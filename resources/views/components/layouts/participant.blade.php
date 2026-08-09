@@ -11,6 +11,10 @@
                    @class(['active' => request()->routeIs('account.dashboard')])>
                     <x-ukc.icon name="home" :size="18" /> Tableau de bord
                 </a>
+                <a href="{{ route('account.submissions.index') }}" wire:navigate
+                   @class(['active' => request()->routeIs('account.submissions.index')])>
+                    <x-ukc.icon name="inbox" :size="18" /> Mes communications
+                </a>
                 <a href="{{ route('account.profile') }}" wire:navigate
                    @class(['active' => request()->routeIs('account.profile')])>
                     <x-ukc.icon name="user" :size="18" /> Mon profil

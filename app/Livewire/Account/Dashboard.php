@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Account;
 
+use App\Models\Edition;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -18,6 +19,10 @@ class Dashboard extends Component
     {
         return view('livewire.account.dashboard', [
             'account' => Auth::guard('account')->user(),
+            'openEdition' => Edition::where('status', 'open')
+                ->where('submission_open', true)
+                ->latest('id')
+                ->first(),
         ])->layout('components.layouts.participant', ['title' => 'Tableau de bord']);
     }
 }

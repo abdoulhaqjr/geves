@@ -62,7 +62,7 @@
 
             <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:30px;">
                 @if ($e->submission_open)
-                    <a href="{{ route('account.register') }}" class="ukc-btn ukc-btn--gold">
+                    <a href="{{ route('account.submissions.create', $e->slug) }}" class="ukc-btn ukc-btn--gold">
                         <x-ukc.icon name="upload" :size="18" /> Soumettre une communication
                     </a>
                 @endif

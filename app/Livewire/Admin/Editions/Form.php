@@ -34,6 +34,7 @@ class Form extends Component
     public string $slug = '';
     public bool $submission_open = false;
     public string $submission_deadline = '';
+    public int $max_communications = 3;
 
     // Réglages
     public string $intro = '';
@@ -67,6 +68,7 @@ class Form extends Component
         $this->submission_deadline = $e->submission_deadline?->format('Y-m-d\TH:i') ?? '';
 
         $settings = $e->settings ?? [];
+        $this->max_communications = (int) ($settings['max_communications'] ?? 3);
         $this->intro = (string) ($settings['intro'] ?? '');
         $this->tracks = implode("\n", $settings['tracks'] ?? []);
         $this->fees = $settings['fees'] ?? [];
@@ -100,6 +102,7 @@ class Form extends Component
             'slug' => ['nullable', 'string', 'max:220'],
             'submission_open' => ['boolean'],
             'submission_deadline' => ['nullable', 'date'],
+            'max_communications' => ['required', 'integer', 'min:1', 'max:10'],
             'intro' => ['nullable', 'string', 'max:5000'],
             'tracks' => ['nullable', 'string', 'max:3000'],
             'fees' => ['array'],
@@ -154,6 +157,7 @@ class Form extends Component
                 'intro' => $this->intro ?: null,
                 'tracks' => $tracks,
                 'fees' => $fees,
+                'max_communications' => $this->max_communications,
             ],
         ];
 

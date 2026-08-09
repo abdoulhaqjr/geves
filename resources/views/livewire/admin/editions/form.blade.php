@@ -107,6 +107,12 @@
                     <input type="datetime-local" id="submission_deadline" wire:model="submission_deadline">
                     @error('submission_deadline') <span class="error">{{ $message }}</span> @enderror
                 </div>
+
+                <div class="ukc-field">
+                    <label for="max_communications">Communications max. par personne</label>
+                    <input type="number" id="max_communications" wire:model="max_communications" min="1" max="10">
+                    @error('max_communications') <span class="error">{{ $message }}</span> @enderror
+                </div>
             </div>
         </div>
 

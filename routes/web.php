@@ -9,6 +9,8 @@ use App\Livewire\Account\Login;
 use App\Livewire\Account\Profile;
 use App\Livewire\Account\Register;
 use App\Livewire\Account\ResetPassword;
+use App\Livewire\Account\Submissions\Create as SubmissionCreate;
+use App\Livewire\Account\Submissions\Index as SubmissionIndex;
 use App\Livewire\Account\VerifyEmailNotice;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\Editions\Form as EditionForm;
@@ -37,6 +39,10 @@ Route::middleware('guest:account')->group(function () {
 Route::middleware('auth:account')->group(function () {
     Route::get('/mon-compte', Dashboard::class)->name('account.dashboard');
     Route::get('/mon-profil', Profile::class)->name('account.profile');
+
+    // Communications
+    Route::get('/mes-communications', SubmissionIndex::class)->name('account.submissions.index');
+    Route::get('/colloque/{slug}/soumettre', SubmissionCreate::class)->name('account.submissions.create');
 
     // Vérification d'e-mail
     Route::get('/verification-email', VerifyEmailNotice::class)->name('account.verification.notice');

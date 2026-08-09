@@ -1,0 +1,209 @@
+<?php
+
+namespace App\Livewire\Account\Submissions;
+
+use App\Actions\UpsertParticipantForAccount;
+use App\Models\Edition;
+use App\Models\Submission;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
+use Livewire\Attributes\Title;
+use Livewire\Component;
+use Livewire\WithFileUploads;
+
+/**
+ * Formulaire de soumission d'une communication, lié au compte connecté.
+ *
+ * - Identité imposée par le compte (bandeau) ; l'e-mail ne peut pas être falsifié.
+ * - Gating : e-mail vérifié + profil complet (affiliation) — cf. Account::canSubmit().
+ * - Garde-fou : nombre maximum de communications par personne et par édition.
+ */
+#[Title('Soumettre une communication')]
+class Create extends Component
+{
+    use WithFileUploads;
+
+    public Edition $edition;
+
+    public string $title = '';
+    public string $track = '';
+    public string $type = 'oral';
+    public string $keywords = '';
+    public string $abstract = '';
+
+    /** Co-auteurs : [['name' => '', 'email' => '', 'affiliation' => '', 'grade' => '']]. */
+    public array $coauthors = [];
+
+    public $file = null;
+
+    public ?string $successRef = null;
+
+    public function mount(string $slug): void
+    {
+        $edition = Edition::where('slug', $slug)->first();
+
+        abort_unless($edition && $edition->isPublished(), 404);
+
+        $this->edition = $edition;
+
+        if (! empty($this->tracks())) {
+            $this->track = $this->tracks()[0];
+        }
+    }
+
+    /** Axes thématiques configurés sur l'édition. */
+    public function tracks(): array
+    {
+        return $this->edition->settings['tracks'] ?? [];
+    }
+
+    /** Nombre maximum de communications par personne (défaut 3). */
+    public function maxCommunications(): int
+    {
+        return (int) ($this->edition->settings['max_communications'] ?? 3);
+    }
+
+    /** Communications déjà déposées par ce compte sur l'édition (originales). */
+    public function usedCount(): int
+    {
+        $account = Auth::guard('account')->user();
+
+        return Submission::where('edition_id', $this->edition->id)
+            ->where('revision_of', 0)
+            ->whereHas('participant', fn ($q) => $q->where('account_id', $account->id))
+            ->count();
+    }
+
+    public function remaining(): int
+    {
+        return max(0, $this->maxCommunications() - $this->usedCount());
+    }
+
+    public function canSubmitNow(): bool
+    {
+        $account = Auth::guard('account')->user();
+
+        return $account->canSubmit()
+            && $this->edition->submission_open
+            && $this->remaining() > 0;
+    }
+
+    public function addCoauthor(): void
+    {
+        $this->coauthors[] = ['name' => '', 'email' => '', 'affiliation' => '', 'grade' => ''];
+    }
+
+    public function removeCoauthor(int $i): void
+    {
+        unset($this->coauthors[$i]);
+        $this->coauthors = array_values($this->coauthors);
+    }
+
+    protected function rules(): array
+    {
+        return [
+            'title' => ['required', 'string', 'max:500'],
+            'track' => [count($this->tracks()) ? 'required' : 'nullable', 'string', 'max:150'],
+            'type' => ['required', 'in:oral,poster'],
+            'keywords' => ['nullable', 'string', 'max:500'],
+            'abstract' => ['required', 'string', 'min:50', 'max:8000'],
+            'coauthors' => ['array'],
+            'coauthors.*.name' => ['nullable', 'string', 'max:200'],
+            'coauthors.*.email' => ['nullable', 'email', 'max:200'],
+            'coauthors.*.affiliation' => ['nullable', 'string', 'max:255'],
+            'coauthors.*.grade' => ['nullable', 'string', 'max:100'],
+            'file' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:8192'],
+        ];
+    }
+
+    public function submit(UpsertParticipantForAccount $upsert)
+    {
+        $account = Auth::guard('account')->user();
+
+        // Garde-fous serveur (en plus de l'affichage).
+        if (! $account->canSubmit()) {
+            $this->addError('abstract', 'Votre e-mail doit être vérifié et votre profil complété (affiliation).');
+
+            return null;
+        }
+        if (! $this->edition->submission_open) {
+            $this->addError('abstract', 'Les soumissions sont fermées pour cette édition.');
+
+            return null;
+        }
+        if ($this->remaining() <= 0) {
+            $this->addError('abstract', 'Vous avez atteint le nombre maximum de communications pour cette édition.');
+
+            return null;
+        }
+
+        $data = $this->validate();
+
+        $participant = $upsert->handle($this->edition, $account, 'author');
+
+        $fileUrl = null;
+        if ($this->file) {
+            $path = $this->file->store('submissions/' . $this->edition->id, 'public');
+            $fileUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+        }
+
+        $coauthors = collect($this->coauthors)
+            ->filter(fn ($c) => filled($c['name'] ?? null))
+            ->map(fn ($c) => [
+                'name' => $c['name'],
+                'email' => $c['email'] ?? null,
+                'affiliation' => $c['affiliation'] ?? null,
+                'grade' => $c['grade'] ?? null,
+            ])->values()->all();
+
+        $authors = array_merge([[
+            'name' => $account->full_name,
+            'email' => $account->email,
+            'affiliation' => $account->affiliation,
+            'grade' => $account->grade,
+            'corresponding' => true,
+        ]], $coauthors);
+
+        $submission = Submission::create([
+            'edition_id' => $this->edition->id,
+            'participant_id' => $participant->id,
+            'ref_code' => $this->generateRefCode(),
+            'access_token' => Str::random(64),
+            'title' => $data['title'],
+            'authors' => $authors,
+            'abstract' => $data['abstract'],
+            'keywords' => $data['keywords'] ?: null,
+            'track' => $data['track'] ?: null,
+            'type' => $data['type'],
+            'status' => 'submitted',
+            'file_url' => $fileUrl,
+        ]);
+
+        $this->successRef = $submission->ref_code;
+    }
+
+    protected function generateRefCode(): string
+    {
+        $prefix = $this->edition->year ? substr((string) $this->edition->year, -2) : 'XX';
+
+        do {
+            $seq = Submission::where('edition_id', $this->edition->id)->count() + 1;
+            $code = sprintf('%s-%03d', $prefix, $seq);
+            $exists = Submission::where('ref_code', $code)->exists();
+            if ($exists) {
+                // Collision improbable : on suffixe aléatoirement.
+                $code = $code . '-' . Str::upper(Str::random(2));
+                $exists = Submission::where('ref_code', $code)->exists();
+            }
+        } while ($exists);
+
+        return $code;
+    }
+
+    public function render()
+    {
+        return view('livewire.account.submissions.create', [
+            'account' => Auth::guard('account')->user(),
+        ])->layout('components.layouts.participant', ['title' => 'Soumettre une communication']);
+    }
+}
