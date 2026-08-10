@@ -1,7 +1,6 @@
 <?php
 
 use App\Livewire\Admin\Editions\Form;
-use App\Livewire\Admin\Editions\Index;
 use App\Models\Colloque;
 use App\Models\Edition;
 use App\Models\User;
@@ -72,6 +71,28 @@ it('modifie une édition existante', function () {
         ->assertHasNoErrors();
 
     expect($edition->fresh()->title)->toBe('Nouveau titre');
+});
+
+it('préserve submission_form et enregistre hero/contact au save', function () {
+    $user = staffWithPermission();
+    $colloque = Colloque::create(['name' => 'C', 'slug' => 'c']);
+    $edition = $colloque->editions()->create([
+        'title' => 'Édition', 'status' => 'open', 'slug' => 'ed',
+        'settings' => ['submission_form' => ['fields' => ['title' => ['label' => 'Intitulé']], 'custom' => []]],
+    ]);
+
+    Livewire::actingAs($user, 'web')
+        ->test(Form::class, ['edition' => $edition])
+        ->set('contact_email', 'colloque@univkara.tg')
+        ->set('hero_image', 'https://example.tg/banniere.jpg')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $settings = $edition->fresh()->settings;
+    // La config du formulaire (gérée ailleurs) survit au save de l'édition.
+    expect($settings['submission_form']['fields']['title']['label'])->toBe('Intitulé');
+    expect($settings['contact']['email'])->toBe('colloque@univkara.tg');
+    expect($settings['hero_image'])->toBe('https://example.tg/banniere.jpg');
 });
 
 it('affiche la page publique d’une édition publiée', function () {

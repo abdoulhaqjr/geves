@@ -1,4 +1,9 @@
 <div>
+    <style>
+        html { scroll-behavior: smooth; }
+        section[id] { scroll-margin-top: 84px; }
+        nav [data-spy].spy-active { background: var(--ukc-blue); color: #fff; }
+    </style>
     @php
         $e = $edition;
         $dateLabel = null;
@@ -23,18 +28,19 @@
                 <div style="font-weight:900;color:var(--ukc-blue);font-size:1rem;line-height:1.2;">{{ $e->colloque?->name }}</div>
                 <div style="font-size:.78rem;color:var(--ukc-muted);font-weight:600;">Université de Kara</div>
             </div>
-            <nav style="display:flex;gap:8px;align-items:center;">
-                <a href="#presentation" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Présentation</a>
-                <a href="#axes" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Axes</a>
+            <nav x-data="ukcScrollspy()" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <a href="#presentation" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">Présentation</a>
+                <a href="#axes" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">Axes</a>
                 @if ($plenaries->count() || $ateliers->count())
-                    <a href="#programme" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Programme</a>
+                    <a href="#programme" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">Programme</a>
                 @endif
                 @if ($committees->count())
-                    <a href="#comites" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Comités</a>
+                    <a href="#comites" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">Comités</a>
                 @endif
                 @if (count($faq))
-                    <a href="#faq" class="ukc-btn ukc-btn--ghost ukc-btn--sm">FAQ</a>
+                    <a href="#faq" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">FAQ</a>
                 @endif
+                <a href="#contact" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">Contact</a>
                 <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--primary ukc-btn--sm">Espace participant</a>
             </nav>
         </div>
@@ -43,7 +49,18 @@
     {{-- Hero --}}
     <section style="position:relative;color:#fff;overflow:hidden;
                     background:linear-gradient(135deg, var(--ukc-blue-dark) 0%, var(--ukc-blue) 55%, #2b52c9 100%);">
-        <div style="max-width:1100px;margin:0 auto;padding:clamp(48px,7vw,88px) clamp(16px,4vw,32px);">
+        @if ($heroVideo)
+            <video autoplay muted loop playsinline
+                   style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;">
+                <source src="{{ $heroVideo }}" type="video/mp4">
+            </video>
+            <div style="position:absolute;inset:0;z-index:1;background:linear-gradient(135deg, rgba(27,49,130,.86), rgba(43,82,201,.78));"></div>
+        @elseif ($heroImage)
+            <img src="{{ $heroImage }}" alt="" aria-hidden="true"
+                 style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;">
+            <div style="position:absolute;inset:0;z-index:1;background:linear-gradient(135deg, rgba(27,49,130,.88), rgba(43,82,201,.72));"></div>
+        @endif
+        <div style="position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:clamp(48px,7vw,88px) clamp(16px,4vw,32px);">
             @if ($e->edition_label)
                 <span class="ukc-pill" style="background:rgba(255,255,255,.16);color:#fff;margin-bottom:18px;">
                     {{ $e->edition_label }}
@@ -258,6 +275,37 @@
                     @endforeach
                 </section>
             @endif
+
+            {{-- Contact --}}
+            <section id="contact" class="ukc-card">
+                <h2 style="font-size:1.3rem;font-weight:800;color:var(--ukc-blue);margin-bottom:16px;">Contact</h2>
+                <div class="ukc-grid-2" style="grid-template-columns:1fr 1.2fr;gap:24px;align-items:start;">
+                    <div style="display:flex;flex-direction:column;gap:12px;">
+                        @if (!empty($contact['email']))
+                            <div style="display:flex;gap:10px;align-items:center;">
+                                <x-ukc.icon name="mail" :size="18" />
+                                <a href="mailto:{{ $contact['email'] }}" style="color:var(--ukc-text);">{{ $contact['email'] }}</a>
+                            </div>
+                        @endif
+                        @if (!empty($contact['phone']))
+                            <div style="display:flex;gap:10px;align-items:center;">
+                                <x-ukc.icon name="phone" :size="18" /> <span>{{ $contact['phone'] }}</span>
+                            </div>
+                        @endif
+                        @if (!empty($contact['address']))
+                            <div style="display:flex;gap:10px;align-items:flex-start;">
+                                <x-ukc.icon name="pin" :size="18" /> <span>{{ $contact['address'] }}</span>
+                            </div>
+                        @endif
+                        @if (empty($contact['email']) && empty($contact['phone']) && empty($contact['address']))
+                            <p style="color:var(--ukc-muted);margin:0;">Envoyez-nous un message via le formulaire.</p>
+                        @endif
+                    </div>
+                    <div>
+                        @livewire('public.contact-form', ['editionId' => $e->id], key('contact-'.$e->id))
+                    </div>
+                </div>
+            </section>
 
             {{-- CTA final --}}
             <section class="ukc-card" style="text-align:center;background:

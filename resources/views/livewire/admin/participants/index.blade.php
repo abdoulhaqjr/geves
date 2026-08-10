@@ -55,6 +55,10 @@
                                     @else<span class="ukc-pill ukc-pill--muted">Non</span>@endif
                                 </td>
                                 <td style="text-align:right;white-space:nowrap;">
+                                    <a href="{{ route('admin.participants.preview', $p) }}" wire:navigate
+                                       class="ukc-btn ukc-btn--ghost ukc-btn--sm" title="Sa page (lecture seule)">
+                                        <x-ukc.icon name="eye" :size="14" /> Sa page
+                                    </a>
                                     <button type="button" class="ukc-btn ukc-btn--outline ukc-btn--sm"
                                             wire:click="invite({{ $p->id }})" @disabled(blank($p->email))>
                                         <x-ukc.icon name="mail" :size="14" /> {{ $p->isInvited() ? 'Relancer' : 'Inviter' }}

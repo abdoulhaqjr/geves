@@ -5,7 +5,6 @@ namespace App\Livewire\Admin\Editions;
 use App\Actions\ExtractEditionFromDocuments;
 use App\AI\AiManager;
 use App\Models\Colloque;
-use App\Models\CommitteeMember;
 use App\Models\Edition;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Title;
@@ -25,34 +24,64 @@ class Form extends Component
 
     // Paramétrage assisté par IA
     public array $aiFiles = [];
+
     public array $aiSummary = [];
 
     // Colloque de rattachement
     public ?int $colloque_id = null;
+
     public string $new_colloque = '';
 
     // Champs cœur
     public string $title = '';
+
     public string $edition_label = '';
+
     public string $subtitle = '';
+
     public string $theme = '';
+
     public ?int $year = null;
+
     public string $date_start = '';
+
     public string $date_end = '';
+
     public string $location = '';
+
     public string $status = 'draft';
+
     public string $slug = '';
+
     public bool $submission_open = false;
+
     public string $submission_deadline = '';
+
     public int $max_communications = 3;
 
     // Réglages
     public string $intro = '';
+
     public string $tracks = '';       // un axe par ligne
+
     public array $fees = [];          // [['label' => '', 'amount' => '']]
+
     public array $committees = [];    // [['role','person_name','person_title','institution','photo_url']]
+
     public array $partners = [];      // [['name','url','logo_url','level']]
+
     public array $faq = [];           // [['question','answer']]
+
+    // Apparence & contact (page publique)
+    public string $hero_image = '';
+
+    public string $hero_video = '';
+
+    public string $contact_email = '';
+
+    public string $contact_phone = '';
+
+    public string $contact_address = '';
 
     /** Rôles de comité. */
     public array $committeeRoles = [
@@ -94,6 +123,11 @@ class Form extends Component
         $this->fees = $settings['fees'] ?? [];
         $this->partners = $settings['partners'] ?? [];
         $this->faq = $settings['faq'] ?? [];
+        $this->hero_image = (string) ($settings['hero_image'] ?? '');
+        $this->hero_video = (string) ($settings['hero_video'] ?? '');
+        $this->contact_email = (string) ($settings['contact']['email'] ?? '');
+        $this->contact_phone = (string) ($settings['contact']['phone'] ?? '');
+        $this->contact_address = (string) ($settings['contact']['address'] ?? '');
 
         $this->committees = $e->committeeMembers()
             ->orderBy('ordre')
@@ -151,7 +185,7 @@ class Form extends Component
             $data = $action->handle($files);
         } catch (\Throwable $e) {
             report($e);
-            $this->addError('aiFiles', 'Échec de l’analyse : ' . $e->getMessage());
+            $this->addError('aiFiles', 'Échec de l’analyse : '.$e->getMessage());
 
             return;
         }
@@ -161,7 +195,7 @@ class Form extends Component
 
         session()->flash('ukc_status', $this->aiSummary === []
             ? 'Aucune information exploitable n’a été extraite des documents.'
-            : count($this->aiSummary) . ' rubrique(s) pré-remplie(s) : ' . implode(', ', $this->aiSummary) . '. Vérifiez puis enregistrez.');
+            : count($this->aiSummary).' rubrique(s) pré-remplie(s) : '.implode(', ', $this->aiSummary).'. Vérifiez puis enregistrez.');
     }
 
     /** Applique les valeurs extraites aux champs du formulaire (sans écraser à vide). */
@@ -190,7 +224,7 @@ class Form extends Component
             $this->date_end = $d['date_end'];
         }
         if (! empty($d['submission_deadline'])) {
-            $this->submission_deadline = $d['submission_deadline'] . 'T23:59';
+            $this->submission_deadline = $d['submission_deadline'].'T23:59';
             $this->aiSummary[] = 'Date limite';
         }
         if (! empty($d['tracks'])) {
@@ -263,6 +297,11 @@ class Form extends Component
             'faq' => ['array'],
             'faq.*.question' => ['nullable', 'string', 'max:300'],
             'faq.*.answer' => ['nullable', 'string', 'max:2000'],
+            'hero_image' => ['nullable', 'string', 'max:500'],
+            'hero_video' => ['nullable', 'string', 'max:500'],
+            'contact_email' => ['nullable', 'email', 'max:200'],
+            'contact_phone' => ['nullable', 'string', 'max:60'],
+            'contact_address' => ['nullable', 'string', 'max:300'],
         ];
     }
 
@@ -320,14 +359,22 @@ class Form extends Component
             'slug' => $this->resolveSlug(),
             'submission_open' => $this->submission_open,
             'submission_deadline' => $this->submission_deadline ?: null,
-            'settings' => [
+            // Fusion : préserve les clés gérées ailleurs (ex. submission_form).
+            'settings' => array_merge($this->edition?->settings ?? [], [
                 'intro' => $this->intro ?: null,
                 'tracks' => $tracks,
                 'fees' => $fees,
                 'max_communications' => $this->max_communications,
                 'partners' => $partners,
                 'faq' => $faq,
-            ],
+                'hero_image' => $this->hero_image ?: null,
+                'hero_video' => $this->hero_video ?: null,
+                'contact' => [
+                    'email' => $this->contact_email ?: null,
+                    'phone' => $this->contact_phone ?: null,
+                    'address' => $this->contact_address ?: null,
+                ],
+            ]),
         ];
 
         if ($this->edition) {
@@ -377,7 +424,7 @@ class Form extends Component
         while (Edition::where('slug', $slug)
             ->when($this->edition, fn ($q) => $q->whereKeyNot($this->edition->id))
             ->exists()) {
-            $slug = $base . '-' . $i++;
+            $slug = $base.'-'.$i++;
         }
 
         return $slug;
@@ -389,7 +436,7 @@ class Form extends Component
         $slug = $base;
         $i = 2;
         while (Colloque::where('slug', $slug)->exists()) {
-            $slug = $base . '-' . $i++;
+            $slug = $base.'-'.$i++;
         }
 
         return $slug;

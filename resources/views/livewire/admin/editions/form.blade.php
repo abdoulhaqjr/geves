@@ -160,6 +160,35 @@
                               placeholder="Sciences et technologies&#10;Sciences de la santé&#10;…"></textarea>
                     @error('tracks') <span class="error">{{ $message }}</span> @enderror
                 </div>
+                <div class="ukc-field">
+                    <label for="hero_image">Image du hero <span class="hint">(URL, optionnel)</span></label>
+                    <input type="url" id="hero_image" wire:model="hero_image" placeholder="https://…/banniere.jpg">
+                    @error('hero_image') <span class="error">{{ $message }}</span> @enderror
+                </div>
+                <div class="ukc-field">
+                    <label for="hero_video">Vidéo de fond du hero <span class="hint">(URL mp4, optionnel)</span></label>
+                    <input type="url" id="hero_video" wire:model="hero_video" placeholder="https://…/intro.mp4">
+                    @error('hero_video') <span class="error">{{ $message }}</span> @enderror
+                </div>
+            </div>
+
+            {{-- Contact --}}
+            <div class="ukc-form-grid" style="margin-top:8px;">
+                <div class="ukc-field">
+                    <label for="contact_email">E-mail de contact</label>
+                    <input type="email" id="contact_email" wire:model="contact_email" placeholder="colloque@univkara.tg">
+                    @error('contact_email') <span class="error">{{ $message }}</span> @enderror
+                </div>
+                <div class="ukc-field">
+                    <label for="contact_phone">Téléphone de contact</label>
+                    <input type="text" id="contact_phone" wire:model="contact_phone" placeholder="+228 …">
+                    @error('contact_phone') <span class="error">{{ $message }}</span> @enderror
+                </div>
+                <div class="ukc-field full">
+                    <label for="contact_address">Adresse</label>
+                    <input type="text" id="contact_address" wire:model="contact_address" placeholder="Université de Kara, BP …">
+                    @error('contact_address') <span class="error">{{ $message }}</span> @enderror
+                </div>
             </div>
 
             {{-- Frais --}}

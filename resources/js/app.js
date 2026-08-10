@@ -1,5 +1,33 @@
 // Alpine est fourni par Livewire 4. On enregistre nos composants au démarrage.
 document.addEventListener('alpine:init', () => {
+    // Surbrillance de la section active dans la navigation (scrollspy).
+    window.Alpine.data('ukcScrollspy', () => ({
+        observer: null,
+        init() {
+            const links = Array.from(this.$el.querySelectorAll('[data-spy]'));
+            const map = new Map();
+            links.forEach((link) => {
+                const id = link.getAttribute('href')?.slice(1);
+                const section = id && document.getElementById(id);
+                if (section) map.set(section, link);
+            });
+            if (map.size === 0) return;
+
+            this.observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return;
+                    links.forEach((l) => l.classList.remove('spy-active'));
+                    map.get(entry.target)?.classList.add('spy-active');
+                });
+            }, { rootMargin: '-45% 0px -50% 0px', threshold: 0 });
+
+            map.forEach((_, section) => this.observer.observe(section));
+        },
+        destroy() {
+            this.observer?.disconnect();
+        },
+    }));
+
     window.Alpine.data('ukcCountdown', (targetIso) => ({
         days: 0,
         hours: 0,

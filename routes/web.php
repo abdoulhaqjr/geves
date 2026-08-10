@@ -29,6 +29,7 @@ use App\Livewire\Admin\Emails\Index as AdminEmailIndex;
 use App\Livewire\Admin\Reports\Index as AdminReportIndex;
 use App\Livewire\Admin\Login as AdminLogin;
 use App\Livewire\Admin\Participants\Index as AdminParticipantIndex;
+use App\Livewire\Admin\Participants\Preview as AdminParticipantPreview;
 use App\Livewire\Admin\Payments\Index as AdminPaymentIndex;
 use App\Livewire\Admin\Payments\Record as AdminPaymentRecord;
 use App\Livewire\Admin\Program\Sessions as AdminProgramSessions;
@@ -122,6 +123,7 @@ Route::prefix('admin')->group(function () {
         Route::get('/paiements/{payment}/recu', ReceiptController::class)->name('admin.payments.receipt');
 
         Route::get('/participants', AdminParticipantIndex::class)->name('admin.participants.index');
+        Route::get('/participants/{participant}/apercu', AdminParticipantPreview::class)->name('admin.participants.preview');
 
         Route::get('/emails', AdminEmailIndex::class)->name('admin.emails.index');
 
