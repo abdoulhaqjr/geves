@@ -26,6 +26,10 @@
                    @class(['active' => request()->routeIs('admin.payments.*')])>
                     <x-ukc.icon name="card" :size="18" /> Paiements
                 </a>
+                <a href="{{ route('admin.participants.index') }}" wire:navigate
+                   @class(['active' => request()->routeIs('admin.participants.*')])>
+                    <x-ukc.icon name="users" :size="18" /> Participants
+                </a>
 
                 <span class="nav-label">Programme</span>
                 <a href="{{ route('admin.program.sessions') }}" wire:navigate

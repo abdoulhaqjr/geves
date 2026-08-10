@@ -15,9 +15,37 @@ class Participant extends Model
 {
     protected $guarded = ['id'];
 
+    /** Libellés des rôles. */
+    public const ROLES = [
+        'author' => 'Communicant',
+        'coauthor' => 'Co-auteur',
+        'reviewer' => 'Relecteur',
+        'committee' => 'Comité',
+        'moderator' => 'Modérateur',
+        'rapporteur' => 'Rapporteur',
+        'attendee' => 'Auditeur',
+    ];
+
     protected function casts(): array
     {
         return ['meta' => 'array'];
+    }
+
+    public function roleLabel(): string
+    {
+        return self::ROLES[$this->role] ?? ucfirst((string) $this->role);
+    }
+
+    public function isInvited(): bool
+    {
+        return filled($this->meta['invited_at'] ?? null);
+    }
+
+    public function markInvited(): void
+    {
+        $meta = $this->meta ?? [];
+        $meta['invited_at'] = now()->toDateTimeString();
+        $this->update(['meta' => $meta]);
     }
 
     public function edition(): BelongsTo
