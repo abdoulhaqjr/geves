@@ -1,7 +1,7 @@
 # Passation — GESCO · Gestion des colloques scientifiques
 
 > Document de passation pour la personne qui reprend le développement.
-> Dernière mise à jour : 2026-08-10 (réutilisation bizzcart : PDF dompdf, enums, sauvegardes, impersonation).
+> Dernière mise à jour : 2026-08-10 (bizzcart : PDF, enums, sauvegardes, impersonation, observers/events).
 
 Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture**, les **conventions**, le **travail réalisé**, ce qui **reste à faire** et les **pièges** à connaître.
 
@@ -68,6 +68,8 @@ php.bat vendor/bin/pint              # style (Laravel Pint)
 composer.bat check                   # pint --test + phpstan + tests (= le CI)
 ```
 > ⚠️ Le lanceur affiche une sortie **JSON compacte** (plugin `laravel/pao`) — pas la trace complète. Pour déboguer une exception dans un test, capter l'exception dans le test (try/catch + `fwrite(STDERR, …)`), ou utiliser `->assertOk()`/dumps ciblés. `vendor/bin/phpunit` **ne fonctionne pas** (Pest requis).
+
+**Observers & Events (patterns bizzcart)** : *Observers* — invariants garantis à la création (sans écraser une valeur fournie) : `SubmissionObserver` (`ref_code` AA-NNN + `access_token`), `ParticipantObserver` (`access_token`), `AttestationObserver` (`uuid`) ; enregistrés via `#[ObservedBy]` sur les modèles ; appelants allégés (`Submissions\Create` — plus de `generateRefCode()`, Upsert*, `IssueAttestation`). ⚠️ La resoumission (`Account\Submissions\Show`) fournit `ref_code` explicitement (conservé). *Events* — `SubmissionStatusChanged` + listeners `NotifyAuthorOfStatus` / `InviteCoauthorsOnAcceptance` **auto-découverts** par Laravel 13 (⚠️ **ne pas** aussi `Event::listen` manuellement → double envoi). `Admin\Submissions\Show::applyStatus` dispatche l'event. *(commit `1bf8ab1`)*
 
 **Impersonation staff → participant** (`lab404/laravel-impersonate`) : vraie « connexion en tant que », **cross-guard** (`web` → `account`). Trait `Impersonate` sur `User` (`canImpersonate()` = permission `manage_colloques`) et `Account`. `Admin\ImpersonationController` : `take` (`POST /admin/participants/{p}/impersonate`, bouton « Se connecter en tant que » sur l'aperçu si compte lié) → impersonifie le compte, redirige vers l'espace ; `leave` (`POST /impersonation/quitter`, `auth:account`). Bannière persistante dans le layout participant (`app('impersonate')->isImpersonating()`). Pendant l'impersonation, le guard `web` est déconnecté → admin inaccessible (retour par « quitter »). ⚠️ Un `composer require --no-scripts` laisse le provider hors du cache de découverte (config `session_key` null → 500) : refaire `php artisan package:discover` après. *(commit `bcc6869`)*
 
