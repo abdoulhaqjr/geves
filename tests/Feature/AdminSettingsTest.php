@@ -23,16 +23,21 @@ it('enregistre les réglages', function () {
         ->set('from_address', 'colloques@univkara.tg')
         ->set('payments_default', 'cashpay')
         ->set('mail_host', 'smtp.univkara.tg')
-        ->set('ai_default', 'openai')
+        ->set('ai_default', 'grok')
         ->set('ai_anthropic_key', 'sk-ant-xyz')
+        ->set('ai_anthropic_model', 'claude-sonnet-4-5')
+        ->set('ai_grok_key', 'xai-123')
+        ->set('ai_grok_model', 'grok-4')
         ->call('save')
         ->assertHasNoErrors();
 
     expect(Settings::get('mail.from_name'))->toBe('Colloques UK');
     expect(Settings::get('payments.default'))->toBe('cashpay');
     expect(Settings::get('mail.host'))->toBe('smtp.univkara.tg');
-    expect(Settings::get('ai.default'))->toBe('openai');
+    expect(Settings::get('ai.default'))->toBe('grok');
     expect(Settings::get('ai.anthropic_key'))->toBe('sk-ant-xyz');
+    expect(Settings::get('ai.anthropic_model'))->toBe('claude-sonnet-4-5');
+    expect(Settings::get('ai.grok_key'))->toBe('xai-123');
 });
 
 it('applique les réglages à la configuration au boot', function () {
@@ -44,6 +49,8 @@ it('applique les réglages à la configuration au boot', function () {
         'cashpay.username' => 'user.demo',
         'ai.default' => 'gemini',
         'ai.anthropic_key' => 'sk-ant-abc',
+        'ai.grok_key' => 'xai-abc',
+        'ai.grok_model' => 'grok-4',
     ]);
 
     // Invoque la logique d'application (méthode protégée du provider).
@@ -57,6 +64,8 @@ it('applique les réglages à la configuration au boot', function () {
     expect(config('services.cashpay.username'))->toBe('user.demo');
     expect(config('services.ai.default'))->toBe('gemini');
     expect(config('services.anthropic.key'))->toBe('sk-ant-abc');
+    expect(config('services.grok.key'))->toBe('xai-abc');
+    expect(config('services.grok.model'))->toBe('grok-4');
 });
 
 it('envoie un e-mail de test sans erreur', function () {

@@ -111,20 +111,37 @@
                 Utilisée pour le paramétrage assisté d’une édition et la génération de modèles (badges, attestations).
                 Les clés sont facultatives ; renseignez au moins le fournisseur par défaut.
             </p>
-            <div class="ukc-form-grid">
-                <div class="ukc-field full">
-                    <label for="ai_default">Fournisseur par défaut</label>
-                    <select id="ai_default" wire:model="ai_default">
-                        <option value="claude">Claude (Anthropic)</option>
-                        <option value="openai">OpenAI</option>
-                        <option value="gemini">Gemini (Google)</option>
-                    </select>
-                    <span class="hint">Repli automatique sur un autre fournisseur configuré si nécessaire.</span>
-                    @error('ai_default') <span class="error">{{ $message }}</span> @enderror
+            <div class="ukc-field" style="max-width:360px;">
+                <label for="ai_default">Fournisseur par défaut</label>
+                <select id="ai_default" wire:model="ai_default">
+                    <option value="claude">Claude (Anthropic)</option>
+                    <option value="openai">OpenAI</option>
+                    <option value="gemini">Gemini (Google)</option>
+                    <option value="grok">Grok (xAI)</option>
+                </select>
+                <span class="hint">Repli automatique sur un autre fournisseur configuré si nécessaire.</span>
+                @error('ai_default') <span class="error">{{ $message }}</span> @enderror
+            </div>
+
+            @php($aiProviders = [
+                ['anthropic', 'Claude (Anthropic)', 'ex. claude-sonnet-4-5'],
+                ['openai', 'OpenAI', 'ex. gpt-4o'],
+                ['gemini', 'Gemini (Google)', 'ex. gemini-2.5-flash'],
+                ['grok', 'Grok (xAI)', 'ex. grok-4'],
+            ])
+            <div style="margin-top:14px;display:flex;flex-direction:column;gap:12px;">
+                <div style="display:grid;grid-template-columns:150px 1fr 1fr;gap:10px;font-size:.75rem;font-weight:700;color:var(--ukc-muted);text-transform:uppercase;letter-spacing:.04em;">
+                    <span>Fournisseur</span><span>Clé API</span><span>Modèle par défaut</span>
                 </div>
-                <div class="ukc-field"><label for="ai_anthropic_key">Clé Claude (Anthropic)</label><input type="password" id="ai_anthropic_key" wire:model="ai_anthropic_key" autocomplete="new-password"></div>
-                <div class="ukc-field"><label for="ai_openai_key">Clé OpenAI</label><input type="password" id="ai_openai_key" wire:model="ai_openai_key" autocomplete="new-password"></div>
-                <div class="ukc-field"><label for="ai_gemini_key">Clé Gemini (Google)</label><input type="password" id="ai_gemini_key" wire:model="ai_gemini_key" autocomplete="new-password"></div>
+                @foreach ($aiProviders as [$prov, $label, $ph])
+                    <div style="display:grid;grid-template-columns:150px 1fr 1fr;gap:10px;align-items:center;">
+                        <span style="font-weight:600;font-size:.88rem;">{{ $label }}</span>
+                        <input type="password" wire:model="ai_{{ $prov }}_key" autocomplete="new-password" placeholder="Clé API"
+                               style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13px;">
+                        <input type="text" wire:model="ai_{{ $prov }}_model" placeholder="{{ $ph }}"
+                               style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13px;">
+                    </div>
+                @endforeach
             </div>
         </div>
 

@@ -56,15 +56,22 @@ return [
     // Fournisseurs d'IA (paramétrage assisté, génération badges/attestations à venir).
     'openai' => [
         'key' => env('OPENAI_API_KEY'),
+        'model' => env('OPENAI_MODEL'),
     ],
     'anthropic' => [
         'key' => env('ANTHROPIC_API_KEY'),
+        'model' => env('ANTHROPIC_MODEL'),
     ],
     'gemini' => [
         'key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL'),
+    ],
+    'grok' => [
+        'key' => env('GROK_API_KEY'),
+        'model' => env('GROK_MODEL'),
     ],
     'ai' => [
-        'default' => env('AI_PROVIDER', 'claude'), // openai | claude | gemini
+        'default' => env('AI_PROVIDER', 'claude'), // openai | claude | gemini | grok
     ],
 
 ];

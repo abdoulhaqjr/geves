@@ -85,10 +85,13 @@ class AppServiceProvider extends ServiceProvider
             }
         }
 
-        // Fournisseurs d'IA
-        foreach (['openai' => 'openai_key', 'anthropic' => 'anthropic_key', 'gemini' => 'gemini_key'] as $svc => $key) {
-            if (filled($set("ai.$key"))) {
-                Config::set("services.$svc.key", $set("ai.$key"));
+        // Fournisseurs d'IA : clé + modèle par défaut
+        foreach (['openai', 'anthropic', 'gemini', 'grok'] as $svc) {
+            if (filled($set("ai.{$svc}_key"))) {
+                Config::set("services.$svc.key", $set("ai.{$svc}_key"));
+            }
+            if (filled($set("ai.{$svc}_model"))) {
+                Config::set("services.$svc.model", $set("ai.{$svc}_model"));
             }
         }
         Config::set('services.ai.default', $set('ai.default', config('services.ai.default')));

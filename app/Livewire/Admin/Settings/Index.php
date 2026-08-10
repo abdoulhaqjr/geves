@@ -43,8 +43,13 @@ class Index extends Component
     // Intelligence artificielle
     public string $ai_default = 'claude';
     public string $ai_openai_key = '';
+    public string $ai_openai_model = '';
     public string $ai_anthropic_key = '';
+    public string $ai_anthropic_model = '';
     public string $ai_gemini_key = '';
+    public string $ai_gemini_model = '';
+    public string $ai_grok_key = '';
+    public string $ai_grok_model = '';
 
     public function mount(): void
     {
@@ -72,8 +77,13 @@ class Index extends Component
 
         $this->ai_default = $g('ai.default', (string) config('services.ai.default', 'claude'));
         $this->ai_openai_key = $g('ai.openai_key');
+        $this->ai_openai_model = $g('ai.openai_model', (string) config('services.openai.model'));
         $this->ai_anthropic_key = $g('ai.anthropic_key');
+        $this->ai_anthropic_model = $g('ai.anthropic_model', (string) config('services.anthropic.model'));
         $this->ai_gemini_key = $g('ai.gemini_key');
+        $this->ai_gemini_model = $g('ai.gemini_model', (string) config('services.gemini.model'));
+        $this->ai_grok_key = $g('ai.grok_key');
+        $this->ai_grok_model = $g('ai.grok_model', (string) config('services.grok.model'));
     }
 
     public function save(): void
@@ -83,7 +93,7 @@ class Index extends Component
             'mail_port' => ['nullable', 'integer'],
             'payments_default' => ['required', 'in:manual,cashpay,fedapay'],
             'fedapay_mode' => ['required', 'in:test,live'],
-            'ai_default' => ['required', 'in:openai,claude,gemini'],
+            'ai_default' => ['required', 'in:openai,claude,gemini,grok'],
             'test_email' => ['nullable', 'email'],
         ]);
 
@@ -107,8 +117,13 @@ class Index extends Component
             'fedapay.webhook_secret' => $this->fedapay_webhook_secret,
             'ai.default' => $this->ai_default,
             'ai.openai_key' => $this->ai_openai_key,
+            'ai.openai_model' => $this->ai_openai_model,
             'ai.anthropic_key' => $this->ai_anthropic_key,
+            'ai.anthropic_model' => $this->ai_anthropic_model,
             'ai.gemini_key' => $this->ai_gemini_key,
+            'ai.gemini_model' => $this->ai_gemini_model,
+            'ai.grok_key' => $this->ai_grok_key,
+            'ai.grok_model' => $this->ai_grok_model,
         ]);
 
         session()->flash('ukc_status', 'Réglages enregistrés.');
