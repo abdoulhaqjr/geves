@@ -1,4 +1,33 @@
 <div>
+    {{-- Paramétrage assisté par IA --}}
+    @if ($aiAvailable)
+        <div class="ukc-card" style="margin-bottom:18px;background:linear-gradient(135deg,rgba(34,62,164,.05),rgba(0,153,51,.05));">
+            <h2><x-ukc.icon name="sparkles" :size="20" /> Paramétrage assisté (IA)</h2>
+            <p style="font-size:.9rem;color:var(--ukc-muted);margin-bottom:12px;">
+                Déposez l’appel à communications ou l’affiche (PDF ou images, 6 max). L’IA pré-remplit les champs
+                trouvés ; rien n’est enregistré tant que vous n’avez pas vérifié et cliqué « Enregistrer ».
+            </p>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <input type="file" wire:model="aiFiles" multiple accept=".pdf,.png,.jpg,.jpeg,.webp"
+                       style="font-size:.9rem;">
+                <button type="button" class="ukc-btn ukc-btn--primary ukc-btn--sm"
+                        wire:click="runAiAssist" wire:loading.attr="disabled" wire:target="runAiAssist,aiFiles">
+                    <span wire:loading.remove wire:target="runAiAssist"><x-ukc.icon name="sparkles" :size="16" /> Analyser</span>
+                    <span wire:loading wire:target="runAiAssist">Analyse en cours…</span>
+                </button>
+                <span wire:loading wire:target="aiFiles" class="hint">Téléversement…</span>
+            </div>
+            @error('aiFiles') <span class="error" style="display:block;margin-top:6px;">{{ $message }}</span> @enderror
+            @error('aiFiles.*') <span class="error" style="display:block;margin-top:6px;">{{ $message }}</span> @enderror
+            @if (count($aiSummary))
+                <div class="ukc-alert ukc-alert--ok" style="margin:12px 0 0;">
+                    <span class="ico"><x-ukc.icon name="check" :size="18" /></span>
+                    <div>Pré-rempli : {{ implode(', ', $aiSummary) }}. Vérifiez ci-dessous puis enregistrez.</div>
+                </div>
+            @endif
+        </div>
+    @endif
+
     <form wire:submit="save">
         {{-- Rattachement --}}
         <div class="ukc-card" style="margin-bottom:18px;">

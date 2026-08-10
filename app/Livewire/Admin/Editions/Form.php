@@ -2,12 +2,15 @@
 
 namespace App\Livewire\Admin\Editions;
 
+use App\Actions\ExtractEditionFromDocuments;
+use App\AI\AiManager;
 use App\Models\Colloque;
 use App\Models\CommitteeMember;
 use App\Models\Edition;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 /**
  * Création / édition d'une édition de colloque (champs cœur + réglages :
@@ -16,7 +19,13 @@ use Livewire\Component;
 #[Title('Édition')]
 class Form extends Component
 {
+    use WithFileUploads;
+
     public ?Edition $edition = null;
+
+    // Paramétrage assisté par IA
+    public array $aiFiles = [];
+    public array $aiSummary = [];
 
     // Colloque de rattachement
     public ?int $colloque_id = null;
@@ -124,6 +133,86 @@ class Form extends Component
     {
         unset($this->faq[$i]);
         $this->faq = array_values($this->faq);
+    }
+
+    /** Analyse les documents et pré-remplit les champs trouvés (révisable). */
+    public function runAiAssist(ExtractEditionFromDocuments $action)
+    {
+        $this->validate([
+            'aiFiles' => ['required', 'array', 'min:1', 'max:6'],
+            'aiFiles.*' => ['file', 'mimes:pdf,png,jpg,jpeg,webp', 'max:10240'],
+        ]);
+
+        $files = collect($this->aiFiles)
+            ->map(fn ($f) => ['mime' => $f->getMimeType(), 'data' => base64_encode($f->get())])
+            ->all();
+
+        try {
+            $data = $action->handle($files);
+        } catch (\Throwable $e) {
+            report($e);
+            $this->addError('aiFiles', 'Échec de l’analyse : ' . $e->getMessage());
+
+            return;
+        }
+
+        $this->applyExtracted($data);
+        $this->aiFiles = [];
+
+        session()->flash('ukc_status', $this->aiSummary === []
+            ? 'Aucune information exploitable n’a été extraite des documents.'
+            : count($this->aiSummary) . ' rubrique(s) pré-remplie(s) : ' . implode(', ', $this->aiSummary) . '. Vérifiez puis enregistrez.');
+    }
+
+    /** Applique les valeurs extraites aux champs du formulaire (sans écraser à vide). */
+    protected function applyExtracted(array $d): void
+    {
+        $this->aiSummary = [];
+
+        $text = ['title' => 'Titre', 'edition_label' => 'Libellé', 'subtitle' => 'Sous-titre',
+            'theme' => 'Thème', 'location' => 'Lieu', 'intro' => 'Présentation'];
+        foreach ($text as $k => $label) {
+            if (filled($d[$k] ?? null)) {
+                $this->{$k} = (string) $d[$k];
+                $this->aiSummary[] = $label;
+            }
+        }
+
+        if (! empty($d['year'])) {
+            $this->year = (int) $d['year'];
+            $this->aiSummary[] = 'Année';
+        }
+        if (! empty($d['date_start'])) {
+            $this->date_start = $d['date_start'];
+            $this->aiSummary[] = 'Dates';
+        }
+        if (! empty($d['date_end'])) {
+            $this->date_end = $d['date_end'];
+        }
+        if (! empty($d['submission_deadline'])) {
+            $this->submission_deadline = $d['submission_deadline'] . 'T23:59';
+            $this->aiSummary[] = 'Date limite';
+        }
+        if (! empty($d['tracks'])) {
+            $this->tracks = implode("\n", $d['tracks']);
+            $this->aiSummary[] = 'Axes';
+        }
+        if (! empty($d['fees'])) {
+            $this->fees = $d['fees'];
+            $this->aiSummary[] = 'Tarifs';
+        }
+        if (! empty($d['committees'])) {
+            $this->committees = $d['committees'];
+            $this->aiSummary[] = 'Comités';
+        }
+        if (! empty($d['partners'])) {
+            $this->partners = $d['partners'];
+            $this->aiSummary[] = 'Partenaires';
+        }
+        if (! empty($d['faq'])) {
+            $this->faq = $d['faq'];
+            $this->aiSummary[] = 'FAQ';
+        }
     }
 
     public function addFee(): void
@@ -310,6 +399,7 @@ class Form extends Component
     {
         return view('livewire.admin.editions.form', [
             'colloques' => Colloque::orderBy('name')->get(),
+            'aiAvailable' => app(AiManager::class)->available() !== [],
         ])->layout('components.layouts.admin', [
             'title' => $this->edition ? 'Modifier l’édition' : 'Nouvelle édition',
         ]);
