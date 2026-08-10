@@ -28,6 +28,7 @@ use App\Livewire\Admin\Payments\Index as AdminPaymentIndex;
 use App\Livewire\Admin\Payments\Record as AdminPaymentRecord;
 use App\Livewire\Admin\Program\Sessions as AdminProgramSessions;
 use App\Livewire\Admin\Program\Slots as AdminProgramSlots;
+use App\Livewire\Admin\Settings\Index as AdminSettings;
 use App\Livewire\Admin\Submissions\Index as AdminSubmissionIndex;
 use App\Livewire\Admin\Submissions\Show as AdminSubmissionShow;
 use App\Livewire\Public\ColloquePage;
@@ -75,6 +76,7 @@ Route::middleware('auth:account')->group(function () {
 
     // Paiement des frais
     Route::get('/mon-compte/paiement/{edition}', AccountPay::class)->name('account.payment');
+    Route::get('/mon-compte/recu/{payment}', \App\Http\Controllers\Account\ReceiptController::class)->name('account.receipt');
 
     // Vérification d'e-mail
     Route::get('/verification-email', VerifyEmailNotice::class)->name('account.verification.notice');
@@ -118,6 +120,8 @@ Route::prefix('admin')->group(function () {
         Route::get('/editions/{edition}/livret', [DocumentController::class, 'livret'])->name('admin.documents.livret');
         Route::get('/editions/{edition}/badges', [DocumentController::class, 'badges'])->name('admin.documents.badges');
         Route::get('/editions/{edition}/fiches-session', [DocumentController::class, 'sessionSheets'])->name('admin.documents.sessions');
+
+        Route::get('/reglages', AdminSettings::class)->name('admin.settings');
 
         Route::post('/deconnexion', AdminLogoutController::class)->name('admin.logout');
     });

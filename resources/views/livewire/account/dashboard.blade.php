@@ -53,8 +53,8 @@
         <div @class(['ukc-step', 'done' => filled($account->affiliation), 'active' => $account->hasVerifiedEmail() && blank($account->affiliation)])>
             Profil complet
         </div>
-        <div class="ukc-step">Participation</div>
-        <div class="ukc-step">Attestation</div>
+        <div @class(['ukc-step', 'done' => $submissions->isNotEmpty() || $payments->isNotEmpty()])>Participation</div>
+        <div @class(['ukc-step', 'done' => $attestations->isNotEmpty()])>Attestation</div>
     </div>
 
     @if ($payableEdition)
@@ -68,17 +68,79 @@
     @endif
 
     @if ($openEdition)
-        <div class="ukc-card" style="text-align:center;background:linear-gradient(135deg,rgba(34,62,164,.06),rgba(0,153,51,.06));">
+        <div class="ukc-card" style="text-align:center;background:linear-gradient(135deg,rgba(34,62,164,.06),rgba(0,153,51,.06));margin-bottom:20px;">
             <h3 style="justify-content:center;">Appel à communications ouvert</h3>
             <p style="color:var(--ukc-muted);margin:6px 0 18px;">{{ $openEdition->title }}</p>
             <a href="{{ route('account.submissions.create', $openEdition->slug) }}" wire:navigate class="ukc-btn ukc-btn--primary">
                 <x-ukc.icon name="upload" :size="18" /> Soumettre une communication
             </a>
         </div>
-    @else
+    @endif
+
+    @php($hasContent = $submissions->isNotEmpty() || $payments->isNotEmpty() || $attestations->isNotEmpty())
+
+    @if ($hasContent)
+        <div class="ukc-grid-2" style="align-items:start;">
+            {{-- Communications --}}
+            <div class="ukc-card">
+                <h3 style="justify-content:space-between;">
+                    <span><x-ukc.icon name="inbox" :size="20" /> Mes communications</span>
+                    <a href="{{ route('account.submissions.index') }}" wire:navigate class="ukc-btn ukc-btn--ghost ukc-btn--sm">Tout voir</a>
+                </h3>
+                @forelse ($submissions as $s)
+                    <a href="{{ route('account.submissions.show', $s) }}" wire:navigate
+                       style="display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--ukc-border);align-items:center;">
+                        <span style="min-width:0;">
+                            <span style="font-family:ui-monospace,monospace;color:var(--ukc-blue);font-weight:700;font-size:.82rem;">{{ $s->ref_code }}</span>
+                            <span style="display:block;font-weight:600;font-size:.9rem;">{{ \Illuminate\Support\Str::limit($s->title, 44) }}</span>
+                        </span>
+                        <span class="ukc-pill ukc-pill--{{ $s->statusPill() }}" style="flex-shrink:0;">{{ $s->statusLabel() }}</span>
+                    </a>
+                @empty
+                    <p style="font-size:.88rem;color:var(--ukc-muted);">Aucune communication.</p>
+                @endforelse
+            </div>
+
+            {{-- Paiements & attestations --}}
+            <div style="display:flex;flex-direction:column;gap:20px;">
+                <div class="ukc-card">
+                    <h3><x-ukc.icon name="receipt" :size="20" /> Paiements & reçus</h3>
+                    @forelse ($payments as $p)
+                        <div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--ukc-border);align-items:center;">
+                            <span style="font-size:.88rem;">
+                                <strong>{{ number_format((float) $p->amount, 0, ',', ' ') }} {{ $p->currency }}</strong>
+                                <span style="color:var(--ukc-muted);"> · {{ $p->edition?->year }}</span>
+                            </span>
+                            <a href="{{ route('account.receipt', $p) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+                                <x-ukc.icon name="download" :size="14" /> Reçu
+                            </a>
+                        </div>
+                    @empty
+                        <p style="font-size:.88rem;color:var(--ukc-muted);">Aucun paiement réglé.</p>
+                    @endforelse
+                </div>
+
+                <div class="ukc-card">
+                    <h3><x-ukc.icon name="award" :size="20" /> Mes attestations</h3>
+                    @forelse ($attestations as $a)
+                        <div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--ukc-border);align-items:center;">
+                            <span style="font-size:.88rem;">{{ $a->typeLabel() }}
+                                <span style="color:var(--ukc-muted);"> · {{ $a->edition?->year }}</span>
+                            </span>
+                            <a href="{{ route('attestation.document', $a->uuid) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+                                <x-ukc.icon name="diploma" :size="14" /> Télécharger
+                            </a>
+                        </div>
+                    @empty
+                        <p style="font-size:.88rem;color:var(--ukc-muted);">Aucune attestation pour le moment.</p>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+    @elseif (! $openEdition)
         <div class="ukc-empty">
             <h3>Votre espace se remplira bientôt</h3>
-            <p>Communications, paiements, documents et attestation apparaîtront ici au fil de votre participation.</p>
+            <p>Communications, paiements et attestation apparaîtront ici au fil de votre participation.</p>
             <a href="{{ route('account.profile') }}" wire:navigate class="ukc-btn ukc-btn--primary">
                 <x-ukc.icon name="user" :size="18" /> Compléter mon profil
             </a>

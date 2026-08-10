@@ -46,6 +46,12 @@
                    @class(['active' => request()->routeIs('admin.documents.attestations')])>
                     <x-ukc.icon name="award" :size="18" /> Attestations
                 </a>
+
+                <span class="nav-label">Configuration</span>
+                <a href="{{ route('admin.settings') }}" wire:navigate
+                   @class(['active' => request()->routeIs('admin.settings')])>
+                    <x-ukc.icon name="settings" :size="18" /> Réglages
+                </a>
                 <a style="opacity:.5;pointer-events:none;"><x-ukc.icon name="award" :size="18" /> Documents</a>
             </nav>
             <div class="ukc-sidebar-foot">
