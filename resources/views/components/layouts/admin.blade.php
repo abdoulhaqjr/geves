@@ -40,6 +40,12 @@
                    @class(['active' => request()->routeIs('admin.program.slots')])>
                     <x-ukc.icon name="calendar" :size="18" /> Créneaux
                 </a>
+
+                <span class="nav-label">Documents</span>
+                <a href="{{ route('admin.documents.attestations') }}" wire:navigate
+                   @class(['active' => request()->routeIs('admin.documents.attestations')])>
+                    <x-ukc.icon name="award" :size="18" /> Attestations
+                </a>
                 <a style="opacity:.5;pointer-events:none;"><x-ukc.icon name="award" :size="18" /> Documents</a>
             </nav>
             <div class="ukc-sidebar-foot">

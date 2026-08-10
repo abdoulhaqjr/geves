@@ -13,6 +13,24 @@ class Attestation extends Model
 {
     protected $guarded = ['id'];
 
+    /** Types d'attestation. */
+    public const TYPES = [
+        'participation' => 'Participation',
+        'communication' => 'Communication',
+        'moderation' => 'Modération',
+        'rapporteur' => 'Rapporteur',
+    ];
+
+    public function typeLabel(): string
+    {
+        return self::TYPES[$this->type] ?? ucfirst((string) $this->type);
+    }
+
+    public function isValid(): bool
+    {
+        return ! $this->revoked;
+    }
+
     protected function casts(): array
     {
         return [

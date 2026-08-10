@@ -71,6 +71,14 @@
                                             <x-ukc.icon name="external" :size="16" />
                                         </a>
                                     @endif
+                                    <a href="{{ route('admin.documents.livret', $edition) }}" target="_blank"
+                                       class="ukc-btn ukc-btn--ghost ukc-btn--sm" title="Livret des résumés">
+                                        <x-ukc.icon name="book" :size="16" />
+                                    </a>
+                                    <a href="{{ route('admin.documents.badges', $edition) }}" target="_blank"
+                                       class="ukc-btn ukc-btn--ghost ukc-btn--sm" title="Badges">
+                                        <x-ukc.icon name="user" :size="16" />
+                                    </a>
                                     <a href="{{ route('admin.editions.edit', $edition) }}" wire:navigate
                                        class="ukc-btn ukc-btn--outline ukc-btn--sm">
                                         <x-ukc.icon name="pen" :size="16" /> Modifier

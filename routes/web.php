@@ -2,9 +2,12 @@
 
 use App\Http\Controllers\Account\EmailVerificationController;
 use App\Http\Controllers\Account\LogoutController;
+use App\Http\Controllers\Admin\DocumentController;
 use App\Http\Controllers\Admin\LogoutController as AdminLogoutController;
 use App\Http\Controllers\Admin\ReceiptController;
+use App\Http\Controllers\AttestationController;
 use App\Livewire\Account\Payment\Pay as AccountPay;
+use App\Livewire\Admin\Documents\Attestations as AdminAttestations;
 use App\Livewire\Account\Dashboard;
 use App\Livewire\Account\ForgotPassword;
 use App\Livewire\Account\Login;
@@ -39,6 +42,10 @@ Route::get('/colloque/{slug}', ColloquePage::class)->name('public.colloque');
 // Portail relecteur (accès par jeton, sans compte).
 Route::get('/relecture/{token}', ReviewerPortal::class)->name('reviewer.portal');
 Route::get('/relecture/{token}/{review}', ReviewerEvaluate::class)->name('reviewer.evaluate');
+
+// Attestations : document imprimable + vérification publique (par UUID).
+Route::get('/attestation/{uuid}', [AttestationController::class, 'document'])->name('attestation.document');
+Route::get('/verifier/{uuid}', [AttestationController::class, 'verify'])->name('attestation.verify');
 
 /*
 |--------------------------------------------------------------------------
@@ -101,6 +108,10 @@ Route::prefix('admin')->group(function () {
 
         Route::get('/programme', AdminProgramSessions::class)->name('admin.program.sessions');
         Route::get('/programme/creneaux', AdminProgramSlots::class)->name('admin.program.slots');
+
+        Route::get('/attestations', AdminAttestations::class)->name('admin.documents.attestations');
+        Route::get('/editions/{edition}/livret', [DocumentController::class, 'livret'])->name('admin.documents.livret');
+        Route::get('/editions/{edition}/badges', [DocumentController::class, 'badges'])->name('admin.documents.badges');
 
         Route::post('/deconnexion', AdminLogoutController::class)->name('admin.logout');
     });
