@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Observers\ParticipantObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * relecteur, membre de comité, co-auteur…). Reliée au compte global quand
  * connue.
  */
+#[ObservedBy([ParticipantObserver::class])]
 class Participant extends Model
 {
     use HasFactory;

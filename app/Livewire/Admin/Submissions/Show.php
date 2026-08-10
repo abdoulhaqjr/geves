@@ -3,8 +3,7 @@
 namespace App\Livewire\Admin\Submissions;
 
 use App\Actions\AssignReviewer;
-use App\Actions\NotifyCoauthorsForPayment;
-use App\Actions\NotifySubmissionStatus;
+use App\Events\SubmissionStatusChanged;
 use App\Mail\ReviewerInvitationMail;
 use App\Models\Participant;
 use App\Models\Review;
@@ -45,30 +44,23 @@ class Show extends Component
         $this->submission = $submission->load(['edition', 'participant']);
     }
 
-    public function applyStatus(string $status, NotifySubmissionStatus $notify, NotifyCoauthorsForPayment $notifyCoauthors): void
+    public function applyStatus(string $status): void
     {
         abort_unless(array_key_exists($status, self::ACTIONS), 400);
 
         $this->validate(['note' => ['nullable', 'string', 'max:3000']]);
 
         $this->submission->update(['status' => $status]);
-        $notify->handle($this->submission, $status, $this->note ?: null);
+        $this->submission->refresh();
 
-        // À l'acceptation : inviter les co-auteurs à régler leurs frais.
-        $coauthorNote = '';
-        if ($status === 'accepted') {
-            $this->submission->refresh();
-            $n = $notifyCoauthors->handle($this->submission);
-            if ($n > 0) {
-                $coauthorNote = " {$n} co-auteur(s) invité(s) à payer.";
-            }
-        }
+        // Effets de bord découplés : notification auteur, invitation co-auteurs…
+        SubmissionStatusChanged::dispatch($this->submission, $status, $this->note ?: null);
 
         $this->note = '';
         $this->submission->refresh();
 
         session()->flash('ukc_status', 'Statut mis à jour : '.$this->submission->statusLabel()
-            .' — l’auteur a été notifié.'.$coauthorNote);
+            .' — l’auteur a été notifié.');
     }
 
     public function assignReviewer(AssignReviewer $action): void

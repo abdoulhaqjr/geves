@@ -21,6 +21,10 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->applySettingsToConfig();
 
+        // Les effets de bord du changement de statut (NotifyAuthorOfStatus,
+        // InviteCoauthorsOnAcceptance) sont câblés par l'auto-découverte des
+        // listeners de app/Listeners (SubmissionStatusChanged).
+
         // Les comptes participants utilisent des routes dédiées (guard « account ») :
         // on réécrit les URL générées par les notifications Laravel en conséquence.
 

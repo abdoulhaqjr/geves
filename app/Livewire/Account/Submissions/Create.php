@@ -10,7 +10,6 @@ use App\Support\SubmissionFormConfig;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -254,11 +253,10 @@ class Create extends Component
         $submission = DB::transaction(function () use ($upsert, $account, $data, $authors, $fileUrl, $customMeta) {
             $participant = $upsert->handle($this->edition, $account, 'author');
 
+            // ref_code + access_token sont générés par SubmissionObserver.
             return Submission::create([
                 'edition_id' => $this->edition->id,
                 'participant_id' => $participant->id,
-                'ref_code' => $this->generateRefCode(),
-                'access_token' => Str::random(64),
                 'title' => $data['title'],
                 'authors' => $authors,
                 'abstract' => $data['abstract'],
@@ -275,24 +273,6 @@ class Create extends Component
         $notify->handle($submission, 'submitted');
 
         $this->successRef = $submission->ref_code;
-    }
-
-    protected function generateRefCode(): string
-    {
-        $prefix = $this->edition->year ? substr((string) $this->edition->year, -2) : 'XX';
-
-        do {
-            $seq = Submission::where('edition_id', $this->edition->id)->count() + 1;
-            $code = sprintf('%s-%03d', $prefix, $seq);
-            $exists = Submission::where('ref_code', $code)->exists();
-            if ($exists) {
-                // Collision improbable : on suffixe aléatoirement.
-                $code = $code.'-'.Str::upper(Str::random(2));
-                $exists = Submission::where('ref_code', $code)->exists();
-            }
-        } while ($exists);
-
-        return $code;
     }
 
     public function render()

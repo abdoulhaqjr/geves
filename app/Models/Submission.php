@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\SubmissionStatus;
+use App\Observers\SubmissionObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * Soumission d'un résumé : titre, co-auteurs (JSON), axe, type, statut du
  * workflow de relecture, versionnage (resoumission). Statuts : {@see SubmissionStatus}.
  */
+#[ObservedBy([SubmissionObserver::class])]
 class Submission extends Model
 {
     use HasFactory;

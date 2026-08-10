@@ -5,7 +5,6 @@ namespace App\Actions;
 use App\Models\Account;
 use App\Models\Edition;
 use App\Models\Participant;
-use Illuminate\Support\Str;
 
 /**
  * Crée ou retrouve le participant d'un compte sur une édition donnée.
@@ -29,8 +28,8 @@ class UpsertParticipantForAccount
             'account_id' => $account->id,
         ]);
 
+        // access_token généré par ParticipantObserver à la création.
         if (! $participant->exists) {
-            $participant->access_token = Str::random(64);
             $participant->role = $role;
         }
 

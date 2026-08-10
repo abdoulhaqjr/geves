@@ -4,7 +4,6 @@ namespace App\Actions;
 
 use App\Models\Edition;
 use App\Models\Participant;
-use Illuminate\Support\Str;
 
 /**
  * Crée ou retrouve le participant « co-auteur » d'une édition, identifié par
@@ -29,6 +28,7 @@ class UpsertCoauthorParticipant
         if (! $participant) {
             [$first, $last] = $this->splitName($name);
 
+            // access_token généré par ParticipantObserver à la création.
             $participant = new Participant([
                 'edition_id' => $edition->id,
                 'email' => $email,
@@ -36,7 +36,6 @@ class UpsertCoauthorParticipant
                 'last_name' => $last,
                 'institution' => $affiliation ?: null,
                 'role' => 'coauthor',
-                'access_token' => Str::random(64),
             ]);
         }
 

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Observers\AttestationObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -9,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Attestation émise (participation, communication, modération, rapporteur) avec
  * UUID de vérification publique.
  */
+#[ObservedBy([AttestationObserver::class])]
 class Attestation extends Model
 {
     protected $guarded = ['id'];
