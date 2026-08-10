@@ -61,7 +61,7 @@ npm install && npm run build
 
 ### Lancer les tests
 ```bash
-php.bat artisan test           # 86 tests, ~291 assertions (base :memory:)
+php.bat artisan test           # 96 tests, ~327 assertions (base :memory:)
 php.bat artisan test --filter=PaymentTest
 ```
 > ⚠️ Le lanceur affiche une sortie **JSON compacte** (plugin `laravel/pao`) — pas la trace complète. Pour déboguer une exception dans un test, capter l'exception dans le test (try/catch + `fwrite(STDERR, …)`), ou utiliser `->assertOk()`/dumps ciblés. `vendor/bin/phpunit` **ne fonctionne pas** (Pest requis).
@@ -171,7 +171,9 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 
 16. **Paramétrage assisté d'édition par IA** (Modules 22, 23) — couche `App\AI` : contrat `AiProvider` (extract multimodal), providers Anthropic/OpenAI/Grok/Gemini (lisent `services.<provider>.key/.model`), `AiManager` (résolution défaut + repli + préférence PDF), parsing JSON robuste. Action `ExtractEditionFromDocuments` (instruction + schéma → normalisation). Carte « Paramétrage assisté (IA) » sur le formulaire d'édition : upload PDF/images → pré-remplissage des champs trouvés (révisable). *(commit `0682f9e`)*
 
-**État git** : `…`, `502a78f`, `6a249c6`, `d55865c`, `51dcd2a` (réglages IA Grok+modèles), `0682f9e` (paramétrage assisté IA). Arbre propre. **86 tests verts**.
+17. **Modèles de badges/attestations + génération IA** (Modules 16, 19) — table `document_templates` (edition, kind badge|attestation, type, layout JSON). `App\Documents\LayoutSanitizer` (validation **déterministe** : bornage, liste blanche, défauts) + `LayoutRenderer` (HTML positionné + variables `{…}` + QR). Action `GenerateDocumentLayout` (l'IA produit **uniquement le JSON**). `Admin\Documents\TemplateDesigner` (génération IA + aperçu live + couleur d'accent + JSON éditable). Rendu branché : attestation + badges utilisent le modèle de l'édition si présent (repli sur le design fixe). *(commit `4a587db`)*
+
+**État git** : `…`, `502a78f`, `6a249c6`, `d55865c`, `51dcd2a`, `0682f9e` (paramétrage assisté IA), `4a587db` (modèles badges/attestations IA). Arbre propre. **96 tests verts**.
 
 ---
 
