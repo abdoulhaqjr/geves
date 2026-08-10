@@ -1,7 +1,7 @@
 # Passation — GESCO · Gestion des colloques scientifiques
 
 > Document de passation pour la personne qui reprend le développement.
-> Dernière mise à jour : 2026-08-10 (réutilisation bizzcart : PDF dompdf, enums de statut, sauvegardes laravel-backup).
+> Dernière mise à jour : 2026-08-10 (réutilisation bizzcart : PDF dompdf, enums, sauvegardes, impersonation).
 
 Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture**, les **conventions**, le **travail réalisé**, ce qui **reste à faire** et les **pièges** à connaître.
 
@@ -68,6 +68,8 @@ php.bat vendor/bin/pint              # style (Laravel Pint)
 composer.bat check                   # pint --test + phpstan + tests (= le CI)
 ```
 > ⚠️ Le lanceur affiche une sortie **JSON compacte** (plugin `laravel/pao`) — pas la trace complète. Pour déboguer une exception dans un test, capter l'exception dans le test (try/catch + `fwrite(STDERR, …)`), ou utiliser `->assertOk()`/dumps ciblés. `vendor/bin/phpunit` **ne fonctionne pas** (Pest requis).
+
+**Impersonation staff → participant** (`lab404/laravel-impersonate`) : vraie « connexion en tant que », **cross-guard** (`web` → `account`). Trait `Impersonate` sur `User` (`canImpersonate()` = permission `manage_colloques`) et `Account`. `Admin\ImpersonationController` : `take` (`POST /admin/participants/{p}/impersonate`, bouton « Se connecter en tant que » sur l'aperçu si compte lié) → impersonifie le compte, redirige vers l'espace ; `leave` (`POST /impersonation/quitter`, `auth:account`). Bannière persistante dans le layout participant (`app('impersonate')->isImpersonating()`). Pendant l'impersonation, le guard `web` est déconnecté → admin inaccessible (retour par « quitter »). ⚠️ Un `composer require --no-scripts` laisse le provider hors du cache de découverte (config `session_key` null → 500) : refaire `php artisan package:discover` après. *(commit `bcc6869`)*
 
 **Réutilisation patterns bizzcart (lots 1-3)** : **PDF serveur** via `barryvdh/laravel-dompdf` — vues autonomes `pdf.attestation` (A4 paysage, QR SVG rendu par dompdf) / `pdf.receipt` ; `AttestationController@pdf` (`/attestation/{uuid}/pdf`) et reçus admin/participant en `?pdf=1` (⚠️ dompdf ne lit ni JS ni CSS-variables → vues dédiées à couleurs littérales, pas les vues `.ukc-*`). **Enums de statut** `App\Enums\SubmissionStatus`/`PaymentStatus` (backed, `label()`/`pill()`, trait `HasLabels` : `values/options/pills`) : les modèles exposent `statuses()`/`statusPills()`/`statusEnum()` (source unique = l'enum) ; `status` **reste une string en base** (pas de cast, pour ne pas casser les comparaisons `=== 'accepted'`). **Sauvegardes** `spatie/laravel-backup` : `config/backup.php` publié + `backup:clean/run/monitor` planifiés. **186 tests verts.**
 
