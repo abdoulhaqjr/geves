@@ -4,6 +4,7 @@ namespace App\Mail;
 
 use App\Models\Payment;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -11,8 +12,9 @@ use Illuminate\Queue\SerializesModels;
 
 /**
  * E-mail « paiement reçu » au participant, avec le numéro de reçu.
+ * Mis en file (ShouldQueue).
  */
-class PaymentReceiptMail extends Mailable
+class PaymentReceiptMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
@@ -20,7 +22,7 @@ class PaymentReceiptMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Paiement reçu — reçu ' . $this->payment->receipt_no);
+        return new Envelope(subject: 'Paiement reçu — reçu '.$this->payment->receipt_no);
     }
 
     public function content(): Content

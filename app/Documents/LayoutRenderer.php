@@ -19,7 +19,7 @@ class LayoutRenderer
         $bg = $layout['bg'] ?? '#ffffff';
 
         $html = "<div class=\"ukc-doc-canvas\" style=\"position:relative;width:{$w}px;height:{$h}px;background:"
-            . e($bg) . ";overflow:hidden;font-family:'Jost',system-ui,sans-serif;\">";
+            .e($bg).";overflow:hidden;font-family:'Jost',system-ui,sans-serif;\">";
 
         foreach ((array) ($layout['elements'] ?? []) as $el) {
             $x = (int) ($el['x'] ?? 0);
@@ -44,7 +44,7 @@ class LayoutRenderer
             };
         }
 
-        return $html . '</div>';
+        return $html.'</div>';
     }
 
     protected static function renderQr(array $el, int $x, int $y, array $vars): string

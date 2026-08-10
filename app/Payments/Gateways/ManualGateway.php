@@ -32,7 +32,7 @@ class ManualGateway implements PaymentGateway
         return [
             'type' => 'instructions',
             'message' => 'Votre demande est enregistrée. Réglez vos frais sur place ou par virement ; '
-                . 'votre paiement sera confirmé par l’organisation et votre reçu vous sera envoyé par e-mail.',
+                .'votre paiement sera confirmé par l’organisation et votre reçu vous sera envoyé par e-mail.',
         ];
     }
 }

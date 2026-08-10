@@ -66,7 +66,7 @@ class Login extends Component
 
     protected function throttleKey(): string
     {
-        return 'admin|' . Str::transliterate(Str::lower($this->email) . '|' . request()->ip());
+        return 'admin|'.Str::transliterate(Str::lower($this->email).'|'.request()->ip());
     }
 
     public function render()

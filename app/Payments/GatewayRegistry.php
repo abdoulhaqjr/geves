@@ -19,9 +19,9 @@ class GatewayRegistry
     public function __construct()
     {
         $this->gateways = [
-            new CashpayGateway(),
-            new FedaPayGateway(),
-            new ManualGateway(),
+            new CashpayGateway,
+            new FedaPayGateway,
+            new ManualGateway,
         ];
     }
 
@@ -55,6 +55,6 @@ class GatewayRegistry
 
         $gateway = $this->get($key);
 
-        return $gateway && $gateway->isAvailable() ? $gateway : new ManualGateway();
+        return $gateway && $gateway->isAvailable() ? $gateway : new ManualGateway;
     }
 }

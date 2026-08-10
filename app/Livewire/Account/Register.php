@@ -20,11 +20,17 @@ use Livewire\Component;
 class Register extends Component
 {
     public string $civility = '';
+
     public string $first_name = '';
+
     public string $last_name = '';
+
     public string $grade = '';
+
     public string $email = '';
+
     public string $password = '';
+
     public string $password_confirmation = '';
 
     /** Civilités par défaut (surchargeable plus tard par la config d'édition). */

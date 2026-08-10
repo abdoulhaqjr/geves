@@ -8,12 +8,10 @@ use App\Http\Controllers\Admin\ReceiptController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\AttestationController;
 use App\Http\Controllers\PaymentController;
-use App\Livewire\Account\Payment\Pay as AccountPay;
-use App\Livewire\Admin\Documents\Attestations as AdminAttestations;
-use App\Livewire\Admin\Documents\TemplateDesigner as AdminTemplateDesigner;
 use App\Livewire\Account\Dashboard;
 use App\Livewire\Account\ForgotPassword;
 use App\Livewire\Account\Login;
+use App\Livewire\Account\Payment\Pay as AccountPay;
 use App\Livewire\Account\Profile;
 use App\Livewire\Account\Register;
 use App\Livewire\Account\ResetPassword;
@@ -22,13 +20,14 @@ use App\Livewire\Account\Submissions\Index as SubmissionIndex;
 use App\Livewire\Account\Submissions\Show as SubmissionShow;
 use App\Livewire\Account\VerifyEmailNotice;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
+use App\Livewire\Admin\Documents\Attestations as AdminAttestations;
+use App\Livewire\Admin\Documents\TemplateDesigner as AdminTemplateDesigner;
+use App\Livewire\Admin\Editions\Documents as AdminEditionDocuments;
 use App\Livewire\Admin\Editions\Form as EditionForm;
 use App\Livewire\Admin\Editions\Index as EditionIndex;
 use App\Livewire\Admin\Editions\SubmissionFormEditor;
-use App\Livewire\Admin\Editions\Documents as AdminEditionDocuments;
 use App\Livewire\Admin\Emails\Index as AdminEmailIndex;
 use App\Livewire\Admin\Emails\Templates as AdminEmailTemplates;
-use App\Livewire\Admin\Reports\Index as AdminReportIndex;
 use App\Livewire\Admin\Login as AdminLogin;
 use App\Livewire\Admin\Participants\Index as AdminParticipantIndex;
 use App\Livewire\Admin\Participants\Preview as AdminParticipantPreview;
@@ -36,11 +35,12 @@ use App\Livewire\Admin\Payments\Index as AdminPaymentIndex;
 use App\Livewire\Admin\Payments\Record as AdminPaymentRecord;
 use App\Livewire\Admin\Program\Sessions as AdminProgramSessions;
 use App\Livewire\Admin\Program\Slots as AdminProgramSlots;
+use App\Livewire\Admin\Reports\Index as AdminReportIndex;
 use App\Livewire\Admin\Settings\Index as AdminSettings;
 use App\Livewire\Admin\Submissions\Index as AdminSubmissionIndex;
 use App\Livewire\Admin\Submissions\Show as AdminSubmissionShow;
-use App\Livewire\Public\ColloquePage;
 use App\Livewire\Public\CoauthorPayment;
+use App\Livewire\Public\ColloquePage;
 use App\Livewire\Reviewer\Evaluate as ReviewerEvaluate;
 use App\Livewire\Reviewer\Portal as ReviewerPortal;
 use Illuminate\Support\Facades\Route;
@@ -88,8 +88,8 @@ Route::middleware('auth:account')->group(function () {
 
     // Paiement des frais
     Route::get('/mon-compte/paiement/{edition}', AccountPay::class)->name('account.payment');
-    Route::get('/mon-compte/recu/{payment}', \App\Http\Controllers\Account\ReceiptController::class)->name('account.receipt');
-    Route::get('/mon-compte/edition/{edition}/livret', [\App\Http\Controllers\Account\DocumentController::class, 'livret'])->name('account.documents.livret');
+    Route::get('/mon-compte/recu/{payment}', App\Http\Controllers\Account\ReceiptController::class)->name('account.receipt');
+    Route::get('/mon-compte/edition/{edition}/livret', [App\Http\Controllers\Account\DocumentController::class, 'livret'])->name('account.documents.livret');
 
     // Vérification d'e-mail
     Route::get('/verification-email', VerifyEmailNotice::class)->name('account.verification.notice');

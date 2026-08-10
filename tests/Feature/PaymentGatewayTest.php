@@ -3,7 +3,6 @@
 use App\Livewire\Account\Payment\Pay;
 use App\Models\Account;
 use App\Models\Colloque;
-use App\Models\Edition;
 use App\Models\Payment;
 use App\Payments\Gateways\CashpayGateway;
 use App\Payments\Gateways\FedaPayGateway;
@@ -112,7 +111,7 @@ it('CashPay : le retour navigateur vérifie et confirme', function () {
         '*/orders/*' => Http::response(['state' => 'Paid']),
     ]);
 
-    $this->get(route('payment.return', ['gateway' => 'cashpay']) . '?payment=' . $payment->id)
+    $this->get(route('payment.return', ['gateway' => 'cashpay']).'?payment='.$payment->id)
         ->assertRedirect(route('account.payment', $edition->id));
 
     expect($payment->fresh()->status)->toBe('paid');
@@ -163,7 +162,7 @@ it('FedaPay : le webhook signé HMAC confirme le paiement', function () {
 
     $body = json_encode(['name' => 'transaction.approved', 'entity' => ['id' => 4242, 'status' => 'approved']]);
     $ts = (string) time();
-    $sig = hash_hmac('sha256', $ts . '.' . $body, 'whsec');
+    $sig = hash_hmac('sha256', $ts.'.'.$body, 'whsec');
     $header = "t={$ts},s={$sig}";
 
     $this->call('POST', route('payment.webhook', ['gateway' => 'fedapay']), [], [], [],

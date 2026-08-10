@@ -15,10 +15,26 @@ function fakeAiManager(): AiManager
 {
     $provider = new class implements AiProvider
     {
-        public function key(): string { return 'fake'; }
-        public function label(): string { return 'Fake'; }
-        public function isAvailable(): bool { return true; }
-        public function supportsPdf(): bool { return true; }
+        public function key(): string
+        {
+            return 'fake';
+        }
+
+        public function label(): string
+        {
+            return 'Fake';
+        }
+
+        public function isAvailable(): bool
+        {
+            return true;
+        }
+
+        public function supportsPdf(): bool
+        {
+            return true;
+        }
+
         public function extract(string $instruction, array $files = []): array
         {
             return [
@@ -40,8 +56,16 @@ function fakeAiManager(): AiManager
     return new class($provider) extends AiManager
     {
         public function __construct(private AiProvider $p) {}
-        public function available(): array { return [$this->p]; }
-        public function resolve(bool $needsPdf = false): ?AiProvider { return $this->p; }
+
+        public function available(): array
+        {
+            return [$this->p];
+        }
+
+        public function resolve(bool $needsPdf = false): ?AiProvider
+        {
+            return $this->p;
+        }
     };
 }
 
@@ -54,7 +78,7 @@ it('résout le fournisseur d’IA par défaut et privilégie un lecteur PDF', fu
         'services.ai.default' => 'openai',
     ]);
 
-    $manager = new AiManager();
+    $manager = new AiManager;
 
     expect(collect($manager->available())->map->key()->all())->toContain('openai', 'claude');
     expect($manager->resolve(false)->key())->toBe('openai');           // défaut

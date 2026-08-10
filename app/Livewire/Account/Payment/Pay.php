@@ -19,7 +19,9 @@ use Livewire\Component;
 class Pay extends Component
 {
     public Edition $edition;
+
     public ?Participant $participant = null;
+
     public ?float $amount = null;
 
     public ?string $instructions = null;

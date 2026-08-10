@@ -23,14 +23,19 @@ class TemplateDesigner extends Component
     use WithFileUploads;
 
     public string $edition_id = '';
+
     public string $kind = 'attestation';
+
     public string $type = 'participation';
 
     public string $prompt = '';
+
     public $inspiration = null;
 
     public array $layout = [];
+
     public string $layoutJson = '';
+
     public string $accent = '#223ea4';
 
     public const ATTESTATION_TYPES = [
@@ -83,7 +88,7 @@ class TemplateDesigner extends Component
             $this->layout = $action->handle($this->kind, $this->type, $this->prompt, $files);
         } catch (\Throwable $e) {
             report($e);
-            $this->addError('prompt', 'Échec de la génération : ' . $e->getMessage());
+            $this->addError('prompt', 'Échec de la génération : '.$e->getMessage());
 
             return;
         }

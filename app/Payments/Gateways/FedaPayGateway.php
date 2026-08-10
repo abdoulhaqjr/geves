@@ -56,8 +56,8 @@ class FedaPayGateway implements OnlineGateway
     {
         $participant = $payment->participant;
 
-        $create = $this->http()->post($this->baseUrl() . '/transactions', [
-            'description' => 'Frais d\'inscription — ' . ($payment->edition?->title ?? 'Colloque'),
+        $create = $this->http()->post($this->baseUrl().'/transactions', [
+            'description' => 'Frais d\'inscription — '.($payment->edition?->title ?? 'Colloque'),
             'amount' => (int) round((float) $payment->amount),
             'currency' => ['iso' => 'XOF'],
             'callback_url' => route('payment.return', ['gateway' => 'fedapay', 'payment' => $payment->id]),
@@ -71,7 +71,7 @@ class FedaPayGateway implements OnlineGateway
         $id = $this->unwrap($create)['id'] ?? null;
         $payment->update(['gateway_ref' => $id]);
 
-        $token = $this->http()->post($this->baseUrl() . "/transactions/{$id}/token")->throw()->json();
+        $token = $this->http()->post($this->baseUrl()."/transactions/{$id}/token")->throw()->json();
 
         return ['type' => 'redirect', 'url' => (string) ($token['url'] ?? '')];
     }
@@ -82,7 +82,7 @@ class FedaPayGateway implements OnlineGateway
             return 'pending';
         }
 
-        $res = $this->http()->get($this->baseUrl() . '/transactions/' . $payment->gateway_ref)->throw()->json();
+        $res = $this->http()->get($this->baseUrl().'/transactions/'.$payment->gateway_ref)->throw()->json();
 
         return $this->mapStatus($this->unwrap($res)['status'] ?? '');
     }
@@ -101,7 +101,7 @@ class FedaPayGateway implements OnlineGateway
         $timestamp = $parts['t'] ?? '';
         $signature = $parts['s'] ?? '';
 
-        $expected = hash_hmac('sha256', $timestamp . '.' . $request->getContent(), $secret);
+        $expected = hash_hmac('sha256', $timestamp.'.'.$request->getContent(), $secret);
         if (! hash_equals($expected, (string) $signature)) {
             return null;
         }

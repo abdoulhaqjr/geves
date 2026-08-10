@@ -3,7 +3,7 @@
 use App\Actions\IssueAttestation;
 use App\Livewire\Admin\Documents\Attestations;
 use App\Models\Attestation;
-use App\Models\Participant;
+use App\Models\User;
 use Livewire\Livewire;
 
 // adminStaff() -> AdminSubmissionWorkflowTest ; openEdition() -> AccountSubmissionTest ; seededSubmission() -> idem
@@ -88,7 +88,7 @@ it('génère la planche de badges', function () {
 
 it('protège les documents admin sans permission', function () {
     $edition = openEdition();
-    $user = App\Models\User::factory()->create();
+    $user = User::factory()->create();
 
     $this->actingAs($user, 'web')->get(route('admin.documents.livret', $edition))->assertForbidden();
 });

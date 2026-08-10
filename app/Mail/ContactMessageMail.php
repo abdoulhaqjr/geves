@@ -4,6 +4,7 @@ namespace App\Mail;
 
 use App\Models\Edition;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -14,7 +15,7 @@ use Illuminate\Queue\SerializesModels;
  * l'adresse de contact de l'organisation. Le « répondre à » pointe vers
  * l'expéditeur du message.
  */
-class ContactMessageMail extends Mailable
+class ContactMessageMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 

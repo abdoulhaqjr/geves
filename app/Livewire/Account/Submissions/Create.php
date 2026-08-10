@@ -8,6 +8,7 @@ use App\Models\Edition;
 use App\Models\Submission;
 use App\Support\SubmissionFormConfig;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -211,8 +212,7 @@ class Create extends Component
         $data = $this->validate();
         $config = $this->config();
 
-        $participant = $upsert->handle($this->edition, $account, 'author');
-
+        // Téléversement du fichier (I/O) hors transaction.
         $fileUrl = null;
         if ($config->enabled('file') && $this->file) {
             $path = $this->file->store('submissions/'.$this->edition->id, 'public');
@@ -249,23 +249,29 @@ class Create extends Component
             'corresponding' => true,
         ]], $coauthors);
 
-        $submission = Submission::create([
-            'edition_id' => $this->edition->id,
-            'participant_id' => $participant->id,
-            'ref_code' => $this->generateRefCode(),
-            'access_token' => Str::random(64),
-            'title' => $data['title'],
-            'authors' => $authors,
-            'abstract' => $data['abstract'],
-            'keywords' => ($data['keywords'] ?? null) ?: null,
-            'track' => ($data['track'] ?? null) ?: null,
-            'type' => $data['type'] ?? 'oral',
-            'status' => 'submitted',
-            'file_url' => $fileUrl,
-            'meta' => $customMeta !== [] ? ['custom_fields' => $customMeta] : null,
-        ]);
+        // Création atomique : le participant (upsert) et la communication sont
+        // écrits ensemble — pas de participant orphelin si la création échoue.
+        $submission = DB::transaction(function () use ($upsert, $account, $data, $authors, $fileUrl, $customMeta) {
+            $participant = $upsert->handle($this->edition, $account, 'author');
 
-        // Accusé de réception à l'auteur correspondant.
+            return Submission::create([
+                'edition_id' => $this->edition->id,
+                'participant_id' => $participant->id,
+                'ref_code' => $this->generateRefCode(),
+                'access_token' => Str::random(64),
+                'title' => $data['title'],
+                'authors' => $authors,
+                'abstract' => $data['abstract'],
+                'keywords' => ($data['keywords'] ?? null) ?: null,
+                'track' => ($data['track'] ?? null) ?: null,
+                'type' => $data['type'] ?? 'oral',
+                'status' => 'submitted',
+                'file_url' => $fileUrl,
+                'meta' => $customMeta !== [] ? ['custom_fields' => $customMeta] : null,
+            ]);
+        });
+
+        // Accusé de réception à l'auteur correspondant (hors transaction).
         $notify->handle($submission, 'submitted');
 
         $this->successRef = $submission->ref_code;

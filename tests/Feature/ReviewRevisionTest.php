@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\AssignReviewer;
 use App\Livewire\Account\Submissions\Show as AccountSubmissionShow;
 use App\Livewire\Admin\Submissions\Show as AdminSubmissionShow;
 use App\Livewire\Reviewer\Evaluate;
@@ -39,7 +40,7 @@ it('permet à l’auteur de resoumettre une version corrigée', function () {
     expect($archive)->not->toBeNull();
     expect($archive->version)->toBe(1);
 
-    Mail::assertSent(SubmissionStatusMail::class, fn ($m) => $m->statusKey === 'submitted');
+    Mail::assertQueued(SubmissionStatusMail::class, fn ($m) => $m->statusKey === 'submitted');
 });
 
 it('bloque la resoumission si aucune correction n’est demandée', function () {
@@ -82,12 +83,12 @@ it('assigne un relecteur, passe en relecture et l’invite par e-mail', function
     expect($reviewer->access_token)->not->toBeEmpty();
     expect(Review::where('submission_id', $submission->id)->where('reviewer_id', $reviewer->id)->exists())->toBeTrue();
 
-    Mail::assertSent(ReviewerInvitationMail::class);
+    Mail::assertQueued(ReviewerInvitationMail::class);
 });
 
 it('donne accès au portail relecteur par jeton et le refuse sinon', function () {
     $submission = seededSubmission('submitted');
-    $reviewer = (new App\Actions\AssignReviewer)->handle($submission, 'Kossi Anani', 'kossi@example.tg');
+    $reviewer = (new AssignReviewer)->handle($submission, 'Kossi Anani', 'kossi@example.tg');
 
     Livewire::test(Portal::class, ['token' => $reviewer->reviewer->access_token])
         ->assertOk()
@@ -99,7 +100,7 @@ it('donne accès au portail relecteur par jeton et le refuse sinon', function ()
 
 it('enregistre une évaluation de relecteur', function () {
     $submission = seededSubmission('under_review');
-    $review = (new App\Actions\AssignReviewer)->handle($submission, 'Kossi Anani', 'kossi@example.tg');
+    $review = (new AssignReviewer)->handle($submission, 'Kossi Anani', 'kossi@example.tg');
     $reviewer = $review->reviewer;
 
     Livewire::test(Evaluate::class, ['token' => $reviewer->access_token, 'review' => $review])
@@ -119,7 +120,7 @@ it('enregistre une évaluation de relecteur', function () {
 
 it('révèle le retour des relecteurs à l’auteur après décision', function () {
     $submission = seededSubmission('under_review');
-    $review = (new App\Actions\AssignReviewer)->handle($submission, 'Kossi Anani', 'kossi@example.tg');
+    $review = (new AssignReviewer)->handle($submission, 'Kossi Anani', 'kossi@example.tg');
     $review->update(['status' => 'completed', 'comments' => 'Merci de clarifier la section 2.']);
     $submission->update(['status' => 'revision']);
     $account = $submission->participant->account;

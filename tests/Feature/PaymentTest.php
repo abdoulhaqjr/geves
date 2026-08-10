@@ -77,7 +77,7 @@ it('enregistre un encaissement manuel, génère le reçu et notifie', function (
     $payment = Payment::first();
     expect($payment->status)->toBe('paid');
     expect($payment->receipt_no)->not->toBeEmpty();
-    Mail::assertSent(PaymentReceiptMail::class, fn ($m) => $m->payment->is($payment));
+    Mail::assertQueued(PaymentReceiptMail::class, fn ($m) => $m->payment->is($payment));
 });
 
 it('refuse un second paiement pour un participant déjà réglé (garde-fou)', function () {

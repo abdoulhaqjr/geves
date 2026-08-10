@@ -47,7 +47,7 @@ class GeminiProvider implements AiProvider
         }
 
         $url = 'https://generativelanguage.googleapis.com/v1beta/models/'
-            . $this->model() . ':generateContent';
+            .$this->model().':generateContent';
 
         $res = Http::acceptJson()->timeout(120)
             ->withHeaders(['x-goog-api-key' => (string) config('services.gemini.key')])

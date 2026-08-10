@@ -19,8 +19,11 @@ class Slots extends Component
     public string $edition_id = '';
 
     public string $slSessionId = '';
+
     public string $slRoom = '';
+
     public string $slDay = '';
+
     public string $slStart = '';
 
     public function mount(): void
@@ -46,7 +49,7 @@ class Slots extends Component
             'session_id' => $session?->id ?? 0,
             'session_label' => $session?->label,
             'room' => $this->slRoom ?: $session?->room,
-            'starts_at' => ($this->slDay && $this->slStart) ? $this->slDay . ' ' . $this->slStart . ':00' : null,
+            'starts_at' => ($this->slDay && $this->slStart) ? $this->slDay.' '.$this->slStart.':00' : null,
             'submission_id' => 0,
             'participant_id' => 0,
         ]);

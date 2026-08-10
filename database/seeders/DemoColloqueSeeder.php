@@ -45,8 +45,8 @@ class DemoColloqueSeeder extends Seeder
                         'Agronomie et environnement',
                     ],
                     'intro' => 'La 3e édition du Colloque international de l’Université de Kara réunit '
-                        . 'chercheurs, doctorants et praticiens autour des enjeux du développement durable. '
-                        . 'Communications orales et posters sont attendus dans les cinq axes thématiques.',
+                        .'chercheurs, doctorants et praticiens autour des enjeux du développement durable. '
+                        .'Communications orales et posters sont attendus dans les cinq axes thématiques.',
                     'fees' => [
                         ['label' => 'Doctorant', 'amount' => 15000],
                         ['label' => 'Enseignant-chercheur', 'amount' => 25000],

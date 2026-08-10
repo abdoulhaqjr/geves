@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -14,7 +15,7 @@ use Illuminate\Notifications\Notifiable;
  */
 class Account extends Authenticatable implements MustVerifyEmail
 {
-    use Notifiable;
+    use HasFactory, Notifiable;
 
     protected $guarded = ['id'];
 
@@ -37,7 +38,7 @@ class Account extends Authenticatable implements MustVerifyEmail
 
     public function getFullNameAttribute(): string
     {
-        return trim($this->first_name . ' ' . $this->last_name);
+        return trim($this->first_name.' '.$this->last_name);
     }
 
     public function getInitialsAttribute(): string
@@ -45,7 +46,7 @@ class Account extends Authenticatable implements MustVerifyEmail
         $a = mb_substr($this->first_name, 0, 1);
         $b = mb_substr($this->last_name, 0, 1);
 
-        return mb_strtoupper($a . $b) ?: 'U';
+        return mb_strtoupper($a.$b) ?: 'U';
     }
 
     /**

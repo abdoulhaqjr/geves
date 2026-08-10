@@ -16,6 +16,7 @@ class Index extends Component
     use WithPagination;
 
     public string $search = '';
+
     public string $status = '';
 
     public function updating($name): void

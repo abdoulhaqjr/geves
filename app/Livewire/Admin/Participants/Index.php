@@ -20,7 +20,9 @@ class Index extends Component
     use WithPagination;
 
     public string $edition_id = '';
+
     public string $role = '';
+
     public string $search = '';
 
     public function mount(): void
@@ -46,7 +48,7 @@ class Index extends Component
         Mail::to($participant->email)->send(new ParticipantInvitationMail($participant));
         $participant->markInvited();
 
-        session()->flash('ukc_status', 'Invitation envoyée à ' . $participant->full_name . '.');
+        session()->flash('ukc_status', 'Invitation envoyée à '.$participant->full_name.'.');
     }
 
     /** Invite les participants ayant payé mais pas encore invités. */
@@ -66,7 +68,7 @@ class Index extends Component
             $participant->markInvited();
         }
 
-        session()->flash('ukc_status', $participants->count() . ' invitation(s) envoyée(s).');
+        session()->flash('ukc_status', $participants->count().' invitation(s) envoyée(s).');
     }
 
     public function render()

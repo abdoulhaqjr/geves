@@ -50,7 +50,7 @@ abstract class OpenAiCompatibleProvider implements AiProvider
             }
             $content[] = [
                 'type' => 'image_url',
-                'image_url' => ['url' => 'data:' . $f['mime'] . ';base64,' . $f['data']],
+                'image_url' => ['url' => 'data:'.$f['mime'].';base64,'.$f['data']],
             ];
         }
 

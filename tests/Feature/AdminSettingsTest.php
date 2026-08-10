@@ -1,9 +1,9 @@
 <?php
 
 use App\Livewire\Admin\Settings\Index;
+use App\Models\User;
 use App\Providers\AppServiceProvider;
 use App\Support\Settings;
-use App\Models\User;
 use Livewire\Livewire;
 
 // adminStaff() -> AdminSubmissionWorkflowTest

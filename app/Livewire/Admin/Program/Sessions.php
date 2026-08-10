@@ -19,17 +19,26 @@ class Sessions extends Component
 
     // Formulaire atelier
     public string $atelierTitle = '';
+
     public array $atelierTracks = [];
 
     // Formulaire session
     public string $sType = 'plenary';
+
     public string $sAtelierId = '';
+
     public string $sLabel = '';
+
     public string $sDay = '';
+
     public string $sStart = '';
+
     public string $sEnd = '';
+
     public string $sRoom = '';
+
     public string $sModerator = '';
+
     public string $sRapporteur = '';
 
     public function mount(): void
@@ -115,7 +124,7 @@ class Sessions extends Component
             return null;
         }
 
-        return $day . ' ' . $time . ':00';
+        return $day.' '.$time.':00';
     }
 
     public function render()

@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\Account\Submissions\Create;
 use App\Livewire\Admin\Submissions\Index;
 use App\Livewire\Admin\Submissions\Show;
 use App\Mail\SubmissionStatusMail;
@@ -66,7 +67,7 @@ it('accepte une soumission, notifie l’auteur et journalise l’e-mail', functi
 
     expect($submission->fresh()->status)->toBe('accepted');
 
-    Mail::assertSent(SubmissionStatusMail::class, function ($mail) {
+    Mail::assertQueued(SubmissionStatusMail::class, function ($mail) {
         return $mail->statusKey === 'accepted' && $mail->hasTo('awa@example.tg');
     });
 
@@ -108,12 +109,12 @@ it('envoie un accusé de réception à la création d’une soumission', functio
     $account = verifiedAccount();
 
     Livewire::actingAs($account, 'account')
-        ->test(\App\Livewire\Account\Submissions\Create::class, ['slug' => $edition->slug])
+        ->test(Create::class, ['slug' => $edition->slug])
         ->set('title', 'Ma communication')
         ->set('track', 'Sciences')
         ->set('abstract', str_repeat('a', 60))
         ->call('submit')
         ->assertHasNoErrors();
 
-    Mail::assertSent(SubmissionStatusMail::class, fn ($mail) => $mail->statusKey === 'submitted');
+    Mail::assertQueued(SubmissionStatusMail::class, fn ($mail) => $mail->statusKey === 'submitted');
 });

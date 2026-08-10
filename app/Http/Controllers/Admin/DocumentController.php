@@ -79,7 +79,7 @@ class DocumentController extends Controller
                 'name' => $p->full_name,
                 'role' => $p->roleLabel(),
                 'institution' => (string) $p->institution,
-                'ref' => $edition->id . '-' . $p->id,
+                'ref' => $edition->id.'-'.$p->id,
             ]));
 
             return view('documents.badges-template', [

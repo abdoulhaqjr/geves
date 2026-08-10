@@ -1,17 +1,8 @@
 <?php
 
 use App\Models\Account;
-use App\Models\Atelier;
-use App\Models\Attestation;
 use App\Models\Colloque;
-use App\Models\CommitteeMember;
-use App\Models\Edition;
 use App\Models\EventSession;
-use App\Models\Participant;
-use App\Models\Payment;
-use App\Models\Review;
-use App\Models\Slot;
-use App\Models\Submission;
 
 it('crée un colloque avec une édition et ses entités liées', function () {
     $colloque = Colloque::create(['name' => 'Colloque de Kara', 'slug' => 'kara']);

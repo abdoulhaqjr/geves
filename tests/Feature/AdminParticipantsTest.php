@@ -2,7 +2,6 @@
 
 use App\Livewire\Admin\Participants\Index;
 use App\Mail\ParticipantInvitationMail;
-use App\Models\Participant;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
 
@@ -33,7 +32,7 @@ it('invite un participant et le marque invité', function () {
         ->set('edition_id', (string) $edition->id)
         ->call('invite', $p->id);
 
-    Mail::assertSent(ParticipantInvitationMail::class, fn ($m) => $m->hasTo('awa@example.tg'));
+    Mail::assertQueued(ParticipantInvitationMail::class, fn ($m) => $m->hasTo('awa@example.tg'));
     expect($p->fresh()->isInvited())->toBeTrue();
 });
 
@@ -56,8 +55,8 @@ it('invite en masse les payés non invités uniquement', function () {
         ->call('invitePaidUninvited');
 
     // Seul le payé non invité reçoit l'e-mail.
-    Mail::assertSent(ParticipantInvitationMail::class, 1);
-    Mail::assertSent(ParticipantInvitationMail::class, fn ($m) => $m->hasTo('paid@example.tg'));
+    Mail::assertQueued(ParticipantInvitationMail::class, 1);
+    Mail::assertQueued(ParticipantInvitationMail::class, fn ($m) => $m->hasTo('paid@example.tg'));
     expect($paid->fresh()->isInvited())->toBeTrue();
     expect($unpaid->fresh()->isInvited())->toBeFalse();
 });

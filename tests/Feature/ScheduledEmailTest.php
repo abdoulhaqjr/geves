@@ -4,14 +4,16 @@ use App\Actions\QueueEmailCampaign;
 use App\Actions\SendDueEmails;
 use App\Livewire\Admin\Emails\Index;
 use App\Mail\CampaignMail;
+use App\Models\Edition;
 use App\Models\Email;
 use App\Support\EmailAudience;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 
 // adminStaff() -> AdminSubmissionWorkflowTest ; openEdition() -> AccountSubmissionTest
 
-function audienceEdition(): \App\Models\Edition
+function audienceEdition(): Edition
 {
     $edition = openEdition();
 
@@ -23,7 +25,7 @@ function audienceEdition(): \App\Models\Edition
     $reviewer = $edition->participants()->create(['first_name' => 'Rita', 'last_name' => 'Relecteur', 'email' => 'reviewer@example.tg', 'role' => 'reviewer']);
 
     $author = $edition->participants()->create(['first_name' => 'Coco', 'last_name' => 'Accepté', 'email' => 'accepted@example.tg', 'role' => 'author']);
-    $edition->submissions()->create(['participant_id' => $author->id, 'title' => 'Titre', 'status' => 'accepted', 'revision_of' => 0, 'ref_code' => 'AA-001', 'access_token' => \Illuminate\Support\Str::random(64)]);
+    $edition->submissions()->create(['participant_id' => $author->id, 'title' => 'Titre', 'status' => 'accepted', 'revision_of' => 0, 'ref_code' => 'AA-001', 'access_token' => Str::random(64)]);
 
     // Sans e-mail : jamais destinataire.
     $edition->participants()->create(['first_name' => 'Sans', 'last_name' => 'Mail', 'email' => '', 'role' => 'attendee']);

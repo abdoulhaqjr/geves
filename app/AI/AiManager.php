@@ -20,10 +20,10 @@ class AiManager
     public function __construct()
     {
         $this->providers = [
-            new AnthropicProvider(),
-            new OpenAiProvider(),
-            new GeminiProvider(),
-            new GrokProvider(),
+            new AnthropicProvider,
+            new OpenAiProvider,
+            new GeminiProvider,
+            new GrokProvider,
         ];
     }
 

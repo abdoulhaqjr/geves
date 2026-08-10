@@ -30,7 +30,7 @@ it('envoie un message de contact et le journalise', function () {
         ->assertHasNoErrors()
         ->assertSet('sent', true);
 
-    Mail::assertSent(ContactMessageMail::class, fn ($m) => $m->hasTo('colloque@univkara.tg'));
+    Mail::assertQueued(ContactMessageMail::class, fn ($m) => $m->hasTo('colloque@univkara.tg'));
     expect(Email::where('template', 'contact')->count())->toBe(1);
 });
 
@@ -47,7 +47,7 @@ it('ignore silencieusement un envoi piégé par le honeypot', function () {
         ->call('submit')
         ->assertSet('sent', true);
 
-    Mail::assertNothingSent();
+    Mail::assertNothingQueued();
     expect(Email::count())->toBe(0);
 });
 
@@ -63,7 +63,7 @@ it('ignore un envoi trop rapide (anti-bot temporel)', function () {
         ->call('submit')
         ->assertSet('sent', true);
 
-    Mail::assertNothingSent();
+    Mail::assertNothingQueued();
 });
 
 it('valide les champs requis du formulaire de contact', function () {

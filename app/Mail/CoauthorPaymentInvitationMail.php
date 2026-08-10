@@ -4,6 +4,7 @@ namespace App\Mail;
 
 use App\Models\Submission;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -14,7 +15,7 @@ use Illuminate\Queue\SerializesModels;
  * communication à laquelle il est associé. Contient un lien pré-rempli vers le
  * parcours de paiement dédié aux co-auteurs.
  */
-class CoauthorPaymentInvitationMail extends Mailable
+class CoauthorPaymentInvitationMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 

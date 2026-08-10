@@ -6,6 +6,7 @@ use App\Actions\ExtractEditionFromDocuments;
 use App\AI\AiManager;
 use App\Models\Colloque;
 use App\Models\Edition;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -412,16 +413,23 @@ class Form extends Component
             ]),
         ];
 
-        if ($this->edition) {
-            $this->edition->update($payload);
-            $edition = $this->edition;
-            session()->flash('ukc_status', 'Édition mise à jour.');
-        } else {
-            $edition = Edition::create($payload);
-            session()->flash('ukc_status', 'Édition créée.');
-        }
+        // Enregistrement + sync des comités atomiques : la suppression puis
+        // recréation des comités ne peut pas laisser l'édition dans un état
+        // partiel si une écriture échoue.
+        $edition = DB::transaction(function () use ($payload) {
+            if ($this->edition) {
+                $this->edition->update($payload);
+                $edition = $this->edition;
+            } else {
+                $edition = Edition::create($payload);
+            }
 
-        $this->syncCommittees($edition);
+            $this->syncCommittees($edition);
+
+            return $edition;
+        });
+
+        session()->flash('ukc_status', $this->edition ? 'Édition mise à jour.' : 'Édition créée.');
 
         return $this->redirect(route('admin.editions.index'), navigate: true);
     }

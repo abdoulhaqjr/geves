@@ -5,6 +5,7 @@ namespace App\Mail;
 use App\Models\Participant;
 use App\Support\EmailTemplates;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -13,8 +14,9 @@ use Illuminate\Queue\SerializesModels;
 /**
  * Invitation d'un participant à l'événement (rappel des infos pratiques).
  * Sujet/titre/intro proviennent des modèles éditables (EmailTemplates).
+ * Mise en file (ShouldQueue).
  */
-class ParticipantInvitationMail extends Mailable
+class ParticipantInvitationMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 

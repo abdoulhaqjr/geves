@@ -119,7 +119,7 @@ it('notifie les co-auteurs d’une communication acceptée et journalise', funct
     $count = app(NotifyCoauthorsForPayment::class)->handle($submission);
 
     expect($count)->toBe(1);
-    Mail::assertSent(CoauthorPaymentInvitationMail::class, fn ($m) => $m->hasTo('co@example.tg'));
+    Mail::assertQueued(CoauthorPaymentInvitationMail::class, fn ($m) => $m->hasTo('co@example.tg'));
     expect(Email::where('template', 'coauthor_payment')->where('recipient', 'co@example.tg')->count())->toBe(1);
 });
 
@@ -129,7 +129,7 @@ it('ne notifie pas les co-auteurs si la communication n’est pas acceptée', fu
     $submission = acceptedWithCoauthor($edition, status: 'submitted');
 
     expect(app(NotifyCoauthorsForPayment::class)->handle($submission))->toBe(0);
-    Mail::assertNothingSent();
+    Mail::assertNothingQueued();
 });
 
 it('déclenche la notification des co-auteurs depuis l’acceptation admin', function () {
@@ -141,7 +141,7 @@ it('déclenche la notification des co-auteurs depuis l’acceptation admin', fun
         ->test(Show::class, ['submission' => $submission])
         ->call('applyStatus', 'accepted');
 
-    Mail::assertSent(CoauthorPaymentInvitationMail::class, 1);
+    Mail::assertQueued(CoauthorPaymentInvitationMail::class, 1);
 });
 
 it('rend un co-auteur payé éligible à l’attestation de communication', function () {

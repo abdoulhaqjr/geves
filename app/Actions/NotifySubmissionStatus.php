@@ -28,7 +28,7 @@ class NotifySubmissionStatus
         Email::create([
             'edition_id' => $submission->edition_id,
             'participant_id' => $submission->participant_id,
-            'template' => 'submission_' . $statusKey,
+            'template' => 'submission_'.$statusKey,
             'recipient' => $recipient,
             'subject' => $mail->meta['subject'],
             'body' => $note,

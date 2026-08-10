@@ -19,16 +19,22 @@ use Livewire\Component;
 class Record extends Component
 {
     public string $edition_id = '';
+
     public string $participant_id = '';
 
     // Nouveau participant
     public string $first_name = '';
+
     public string $last_name = '';
+
     public string $email = '';
 
     public string $amount = '';
+
     public string $method = 'cash';
+
     public string $note = '';
+
     public bool $markPaidNow = true;
 
     public function mount(): void
@@ -58,7 +64,7 @@ class Record extends Component
             'last_name' => ['nullable', 'string', 'max:150'],
             'email' => ['nullable', 'email', 'max:200'],
             'amount' => ['required', 'numeric', 'min:0'],
-            'method' => ['required', 'in:' . implode(',', array_keys(Payment::MANUAL_METHODS))],
+            'method' => ['required', 'in:'.implode(',', array_keys(Payment::MANUAL_METHODS))],
             'note' => ['nullable', 'string', 'max:1000'],
         ];
     }

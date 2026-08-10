@@ -16,11 +16,15 @@ use Livewire\Component;
 class Evaluate extends Component
 {
     public Participant $reviewer;
+
     public Review $review;
 
     public string $recommendation = '';
+
     public ?string $score = null;
+
     public string $comments = '';
+
     public string $comments_private = '';
 
     public bool $saved = false;
@@ -45,7 +49,7 @@ class Evaluate extends Component
     protected function rules(): array
     {
         return [
-            'recommendation' => ['required', 'in:' . implode(',', array_keys(Review::RECOMMENDATIONS))],
+            'recommendation' => ['required', 'in:'.implode(',', array_keys(Review::RECOMMENDATIONS))],
             'score' => ['nullable', 'numeric', 'min:0', 'max:20'],
             'comments' => ['nullable', 'string', 'max:5000'],
             'comments_private' => ['nullable', 'string', 'max:5000'],

@@ -23,10 +23,15 @@ class Index extends Component
     use WithPagination;
 
     public string $edition_id = '';
+
     public string $audience = 'all';
+
     public string $subject = '';
+
     public string $body = '';
+
     public string $scheduled_at = '';
+
     public string $statusFilter = '';
 
     public function mount(): void
@@ -46,7 +51,7 @@ class Index extends Component
     {
         return [
             'edition_id' => ['required', 'exists:editions,id'],
-            'audience' => ['required', 'in:' . implode(',', array_keys(EmailAudience::AUDIENCES))],
+            'audience' => ['required', 'in:'.implode(',', array_keys(EmailAudience::AUDIENCES))],
             'subject' => ['required', 'string', 'max:200'],
             'body' => ['required', 'string', 'max:5000'],
             'scheduled_at' => ['nullable', 'date'],

@@ -50,7 +50,7 @@ class CashpayGateway implements OnlineGateway
     {
         return Cache::remember('cashpay.token', now()->addMinutes(50), function () {
             $c = config('services.cashpay');
-            $res = Http::acceptJson()->post($this->baseUrl() . '/auth', [
+            $res = Http::acceptJson()->post($this->baseUrl().'/auth', [
                 'username' => $c['username'],
                 'password' => $c['password'],
                 'client_id' => $c['client_id'] ?? 'cashpay',
@@ -67,11 +67,11 @@ class CashpayGateway implements OnlineGateway
 
         $res = Http::acceptJson()
             ->withToken($this->token())
-            ->post($this->baseUrl() . '/orders', [
+            ->post($this->baseUrl().'/orders', [
                 'amount' => (int) round((float) $payment->amount),
                 'currency' => 'XOF',
-                'merchant_reference' => 'GESCO-' . $payment->id,
-                'description' => 'Frais d\'inscription — ' . ($payment->edition?->title ?? 'Colloque'),
+                'merchant_reference' => 'GESCO-'.$payment->id,
+                'description' => 'Frais d\'inscription — '.($payment->edition?->title ?? 'Colloque'),
                 'callback_url' => route('payment.webhook', ['gateway' => 'cashpay']),
                 'redirect_url' => route('payment.return', ['gateway' => 'cashpay', 'payment' => $payment->id]),
                 'client' => [
@@ -95,7 +95,7 @@ class CashpayGateway implements OnlineGateway
 
         $res = Http::acceptJson()
             ->withToken($this->token())
-            ->get($this->baseUrl() . '/orders/' . $payment->gateway_ref)
+            ->get($this->baseUrl().'/orders/'.$payment->gateway_ref)
             ->throw()->json();
 
         return $this->mapState($res['state'] ?? '');

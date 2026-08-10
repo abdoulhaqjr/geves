@@ -7,6 +7,7 @@ use App\Models\Slot;
 use App\Models\Submission;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -24,8 +25,11 @@ class Show extends Component
     public Submission $submission;
 
     public string $title = '';
+
     public string $keywords = '';
+
     public string $abstract = '';
+
     public $file = null;
 
     public function mount(Submission $submission): void
@@ -56,7 +60,7 @@ class Show extends Component
         return $this->submission->reviews()->where('status', 'completed')->get()
             ->filter(fn ($r) => filled($r->comments))
             ->values()
-            ->map(fn ($r, $i) => ['label' => 'Relecteur ' . ($i + 1), 'comments' => $r->comments])
+            ->map(fn ($r, $i) => ['label' => 'Relecteur '.($i + 1), 'comments' => $r->comments])
             ->all();
     }
 
@@ -130,7 +134,7 @@ class Show extends Component
             'edition_id' => $current->edition_id,
             'participant_id' => $current->participant_id,
             'ref_code' => $current->ref_code,
-            'access_token' => \Illuminate\Support\Str::random(64),
+            'access_token' => Str::random(64),
             'title' => $current->title,
             'authors' => $current->authors,
             'abstract' => $current->abstract,
@@ -146,7 +150,7 @@ class Show extends Component
         // Nouveau fichier éventuel.
         $fileUrl = $current->file_url;
         if ($this->file) {
-            $path = $this->file->store('submissions/' . $current->edition_id, 'public');
+            $path = $this->file->store('submissions/'.$current->edition_id, 'public');
             $fileUrl = Storage::disk('public')->url($path);
         }
 

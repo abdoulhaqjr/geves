@@ -4,7 +4,9 @@ namespace App\Actions;
 
 use App\Mail\PaymentReceiptMail;
 use App\Models\Payment;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 /**
  * Confirme un paiement (passage à « réglé ») : garde anti-double-paiement,
@@ -19,23 +21,28 @@ class ConfirmPayment
             return $payment;
         }
 
-        // Garde-fou : un seul paiement réglé par participant et par édition.
-        $already = Payment::where('edition_id', $payment->edition_id)
-            ->where('participant_id', $payment->participant_id)
-            ->where('status', 'paid')
-            ->whereKeyNot($payment->id)
-            ->exists();
+        // Transaction + verrou : la garde anti-double-paiement et l'écriture
+        // sont atomiques (deux confirmations concurrentes ne peuvent pas passer).
+        DB::transaction(function () use ($payment) {
+            $already = Payment::where('edition_id', $payment->edition_id)
+                ->where('participant_id', $payment->participant_id)
+                ->where('status', 'paid')
+                ->whereKeyNot($payment->id)
+                ->lockForUpdate()
+                ->exists();
 
-        if ($already) {
-            throw new \DomainException('Ce participant a déjà réglé ses frais.');
-        }
+            if ($already) {
+                throw new \DomainException('Ce participant a déjà réglé ses frais.');
+            }
 
-        $payment->forceFill([
-            'status' => 'paid',
-            'paid_at' => now(),
-            'receipt_no' => $payment->receipt_no ?: $this->generateReceiptNo($payment),
-        ])->save();
+            $payment->forceFill([
+                'status' => 'paid',
+                'paid_at' => now(),
+                'receipt_no' => $payment->receipt_no ?: $this->generateReceiptNo($payment),
+            ])->save();
+        });
 
+        // E-mail hors transaction (I/O externe, ne doit pas la faire échouer).
         $recipient = $payment->participant?->email;
         if ($recipient) {
             Mail::to($recipient)->send(new PaymentReceiptMail($payment));
@@ -54,7 +61,7 @@ class ConfirmPayment
             $no = sprintf('REC-%s-%04d', $year, $seq);
             $exists = Payment::where('receipt_no', $no)->exists();
             if ($exists) {
-                $no .= '-' . strtoupper(\Illuminate\Support\Str::random(2));
+                $no .= '-'.strtoupper(Str::random(2));
                 $exists = Payment::where('receipt_no', $no)->exists();
             }
         } while ($exists);

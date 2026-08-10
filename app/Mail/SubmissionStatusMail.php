@@ -5,6 +5,7 @@ namespace App\Mail;
 use App\Models\Submission;
 use App\Support\EmailTemplates;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -14,8 +15,9 @@ use Illuminate\Queue\SerializesModels;
  * E-mail à l'auteur correspondant lors d'un événement du workflow de sa
  * communication (accusé de réception, mise en relecture, correction, décision).
  * Sujet/titre/intro proviennent des modèles éditables (EmailTemplates).
+ * Mis en file (ShouldQueue) pour ne pas bloquer la requête.
  */
-class SubmissionStatusMail extends Mailable
+class SubmissionStatusMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
