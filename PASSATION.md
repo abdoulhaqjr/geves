@@ -1,7 +1,7 @@
 # Passation — GESCO · Gestion des colloques scientifiques
 
 > Document de passation pour la personne qui reprend le développement.
-> Dernière mise à jour : 2026-08-10 (revue technique : pins, Larastan+CI, transactions, e-mails en file, factories).
+> Dernière mise à jour : 2026-08-10 (réutilisation bizzcart : PDF dompdf, enums de statut, sauvegardes laravel-backup).
 
 Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture**, les **conventions**, le **travail réalisé**, ce qui **reste à faire** et les **pièges** à connaître.
 
@@ -68,6 +68,8 @@ php.bat vendor/bin/pint              # style (Laravel Pint)
 composer.bat check                   # pint --test + phpstan + tests (= le CI)
 ```
 > ⚠️ Le lanceur affiche une sortie **JSON compacte** (plugin `laravel/pao`) — pas la trace complète. Pour déboguer une exception dans un test, capter l'exception dans le test (try/catch + `fwrite(STDERR, …)`), ou utiliser `->assertOk()`/dumps ciblés. `vendor/bin/phpunit` **ne fonctionne pas** (Pest requis).
+
+**Réutilisation patterns bizzcart (lots 1-3)** : **PDF serveur** via `barryvdh/laravel-dompdf` — vues autonomes `pdf.attestation` (A4 paysage, QR SVG rendu par dompdf) / `pdf.receipt` ; `AttestationController@pdf` (`/attestation/{uuid}/pdf`) et reçus admin/participant en `?pdf=1` (⚠️ dompdf ne lit ni JS ni CSS-variables → vues dédiées à couleurs littérales, pas les vues `.ukc-*`). **Enums de statut** `App\Enums\SubmissionStatus`/`PaymentStatus` (backed, `label()`/`pill()`, trait `HasLabels` : `values/options/pills`) : les modèles exposent `statuses()`/`statusPills()`/`statusEnum()` (source unique = l'enum) ; `status` **reste une string en base** (pas de cast, pour ne pas casser les comparaisons `=== 'accepted'`). **Sauvegardes** `spatie/laravel-backup` : `config/backup.php` publié + `backup:clean/run/monitor` planifiés. **186 tests verts.**
 
 **Outillage qualité (revue technique)** : contraintes composer **pinnées** (plus de `*`) ; **Larastan** niveau 5 (`phpstan.neon`) avec **baseline** (`phpstan-baseline.neon`, dette figée — surtout inférence Eloquent générique/JSON, pas des bugs ; le CI ne bloque que sur les nouvelles erreurs) ; **CI GitHub Actions** (`.github/workflows/ci.yml` : Pint + PHPStan + build + Pest). **Model factories** dispo pour Colloque/Edition/Account/Participant/Submission/Payment (`Model::factory()`, states). ⚠️ Le style **Pint** est appliqué **projet-wide** (concat sans espaces `'a'.$b`) — lancer `pint` avant de commiter. E-mails transactionnels en **file (ShouldQueue)** → un **worker** est requis en prod (`queue:work`/`queue:listen` ; `composer dev` en lance un). Écritures multi-étapes clés sous **`DB::transaction`** (paiement anti-doublon avec `lockForUpdate`, sync comités, soumission).
 
