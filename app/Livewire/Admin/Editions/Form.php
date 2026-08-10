@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin\Editions;
 
 use App\Models\Colloque;
+use App\Models\CommitteeMember;
 use App\Models\Edition;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Title;
@@ -40,6 +41,16 @@ class Form extends Component
     public string $intro = '';
     public string $tracks = '';       // un axe par ligne
     public array $fees = [];          // [['label' => '', 'amount' => '']]
+    public array $committees = [];    // [['role','person_name','person_title','institution','photo_url']]
+    public array $partners = [];      // [['name','url','logo_url','level']]
+    public array $faq = [];           // [['question','answer']]
+
+    /** Rôles de comité. */
+    public array $committeeRoles = [
+        'organisation' => 'Comité d’organisation',
+        'scientifique' => 'Comité scientifique',
+        'supervision' => 'Comité de supervision',
+    ];
 
     public function mount(?Edition $edition = null): void
     {
@@ -72,6 +83,47 @@ class Form extends Component
         $this->intro = (string) ($settings['intro'] ?? '');
         $this->tracks = implode("\n", $settings['tracks'] ?? []);
         $this->fees = $settings['fees'] ?? [];
+        $this->partners = $settings['partners'] ?? [];
+        $this->faq = $settings['faq'] ?? [];
+
+        $this->committees = $e->committeeMembers()
+            ->orderBy('ordre')
+            ->get(['role', 'person_name', 'person_title', 'institution', 'photo_url'])
+            ->map(fn ($m) => $m->only(['role', 'person_name', 'person_title', 'institution', 'photo_url']))
+            ->all();
+    }
+
+    public function addCommittee(): void
+    {
+        $this->committees[] = ['role' => 'organisation', 'person_name' => '', 'person_title' => '', 'institution' => '', 'photo_url' => ''];
+    }
+
+    public function removeCommittee(int $i): void
+    {
+        unset($this->committees[$i]);
+        $this->committees = array_values($this->committees);
+    }
+
+    public function addPartner(): void
+    {
+        $this->partners[] = ['name' => '', 'url' => '', 'logo_url' => '', 'level' => ''];
+    }
+
+    public function removePartner(int $i): void
+    {
+        unset($this->partners[$i]);
+        $this->partners = array_values($this->partners);
+    }
+
+    public function addFaq(): void
+    {
+        $this->faq[] = ['question' => '', 'answer' => ''];
+    }
+
+    public function removeFaq(int $i): void
+    {
+        unset($this->faq[$i]);
+        $this->faq = array_values($this->faq);
     }
 
     public function addFee(): void
@@ -108,6 +160,20 @@ class Form extends Component
             'fees' => ['array'],
             'fees.*.label' => ['nullable', 'string', 'max:150'],
             'fees.*.amount' => ['nullable', 'numeric', 'min:0'],
+            'committees' => ['array'],
+            'committees.*.role' => ['nullable', 'in:organisation,scientifique,supervision'],
+            'committees.*.person_name' => ['nullable', 'string', 'max:200'],
+            'committees.*.person_title' => ['nullable', 'string', 'max:200'],
+            'committees.*.institution' => ['nullable', 'string', 'max:255'],
+            'committees.*.photo_url' => ['nullable', 'string', 'max:500'],
+            'partners' => ['array'],
+            'partners.*.name' => ['nullable', 'string', 'max:200'],
+            'partners.*.url' => ['nullable', 'string', 'max:500'],
+            'partners.*.logo_url' => ['nullable', 'string', 'max:500'],
+            'partners.*.level' => ['nullable', 'string', 'max:40'],
+            'faq' => ['array'],
+            'faq.*.question' => ['nullable', 'string', 'max:300'],
+            'faq.*.answer' => ['nullable', 'string', 'max:2000'],
         ];
     }
 
@@ -139,6 +205,18 @@ class Form extends Component
             ->map(fn ($f) => ['label' => $f['label'], 'amount' => (float) ($f['amount'] ?? 0)])
             ->values()->all();
 
+        $partners = collect($this->partners)
+            ->filter(fn ($p) => trim((string) ($p['name'] ?? '')) !== '')
+            ->map(fn ($p) => [
+                'name' => $p['name'], 'url' => $p['url'] ?? null,
+                'logo_url' => $p['logo_url'] ?? null, 'level' => $p['level'] ?? null,
+            ])->values()->all();
+
+        $faq = collect($this->faq)
+            ->filter(fn ($f) => trim((string) ($f['question'] ?? '')) !== '')
+            ->map(fn ($f) => ['question' => $f['question'], 'answer' => $f['answer'] ?? ''])
+            ->values()->all();
+
         $payload = [
             'colloque_id' => $colloqueId,
             'title' => $this->title,
@@ -158,18 +236,44 @@ class Form extends Component
                 'tracks' => $tracks,
                 'fees' => $fees,
                 'max_communications' => $this->max_communications,
+                'partners' => $partners,
+                'faq' => $faq,
             ],
         ];
 
         if ($this->edition) {
             $this->edition->update($payload);
+            $edition = $this->edition;
             session()->flash('ukc_status', 'Édition mise à jour.');
         } else {
-            Edition::create($payload);
+            $edition = Edition::create($payload);
             session()->flash('ukc_status', 'Édition créée.');
         }
 
+        $this->syncCommittees($edition);
+
         return $this->redirect(route('admin.editions.index'), navigate: true);
+    }
+
+    /** Remplace les membres de comité de l'édition par ceux du formulaire. */
+    protected function syncCommittees(Edition $edition): void
+    {
+        $edition->committeeMembers()->delete();
+
+        $rows = collect($this->committees)
+            ->filter(fn ($c) => trim((string) ($c['person_name'] ?? '')) !== '')
+            ->values();
+
+        foreach ($rows as $i => $c) {
+            $edition->committeeMembers()->create([
+                'role' => $c['role'] ?? 'organisation',
+                'person_name' => $c['person_name'],
+                'person_title' => $c['person_title'] ?? null,
+                'institution' => $c['institution'] ?? null,
+                'photo_url' => $c['photo_url'] ?? null,
+                'ordre' => $i,
+            ]);
+        }
     }
 
     protected function resolveSlug(): string

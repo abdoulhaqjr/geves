@@ -39,9 +39,12 @@ class ColloquePage extends Component
             'intro' => $settings['intro'] ?? null,
             'tracks' => $settings['tracks'] ?? [],
             'fees' => $settings['fees'] ?? [],
+            'partners' => $settings['partners'] ?? [],
+            'faq' => $settings['faq'] ?? [],
             'plenaries' => $this->edition->sessions()->where('type', 'plenary')->orderBy('ordre')->orderBy('starts_at')->get(),
             'ateliers' => $this->edition->ateliers()->with(['sessions' => fn ($q) => $q->orderBy('ordre')])->orderBy('ordre')->get(),
             'commsBySession' => $commsBySession,
+            'committees' => $this->edition->committeeMembers()->orderBy('ordre')->get()->groupBy('role'),
         ])->title($this->edition->title);
     }
 }

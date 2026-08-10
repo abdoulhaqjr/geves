@@ -155,6 +155,65 @@
             </div>
         </div>
 
+        {{-- Comités --}}
+        <div class="ukc-card" style="margin-bottom:18px;">
+            <h2><x-ukc.icon name="users" :size="20" /> Comités</h2>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                @foreach ($committees as $i => $c)
+                    <div wire:key="com-{{ $i }}" style="display:grid;grid-template-columns:1fr 1.2fr 1fr 1.2fr auto;gap:8px;align-items:center;">
+                        <select wire:model="committees.{{ $i }}.role" style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 10px;font-size:13px;">
+                            @foreach ($committeeRoles as $key => $label)<option value="{{ $key }}">{{ $label }}</option>@endforeach
+                        </select>
+                        <input type="text" wire:model="committees.{{ $i }}.person_name" placeholder="Nom Prénom" style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13px;">
+                        <input type="text" wire:model="committees.{{ $i }}.person_title" placeholder="Fonction/grade" style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13px;">
+                        <input type="text" wire:model="committees.{{ $i }}.institution" placeholder="Institution" style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13px;">
+                        <button type="button" class="ukc-btn ukc-btn--danger ukc-btn--sm" wire:click="removeCommittee({{ $i }})"><x-ukc.icon name="close" :size="14" /></button>
+                    </div>
+                @endforeach
+            </div>
+            <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" wire:click="addCommittee" style="margin-top:10px;">
+                <x-ukc.icon name="plus" :size="16" /> Ajouter un membre
+            </button>
+        </div>
+
+        {{-- Partenaires --}}
+        <div class="ukc-card" style="margin-bottom:18px;">
+            <h2><x-ukc.icon name="external" :size="20" /> Partenaires</h2>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                @foreach ($partners as $i => $p)
+                    <div wire:key="par-{{ $i }}" style="display:grid;grid-template-columns:1.2fr 1.4fr 1.4fr .8fr auto;gap:8px;align-items:center;">
+                        <input type="text" wire:model="partners.{{ $i }}.name" placeholder="Nom" style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13px;">
+                        <input type="text" wire:model="partners.{{ $i }}.url" placeholder="https://…" style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13px;">
+                        <input type="text" wire:model="partners.{{ $i }}.logo_url" placeholder="URL du logo" style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13px;">
+                        <input type="text" wire:model="partners.{{ $i }}.level" placeholder="Niveau" style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13px;">
+                        <button type="button" class="ukc-btn ukc-btn--danger ukc-btn--sm" wire:click="removePartner({{ $i }})"><x-ukc.icon name="close" :size="14" /></button>
+                    </div>
+                @endforeach
+            </div>
+            <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" wire:click="addPartner" style="margin-top:10px;">
+                <x-ukc.icon name="plus" :size="16" /> Ajouter un partenaire
+            </button>
+        </div>
+
+        {{-- FAQ --}}
+        <div class="ukc-card" style="margin-bottom:18px;">
+            <h2><x-ukc.icon name="info" :size="20" /> FAQ</h2>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                @foreach ($faq as $i => $f)
+                    <div wire:key="faq-{{ $i }}" style="display:flex;gap:8px;align-items:flex-start;">
+                        <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+                            <input type="text" wire:model="faq.{{ $i }}.question" placeholder="Question" style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13px;">
+                            <textarea wire:model="faq.{{ $i }}.answer" placeholder="Réponse" rows="2" style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13px;"></textarea>
+                        </div>
+                        <button type="button" class="ukc-btn ukc-btn--danger ukc-btn--sm" wire:click="removeFaq({{ $i }})"><x-ukc.icon name="close" :size="14" /></button>
+                    </div>
+                @endforeach
+            </div>
+            <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" wire:click="addFaq" style="margin-top:10px;">
+                <x-ukc.icon name="plus" :size="16" /> Ajouter une question
+            </button>
+        </div>
+
         <div class="ukc-form-actions" style="margin-top:0;border-top:none;padding-top:0;">
             <button type="submit" class="ukc-btn ukc-btn--primary" wire:loading.attr="disabled">
                 <span wire:loading.remove wire:target="save">Enregistrer</span>

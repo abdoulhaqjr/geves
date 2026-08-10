@@ -29,6 +29,12 @@
                 @if ($plenaries->count() || $ateliers->count())
                     <a href="#programme" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Programme</a>
                 @endif
+                @if ($committees->count())
+                    <a href="#comites" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Comités</a>
+                @endif
+                @if (count($faq))
+                    <a href="#faq" class="ukc-btn ukc-btn--ghost ukc-btn--sm">FAQ</a>
+                @endif
                 <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--primary ukc-btn--sm">Espace participant</a>
             </nav>
         </div>
@@ -80,6 +86,20 @@
                     <x-ukc.icon name="clock" :size="15" /> Clôture des soumissions le
                     {{ $e->submission_deadline->translatedFormat('d F Y') }}.
                 </p>
+            @endif
+
+            {{-- Compte à rebours --}}
+            @if ($e->date_start && $e->date_start->isFuture())
+                <div style="margin-top:28px;" x-data="ukcCountdown('{{ $e->date_start->toIso8601String() }}')" x-cloak>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                        @foreach (['days' => 'Jours', 'hours' => 'Heures', 'minutes' => 'Min', 'seconds' => 'Sec'] as $k => $lbl)
+                            <div style="min-width:70px;text-align:center;background:rgba(255,255,255,.14);border-radius:12px;padding:10px 8px;">
+                                <div style="font-size:1.6rem;font-weight:900;line-height:1;" x-text="String({{ $k }}).padStart(2,'0')">00</div>
+                                <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;opacity:.85;margin-top:4px;">{{ $lbl }}</div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
             @endif
         </div>
     </section>
@@ -152,6 +172,33 @@
                 </section>
             @endif
 
+            {{-- Comités --}}
+            @if ($committees->count())
+                @php($comLabels = ['organisation' => 'Comité d’organisation', 'scientifique' => 'Comité scientifique', 'supervision' => 'Comité de supervision'])
+                <section id="comites" class="ukc-card">
+                    <h2 style="font-size:1.3rem;font-weight:800;color:var(--ukc-blue);margin-bottom:16px;">Comités</h2>
+                    @foreach ($comLabels as $role => $label)
+                        @php($members = $committees[$role] ?? collect())
+                        @if ($members->count())
+                            <h3 style="font-size:1.05rem;font-weight:800;margin:14px 0 10px;">{{ $label }}</h3>
+                            <div class="ukc-grid-3" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">
+                                @foreach ($members as $m)
+                                    <div style="display:flex;gap:10px;align-items:center;padding:10px 12px;background:var(--ukc-bg);border:1px solid var(--ukc-border);border-radius:12px;">
+                                        <div style="width:44px;height:44px;border-radius:50%;flex-shrink:0;overflow:hidden;background:linear-gradient(135deg,var(--ukc-blue),var(--ukc-green));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;">
+                                            @if ($m->photo_url)<img src="{{ $m->photo_url }}" alt="" style="width:100%;height:100%;object-fit:cover;">@else{{ mb_substr($m->person_name, 0, 1) }}@endif
+                                        </div>
+                                        <div style="min-width:0;">
+                                            <div style="font-weight:700;font-size:.9rem;">{{ $m->person_name }}</div>
+                                            <div style="font-size:.78rem;color:var(--ukc-muted);">{{ $m->person_title }}@if ($m->institution) · {{ $m->institution }}@endif</div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    @endforeach
+                </section>
+            @endif
+
             {{-- Frais d'inscription --}}
             @if (count($fees))
                 <section id="tarifs" class="ukc-card">
@@ -169,6 +216,42 @@
                             </div>
                         @endforeach
                     </div>
+                </section>
+            @endif
+
+            {{-- Partenaires --}}
+            @if (count($partners))
+                <section id="partenaires" class="ukc-card">
+                    <h2 style="font-size:1.3rem;font-weight:800;color:var(--ukc-blue);margin-bottom:16px;">Partenaires</h2>
+                    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:center;">
+                        @foreach ($partners as $p)
+                            @php($inner = !empty($p['logo_url'])
+                                ? '<img src="' . e($p['logo_url']) . '" alt="' . e($p['name']) . '" style="max-height:56px;max-width:150px;object-fit:contain;">'
+                                : '<span style="font-weight:700;color:var(--ukc-text);">' . e($p['name']) . '</span>')
+                            @if (!empty($p['url']))
+                                <a href="{{ $p['url'] }}" target="_blank" rel="noopener" title="{{ $p['name'] }}"
+                                   style="padding:12px 16px;background:#fff;border:1px solid var(--ukc-border);border-radius:12px;display:flex;align-items:center;">{!! $inner !!}</a>
+                            @else
+                                <div style="padding:12px 16px;background:#fff;border:1px solid var(--ukc-border);border-radius:12px;display:flex;align-items:center;">{!! $inner !!}</div>
+                            @endif
+                        @endforeach
+                    </div>
+                </section>
+            @endif
+
+            {{-- FAQ --}}
+            @if (count($faq))
+                <section id="faq" class="ukc-card">
+                    <h2 style="font-size:1.3rem;font-weight:800;color:var(--ukc-blue);margin-bottom:16px;">Questions fréquentes</h2>
+                    @foreach ($faq as $item)
+                        <details style="border-bottom:1px solid var(--ukc-border);padding:12px 0;">
+                            <summary style="font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:10px;">
+                                {{ $item['question'] }}
+                                <x-ukc.icon name="chevron" :size="16" style="transform:rotate(90deg);flex-shrink:0;" />
+                            </summary>
+                            <p style="color:var(--ukc-muted);line-height:1.6;margin-top:8px;white-space:pre-line;">{{ $item['answer'] }}</p>
+                        </details>
+                    @endforeach
                 </section>
             @endif
 
