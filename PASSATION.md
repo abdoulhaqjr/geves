@@ -1,7 +1,7 @@
 # Passation — GESCO · Gestion des colloques scientifiques
 
 > Document de passation pour la personne qui reprend le développement.
-> Dernière mise à jour : 2026-08-10 (module 24 : documents de l'édition côté participant).
+> Dernière mise à jour : 2026-08-10 (module 25 : modèles d'e-mails éditables).
 
 Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture**, les **conventions**, le **travail réalisé**, ce qui **reste à faire** et les **pièges** à connaître.
 
@@ -173,6 +173,8 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 
 17. **Modèles de badges/attestations + génération IA** (Modules 16, 19) — table `document_templates` (edition, kind badge|attestation, type, layout JSON). `App\Documents\LayoutSanitizer` (validation **déterministe** : bornage, liste blanche, défauts) + `LayoutRenderer` (HTML positionné + variables `{…}` + QR). Action `GenerateDocumentLayout` (l'IA produit **uniquement le JSON**). `Admin\Documents\TemplateDesigner` (génération IA + aperçu live + couleur d'accent + JSON éditable). Rendu branché : attestation + badges utilisent le modèle de l'édition si présent (repli sur le design fixe). *(commit `4a587db`)*
 
+25. **Modèles d'e-mails éditables** (Modules WP 12/13) — `App\Support\EmailTemplates` : 6 modèles (5 statuts de soumission + invitation participant) avec défauts, override via le réglage `email_templates` (champ vide = défaut), placeholders `{prenom} {nom_complet} {ref} {titre} {edition}`, helpers `forSubmission`/`forParticipant`. `SubmissionStatusMail` + `ParticipantInvitationMail` tirent sujet/titre/intro d'EmailTemplates (⚠️ ancienne const `SubmissionStatusMail::MESSAGES` supprimée ; `NotifySubmissionStatus` lit toujours `$mail->meta['subject']`). Seuls sujet/titre/intro sont éditables — les détails structurés (réf, dates, boutons) et le gabarit de marque restent fixes. `Admin\Emails\Templates` (`/admin/emails/modeles`, lien page E-mails) : édition + bouton « Défaut ». *(commit `c069947`)*
+
 24. **Documents de l'édition côté participant** (Modules WP 10/11) — la table `media` (jusqu'ici inutilisée) est désormais gérée. `Media::TYPES` (document/livret/vidéo/photo/lien) + `typeLabel`. `Admin\Editions\Documents` (`/admin/editions/{edition}/documents`, lien liste éditions) : ajout/retrait de ressources (type/intitulé/URL). `Account\DocumentController@livret` (`/mon-compte/edition/{edition}/livret`) : livret des résumés avec **contrôle de propriété** (abort 403 si non-participant). `Account\Dashboard` : bloc « Documents de mes éditions » (médias + lien livret si ≥1 communication acceptée, pour chaque édition où le compte participe). *(commit `cd2f113`)*
 
 23. **HAL — étape 1 (autocomplétion des affiliations)** — `App\Support\HalClient` interroge le référentiel des structures **AuréHAL** (API publique), normalise (label/acronyme/pays), **cache 1 j**, **fail-closed** (erreur/timeout → liste vide, saisie libre préservée), requêtes < 3 car. ignorées. `config/services.php` → `services.hal.enabled` (`HAL_ENABLED`) + endpoint ; appliqué depuis le réglage `hal.enabled` au boot. `Account\Profile` : autocomplétion du champ affiliation quand activé (`updatedAffiliation`/`chooseAffiliation`, click-outside). Réglages back-office : bloc « Interconnexion HAL » (toggle). **OFF par défaut.** ⚠️ Étape 2 (dépôt **SWORD** du texte intégral) non faite : nécessite un compte HAL + une étape « article complet » PDF pour les acceptés. *(commit `323da2f`)*
@@ -187,7 +189,7 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 
 18. **E-mails programmés** (Modules 7, 11) — campagnes ciblées + rappels planifiés. `App\Support\EmailAudience` (audiences : tous / payés / non réglés / communication acceptée / relecteurs / non invités ; dédoublonnage par e-mail, exclusion des sans-adresse). `App\Mail\CampaignMail` + gabarit `emails.campaign` (sujet/corps libres). Action `QueueEmailCampaign` (une ligne `emails` par destinataire, statut `queued`, sujet/corps personnalisés via `{prenom} {nom} {nom_complet} {edition}`). Action `SendDueEmails` (envoie les `queued` dus `scheduled_at<=now`, marque `sent`/`failed`, **idempotent**). Commande `emails:send` + `Schedule::command('emails:send')->everyMinute()->withoutOverlapping()` (routes/console.php). `Admin\Emails\Index` (`/admin/emails`) : composer (immédiat/programmé), compteur d'audience live, journal filtrable, envoi des dus, annulation. Lien sidebar (remplace le placeholder « Documents » désactivé). *(commit `851cd61`)*
 
-**État git** : `…`, `502a78f`, `6a249c6`, `d55865c`, `51dcd2a`, `0682f9e` (paramétrage assisté IA), `4a587db` (modèles badges/attestations IA), `851cd61` (e-mails programmés), `614d9b4` (rapports xlsx/pdf), `497bd0a` (parcours co-auteurs), `32a5be5` (formulaire de soumission paramétrable), `a31c2f0` (finitions page publique + impersonation), `323da2f` (HAL étape 1), `cd2f113` (documents de l'édition côté participant). Arbre propre. **152 tests verts**.
+**État git** : `…`, `502a78f`, `6a249c6`, `d55865c`, `51dcd2a`, `0682f9e` (paramétrage assisté IA), `4a587db` (modèles badges/attestations IA), `851cd61` (e-mails programmés), `614d9b4` (rapports xlsx/pdf), `497bd0a` (parcours co-auteurs), `32a5be5` (formulaire de soumission paramétrable), `a31c2f0` (finitions page publique + impersonation), `323da2f` (HAL étape 1), `cd2f113` (documents de l'édition côté participant), `c069947` (modèles d'e-mails éditables). Arbre propre. **159 tests verts**.
 
 ---
 
@@ -206,7 +208,7 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 8. ~~**Formulaire de soumission paramétrable** (module WP 14)~~ **fait** (module 21, commit `32a5be5`). Non porté volontairement (widgets front spécifiques WP) : tél. intl-tel-input, résumé WYSIWYG Quill, tags Select2 — le stack GESCO reste en champs simples.
 9. **HAL** — ~~autocomplétion des affiliations (AuréHAL)~~ **fait** (étape 1, module 23, commit `323da2f`). Reste **étape 2** : dépôt **SWORD** du texte intégral vers une collection HAL (nécessite compte HAL + étape « article complet » PDF pour les acceptés). Optionnel : brancher l'autocomplétion aussi sur les co-auteurs du formulaire de soumission (aujourd'hui : profil compte seulement).
 
-> **Comparaison WP↔GESCO (27 modules)** faite le 2026-08-10. Couverts en plus depuis : e-mails programmés (18), rapports xlsx/pdf (19), parcours co-auteurs (20), formulaire de soumission paramétrable (21), finitions page publique + impersonation (22), HAL étape 1 (23), **documents de l'édition côté participant (24)**. Restent surtout : HAL étape 2 (SWORD), bannière promo / infos pratiques, modèles d'e-mails éditables, rôles agrégés inter-éditions.
+> **Comparaison WP↔GESCO (27 modules)** faite le 2026-08-10. Couverts en plus depuis : e-mails programmés (18), rapports xlsx/pdf (19), parcours co-auteurs (20), formulaire de soumission paramétrable (21), finitions page publique + impersonation (22), HAL étape 1 (23), documents de l'édition côté participant (24), **modèles d'e-mails éditables (25)**. Restent surtout : HAL étape 2 (SWORD), bannière promo / infos pratiques, rôles agrégés inter-éditions.
 
 ---
 
