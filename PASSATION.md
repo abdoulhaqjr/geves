@@ -1,7 +1,7 @@
 # Passation — GESCO · Gestion des colloques scientifiques
 
 > Document de passation pour la personne qui reprend le développement.
-> Dernière mise à jour : 2026-08-10 (module 18 : e-mails programmés).
+> Dernière mise à jour : 2026-08-10 (module 19 : rapports xlsx/pdf).
 
 Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture**, les **conventions**, le **travail réalisé**, ce qui **reste à faire** et les **pièges** à connaître.
 
@@ -173,9 +173,11 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 
 17. **Modèles de badges/attestations + génération IA** (Modules 16, 19) — table `document_templates` (edition, kind badge|attestation, type, layout JSON). `App\Documents\LayoutSanitizer` (validation **déterministe** : bornage, liste blanche, défauts) + `LayoutRenderer` (HTML positionné + variables `{…}` + QR). Action `GenerateDocumentLayout` (l'IA produit **uniquement le JSON**). `Admin\Documents\TemplateDesigner` (génération IA + aperçu live + couleur d'accent + JSON éditable). Rendu branché : attestation + badges utilisent le modèle de l'édition si présent (repli sur le design fixe). *(commit `4a587db`)*
 
+19. **Rapports xlsx/pdf** (Module 9) — exports par édition en **PHP pur** (aucune dépendance). `App\Support\XlsxWriter` : générateur .xlsx natif (ZipArchive + OOXML SpreadsheetML), multi-feuilles, en-tête gras, cellules texte (`inlineStr`) / numériques (auto), échappement XML, colonnes > Z. `App\Support\EditionReport` : agrégateur unique (synthèse + Participants/Communications/Paiements, note moyenne via `withAvg('reviews','score')`) réutilisé par xlsx/pdf/Livewire. `Admin\ReportController` : `xlsx` (4 feuilles) + `pdf` (HTML imprimable `@media print`). `Admin\Reports\Index` (`/admin/rapports`) : sélecteur édition, tuiles, boutons Excel/PDF ; lien sidebar. *(commit `614d9b4`)*
+
 18. **E-mails programmés** (Modules 7, 11) — campagnes ciblées + rappels planifiés. `App\Support\EmailAudience` (audiences : tous / payés / non réglés / communication acceptée / relecteurs / non invités ; dédoublonnage par e-mail, exclusion des sans-adresse). `App\Mail\CampaignMail` + gabarit `emails.campaign` (sujet/corps libres). Action `QueueEmailCampaign` (une ligne `emails` par destinataire, statut `queued`, sujet/corps personnalisés via `{prenom} {nom} {nom_complet} {edition}`). Action `SendDueEmails` (envoie les `queued` dus `scheduled_at<=now`, marque `sent`/`failed`, **idempotent**). Commande `emails:send` + `Schedule::command('emails:send')->everyMinute()->withoutOverlapping()` (routes/console.php). `Admin\Emails\Index` (`/admin/emails`) : composer (immédiat/programmé), compteur d'audience live, journal filtrable, envoi des dus, annulation. Lien sidebar (remplace le placeholder « Documents » désactivé). *(commit `851cd61`)*
 
-**État git** : `…`, `502a78f`, `6a249c6`, `d55865c`, `51dcd2a`, `0682f9e` (paramétrage assisté IA), `4a587db` (modèles badges/attestations IA), `851cd61` (e-mails programmés). Arbre propre. **104 tests verts**.
+**État git** : `…`, `502a78f`, `6a249c6`, `d55865c`, `51dcd2a`, `0682f9e` (paramétrage assisté IA), `4a587db` (modèles badges/attestations IA), `851cd61` (e-mails programmés), `614d9b4` (rapports xlsx/pdf). Arbre propre. **111 tests verts**.
 
 ---
 
@@ -187,7 +189,7 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 
 ### Ensuite
 3. **E-mails** (Modules 7, 11) — ~~e-mails programmés (rappels à une audience via une commande planifiée)~~ **fait** (module 18, commit `851cd61`). Reste : brancher un vrai SMTP en prod (déjà réglable dans /admin/reglages) et lancer le planificateur (`php artisan schedule:work` en dev, ou cron `schedule:run` en prod) pour que `emails:send` tourne. En dev `MAIL_MAILER=log`, l'envoi immédiat marche sans planificateur (flush direct dans le composant).
-4. **Rapports** (Module 9) — export Excel (.xlsx) multi-feuilles + PDF. (envisager `maatwebsite/excel` ou un générateur maison.)
+4. ~~**Rapports** (Module 9) — export Excel (.xlsx) multi-feuilles + PDF.~~ **Fait** (module 19, commit `614d9b4`) : générateur maison `App\Support\XlsxWriter` (PHP pur, ZipArchive) + rapport PDF imprimable.
 5. **Page publique — finitions** — formulaire de contact anti-spam, hero photo/vidéo, scrollspy / menu sticky, bannière promo (Modules 20, 21) — comités/partenaires/FAQ/countdown sont faits (module 15).
 6. **Documents de l'édition côté participant** — exposer le livret / médias de l'édition dans l'espace participant (les blocs communications/paiements/attestations sont faits, module 14).
 7. **Back-office Participants** — « Sa page » (impersonation lecture seule), rôles pleinement dérivés inter-éditions (aujourd'hui : rôle stocké par participation).
