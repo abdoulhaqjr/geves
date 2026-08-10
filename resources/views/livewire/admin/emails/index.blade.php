@@ -1,4 +1,10 @@
 <div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
+        <a href="{{ route('admin.emails.templates') }}" wire:navigate class="ukc-btn ukc-btn--outline ukc-btn--sm">
+            <x-ukc.icon name="pen" :size="16" /> Modèles d’e-mails
+        </a>
+    </div>
+
     <div class="ukc-grid-2" style="grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:18px;align-items:start;">
 
         {{-- Composer une campagne --}}

@@ -1,9 +1,9 @@
 <x-mail::message>
-# Vous êtes invité(e) 🎓
+# {{ $meta['heading'] }}
 
 Bonjour {{ $participant->full_name }},
 
-Nous avons le plaisir de vous convier à **{{ $participant->edition?->title }}**.
+{{ $meta['intro'] }}
 
 @if ($participant->edition?->date_start)
 - **Dates :** du {{ $participant->edition->date_start->format('d/m/Y') }}@if ($participant->edition->date_end) au {{ $participant->edition->date_end->format('d/m/Y') }}@endif

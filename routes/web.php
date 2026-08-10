@@ -27,6 +27,7 @@ use App\Livewire\Admin\Editions\Index as EditionIndex;
 use App\Livewire\Admin\Editions\SubmissionFormEditor;
 use App\Livewire\Admin\Editions\Documents as AdminEditionDocuments;
 use App\Livewire\Admin\Emails\Index as AdminEmailIndex;
+use App\Livewire\Admin\Emails\Templates as AdminEmailTemplates;
 use App\Livewire\Admin\Reports\Index as AdminReportIndex;
 use App\Livewire\Admin\Login as AdminLogin;
 use App\Livewire\Admin\Participants\Index as AdminParticipantIndex;
@@ -129,6 +130,7 @@ Route::prefix('admin')->group(function () {
         Route::get('/participants/{participant}/apercu', AdminParticipantPreview::class)->name('admin.participants.preview');
 
         Route::get('/emails', AdminEmailIndex::class)->name('admin.emails.index');
+        Route::get('/emails/modeles', AdminEmailTemplates::class)->name('admin.emails.templates');
 
         Route::get('/rapports', AdminReportIndex::class)->name('admin.reports.index');
         Route::get('/rapports/{edition}/excel', [ReportController::class, 'xlsx'])->name('admin.reports.xlsx');
