@@ -30,13 +30,19 @@
                    @class(['active' => request()->routeIs('admin.participants.*')])>
                     <x-ukc.icon name="users" :size="18" /> Participants
                 </a>
-                <a href="{{ route('admin.emails.index') }}" wire:navigate
-                   @class(['active' => request()->routeIs('admin.emails.*')])>
-                    <x-ukc.icon name="mail" :size="18" /> E-mails
-                </a>
                 <a href="{{ route('admin.reports.index') }}" wire:navigate
                    @class(['active' => request()->routeIs('admin.reports.*')])>
                     <x-ukc.icon name="chart" :size="18" /> Rapports
+                </a>
+
+                <span class="nav-label">Communication</span>
+                <a href="{{ route('admin.emails.index') }}" wire:navigate
+                   @class(['active' => request()->routeIs('admin.emails.index')])>
+                    <x-ukc.icon name="mail" :size="18" /> E-mails
+                </a>
+                <a href="{{ route('admin.emails.templates') }}" wire:navigate
+                   @class(['active' => request()->routeIs('admin.emails.templates')])>
+                    <x-ukc.icon name="pen" :size="18" /> Modèles d’e-mails
                 </a>
 
                 <span class="nav-label">Programme</span>
@@ -56,7 +62,7 @@
                 </a>
                 <a href="{{ route('admin.documents.templates') }}" wire:navigate
                    @class(['active' => request()->routeIs('admin.documents.templates')])>
-                    <x-ukc.icon name="palette" :size="18" /> Modèles
+                    <x-ukc.icon name="palette" :size="18" /> Modèles (badges/attest.)
                 </a>
 
                 <span class="nav-label">Configuration</span>
