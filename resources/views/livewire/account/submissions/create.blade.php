@@ -89,46 +89,89 @@
 
                 <div class="ukc-form-grid">
                     <div class="ukc-field full">
-                        <label for="title">Titre <span class="req">*</span></label>
+                        <label for="title">{{ $config->label('title') }} <span class="req">*</span></label>
                         <input type="text" id="title" wire:model="title">
+                        @if ($config->help('title'))<span class="hint">{{ $config->help('title') }}</span>@endif
                         @error('title') <span class="error">{{ $message }}</span> @enderror
                     </div>
 
                     @if (count($this->tracks()))
                         <div class="ukc-field">
-                            <label for="track">Axe thématique <span class="req">*</span></label>
+                            <label for="track">{{ $config->label('track') }} @if ($config->required('track'))<span class="req">*</span>@endif</label>
                             <select id="track" wire:model="track">
                                 @foreach ($this->tracks() as $t)
                                     <option value="{{ $t }}">{{ $t }}</option>
                                 @endforeach
                             </select>
+                            @if ($config->help('track'))<span class="hint">{{ $config->help('track') }}</span>@endif
                             @error('track') <span class="error">{{ $message }}</span> @enderror
                         </div>
                     @endif
 
-                    <div class="ukc-field">
-                        <label for="type">Mode de présentation <span class="req">*</span></label>
-                        <select id="type" wire:model="type">
-                            <option value="oral">Communication orale</option>
-                            <option value="poster">Poster</option>
-                        </select>
-                        @error('type') <span class="error">{{ $message }}</span> @enderror
-                    </div>
+                    @if ($config->enabled('type'))
+                        <div class="ukc-field">
+                            <label for="type">{{ $config->label('type') }} <span class="req">*</span></label>
+                            <select id="type" wire:model="type">
+                                <option value="oral">Communication orale</option>
+                                <option value="poster">Poster</option>
+                            </select>
+                            @if ($config->help('type'))<span class="hint">{{ $config->help('type') }}</span>@endif
+                            @error('type') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                    @endif
+
+                    @if ($config->enabled('keywords'))
+                        <div class="ukc-field full">
+                            <label for="keywords">{{ $config->label('keywords') }}
+                                @if ($config->required('keywords'))<span class="req">*</span>@endif
+                            </label>
+                            <input type="text" id="keywords" wire:model="keywords" placeholder="développement durable, innovation, …">
+                            @if ($config->help('keywords'))<span class="hint">{{ $config->help('keywords') }}</span>@endif
+                            @error('keywords') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                    @endif
 
                     <div class="ukc-field full">
-                        <label for="keywords">Mots-clés <span class="hint">(séparés par des virgules)</span></label>
-                        <input type="text" id="keywords" wire:model="keywords" placeholder="développement durable, innovation, …">
-                        @error('keywords') <span class="error">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div class="ukc-field full">
-                        <label for="abstract">Résumé <span class="req">*</span></label>
+                        <label for="abstract">{{ $config->label('abstract') }} <span class="req">*</span></label>
                         <textarea id="abstract" wire:model="abstract" rows="8"
                                   placeholder="Contexte, objectifs, méthode, résultats attendus…"></textarea>
-                        <span class="hint">Minimum 50 caractères.</span>
+                        <span class="hint">{{ $config->help('abstract') ?: 'Minimum ' . $config->abstractMin() . ' caractères.' }}</span>
                         @error('abstract') <span class="error">{{ $message }}</span> @enderror
                     </div>
                 </div>
+
+                {{-- Champs personnalisés --}}
+                @if (count($config->customFields()))
+                    <div class="ukc-form-grid" style="margin-top:4px;">
+                        @foreach ($config->customFields() as $field)
+                            <div class="ukc-field full" wire:key="cf-{{ $field['key'] }}">
+                                @if ($field['type'] === 'checkbox')
+                                    <label style="display:inline-flex;align-items:center;gap:8px;">
+                                        <input type="checkbox" wire:model="customAnswers.{{ $field['key'] }}">
+                                        {{ $field['label'] }} @if ($field['required'])<span class="req">*</span>@endif
+                                    </label>
+                                @else
+                                    <label>{{ $field['label'] }} @if ($field['required'])<span class="req">*</span>@endif</label>
+                                    @if ($field['type'] === 'textarea')
+                                        <textarea rows="4" wire:model="customAnswers.{{ $field['key'] }}"></textarea>
+                                    @elseif ($field['type'] === 'select')
+                                        <select wire:model="customAnswers.{{ $field['key'] }}">
+                                            <option value="">— Choisir —</option>
+                                            @foreach ($field['options'] as $opt)
+                                                <option value="{{ $opt }}">{{ $opt }}</option>
+                                            @endforeach
+                                        </select>
+                                    @else
+                                        <input type="{{ $field['type'] === 'number' ? 'number' : ($field['type'] === 'email' ? 'email' : 'text') }}"
+                                               wire:model="customAnswers.{{ $field['key'] }}">
+                                    @endif
+                                @endif
+                                @if ($field['help'])<span class="hint">{{ $field['help'] }}</span>@endif
+                                @error('customAnswers.' . $field['key']) <span class="error">{{ $message }}</span> @enderror
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
 
                 {{-- Co-auteurs --}}
                 <div style="margin-top:18px;">
@@ -157,12 +200,17 @@
                 </div>
 
                 {{-- Fichier --}}
-                <div class="ukc-field" style="margin-top:18px;">
-                    <label for="file">Fichier joint <span class="hint">(PDF/DOC/DOCX, optionnel, max 8 Mo)</span></label>
-                    <input type="file" id="file" wire:model="file" accept=".pdf,.doc,.docx">
-                    <div wire:loading wire:target="file" class="hint">Téléversement…</div>
-                    @error('file') <span class="error">{{ $message }}</span> @enderror
-                </div>
+                @if ($config->enabled('file'))
+                    <div class="ukc-field" style="margin-top:18px;">
+                        <label for="file">{{ $config->label('file') }}
+                            @if ($config->required('file'))<span class="req">*</span>@endif
+                            <span class="hint">({{ $config->help('file') ?: 'PDF/DOC/DOCX, max 8 Mo' }})</span>
+                        </label>
+                        <input type="file" id="file" wire:model="file" accept=".pdf,.doc,.docx">
+                        <div wire:loading wire:target="file" class="hint">Téléversement…</div>
+                        @error('file') <span class="error">{{ $message }}</span> @enderror
+                    </div>
+                @endif
 
                 <div class="ukc-form-actions">
                     <button type="submit" class="ukc-btn ukc-btn--primary" wire:loading.attr="disabled" wire:target="submit">

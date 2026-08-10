@@ -35,6 +35,16 @@
                         <x-ukc.icon name="file" :size="16" /> Fichier joint
                     </a>
                 @endif
+                @if (! empty($s->meta['custom_fields']))
+                    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--ukc-border);">
+                        <h3 style="font-size:.95rem;">Réponses complémentaires</h3>
+                        @foreach ($s->meta['custom_fields'] as $cf)
+                            <p style="margin:6px 0;font-size:.9rem;">
+                                <strong>{{ $cf['label'] ?? '' }} :</strong> {{ $cf['value'] ?? '' }}
+                            </p>
+                        @endforeach
+                    </div>
+                @endif
             </div>
 
             <div class="ukc-card">

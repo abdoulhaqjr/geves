@@ -24,6 +24,7 @@ use App\Livewire\Account\VerifyEmailNotice;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\Editions\Form as EditionForm;
 use App\Livewire\Admin\Editions\Index as EditionIndex;
+use App\Livewire\Admin\Editions\SubmissionFormEditor;
 use App\Livewire\Admin\Emails\Index as AdminEmailIndex;
 use App\Livewire\Admin\Reports\Index as AdminReportIndex;
 use App\Livewire\Admin\Login as AdminLogin;
@@ -111,6 +112,7 @@ Route::prefix('admin')->group(function () {
         Route::get('/editions', EditionIndex::class)->name('admin.editions.index');
         Route::get('/editions/creer', EditionForm::class)->name('admin.editions.create');
         Route::get('/editions/{edition}/modifier', EditionForm::class)->name('admin.editions.edit');
+        Route::get('/editions/{edition}/formulaire', SubmissionFormEditor::class)->name('admin.editions.form');
 
         Route::get('/soumissions', AdminSubmissionIndex::class)->name('admin.submissions.index');
         Route::get('/soumissions/{submission}', AdminSubmissionShow::class)->name('admin.submissions.show');

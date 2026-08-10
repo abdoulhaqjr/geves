@@ -6,8 +6,11 @@ use App\Actions\NotifySubmissionStatus;
 use App\Actions\UpsertParticipantForAccount;
 use App\Models\Edition;
 use App\Models\Submission;
+use App\Support\SubmissionFormConfig;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -27,13 +30,20 @@ class Create extends Component
     public Edition $edition;
 
     public string $title = '';
+
     public string $track = '';
+
     public string $type = 'oral';
+
     public string $keywords = '';
+
     public string $abstract = '';
 
     /** Co-auteurs : [['name' => '', 'email' => '', 'affiliation' => '', 'grade' => '']]. */
     public array $coauthors = [];
+
+    /** Réponses aux champs personnalisés, indexées par clé de champ. */
+    public array $customAnswers = [];
 
     public $file = null;
 
@@ -50,6 +60,17 @@ class Create extends Component
         if (! empty($this->tracks())) {
             $this->track = $this->tracks()[0];
         }
+
+        // Valeurs initiales des champs personnalisés.
+        foreach ($this->config()->customFields() as $field) {
+            $this->customAnswers[$field['key']] = $field['type'] === 'checkbox' ? false : '';
+        }
+    }
+
+    /** Configuration paramétrable du formulaire de cette édition. */
+    public function config(): SubmissionFormConfig
+    {
+        return new SubmissionFormConfig($this->edition);
     }
 
     /** Axes thématiques configurés sur l'édition. */
@@ -102,19 +123,68 @@ class Create extends Component
 
     protected function rules(): array
     {
-        return [
+        $c = $this->config();
+
+        $rules = [
             'title' => ['required', 'string', 'max:500'],
-            'track' => [count($this->tracks()) ? 'required' : 'nullable', 'string', 'max:150'],
-            'type' => ['required', 'in:oral,poster'],
-            'keywords' => ['nullable', 'string', 'max:500'],
-            'abstract' => ['required', 'string', 'min:50', 'max:8000'],
+            'abstract' => ['required', 'string', 'min:'.$c->abstractMin(), 'max:'.$c->abstractMax()],
             'coauthors' => ['array'],
             'coauthors.*.name' => ['nullable', 'string', 'max:200'],
             'coauthors.*.email' => ['nullable', 'email', 'max:200'],
             'coauthors.*.affiliation' => ['nullable', 'string', 'max:255'],
             'coauthors.*.grade' => ['nullable', 'string', 'max:100'],
-            'file' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:8192'],
         ];
+
+        $rules['track'] = count($this->tracks())
+            ? [$c->required('track') ? 'required' : 'nullable', 'string', 'max:150']
+            : ['nullable', 'string', 'max:150'];
+
+        if ($c->enabled('type')) {
+            $rules['type'] = ['required', 'in:oral,poster'];
+        }
+
+        if ($c->enabled('keywords')) {
+            $rules['keywords'] = [$c->required('keywords') ? 'required' : 'nullable', 'string', 'max:500'];
+        }
+
+        if ($c->enabled('file')) {
+            $rules['file'] = [$c->required('file') ? 'required' : 'nullable', 'file', 'mimes:pdf,doc,docx', 'max:8192'];
+        }
+
+        foreach ($c->customFields() as $field) {
+            $key = 'customAnswers.'.$field['key'];
+
+            if ($field['type'] === 'checkbox') {
+                $rules[$key] = $field['required'] ? ['accepted'] : ['nullable', 'boolean'];
+
+                continue;
+            }
+
+            $rule = [$field['required'] ? 'required' : 'nullable'];
+            $rule[] = match ($field['type']) {
+                'email' => 'email',
+                'number' => 'numeric',
+                default => 'string',
+            };
+            $rule[] = 'max:2000';
+            if ($field['type'] === 'select' && $field['options'] !== []) {
+                $rule[] = Rule::in($field['options']);
+            }
+            $rules[$key] = $rule;
+        }
+
+        return $rules;
+    }
+
+    /** Libellés de champs pour des messages de validation lisibles. */
+    protected function validationAttributes(): array
+    {
+        $attrs = [];
+        foreach ($this->config()->customFields() as $field) {
+            $attrs['customAnswers.'.$field['key']] = mb_strtolower($field['label']);
+        }
+
+        return $attrs;
     }
 
     public function submit(UpsertParticipantForAccount $upsert, NotifySubmissionStatus $notify)
@@ -139,13 +209,27 @@ class Create extends Component
         }
 
         $data = $this->validate();
+        $config = $this->config();
 
         $participant = $upsert->handle($this->edition, $account, 'author');
 
         $fileUrl = null;
-        if ($this->file) {
-            $path = $this->file->store('submissions/' . $this->edition->id, 'public');
-            $fileUrl = \Illuminate\Support\Facades\Storage::disk('public')->url($path);
+        if ($config->enabled('file') && $this->file) {
+            $path = $this->file->store('submissions/'.$this->edition->id, 'public');
+            $fileUrl = Storage::disk('public')->url($path);
+        }
+
+        // Réponses aux champs personnalisés (label + valeur, pour affichage).
+        $customMeta = [];
+        foreach ($config->customFields() as $field) {
+            $value = $this->customAnswers[$field['key']] ?? null;
+            if ($field['type'] === 'checkbox') {
+                $value = $value ? 'Oui' : 'Non';
+            }
+            if ($value === '' || $value === null) {
+                continue;
+            }
+            $customMeta[] = ['key' => $field['key'], 'label' => $field['label'], 'value' => (string) $value];
         }
 
         $coauthors = collect($this->coauthors)
@@ -173,11 +257,12 @@ class Create extends Component
             'title' => $data['title'],
             'authors' => $authors,
             'abstract' => $data['abstract'],
-            'keywords' => $data['keywords'] ?: null,
-            'track' => $data['track'] ?: null,
-            'type' => $data['type'],
+            'keywords' => ($data['keywords'] ?? null) ?: null,
+            'track' => ($data['track'] ?? null) ?: null,
+            'type' => $data['type'] ?? 'oral',
             'status' => 'submitted',
             'file_url' => $fileUrl,
+            'meta' => $customMeta !== [] ? ['custom_fields' => $customMeta] : null,
         ]);
 
         // Accusé de réception à l'auteur correspondant.
@@ -196,7 +281,7 @@ class Create extends Component
             $exists = Submission::where('ref_code', $code)->exists();
             if ($exists) {
                 // Collision improbable : on suffixe aléatoirement.
-                $code = $code . '-' . Str::upper(Str::random(2));
+                $code = $code.'-'.Str::upper(Str::random(2));
                 $exists = Submission::where('ref_code', $code)->exists();
             }
         } while ($exists);
@@ -208,6 +293,7 @@ class Create extends Component
     {
         return view('livewire.account.submissions.create', [
             'account' => Auth::guard('account')->user(),
+            'config' => $this->config(),
         ])->layout('components.layouts.participant', ['title' => 'Soumettre une communication']);
     }
 }
