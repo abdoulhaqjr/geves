@@ -61,7 +61,7 @@ npm install && npm run build
 
 ### Lancer les tests
 ```bash
-php.bat artisan test           # 65 tests, ~213 assertions (base :memory:)
+php.bat artisan test           # 69 tests, ~227 assertions (base :memory:)
 php.bat artisan test --filter=PaymentTest
 ```
 > ⚠️ Le lanceur affiche une sortie **JSON compacte** (plugin `laravel/pao`) — pas la trace complète. Pour déboguer une exception dans un test, capter l'exception dans le test (try/catch + `fwrite(STDERR, …)`), ou utiliser `->assertOk()`/dumps ciblés. `vendor/bin/phpunit` **ne fonctionne pas** (Pest requis).
@@ -162,7 +162,9 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 10. **Documents** (Modules 6, 8, 16, 19) — **attestations vérifiables par QR** (`IssueAttestation` UUID idempotent, émission par type/audience, révocation ; document imprimable avec QR → page publique `/verifier/{uuid}`), **livret** des résumés (par axe) et **badges** (A4, couleur par rôle) imprimables. Lib `simplesoftwareio/simple-qrcode` (SVG). *(commit `1f9d6c0`)*
 11. **Paiement en ligne** (Modules 16, 18, 19) — contrat `OnlineGateway` (verify + parseWebhook **fail-closed**) ; `PaymentController` retour (`/paiement/retour/{gateway}`) + webhook (`/webhooks/paiement/{gateway}`, hors CSRF) avec confirmation via `ConfirmPayment` (le statut vient **toujours** d'une vérification serveur). **CashPay (SEMOA)** : OAuth token caché, `POST /orders` (bill_url), `GET /orders/{ref}`, callback **JWT HS256** vérifié (`firebase/php-jwt`). **FedaPay** : `POST /transactions` + `/token`, `GET /transactions/{id}` (approved), webhook **HMAC-SHA256** (`X-FEDAPAY-Signature`). Registre = CashPay + FedaPay + Manuel. *(commit `dbc1435`)*
 
-**État git** : `54263ae`, `cfbcf4c`, `f83324b`, `8e49dbe`, `0144165`, `16bedeb`, `1f9d6c0`, `d6bb43d` (maj passation), `dbc1435` (paiement en ligne). Arbre propre.
+12. **Programme public & fiches de session** (Modules 7, 26) — section « Programme » sur la page publique (plénières + ateliers + communications programmées via les créneaux, partiel `_session.blade.php`) ; **fiches de session imprimables** (`DocumentController@sessionSheets`, `/admin/editions/{edition}/fiches-session`). *(commit `502a78f`)*
+
+**État git** : `54263ae`, `cfbcf4c`, `f83324b`, `8e49dbe`, `0144165`, `16bedeb`, `1f9d6c0`, `d6bb43d`, `dbc1435`, `3f56a87` (maj passation), `502a78f` (programme public). Arbre propre. **69 tests verts**.
 
 ---
 
@@ -170,7 +172,7 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 
 ### Priorité haute
 1. **Validation des paiements en ligne au sandbox** — CashPay (SEMOA) et FedaPay sont **implémentés** (voir §6 module 11). Reste à : renseigner les identifiants (`.env` : `CASHPAY_*`, `FEDAPAY_*`, `PAYMENT_GATEWAY`), **tester un vrai paiement** en sandbox, confirmer l'enveloppe de réponse FedaPay (`v1/transaction`) et le format exact du corps du callback CashPay (JWT brut vs champ `token`). Puis exposer les webhooks publiquement (URL `/webhooks/paiement/{gateway}`) et les déclarer côté marchand.
-2. **Fiches de session imprimables** + affichage public du programme (ateliers/sessions/créneaux) — la donnée est gérée en admin, reste le rendu public (page colloque) et les fiches de session. Livret .docx « vrai » via `phpoffice/phpword` si un format Word éditable est requis (le livret actuel est imprimable HTML → PDF).
+2. **Livret .docx « vrai »** via `phpoffice/phpword` si un format Word éditable est requis (le livret actuel est imprimable HTML → PDF). *(le programme public et les fiches de session sont faits — voir §6 module 12.)*
 
 ### Ensuite
 3. **E-mails** (Modules 7, 11) — SMTP réel (Réglages), e-mails programmés (rappels à une audience via une commande planifiée). Le journal `emails` et les Mailables existent déjà.
