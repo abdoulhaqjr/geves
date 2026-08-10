@@ -1,7 +1,7 @@
 # Passation — GESCO · Gestion des colloques scientifiques
 
 > Document de passation pour la personne qui reprend le développement.
-> Dernière mise à jour : 2026-08-10 (module 27 : bannière promo + infos pratiques).
+> Dernière mise à jour : 2026-08-10 (revue technique : pins, Larastan+CI, transactions, e-mails en file, factories).
 
 Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture**, les **conventions**, le **travail réalisé**, ce qui **reste à faire** et les **pièges** à connaître.
 
@@ -59,12 +59,17 @@ npm install && npm run build
 - **Page publique de démo** : http://gesco.test/colloque/edition-2026.
 - Seeders : `RolesAndAdminSeeder` (rôles `administrator`/`editor` + permission `manage_colloques` + admin), `DemoColloqueSeeder` (colloque + édition ouverte `edition-2026`).
 
-### Lancer les tests
+### Lancer les tests & la qualité
 ```bash
-php.bat artisan test           # 96 tests, ~327 assertions (base :memory:)
+php.bat artisan test                 # 176 tests (base :memory:)
 php.bat artisan test --filter=PaymentTest
+php.bat vendor/bin/phpstan analyse   # analyse statique (Larastan niveau 5)
+php.bat vendor/bin/pint              # style (Laravel Pint)
+composer.bat check                   # pint --test + phpstan + tests (= le CI)
 ```
 > ⚠️ Le lanceur affiche une sortie **JSON compacte** (plugin `laravel/pao`) — pas la trace complète. Pour déboguer une exception dans un test, capter l'exception dans le test (try/catch + `fwrite(STDERR, …)`), ou utiliser `->assertOk()`/dumps ciblés. `vendor/bin/phpunit` **ne fonctionne pas** (Pest requis).
+
+**Outillage qualité (revue technique)** : contraintes composer **pinnées** (plus de `*`) ; **Larastan** niveau 5 (`phpstan.neon`) avec **baseline** (`phpstan-baseline.neon`, dette figée — surtout inférence Eloquent générique/JSON, pas des bugs ; le CI ne bloque que sur les nouvelles erreurs) ; **CI GitHub Actions** (`.github/workflows/ci.yml` : Pint + PHPStan + build + Pest). **Model factories** dispo pour Colloque/Edition/Account/Participant/Submission/Payment (`Model::factory()`, states). ⚠️ Le style **Pint** est appliqué **projet-wide** (concat sans espaces `'a'.$b`) — lancer `pint` avant de commiter. E-mails transactionnels en **file (ShouldQueue)** → un **worker** est requis en prod (`queue:work`/`queue:listen` ; `composer dev` en lance un). Écritures multi-étapes clés sous **`DB::transaction`** (paiement anti-doublon avec `lockForUpdate`, sync comités, soumission).
 
 ### Vérification visuelle
 Le **navigateur intégré exige une approbation par action** sur `gesco.test`. Se rabattre sur `curl` (statut HTTP + `grep` du contenu attendu + absence d'erreur) comme méthode de contrôle rapide.
