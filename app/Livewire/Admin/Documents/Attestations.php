@@ -6,6 +6,8 @@ use App\Actions\IssueAttestation;
 use App\Models\Attestation;
 use App\Models\Edition;
 use App\Models\Participant;
+use App\Models\Submission;
+use Illuminate\Support\Collection;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -17,7 +19,9 @@ use Livewire\Component;
 class Attestations extends Component
 {
     public string $edition_id = '';
+
     public string $type = 'participation';
+
     public string $audience = 'paid';
 
     public function mount(): void
@@ -27,15 +31,49 @@ class Attestations extends Component
     }
 
     /** Participants ciblés selon l'audience choisie. */
-    protected function targets(): \Illuminate\Support\Collection
+    protected function targets(): Collection
     {
         $query = Participant::where('edition_id', $this->edition_id);
 
         return match ($this->audience) {
             'paid' => $query->whereHas('payments', fn ($q) => $q->where('status', 'paid'))->get(),
-            'communicants' => $query->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted'))->get(),
+            'communicants' => $this->communicantTargets(),
             default => $query->get(),
         };
+    }
+
+    /**
+     * Communicants : auteurs correspondants d'une communication acceptée, plus
+     * les co-auteurs ayant réglé leurs frais (règle « co-auteur payé =
+     * éligible à l'attestation de communication »).
+     */
+    protected function communicantTargets(): Collection
+    {
+        $accepted = Submission::where('edition_id', $this->edition_id)
+            ->where('revision_of', 0)
+            ->where('status', 'accepted')
+            ->get();
+
+        $correspondingIds = $accepted->pluck('participant_id')->filter()->unique();
+
+        $coauthorEmails = $accepted
+            ->flatMap(fn (Submission $s) => collect($s->authors ?? [])
+                ->reject(fn ($a) => $a['corresponding'] ?? false)
+                ->pluck('email'))
+            ->filter()
+            ->map(fn ($e) => mb_strtolower(trim((string) $e)))
+            ->unique();
+
+        $corresponding = Participant::where('edition_id', $this->edition_id)
+            ->whereIn('id', $correspondingIds)
+            ->get();
+
+        $paidCoauthors = Participant::where('edition_id', $this->edition_id)
+            ->whereHas('payments', fn ($q) => $q->where('status', 'paid'))
+            ->get()
+            ->filter(fn (Participant $p) => $coauthorEmails->contains(mb_strtolower(trim((string) $p->email))));
+
+        return $corresponding->concat($paidCoauthors)->unique('id')->values();
     }
 
     public function issue(IssueAttestation $action): void
@@ -50,7 +88,7 @@ class Attestations extends Component
             $count++;
         }
 
-        session()->flash('ukc_status', $count . ' attestation(s) « ' . (Attestation::TYPES[$this->type] ?? $this->type) . ' » émise(s).');
+        session()->flash('ukc_status', $count.' attestation(s) « '.(Attestation::TYPES[$this->type] ?? $this->type).' » émise(s).');
     }
 
     public function revoke(int $id): void

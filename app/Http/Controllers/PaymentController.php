@@ -38,6 +38,14 @@ class PaymentController extends Controller
             ? ['ukc_status' => 'Paiement confirmé. Votre reçu vous a été envoyé par e-mail.']
             : ['ukc_error' => 'Paiement non confirmé pour le moment. Il le sera dès réception de la confirmation.'];
 
+        // Parcours co-auteur (sans compte) : retour sur la page publique dédiée.
+        if (($payment->meta['flow'] ?? null) === 'coauthor' && $payment->edition?->slug) {
+            return redirect()->route('public.coauthor', [
+                'slug' => $payment->edition->slug,
+                'email' => $payment->participant?->email,
+            ])->with($flash);
+        }
+
         return redirect()->route('account.payment', $payment->edition_id)->with($flash);
     }
 

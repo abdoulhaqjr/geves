@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin\Submissions;
 
 use App\Actions\AssignReviewer;
+use App\Actions\NotifyCoauthorsForPayment;
 use App\Actions\NotifySubmissionStatus;
 use App\Mail\ReviewerInvitationMail;
 use App\Models\Participant;
@@ -26,7 +27,9 @@ class Show extends Component
 
     // Assignation d'un relecteur
     public string $reviewerName = '';
+
     public string $reviewerEmail = '';
+
     public string $existingReviewerId = '';
 
     /** Statuts que l'on peut appliquer depuis la fiche (le dépôt initial exclu). */
@@ -42,7 +45,7 @@ class Show extends Component
         $this->submission = $submission->load(['edition', 'participant']);
     }
 
-    public function applyStatus(string $status, NotifySubmissionStatus $notify): void
+    public function applyStatus(string $status, NotifySubmissionStatus $notify, NotifyCoauthorsForPayment $notifyCoauthors): void
     {
         abort_unless(array_key_exists($status, self::ACTIONS), 400);
 
@@ -51,11 +54,21 @@ class Show extends Component
         $this->submission->update(['status' => $status]);
         $notify->handle($this->submission, $status, $this->note ?: null);
 
+        // À l'acceptation : inviter les co-auteurs à régler leurs frais.
+        $coauthorNote = '';
+        if ($status === 'accepted') {
+            $this->submission->refresh();
+            $n = $notifyCoauthors->handle($this->submission);
+            if ($n > 0) {
+                $coauthorNote = " {$n} co-auteur(s) invité(s) à payer.";
+            }
+        }
+
         $this->note = '';
         $this->submission->refresh();
 
-        session()->flash('ukc_status', 'Statut mis à jour : ' . $this->submission->statusLabel()
-            . ' — l’auteur a été notifié.');
+        session()->flash('ukc_status', 'Statut mis à jour : '.$this->submission->statusLabel()
+            .' — l’auteur a été notifié.'.$coauthorNote);
     }
 
     public function assignReviewer(AssignReviewer $action): void
@@ -109,6 +122,6 @@ class Show extends Component
                 ->where('role', 'reviewer')
                 ->orderBy('last_name')
                 ->get(),
-        ])->layout('components.layouts.admin', ['title' => 'Soumission ' . $this->submission->ref_code]);
+        ])->layout('components.layouts.admin', ['title' => 'Soumission '.$this->submission->ref_code]);
     }
 }

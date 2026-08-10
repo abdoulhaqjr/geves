@@ -216,6 +216,10 @@
                             </div>
                         @endforeach
                     </div>
+                    <p style="margin:16px 0 0;font-size:.9rem;color:var(--ukc-muted);text-align:center;">
+                        Co-auteur d’une communication acceptée ?
+                        <a href="{{ route('public.coauthor', $edition->slug) }}" style="color:var(--ukc-blue);font-weight:700;">Réglez vos frais ici</a>.
+                    </p>
                 </section>
             @endif
 
