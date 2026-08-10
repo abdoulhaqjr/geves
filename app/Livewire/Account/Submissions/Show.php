@@ -3,6 +3,7 @@
 namespace App\Livewire\Account\Submissions;
 
 use App\Actions\NotifySubmissionStatus;
+use App\Models\Slot;
 use App\Models\Submission;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -57,6 +58,54 @@ class Show extends Component
             ->values()
             ->map(fn ($r, $i) => ['label' => 'Relecteur ' . ($i + 1), 'comments' => $r->comments])
             ->all();
+    }
+
+    /** Créneau actuellement assigné à cette communication. */
+    public function currentSlot(): ?Slot
+    {
+        return Slot::where('submission_id', $this->submission->id)->first();
+    }
+
+    /** Créneaux libres proposés au participant (communication acceptée). */
+    public function availableSlots()
+    {
+        if ($this->submission->status !== 'accepted') {
+            return collect();
+        }
+
+        return Slot::where('edition_id', $this->submission->edition_id)
+            ->where('submission_id', 0)
+            ->orderBy('starts_at')
+            ->get();
+    }
+
+    /** Le participant choisit lui-même un créneau libre. */
+    public function chooseSlot(int $slotId): void
+    {
+        abort_unless($this->submission->status === 'accepted', 403);
+
+        $slot = Slot::where('id', $slotId)
+            ->where('edition_id', $this->submission->edition_id)
+            ->where('submission_id', 0)
+            ->first();
+
+        if (! $slot) {
+            session()->flash('ukc_error', 'Ce créneau n’est plus disponible.');
+
+            return;
+        }
+
+        // Libère l'ancien créneau puis prend le nouveau.
+        Slot::where('submission_id', $this->submission->id)
+            ->update(['submission_id' => 0, 'participant_id' => 0, 'chosen_by_participant' => false]);
+
+        $slot->update([
+            'submission_id' => $this->submission->id,
+            'participant_id' => $this->submission->participant_id ?? 0,
+            'chosen_by_participant' => true,
+        ]);
+
+        session()->flash('ukc_status', 'Votre créneau de passage est confirmé.');
     }
 
     protected function rules(): array

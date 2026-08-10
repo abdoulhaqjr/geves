@@ -21,6 +21,8 @@ use App\Livewire\Admin\Editions\Index as EditionIndex;
 use App\Livewire\Admin\Login as AdminLogin;
 use App\Livewire\Admin\Payments\Index as AdminPaymentIndex;
 use App\Livewire\Admin\Payments\Record as AdminPaymentRecord;
+use App\Livewire\Admin\Program\Sessions as AdminProgramSessions;
+use App\Livewire\Admin\Program\Slots as AdminProgramSlots;
 use App\Livewire\Admin\Submissions\Index as AdminSubmissionIndex;
 use App\Livewire\Admin\Submissions\Show as AdminSubmissionShow;
 use App\Livewire\Public\ColloquePage;
@@ -93,6 +95,9 @@ Route::prefix('admin')->group(function () {
         Route::get('/paiements', AdminPaymentIndex::class)->name('admin.payments.index');
         Route::get('/paiements/creer', AdminPaymentRecord::class)->name('admin.payments.create');
         Route::get('/paiements/{payment}/recu', ReceiptController::class)->name('admin.payments.receipt');
+
+        Route::get('/programme', AdminProgramSessions::class)->name('admin.program.sessions');
+        Route::get('/programme/creneaux', AdminProgramSlots::class)->name('admin.program.slots');
 
         Route::post('/deconnexion', AdminLogoutController::class)->name('admin.logout');
     });

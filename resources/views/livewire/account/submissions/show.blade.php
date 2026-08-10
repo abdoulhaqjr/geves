@@ -32,6 +32,46 @@
         </div>
     @endif
 
+    {{-- Créneau de passage (communication acceptée) --}}
+    @if ($s->status === 'accepted')
+        @php($slot = $this->currentSlot())
+        <div class="ukc-card" style="margin-bottom:18px;">
+            <h3><x-ukc.icon name="calendar" :size="20" /> Créneau de passage</h3>
+            @if ($slot)
+                <div class="ukc-alert ukc-alert--ok" style="margin:8px 0 0;">
+                    <span class="ico"><x-ukc.icon name="check" :size="18" /></span>
+                    <div>
+                        <strong>{{ $slot->session_label ?: 'Présentation' }}</strong>
+                        @if ($slot->starts_at) — {{ $slot->starts_at->translatedFormat('d F, H:i') }} @endif
+                        @if ($slot->room) · Salle {{ $slot->room }} @endif
+                        @if ($slot->chosen_by_participant) <span class="ukc-pill ukc-pill--info" style="margin-left:6px;">Choisi</span> @endif
+                    </div>
+                </div>
+            @endif
+
+            @php($available = $this->availableSlots())
+            @if ($available->count())
+                <p style="font-size:.88rem;color:var(--ukc-muted);margin:14px 0 8px;">
+                    {{ $slot ? 'Vous pouvez changer de créneau :' : 'Choisissez votre créneau de passage :' }}
+                </p>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    @foreach ($available as $av)
+                        <button type="button" class="ukc-btn ukc-btn--outline" style="justify-content:space-between;"
+                                wire:click="chooseSlot({{ $av->id }})">
+                            <span>{{ $av->session_label ?: 'Créneau' }}
+                                @if ($av->starts_at) — {{ $av->starts_at->translatedFormat('d F, H:i') }} @endif
+                                @if ($av->room) · {{ $av->room }} @endif
+                            </span>
+                            <x-ukc.icon name="chevron" :size="16" />
+                        </button>
+                    @endforeach
+                </div>
+            @elseif (! $slot)
+                <p style="font-size:.88rem;color:var(--ukc-muted);">Aucun créneau disponible pour l’instant — l’organisation vous en attribuera un.</p>
+            @endif
+        </div>
+    @endif
+
     {{-- Resoumission --}}
     @if ($s->canBeRevised())
         <div class="ukc-card" style="margin-bottom:18px;">

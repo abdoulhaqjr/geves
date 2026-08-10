@@ -27,8 +27,15 @@
                     <x-ukc.icon name="card" :size="18" /> Paiements
                 </a>
 
-                <span class="nav-label">À venir</span>
-                <a style="opacity:.5;pointer-events:none;"><x-ukc.icon name="users" :size="18" /> Participants</a>
+                <span class="nav-label">Programme</span>
+                <a href="{{ route('admin.program.sessions') }}" wire:navigate
+                   @class(['active' => request()->routeIs('admin.program.sessions')])>
+                    <x-ukc.icon name="layers" :size="18" /> Ateliers & sessions
+                </a>
+                <a href="{{ route('admin.program.slots') }}" wire:navigate
+                   @class(['active' => request()->routeIs('admin.program.slots')])>
+                    <x-ukc.icon name="calendar" :size="18" /> Créneaux
+                </a>
                 <a style="opacity:.5;pointer-events:none;"><x-ukc.icon name="award" :size="18" /> Documents</a>
             </nav>
             <div class="ukc-sidebar-foot">
