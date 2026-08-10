@@ -46,6 +46,10 @@
                    @class(['active' => request()->routeIs('admin.documents.attestations')])>
                     <x-ukc.icon name="award" :size="18" /> Attestations
                 </a>
+                <a href="{{ route('admin.documents.templates') }}" wire:navigate
+                   @class(['active' => request()->routeIs('admin.documents.templates')])>
+                    <x-ukc.icon name="palette" :size="18" /> Modèles
+                </a>
 
                 <span class="nav-label">Configuration</span>
                 <a href="{{ route('admin.settings') }}" wire:navigate

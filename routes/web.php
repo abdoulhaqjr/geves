@@ -9,6 +9,7 @@ use App\Http\Controllers\AttestationController;
 use App\Http\Controllers\PaymentController;
 use App\Livewire\Account\Payment\Pay as AccountPay;
 use App\Livewire\Admin\Documents\Attestations as AdminAttestations;
+use App\Livewire\Admin\Documents\TemplateDesigner as AdminTemplateDesigner;
 use App\Livewire\Account\Dashboard;
 use App\Livewire\Account\ForgotPassword;
 use App\Livewire\Account\Login;
@@ -117,6 +118,7 @@ Route::prefix('admin')->group(function () {
         Route::get('/programme/creneaux', AdminProgramSlots::class)->name('admin.program.slots');
 
         Route::get('/attestations', AdminAttestations::class)->name('admin.documents.attestations');
+        Route::get('/modeles', AdminTemplateDesigner::class)->name('admin.documents.templates');
         Route::get('/editions/{edition}/livret', [DocumentController::class, 'livret'])->name('admin.documents.livret');
         Route::get('/editions/{edition}/badges', [DocumentController::class, 'badges'])->name('admin.documents.badges');
         Route::get('/editions/{edition}/fiches-session', [DocumentController::class, 'sessionSheets'])->name('admin.documents.sessions');
