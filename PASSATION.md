@@ -13,7 +13,7 @@ Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture
 
 - **But** : plateforme professionnelle, autonome (sans WordPress).
 - **Stack** : Laravel 13 (PHP 8.4), **Blade + Livewire 4 + Alpine**, Tailwind v4 (+ design system maison), SQLite en dev, Pest pour les tests.
-- **Périmètre couvert à ce jour** : fondations, comptes participants, back-office éditions, page publique, **soumission**, **relecture**, **resoumission**, **paiement**, **ateliers/sessions/créneaux**, **participants**, **documents (livret/badges/attestations QR)** (voir §6).
+- **Périmètre couvert à ce jour** : fondations, comptes participants, back-office éditions, page publique, **soumission**, **relecture**, **resoumission**, **paiement**, **ateliers/sessions/créneaux**, **participants**, **documents (livret/badges/attestations QR)**, **paiement en ligne (CashPay/FedaPay)** (voir §6).
 
 ### Sources de référence (hors dépôt, dans `Downloads/`)
 - `Site Web/uk-colloques/` — **plugin WordPress source** (27 modules, ~19 600 lignes). Référence fonctionnelle.
@@ -61,7 +61,7 @@ npm install && npm run build
 
 ### Lancer les tests
 ```bash
-php.bat artisan test           # 56 tests, ~192 assertions (base :memory:)
+php.bat artisan test           # 65 tests, ~213 assertions (base :memory:)
 php.bat artisan test --filter=PaymentTest
 ```
 > ⚠️ Le lanceur affiche une sortie **JSON compacte** (plugin `laravel/pao`) — pas la trace complète. Pour déboguer une exception dans un test, capter l'exception dans le test (try/catch + `fwrite(STDERR, …)`), ou utiliser `->assertOk()`/dumps ciblés. `vendor/bin/phpunit` **ne fonctionne pas** (Pest requis).
@@ -93,7 +93,7 @@ app/
 ├─ Payments/             # Abstraction passerelles (interface + registre + gateways)
 │  ├─ Contracts/PaymentGateway
 │  ├─ GatewayRegistry
-│  └─ Gateways/          # ManualGateway (actif), MoneyFusionGateway, FedaPayGateway (échafaudés)
+│  └─ Gateways/          # ManualGateway, CashpayGateway (SEMOA), FedaPayGateway ; contrat OnlineGateway
 ├─ Support/Fees          # Résolution des frais depuis settings.fees
 ├─ Models/               # 14 modèles Eloquent + User
 └─ Http/Controllers/     # Account/ (verify, logout), Admin/ (logout, ReceiptController)
@@ -142,7 +142,7 @@ database/seeders/        # RolesAndAdminSeeder, DemoColloqueSeeder
 - **`AssignReviewer`** — crée/retrouve un participant relecteur (jeton de portail) + `Review`, passe la soumission en `under_review`.
 - **`ConfirmPayment`** — passe un paiement à `paid` avec **garde anti-double-paiement** (un seul `paid` par participant/édition), génère `receipt_no` (`REC-{année}-{seq}`), envoie `PaymentReceiptMail`.
 - **`Support\Fees`** — `resolveAmount(edition, grade)` (insensible casse), `highestAmount(edition)`, `grid(edition)` depuis `settings.fees`.
-- **Passerelles** — `GatewayRegistry` résout les passerelles **disponibles** (`isAvailable()` = identifiants configurés) et la **par défaut** (`config('payments.default')`, repli `manual`). `ManualGateway` est fonctionnel ; `MoneyFusionGateway`/`FedaPayGateway` sont **échafaudées** (voir §7).
+- **Passerelles** — `GatewayRegistry` résout les passerelles **disponibles** (`isAvailable()` = identifiants configurés) et la **par défaut** (`config('payments.default')`, repli `manual`). `ManualGateway` (hors-ligne), `CashpayGateway` (SEMOA) et `FedaPayGateway` sont **implémentées** ; contrat `OnlineGateway` (verify + parseWebhook) pour le flux en ligne (voir §6 module 11).
 
 ---
 
@@ -156,19 +156,20 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 4. **Workflow admin des soumissions** (Module 2) — liste filtrable, fiche détaillée, actions **en relecture / correction / accepter / refuser** avec message + e-mail à l'auteur (méthode `applyStatus`, ⚠️ `transition` réservé Livewire). *(commit `f83324b`)*
 5. **Resoumission / versionnage** (Module 2) — fiche participant `/mes-communications/{submission}` : retour relecteurs (après décision) + resoumission quand `revision`. Une ligne **canonique** (`revision_of=0`) + **archives** (`revision_of=id`), `version++`. *(commit `f83324b`)*
 6. **Relecture / peer review** (Module 3) — assignation depuis la fiche admin (panneau Relecteurs + synthèse note moyenne/recommandations), **portail relecteur en aveugle par jeton** `/relecture/{token}` + évaluation `/relecture/{token}/{review}` (recommandation, note /20, commentaires auteur + confidentiels), invitation par e-mail. *(commit `f83324b`)*
-7. **Paiement** (Modules 4, 12, 17, 18) — encaissement **manuel** back-office (liste + totaux + reçu imprimable + e-mail + marquer réglé/rembourser), parcours **participant** (`/mon-compte/paiement/{edition}`, éligible si communication acceptée, montant du grade), **abstraction passerelle** (manuel actif ; MoneyFusion/FedaPay échafaudées). Garde anti-double-paiement partout. *(commit `f83324b`)*
+7. **Paiement** (Modules 4, 12, 17, 18) — encaissement **manuel** back-office (liste + totaux + reçu imprimable + e-mail + marquer réglé/rembourser), parcours **participant** (`/mon-compte/paiement/{edition}`, éligible si communication acceptée, montant du grade), **abstraction passerelle** (manuel ; CashPay/FedaPay implémentées au module 11). Garde anti-double-paiement partout. *(commit `f83324b`)*
 8. **Ateliers, sessions & créneaux** (Modules 7, 26) — admin : ateliers (titre + axes), sessions (plénière/atelier, jour/horaire/salle, modérateur/rapporteur), créneaux + assignation des acceptées. Participant : choix d'un créneau libre sur sa fiche. *(commit `0144165`)*
 9. **Back-office Participants** (Modules 5, 27) — liste par édition (rôle, paiement, invité), filtres, invitation individuelle + groupée (payés non invités), `ParticipantInvitationMail`. *(commit `16bedeb`)*
 10. **Documents** (Modules 6, 8, 16, 19) — **attestations vérifiables par QR** (`IssueAttestation` UUID idempotent, émission par type/audience, révocation ; document imprimable avec QR → page publique `/verifier/{uuid}`), **livret** des résumés (par axe) et **badges** (A4, couleur par rôle) imprimables. Lib `simplesoftwareio/simple-qrcode` (SVG). *(commit `1f9d6c0`)*
+11. **Paiement en ligne** (Modules 16, 18, 19) — contrat `OnlineGateway` (verify + parseWebhook **fail-closed**) ; `PaymentController` retour (`/paiement/retour/{gateway}`) + webhook (`/webhooks/paiement/{gateway}`, hors CSRF) avec confirmation via `ConfirmPayment` (le statut vient **toujours** d'une vérification serveur). **CashPay (SEMOA)** : OAuth token caché, `POST /orders` (bill_url), `GET /orders/{ref}`, callback **JWT HS256** vérifié (`firebase/php-jwt`). **FedaPay** : `POST /transactions` + `/token`, `GET /transactions/{id}` (approved), webhook **HMAC-SHA256** (`X-FEDAPAY-Signature`). Registre = CashPay + FedaPay + Manuel. *(commit `dbc1435`)*
 
-**État git** : `54263ae` (fondations + éditions + page publique), `cfbcf4c` (soumission), `f83324b` (workflow + resoumission + relecture + paiement), `8e49dbe` (passation), `0144165` (ateliers/sessions/créneaux), `16bedeb` (participants), `1f9d6c0` (documents). Arbre propre.
+**État git** : `54263ae`, `cfbcf4c`, `f83324b`, `8e49dbe`, `0144165`, `16bedeb`, `1f9d6c0`, `d6bb43d` (maj passation), `dbc1435` (paiement en ligne). Arbre propre.
 
 ---
 
 ## 7. Ce qui reste à faire
 
 ### Priorité haute
-1. **Passerelles de paiement en ligne** — implémenter l'appel API réel dans `MoneyFusionGateway`/`FedaPayGateway` (méthodes `initiate()` + vérification au retour + **webhook**). S'active dès que les identifiants sont dans `config/services.php` (env `MONEYFUSION_API_URL`, `FEDAPAY_SECRET`). **Pas de sandbox public** → tester par un vrai paiement de petit montant. S'inspirer de `bizzcart.com` (`app/Services/FinanceAI/Gateways`) et de la passation WP.
+1. **Validation des paiements en ligne au sandbox** — CashPay (SEMOA) et FedaPay sont **implémentés** (voir §6 module 11). Reste à : renseigner les identifiants (`.env` : `CASHPAY_*`, `FEDAPAY_*`, `PAYMENT_GATEWAY`), **tester un vrai paiement** en sandbox, confirmer l'enveloppe de réponse FedaPay (`v1/transaction`) et le format exact du corps du callback CashPay (JWT brut vs champ `token`). Puis exposer les webhooks publiquement (URL `/webhooks/paiement/{gateway}`) et les déclarer côté marchand.
 2. **Fiches de session imprimables** + affichage public du programme (ateliers/sessions/créneaux) — la donnée est gérée en admin, reste le rendu public (page colloque) et les fiches de session. Livret .docx « vrai » via `phpoffice/phpword` si un format Word éditable est requis (le livret actuel est imprimable HTML → PDF).
 
 ### Ensuite
@@ -187,6 +188,9 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 - **Livewire 4 — méthodes réservées** : ne pas nommer une action `transition` (collision avec `Livewire\Component::transition`). Utiliser un autre nom (ex. `applyStatus`).
 - **Livewire 4 — variable de vue `$slots` réservée** : Livewire injecte `$slots` (slots nommés) dans chaque vue ; ne jamais passer une donnée de vue nommée `slots` (elle est shadowée par un `SlotProxy`). Renommer (ex. `creneaux`). Idem prudence avec d'autres noms magiques.
 - **Colonnes `nullable` avec défaut « 0 » applicatif** : `slots.submission_id`/`participant_id` sont `nullable` mais le code traite « 0 = libre ». À la création d'un créneau, forcer `submission_id => 0` (sinon `null` ≠ `0` et les requêtes `where(...,0)` le manquent) — même piège que `revision_of`.
+- **Paiement en ligne — confiance zéro dans l'URL** : le statut « payé » vient **toujours** d'une vérification serveur (`OnlineGateway::verify`) ou d'un webhook **à signature vérifiée** (`parseWebhook`, **fail-closed** = retourne `null` si invalide). Ne jamais confirmer un paiement d'après un paramètre d'URL de retour. `ConfirmPayment` reste idempotent + anti-double-paiement.
+- **`firebase/php-jwt` (HS256)** : refuse les clés trop courtes (`Provided key is too short`). En test, utiliser une clé d'API ≥ ~32 caractères (les vraies clés SEMOA le sont). Le corps du callback CashPay peut être le JWT brut **ou** un champ `token` — `CashpayGateway::parseWebhook` gère les deux ; à confirmer au sandbox.
+- **Webhooks hors CSRF** : les routes `/webhooks/*` sont exclues de la vérification CSRF dans `bootstrap/app.php` (`validateCsrfTokens(except: ['webhooks/*'])`).
 - **Livewire 4 — « Invalid snapshot structure » en test** = une exception/`abort()` **avalée pendant le render initial** (le snapshot devient NULL, l'erreur ne remonte qu'au 1ᵉʳ `->set()`/`->call()`). Chercher un `abort_unless` faux dans `mount()`/`render()`, pas le trait `WithFileUploads`. Astuce diagnostic : dumper `$c->html()` et vérifier la présence de `wire:id`.
 - **Modèle fraîchement créé ≠ rechargé** : `Model::create([...])` **ne reflète pas les valeurs par défaut SQL** en mémoire (ex. `revision_of` reste `null`, pas `0`). Une comparaison stricte `=== 0` casse alors. → **caster** (`'revision_of' => 'integer'`) et comparer en `(int)`, ou passer `->fresh()`. (Incident réel corrigé sur la resoumission.)
 - **Composants Livewire = classe** (`--class`), pas les single-file components de Livewire 4 (préfixe emoji `⚡` peu maniable pour l'outillage). Générer avec `php.bat artisan make:livewire Chemin/Nom --class`.
