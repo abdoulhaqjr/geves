@@ -51,10 +51,30 @@
                 @error('country') <span class="error">{{ $message }}</span> @enderror
             </div>
 
-            <div class="ukc-field full">
+            <div class="ukc-field full" style="position:relative;" @if ($this->halEnabled()) x-data @click.outside="$wire.set('halSuggestions', [])" @endif>
                 <label for="affiliation">Affiliation <span class="req">*</span> <span class="hint">(requise pour soumettre)</span></label>
-                <input type="text" id="affiliation" wire:model="affiliation"
+                <input type="text" id="affiliation" autocomplete="off"
+                       wire:model{{ $this->halEnabled() ? '.live.debounce.400ms' : '' }}="affiliation"
                        placeholder="Laboratoire / Département — Université de Kara">
+                @if ($this->halEnabled() && count($halSuggestions))
+                    <ul style="position:absolute;z-index:20;left:0;right:0;top:100%;margin:4px 0 0;padding:6px;list-style:none;
+                               background:#fff;border:1px solid var(--ukc-border);border-radius:12px;box-shadow:var(--ukc-shadow);max-height:260px;overflow:auto;">
+                        @foreach ($halSuggestions as $s)
+                            <li>
+                                <button type="button" wire:click="chooseAffiliation(@js($s['label']))"
+                                        style="width:100%;text-align:left;padding:9px 12px;border:0;background:none;border-radius:8px;cursor:pointer;font-size:.9rem;"
+                                        onmouseover="this.style.background='var(--ukc-bg)'" onmouseout="this.style.background='none'">
+                                    <span style="font-weight:600;">{{ $s['label'] }}</span>
+                                    @if ($s['acronym'])<span style="color:var(--ukc-muted);"> · {{ $s['acronym'] }}</span>@endif
+                                    @if ($s['country'])<span style="color:var(--ukc-light);"> ({{ strtoupper($s['country']) }})</span>@endif
+                                </button>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+                @if ($this->halEnabled())
+                    <span class="hint">Commencez à taper : suggestions depuis HAL (AuréHAL).</span>
+                @endif
                 @error('affiliation') <span class="error">{{ $message }}</span> @enderror
             </div>
 

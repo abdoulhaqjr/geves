@@ -74,4 +74,11 @@ return [
         'default' => env('AI_PROVIDER', 'claude'), // openai | claude | gemini | grok
     ],
 
+    // HAL / AuréHAL — autocomplétion des affiliations (référentiel des structures).
+    // Désactivé par défaut ; activable dans les réglages (hal.enabled).
+    'hal' => [
+        'enabled' => (bool) env('HAL_ENABLED', false),
+        'endpoint' => env('HAL_STRUCTURE_ENDPOINT', 'https://api.archives-ouvertes.fr/ref/structure/'),
+    ],
+
 ];

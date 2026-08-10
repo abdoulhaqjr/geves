@@ -26,7 +26,7 @@ class AppServiceProvider extends ServiceProvider
 
         ResetPassword::createUrlUsing(function ($notifiable, string $token) {
             return route('account.password.reset', ['token' => $token])
-                . '?email=' . urlencode($notifiable->getEmailForPasswordReset());
+                .'?email='.urlencode($notifiable->getEmailForPasswordReset());
         });
 
         VerifyEmail::createUrlUsing(function ($notifiable) {
@@ -95,5 +95,10 @@ class AppServiceProvider extends ServiceProvider
             }
         }
         Config::set('services.ai.default', $set('ai.default', config('services.ai.default')));
+
+        // HAL : autocomplétion des affiliations (activable dans les réglages).
+        if ($set('hal.enabled') !== null) {
+            Config::set('services.hal.enabled', (bool) $set('hal.enabled'));
+        }
     }
 }

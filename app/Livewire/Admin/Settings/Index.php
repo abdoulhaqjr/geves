@@ -18,38 +18,64 @@ class Index extends Component
 {
     // Général
     public string $from_name = '';
+
     public string $from_address = '';
+
     public string $currency = 'XOF';
 
     // SMTP
     public string $mail_host = '';
+
     public string $mail_port = '587';
+
     public string $mail_encryption = 'tls';
+
     public string $mail_username = '';
+
     public string $mail_password = '';
+
     public string $test_email = '';
 
     // Paiement
     public string $payments_default = 'manual';
+
     public string $cashpay_base_url = '';
+
     public string $cashpay_username = '';
+
     public string $cashpay_password = '';
+
     public string $cashpay_client_secret = '';
+
     public string $cashpay_api_key = '';
+
     public string $fedapay_secret = '';
+
     public string $fedapay_mode = 'test';
+
     public string $fedapay_webhook_secret = '';
 
     // Intelligence artificielle
     public string $ai_default = 'claude';
+
     public string $ai_openai_key = '';
+
     public string $ai_openai_model = '';
+
     public string $ai_anthropic_key = '';
+
     public string $ai_anthropic_model = '';
+
     public string $ai_gemini_key = '';
+
     public string $ai_gemini_model = '';
+
     public string $ai_grok_key = '';
+
     public string $ai_grok_model = '';
+
+    // Interconnexion
+    public bool $hal_enabled = false;
 
     public function mount(): void
     {
@@ -84,6 +110,8 @@ class Index extends Component
         $this->ai_gemini_model = $g('ai.gemini_model', (string) config('services.gemini.model'));
         $this->ai_grok_key = $g('ai.grok_key');
         $this->ai_grok_model = $g('ai.grok_model', (string) config('services.grok.model'));
+
+        $this->hal_enabled = (bool) Settings::get('hal.enabled', (bool) config('services.hal.enabled', false));
     }
 
     public function save(): void
@@ -124,6 +152,7 @@ class Index extends Component
             'ai.gemini_model' => $this->ai_gemini_model,
             'ai.grok_key' => $this->ai_grok_key,
             'ai.grok_model' => $this->ai_grok_model,
+            'hal.enabled' => $this->hal_enabled,
         ]);
 
         session()->flash('ukc_status', 'Réglages enregistrés.');
@@ -149,9 +178,9 @@ class Index extends Component
             Mail::raw('Ceci est un e-mail de test envoyé depuis GESCO.', function ($m) {
                 $m->to($this->test_email)->subject('Test SMTP — GESCO');
             });
-            session()->flash('ukc_status', 'E-mail de test envoyé à ' . $this->test_email . '.');
+            session()->flash('ukc_status', 'E-mail de test envoyé à '.$this->test_email.'.');
         } catch (\Throwable $e) {
-            session()->flash('ukc_error', 'Échec de l’envoi : ' . $e->getMessage());
+            session()->flash('ukc_error', 'Échec de l’envoi : '.$e->getMessage());
         }
     }
 

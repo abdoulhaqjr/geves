@@ -2,27 +2,58 @@
 
 namespace App\Livewire\Account;
 
+use App\Support\HalClient;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 /**
  * Édition du profil du compte participant. L'affiliation est requise pour
- * pouvoir soumettre (cf. Account::canSubmit()).
+ * pouvoir soumettre (cf. Account::canSubmit()). Autocomplétion des affiliations
+ * via HAL/AuréHAL quand le réglage est activé.
  */
 #[Title('Mon profil')]
 class Profile extends Component
 {
     public string $civility = '';
+
     public string $first_name = '';
+
     public string $last_name = '';
+
     public string $grade = '';
+
     public string $phone = '';
+
     public string $affiliation = '';
+
     public string $country = '';
+
     public string $bio = '';
 
     public array $civilities = ['M.', 'Mme', 'Dr', 'Pr'];
+
+    /** Suggestions HAL pour l'affiliation. */
+    public array $halSuggestions = [];
+
+    public function halEnabled(): bool
+    {
+        return HalClient::enabled();
+    }
+
+    /** Autocomplétion de l'affiliation (déclenchée à la frappe). */
+    public function updatedAffiliation(string $value): void
+    {
+        $this->halSuggestions = HalClient::enabled()
+            ? HalClient::searchStructures($value)
+            : [];
+    }
+
+    public function chooseAffiliation(string $label): void
+    {
+        $this->affiliation = $label;
+        $this->halSuggestions = [];
+    }
 
     public function mount(): void
     {

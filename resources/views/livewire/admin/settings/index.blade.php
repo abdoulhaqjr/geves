@@ -145,6 +145,18 @@
             </div>
         </div>
 
+        {{-- Interconnexion HAL --}}
+        <div class="ukc-card" style="margin-bottom:18px;">
+            <h2><x-ukc.icon name="globe" :size="20" /> Interconnexion HAL</h2>
+            <p class="ukc-muted" style="font-size:.88rem;margin:0 0 12px;">
+                Active l’autocomplétion des affiliations depuis le référentiel des structures HAL (AuréHAL),
+                sur le profil des participants. Aucun compte HAL requis pour cette étape.
+            </p>
+            <label style="display:inline-flex;align-items:center;gap:8px;font-size:.95rem;">
+                <input type="checkbox" wire:model="hal_enabled"> Activer l’autocomplétion des affiliations (HAL)
+            </label>
+        </div>
+
         <div class="ukc-form-actions" style="border-top:none;padding-top:0;margin-top:0;">
             <button type="submit" class="ukc-btn ukc-btn--primary" wire:loading.attr="disabled" wire:target="save">
                 <span wire:loading.remove wire:target="save">Enregistrer les réglages</span>
