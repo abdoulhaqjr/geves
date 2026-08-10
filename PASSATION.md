@@ -61,7 +61,7 @@ npm install && npm run build
 
 ### Lancer les tests
 ```bash
-php.bat artisan test           # 78 tests, ~250 assertions (base :memory:)
+php.bat artisan test           # 82 tests, ~266 assertions (base :memory:)
 php.bat artisan test --filter=PaymentTest
 ```
 > ⚠️ Le lanceur affiche une sortie **JSON compacte** (plugin `laravel/pao`) — pas la trace complète. Pour déboguer une exception dans un test, capter l'exception dans le test (try/catch + `fwrite(STDERR, …)`), ou utiliser `->assertOk()`/dumps ciblés. `vendor/bin/phpunit` **ne fonctionne pas** (Pest requis).
@@ -167,7 +167,9 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 13. **Réglages back-office** — table `settings` (clé/valeur JSON) + `App\Support\Settings` (caché) ; `AppServiceProvider::applySettingsToConfig()` applique au boot (mail SMTP, `services.cashpay/fedapay`, `payments.default`) en repli sur `.env`. `Admin\Settings\Index` (Général, SMTP + e-mail de test, Paiement + identifiants). *(commit `6a249c6`)*
 14. **Espace participant enrichi** — dashboard : stepper (participation/attestation dérivées), blocs **Mes communications**, **Paiements & reçus**, **Mes attestations** (téléchargement par UUID) ; reçu participant `Account\ReceiptController` (`/mon-compte/recu/{payment}`, contrôle de propriété). *(commit `6a249c6`)*
 
-**État git** : `…`, `502a78f` (programme public), `6a249c6` (réglages + espace participant). Arbre propre. **78 tests verts**.
+15. **Page publique enrichie** (Modules 15, 20, 21) — comités (groupés par rôle), partenaires (logos par niveau), FAQ (accordéon), **compte à rebours** dans le hero (Alpine `ukcCountdown` dans `resources/js/app.js`). Gérés depuis le formulaire d'édition (comités = table `committee_members` sync ; partenaires/FAQ = `settings`). *(commit `d55865c`)*
+
+**État git** : `…`, `502a78f` (programme public), `6a249c6` (réglages + espace participant), `d55865c` (page publique enrichie). Arbre propre. **82 tests verts**.
 
 ---
 
@@ -180,7 +182,7 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 ### Ensuite
 3. **E-mails** (Modules 7, 11) — SMTP réel (Réglages), e-mails programmés (rappels à une audience via une commande planifiée). Le journal `emails` et les Mailables existent déjà.
 4. **Rapports** (Module 9) — export Excel (.xlsx) multi-feuilles + PDF. (envisager `maatwebsite/excel` ou un générateur maison.)
-5. **Page publique enrichie** — programme, comités, partenaires, FAQ, contact, hero avec compte à rebours (Modules 15, 20, 21) — d'après `gesco-mockup/` et le plugin WP.
+5. **Page publique — finitions** — formulaire de contact anti-spam, hero photo/vidéo, scrollspy / menu sticky, bannière promo (Modules 20, 21) — comités/partenaires/FAQ/countdown sont faits (module 15).
 6. **Documents de l'édition côté participant** — exposer le livret / médias de l'édition dans l'espace participant (les blocs communications/paiements/attestations sont faits, module 14).
 7. **Back-office Participants** — « Sa page » (impersonation lecture seule), rôles pleinement dérivés inter-éditions (aujourd'hui : rôle stocké par participation).
 
