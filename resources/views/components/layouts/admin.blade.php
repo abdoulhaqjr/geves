@@ -34,6 +34,10 @@
                    @class(['active' => request()->routeIs('admin.emails.*')])>
                     <x-ukc.icon name="mail" :size="18" /> E-mails
                 </a>
+                <a href="{{ route('admin.reports.index') }}" wire:navigate
+                   @class(['active' => request()->routeIs('admin.reports.*')])>
+                    <x-ukc.icon name="chart" :size="18" /> Rapports
+                </a>
 
                 <span class="nav-label">Programme</span>
                 <a href="{{ route('admin.program.sessions') }}" wire:navigate

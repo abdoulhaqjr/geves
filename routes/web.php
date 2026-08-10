@@ -5,6 +5,7 @@ use App\Http\Controllers\Account\LogoutController;
 use App\Http\Controllers\Admin\DocumentController;
 use App\Http\Controllers\Admin\LogoutController as AdminLogoutController;
 use App\Http\Controllers\Admin\ReceiptController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\AttestationController;
 use App\Http\Controllers\PaymentController;
 use App\Livewire\Account\Payment\Pay as AccountPay;
@@ -24,6 +25,7 @@ use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\Editions\Form as EditionForm;
 use App\Livewire\Admin\Editions\Index as EditionIndex;
 use App\Livewire\Admin\Emails\Index as AdminEmailIndex;
+use App\Livewire\Admin\Reports\Index as AdminReportIndex;
 use App\Livewire\Admin\Login as AdminLogin;
 use App\Livewire\Admin\Participants\Index as AdminParticipantIndex;
 use App\Livewire\Admin\Payments\Index as AdminPaymentIndex;
@@ -116,6 +118,10 @@ Route::prefix('admin')->group(function () {
         Route::get('/participants', AdminParticipantIndex::class)->name('admin.participants.index');
 
         Route::get('/emails', AdminEmailIndex::class)->name('admin.emails.index');
+
+        Route::get('/rapports', AdminReportIndex::class)->name('admin.reports.index');
+        Route::get('/rapports/{edition}/excel', [ReportController::class, 'xlsx'])->name('admin.reports.xlsx');
+        Route::get('/rapports/{edition}/pdf', [ReportController::class, 'pdf'])->name('admin.reports.pdf');
 
         Route::get('/programme', AdminProgramSessions::class)->name('admin.program.sessions');
         Route::get('/programme/creneaux', AdminProgramSlots::class)->name('admin.program.slots');
