@@ -3,6 +3,7 @@
 use App\Http\Controllers\Account\EmailVerificationController;
 use App\Http\Controllers\Account\LogoutController;
 use App\Http\Controllers\Admin\DocumentController;
+use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\LogoutController as AdminLogoutController;
 use App\Http\Controllers\Admin\ReceiptController;
 use App\Http\Controllers\Admin\ReportController;
@@ -99,6 +100,9 @@ Route::middleware('auth:account')->group(function () {
         ->name('account.verification.verify');
 
     Route::post('/deconnexion', LogoutController::class)->name('account.logout');
+
+    // Quitter l'impersonation (le staff redevient lui-même).
+    Route::post('/impersonation/quitter', [ImpersonationController::class, 'leave'])->name('impersonation.leave');
 });
 
 /*
@@ -129,6 +133,7 @@ Route::prefix('admin')->group(function () {
 
         Route::get('/participants', AdminParticipantIndex::class)->name('admin.participants.index');
         Route::get('/participants/{participant}/apercu', AdminParticipantPreview::class)->name('admin.participants.preview');
+        Route::post('/participants/{participant}/impersonate', [ImpersonationController::class, 'take'])->name('admin.participants.impersonate');
 
         Route::get('/emails', AdminEmailIndex::class)->name('admin.emails.index');
         Route::get('/emails/modeles', AdminEmailTemplates::class)->name('admin.emails.templates');

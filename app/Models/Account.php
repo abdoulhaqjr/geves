@@ -7,15 +7,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Lab404\Impersonate\Models\Impersonate;
 
 /**
  * Compte participant : authentification propre à la plateforme (guard
  * « account »), distincte du back-office (guard « web » / {@see User}). Un
- * compte global par personne, valable pour toutes les éditions.
+ * compte global par personne, valable pour toutes les éditions. Peut être
+ * impersonifié par le staff (assistance).
  */
 class Account extends Authenticatable implements MustVerifyEmail
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Impersonate, Notifiable;
 
     protected $guarded = ['id'];
 

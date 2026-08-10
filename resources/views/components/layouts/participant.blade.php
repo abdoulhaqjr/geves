@@ -56,6 +56,22 @@
             </header>
 
             <main class="ukc-content">
+                @if (app('impersonate')->isImpersonating())
+                    <div style="background:#fef3c7;border:1px solid #f59e0b;color:#92400e;border-radius:12px;
+                                padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;
+                                justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                        <span style="display:inline-flex;align-items:center;gap:8px;font-weight:600;">
+                            <x-ukc.icon name="eye" :size="16" />
+                            Impersonation en cours — vous agissez en tant que {{ $account?->full_name }}.
+                        </span>
+                        <form method="POST" action="{{ route('impersonation.leave') }}">
+                            @csrf
+                            <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+                                <x-ukc.icon name="logout" :size="14" /> Quitter l’impersonation
+                            </button>
+                        </form>
+                    </div>
+                @endif
                 @if (session('ukc_status'))
                     <div class="ukc-alert ukc-alert--ok">
                         <span class="ico"><x-ukc.icon name="check-circle" :size="18" /></span>

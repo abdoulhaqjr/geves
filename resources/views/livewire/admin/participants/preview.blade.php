@@ -4,7 +4,18 @@
         <span class="ico"><x-ukc.icon name="eye" :size="18" /></span>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;width:100%;">
             <div>Aperçu de l’espace de <strong>{{ $participant->full_name }}</strong> — lecture seule.</div>
-            <a href="{{ route('admin.participants.index') }}" wire:navigate class="ukc-btn ukc-btn--ghost ukc-btn--sm">← Participants</a>
+            <div style="display:flex;gap:8px;">
+                @if ($participant->account)
+                    <form method="POST" action="{{ route('admin.participants.impersonate', $participant) }}">
+                        @csrf
+                        <button type="submit" class="ukc-btn ukc-btn--primary ukc-btn--sm"
+                                onclick="return confirm('Se connecter en tant que {{ $participant->full_name }} ? Vous verrez et agirez dans son espace jusqu’à ce que vous quittiez l’impersonation.')">
+                            <x-ukc.icon name="login" :size="14" /> Se connecter en tant que
+                        </button>
+                    </form>
+                @endif
+                <a href="{{ route('admin.participants.index') }}" wire:navigate class="ukc-btn ukc-btn--ghost ukc-btn--sm">← Participants</a>
+            </div>
         </div>
     </div>
 
