@@ -40,6 +40,12 @@ class Index extends Component
     public string $fedapay_mode = 'test';
     public string $fedapay_webhook_secret = '';
 
+    // Intelligence artificielle
+    public string $ai_default = 'claude';
+    public string $ai_openai_key = '';
+    public string $ai_anthropic_key = '';
+    public string $ai_gemini_key = '';
+
     public function mount(): void
     {
         $g = fn (string $k, $def = '') => (string) Settings::get($k, $def);
@@ -63,6 +69,11 @@ class Index extends Component
         $this->fedapay_secret = $g('fedapay.secret');
         $this->fedapay_mode = $g('fedapay.mode', 'test');
         $this->fedapay_webhook_secret = $g('fedapay.webhook_secret');
+
+        $this->ai_default = $g('ai.default', (string) config('services.ai.default', 'claude'));
+        $this->ai_openai_key = $g('ai.openai_key');
+        $this->ai_anthropic_key = $g('ai.anthropic_key');
+        $this->ai_gemini_key = $g('ai.gemini_key');
     }
 
     public function save(): void
@@ -72,6 +83,7 @@ class Index extends Component
             'mail_port' => ['nullable', 'integer'],
             'payments_default' => ['required', 'in:manual,cashpay,fedapay'],
             'fedapay_mode' => ['required', 'in:test,live'],
+            'ai_default' => ['required', 'in:openai,claude,gemini'],
             'test_email' => ['nullable', 'email'],
         ]);
 
@@ -93,6 +105,10 @@ class Index extends Component
             'fedapay.secret' => $this->fedapay_secret,
             'fedapay.mode' => $this->fedapay_mode,
             'fedapay.webhook_secret' => $this->fedapay_webhook_secret,
+            'ai.default' => $this->ai_default,
+            'ai.openai_key' => $this->ai_openai_key,
+            'ai.anthropic_key' => $this->ai_anthropic_key,
+            'ai.gemini_key' => $this->ai_gemini_key,
         ]);
 
         session()->flash('ukc_status', 'Réglages enregistrés.');

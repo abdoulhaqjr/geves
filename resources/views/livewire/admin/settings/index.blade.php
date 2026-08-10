@@ -104,6 +104,30 @@
             </div>
         </div>
 
+        {{-- Intelligence artificielle --}}
+        <div class="ukc-card" style="margin-bottom:18px;">
+            <h2><x-ukc.icon name="sparkles" :size="20" /> Intelligence artificielle</h2>
+            <p style="font-size:.88rem;color:var(--ukc-muted);margin-bottom:12px;">
+                Utilisée pour le paramétrage assisté d’une édition et la génération de modèles (badges, attestations).
+                Les clés sont facultatives ; renseignez au moins le fournisseur par défaut.
+            </p>
+            <div class="ukc-form-grid">
+                <div class="ukc-field full">
+                    <label for="ai_default">Fournisseur par défaut</label>
+                    <select id="ai_default" wire:model="ai_default">
+                        <option value="claude">Claude (Anthropic)</option>
+                        <option value="openai">OpenAI</option>
+                        <option value="gemini">Gemini (Google)</option>
+                    </select>
+                    <span class="hint">Repli automatique sur un autre fournisseur configuré si nécessaire.</span>
+                    @error('ai_default') <span class="error">{{ $message }}</span> @enderror
+                </div>
+                <div class="ukc-field"><label for="ai_anthropic_key">Clé Claude (Anthropic)</label><input type="password" id="ai_anthropic_key" wire:model="ai_anthropic_key" autocomplete="new-password"></div>
+                <div class="ukc-field"><label for="ai_openai_key">Clé OpenAI</label><input type="password" id="ai_openai_key" wire:model="ai_openai_key" autocomplete="new-password"></div>
+                <div class="ukc-field"><label for="ai_gemini_key">Clé Gemini (Google)</label><input type="password" id="ai_gemini_key" wire:model="ai_gemini_key" autocomplete="new-password"></div>
+            </div>
+        </div>
+
         <div class="ukc-form-actions" style="border-top:none;padding-top:0;margin-top:0;">
             <button type="submit" class="ukc-btn ukc-btn--primary" wire:loading.attr="disabled" wire:target="save">
                 <span wire:loading.remove wire:target="save">Enregistrer les réglages</span>

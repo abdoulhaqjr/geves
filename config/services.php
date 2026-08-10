@@ -53,4 +53,18 @@ return [
         'webhook_secret' => env('FEDAPAY_WEBHOOK_SECRET'),
     ],
 
+    // Fournisseurs d'IA (paramétrage assisté, génération badges/attestations à venir).
+    'openai' => [
+        'key' => env('OPENAI_API_KEY'),
+    ],
+    'anthropic' => [
+        'key' => env('ANTHROPIC_API_KEY'),
+    ],
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+    ],
+    'ai' => [
+        'default' => env('AI_PROVIDER', 'claude'), // openai | claude | gemini
+    ],
+
 ];

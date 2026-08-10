@@ -84,5 +84,13 @@ class AppServiceProvider extends ServiceProvider
                 Config::set("services.fedapay.$k", $set("fedapay.$k"));
             }
         }
+
+        // Fournisseurs d'IA
+        foreach (['openai' => 'openai_key', 'anthropic' => 'anthropic_key', 'gemini' => 'gemini_key'] as $svc => $key) {
+            if (filled($set("ai.$key"))) {
+                Config::set("services.$svc.key", $set("ai.$key"));
+            }
+        }
+        Config::set('services.ai.default', $set('ai.default', config('services.ai.default')));
     }
 }

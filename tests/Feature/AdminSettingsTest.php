@@ -23,12 +23,16 @@ it('enregistre les réglages', function () {
         ->set('from_address', 'colloques@univkara.tg')
         ->set('payments_default', 'cashpay')
         ->set('mail_host', 'smtp.univkara.tg')
+        ->set('ai_default', 'openai')
+        ->set('ai_anthropic_key', 'sk-ant-xyz')
         ->call('save')
         ->assertHasNoErrors();
 
     expect(Settings::get('mail.from_name'))->toBe('Colloques UK');
     expect(Settings::get('payments.default'))->toBe('cashpay');
     expect(Settings::get('mail.host'))->toBe('smtp.univkara.tg');
+    expect(Settings::get('ai.default'))->toBe('openai');
+    expect(Settings::get('ai.anthropic_key'))->toBe('sk-ant-xyz');
 });
 
 it('applique les réglages à la configuration au boot', function () {
@@ -38,6 +42,8 @@ it('applique les réglages à la configuration au boot', function () {
         'mail.host' => 'smtp.test.tg',
         'mail.port' => '465',
         'cashpay.username' => 'user.demo',
+        'ai.default' => 'gemini',
+        'ai.anthropic_key' => 'sk-ant-abc',
     ]);
 
     // Invoque la logique d'application (méthode protégée du provider).
@@ -49,6 +55,8 @@ it('applique les réglages à la configuration au boot', function () {
     expect(config('mail.default'))->toBe('smtp');
     expect(config('mail.mailers.smtp.host'))->toBe('smtp.test.tg');
     expect(config('services.cashpay.username'))->toBe('user.demo');
+    expect(config('services.ai.default'))->toBe('gemini');
+    expect(config('services.anthropic.key'))->toBe('sk-ant-abc');
 });
 
 it('envoie un e-mail de test sans erreur', function () {
