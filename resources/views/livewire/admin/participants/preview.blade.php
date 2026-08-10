@@ -22,6 +22,12 @@
                         <span class="ukc-pill ukc-pill--ok" style="margin-left:2px;">Compte lié</span>
                     @endif
                 </div>
+                @if (count($derivedRoles))
+                    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;">
+                        <span class="ukc-muted" style="font-size:.8rem;">Rôles (toutes éditions) :</span>
+                        @foreach ($derivedRoles as $r)<span class="ukc-pill ukc-pill--muted">{{ $r }}</span>@endforeach
+                    </div>
+                @endif
                 <div style="font-size:.88rem;color:var(--ukc-muted);">
                     {{ $participant->email }}
                     @if ($participant->title) — {{ $participant->title }} @endif

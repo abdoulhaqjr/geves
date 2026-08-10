@@ -7,6 +7,7 @@ use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Models\Submission;
+use App\Support\AccountActivity;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -23,6 +24,9 @@ class Dashboard extends Component
         $account = Auth::guard('account')->user();
 
         $participantIds = Participant::where('account_id', $account->id)->pluck('id');
+
+        // Rôles et activité dérivés (inter-éditions, par rapprochement d'e-mail).
+        $activity = new AccountActivity($account);
 
         // Éditions auxquelles le compte participe → leurs documents (médias + livret).
         $editionIds = Participant::where('account_id', $account->id)
@@ -62,6 +66,10 @@ class Dashboard extends Component
             'attestations' => Attestation::whereIn('participant_id', $participantIds)
                 ->where('revoked', false)->with('edition')->latest('id')->get(),
             'editionDocuments' => $editionDocuments,
+            'roles' => $activity->roles(),
+            'moderatedSessions' => $activity->moderatedSessions(),
+            'reportedSessions' => $activity->reportedSessions(),
+            'committees' => $activity->committees(),
         ])->layout('components.layouts.participant', ['title' => 'Tableau de bord']);
     }
 }

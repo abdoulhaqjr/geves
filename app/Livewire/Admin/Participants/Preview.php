@@ -6,6 +6,7 @@ use App\Models\Attestation;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Models\Submission;
+use App\Support\AccountActivity;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -28,12 +29,17 @@ class Preview extends Component
     {
         $id = $this->participant->id;
 
+        $derivedRoles = $this->participant->account
+            ? (new AccountActivity($this->participant->account))->roles()
+            : [];
+
         return view('livewire.admin.participants.preview', [
             'submissions' => Submission::where('participant_id', $id)
                 ->where('revision_of', 0)->latest('id')->get(),
             'payments' => Payment::where('participant_id', $id)->latest('id')->get(),
             'attestations' => Attestation::where('participant_id', $id)
                 ->where('revoked', false)->latest('id')->get(),
+            'derivedRoles' => $derivedRoles,
         ])->layout('components.layouts.admin', ['title' => 'Aperçu — '.$this->participant->full_name]);
     }
 }

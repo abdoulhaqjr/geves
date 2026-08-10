@@ -57,6 +57,49 @@
         <div @class(['ukc-step', 'done' => $attestations->isNotEmpty()])>Attestation</div>
     </div>
 
+    {{-- Mes rôles & activité (dérivés inter-éditions) --}}
+    @if (count($roles) || $moderatedSessions->isNotEmpty() || $reportedSessions->isNotEmpty() || $committees->isNotEmpty())
+        <div class="ukc-card" style="margin-bottom:18px;">
+            <h3><x-ukc.icon name="role" :size="20" /> Mes rôles &amp; activité</h3>
+            @if (count($roles))
+                <div style="display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 6px;">
+                    @foreach ($roles as $role)
+                        <span class="ukc-pill ukc-pill--info">{{ $role }}</span>
+                    @endforeach
+                </div>
+                <p class="ukc-muted" style="font-size:.8rem;margin:0 0 8px;">Rôles dérivés de votre activité sur l’ensemble des éditions.</p>
+            @endif
+
+            @if ($moderatedSessions->isNotEmpty() || $reportedSessions->isNotEmpty())
+                <div style="margin-top:8px;">
+                    @foreach ($moderatedSessions as $s)
+                        <div style="padding:6px 0;font-size:.9rem;border-top:1px solid var(--ukc-border);">
+                            <span class="ukc-pill ukc-pill--muted">Modérateur</span>
+                            {{ $s->label ?: 'Session' }} <span class="ukc-muted">— {{ $s->edition?->title }}</span>
+                        </div>
+                    @endforeach
+                    @foreach ($reportedSessions as $s)
+                        <div style="padding:6px 0;font-size:.9rem;border-top:1px solid var(--ukc-border);">
+                            <span class="ukc-pill ukc-pill--muted">Rapporteur</span>
+                            {{ $s->label ?: 'Session' }} <span class="ukc-muted">— {{ $s->edition?->title }}</span>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
+            @if ($committees->isNotEmpty())
+                <div style="margin-top:8px;">
+                    @foreach ($committees as $c)
+                        <div style="padding:6px 0;font-size:.9rem;border-top:1px solid var(--ukc-border);">
+                            <span class="ukc-pill ukc-pill--muted">Comité</span>
+                            {{ $c->person_title ?: 'Membre' }} <span class="ukc-muted">— {{ $c->edition?->title }}</span>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+    @endif
+
     @if ($payableEdition)
         <div class="ukc-card" style="text-align:center;background:linear-gradient(135deg,rgba(0,153,51,.08),rgba(34,62,164,.06));margin-bottom:18px;">
             <h3 style="justify-content:center;">Communication acceptée</h3>
