@@ -23,6 +23,7 @@ use App\Livewire\Account\VerifyEmailNotice;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\Editions\Form as EditionForm;
 use App\Livewire\Admin\Editions\Index as EditionIndex;
+use App\Livewire\Admin\Emails\Index as AdminEmailIndex;
 use App\Livewire\Admin\Login as AdminLogin;
 use App\Livewire\Admin\Participants\Index as AdminParticipantIndex;
 use App\Livewire\Admin\Payments\Index as AdminPaymentIndex;
@@ -113,6 +114,8 @@ Route::prefix('admin')->group(function () {
         Route::get('/paiements/{payment}/recu', ReceiptController::class)->name('admin.payments.receipt');
 
         Route::get('/participants', AdminParticipantIndex::class)->name('admin.participants.index');
+
+        Route::get('/emails', AdminEmailIndex::class)->name('admin.emails.index');
 
         Route::get('/programme', AdminProgramSessions::class)->name('admin.program.sessions');
         Route::get('/programme/creneaux', AdminProgramSlots::class)->name('admin.program.slots');

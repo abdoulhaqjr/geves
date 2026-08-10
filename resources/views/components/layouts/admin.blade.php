@@ -30,6 +30,10 @@
                    @class(['active' => request()->routeIs('admin.participants.*')])>
                     <x-ukc.icon name="users" :size="18" /> Participants
                 </a>
+                <a href="{{ route('admin.emails.index') }}" wire:navigate
+                   @class(['active' => request()->routeIs('admin.emails.*')])>
+                    <x-ukc.icon name="mail" :size="18" /> E-mails
+                </a>
 
                 <span class="nav-label">Programme</span>
                 <a href="{{ route('admin.program.sessions') }}" wire:navigate
@@ -56,7 +60,6 @@
                    @class(['active' => request()->routeIs('admin.settings')])>
                     <x-ukc.icon name="settings" :size="18" /> Réglages
                 </a>
-                <a style="opacity:.5;pointer-events:none;"><x-ukc.icon name="award" :size="18" /> Documents</a>
             </nav>
             <div class="ukc-sidebar-foot">
                 <div class="ukc-user-chip">
