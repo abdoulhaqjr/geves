@@ -13,7 +13,7 @@ Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture
 
 - **But** : plateforme professionnelle, autonome (sans WordPress).
 - **Stack** : Laravel 13 (PHP 8.4), **Blade + Livewire 4 + Alpine**, Tailwind v4 (+ design system maison), SQLite en dev, Pest pour les tests.
-- **Périmètre couvert à ce jour** : fondations, comptes participants, back-office éditions, page publique, **soumission**, **relecture**, **resoumission**, **paiement** (voir §6).
+- **Périmètre couvert à ce jour** : fondations, comptes participants, back-office éditions, page publique, **soumission**, **relecture**, **resoumission**, **paiement**, **ateliers/sessions/créneaux**, **participants**, **documents (livret/badges/attestations QR)** (voir §6).
 
 ### Sources de référence (hors dépôt, dans `Downloads/`)
 - `Site Web/uk-colloques/` — **plugin WordPress source** (27 modules, ~19 600 lignes). Référence fonctionnelle.
@@ -61,7 +61,7 @@ npm install && npm run build
 
 ### Lancer les tests
 ```bash
-php.bat artisan test           # 42 tests, ~144 assertions (base :memory:)
+php.bat artisan test           # 56 tests, ~192 assertions (base :memory:)
 php.bat artisan test --filter=PaymentTest
 ```
 > ⚠️ Le lanceur affiche une sortie **JSON compacte** (plugin `laravel/pao`) — pas la trace complète. Pour déboguer une exception dans un test, capter l'exception dans le test (try/catch + `fwrite(STDERR, …)`), ou utiliser `->assertOk()`/dumps ciblés. `vendor/bin/phpunit` **ne fonctionne pas** (Pest requis).
@@ -157,8 +157,11 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 5. **Resoumission / versionnage** (Module 2) — fiche participant `/mes-communications/{submission}` : retour relecteurs (après décision) + resoumission quand `revision`. Une ligne **canonique** (`revision_of=0`) + **archives** (`revision_of=id`), `version++`. *(commit `f83324b`)*
 6. **Relecture / peer review** (Module 3) — assignation depuis la fiche admin (panneau Relecteurs + synthèse note moyenne/recommandations), **portail relecteur en aveugle par jeton** `/relecture/{token}` + évaluation `/relecture/{token}/{review}` (recommandation, note /20, commentaires auteur + confidentiels), invitation par e-mail. *(commit `f83324b`)*
 7. **Paiement** (Modules 4, 12, 17, 18) — encaissement **manuel** back-office (liste + totaux + reçu imprimable + e-mail + marquer réglé/rembourser), parcours **participant** (`/mon-compte/paiement/{edition}`, éligible si communication acceptée, montant du grade), **abstraction passerelle** (manuel actif ; MoneyFusion/FedaPay échafaudées). Garde anti-double-paiement partout. *(commit `f83324b`)*
+8. **Ateliers, sessions & créneaux** (Modules 7, 26) — admin : ateliers (titre + axes), sessions (plénière/atelier, jour/horaire/salle, modérateur/rapporteur), créneaux + assignation des acceptées. Participant : choix d'un créneau libre sur sa fiche. *(commit `0144165`)*
+9. **Back-office Participants** (Modules 5, 27) — liste par édition (rôle, paiement, invité), filtres, invitation individuelle + groupée (payés non invités), `ParticipantInvitationMail`. *(commit `16bedeb`)*
+10. **Documents** (Modules 6, 8, 16, 19) — **attestations vérifiables par QR** (`IssueAttestation` UUID idempotent, émission par type/audience, révocation ; document imprimable avec QR → page publique `/verifier/{uuid}`), **livret** des résumés (par axe) et **badges** (A4, couleur par rôle) imprimables. Lib `simplesoftwareio/simple-qrcode` (SVG). *(commit `1f9d6c0`)*
 
-**État git** : `54263ae` (fondations + éditions + page publique), `cfbcf4c` (soumission liée au compte), `f83324b` (workflow soumissions + resoumission + relecture + paiement). Arbre propre.
+**État git** : `54263ae` (fondations + éditions + page publique), `cfbcf4c` (soumission), `f83324b` (workflow + resoumission + relecture + paiement), `8e49dbe` (passation), `0144165` (ateliers/sessions/créneaux), `16bedeb` (participants), `1f9d6c0` (documents). Arbre propre.
 
 ---
 
@@ -166,16 +169,15 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 
 ### Priorité haute
 1. **Passerelles de paiement en ligne** — implémenter l'appel API réel dans `MoneyFusionGateway`/`FedaPayGateway` (méthodes `initiate()` + vérification au retour + **webhook**). S'active dès que les identifiants sont dans `config/services.php` (env `MONEYFUSION_API_URL`, `FEDAPAY_SECRET`). **Pas de sandbox public** → tester par un vrai paiement de petit montant. S'inspirer de `bizzcart.com` (`app/Services/FinanceAI/Gateways`) et de la passation WP.
-2. **Créneaux & ateliers/sessions** (Modules 7, 26) — proposer/assigner des créneaux aux communications acceptées, choix par le participant, sessions plénières/d'atelier, fiches de session. Tables `slots`, `event_sessions`, `ateliers` déjà prêtes.
-3. **Documents** (Modules 6, 8, 16, 19) — livret des résumés (.docx), badges (planche A4), **attestations vérifiables par QR** (page publique de vérif via `attestations.uuid`). `barryvdh/laravel-dompdf` (utilisé par bizzcart) est un bon candidat pour les PDF.
+2. **Fiches de session imprimables** + affichage public du programme (ateliers/sessions/créneaux) — la donnée est gérée en admin, reste le rendu public (page colloque) et les fiches de session. Livret .docx « vrai » via `phpoffice/phpword` si un format Word éditable est requis (le livret actuel est imprimable HTML → PDF).
 
 ### Ensuite
-4. **Back-office Participants** (Module 5) — liste par édition, rôles dérivés, invitations aux payés, « Sa page » (impersonation lecture seule).
-5. **E-mails** (Modules 7, 11) — SMTP réel (Réglages), e-mails programmés (rappels à une audience via une commande planifiée).
-6. **Rapports** (Module 9) — export Excel (.xlsx) multi-feuilles + PDF. (bizzcart n'a pas d'export xlsx natif ; envisager `maatwebsite/excel` ou un générateur maison.)
-7. **Page publique enrichie** — programme, comités, partenaires, FAQ, contact, hero avec compte à rebours (Modules 15, 20, 21) — d'après `gesco-mockup/` et le plugin WP.
-8. **Espace participant enrichi** — d'après `gesco-mockup/espace-participant.html` (communications, paiements, documents, attestation, stepper).
-9. **Réglages** back-office (SMTP, passerelle par défaut, certifier/attestations) au lieu de tout en `.env`.
+3. **E-mails** (Modules 7, 11) — SMTP réel (Réglages), e-mails programmés (rappels à une audience via une commande planifiée). Le journal `emails` et les Mailables existent déjà.
+4. **Rapports** (Module 9) — export Excel (.xlsx) multi-feuilles + PDF. (envisager `maatwebsite/excel` ou un générateur maison.)
+5. **Page publique enrichie** — programme, comités, partenaires, FAQ, contact, hero avec compte à rebours (Modules 15, 20, 21) — d'après `gesco-mockup/` et le plugin WP.
+6. **Espace participant enrichi** — d'après `gesco-mockup/espace-participant.html` (attestation téléchargeable côté participant, stepper, documents de l'édition).
+7. **Back-office Participants** — « Sa page » (impersonation lecture seule), rôles pleinement dérivés inter-éditions (aujourd'hui : rôle stocké par participation).
+8. **Réglages** back-office (SMTP, passerelle par défaut, certifier/attestations) au lieu de tout en `.env`.
 
 ---
 
@@ -183,6 +185,8 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 
 - **Toolchain Herd** : toujours `export PATH="$HOME/.config/herd/bin:$PATH"` puis `php.bat`/`composer.bat` (§2).
 - **Livewire 4 — méthodes réservées** : ne pas nommer une action `transition` (collision avec `Livewire\Component::transition`). Utiliser un autre nom (ex. `applyStatus`).
+- **Livewire 4 — variable de vue `$slots` réservée** : Livewire injecte `$slots` (slots nommés) dans chaque vue ; ne jamais passer une donnée de vue nommée `slots` (elle est shadowée par un `SlotProxy`). Renommer (ex. `creneaux`). Idem prudence avec d'autres noms magiques.
+- **Colonnes `nullable` avec défaut « 0 » applicatif** : `slots.submission_id`/`participant_id` sont `nullable` mais le code traite « 0 = libre ». À la création d'un créneau, forcer `submission_id => 0` (sinon `null` ≠ `0` et les requêtes `where(...,0)` le manquent) — même piège que `revision_of`.
 - **Livewire 4 — « Invalid snapshot structure » en test** = une exception/`abort()` **avalée pendant le render initial** (le snapshot devient NULL, l'erreur ne remonte qu'au 1ᵉʳ `->set()`/`->call()`). Chercher un `abort_unless` faux dans `mount()`/`render()`, pas le trait `WithFileUploads`. Astuce diagnostic : dumper `$c->html()` et vérifier la présence de `wire:id`.
 - **Modèle fraîchement créé ≠ rechargé** : `Model::create([...])` **ne reflète pas les valeurs par défaut SQL** en mémoire (ex. `revision_of` reste `null`, pas `0`). Une comparaison stricte `=== 0` casse alors. → **caster** (`'revision_of' => 'integer'`) et comparer en `(int)`, ou passer `->fresh()`. (Incident réel corrigé sur la resoumission.)
 - **Composants Livewire = classe** (`--class`), pas les single-file components de Livewire 4 (préfixe emoji `⚡` peu maniable pour l'outillage). Générer avec `php.bat artisan make:livewire Chemin/Nom --class`.
