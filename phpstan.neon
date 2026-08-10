@@ -1,0 +1,19 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    # Dette existante (surtout inférence Eloquent générique et accès aux
+    # tableaux JSON) figée : le CI ne bloque que sur les NOUVELLES erreurs.
+    # À réduire progressivement (annoter les modèles, etc.).
+    - phpstan-baseline.neon
+
+parameters:
+    level: 5
+
+    paths:
+        - app
+
+    ignoreErrors:
+        # Propriétés magiques des composants Livewire (bindings de vue).
+        -
+            identifier: property.notFound
+            paths:
+                - app/Livewire/*
