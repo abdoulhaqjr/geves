@@ -1,7 +1,7 @@
 # Passation — GESCO · Gestion des colloques scientifiques
 
 > Document de passation pour la personne qui reprend le développement.
-> Dernière mise à jour : 2026-08-10 (module 20 : parcours co-auteurs).
+> Dernière mise à jour : 2026-08-10 (module 21 : formulaire de soumission paramétrable).
 
 Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture**, les **conventions**, le **travail réalisé**, ce qui **reste à faire** et les **pièges** à connaître.
 
@@ -173,13 +173,15 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 
 17. **Modèles de badges/attestations + génération IA** (Modules 16, 19) — table `document_templates` (edition, kind badge|attestation, type, layout JSON). `App\Documents\LayoutSanitizer` (validation **déterministe** : bornage, liste blanche, défauts) + `LayoutRenderer` (HTML positionné + variables `{…}` + QR). Action `GenerateDocumentLayout` (l'IA produit **uniquement le JSON**). `Admin\Documents\TemplateDesigner` (génération IA + aperçu live + couleur d'accent + JSON éditable). Rendu branché : attestation + badges utilisent le modèle de l'édition si présent (repli sur le design fixe). *(commit `4a587db`)*
 
+21. **Formulaire de soumission paramétrable** (Module WP 14, adapté archi comptes) — l'identité vient du compte ; le formulaire porte sur titre/axe/type/mots-clés/résumé/fichier/co-auteurs. `App\Support\SubmissionFormConfig` (libellés, aides, requis/activé, bornes résumé min/max, champs personnalisés depuis `settings.submission_form`, défauts alignés). `Admin\Editions\SubmissionFormEditor` (`/admin/editions/{edition}/formulaire`, lien liste éditions) : champs standard + champs personnalisés (texte/texte long/liste/e-mail/nombre/case ; options une par ligne). `Account\Submissions\Create` consomme la config (libellés dynamiques, champs activables, obligatoires configurables, validation `accepted`/`in:`, stockage dans `submission.meta.custom_fields` + affichage fiche admin). *(commit `32a5be5`)*
+
 20. **Parcours co-auteurs** (Modules WP 19-20) — les co-auteurs communiquants règlent leurs frais et deviennent éligibles à l'attestation de communication. `Public\CoauthorPayment` (`/colloque/{slug}/co-auteur`, **public sans compte**) : recherche par e-mail → communications acceptées associées → correction du grade (grille tarifaire) → paiement au tarif du grade via passerelles ; lien pré-rempli `?email=` + entrée discrète sur la page publique (section tarifs). `App\Actions\UpsertCoauthorParticipant` (participant co-auteur par e-mail, identité figée, rôle non rétrogradé, grade corrigeable). `PaymentController::return` branché sur la page publique co-auteur quand `meta.flow=coauthor`. Notification à l'acceptation : `App\Actions\NotifyCoauthorsForPayment` + `CoauthorPaymentInvitationMail` (lien pré-rempli, journalisée `emails`, dédoublonnage), câblée dans `Admin\Submissions\Show::applyStatus('accepted')`. Attestation « communication » : `Attestations::communicantTargets()` inclut les co-auteurs **ayant payé**. *(commit `497bd0a`)*
 
 19. **Rapports xlsx/pdf** (Module 9) — exports par édition en **PHP pur** (aucune dépendance). `App\Support\XlsxWriter` : générateur .xlsx natif (ZipArchive + OOXML SpreadsheetML), multi-feuilles, en-tête gras, cellules texte (`inlineStr`) / numériques (auto), échappement XML, colonnes > Z. `App\Support\EditionReport` : agrégateur unique (synthèse + Participants/Communications/Paiements, note moyenne via `withAvg('reviews','score')`) réutilisé par xlsx/pdf/Livewire. `Admin\ReportController` : `xlsx` (4 feuilles) + `pdf` (HTML imprimable `@media print`). `Admin\Reports\Index` (`/admin/rapports`) : sélecteur édition, tuiles, boutons Excel/PDF ; lien sidebar. *(commit `614d9b4`)*
 
 18. **E-mails programmés** (Modules 7, 11) — campagnes ciblées + rappels planifiés. `App\Support\EmailAudience` (audiences : tous / payés / non réglés / communication acceptée / relecteurs / non invités ; dédoublonnage par e-mail, exclusion des sans-adresse). `App\Mail\CampaignMail` + gabarit `emails.campaign` (sujet/corps libres). Action `QueueEmailCampaign` (une ligne `emails` par destinataire, statut `queued`, sujet/corps personnalisés via `{prenom} {nom} {nom_complet} {edition}`). Action `SendDueEmails` (envoie les `queued` dus `scheduled_at<=now`, marque `sent`/`failed`, **idempotent**). Commande `emails:send` + `Schedule::command('emails:send')->everyMinute()->withoutOverlapping()` (routes/console.php). `Admin\Emails\Index` (`/admin/emails`) : composer (immédiat/programmé), compteur d'audience live, journal filtrable, envoi des dus, annulation. Lien sidebar (remplace le placeholder « Documents » désactivé). *(commit `851cd61`)*
 
-**État git** : `…`, `502a78f`, `6a249c6`, `d55865c`, `51dcd2a`, `0682f9e` (paramétrage assisté IA), `4a587db` (modèles badges/attestations IA), `851cd61` (e-mails programmés), `614d9b4` (rapports xlsx/pdf), `497bd0a` (parcours co-auteurs). Arbre propre. **121 tests verts**.
+**État git** : `…`, `502a78f`, `6a249c6`, `d55865c`, `51dcd2a`, `0682f9e` (paramétrage assisté IA), `4a587db` (modèles badges/attestations IA), `851cd61` (e-mails programmés), `614d9b4` (rapports xlsx/pdf), `497bd0a` (parcours co-auteurs), `32a5be5` (formulaire de soumission paramétrable). Arbre propre. **129 tests verts**.
 
 ---
 
@@ -195,10 +197,10 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 5. **Page publique — finitions** — formulaire de contact anti-spam, hero photo/vidéo, scrollspy / menu sticky, bannière promo (Modules 20, 21) — comités/partenaires/FAQ/countdown sont faits (module 15).
 6. **Documents de l'édition côté participant** — exposer le livret / médias de l'édition dans l'espace participant (les blocs communications/paiements/attestations sont faits, module 14).
 7. **Back-office Participants** — « Sa page » (impersonation lecture seule), rôles pleinement dérivés inter-éditions (aujourd'hui : rôle stocké par participation).
-8. **Formulaire de soumission paramétrable** (module WP 14) — champs configurables par édition, tél. intl, résumé WYSIWYG avec limite, champs custom. Aujourd'hui figé.
+8. ~~**Formulaire de soumission paramétrable** (module WP 14)~~ **fait** (module 21, commit `32a5be5`). Non porté volontairement (widgets front spécifiques WP) : tél. intl-tel-input, résumé WYSIWYG Quill, tags Select2 — le stack GESCO reste en champs simples.
 9. **HAL** — autocomplétion des affiliations (AuréHAL) + dépôt SWORD (module WP hors-numéro). Non porté.
 
-> **Comparaison WP↔GESCO (27 modules)** faite le 2026-08-10. Couverts en plus depuis : e-mails programmés (18), rapports xlsx/pdf (19), **parcours co-auteurs (20)**. Restent surtout : formulaire de soumission paramétrable, HAL, finitions page publique (contact anti-spam, hero média, scrollspy), « Sa page » (impersonation), modèles d'e-mails éditables, rôles agrégés inter-éditions.
+> **Comparaison WP↔GESCO (27 modules)** faite le 2026-08-10. Couverts en plus depuis : e-mails programmés (18), rapports xlsx/pdf (19), parcours co-auteurs (20), **formulaire de soumission paramétrable (21)**. Restent surtout : HAL, finitions page publique (contact anti-spam, hero média, scrollspy), « Sa page » (impersonation), modèles d'e-mails éditables, rôles agrégés inter-éditions.
 
 ---
 
