@@ -44,6 +44,8 @@ class ColloquePage extends Component
             'contact' => $settings['contact'] ?? [],
             'heroImage' => $settings['hero_image'] ?? null,
             'heroVideo' => $settings['hero_video'] ?? null,
+            'promo' => $settings['promo'] ?? [],
+            'practical' => $settings['practical'] ?? [],
             'plenaries' => $this->edition->sessions()->where('type', 'plenary')->orderBy('ordre')->orderBy('starts_at')->get(),
             'ateliers' => $this->edition->ateliers()->with(['sessions' => fn ($q) => $q->orderBy('ordre')])->orderBy('ordre')->get(),
             'commsBySession' => $commsBySession,

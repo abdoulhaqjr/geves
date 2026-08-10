@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\Admin\Editions\Form;
 use App\Livewire\Admin\Participants\Preview;
 use App\Livewire\Public\ColloquePage;
 use App\Livewire\Public\ContactForm;
@@ -84,6 +85,49 @@ it('affiche la section contact et le formulaire sur la page publique', function 
         ->assertSee('Contact')
         ->assertSee('+228 90 00 00 00')
         ->assertSee('Envoyer le message');
+});
+
+it('affiche la bannière promo quand elle est renseignée', function () {
+    $edition = openEdition(['promo' => ['text' => 'Early-bird jusqu’au 30 septembre', 'url' => 'https://uk.tg/promo', 'cta' => 'En profiter']]);
+
+    Livewire::test(ColloquePage::class, ['slug' => $edition->slug])
+        ->assertSee('Early-bird jusqu’au 30 septembre')
+        ->assertSee('En profiter');
+});
+
+it('masque la bannière promo sans texte', function () {
+    $edition = openEdition();
+
+    Livewire::test(ColloquePage::class, ['slug' => $edition->slug])
+        ->assertDontSee('En profiter');
+});
+
+it('affiche la section infos pratiques', function () {
+    $edition = openEdition(['practical' => [
+        'venue' => 'Campus de Kara, amphi A',
+        'transport' => 'Navettes depuis l’aéroport',
+    ]]);
+
+    Livewire::test(ColloquePage::class, ['slug' => $edition->slug])
+        ->assertSee('Infos pratiques')
+        ->assertSee('Campus de Kara, amphi A')
+        ->assertSee('Navettes depuis l’aéroport');
+});
+
+it('enregistre promo et infos pratiques depuis le formulaire d’édition', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+
+    Livewire::actingAs($staff, 'web')
+        ->test(Form::class, ['edition' => $edition])
+        ->set('promo_text', 'Inscriptions ouvertes')
+        ->set('practical_venue', 'Université de Kara')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $settings = $edition->fresh()->settings;
+    expect($settings['promo']['text'])->toBe('Inscriptions ouvertes');
+    expect($settings['practical']['venue'])->toBe('Université de Kara');
 });
 
 it('affiche « Sa page » d’un participant en lecture seule', function () {

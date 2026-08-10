@@ -191,6 +191,44 @@
                 </div>
             </div>
 
+            {{-- Bannière promo --}}
+            <div class="ukc-form-grid" style="margin-top:8px;">
+                <div class="ukc-field full">
+                    <label for="promo_text">Bannière promo <span class="hint">(texte affiché en haut de la page ; vide = masquée)</span></label>
+                    <input type="text" id="promo_text" wire:model="promo_text" placeholder="Inscriptions early-bird jusqu’au 30 septembre !">
+                    @error('promo_text') <span class="error">{{ $message }}</span> @enderror
+                </div>
+                <div class="ukc-field">
+                    <label for="promo_url">Lien de la bannière <span class="hint">(optionnel)</span></label>
+                    <input type="url" id="promo_url" wire:model="promo_url" placeholder="https://…">
+                    @error('promo_url') <span class="error">{{ $message }}</span> @enderror
+                </div>
+                <div class="ukc-field">
+                    <label for="promo_cta">Libellé du bouton <span class="hint">(optionnel)</span></label>
+                    <input type="text" id="promo_cta" wire:model="promo_cta" placeholder="En profiter">
+                    @error('promo_cta') <span class="error">{{ $message }}</span> @enderror
+                </div>
+            </div>
+
+            {{-- Infos pratiques --}}
+            <div class="ukc-form-grid" style="margin-top:8px;">
+                <div class="ukc-field full">
+                    <label for="practical_venue">Infos pratiques — Lieu</label>
+                    <textarea id="practical_venue" wire:model="practical_venue" rows="2" placeholder="Campus de l’Université de Kara, amphi …"></textarea>
+                    @error('practical_venue') <span class="error">{{ $message }}</span> @enderror
+                </div>
+                <div class="ukc-field full">
+                    <label for="practical_accommodation">Infos pratiques — Hébergement</label>
+                    <textarea id="practical_accommodation" wire:model="practical_accommodation" rows="2" placeholder="Hôtels partenaires, tarifs négociés …"></textarea>
+                    @error('practical_accommodation') <span class="error">{{ $message }}</span> @enderror
+                </div>
+                <div class="ukc-field full">
+                    <label for="practical_transport">Infos pratiques — Transport</label>
+                    <textarea id="practical_transport" wire:model="practical_transport" rows="2" placeholder="Aéroport, navettes, accès routier …"></textarea>
+                    @error('practical_transport') <span class="error">{{ $message }}</span> @enderror
+                </div>
+            </div>
+
             {{-- Frais --}}
             <div style="margin-top:8px;">
                 <label style="font-size:13px;font-weight:600;">Frais d’inscription (FCFA)</label>

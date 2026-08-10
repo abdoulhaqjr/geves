@@ -15,6 +15,20 @@
         }
     @endphp
 
+    {{-- Bannière promo --}}
+    @if (! empty($promo['text']))
+        <div style="background:var(--ukc-gold);color:var(--ukc-blue-dark);font-weight:700;text-align:center;
+                    padding:10px 16px;font-size:.92rem;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;">
+            <span>{{ $promo['text'] }}</span>
+            @if (! empty($promo['url']))
+                <a href="{{ $promo['url'] }}" target="_blank" rel="noopener"
+                   style="background:var(--ukc-blue);color:#fff;padding:5px 14px;border-radius:999px;font-size:.85rem;white-space:nowrap;">
+                    {{ $promo['cta'] ?: 'En savoir plus' }}
+                </a>
+            @endif
+        </div>
+    @endif
+
     {{-- Barre de navigation --}}
     <header style="position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid var(--ukc-border);">
         <div style="height:3px;display:flex;">
@@ -39,6 +53,9 @@
                 @endif
                 @if (count($faq))
                     <a href="#faq" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">FAQ</a>
+                @endif
+                @if (! empty($practical['venue']) || ! empty($practical['accommodation']) || ! empty($practical['transport']))
+                    <a href="#infos" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">Infos pratiques</a>
                 @endif
                 <a href="#contact" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">Contact</a>
                 <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--primary ukc-btn--sm">Espace participant</a>
@@ -273,6 +290,30 @@
                             <p style="color:var(--ukc-muted);line-height:1.6;margin-top:8px;white-space:pre-line;">{{ $item['answer'] }}</p>
                         </details>
                     @endforeach
+                </section>
+            @endif
+
+            {{-- Infos pratiques --}}
+            @if (! empty($practical['venue']) || ! empty($practical['accommodation']) || ! empty($practical['transport']))
+                <section id="infos" class="ukc-card">
+                    <h2 style="font-size:1.3rem;font-weight:800;color:var(--ukc-blue);margin-bottom:16px;">Infos pratiques</h2>
+                    <div class="ukc-grid-3" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+                        @php($infos = [
+                            ['pin', 'Lieu', $practical['venue'] ?? null],
+                            ['bed', 'Hébergement', $practical['accommodation'] ?? null],
+                            ['bus', 'Transport', $practical['transport'] ?? null],
+                        ])
+                        @foreach ($infos as [$icon, $label, $value])
+                            @if (! empty($value))
+                                <div style="padding:16px;border:1px solid var(--ukc-border);border-radius:12px;background:#fff;">
+                                    <div style="display:flex;align-items:center;gap:8px;font-weight:700;color:var(--ukc-blue);margin-bottom:8px;">
+                                        <x-ukc.icon :name="$icon" :size="18" /> {{ $label }}
+                                    </div>
+                                    <p style="color:var(--ukc-muted);line-height:1.6;white-space:pre-line;margin:0;font-size:.92rem;">{{ $value }}</p>
+                                </div>
+                            @endif
+                        @endforeach
+                    </div>
                 </section>
             @endif
 

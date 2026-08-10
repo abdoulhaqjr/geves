@@ -83,6 +83,19 @@ class Form extends Component
 
     public string $contact_address = '';
 
+    // Bannière promo + infos pratiques (page publique)
+    public string $promo_text = '';
+
+    public string $promo_url = '';
+
+    public string $promo_cta = '';
+
+    public string $practical_venue = '';
+
+    public string $practical_accommodation = '';
+
+    public string $practical_transport = '';
+
     /** Rôles de comité. */
     public array $committeeRoles = [
         'organisation' => 'Comité d’organisation',
@@ -128,6 +141,12 @@ class Form extends Component
         $this->contact_email = (string) ($settings['contact']['email'] ?? '');
         $this->contact_phone = (string) ($settings['contact']['phone'] ?? '');
         $this->contact_address = (string) ($settings['contact']['address'] ?? '');
+        $this->promo_text = (string) ($settings['promo']['text'] ?? '');
+        $this->promo_url = (string) ($settings['promo']['url'] ?? '');
+        $this->promo_cta = (string) ($settings['promo']['cta'] ?? '');
+        $this->practical_venue = (string) ($settings['practical']['venue'] ?? '');
+        $this->practical_accommodation = (string) ($settings['practical']['accommodation'] ?? '');
+        $this->practical_transport = (string) ($settings['practical']['transport'] ?? '');
 
         $this->committees = $e->committeeMembers()
             ->orderBy('ordre')
@@ -302,6 +321,12 @@ class Form extends Component
             'contact_email' => ['nullable', 'email', 'max:200'],
             'contact_phone' => ['nullable', 'string', 'max:60'],
             'contact_address' => ['nullable', 'string', 'max:300'],
+            'promo_text' => ['nullable', 'string', 'max:200'],
+            'promo_url' => ['nullable', 'string', 'max:500'],
+            'promo_cta' => ['nullable', 'string', 'max:60'],
+            'practical_venue' => ['nullable', 'string', 'max:2000'],
+            'practical_accommodation' => ['nullable', 'string', 'max:2000'],
+            'practical_transport' => ['nullable', 'string', 'max:2000'],
         ];
     }
 
@@ -373,6 +398,16 @@ class Form extends Component
                     'email' => $this->contact_email ?: null,
                     'phone' => $this->contact_phone ?: null,
                     'address' => $this->contact_address ?: null,
+                ],
+                'promo' => [
+                    'text' => $this->promo_text ?: null,
+                    'url' => $this->promo_url ?: null,
+                    'cta' => $this->promo_cta ?: null,
+                ],
+                'practical' => [
+                    'venue' => $this->practical_venue ?: null,
+                    'accommodation' => $this->practical_accommodation ?: null,
+                    'transport' => $this->practical_transport ?: null,
                 ],
             ]),
         ];
