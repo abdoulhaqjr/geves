@@ -61,7 +61,7 @@ npm install && npm run build
 
 ### Lancer les tests
 ```bash
-php.bat artisan test           # 82 tests, ~266 assertions (base :memory:)
+php.bat artisan test           # 86 tests, ~291 assertions (base :memory:)
 php.bat artisan test --filter=PaymentTest
 ```
 > ⚠️ Le lanceur affiche une sortie **JSON compacte** (plugin `laravel/pao`) — pas la trace complète. Pour déboguer une exception dans un test, capter l'exception dans le test (try/catch + `fwrite(STDERR, …)`), ou utiliser `->assertOk()`/dumps ciblés. `vendor/bin/phpunit` **ne fonctionne pas** (Pest requis).
@@ -169,7 +169,9 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 
 15. **Page publique enrichie** (Modules 15, 20, 21) — comités (groupés par rôle), partenaires (logos par niveau), FAQ (accordéon), **compte à rebours** dans le hero (Alpine `ukcCountdown` dans `resources/js/app.js`). Gérés depuis le formulaire d'édition (comités = table `committee_members` sync ; partenaires/FAQ = `settings`). *(commit `d55865c`)*
 
-**État git** : `…`, `502a78f` (programme public), `6a249c6` (réglages + espace participant), `d55865c` (page publique enrichie). Arbre propre. **82 tests verts**.
+16. **Paramétrage assisté d'édition par IA** (Modules 22, 23) — couche `App\AI` : contrat `AiProvider` (extract multimodal), providers Anthropic/OpenAI/Grok/Gemini (lisent `services.<provider>.key/.model`), `AiManager` (résolution défaut + repli + préférence PDF), parsing JSON robuste. Action `ExtractEditionFromDocuments` (instruction + schéma → normalisation). Carte « Paramétrage assisté (IA) » sur le formulaire d'édition : upload PDF/images → pré-remplissage des champs trouvés (révisable). *(commit `0682f9e`)*
+
+**État git** : `…`, `502a78f`, `6a249c6`, `d55865c`, `51dcd2a` (réglages IA Grok+modèles), `0682f9e` (paramétrage assisté IA). Arbre propre. **86 tests verts**.
 
 ---
 
