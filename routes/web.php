@@ -25,6 +25,7 @@ use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\Editions\Form as EditionForm;
 use App\Livewire\Admin\Editions\Index as EditionIndex;
 use App\Livewire\Admin\Editions\SubmissionFormEditor;
+use App\Livewire\Admin\Editions\Documents as AdminEditionDocuments;
 use App\Livewire\Admin\Emails\Index as AdminEmailIndex;
 use App\Livewire\Admin\Reports\Index as AdminReportIndex;
 use App\Livewire\Admin\Login as AdminLogin;
@@ -87,6 +88,7 @@ Route::middleware('auth:account')->group(function () {
     // Paiement des frais
     Route::get('/mon-compte/paiement/{edition}', AccountPay::class)->name('account.payment');
     Route::get('/mon-compte/recu/{payment}', \App\Http\Controllers\Account\ReceiptController::class)->name('account.receipt');
+    Route::get('/mon-compte/edition/{edition}/livret', [\App\Http\Controllers\Account\DocumentController::class, 'livret'])->name('account.documents.livret');
 
     // Vérification d'e-mail
     Route::get('/verification-email', VerifyEmailNotice::class)->name('account.verification.notice');
@@ -114,6 +116,7 @@ Route::prefix('admin')->group(function () {
         Route::get('/editions/creer', EditionForm::class)->name('admin.editions.create');
         Route::get('/editions/{edition}/modifier', EditionForm::class)->name('admin.editions.edit');
         Route::get('/editions/{edition}/formulaire', SubmissionFormEditor::class)->name('admin.editions.form');
+        Route::get('/editions/{edition}/documents', AdminEditionDocuments::class)->name('admin.editions.documents');
 
         Route::get('/soumissions', AdminSubmissionIndex::class)->name('admin.submissions.index');
         Route::get('/soumissions/{submission}', AdminSubmissionShow::class)->name('admin.submissions.show');

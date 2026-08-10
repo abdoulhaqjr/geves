@@ -146,4 +146,29 @@
             </a>
         </div>
     @endif
+
+    {{-- Documents de mes éditions --}}
+    @if ($editionDocuments->isNotEmpty())
+        <div class="ukc-card" style="margin-top:18px;">
+            <h3><x-ukc.icon name="folder" :size="20" /> Documents de mes éditions</h3>
+            @foreach ($editionDocuments as $doc)
+                <div style="padding:12px 0;border-top:1px solid var(--ukc-border);">
+                    <div style="font-weight:700;margin-bottom:8px;">{{ $doc['edition']->title ?: $doc['edition']->year }}</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                        @if ($doc['hasBooklet'])
+                            <a href="{{ route('account.documents.livret', $doc['edition']) }}" target="_blank"
+                               class="ukc-btn ukc-btn--outline ukc-btn--sm">
+                                <x-ukc.icon name="book" :size="14" /> Livret des résumés
+                            </a>
+                        @endif
+                        @foreach ($doc['media'] as $m)
+                            <a href="{{ $m->url }}" target="_blank" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
+                                <x-ukc.icon name="file" :size="14" /> {{ $m->title ?: $m->typeLabel() }}
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    @endif
 </div>

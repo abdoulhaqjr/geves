@@ -24,6 +24,23 @@ class Dashboard extends Component
 
         $participantIds = Participant::where('account_id', $account->id)->pluck('id');
 
+        // Éditions auxquelles le compte participe → leurs documents (médias + livret).
+        $editionIds = Participant::where('account_id', $account->id)
+            ->pluck('edition_id')->unique()->filter();
+
+        $editionDocuments = Edition::whereIn('id', $editionIds)
+            ->with(['media' => fn ($q) => $q->orderBy('ordre')->orderBy('id')])
+            ->latest('id')
+            ->get()
+            ->map(fn (Edition $e) => [
+                'edition' => $e,
+                'media' => $e->media,
+                'hasBooklet' => $e->submissions()
+                    ->where('revision_of', 0)->where('status', 'accepted')->exists(),
+            ])
+            ->filter(fn ($d) => $d['media']->isNotEmpty() || $d['hasBooklet'])
+            ->values();
+
         // Édition où une communication est acceptée et les frais non encore réglés.
         $payable = Participant::whereIn('id', $participantIds)
             ->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted'))
@@ -44,6 +61,7 @@ class Dashboard extends Component
                 ->where('status', 'paid')->with('edition')->latest('id')->get(),
             'attestations' => Attestation::whereIn('participant_id', $participantIds)
                 ->where('revoked', false)->with('edition')->latest('id')->get(),
+            'editionDocuments' => $editionDocuments,
         ])->layout('components.layouts.participant', ['title' => 'Tableau de bord']);
     }
 }

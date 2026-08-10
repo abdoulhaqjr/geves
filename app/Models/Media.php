@@ -14,6 +14,20 @@ class Media extends Model
 
     protected $guarded = ['id'];
 
+    /** Types de média d'une édition (documents exposés aux participants). */
+    public const TYPES = [
+        'document' => 'Document',
+        'livret' => 'Livret',
+        'video' => 'Vidéo',
+        'photo' => 'Photo',
+        'link' => 'Lien',
+    ];
+
+    public function typeLabel(): string
+    {
+        return self::TYPES[$this->type] ?? ucfirst((string) $this->type);
+    }
+
     public function edition(): BelongsTo
     {
         return $this->belongsTo(Edition::class);

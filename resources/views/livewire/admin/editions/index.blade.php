@@ -83,6 +83,10 @@
                                        class="ukc-btn ukc-btn--ghost ukc-btn--sm" title="Formulaire de soumission">
                                         <x-ukc.icon name="list" :size="16" />
                                     </a>
+                                    <a href="{{ route('admin.editions.documents', $edition) }}" wire:navigate
+                                       class="ukc-btn ukc-btn--ghost ukc-btn--sm" title="Documents de l’édition">
+                                        <x-ukc.icon name="folder" :size="16" />
+                                    </a>
                                     <a href="{{ route('admin.editions.edit', $edition) }}" wire:navigate
                                        class="ukc-btn ukc-btn--outline ukc-btn--sm">
                                         <x-ukc.icon name="pen" :size="16" /> Modifier
