@@ -3,9 +3,9 @@
 namespace App\Payments;
 
 use App\Payments\Contracts\PaymentGateway;
+use App\Payments\Gateways\CashpayGateway;
 use App\Payments\Gateways\FedaPayGateway;
 use App\Payments\Gateways\ManualGateway;
-use App\Payments\Gateways\MoneyFusionGateway;
 
 /**
  * Registre des passerelles de paiement. Résout la liste des passerelles
@@ -19,7 +19,7 @@ class GatewayRegistry
     public function __construct()
     {
         $this->gateways = [
-            new MoneyFusionGateway(),
+            new CashpayGateway(),
             new FedaPayGateway(),
             new ManualGateway(),
         ];

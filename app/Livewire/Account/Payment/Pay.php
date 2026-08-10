@@ -85,7 +85,14 @@ class Pay extends Component
             ]
         );
 
-        $result = $gateway->initiate($payment);
+        try {
+            $result = $gateway->initiate($payment);
+        } catch (\Throwable $e) {
+            report($e);
+            $this->addError('pay', 'Le service de paiement est momentanément indisponible. Réessayez plus tard.');
+
+            return null;
+        }
 
         if (($result['type'] ?? null) === 'redirect' && ! empty($result['url'])) {
             return $this->redirect($result['url']);

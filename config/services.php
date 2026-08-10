@@ -36,13 +36,20 @@ return [
     ],
 
     // Passerelles de paiement (identifiants marchands ; vides = passerelle inactive).
-    'moneyfusion' => [
-        'api_url' => env('MONEYFUSION_API_URL'),
+
+    // CashPay (SEMOA) — OAuth 2.0 + facture hébergée (bill_url) + callback JWT HS256.
+    'cashpay' => [
+        'base_url' => env('CASHPAY_BASE_URL', 'https://api.semoa-payments.ovh/sandbox-v3'),
+        'username' => env('CASHPAY_USERNAME'),
+        'password' => env('CASHPAY_PASSWORD'),
+        'client_id' => env('CASHPAY_CLIENT_ID', 'cashpay'),
+        'client_secret' => env('CASHPAY_CLIENT_SECRET'),
+        'api_key' => env('CASHPAY_API_KEY'), // clé de vérification du JWT de callback
     ],
 
     'fedapay' => [
         'secret' => env('FEDAPAY_SECRET'),
-        'mode' => env('FEDAPAY_MODE', 'test'),
+        'mode' => env('FEDAPAY_MODE', 'test'), // test (sandbox) | live
         'webhook_secret' => env('FEDAPAY_WEBHOOK_SECRET'),
     ],
 

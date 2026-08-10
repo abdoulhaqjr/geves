@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\DocumentController;
 use App\Http\Controllers\Admin\LogoutController as AdminLogoutController;
 use App\Http\Controllers\Admin\ReceiptController;
 use App\Http\Controllers\AttestationController;
+use App\Http\Controllers\PaymentController;
 use App\Livewire\Account\Payment\Pay as AccountPay;
 use App\Livewire\Admin\Documents\Attestations as AdminAttestations;
 use App\Livewire\Account\Dashboard;
@@ -46,6 +47,10 @@ Route::get('/relecture/{token}/{review}', ReviewerEvaluate::class)->name('review
 // Attestations : document imprimable + vérification publique (par UUID).
 Route::get('/attestation/{uuid}', [AttestationController::class, 'document'])->name('attestation.document');
 Route::get('/verifier/{uuid}', [AttestationController::class, 'verify'])->name('attestation.verify');
+
+// Paiement en ligne : retour navigateur + webhook serveur-à-serveur.
+Route::get('/paiement/retour/{gateway}', [PaymentController::class, 'return'])->name('payment.return');
+Route::post('/webhooks/paiement/{gateway}', [PaymentController::class, 'webhook'])->name('payment.webhook');
 
 /*
 |--------------------------------------------------------------------------

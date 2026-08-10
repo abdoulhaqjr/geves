@@ -16,6 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn ($request) => $request->is('admin', 'admin/*')
             ? route('admin.login')
             : route('account.login'));
+
+        // Les webhooks de paiement sont des appels serveur-à-serveur (pas de CSRF).
+        $middleware->validateCsrfTokens(except: ['webhooks/*']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
