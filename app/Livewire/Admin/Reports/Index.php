@@ -32,7 +32,7 @@ class Index extends Component
             'editions' => Edition::latest('id')->get(),
             'edition' => $edition,
             'summary' => $summary,
-            'statuses' => Submission::STATUSES,
+            'statuses' => Submission::statuses(),
         ])->layout('components.layouts.admin', ['title' => 'Rapports']);
     }
 }

@@ -53,7 +53,7 @@ class Index extends Component
         return view('livewire.admin.submissions.index', [
             'submissions' => $submissions,
             'editions' => Edition::latest('id')->get(),
-            'statuses' => Submission::STATUSES,
+            'statuses' => Submission::statuses(),
         ])->layout('components.layouts.admin', ['title' => 'Soumissions']);
     }
 }

@@ -59,6 +59,7 @@ Route::get('/relecture/{token}/{review}', ReviewerEvaluate::class)->name('review
 
 // Attestations : document imprimable + vérification publique (par UUID).
 Route::get('/attestation/{uuid}', [AttestationController::class, 'document'])->name('attestation.document');
+Route::get('/attestation/{uuid}/pdf', [AttestationController::class, 'pdf'])->name('attestation.pdf');
 Route::get('/verifier/{uuid}', [AttestationController::class, 'verify'])->name('attestation.verify');
 
 // Paiement en ligne : retour navigateur + webhook serveur-à-serveur.

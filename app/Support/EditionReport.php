@@ -36,7 +36,7 @@ class EditionReport
         $editionId = $this->edition->id;
 
         $submissionsByStatus = [];
-        foreach (array_keys(Submission::STATUSES) as $status) {
+        foreach (array_keys(Submission::statuses()) as $status) {
             $submissionsByStatus[$status] = Submission::where('edition_id', $editionId)
                 ->where('revision_of', 0)
                 ->where('status', $status)

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\SubmissionStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Soumission d'un résumé : titre, co-auteurs (JSON), axe, type, statut du
- * workflow de relecture, versionnage (resoumission).
+ * workflow de relecture, versionnage (resoumission). Statuts : {@see SubmissionStatus}.
  */
 class Submission extends Model
 {
@@ -17,23 +18,17 @@ class Submission extends Model
 
     protected $guarded = ['id'];
 
-    /** Libellés des statuts du workflow de relecture. */
-    public const STATUSES = [
-        'submitted' => 'Soumise',
-        'under_review' => 'En relecture',
-        'revision' => 'Correction demandée',
-        'accepted' => 'Acceptée',
-        'rejected' => 'Refusée',
-    ];
+    /** @return array<string, string> valeur => libellé (filtres/affichage). */
+    public static function statuses(): array
+    {
+        return SubmissionStatus::options();
+    }
 
-    /** Variante de pastille (.ukc-pill--*) par statut. */
-    public const STATUS_PILLS = [
-        'submitted' => 'info',
-        'under_review' => 'warn',
-        'revision' => 'warn',
-        'accepted' => 'ok',
-        'rejected' => 'err',
-    ];
+    /** @return array<string, string> valeur => variante de pastille. */
+    public static function statusPills(): array
+    {
+        return SubmissionStatus::pills();
+    }
 
     protected function casts(): array
     {
@@ -45,14 +40,20 @@ class Submission extends Model
         ];
     }
 
+    /** Statut typé (ou null si valeur inconnue). */
+    public function statusEnum(): ?SubmissionStatus
+    {
+        return SubmissionStatus::tryFrom((string) $this->status);
+    }
+
     public function statusLabel(): string
     {
-        return self::STATUSES[$this->status] ?? $this->status;
+        return $this->statusEnum()?->label() ?? (string) $this->status;
     }
 
     public function statusPill(): string
     {
-        return self::STATUS_PILLS[$this->status] ?? 'muted';
+        return $this->statusEnum()?->pill() ?? 'muted';
     }
 
     /** Nom de l'auteur correspondant (1er des authors). */

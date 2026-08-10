@@ -26,7 +26,7 @@ class ReportController extends Controller
             ['Participants', $summary['participants']],
             ['Communications', $summary['submissions']],
         ];
-        foreach (Submission::STATUSES as $key => $label) {
+        foreach (Submission::statuses() as $key => $label) {
             $synthese[] = ['— '.$label, $summary['submissionsByStatus'][$key] ?? 0];
         }
         $synthese[] = ['Paiements réglés', $summary['paidCount']];
@@ -55,7 +55,7 @@ class ReportController extends Controller
             'submissionRows' => $report->submissionRows(),
             'paymentHeaders' => $report->paymentHeaders(),
             'paymentRows' => $report->paymentRows(),
-            'statuses' => Submission::STATUSES,
+            'statuses' => Submission::statuses(),
         ]);
     }
 }

@@ -74,7 +74,7 @@ class Index extends Component
         return view('livewire.admin.payments.index', [
             'payments' => $payments,
             'editions' => Edition::latest('id')->get(),
-            'statuses' => Payment::STATUSES,
+            'statuses' => Payment::statuses(),
             'totalPaid' => (clone $base)->where('status', 'paid')->sum('amount'),
             'totalPending' => (clone $base)->where('status', 'pending')->sum('amount'),
         ])->layout('components.layouts.admin', ['title' => 'Paiements']);

@@ -37,7 +37,7 @@
             <h2 style="margin:0 0 12px;font-size:1rem;color:var(--ukc-blue);">Communications par statut</h2>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
                 @foreach ($statuses as $key => $label)
-                    <span class="ukc-pill ukc-pill--{{ \App\Models\Submission::STATUS_PILLS[$key] ?? 'muted' }}">
+                    <span class="ukc-pill ukc-pill--{{ \App\Models\Submission::statusPills()[$key] ?? 'muted' }}">
                         {{ $label }} : {{ $summary['submissionsByStatus'][$key] ?? 0 }}
                     </span>
                 @endforeach

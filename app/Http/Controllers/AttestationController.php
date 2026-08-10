@@ -6,8 +6,10 @@ use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
 use App\Models\Attestation;
 use App\Models\DocumentTemplate;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Attestations : document imprimable (avec QR de vérification) et page publique
@@ -56,6 +58,23 @@ class AttestationController extends Controller
             'qr' => $qr,
             'verifyUrl' => $verifyUrl,
         ]);
+    }
+
+    /** Attestation en vrai PDF serveur (téléchargement, format A4 paysage). */
+    public function pdf(string $uuid): Response
+    {
+        $attestation = Attestation::with(['edition.colloque', 'participant'])
+            ->where('uuid', $uuid)->firstOrFail();
+
+        $verifyUrl = route('attestation.verify', $attestation->uuid);
+        $qr = QrCode::format('svg')->size(150)->margin(0)->generate($verifyUrl);
+
+        return Pdf::loadView('pdf.attestation', [
+            'attestation' => $attestation,
+            'qr' => $qr,
+            'verifyUrl' => $verifyUrl,
+        ])->setPaper('a4', 'landscape')
+            ->download('attestation-'.$attestation->uuid.'.pdf');
     }
 
     /** Page publique de vérification d'authenticité. */

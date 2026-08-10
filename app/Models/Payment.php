@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,27 +10,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * Paiement des frais d'inscription (mobile money, carte via passerelle, ou
  * encaissement manuel). Un règlement par participant et par édition.
+ * Statuts : {@see PaymentStatus}.
  */
 class Payment extends Model
 {
     use HasFactory;
 
     protected $guarded = ['id'];
-
-    /** Statuts d'un paiement. */
-    public const STATUSES = [
-        'pending' => 'En attente',
-        'paid' => 'Réglé',
-        'refunded' => 'Remboursé',
-        'failed' => 'Échoué',
-    ];
-
-    public const STATUS_PILLS = [
-        'pending' => 'warn',
-        'paid' => 'ok',
-        'refunded' => 'muted',
-        'failed' => 'err',
-    ];
 
     /** Moyens d'encaissement manuel. */
     public const MANUAL_METHODS = [
@@ -41,6 +28,18 @@ class Payment extends Model
         'other' => 'Autre',
     ];
 
+    /** @return array<string, string> valeur => libellé. */
+    public static function statuses(): array
+    {
+        return PaymentStatus::options();
+    }
+
+    /** @return array<string, string> valeur => variante de pastille. */
+    public static function statusPills(): array
+    {
+        return PaymentStatus::pills();
+    }
+
     protected function casts(): array
     {
         return [
@@ -50,14 +49,20 @@ class Payment extends Model
         ];
     }
 
+    /** Statut typé (ou null si valeur inconnue). */
+    public function statusEnum(): ?PaymentStatus
+    {
+        return PaymentStatus::tryFrom((string) $this->status);
+    }
+
     public function statusLabel(): string
     {
-        return self::STATUSES[$this->status] ?? $this->status;
+        return $this->statusEnum()?->label() ?? (string) $this->status;
     }
 
     public function statusPill(): string
     {
-        return self::STATUS_PILLS[$this->status] ?? 'muted';
+        return $this->statusEnum()?->pill() ?? 'muted';
     }
 
     public function methodLabel(): string
