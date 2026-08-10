@@ -18,9 +18,16 @@
                     <x-ukc.icon name="calendar" :size="18" /> Éditions
                 </a>
 
+                <a href="{{ route('admin.submissions.index') }}" wire:navigate
+                   @class(['active' => request()->routeIs('admin.submissions.*')])>
+                    <x-ukc.icon name="inbox" :size="18" /> Soumissions
+                </a>
+                <a href="{{ route('admin.payments.index') }}" wire:navigate
+                   @class(['active' => request()->routeIs('admin.payments.*')])>
+                    <x-ukc.icon name="card" :size="18" /> Paiements
+                </a>
+
                 <span class="nav-label">À venir</span>
-                <a style="opacity:.5;pointer-events:none;"><x-ukc.icon name="inbox" :size="18" /> Soumissions</a>
-                <a style="opacity:.5;pointer-events:none;"><x-ukc.icon name="card" :size="18" /> Paiements</a>
                 <a style="opacity:.5;pointer-events:none;"><x-ukc.icon name="users" :size="18" /> Participants</a>
                 <a style="opacity:.5;pointer-events:none;"><x-ukc.icon name="award" :size="18" /> Documents</a>
             </nav>

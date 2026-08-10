@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    // Passerelles de paiement (identifiants marchands ; vides = passerelle inactive).
+    'moneyfusion' => [
+        'api_url' => env('MONEYFUSION_API_URL'),
+    ],
+
+    'fedapay' => [
+        'secret' => env('FEDAPAY_SECRET'),
+        'mode' => env('FEDAPAY_MODE', 'test'),
+        'webhook_secret' => env('FEDAPAY_WEBHOOK_SECRET'),
+    ],
+
 ];

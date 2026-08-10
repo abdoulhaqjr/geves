@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Account\Submissions;
 
+use App\Actions\NotifySubmissionStatus;
 use App\Actions\UpsertParticipantForAccount;
 use App\Models\Edition;
 use App\Models\Submission;
@@ -116,7 +117,7 @@ class Create extends Component
         ];
     }
 
-    public function submit(UpsertParticipantForAccount $upsert)
+    public function submit(UpsertParticipantForAccount $upsert, NotifySubmissionStatus $notify)
     {
         $account = Auth::guard('account')->user();
 
@@ -178,6 +179,9 @@ class Create extends Component
             'status' => 'submitted',
             'file_url' => $fileUrl,
         ]);
+
+        // Accusé de réception à l'auteur correspondant.
+        $notify->handle($submission, 'submitted');
 
         $this->successRef = $submission->ref_code;
     }

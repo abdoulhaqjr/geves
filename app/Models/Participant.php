@@ -44,4 +44,19 @@ class Participant extends Model
     {
         return trim($this->first_name . ' ' . $this->last_name);
     }
+
+    /** Au moins une communication acceptée (canonique) sur l'édition. */
+    public function hasAcceptedSubmission(): bool
+    {
+        return $this->submissions()
+            ->where('revision_of', 0)
+            ->where('status', 'accepted')
+            ->exists();
+    }
+
+    /** Le participant a déjà un paiement réglé (garde anti-double-paiement). */
+    public function hasPaid(): bool
+    {
+        return $this->payments()->where('status', 'paid')->exists();
+    }
 }

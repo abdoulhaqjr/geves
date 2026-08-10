@@ -57,6 +57,16 @@
         <div class="ukc-step">Attestation</div>
     </div>
 
+    @if ($payableEdition)
+        <div class="ukc-card" style="text-align:center;background:linear-gradient(135deg,rgba(0,153,51,.08),rgba(34,62,164,.06));margin-bottom:18px;">
+            <h3 style="justify-content:center;">Communication acceptée</h3>
+            <p style="color:var(--ukc-muted);margin:6px 0 18px;">Réglez vos frais d’inscription pour finaliser votre participation à « {{ $payableEdition->title }} ».</p>
+            <a href="{{ route('account.payment', $payableEdition) }}" wire:navigate class="ukc-btn ukc-btn--green">
+                <x-ukc.icon name="card" :size="18" /> Payer mes frais
+            </a>
+        </div>
+    @endif
+
     @if ($openEdition)
         <div class="ukc-card" style="text-align:center;background:linear-gradient(135deg,rgba(34,62,164,.06),rgba(0,153,51,.06));">
             <h3 style="justify-content:center;">Appel à communications ouvert</h3>

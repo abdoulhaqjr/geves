@@ -1,0 +1,99 @@
+<div>
+    @php($s = $submission)
+
+    <a href="{{ route('account.submissions.index') }}" wire:navigate
+       style="display:inline-flex;align-items:center;gap:6px;font-size:.9rem;color:var(--ukc-muted);margin-bottom:14px;">
+        <x-ukc.icon name="chevron" :size="16" style="transform:rotate(180deg);" /> Mes communications
+    </a>
+
+    <div class="ukc-card" style="margin-bottom:18px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+            <span style="font-family:ui-monospace,monospace;font-weight:700;color:var(--ukc-muted);">{{ $s->ref_code }}</span>
+            <span class="ukc-pill ukc-pill--{{ $s->statusPill() }}">{{ $s->statusLabel() }}</span>
+        </div>
+        <h2 style="margin-top:10px;">{{ $s->title }}</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+            @if ($s->track)<span class="ukc-pill ukc-pill--info">{{ $s->track }}</span>@endif
+            <span class="ukc-pill ukc-pill--muted">{{ $s->type === 'poster' ? 'Poster' : 'Oral' }}</span>
+            <span class="ukc-pill ukc-pill--muted">Version {{ $s->version }}</span>
+        </div>
+    </div>
+
+    {{-- Retour des relecteurs --}}
+    @if (count($feedback))
+        <div class="ukc-card" style="margin-bottom:18px;">
+            <h3><x-ukc.icon name="mic" :size="20" /> Retour des relecteurs</h3>
+            @foreach ($feedback as $fb)
+                <div style="padding:12px 0;border-bottom:1px solid var(--ukc-border);">
+                    <div style="font-weight:700;font-size:.9rem;color:var(--ukc-blue);">{{ $fb['label'] }}</div>
+                    <p style="color:var(--ukc-text);line-height:1.6;white-space:pre-line;margin-top:4px;">{{ $fb['comments'] }}</p>
+                </div>
+            @endforeach
+        </div>
+    @endif
+
+    {{-- Resoumission --}}
+    @if ($s->canBeRevised())
+        <div class="ukc-card" style="margin-bottom:18px;">
+            <div class="ukc-alert ukc-alert--warn" style="margin-bottom:16px;">
+                <span class="ico"><x-ukc.icon name="pen" :size="18" /></span>
+                <div>Une <strong>correction</strong> vous est demandée. Modifiez votre communication ci-dessous puis renvoyez-la.</div>
+            </div>
+
+            <form wire:submit="resubmit" class="ukc-form-grid">
+                <div class="ukc-field full">
+                    <label for="title">Titre <span class="req">*</span></label>
+                    <input type="text" id="title" wire:model="title">
+                    @error('title') <span class="error">{{ $message }}</span> @enderror
+                </div>
+                <div class="ukc-field full">
+                    <label for="keywords">Mots-clés</label>
+                    <input type="text" id="keywords" wire:model="keywords">
+                    @error('keywords') <span class="error">{{ $message }}</span> @enderror
+                </div>
+                <div class="ukc-field full">
+                    <label for="abstract">Résumé <span class="req">*</span></label>
+                    <textarea id="abstract" wire:model="abstract" rows="8"></textarea>
+                    @error('abstract') <span class="error">{{ $message }}</span> @enderror
+                </div>
+                <div class="ukc-field full">
+                    <label for="file">Remplacer le fichier <span class="hint">(optionnel)</span></label>
+                    <input type="file" id="file" wire:model="file" accept=".pdf,.doc,.docx">
+                    <div wire:loading wire:target="file" class="hint">Téléversement…</div>
+                    @error('file') <span class="error">{{ $message }}</span> @enderror
+                </div>
+                <div class="ukc-form-actions full">
+                    <button type="submit" class="ukc-btn ukc-btn--primary" wire:loading.attr="disabled" wire:target="resubmit">
+                        <span wire:loading.remove wire:target="resubmit"><x-ukc.icon name="upload" :size="18" /> Renvoyer la version corrigée</span>
+                        <span wire:loading wire:target="resubmit">Envoi…</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    @else
+        <div class="ukc-card" style="margin-bottom:18px;">
+            <h3>Résumé</h3>
+            <p style="line-height:1.7;white-space:pre-line;">{{ $s->abstract }}</p>
+            @if ($s->file_url)
+                <a href="{{ $s->file_url }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm" style="margin-top:14px;">
+                    <x-ukc.icon name="file" :size="16" /> Fichier joint
+                </a>
+            @endif
+        </div>
+    @endif
+
+    {{-- Historique des versions --}}
+    @if ($versions->count())
+        <div class="ukc-card">
+            <h3><x-ukc.icon name="clock" :size="20" /> Historique des versions</h3>
+            <ul style="list-style:none;">
+                @foreach ($versions as $v)
+                    <li style="display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--ukc-border);font-size:.9rem;">
+                        <span>Version {{ $v->version }} — {{ \Illuminate\Support\Str::limit($v->title, 60) }}</span>
+                        <span style="color:var(--ukc-muted);">{{ $v->created_at?->format('d/m/Y H:i') }}</span>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+</div>

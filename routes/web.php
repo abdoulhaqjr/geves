@@ -3,6 +3,8 @@
 use App\Http\Controllers\Account\EmailVerificationController;
 use App\Http\Controllers\Account\LogoutController;
 use App\Http\Controllers\Admin\LogoutController as AdminLogoutController;
+use App\Http\Controllers\Admin\ReceiptController;
+use App\Livewire\Account\Payment\Pay as AccountPay;
 use App\Livewire\Account\Dashboard;
 use App\Livewire\Account\ForgotPassword;
 use App\Livewire\Account\Login;
@@ -11,18 +13,29 @@ use App\Livewire\Account\Register;
 use App\Livewire\Account\ResetPassword;
 use App\Livewire\Account\Submissions\Create as SubmissionCreate;
 use App\Livewire\Account\Submissions\Index as SubmissionIndex;
+use App\Livewire\Account\Submissions\Show as SubmissionShow;
 use App\Livewire\Account\VerifyEmailNotice;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\Editions\Form as EditionForm;
 use App\Livewire\Admin\Editions\Index as EditionIndex;
 use App\Livewire\Admin\Login as AdminLogin;
+use App\Livewire\Admin\Payments\Index as AdminPaymentIndex;
+use App\Livewire\Admin\Payments\Record as AdminPaymentRecord;
+use App\Livewire\Admin\Submissions\Index as AdminSubmissionIndex;
+use App\Livewire\Admin\Submissions\Show as AdminSubmissionShow;
 use App\Livewire\Public\ColloquePage;
+use App\Livewire\Reviewer\Evaluate as ReviewerEvaluate;
+use App\Livewire\Reviewer\Portal as ReviewerPortal;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'home')->name('home');
 
 // Page publique d'une édition de colloque.
 Route::get('/colloque/{slug}', ColloquePage::class)->name('public.colloque');
+
+// Portail relecteur (accès par jeton, sans compte).
+Route::get('/relecture/{token}', ReviewerPortal::class)->name('reviewer.portal');
+Route::get('/relecture/{token}/{review}', ReviewerEvaluate::class)->name('reviewer.evaluate');
 
 /*
 |--------------------------------------------------------------------------
@@ -42,7 +55,11 @@ Route::middleware('auth:account')->group(function () {
 
     // Communications
     Route::get('/mes-communications', SubmissionIndex::class)->name('account.submissions.index');
+    Route::get('/mes-communications/{submission}', SubmissionShow::class)->name('account.submissions.show');
     Route::get('/colloque/{slug}/soumettre', SubmissionCreate::class)->name('account.submissions.create');
+
+    // Paiement des frais
+    Route::get('/mon-compte/paiement/{edition}', AccountPay::class)->name('account.payment');
 
     // Vérification d'e-mail
     Route::get('/verification-email', VerifyEmailNotice::class)->name('account.verification.notice');
@@ -69,6 +86,13 @@ Route::prefix('admin')->group(function () {
         Route::get('/editions', EditionIndex::class)->name('admin.editions.index');
         Route::get('/editions/creer', EditionForm::class)->name('admin.editions.create');
         Route::get('/editions/{edition}/modifier', EditionForm::class)->name('admin.editions.edit');
+
+        Route::get('/soumissions', AdminSubmissionIndex::class)->name('admin.submissions.index');
+        Route::get('/soumissions/{submission}', AdminSubmissionShow::class)->name('admin.submissions.show');
+
+        Route::get('/paiements', AdminPaymentIndex::class)->name('admin.payments.index');
+        Route::get('/paiements/creer', AdminPaymentRecord::class)->name('admin.payments.create');
+        Route::get('/paiements/{payment}/recu', ReceiptController::class)->name('admin.payments.receipt');
 
         Route::post('/deconnexion', AdminLogoutController::class)->name('admin.logout');
     });

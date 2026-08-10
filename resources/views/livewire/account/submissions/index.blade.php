@@ -1,14 +1,4 @@
 <div>
-    @php
-        $statusMeta = [
-            'submitted' => ['Soumise', 'info'],
-            'under_review' => ['En relecture', 'warn'],
-            'revision' => ['Correction demandée', 'warn'],
-            'accepted' => ['Acceptée', 'ok'],
-            'rejected' => ['Refusée', 'err'],
-        ];
-    @endphp
-
     <div class="ukc-card" style="padding:0;">
         @if ($submissions->count())
             <div class="ukc-table-wrap">
@@ -25,20 +15,21 @@
                     </thead>
                     <tbody>
                         @foreach ($submissions as $s)
-                            @php($meta = $statusMeta[$s->status] ?? [$s->status, 'muted'])
                             <tr wire:key="sub-{{ $s->id }}">
-                                <td style="font-family:ui-monospace,monospace;font-weight:700;">{{ $s->ref_code }}</td>
+                                <td style="font-family:ui-monospace,monospace;font-weight:700;">
+                                    <a href="{{ route('account.submissions.show', $s) }}" wire:navigate
+                                       style="color:var(--ukc-blue);">{{ $s->ref_code }}</a>
+                                </td>
                                 <td>
-                                    <div class="title">{{ $s->title }}</div>
-                                    @if ($s->file_url)
-                                        <div class="meta"><a href="{{ $s->file_url }}" target="_blank"
-                                            style="color:var(--ukc-blue);">Fichier joint</a></div>
+                                    <a href="{{ route('account.submissions.show', $s) }}" wire:navigate class="title">{{ $s->title }}</a>
+                                    @if ($s->status === 'revision')
+                                        <div class="meta" style="color:#b45309;font-weight:700;">Correction demandée</div>
                                     @endif
                                 </td>
                                 <td>{{ $s->edition?->edition_label ?: $s->edition?->year }}</td>
                                 <td>{{ $s->track ?: '—' }}</td>
                                 <td>{{ $s->type === 'poster' ? 'Poster' : 'Oral' }}</td>
-                                <td><span class="ukc-pill ukc-pill--{{ $meta[1] }}">{{ $meta[0] }}</span></td>
+                                <td><span class="ukc-pill ukc-pill--{{ $s->statusPill() }}">{{ $s->statusLabel() }}</span></td>
                             </tr>
                         @endforeach
                     </tbody>

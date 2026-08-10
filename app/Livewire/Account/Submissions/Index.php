@@ -18,6 +18,7 @@ class Index extends Component
         $account = Auth::guard('account')->user();
 
         $submissions = Submission::query()
+            ->canonical()
             ->with('edition')
             ->whereHas('participant', fn ($q) => $q->where('account_id', $account->id))
             ->latest('id')
