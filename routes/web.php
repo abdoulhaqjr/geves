@@ -117,6 +117,7 @@ Route::prefix('admin')->group(function () {
         Route::get('/attestations', AdminAttestations::class)->name('admin.documents.attestations');
         Route::get('/editions/{edition}/livret', [DocumentController::class, 'livret'])->name('admin.documents.livret');
         Route::get('/editions/{edition}/badges', [DocumentController::class, 'badges'])->name('admin.documents.badges');
+        Route::get('/editions/{edition}/fiches-session', [DocumentController::class, 'sessionSheets'])->name('admin.documents.sessions');
 
         Route::post('/deconnexion', AdminLogoutController::class)->name('admin.logout');
     });

@@ -1,12 +1,24 @@
 <div>
-    <div class="ukc-field" style="max-width:320px;margin-bottom:18px;">
-        <label>Édition</label>
-        <select wire:model.live="edition_id">
-            <option value="">— Choisir —</option>
-            @foreach ($editions as $ed)
-                <option value="{{ $ed->id }}">{{ $ed->title ?: $ed->year }}</option>
-            @endforeach
-        </select>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
+        <div class="ukc-field" style="max-width:320px;margin:0;">
+            <label>Édition</label>
+            <select wire:model.live="edition_id">
+                <option value="">— Choisir —</option>
+                @foreach ($editions as $ed)
+                    <option value="{{ $ed->id }}">{{ $ed->title ?: $ed->year }}</option>
+                @endforeach
+            </select>
+        </div>
+        @if ($edition_id !== '')
+            <div style="display:flex;gap:8px;">
+                <a href="{{ route('admin.documents.sessions', $edition_id) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+                    <x-ukc.icon name="file" :size="16" /> Fiches de session
+                </a>
+                <a href="{{ route('admin.program.slots') }}" wire:navigate class="ukc-btn ukc-btn--ghost ukc-btn--sm">
+                    <x-ukc.icon name="calendar" :size="16" /> Créneaux
+                </a>
+            </div>
+        @endif
     </div>
 
     @if ($edition_id === '')

@@ -26,6 +26,9 @@
             <nav style="display:flex;gap:8px;align-items:center;">
                 <a href="#presentation" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Présentation</a>
                 <a href="#axes" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Axes</a>
+                @if ($plenaries->count() || $ateliers->count())
+                    <a href="#programme" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Programme</a>
+                @endif
                 <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--primary ukc-btn--sm">Espace participant</a>
             </nav>
         </div>
@@ -112,6 +115,40 @@
                             </div>
                         @endforeach
                     </div>
+                </section>
+            @endif
+
+            {{-- Programme (sessions plénières + ateliers) --}}
+            @if ($plenaries->count() || $ateliers->count())
+                <section id="programme" class="ukc-card">
+                    <h2 style="font-size:1.3rem;font-weight:800;color:var(--ukc-blue);margin-bottom:16px;">Programme</h2>
+
+                    @if ($plenaries->count())
+                        <h3 style="font-size:1.05rem;font-weight:800;margin:6px 0 12px;display:flex;align-items:center;gap:8px;">
+                            <x-ukc.icon name="mic" :size="18" /> Sessions plénières
+                        </h3>
+                        @foreach ($plenaries as $session)
+                            @include('livewire.public._session', ['session' => $session, 'commsBySession' => $commsBySession])
+                        @endforeach
+                    @endif
+
+                    @foreach ($ateliers as $atelier)
+                        <div style="margin-top:18px;">
+                            <h3 style="font-size:1.05rem;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+                                <x-ukc.icon name="layers" :size="18" /> {{ $atelier->title }}
+                            </h3>
+                            @if (count($atelier->tracks ?? []))
+                                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+                                    @foreach ($atelier->tracks as $t)<span class="ukc-pill ukc-pill--info">{{ $t }}</span>@endforeach
+                                </div>
+                            @endif
+                            @forelse ($atelier->sessions as $session)
+                                @include('livewire.public._session', ['session' => $session, 'commsBySession' => $commsBySession])
+                            @empty
+                                <p style="font-size:.88rem;color:var(--ukc-muted);">Sessions à venir.</p>
+                            @endforelse
+                        </div>
+                    @endforeach
                 </section>
             @endif
 

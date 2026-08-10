@@ -27,10 +27,21 @@ class ColloquePage extends Component
     {
         $settings = $this->edition->settings ?? [];
 
+        // Communications programmées, groupées par session (via les créneaux).
+        $commsBySession = $this->edition->slots()
+            ->where('submission_id', '>', 0)
+            ->with('submission')
+            ->orderBy('starts_at')
+            ->get()
+            ->groupBy('session_id');
+
         return view('livewire.public.colloque-page', [
             'intro' => $settings['intro'] ?? null,
             'tracks' => $settings['tracks'] ?? [],
             'fees' => $settings['fees'] ?? [],
+            'plenaries' => $this->edition->sessions()->where('type', 'plenary')->orderBy('ordre')->orderBy('starts_at')->get(),
+            'ateliers' => $this->edition->ateliers()->with(['sessions' => fn ($q) => $q->orderBy('ordre')])->orderBy('ordre')->get(),
+            'commsBySession' => $commsBySession,
         ])->title($this->edition->title);
     }
 }

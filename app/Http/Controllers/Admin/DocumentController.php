@@ -29,6 +29,29 @@ class DocumentController extends Controller
         ]);
     }
 
+    /** Fiches de session imprimables : chaque session avec ses communications. */
+    public function sessionSheets(Edition $edition): View
+    {
+        $sessions = $edition->sessions()
+            ->with('atelier')
+            ->orderBy('session_day')
+            ->orderBy('ordre')
+            ->get();
+
+        $commsBySession = $edition->slots()
+            ->where('submission_id', '>', 0)
+            ->with('submission')
+            ->orderBy('starts_at')
+            ->get()
+            ->groupBy('session_id');
+
+        return view('documents.session-sheets', [
+            'edition' => $edition,
+            'sessions' => $sessions,
+            'commsBySession' => $commsBySession,
+        ]);
+    }
+
     /** Planche de badges (A4, 2 colonnes), couleur par rôle. */
     public function badges(Edition $edition, Request $request): View
     {
