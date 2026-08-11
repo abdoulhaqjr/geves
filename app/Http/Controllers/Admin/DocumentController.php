@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
+use App\Documents\LivretDocx;
 use App\Http\Controllers\Controller;
 use App\Models\DocumentTemplate;
 use App\Models\Edition;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Documents imprimables d'une édition : livret des résumés et planche de badges.
@@ -17,18 +19,23 @@ use Illuminate\Http\Request;
 class DocumentController extends Controller
 {
     /** Livret des résumés : communications acceptées, groupées par axe. */
-    public function livret(Edition $edition): View
+    public function livret(Edition $edition, Request $request): View|Response
     {
-        $submissions = $edition->submissions()
+        $groups = $edition->submissions()
             ->where('revision_of', 0)
             ->where('status', 'accepted')
             ->orderBy('track')
             ->get()
             ->groupBy(fn ($s) => $s->track ?: 'Autres');
 
+        if ($request->query('format') === 'docx') {
+            return (new LivretDocx($edition, $groups))
+                ->download('livret-'.($edition->slug ?: 'edition-'.$edition->id).'.docx');
+        }
+
         return view('documents.livret', [
             'edition' => $edition,
-            'groups' => $submissions,
+            'groups' => $groups,
         ]);
     }
 

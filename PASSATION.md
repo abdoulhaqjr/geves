@@ -1,7 +1,7 @@
 # Passation — GESCO · Gestion des colloques scientifiques
 
 > Document de passation pour la personne qui reprend le développement.
-> Dernière mise à jour : 2026-08-10 (bizzcart : PDF, enums, sauvegardes, impersonation, observers/events).
+> Dernière mise à jour : 2026-08-11 (livret des résumés en Word .docx via phpword).
 
 Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture**, les **conventions**, le **travail réalisé**, ce qui **reste à faire** et les **pièges** à connaître.
 
@@ -212,7 +212,7 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 
 ### Priorité haute
 1. **Validation des paiements en ligne au sandbox** — CashPay (SEMOA) et FedaPay sont **implémentés** (voir §6 module 11). Reste à : renseigner les identifiants (`.env` : `CASHPAY_*`, `FEDAPAY_*`, `PAYMENT_GATEWAY`), **tester un vrai paiement** en sandbox, confirmer l'enveloppe de réponse FedaPay (`v1/transaction`) et le format exact du corps du callback CashPay (JWT brut vs champ `token`). Puis exposer les webhooks publiquement (URL `/webhooks/paiement/{gateway}`) et les déclarer côté marchand.
-2. **Livret .docx « vrai »** via `phpoffice/phpword` si un format Word éditable est requis (le livret actuel est imprimable HTML → PDF). *(le programme public et les fiches de session sont faits — voir §6 module 12.)*
+2. ~~**Livret .docx « vrai »** via `phpoffice/phpword`~~ **fait** — `App\Documents\LivretDocx` (page de garde charte + résumés acceptés groupés par axe : titre/auteurs/résumé) ; téléchargement via `?format=docx` sur les routes livret **admin** (`admin.documents.livret`) et **participant** (`account.documents.livret`, contrôle de propriété conservé), bouton « Word (.docx) » dans la vue `documents.livret`. ⚠️ phpword veut des **twips entiers** (`(int) Converter::cmToTwip(...)`). Tests : le `.docx` est dézippé (`word/document.xml`) pour vérifier titre/axe/communication.
 
 ### Ensuite
 3. **E-mails** (Modules 7, 11) — ~~e-mails programmés (rappels à une audience via une commande planifiée)~~ **fait** (module 18, commit `851cd61`). Reste : brancher un vrai SMTP en prod (déjà réglable dans /admin/reglages) et lancer le planificateur (`php artisan schedule:work` en dev, ou cron `schedule:run` en prod) pour que `emails:send` tourne. En dev `MAIL_MAILER=log`, l'envoi immédiat marche sans planificateur (flush direct dans le composant).

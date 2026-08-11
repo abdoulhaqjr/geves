@@ -1,6 +1,9 @@
 <x-layouts.app :title="'Livret — ' . $edition->title">
     <div style="max-width:820px;margin:0 auto;padding:24px 16px;">
-        <div style="display:flex;justify-content:flex-end;margin-bottom:12px;" class="no-print">
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px;" class="no-print">
+            <a href="{{ request()->fullUrlWithQuery(['format' => 'docx']) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+                <x-ukc.icon name="download" :size="16" /> Word (.docx)
+            </a>
             <button onclick="window.print()" class="ukc-btn ukc-btn--primary ukc-btn--sm">
                 <x-ukc.icon name="download" :size="16" /> Imprimer / PDF
             </button>

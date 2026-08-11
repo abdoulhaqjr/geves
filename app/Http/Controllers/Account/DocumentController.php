@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\Account;
 
+use App\Documents\LivretDocx;
 use App\Http\Controllers\Controller;
 use App\Models\Edition;
 use App\Models\Participant;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Documents de l'édition accessibles au participant connecté : livret des
@@ -14,7 +17,7 @@ use Illuminate\Support\Facades\Auth;
  */
 class DocumentController extends Controller
 {
-    public function livret(Edition $edition): View
+    public function livret(Edition $edition, Request $request): View|Response
     {
         $account = Auth::guard('account')->user();
 
@@ -30,6 +33,11 @@ class DocumentController extends Controller
             ->orderBy('track')
             ->get()
             ->groupBy(fn ($s) => $s->track ?: 'Autres');
+
+        if ($request->query('format') === 'docx') {
+            return (new LivretDocx($edition, $groups))
+                ->download('livret-'.($edition->slug ?: 'edition-'.$edition->id).'.docx');
+        }
 
         return view('documents.livret', [
             'edition' => $edition,

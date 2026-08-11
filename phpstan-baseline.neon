@@ -37,8 +37,26 @@ parameters:
 			path: app/Actions/QueueEmailCampaign.php
 
 		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Documents/LivretDocx.php
+
+		-
+			message: '#^Cannot call method format\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Documents/LivretDocx.php
+
+		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$track\.$#'
 			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Account/DocumentController.php
+
+		-
+			message: '#^Parameter \#2 \$groups of class App\\Documents\\LivretDocx constructor expects Illuminate\\Support\\Collection\<string, Illuminate\\Support\\Collection\<int, App\\Models\\Submission\>\>, Illuminate\\Database\\Eloquent\\Collection\<\(int\|string\), Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\> given\.$#'
+			identifier: argument.type
 			count: 1
 			path: app/Http/Controllers/Account/DocumentController.php
 
@@ -86,6 +104,12 @@ parameters:
 
 		-
 			message: '#^Parameter \#1 \$raw of static method App\\Documents\\LayoutSanitizer\:\:sanitize\(\) expects array, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Admin/DocumentController.php
+
+		-
+			message: '#^Parameter \#2 \$groups of class App\\Documents\\LivretDocx constructor expects Illuminate\\Support\\Collection\<string, Illuminate\\Support\\Collection\<int, App\\Models\\Submission\>\>, Illuminate\\Database\\Eloquent\\Collection\<\(int\|string\), Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\> given\.$#'
 			identifier: argument.type
 			count: 1
 			path: app/Http/Controllers/Admin/DocumentController.php

@@ -8,6 +8,21 @@ use Livewire\Livewire;
 
 // adminStaff() -> AdminSubmissionWorkflowTest ; openEdition() -> AccountSubmissionTest ; seededSubmission() -> idem
 
+/** Extrait word/document.xml d'un .docx (contenu binaire) pour assertions de contenu. */
+function docxDocumentXml(string $binary): string
+{
+    $tmp = tempnam(sys_get_temp_dir(), 'docx');
+    file_put_contents($tmp, $binary);
+
+    $zip = new ZipArchive;
+    expect($zip->open($tmp))->toBeTrue(); // .docx = archive ZIP valide
+    $xml = $zip->getFromName('word/document.xml');
+    $zip->close();
+    @unlink($tmp);
+
+    return (string) $xml;
+}
+
 it('émet une attestation vérifiable et reste idempotente', function () {
     $edition = openEdition();
     $p = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
@@ -73,6 +88,46 @@ it('génère le livret des résumés groupé par axe', function () {
         ->assertSee('Livret des résumés')
         ->assertSee('Innovation durable')
         ->assertSee('Sciences');
+});
+
+it('génère le livret des résumés au format Word (.docx)', function () {
+    $staff = adminStaff();
+    $submission = seededSubmission('accepted'); // titre « Innovation durable », axe « Sciences »
+    $edition = $submission->edition;
+
+    $response = $this->actingAs($staff, 'web')
+        ->get(route('admin.documents.livret', [$edition, 'format' => 'docx']));
+
+    $response->assertOk();
+    $response->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    expect($response->headers->get('Content-Disposition'))->toContain('.docx');
+
+    $xml = docxDocumentXml($response->streamedContent());
+    expect($xml)->toContain('Livret des résumés')
+        ->toContain('Innovation durable')
+        ->toContain('Sciences');
+});
+
+it('permet au participant de télécharger le livret .docx de son édition', function () {
+    $submission = seededSubmission('accepted');
+    $edition = $submission->edition;
+    $account = $submission->participant->account;
+
+    $response = $this->actingAs($account, 'account')
+        ->get(route('account.documents.livret', [$edition, 'format' => 'docx']));
+
+    $response->assertOk();
+    $response->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    expect(docxDocumentXml($response->streamedContent()))->toContain('Innovation durable');
+});
+
+it('refuse le livret .docx à un compte non participant', function () {
+    $edition = openEdition();
+    $intrus = verifiedAccount(); // compte sans participation sur l'édition
+
+    $this->actingAs($intrus, 'account')
+        ->get(route('account.documents.livret', [$edition, 'format' => 'docx']))
+        ->assertForbidden();
 });
 
 it('génère la planche de badges', function () {
