@@ -5,10 +5,10 @@ namespace App\Enums;
 use App\Enums\Concerns\HasLabels;
 
 /**
- * État de diffusion en direct d'une session : aucune diffusion, programmée,
- * en direct, ou terminée. Piloté par le staff au fil de l'événement.
+ * État de la visio d'une session : aucune, programmée, en direct, terminée.
+ * Piloté par le staff au fil de l'événement.
  */
-enum StreamStatus: string
+enum MeetingStatus: string
 {
     use HasLabels;
 
@@ -20,10 +20,10 @@ enum StreamStatus: string
     public function label(): string
     {
         return match ($this) {
-            self::None => 'Aucune diffusion',
-            self::Scheduled => 'Diffusion programmée',
+            self::None => 'Aucune visio',
+            self::Scheduled => 'Visio programmée',
             self::Live => 'En direct',
-            self::Ended => 'Diffusion terminée',
+            self::Ended => 'Visio terminée',
         };
     }
 
@@ -33,7 +33,7 @@ enum StreamStatus: string
         return match ($this) {
             self::None => 'muted',
             self::Scheduled => 'info',
-            self::Live => 'err', // rouge « live »
+            self::Live => 'err', // rouge « en direct »
             self::Ended => 'muted',
         };
     }

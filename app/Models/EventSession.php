@@ -2,20 +2,24 @@
 
 namespace App\Models;
 
-use App\Enums\StreamStatus;
-use App\Enums\StreamVisibility;
+use App\Enums\MeetingRole;
+use App\Enums\MeetingStatus;
+use App\Enums\MeetingVisibility;
+use App\Meetings\MeetingProviderRegistry;
 use App\Support\StreamEmbed;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 /**
  * Session de l'événement : d'atelier ou plénière (modérateur + rapporteur).
  * Table `event_sessions` (`sessions` étant réservée par Laravel). Peut porter
- * une diffusion en direct (voir les champs `stream_*` et les helpers ci-dessous ;
- * `stream_status`/`stream_visibility` restent des strings en base, comme les
- * autres statuts — l'enum est la source des libellés/pastilles).
+ * une **visio interactive** (présentations en ligne) : voir les champs `meeting_*`
+ * et les helpers ci-dessous. `meeting_status`/`meeting_visibility` restent des
+ * strings en base (l'enum est la source des libellés/pastilles). Les rôles
+ * (modérateur/présentateur/participant) sont **calculés**, jamais stockés.
  */
 class EventSession extends Model
 {
@@ -32,18 +36,18 @@ class EventSession extends Model
         ];
     }
 
-    // --- Diffusion en direct (live streaming) ------------------------------
+    // --- Visio interactive (présentations en ligne) ------------------------
 
-    /** Une diffusion est configurée (URL renseignée). */
-    public function hasStream(): bool
+    /** La visio est activée pour cette session (statut ≠ aucune). */
+    public function hasMeeting(): bool
     {
-        return filled($this->stream_url);
+        return $this->meetingStatusEnum() !== MeetingStatus::None;
     }
 
     /** La session est en direct maintenant. */
     public function isLive(): bool
     {
-        return $this->stream_status === StreamStatus::Live->value && $this->hasStream();
+        return $this->meetingStatusEnum() === MeetingStatus::Live;
     }
 
     /** Un replay est disponible. */
@@ -52,20 +56,29 @@ class EventSession extends Model
         return filled($this->recording_url);
     }
 
-    public function streamStatusEnum(): StreamStatus
+    public function meetingStatusEnum(): MeetingStatus
     {
-        return StreamStatus::tryFrom((string) $this->stream_status) ?? StreamStatus::None;
+        return MeetingStatus::tryFrom((string) $this->meeting_status) ?? MeetingStatus::None;
     }
 
-    public function streamVisibilityEnum(): StreamVisibility
+    public function meetingVisibilityEnum(): MeetingVisibility
     {
-        return StreamVisibility::tryFrom((string) $this->stream_visibility) ?? StreamVisibility::Participants;
+        return MeetingVisibility::tryFrom((string) $this->meeting_visibility) ?? MeetingVisibility::Participants;
     }
 
-    /** URL embarquable (iframe) de la diffusion, ou null. */
-    public function streamEmbedUrl(): ?string
+    /**
+     * Nom de salle. Utilise `meeting_room` si fourni, sinon un nom déterministe
+     * et stable dérivé de l'édition et de la session (préfixe configurable).
+     */
+    public function meetingRoom(): string
     {
-        return StreamEmbed::toEmbedUrl($this->stream_url);
+        if (filled($this->meeting_room)) {
+            return (string) $this->meeting_room;
+        }
+
+        $prefix = (string) config('meetings.jitsi.room_prefix', 'gesco');
+
+        return Str::slug($prefix.'-'.$this->edition_id.'-'.$this->id);
     }
 
     /** URL embarquable du replay, ou null. */
@@ -74,37 +87,88 @@ class EventSession extends Model
         return StreamEmbed::toEmbedUrl($this->recording_url);
     }
 
-    /** Fournisseur détecté (youtube | vimeo | custom | null). */
-    public function streamProvider(): ?string
+    /**
+     * Identifiants (account_id) des communicants dont la communication est
+     * programmée dans cette session (via les créneaux) — les présentateurs.
+     *
+     * @return array<int, int>
+     */
+    public function presenterAccountIds(): array
     {
-        return StreamEmbed::provider($this->stream_url);
+        $submissionIds = $this->slots()->where('submission_id', '>', 0)->pluck('submission_id');
+
+        return Submission::whereIn('id', $submissionIds)
+            ->with('participant')
+            ->get()
+            ->map(fn (Submission $s) => (int) $s->participant?->account_id)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /**
-     * Ce compte peut-il regarder la diffusion ? Publique → tout le monde ;
-     * participants → le compte doit être inscrit sur l'édition. (Gating plus fin,
-     * ex. payés seulement, à décider avec le mockup.)
+     * Rôle calculé d'un utilisateur dans la visio de cette session.
+     * Staff → modérateur ; e-mail = modérateur assigné → modérateur ;
+     * communicant programmé → présentateur ; inscrit (ou public) → participant ;
+     * sinon accès refusé. (Gating plus fin, ex. payés, à décider avec le mockup.)
      */
-    public function canBeWatchedBy(?Account $account): bool
+    public function meetingRoleFor(?Account $account, bool $isStaff = false): MeetingRole
     {
-        if ($this->streamVisibilityEnum() === StreamVisibility::Public) {
-            return true;
+        if ($isStaff) {
+            return MeetingRole::Moderator;
         }
+
+        $public = $this->meetingVisibilityEnum() === MeetingVisibility::Public;
 
         if (! $account) {
-            return false;
+            return $public ? MeetingRole::Attendee : MeetingRole::None;
         }
 
-        return Participant::where('edition_id', $this->edition_id)
+        if (filled($this->moderator_email)
+            && mb_strtolower((string) $this->moderator_email) === mb_strtolower((string) $account->email)) {
+            return MeetingRole::Moderator;
+        }
+
+        if (in_array($account->id, $this->presenterAccountIds(), true)) {
+            return MeetingRole::Presenter;
+        }
+
+        $isParticipant = Participant::where('edition_id', $this->edition_id)
             ->where('account_id', $account->id)
             ->exists();
+
+        if ($public || $isParticipant) {
+            return MeetingRole::Attendee;
+        }
+
+        return MeetingRole::None;
+    }
+
+    /** Cet utilisateur peut-il rejoindre la visio ? */
+    public function canJoin(?Account $account, bool $isStaff = false): bool
+    {
+        return $this->meetingRoleFor($account, $isStaff)->canJoin();
+    }
+
+    /** URL de connexion à la salle pour cet utilisateur (ou null si refusé). */
+    public function joinUrl(?Account $account, bool $isStaff = false, ?string $displayName = null): ?string
+    {
+        $role = $this->meetingRoleFor($account, $isStaff);
+
+        if (! $role->canJoin()) {
+            return null;
+        }
+
+        $name = $displayName ?: ($isStaff ? 'Organisation' : $account?->full_name);
+
+        return app(MeetingProviderRegistry::class)->for($this)->joinUrl($this, $role, $name);
     }
 
     /** Sessions actuellement en direct. */
     public function scopeLive(Builder $query): Builder
     {
-        return $query->where('stream_status', StreamStatus::Live->value)
-            ->whereNotNull('stream_url');
+        return $query->where('meeting_status', MeetingStatus::Live->value);
     }
 
     public function edition(): BelongsTo

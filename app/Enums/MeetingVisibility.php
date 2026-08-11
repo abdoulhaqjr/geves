@@ -5,11 +5,11 @@ namespace App\Enums;
 use App\Enums\Concerns\HasLabels;
 
 /**
- * Qui peut regarder la diffusion d'une session : tout le monde (public) ou les
- * seuls participants inscrits de l'édition. Le gating fin (ex. payés seulement)
- * pourra être affiné à l'arrivée du mockup — cf. EventSession::canBeWatchedBy().
+ * Qui peut rejoindre la visio d'une session : tout le monde (public) ou les
+ * seuls participants inscrits de l'édition. Gating plus fin (payés seulement…)
+ * à décider avec le mockup — cf. EventSession::meetingRoleFor().
  */
-enum StreamVisibility: string
+enum MeetingVisibility: string
 {
     use HasLabels;
 
