@@ -15,9 +15,17 @@
                    @class(['active' => request()->routeIs('account.submissions.index')])>
                     <x-ukc.icon name="inbox" :size="18" /> Mes communications
                 </a>
+                <a href="{{ route('account.documents') }}" wire:navigate
+                   @class(['active' => request()->routeIs('account.documents')])>
+                    <x-ukc.icon name="folder" :size="18" /> Mes documents
+                </a>
                 <a href="{{ route('account.profile') }}" wire:navigate
                    @class(['active' => request()->routeIs('account.profile')])>
                     <x-ukc.icon name="user" :size="18" /> Mon profil
+                </a>
+                <a href="{{ route('account.security') }}" wire:navigate
+                   @class(['active' => request()->routeIs('account.security')])>
+                    <x-ukc.icon name="lock" :size="18" /> Sécurité
                 </a>
             </nav>
             <div class="ukc-sidebar-foot">

@@ -10,12 +10,14 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\AttestationController;
 use App\Http\Controllers\PaymentController;
 use App\Livewire\Account\Dashboard;
+use App\Livewire\Account\Documents as AccountDocuments;
 use App\Livewire\Account\ForgotPassword;
 use App\Livewire\Account\Login;
 use App\Livewire\Account\Payment\Pay as AccountPay;
 use App\Livewire\Account\Profile;
 use App\Livewire\Account\Register;
 use App\Livewire\Account\ResetPassword;
+use App\Livewire\Account\Security as AccountSecurity;
 use App\Livewire\Account\Submissions\Create as SubmissionCreate;
 use App\Livewire\Account\Submissions\Index as SubmissionIndex;
 use App\Livewire\Account\Submissions\Show as SubmissionShow;
@@ -82,6 +84,8 @@ Route::middleware('guest:account')->group(function () {
 Route::middleware('auth:account')->group(function () {
     Route::get('/mon-compte', Dashboard::class)->name('account.dashboard');
     Route::get('/mon-profil', Profile::class)->name('account.profile');
+    Route::get('/mes-documents', AccountDocuments::class)->name('account.documents');
+    Route::get('/mon-compte/securite', AccountSecurity::class)->name('account.security');
 
     // Communications
     Route::get('/mes-communications', SubmissionIndex::class)->name('account.submissions.index');

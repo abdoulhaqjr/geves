@@ -1,0 +1,30 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+/**
+ * Double authentification (TOTP) pour les comptes participants. Colonnes alignées
+ * sur la convention Laravel Fortify. Secret et codes de récupération chiffrés
+ * (cast `encrypted`/`encrypted:array` sur le modèle Account). `confirmed_at` non
+ * nul = 2FA active (l'utilisateur a validé un premier code).
+ */
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('accounts', function (Blueprint $table) {
+            $table->text('two_factor_secret')->nullable()->after('password');
+            $table->text('two_factor_recovery_codes')->nullable()->after('two_factor_secret');
+            $table->timestamp('two_factor_confirmed_at')->nullable()->after('two_factor_recovery_codes');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('accounts', function (Blueprint $table) {
+            $table->dropColumn(['two_factor_secret', 'two_factor_recovery_codes', 'two_factor_confirmed_at']);
+        });
+    }
+};

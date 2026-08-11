@@ -1,7 +1,7 @@
 # Passation — GESCO · Gestion des colloques scientifiques
 
 > Document de passation pour la personne qui reprend le développement.
-> Dernière mise à jour : 2026-08-11 (livret des résumés en Word .docx via phpword).
+> Dernière mise à jour : 2026-08-11 (espace participant : page « Mes documents » + page « Sécurité » mot de passe & 2FA TOTP ; livret .docx).
 
 Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture**, les **conventions**, le **travail réalisé**, ce qui **reste à faire** et les **pièges** à connaître.
 
@@ -68,6 +68,8 @@ php.bat vendor/bin/pint              # style (Laravel Pint)
 composer.bat check                   # pint --test + phpstan + tests (= le CI)
 ```
 > ⚠️ Le lanceur affiche une sortie **JSON compacte** (plugin `laravel/pao`) — pas la trace complète. Pour déboguer une exception dans un test, capter l'exception dans le test (try/catch + `fwrite(STDERR, …)`), ou utiliser `->assertOk()`/dumps ciblés. `vendor/bin/phpunit` **ne fonctionne pas** (Pest requis).
+
+**Espace participant — « Mes documents » & « Sécurité » (2FA)** : sidebar participant complétée (`components/layouts/participant.blade.php`) avec deux entrées. *Mes documents* (`Account\Documents`, `/mes-documents`) : page consolidée = attestations + reçus + documents des éditions (ressources `media` + livret HTML/.docx), reprend la logique du dashboard. *Sécurité* (`Account\Security`, `/mon-compte/securite`) : changement de mot de passe (mot de passe actuel exigé) + **double authentification TOTP**. Moteur **`App\Support\Totp`** = RFC 6238 **PHP pur, zéro dépendance** (porté du pattern bizzcart `Services/Auth/App/Helpers/Totp`), QR via `simplesoftwareio/simple-qrcode` déjà présent (⚠️ google2fa a été **retiré** au profit de ce moteur maison). Colonnes `accounts.two_factor_secret`/`two_factor_recovery_codes`/`two_factor_confirmed_at` (convention Fortify), **chiffrées** (`encrypted`/`encrypted:array`) — ⚠️ Larastan infère la colonne `text` comme `string|null` : **annoter `@property`** sur le modèle (fait). Méthodes modèle alignées bizzcart : `hasTotpEnabled`/`generateRecoveryCodes`/`countRecoveryCodes`/`consumeRecoveryCode`/`disableTotp`. Flux : setup (secret provisoire **en session**, jamais dans l'état Livewire) → confirm (code TOTP → active + codes de secours affichés **une seule fois**) → désactiver/régénérer (mot de passe exigé). **Challenge à la connexion** intégré dans `Account\Login` : mot de passe validé mais connexion différée si `hasTotpEnabled()` (identifiant en session `account.2fa.login_id`), `confirmChallenge` accepte un code TOTP **ou** un code de récupération à usage unique. 14 tests dédiés (`AccountSecurityTest`, `AccountDocumentsPageTest`). **213 tests verts.**
 
 **Observers & Events (patterns bizzcart)** : *Observers* — invariants garantis à la création (sans écraser une valeur fournie) : `SubmissionObserver` (`ref_code` AA-NNN + `access_token`), `ParticipantObserver` (`access_token`), `AttestationObserver` (`uuid`) ; enregistrés via `#[ObservedBy]` sur les modèles ; appelants allégés (`Submissions\Create` — plus de `generateRefCode()`, Upsert*, `IssueAttestation`). ⚠️ La resoumission (`Account\Submissions\Show`) fournit `ref_code` explicitement (conservé). *Events* — `SubmissionStatusChanged` + listeners `NotifyAuthorOfStatus` / `InviteCoauthorsOnAcceptance` **auto-découverts** par Laravel 13 (⚠️ **ne pas** aussi `Event::listen` manuellement → double envoi). `Admin\Submissions\Show::applyStatus` dispatche l'event. *(commit `1bf8ab1`)*
 
