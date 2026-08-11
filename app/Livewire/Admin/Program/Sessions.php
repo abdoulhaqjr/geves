@@ -43,6 +43,15 @@ class Sessions extends Component
 
     public string $sRapporteur = '';
 
+    // Personnalisation visio (une session éditée à la fois)
+    public ?int $editingMeeting = null;
+
+    public string $mProvider = 'jitsi';
+
+    public string $mRoom = '';
+
+    public string $mUrl = '';
+
     public function mount(): void
     {
         $this->edition_id = (string) (Edition::where('status', 'open')->latest('id')->value('id')
@@ -139,6 +148,51 @@ class Sessions extends Component
         }
 
         EventSession::whereKey($id)->update(['meeting_visibility' => $visibility]);
+    }
+
+    /** Ouvre le panneau de personnalisation visio d'une session. */
+    public function editMeeting(int $id): void
+    {
+        $s = EventSession::find($id);
+        if (! $s) {
+            return;
+        }
+
+        $this->editingMeeting = $id;
+        $this->mProvider = $s->meeting_provider ?: (string) config('meetings.default', 'jitsi');
+        $this->mRoom = (string) $s->meeting_room;
+        $this->mUrl = (string) $s->meeting_url;
+    }
+
+    public function cancelMeetingEdit(): void
+    {
+        $this->reset(['editingMeeting', 'mProvider', 'mRoom', 'mUrl']);
+    }
+
+    /** Enregistre le fournisseur et la salle/URL personnalisés. */
+    public function saveMeeting(): void
+    {
+        if (! $this->editingMeeting) {
+            return;
+        }
+
+        $this->validate([
+            'mProvider' => ['required', 'in:jitsi,custom'],
+            'mRoom' => ['nullable', 'string', 'max:120', 'regex:/^[A-Za-z0-9 _-]+$/'],
+            'mUrl' => [$this->mProvider === 'custom' ? 'required' : 'nullable', 'url', 'max:500'],
+        ], attributes: [
+            'mRoom' => 'nom de salle',
+            'mUrl' => 'lien de réunion',
+        ]);
+
+        EventSession::whereKey($this->editingMeeting)->update([
+            'meeting_provider' => $this->mProvider,
+            'meeting_room' => $this->mProvider === 'jitsi' ? ($this->mRoom ?: null) : null,
+            'meeting_url' => $this->mProvider === 'custom' ? ($this->mUrl ?: null) : null,
+        ]);
+
+        $this->reset(['editingMeeting', 'mProvider', 'mRoom', 'mUrl']);
+        session()->flash('ukc_status', 'Visio personnalisée.');
     }
 
     protected function composeDateTime(?string $day, ?string $time): ?string

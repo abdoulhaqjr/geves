@@ -151,7 +151,7 @@ class EventSession extends Model
         return $this->meetingRoleFor($account, $isStaff)->canJoin();
     }
 
-    /** URL de connexion à la salle pour cet utilisateur (ou null si refusé). */
+    /** URL de connexion à la salle pour cet utilisateur (ou null si refusé/absente). */
     public function joinUrl(?Account $account, bool $isStaff = false, ?string $displayName = null): ?string
     {
         $role = $this->meetingRoleFor($account, $isStaff);
@@ -162,7 +162,13 @@ class EventSession extends Model
 
         $name = $displayName ?: ($isStaff ? 'Organisation' : $account?->full_name);
 
-        return app(MeetingProviderRegistry::class)->for($this)->joinUrl($this, $role, $name);
+        return app(MeetingProviderRegistry::class)->for($this)->joinUrl($this, $role, $name) ?: null;
+    }
+
+    /** La salle du fournisseur de cette session peut-elle être embarquée en iframe ? */
+    public function meetingEmbeddable(): bool
+    {
+        return app(MeetingProviderRegistry::class)->for($this)->embeddable();
     }
 
     /** Sessions actuellement en direct. */

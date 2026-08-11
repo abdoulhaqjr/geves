@@ -29,6 +29,7 @@ class MeetingController extends Controller
             'isStaff' => $isStaff,
             'isGuest' => ! $account && ! $isStaff,
             'joinUrl' => $canJoinNow ? $session->joinUrl($account, $isStaff) : null,
+            'embeddable' => $session->meetingEmbeddable(),
         ]);
     }
 }

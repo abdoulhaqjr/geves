@@ -200,3 +200,56 @@ it('la page visio indique quand la visio n’est pas en cours', function () {
         ->assertSee('pas en cours')
         ->assertDontSee('<iframe', false);
 });
+
+// --- Salle / lien custom ----------------------------------------------------
+
+it('utilise le lien externe quand le fournisseur custom est configuré', function () {
+    $edition = openEdition();
+    $session = liveSession($edition, 'public', ['meeting_provider' => 'custom', 'meeting_url' => 'https://zoom.us/j/123']);
+
+    expect($session->meetingEmbeddable())->toBeFalse();
+    expect($session->joinUrl(null))->toBe('https://zoom.us/j/123');
+});
+
+it('le staff personnalise fournisseur, salle et lien', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+    $session = $edition->sessions()->create(['type' => 'plenary', 'label' => 'X']);
+
+    Livewire::actingAs($staff, 'web')->test(Sessions::class)
+        ->call('editMeeting', $session->id)
+        ->set('mProvider', 'jitsi')->set('mRoom', 'ma-salle')
+        ->call('saveMeeting')->assertHasNoErrors();
+    expect($session->fresh()->meeting_room)->toBe('ma-salle');
+
+    Livewire::actingAs($staff, 'web')->test(Sessions::class)
+        ->call('editMeeting', $session->id)
+        ->set('mProvider', 'custom')->set('mUrl', 'https://meet.google.com/abc')
+        ->call('saveMeeting')->assertHasNoErrors();
+    $fresh = $session->fresh();
+    expect($fresh->meeting_provider)->toBe('custom');
+    expect($fresh->meeting_url)->toBe('https://meet.google.com/abc');
+    expect($fresh->meeting_room)->toBeNull();
+});
+
+it('exige un lien pour le fournisseur externe', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+    $session = $edition->sessions()->create(['type' => 'plenary', 'label' => 'X']);
+
+    Livewire::actingAs($staff, 'web')->test(Sessions::class)
+        ->call('editMeeting', $session->id)
+        ->set('mProvider', 'custom')->set('mUrl', '')
+        ->call('saveMeeting')->assertHasErrors('mUrl');
+});
+
+it('la page visio propose un nouvel onglet pour un lien externe', function () {
+    $edition = openEdition();
+    $session = liveSession($edition, 'public', ['meeting_provider' => 'custom', 'meeting_url' => 'https://zoom.us/j/999']);
+
+    $this->get(route('session.meeting', $session))
+        ->assertOk()
+        ->assertSee('nouvel onglet')
+        ->assertSee('https://zoom.us/j/999')
+        ->assertDontSee('<iframe', false);
+});

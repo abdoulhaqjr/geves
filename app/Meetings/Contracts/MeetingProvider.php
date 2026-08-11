@@ -20,6 +20,12 @@ interface MeetingProvider
     public function isAvailable(): bool;
 
     /**
+     * Vrai si la salle peut être embarquée en iframe (Jitsi). Les liens externes
+     * (Zoom/Meet…) bloquent souvent l'iframe → on ouvre plutôt un nouvel onglet.
+     */
+    public function embeddable(): bool;
+
+    /**
      * URL de connexion à la salle de la session, pour le rôle et le nom donnés.
      * Le rôle peut être matérialisé côté serveur (JWT) si le fournisseur le
      * supporte, sinon il n'est qu'indicatif (nom d'affichage).

@@ -3,6 +3,7 @@
 namespace App\Meetings;
 
 use App\Meetings\Contracts\MeetingProvider;
+use App\Meetings\Providers\CustomProvider;
 use App\Meetings\Providers\JitsiProvider;
 use App\Models\EventSession;
 use App\Payments\GatewayRegistry;
@@ -21,6 +22,7 @@ class MeetingProviderRegistry
     {
         $this->providers = [
             new JitsiProvider,
+            new CustomProvider,
         ];
     }
 

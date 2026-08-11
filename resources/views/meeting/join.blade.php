@@ -27,10 +27,32 @@
 
         {{-- Corps --}}
         <main style="flex:1;min-height:0;display:flex;">
-            @if ($joinUrl)
+            @if ($joinUrl && $embeddable)
                 <iframe src="{{ $joinUrl }}" title="Visio de la session"
                         allow="camera; microphone; fullscreen; display-capture; autoplay; clipboard-write"
                         style="flex:1;width:100%;height:100%;border:0;"></iframe>
+            @elseif ($joinUrl)
+                {{-- Lien externe non embarquable (Zoom/Meet…) → nouvel onglet --}}
+                <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:24px;">
+                    <div class="ukc-card" style="max-width:460px;text-align:center;">
+                        <span class="ico" style="display:inline-flex;color:var(--ukc-blue);margin-bottom:8px;">
+                            <x-ukc.icon name="video" :size="34" />
+                        </span>
+                        <h3 style="margin-bottom:6px;">La visio a lieu sur un service externe</h3>
+                        <p style="color:var(--ukc-muted);">Cliquez pour rejoindre la réunion dans un nouvel onglet.</p>
+                        <a href="{{ $joinUrl }}" target="_blank" rel="noopener" class="ukc-btn ukc-btn--primary" style="margin-top:14px;">
+                            <x-ukc.icon name="external" :size="16" /> Rejoindre la réunion
+                        </a>
+                    </div>
+                </div>
+            @elseif ($session->isLive() && $role->canJoin())
+                {{-- En direct, autorisé, mais salle non configurée --}}
+                <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:24px;">
+                    <div class="ukc-card" style="max-width:460px;text-align:center;">
+                        <h3 style="margin-bottom:6px;">Salle non configurée</h3>
+                        <p style="color:var(--ukc-muted);">Le lien de la réunion n’a pas encore été renseigné par l’organisation.</p>
+                    </div>
+                </div>
             @else
                 <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:24px;">
                     <div class="ukc-card" style="max-width:460px;text-align:center;">

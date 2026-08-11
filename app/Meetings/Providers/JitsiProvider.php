@@ -35,6 +35,12 @@ class JitsiProvider implements MeetingProvider
         return true;
     }
 
+    /** Jitsi s'embarque en iframe. */
+    public function embeddable(): bool
+    {
+        return true;
+    }
+
     /** Le mode JWT (rôles imposés) est actif si un secret est configuré. */
     public function usesJwt(): bool
     {
