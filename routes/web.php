@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\LogoutController as AdminLogoutController;
 use App\Http\Controllers\Admin\ReceiptController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\AttestationController;
+use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Public\ColloqueController;
 use App\Livewire\Account\Dashboard;
@@ -56,6 +57,9 @@ Route::get('/colloque/{slug}', ColloqueController::class)->name('public.colloque
 
 // Parcours de paiement des co-auteurs (public, sans compte, retrouvé par e-mail).
 Route::get('/colloque/{slug}/co-auteur', CoauthorPayment::class)->name('public.coauthor');
+
+// Visio interactive d'une session (accès géré dans le contrôleur selon le rôle).
+Route::get('/session/{session}/visio', [MeetingController::class, 'join'])->name('session.meeting');
 
 // Portail relecteur (accès par jeton, sans compte).
 Route::get('/relecture/{token}', ReviewerPortal::class)->name('reviewer.portal');

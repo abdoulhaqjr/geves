@@ -31,16 +31,19 @@
                 <div class="ukc-card">
                     <h3><x-ukc.icon name="mic" :size="20" /> Sessions plénières</h3>
                     @forelse ($plenaries as $s)
-                        <div wire:key="pl-{{ $s->id }}" style="display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--ukc-border);">
-                            <div>
-                                <div style="font-weight:700;">{{ $s->label }}</div>
-                                <div style="font-size:.82rem;color:var(--ukc-muted);">
-                                    {{ $s->session_day?->format('d/m/Y') }}
-                                    @if ($s->starts_at) · {{ $s->starts_at->format('H:i') }}@if($s->ends_at)–{{ $s->ends_at->format('H:i') }}@endif @endif
-                                    @if ($s->room) · {{ $s->room }} @endif
+                        <div wire:key="pl-{{ $s->id }}" style="padding:10px 0;border-bottom:1px solid var(--ukc-border);">
+                            <div style="display:flex;justify-content:space-between;gap:10px;">
+                                <div>
+                                    <div style="font-weight:700;">{{ $s->label }}</div>
+                                    <div style="font-size:.82rem;color:var(--ukc-muted);">
+                                        {{ $s->session_day?->format('d/m/Y') }}
+                                        @if ($s->starts_at) · {{ $s->starts_at->format('H:i') }}@if($s->ends_at)–{{ $s->ends_at->format('H:i') }}@endif @endif
+                                        @if ($s->room) · {{ $s->room }} @endif
+                                    </div>
                                 </div>
+                                <button type="button" class="ukc-btn ukc-btn--danger ukc-btn--sm" wire:click="deleteSession({{ $s->id }})" wire:confirm="Supprimer ?"><x-ukc.icon name="trash" :size="14" /></button>
                             </div>
-                            <button type="button" class="ukc-btn ukc-btn--danger ukc-btn--sm" wire:click="deleteSession({{ $s->id }})" wire:confirm="Supprimer ?"><x-ukc.icon name="trash" :size="14" /></button>
+                            @include('livewire.admin.program._meeting', ['s' => $s])
                         </div>
                     @empty
                         <p style="font-size:.88rem;color:var(--ukc-muted);">Aucune session plénière.</p>
@@ -60,17 +63,20 @@
                             </div>
                         @endif
                         @forelse ($atelier->sessions as $s)
-                            <div wire:key="as-{{ $s->id }}" style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--ukc-border);">
-                                <div>
-                                    <div style="font-weight:600;font-size:.92rem;">{{ $s->label }}</div>
-                                    <div style="font-size:.8rem;color:var(--ukc-muted);">
-                                        {{ $s->session_day?->format('d/m/Y') }}
-                                        @if ($s->room) · {{ $s->room }} @endif
-                                        @if ($s->moderator_name) · Mod. {{ $s->moderator_name }} @endif
-                                        @if ($s->rapporteur_name) · Rap. {{ $s->rapporteur_name }} @endif
+                            <div wire:key="as-{{ $s->id }}" style="padding:8px 0;border-bottom:1px solid var(--ukc-border);">
+                                <div style="display:flex;justify-content:space-between;gap:10px;">
+                                    <div>
+                                        <div style="font-weight:600;font-size:.92rem;">{{ $s->label }}</div>
+                                        <div style="font-size:.8rem;color:var(--ukc-muted);">
+                                            {{ $s->session_day?->format('d/m/Y') }}
+                                            @if ($s->room) · {{ $s->room }} @endif
+                                            @if ($s->moderator_name) · Mod. {{ $s->moderator_name }} @endif
+                                            @if ($s->rapporteur_name) · Rap. {{ $s->rapporteur_name }} @endif
+                                        </div>
                                     </div>
+                                    <button type="button" class="ukc-btn ukc-btn--danger ukc-btn--sm" wire:click="deleteSession({{ $s->id }})" wire:confirm="Supprimer ?"><x-ukc.icon name="trash" :size="14" /></button>
                                 </div>
-                                <button type="button" class="ukc-btn ukc-btn--danger ukc-btn--sm" wire:click="deleteSession({{ $s->id }})" wire:confirm="Supprimer ?"><x-ukc.icon name="trash" :size="14" /></button>
+                                @include('livewire.admin.program._meeting', ['s' => $s])
                             </div>
                         @empty
                             <p style="font-size:.85rem;color:var(--ukc-muted);">Aucune session dans cet atelier.</p>

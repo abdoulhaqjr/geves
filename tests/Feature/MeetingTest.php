@@ -1,11 +1,13 @@
 <?php
 
 use App\Enums\MeetingRole;
+use App\Livewire\Admin\Program\Sessions;
 use App\Meetings\MeetingProviderRegistry;
 use App\Meetings\Providers\JitsiProvider;
 use App\Models\Account;
 use App\Models\EventSession;
 use App\Support\StreamEmbed;
+use Livewire\Livewire;
 
 // openEdition() -> AccountSubmissionTest
 
@@ -138,4 +140,63 @@ it('autorise tout le monde sur une visio publique', function () {
 
     expect($session->meetingRoleFor(null))->toBe(MeetingRole::Attendee);
     expect($session->canJoin(null))->toBeTrue();
+});
+
+// --- UI : back-office & page « Rejoindre » ---------------------------------
+
+it('le staff pilote l’état et la visibilité de la visio', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+    $session = $edition->sessions()->create(['type' => 'plenary', 'label' => 'X']);
+
+    Livewire::actingAs($staff, 'web')
+        ->test(Sessions::class)
+        ->call('setMeetingStatus', $session->id, 'live')
+        ->call('setMeetingVisibility', $session->id, 'public');
+
+    $session->refresh();
+    expect($session->meeting_status)->toBe('live');
+    expect($session->meeting_visibility)->toBe('public');
+});
+
+it('la page visio embarque la salle pour un inscrit', function () {
+    $edition = openEdition();
+    $session = liveSession($edition, 'participants');
+    $account = Account::create(['first_name' => 'In', 'last_name' => 'S', 'email' => 'in@example.tg', 'password' => 'pass12345']);
+    $edition->participants()->create(['account_id' => $account->id, 'first_name' => 'In', 'last_name' => 'S', 'email' => 'in@example.tg', 'role' => 'author']);
+
+    $this->actingAs($account, 'account')->get(route('session.meeting', $session))
+        ->assertOk()
+        ->assertSee('EN DIRECT')
+        ->assertSee('<iframe', false);
+});
+
+it('la page visio refuse un non-inscrit', function () {
+    $edition = openEdition();
+    $session = liveSession($edition, 'participants');
+    $etranger = Account::create(['first_name' => 'Et', 'last_name' => 'R', 'email' => 'et@example.tg', 'password' => 'pass12345']);
+
+    $this->actingAs($etranger, 'account')->get(route('session.meeting', $session))
+        ->assertOk()
+        ->assertSee('Accès réservé')
+        ->assertDontSee('<iframe', false);
+});
+
+it('la page visio est ouverte à tous pour une session publique', function () {
+    $edition = openEdition();
+    $session = liveSession($edition, 'public');
+
+    $this->get(route('session.meeting', $session))
+        ->assertOk()
+        ->assertSee('<iframe', false);
+});
+
+it('la page visio indique quand la visio n’est pas en cours', function () {
+    $edition = openEdition();
+    $session = $edition->sessions()->create(['type' => 'plenary', 'label' => 'X', 'meeting_status' => 'scheduled', 'meeting_visibility' => 'public']);
+
+    $this->get(route('session.meeting', $session))
+        ->assertOk()
+        ->assertSee('pas en cours')
+        ->assertDontSee('<iframe', false);
 });

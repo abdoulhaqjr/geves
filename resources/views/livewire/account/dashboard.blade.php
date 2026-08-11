@@ -44,6 +44,29 @@
         </div>
     </div>
 
+    {{-- Sessions en direct maintenant --}}
+    @if ($liveSessions->isNotEmpty())
+        <div class="ukc-card" style="margin-bottom:20px;border-color:#fecaca;background:#fff5f5;">
+            <h3 style="display:flex;align-items:center;gap:8px;">
+                <span class="ukc-pill ukc-pill--err" style="display:inline-flex;align-items:center;gap:5px;">
+                    <span style="width:7px;height:7px;border-radius:50%;background:currentColor;"></span> EN DIRECT
+                </span>
+                Sessions en cours
+            </h3>
+            @foreach ($liveSessions as $s)
+                <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--ukc-border);">
+                    <div style="min-width:0;">
+                        <div style="font-weight:700;">{{ $s->label }}</div>
+                        <div style="font-size:.82rem;color:var(--ukc-muted);">{{ $s->edition?->title }}</div>
+                    </div>
+                    <a href="{{ route('session.meeting', $s) }}" class="ukc-btn ukc-btn--green ukc-btn--sm" style="flex-shrink:0;">
+                        <x-ukc.icon name="video" :size="15" /> Rejoindre
+                    </a>
+                </div>
+            @endforeach
+        </div>
+    @endif
+
     {{-- Étapes du parcours --}}
     <div class="ukc-steps">
         <div class="ukc-step done">Compte créé</div>

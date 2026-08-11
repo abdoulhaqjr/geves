@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Admin\Program;
 
+use App\Enums\MeetingStatus;
+use App\Enums\MeetingVisibility;
 use App\Models\Atelier;
 use App\Models\Edition;
 use App\Models\EventSession;
@@ -116,6 +118,27 @@ class Sessions extends Component
     {
         EventSession::whereKey($id)->delete();
         session()->flash('ukc_status', 'Session supprimée.');
+    }
+
+    /** Change l'état de la visio d'une session (none|scheduled|live|ended). */
+    public function setMeetingStatus(int $id, string $status): void
+    {
+        if (! in_array($status, MeetingStatus::values(), true)) {
+            return;
+        }
+
+        EventSession::whereKey($id)->update(['meeting_status' => $status]);
+        session()->flash('ukc_status', 'Visio : '.MeetingStatus::from($status)->label().'.');
+    }
+
+    /** Change la visibilité de la visio d'une session (public|participants). */
+    public function setMeetingVisibility(int $id, string $visibility): void
+    {
+        if (! in_array($visibility, MeetingVisibility::values(), true)) {
+            return;
+        }
+
+        EventSession::whereKey($id)->update(['meeting_visibility' => $visibility]);
     }
 
     protected function composeDateTime(?string $day, ?string $time): ?string
