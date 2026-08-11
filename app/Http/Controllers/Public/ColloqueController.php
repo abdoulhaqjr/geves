@@ -1,0 +1,54 @@
+<?php
+
+namespace App\Http\Controllers\Public;
+
+use App\Http\Controllers\Controller;
+use App\Models\Edition;
+use Illuminate\Contracts\View\View;
+
+/**
+ * Page publique d'une édition de colloque (accessible seulement si publiée).
+ *
+ * Vue statique en lecture seule rendue par contrôleur + Blade : la page ne porte
+ * aucune interactivité serveur (elle est donc cacheable en HTTP, sans snapshot
+ * Livewire). Les parties dynamiques restent des îlots — le formulaire de contact
+ * est un composant Livewire imbriqué (`<livewire:public.contact-form>`), le
+ * compte à rebours et le scrollspy sont gérés côté client par Alpine.
+ */
+class ColloqueController extends Controller
+{
+    public function __invoke(string $slug): View
+    {
+        $edition = Edition::with('colloque')->where('slug', $slug)->first();
+
+        abort_unless($edition && $edition->isPublished(), 404);
+
+        $settings = $edition->settings ?? [];
+
+        // Communications programmées, groupées par session (via les créneaux).
+        $commsBySession = $edition->slots()
+            ->where('submission_id', '>', 0)
+            ->with('submission')
+            ->orderBy('starts_at')
+            ->get()
+            ->groupBy('session_id');
+
+        return view('public.colloque', [
+            'edition' => $edition,
+            'intro' => $settings['intro'] ?? null,
+            'tracks' => $settings['tracks'] ?? [],
+            'fees' => $settings['fees'] ?? [],
+            'partners' => $settings['partners'] ?? [],
+            'faq' => $settings['faq'] ?? [],
+            'contact' => $settings['contact'] ?? [],
+            'heroImage' => $settings['hero_image'] ?? null,
+            'heroVideo' => $settings['hero_video'] ?? null,
+            'promo' => $settings['promo'] ?? [],
+            'practical' => $settings['practical'] ?? [],
+            'plenaries' => $edition->sessions()->where('type', 'plenary')->orderBy('ordre')->orderBy('starts_at')->get(),
+            'ateliers' => $edition->ateliers()->with(['sessions' => fn ($q) => $q->orderBy('ordre')])->orderBy('ordre')->get(),
+            'commsBySession' => $commsBySession,
+            'committees' => $edition->committeeMembers()->orderBy('ordre')->get()->groupBy('role'),
+        ]);
+    }
+}

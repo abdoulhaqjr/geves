@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * Édition : une occurrence datée d'un colloque, avec son cycle de vie et son
  * contenu public. Les réglages libres (frais, contenu enrichi…) sont en JSON.
+ *
+ * @property array<string, mixed>|null $settings réglages libres (frais, axes, contenu public…)
  */
 class Edition extends Model
 {

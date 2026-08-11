@@ -217,18 +217,6 @@ parameters:
 			path: app/Livewire/Account/Payment/Pay.php
 
 		-
-			message: '#^Offset ''max_communications'' on string\|null on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Livewire/Account/Submissions/Create.php
-
-		-
-			message: '#^Offset ''tracks'' on string\|null on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Livewire/Account/Submissions/Create.php
-
-		-
 			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) contains unresolvable type\.$#'
 			identifier: argument.unresolvableType
 			count: 1
@@ -271,72 +259,6 @@ parameters:
 			path: app/Livewire/Admin/Editions/Form.php
 
 		-
-			message: '#^Offset ''contact'' on array\{\}\|string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 3
-			path: app/Livewire/Admin/Editions/Form.php
-
-		-
-			message: '#^Offset ''faq'' on array\{\}\|string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Livewire/Admin/Editions/Form.php
-
-		-
-			message: '#^Offset ''fees'' on array\{\}\|string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Livewire/Admin/Editions/Form.php
-
-		-
-			message: '#^Offset ''hero_image'' on array\{\}\|string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Livewire/Admin/Editions/Form.php
-
-		-
-			message: '#^Offset ''hero_video'' on array\{\}\|string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Livewire/Admin/Editions/Form.php
-
-		-
-			message: '#^Offset ''intro'' on array\{\}\|string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Livewire/Admin/Editions/Form.php
-
-		-
-			message: '#^Offset ''max_communications'' on array\{\}\|string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Livewire/Admin/Editions/Form.php
-
-		-
-			message: '#^Offset ''partners'' on array\{\}\|string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Livewire/Admin/Editions/Form.php
-
-		-
-			message: '#^Offset ''practical'' on array\{\}\|string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 3
-			path: app/Livewire/Admin/Editions/Form.php
-
-		-
-			message: '#^Offset ''promo'' on array\{\}\|string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 3
-			path: app/Livewire/Admin/Editions/Form.php
-
-		-
-			message: '#^Offset ''tracks'' on array\{\}\|string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Livewire/Admin/Editions/Form.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>settings" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
@@ -373,12 +295,6 @@ parameters:
 			path: app/Livewire/Admin/Payments/Record.php
 
 		-
-			message: '#^Offset ''tracks'' on string\|null on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Livewire/Admin/Program/Sessions.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
@@ -407,72 +323,6 @@ parameters:
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Livewire/Public/CoauthorPayment.php
-
-		-
-			message: '#^Offset ''contact'' on array\{\}\|string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Livewire/Public/ColloquePage.php
-
-		-
-			message: '#^Offset ''faq'' on array\{\}\|string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Livewire/Public/ColloquePage.php
-
-		-
-			message: '#^Offset ''fees'' on array\{\}\|string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Livewire/Public/ColloquePage.php
-
-		-
-			message: '#^Offset ''hero_image'' on array\{\}\|string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Livewire/Public/ColloquePage.php
-
-		-
-			message: '#^Offset ''hero_video'' on array\{\}\|string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Livewire/Public/ColloquePage.php
-
-		-
-			message: '#^Offset ''intro'' on array\{\}\|string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Livewire/Public/ColloquePage.php
-
-		-
-			message: '#^Offset ''partners'' on array\{\}\|string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Livewire/Public/ColloquePage.php
-
-		-
-			message: '#^Offset ''practical'' on array\{\}\|string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Livewire/Public/ColloquePage.php
-
-		-
-			message: '#^Offset ''promo'' on array\{\}\|string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Livewire/Public/ColloquePage.php
-
-		-
-			message: '#^Offset ''tracks'' on array\{\}\|string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Livewire/Public/ColloquePage.php
-
-		-
-			message: '#^Offset ''contact'' on string\|null on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Livewire/Public/ContactForm.php
 
 		-
 			message: '#^Parameter \#1 \$boolean of function abort_unless expects bool, App\\Models\\Participant\|null given\.$#'
@@ -661,19 +511,8 @@ parameters:
 			path: app/Support/EmailTemplates.php
 
 		-
-			message: '#^Offset ''fees'' on string\|null on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Support/Fees.php
-
-		-
-			message: '#^Offset ''submission_form'' on string\|null on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Support/SubmissionFormConfig.php
-
-		-
 			message: '#^Parameter \#1 \$array \(non\-empty\-list\<string\>\) of array_values is already a list, call has no effect\.$#'
 			identifier: arrayValues.list
 			count: 1
 			path: app/Support/XlsxWriter.php
+

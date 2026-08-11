@@ -1,7 +1,7 @@
 # Passation — GESCO · Gestion des colloques scientifiques
 
 > Document de passation pour la personne qui reprend le développement.
-> Dernière mise à jour : 2026-08-11 (espace participant : page « Mes documents » + page « Sécurité » mot de passe & 2FA TOTP ; livret .docx).
+> Dernière mise à jour : 2026-08-11 (page publique du colloque : Livewire → contrôleur + Blade ; espace participant : « Mes documents » + « Sécurité » 2FA ; livret .docx).
 
 Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture**, les **conventions**, le **travail réalisé**, ce qui **reste à faire** et les **pièges** à connaître.
 
@@ -69,6 +69,8 @@ composer.bat check                   # pint --test + phpstan + tests (= le CI)
 ```
 > ⚠️ Le lanceur affiche une sortie **JSON compacte** (plugin `laravel/pao`) — pas la trace complète. Pour déboguer une exception dans un test, capter l'exception dans le test (try/catch + `fwrite(STDERR, …)`), ou utiliser `->assertOk()`/dumps ciblés. `vendor/bin/phpunit` **ne fonctionne pas** (Pest requis).
 
+**Page publique du colloque : Livewire → contrôleur + Blade** (audit Livewire vs Blade). Sur 38 composants, un seul était en lecture seule *et* public/SEO : `Public\ColloquePage`. Converti en `Http\Controllers\Public\ColloqueController` (invokable) + vue `resources/views/public/colloque.blade.php` (wrappée dans `x-layouts.app`). Pattern « coquille statique + îlots » : la page n'a **aucun `wire:`**, l'interactivité reste isolée — formulaire de contact via `@livewire('public.contact-form')`, compte à rebours/scrollspy via Alpine. Bénéfice : page **cacheable en HTTP**, plus de snapshot Livewire externe (vérifié : 1 seul `wire:id`, celui de l'îlot contact). Les 6 autres composants lecture-seule (dashboards, listes, aperçu, portail) restent en Livewire (authentifiés → pas de gain, cohérence privilégiée). ⚠️ Après suppression d'un composant, **régénérer le baseline PHPStan** (sinon chemins orphelins → erreur). Bonus : annoter `@property array<string,mixed>|null $settings` sur `Edition` a résorbé ~100 lignes de baseline (inférence JSON) à travers tout le code.
+
 **Espace participant — « Mes documents » & « Sécurité » (2FA)** : sidebar participant complétée (`components/layouts/participant.blade.php`) avec deux entrées. *Mes documents* (`Account\Documents`, `/mes-documents`) : page consolidée = attestations + reçus + documents des éditions (ressources `media` + livret HTML/.docx), reprend la logique du dashboard. *Sécurité* (`Account\Security`, `/mon-compte/securite`) : changement de mot de passe (mot de passe actuel exigé) + **double authentification TOTP**. Moteur **`App\Support\Totp`** = RFC 6238 **PHP pur, zéro dépendance** (porté du pattern bizzcart `Services/Auth/App/Helpers/Totp`), QR via `simplesoftwareio/simple-qrcode` déjà présent (⚠️ google2fa a été **retiré** au profit de ce moteur maison). Colonnes `accounts.two_factor_secret`/`two_factor_recovery_codes`/`two_factor_confirmed_at` (convention Fortify), **chiffrées** (`encrypted`/`encrypted:array`) — ⚠️ Larastan infère la colonne `text` comme `string|null` : **annoter `@property`** sur le modèle (fait). Méthodes modèle alignées bizzcart : `hasTotpEnabled`/`generateRecoveryCodes`/`countRecoveryCodes`/`consumeRecoveryCode`/`disableTotp`. Flux : setup (secret provisoire **en session**, jamais dans l'état Livewire) → confirm (code TOTP → active + codes de secours affichés **une seule fois**) → désactiver/régénérer (mot de passe exigé). **Challenge à la connexion** intégré dans `Account\Login` : mot de passe validé mais connexion différée si `hasTotpEnabled()` (identifiant en session `account.2fa.login_id`), `confirmChallenge` accepte un code TOTP **ou** un code de récupération à usage unique. 14 tests dédiés (`AccountSecurityTest`, `AccountDocumentsPageTest`). **213 tests verts.**
 
 **Observers & Events (patterns bizzcart)** : *Observers* — invariants garantis à la création (sans écraser une valeur fournie) : `SubmissionObserver` (`ref_code` AA-NNN + `access_token`), `ParticipantObserver` (`access_token`), `AttestationObserver` (`uuid`) ; enregistrés via `#[ObservedBy]` sur les modèles ; appelants allégés (`Submissions\Create` — plus de `generateRefCode()`, Upsert*, `IssueAttestation`). ⚠️ La resoumission (`Account\Submissions\Show`) fournit `ref_code` explicitement (conservé). *Events* — `SubmissionStatusChanged` + listeners `NotifyAuthorOfStatus` / `InviteCoauthorsOnAcceptance` **auto-découverts** par Laravel 13 (⚠️ **ne pas** aussi `Event::listen` manuellement → double envoi). `Admin\Submissions\Show::applyStatus` dispatche l'event. *(commit `1bf8ab1`)*
@@ -99,7 +101,7 @@ app/
 │  │  ├─ Submissions/    # Index, Show (workflow + relecteurs)
 │  │  └─ Payments/       # Index, Record (encaissement manuel)
 │  ├─ Reviewer/          # Portail relecteur par jeton : Portal, Evaluate
-│  └─ Public/ColloquePage
+│  └─ Public/CoauthorPayment, ContactForm   # ColloquePage → Http/Controllers/Public/ColloqueController (Blade)
 ├─ Actions/              # Logique métier réutilisable (voir §5)
 │  ├─ UpsertParticipantForAccount, NotifySubmissionStatus, AssignReviewer, ConfirmPayment
 ├─ Mail/                 # SubmissionStatusMail, ReviewerInvitationMail, PaymentReceiptMail

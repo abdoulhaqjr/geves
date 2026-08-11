@@ -1,4 +1,4 @@
-<div>
+<x-layouts.app :title="$edition->title">
     <style>
         html { scroll-behavior: smooth; }
         section[id] { scroll-margin-top: 84px; }
@@ -368,4 +368,4 @@
     <footer style="padding:24px;text-align:center;font-size:.82rem;color:var(--ukc-light);background:var(--ukc-bg);">
         © {{ date('Y') }} {{ $e->colloque?->name }} — Université de Kara
     </footer>
-</div>
+</x-layouts.app>

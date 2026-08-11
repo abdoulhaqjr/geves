@@ -2,7 +2,6 @@
 
 use App\Livewire\Admin\Editions\Form;
 use App\Livewire\Admin\Participants\Preview;
-use App\Livewire\Public\ColloquePage;
 use App\Livewire\Public\ContactForm;
 use App\Mail\ContactMessageMail;
 use App\Models\Email;
@@ -81,7 +80,8 @@ it('valide les champs requis du formulaire de contact', function () {
 it('affiche la section contact et le formulaire sur la page publique', function () {
     $edition = openEdition(['contact' => ['email' => 'colloque@univkara.tg', 'phone' => '+228 90 00 00 00']]);
 
-    Livewire::test(ColloquePage::class, ['slug' => $edition->slug])
+    $this->get(route('public.colloque', $edition->slug))
+        ->assertOk()
         ->assertSee('Contact')
         ->assertSee('+228 90 00 00 00')
         ->assertSee('Envoyer le message');
@@ -90,7 +90,8 @@ it('affiche la section contact et le formulaire sur la page publique', function 
 it('affiche la bannière promo quand elle est renseignée', function () {
     $edition = openEdition(['promo' => ['text' => 'Early-bird jusqu’au 30 septembre', 'url' => 'https://uk.tg/promo', 'cta' => 'En profiter']]);
 
-    Livewire::test(ColloquePage::class, ['slug' => $edition->slug])
+    $this->get(route('public.colloque', $edition->slug))
+        ->assertOk()
         ->assertSee('Early-bird jusqu’au 30 septembre')
         ->assertSee('En profiter');
 });
@@ -98,7 +99,8 @@ it('affiche la bannière promo quand elle est renseignée', function () {
 it('masque la bannière promo sans texte', function () {
     $edition = openEdition();
 
-    Livewire::test(ColloquePage::class, ['slug' => $edition->slug])
+    $this->get(route('public.colloque', $edition->slug))
+        ->assertOk()
         ->assertDontSee('En profiter');
 });
 
@@ -108,7 +110,8 @@ it('affiche la section infos pratiques', function () {
         'transport' => 'Navettes depuis l’aéroport',
     ]]);
 
-    Livewire::test(ColloquePage::class, ['slug' => $edition->slug])
+    $this->get(route('public.colloque', $edition->slug))
+        ->assertOk()
         ->assertSee('Infos pratiques')
         ->assertSee('Campus de Kara, amphi A')
         ->assertSee('Navettes depuis l’aéroport');

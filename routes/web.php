@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\ReceiptController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\AttestationController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\Public\ColloqueController;
 use App\Livewire\Account\Dashboard;
 use App\Livewire\Account\Documents as AccountDocuments;
 use App\Livewire\Account\ForgotPassword;
@@ -43,7 +44,6 @@ use App\Livewire\Admin\Settings\Index as AdminSettings;
 use App\Livewire\Admin\Submissions\Index as AdminSubmissionIndex;
 use App\Livewire\Admin\Submissions\Show as AdminSubmissionShow;
 use App\Livewire\Public\CoauthorPayment;
-use App\Livewire\Public\ColloquePage;
 use App\Livewire\Reviewer\Evaluate as ReviewerEvaluate;
 use App\Livewire\Reviewer\Portal as ReviewerPortal;
 use Illuminate\Support\Facades\Route;
@@ -51,7 +51,7 @@ use Illuminate\Support\Facades\Route;
 Route::view('/', 'home')->name('home');
 
 // Page publique d'une édition de colloque.
-Route::get('/colloque/{slug}', ColloquePage::class)->name('public.colloque');
+Route::get('/colloque/{slug}', ColloqueController::class)->name('public.colloque');
 
 // Parcours de paiement des co-auteurs (public, sans compte, retrouvé par e-mail).
 Route::get('/colloque/{slug}/co-auteur', CoauthorPayment::class)->name('public.coauthor');
