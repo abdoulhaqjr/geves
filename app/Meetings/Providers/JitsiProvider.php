@@ -47,6 +47,23 @@ class JitsiProvider implements MeetingProvider
         return filled(config('meetings.jitsi.app_secret')) && filled(config('meetings.jitsi.app_id'));
     }
 
+    /**
+     * Paramètres pour l'IFrame API officielle (JitsiMeetExternalAPI) : domaine,
+     * salle, jeton (self-host) et nom d'affichage. Méthode d'intégration
+     * recommandée par le handbook Jitsi (au lieu d'une iframe brute).
+     *
+     * @return array{domain: string, roomName: string, jwt: ?string, userName: string}
+     */
+    public function embedConfig(EventSession $session, MeetingRole $role, ?string $displayName = null): array
+    {
+        return [
+            'domain' => trim((string) config('meetings.jitsi.domain', 'meet.jit.si'), '/'),
+            'roomName' => $session->meetingRoom(),
+            'jwt' => $this->usesJwt() ? $this->jwt($session, $role, $displayName) : null,
+            'userName' => $displayName ?: 'Invité',
+        ];
+    }
+
     public function joinUrl(EventSession $session, MeetingRole $role, ?string $displayName = null): string
     {
         $domain = trim((string) config('meetings.jitsi.domain', 'meet.jit.si'), '/');

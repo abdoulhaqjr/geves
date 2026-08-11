@@ -27,11 +27,28 @@
 
         {{-- Corps --}}
         <main style="flex:1;min-height:0;display:flex;">
-            @if ($joinUrl && $embeddable)
-                <iframe src="{{ $joinUrl }}" title="Visio de la session"
-                        allow="camera; microphone; fullscreen; display-capture; autoplay; clipboard-write"
-                        style="flex:1;width:100%;height:100%;border:0;"></iframe>
-            @elseif ($joinUrl)
+            @if ($embed)
+                {{-- Jitsi via l'IFrame API officielle (JitsiMeetExternalAPI). --}}
+                <div id="jitsi-container" style="flex:1;width:100%;height:100%;"></div>
+                <script src="https://{{ $embed['domain'] }}/external_api.js"></script>
+                <script>
+                    (function () {
+                        if (typeof JitsiMeetExternalAPI === 'undefined') { return; }
+                        const api = new JitsiMeetExternalAPI(@js($embed['domain']), {
+                            roomName: @js($embed['roomName']),
+                            parentNode: document.getElementById('jitsi-container'),
+                            width: '100%',
+                            height: '100%',
+                            jwt: @js($embed['jwt']),
+                            userInfo: { displayName: @js($embed['userName']) },
+                            configOverwrite: { prejoinPageEnabled: true },
+                        });
+                        api.addListener('readyToClose', function () {
+                            window.location = @js(url()->previous() ?: route('home'));
+                        });
+                    })();
+                </script>
+            @elseif ($externalUrl)
                 {{-- Lien externe non embarquable (Zoom/Meet…) → nouvel onglet --}}
                 <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:24px;">
                     <div class="ukc-card" style="max-width:460px;text-align:center;">
@@ -40,7 +57,7 @@
                         </span>
                         <h3 style="margin-bottom:6px;">La visio a lieu sur un service externe</h3>
                         <p style="color:var(--ukc-muted);">Cliquez pour rejoindre la réunion dans un nouvel onglet.</p>
-                        <a href="{{ $joinUrl }}" target="_blank" rel="noopener" class="ukc-btn ukc-btn--primary" style="margin-top:14px;">
+                        <a href="{{ $externalUrl }}" target="_blank" rel="noopener" class="ukc-btn ukc-btn--primary" style="margin-top:14px;">
                             <x-ukc.icon name="external" :size="16" /> Rejoindre la réunion
                         </a>
                     </div>

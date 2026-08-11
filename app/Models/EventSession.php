@@ -6,6 +6,7 @@ use App\Enums\MeetingRole;
 use App\Enums\MeetingStatus;
 use App\Enums\MeetingVisibility;
 use App\Meetings\MeetingProviderRegistry;
+use App\Meetings\Providers\JitsiProvider;
 use App\Support\StreamEmbed;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -169,6 +170,31 @@ class EventSession extends Model
     public function meetingEmbeddable(): bool
     {
         return app(MeetingProviderRegistry::class)->for($this)->embeddable();
+    }
+
+    /**
+     * Config pour l'IFrame API Jitsi (JitsiMeetExternalAPI), ou null si le
+     * fournisseur n'est pas Jitsi / accès refusé.
+     *
+     * @return array{domain: string, roomName: string, jwt: ?string, userName: string}|null
+     */
+    public function meetingEmbedConfig(?Account $account, bool $isStaff = false, ?string $displayName = null): ?array
+    {
+        $role = $this->meetingRoleFor($account, $isStaff);
+
+        if (! $role->canJoin()) {
+            return null;
+        }
+
+        $provider = app(MeetingProviderRegistry::class)->for($this);
+
+        if (! $provider instanceof JitsiProvider) {
+            return null;
+        }
+
+        $name = $displayName ?: ($isStaff ? 'Organisation' : $account?->full_name);
+
+        return $provider->embedConfig($this, $role, $name);
     }
 
     /** Sessions actuellement en direct. */

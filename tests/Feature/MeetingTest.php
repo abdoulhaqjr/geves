@@ -168,7 +168,7 @@ it('la page visio embarque la salle pour un inscrit', function () {
     $this->actingAs($account, 'account')->get(route('session.meeting', $session))
         ->assertOk()
         ->assertSee('EN DIRECT')
-        ->assertSee('<iframe', false);
+        ->assertSee('JitsiMeetExternalAPI');
 });
 
 it('la page visio refuse un non-inscrit', function () {
@@ -179,7 +179,7 @@ it('la page visio refuse un non-inscrit', function () {
     $this->actingAs($etranger, 'account')->get(route('session.meeting', $session))
         ->assertOk()
         ->assertSee('Accès réservé')
-        ->assertDontSee('<iframe', false);
+        ->assertDontSee('JitsiMeetExternalAPI');
 });
 
 it('la page visio est ouverte à tous pour une session publique', function () {
@@ -188,7 +188,7 @@ it('la page visio est ouverte à tous pour une session publique', function () {
 
     $this->get(route('session.meeting', $session))
         ->assertOk()
-        ->assertSee('<iframe', false);
+        ->assertSee('JitsiMeetExternalAPI');
 });
 
 it('la page visio indique quand la visio n’est pas en cours', function () {
@@ -198,7 +198,7 @@ it('la page visio indique quand la visio n’est pas en cours', function () {
     $this->get(route('session.meeting', $session))
         ->assertOk()
         ->assertSee('pas en cours')
-        ->assertDontSee('<iframe', false);
+        ->assertDontSee('JitsiMeetExternalAPI');
 });
 
 // --- Salle / lien custom ----------------------------------------------------
@@ -251,5 +251,5 @@ it('la page visio propose un nouvel onglet pour un lien externe', function () {
         ->assertOk()
         ->assertSee('nouvel onglet')
         ->assertSee('https://zoom.us/j/999')
-        ->assertDontSee('<iframe', false);
+        ->assertDontSee('JitsiMeetExternalAPI');
 });
