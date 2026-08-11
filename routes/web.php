@@ -43,6 +43,7 @@ use App\Livewire\Admin\Reports\Index as AdminReportIndex;
 use App\Livewire\Admin\Settings\Index as AdminSettings;
 use App\Livewire\Admin\Submissions\Index as AdminSubmissionIndex;
 use App\Livewire\Admin\Submissions\Show as AdminSubmissionShow;
+use App\Livewire\Notifications\Center as NotificationCenter;
 use App\Livewire\Public\CoauthorPayment;
 use App\Livewire\Reviewer\Evaluate as ReviewerEvaluate;
 use App\Livewire\Reviewer\Portal as ReviewerPortal;
@@ -85,6 +86,7 @@ Route::middleware('auth:account')->group(function () {
     Route::get('/mon-compte', Dashboard::class)->name('account.dashboard');
     Route::get('/mon-profil', Profile::class)->name('account.profile');
     Route::get('/mes-documents', AccountDocuments::class)->name('account.documents');
+    Route::get('/mes-notifications', NotificationCenter::class)->name('account.notifications');
     Route::get('/mon-compte/securite', AccountSecurity::class)->name('account.security');
 
     // Communications
@@ -121,6 +123,7 @@ Route::prefix('admin')->group(function () {
 
     Route::middleware(['auth:web', 'can:manage_colloques'])->group(function () {
         Route::get('/', AdminDashboard::class)->name('admin.dashboard');
+        Route::get('/notifications', NotificationCenter::class)->name('admin.notifications');
 
         Route::get('/editions', EditionIndex::class)->name('admin.editions.index');
         Route::get('/editions/creer', EditionForm::class)->name('admin.editions.create');

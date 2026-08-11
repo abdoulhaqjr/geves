@@ -98,9 +98,10 @@
                     </button>
                     <h1>{{ $title ?? 'Back-office' }}</h1>
                 </div>
-                @isset($actions)
-                    <div class="actions">{{ $actions }}</div>
-                @endisset
+                <div class="actions">
+                    @isset($actions){{ $actions }}@endisset
+                    <livewire:notifications.bell />
+                </div>
             </header>
 
             <main class="ukc-content">

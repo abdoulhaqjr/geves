@@ -76,6 +76,7 @@ class Submission extends Model
         return $this->belongsTo(Edition::class);
     }
 
+    /** @return BelongsTo<Participant, $this> */
     public function participant(): BelongsTo
     {
         return $this->belongsTo(Participant::class);

@@ -5,8 +5,10 @@ namespace App\Livewire\Public;
 use App\Mail\ContactMessageMail;
 use App\Models\Edition;
 use App\Models\Email;
+use App\Support\Notifier;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Livewire\Component;
 
 /**
@@ -93,6 +95,15 @@ class ContactForm extends Component
             'sent_at' => now(),
             'status' => 'sent',
         ]);
+
+        // Notification in-app au back-office : un message de contact reçu.
+        Notifier::staff(
+            kind: 'contact',
+            title: 'Message de contact',
+            body: $data['name'].' : '.Str::limit($data['message'], 80),
+            url: null,
+            icon: 'mail',
+        );
 
         $this->reset('name', 'email', 'message', 'website');
         $this->sent = true;

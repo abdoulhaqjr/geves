@@ -5,6 +5,7 @@ namespace App\Livewire\Admin\Participants;
 use App\Mail\ParticipantInvitationMail;
 use App\Models\Edition;
 use App\Models\Participant;
+use App\Support\Notifier;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -47,8 +48,22 @@ class Index extends Component
 
         Mail::to($participant->email)->send(new ParticipantInvitationMail($participant));
         $participant->markInvited();
+        $this->notifyInvitation($participant);
 
         session()->flash('ukc_status', 'Invitation envoyée à '.$participant->full_name.'.');
+    }
+
+    /** Notifie le compte lié au participant (le cas échéant) de son invitation. */
+    private function notifyInvitation(Participant $participant): void
+    {
+        Notifier::account(
+            $participant->account,
+            kind: 'invitation',
+            title: 'Invitation au colloque',
+            body: 'Vous êtes invité(e) à '.($participant->edition?->title ?: 'l’édition').'.',
+            url: route('account.dashboard'),
+            icon: 'bell',
+        );
     }
 
     /** Invite les participants ayant payé mais pas encore invités. */
@@ -66,6 +81,7 @@ class Index extends Component
         foreach ($participants as $participant) {
             Mail::to($participant->email)->send(new ParticipantInvitationMail($participant));
             $participant->markInvited();
+            $this->notifyInvitation($participant);
         }
 
         session()->flash('ukc_status', $participants->count().' invitation(s) envoyée(s).');

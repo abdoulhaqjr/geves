@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Models\Attestation;
 use App\Models\Participant;
+use App\Support\Notifier;
 
 /**
  * Émet une attestation vérifiable pour un participant et un type donnés.
@@ -23,7 +24,7 @@ class IssueAttestation
         }
 
         // uuid généré par AttestationObserver.
-        return Attestation::create([
+        $attestation = Attestation::create([
             'edition_id' => $participant->edition_id,
             'type' => $type,
             'participant_id' => $participant->id,
@@ -32,5 +33,16 @@ class IssueAttestation
             'revoked' => false,
             'issued_at' => now(),
         ]);
+
+        Notifier::account(
+            $participant->account,
+            kind: 'attestation',
+            title: 'Attestation disponible',
+            body: 'Votre attestation ('.$attestation->typeLabel().') peut être téléchargée.',
+            url: route('account.documents'),
+            icon: 'award',
+        );
+
+        return $attestation;
     }
 }

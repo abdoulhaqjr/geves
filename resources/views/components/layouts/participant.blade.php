@@ -19,6 +19,10 @@
                    @class(['active' => request()->routeIs('account.documents')])>
                     <x-ukc.icon name="folder" :size="18" /> Mes documents
                 </a>
+                <a href="{{ route('account.notifications') }}" wire:navigate
+                   @class(['active' => request()->routeIs('account.notifications')])>
+                    <x-ukc.icon name="bell" :size="18" /> Notifications
+                </a>
                 <a href="{{ route('account.profile') }}" wire:navigate
                    @class(['active' => request()->routeIs('account.profile')])>
                     <x-ukc.icon name="user" :size="18" /> Mon profil
@@ -60,6 +64,9 @@
                         <x-ukc.icon name="menu" :size="24" />
                     </button>
                     <h1>{{ $title ?? 'Mon espace' }}</h1>
+                </div>
+                <div class="actions">
+                    <livewire:notifications.bell />
                 </div>
             </header>
 

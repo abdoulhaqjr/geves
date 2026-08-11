@@ -6,6 +6,7 @@ use App\Actions\NotifySubmissionStatus;
 use App\Actions\UpsertParticipantForAccount;
 use App\Models\Edition;
 use App\Models\Submission;
+use App\Support\Notifier;
 use App\Support\SubmissionFormConfig;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -271,6 +272,15 @@ class Create extends Component
 
         // Accusé de réception à l'auteur correspondant (hors transaction).
         $notify->handle($submission, 'submitted');
+
+        // Notification in-app au back-office : une communication à traiter.
+        Notifier::staff(
+            kind: 'submission_new',
+            title: 'Nouvelle communication',
+            body: '« '.$submission->title.' » — '.$account->full_name,
+            url: route('admin.submissions.show', $submission),
+            icon: 'inbox',
+        );
 
         $this->successRef = $submission->ref_code;
     }

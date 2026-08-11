@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Mail\PaymentReceiptMail;
 use App\Models\Payment;
+use App\Support\Notifier;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -47,6 +48,24 @@ class ConfirmPayment
         if ($recipient) {
             Mail::to($recipient)->send(new PaymentReceiptMail($payment));
         }
+
+        // Notifications in-app : reçu au participant + info au back-office.
+        $amount = number_format((float) $payment->amount, 0, ',', ' ').' '.$payment->currency;
+        Notifier::account(
+            $payment->participant?->account,
+            kind: 'payment',
+            title: 'Paiement confirmé',
+            body: 'Votre reçu n° '.$payment->receipt_no.' ('.$amount.') est disponible.',
+            url: route('account.documents'),
+            icon: 'receipt',
+        );
+        Notifier::staff(
+            kind: 'payment',
+            title: 'Nouveau paiement réglé',
+            body: trim(($payment->participant?->full_name ?: 'Un participant').' — '.$amount),
+            url: route('admin.payments.index'),
+            icon: 'receipt',
+        );
 
         return $payment;
     }
