@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Concerns\HasNotificationPreferences;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -16,13 +17,15 @@ use Spatie\Permission\Traits\HasRoles;
  * Utilisateur du back-office (staff de gestion des colloques). Les rôles et
  * permissions sont gérés par spatie/laravel-permission ; la capacité clé est
  * `manage_colloques`. Peut impersonifier un compte participant (guard account).
+ *
+ * @property array<string, array{inapp: bool, email: bool}>|null $notification_preferences
  */
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasRoles, Impersonate, Notifiable;
+    use HasFactory, HasNotificationPreferences, HasRoles, Impersonate, Notifiable;
 
     /** Seul le staff habilité peut impersonifier. */
     public function canImpersonate(): bool
@@ -40,6 +43,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'notification_preferences' => 'array',
         ];
     }
 }

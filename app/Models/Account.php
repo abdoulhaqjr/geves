@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasNotificationPreferences;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -19,10 +20,11 @@ use Lab404\Impersonate\Models\Impersonate;
  * @property string|null $two_factor_secret secret TOTP (chiffré)
  * @property array<int, string>|null $two_factor_recovery_codes codes de secours (chiffrés)
  * @property Carbon|null $two_factor_confirmed_at
+ * @property array<string, array{inapp: bool, email: bool}>|null $notification_preferences
  */
 class Account extends Authenticatable implements MustVerifyEmail
 {
-    use HasFactory, Impersonate, Notifiable;
+    use HasFactory, HasNotificationPreferences, Impersonate, Notifiable;
 
     protected $guarded = ['id'];
 
@@ -34,6 +36,7 @@ class Account extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'meta' => 'array',
+            'notification_preferences' => 'array',
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted:array',
             'two_factor_confirmed_at' => 'datetime',

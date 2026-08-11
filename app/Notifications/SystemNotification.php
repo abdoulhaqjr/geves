@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
@@ -27,10 +28,35 @@ class SystemNotification extends Notification implements ShouldQueue
         public string $icon = 'bell',
     ) {}
 
-    /** Canal unique : base de données (in-app). */
+    /**
+     * Canaux selon les préférences du destinataire pour ce type (in-app et/ou
+     * e-mail). Un destinataire sans préférences configurables reçoit l'in-app.
+     */
     public function via(object $notifiable): array
     {
+        if (method_exists($notifiable, 'notificationChannels')) {
+            return $notifiable->notificationChannels($this->kind);
+        }
+
         return ['database'];
+    }
+
+    /** Version e-mail unifiée (marque simple : titre, corps, bouton d'action). */
+    public function toMail(object $notifiable): MailMessage
+    {
+        $mail = (new MailMessage)
+            ->subject($this->title)
+            ->greeting($this->title);
+
+        if ($this->body !== '') {
+            $mail->line($this->body);
+        }
+
+        if ($this->url) {
+            $mail->action('Ouvrir', url($this->url));
+        }
+
+        return $mail;
     }
 
     /**

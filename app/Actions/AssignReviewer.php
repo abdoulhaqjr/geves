@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Models\Participant;
 use App\Models\Review;
 use App\Models\Submission;
+use App\Support\Notifier;
 use Illuminate\Support\Str;
 
 /**
@@ -46,6 +47,18 @@ class AssignReviewer
 
         if ($submission->status === 'submitted') {
             $submission->update(['status' => 'under_review']);
+        }
+
+        // Notification in-app au relecteur, s'il dispose d'un compte lié.
+        if ($review->wasRecentlyCreated) {
+            Notifier::account(
+                $reviewer->account,
+                kind: 'review_assigned',
+                title: 'Nouvelle relecture assignée',
+                body: 'Une communication vous a été confiée pour évaluation.',
+                url: route('reviewer.portal', $reviewer->access_token),
+                icon: 'inbox',
+            );
         }
 
         return $review;

@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\AssignReviewer;
 use App\Actions\ConfirmPayment;
 use App\Actions\IssueAttestation;
 use App\Events\SubmissionStatusChanged;
@@ -7,6 +8,7 @@ use App\Livewire\Account\Submissions\Create;
 use App\Livewire\Notifications\Bell;
 use App\Livewire\Notifications\Center;
 use App\Livewire\Public\ContactForm;
+use App\Models\Account;
 use App\Support\Notifier;
 use Livewire\Livewire;
 
@@ -125,4 +127,63 @@ it('la page Notifications marque tout comme lu', function () {
 
 it('la page Notifications est protégée par le guard account', function () {
     $this->get(route('account.notifications'))->assertRedirect(route('account.login'));
+});
+
+// --- Relecteur assigné -----------------------------------------------------
+
+it('notifie le compte du relecteur à l’assignation', function () {
+    $submission = seededSubmission('submitted');
+    $edition = $submission->edition;
+
+    $reviewerAccount = Account::create([
+        'first_name' => 'Rel', 'last_name' => 'Ecteur', 'email' => 'rev@example.tg', 'password' => 'pass12345',
+    ]);
+    $edition->participants()->create([
+        'account_id' => $reviewerAccount->id, 'first_name' => 'Rel', 'last_name' => 'Ecteur',
+        'email' => 'rev@example.tg', 'role' => 'author',
+    ]);
+
+    (new AssignReviewer)->handle($submission, 'Rel Ecteur', 'rev@example.tg');
+
+    expect($reviewerAccount->fresh()->notifications->pluck('data.kind'))->toContain('review_assigned');
+});
+
+// --- Préférences & canal e-mail --------------------------------------------
+
+it('résout les canaux selon les défauts du registre', function () {
+    $account = verifiedAccount();
+
+    // e-mail OFF par défaut (Mailable dédié) → in-app seul.
+    expect($account->notificationChannels('submission_status'))->toBe(['database']);
+    // e-mail ON par défaut (aucun mail existant) → in-app + mail.
+    expect($account->notificationChannels('attestation'))->toBe(['database', 'mail']);
+});
+
+it('ne crée pas de notification en base quand l’in-app est désactivé', function () {
+    $edition = openEdition();
+    $account = verifiedAccount();
+    $account->saveNotificationPreferences(['attestation' => ['inapp' => false, 'email' => false]], 'account');
+    $participant = notifiedParticipant($edition, $account);
+
+    (new IssueAttestation)->handle($participant, 'participation');
+
+    expect($account->fresh()->notifications)->toHaveCount(0);
+});
+
+it('ajoute le canal mail quand l’e-mail est activé pour un type', function () {
+    $account = verifiedAccount();
+    $account->saveNotificationPreferences(['submission_status' => ['inapp' => true, 'email' => true]], 'account');
+
+    expect($account->notificationChannels('submission_status'))->toContain('mail');
+});
+
+it('enregistre les préférences depuis la page Notifications', function () {
+    $account = verifiedAccount();
+
+    Livewire::actingAs($account, 'account')
+        ->test(Center::class)
+        ->set('prefs.submission_status.email', true)
+        ->call('savePrefs');
+
+    expect($account->fresh()->wantsNotification('submission_status', 'email'))->toBeTrue();
 });
