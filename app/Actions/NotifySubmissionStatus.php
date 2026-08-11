@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Mail\SubmissionStatusMail;
 use App\Models\Email;
 use App\Models\Submission;
+use App\Support\Notifier;
 use Illuminate\Support\Facades\Mail;
 
 /**
@@ -18,6 +19,11 @@ class NotifySubmissionStatus
         $recipient = $submission->correspondingAuthorEmail();
 
         if (! $recipient) {
+            return;
+        }
+
+        // Préférence e-mail du compte auteur (le cas échéant) : interrupteur unique.
+        if (! Notifier::emailAllowed($submission->participant?->account, 'submission_status')) {
             return;
         }
 

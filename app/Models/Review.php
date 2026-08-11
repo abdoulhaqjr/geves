@@ -40,6 +40,7 @@ class Review extends Model
         return $this->belongsTo(Submission::class);
     }
 
+    /** @return BelongsTo<Participant, $this> */
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(Participant::class, 'reviewer_id');

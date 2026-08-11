@@ -3,13 +3,16 @@
 use App\Actions\AssignReviewer;
 use App\Actions\ConfirmPayment;
 use App\Actions\IssueAttestation;
+use App\Actions\NotifySubmissionStatus;
 use App\Events\SubmissionStatusChanged;
 use App\Livewire\Account\Submissions\Create;
 use App\Livewire\Notifications\Bell;
 use App\Livewire\Notifications\Center;
 use App\Livewire\Public\ContactForm;
+use App\Mail\SubmissionStatusMail;
 use App\Models\Account;
 use App\Support\Notifier;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
 
 // helpers globaux : openEdition()/verifiedAccount() -> AccountSubmissionTest ;
@@ -170,11 +173,32 @@ it('ne crée pas de notification en base quand l’in-app est désactivé', func
     expect($account->fresh()->notifications)->toHaveCount(0);
 });
 
-it('ajoute le canal mail quand l’e-mail est activé pour un type', function () {
+it('n’ajoute le canal mail générique que pour les types sans Mailable dédié', function () {
     $account = verifiedAccount();
-    $account->saveNotificationPreferences(['submission_status' => ['inapp' => true, 'email' => true]], 'account');
 
-    expect($account->notificationChannels('submission_status'))->toContain('mail');
+    // Type sans Mailable dédié → e-mail générique via le canal mail.
+    expect($account->notificationChannels('attestation'))->toContain('mail');
+
+    // Type avec Mailable dédié → pas de mail générique (évite le doublon),
+    // mais la préférence e-mail reste vraie (le Mailable dédié est gaté par elle).
+    expect($account->notificationChannels('submission_status'))->not->toContain('mail');
+    expect($account->wantsNotification('submission_status', 'email'))->toBeTrue();
+});
+
+it('la préférence e-mail gate le Mailable dédié (décision de soumission)', function () {
+    Mail::fake();
+    $submission = seededSubmission('submitted');
+    $account = $submission->participant->account;
+
+    // Par défaut (préférence ON) : le Mailable dédié part (en file).
+    (new NotifySubmissionStatus)->handle($submission, 'accepted');
+    Mail::assertQueued(SubmissionStatusMail::class);
+
+    // Préférence e-mail désactivée : le Mailable dédié est supprimé.
+    $account->saveNotificationPreferences(['submission_status' => ['inapp' => true, 'email' => false]], 'account');
+    Mail::fake();
+    (new NotifySubmissionStatus)->handle($submission, 'rejected');
+    Mail::assertNotQueued(SubmissionStatusMail::class);
 });
 
 it('enregistre les préférences depuis la page Notifications', function () {
@@ -182,8 +206,8 @@ it('enregistre les préférences depuis la page Notifications', function () {
 
     Livewire::actingAs($account, 'account')
         ->test(Center::class)
-        ->set('prefs.submission_status.email', true)
+        ->set('prefs.submission_status.email', false)
         ->call('savePrefs');
 
-    expect($account->fresh()->wantsNotification('submission_status', 'email'))->toBeTrue();
+    expect($account->fresh()->wantsNotification('submission_status', 'email'))->toBeFalse();
 });

@@ -277,12 +277,6 @@ parameters:
 			path: app/Livewire/Admin/Program/Slots.php
 
 		-
-			message: '#^Parameter \#1 \$reviewer of class App\\Mail\\ReviewerInvitationMail constructor expects App\\Models\\Participant, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Livewire/Admin/Submissions/Show.php
-
-		-
 			message: '#^Empty array passed to foreach\.$#'
 			identifier: foreach.emptyArray
 			count: 1

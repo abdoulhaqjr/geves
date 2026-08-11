@@ -43,16 +43,21 @@ class ConfirmPayment
             ])->save();
         });
 
-        // E-mail hors transaction (I/O externe, ne doit pas la faire échouer).
-        $recipient = $payment->participant?->email;
-        if ($recipient) {
+        // Un paiement porte toujours un participant dans ce flux.
+        $participant = $payment->participant;
+        $account = $participant?->account;
+
+        // E-mail hors transaction (I/O externe, ne doit pas la faire échouer),
+        // soumis à la préférence e-mail du compte (interrupteur unique).
+        $recipient = $participant?->email;
+        if ($recipient && Notifier::emailAllowed($account, 'payment')) {
             Mail::to($recipient)->send(new PaymentReceiptMail($payment));
         }
 
         // Notifications in-app : reçu au participant + info au back-office.
         $amount = number_format((float) $payment->amount, 0, ',', ' ').' '.$payment->currency;
         Notifier::account(
-            $payment->participant?->account,
+            $account,
             kind: 'payment',
             title: 'Paiement confirmé',
             body: 'Votre reçu n° '.$payment->receipt_no.' ('.$amount.') est disponible.',
@@ -62,7 +67,7 @@ class ConfirmPayment
         Notifier::staff(
             kind: 'payment',
             title: 'Nouveau paiement réglé',
-            body: trim(($payment->participant?->full_name ?: 'Un participant').' — '.$amount),
+            body: trim(($participant?->full_name ?: 'Un participant').' — '.$amount),
             url: route('admin.payments.index'),
             icon: 'receipt',
         );

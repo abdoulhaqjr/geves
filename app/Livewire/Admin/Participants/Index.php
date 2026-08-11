@@ -46,7 +46,9 @@ class Index extends Component
             return;
         }
 
-        Mail::to($participant->email)->send(new ParticipantInvitationMail($participant));
+        if (Notifier::emailAllowed($participant->account, 'invitation')) {
+            Mail::to($participant->email)->send(new ParticipantInvitationMail($participant));
+        }
         $participant->markInvited();
         $this->notifyInvitation($participant);
 
@@ -79,7 +81,9 @@ class Index extends Component
             ->filter(fn ($p) => ! $p->isInvited() && filled($p->email));
 
         foreach ($participants as $participant) {
-            Mail::to($participant->email)->send(new ParticipantInvitationMail($participant));
+            if (Notifier::emailAllowed($participant->account, 'invitation')) {
+                Mail::to($participant->email)->send(new ParticipantInvitationMail($participant));
+            }
             $participant->markInvited();
             $this->notifyInvitation($participant);
         }

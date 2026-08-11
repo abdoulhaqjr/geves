@@ -33,6 +33,12 @@ class User extends Authenticatable
         return $this->can('manage_colloques');
     }
 
+    /** Aucun Mailable dédié côté staff : l'e-mail passe par le canal générique. */
+    protected function usesDedicatedMailFor(string $kind): bool
+    {
+        return false;
+    }
+
     /**
      * Get the attributes that should be cast.
      *

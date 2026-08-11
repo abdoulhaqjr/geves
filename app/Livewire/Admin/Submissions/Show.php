@@ -8,6 +8,7 @@ use App\Mail\ReviewerInvitationMail;
 use App\Models\Participant;
 use App\Models\Review;
 use App\Models\Submission;
+use App\Support\Notifier;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -84,8 +85,11 @@ class Show extends Component
 
         $review = $action->handle($this->submission, $this->reviewerName, $this->reviewerEmail);
 
-        // Invitation par e-mail (journalisée par le mailer applicatif).
-        Mail::to($this->reviewerEmail)->send(new ReviewerInvitationMail($review->reviewer));
+        // Invitation par e-mail, soumise à la préférence du relecteur (le cas
+        // échéant) — interrupteur unique du canal e-mail.
+        if (Notifier::emailAllowed($review->reviewer->account, 'review_assigned')) {
+            Mail::to($this->reviewerEmail)->send(new ReviewerInvitationMail($review->reviewer));
+        }
 
         $this->reset(['reviewerName', 'reviewerEmail', 'existingReviewerId']);
         $this->submission->refresh();

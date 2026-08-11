@@ -23,7 +23,10 @@ trait HasNotificationPreferences
     }
 
     /**
-     * Canaux Laravel activés pour un type (database / mail).
+     * Canaux Laravel activés pour un type (database / mail). L'e-mail générique
+     * n'est ajouté que si aucun Mailable dédié ne couvre déjà ce type pour ce
+     * destinataire — sinon c'est le Mailable dédié (gaté par la préférence) qui
+     * porte l'e-mail, pour éviter le doublon.
      *
      * @return array<int, string>
      */
@@ -33,11 +36,21 @@ trait HasNotificationPreferences
         if ($this->wantsNotification($kind, 'inapp')) {
             $channels[] = 'database';
         }
-        if ($this->wantsNotification($kind, 'email')) {
+        if ($this->wantsNotification($kind, 'email') && ! $this->usesDedicatedMailFor($kind)) {
             $channels[] = 'mail';
         }
 
         return $channels;
+    }
+
+    /**
+     * Un Mailable dédié couvre-t-il déjà l'e-mail de ce type pour CE
+     * destinataire ? Vrai pour les comptes participants (Mailables riches
+     * existants) ; le staff surcharge à false (aucun Mailable dédié côté staff).
+     */
+    protected function usesDedicatedMailFor(string $kind): bool
+    {
+        return NotificationKinds::hasMail($kind);
     }
 
     /**

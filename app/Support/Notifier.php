@@ -23,6 +23,17 @@ class Notifier
     }
 
     /**
+     * L'e-mail d'un Mailable dédié est-il autorisé pour ce destinataire ?
+     * Un destinataire sans compte (pas de préférences) reçoit toujours l'e-mail ;
+     * sinon la préférence e-mail du type fait foi. Sert à gater les Mailables
+     * riches existants (soumission, reçu, invitation, relecture).
+     */
+    public static function emailAllowed(?Account $account, string $kind): bool
+    {
+        return $account === null || $account->wantsNotification($kind, 'email');
+    }
+
+    /**
      * Notifie l'ensemble du personnel back-office (permission manage_colloques).
      * Repli sur tous les utilisateurs si la permission n'est portée par personne.
      */
