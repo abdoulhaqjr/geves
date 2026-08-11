@@ -34,7 +34,10 @@
   line-height: 1.55;
   min-height: 100vh;
 }
-.ukc-scope a { color: inherit; text-decoration: none; }
+/* Reset des liens de contenu — exclut les liens-boutons (.ukc-btn) dont la
+   couleur de texte vient de leur variante, sinon `.ukc-scope a` (0,1,1) écrase
+   `.ukc-btn--primary` (0,1,0) → texte foncé sur bouton bleu. */
+.ukc-scope a:not(.ukc-btn) { color: inherit; text-decoration: none; }
 .ukc-scope img { max-width: 100%; display: block; }
 .ukc-scope button,
 .ukc-scope input,
