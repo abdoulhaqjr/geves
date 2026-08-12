@@ -29,6 +29,11 @@ class MeetingController extends Controller
         $liveKit = $canJoinNow ? $session->liveKitEmbedConfig($account, $isStaff) : null;
         $externalUrl = ($canJoinNow && ! $embed && ! $liveKit) ? $session->joinUrl($account, $isStaff) : null;
 
+        // URL de retour intégrée à la config du lecteur LiveKit (lue par le bundle JS).
+        if ($liveKit) {
+            $liveKit['backUrl'] = url()->previous() ?: route('home');
+        }
+
         return view('meeting.join', [
             'session' => $session,
             'role' => $role,

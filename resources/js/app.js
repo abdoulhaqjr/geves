@@ -1,3 +1,9 @@
+// Visio : charge le lecteur LiveKit (SDK livekit-client) uniquement sur la page
+// « Rejoindre » — l'import dynamique code-splitte le SDK dans son propre chunk.
+if (document.getElementById('lk-config')) {
+    import('./meeting.js').then((m) => m.startFromConfig()).catch(() => {});
+}
+
 // Alpine est fourni par Livewire 4. On enregistre nos composants au démarrage.
 document.addEventListener('alpine:init', () => {
     // Surbrillance de la section active dans la navigation (scrollspy).

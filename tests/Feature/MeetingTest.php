@@ -271,7 +271,7 @@ it('la page visio embarque le lecteur LiveKit inline', function () {
 
     $this->get(route('session.meeting', $session))
         ->assertOk()
-        ->assertSee('livekit-client')      // SDK chargé
+        ->assertSee('lk-config', false)    // config lue par le bundle Vite (SDK livekit-client)
         ->assertSee('lk-grid', false)      // conteneur du lecteur inline
         ->assertDontSee('Ouvrir la salle')
         ->assertDontSee('JitsiMeetExternalAPI');
