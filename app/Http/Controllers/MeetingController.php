@@ -23,10 +23,11 @@ class MeetingController extends Controller
         $role = $session->meetingRoleFor($account, $isStaff);
         $canJoinNow = $session->isLive() && $role->canJoin();
 
-        // Jitsi → IFrame API officielle (config d'embed) ; lien externe → URL à
-        // ouvrir dans un nouvel onglet.
+        // Selon le fournisseur : Jitsi (IFrame API), LiveKit (lecteur inline
+        // maison), ou lien externe (nouvel onglet).
         $embed = $canJoinNow ? $session->meetingEmbedConfig($account, $isStaff) : null;
-        $externalUrl = ($canJoinNow && ! $embed) ? $session->joinUrl($account, $isStaff) : null;
+        $liveKit = $canJoinNow ? $session->liveKitEmbedConfig($account, $isStaff) : null;
+        $externalUrl = ($canJoinNow && ! $embed && ! $liveKit) ? $session->joinUrl($account, $isStaff) : null;
 
         return view('meeting.join', [
             'session' => $session,
@@ -34,6 +35,7 @@ class MeetingController extends Controller
             'isStaff' => $isStaff,
             'isGuest' => ! $account && ! $isStaff,
             'embed' => $embed,
+            'liveKit' => $liveKit,
             'externalUrl' => $externalUrl,
         ]);
     }

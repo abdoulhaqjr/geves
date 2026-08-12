@@ -258,20 +258,22 @@ it('résout LiveKit quand configuré, retombe sur Jitsi sinon', function () {
     config()->set('meetings.livekit.url', null);
     expect(app(MeetingProviderRegistry::class)->for($session))->toBeInstanceOf(JitsiProvider::class);
 
-    // Configuré → LiveKit (non embarquable → nouvel onglet).
+    // Configuré → LiveKit (embarqué via notre lecteur inline).
     configureLiveKit();
     expect(app(MeetingProviderRegistry::class)->for($session))->toBeInstanceOf(LiveKitProvider::class);
-    expect($session->meetingEmbeddable())->toBeFalse();
+    expect($session->meetingEmbeddable())->toBeTrue();
 });
 
-it('la page visio ouvre la salle LiveKit en nouvel onglet', function () {
+it('la page visio embarque le lecteur LiveKit inline', function () {
     configureLiveKit();
     $edition = openEdition();
     $session = liveSession($edition, 'public', ['meeting_provider' => 'livekit']);
 
     $this->get(route('session.meeting', $session))
         ->assertOk()
-        ->assertSee('Ouvrir la salle')
+        ->assertSee('livekit-client')      // SDK chargé
+        ->assertSee('lk-grid', false)      // conteneur du lecteur inline
+        ->assertDontSee('Ouvrir la salle')
         ->assertDontSee('JitsiMeetExternalAPI');
 });
 

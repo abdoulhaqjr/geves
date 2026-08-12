@@ -7,6 +7,7 @@ use App\Enums\MeetingStatus;
 use App\Enums\MeetingVisibility;
 use App\Meetings\MeetingProviderRegistry;
 use App\Meetings\Providers\JitsiProvider;
+use App\Meetings\Providers\LiveKitProvider;
 use App\Support\StreamEmbed;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -195,6 +196,37 @@ class EventSession extends Model
         $name = $displayName ?: ($isStaff ? 'Organisation' : $account?->full_name);
 
         return $provider->embedConfig($this, $role, $name);
+    }
+
+    /**
+     * Config pour le lecteur LiveKit inline (SDK livekit-client), ou null si le
+     * fournisseur n'est pas LiveKit / accès refusé. Le token porte les droits
+     * (publier/s'abonner/admin) dérivés du rôle.
+     *
+     * @return array{url: string, token: string, userName: string, canPublish: bool}|null
+     */
+    public function liveKitEmbedConfig(?Account $account, bool $isStaff = false, ?string $displayName = null): ?array
+    {
+        $role = $this->meetingRoleFor($account, $isStaff);
+
+        if (! $role->canJoin()) {
+            return null;
+        }
+
+        $provider = app(MeetingProviderRegistry::class)->for($this);
+
+        if (! $provider instanceof LiveKitProvider) {
+            return null;
+        }
+
+        $name = $displayName ?: ($isStaff ? 'Organisation' : $account?->full_name);
+
+        return [
+            'url' => (string) config('meetings.livekit.url'),
+            'token' => $provider->token($this, $role, $name),
+            'userName' => $name ?: 'Invité',
+            'canPublish' => in_array($role, [MeetingRole::Moderator, MeetingRole::Presenter], true),
+        ];
     }
 
     /** Sessions actuellement en direct. */

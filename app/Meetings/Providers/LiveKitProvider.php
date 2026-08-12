@@ -38,9 +38,10 @@ class LiveKitProvider implements MeetingProvider
             && filled(config('meetings.livekit.api_secret'));
     }
 
+    /** Intégré via notre lecteur maison (SDK livekit-client), aux couleurs UK. */
     public function embeddable(): bool
     {
-        return false;
+        return true;
     }
 
     public function joinUrl(EventSession $session, MeetingRole $role, ?string $displayName = null): string
