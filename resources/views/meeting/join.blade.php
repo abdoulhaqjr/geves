@@ -55,10 +55,10 @@
                         <span class="ico" style="display:inline-flex;color:var(--ukc-blue);margin-bottom:8px;">
                             <x-ukc.icon name="video" :size="34" />
                         </span>
-                        <h3 style="margin-bottom:6px;">La visio a lieu sur un service externe</h3>
-                        <p style="color:var(--ukc-muted);">Cliquez pour rejoindre la réunion dans un nouvel onglet.</p>
+                        <h3 style="margin-bottom:6px;">Rejoindre la visio</h3>
+                        <p style="color:var(--ukc-muted);">La salle s’ouvre dans un nouvel onglet.</p>
                         <a href="{{ $externalUrl }}" target="_blank" rel="noopener" class="ukc-btn ukc-btn--primary" style="margin-top:14px;">
-                            <x-ukc.icon name="external" :size="16" /> Rejoindre la réunion
+                            <x-ukc.icon name="external" :size="16" /> Ouvrir la salle
                         </a>
                     </div>
                 </div>

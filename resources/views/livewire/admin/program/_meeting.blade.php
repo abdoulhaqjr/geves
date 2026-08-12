@@ -37,11 +37,12 @@
     </button>
 
     {{-- Résumé de la configuration --}}
+    @php($prov = $s->meeting_provider ?: config('meetings.default', 'livekit'))
     <span style="font-size:.75rem;color:var(--ukc-muted);">
-        @if (($s->meeting_provider ?: 'jitsi') === 'custom')
+        @if ($prov === 'custom')
             Lien externe{{ filled($s->meeting_url) ? '' : ' (non renseigné)' }}
         @else
-            Jitsi · salle {{ filled($s->meeting_room) ? '« '.$s->meeting_room.' »' : 'auto' }}
+            {{ $prov === 'livekit' ? 'LiveKit' : 'Jitsi' }} · salle {{ filled($s->meeting_room) ? '« '.$s->meeting_room.' »' : 'auto' }}
         @endif
     </span>
 </div>
@@ -52,12 +53,13 @@
             <div class="ukc-field">
                 <label for="mProvider-{{ $s->id }}">Fournisseur</label>
                 <select id="mProvider-{{ $s->id }}" wire:model.live="mProvider">
+                    <option value="livekit">LiveKit</option>
                     <option value="jitsi">Jitsi (intégré)</option>
                     <option value="custom">Lien externe (Zoom, Meet…)</option>
                 </select>
             </div>
 
-            @if ($mProvider === 'jitsi')
+            @if (in_array($mProvider, ['jitsi', 'livekit']))
                 <div class="ukc-field">
                     <label for="mRoom-{{ $s->id }}">Nom de salle <span class="hint">(vide = auto)</span></label>
                     <input type="text" id="mRoom-{{ $s->id }}" wire:model="mRoom" placeholder="colloque-pleniere-1">

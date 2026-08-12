@@ -13,7 +13,21 @@ return [
     |
     */
 
-    'default' => env('MEETING_PROVIDER', 'jitsi'),
+    'default' => env('MEETING_PROVIDER', 'livekit'),
+
+    'livekit' => [
+        // Serveur LiveKit (Cloud ou self-host) + identifiants d'API. Sans ces
+        // trois valeurs, le fournisseur n'est pas disponible → repli sur Jitsi.
+        'url' => env('LIVEKIT_URL'),          // wss://…
+        'api_key' => env('LIVEKIT_API_KEY'),
+        'api_secret' => env('LIVEKIT_API_SECRET'),
+        'token_ttl' => (int) env('LIVEKIT_TOKEN_TTL', 7200),
+
+        // App front qui affiche la salle (reçoit l'URL serveur + le token).
+        // Par défaut l'app publique LiveKit Meet ; remplaçable par une version
+        // self-host (qui, elle, peut être intégrée en iframe).
+        'meet_url' => env('LIVEKIT_MEET_URL', 'https://meet.livekit.io/custom'),
+    ],
 
     'jitsi' => [
         // Domaine Jitsi. Public par défaut ; renseigner une instance self-host

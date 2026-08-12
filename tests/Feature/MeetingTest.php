@@ -4,6 +4,7 @@ use App\Enums\MeetingRole;
 use App\Livewire\Admin\Program\Sessions;
 use App\Meetings\MeetingProviderRegistry;
 use App\Meetings\Providers\JitsiProvider;
+use App\Meetings\Providers\LiveKitProvider;
 use App\Models\Account;
 use App\Models\EventSession;
 use App\Support\StreamEmbed;
@@ -199,6 +200,94 @@ it('la page visio indique quand la visio n’est pas en cours', function () {
         ->assertOk()
         ->assertSee('pas en cours')
         ->assertDontSee('JitsiMeetExternalAPI');
+});
+
+// --- LiveKit ----------------------------------------------------------------
+
+/** Configure des identifiants LiveKit factices pour les tests. */
+function configureLiveKit(): void
+{
+    config()->set('meetings.livekit.url', 'wss://demo.livekit.cloud');
+    config()->set('meetings.livekit.api_key', 'APIabc');
+    config()->set('meetings.livekit.api_secret', str_repeat('s', 40));
+    config()->set('meetings.livekit.meet_url', 'https://meet.livekit.io/custom');
+}
+
+it('génère un token LiveKit avec les droits dérivés du rôle', function () {
+    configureLiveKit();
+    $edition = openEdition();
+    $session = liveSession($edition, 'public', ['meeting_room' => 'salle-lk']);
+    $provider = new LiveKitProvider;
+
+    expect($provider->isAvailable())->toBeTrue();
+
+    $decode = fn (string $t) => json_decode(base64_decode(explode('.', $t)[1]), true);
+
+    $mod = $decode($provider->token($session, MeetingRole::Moderator, 'Modo'));
+    expect($mod['iss'])->toBe('APIabc');
+    expect($mod['video']['room'])->toBe('salle-lk');
+    expect($mod['video']['roomAdmin'])->toBeTrue();
+    expect($mod['video']['canPublish'])->toBeTrue();
+
+    $pres = $decode($provider->token($session, MeetingRole::Presenter, 'P'));
+    expect($pres['video']['canPublish'])->toBeTrue();
+    expect($pres['video']['roomAdmin'])->toBeFalse();
+
+    $att = $decode($provider->token($session, MeetingRole::Attendee, 'A'));
+    expect($att['video']['canPublish'])->toBeFalse();
+    expect($att['video']['canSubscribe'])->toBeTrue();
+});
+
+it('construit l’URL LiveKit Meet avec serveur et token', function () {
+    configureLiveKit();
+    $edition = openEdition();
+    $session = liveSession($edition, 'public');
+
+    $url = (new LiveKitProvider)->joinUrl($session, MeetingRole::Attendee, 'A');
+
+    expect($url)->toStartWith('https://meet.livekit.io/custom?');
+    expect($url)->toContain('liveKitUrl=');
+    expect($url)->toContain('token=');
+});
+
+it('résout LiveKit quand configuré, retombe sur Jitsi sinon', function () {
+    $edition = openEdition();
+    $session = liveSession($edition, 'public', ['meeting_provider' => 'livekit']);
+
+    // Sans identifiants → repli Jitsi (pas de salle cassée).
+    config()->set('meetings.livekit.url', null);
+    expect(app(MeetingProviderRegistry::class)->for($session))->toBeInstanceOf(JitsiProvider::class);
+
+    // Configuré → LiveKit (non embarquable → nouvel onglet).
+    configureLiveKit();
+    expect(app(MeetingProviderRegistry::class)->for($session))->toBeInstanceOf(LiveKitProvider::class);
+    expect($session->meetingEmbeddable())->toBeFalse();
+});
+
+it('la page visio ouvre la salle LiveKit en nouvel onglet', function () {
+    configureLiveKit();
+    $edition = openEdition();
+    $session = liveSession($edition, 'public', ['meeting_provider' => 'livekit']);
+
+    $this->get(route('session.meeting', $session))
+        ->assertOk()
+        ->assertSee('Ouvrir la salle')
+        ->assertDontSee('JitsiMeetExternalAPI');
+});
+
+it('le staff peut choisir LiveKit pour une session', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+    $session = $edition->sessions()->create(['type' => 'plenary', 'label' => 'X']);
+
+    Livewire::actingAs($staff, 'web')->test(Sessions::class)
+        ->call('editMeeting', $session->id)
+        ->set('mProvider', 'livekit')->set('mRoom', 'salle-lk')
+        ->call('saveMeeting')->assertHasNoErrors();
+
+    $fresh = $session->fresh();
+    expect($fresh->meeting_provider)->toBe('livekit');
+    expect($fresh->meeting_room)->toBe('salle-lk');
 });
 
 // --- Salle / lien custom ----------------------------------------------------

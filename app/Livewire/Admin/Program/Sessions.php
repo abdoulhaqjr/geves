@@ -177,7 +177,7 @@ class Sessions extends Component
         }
 
         $this->validate([
-            'mProvider' => ['required', 'in:jitsi,custom'],
+            'mProvider' => ['required', 'in:jitsi,livekit,custom'],
             'mRoom' => ['nullable', 'string', 'max:120', 'regex:/^[A-Za-z0-9 _-]+$/'],
             'mUrl' => [$this->mProvider === 'custom' ? 'required' : 'nullable', 'url', 'max:500'],
         ], attributes: [
@@ -185,9 +185,11 @@ class Sessions extends Component
             'mUrl' => 'lien de réunion',
         ]);
 
+        $usesRoom = in_array($this->mProvider, ['jitsi', 'livekit'], true);
+
         EventSession::whereKey($this->editingMeeting)->update([
             'meeting_provider' => $this->mProvider,
-            'meeting_room' => $this->mProvider === 'jitsi' ? ($this->mRoom ?: null) : null,
+            'meeting_room' => $usesRoom ? ($this->mRoom ?: null) : null,
             'meeting_url' => $this->mProvider === 'custom' ? ($this->mUrl ?: null) : null,
         ]);
 

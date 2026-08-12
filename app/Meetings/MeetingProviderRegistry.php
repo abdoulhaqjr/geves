@@ -5,6 +5,7 @@ namespace App\Meetings;
 use App\Meetings\Contracts\MeetingProvider;
 use App\Meetings\Providers\CustomProvider;
 use App\Meetings\Providers\JitsiProvider;
+use App\Meetings\Providers\LiveKitProvider;
 use App\Models\EventSession;
 use App\Payments\GatewayRegistry;
 
@@ -21,6 +22,7 @@ class MeetingProviderRegistry
     public function __construct()
     {
         $this->providers = [
+            new LiveKitProvider,
             new JitsiProvider,
             new CustomProvider,
         ];
@@ -43,21 +45,27 @@ class MeetingProviderRegistry
         return null;
     }
 
-    /** Fournisseur par défaut (réglage), repli sur Jitsi. */
+    /** Fournisseur par défaut (réglage), repli sur Jitsi (toujours disponible). */
     public function default(): MeetingProvider
     {
-        $key = (string) config('meetings.default', 'jitsi');
+        $key = (string) config('meetings.default', 'livekit');
 
         $provider = $this->get($key);
 
         return $provider && $provider->isAvailable() ? $provider : new JitsiProvider;
     }
 
-    /** Fournisseur d'une session (son `meeting_provider`, sinon le défaut). */
+    /**
+     * Fournisseur d'une session (son `meeting_provider`, sinon le défaut). Si le
+     * fournisseur choisi n'est pas configuré (ex. LiveKit sans identifiants), on
+     * retombe sur le défaut disponible — pas de salle cassée.
+     */
     public function for(EventSession $session): MeetingProvider
     {
-        $key = (string) ($session->meeting_provider ?: config('meetings.default', 'jitsi'));
+        $key = (string) ($session->meeting_provider ?: config('meetings.default', 'livekit'));
 
-        return $this->get($key) ?? $this->default();
+        $provider = $this->get($key);
+
+        return $provider && $provider->isAvailable() ? $provider : $this->default();
     }
 }
