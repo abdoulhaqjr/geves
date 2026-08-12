@@ -32,6 +32,7 @@ class Slot extends Model
         return $this->belongsTo(EventSession::class, 'session_id');
     }
 
+    /** @return BelongsTo<Submission, $this> */
     public function submission(): BelongsTo
     {
         return $this->belongsTo(Submission::class);

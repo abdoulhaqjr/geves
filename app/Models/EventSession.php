@@ -226,7 +226,47 @@ class EventSession extends Model
             'token' => $provider->token($this, $role, $name),
             'userName' => $name ?: 'Invité',
             'canPublish' => in_array($role, [MeetingRole::Moderator, MeetingRole::Presenter], true),
+            'role' => match ($role) {
+                MeetingRole::Moderator => 'moderator',
+                MeetingRole::Presenter => 'presenter',
+                default => 'audience',
+            },
+            'roomName' => $this->meetingRoom(),
         ];
+    }
+
+    /**
+     * Communications programmées dans la session (créneaux → soumissions), pour
+     * la fiche « communicateurs » de la salle : ordre, auteur, titre, compte lié.
+     *
+     * @return array<int, array{order: int, name: string, title: string, accountId: ?int}>
+     */
+    public function scheduledCommunications(): array
+    {
+        $slots = $this->slots()->where('submission_id', '>', 0)
+            ->with('submission.participant')
+            ->orderBy('starts_at')
+            ->orderBy('id')
+            ->get();
+
+        $out = [];
+        $order = 1;
+        foreach ($slots as $slot) {
+            $sub = $slot->submission;
+            if (! $sub) {
+                continue;
+            }
+            $name = $sub->correspondingAuthorName()
+                ?: (collect($sub->authors ?? [])->pluck('name')->filter()->first() ?: 'Communicant');
+            $out[] = [
+                'order' => $order++,
+                'name' => (string) $name,
+                'title' => (string) $sub->title,
+                'accountId' => $sub->participant?->account_id,
+            ];
+        }
+
+        return $out;
     }
 
     /** Sessions actuellement en direct. */
@@ -235,6 +275,7 @@ class EventSession extends Model
         return $query->where('meeting_status', MeetingStatus::Live->value);
     }
 
+    /** @return BelongsTo<Edition, $this> */
     public function edition(): BelongsTo
     {
         return $this->belongsTo(Edition::class);
@@ -245,6 +286,7 @@ class EventSession extends Model
         return $this->belongsTo(Atelier::class);
     }
 
+    /** @return HasMany<Slot, $this> */
     public function slots(): HasMany
     {
         return $this->hasMany(Slot::class, 'session_id');

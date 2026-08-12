@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\LogoutController as AdminLogoutController;
 use App\Http\Controllers\Admin\ReceiptController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\AttestationController;
+use App\Http\Controllers\EgressController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Public\ColloqueController;
@@ -60,6 +61,9 @@ Route::get('/colloque/{slug}/co-auteur', CoauthorPayment::class)->name('public.c
 
 // Visio interactive d'une session (accès géré dans le contrôleur selon le rôle).
 Route::get('/session/{session}/visio', [MeetingController::class, 'join'])->name('session.meeting');
+// Enregistrement (LiveKit Egress) — réservé au modérateur (contrôle dans le contrôleur).
+Route::post('/session/{session}/egress/start', [EgressController::class, 'start'])->name('session.egress.start');
+Route::post('/session/{session}/egress/stop', [EgressController::class, 'stop'])->name('session.egress.stop');
 
 // Portail relecteur (accès par jeton, sans compte).
 Route::get('/relecture/{token}', ReviewerPortal::class)->name('reviewer.portal');

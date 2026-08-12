@@ -292,6 +292,34 @@ it('le staff peut choisir LiveKit pour une session', function () {
     expect($fresh->meeting_room)->toBe('salle-lk');
 });
 
+it('liste les communications programmées de la session pour la salle', function () {
+    $edition = openEdition();
+    $account = Account::create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'password' => 'pass12345']);
+    $participant = $edition->participants()->create(['account_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $sub = $edition->submissions()->create([
+        'participant_id' => $participant->id, 'ref_code' => '26-001', 'title' => 'Ma communication', 'abstract' => 'x',
+        'status' => 'accepted', 'authors' => [['name' => 'Awa Kodjo', 'corresponding' => true]],
+    ]);
+    $session = liveSession($edition);
+    $session->slots()->create(['edition_id' => $edition->id, 'submission_id' => $sub->id, 'participant_id' => 0]);
+
+    $comms = $session->scheduledCommunications();
+    expect($comms)->toHaveCount(1);
+    expect($comms[0]['title'])->toBe('Ma communication');
+    expect($comms[0]['accountId'])->toBe($account->id);
+});
+
+it('la config LiveKit porte le rôle et le nom de salle', function () {
+    configureLiveKit();
+    $edition = openEdition();
+    $session = liveSession($edition, 'public', ['meeting_provider' => 'livekit']);
+
+    $cfg = $session->liveKitEmbedConfig(null, false);
+    expect($cfg['role'])->toBe('audience');       // anonyme sur session publique
+    expect($cfg['roomName'])->not->toBeEmpty();
+    expect($cfg['canPublish'])->toBeFalse();
+});
+
 // --- Salle / lien custom ----------------------------------------------------
 
 it('utilise le lien externe quand le fournisseur custom est configuré', function () {

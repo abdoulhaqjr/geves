@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\MeetingRole;
 use App\Models\EventSession;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
@@ -29,9 +30,18 @@ class MeetingController extends Controller
         $liveKit = $canJoinNow ? $session->liveKitEmbedConfig($account, $isStaff) : null;
         $externalUrl = ($canJoinNow && ! $embed && ! $liveKit) ? $session->joinUrl($account, $isStaff) : null;
 
-        // URL de retour intégrée à la config du lecteur LiveKit (lue par le bundle JS).
+        // Enrichit la config du lecteur LiveKit (lue par le bundle JS) : retour,
+        // libellés, communications programmées, droit d'enregistrement.
         if ($liveKit) {
             $liveKit['backUrl'] = url()->previous() ?: route('home');
+            $liveKit['sessionLabel'] = (string) $session->label;
+            $liveKit['editionTitle'] = (string) ($session->edition->title ?? '');
+            $liveKit['communications'] = $session->scheduledCommunications();
+            $liveKit['canRecord'] = $role === MeetingRole::Moderator;
+            $liveKit['egress'] = [
+                'start' => route('session.egress.start', $session),
+                'stop' => route('session.egress.stop', $session),
+            ];
         }
 
         return view('meeting.join', [
