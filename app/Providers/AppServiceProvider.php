@@ -100,6 +100,14 @@ class AppServiceProvider extends ServiceProvider
         }
         Config::set('services.ai.default', $set('ai.default', config('services.ai.default')));
 
+        // Visio : fournisseur par défaut + identifiants LiveKit (repli config/.env).
+        Config::set('meetings.default', $set('meetings.default', config('meetings.default')));
+        foreach (['url', 'api_key', 'api_secret', 'meet_url'] as $k) {
+            if (filled($set("livekit.$k"))) {
+                Config::set("meetings.livekit.$k", $set("livekit.$k"));
+            }
+        }
+
         // HAL : autocomplétion des affiliations (activable dans les réglages).
         if ($set('hal.enabled') !== null) {
             Config::set('services.hal.enabled', (bool) $set('hal.enabled'));

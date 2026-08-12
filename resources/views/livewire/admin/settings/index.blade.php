@@ -145,6 +145,46 @@
             </div>
         </div>
 
+        {{-- Visio (LiveKit) --}}
+        <div class="ukc-card" style="margin-bottom:18px;">
+            <h2><x-ukc.icon name="video" :size="20" /> Visio des sessions</h2>
+            <p style="font-size:.88rem;color:var(--ukc-muted);margin-bottom:12px;">
+                Plateforme de visio interactive pour les présentations en ligne. LiveKit nécessite un serveur
+                (LiveKit Cloud ou self-host) et ses identifiants d’API. Sans identifiants, le système bascule
+                automatiquement sur Jitsi (mode public, sans configuration).
+            </p>
+
+            <div class="ukc-field" style="max-width:360px;">
+                <label for="meeting_default">Fournisseur par défaut</label>
+                <select id="meeting_default" wire:model="meeting_default">
+                    <option value="livekit">LiveKit</option>
+                    <option value="jitsi">Jitsi (repli, sans config)</option>
+                </select>
+                @error('meeting_default') <span class="error">{{ $message }}</span> @enderror
+            </div>
+
+            <h3 style="font-size:.95rem;margin:16px 0 8px;">LiveKit</h3>
+            <div class="ukc-form-grid">
+                <div class="ukc-field full">
+                    <label for="livekit_url">URL du serveur <span class="hint">(wss://…)</span></label>
+                    <input type="text" id="livekit_url" wire:model="livekit_url" placeholder="wss://ton-projet.livekit.cloud">
+                </div>
+                <div class="ukc-field">
+                    <label for="livekit_api_key">Clé d’API</label>
+                    <input type="password" id="livekit_api_key" wire:model="livekit_api_key" autocomplete="new-password" placeholder="API key">
+                </div>
+                <div class="ukc-field">
+                    <label for="livekit_api_secret">Secret d’API</label>
+                    <input type="password" id="livekit_api_secret" wire:model="livekit_api_secret" autocomplete="new-password" placeholder="API secret">
+                </div>
+                <div class="ukc-field full">
+                    <label for="livekit_meet_url">App LiveKit Meet <span class="hint">(par défaut l’app publique)</span></label>
+                    <input type="url" id="livekit_meet_url" wire:model="livekit_meet_url" placeholder="https://meet.livekit.io/custom">
+                    @error('livekit_meet_url') <span class="error">{{ $message }}</span> @enderror
+                </div>
+            </div>
+        </div>
+
         {{-- Interconnexion HAL --}}
         <div class="ukc-card" style="margin-bottom:18px;">
             <h2><x-ukc.icon name="globe" :size="20" /> Interconnexion HAL</h2>

@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Admin\Settings\Index;
+use App\Meetings\Providers\LiveKitProvider;
 use App\Models\User;
 use App\Providers\AppServiceProvider;
 use App\Support\Settings;
@@ -66,6 +67,30 @@ it('applique les réglages à la configuration au boot', function () {
     expect(config('services.anthropic.key'))->toBe('sk-ant-abc');
     expect(config('services.grok.key'))->toBe('xai-abc');
     expect(config('services.grok.model'))->toBe('grok-4');
+});
+
+it('enregistre les identifiants LiveKit depuis l’admin et les applique', function () {
+    $staff = adminStaff();
+
+    Livewire::actingAs($staff, 'web')
+        ->test(Index::class)
+        ->set('meeting_default', 'livekit')
+        ->set('livekit_url', 'wss://ukara.livekit.cloud')
+        ->set('livekit_api_key', 'APIkey')
+        ->set('livekit_api_secret', 'secret-value-1234567890')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(Settings::get('livekit.url'))->toBe('wss://ukara.livekit.cloud');
+    expect(Settings::get('livekit.api_secret'))->toBe('secret-value-1234567890');
+
+    // Appliqué à la config au boot → LiveKit devient le fournisseur disponible.
+    $provider = new AppServiceProvider(app());
+    (fn () => $this->applySettingsToConfig())->call($provider);
+
+    expect(config('meetings.default'))->toBe('livekit');
+    expect(config('meetings.livekit.url'))->toBe('wss://ukara.livekit.cloud');
+    expect((new LiveKitProvider)->isAvailable())->toBeTrue();
 });
 
 it('envoie un e-mail de test sans erreur', function () {

@@ -74,6 +74,17 @@ class Index extends Component
 
     public string $ai_grok_model = '';
 
+    // Visio (LiveKit)
+    public string $meeting_default = 'livekit';
+
+    public string $livekit_url = '';
+
+    public string $livekit_api_key = '';
+
+    public string $livekit_api_secret = '';
+
+    public string $livekit_meet_url = '';
+
     // Interconnexion
     public bool $hal_enabled = false;
 
@@ -111,6 +122,12 @@ class Index extends Component
         $this->ai_grok_key = $g('ai.grok_key');
         $this->ai_grok_model = $g('ai.grok_model', (string) config('services.grok.model'));
 
+        $this->meeting_default = $g('meetings.default', (string) config('meetings.default', 'livekit'));
+        $this->livekit_url = $g('livekit.url', (string) config('meetings.livekit.url'));
+        $this->livekit_api_key = $g('livekit.api_key', (string) config('meetings.livekit.api_key'));
+        $this->livekit_api_secret = $g('livekit.api_secret', (string) config('meetings.livekit.api_secret'));
+        $this->livekit_meet_url = $g('livekit.meet_url', (string) config('meetings.livekit.meet_url'));
+
         $this->hal_enabled = (bool) Settings::get('hal.enabled', (bool) config('services.hal.enabled', false));
     }
 
@@ -123,6 +140,8 @@ class Index extends Component
             'fedapay_mode' => ['required', 'in:test,live'],
             'ai_default' => ['required', 'in:openai,claude,gemini,grok'],
             'test_email' => ['nullable', 'email'],
+            'meeting_default' => ['required', 'in:livekit,jitsi'],
+            'livekit_meet_url' => ['nullable', 'url'],
         ]);
 
         Settings::setMany([
@@ -152,6 +171,11 @@ class Index extends Component
             'ai.gemini_model' => $this->ai_gemini_model,
             'ai.grok_key' => $this->ai_grok_key,
             'ai.grok_model' => $this->ai_grok_model,
+            'meetings.default' => $this->meeting_default,
+            'livekit.url' => $this->livekit_url,
+            'livekit.api_key' => $this->livekit_api_key,
+            'livekit.api_secret' => $this->livekit_api_secret,
+            'livekit.meet_url' => $this->livekit_meet_url,
             'hal.enabled' => $this->hal_enabled,
         ]);
 
