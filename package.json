@@ -14,6 +14,7 @@
         "vite": "^8.0.0"
     },
     "dependencies": {
+        "@livekit/track-processors": "^0.7.2",
         "livekit-client": "^2.21.0"
     }
 }
