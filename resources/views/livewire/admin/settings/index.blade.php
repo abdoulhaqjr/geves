@@ -183,6 +183,35 @@
                     @error('livekit_meet_url') <span class="error">{{ $message }}</span> @enderror
                 </div>
             </div>
+
+            <h3 style="font-size:.95rem;margin:16px 0 8px;">Enregistrement <span class="hint">(stockage S3)</span></h3>
+            <p style="font-size:.84rem;color:var(--ukc-muted);margin:0 0 10px;">
+                Les sessions peuvent être enregistrées (Egress RoomComposite → MP4). LiveKit dépose le fichier
+                dans un bucket objet compatible S3. Sans ces valeurs, le bouton d’enregistrement reste indisponible.
+            </p>
+            <div class="ukc-form-grid">
+                <div class="ukc-field">
+                    <label for="livekit_egress_s3_bucket">Bucket</label>
+                    <input type="text" id="livekit_egress_s3_bucket" wire:model="livekit_egress_s3_bucket" placeholder="gesco-recordings">
+                </div>
+                <div class="ukc-field">
+                    <label for="livekit_egress_s3_region">Région</label>
+                    <input type="text" id="livekit_egress_s3_region" wire:model="livekit_egress_s3_region" placeholder="eu-west-3">
+                </div>
+                <div class="ukc-field">
+                    <label for="livekit_egress_s3_access_key">Access key</label>
+                    <input type="password" id="livekit_egress_s3_access_key" wire:model="livekit_egress_s3_access_key" autocomplete="new-password" placeholder="AKIA…">
+                </div>
+                <div class="ukc-field">
+                    <label for="livekit_egress_s3_secret">Secret key</label>
+                    <input type="password" id="livekit_egress_s3_secret" wire:model="livekit_egress_s3_secret" autocomplete="new-password" placeholder="Secret">
+                </div>
+                <div class="ukc-field full">
+                    <label for="livekit_egress_s3_endpoint">Endpoint <span class="hint">(optionnel — S3-compatible : MinIO…)</span></label>
+                    <input type="url" id="livekit_egress_s3_endpoint" wire:model="livekit_egress_s3_endpoint" placeholder="https://s3.exemple.com">
+                    @error('livekit_egress_s3_endpoint') <span class="error">{{ $message }}</span> @enderror
+                </div>
+            </div>
         </div>
 
         {{-- Interconnexion HAL --}}

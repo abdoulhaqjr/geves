@@ -2,12 +2,14 @@
 
 use App\Enums\MeetingRole;
 use App\Livewire\Admin\Program\Sessions;
+use App\Meetings\LiveKitEgress;
 use App\Meetings\MeetingProviderRegistry;
 use App\Meetings\Providers\JitsiProvider;
 use App\Meetings\Providers\LiveKitProvider;
 use App\Models\Account;
 use App\Models\EventSession;
 use App\Support\StreamEmbed;
+use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 
 // openEdition() -> AccountSubmissionTest
@@ -319,6 +321,82 @@ it('la config LiveKit porte le rôle et le nom de salle', function () {
     expect($cfg['role'])->toBe('audience');       // anonyme sur session publique
     expect($cfg['roomName'])->not->toBeEmpty();
     expect($cfg['canPublish'])->toBeFalse();
+});
+
+// --- Enregistrement (Egress) -----------------------------------------------
+
+/** Configure une destination de stockage S3 factice pour l'Egress. */
+function configureEgress(): void
+{
+    config()->set('meetings.livekit.egress.s3_bucket', 'gesco-rec');
+    config()->set('meetings.livekit.egress.s3_region', 'eu-west-3');
+    config()->set('meetings.livekit.egress.s3_access_key', 'AKIA');
+    config()->set('meetings.livekit.egress.s3_secret', 'sekret');
+    config()->set('meetings.livekit.egress.s3_endpoint', null);
+}
+
+it('sait si l’enregistrement est exploitable', function () {
+    config()->set('meetings.livekit.egress.s3_bucket', null);
+    expect(app(LiveKitEgress::class)->isConfigured())->toBeFalse();
+
+    configureEgress();
+    expect(app(LiveKitEgress::class)->isConfigured())->toBeTrue();
+});
+
+it('le modérateur démarre puis arrête l’enregistrement Egress', function () {
+    configureLiveKit();
+    configureEgress();
+    Http::fake([
+        '*livekit.Egress/StartRoomCompositeEgress' => Http::response(['egress_id' => 'EG_123']),
+        '*livekit.Egress/StopEgress' => Http::response(['egress_id' => 'EG_123']),
+    ]);
+
+    $staff = adminStaff();
+    $edition = openEdition();
+    $session = liveSession($edition, 'public', ['meeting_provider' => 'livekit', 'meeting_room' => 'salle-lk']);
+
+    $this->actingAs($staff, 'web')
+        ->postJson(route('session.egress.start', $session))
+        ->assertOk()->assertJson(['ok' => true, 'egressId' => 'EG_123']);
+
+    $this->actingAs($staff, 'web')
+        ->postJson(route('session.egress.stop', $session))
+        ->assertOk()->assertJson(['ok' => true, 'egressId' => 'EG_123']);
+
+    // La requête de démarrage vise le bon endpoint HTTP (wss→https), la bonne
+    // salle et porte la destination S3.
+    Http::assertSent(function ($request) use ($session) {
+        return str_contains($request->url(), 'https://demo.livekit.cloud/twirp/livekit.Egress/StartRoomCompositeEgress')
+            && $request['room_name'] === $session->meetingRoom()
+            && $request['file_outputs'][0]['s3']['bucket'] === 'gesco-rec';
+    });
+});
+
+it('refuse l’enregistrement à un non-modérateur', function () {
+    configureLiveKit();
+    configureEgress();
+    Http::fake();
+
+    $edition = openEdition();
+    $session = liveSession($edition, 'public', ['meeting_provider' => 'livekit']);
+
+    $this->postJson(route('session.egress.start', $session))->assertStatus(403);
+    Http::assertNothingSent();
+});
+
+it('signale un stockage d’enregistrement non configuré', function () {
+    configureLiveKit();
+    config()->set('meetings.livekit.egress.s3_bucket', null); // incomplet
+    Http::fake();
+
+    $staff = adminStaff();
+    $edition = openEdition();
+    $session = liveSession($edition, 'public', ['meeting_provider' => 'livekit']);
+
+    $this->actingAs($staff, 'web')
+        ->postJson(route('session.egress.start', $session))
+        ->assertStatus(422)->assertJsonPath('ok', false);
+    Http::assertNothingSent();
 });
 
 // --- Salle / lien custom ----------------------------------------------------

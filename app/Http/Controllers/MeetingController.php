@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\MeetingRole;
+use App\Meetings\LiveKitEgress;
 use App\Models\EventSession;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
@@ -37,7 +38,7 @@ class MeetingController extends Controller
             $liveKit['sessionLabel'] = (string) $session->label;
             $liveKit['editionTitle'] = (string) ($session->edition->title ?? '');
             $liveKit['communications'] = $session->scheduledCommunications();
-            $liveKit['canRecord'] = $role === MeetingRole::Moderator;
+            $liveKit['canRecord'] = $role === MeetingRole::Moderator && app(LiveKitEgress::class)->isConfigured();
             $liveKit['egress'] = [
                 'start' => route('session.egress.start', $session),
                 'stop' => route('session.egress.stop', $session),

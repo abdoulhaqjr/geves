@@ -27,6 +27,17 @@ return [
         // Par défaut l'app publique LiveKit Meet ; remplaçable par une version
         // self-host (qui, elle, peut être intégrée en iframe).
         'meet_url' => env('LIVEKIT_MEET_URL', 'https://meet.livekit.io/custom'),
+
+        // Enregistrement (Egress RoomComposite → fichier MP4). LiveKit dépose le
+        // fichier dans un stockage objet compatible S3 fourni par l'université.
+        // Sans bucket/région/identifiants, l'enregistrement reste indisponible.
+        'egress' => [
+            's3_bucket' => env('LIVEKIT_EGRESS_S3_BUCKET'),
+            's3_region' => env('LIVEKIT_EGRESS_S3_REGION'),
+            's3_access_key' => env('LIVEKIT_EGRESS_S3_ACCESS_KEY'),
+            's3_secret' => env('LIVEKIT_EGRESS_S3_SECRET'),
+            's3_endpoint' => env('LIVEKIT_EGRESS_S3_ENDPOINT'), // S3-compatible (MinIO…)
+        ],
     ],
 
     'jitsi' => [

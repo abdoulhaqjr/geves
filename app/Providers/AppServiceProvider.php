@@ -107,6 +107,11 @@ class AppServiceProvider extends ServiceProvider
                 Config::set("meetings.livekit.$k", $set("livekit.$k"));
             }
         }
+        foreach (['s3_bucket', 's3_region', 's3_access_key', 's3_secret', 's3_endpoint'] as $k) {
+            if (filled($set("livekit_egress.$k"))) {
+                Config::set("meetings.livekit.egress.$k", $set("livekit_egress.$k"));
+            }
+        }
 
         // HAL : autocomplétion des affiliations (activable dans les réglages).
         if ($set('hal.enabled') !== null) {

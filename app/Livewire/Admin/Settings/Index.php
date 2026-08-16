@@ -85,6 +85,17 @@ class Index extends Component
 
     public string $livekit_meet_url = '';
 
+    // Visio — enregistrement (Egress → stockage S3)
+    public string $livekit_egress_s3_bucket = '';
+
+    public string $livekit_egress_s3_region = '';
+
+    public string $livekit_egress_s3_access_key = '';
+
+    public string $livekit_egress_s3_secret = '';
+
+    public string $livekit_egress_s3_endpoint = '';
+
     // Interconnexion
     public bool $hal_enabled = false;
 
@@ -128,6 +139,12 @@ class Index extends Component
         $this->livekit_api_secret = $g('livekit.api_secret', (string) config('meetings.livekit.api_secret'));
         $this->livekit_meet_url = $g('livekit.meet_url', (string) config('meetings.livekit.meet_url'));
 
+        $this->livekit_egress_s3_bucket = $g('livekit_egress.s3_bucket', (string) config('meetings.livekit.egress.s3_bucket'));
+        $this->livekit_egress_s3_region = $g('livekit_egress.s3_region', (string) config('meetings.livekit.egress.s3_region'));
+        $this->livekit_egress_s3_access_key = $g('livekit_egress.s3_access_key', (string) config('meetings.livekit.egress.s3_access_key'));
+        $this->livekit_egress_s3_secret = $g('livekit_egress.s3_secret', (string) config('meetings.livekit.egress.s3_secret'));
+        $this->livekit_egress_s3_endpoint = $g('livekit_egress.s3_endpoint', (string) config('meetings.livekit.egress.s3_endpoint'));
+
         $this->hal_enabled = (bool) Settings::get('hal.enabled', (bool) config('services.hal.enabled', false));
     }
 
@@ -142,6 +159,7 @@ class Index extends Component
             'test_email' => ['nullable', 'email'],
             'meeting_default' => ['required', 'in:livekit,jitsi'],
             'livekit_meet_url' => ['nullable', 'url'],
+            'livekit_egress_s3_endpoint' => ['nullable', 'url'],
         ]);
 
         Settings::setMany([
@@ -176,6 +194,11 @@ class Index extends Component
             'livekit.api_key' => $this->livekit_api_key,
             'livekit.api_secret' => $this->livekit_api_secret,
             'livekit.meet_url' => $this->livekit_meet_url,
+            'livekit_egress.s3_bucket' => $this->livekit_egress_s3_bucket,
+            'livekit_egress.s3_region' => $this->livekit_egress_s3_region,
+            'livekit_egress.s3_access_key' => $this->livekit_egress_s3_access_key,
+            'livekit_egress.s3_secret' => $this->livekit_egress_s3_secret,
+            'livekit_egress.s3_endpoint' => $this->livekit_egress_s3_endpoint,
             'hal.enabled' => $this->hal_enabled,
         ]);
 
