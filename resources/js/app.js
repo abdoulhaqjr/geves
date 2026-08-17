@@ -37,6 +37,24 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
+    // Champ de mots-clés « tags » (style Select2, multi) — sans dépendance.
+    // Synchronise la liste vers une propriété Livewire (chaîne « a, b, c »).
+    window.Alpine.data('ukcTags', (initial = '') => ({
+        tags: String(initial || '').split(',').map((t) => t.trim()).filter(Boolean),
+        draft: '',
+        add() {
+            const v = this.draft.trim().replace(/,+$/, '').trim();
+            if (v && !this.tags.includes(v)) this.tags.push(v);
+            this.draft = '';
+        },
+        remove(i) {
+            this.tags.splice(i, 1);
+        },
+        backspace() {
+            if (this.draft === '' && this.tags.length) this.tags.pop();
+        },
+    }));
+
     window.Alpine.data('ukcCountdown', (targetIso) => ({
         days: 0,
         hours: 0,

@@ -121,12 +121,25 @@
                     @endif
 
                     @if ($config->enabled('keywords'))
-                        <div class="ukc-field full">
-                            <label for="keywords">{{ $config->label('keywords') }}
+                        <div class="ukc-field full"
+                             x-data="ukcTags(@js($keywords))"
+                             x-init="$watch('tags', v => $wire.set('keywords', v.join(', '), false))">
+                            <label for="keywords-input">{{ $config->label('keywords') }}
                                 @if ($config->required('keywords'))<span class="req">*</span>@endif
                             </label>
-                            <input type="text" id="keywords" wire:model="keywords" placeholder="développement durable, innovation, …">
-                            @if ($config->help('keywords'))<span class="hint">{{ $config->help('keywords') }}</span>@endif
+                            <div class="ukc-tags" @click="$refs.kwinput.focus()">
+                                <template x-for="(tag, i) in tags" :key="tag">
+                                    <span class="ukc-tag">
+                                        <span x-text="tag"></span>
+                                        <button type="button" @click="remove(i)" aria-label="Retirer">&times;</button>
+                                    </span>
+                                </template>
+                                <input type="text" id="keywords-input" x-ref="kwinput" x-model="draft"
+                                       @keydown.enter.prevent="add()" @keydown.comma.prevent="add()"
+                                       @keydown.backspace="backspace()" @blur="add()"
+                                       placeholder="Saisir un mot-clé puis Entrée…">
+                            </div>
+                            <span class="hint">{{ $config->help('keywords') ?: 'Entrée ou virgule pour ajouter un mot-clé.' }}</span>
                             @error('keywords') <span class="error">{{ $message }}</span> @enderror
                         </div>
                     @endif
