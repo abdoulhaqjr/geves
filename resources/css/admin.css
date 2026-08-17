@@ -73,6 +73,11 @@
 .admin-dash .activity-list .when { font-size: 11.5px; color: var(--ukc-light); margin-top: 2px; }
 .admin-dash table.ukc-table code { font-size: 12px; }
 
+/* ---- Hub d'édition (form en onglets) ---- */
+.admin-edition-detail .quick-links { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-top: 4px; }
+.admin-edition-detail .quick-links .ql { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border: 1px solid var(--ukc-border); border-radius: 10px; background: #fafbfd; font-size: 13.5px; font-weight: 700; color: var(--ukc-text); transition: .15s; }
+.admin-edition-detail .quick-links .ql:hover { border-color: var(--ukc-blue); background: #eef2ff; color: var(--ukc-blue); }
+
 /* ---- Rapports ---- */
 .admin-reports .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
 @media (max-width: 900px) { .admin-reports .charts-grid { grid-template-columns: 1fr; } }

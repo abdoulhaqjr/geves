@@ -8,6 +8,7 @@ use App\Models\Colloque;
 use App\Models\Edition;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -331,12 +332,33 @@ class Form extends Component
         ];
     }
 
+    /** Associe un champ à l'onglet du hub d'édition qui le contient. */
+    protected function tabForField(string $field): string
+    {
+        return match (true) {
+            in_array($field, ['status', 'slug', 'submission_open', 'submission_deadline', 'max_communications'], true),
+            str_starts_with($field, 'fees') => 'submissions',
+            str_starts_with($field, 'committees') => 'committees',
+            str_starts_with($field, 'partners'), str_starts_with($field, 'faq') => 'partners',
+            in_array($field, ['intro', 'tracks', 'hero_image', 'hero_video'], true),
+            str_starts_with($field, 'contact'), str_starts_with($field, 'promo'), str_starts_with($field, 'practical') => 'content',
+            default => 'general',
+        };
+    }
+
     public function save()
     {
-        $data = $this->validate();
+        try {
+            $data = $this->validate();
+        } catch (ValidationException $e) {
+            $this->dispatch('edition-invalid', tab: $this->tabForField((string) array_key_first($e->errors())));
+
+            throw $e;
+        }
 
         if ($this->colloque_id === null && trim($this->new_colloque) === '') {
             $this->addError('colloque_id', 'Choisissez un colloque existant ou saisissez-en un nouveau.');
+            $this->dispatch('edition-invalid', tab: 'general');
 
             return null;
         }
