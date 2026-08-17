@@ -28,6 +28,7 @@ use App\Livewire\Account\Submissions\Create as SubmissionCreate;
 use App\Livewire\Account\Submissions\Index as SubmissionIndex;
 use App\Livewire\Account\Submissions\Show as SubmissionShow;
 use App\Livewire\Account\VerifyEmailNotice;
+use App\Livewire\Admin\AiAssistant as AdminAiAssistant;
 use App\Livewire\Admin\BadgeScan as AdminBadgeScan;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\Documents\Attestations as AdminAttestations;
@@ -182,6 +183,7 @@ Route::prefix('admin')->group(function () {
 
         Route::get('/reglages', AdminSettings::class)->name('admin.settings');
         Route::get('/reglages/agents-ia', AdminSettingsAgents::class)->name('admin.settings.agents');
+        Route::get('/assistant-ia', AdminAiAssistant::class)->name('admin.ai');
 
         Route::post('/deconnexion', AdminLogoutController::class)->name('admin.logout');
     });

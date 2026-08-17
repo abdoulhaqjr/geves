@@ -74,6 +74,10 @@
                    @class(['active' => request()->routeIs('admin.settings')])>
                     <x-ukc.icon name="settings" :size="18" /> Réglages
                 </a>
+                <a href="{{ route('admin.ai') }}" wire:navigate
+                   @class(['active' => request()->routeIs('admin.ai')])>
+                    <x-ukc.icon name="sparkles" :size="18" /> Assistant IA
+                </a>
                 <a href="{{ route('admin.settings.agents') }}" wire:navigate
                    @class(['active' => request()->routeIs('admin.settings.agents')])>
                     <x-ukc.icon name="sparkles" :size="18" /> Agents IA
