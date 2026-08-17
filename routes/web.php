@@ -14,6 +14,7 @@ use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Public\ArchiveController;
 use App\Http\Controllers\Public\ColloqueController;
+use App\Http\Controllers\Public\DeroulementController;
 use App\Livewire\Account\Dashboard;
 use App\Livewire\Account\Documents as AccountDocuments;
 use App\Livewire\Account\ForgotPassword;
@@ -56,6 +57,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', HomeController::class)->name('home');
 
 // Page publique d'une édition de colloque.
+Route::get('/deroulement', DeroulementController::class)->name('public.deroulement');
+
 Route::get('/colloques-passes', [ArchiveController::class, 'index'])->name('public.archives');
 Route::get('/colloques-passes/{slug}', [ArchiveController::class, 'show'])->name('public.archive');
 

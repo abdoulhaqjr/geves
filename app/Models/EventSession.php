@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
@@ -22,6 +23,10 @@ use Illuminate\Support\Str;
  * et les helpers ci-dessous. `meeting_status`/`meeting_visibility` restent des
  * strings en base (l'enum est la source des libellés/pastilles). Les rôles
  * (modérateur/présentateur/participant) sont **calculés**, jamais stockés.
+ *
+ * @property Carbon|null $starts_at
+ * @property Carbon|null $ends_at
+ * @property Carbon|null $session_day
  */
 class EventSession extends Model
 {
@@ -281,6 +286,7 @@ class EventSession extends Model
         return $this->belongsTo(Edition::class);
     }
 
+    /** @return BelongsTo<Atelier, $this> */
     public function atelier(): BelongsTo
     {
         return $this->belongsTo(Atelier::class);

@@ -39,6 +39,35 @@ it('affiche le détail d’une édition avec sa galerie', function () {
         ->assertSee('galleryData', false);   // JSON du lightbox
 });
 
+it('affiche l’état vide du déroulement sans colloque en cours', function () {
+    $this->get(route('public.deroulement'))
+        ->assertOk()
+        ->assertSee('Aucun colloque en cours', false);
+});
+
+it('affiche le déroulement d’un colloque en cours', function () {
+    $edition = openEdition();
+    $edition->update([
+        'title' => 'Colloque en direct',
+        'date_start' => now()->subDay(),
+        'date_end' => now()->addDay(),
+        'location' => 'Kara',
+    ]);
+    $atelier = $edition->ateliers()->create(['title' => 'Atelier 1', 'ordre' => 1]);
+    $edition->sessions()->create([
+        'atelier_id' => $atelier->id, 'type' => 'atelier', 'label' => 'Session en cours',
+        'room' => 'Salle A', 'session_day' => now()->toDateString(),
+        'starts_at' => now()->subHour(), 'ends_at' => now()->addHour(),
+        'meeting_status' => 'live', 'meeting_provider' => 'jitsi', 'ordre' => 1,
+    ]);
+
+    $this->get(route('public.deroulement'))
+        ->assertOk()
+        ->assertSee('Colloque en direct')
+        ->assertSee('En ce moment', false)
+        ->assertSee('Session en cours');
+});
+
 it('renvoie 404 pour une édition inconnue', function () {
     $this->get(route('public.archive', 'edition-inexistante'))->assertNotFound();
 });

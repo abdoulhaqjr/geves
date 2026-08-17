@@ -66,6 +66,7 @@ class Edition extends Model
         return $this->hasMany(Atelier::class);
     }
 
+    /** @return HasMany<EventSession, $this> */
     public function sessions(): HasMany
     {
         return $this->hasMany(EventSession::class);

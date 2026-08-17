@@ -113,7 +113,7 @@
                             <div>Du {{ $ongoing->date_start?->translatedFormat('d F') }} au {{ $ongoing->date_end?->translatedFormat('d F Y') }}</div>
                         </div>
                         <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;">
-                            <a href="{{ $colloqueUrl($ongoing) }}" class="ukc-btn ukc-btn--blue">Rejoindre le déroulement</a>
+                            <a href="{{ route('public.deroulement') }}" class="ukc-btn ukc-btn--blue">Rejoindre le déroulement</a>
                             <a href="{{ $colloqueUrl($ongoing) }}" class="ukc-btn ukc-btn--outline">Infos du colloque</a>
                         </div>
                     </div>
