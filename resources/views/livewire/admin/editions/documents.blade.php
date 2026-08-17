@@ -29,7 +29,7 @@
                 <input type="url" wire:model="url" placeholder="https://…">
                 @error('url') <span class="error">{{ $message }}</span> @enderror
             </div>
-            <button type="submit" class="ukc-btn ukc-btn--primary">
+            <button type="submit" class="ukc-btn ukc-btn--blue">
                 <x-ukc.icon name="plus" :size="18" /> Ajouter
             </button>
         </form>

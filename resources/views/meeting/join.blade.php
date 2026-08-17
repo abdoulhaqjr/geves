@@ -337,7 +337,7 @@
                         <span class="ico" style="display:inline-flex;color:var(--ukc-blue);margin-bottom:8px;"><x-ukc.icon name="video" :size="34" /></span>
                         <h3 style="margin-bottom:6px;">Rejoindre la visio</h3>
                         <p style="color:var(--ukc-muted);">La salle s’ouvre dans un nouvel onglet.</p>
-                        <a href="{{ $externalUrl }}" target="_blank" rel="noopener" class="ukc-btn ukc-btn--primary" style="margin-top:14px;">
+                        <a href="{{ $externalUrl }}" target="_blank" rel="noopener" class="ukc-btn ukc-btn--blue" style="margin-top:14px;">
                             <x-ukc.icon name="external" :size="16" /> Ouvrir la salle
                         </a>
                     </div>
@@ -357,12 +357,12 @@
                             <h3 style="margin-bottom:6px;">La visio n’est pas en cours</h3>
                             <p style="color:var(--ukc-muted);">{{ $st->label() }}. Revenez à l’heure de la session{{ '' }}@if ($session->starts_at) ({{ $session->starts_at->translatedFormat('d F, H:i') }})@endif.</p>
                             @if ($session->hasRecording())
-                                <a href="{{ $session->recording_url }}" target="_blank" class="ukc-btn ukc-btn--primary" style="margin-top:14px;"><x-ukc.icon name="video" :size="16" /> Voir le replay</a>
+                                <a href="{{ $session->recording_url }}" target="_blank" class="ukc-btn ukc-btn--blue" style="margin-top:14px;"><x-ukc.icon name="video" :size="16" /> Voir le replay</a>
                             @endif
                         @elseif ($isGuest)
                             <h3 style="margin-bottom:6px;">Connexion requise</h3>
                             <p style="color:var(--ukc-muted);">Cette visio est réservée aux participants inscrits.</p>
-                            <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--primary" style="margin-top:14px;"><x-ukc.icon name="login" :size="16" /> Se connecter</a>
+                            <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--blue" style="margin-top:14px;"><x-ukc.icon name="login" :size="16" /> Se connecter</a>
                         @else
                             <h3 style="margin-bottom:6px;">Accès réservé</h3>
                             <p style="color:var(--ukc-muted);">Cette visio est réservée aux participants inscrits de cette édition.</p>

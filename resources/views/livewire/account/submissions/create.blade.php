@@ -13,7 +13,7 @@
                 Vous pouvez suivre son statut depuis « Mes communications ».
             </p>
             <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:20px;">
-                <a href="{{ route('account.submissions.index') }}" wire:navigate class="ukc-btn ukc-btn--primary">
+                <a href="{{ route('account.submissions.index') }}" wire:navigate class="ukc-btn ukc-btn--blue">
                     <x-ukc.icon name="inbox" :size="18" /> Mes communications
                 </a>
                 @if ($this->remaining() > 0)
@@ -213,7 +213,7 @@
                 @endif
 
                 <div class="ukc-form-actions">
-                    <button type="submit" class="ukc-btn ukc-btn--primary" wire:loading.attr="disabled" wire:target="submit">
+                    <button type="submit" class="ukc-btn ukc-btn--blue" wire:loading.attr="disabled" wire:target="submit">
                         <span wire:loading.remove wire:target="submit"><x-ukc.icon name="check" :size="18" /> Envoyer ma communication</span>
                         <span wire:loading wire:target="submit">Envoi…</span>
                     </button>

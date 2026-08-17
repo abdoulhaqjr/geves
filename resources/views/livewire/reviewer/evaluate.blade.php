@@ -69,7 +69,7 @@
         </div>
 
         <div class="ukc-form-actions">
-            <button type="submit" class="ukc-btn ukc-btn--primary" wire:loading.attr="disabled" wire:target="submitEvaluation">
+            <button type="submit" class="ukc-btn ukc-btn--blue" wire:loading.attr="disabled" wire:target="submitEvaluation">
                 <span wire:loading.remove wire:target="submitEvaluation"><x-ukc.icon name="check" :size="18" /> Enregistrer mon évaluation</span>
                 <span wire:loading wire:target="submitEvaluation">Enregistrement…</span>
             </button>

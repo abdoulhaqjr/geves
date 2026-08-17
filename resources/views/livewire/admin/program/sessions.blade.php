@@ -104,7 +104,7 @@
                             @endforeach
                         </div>
                     @endif
-                    <button type="button" class="ukc-btn ukc-btn--primary ukc-btn--sm" style="margin-top:10px;" wire:click="addAtelier">Ajouter l'atelier</button>
+                    <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" style="margin-top:10px;" wire:click="addAtelier">Ajouter l'atelier</button>
                 </div>
 
                 <div class="ukc-card">
@@ -138,7 +138,7 @@
                         <div class="ukc-field"><label for="sModerator">Modérateur</label><input type="text" id="sModerator" wire:model="sModerator"></div>
                         <div class="ukc-field"><label for="sRapporteur">Rapporteur</label><input type="text" id="sRapporteur" wire:model="sRapporteur"></div>
                     </div>
-                    <button type="button" class="ukc-btn ukc-btn--primary ukc-btn--sm" style="margin-top:10px;" wire:click="addSession">Ajouter la session</button>
+                    <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" style="margin-top:10px;" wire:click="addSession">Ajouter la session</button>
                 </div>
             </div>
         </div>

@@ -17,7 +17,7 @@
     @endif
 
     <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:20px;">
-        <button type="button" wire:click="resend" class="ukc-btn ukc-btn--primary" wire:loading.attr="disabled">
+        <button type="button" wire:click="resend" class="ukc-btn ukc-btn--blue" wire:loading.attr="disabled">
             <x-ukc.icon name="mail" :size="18" /> Renvoyer le lien
         </button>
         <a href="{{ route('account.dashboard') }}" wire:navigate class="ukc-btn ukc-btn--outline">

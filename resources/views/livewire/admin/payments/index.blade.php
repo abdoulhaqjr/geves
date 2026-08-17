@@ -21,7 +21,7 @@
                 </select>
             </div>
         </div>
-        <a href="{{ route('admin.payments.create') }}" wire:navigate class="ukc-btn ukc-btn--primary">
+        <a href="{{ route('admin.payments.create') }}" wire:navigate class="ukc-btn ukc-btn--blue">
             <x-ukc.icon name="plus" :size="18" /> Enregistrer un encaissement
         </a>
     </div>
@@ -90,7 +90,7 @@
             <div class="ukc-empty">
                 <h3>Aucun paiement</h3>
                 <p>Enregistrez un encaissement pour commencer.</p>
-                <a href="{{ route('admin.payments.create') }}" wire:navigate class="ukc-btn ukc-btn--primary">
+                <a href="{{ route('admin.payments.create') }}" wire:navigate class="ukc-btn ukc-btn--blue">
                     <x-ukc.icon name="plus" :size="18" /> Enregistrer un encaissement
                 </a>
             </div>

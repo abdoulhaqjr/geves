@@ -22,7 +22,7 @@
                 </select>
             </div>
         </div>
-        <a href="{{ route('admin.editions.create') }}" wire:navigate class="ukc-btn ukc-btn--primary">
+        <a href="{{ route('admin.editions.create') }}" wire:navigate class="ukc-btn ukc-btn--blue">
             <x-ukc.icon name="plus" :size="18" /> Nouvelle édition
         </a>
     </div>
@@ -107,7 +107,7 @@
             <div class="ukc-empty">
                 <h3>Aucune édition</h3>
                 <p>Créez votre première édition pour commencer.</p>
-                <a href="{{ route('admin.editions.create') }}" wire:navigate class="ukc-btn ukc-btn--primary">
+                <a href="{{ route('admin.editions.create') }}" wire:navigate class="ukc-btn ukc-btn--blue">
                     <x-ukc.icon name="plus" :size="18" /> Nouvelle édition
                 </a>
             </div>

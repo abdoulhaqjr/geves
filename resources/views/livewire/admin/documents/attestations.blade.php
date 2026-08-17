@@ -28,7 +28,7 @@
                     </select>
                 </div>
             </div>
-            <button type="button" class="ukc-btn ukc-btn--primary ukc-btn--sm" style="margin-top:12px;"
+            <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" style="margin-top:12px;"
                     wire:click="issue" wire:confirm="Émettre les attestations pour l'audience choisie ?">
                 <x-ukc.icon name="award" :size="16" /> Émettre
             </button>

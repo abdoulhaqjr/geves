@@ -62,7 +62,7 @@
                 </div>
 
                 <div>
-                    <button type="submit" class="ukc-btn ukc-btn--primary">
+                    <button type="submit" class="ukc-btn ukc-btn--blue">
                         <x-ukc.icon name="mail" :size="18" /> Mettre en file / Envoyer
                     </button>
                 </div>

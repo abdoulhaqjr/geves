@@ -41,7 +41,7 @@
         @endforeach
 
         <div style="display:flex;justify-content:flex-end;">
-            <button type="submit" class="ukc-btn ukc-btn--primary">
+            <button type="submit" class="ukc-btn ukc-btn--blue">
                 <x-ukc.icon name="check" :size="18" /> Enregistrer les modèles
             </button>
         </div>

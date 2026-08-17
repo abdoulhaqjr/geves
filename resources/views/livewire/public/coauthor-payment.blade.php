@@ -17,7 +17,7 @@
                 <input type="email" wire:model="email" placeholder="prenom.nom@example.org" autocomplete="email">
                 @error('email') <span class="error">{{ $message }}</span> @enderror
             </div>
-            <button type="submit" class="ukc-btn ukc-btn--primary">
+            <button type="submit" class="ukc-btn ukc-btn--blue">
                 <x-ukc.icon name="search" :size="18" /> Rechercher
             </button>
         </form>

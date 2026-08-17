@@ -227,7 +227,7 @@
         </div>
 
         <div class="ukc-form-actions" style="border-top:none;padding-top:0;margin-top:0;">
-            <button type="submit" class="ukc-btn ukc-btn--primary" wire:loading.attr="disabled" wire:target="save">
+            <button type="submit" class="ukc-btn ukc-btn--blue" wire:loading.attr="disabled" wire:target="save">
                 <span wire:loading.remove wire:target="save">Enregistrer les réglages</span>
                 <span wire:loading wire:target="save">Enregistrement…</span>
             </button>

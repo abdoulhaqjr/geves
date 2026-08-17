@@ -8,7 +8,7 @@
     <div style="display:inline-flex;gap:4px;flex-wrap:wrap;">
         @foreach (['scheduled' => 'Programmer', 'live' => 'En direct', 'ended' => 'Terminer', 'none' => 'Aucune'] as $val => $lbl)
             <button type="button" wire:click="setMeetingStatus({{ $s->id }}, '{{ $val }}')"
-                    @class(['ukc-btn', 'ukc-btn--sm', 'ukc-btn--primary' => $st->value === $val, 'ukc-btn--ghost' => $st->value !== $val])>
+                    @class(['ukc-btn', 'ukc-btn--sm', 'ukc-btn--blue' => $st->value === $val, 'ukc-btn--ghost' => $st->value !== $val])>
                 {{ $lbl }}
             </button>
         @endforeach
@@ -20,7 +20,7 @@
     <div style="display:inline-flex;gap:4px;">
         @foreach (['public' => 'Public', 'participants' => 'Participants'] as $val => $lbl)
             <button type="button" wire:click="setMeetingVisibility({{ $s->id }}, '{{ $val }}')"
-                    @class(['ukc-btn', 'ukc-btn--sm', 'ukc-btn--primary' => $vis->value === $val, 'ukc-btn--ghost' => $vis->value !== $val])>
+                    @class(['ukc-btn', 'ukc-btn--sm', 'ukc-btn--blue' => $vis->value === $val, 'ukc-btn--ghost' => $vis->value !== $val])>
                 {{ $lbl }}
             </button>
         @endforeach
@@ -75,7 +75,7 @@
             @endif
         </div>
         <div style="display:flex;gap:8px;margin-top:10px;">
-            <button type="button" wire:click="saveMeeting" class="ukc-btn ukc-btn--primary ukc-btn--sm">
+            <button type="button" wire:click="saveMeeting" class="ukc-btn ukc-btn--blue ukc-btn--sm">
                 <x-ukc.icon name="check" :size="14" /> Enregistrer
             </button>
             <button type="button" wire:click="cancelMeetingEdit" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Annuler</button>

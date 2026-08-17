@@ -85,7 +85,7 @@
             </div>
 
             <div class="ukc-form-actions full">
-                <button type="submit" class="ukc-btn ukc-btn--primary" wire:loading.attr="disabled">
+                <button type="submit" class="ukc-btn ukc-btn--blue" wire:loading.attr="disabled">
                     <span wire:loading.remove wire:target="save">Enregistrer</span>
                     <span wire:loading wire:target="save">Enregistrement…</span>
                 </button>

@@ -4,7 +4,7 @@
             <a href="{{ request()->fullUrlWithQuery(['format' => 'docx']) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">
                 <x-ukc.icon name="download" :size="16" /> Word (.docx)
             </a>
-            <button onclick="window.print()" class="ukc-btn ukc-btn--primary ukc-btn--sm">
+            <button onclick="window.print()" class="ukc-btn ukc-btn--blue ukc-btn--sm">
                 <x-ukc.icon name="download" :size="16" /> Imprimer / PDF
             </button>
         </div>

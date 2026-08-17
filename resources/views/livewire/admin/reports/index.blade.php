@@ -14,7 +14,7 @@
                 <a href="{{ route('admin.reports.xlsx', $edition) }}" class="ukc-btn ukc-btn--green">
                     <x-ukc.icon name="sheet" :size="18" /> Exporter Excel (.xlsx)
                 </a>
-                <a href="{{ route('admin.reports.pdf', $edition) }}" target="_blank" class="ukc-btn ukc-btn--primary">
+                <a href="{{ route('admin.reports.pdf', $edition) }}" target="_blank" class="ukc-btn ukc-btn--blue">
                     <x-ukc.icon name="file" :size="18" /> Rapport PDF
                 </a>
             </div>

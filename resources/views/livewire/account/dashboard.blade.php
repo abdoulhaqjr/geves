@@ -137,7 +137,7 @@
         <div class="ukc-card" style="text-align:center;background:linear-gradient(135deg,rgba(34,62,164,.06),rgba(0,153,51,.06));margin-bottom:20px;">
             <h3 style="justify-content:center;">Appel à communications ouvert</h3>
             <p style="color:var(--ukc-muted);margin:6px 0 18px;">{{ $openEdition->title }}</p>
-            <a href="{{ route('account.submissions.create', $openEdition->slug) }}" wire:navigate class="ukc-btn ukc-btn--primary">
+            <a href="{{ route('account.submissions.create', $openEdition->slug) }}" wire:navigate class="ukc-btn ukc-btn--blue">
                 <x-ukc.icon name="upload" :size="18" /> Soumettre une communication
             </a>
         </div>
@@ -207,7 +207,7 @@
         <div class="ukc-empty">
             <h3>Votre espace se remplira bientôt</h3>
             <p>Communications, paiements et attestation apparaîtront ici au fil de votre participation.</p>
-            <a href="{{ route('account.profile') }}" wire:navigate class="ukc-btn ukc-btn--primary">
+            <a href="{{ route('account.profile') }}" wire:navigate class="ukc-btn ukc-btn--blue">
                 <x-ukc.icon name="user" :size="18" /> Compléter mon profil
             </a>
         </div>

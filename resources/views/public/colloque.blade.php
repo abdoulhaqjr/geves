@@ -58,7 +58,7 @@
                     <a href="#infos" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">Infos pratiques</a>
                 @endif
                 <a href="#contact" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">Contact</a>
-                <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--primary ukc-btn--sm">Espace participant</a>
+                <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">Espace participant</a>
             </nav>
         </div>
     </header>
@@ -354,7 +354,7 @@
                 <h2 style="font-size:1.4rem;font-weight:900;">Prêt à participer ?</h2>
                 <p style="color:var(--ukc-muted);margin:8px 0 20px;">Créez votre compte pour soumettre une communication ou vous inscrire.</p>
                 <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-                    <a href="{{ route('account.register') }}" class="ukc-btn ukc-btn--primary">
+                    <a href="{{ route('account.register') }}" class="ukc-btn ukc-btn--blue">
                         <x-ukc.icon name="user-plus" :size="18" /> Créer mon compte
                     </a>
                     <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--outline">

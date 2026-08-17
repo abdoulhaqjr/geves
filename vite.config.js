@@ -17,6 +17,9 @@ export default defineConfig({
         tailwindcss(),
     ],
     server: {
+        // Bind explicite en IPv4 : évite un fichier `hot` en http://[::1]:5173
+        // (IPv6) injoignable par certains navigateurs → CSS/HMR non chargés.
+        host: '127.0.0.1',
         watch: {
             ignored: ['**/storage/framework/views/**'],
         },

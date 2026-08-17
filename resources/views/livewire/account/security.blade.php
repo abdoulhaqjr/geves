@@ -24,7 +24,7 @@
                 <input type="password" id="password_confirmation" wire:model="password_confirmation" autocomplete="new-password">
             </div>
             <div class="ukc-field full">
-                <button type="submit" class="ukc-btn ukc-btn--primary">
+                <button type="submit" class="ukc-btn ukc-btn--blue">
                     <x-ukc.icon name="check" :size="16" /> Mettre à jour le mot de passe
                 </button>
             </div>
@@ -68,7 +68,7 @@
         @if (! $enabled && ! $showingSetup)
             {{-- État désactivé : proposer l'activation --}}
             <div style="margin-top:14px;">
-                <button type="button" wire:click="startSetup" class="ukc-btn ukc-btn--primary">
+                <button type="button" wire:click="startSetup" class="ukc-btn ukc-btn--blue">
                     <x-ukc.icon name="lock" :size="16" /> Activer la 2FA
                 </button>
             </div>
@@ -96,7 +96,7 @@
                                    maxlength="6" placeholder="123456" style="letter-spacing:.3em;font-size:1.1rem;">
                             @error('code') <span class="error">{{ $message }}</span> @enderror
                             <div style="display:flex;gap:8px;margin-top:12px;">
-                                <button type="submit" class="ukc-btn ukc-btn--primary ukc-btn--sm">
+                                <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm">
                                     <x-ukc.icon name="check" :size="14" /> Confirmer
                                 </button>
                                 <button type="button" wire:click="cancelSetup" class="ukc-btn ukc-btn--ghost ukc-btn--sm">

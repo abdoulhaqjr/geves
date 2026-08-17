@@ -50,7 +50,7 @@
                         <input type="file" id="inspiration" wire:model="inspiration" accept=".png,.jpg,.jpeg,.webp">
                         <div wire:loading wire:target="inspiration" class="hint">Téléversement…</div>
                     </div>
-                    <button type="button" class="ukc-btn ukc-btn--primary ukc-btn--sm" wire:click="generate"
+                    <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" wire:click="generate"
                             wire:loading.attr="disabled" wire:target="generate,inspiration">
                         <span wire:loading.remove wire:target="generate"><x-ukc.icon name="sparkles" :size="16" /> Générer la mise en page</span>
                         <span wire:loading wire:target="generate">Génération…</span>
@@ -83,7 +83,7 @@
             </div>
 
             <div class="ukc-form-actions" style="border-top:none;padding-top:0;margin-top:0;">
-                <button type="button" class="ukc-btn ukc-btn--primary" wire:click="save">
+                <button type="button" class="ukc-btn ukc-btn--blue" wire:click="save">
                     <x-ukc.icon name="check" :size="18" /> Enregistrer le modèle
                 </button>
             </div>

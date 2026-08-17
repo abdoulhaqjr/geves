@@ -35,7 +35,7 @@
         </div>
 
         <div class="ukc-field full">
-            <button type="submit" class="ukc-btn ukc-btn--primary" style="width:100%;"
+            <button type="submit" class="ukc-btn ukc-btn--blue" style="width:100%;"
                     wire:loading.attr="disabled">
                 <span wire:loading.remove wire:target="authenticate">Se connecter</span>
                 <span wire:loading wire:target="authenticate">Connexion…</span>

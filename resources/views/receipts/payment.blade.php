@@ -1,7 +1,7 @@
 <x-layouts.app :title="'Reçu ' . $payment->receipt_no">
     <div style="max-width:720px;margin:0 auto;padding:32px 20px;">
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px;" class="no-print">
-            <a href="{{ request()->fullUrlWithQuery(['pdf' => 1]) }}" class="ukc-btn ukc-btn--primary ukc-btn--sm">
+            <a href="{{ request()->fullUrlWithQuery(['pdf' => 1]) }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">
                 <x-ukc.icon name="download" :size="16" /> Télécharger le PDF
             </a>
             <button onclick="window.print()" class="ukc-btn ukc-btn--outline ukc-btn--sm">

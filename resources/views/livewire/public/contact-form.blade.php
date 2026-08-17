@@ -30,7 +30,7 @@
             </div>
 
             <div>
-                <button type="submit" class="ukc-btn ukc-btn--primary" wire:loading.attr="disabled" wire:target="submit">
+                <button type="submit" class="ukc-btn ukc-btn--blue" wire:loading.attr="disabled" wire:target="submit">
                     <x-ukc.icon name="mail" :size="18" /> Envoyer le message
                 </button>
             </div>

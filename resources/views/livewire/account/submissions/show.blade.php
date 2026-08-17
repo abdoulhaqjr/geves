@@ -103,7 +103,7 @@
                     @error('file') <span class="error">{{ $message }}</span> @enderror
                 </div>
                 <div class="ukc-form-actions full">
-                    <button type="submit" class="ukc-btn ukc-btn--primary" wire:loading.attr="disabled" wire:target="resubmit">
+                    <button type="submit" class="ukc-btn ukc-btn--blue" wire:loading.attr="disabled" wire:target="resubmit">
                         <span wire:loading.remove wire:target="resubmit"><x-ukc.icon name="upload" :size="18" /> Renvoyer la version corrigée</span>
                         <span wire:loading wire:target="resubmit">Envoi…</span>
                     </button>

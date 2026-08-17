@@ -2,7 +2,7 @@
     <div style="max-width:1000px;margin:0 auto;padding:28px 20px;">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;" class="no-print">
             <a href="{{ route('admin.reports.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">← Rapports</a>
-            <button onclick="window.print()" class="ukc-btn ukc-btn--primary ukc-btn--sm">
+            <button onclick="window.print()" class="ukc-btn ukc-btn--blue ukc-btn--sm">
                 <x-ukc.icon name="download" :size="16" /> Imprimer / PDF
             </button>
         </div>

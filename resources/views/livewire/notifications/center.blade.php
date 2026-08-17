@@ -55,7 +55,7 @@
                 </table>
             </div>
             <div style="margin-top:12px;">
-                <button type="button" wire:click="savePrefs" class="ukc-btn ukc-btn--primary ukc-btn--sm">
+                <button type="button" wire:click="savePrefs" class="ukc-btn ukc-btn--blue ukc-btn--sm">
                     <x-ukc.icon name="check" :size="16" /> Enregistrer les préférences
                 </button>
             </div>

@@ -54,7 +54,7 @@
                         <div class="ukc-field"><label for="slStart">Heure</label><input type="time" id="slStart" wire:model="slStart">@error('slStart')<span class="error">{{ $message }}</span>@enderror</div>
                         <div class="ukc-field full"><label for="slRoom">Salle</label><input type="text" id="slRoom" wire:model="slRoom"></div>
                     </div>
-                    <button type="button" class="ukc-btn ukc-btn--primary ukc-btn--sm" style="margin-top:10px;" wire:click="addSlot">Ajouter le créneau</button>
+                    <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" style="margin-top:10px;" wire:click="addSlot">Ajouter le créneau</button>
                 </div>
 
                 <div class="ukc-card">

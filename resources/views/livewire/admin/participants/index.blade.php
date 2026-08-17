@@ -18,7 +18,7 @@
             </div>
         </div>
         @if ($edition_id !== '')
-            <button type="button" class="ukc-btn ukc-btn--primary" wire:click="invitePaidUninvited"
+            <button type="button" class="ukc-btn ukc-btn--blue" wire:click="invitePaidUninvited"
                     wire:confirm="Envoyer une invitation à tous les payés non encore invités ?">
                 <x-ukc.icon name="mail" :size="18" /> Inviter les payés non invités
             </button>

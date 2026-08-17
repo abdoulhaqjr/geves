@@ -9,7 +9,7 @@
             </div>
             <nav style="display:flex;gap:10px;">
                 <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">Connexion</a>
-                <a href="{{ route('account.register') }}" class="ukc-btn ukc-btn--primary ukc-btn--sm">Créer un compte</a>
+                <a href="{{ route('account.register') }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">Créer un compte</a>
             </nav>
         </header>
 
@@ -27,7 +27,7 @@
                     une plateforme unique, à la charte de l'Université de Kara.
                 </p>
                 <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:28px;">
-                    <a href="{{ route('account.register') }}" class="ukc-btn ukc-btn--primary">
+                    <a href="{{ route('account.register') }}" class="ukc-btn ukc-btn--blue">
                         <x-ukc.icon name="user-plus" :size="18" /> Créer mon compte
                     </a>
                     <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--outline">

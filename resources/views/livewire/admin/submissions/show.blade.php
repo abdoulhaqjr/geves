@@ -177,7 +177,7 @@
                         <input type="email" id="reviewerEmail" wire:model="reviewerEmail" placeholder="relecteur@exemple.tg">
                         @error('reviewerEmail') <span class="error">{{ $message }}</span> @enderror
                     </div>
-                    <button type="button" class="ukc-btn ukc-btn--primary ukc-btn--sm" wire:click="assignReviewer">
+                    <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" wire:click="assignReviewer">
                         <x-ukc.icon name="user-plus" :size="16" /> Assigner et inviter
                     </button>
                 </div>

@@ -8,7 +8,7 @@
                 @if ($participant->account)
                     <form method="POST" action="{{ route('admin.participants.impersonate', $participant) }}">
                         @csrf
-                        <button type="submit" class="ukc-btn ukc-btn--primary ukc-btn--sm"
+                        <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"
                                 onclick="return confirm('Se connecter en tant que {{ $participant->full_name }} ? Vous verrez et agirez dans son espace jusqu’à ce que vous quittiez l’impersonation.')">
                             <x-ukc.icon name="login" :size="14" /> Se connecter en tant que
                         </button>

@@ -10,7 +10,7 @@
             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
                 <input type="file" wire:model="aiFiles" multiple accept=".pdf,.png,.jpg,.jpeg,.webp"
                        style="font-size:.9rem;">
-                <button type="button" class="ukc-btn ukc-btn--primary ukc-btn--sm"
+                <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm"
                         wire:click="runAiAssist" wire:loading.attr="disabled" wire:target="runAiAssist,aiFiles">
                     <span wire:loading.remove wire:target="runAiAssist"><x-ukc.icon name="sparkles" :size="16" /> Analyser</span>
                     <span wire:loading wire:target="runAiAssist">Analyse en cours…</span>
@@ -311,7 +311,7 @@
         </div>
 
         <div class="ukc-form-actions" style="margin-top:0;border-top:none;padding-top:0;">
-            <button type="submit" class="ukc-btn ukc-btn--primary" wire:loading.attr="disabled">
+            <button type="submit" class="ukc-btn ukc-btn--blue" wire:loading.attr="disabled">
                 <span wire:loading.remove wire:target="save">Enregistrer</span>
                 <span wire:loading wire:target="save">Enregistrement…</span>
             </button>

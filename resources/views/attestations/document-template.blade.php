@@ -1,7 +1,7 @@
 <x-layouts.app :title="'Attestation — ' . $attestation->recipient_name">
     <div style="max-width:{{ $width + 80 }}px;margin:0 auto;padding:24px 16px;">
         <div style="display:flex;justify-content:flex-end;margin-bottom:12px;" class="no-print">
-            <button onclick="window.print()" class="ukc-btn ukc-btn--primary ukc-btn--sm">
+            <button onclick="window.print()" class="ukc-btn ukc-btn--blue ukc-btn--sm">
                 <x-ukc.icon name="download" :size="16" /> Imprimer / PDF
             </button>
         </div>

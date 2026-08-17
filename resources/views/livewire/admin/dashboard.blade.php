@@ -23,7 +23,7 @@
         <p style="font-size:.92rem;color:var(--ukc-muted);line-height:1.6;margin-bottom:16px;">
             Créez une édition, renseignez son thème et ses dates, ouvrez les soumissions, puis publiez sa page.
         </p>
-        <a href="{{ route('admin.editions.index') }}" wire:navigate class="ukc-btn ukc-btn--primary">
+        <a href="{{ route('admin.editions.index') }}" wire:navigate class="ukc-btn ukc-btn--blue">
             <x-ukc.icon name="calendar" :size="18" /> Gérer les éditions
         </a>
     </div>
