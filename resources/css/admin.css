@@ -29,6 +29,8 @@
 
 .admin-dash .layout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; align-items: start; }
 @media (max-width: 980px) { .admin-dash .layout { grid-template-columns: 1fr; } }
+.admin-dash .ukc-card { margin-bottom: 16px; }
+.admin-dash .layout > div > .ukc-card:last-child { margin-bottom: 0; }
 .admin-dash .ukc-card h2 { font-size: 15px; font-weight: 800; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .admin-dash .ukc-card .desc { font-size: 13px; color: var(--ukc-muted); margin-bottom: 14px; line-height: 1.45; }
 
