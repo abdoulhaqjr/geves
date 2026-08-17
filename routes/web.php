@@ -51,6 +51,7 @@ use App\Livewire\Admin\Submissions\Index as AdminSubmissionIndex;
 use App\Livewire\Admin\Submissions\Show as AdminSubmissionShow;
 use App\Livewire\Notifications\Center as NotificationCenter;
 use App\Livewire\Public\CoauthorPayment;
+use App\Livewire\Public\GescoChat;
 use App\Livewire\Reviewer\Evaluate as ReviewerEvaluate;
 use App\Livewire\Reviewer\Portal as ReviewerPortal;
 use Illuminate\Support\Facades\Route;
@@ -59,6 +60,7 @@ Route::get('/', HomeController::class)->name('home');
 
 // Page publique d'une édition de colloque.
 Route::get('/deroulement', DeroulementController::class)->name('public.deroulement');
+Route::get('/assistante', GescoChat::class)->name('public.gesco');
 
 Route::get('/colloques-passes', [ArchiveController::class, 'index'])->name('public.archives');
 Route::get('/colloques-passes/{slug}', [ArchiveController::class, 'show'])->name('public.archive');

@@ -276,11 +276,11 @@
                     <h3>Badges &amp; attestations</h3>
                     <p>Badge participant, attestations de soumission, communication et participation avec QR de vérification.</p>
                 </div>
-                <div class="feature">
+                <a href="{{ route('public.gesco') }}" class="feature" style="display:block;">
                     <div class="ico c-ai"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 9V7c0-1.1-.9-2-2-2h-3c0-1.66-1.34-3-3-3S9 3.34 9 5H6c-1.1 0-2 .9-2 2v2c-1.66 0-3 1.34-3 3s1.34 3 3 3v4c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-4c1.66 0 3-1.34 3-3s-1.34-3-3-3zM7.5 11.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5S9.83 13 9 13s-1.5-.67-1.5-1.5zM16 17H8v-1.5c0-1.1 1.79-1.67 4-1.67s4 .57 4 1.67V17zm-.5-4c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg></div>
                     <h3>Assistance IA Gesco</h3>
-                    <p>Chat et widget pour répondre aux questions sur les soumissions, tarifs, programme et documents.</p>
-                </div>
+                    <p>Chat pour répondre aux questions sur les soumissions, tarifs, programme et documents.</p>
+                </a>
                 <div class="feature">
                     <div class="ico c-sec"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg></div>
                     <h3>Compte sécurisé</h3>

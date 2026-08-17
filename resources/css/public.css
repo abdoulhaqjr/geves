@@ -398,6 +398,29 @@
 .ind-table .room { font-weight: 800; color: var(--ukc-blue); white-space: nowrap; }
 .ind-table .type { font-size: 11.5px; font-weight: 700; color: var(--ukc-muted); text-transform: uppercase; letter-spacing: .03em; }
 
+/* ---- Chat Gesco (assistante IA) ---- */
+.gesco-chat { display: flex; flex-direction: column; gap: 16px; }
+.gesco-chat .chat-hero { display: flex; align-items: center; gap: 14px; }
+.gesco-chat .chat-hero .av { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(145deg, #1a3080, #223ea4); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 900; flex-shrink: 0; }
+.gesco-chat .chat-hero h1 { font-size: 1.35rem; font-weight: 800; }
+.gesco-chat .chat-hero p { font-size: 14px; color: var(--ukc-muted); margin-top: 2px; }
+.gesco-chat .chat-shell { background: #fff; border: 1px solid var(--ukc-border); border-radius: 18px; box-shadow: 0 12px 36px rgba(20, 40, 90, .08); display: flex; flex-direction: column; min-height: 480px; overflow: hidden; }
+.gesco-chat .chat-messages { flex: 1; overflow-y: auto; padding: 20px 18px; display: flex; flex-direction: column; gap: 14px; background: linear-gradient(180deg, #fafbff 0%, #fff 40%); max-height: 60vh; }
+.gesco-chat .msg { max-width: 88%; padding: 12px 14px; border-radius: 14px; font-size: 14px; line-height: 1.5; }
+.gesco-chat .msg.bot { align-self: flex-start; background: #eef2ff; color: var(--ukc-text); border-bottom-left-radius: 4px; }
+.gesco-chat .msg.user { align-self: flex-end; background: var(--ukc-blue); color: #fff; border-bottom-right-radius: 4px; }
+.gesco-chat .msg .who { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; opacity: .75; }
+.gesco-chat .msg.typing { opacity: .7; font-style: italic; }
+.gesco-chat .suggestions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 18px 12px; }
+.gesco-chat .suggestions button { background: #fff; border: 1px solid var(--ukc-border); border-radius: 50px; padding: 7px 12px; font-size: 12.5px; font-weight: 600; color: var(--ukc-blue); cursor: pointer; }
+.gesco-chat .suggestions button:hover { border-color: var(--ukc-blue); background: #eef2ff; }
+.gesco-chat .chat-input { border-top: 1px solid var(--ukc-border); padding: 12px 14px; display: flex; gap: 8px; align-items: flex-end; background: #fff; }
+.gesco-chat .chat-input textarea { flex: 1; border: 1px solid var(--ukc-border); border-radius: 12px; padding: 10px 12px; font-size: 14px; resize: none; min-height: 44px; max-height: 120px; line-height: 1.4; }
+.gesco-chat .chat-input textarea:focus { outline: none; border-color: var(--ukc-blue); box-shadow: 0 0 0 3px rgba(34, 62, 164, .12); }
+.gesco-chat .chat-input button.send { width: 44px; height: 44px; border-radius: 12px; border: none; background: var(--ukc-blue); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.gesco-chat .chat-input button.send:hover { background: var(--ukc-blue-dark); }
+.gesco-chat .chat-input button.send:disabled { opacity: .55; cursor: not-allowed; }
+
 /* ---- Footer public ---- */
 .site-footer { background: #0f1a33; color: #a8b3c9; padding: 48px 0 24px; font-size: 14px; }
 .footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 28px; margin-bottom: 36px; }

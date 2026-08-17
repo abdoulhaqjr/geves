@@ -20,6 +20,7 @@
                 <a href="{{ route('account.login') }}">Se connecter</a>
                 <a href="{{ route('account.register') }}">Créer un compte</a>
                 <a href="{{ route('account.dashboard') }}">Espace participant</a>
+                <a href="{{ route('public.gesco') }}">Assistante Gesco</a>
                 <a href="mailto:dri@univkara.tg">dri@univkara.tg</a>
             </div>
             <div>
