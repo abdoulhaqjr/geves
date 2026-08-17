@@ -1,13 +1,31 @@
 /**
- * Contenu du back-office (tableau de bord…) — porté du mockup gesco-mockup.
- * Scopé sous .admin-dash pour ne pas entrer en conflit avec les autres pages.
+ * Contenu du back-office (tableaux de bord, listes…) — porté du mockup.
+ * Styles partagés sous .admin-page ; spécifiques sous .admin-dash / .admin-editions.
  * Réutilise le shell admin ukc (sidebar/topbar) de ukc.css.
  */
-.admin-dash .edition-banner {
-  display: flex; gap: 16px; align-items: center; flex-wrap: wrap;
-  background: linear-gradient(135deg, #223ea4 0%, #1a3080 55%, #009933 160%);
-  color: #fff; border-radius: var(--ukc-radius); padding: 18px 20px; margin-bottom: 16px;
-}
+
+/* ---- Partagé (indicateurs, cartes, onglets) ---- */
+.admin-page .ukc-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.admin-page .ukc-stat-card { background: #fff; border: 1px solid var(--ukc-border); border-radius: var(--ukc-radius); padding: 16px 18px; text-align: left; }
+.admin-page .ukc-stat-card .lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--ukc-light); margin-bottom: 6px; }
+.admin-page .ukc-stat-card .val { font-size: 1.55rem; font-weight: 800; line-height: 1.1; color: var(--ukc-text); }
+.admin-page .ukc-stat-card .val.blue { color: var(--ukc-blue); }
+.admin-page .ukc-stat-card .val.green { color: var(--ukc-green); }
+.admin-page .ukc-stat-card .val.warn { color: #d97706; }
+.admin-page .ukc-stat-card .hint { font-size: 12px; color: var(--ukc-muted); margin-top: 6px; }
+.admin-page .ukc-stat-card .hint.up { color: var(--ukc-green); }
+.admin-page .ukc-card h2 { font-size: 15px; font-weight: 800; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.admin-page .ukc-card .desc { font-size: 13px; color: var(--ukc-muted); margin-bottom: 14px; line-height: 1.45; }
+
+.admin-page .ukc-tabs { display: flex; gap: 4px; margin-bottom: 18px; border-bottom: 2px solid var(--ukc-border); flex-wrap: wrap; }
+.admin-page .ukc-tabs button { background: none; border: none; cursor: pointer; font-weight: 700; font-size: 13.5px; color: var(--ukc-muted); padding: 10px 16px; margin-bottom: -2px; border-bottom: 2px solid transparent; }
+.admin-page .ukc-tabs button.active { color: var(--ukc-blue); border-bottom-color: var(--ukc-blue); }
+.admin-page .ukc-panel { display: none; }
+.admin-page .ukc-panel.active { display: block; }
+.admin-page .ukc-actions { display: flex; gap: 6px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+
+/* ---- Tableau de bord ---- */
+.admin-dash .edition-banner { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; background: linear-gradient(135deg, #223ea4 0%, #1a3080 55%, #009933 160%); color: #fff; border-radius: var(--ukc-radius); padding: 18px 20px; margin-bottom: 16px; }
 .admin-dash .edition-banner .body { flex: 1; min-width: 200px; }
 .admin-dash .edition-banner h2 { font-size: 1.15rem; font-weight: 800; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .admin-dash .edition-banner p { font-size: 13.5px; opacity: .92; margin-bottom: 8px; }
@@ -17,43 +35,27 @@
 .admin-dash .edition-banner .ukc-btn:hover { background: #fff; color: var(--ukc-blue); }
 .admin-dash .edition-banner .ukc-btn--solid { background: #fff; color: var(--ukc-blue); border-color: #fff; }
 
-.admin-dash .ukc-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
-.admin-dash .ukc-stat-card { background: #fff; border: 1px solid var(--ukc-border); border-radius: var(--ukc-radius); padding: 16px 18px; text-align: left; }
-.admin-dash .ukc-stat-card .lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--ukc-light); margin-bottom: 6px; }
-.admin-dash .ukc-stat-card .val { font-size: 1.55rem; font-weight: 800; line-height: 1.1; color: var(--ukc-text); }
-.admin-dash .ukc-stat-card .val.blue { color: var(--ukc-blue); }
-.admin-dash .ukc-stat-card .val.green { color: var(--ukc-green); }
-.admin-dash .ukc-stat-card .val.warn { color: #d97706; }
-.admin-dash .ukc-stat-card .hint { font-size: 12px; color: var(--ukc-muted); margin-top: 6px; }
-.admin-dash .ukc-stat-card .hint.up { color: var(--ukc-green); }
-
 .admin-dash .layout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; align-items: start; }
 @media (max-width: 980px) { .admin-dash .layout { grid-template-columns: 1fr; } }
 .admin-dash .ukc-card { margin-bottom: 16px; }
 .admin-dash .layout > div > .ukc-card:last-child { margin-bottom: 0; }
-.admin-dash .ukc-card h2 { font-size: 15px; font-weight: 800; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-.admin-dash .ukc-card .desc { font-size: 13px; color: var(--ukc-muted); margin-bottom: 14px; line-height: 1.45; }
 
 .admin-dash .pipeline-grid { display: grid; grid-template-columns: 1fr 180px; gap: 16px; align-items: center; }
 @media (max-width: 700px) { .admin-dash .pipeline-grid { grid-template-columns: 1fr; } }
 .admin-dash .status-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--ukc-border); font-size: 13.5px; }
 .admin-dash .status-row:last-child { border-bottom: none; }
 .admin-dash .status-row .count { font-weight: 800; display: inline-flex; align-items: center; gap: 6px; }
-
 .admin-dash .chart-wrap { position: relative; width: 100%; max-height: 240px; }
 .admin-dash .chart-wrap--donut { max-width: 180px; max-height: 180px; margin: 0 auto; }
-
 .admin-dash .quick-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
 .admin-dash .quick-link { display: flex; flex-direction: column; gap: 6px; padding: 14px; border: 1px solid var(--ukc-border); border-radius: 10px; background: #fafbfd; font-size: 13px; font-weight: 700; color: var(--ukc-text); transition: .15s; }
 .admin-dash .quick-link:hover { border-color: var(--ukc-blue); background: #eef2ff; color: var(--ukc-blue); }
 .admin-dash .quick-link span { font-size: 11px; font-weight: 600; color: var(--ukc-muted); }
 .admin-dash .quick-link:hover span { color: var(--ukc-blue); }
-
 .admin-dash .todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--ukc-border); font-size: 13.5px; }
 .admin-dash .todo-item:last-child { border-bottom: none; }
 .admin-dash .todo-item input { margin-top: 3px; }
 .admin-dash .todo-item .txt { flex: 1; }
-
 .admin-dash .activity-list { list-style: none; padding: 0; margin: 0; }
 .admin-dash .activity-list li { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--ukc-border); font-size: 13.5px; }
 .admin-dash .activity-list li:last-child { border-bottom: none; }
@@ -61,3 +63,13 @@
 .admin-dash .activity-list .dot.green { background: var(--ukc-green); }
 .admin-dash .activity-list .when { font-size: 11.5px; color: var(--ukc-light); margin-top: 2px; }
 .admin-dash table.ukc-table code { font-size: 12px; }
+
+/* ---- Éditions (liste en cartes) ---- */
+.admin-editions .ed-card { display: grid; grid-template-columns: 120px 1fr auto; gap: 16px; align-items: center; background: #fff; border: 1px solid var(--ukc-border); border-radius: var(--ukc-radius); padding: 16px; margin-bottom: 12px; }
+@media (max-width: 700px) { .admin-editions .ed-card { grid-template-columns: 1fr; } }
+.admin-editions .ed-card .thumb { width: 120px; height: 72px; border-radius: 8px; background-size: cover; background-position: center; background-color: #e2e8f0; flex-shrink: 0; }
+@media (max-width: 700px) { .admin-editions .ed-card .thumb { width: 100%; } }
+.admin-editions .ed-card .body h3 { font-size: 15px; font-weight: 800; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.admin-editions .ed-card .body p { font-size: 13px; color: var(--ukc-muted); margin-bottom: 6px; line-height: 1.4; }
+.admin-editions .ed-card .meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; color: var(--ukc-light); }
+.admin-editions .ed-card.active-ed { border-color: var(--ukc-blue); box-shadow: 0 0 0 3px rgba(34, 62, 164, .1); }

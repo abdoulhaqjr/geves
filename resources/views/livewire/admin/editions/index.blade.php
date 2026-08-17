@@ -1,24 +1,41 @@
-<div>
+<div class="admin-page admin-editions">
     @php
         $statusMeta = [
             'draft' => ['Brouillon', 'muted'],
-            'open' => ['Ouverte', 'ok'],
+            'open' => ['Active', 'ok'],
             'closed' => ['Clôturée', 'warn'],
-            'archived' => ['Archivée', 'info'],
+            'archived' => ['Archivée', 'muted'],
         ];
+        $thumbStyle = function ($e) {
+            if ($e->banner_url) {
+                return "background-image:url('".e($e->banner_url)."');";
+            }
+            return 'background:linear-gradient(135deg,#223ea4,#009933);';
+        };
     @endphp
 
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px;">
+    @if (session('ukc_status'))
+        <div class="ukc-alert ukc-alert--ok"><span class="ico"><x-ukc.icon name="check-circle" :size="18" /></span><div>{{ session('ukc_status') }}</div></div>
+    @endif
+
+    {{-- Indicateurs --}}
+    <div class="ukc-stats">
+        <div class="ukc-stat-card"><div class="lbl">Éditions</div><div class="val blue">{{ $stats['total'] }}</div></div>
+        <div class="ukc-stat-card"><div class="lbl">Édition active</div><div class="val green">{{ $stats['activeYear'] ?? '—' }}</div></div>
+        <div class="ukc-stat-card"><div class="lbl">Soumissions (active)</div><div class="val">{{ $stats['activeSubmissions'] }}</div></div>
+        <div class="ukc-stat-card"><div class="lbl">Participants payés</div><div class="val">{{ $stats['paidParticipants'] }}</div></div>
+    </div>
+
+    {{-- Barre d'outils --}}
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-            <div class="ukc-field" style="min-width:220px;">
+            <div class="ukc-field" style="margin:0;min-width:220px;">
                 <input type="search" wire:model.live.debounce.300ms="search" placeholder="Rechercher une édition…">
             </div>
-            <div class="ukc-field" style="min-width:150px;">
+            <div class="ukc-field" style="margin:0;min-width:150px;">
                 <select wire:model.live="status">
                     <option value="">Tous les statuts</option>
-                    @foreach ($statusMeta as $key => $meta)
-                        <option value="{{ $key }}">{{ $meta[0] }}</option>
-                    @endforeach
+                    @foreach ($statusMeta as $key => $meta)<option value="{{ $key }}">{{ $meta[0] }}</option>@endforeach
                 </select>
             </div>
         </div>
@@ -27,90 +44,33 @@
         </a>
     </div>
 
-    <div class="ukc-card" style="padding:0;">
-        @if ($editions->count())
-            <div class="ukc-table-wrap">
-                <table class="ukc-table">
-                    <thead>
-                        <tr>
-                            <th>Édition</th>
-                            <th>Année</th>
-                            <th>Dates</th>
-                            <th>Statut</th>
-                            <th>Soumissions</th>
-                            <th style="text-align:right;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($editions as $edition)
-                            @php($meta = $statusMeta[$edition->status] ?? ['—', 'muted'])
-                            <tr wire:key="edition-{{ $edition->id }}">
-                                <td>
-                                    <div class="title">{{ $edition->title ?: '(sans titre)' }}</div>
-                                    <div class="meta">{{ $edition->colloque?->name }} · {{ $edition->edition_label }}</div>
-                                </td>
-                                <td>{{ $edition->year ?: '—' }}</td>
-                                <td>
-                                    @if ($edition->date_start)
-                                        {{ $edition->date_start->format('d/m/Y') }}
-                                        @if ($edition->date_end) → {{ $edition->date_end->format('d/m/Y') }} @endif
-                                    @else — @endif
-                                </td>
-                                <td><span class="ukc-pill ukc-pill--{{ $meta[1] }}">{{ $meta[0] }}</span></td>
-                                <td>
-                                    @if ($edition->submission_open)
-                                        <span class="ukc-pill ukc-pill--ok">Ouvertes</span>
-                                    @else
-                                        <span class="ukc-pill ukc-pill--muted">Fermées</span>
-                                    @endif
-                                </td>
-                                <td style="text-align:right;white-space:nowrap;">
-                                    @if ($edition->isPublished() && $edition->slug)
-                                        <a href="{{ route('public.colloque', $edition->slug) }}" target="_blank"
-                                           class="ukc-btn ukc-btn--ghost ukc-btn--sm" title="Voir la page publique">
-                                            <x-ukc.icon name="external" :size="16" />
-                                        </a>
-                                    @endif
-                                    <a href="{{ route('admin.documents.livret', $edition) }}" target="_blank"
-                                       class="ukc-btn ukc-btn--ghost ukc-btn--sm" title="Livret des résumés">
-                                        <x-ukc.icon name="book" :size="16" />
-                                    </a>
-                                    <a href="{{ route('admin.documents.badges', $edition) }}" target="_blank"
-                                       class="ukc-btn ukc-btn--ghost ukc-btn--sm" title="Badges">
-                                        <x-ukc.icon name="user" :size="16" />
-                                    </a>
-                                    <a href="{{ route('admin.editions.form', $edition) }}" wire:navigate
-                                       class="ukc-btn ukc-btn--ghost ukc-btn--sm" title="Formulaire de soumission">
-                                        <x-ukc.icon name="list" :size="16" />
-                                    </a>
-                                    <a href="{{ route('admin.editions.documents', $edition) }}" wire:navigate
-                                       class="ukc-btn ukc-btn--ghost ukc-btn--sm" title="Documents de l’édition">
-                                        <x-ukc.icon name="folder" :size="16" />
-                                    </a>
-                                    <a href="{{ route('admin.editions.edit', $edition) }}" wire:navigate
-                                       class="ukc-btn ukc-btn--outline ukc-btn--sm">
-                                        <x-ukc.icon name="pen" :size="16" /> Modifier
-                                    </a>
-                                    <button type="button" class="ukc-btn ukc-btn--danger ukc-btn--sm"
-                                            wire:click="delete({{ $edition->id }})"
-                                            wire:confirm="Supprimer définitivement cette édition et ses données liées ?">
-                                        <x-ukc.icon name="trash" :size="16" />
-                                    </button>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+    {{-- Cartes éditions --}}
+    @forelse ($editions as $e)
+        <div class="ed-card {{ $e->status === 'open' ? 'active-ed' : '' }}" wire:key="ed-{{ $e->id }}">
+            <div class="thumb" style="{{ $thumbStyle($e) }}"></div>
+            <div class="body">
+                <h3>{{ $e->title ?: $e->colloque?->name }}
+                    <span class="ukc-pill ukc-pill--{{ $statusMeta[$e->status][1] ?? 'muted' }}">{{ $statusMeta[$e->status][0] ?? $e->status }}</span>
+                </h3>
+                @if ($e->theme)<p>{{ \Illuminate\Support\Str::limit($e->theme, 90) }}</p>@endif
+                <div class="meta">
+                    <span>@if ($e->date_start){{ $e->date_start->translatedFormat('d M') }} – {{ $e->date_end?->translatedFormat('d M Y') }}@else{{ $e->year }}@endif</span>
+                    @if ($e->location)<span>·</span><span>{{ $e->location }}</span>@endif
+                    <span>·</span><span>{{ $e->submissions_count }} soumission(s) · {{ $e->participants_count }} inscrit(s)</span>
+                </div>
             </div>
-            <div style="padding:14px 18px;">{{ $editions->links() }}</div>
-        @else
-            <div class="ukc-empty">
-                <h3>Aucune édition</h3>
-                <p>Créez votre première édition pour commencer.</p>
-                <a href="{{ route('admin.editions.create') }}" wire:navigate class="ukc-btn ukc-btn--blue">
-                    <x-ukc.icon name="plus" :size="18" /> Nouvelle édition
-                </a>
+            <div class="ukc-actions">
+                <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.editions.edit', $e) }}" wire:navigate><x-ukc.icon name="pen" :size="14" /> Éditer</a>
+                <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.submissions.index') }}" wire:navigate><x-ukc.icon name="inbox" :size="14" /> Soumissions</a>
+                @if ($e->status !== 'open')
+                    <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" wire:click="activate({{ $e->id }})"><x-ukc.icon name="check" :size="14" /> Activer</button>
+                @endif
+                <button type="button" class="ukc-btn ukc-btn--danger ukc-btn--sm" wire:click="delete({{ $e->id }})" wire:confirm="Supprimer cette édition et tout son contenu ?"><x-ukc.icon name="trash" :size="14" /></button>
             </div>
-        @endif
-    </div>
+        </div>
+    @empty
+        <div class="ukc-card"><div class="ukc-empty"><h3>Aucune édition</h3><p>Créez votre première édition de colloque.</p><a href="{{ route('admin.editions.create') }}" wire:navigate class="ukc-btn ukc-btn--blue">Nouvelle édition</a></div></div>
+    @endforelse
+
+    <div style="margin-top:12px;">{{ $editions->links() }}</div>
 </div>

@@ -1,4 +1,4 @@
-<div class="admin-dash">
+<div class="admin-page admin-dash">
     @php
         $fmtRevenue = function (float $r) {
             if ($r >= 1_000_000) return number_format($r / 1_000_000, 1, ',', ' ').' M';
