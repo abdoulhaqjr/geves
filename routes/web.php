@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\ReceiptController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\AttestationController;
 use App\Http\Controllers\EgressController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Public\ColloqueController;
@@ -51,7 +52,7 @@ use App\Livewire\Reviewer\Evaluate as ReviewerEvaluate;
 use App\Livewire\Reviewer\Portal as ReviewerPortal;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'home')->name('home');
+Route::get('/', HomeController::class)->name('home');
 
 // Page publique d'une édition de colloque.
 Route::get('/colloque/{slug}', ColloqueController::class)->name('public.colloque');

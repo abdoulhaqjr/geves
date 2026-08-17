@@ -12,6 +12,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * contenu public. Les réglages libres (frais, contenu enrichi…) sont en JSON.
  *
  * @property array<string, mixed>|null $settings réglages libres (frais, axes, contenu public…)
+ * @property \Illuminate\Support\Carbon|null $date_start
+ * @property \Illuminate\Support\Carbon|null $date_end
+ * @property \Illuminate\Support\Carbon|null $submission_deadline
+ * @property int $year
+ * @property bool $submission_open
+ * @property string $status
  */
 class Edition extends Model
 {

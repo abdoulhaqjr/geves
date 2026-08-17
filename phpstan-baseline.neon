@@ -37,12 +37,6 @@ parameters:
 			path: app/Documents/LivretDocx.php
 
 		-
-			message: '#^Cannot call method format\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 2
-			path: app/Documents/LivretDocx.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$track\.$#'
 			identifier: property.notFound
 			count: 1
@@ -233,12 +227,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Livewire/Admin/Documents/TemplateDesigner.php
-
-		-
-			message: '#^Cannot call method format\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 3
-			path: app/Livewire/Admin/Editions/Form.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>settings" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
