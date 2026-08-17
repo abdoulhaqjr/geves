@@ -1,8 +1,15 @@
-<div>
-    <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
-        <a href="{{ route('admin.emails.templates') }}" wire:navigate class="ukc-btn ukc-btn--outline ukc-btn--sm">
-            <x-ukc.icon name="pen" :size="16" /> Modèles d’e-mails
-        </a>
+<div class="admin-page admin-emails">
+    <div class="ukc-tabs">
+        <button type="button" class="active">E-mails programmés</button>
+        <a href="{{ route('admin.emails.templates') }}" wire:navigate
+           style="padding:10px 16px;font-weight:700;font-size:13.5px;color:var(--ukc-muted);text-decoration:none;">Modèles d’e-mails</a>
+    </div>
+
+    <div class="ukc-stats">
+        <div class="ukc-stat-card"><div class="lbl">Total</div><div class="val blue">{{ $stats['total'] }}</div></div>
+        <div class="ukc-stat-card"><div class="lbl">En file</div><div class="val warn">{{ $stats['queued'] }}</div></div>
+        <div class="ukc-stat-card"><div class="lbl">Envoyés</div><div class="val green">{{ $stats['sent'] }}</div></div>
+        <div class="ukc-stat-card"><div class="lbl">Échecs</div><div class="val" style="color:#dc2626;">{{ $stats['failed'] }}</div></div>
     </div>
 
     <div class="ukc-grid-2" style="grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:18px;align-items:start;">

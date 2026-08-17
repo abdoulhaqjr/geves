@@ -120,12 +120,27 @@ class Index extends Component
             ->where('scheduled_at', '<=', now())
             ->count();
 
+        // KPIs du journal (portée = édition sélectionnée si filtrée).
+        $counts = Email::query()
+            ->when($this->edition_id !== '', fn ($q) => $q->where('edition_id', $this->edition_id))
+            ->selectRaw('status, count(*) as c')
+            ->groupBy('status')
+            ->pluck('c', 'status');
+
+        $stats = [
+            'total' => (int) $counts->sum(),
+            'queued' => (int) $counts->get('queued', 0),
+            'sent' => (int) $counts->get('sent', 0),
+            'failed' => (int) $counts->get('failed', 0),
+        ];
+
         return view('livewire.admin.emails.index', [
             'editions' => Edition::latest('id')->get(),
             'audiences' => EmailAudience::AUDIENCES,
             'recipientCount' => $recipientCount,
             'journal' => $journal,
             'queuedDue' => $queuedDue,
+            'stats' => $stats,
         ])->layout('components.layouts.admin', ['title' => 'E-mails']);
     }
 }

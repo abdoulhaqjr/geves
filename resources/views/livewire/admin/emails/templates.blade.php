@@ -1,10 +1,13 @@
-<div style="max-width:820px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
-        <a href="{{ route('admin.emails.index') }}" wire:navigate class="ukc-btn ukc-btn--ghost ukc-btn--sm">← E-mails</a>
-        <div class="ukc-muted" style="font-size:.85rem;">
-            Placeholders :
-            @foreach ($placeholders as $ph)<code>{{ $ph }}</code>@if (! $loop->last) @endif @endforeach
-        </div>
+<div class="admin-page admin-emails" style="max-width:820px;">
+    <div class="ukc-tabs">
+        <a href="{{ route('admin.emails.index') }}" wire:navigate
+           style="padding:10px 16px;font-weight:700;font-size:13.5px;color:var(--ukc-muted);text-decoration:none;">E-mails programmés</a>
+        <button type="button" class="active">Modèles d’e-mails</button>
+    </div>
+
+    <div class="ukc-muted" style="font-size:.85rem;margin-bottom:16px;">
+        Placeholders :
+        @foreach ($placeholders as $ph)<code>{{ $ph }}</code>@if (! $loop->last) @endif @endforeach
     </div>
 
     <div class="ukc-alert ukc-alert--info" style="margin-bottom:18px;">
