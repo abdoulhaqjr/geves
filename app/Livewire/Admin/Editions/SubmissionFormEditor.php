@@ -70,6 +70,18 @@ class SubmissionFormEditor extends Component
         $this->custom = array_values($this->custom);
     }
 
+    /** Déplace un champ personnalisé dans l'ordre d'affichage ($dir = -1 haut, +1 bas). */
+    public function moveCustom(int $i, int $dir): void
+    {
+        $j = $i + $dir;
+        if (! isset($this->custom[$i], $this->custom[$j])) {
+            return;
+        }
+
+        [$this->custom[$i], $this->custom[$j]] = [$this->custom[$j], $this->custom[$i]];
+        $this->custom = array_values($this->custom);
+    }
+
     public function save(): void
     {
         $this->validate([

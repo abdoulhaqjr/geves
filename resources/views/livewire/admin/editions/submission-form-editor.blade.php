@@ -1,4 +1,4 @@
-<div style="max-width:820px;">
+<div class="admin-page admin-submission-forms" style="max-width:820px;">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
         <a href="{{ route('admin.editions.index') }}" wire:navigate class="ukc-btn ukc-btn--ghost ukc-btn--sm">← Éditions</a>
         <a href="{{ route('account.submissions.create', $edition->slug) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
@@ -64,11 +64,23 @@
             </div>
             <p class="ukc-muted" style="font-size:.85rem;margin:0 0 12px;">
                 Champs supplémentaires demandés au dépôt (stockés avec la communication).
+                L’<strong>ordre ci-dessous = l’ordre d’affichage</strong> dans le formulaire public.
             </p>
 
             @forelse ($custom as $i => $c)
                 <div wire:key="custom-{{ $i }}" style="padding:14px 0;border-top:1px solid var(--ukc-border);">
-                    <div style="display:grid;grid-template-columns:1.4fr 1fr auto;gap:12px;align-items:end;">
+                    <div style="display:grid;grid-template-columns:auto 1.4fr 1fr auto;gap:12px;align-items:end;">
+                        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;padding-bottom:4px;">
+                            <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" style="padding:2px 6px;line-height:1;"
+                                    wire:click="moveCustom({{ $i }}, -1)" @disabled($loop->first) aria-label="Monter">
+                                <x-ukc.icon name="chevron" :size="14" style="transform:rotate(-90deg);" />
+                            </button>
+                            <span style="font-size:.75rem;font-weight:700;color:var(--ukc-muted);">{{ $i + 1 }}</span>
+                            <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" style="padding:2px 6px;line-height:1;"
+                                    wire:click="moveCustom({{ $i }}, 1)" @disabled($loop->last) aria-label="Descendre">
+                                <x-ukc.icon name="chevron" :size="14" style="transform:rotate(90deg);" />
+                            </button>
+                        </div>
                         <div class="ukc-field" style="margin:0;">
                             <label>Libellé</label>
                             <input type="text" wire:model="custom.{{ $i }}.label" placeholder="Ex. Numéro ORCID">

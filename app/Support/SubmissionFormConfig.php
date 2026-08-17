@@ -32,6 +32,7 @@ class SubmissionFormConfig
         'select' => 'Liste déroulante',
         'email' => 'E-mail',
         'number' => 'Nombre',
+        'date' => 'Date',
         'checkbox' => 'Case à cocher',
     ];
 

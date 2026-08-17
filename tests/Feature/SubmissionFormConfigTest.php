@@ -92,6 +92,57 @@ it('convertit les options de liste (une par ligne) en tableau', function () {
     expect($field['options'])->toBe(['Matin', 'Après-midi']);
 });
 
+it('réordonne les champs personnalisés (monter/descendre) et persiste l’ordre', function () {
+    $staff = adminStaff();
+    $edition = openEdition(['submission_form' => ['custom' => [
+        ['key' => 'a', 'label' => 'Champ A', 'type' => 'text'],
+        ['key' => 'b', 'label' => 'Champ B', 'type' => 'text'],
+        ['key' => 'c', 'label' => 'Champ C', 'type' => 'text'],
+    ]]]);
+
+    Livewire::actingAs($staff, 'web')
+        ->test(SubmissionFormEditor::class, ['edition' => $edition])
+        ->call('moveCustom', 2, -1) // C monte : A, C, B
+        ->call('moveCustom', 0, -1) // no-op (déjà en tête)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $edition->refresh();
+    $labels = array_column((new SubmissionFormConfig($edition))->customFields(), 'label');
+
+    expect($labels)->toBe(['Champ A', 'Champ C', 'Champ B']);
+});
+
+it('accepte un champ personnalisé de type date', function () {
+    $edition = openEdition(['submission_form' => ['custom' => [
+        ['key' => 'dispo', 'label' => 'Disponibilité', 'type' => 'date', 'required' => true],
+    ]]]);
+    $account = verifiedAccount();
+
+    // Date invalide → erreur.
+    Livewire::actingAs($account, 'account')
+        ->test(Create::class, ['slug' => $edition->slug])
+        ->set('title', 'Ma communication')
+        ->set('abstract', str_repeat('a', 60))
+        ->set('customAnswers.dispo', 'pas-une-date')
+        ->call('submit')
+        ->assertHasErrors('customAnswers.dispo');
+
+    // Date valide → enregistrée.
+    Livewire::actingAs($account, 'account')
+        ->test(Create::class, ['slug' => $edition->slug])
+        ->set('title', 'Ma communication')
+        ->set('abstract', str_repeat('a', 60))
+        ->set('customAnswers.dispo', '2026-09-15')
+        ->call('submit')
+        ->assertHasNoErrors();
+
+    $submission = Submission::where('edition_id', $edition->id)->latest('id')->first();
+    $custom = collect($submission->meta['custom_fields'] ?? []);
+
+    expect($custom->firstWhere('key', 'dispo')['value'])->toBe('2026-09-15');
+});
+
 it('respecte le libellé personnalisé et masque un champ désactivé sur le formulaire public', function () {
     $edition = openEdition(['submission_form' => ['fields' => [
         'title' => ['label' => 'Intitulé unique'],

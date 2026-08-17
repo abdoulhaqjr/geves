@@ -173,6 +173,7 @@ class Create extends Component
             $rule[] = match ($field['type']) {
                 'email' => 'email',
                 'number' => 'numeric',
+                'date' => 'date',
                 default => 'string',
             };
             $rule[] = 'max:2000';

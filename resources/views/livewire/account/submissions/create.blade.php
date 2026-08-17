@@ -173,7 +173,7 @@
                                             @endforeach
                                         </select>
                                     @else
-                                        <input type="{{ $field['type'] === 'number' ? 'number' : ($field['type'] === 'email' ? 'email' : 'text') }}"
+                                        <input type="{{ in_array($field['type'], ['number', 'email', 'date']) ? $field['type'] : 'text' }}"
                                                wire:model="customAnswers.{{ $field['key'] }}">
                                     @endif
                                 @endif
