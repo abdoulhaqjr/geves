@@ -1,4 +1,4 @@
-<div>
+<div class="admin-page admin-program">
     <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
         <div class="ukc-field" style="max-width:320px;margin:0;">
             <label>Édition</label>
@@ -24,6 +24,12 @@
     @if ($edition_id === '')
         <div class="ukc-empty"><h3>Choisissez une édition</h3><p>Sélectionnez une édition pour gérer son programme.</p></div>
     @else
+        <div class="ukc-stats">
+            <div class="ukc-stat-card"><div class="lbl">Ateliers</div><div class="val blue">{{ $stats['ateliers'] }}</div></div>
+            <div class="ukc-stat-card"><div class="lbl">Sessions</div><div class="val">{{ $stats['sessions'] }}</div></div>
+            <div class="ukc-stat-card"><div class="lbl">Créneaux</div><div class="val">{{ $stats['slots'] }}</div></div>
+            <div class="ukc-stat-card"><div class="lbl">Communications programmées</div><div class="val green">{{ $stats['comms'] }}</div></div>
+        </div>
         <div class="ukc-grid-2" style="align-items:start;">
             {{-- Colonne gauche : contenu --}}
             <div style="display:flex;flex-direction:column;gap:18px;">

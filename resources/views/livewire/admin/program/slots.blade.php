@@ -1,4 +1,4 @@
-<div>
+<div class="admin-page admin-program">
     <div class="ukc-field" style="max-width:320px;margin-bottom:18px;">
         <label>Édition</label>
         <select wire:model.live="edition_id">

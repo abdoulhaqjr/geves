@@ -214,6 +214,12 @@ class Sessions extends Component
             'editions' => Edition::latest('id')->get(),
             'ateliers' => $edition ? $edition->ateliers()->with('sessions')->orderBy('ordre')->get() : collect(),
             'plenaries' => $edition ? $edition->sessions()->where('type', 'plenary')->orderBy('ordre')->get() : collect(),
+            'stats' => [
+                'ateliers' => $edition ? $edition->ateliers()->count() : 0,
+                'sessions' => $edition ? $edition->sessions()->count() : 0,
+                'slots' => $edition ? $edition->slots()->count() : 0,
+                'comms' => $edition ? $edition->slots()->where('submission_id', '>', 0)->count() : 0,
+            ],
         ])->layout('components.layouts.admin', ['title' => 'Programme']);
     }
 }
