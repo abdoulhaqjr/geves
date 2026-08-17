@@ -71,6 +71,66 @@
 .admin-dash .activity-list .when { font-size: 11.5px; color: var(--ukc-light); margin-top: 2px; }
 .admin-dash table.ukc-table code { font-size: 12px; }
 
+/* ---- Fiche soumission (détail) ---- */
+.admin-submission-detail .metabar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 12px 16px; margin-bottom: 16px; }
+.admin-submission-detail .metabar .info { font-size: 13px; color: var(--ukc-muted); }
+.admin-submission-detail .metabar .info strong { color: var(--ukc-text); }
+.admin-submission-detail .metabar .acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.admin-submission-detail .layout { display: grid; grid-template-columns: 1fr 340px; gap: 18px; align-items: start; }
+@media (max-width: 1000px) { .admin-submission-detail .layout { grid-template-columns: 1fr; } }
+.admin-submission-detail .ukc-card { margin-bottom: 16px; }
+.admin-submission-detail .layout > div > .ukc-card:last-child { margin-bottom: 0; }
+.admin-submission-detail .ukc-card h3 { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--ukc-muted); margin: 4px 0 10px; }
+
+.admin-submission-detail .paper-title { font-size: 1.25rem; font-weight: 800; line-height: 1.35; margin-bottom: 10px; }
+.admin-submission-detail .meta-row { display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: 13px; color: var(--ukc-muted); margin-bottom: 16px; }
+.admin-submission-detail .meta-row strong { color: var(--ukc-text); }
+
+.admin-submission-detail .authors-list { list-style: none; padding: 0; margin: 0; }
+.admin-submission-detail .authors-list li { padding: 10px 12px; border: 1px solid var(--ukc-border); border-radius: 10px; margin-bottom: 8px; font-size: 13.5px; display: flex; gap: 12px; align-items: flex-start; }
+.admin-submission-detail .authors-list li:last-child { margin-bottom: 0; }
+.admin-submission-detail .authors-list .av { width: 36px; height: 36px; border-radius: 50%; background: #e0e7ff; color: var(--ukc-blue); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; flex-shrink: 0; }
+.admin-submission-detail .authors-list .name { font-weight: 700; }
+.admin-submission-detail .authors-list .aff { font-size: 12.5px; color: var(--ukc-muted); }
+
+.admin-submission-detail .abstract-box { background: #f8fafc; border: 1px solid var(--ukc-border); border-radius: 10px; padding: 16px; font-size: 14px; line-height: 1.65; color: var(--ukc-text); }
+.admin-submission-detail .abstract-box > :last-child { margin-bottom: 0; }
+.admin-submission-detail .keywords { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.admin-submission-detail .keywords span { font-size: 12px; font-weight: 600; background: #eef2ff; color: #3730a3; padding: 4px 10px; border-radius: 50px; }
+
+.admin-submission-detail .file-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--ukc-border); border-radius: 10px; font-size: 13.5px; }
+.admin-submission-detail .file-row .ico { width: 36px; height: 36px; border-radius: 8px; background: #fef2f2; color: #dc2626; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; flex-shrink: 0; }
+.admin-submission-detail .file-row .name { flex: 1; min-width: 0; }
+.admin-submission-detail .file-row .name strong { display: block; word-break: break-all; }
+.admin-submission-detail .file-row .name .sub { font-size: 12px; color: var(--ukc-muted); }
+
+.admin-submission-detail .cf-row { margin: 6px 0; font-size: 13.5px; }
+.admin-submission-detail .cf-row strong { color: var(--ukc-text); }
+
+.admin-submission-detail .decision-bar { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+
+.admin-submission-detail .timeline { list-style: none; padding: 0; margin: 0; }
+.admin-submission-detail .timeline li { position: relative; padding: 0 0 16px 18px; border-left: 2px solid var(--ukc-border); }
+.admin-submission-detail .timeline li:last-child { border-left-color: transparent; padding-bottom: 0; }
+.admin-submission-detail .timeline li::before { content: ''; position: absolute; left: -5px; top: 4px; width: 8px; height: 8px; border-radius: 50%; background: var(--ukc-blue); }
+.admin-submission-detail .timeline li.green::before { background: var(--ukc-green); }
+.admin-submission-detail .timeline .when { font-size: 11.5px; color: var(--ukc-light); }
+.admin-submission-detail .timeline .what { font-weight: 600; font-size: 13px; }
+
+.admin-submission-detail .reviewer-item { display: flex; align-items: flex-start; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--ukc-border); font-size: 13.5px; }
+.admin-submission-detail .reviewer-item:first-child { padding-top: 0; }
+.admin-submission-detail .reviewer-item .av { width: 32px; height: 32px; border-radius: 50%; background: #e0e7ff; color: var(--ukc-blue); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; flex-shrink: 0; }
+.admin-submission-detail .reviewer-item .info { flex: 1; min-width: 0; }
+.admin-submission-detail .reviewer-item .info strong { display: block; }
+.admin-submission-detail .reviewer-item .info .sub { font-size: 12px; color: var(--ukc-muted); }
+.admin-submission-detail .reviewer-item .rev-detail { margin-top: 6px; font-size: 12.5px; color: var(--ukc-muted); line-height: 1.5; }
+.admin-submission-detail .reviewer-item .rev-detail em { color: var(--ukc-text); font-style: normal; font-weight: 700; }
+
+.admin-submission-detail .info-list { font-size: 13.5px; line-height: 1.6; }
+.admin-submission-detail .info-list > div { padding: 8px 0; border-bottom: 1px solid var(--ukc-border); }
+.admin-submission-detail .info-list > div:last-child { border-bottom: none; }
+.admin-submission-detail .info-list .k { color: var(--ukc-muted); font-size: 12.5px; }
+
 /* ---- Éditions (liste en cartes) ---- */
 .admin-editions .ed-card { display: grid; grid-template-columns: 120px 1fr auto; gap: 16px; align-items: center; background: #fff; border: 1px solid var(--ukc-border); border-radius: var(--ukc-radius); padding: 16px; margin-bottom: 12px; }
 @media (max-width: 700px) { .admin-editions .ed-card { grid-template-columns: 1fr; } }

@@ -82,12 +82,17 @@ class Submission extends Model
         return $this->belongsTo(Participant::class);
     }
 
+    /** @return HasMany<Review, $this> */
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
     }
 
-    /** Versions antérieures archivées lors des resoumissions. */
+    /**
+     * Versions antérieures archivées lors des resoumissions.
+     *
+     * @return HasMany<Submission, $this>
+     */
     public function versions(): HasMany
     {
         return $this->hasMany(Submission::class, 'revision_of')->latest('version');

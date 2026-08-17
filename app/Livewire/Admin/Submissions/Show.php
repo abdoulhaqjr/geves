@@ -9,6 +9,8 @@ use App\Models\Participant;
 use App\Models\Review;
 use App\Models\Submission;
 use App\Support\Notifier;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -114,10 +116,69 @@ class Show extends Component
             'recommendations' => Review::RECOMMENDATIONS,
             'averageScore' => $completed->whereNotNull('score')->avg('score'),
             'completedCount' => $completed->count(),
+            'timeline' => $this->timeline($reviews),
+            'authorPaid' => $this->authorHasPaid(),
             'existingReviewers' => Participant::where('edition_id', $this->submission->edition_id)
                 ->where('role', 'reviewer')
                 ->orderBy('last_name')
                 ->get(),
         ])->layout('components.layouts.admin', ['title' => 'Soumission '.$this->submission->ref_code]);
+    }
+
+    /**
+     * Historique dérivé des vrais événements (dépôt, versions, relectures).
+     *
+     * @param  Collection<int, Review>  $reviews
+     * @return array<int, array{when: Carbon|null, what: string, done: bool}>
+     */
+    protected function timeline($reviews): array
+    {
+        $s = $this->submission;
+        $events = [];
+
+        $events[] = [
+            'when' => $s->created_at,
+            'what' => 'Soumission déposée'.($s->correspondingAuthorName() ? ' par '.$s->correspondingAuthorName() : ''),
+            'done' => false,
+        ];
+
+        foreach ($s->versions()->get() as $v) {
+            $events[] = [
+                'when' => $v->created_at,
+                'what' => 'Version '.$v->version.' resoumise',
+                'done' => false,
+            ];
+        }
+
+        foreach ($reviews as $review) {
+            $name = $review->reviewer?->full_name ?: 'un relecteur';
+            $events[] = [
+                'when' => $review->created_at,
+                'what' => 'Assignée à '.$name,
+                'done' => false,
+            ];
+            if ($review->isCompleted()) {
+                $reco = $review->recommendationLabel();
+                $events[] = [
+                    'when' => $review->updated_at,
+                    'what' => 'Avis de '.$name.' reçu'.($reco ? ' — '.$reco : ''),
+                    'done' => true,
+                ];
+            }
+        }
+
+        return collect($events)
+            ->sortBy(fn (array $e) => $e['when']?->getTimestamp() ?? 0)
+            ->values()
+            ->all();
+    }
+
+    /** L'auteur correspondant (participant lié) a-t-il un paiement réglé sur l'édition ? */
+    protected function authorHasPaid(): bool
+    {
+        return $this->submission->participant
+            ?->payments()
+            ->where('status', 'paid')
+            ->exists() ?? false;
     }
 }
