@@ -5,6 +5,7 @@ namespace App\Livewire\Admin\Settings;
 use App\Support\Settings;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -150,17 +151,24 @@ class Index extends Component
 
     public function save(): void
     {
-        $this->validate([
-            'from_address' => ['nullable', 'email'],
-            'mail_port' => ['nullable', 'integer'],
-            'payments_default' => ['required', 'in:manual,cashpay,fedapay'],
-            'fedapay_mode' => ['required', 'in:test,live'],
-            'ai_default' => ['required', 'in:openai,claude,gemini,grok'],
-            'test_email' => ['nullable', 'email'],
-            'meeting_default' => ['required', 'in:livekit,jitsi'],
-            'livekit_meet_url' => ['nullable', 'url'],
-            'livekit_egress_s3_endpoint' => ['nullable', 'url'],
-        ]);
+        try {
+            $this->validate([
+                'from_address' => ['nullable', 'email'],
+                'mail_port' => ['nullable', 'integer'],
+                'payments_default' => ['required', 'in:manual,cashpay,fedapay'],
+                'fedapay_mode' => ['required', 'in:test,live'],
+                'ai_default' => ['required', 'in:openai,claude,gemini,grok'],
+                'test_email' => ['nullable', 'email'],
+                'meeting_default' => ['required', 'in:livekit,jitsi'],
+                'livekit_meet_url' => ['nullable', 'url'],
+                'livekit_egress_s3_endpoint' => ['nullable', 'url'],
+            ]);
+        } catch (ValidationException $e) {
+            // Bascule l'UI vers l'onglet qui contient la première erreur (masquée sinon).
+            $this->dispatch('settings-invalid', tab: $this->tabForField((string) array_key_first($e->errors())));
+
+            throw $e;
+        }
 
         Settings::setMany([
             'mail.from_name' => $this->from_name,
@@ -203,6 +211,19 @@ class Index extends Component
         ]);
 
         session()->flash('ukc_status', 'Réglages enregistrés.');
+    }
+
+    /** Associe un champ de formulaire à l'onglet qui le contient. */
+    protected function tabForField(string $field): string
+    {
+        return match (true) {
+            str_starts_with($field, 'payments_') || str_starts_with($field, 'cashpay_') || str_starts_with($field, 'fedapay_') => 'payments',
+            str_starts_with($field, 'mail_') || $field === 'test_email' => 'email',
+            str_starts_with($field, 'ai_') => 'ai',
+            str_starts_with($field, 'meeting_') || str_starts_with($field, 'livekit_') => 'meetings',
+            $field === 'hal_enabled' => 'integrations',
+            default => 'general',
+        };
     }
 
     public function sendTest(): void
