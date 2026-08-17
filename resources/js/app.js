@@ -21,6 +21,10 @@ function initDashboardCharts() {
 }
 initDashboardCharts();
 document.addEventListener('livewire:navigated', initDashboardCharts);
+// Rafraîchissement à la demande (ex. page Rapports : changement d'édition).
+document.addEventListener('livewire:init', () => {
+    window.Livewire?.on('charts-refresh', () => setTimeout(initDashboardCharts, 50));
+});
 
 // Alpine est fourni par Livewire 4. On enregistre nos composants au démarrage.
 document.addEventListener('alpine:init', () => {

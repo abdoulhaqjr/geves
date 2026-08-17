@@ -13,6 +13,16 @@ export async function startDashboardCharts() {
 
     const { Chart, registerables } = await import('chart.js');
     Chart.register(...registerables);
+
+    // Idempotent : détruit une instance existante sur ces canvas avant de recréer
+    // (la page Rapports rafraîchit les graphiques au changement d'édition).
+    ['chartStatus', 'chartSubsMonth', 'chartPayments', 'chartAxes'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) {
+            const prev = Chart.getChart(el);
+            if (prev) prev.destroy();
+        }
+    });
     Chart.defaults.color = '#475569';
     Chart.defaults.font.family = "'Jost', system-ui, sans-serif";
     Chart.defaults.plugins.legend.labels.usePointStyle = true;
