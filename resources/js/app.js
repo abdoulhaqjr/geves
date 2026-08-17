@@ -12,6 +12,16 @@ if (document.getElementById('badge-scanner')) {
     import('./scanner.js').then((m) => m.startBadgeScanner()).catch(() => {});
 }
 
+// Tableau de bord admin : charge Chart.js quand des graphiques sont présents.
+// Réexécuté après une navigation Livewire (wire:navigate) — l'admin en use.
+function initDashboardCharts() {
+    if (document.getElementById('dashboardData')) {
+        import('./charts.js').then((m) => m.startDashboardCharts()).catch(() => {});
+    }
+}
+initDashboardCharts();
+document.addEventListener('livewire:navigated', initDashboardCharts);
+
 // Alpine est fourni par Livewire 4. On enregistre nos composants au démarrage.
 document.addEventListener('alpine:init', () => {
     // Surbrillance de la section active dans la navigation (scrollspy).

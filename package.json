@@ -15,6 +15,7 @@
     },
     "dependencies": {
         "@livekit/track-processors": "^0.7.2",
+        "chart.js": "^4.5.1",
         "html5-qrcode": "^2.3.8",
         "livekit-client": "^2.21.0"
     }

@@ -13,8 +13,9 @@
 <body class="ukc-scope antialiased">
     {{ $slot }}
 
-    {{-- Widget flottant Gesco — partout sauf la salle visio et la page chat dédiée. --}}
-    @unless (request()->routeIs('session.meeting') || request()->routeIs('public.gesco'))
+    {{-- Widget flottant Gesco — public + espace participant ; pas dans le
+         back-office, le portail relecteur, la salle visio, ni la page chat dédiée. --}}
+    @unless (request()->routeIs('admin.*') || request()->routeIs('reviewer.*') || request()->routeIs('session.meeting') || request()->routeIs('public.gesco'))
         <livewire:public.gesco-widget />
     @endunless
 
