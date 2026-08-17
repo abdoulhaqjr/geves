@@ -8,6 +8,8 @@ use App\Models\Attestation;
 use App\Models\DocumentTemplate;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -86,5 +88,26 @@ class AttestationController extends Controller
         return view('attestations.verify', [
             'attestation' => $attestation,
         ]);
+    }
+
+    /**
+     * Landing publique : saisie manuelle d'un code d'attestation (le QR imprimé
+     * pointe déjà directement vers la page de vérification). Redirige vers le
+     * résultat si un code est fourni.
+     */
+    public function verifyLanding(Request $request): View|RedirectResponse
+    {
+        $code = trim((string) $request->query('code', ''));
+
+        if ($code !== '') {
+            // Accepte un UUID brut ou une URL de vérification collée.
+            if (preg_match('~([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})~i', $code, $m)) {
+                $code = $m[1];
+            }
+
+            return redirect()->route('attestation.verify', $code);
+        }
+
+        return view('attestations.verify-landing');
     }
 }

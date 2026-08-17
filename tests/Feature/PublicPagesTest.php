@@ -68,6 +68,26 @@ it('affiche le déroulement d’un colloque en cours', function () {
         ->assertSee('Session en cours');
 });
 
+it('affiche la landing de vérification d’attestation', function () {
+    $this->get(route('attestation.verify.landing'))
+        ->assertOk()
+        ->assertSee('Vérifier une attestation');
+});
+
+it('redirige la saisie d’un code vers le résultat', function () {
+    $uuid = '11111111-2222-3333-4444-555555555555';
+
+    $this->get(route('attestation.verify.landing', ['code' => $uuid]))
+        ->assertRedirect(route('attestation.verify', $uuid));
+});
+
+it('extrait l’UUID d’une URL de vérification collée', function () {
+    $uuid = '11111111-2222-3333-4444-555555555555';
+
+    $this->get(route('attestation.verify.landing', ['code' => 'https://gesco.test/verifier/'.$uuid]))
+        ->assertRedirect(route('attestation.verify', $uuid));
+});
+
 it('renvoie 404 pour une édition inconnue', function () {
     $this->get(route('public.archive', 'edition-inexistante'))->assertNotFound();
 });

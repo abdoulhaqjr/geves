@@ -15,6 +15,7 @@
             <a href="{{ route('public.archives') }}">Passés</a>
             <a href="{{ route('home') }}#apropos">À propos</a>
             <a href="{{ route('home') }}#contact">Contact</a>
+            <a href="{{ route('attestation.verify.landing') }}">Vérifier une attestation</a>
             <a href="{{ route('account.login') }}">Se connecter</a>
             <a href="{{ route('account.dashboard') }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">Espace participant</a>
         </nav>
