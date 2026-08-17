@@ -12,7 +12,7 @@
         <nav class="nav" id="mainNav">
             <a href="{{ route('home') }}#en-cours">En cours</a>
             <a href="{{ route('home') }}#a-venir">À venir</a>
-            <a href="{{ route('home') }}#passes">Passés</a>
+            <a href="{{ route('public.archives') }}">Passés</a>
             <a href="{{ route('home') }}#apropos">À propos</a>
             <a href="{{ route('home') }}#contact">Contact</a>
             <a href="{{ route('account.login') }}">Se connecter</a>

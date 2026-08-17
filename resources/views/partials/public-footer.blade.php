@@ -11,7 +11,7 @@
                 <a href="{{ route('home') }}">Accueil</a>
                 <a href="{{ route('home') }}#en-cours">Colloque en cours</a>
                 <a href="{{ route('home') }}#a-venir">À venir</a>
-                <a href="{{ route('home') }}#passes">Colloques passés</a>
+                <a href="{{ route('public.archives') }}">Colloques passés</a>
                 <a href="{{ route('home') }}#apropos">À propos</a>
                 <a href="{{ route('home') }}#contact">Contact</a>
             </div>

@@ -31,12 +31,6 @@ parameters:
 			path: app/Actions/QueueEmailCampaign.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Documents/LivretDocx.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$track\.$#'
 			identifier: property.notFound
 			count: 1
@@ -62,12 +56,6 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$institution\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Admin/DocumentController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Controllers/Admin/DocumentController.php

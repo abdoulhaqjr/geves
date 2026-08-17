@@ -12,6 +12,7 @@ use App\Http\Controllers\EgressController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\Public\ArchiveController;
 use App\Http\Controllers\Public\ColloqueController;
 use App\Livewire\Account\Dashboard;
 use App\Livewire\Account\Documents as AccountDocuments;
@@ -55,6 +56,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', HomeController::class)->name('home');
 
 // Page publique d'une édition de colloque.
+Route::get('/colloques-passes', [ArchiveController::class, 'index'])->name('public.archives');
+Route::get('/colloques-passes/{slug}', [ArchiveController::class, 'show'])->name('public.archive');
+
 Route::get('/colloque/{slug}', ColloqueController::class)->name('public.colloque');
 
 // Parcours de paiement des co-auteurs (public, sans compte, retrouvé par e-mail).

@@ -182,11 +182,14 @@
                                     @if ($e->theme)<div>{{ $e->theme }}</div>@endif
                                 </div>
                                 <div class="foot">
-                                    <a href="{{ $colloqueUrl($e) }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">Détail</a>
+                                    <a href="{{ route('public.archive', $e->slug) }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">Détail</a>
                                 </div>
                             </div>
                         </article>
                     @endforeach
+                </div>
+                <div style="text-align:center;margin-top:24px;">
+                    <a href="{{ route('public.archives') }}" class="ukc-btn ukc-btn--outline">Toutes les archives des colloques</a>
                 </div>
             </div>
         </section>
@@ -379,20 +382,4 @@
     </section>
 
     @include('partials.public-footer')
-
-    @push('scripts')
-        <script>
-            // Menu mobile (burger).
-            (function () {
-                var burger = document.getElementById('burger');
-                var nav = document.getElementById('mainNav');
-                if (burger && nav) {
-                    burger.addEventListener('click', function () {
-                        var open = nav.classList.toggle('open');
-                        burger.setAttribute('aria-expanded', open ? 'true' : 'false');
-                    });
-                }
-            })();
-        </script>
-    @endpush
 </x-layouts.app>

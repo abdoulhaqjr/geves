@@ -1,3 +1,6 @@
+// Interactions du site public (menu mobile, galerie/lightbox, filtres).
+import './public.js';
+
 // Visio : charge le lecteur LiveKit (SDK livekit-client) uniquement sur la page
 // « Rejoindre » — l'import dynamique code-splitte le SDK dans son propre chunk.
 if (document.getElementById('lk-config')) {

@@ -6,15 +6,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * Édition : une occurrence datée d'un colloque, avec son cycle de vie et son
  * contenu public. Les réglages libres (frais, contenu enrichi…) sont en JSON.
  *
  * @property array<string, mixed>|null $settings réglages libres (frais, axes, contenu public…)
- * @property \Illuminate\Support\Carbon|null $date_start
- * @property \Illuminate\Support\Carbon|null $date_end
- * @property \Illuminate\Support\Carbon|null $submission_deadline
+ * @property Carbon|null $date_start
+ * @property Carbon|null $date_end
+ * @property Carbon|null $submission_deadline
  * @property int $year
  * @property bool $submission_open
  * @property string $status
@@ -39,6 +40,7 @@ class Edition extends Model
         ];
     }
 
+    /** @return BelongsTo<Colloque, $this> */
     public function colloque(): BelongsTo
     {
         return $this->belongsTo(Colloque::class);
@@ -89,6 +91,7 @@ class Edition extends Model
         return $this->hasMany(CommitteeMember::class);
     }
 
+    /** @return HasMany<Media, $this> */
     public function media(): HasMany
     {
         return $this->hasMany(Media::class);
