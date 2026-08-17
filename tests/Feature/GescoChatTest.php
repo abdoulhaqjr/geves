@@ -2,6 +2,7 @@
 
 use App\Actions\AskGesco;
 use App\Livewire\Public\GescoChat;
+use App\Livewire\Public\GescoWidget;
 use Livewire\Livewire;
 
 // fakeAiProvider(), bindFakeAi() -> GenerateReportTest
@@ -30,6 +31,17 @@ it('refuse un message vide', function () {
         ->set('input', '')
         ->call('send')
         ->assertHasErrors('input');
+});
+
+it('le widget flottant répond aussi', function () {
+    bindFakeAi(fakeAiProvider(['answer' => 'Le programme est publié sur la page du colloque.']));
+
+    Livewire::test(GescoWidget::class)
+        ->assertSee('Gesco')
+        ->set('input', 'Où est le programme ?')
+        ->call('send')
+        ->assertSee('Le programme est publié')
+        ->assertSet('input', '');
 });
 
 it('gère proprement l’absence de fournisseur IA', function () {
