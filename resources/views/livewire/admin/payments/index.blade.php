@@ -1,4 +1,11 @@
-<div>
+<div class="admin-page admin-payments">
+    <div class="ukc-stats">
+        <div class="ukc-stat-card"><div class="lbl">Encaissé ({{ $currency }})</div><div class="val green">{{ number_format($stats['paid'], 0, ',', ' ') }}</div></div>
+        <div class="ukc-stat-card"><div class="lbl">En attente ({{ $currency }})</div><div class="val warn">{{ number_format($stats['pending'], 0, ',', ' ') }}</div></div>
+        <div class="ukc-stat-card"><div class="lbl">Échoués</div><div class="val" style="color:#dc2626;">{{ $stats['failed'] }}</div></div>
+        <div class="ukc-stat-card"><div class="lbl">Taux de conversion</div><div class="val blue">{{ $stats['rate'] }} %</div></div>
+    </div>
+
     <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px;">
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
             <div class="ukc-field" style="min-width:220px;">
@@ -24,17 +31,6 @@
         <a href="{{ route('admin.payments.create') }}" wire:navigate class="ukc-btn ukc-btn--blue">
             <x-ukc.icon name="plus" :size="18" /> Enregistrer un encaissement
         </a>
-    </div>
-
-    <div class="ukc-grid-2" style="margin-bottom:18px;grid-template-columns:1fr 1fr;">
-        <div class="ukc-stat-card">
-            <div class="num">{{ number_format((float) $totalPaid, 0, ',', ' ') }}</div>
-            <div class="lbl">Encaissé (FCFA)</div>
-        </div>
-        <div class="ukc-stat-card">
-            <div class="num">{{ number_format((float) $totalPending, 0, ',', ' ') }}</div>
-            <div class="lbl">En attente (FCFA)</div>
-        </div>
     </div>
 
     <div class="ukc-card" style="padding:0;">

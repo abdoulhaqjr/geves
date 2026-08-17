@@ -1,4 +1,4 @@
-<div>
+<div class="admin-page admin-participants">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px;">
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
             <div class="ukc-field" style="min-width:200px;">
@@ -25,9 +25,11 @@
         @endif
     </div>
 
-    <div class="ukc-grid-2" style="margin-bottom:18px;grid-template-columns:1fr 1fr;">
-        <div class="ukc-stat-card"><div class="num">{{ $totalCount }}</div><div class="lbl">Participants</div></div>
-        <div class="ukc-stat-card"><div class="num">{{ $paidCount }}</div><div class="lbl">Ont payé</div></div>
+    <div class="ukc-stats">
+        <div class="ukc-stat-card"><div class="lbl">Participants</div><div class="val blue">{{ $stats['total'] }}</div></div>
+        <div class="ukc-stat-card"><div class="lbl">Ont payé</div><div class="val green">{{ $stats['paid'] }}</div></div>
+        <div class="ukc-stat-card"><div class="lbl">Pointés (accueil)</div><div class="val">{{ $stats['checkedIn'] }}</div></div>
+        <div class="ukc-stat-card"><div class="lbl">Auteurs</div><div class="val">{{ $stats['authors'] }}</div></div>
     </div>
 
     <div class="ukc-card" style="padding:0;">

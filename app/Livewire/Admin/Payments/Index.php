@@ -71,12 +71,20 @@ class Index extends Component
             ->latest('id')
             ->paginate(15);
 
+        $paidCount = (clone $base)->where('status', 'paid')->count();
+        $totalCount = (clone $base)->count();
+
         return view('livewire.admin.payments.index', [
             'payments' => $payments,
             'editions' => Edition::latest('id')->get(),
             'statuses' => Payment::statuses(),
-            'totalPaid' => (clone $base)->where('status', 'paid')->sum('amount'),
-            'totalPending' => (clone $base)->where('status', 'pending')->sum('amount'),
+            'currency' => (clone $base)->value('currency') ?: 'XOF',
+            'stats' => [
+                'paid' => (float) (clone $base)->where('status', 'paid')->sum('amount'),
+                'pending' => (float) (clone $base)->where('status', 'pending')->sum('amount'),
+                'failed' => (clone $base)->where('status', 'failed')->count(),
+                'rate' => $totalCount > 0 ? (int) round($paidCount / $totalCount * 100) : 0,
+            ],
         ])->layout('components.layouts.admin', ['title' => 'Paiements']);
     }
 }

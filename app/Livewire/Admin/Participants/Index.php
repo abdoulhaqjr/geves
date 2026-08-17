@@ -115,6 +115,12 @@ class Index extends Component
             'roles' => Participant::ROLES,
             'totalCount' => (clone $base)->count(),
             'paidCount' => $paidCount,
+            'stats' => [
+                'total' => (clone $base)->count(),
+                'paid' => $paidCount,
+                'checkedIn' => (clone $base)->whereNotNull('checked_in_at')->count(),
+                'authors' => (clone $base)->where('role', 'author')->count(),
+            ],
         ])->layout('components.layouts.admin', ['title' => 'Participants']);
     }
 }
