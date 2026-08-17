@@ -28,6 +28,7 @@ use App\Livewire\Account\Submissions\Create as SubmissionCreate;
 use App\Livewire\Account\Submissions\Index as SubmissionIndex;
 use App\Livewire\Account\Submissions\Show as SubmissionShow;
 use App\Livewire\Account\VerifyEmailNotice;
+use App\Livewire\Admin\BadgeScan as AdminBadgeScan;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\Documents\Attestations as AdminAttestations;
 use App\Livewire\Admin\Documents\TemplateDesigner as AdminTemplateDesigner;
@@ -174,6 +175,7 @@ Route::prefix('admin')->group(function () {
 
         Route::get('/attestations', AdminAttestations::class)->name('admin.documents.attestations');
         Route::get('/modeles', AdminTemplateDesigner::class)->name('admin.documents.templates');
+        Route::get('/pointage', AdminBadgeScan::class)->name('admin.badges.scan');
         Route::get('/editions/{edition}/livret', [DocumentController::class, 'livret'])->name('admin.documents.livret');
         Route::get('/editions/{edition}/badges', [DocumentController::class, 'badges'])->name('admin.documents.badges');
         Route::get('/editions/{edition}/fiches-session', [DocumentController::class, 'sessionSheets'])->name('admin.documents.sessions');

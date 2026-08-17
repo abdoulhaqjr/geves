@@ -95,6 +95,11 @@
   50% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
 }
 
+/* ---- Scanner de badge (pointage) ---- */
+.badge-scanner { border-radius: 12px; overflow: hidden; background: #0f1a33; min-height: 240px; display: flex; align-items: center; justify-content: center; }
+.badge-scanner video { width: 100% !important; height: auto !important; display: block; }
+.badge-scanner .scan-fallback { color: #fff; padding: 20px; text-align: center; font-size: 14px; line-height: 1.5; }
+
 /* ---- Layout public (container + sections) ---- */
 .ukc-container { max-width: 1180px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 28px); width: 100%; }
 .ukc-section { padding: clamp(52px, 8vw, 88px) 0; }

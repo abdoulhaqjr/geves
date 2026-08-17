@@ -64,6 +64,10 @@
                    @class(['active' => request()->routeIs('admin.documents.templates')])>
                     <x-ukc.icon name="palette" :size="18" /> Modèles (badges/attest.)
                 </a>
+                <a href="{{ route('admin.badges.scan') }}" wire:navigate
+                   @class(['active' => request()->routeIs('admin.badges.scan')])>
+                    <x-ukc.icon name="video" :size="18" /> Pointage badges
+                </a>
 
                 <span class="nav-label">Configuration</span>
                 <a href="{{ route('admin.settings') }}" wire:navigate

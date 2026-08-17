@@ -7,6 +7,11 @@ if (document.getElementById('lk-config')) {
     import('./meeting.js').then((m) => m.startFromConfig()).catch(() => {});
 }
 
+// Pointage : charge le scanner QR (html5-qrcode) uniquement sur la page de scan.
+if (document.getElementById('badge-scanner')) {
+    import('./scanner.js').then((m) => m.startBadgeScanner()).catch(() => {});
+}
+
 // Alpine est fourni par Livewire 4. On enregistre nos composants au démarrage.
 document.addEventListener('alpine:init', () => {
     // Surbrillance de la section active dans la navigation (scrollspy).

@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * Participant : présence d'une personne sur une édition (auteur, auditeur,
  * relecteur, membre de comité, co-auteur…). Reliée au compte global quand
  * connue.
+ *
+ * @property \Illuminate\Support\Carbon|null $checked_in_at
  */
 #[ObservedBy([ParticipantObserver::class])]
 class Participant extends Model
@@ -34,7 +36,13 @@ class Participant extends Model
 
     protected function casts(): array
     {
-        return ['meta' => 'array'];
+        return ['meta' => 'array', 'checked_in_at' => 'datetime'];
+    }
+
+    /** Le participant a-t-il été pointé (présent à l'accueil) ? */
+    public function isCheckedIn(): bool
+    {
+        return $this->checked_in_at !== null;
     }
 
     public function roleLabel(): string
