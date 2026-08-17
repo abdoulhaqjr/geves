@@ -15,6 +15,8 @@
 .admin-page .ukc-stat-card .hint { font-size: 12px; color: var(--ukc-muted); margin-top: 6px; }
 .admin-page .ukc-stat-card .hint.up { color: var(--ukc-green); }
 .admin-page .ukc-card h2 { font-size: 15px; font-weight: 800; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+/* Icône + titre groupés dans un <span> : garder l'icône alignée au texte (évite le SVG block qui passe à la ligne). */
+.admin-page .ukc-card h2 > span { display: inline-flex; align-items: center; gap: 8px; }
 .admin-page .ukc-card .desc { font-size: 13px; color: var(--ukc-muted); margin-bottom: 14px; line-height: 1.45; }
 
 .admin-page .ukc-tabs { display: flex; gap: 4px; margin-bottom: 18px; border-bottom: 2px solid var(--ukc-border); flex-wrap: wrap; }

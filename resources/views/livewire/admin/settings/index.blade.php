@@ -14,7 +14,7 @@
         {{-- Général --}}
         <div class="ukc-panel" :class="{ active: tab==='general' }">
             <div class="ukc-card">
-                <h2><x-ukc.icon name="settings" :size="20" /> Général</h2>
+                <h2><span><x-ukc.icon name="settings" :size="20" /> Général</span></h2>
                 <p class="desc">Identité de l’expéditeur des e-mails et devise utilisée pour les frais.</p>
                 <div class="ukc-form-grid">
                     <div class="ukc-field">
@@ -38,7 +38,7 @@
         {{-- Paiement --}}
         <div class="ukc-panel" :class="{ active: tab==='payments' }">
             <div class="ukc-card">
-                <h2><x-ukc.icon name="card" :size="20" /> Paiement</h2>
+                <h2><span><x-ukc.icon name="card" :size="20" /> Paiement</span></h2>
                 <div class="ukc-form-grid">
                     <div class="ukc-field full">
                         <label for="payments_default">Passerelle par défaut</label>
@@ -76,7 +76,7 @@
         {{-- E-mail (SMTP) --}}
         <div class="ukc-panel" :class="{ active: tab==='email' }">
             <div class="ukc-card">
-                <h2><x-ukc.icon name="mail" :size="20" /> Envoi des e-mails (SMTP)</h2>
+                <h2><span><x-ukc.icon name="mail" :size="20" /> Envoi des e-mails (SMTP)</span></h2>
                 <p class="desc">Laissez l’hôte vide pour utiliser le transport par défaut (log en dev).</p>
                 <div class="ukc-form-grid">
                     <div class="ukc-field">
@@ -123,7 +123,7 @@
         {{-- Intelligence artificielle --}}
         <div class="ukc-panel" :class="{ active: tab==='ai' }">
             <div class="ukc-card">
-                <h2><x-ukc.icon name="sparkles" :size="20" /> Intelligence artificielle</h2>
+                <h2><span><x-ukc.icon name="sparkles" :size="20" /> Intelligence artificielle</span></h2>
                 <p class="desc">
                     Utilisée pour le paramétrage assisté d’une édition et la génération de modèles (badges, attestations).
                     Les clés sont facultatives ; renseignez au moins le fournisseur par défaut.
@@ -166,7 +166,7 @@
         {{-- Visio (LiveKit) --}}
         <div class="ukc-panel" :class="{ active: tab==='meetings' }">
             <div class="ukc-card">
-                <h2><x-ukc.icon name="video" :size="20" /> Visio des sessions</h2>
+                <h2><span><x-ukc.icon name="video" :size="20" /> Visio des sessions</span></h2>
                 <p class="desc">
                     Plateforme de visio interactive pour les présentations en ligne. LiveKit nécessite un serveur
                     (LiveKit Cloud ou self-host) et ses identifiants d’API. Sans identifiants, le système bascule
@@ -237,7 +237,7 @@
         {{-- Intégrations --}}
         <div class="ukc-panel" :class="{ active: tab==='integrations' }">
             <div class="ukc-card">
-                <h2><x-ukc.icon name="globe" :size="20" /> Interconnexion HAL</h2>
+                <h2><span><x-ukc.icon name="globe" :size="20" /> Interconnexion HAL</span></h2>
                 <p class="desc">
                     Active l’autocomplétion des affiliations depuis le référentiel des structures HAL (AuréHAL),
                     sur le profil des participants. Aucun compte HAL requis pour cette étape.

@@ -58,7 +58,7 @@
                 <span class="nav-label">Documents</span>
                 <a href="{{ route('admin.documents.attestations') }}" wire:navigate
                    @class(['active' => request()->routeIs('admin.documents.attestations')])>
-                    <x-ukc.icon name="award" :size="18" /> Attestations
+                    <x-ukc.icon name="award" :size="18" /> Documents
                 </a>
                 <a href="{{ route('admin.documents.templates') }}" wire:navigate
                    @class(['active' => request()->routeIs('admin.documents.templates')])>

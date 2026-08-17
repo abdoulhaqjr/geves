@@ -12,10 +12,11 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 /**
- * Émission des attestations vérifiables d'une édition (par type et audience),
- * et gestion (révocation) des attestations émises.
+ * Hub Documents d'une édition : émission/gestion des attestations vérifiables
+ * (par type et audience), génération des badges imprimables, et livre des
+ * résumés (aperçu HTML + export Word). Trois volets, une édition sélectionnée.
  */
-#[Title('Attestations')]
+#[Title('Documents')]
 class Attestations extends Component
 {
     public string $edition_id = '';
@@ -105,14 +106,26 @@ class Attestations extends Component
 
     public function render()
     {
-        $attestations = $this->edition_id !== ''
-            ? Attestation::where('edition_id', $this->edition_id)->latest('id')->get()
+        $edition = $this->edition_id !== '' ? Edition::find($this->edition_id) : null;
+
+        $attestations = $edition
+            ? Attestation::where('edition_id', $edition->id)->latest('id')->get()
             : collect();
+
+        // Compteurs de contexte pour les volets Badges / Livre.
+        $counts = $edition ? [
+            'participants' => Participant::where('edition_id', $edition->id)->count(),
+            'accepted' => Submission::where('edition_id', $edition->id)
+                ->where('revision_of', 0)->where('status', 'accepted')->count(),
+            'issued' => $attestations->where('revoked', false)->count(),
+        ] : ['participants' => 0, 'accepted' => 0, 'issued' => 0];
 
         return view('livewire.admin.documents.attestations', [
             'editions' => Edition::latest('id')->get(),
+            'edition' => $edition,
             'types' => Attestation::TYPES,
             'attestations' => $attestations,
-        ])->layout('components.layouts.admin', ['title' => 'Attestations']);
+            'counts' => $counts,
+        ])->layout('components.layouts.admin', ['title' => 'Documents']);
     }
 }

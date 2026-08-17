@@ -99,7 +99,7 @@
 
             {{-- Décision --}}
             <div class="ukc-card">
-                <h2><x-ukc.icon name="check-circle" :size="18" /> Décision du comité</h2>
+                <h2><span><x-ukc.icon name="check-circle" :size="18" /> Décision du comité</span></h2>
                 <p class="desc">Le message ci-dessous est inclus dans l’e-mail envoyé automatiquement à l’auteur correspondant.</p>
 
                 <div class="ukc-field">
@@ -139,7 +139,7 @@
         <div>
             {{-- Relecteurs --}}
             <div class="ukc-card">
-                <h2><x-ukc.icon name="mic" :size="18" /> Relecteurs</h2>
+                <h2><span><x-ukc.icon name="mic" :size="18" /> Relecteurs</span></h2>
 
                 @if ($completedCount)
                     <div class="ukc-alert ukc-alert--info" style="margin-bottom:12px;">
