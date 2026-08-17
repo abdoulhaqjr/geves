@@ -4,6 +4,7 @@ namespace App\Documents;
 
 use App\Models\Edition;
 use App\Models\Submission;
+use App\Support\Html;
 use Illuminate\Support\Collection;
 use PhpOffice\PhpWord\Element\Section;
 use PhpOffice\PhpWord\PhpWord;
@@ -123,7 +124,7 @@ class LivretDocx
                     $section->addText($authors, ['italic' => true, 'size' => 10, 'color' => self::MUTED], ['spaceAfter' => 40]);
                 }
 
-                if ($abstract = trim((string) $s->abstract)) {
+                if ($abstract = Html::toText($s->abstract)) {
                     $section->addText($abstract, ['size' => 11], ['alignment' => 'both', 'spaceAfter' => 120]);
                 }
             }

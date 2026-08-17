@@ -5,6 +5,7 @@ namespace App\Livewire\Account\Submissions;
 use App\Actions\NotifySubmissionStatus;
 use App\Models\Slot;
 use App\Models\Submission;
+use App\Support\Html;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -116,7 +117,14 @@ class Show extends Component
     {
         return [
             'title' => ['required', 'string', 'max:500'],
-            'abstract' => ['required', 'string', 'min:50', 'max:8000'],
+            'abstract' => ['required', 'string', 'max:20000', function (string $attr, string $value, \Closure $fail): void {
+                $len = Html::textLength($value);
+                if ($len < 50) {
+                    $fail('Le résumé doit contenir au moins 50 caractères.');
+                } elseif ($len > 8000) {
+                    $fail('Le résumé ne doit pas dépasser 8000 caractères.');
+                }
+            }],
             'keywords' => ['nullable', 'string', 'max:500'],
             'file' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:8192'],
         ];
@@ -157,7 +165,7 @@ class Show extends Component
         // Met à jour la version canonique.
         $current->update([
             'title' => $data['title'],
-            'abstract' => $data['abstract'],
+            'abstract' => Html::clean($data['abstract']),
             'keywords' => $data['keywords'] ?: null,
             'file_url' => $fileUrl,
             'version' => $current->version + 1,

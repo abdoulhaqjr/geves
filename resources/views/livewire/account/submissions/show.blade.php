@@ -102,8 +102,8 @@
                     @error('keywords') <span class="error">{{ $message }}</span> @enderror
                 </div>
                 <div class="ukc-field full">
-                    <label for="abstract">Résumé <span class="req">*</span></label>
-                    <textarea id="abstract" wire:model="abstract" rows="8"></textarea>
+                    <label>Résumé <span class="req">*</span></label>
+                    @include('partials.abstract-editor', ['initial' => $abstract, 'min' => 50])
                     @error('abstract') <span class="error">{{ $message }}</span> @enderror
                 </div>
                 <div class="ukc-field full">
@@ -123,7 +123,7 @@
     @else
         <div class="ukc-card" style="margin-bottom:18px;">
             <h3>Résumé</h3>
-            <p style="line-height:1.7;white-space:pre-line;">{{ $s->abstract }}</p>
+            <div class="ukc-rte">{!! \App\Support\Html::render($s->abstract) !!}</div>
             @if ($s->file_url)
                 <a href="{{ $s->file_url }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm" style="margin-top:14px;">
                     <x-ukc.icon name="file" :size="16" /> Fichier joint

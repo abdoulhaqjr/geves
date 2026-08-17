@@ -256,6 +256,21 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 }
 .ukc-tag button { border: none; background: none; color: var(--ukc-blue); cursor: pointer; font-size: 15px; line-height: 1; opacity: .65; padding: 0 2px; }
 .ukc-tag button:hover { opacity: 1; }
+
+/* ---- Éditeur de texte enrichi (WYSIWYG) + rendu ---- */
+.ukc-rte-editor { border: 1.5px solid var(--ukc-border); border-radius: 10px; overflow: hidden; background: #fff; transition: border-color .2s; }
+.ukc-rte-editor:focus-within { border-color: var(--ukc-blue); box-shadow: 0 0 0 3px rgba(34, 62, 164, .12); }
+.ukc-rte-toolbar { display: flex; flex-wrap: wrap; gap: 2px; padding: 6px 8px; border-bottom: 1px solid var(--ukc-border); background: var(--ukc-bg); }
+.ukc-rte-toolbar button { border: none; background: transparent; color: var(--ukc-muted); width: 30px; height: 28px; border-radius: 7px; cursor: pointer; font-size: 14px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
+.ukc-rte-toolbar button:hover { background: #e6ebf7; color: var(--ukc-blue); }
+.ukc-rte-area { min-height: 150px; padding: 12px 14px; font-size: 14px; line-height: 1.6; color: var(--ukc-text); outline: none; }
+.ukc-rte-area:empty::before { content: attr(data-placeholder); color: var(--ukc-light); }
+.ukc-rte-area ul, .ukc-rte-area ol { padding-left: 1.4em; margin: 6px 0; }
+/* Rendu en lecture seule d'un résumé enrichi */
+.ukc-rte { line-height: 1.7; }
+.ukc-rte p { margin: 0 0 10px; }
+.ukc-rte ul, .ukc-rte ol { padding-left: 1.4em; margin: 8px 0; }
+.ukc-rte li { margin-bottom: 4px; }
 .ukc-form-actions {
   display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px;
   padding-top: 18px; border-top: 1px solid var(--ukc-border);

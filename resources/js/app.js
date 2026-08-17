@@ -55,6 +55,28 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
+    // Éditeur de texte enrichi minimal (WYSIWYG) — gras/italique/souligné/listes.
+    // Sync le HTML vers une propriété Livewire ; le bloc est en wire:ignore.
+    window.Alpine.data('ukcEditor', (initial = '', wireProp = 'abstract') => ({
+        count: 0,
+        init() {
+            this.$refs.area.innerHTML = initial || '';
+            this.updateCount();
+        },
+        cmd(command) {
+            this.$refs.area.focus();
+            document.execCommand(command, false, null);
+            this.sync();
+        },
+        sync() {
+            this.$wire.set(wireProp, this.$refs.area.innerHTML, false);
+            this.updateCount();
+        },
+        updateCount() {
+            this.count = (this.$refs.area.innerText || '').replace(/\s+/g, ' ').trim().length;
+        },
+    }));
+
     window.Alpine.data('ukcCountdown', (targetIso) => ({
         days: 0,
         hours: 0,

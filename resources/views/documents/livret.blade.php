@@ -35,7 +35,7 @@
                         <div style="font-size:.85rem;color:var(--ukc-muted);margin:2px 0 6px;">
                             {{ collect($s->authors ?? [])->pluck('name')->filter()->join(', ') }}
                         </div>
-                        <p style="font-size:.92rem;line-height:1.6;text-align:justify;">{{ $s->abstract }}</p>
+                        <div class="ukc-rte" style="font-size:.92rem;line-height:1.6;text-align:justify;">{!! \App\Support\Html::render($s->abstract) !!}</div>
                     </div>
                 @endforeach
             </div>

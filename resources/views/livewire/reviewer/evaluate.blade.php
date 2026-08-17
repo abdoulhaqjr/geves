@@ -21,7 +21,7 @@
             @if ($sub?->track)<span class="ukc-pill ukc-pill--info">{{ $sub->track }}</span>@endif
             <span class="ukc-pill ukc-pill--muted">{{ $sub?->type === 'poster' ? 'Poster' : 'Oral' }}</span>
         </div>
-        <p style="line-height:1.7;white-space:pre-line;margin-top:14px;">{{ $sub?->abstract }}</p>
+        <div class="ukc-rte" style="margin-top:14px;">{!! \App\Support\Html::render($sub?->abstract) !!}</div>
         @if ($sub?->keywords)
             <p style="margin-top:10px;font-size:.9rem;color:var(--ukc-muted);"><strong>Mots-clés :</strong> {{ $sub->keywords }}</p>
         @endif

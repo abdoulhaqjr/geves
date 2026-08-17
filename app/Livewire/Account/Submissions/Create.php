@@ -6,6 +6,7 @@ use App\Actions\NotifySubmissionStatus;
 use App\Actions\UpsertParticipantForAccount;
 use App\Models\Edition;
 use App\Models\Submission;
+use App\Support\Html;
 use App\Support\Notifier;
 use App\Support\SubmissionFormConfig;
 use Illuminate\Support\Facades\Auth;
@@ -128,7 +129,14 @@ class Create extends Component
 
         $rules = [
             'title' => ['required', 'string', 'max:500'],
-            'abstract' => ['required', 'string', 'min:'.$c->abstractMin(), 'max:'.$c->abstractMax()],
+            'abstract' => ['required', 'string', 'max:20000', function (string $attr, string $value, \Closure $fail) use ($c): void {
+                $len = Html::textLength($value);
+                if ($len < $c->abstractMin()) {
+                    $fail('Le résumé doit contenir au moins '.$c->abstractMin().' caractères.');
+                } elseif ($len > $c->abstractMax()) {
+                    $fail('Le résumé ne doit pas dépasser '.$c->abstractMax().' caractères.');
+                }
+            }],
             'coauthors' => ['array'],
             'coauthors.*.name' => ['nullable', 'string', 'max:200'],
             'coauthors.*.email' => ['nullable', 'email', 'max:200'],
@@ -260,7 +268,7 @@ class Create extends Component
                 'participant_id' => $participant->id,
                 'title' => $data['title'],
                 'authors' => $authors,
-                'abstract' => $data['abstract'],
+                'abstract' => Html::clean($data['abstract']),
                 'keywords' => ($data['keywords'] ?? null) ?: null,
                 'track' => ($data['track'] ?? null) ?: null,
                 'type' => $data['type'] ?? 'oral',

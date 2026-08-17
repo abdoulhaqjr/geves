@@ -24,7 +24,7 @@
 
             <div class="ukc-card">
                 <h3>Résumé</h3>
-                <p style="color:var(--ukc-text);line-height:1.7;white-space:pre-line;">{{ $s->abstract ?: '—' }}</p>
+                <div class="ukc-rte" style="color:var(--ukc-text);">{!! $s->abstract ? \App\Support\Html::render($s->abstract) : '—' !!}</div>
                 @if ($s->keywords)
                     <p style="margin-top:12px;font-size:.9rem;color:var(--ukc-muted);">
                         <strong>Mots-clés :</strong> {{ $s->keywords }}

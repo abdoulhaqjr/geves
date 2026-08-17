@@ -145,10 +145,8 @@
                     @endif
 
                     <div class="ukc-field full">
-                        <label for="abstract">{{ $config->label('abstract') }} <span class="req">*</span></label>
-                        <textarea id="abstract" wire:model="abstract" rows="8"
-                                  placeholder="Contexte, objectifs, méthode, résultats attendus…"></textarea>
-                        <span class="hint">{{ $config->help('abstract') ?: 'Minimum ' . $config->abstractMin() . ' caractères.' }}</span>
+                        <label>{{ $config->label('abstract') }} <span class="req">*</span></label>
+                        @include('partials.abstract-editor', ['initial' => $abstract, 'min' => $config->abstractMin(), 'help' => $config->help('abstract') ?: null])
                         @error('abstract') <span class="error">{{ $message }}</span> @enderror
                     </div>
                 </div>
