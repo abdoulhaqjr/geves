@@ -45,6 +45,7 @@ use App\Livewire\Admin\Payments\Record as AdminPaymentRecord;
 use App\Livewire\Admin\Program\Sessions as AdminProgramSessions;
 use App\Livewire\Admin\Program\Slots as AdminProgramSlots;
 use App\Livewire\Admin\Reports\Index as AdminReportIndex;
+use App\Livewire\Admin\Settings\Agents as AdminSettingsAgents;
 use App\Livewire\Admin\Settings\Index as AdminSettings;
 use App\Livewire\Admin\Submissions\Index as AdminSubmissionIndex;
 use App\Livewire\Admin\Submissions\Show as AdminSubmissionShow;
@@ -175,6 +176,7 @@ Route::prefix('admin')->group(function () {
         Route::get('/editions/{edition}/fiches-session', [DocumentController::class, 'sessionSheets'])->name('admin.documents.sessions');
 
         Route::get('/reglages', AdminSettings::class)->name('admin.settings');
+        Route::get('/reglages/agents-ia', AdminSettingsAgents::class)->name('admin.settings.agents');
 
         Route::post('/deconnexion', AdminLogoutController::class)->name('admin.logout');
     });
