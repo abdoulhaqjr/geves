@@ -290,8 +290,26 @@
         </div>
     </section>
 
+    {{-- ===================== Galerie — dernier colloque ===================== --}}
+    @if (! empty($gallery))
+        <section class="ukc-section ukc-section--alt" id="galerie">
+            <div class="ukc-container">
+                <div class="block-head">
+                    <h2>Galerie — dernier colloque</h2>
+                    <p>Photos et vidéos{{ $galleryEdition ? ' du '.$galleryEdition->title : '' }}. Cliquez pour agrandir ou visionner.</p>
+                </div>
+                @include('partials.gallery', ['media' => $gallery])
+                @if ($galleryEdition)
+                    <div style="text-align:center;margin-top:20px;">
+                        <a href="{{ route('public.archive', $galleryEdition->slug) }}#galerie" class="ukc-btn ukc-btn--outline">Voir toute la galerie</a>
+                    </div>
+                @endif
+            </div>
+        </section>
+    @endif
+
     {{-- ===================== Témoignages ===================== --}}
-    <section class="ukc-section ukc-section--alt" id="temoignages">
+    <section class="ukc-section" id="temoignages">
         <div class="ukc-container">
             <div class="block-head">
                 <h2>Témoignages</h2>
@@ -324,7 +342,7 @@
     </section>
 
     {{-- ===================== Contact ===================== --}}
-    <section class="ukc-section" id="contact">
+    <section class="ukc-section ukc-section--alt" id="contact">
         <div class="ukc-container">
             <div class="block-head">
                 <h2>Contact</h2>
@@ -382,4 +400,8 @@
     </section>
 
     @include('partials.public-footer')
+
+    @if (! empty($gallery))
+        @include('partials.lightbox')
+    @endif
 </x-layouts.app>

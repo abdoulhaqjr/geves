@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Models\Edition;
-use App\Models\Media;
+use App\Support\Gallery;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -57,47 +57,13 @@ class ArchiveController extends Controller
             'highlights' => $settings['highlights'] ?? [],
             'axes' => $settings['tracks'] ?? [],
             'documents' => $documents,
-            'gallery' => $this->gallery($edition),
+            'gallery' => Gallery::for($edition),
             'stats' => [
                 'communications' => $edition->submissions()->where('status', 'accepted')->count(),
                 'participants' => $edition->participants()->count(),
                 'sessions' => $edition->sessions()->count(),
             ],
         ]);
-    }
-
-    /**
-     * Médias de galerie (photos + vidéos) formatés pour le lightbox client.
-     *
-     * @return list<array{type: string, src: string, caption: string, thumb: ?string}>
-     */
-    private function gallery(Edition $edition): array
-    {
-        return $edition->media()
-            ->whereIn('type', ['photo', 'video'])
-            ->orderBy('ordre')
-            ->get()
-            ->map(function (Media $m): array {
-                $isVideo = $m->type === 'video';
-
-                return [
-                    'type' => $isVideo ? 'video' : 'image',
-                    'src' => (string) $m->url,
-                    'caption' => (string) ($m->title ?? ''),
-                    'thumb' => $isVideo ? $this->videoThumb((string) $m->url) : (string) $m->url,
-                ];
-            })
-            ->all();
-    }
-
-    /** Vignette d'une vidéo YouTube (sinon null → fond dégradé). */
-    private function videoThumb(string $url): ?string
-    {
-        if (preg_match('~(?:youtu\.be/|watch\?v=|/embed/)([\w-]{11})~', $url, $m)) {
-            return 'https://img.youtube.com/vi/'.$m[1].'/hqdefault.jpg';
-        }
-
-        return null;
     }
 
     /** Nature de la manifestation (heuristique pour le filtre de la liste). */

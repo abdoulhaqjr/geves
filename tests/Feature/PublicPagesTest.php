@@ -9,6 +9,26 @@ it('affiche la page d’accueil publique', function () {
         ->assertSee('séminaires, colloques et journées scientifiques', false);
 });
 
+it('affiche la galerie du dernier colloque sur l’accueil', function () {
+    $edition = openEdition();
+    $edition->update(['status' => 'archived', 'date_start' => '2024-03-18', 'date_end' => '2024-03-20']);
+    $edition->media()->create(['type' => 'photo', 'url' => 'https://example.test/g1.jpg', 'title' => 'Ouverture', 'ordre' => 1]);
+
+    $this->get(route('home'))
+        ->assertOk()
+        ->assertSee('Galerie — dernier colloque', false)
+        ->assertSee('galleryData', false)
+        ->assertSee('https://example.test/g1.jpg');
+});
+
+it('n’affiche pas la galerie sur l’accueil sans média passé', function () {
+    openEdition(); // publiée mais non passée, sans média
+
+    $this->get(route('home'))
+        ->assertOk()
+        ->assertDontSee('Galerie — dernier colloque', false);
+});
+
 it('affiche la liste des archives', function () {
     openEdition(); // édition publiée mais non passée → liste vide, page OK
 

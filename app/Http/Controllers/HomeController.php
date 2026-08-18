@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Colloque;
 use App\Models\Edition;
 use App\Models\Participant;
+use App\Support\Gallery;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 
@@ -49,12 +50,17 @@ class HomeController extends Controller
                 ->distinct()->count('institution'),
         ];
 
+        // Galerie « dernier colloque » : médias de l'édition passée la plus récente.
+        $gallery = Gallery::for($past->first());
+
         return view('home', [
             'featured' => $featured,
             'ongoing' => $ongoing->first(),
             'upcoming' => $upcoming->take(2),
             'past' => $past->take(2),
             'stats' => $stats,
+            'galleryEdition' => $past->first(),
+            'gallery' => $gallery,
         ]);
     }
 }
