@@ -49,6 +49,15 @@ class ColloqueController extends Controller
             'ateliers' => $edition->ateliers()->with(['sessions' => fn ($q) => $q->orderBy('ordre')])->orderBy('ordre')->get(),
             'commsBySession' => $commsBySession,
             'committees' => $edition->committeeMembers()->orderBy('ordre')->get()->groupBy('role'),
+            // Autres éditions publiées du même colloque (éditions précédentes).
+            'siblings' => $edition->colloque_id
+                ? Edition::where('colloque_id', $edition->colloque_id)
+                    ->whereKeyNot($edition->id)
+                    ->whereIn('status', ['open', 'closed', 'archived'])
+                    ->orderByDesc('year')
+                    ->limit(4)
+                    ->get()
+                : collect(),
         ]);
     }
 }

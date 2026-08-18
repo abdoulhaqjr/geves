@@ -36,7 +36,7 @@
             <span style="flex:1;background:var(--ukc-gold);"></span>
             <span style="flex:1;background:var(--ukc-green);"></span>
         </div>
-        <div style="max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;
+        <div style="max-width:1120px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;
                     gap:16px;padding:12px clamp(16px,4vw,32px);">
             <div>
                 <div style="font-weight:900;color:var(--ukc-blue);font-size:1rem;line-height:1.2;">{{ $e->colloque?->name }}</div>
@@ -44,6 +44,7 @@
             </div>
             <nav x-data="ukcScrollspy()" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                 <a href="#presentation" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">Présentation</a>
+                <a href="#dates" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">Dates clés</a>
                 <a href="#axes" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">Axes</a>
                 @if ($plenaries->count() || $ateliers->count())
                     <a href="#programme" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">Programme</a>
@@ -56,6 +57,9 @@
                 @endif
                 @if (! empty($practical['venue']) || ! empty($practical['accommodation']) || ! empty($practical['transport']))
                     <a href="#infos" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">Infos pratiques</a>
+                @endif
+                @if ($siblings->count())
+                    <a href="#editions" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">Éditions</a>
                 @endif
                 <a href="#contact" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">Contact</a>
                 <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">Espace participant</a>
@@ -77,7 +81,7 @@
                  style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;">
             <div style="position:absolute;inset:0;z-index:1;background:linear-gradient(135deg, rgba(27,49,130,.88), rgba(43,82,201,.72));"></div>
         @endif
-        <div style="position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:clamp(48px,7vw,88px) clamp(16px,4vw,32px);">
+        <div style="position:relative;z-index:2;max-width:1120px;margin:0 auto;padding:clamp(48px,7vw,88px) clamp(16px,4vw,32px);">
             @if ($e->edition_label)
                 <span class="ukc-pill" style="background:rgba(255,255,255,.16);color:#fff;margin-bottom:18px;">
                     {{ $e->edition_label }}
@@ -139,7 +143,7 @@
     </section>
 
     <div style="background:var(--ukc-bg);">
-        <div style="max-width:1000px;margin:0 auto;padding:clamp(32px,5vw,56px) clamp(16px,4vw,32px);display:flex;flex-direction:column;gap:28px;">
+        <div style="max-width:1120px;margin:0 auto;padding:clamp(32px,5vw,56px) clamp(16px,4vw,32px);display:flex;flex-direction:column;gap:28px;">
 
             {{-- Présentation --}}
             @if ($e->theme || $intro)
@@ -151,6 +155,41 @@
                     @if ($intro)
                         <p style="color:var(--ukc-muted);line-height:1.7;white-space:pre-line;">{{ $intro }}</p>
                     @endif
+                </section>
+            @endif
+
+            {{-- Dates clés --}}
+            @php
+                $keyDates = [];
+                if ($e->submission_deadline) {
+                    $keyDates[] = ['icon' => 'upload', 'label' => 'Clôture des soumissions', 'value' => $e->submission_deadline->translatedFormat('d F Y'), 'accent' => 'gold'];
+                }
+                if ($e->date_start) {
+                    $keyDates[] = ['icon' => 'calendar', 'label' => 'Ouverture du colloque', 'value' => $e->date_start->translatedFormat('d F Y'), 'accent' => 'blue'];
+                }
+                if ($e->date_end && (! $e->date_start || $e->date_end->ne($e->date_start))) {
+                    $keyDates[] = ['icon' => 'calendar-check', 'label' => 'Clôture du colloque', 'value' => $e->date_end->translatedFormat('d F Y'), 'accent' => 'green'];
+                }
+            @endphp
+            @if (count($keyDates))
+                <section id="dates" class="ukc-card">
+                    <h2 style="font-size:1.3rem;font-weight:800;color:var(--ukc-blue);margin-bottom:16px;">Dates clés</h2>
+                    <div class="ukc-grid-2" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));">
+                        @foreach ($keyDates as $d)
+                            @php($col = ['gold' => 'var(--ukc-gold)', 'green' => 'var(--ukc-green)', 'blue' => 'var(--ukc-blue)'][$d['accent']])
+                            <div style="display:flex;gap:14px;align-items:center;padding:16px;background:var(--ukc-bg);
+                                        border:1px solid var(--ukc-border);border-left:4px solid {{ $col }};border-radius:12px;">
+                                <span style="flex-shrink:0;width:40px;height:40px;border-radius:10px;display:flex;align-items:center;
+                                             justify-content:center;background:{{ $col }};color:#fff;">
+                                    <x-ukc.icon :name="$d['icon']" :size="20" />
+                                </span>
+                                <div>
+                                    <div style="font-size:.8rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ukc-muted);font-weight:700;">{{ $d['label'] }}</div>
+                                    <div style="font-weight:800;font-size:1.05rem;color:var(--ukc-text);">{{ $d['value'] }}</div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
                 </section>
             @endif
 
@@ -233,6 +272,31 @@
                 </section>
             @endif
 
+            {{-- Votre parcours en 5 étapes --}}
+            <section id="parcours" class="ukc-card">
+                <h2 style="font-size:1.3rem;font-weight:800;color:var(--ukc-blue);margin-bottom:6px;">Votre parcours en 5 étapes</h2>
+                <p style="color:var(--ukc-muted);font-size:.92rem;margin-bottom:18px;">De la soumission à l’attestation, le déroulé de votre participation.</p>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;">
+                    @foreach ([
+                        ['n' => 1, 'icon' => 'upload', 'title' => 'Soumettre', 'desc' => 'Déposez votre résumé sur l’axe de votre choix depuis votre espace.'],
+                        ['n' => 2, 'icon' => 'search', 'title' => 'Évaluation', 'desc' => 'Relecture en aveugle par le comité scientifique.'],
+                        ['n' => 3, 'icon' => 'card', 'title' => 'Paiement', 'desc' => 'Réglez vos frais d’inscription selon votre profil.'],
+                        ['n' => 4, 'icon' => 'mic', 'title' => 'Présenter', 'desc' => 'Communiquez lors de la session programmée, en présentiel ou en visio.'],
+                        ['n' => 5, 'icon' => 'award', 'title' => 'Attestation', 'desc' => 'Recevez votre attestation vérifiable par QR code.'],
+                    ] as $step)
+                        <div style="position:relative;padding:18px 16px;background:var(--ukc-bg);border:1px solid var(--ukc-border);border-radius:12px;">
+                            <span style="position:absolute;top:12px;right:14px;font-size:1.6rem;font-weight:900;color:rgba(34,62,164,.12);line-height:1;">{{ $step['n'] }}</span>
+                            <span style="display:inline-flex;width:38px;height:38px;border-radius:10px;align-items:center;justify-content:center;
+                                         background:var(--ukc-blue);color:#fff;margin-bottom:10px;">
+                                <x-ukc.icon :name="$step['icon']" :size="19" />
+                            </span>
+                            <div style="font-weight:800;font-size:1rem;margin-bottom:4px;">{{ $step['title'] }}</div>
+                            <div style="font-size:.85rem;color:var(--ukc-muted);line-height:1.5;">{{ $step['desc'] }}</div>
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+
             {{-- Frais d'inscription --}}
             @if (count($fees))
                 <section id="tarifs" class="ukc-card">
@@ -312,6 +376,29 @@
                                     <p style="color:var(--ukc-muted);line-height:1.6;white-space:pre-line;margin:0;font-size:.92rem;">{{ $value }}</p>
                                 </div>
                             @endif
+                        @endforeach
+                    </div>
+                </section>
+            @endif
+
+            {{-- Éditions précédentes --}}
+            @if ($siblings->count())
+                <section id="editions" class="ukc-card">
+                    <h2 style="font-size:1.3rem;font-weight:800;color:var(--ukc-blue);margin-bottom:16px;">Éditions précédentes</h2>
+                    <div class="ukc-grid-2" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr));">
+                        @foreach ($siblings as $sib)
+                            <a href="{{ route('public.archive', $sib->slug) }}"
+                               style="display:flex;flex-direction:column;gap:6px;padding:16px;background:var(--ukc-bg);
+                                      border:1px solid var(--ukc-border);border-radius:12px;color:inherit;transition:.15s;"
+                               onmouseover="this.style.borderColor='var(--ukc-blue)'" onmouseout="this.style.borderColor='var(--ukc-border)'">
+                                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                                    <span style="font-size:1.4rem;font-weight:900;color:var(--ukc-blue);line-height:1;">{{ $sib->year ?: $sib->date_start?->format('Y') }}</span>
+                                    <span class="ukc-pill ukc-pill--{{ $sib->status === 'open' ? 'ok' : 'muted' }}">{{ $sib->status === 'open' ? 'En cours' : 'Clôturé' }}</span>
+                                </div>
+                                <div style="font-weight:700;font-size:.95rem;line-height:1.35;">{{ \Illuminate\Support\Str::limit($sib->title ?: $sib->colloque?->name, 70) }}</div>
+                                @if ($sib->location)<div style="font-size:.82rem;color:var(--ukc-muted);">{{ $sib->location }}</div>@endif
+                                <span style="font-size:.82rem;font-weight:700;color:var(--ukc-blue);margin-top:2px;">Voir l’édition →</span>
+                            </a>
                         @endforeach
                     </div>
                 </section>
