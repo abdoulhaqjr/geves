@@ -1,9 +1,7 @@
-<div style="display:flex;flex-direction:column;gap:20px;max-width:640px;">
-    <div class="ukc-page-head">
-        <h2 style="font-size:1.4rem;font-weight:800;">Sécurité</h2>
-        <p style="color:var(--ukc-muted);">Mot de passe et double authentification de votre compte.</p>
-    </div>
+<div>
+    @include('partials.account-nav')
 
+    <div style="display:flex;flex-direction:column;gap:20px;max-width:640px;">
     {{-- ============ Mot de passe ============ --}}
     <div class="ukc-card">
         <h3><x-ukc.icon name="lock" :size="20" /> Mot de passe</h3>
@@ -133,5 +131,6 @@
                 </div>
             </div>
         @endif
+    </div>
     </div>
 </div>

@@ -1,4 +1,8 @@
 <div style="max-width:760px;">
+    @if (request()->routeIs('account.notifications'))
+        @include('partials.account-nav')
+    @endif
+
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
         <div>
             <h2 style="font-size:1.4rem;font-weight:800;">Notifications</h2>

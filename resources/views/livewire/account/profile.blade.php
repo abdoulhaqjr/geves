@@ -1,4 +1,6 @@
 <div>
+    @include('partials.account-nav')
+
     @if (session('ukc_status'))
         <div class="ukc-alert ukc-alert--ok">
             <span class="ico"><x-ukc.icon name="check-circle" :size="18" /></span>
