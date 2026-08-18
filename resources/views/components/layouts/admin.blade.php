@@ -1,6 +1,6 @@
 @php($staff = auth('web')->user())
 <x-layouts.app :title="($title ?? 'Back-office') . ' — Colloques UK'">
-    <div class="ukc-shell" x-data="{ open: false }">
+    <div class="ukc-shell ukc-shell--admin" x-data="{ open: false }">
         <aside class="ukc-sidebar" :class="{ 'open': open }">
             <div class="ukc-sidebar-brand">
                 <div class="logo">Back-office</div>
