@@ -8,6 +8,7 @@ use App\Mail\ReviewerInvitationMail;
 use App\Models\Participant;
 use App\Models\Review;
 use App\Models\Submission;
+use App\Support\ConflictOfInterest;
 use App\Support\Notifier;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
@@ -110,6 +111,28 @@ class Show extends Component
         $reviews = $this->submission->reviews()->with('reviewer')->get();
         $completed = $reviews->where('status', 'completed');
 
+        $existingReviewers = Participant::where('edition_id', $this->submission->edition_id)
+            ->where('role', 'reviewer')
+            ->orderBy('last_name')
+            ->get();
+
+        // Détection de conflits d'intérêts (indicative) : par relecteur assigné et
+        // pour chaque relecteur existant proposé au sélecteur.
+        $coiByReview = [];
+        foreach ($reviews as $review) {
+            $rev = $review->reviewer;
+            $coiByReview[$review->id] = $rev
+                ? ConflictOfInterest::check($this->submission, $rev->full_name, (string) $rev->email, $rev->institution)
+                : [];
+        }
+
+        $coiByReviewer = [];
+        foreach ($existingReviewers as $rev) {
+            $coiByReviewer[$rev->id] = ConflictOfInterest::worstLevel(
+                ConflictOfInterest::check($this->submission, $rev->full_name, (string) $rev->email, $rev->institution)
+            );
+        }
+
         return view('livewire.admin.submissions.show', [
             'actions' => self::ACTIONS,
             'reviews' => $reviews,
@@ -118,10 +141,9 @@ class Show extends Component
             'completedCount' => $completed->count(),
             'timeline' => $this->timeline($reviews),
             'authorPaid' => $this->authorHasPaid(),
-            'existingReviewers' => Participant::where('edition_id', $this->submission->edition_id)
-                ->where('role', 'reviewer')
-                ->orderBy('last_name')
-                ->get(),
+            'existingReviewers' => $existingReviewers,
+            'coiByReview' => $coiByReview,
+            'coiByReviewer' => $coiByReviewer,
         ])->layout('components.layouts.admin', ['title' => 'Soumission '.$this->submission->ref_code]);
     }
 

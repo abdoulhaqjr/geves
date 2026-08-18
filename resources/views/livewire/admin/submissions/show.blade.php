@@ -137,6 +137,35 @@
 
         {{-- COLONNE LATÉRALE --}}
         <div>
+            {{-- Conflits d'intérêts --}}
+            @php($coiTag = fn ($lvl) => ['high' => ['Élevé', 'high'], 'medium' => ['Moyen', 'med'], 'low' => ['Faible', 'low']][$lvl] ?? ['OK', 'clear'])
+            <div class="ukc-card">
+                <h2><span><x-ukc.icon name="shield" :size="18" /> Conflits d’intérêts</span></h2>
+                <p class="desc">Détection automatique indicative entre relecteurs et auteurs. La décision reste à votre main.</p>
+                @forelse ($reviews as $review)
+                    @php($cois = $coiByReview[$review->id] ?? [])
+                    @if (count($cois))
+                        @foreach ($cois as $c)
+                            <div class="coi-item risk" wire:key="coi-{{ $review->id }}-{{ $loop->index }}">
+                                <span class="coi-tag {{ $coiTag($c['level'])[1] }}">{{ $coiTag($c['level'])[0] }}</span>
+                                <div>
+                                    <strong>{{ $c['label'] }}</strong> — {{ $review->reviewer?->full_name }}<br>
+                                    <span style="color:var(--ukc-muted);font-size:12px;">{{ $c['detail'] }}</span>
+                                </div>
+                            </div>
+                        @endforeach
+                    @else
+                        <div class="coi-item" wire:key="coi-ok-{{ $review->id }}">
+                            <span class="coi-tag clear">OK</span>
+                            <div><strong>{{ $review->reviewer?->full_name }}</strong> — aucun conflit détecté.</div>
+                        </div>
+                    @endif
+                @empty
+                    <p style="font-size:.88rem;color:var(--ukc-muted);">Assignez des relecteurs pour vérifier les conflits potentiels.</p>
+                @endforelse
+                <p class="hint" style="margin-top:10px;font-size:12px;color:var(--ukc-light);">Règles : même institution · co-auteur &lt; 5 ans · homonymie (lien familial possible) → vérification manuelle.</p>
+            </div>
+
             {{-- Relecteurs --}}
             <div class="ukc-card">
                 <h2><span><x-ukc.icon name="mic" :size="18" /> Relecteurs</span></h2>
@@ -192,9 +221,11 @@
                             <select id="existingReviewerId" wire:model="existingReviewerId">
                                 <option value="">— Nouveau relecteur —</option>
                                 @foreach ($existingReviewers as $rev)
-                                    <option value="{{ $rev->id }}">{{ $rev->full_name }} ({{ $rev->email }})</option>
+                                    @php($worst = $coiByReviewer[$rev->id] ?? null)
+                                    <option value="{{ $rev->id }}">{{ $worst === 'high' ? '⛔ ' : ($worst ? '⚠ ' : '') }}{{ $rev->full_name }} ({{ $rev->email }})</option>
                                 @endforeach
                             </select>
+                            <span class="hint">⚠ / ⛔ = conflit d’intérêts potentiel détecté (voir ci-dessus).</span>
                         </div>
                     @endif
                     <div class="ukc-field" style="margin-bottom:8px;">

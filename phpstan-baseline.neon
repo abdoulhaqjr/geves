@@ -13,12 +13,6 @@ parameters:
 			path: app/Actions/NotifyCoauthorsForPayment.php
 
 		-
-			message: '#^Empty array passed to foreach\.$#'
-			identifier: foreach.emptyArray
-			count: 1
-			path: app/Actions/NotifyCoauthorsForPayment.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$title\.$#'
 			identifier: property.notFound
 			count: 1
@@ -181,12 +175,6 @@ parameters:
 			path: app/Livewire/Account/Payment/Pay.php
 
 		-
-			message: '#^Offset ''corresponding'' on string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Livewire/Admin/Documents/Attestations.php
-
-		-
 			message: '#^Parameter \#1 \$raw of static method App\\Documents\\LayoutSanitizer\:\:sanitize\(\) expects array, string given\.$#'
 			identifier: argument.type
 			count: 1
@@ -247,12 +235,6 @@ parameters:
 			path: app/Livewire/Admin/Program/Slots.php
 
 		-
-			message: '#^Empty array passed to foreach\.$#'
-			identifier: foreach.emptyArray
-			count: 1
-			path: app/Livewire/Public/CoauthorPayment.php
-
-		-
 			message: '#^Method App\\Livewire\\Public\\CoauthorPayment\:\:paidReceipt\(\) should return App\\Models\\Payment\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
 			identifier: return.type
 			count: 1
@@ -289,18 +271,6 @@ parameters:
 			path: app/Models/Participant.php
 
 		-
-			message: '#^Offset ''email'' on non\-empty\-string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Models/Submission.php
-
-		-
-			message: '#^Offset ''name'' on non\-empty\-string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Models/Submission.php
-
-		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$title\.$#'
 			identifier: property.notFound
 			count: 1
@@ -323,18 +293,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Payments/Gateways/FedaPayGateway.php
-
-		-
-			message: '#^Empty array passed to foreach\.$#'
-			identifier: foreach.emptyArray
-			count: 1
-			path: app/Support/AccountActivity.php
-
-		-
-			message: '#^Offset ''email'' on non\-empty\-string on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Support/AccountActivity.php
 
 		-
 			message: '#^Access to an undefined property App\\Models\\Submission\:\:\$reviews_avg_score\.$#'

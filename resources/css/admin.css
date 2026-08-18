@@ -186,6 +186,15 @@
 .admin-submission-detail .info-list > div:last-child { border-bottom: none; }
 .admin-submission-detail .info-list .k { color: var(--ukc-muted); font-size: 12.5px; }
 
+/* Conflits d'intérêts */
+.admin-submission-detail .coi-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--ukc-border); border-radius: 10px; margin-bottom: 8px; font-size: 13px; line-height: 1.4; }
+.admin-submission-detail .coi-item.risk { border-color: #fecaca; background: #fef2f2; }
+.admin-submission-detail .coi-tag { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; padding: 2px 7px; border-radius: 4px; flex-shrink: 0; margin-top: 2px; }
+.admin-submission-detail .coi-tag.high { background: #fee2e2; color: #991b1b; }
+.admin-submission-detail .coi-tag.med { background: #fef3c7; color: #92400e; }
+.admin-submission-detail .coi-tag.low { background: #e0e7ff; color: #3730a3; }
+.admin-submission-detail .coi-tag.clear { background: #dcfce7; color: #166534; }
+
 /* ---- Éditions (liste en cartes) ---- */
 .admin-editions .ed-card { display: grid; grid-template-columns: 120px 1fr auto; gap: 16px; align-items: center; background: #fff; border: 1px solid var(--ukc-border); border-radius: var(--ukc-radius); padding: 16px; margin-bottom: 12px; }
 @media (max-width: 700px) { .admin-editions .ed-card { grid-template-columns: 1fr; } }
