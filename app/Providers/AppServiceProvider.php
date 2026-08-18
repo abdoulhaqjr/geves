@@ -117,5 +117,13 @@ class AppServiceProvider extends ServiceProvider
         if ($set('hal.enabled') !== null) {
             Config::set('services.hal.enabled', (bool) $set('hal.enabled'));
         }
+
+        // SMS (2FA par OTP) : fournisseur par défaut + passerelle HTTP.
+        Config::set('sms.default', $set('sms.default', config('sms.default')));
+        foreach (['url', 'token', 'sender'] as $k) {
+            if (filled($set("sms.http_$k"))) {
+                Config::set("sms.http.$k", $set("sms.http_$k"));
+            }
+        }
     }
 }

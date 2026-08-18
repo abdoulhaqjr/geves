@@ -246,6 +246,40 @@
                     <input type="checkbox" wire:model="hal_enabled"> Activer l’autocomplétion des affiliations (HAL)
                 </label>
             </div>
+
+            <div class="ukc-card">
+                <h2><span><x-ukc.icon name="phone" :size="20" /> SMS (2FA par code)</span></h2>
+                <p class="desc">
+                    Passerelle d’envoi des codes de vérification (OTP) pour la double authentification par SMS des
+                    comptes participants. « Journal » n’envoie rien (journalise, développement) ; « Passerelle HTTP »
+                    appelle une API d’envoi de SMS.
+                </p>
+                <div class="ukc-field" style="max-width:360px;">
+                    <label for="sms_default">Fournisseur par défaut</label>
+                    <select id="sms_default" wire:model="sms_default">
+                        <option value="log">Journal (développement)</option>
+                        <option value="http">Passerelle HTTP (API)</option>
+                    </select>
+                    @error('sms_default') <span class="error">{{ $message }}</span> @enderror
+                </div>
+
+                <h3 style="font-size:.95rem;margin:16px 0 8px;">Passerelle HTTP</h3>
+                <div class="ukc-form-grid">
+                    <div class="ukc-field full">
+                        <label for="sms_http_url">URL de l’API <span class="hint">(POST JSON : to, message, sender)</span></label>
+                        <input type="url" id="sms_http_url" wire:model="sms_http_url" placeholder="https://api.passerelle-sms.tg/send">
+                        @error('sms_http_url') <span class="error">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="ukc-field">
+                        <label for="sms_http_token">Jeton (Bearer)</label>
+                        <input type="password" id="sms_http_token" wire:model="sms_http_token" autocomplete="new-password">
+                    </div>
+                    <div class="ukc-field">
+                        <label for="sms_http_sender">Expéditeur (Sender ID)</label>
+                        <input type="text" id="sms_http_sender" wire:model="sms_http_sender" placeholder="UKColloques" maxlength="20">
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="ukc-form-actions" style="border-top:none;padding-top:0;margin-top:4px;">

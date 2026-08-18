@@ -3,6 +3,7 @@
 namespace App\Livewire\Account;
 
 use App\Models\Account;
+use App\Sms\SmsManager;
 use App\Support\Totp;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Support\Facades\Auth;
@@ -40,10 +41,16 @@ class Login extends Component
     /** Le second facteur est requis (le mot de passe a été validé). */
     public bool $twoFactor = false;
 
-    /** Code du second facteur (TOTP à 6 chiffres ou code de récupération). */
+    /** Méthode du second facteur en cours : « totp » ou « sms ». */
+    public string $method = '';
+
+    /** Numéro masqué (indication) quand le second facteur est par SMS. */
+    public string $phoneHint = '';
+
+    /** Code du second facteur (TOTP/OTP à 6 chiffres ou code de récupération). */
     public string $code = '';
 
-    public function authenticate(): void
+    public function authenticate(SmsManager $sms): void
     {
         $this->validate();
         $this->ensureIsNotRateLimited();
@@ -61,16 +68,53 @@ class Login extends Component
         RateLimiter::clear($this->throttleKey());
 
         // Second facteur requis : ne pas connecter tout de suite.
-        if ($account->hasTotpEnabled()) {
+        if ($account->hasTwoFactorEnabled()) {
             session()->put(self::SESSION_LOGIN_ID, $account->id);
             session()->put(self::SESSION_LOGIN_REMEMBER, $this->remember);
+            $this->method = (string) $account->twoFactorMethod();
             $this->twoFactor = true;
             $this->code = '';
+
+            if ($this->method === 'sms') {
+                $this->sendOtp($account, $sms);
+            }
 
             return;
         }
 
         $this->completeLogin($account, $this->remember);
+    }
+
+    /** Renvoie un nouveau code OTP par SMS pendant le challenge. */
+    public function resendOtp(SmsManager $sms): void
+    {
+        $id = session(self::SESSION_LOGIN_ID);
+        $account = $id ? Account::find($id) : null;
+
+        if ($account && $account->hasSmsEnabled()) {
+            $this->sendOtp($account, $sms);
+            session()->flash('ukc_status', 'Un nouveau code a été envoyé.');
+        }
+    }
+
+    private function sendOtp(Account $account, SmsManager $sms): void
+    {
+        $code = $account->generateOtp();
+        $account->save();
+        $this->phoneHint = $this->maskPhone((string) $account->phone);
+
+        try {
+            $sms->send((string) $account->phone, 'UK Colloques — votre code de connexion : '.$code.' (valide '.(int) config('sms.otp_ttl', 5).' min).');
+        } catch (\Throwable $e) {
+            report($e); // en dev (fournisseur « log ») l'envoi ne bloque pas
+        }
+    }
+
+    private function maskPhone(string $phone): string
+    {
+        $digits = preg_replace('/\D/', '', $phone) ?? '';
+
+        return $digits === '' ? '' : '••• ••• '.mb_substr($digits, -2);
     }
 
     /** Vérifie le second facteur puis finalise la connexion. */
@@ -91,10 +135,13 @@ class Login extends Component
 
         $code = trim($this->code);
 
-        // TOTP d'abord, puis repli sur un code de récupération à usage unique.
-        if (Totp::verify((string) $account->two_factor_secret, $code)) {
-            // OK
-        } elseif ($account->consumeRecoveryCode($code)) {
+        // Vérifie selon la méthode active (OTP SMS ou TOTP), avec repli sur un
+        // code de récupération à usage unique dans les deux cas.
+        $primaryOk = $account->hasSmsEnabled()
+            ? $account->verifyOtp($code)
+            : Totp::verify((string) $account->two_factor_secret, $code);
+
+        if ($primaryOk || $account->consumeRecoveryCode($code)) {
             $account->save();
         } else {
             throw ValidationException::withMessages([
@@ -118,6 +165,8 @@ class Login extends Component
     {
         session()->forget([self::SESSION_LOGIN_ID, self::SESSION_LOGIN_REMEMBER]);
         $this->twoFactor = false;
+        $this->method = '';
+        $this->phoneHint = '';
     }
 
     private function completeLogin(Account $account, bool $remember): void

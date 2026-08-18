@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Hash;
 use Lab404\Impersonate\Models\Impersonate;
 
 /**
@@ -20,6 +21,10 @@ use Lab404\Impersonate\Models\Impersonate;
  * @property string|null $two_factor_secret secret TOTP (chiffré)
  * @property array<int, string>|null $two_factor_recovery_codes codes de secours (chiffrés)
  * @property Carbon|null $two_factor_confirmed_at
+ * @property string|null $two_factor_method « totp » ou « sms »
+ * @property string|null $two_factor_otp code OTP SMS haché
+ * @property Carbon|null $two_factor_otp_expires_at
+ * @property string|null $phone
  * @property array<string, array{inapp: bool, email: bool}>|null $notification_preferences
  */
 class Account extends Authenticatable implements MustVerifyEmail
@@ -40,13 +45,67 @@ class Account extends Authenticatable implements MustVerifyEmail
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted:array',
             'two_factor_confirmed_at' => 'datetime',
+            'two_factor_otp_expires_at' => 'datetime',
         ];
     }
 
-    /** La double authentification (TOTP) est active et confirmée. */
+    /** La double authentification par application (TOTP) est active et confirmée. */
     public function hasTotpEnabled(): bool
     {
         return filled($this->two_factor_secret) && ! is_null($this->two_factor_confirmed_at);
+    }
+
+    /** La double authentification par SMS (OTP) est active et confirmée. */
+    public function hasSmsEnabled(): bool
+    {
+        return $this->two_factor_method === 'sms' && ! is_null($this->two_factor_confirmed_at);
+    }
+
+    /** Une méthode de 2FA (TOTP ou SMS) est active. */
+    public function hasTwoFactorEnabled(): bool
+    {
+        return $this->hasTotpEnabled() || $this->hasSmsEnabled();
+    }
+
+    /** Méthode de 2FA active (« totp », « sms » ou null). */
+    public function twoFactorMethod(): ?string
+    {
+        return match (true) {
+            $this->hasSmsEnabled() => 'sms',
+            $this->hasTotpEnabled() => 'totp',
+            default => null,
+        };
+    }
+
+    /**
+     * Génère un code OTP à 6 chiffres (haché + expiration) pour un envoi SMS et
+     * retourne le code en clair (à transmettre). Ne persiste pas : appeler save().
+     */
+    public function generateOtp(): string
+    {
+        $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $this->two_factor_otp = Hash::make($code);
+        $this->two_factor_otp_expires_at = now()->addMinutes((int) config('sms.otp_ttl', 5));
+
+        return $code;
+    }
+
+    /** Vérifie un code OTP (non expiré) et le consomme. Ne persiste pas. */
+    public function verifyOtp(string $code): bool
+    {
+        if (! filled($this->two_factor_otp) || ! $this->two_factor_otp_expires_at
+            || $this->two_factor_otp_expires_at->isPast()) {
+            return false;
+        }
+
+        if (! Hash::check(trim($code), (string) $this->two_factor_otp)) {
+            return false;
+        }
+
+        $this->two_factor_otp = null;
+        $this->two_factor_otp_expires_at = null;
+
+        return true;
     }
 
     /**
@@ -95,12 +154,15 @@ class Account extends Authenticatable implements MustVerifyEmail
         return true;
     }
 
-    /** Désactive complètement la 2FA et purge les secrets. Ne persiste pas. */
+    /** Désactive complètement la 2FA (TOTP et SMS) et purge les secrets. Ne persiste pas. */
     public function disableTotp(): void
     {
         $this->two_factor_secret = null;
         $this->two_factor_recovery_codes = null;
         $this->two_factor_confirmed_at = null;
+        $this->two_factor_method = null;
+        $this->two_factor_otp = null;
+        $this->two_factor_otp_expires_at = null;
     }
 
     /** Présences de ce compte sur les différentes éditions. */

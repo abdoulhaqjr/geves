@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Account;
 
+use App\Sms\SmsManager;
 use App\Support\Totp;
 use App\Support\UserAgent;
 use Illuminate\Support\Carbon;
@@ -32,10 +33,17 @@ class Security extends Component
 
     public string $password_confirmation = '';
 
-    // --- 2FA ---
+    // --- 2FA (TOTP) ---
     public bool $showingSetup = false;
 
     public string $code = '';
+
+    // --- 2FA (SMS) ---
+    public bool $showingSmsSetup = false;
+
+    public bool $smsCodeSent = false;
+
+    public string $phone = '';
 
     /** Codes de récupération affichés une seule fois (activation / régénération). */
     public array $recoveryCodes = [];
@@ -77,12 +85,84 @@ class Security extends Component
         $this->recoveryCodes = [];
         $this->code = '';
         $this->showingSetup = true;
+        $this->reset('showingSmsSetup', 'smsCodeSent'); // exclusif du flux SMS
     }
 
     public function cancelSetup(): void
     {
         session()->forget(self::SESSION_PENDING_SECRET);
         $this->reset('showingSetup', 'code');
+    }
+
+    /** Démarre l'activation 2FA par SMS (saisie du numéro). */
+    public function startSmsSetup(): void
+    {
+        $account = Auth::guard('account')->user();
+
+        if ($account->hasTwoFactorEnabled()) {
+            return;
+        }
+
+        $this->phone = (string) $account->phone;
+        $this->recoveryCodes = [];
+        $this->code = '';
+        $this->smsCodeSent = false;
+        $this->showingSmsSetup = true;
+        $this->reset('showingSetup'); // exclusif du flux TOTP
+        session()->forget(self::SESSION_PENDING_SECRET);
+    }
+
+    /** Envoie un code de vérification au numéro saisi. */
+    public function sendSmsSetupCode(SmsManager $sms): void
+    {
+        $this->validate([
+            'phone' => ['required', 'string', 'regex:/^\+?[0-9 ().-]{8,20}$/'],
+        ], attributes: ['phone' => 'numéro de téléphone']);
+
+        $account = Auth::guard('account')->user();
+        $code = $account->generateOtp();
+        $account->phone = $this->phone;
+        $account->save();
+
+        try {
+            $sms->send($this->phone, 'UK Colloques — code de vérification : '.$code.'.');
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        $this->smsCodeSent = true;
+        $this->code = '';
+        session()->flash('ukc_status', 'Code envoyé par SMS.');
+    }
+
+    /** Vérifie le code SMS puis active la 2FA par SMS + codes de secours. */
+    public function confirmSmsSetup(): void
+    {
+        $this->validate(['code' => ['required', 'string']]);
+
+        $account = Auth::guard('account')->user();
+
+        if (! $account->verifyOtp(trim($this->code))) {
+            throw ValidationException::withMessages([
+                'code' => __('Code invalide ou expiré. Renvoyez un code et réessayez.'),
+            ]);
+        }
+
+        $account->disableTotp();          // repart d'un état propre (méthode exclusive)
+        $account->two_factor_method = 'sms';
+        $account->two_factor_confirmed_at = now();
+        $codes = $account->generateRecoveryCodes();
+        $account->save();
+
+        session()->put('account.2fa.passed', true);
+        $this->recoveryCodes = $codes;
+        $this->reset('showingSmsSetup', 'smsCodeSent', 'code');
+        session()->flash('ukc_status', 'Double authentification par SMS activée.');
+    }
+
+    public function cancelSmsSetup(): void
+    {
+        $this->reset('showingSmsSetup', 'smsCodeSent', 'code', 'phone');
     }
 
     /** Étape 2 : vérifie le code puis active la 2FA + génère les codes de secours. */
@@ -249,7 +329,8 @@ class Security extends Component
 
         return view('livewire.account.security', [
             'account' => $account,
-            'enabled' => $account->hasTotpEnabled(),
+            'enabled' => $account->hasTwoFactorEnabled(),
+            'method' => $account->twoFactorMethod(),
             'recoveryCount' => $account->countRecoveryCodes(),
             'setupSecret' => $secret,
             'setupSecretFormatted' => $secret !== '' ? trim(chunk_split($secret, 4, ' ')) : '',

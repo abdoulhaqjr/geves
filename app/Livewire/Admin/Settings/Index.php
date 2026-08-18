@@ -100,6 +100,15 @@ class Index extends Component
     // Interconnexion
     public bool $hal_enabled = false;
 
+    // SMS (2FA par OTP)
+    public string $sms_default = 'log';
+
+    public string $sms_http_url = '';
+
+    public string $sms_http_token = '';
+
+    public string $sms_http_sender = '';
+
     public function mount(): void
     {
         $g = fn (string $k, $def = '') => (string) Settings::get($k, $def);
@@ -147,6 +156,11 @@ class Index extends Component
         $this->livekit_egress_s3_endpoint = $g('livekit_egress.s3_endpoint', (string) config('meetings.livekit.egress.s3_endpoint'));
 
         $this->hal_enabled = (bool) Settings::get('hal.enabled', (bool) config('services.hal.enabled', false));
+
+        $this->sms_default = $g('sms.default', (string) config('sms.default', 'log'));
+        $this->sms_http_url = $g('sms.http_url', (string) config('sms.http.url'));
+        $this->sms_http_token = $g('sms.http_token', (string) config('sms.http.token'));
+        $this->sms_http_sender = $g('sms.http_sender', (string) config('sms.http.sender', 'UKColloques'));
     }
 
     public function save(): void
@@ -162,6 +176,8 @@ class Index extends Component
                 'meeting_default' => ['required', 'in:livekit,jitsi'],
                 'livekit_meet_url' => ['nullable', 'url'],
                 'livekit_egress_s3_endpoint' => ['nullable', 'url'],
+                'sms_default' => ['required', 'in:log,http'],
+                'sms_http_url' => ['nullable', 'url'],
             ]);
         } catch (ValidationException $e) {
             // Bascule l'UI vers l'onglet qui contient la première erreur (masquée sinon).
@@ -208,6 +224,10 @@ class Index extends Component
             'livekit_egress.s3_secret' => $this->livekit_egress_s3_secret,
             'livekit_egress.s3_endpoint' => $this->livekit_egress_s3_endpoint,
             'hal.enabled' => $this->hal_enabled,
+            'sms.default' => $this->sms_default,
+            'sms.http_url' => $this->sms_http_url,
+            'sms.http_token' => $this->sms_http_token,
+            'sms.http_sender' => $this->sms_http_sender,
         ]);
 
         session()->flash('ukc_status', 'Réglages enregistrés.');
@@ -221,7 +241,7 @@ class Index extends Component
             str_starts_with($field, 'mail_') || $field === 'test_email' => 'email',
             str_starts_with($field, 'ai_') => 'ai',
             str_starts_with($field, 'meeting_') || str_starts_with($field, 'livekit_') => 'meetings',
-            $field === 'hal_enabled' => 'integrations',
+            $field === 'hal_enabled', str_starts_with($field, 'sms_') => 'integrations',
             default => 'general',
         };
     }

@@ -92,8 +92,12 @@
             @endif
         </div>
         <p style="color:var(--ukc-muted);font-size:.9rem;margin-top:6px;">
-            Ajoutez une étape de vérification à la connexion via une application d’authentification
-            (Google Authenticator, Authy, Microsoft Authenticator…).
+            @if ($enabled)
+                Active — méthode : <strong>{{ $method === 'sms' ? 'SMS (code par message)' : 'Application d’authentification (TOTP)' }}</strong>.
+            @else
+                Ajoutez une étape de vérification à la connexion : par <strong>application d’authentification</strong>
+                (Google Authenticator, Authy…) ou par <strong>SMS</strong>.
+            @endif
         </p>
 
         {{-- Codes de récupération fraîchement générés (affichage unique) --}}
@@ -115,12 +119,48 @@
             </div>
         @endif
 
-        @if (! $enabled && ! $showingSetup)
-            {{-- État désactivé : proposer l'activation --}}
-            <div style="margin-top:14px;">
+        @if (! $enabled && ! $showingSetup && ! $showingSmsSetup)
+            {{-- État désactivé : proposer les deux méthodes --}}
+            <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
                 <button type="button" wire:click="startSetup" class="ukc-btn ukc-btn--blue">
-                    <x-ukc.icon name="lock" :size="16" /> Activer la 2FA
+                    <x-ukc.icon name="shield" :size="16" /> Par application (TOTP)
                 </button>
+                <button type="button" wire:click="startSmsSetup" class="ukc-btn ukc-btn--outline">
+                    <x-ukc.icon name="phone" :size="16" /> Par SMS
+                </button>
+            </div>
+        @elseif ($showingSmsSetup)
+            {{-- Assistant d'activation par SMS : numéro → code → confirmation --}}
+            <div style="margin-top:14px;border-top:1px solid var(--ukc-border);padding-top:16px;">
+                <div class="ukc-field" style="max-width:280px;">
+                    <label for="phone">Numéro de téléphone <span class="req">*</span></label>
+                    <input type="tel" id="phone" wire:model="phone" autocomplete="tel" placeholder="+228 90 00 00 00" @disabled($smsCodeSent)>
+                    @error('phone') <span class="error">{{ $message }}</span> @enderror
+                </div>
+
+                @if (! $smsCodeSent)
+                    <div style="display:flex;gap:8px;margin-top:12px;">
+                        <button type="button" wire:click="sendSmsSetupCode" class="ukc-btn ukc-btn--blue ukc-btn--sm"
+                                wire:loading.attr="disabled" wire:target="sendSmsSetupCode">
+                            <x-ukc.icon name="mail" :size="14" /> Envoyer le code
+                        </button>
+                        <button type="button" wire:click="cancelSmsSetup" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Annuler</button>
+                    </div>
+                @else
+                    <form wire:submit="confirmSmsSetup" class="ukc-field" style="max-width:220px;margin-top:12px;">
+                        <label for="sms_code">Code reçu par SMS <span class="req">*</span></label>
+                        <input type="text" id="sms_code" wire:model="code" inputmode="numeric" autocomplete="one-time-code"
+                               maxlength="6" placeholder="123456" style="letter-spacing:.3em;font-size:1.1rem;">
+                        @error('code') <span class="error">{{ $message }}</span> @enderror
+                        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+                            <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm">
+                                <x-ukc.icon name="check" :size="14" /> Confirmer
+                            </button>
+                            <button type="button" wire:click="sendSmsSetupCode" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Renvoyer</button>
+                            <button type="button" wire:click="cancelSmsSetup" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Annuler</button>
+                        </div>
+                    </form>
+                @endif
             </div>
         @elseif ($showingSetup)
             {{-- Assistant d'activation : QR + clé + confirmation --}}
