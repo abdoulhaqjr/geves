@@ -118,4 +118,145 @@ document.addEventListener('alpine:init', () => {
             this.seconds = total % 60;
         },
     }));
+
+    // Éditeur visuel de modèles (badges / attestations) : drag-drop sur canvas,
+    // même schéma de mise en page que LayoutSanitizer/LayoutRenderer côté serveur.
+    window.Alpine.data('docEditor', (config) => ({
+        layout: { width: 320, height: 440, bg: '#ffffff', accent: '#223ea4', elements: [] },
+        vars: {},
+        selectedIndex: null,
+        scale: 1,
+        _drag: null,
+        _onMove: null,
+        _onUp: null,
+
+        init() {
+            this.setLayout(config.layout, config.vars);
+            this._fit = () => this.fit();
+            window.addEventListener('resize', this._fit);
+            if (window.Livewire) {
+                window.Livewire.on('layout-updated', (payload) => {
+                    const p = Array.isArray(payload) ? payload[0] : payload;
+                    if (p && p.layout) this.setLayout(p.layout, p.vars);
+                });
+            }
+        },
+        destroy() {
+            window.removeEventListener('resize', this._fit);
+        },
+
+        setLayout(layout, vars) {
+            this.layout = JSON.parse(JSON.stringify(layout));
+            if (vars) this.vars = vars;
+            this.selectedIndex = null;
+            this.$nextTick(() => this.fit());
+        },
+
+        fit() {
+            const wrap = this.$refs.canvasWrap;
+            if (!wrap || !this.layout) return;
+            this.scale = Math.min(1, (wrap.clientWidth - 2) / this.layout.width);
+        },
+
+        get selected() {
+            return this.selectedIndex !== null ? this.layout.elements[this.selectedIndex] : null;
+        },
+        get wrapHeight() {
+            return Math.round(this.layout.height * this.scale);
+        },
+
+        select(i) { this.selectedIndex = i; },
+        deselect() { this.selectedIndex = null; },
+
+        addElement(type) {
+            const base = { type, x: 20, y: 20 };
+            if (type === 'text') Object.assign(base, { w: 200, h: 32, text: 'Nouveau texte', size: 18, weight: 600, color: '#1a2332', align: 'left' });
+            else if (type === 'rect') Object.assign(base, { w: 200, h: 8, color: this.layout.accent });
+            else if (type === 'image') Object.assign(base, { w: 140, h: 90, src: '' });
+            else if (type === 'qr') Object.assign(base, { size: 96, value: '{verify_url}' });
+            this.layout.elements.push(base);
+            this.selectedIndex = this.layout.elements.length - 1;
+        },
+        deleteSelected() {
+            if (this.selectedIndex === null) return;
+            this.layout.elements.splice(this.selectedIndex, 1);
+            this.selectedIndex = null;
+        },
+        moveLayer(dir) {
+            const i = this.selectedIndex;
+            if (i === null) return;
+            const j = i + dir;
+            if (j < 0 || j >= this.layout.elements.length) return;
+            const els = this.layout.elements;
+            [els[i], els[j]] = [els[j], els[i]];
+            this.selectedIndex = j;
+        },
+
+        elWidth(el) { return el.type === 'qr' ? el.size : el.w; },
+        elHeight(el) { return el.type === 'qr' ? el.size : el.h; },
+        elStyle(el) {
+            return `left:${el.x}px;top:${el.y}px;width:${this.elWidth(el)}px;height:${this.elHeight(el)}px;`;
+        },
+        textStyle(el) {
+            return `font-size:${el.size}px;font-weight:${el.weight};color:${el.color};text-align:${el.align};`;
+        },
+
+        startDrag(e, i) {
+            e.preventDefault();
+            this.select(i);
+            const el = this.layout.elements[i];
+            this._drag = { i, mode: 'move', sx: e.clientX, sy: e.clientY, ox: el.x, oy: el.y };
+            this._bind();
+        },
+        startResize(e, i) {
+            e.preventDefault(); e.stopPropagation();
+            this.select(i);
+            const el = this.layout.elements[i];
+            this._drag = { i, mode: 'resize', sx: e.clientX, sy: e.clientY, ow: this.elWidth(el), oh: this.elHeight(el) };
+            this._bind();
+        },
+        _bind() {
+            this._onMove = (e) => this._move(e);
+            this._onUp = () => this._end();
+            window.addEventListener('mousemove', this._onMove);
+            window.addEventListener('mouseup', this._onUp);
+        },
+        _move(e) {
+            if (!this._drag) return;
+            const d = this._drag;
+            const dx = (e.clientX - d.sx) / this.scale;
+            const dy = (e.clientY - d.sy) / this.scale;
+            const el = this.layout.elements[d.i];
+            if (d.mode === 'move') {
+                el.x = Math.max(0, Math.round(d.ox + dx));
+                el.y = Math.max(0, Math.round(d.oy + dy));
+            } else if (el.type === 'qr') {
+                el.size = Math.max(24, Math.round(d.ow + dx));
+            } else {
+                el.w = Math.max(8, Math.round(d.ow + dx));
+                el.h = Math.max(8, Math.round(d.oh + dy));
+            }
+        },
+        _end() {
+            window.removeEventListener('mousemove', this._onMove);
+            window.removeEventListener('mouseup', this._onUp);
+            this._drag = null;
+        },
+
+        substitute(text) {
+            return (text || '').replace(/\{(\w+)\}/g, (m, k) => (this.vars[k] != null ? this.vars[k] : m));
+        },
+        insertVar(v) {
+            const el = this.selected;
+            if (el && el.type === 'text') el.text = (el.text || '') + v;
+        },
+        applyAccent(color) {
+            this.layout.accent = color;
+            this.layout.elements.forEach((el) => { if (el.type === 'rect') el.color = color; });
+        },
+
+        save() {
+            this.$wire.saveLayout(JSON.parse(JSON.stringify(this.layout)));
+        },
+    }));
 });

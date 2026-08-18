@@ -4,7 +4,6 @@ namespace App\Livewire\Admin\Documents;
 
 use App\Actions\GenerateDocumentLayout;
 use App\AI\AiManager;
-use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
 use App\Models\DocumentTemplate;
 use App\Models\Edition;
@@ -73,6 +72,13 @@ class TemplateDesigner extends Component
             : LayoutSanitizer::default($this->kind, $this->type);
 
         $this->syncFromLayout();
+        $this->dispatchLayout();
+    }
+
+    /** Pousse la mise en page courante vers l'éditeur interactif (Alpine). */
+    protected function dispatchLayout(): void
+    {
+        $this->dispatch('layout-updated', layout: $this->layout, vars: $this->sampleVars());
     }
 
     public function generate(GenerateDocumentLayout $action): void
@@ -95,6 +101,7 @@ class TemplateDesigner extends Component
 
         $this->inspiration = null;
         $this->syncFromLayout();
+        $this->dispatchLayout();
         session()->flash('ukc_status', 'Mise en page générée. Ajustez si besoin, puis enregistrez.');
     }
 
@@ -107,6 +114,7 @@ class TemplateDesigner extends Component
             }
         }
         $this->syncJson();
+        $this->dispatchLayout();
     }
 
     public function applyJson(): void
@@ -119,8 +127,23 @@ class TemplateDesigner extends Component
         }
         $this->layout = LayoutSanitizer::sanitize($decoded, $this->kind, $this->type);
         $this->syncFromLayout();
+        $this->dispatchLayout();
     }
 
+    /**
+     * Enregistre la mise en page produite par l'éditeur interactif (drag-drop).
+     * La mise en page passe par le sanitizer déterministe avant persistance.
+     *
+     * @param  array<string, mixed>  $layout
+     */
+    public function saveLayout(array $layout): void
+    {
+        $this->layout = LayoutSanitizer::sanitize($layout, $this->kind, $this->type);
+        $this->syncFromLayout();
+        $this->save();
+    }
+
+    /** Persiste la mise en page courante ($this->layout) pour l'édition/type. */
     public function save(): void
     {
         if ($this->edition_id === '') {
@@ -168,13 +191,29 @@ class TemplateDesigner extends Component
         ];
     }
 
+    /** Variables insérables dans les champs texte, avec libellé. */
+    public const VARIABLES = [
+        '{name}' => 'Nom du bénéficiaire',
+        '{role}' => 'Rôle',
+        '{institution}' => 'Institution',
+        '{type}' => 'Type d’attestation',
+        '{org}' => 'Organisateur',
+        '{event}' => 'Édition',
+        '{year}' => 'Année',
+        '{location}' => 'Lieu',
+        '{date}' => 'Date d’émission',
+        '{ref}' => 'Référence',
+        '{verify_url}' => 'URL de vérification',
+    ];
+
     public function render()
     {
         return view('livewire.admin.documents.template-designer', [
             'editions' => Edition::latest('id')->get(),
             'attestationTypes' => self::ATTESTATION_TYPES,
             'aiAvailable' => app(AiManager::class)->available() !== [],
-            'preview' => LayoutRenderer::render($this->layout, $this->sampleVars()),
+            'vars' => $this->sampleVars(),
+            'variables' => self::VARIABLES,
         ])->layout('components.layouts.admin', ['title' => 'Modèles de documents']);
     }
 }

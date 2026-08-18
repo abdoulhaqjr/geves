@@ -92,6 +92,32 @@ it('enregistre le modèle', function () {
     expect(DocumentTemplate::where('edition_id', $edition->id)->where('kind', 'attestation')->where('type', 'communication')->exists())->toBeTrue();
 });
 
+it('enregistre la mise en page de l’éditeur visuel (sanitisée)', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+
+    Livewire::actingAs($staff, 'web')
+        ->test(TemplateDesigner::class)
+        ->set('edition_id', (string) $edition->id)
+        ->set('kind', 'badge')
+        ->call('saveLayout', [
+            'width' => 320, 'height' => 440, 'bg' => '#ffffff', 'accent' => '#223ea4',
+            'elements' => [
+                ['type' => 'text', 'x' => 5000, 'y' => 10, 'w' => 300, 'h' => 30, 'text' => 'EDIT {name}', 'size' => 20, 'weight' => 700, 'color' => '#111111', 'align' => 'center'],
+                ['type' => 'chaos', 'x' => 0, 'y' => 0], // type non listé → ignoré
+            ],
+        ])
+        ->assertHasNoErrors();
+
+    $tpl = DocumentTemplate::where('edition_id', $edition->id)->where('kind', 'badge')->where('type', 'default')->first();
+
+    expect($tpl)->not->toBeNull();
+    // Coordonnée bornée par le sanitizer (x ≤ largeur), type inconnu écarté.
+    expect($tpl->layout['elements'])->toHaveCount(1);
+    expect($tpl->layout['elements'][0]['x'])->toBeLessThanOrEqual(320);
+    expect($tpl->layout['elements'][0]['text'])->toBe('EDIT {name}');
+});
+
 it('rejette un JSON de mise en page invalide', function () {
     $staff = adminStaff();
 
