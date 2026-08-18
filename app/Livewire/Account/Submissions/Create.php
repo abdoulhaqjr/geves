@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -197,6 +198,17 @@ class Create extends Component
         return $attrs;
     }
 
+    /** Étape du wizard (1..5) contenant un champ donné (pour le saut d'erreur). */
+    protected function stepForField(string $field): int
+    {
+        return match (true) {
+            str_starts_with($field, 'coauthors') => 2,
+            $field === 'abstract', str_starts_with($field, 'customAnswers') => 3,
+            $field === 'file' => 4,
+            default => 1,
+        };
+    }
+
     public function submit(UpsertParticipantForAccount $upsert, NotifySubmissionStatus $notify)
     {
         $account = Auth::guard('account')->user();
@@ -218,7 +230,14 @@ class Create extends Component
             return null;
         }
 
-        $data = $this->validate();
+        try {
+            $data = $this->validate();
+        } catch (ValidationException $e) {
+            // Bascule le wizard vers l'étape contenant la première erreur (masquée sinon).
+            $this->dispatch('submission-invalid', step: $this->stepForField((string) array_key_first($e->errors())));
+
+            throw $e;
+        }
         $config = $this->config();
 
         // Téléversement du fichier (I/O) hors transaction.

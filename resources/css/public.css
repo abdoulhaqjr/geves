@@ -363,6 +363,23 @@
 .atelier-card .meta { font-size: 12.5px; color: var(--ukc-muted); display: flex; flex-direction: column; gap: 3px; }
 .atelier-card .foot { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--ukc-border); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
 
+/* Wizard de soumission (formulaire multi-étapes) */
+.form-steps { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 22px; }
+.form-steps .s { flex: 1; min-width: 108px; padding: 12px 10px; border-radius: 12px; background: #fff; border: 1.5px solid var(--ukc-border); font-size: 12.5px; font-weight: 700; color: var(--ukc-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.form-steps .s .n { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #e8ecf4; color: var(--ukc-muted); font-size: 11px; flex-shrink: 0; }
+.form-steps .s.active { border-color: var(--ukc-blue); background: rgba(34, 62, 164, .06); color: var(--ukc-blue); }
+.form-steps .s.active .n { background: var(--ukc-blue); color: #fff; }
+.form-steps .s.done { border-color: #86efac; background: #f0fdf4; color: #166534; }
+.form-steps .s.done .n { background: var(--ukc-green); color: #fff; }
+.step-panel { display: none; }
+.step-panel.active { display: block; }
+.wizard-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 22px; }
+.recap-list { display: flex; flex-direction: column; gap: 0; }
+.recap-list .r { display: flex; justify-content: space-between; gap: 14px; padding: 11px 0; border-bottom: 1px solid var(--ukc-border); font-size: 14px; }
+.recap-list .r:last-child { border-bottom: none; }
+.recap-list .r .k { color: var(--ukc-muted); font-weight: 600; }
+.recap-list .r .v { font-weight: 700; text-align: right; word-break: break-word; }
+
 /* Barre d'onglets « Mon compte » (espace participant) */
 .account-head h1 { font-size: 1.55rem; font-weight: 800; color: var(--ukc-text); }
 .account-head p { font-size: .9rem; color: var(--ukc-muted); margin-top: 4px; }
