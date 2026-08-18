@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\EditionPhase;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -101,5 +102,45 @@ class Edition extends Model
     public function isPublished(): bool
     {
         return in_array($this->status, ['open', 'closed', 'archived'], true);
+    }
+
+    /**
+     * Phase du cycle de vie (guide §2.2), dérivée sans requête depuis le statut de
+     * publication, les dates de l'événement et l'ouverture des soumissions.
+     * Source unique pour les libellés/pastilles et les 3 vues publiques.
+     */
+    public function phase(): EditionPhase
+    {
+        if ($this->status === 'draft') {
+            return EditionPhase::Draft;
+        }
+        // Clôture explicite par l'admin.
+        if ($this->status === 'archived' || $this->status === 'closed') {
+            return EditionPhase::Closed;
+        }
+
+        $today = Carbon::today();
+        $now = Carbon::now();
+
+        // Déroulement : les dates de l'événement sont atteintes.
+        if ($this->date_start && $this->date_end
+            && $this->date_start->lte($today) && $this->date_end->gte($today)) {
+            return EditionPhase::Ongoing;
+        }
+        // Événement passé (date de fin dépassée).
+        if ($this->date_end && $this->date_end->lt($today)) {
+            return EditionPhase::Closed;
+        }
+
+        // Pré-événement (futur ou sans dates) : phase selon l'appel à communications.
+        if ($this->submission_open
+            && (! $this->submission_deadline || $this->submission_deadline->gte($now))) {
+            return EditionPhase::CallOpen;
+        }
+        if ($this->submission_deadline && $this->submission_deadline->lt($now)) {
+            return EditionPhase::UnderReview; // soumissions closes → évaluation
+        }
+
+        return EditionPhase::Registration; // pas d'appel actif, événement à venir → inscriptions
     }
 }

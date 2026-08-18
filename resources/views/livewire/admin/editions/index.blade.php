@@ -51,6 +51,9 @@
             <div class="body">
                 <h3>{{ $e->title ?: $e->colloque?->name }}
                     <span class="ukc-pill ukc-pill--{{ $statusMeta[$e->status][1] ?? 'muted' }}">{{ $statusMeta[$e->status][0] ?? $e->status }}</span>
+                    @if ($e->status !== 'draft')
+                        <span class="ukc-pill ukc-pill--{{ $e->phase()->pill() }}" title="Phase du cycle de vie">{{ $e->phase()->label() }}</span>
+                    @endif
                 </h3>
                 @if ($e->theme)<p>{{ \Illuminate\Support\Str::limit($e->theme, 90) }}</p>@endif
                 <div class="meta">

@@ -19,14 +19,12 @@ class DeroulementController extends Controller
 {
     public function __invoke(): View
     {
-        $today = Carbon::today();
-
+        // Édition « en cours » = phase Ongoing (déroulement commencé), cf. §2.2.
         $edition = Edition::query()
             ->with('colloque')
             ->whereIn('status', ['open', 'closed', 'archived'])
             ->get()
-            ->first(fn (Edition $e) => $e->date_start && $e->date_end
-                && $e->date_start->lte($today) && $e->date_end->gte($today));
+            ->first(fn (Edition $e) => $e->phase()->isOngoing());
 
         if (! $edition) {
             return view('public.deroulement', ['edition' => null]);

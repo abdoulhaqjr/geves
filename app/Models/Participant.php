@@ -8,13 +8,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * Participant : présence d'une personne sur une édition (auteur, auditeur,
  * relecteur, membre de comité, co-auteur…). Reliée au compte global quand
  * connue.
  *
- * @property \Illuminate\Support\Carbon|null $checked_in_at
+ * @property Carbon|null $checked_in_at
  */
 #[ObservedBy([ParticipantObserver::class])]
 class Participant extends Model

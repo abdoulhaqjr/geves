@@ -7,7 +7,6 @@ use App\Models\Edition;
 use App\Models\Participant;
 use App\Support\Gallery;
 use Illuminate\Contracts\View\View;
-use Illuminate\Support\Carbon;
 
 /**
  * Accueil public de la plateforme (institutionnel, non commercial). Vue statique
@@ -20,23 +19,18 @@ class HomeController extends Controller
 {
     public function __invoke(): View
     {
-        $today = Carbon::today();
-
-        // Éditions publiées, réparties par phase à partir des dates de l'événement.
+        // Éditions publiées, réparties selon la phase du cycle de vie (§2.2) :
+        // un simple appel à communications ouvert reste « à venir », pas « en cours ».
         $published = Edition::query()
             ->with('colloque')
             ->whereIn('status', ['open', 'closed', 'archived'])
             ->orderByDesc('date_start')
             ->get();
 
-        $ongoing = $published->filter(fn (Edition $e) => $e->date_start && $e->date_end
-            && $e->date_start->lte($today) && $e->date_end->gte($today))->values();
-
-        $upcoming = $published->filter(fn (Edition $e) => $e->date_start && $e->date_start->gt($today))
-            ->sortBy('date_start')->values();
-
-        $past = $published->filter(fn (Edition $e) => $e->status === 'archived'
-            || ($e->date_end && $e->date_end->lt($today)))->values();
+        $byView = $published->groupBy(fn (Edition $e) => $e->phase()->publicView());
+        $ongoing = ($byView->get('ongoing') ?? collect())->values();
+        $upcoming = ($byView->get('upcoming') ?? collect())->sortBy('date_start')->values();
+        $past = ($byView->get('past') ?? collect())->values();
 
         // « À la une » : l'édition en cours, sinon la prochaine, sinon la dernière passée.
         $featured = $ongoing->first() ?? $upcoming->first() ?? $past->first();

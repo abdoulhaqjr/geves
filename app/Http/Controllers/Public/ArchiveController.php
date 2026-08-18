@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Edition;
 use App\Support\Gallery;
 use Illuminate\Contracts\View\View;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
@@ -17,17 +16,14 @@ use Illuminate\Support\Str;
  */
 class ArchiveController extends Controller
 {
-    /** Liste des éditions passées (clôturées, archivées ou dont la date est dépassée). */
+    /** Liste des éditions passées (phase « Colloque passé », cf. §2.2). */
     public function index(): View
     {
-        $today = Carbon::today();
-
         $editions = Edition::query()
             ->with('colloque')
             ->whereIn('status', ['open', 'closed', 'archived'])
             ->get()
-            ->filter(fn (Edition $e) => $e->status === 'archived'
-                || ($e->date_end && $e->date_end->lt($today)))
+            ->filter(fn (Edition $e) => $e->phase()->isPast())
             ->sortByDesc('year')
             ->values();
 

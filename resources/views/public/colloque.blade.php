@@ -82,11 +82,12 @@
             <div style="position:absolute;inset:0;z-index:1;background:linear-gradient(135deg, rgba(27,49,130,.88), rgba(43,82,201,.72));"></div>
         @endif
         <div style="position:relative;z-index:2;max-width:1120px;margin:0 auto;padding:clamp(48px,7vw,88px) clamp(16px,4vw,32px);">
-            @if ($e->edition_label)
-                <span class="ukc-pill" style="background:rgba(255,255,255,.16);color:#fff;margin-bottom:18px;">
-                    {{ $e->edition_label }}
-                </span>
-            @endif
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">
+                @if ($e->edition_label)
+                    <span class="ukc-pill" style="background:rgba(255,255,255,.16);color:#fff;">{{ $e->edition_label }}</span>
+                @endif
+                <span class="ukc-pill ukc-pill--{{ $e->phase()->pill() }}">{{ $e->phase()->label() }}</span>
+            </div>
             <h1 style="font-size:clamp(1.9rem,5vw,3rem);font-weight:900;line-height:1.12;letter-spacing:-.02em;max-width:18ch;">
                 {{ $e->title }}
             </h1>
