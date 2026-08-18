@@ -14,9 +14,12 @@ it('inscrit un participant, le connecte et envoie l’e-mail de vérification', 
     Notification::fake();
 
     Livewire::test(Register::class)
+        ->set('civility', 'Dr')
+        ->set('grade', 'Enseignant-chercheur')
         ->set('first_name', 'Awa')
         ->set('last_name', 'Kodjo')
         ->set('email', 'awa@example.tg')
+        ->set('affiliation', 'Université de Kara')
         ->set('password', 'MotDePasse123!')
         ->set('password_confirmation', 'MotDePasse123!')
         ->call('register')
@@ -24,6 +27,8 @@ it('inscrit un participant, le connecte et envoie l’e-mail de vérification', 
 
     $account = Account::firstWhere('email', 'awa@example.tg');
     expect($account)->not->toBeNull();
+    expect($account->affiliation)->toBe('Université de Kara');
+    expect($account->grade)->toBe('Enseignant-chercheur');
     expect(auth('account')->check())->toBeTrue();
     expect($account->hasVerifiedEmail())->toBeFalse();
 

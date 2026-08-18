@@ -6,7 +6,6 @@ use App\Models\Account;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Password;
-use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -15,7 +14,6 @@ use Livewire\Component;
  * connecte la personne (l'accès à la soumission reste conditionné à la
  * vérification + profil complet, cf. Account::canSubmit()).
  */
-#[Layout('components.layouts.auth')]
 #[Title('Créer un compte')]
 class Register extends Component
 {
@@ -27,6 +25,8 @@ class Register extends Component
 
     public string $grade = '';
 
+    public string $affiliation = '';
+
     public string $email = '';
 
     public string $password = '';
@@ -36,6 +36,14 @@ class Register extends Component
     /** Civilités par défaut (surchargeable plus tard par la config d'édition). */
     public array $civilities = ['M.', 'Mme', 'Dr', 'Pr'];
 
+    /** Titres (profil principal), alignés sur le mockup d'inscription. */
+    public array $titles = [
+        'Enseignant-chercheur',
+        'Doctorant / étudiant',
+        'Professionnel',
+        'Autre',
+    ];
+
     protected function rules(): array
     {
         return [
@@ -43,6 +51,7 @@ class Register extends Component
             'first_name' => ['required', 'string', 'max:150'],
             'last_name' => ['required', 'string', 'max:150'],
             'grade' => ['nullable', 'string', 'max:100'],
+            'affiliation' => ['nullable', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:190', 'unique:accounts,email'],
             'password' => ['required', 'string', 'confirmed', Password::defaults()],
         ];
@@ -63,6 +72,7 @@ class Register extends Component
 
     public function render()
     {
-        return view('livewire.account.register');
+        return view('livewire.account.register')
+            ->layout('components.layouts.auth', ['title' => 'Créer un compte', 'width' => '620px']);
     }
 }

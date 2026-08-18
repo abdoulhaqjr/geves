@@ -1,8 +1,8 @@
-@props(['title' => null])
+@props(['title' => null, 'width' => '440px'])
 <x-layouts.app :title="$title">
     <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 16px;background:
                 radial-gradient(1200px 600px at 50% -10%, rgba(34,62,164,.10), transparent 60%), var(--ukc-bg);">
-        <div style="width:100%;max-width:440px;">
+        <div style="width:100%;max-width:{{ $width }};">
             <div style="text-align:center;margin-bottom:22px;">
                 <a href="{{ url('/') }}" style="display:inline-block;">
                     <div style="font-size:1.25rem;font-weight:900;color:var(--ukc-blue);letter-spacing:-.01em;">
