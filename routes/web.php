@@ -104,7 +104,7 @@ Route::middleware('guest:account')->group(function () {
     Route::get('/reinitialiser/{token}', ResetPassword::class)->name('account.password.reset');
 });
 
-Route::middleware('auth:account')->group(function () {
+Route::middleware(['auth:account', \App\Http\Middleware\StampAccountSession::class])->group(function () {
     Route::get('/mon-compte', Dashboard::class)->name('account.dashboard');
     Route::get('/mon-profil', Profile::class)->name('account.profile');
     Route::get('/mes-documents', AccountDocuments::class)->name('account.documents');

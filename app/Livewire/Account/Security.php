@@ -3,7 +3,10 @@
 namespace App\Livewire\Account;
 
 use App\Support\Totp;
+use App\Support\UserAgent;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password as PasswordRule;
 use Illuminate\Validation\ValidationException;
@@ -172,6 +175,73 @@ class Security extends Component
         return (string) session(self::SESSION_PENDING_SECRET, '');
     }
 
+    /**
+     * Sessions actives du compte (driver « database »), la plus récente d'abord.
+     *
+     * @return list<array{id: string, current: bool, device: string, ip: string, last: ?string}>
+     */
+    public function activeSessions(): array
+    {
+        if (config('session.driver') !== 'database') {
+            return [];
+        }
+
+        $accountId = Auth::guard('account')->id();
+        $currentId = session()->getId();
+
+        return DB::table(config('session.table', 'sessions'))
+            ->where('account_id', $accountId)
+            ->orderByDesc('last_activity')
+            ->get(['id', 'ip_address', 'user_agent', 'last_activity'])
+            ->map(fn ($s) => [
+                'id' => (string) $s->id,
+                'current' => (string) $s->id === $currentId,
+                'device' => UserAgent::describe($s->user_agent),
+                'ip' => (string) ($s->ip_address ?: '—'),
+                'last' => $s->last_activity ? Carbon::createFromTimestamp($s->last_activity)->diffForHumans() : null,
+            ])
+            ->all();
+    }
+
+    /** Révoque une autre session du compte (déconnecte l'appareil concerné). */
+    public function revokeSession(string $id): void
+    {
+        if ($id === session()->getId()) {
+            return; // on ne révoque pas la session courante ici
+        }
+
+        DB::table(config('session.table', 'sessions'))
+            ->where('account_id', Auth::guard('account')->id())
+            ->where('id', $id)
+            ->delete();
+
+        session()->flash('ukc_status', 'Session révoquée.');
+    }
+
+    /** Déconnecte toutes les autres sessions (confirmation par mot de passe). */
+    public function revokeOtherSessions(): void
+    {
+        $account = Auth::guard('account')->user();
+
+        $this->validate(['disable_password' => ['required', 'string']], attributes: [
+            'disable_password' => 'mot de passe',
+        ]);
+
+        if (! Hash::check($this->disable_password, $account->password)) {
+            throw ValidationException::withMessages([
+                'disable_password' => __('Le mot de passe est incorrect.'),
+            ]);
+        }
+
+        DB::table(config('session.table', 'sessions'))
+            ->where('account_id', $account->getAuthIdentifier())
+            ->where('id', '!=', session()->getId())
+            ->delete();
+
+        $this->reset('disable_password');
+        session()->flash('ukc_status', 'Toutes les autres sessions ont été déconnectées.');
+    }
+
     public function render()
     {
         $account = Auth::guard('account')->user();
@@ -184,6 +254,7 @@ class Security extends Component
             'setupSecret' => $secret,
             'setupSecretFormatted' => $secret !== '' ? trim(chunk_split($secret, 4, ' ')) : '',
             'setupQr' => $secret !== '' ? Totp::qrCodeSvg($secret, (string) $account->email) : '',
+            'sessions' => $this->activeSessions(),
         ])->layout('components.layouts.participant', ['title' => 'Sécurité']);
     }
 }

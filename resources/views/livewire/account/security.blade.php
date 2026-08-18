@@ -29,6 +29,58 @@
         </form>
     </div>
 
+    {{-- ============ Sessions actives ============ --}}
+    <div class="ukc-card">
+        <h3><x-ukc.icon name="monitor" :size="20" /> Sessions actives</h3>
+        <p style="color:var(--ukc-muted);font-size:.9rem;margin-top:6px;">
+            Appareils connectés à votre compte. Révoquez ceux que vous ne reconnaissez pas.
+        </p>
+
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
+            @forelse ($sessions as $s)
+                <div wire:key="sess-{{ $s['id'] }}"
+                     style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--ukc-border);border-radius:12px;{{ $s['current'] ? 'background:var(--ukc-bg);' : '' }}">
+                    <span style="flex-shrink:0;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#eef2ff;color:var(--ukc-blue);">
+                        <x-ukc.icon name="monitor" :size="19" />
+                    </span>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-weight:700;">
+                            {{ $s['device'] }}
+                            @if ($s['current'])<span class="ukc-pill ukc-pill--ok" style="margin-left:6px;">Cet appareil</span>@endif
+                        </div>
+                        <div style="font-size:.82rem;color:var(--ukc-muted);">
+                            {{ $s['ip'] }}@if ($s['last']) · {{ $s['last'] }}@endif
+                        </div>
+                    </div>
+                    @unless ($s['current'])
+                        <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm"
+                                wire:click="revokeSession('{{ $s['id'] }}')"
+                                wire:confirm="Révoquer cette session ?">
+                            <x-ukc.icon name="close" :size="14" /> Révoquer
+                        </button>
+                    @endunless
+                </div>
+            @empty
+                <p style="font-size:.9rem;color:var(--ukc-muted);">Aucune autre session active.</p>
+            @endforelse
+        </div>
+
+        @if (count($sessions) > 1)
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:14px;padding-top:14px;border-top:1px solid var(--ukc-border);">
+                <div class="ukc-field" style="max-width:260px;margin:0;">
+                    <label for="revoke_password">Mot de passe (pour confirmer) <span class="req">*</span></label>
+                    <input type="password" id="revoke_password" wire:model="disable_password" autocomplete="current-password">
+                    @error('disable_password') <span class="error">{{ $message }}</span> @enderror
+                </div>
+                <button type="button" wire:click="revokeOtherSessions"
+                        wire:confirm="Déconnecter tous les autres appareils ?"
+                        class="ukc-btn ukc-btn--danger ukc-btn--sm">
+                    <x-ukc.icon name="logout" :size="14" /> Déconnecter les autres appareils
+                </button>
+            </div>
+        @endif
+    </div>
+
     {{-- ============ Double authentification ============ --}}
     <div class="ukc-card">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
