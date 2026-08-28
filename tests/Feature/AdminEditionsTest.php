@@ -1,10 +1,8 @@
 <?php
 
-use App\Livewire\Admin\Editions\Form;
 use App\Models\Colloque;
 use App\Models\Edition;
 use App\Models\User;
-use Livewire\Livewire;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -38,17 +36,15 @@ it('autorise le staff habilité à voir la liste des éditions', function () {
 it('crée une édition avec un nouveau colloque via le formulaire', function () {
     $user = staffWithPermission();
 
-    Livewire::actingAs($user, 'web')
-        ->test(Form::class)
-        ->set('new_colloque', 'Colloque test')
-        ->set('title', 'Édition inaugurale 2026')
-        ->set('status', 'open')
-        ->set('submission_open', true)
-        ->set('tracks', "Axe A\nAxe B")
-        ->set('fees', [['label' => 'Doctorant', 'amount' => '15000']])
-        ->call('save')
-        ->assertHasNoErrors()
-        ->assertRedirect(route('admin.editions.index'));
+    $this->actingAs($user, 'web')->post(route('admin.editions.store'), [
+        'new_colloque' => 'Colloque test',
+        'title' => 'Édition inaugurale 2026',
+        'status' => 'open',
+        'submission_open' => '1',
+        'max_communications' => 3,
+        'tracks' => "Axe A\nAxe B",
+        'fees' => [['label' => 'Doctorant', 'amount' => '15000']],
+    ])->assertSessionHasNoErrors()->assertRedirect(route('admin.editions.index'));
 
     $edition = Edition::firstWhere('title', 'Édition inaugurale 2026');
     expect($edition)->not->toBeNull();
@@ -63,12 +59,12 @@ it('modifie une édition existante', function () {
     $colloque = Colloque::create(['name' => 'C', 'slug' => 'c']);
     $edition = $colloque->editions()->create(['title' => 'Ancien titre', 'status' => 'draft', 'slug' => 'ancien']);
 
-    Livewire::actingAs($user, 'web')
-        ->test(Form::class, ['edition' => $edition])
-        ->assertSet('title', 'Ancien titre')
-        ->set('title', 'Nouveau titre')
-        ->call('save')
-        ->assertHasNoErrors();
+    $this->actingAs($user, 'web')->put(route('admin.editions.update', $edition), [
+        'title' => 'Nouveau titre',
+        'status' => 'draft',
+        'colloque_id' => $edition->colloque_id,
+        'max_communications' => 3,
+    ])->assertSessionHasNoErrors();
 
     expect($edition->fresh()->title)->toBe('Nouveau titre');
 });
@@ -81,12 +77,14 @@ it('préserve submission_form et enregistre hero/contact au save', function () {
         'settings' => ['submission_form' => ['fields' => ['title' => ['label' => 'Intitulé']], 'custom' => []]],
     ]);
 
-    Livewire::actingAs($user, 'web')
-        ->test(Form::class, ['edition' => $edition])
-        ->set('contact_email', 'colloque@univkara.tg')
-        ->set('hero_image', 'https://example.tg/banniere.jpg')
-        ->call('save')
-        ->assertHasNoErrors();
+    $this->actingAs($user, 'web')->put(route('admin.editions.update', $edition), [
+        'title' => $edition->title,
+        'status' => 'open',
+        'colloque_id' => $edition->colloque_id,
+        'max_communications' => 3,
+        'contact_email' => 'colloque@univkara.tg',
+        'hero_image' => 'https://example.tg/banniere.jpg',
+    ])->assertSessionHasNoErrors();
 
     $settings = $edition->fresh()->settings;
     // La config du formulaire (gérée ailleurs) survit au save de l'édition.
@@ -105,7 +103,7 @@ it('affiche la page publique d’une édition publiée', function () {
     $this->get(route('public.colloque', 'uk-2026'))
         ->assertOk()
         ->assertSee('UK 2026')
-        ->assertSee('Axes thématiques');
+        ->assertSee('Ateliers disciplinaires');
 });
 
 it('renvoie 404 pour une édition en brouillon', function () {

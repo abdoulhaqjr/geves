@@ -3,8 +3,6 @@
 use App\Actions\GenerateReport;
 use App\AI\AiManager;
 use App\AI\Contracts\AiProvider;
-use App\Livewire\Admin\Reports\Index;
-use Livewire\Livewire;
 
 // openEdition() -> AccountSubmissionTest ; adminStaff() -> helpers partagés
 
@@ -69,32 +67,34 @@ it('affiche le brouillon IA dans les rapports', function () {
     bindFakeAi(fakeAiProvider(['title' => 'Rapport de test', 'sections' => [['heading' => 'Contexte', 'body' => 'Texte.']]]));
     $edition = openEdition();
 
-    Livewire::actingAs(adminStaff(), 'web')
-        ->test(Index::class)
-        ->set('edition_id', (string) $edition->id)
-        ->set('aiBrief', 'Rapport pour le conseil scientifique.')
-        ->call('generateReport')
-        ->assertHasNoErrors()
-        ->assertSet('aiTitle', 'Rapport de test')
-        ->assertSee('Contexte');
+    $this->actingAs(adminStaff(), 'web')
+        ->post(route('admin.reports.generate'), [
+            'edition_id' => (string) $edition->id,
+            'aiBrief' => 'Rapport pour le conseil scientifique.',
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertSessionHas('ai_report', fn ($r) => $r['title'] === 'Rapport de test' && $r['sections'][0]['heading'] === 'Contexte');
 });
 
 it('exige un brief pour générer', function () {
-    Livewire::actingAs(adminStaff(), 'web')
-        ->test(Index::class)
-        ->set('aiBrief', '')
-        ->call('generateReport')
-        ->assertHasErrors('aiBrief');
+    $edition = openEdition();
+
+    $this->actingAs(adminStaff(), 'web')
+        ->post(route('admin.reports.generate'), [
+            'edition_id' => (string) $edition->id,
+            'aiBrief' => '',
+        ])
+        ->assertSessionHasErrors('aiBrief');
 });
 
 it('signale l’absence de fournisseur IA', function () {
     bindFakeAi(null);
     $edition = openEdition();
 
-    Livewire::actingAs(adminStaff(), 'web')
-        ->test(Index::class)
-        ->set('edition_id', (string) $edition->id)
-        ->set('aiBrief', 'Un rapport de synthèse.')
-        ->call('generateReport')
-        ->assertSet('aiError', fn ($e) => filled($e));
+    $this->actingAs(adminStaff(), 'web')
+        ->post(route('admin.reports.generate'), [
+            'edition_id' => (string) $edition->id,
+            'aiBrief' => 'Un rapport de synthèse.',
+        ])
+        ->assertSessionHas('ai_error');
 });

@@ -1,87 +1,67 @@
 @php($staff = auth('web')->user())
+@props(['title' => 'Back-office', 'subtitle' => null])
 <x-layouts.app :title="($title ?? 'Back-office') . ' — Colloques UK'">
+    <div class="wp-bar">
+        <strong>UK Colloques</strong>
+        <span>Back-office</span>
+        <span class="right">Admin · Université de Kara</span>
+    </div>
+
     <div class="ukc-shell ukc-shell--admin" x-data="{ open: false }">
         <aside class="ukc-sidebar" :class="{ 'open': open }">
             <div class="ukc-sidebar-brand">
-                <div class="logo">Back-office</div>
-                <div class="sub">Colloques · Université de Kara</div>
+                <a href="{{ route('admin.dashboard') }}" class="logo-img" aria-label="Université de Kara — back-office">
+                    <img src="{{ asset('img/logo-uk.png') }}" alt="Université de Kara">
+                </a>
+                <div class="logo-sub">Back-office · Colloques</div>
             </div>
             <nav class="ukc-sidebar-nav">
-                <a href="{{ route('admin.dashboard') }}" wire:navigate
-                   @class(['active' => request()->routeIs('admin.dashboard')])>
-                    <x-ukc.icon name="home" :size="18" /> Tableau de bord
-                </a>
-
-                <span class="nav-label">Événements</span>
-                <a href="{{ route('admin.editions.index') }}" wire:navigate
-                   @class(['active' => request()->routeIs('admin.editions.*')])>
-                    <x-ukc.icon name="calendar" :size="18" /> Éditions
-                </a>
-
-                <a href="{{ route('admin.submissions.index') }}" wire:navigate
-                   @class(['active' => request()->routeIs('admin.submissions.*')])>
-                    <x-ukc.icon name="inbox" :size="18" /> Soumissions
-                </a>
-                <a href="{{ route('admin.payments.index') }}" wire:navigate
-                   @class(['active' => request()->routeIs('admin.payments.*')])>
-                    <x-ukc.icon name="card" :size="18" /> Paiements
-                </a>
-                <a href="{{ route('admin.participants.index') }}" wire:navigate
-                   @class(['active' => request()->routeIs('admin.participants.*')])>
-                    <x-ukc.icon name="users" :size="18" /> Participants
-                </a>
-                <a href="{{ route('admin.reports.index') }}" wire:navigate
-                   @class(['active' => request()->routeIs('admin.reports.*')])>
-                    <x-ukc.icon name="chart" :size="18" /> Rapports
-                </a>
-
-                <span class="nav-label">Communication</span>
-                <a href="{{ route('admin.emails.index') }}" wire:navigate
-                   @class(['active' => request()->routeIs('admin.emails.index')])>
-                    <x-ukc.icon name="mail" :size="18" /> E-mails
-                </a>
-                <a href="{{ route('admin.emails.templates') }}" wire:navigate
-                   @class(['active' => request()->routeIs('admin.emails.templates')])>
-                    <x-ukc.icon name="pen" :size="18" /> Modèles d’e-mails
-                </a>
-
-                <span class="nav-label">Programme</span>
-                <a href="{{ route('admin.program.sessions') }}" wire:navigate
-                   @class(['active' => request()->routeIs('admin.program.sessions')])>
-                    <x-ukc.icon name="layers" :size="18" /> Ateliers & sessions
-                </a>
-                <a href="{{ route('admin.program.slots') }}" wire:navigate
-                   @class(['active' => request()->routeIs('admin.program.slots')])>
-                    <x-ukc.icon name="calendar" :size="18" /> Créneaux
-                </a>
-
-                <span class="nav-label">Documents</span>
-                <a href="{{ route('admin.documents.attestations') }}" wire:navigate
-                   @class(['active' => request()->routeIs('admin.documents.attestations')])>
-                    <x-ukc.icon name="award" :size="18" /> Documents
-                </a>
-                <a href="{{ route('admin.documents.templates') }}" wire:navigate
-                   @class(['active' => request()->routeIs('admin.documents.templates')])>
-                    <x-ukc.icon name="palette" :size="18" /> Modèles (badges/attest.)
-                </a>
-                <a href="{{ route('admin.badges.scan') }}" wire:navigate
-                   @class(['active' => request()->routeIs('admin.badges.scan')])>
-                    <x-ukc.icon name="video" :size="18" /> Pointage badges
-                </a>
-
-                <span class="nav-label">Configuration</span>
-                <a href="{{ route('admin.settings') }}" wire:navigate
-                   @class(['active' => request()->routeIs('admin.settings')])>
-                    <x-ukc.icon name="settings" :size="18" /> Réglages
-                </a>
-                <a href="{{ route('admin.ai') }}" wire:navigate
-                   @class(['active' => request()->routeIs('admin.ai')])>
-                    <x-ukc.icon name="sparkles" :size="18" /> Assistant IA
-                </a>
-                <a href="{{ route('admin.settings.agents') }}" wire:navigate
-                   @class(['active' => request()->routeIs('admin.settings.agents')])>
-                    <x-ukc.icon name="sparkles" :size="18" /> Agents IA
-                </a>
+                @can('view_dashboard')
+                    <a href="{{ route('admin.dashboard') }}"
+                       @class(['active' => request()->routeIs('admin.dashboard')])>Tableau de bord</a>
+                @endcan
+                @can('editions_read')
+                    <a href="{{ route('admin.editions.index') }}"
+                       @class(['active' => request()->routeIs('admin.editions.*')])>Éditions</a>
+                @endcan
+                @can('submissions_list')
+                    <a href="{{ route('admin.submissions.index') }}"
+                       @class(['active' => request()->routeIs('admin.submissions.*')])>Soumissions</a>
+                @endcan
+                @can('users_roles')
+                    <a href="{{ route('admin.users.index') }}"
+                       @class(['active' => request()->routeIs('admin.users.*')])>Utilisateurs</a>
+                @endcan
+                @can('participants')
+                    <a href="{{ route('admin.participants.index') }}"
+                       @class(['active' => request()->routeIs('admin.participants.*')])>Participants</a>
+                @endcan
+                @can('payments')
+                    <a href="{{ route('admin.payments.index') }}"
+                       @class(['active' => request()->routeIs('admin.payments.*')])>Paiements</a>
+                @endcan
+                @can('documents')
+                    <a href="{{ route('admin.documents.attestations') }}"
+                       @class(['active' => request()->routeIs('admin.documents.*') || request()->routeIs('admin.badges.*')])>Documents</a>
+                @endcan
+                @can('emails')
+                    <a href="{{ route('admin.emails.index') }}"
+                       @class(['active' => request()->routeIs('admin.emails.*')])>E-mails</a>
+                @endcan
+                @can('editions_read')
+                    <a href="{{ route('admin.program.slots') }}"
+                       @class(['active' => request()->routeIs('admin.program.*')])>Créneaux</a>
+                @endcan
+                @can('view_dashboard')
+                    <a href="{{ route('admin.reports.index') }}"
+                       @class(['active' => request()->routeIs('admin.reports.*')])>Rapports</a>
+                    <a href="{{ route('admin.ai') }}"
+                       @class(['active' => request()->routeIs('admin.ai')])>Assistant IA</a>
+                @endcan
+                @can('settings')
+                    <a href="{{ route('admin.settings') }}"
+                       @class(['active' => request()->routeIs('admin.settings') || request()->routeIs('admin.settings.*')])>Réglages</a>
+                @endcan
             </nav>
             <div class="ukc-sidebar-foot">
                 <div class="ukc-user-chip">
@@ -103,20 +83,23 @@
         <div class="ukc-overlay" :class="{ 'show': open }" @click="open = false"></div>
 
         <div class="ukc-main">
-            <header class="ukc-topbar">
-                <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+            <header class="ukc-admin-head">
+                <div class="head-title">
                     <button type="button" class="ukc-burger" @click="open = !open" aria-label="Menu">
                         <x-ukc.icon name="menu" :size="24" />
                     </button>
-                    <h1>{{ $title ?? 'Back-office' }}</h1>
+                    <div>
+                        <h1>{{ $title ?? 'Back-office' }}</h1>
+                        @if ($subtitle)<div class="sub">{{ $subtitle }}</div>@endif
+                    </div>
                 </div>
-                <div class="actions">
-                    @isset($actions){{ $actions }}@endisset
-                    <livewire:notifications.bell />
+                <div class="head-actions">
+                    {{ $actions ?? '' }}
+                    <x-ukc.notification-bell />
                 </div>
             </header>
 
-            <main class="ukc-content">
+            <main class="ukc-admin-body">
                 @if (session('ukc_status'))
                     <div class="ukc-alert ukc-alert--ok">
                         <span class="ico"><x-ukc.icon name="check-circle" :size="18" /></span>

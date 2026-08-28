@@ -369,7 +369,44 @@
                 </div>
                 <div class="ukc-card" style="padding:24px;">
                     @if ($featured)
-                        <livewire:public.contact-form :edition-id="$featured->id" />
+                        @if (session('contact_sent'))
+                            <div class="ukc-alert ukc-alert--ok" style="margin:0;">
+                                <span class="ico"><x-ukc.icon name="check-circle" :size="18" /></span>
+                                <div>Merci, votre message a bien été envoyé. Nous vous répondrons rapidement.</div>
+                            </div>
+                        @else
+                            <form method="POST" action="{{ route('public.contact', $featured->id) }}"
+                                  x-data="{ loadedAt: Math.floor(Date.now() / 1000) }"
+                                  style="display:flex;flex-direction:column;gap:12px;">
+                                @csrf
+                                <input type="hidden" name="loaded_at" :value="loadedAt">
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                                    <div class="ukc-field" style="margin:0;">
+                                        <label for="hc_name">Votre nom</label>
+                                        <input type="text" id="hc_name" name="name" value="{{ old('name') }}">
+                                        @error('name') <span class="error">{{ $message }}</span> @enderror
+                                    </div>
+                                    <div class="ukc-field" style="margin:0;">
+                                        <label for="hc_email">Votre e-mail</label>
+                                        <input type="email" id="hc_email" name="email" value="{{ old('email') }}">
+                                        @error('email') <span class="error">{{ $message }}</span> @enderror
+                                    </div>
+                                </div>
+                                <div class="ukc-field" style="margin:0;">
+                                    <label for="hc_message">Message</label>
+                                    <textarea id="hc_message" name="message" rows="5">{{ old('message') }}</textarea>
+                                    @error('message') <span class="error">{{ $message }}</span> @enderror
+                                </div>
+                                <div style="position:absolute;left:-9999px;" aria-hidden="true">
+                                    <label>Ne pas remplir <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+                                </div>
+                                <div>
+                                    <button type="submit" class="ukc-btn ukc-btn--blue">
+                                        <x-ukc.icon name="mail" :size="18" /> Envoyer le message
+                                    </button>
+                                </div>
+                            </form>
+                        @endif
                     @else
                         <h3 style="font-size:1.05rem;font-weight:800;margin-bottom:8px;">Écrire à la DRI</h3>
                         <p style="color:var(--ukc-muted);font-size:14px;margin-bottom:16px;">Envoyez-nous un e-mail, nous vous répondrons rapidement.</p>

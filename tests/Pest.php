@@ -1,6 +1,13 @@
 <?php
 
+use App\Models\Account;
+use App\Models\Colloque;
+use App\Models\Edition;
+use App\Models\Submission;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 /*
@@ -44,7 +51,71 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/*
+|--------------------------------------------------------------------------
+| Fabriques de test partagées
+|--------------------------------------------------------------------------
+|
+| Helpers réutilisés par plusieurs suites (soumissions, back-office, smoke
+| tests). Définis ici pour être globaux quel que soit l'ordre de chargement
+| des fichiers de test (et donc utilisables même en exécution isolée).
+|
+*/
+
+function openEdition(array $settings = []): Edition
 {
-    // ..
+    $colloque = Colloque::create(['name' => 'Colloque UK', 'slug' => 'uk']);
+
+    return $colloque->editions()->create([
+        'title' => 'UK 2026',
+        'edition_label' => '3e édition',
+        'year' => 2026,
+        'status' => 'open',
+        'slug' => 'uk-2026',
+        'submission_open' => true,
+        'settings' => array_merge(['tracks' => ['Sciences', 'Santé'], 'max_communications' => 3], $settings),
+    ]);
+}
+
+function verifiedAccount(): Account
+{
+    $account = Account::create([
+        'first_name' => 'Awa', 'last_name' => 'Kodjo',
+        'email' => 'awa@example.tg', 'password' => 'pass12345',
+        'grade' => 'Doctorante', 'affiliation' => 'Université de Kara',
+    ]);
+    $account->markEmailAsVerified();
+
+    return $account;
+}
+
+function adminStaff(): User
+{
+    Permission::firstOrCreate(['name' => 'manage_colloques', 'guard_name' => 'web']);
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+    $user = User::factory()->create();
+    $user->givePermissionTo('manage_colloques');
+
+    return $user;
+}
+
+function seededSubmission(string $status = 'submitted'): Submission
+{
+    $edition = openEdition();
+    $account = verifiedAccount();
+    $participant = $edition->participants()->create([
+        'account_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
+    ]);
+
+    return $edition->submissions()->create([
+        'participant_id' => $participant->id,
+        'ref_code' => '26-001',
+        'title' => 'Innovation durable',
+        'abstract' => str_repeat('Contexte. ', 10),
+        'track' => 'Sciences',
+        'type' => 'oral',
+        'status' => $status,
+        'authors' => [['name' => 'Awa Kodjo', 'email' => 'awa@example.tg', 'corresponding' => true]],
+    ]);
 }

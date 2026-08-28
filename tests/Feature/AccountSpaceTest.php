@@ -1,9 +1,7 @@
 <?php
 
 use App\Actions\IssueAttestation;
-use App\Livewire\Account\Dashboard;
 use App\Models\Account;
-use Livewire\Livewire;
 
 // openEdition(), verifiedAccount() -> AccountSubmissionTest
 
@@ -28,8 +26,9 @@ function participantWithActivity(): array
 it('affiche les blocs personnels sur le tableau de bord', function () {
     ['account' => $account] = participantWithActivity();
 
-    Livewire::actingAs($account, 'account')
-        ->test(Dashboard::class)
+    $this->actingAs($account, 'account')
+        ->get(route('account.dashboard'))
+        ->assertOk()
         ->assertSee('26-007')
         ->assertSee('Innovation locale')
         ->assertSee('Reçu')

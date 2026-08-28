@@ -1,13 +1,11 @@
 <?php
 
 use App\Events\SubmissionStatusChanged;
-use App\Livewire\Admin\Submissions\Show;
 use App\Models\Attestation;
 use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\Submission;
 use Illuminate\Support\Facades\Event;
-use Livewire\Livewire;
 
 // adminStaff() -> AdminSubmissionWorkflowTest
 
@@ -77,9 +75,8 @@ it('émet SubmissionStatusChanged à l’application d’un statut', function ()
     $participant = Participant::factory()->for($edition)->create();
     $submission = Submission::factory()->for($edition)->for($participant)->create();
 
-    Livewire::actingAs($staff, 'web')
-        ->test(Show::class, ['submission' => $submission])
-        ->call('applyStatus', 'accepted');
+    $this->actingAs($staff, 'web')
+        ->post(route('admin.submissions.status', $submission), ['status' => 'accepted']);
 
     Event::assertDispatched(SubmissionStatusChanged::class, fn ($e) => $e->status === 'accepted' && $e->submission->is($submission));
 });

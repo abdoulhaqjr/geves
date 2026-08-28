@@ -1,7 +1,6 @@
 <?php
 
 use App\Enums\MeetingRole;
-use App\Livewire\Admin\Program\Sessions;
 use App\Meetings\LiveKitEgress;
 use App\Meetings\MeetingProviderRegistry;
 use App\Meetings\Providers\JitsiProvider;
@@ -10,7 +9,6 @@ use App\Models\Account;
 use App\Models\EventSession;
 use App\Support\StreamEmbed;
 use Illuminate\Support\Facades\Http;
-use Livewire\Livewire;
 
 // openEdition() -> AccountSubmissionTest
 
@@ -152,10 +150,8 @@ it('le staff pilote l’état et la visibilité de la visio', function () {
     $edition = openEdition();
     $session = $edition->sessions()->create(['type' => 'plenary', 'label' => 'X']);
 
-    Livewire::actingAs($staff, 'web')
-        ->test(Sessions::class)
-        ->call('setMeetingStatus', $session->id, 'live')
-        ->call('setMeetingVisibility', $session->id, 'public');
+    $this->actingAs($staff, 'web')->post(route('admin.program.sessions.meeting-status', $session), ['status' => 'live']);
+    $this->actingAs($staff, 'web')->post(route('admin.program.sessions.meeting-visibility', $session), ['visibility' => 'public']);
 
     $session->refresh();
     expect($session->meeting_status)->toBe('live');
@@ -285,10 +281,9 @@ it('le staff peut choisir LiveKit pour une session', function () {
     $edition = openEdition();
     $session = $edition->sessions()->create(['type' => 'plenary', 'label' => 'X']);
 
-    Livewire::actingAs($staff, 'web')->test(Sessions::class)
-        ->call('editMeeting', $session->id)
-        ->set('mProvider', 'livekit')->set('mRoom', 'salle-lk')
-        ->call('saveMeeting')->assertHasNoErrors();
+    $this->actingAs($staff, 'web')->post(route('admin.program.sessions.meeting', $session), [
+        'mProvider' => 'livekit', 'mRoom' => 'salle-lk',
+    ])->assertSessionHasNoErrors();
 
     $fresh = $session->fresh();
     expect($fresh->meeting_provider)->toBe('livekit');
@@ -414,16 +409,14 @@ it('le staff personnalise fournisseur, salle et lien', function () {
     $edition = openEdition();
     $session = $edition->sessions()->create(['type' => 'plenary', 'label' => 'X']);
 
-    Livewire::actingAs($staff, 'web')->test(Sessions::class)
-        ->call('editMeeting', $session->id)
-        ->set('mProvider', 'jitsi')->set('mRoom', 'ma-salle')
-        ->call('saveMeeting')->assertHasNoErrors();
+    $this->actingAs($staff, 'web')->post(route('admin.program.sessions.meeting', $session), [
+        'mProvider' => 'jitsi', 'mRoom' => 'ma-salle',
+    ])->assertSessionHasNoErrors();
     expect($session->fresh()->meeting_room)->toBe('ma-salle');
 
-    Livewire::actingAs($staff, 'web')->test(Sessions::class)
-        ->call('editMeeting', $session->id)
-        ->set('mProvider', 'custom')->set('mUrl', 'https://meet.google.com/abc')
-        ->call('saveMeeting')->assertHasNoErrors();
+    $this->actingAs($staff, 'web')->post(route('admin.program.sessions.meeting', $session), [
+        'mProvider' => 'custom', 'mUrl' => 'https://meet.google.com/abc',
+    ])->assertSessionHasNoErrors();
     $fresh = $session->fresh();
     expect($fresh->meeting_provider)->toBe('custom');
     expect($fresh->meeting_url)->toBe('https://meet.google.com/abc');
@@ -435,10 +428,9 @@ it('exige un lien pour le fournisseur externe', function () {
     $edition = openEdition();
     $session = $edition->sessions()->create(['type' => 'plenary', 'label' => 'X']);
 
-    Livewire::actingAs($staff, 'web')->test(Sessions::class)
-        ->call('editMeeting', $session->id)
-        ->set('mProvider', 'custom')->set('mUrl', '')
-        ->call('saveMeeting')->assertHasErrors('mUrl');
+    $this->actingAs($staff, 'web')->post(route('admin.program.sessions.meeting', $session), [
+        'mProvider' => 'custom', 'mUrl' => '',
+    ])->assertSessionHasErrors('mUrl');
 });
 
 it('la page visio propose un nouvel onglet pour un lien externe', function () {

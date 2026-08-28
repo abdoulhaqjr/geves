@@ -1,36 +1,53 @@
-@props(['title' => null, 'width' => '440px'])
+@props(['title' => null, 'width' => '460px'])
 <x-layouts.app :title="$title">
-    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 16px;background:
-                radial-gradient(1200px 600px at 50% -10%, rgba(34,62,164,.10), transparent 60%), var(--ukc-bg);">
-        <div style="width:100%;max-width:{{ $width }};">
-            <div style="text-align:center;margin-bottom:22px;">
-                <a href="{{ url('/') }}" style="display:inline-block;">
-                    <div style="font-size:1.25rem;font-weight:900;color:var(--ukc-blue);letter-spacing:-.01em;">
-                        Colloques scientifiques
-                    </div>
-                    <div style="font-size:.85rem;color:var(--ukc-muted);font-weight:600;">Université de Kara</div>
+    {{-- Pages d'authentification — mise en page deux colonnes fidèle au mockup
+         connexion.html / inscription.html : panneau de marque à gauche, carte à droite. --}}
+    <div class="auth-shell">
+        <aside class="auth-brand">
+            <div>
+                <a href="{{ url('/') }}" class="logo">
+                    <img src="{{ asset('img/logo-uk-white.png') }}" alt="Université de Kara" class="auth-logo">
                 </a>
+                @isset($brandBody)
+                    {{ $brandBody }}
+                @else
+                    <h1>Bienvenue sur la plateforme <em>scientifique</em></h1>
+                    <p>
+                        Accédez à votre espace pour suivre vos soumissions, inscriptions, badges
+                        et attestations des colloques de l’Université de Kara.
+                    </p>
+                    <ul>
+                        <li>
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                            Suivi des résumés et évaluations
+                        </li>
+                        <li>
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                            Badges et attestations avec QR
+                        </li>
+                        <li>
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                            Assistance IA Gesco
+                        </li>
+                    </ul>
+                @endisset
             </div>
+            <div class="foot">
+                <a href="{{ url('/') }}">← Retour à l’accueil</a> · Service institutionnel non commercial
+            </div>
+        </aside>
 
-            <div class="ukc-card" style="padding:28px 26px;position:relative;overflow:hidden;">
-                {{-- Accent tricolore --}}
-                <div style="position:absolute;top:0;left:0;right:0;height:4px;display:flex;">
-                    <span style="flex:1;background:var(--ukc-blue);"></span>
-                    <span style="flex:1;background:var(--ukc-gold);"></span>
-                    <span style="flex:1;background:var(--ukc-green);"></span>
-                </div>
-
+        <main class="auth-panel">
+            <div class="auth-card" style="max-width:{{ $width }};">
                 @isset($heading)
-                    <div style="margin:6px 0 20px;">
-                        <h1 style="font-size:1.35rem;font-weight:800;color:var(--ukc-text);">{{ $heading }}</h1>
-                        @isset($subheading)
-                            <p style="font-size:.9rem;color:var(--ukc-muted);margin-top:4px;">{{ $subheading }}</p>
-                        @endisset
-                    </div>
+                    <h2 class="auth-card__title">{{ $heading }}</h2>
+                    @isset($subheading)
+                        <p class="auth-card__sub">{{ $subheading }}</p>
+                    @endisset
                 @endisset
 
                 {{ $slot }}
             </div>
-        </div>
+        </main>
     </div>
 </x-layouts.app>

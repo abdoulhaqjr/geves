@@ -1,12 +1,10 @@
 <?php
 
-use App\Livewire\Admin\Emails\Templates;
 use App\Mail\ParticipantInvitationMail;
 use App\Mail\SubmissionStatusMail;
 use App\Support\EmailTemplates;
 use App\Support\Settings;
 use Illuminate\Support\Str;
-use Livewire\Livewire;
 
 // adminStaff() -> AdminSubmissionWorkflowTest ; openEdition() -> AccountSubmissionTest
 
@@ -80,23 +78,24 @@ it('personnalise l’invitation participant', function () {
 it('enregistre les modèles depuis le back-office', function () {
     $staff = adminStaff();
 
-    Livewire::actingAs($staff, 'web')
-        ->test(Templates::class)
-        ->set('templates.submission_accepted.subject', 'Sujet personnalisé')
-        ->call('save')
-        ->assertHasNoErrors();
+    $this->actingAs($staff, 'web')
+        ->put(route('admin.emails.templates.update'), [
+            'templates' => ['submission_accepted' => ['subject' => 'Sujet personnalisé']],
+        ])
+        ->assertSessionHasNoErrors();
 
     expect(EmailTemplates::raw('submission_accepted')['subject'])->toBe('Sujet personnalisé');
 });
 
-it('réinitialise un modèle à sa valeur par défaut', function () {
+it('expose la valeur courante et le défaut (réinitialisation côté client)', function () {
     $staff = adminStaff();
+    Settings::set('email_templates', ['submission_accepted' => ['subject' => 'Autre chose', 'heading' => '', 'intro' => '']]);
 
-    Livewire::actingAs($staff, 'web')
-        ->test(Templates::class)
-        ->set('templates.submission_accepted.subject', 'Autre chose')
-        ->call('resetTemplate', 'submission_accepted')
-        ->assertSet('templates.submission_accepted.subject', 'Votre communication est acceptée');
+    $this->actingAs($staff, 'web')
+        ->get(route('admin.emails.templates'))
+        ->assertOk()
+        ->assertSee('Autre chose')                        // valeur courante
+        ->assertSee('Votre communication est acceptée');  // défaut disponible pour le bouton « Défaut » (Alpine)
 });
 
 it('refuse l’édition des modèles aux invités', function () {

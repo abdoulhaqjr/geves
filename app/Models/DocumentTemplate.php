@@ -14,7 +14,7 @@ class DocumentTemplate extends Model
 
     protected function casts(): array
     {
-        return ['layout' => 'array'];
+        return ['layout' => 'array', 'editor_state' => 'array'];
     }
 
     public function edition(): BelongsTo

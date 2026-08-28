@@ -1,12 +1,10 @@
 <?php
 
-use App\Livewire\Account\Dashboard;
 use App\Models\Account;
 use App\Models\Colloque;
 use App\Models\Edition;
 use App\Support\AccountActivity;
 use Illuminate\Support\Str;
-use Livewire\Livewire;
 
 // openEdition() -> AccountSubmissionTest
 
@@ -107,8 +105,9 @@ it('affiche les rôles dérivés sur le tableau de bord participant', function (
     $e = otherEdition('uk-dash');
     $e->sessions()->create(['type' => 'plenary', 'label' => 'Plénière', 'moderator_email' => 'pro@uk.tg']);
 
-    Livewire::actingAs($account, 'account')
-        ->test(Dashboard::class)
+    $this->actingAs($account, 'account')
+        ->get(route('account.dashboard'))
+        ->assertOk()
         ->assertSee('Mes rôles')
         ->assertSee('Modérateur');
 });

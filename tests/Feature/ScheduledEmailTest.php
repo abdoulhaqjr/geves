@@ -2,14 +2,12 @@
 
 use App\Actions\QueueEmailCampaign;
 use App\Actions\SendDueEmails;
-use App\Livewire\Admin\Emails\Index;
 use App\Mail\CampaignMail;
 use App\Models\Edition;
 use App\Models\Email;
 use App\Support\EmailAudience;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
-use Livewire\Livewire;
 
 // adminStaff() -> AdminSubmissionWorkflowTest ; openEdition() -> AccountSubmissionTest
 
@@ -50,14 +48,14 @@ it('met une campagne immédiate en file et l’envoie tout de suite', function (
     $staff = adminStaff();
     $edition = audienceEdition();
 
-    Livewire::actingAs($staff, 'web')
-        ->test(Index::class)
-        ->set('edition_id', (string) $edition->id)
-        ->set('audience', 'paid')
-        ->set('subject', 'Bonjour {prenom}')
-        ->set('body', 'Merci {nom_complet} pour {edition}.')
-        ->call('queueCampaign')
-        ->assertHasNoErrors();
+    $this->actingAs($staff, 'web')
+        ->post(route('admin.emails.send'), [
+            'edition_id' => (string) $edition->id,
+            'audience' => 'paid',
+            'subject' => 'Bonjour {prenom}',
+            'body' => 'Merci {nom_complet} pour {edition}.',
+        ])
+        ->assertSessionHasNoErrors();
 
     Mail::assertSent(CampaignMail::class, 1);
     $email = Email::first();
@@ -127,10 +125,7 @@ it('annule un e-mail encore en file', function () {
     app(QueueEmailCampaign::class)->handle($edition, 'paid', 'Rappel', 'Corps', now()->addDay());
     $email = Email::first();
 
-    Livewire::actingAs($staff, 'web')
-        ->test(Index::class)
-        ->set('edition_id', (string) $edition->id)
-        ->call('cancel', $email->id);
+    $this->actingAs($staff, 'web')->delete(route('admin.emails.cancel', $email));
 
     expect(Email::find($email->id))->toBeNull();
 });
@@ -139,13 +134,13 @@ it('refuse une audience sans destinataire', function () {
     $staff = adminStaff();
     $edition = openEdition(); // aucune participation
 
-    Livewire::actingAs($staff, 'web')
-        ->test(Index::class)
-        ->set('edition_id', (string) $edition->id)
-        ->set('audience', 'paid')
-        ->set('subject', 'Objet')
-        ->set('body', 'Corps')
-        ->call('queueCampaign');
+    $this->actingAs($staff, 'web')
+        ->post(route('admin.emails.send'), [
+            'edition_id' => (string) $edition->id,
+            'audience' => 'paid',
+            'subject' => 'Objet',
+            'body' => 'Corps',
+        ]);
 
     expect(Email::count())->toBe(0);
 });

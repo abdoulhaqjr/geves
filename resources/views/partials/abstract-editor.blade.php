@@ -1,9 +1,10 @@
 {{--
-    Éditeur WYSIWYG du résumé (bound à la propriété Livewire `abstract`).
-    Variables : $initial (HTML de départ), $min (caractères), $help (facultatif).
-    La zone éditable est en wire:ignore pour survivre aux re-rendus Livewire.
+    Éditeur WYSIWYG du résumé (soumission de formulaire classique, sans Livewire).
+    Variables : $name (nom du champ caché), $initial (HTML de départ),
+    $min (caractères), $help (facultatif).
 --}}
 <div x-data="ukcEditor(@js($initial ?? ''))">
+    <input type="hidden" name="{{ $name ?? 'abstract' }}" x-ref="hidden">
     <div class="ukc-rte-editor">
         <div class="ukc-rte-toolbar">
             <button type="button" @click="cmd('bold')" title="Gras"><strong>B</strong></button>
@@ -12,7 +13,7 @@
             <button type="button" @click="cmd('insertUnorderedList')" title="Liste à puces">•</button>
             <button type="button" @click="cmd('insertOrderedList')" title="Liste numérotée" style="font-size:12px;">1.</button>
         </div>
-        <div class="ukc-rte-area" contenteditable="true" x-ref="area" wire:ignore
+        <div class="ukc-rte-area" contenteditable="true" x-ref="area"
              role="textbox" aria-multiline="true" aria-label="Résumé"
              data-placeholder="Contexte, objectifs, méthode, résultats attendus…"
              @input="sync()" @blur="sync()"></div>

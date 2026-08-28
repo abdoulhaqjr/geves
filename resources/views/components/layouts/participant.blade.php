@@ -1,35 +1,79 @@
-@php($account = auth('account')->user())
+@php
+    $account = auth('account')->user();
+
+    // Éditions auxquelles le compte participe (pour les liens contextuels).
+    $myEditionIds = \App\Models\Participant::where('account_id', $account?->id)
+        ->pluck('edition_id')->unique()->filter();
+
+    // Édition à régler en priorité (communication acceptée, frais non payés),
+    // sinon la dernière à laquelle le compte participe.
+    $payEditionId = \App\Models\Participant::where('account_id', $account?->id)
+        ->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted'))
+        ->whereDoesntHave('payments', fn ($q) => $q->where('status', 'paid'))
+        ->latest('id')->value('edition_id') ?? $myEditionIds->first();
+
+    // Édition « du colloque » pour les liens publics (participée, sinon ouverte).
+    $colloqueEdition = \App\Models\Edition::whereIn('id', $myEditionIds)->latest('id')->first()
+        ?? \App\Models\Edition::where('status', 'open')->latest('id')->first();
+@endphp
 <x-layouts.app :title="$title ?? 'Mon espace'">
     <div class="ukc-shell" x-data="{ open: false }">
         <aside class="ukc-sidebar" :class="{ 'open': open }">
             <div class="ukc-sidebar-brand">
-                <div class="logo">Espace participant</div>
-                <div class="sub">Colloques · Université de Kara</div>
+                <a href="{{ route('account.dashboard') }}" class="logo-img" aria-label="Université de Kara — espace participant">
+                    <img src="{{ asset('img/logo-uk.png') }}" alt="Université de Kara">
+                </a>
+                <div class="logo-sub" style="margin-top:8px;">Espace participant</div>
+                <div class="sub">{{ $colloqueEdition?->title ?: 'Colloques · Université de Kara' }}</div>
             </div>
             <nav class="ukc-sidebar-nav">
-                <a href="{{ route('account.dashboard') }}" wire:navigate
+                <a href="{{ route('account.dashboard') }}"
                    @class(['active' => request()->routeIs('account.dashboard')])>
                     <x-ukc.icon name="home" :size="18" /> Tableau de bord
                 </a>
-                <a href="{{ route('account.submissions.index') }}" wire:navigate
-                   @class(['active' => request()->routeIs('account.submissions.index')])>
-                    <x-ukc.icon name="inbox" :size="18" /> Mes communications
-                </a>
-                <a href="{{ route('account.documents') }}" wire:navigate
-                   @class(['active' => request()->routeIs('account.documents')])>
-                    <x-ukc.icon name="folder" :size="18" /> Mes documents
-                </a>
-                <a href="{{ route('account.notifications') }}" wire:navigate
-                   @class(['active' => request()->routeIs('account.notifications')])>
-                    <x-ukc.icon name="bell" :size="18" /> Notifications
-                </a>
-                <a href="{{ route('account.profile') }}" wire:navigate
+
+                <span class="nav-label">Mon dossier</span>
+                <a href="{{ route('account.profile') }}"
                    @class(['active' => request()->routeIs('account.profile')])>
                     <x-ukc.icon name="user" :size="18" /> Mon profil
                 </a>
-                <a href="{{ route('account.security') }}" wire:navigate
+                <a href="{{ route('account.submissions.index') }}"
+                   @class(['active' => request()->routeIs('account.submissions.*')])>
+                    <x-ukc.icon name="inbox" :size="18" /> Soumissions
+                </a>
+                <a href="{{ $payEditionId ? route('account.payment', $payEditionId) : ($colloqueEdition ? route('public.colloque', $colloqueEdition->slug) : route('account.dashboard')) }}"
+                   @class(['active' => request()->routeIs('account.payment')])>
+                    <x-ukc.icon name="card" :size="18" /> Inscription &amp; paiement
+                </a>
+                <a href="{{ route('account.documents') }}"
+                   @class(['active' => request()->routeIs('account.documents')])>
+                    <x-ukc.icon name="folder" :size="18" /> Documents
+                </a>
+                <a href="{{ route('account.security') }}"
                    @class(['active' => request()->routeIs('account.security')])>
-                    <x-ukc.icon name="lock" :size="18" /> Sécurité
+                    <x-ukc.icon name="shield" :size="18" /> Mon compte
+                </a>
+
+                <span class="nav-label">Colloque</span>
+                @if ($colloqueEdition)
+                    <a href="{{ route('public.colloque', $colloqueEdition->slug) }}">
+                        <x-ukc.icon name="globe" :size="18" /> Page du colloque
+                    </a>
+                    <a href="{{ route('public.colloque', $colloqueEdition->slug) }}#programme">
+                        <x-ukc.icon name="calendar" :size="18" /> Programme
+                    </a>
+                @endif
+                <a href="{{ route('public.deroulement') }}">
+                    <x-ukc.icon name="video" :size="18" /> Déroulement
+                </a>
+                <a href="{{ route('public.archives') }}">
+                    <x-ukc.icon name="book" :size="18" /> Archives
+                </a>
+                <a href="{{ route('home') }}">
+                    <x-ukc.icon name="external" :size="18" /> Accueil plateforme
+                </a>
+                <a href="{{ route('public.gesco') }}">
+                    <x-ukc.icon name="sparkles" :size="18" /> Assistant Gesco
                 </a>
             </nav>
             <div class="ukc-sidebar-foot">
@@ -63,10 +107,18 @@
                     <button type="button" class="ukc-burger" @click="open = !open" aria-label="Menu">
                         <x-ukc.icon name="menu" :size="24" />
                     </button>
-                    <h1>{{ $title ?? 'Mon espace' }}</h1>
+                    <div>
+                        <h1>{{ $title ?? 'Mon espace' }}</h1>
+                        @isset($subtitle)<div class="sub" style="font-size:13px;color:var(--ukc-muted);">{{ $subtitle }}</div>@endisset
+                    </div>
                 </div>
                 <div class="actions">
-                    <livewire:notifications.bell />
+                    @if ($colloqueEdition)
+                        <a href="{{ route('public.colloque', $colloqueEdition->slug) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+                            <x-ukc.icon name="external" :size="14" /> Voir le colloque
+                        </a>
+                    @endif
+                    <x-ukc.notification-bell />
                 </div>
             </header>
 

@@ -1,9 +1,9 @@
 <?php
 
-use App\Livewire\Admin\Settings\Agents;
 use App\Support\AiAgents;
 use App\Support\Settings;
-use Livewire\Livewire;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 // adminStaff() -> défini dans les helpers de tests partagés
 
@@ -37,8 +37,8 @@ it('normalise une clé manquante depuis le nom', function () {
 });
 
 it('affiche l’éditeur d’agents au staff', function () {
-    Livewire::actingAs(adminStaff(), 'web')
-        ->test(Agents::class)
+    $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.settings.agents'))
         ->assertOk()
         ->assertSee('Agents IA')
         ->assertSee('Gesco')
@@ -46,31 +46,64 @@ it('affiche l’éditeur d’agents au staff', function () {
 });
 
 it('ajoute puis enregistre un agent', function () {
-    Livewire::actingAs(adminStaff(), 'web')
-        ->test(Agents::class)
-        ->call('addAgent')
-        ->set('agents.2.name', 'Agent Rapports')
-        ->set('agents.2.audience', 'admin')
-        ->call('save')
-        ->assertHasNoErrors();
+    $this->actingAs(adminStaff(), 'web')->put(route('admin.settings.agents.update'), [
+        'agents' => [
+            ['key' => 'gesco', 'name' => 'Gesco', 'audience' => 'participants'],
+            ['key' => 'admin', 'name' => 'Copilote', 'audience' => 'admin'],
+            ['key' => 'rapports', 'name' => 'Agent Rapports', 'audience' => 'admin'],
+        ],
+    ])->assertSessionHasNoErrors();
 
     expect(collect(AiAgents::all())->pluck('name'))->toContain('Agent Rapports');
 });
 
 it('exige un nom d’agent', function () {
-    Livewire::actingAs(adminStaff(), 'web')
-        ->test(Agents::class)
-        ->set('agents.0.name', '')
-        ->call('save')
-        ->assertHasErrors('agents.0.name');
+    $this->actingAs(adminStaff(), 'web')->put(route('admin.settings.agents.update'), [
+        'agents' => [['key' => 'gesco', 'name' => '', 'audience' => 'participants']],
+    ])->assertSessionHasErrors('agents.0.name');
 });
 
 it('supprime un agent', function () {
-    $test = Livewire::actingAs(adminStaff(), 'web')
-        ->test(Agents::class)
-        ->call('addAgent')
-        ->call('removeAgent', 2)
-        ->assertHasNoErrors();
+    // La suppression est côté client ; le serveur persiste la liste soumise.
+    $this->actingAs(adminStaff(), 'web')->put(route('admin.settings.agents.update'), [
+        'agents' => [
+            ['key' => 'gesco', 'name' => 'Gesco', 'audience' => 'participants'],
+            ['key' => 'admin', 'name' => 'Copilote', 'audience' => 'admin'],
+        ],
+    ])->assertSessionHasNoErrors();
 
-    expect($test->get('agents'))->toHaveCount(2);
+    expect(AiAgents::all())->toHaveCount(2);
+});
+
+it('téléverse un avatar d’agent et le persiste', function () {
+    Storage::fake('public');
+
+    $this->actingAs(adminStaff(), 'web')->put(route('admin.settings.agents.update'), [
+        'agents' => [['key' => 'gesco', 'name' => 'Gesco', 'audience' => 'participants', 'avatar' => '']],
+        'avatars' => [0 => UploadedFile::fake()->image('gesco.png', 120, 120)],
+    ])->assertSessionHasNoErrors();
+
+    $agent = AiAgents::all()[0];
+    expect($agent['avatar'])->not->toBe('');
+    Storage::disk('public')->assertExists($agent['avatar']);
+});
+
+it('rejette un avatar non-image', function () {
+    Storage::fake('public');
+
+    $this->actingAs(adminStaff(), 'web')->put(route('admin.settings.agents.update'), [
+        'agents' => [['key' => 'gesco', 'name' => 'Gesco', 'audience' => 'participants']],
+        'avatars' => [0 => UploadedFile::fake()->create('malware.pdf', 100, 'application/pdf')],
+    ])->assertSessionHasErrors('avatars.0');
+});
+
+it('retire l’avatar d’un agent', function () {
+    Storage::fake('public');
+
+    $this->actingAs(adminStaff(), 'web')->put(route('admin.settings.agents.update'), [
+        'agents' => [['key' => 'gesco', 'name' => 'Gesco', 'audience' => 'participants', 'avatar' => 'ai-agents/x.png']],
+        'remove_avatar' => [0 => '1'],
+    ])->assertSessionHasNoErrors();
+
+    expect(AiAgents::all()[0]['avatar'])->toBe('');
 });

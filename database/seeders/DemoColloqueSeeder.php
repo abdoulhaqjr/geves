@@ -22,7 +22,7 @@ class DemoColloqueSeeder extends Seeder
             ]
         );
 
-        $colloque->editions()->firstOrCreate(
+        $colloque->editions()->updateOrCreate(
             ['slug' => 'edition-2026'],
             [
                 'title' => 'Colloque international de l’Université de Kara — 2026',

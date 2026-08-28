@@ -10,10 +10,10 @@ use Illuminate\Contracts\View\View;
 
 /**
  * Accueil public de la plateforme (institutionnel, non commercial). Vue statique
- * rendue par contrôleur + Blade (cacheable, sans snapshot Livewire) ; les parties
- * dynamiques sont des îlots (formulaire de contact = composant Livewire, galerie
- * et menu mobile = JS client). Répartit les éditions publiées selon les 3 phases
- * publiques (en cours / à venir / passées) et calcule les indicateurs.
+ * rendue par contrôleur + Blade (cacheable) ; les parties dynamiques sont des
+ * îlots légers (formulaire de contact = POST classique, galerie et menu mobile
+ * = JS/Alpine). Répartit les éditions publiées selon les 3 phases publiques
+ * (en cours / à venir / passées) et calcule les indicateurs.
  */
 class HomeController extends Controller
 {

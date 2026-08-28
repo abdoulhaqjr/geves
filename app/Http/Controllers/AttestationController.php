@@ -69,6 +69,37 @@ class AttestationController extends Controller
             ->where('uuid', $uuid)->firstOrFail();
 
         $verifyUrl = route('attestation.verify', $attestation->uuid);
+
+        // Modèle personnalisé enregistré pour ce type ? Le PDF rend cette mise en page.
+        $template = DocumentTemplate::where('edition_id', $attestation->edition_id)
+            ->where('kind', 'attestation')->where('type', $attestation->type)->first();
+
+        if ($template && $template->layout) {
+            $layout = LayoutSanitizer::sanitize($template->layout, 'attestation', $attestation->type);
+            $canvas = LayoutRenderer::render($layout, [
+                'org' => $attestation->edition?->colloque?->name ?? '',
+                'event' => $attestation->edition?->title ?? '',
+                'year' => (string) ($attestation->edition?->year ?: ''),
+                'location' => $attestation->edition?->location ?? '',
+                'name' => (string) $attestation->recipient_name,
+                'type' => mb_strtolower($attestation->typeLabel()),
+                'date' => $attestation->issued_at?->format('d/m/Y') ?? '',
+                'ref' => $attestation->uuid,
+                'verify_url' => $verifyUrl,
+            ]);
+
+            // Page à la taille exacte de la mise en page (px → points à 96 dpi).
+            $w = (int) $layout['width'];
+            $h = (int) $layout['height'];
+
+            return Pdf::loadView('pdf.attestation-template', [
+                'attestation' => $attestation,
+                'canvas' => $canvas,
+            ])->setPaper([0, 0, $w * 0.75, $h * 0.75])
+                ->download('attestation-'.$attestation->uuid.'.pdf');
+        }
+
+        // Repli : mise en page par défaut (A4 paysage).
         $qr = QrCode::format('svg')->size(150)->margin(0)->generate($verifyUrl);
 
         return Pdf::loadView('pdf.attestation', [

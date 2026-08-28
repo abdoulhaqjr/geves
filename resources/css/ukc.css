@@ -48,8 +48,8 @@
 /* ---- Boutons ---- */
 .ukc-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
-  font-weight: 600; font-size: .9rem; padding: .7rem 1.35rem;
-  border-radius: 50px; border: none; cursor: pointer; transition: .22s;
+  font-weight: 700; font-size: .92rem; padding: .75rem 1.45rem;
+  border-radius: 50px; border: none; cursor: pointer; transition: .2s;
   text-align: center;
 }
 /* CTA principal = or (charte : accent sur fond clair ou sombre). Le bleu plein
@@ -70,6 +70,12 @@
 .ukc-btn--danger:hover { background: #fecaca; }
 .ukc-btn--sm { padding: .5rem 1rem; font-size: .82rem; }
 .ukc-btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+/* Icônes = SVG « inline » dans le flux : annule le `svg { display:block }` de
+   Tailwind Preflight, pour que les icônes s'alignent au texte partout (boutons
+   via flex, mais aussi inline dans les labels/pills/paragraphes). Charte + mockup. */
+.ukc-scope svg.ukc-icon,
+.ukc-scope .ukc-btn svg,
+.ukc-scope .ukc-btn--icon svg { display: inline-block; vertical-align: middle; flex-shrink: 0; }
 
 /* ---- Pastilles de statut ---- */
 .ukc-pill {
@@ -102,7 +108,7 @@
 .badge-scanner .scan-fallback { color: #fff; padding: 20px; text-align: center; font-size: 14px; line-height: 1.5; }
 
 /* ---- Layout public (container + sections) ---- */
-.ukc-container { max-width: 1180px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 28px); width: 100%; }
+.ukc-container { max-width: 1380px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 28px); width: 100%; }
 .ukc-section { padding: clamp(52px, 8vw, 88px) 0; }
 .ukc-section--alt { background: var(--ukc-bg); }
 .ukc-section--tight { padding: clamp(36px, 5vw, 56px) 0; }
@@ -118,6 +124,9 @@
 }
 .ukc-sidebar-brand { padding: 22px 20px 18px; border-bottom: 1px solid rgba(255, 255, 255, .08); }
 .ukc-sidebar-brand .logo { font-size: 15px; font-weight: 800; color: #fff; line-height: 1.25; }
+.ukc-sidebar-brand .logo-img { display: block; background: #fff; border-radius: 10px; padding: 8px 12px; }
+.ukc-sidebar-brand .logo-img img { display: block; width: 100%; height: auto; max-height: 40px; object-fit: contain; }
+.ukc-sidebar-brand .logo-sub { font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, .6); margin-top: 8px; }
 .ukc-sidebar-brand .sub { font-size: 12px; color: #8b97b8; margin-top: 4px; }
 .ukc-sidebar-nav {
   flex: 1; padding: 16px 12px; overflow-y: auto;
@@ -154,20 +163,39 @@
 .ukc-user-chip .logout { color: #8b97b8; padding: 6px; border-radius: 8px; background: none; border: none; cursor: pointer; }
 .ukc-user-chip .logout:hover { background: rgba(255, 255, 255, .08); color: #fff; }
 
-/* Back-office : sidebar sombre style WordPress (mockup admin), icônes conservées. */
-.ukc-shell--admin { --ukc-sidebar: 200px; }
-.ukc-shell--admin .ukc-sidebar { background: #1d2327; color: #c3c4c7; }
+/* Back-office : shell style WordPress (mockup admin) — barre noire en tête,
+   sidebar sombre plate (liens texte), en-tête blanc par page. */
+.wp-bar {
+  position: fixed; top: 0; left: 0; right: 0; height: 32px; z-index: 60;
+  background: #1d2327; color: #c3c4c7;
+  display: flex; align-items: center; gap: 16px; padding: 0 14px; font-size: 12px;
+}
+.wp-bar strong { color: #fff; font-weight: 700; }
+.wp-bar .right { margin-left: auto; }
+
+.ukc-shell--admin { --ukc-sidebar: 180px; }
+.ukc-shell--admin .ukc-sidebar { background: #1d2327; color: #c3c4c7; top: 32px; }
 .ukc-shell--admin .ukc-sidebar-brand { padding: 16px 16px 14px; }
 .ukc-shell--admin .ukc-sidebar-nav { padding: 8px 0; gap: 1px; }
 .ukc-shell--admin .ukc-sidebar-nav a {
-  border-radius: 0; padding: 9px 16px; gap: 10px;
-  font-size: 13px; color: #c3c4c7; border-left: 3px solid transparent; line-height: 1.3;
+  border-radius: 0; padding: 9px 16px;
+  font-size: 13px; font-weight: 500; color: #c3c4c7; border-left: 3px solid transparent; line-height: 1.3;
 }
 .ukc-shell--admin .ukc-sidebar-nav a:hover { background: #2c3338; color: #fff; }
 .ukc-shell--admin .ukc-sidebar-nav a.active { background: #2c3338; color: #fff; border-left-color: var(--ukc-blue); font-weight: 600; }
-.ukc-shell--admin .ukc-sidebar-nav a svg { width: 17px; height: 17px; }
-.ukc-shell--admin .ukc-sidebar-nav .nav-label { color: #7c858e; padding: 12px 16px 5px; margin-top: 4px; }
 .ukc-shell--admin .ukc-sidebar-foot { padding: 12px 14px 16px; }
+.ukc-shell--admin .ukc-main { margin-top: 32px; }
+
+/* En-tête blanc par page (mockup .ukc-admin-head) + corps (.ukc-admin-body) */
+.ukc-admin-head {
+  background: #fff; border-bottom: 1px solid var(--ukc-border); padding: 16px 24px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+}
+.ukc-admin-head .head-title { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.ukc-admin-head h1 { font-size: 1.35rem; font-weight: 800; line-height: 1.2; }
+.ukc-admin-head .sub { font-size: 13px; color: var(--ukc-muted); margin-top: 2px; }
+.ukc-admin-head .head-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ukc-admin-body { padding: 20px 24px 48px; width: 100%; min-width: 0; }
 
 .ukc-main { flex: 1; margin-left: var(--ukc-sidebar); min-width: 0; display: flex; flex-direction: column; }
 .ukc-topbar {
@@ -178,7 +206,8 @@
 .ukc-topbar h1 { font-size: 1.15rem; font-weight: 800; color: var(--ukc-text); }
 .ukc-topbar .actions { display: flex; align-items: center; gap: 10px; }
 .ukc-burger { display: none; background: none; border: none; font-size: 1.4rem; color: var(--ukc-blue); cursor: pointer; padding: 4px; }
-.ukc-content { padding: 24px clamp(16px, 3vw, 32px) 48px; width: 100%; min-width: 0; }
+/* Contenu participant : cadré 1100px et centré (fidèle au mockup espace-participant). */
+.ukc-content { padding: 24px clamp(16px, 3vw, 32px) 48px; width: 100%; min-width: 0; max-width: 1100px; margin: 0 auto; }
 
 /* ---- Grilles ---- */
 .ukc-grid-2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; }
@@ -327,3 +356,70 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .ukc-scope h1, .ukc-scope h2, .ukc-scope h3, .ukc-scope h4, .ukc-scope h5, .ukc-scope h6 {
   font-family: var(--ukc-font);
 }
+
+/* =========================================================================
+   Pages d'authentification (connexion, inscription, mots de passe)
+   Mise en page deux colonnes fidèle au mockup connexion.html / inscription.html.
+   ========================================================================= */
+.auth-shell { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; }
+@media (max-width: 900px) { .auth-shell { grid-template-columns: 1fr; } }
+
+.auth-brand {
+  background: linear-gradient(145deg, #0f1a33 0%, #1a3080 45%, #223ea4 75%, #0a7a2f 100%);
+  color: #fff; padding: clamp(32px, 6vw, 56px);
+  display: flex; flex-direction: column; justify-content: space-between;
+  position: relative; overflow: hidden;
+}
+.auth-brand::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 50% 40% at 80% 15%, rgba(255,215,0,.18), transparent 55%),
+    radial-gradient(ellipse 40% 40% at 10% 85%, rgba(0,153,51,.2), transparent 50%);
+}
+.auth-brand > * { position: relative; z-index: 1; }
+.auth-brand .logo { display: flex; align-items: center; gap: 12px; font-weight: 900; font-size: 1.1rem; color: #fff; text-decoration: none; }
+.auth-brand .logo .mark {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: linear-gradient(135deg, var(--ukc-blue), var(--ukc-green));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 900; box-shadow: 0 8px 20px rgba(0,0,0,.2);
+}
+.auth-brand .logo span { display: block; font-size: 12px; font-weight: 600; color: rgba(255,255,255,.75); margin-top: 2px; }
+.auth-brand .logo .auth-logo { height: 48px; width: auto; display: block; }
+.auth-brand h1 { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 900; line-height: 1.2; letter-spacing: -.02em; margin: 40px 0 14px; max-width: 14em; color: #fff; }
+.auth-brand h1 em { font-style: normal; color: var(--ukc-gold); }
+.auth-brand p { color: rgba(255,255,255,.85); font-size: 15px; max-width: 28em; margin-bottom: 28px; }
+.auth-brand ul { list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 14px; font-weight: 600; color: rgba(255,255,255,.9); margin: 0; padding: 0; }
+.auth-brand ul li { display: flex; align-items: center; gap: 10px; }
+.auth-brand ul li svg { width: 18px; height: 18px; flex-shrink: 0; color: var(--ukc-gold); fill: currentColor; }
+.auth-brand .foot { margin-top: 40px; font-size: 13px; color: rgba(255,255,255,.65); }
+.auth-brand .foot a { color: #fff; }
+@media (max-width: 900px) {
+  .auth-brand { padding-bottom: 28px; }
+  .auth-brand h1 { margin-top: 24px; }
+  .auth-brand ul { display: none; }
+}
+
+.auth-panel { display: flex; align-items: center; justify-content: center; padding: clamp(28px, 5vw, 48px) 20px; background: var(--ukc-bg); }
+.auth-card {
+  width: 100%; background: #fff;
+  border: 1px solid var(--ukc-border); border-radius: var(--ukc-radius-lg);
+  box-shadow: var(--ukc-shadow-lg); padding: clamp(24px, 4vw, 34px);
+}
+.auth-card__title { font-size: 1.35rem; font-weight: 900; letter-spacing: -.02em; margin-bottom: 6px; color: var(--ukc-text); }
+.auth-card__sub { color: var(--ukc-muted); font-size: 14.5px; margin-bottom: 22px; }
+
+/* Séparateur « ou » et bouton contour (renvoi vers l'inscription). */
+.auth-divider { display: flex; align-items: center; gap: 12px; margin: 18px 0; color: var(--ukc-muted); font-size: 12.5px; font-weight: 700; }
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--ukc-border); }
+.auth-footer-link { margin-top: 20px; text-align: center; font-size: 14px; color: var(--ukc-muted); }
+
+/* ===== Hero page colloque : grille deux colonnes + carte compte à rebours ===== */
+.ukc-hero-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: clamp(24px, 4vw, 48px); align-items: center; }
+@media (max-width: 860px) { .ukc-hero-grid { grid-template-columns: 1fr; } }
+.ukc-countdown-card {
+  background: rgba(255,255,255,.10); border: 1px solid rgba(255,255,255,.18);
+  border-radius: 18px; padding: clamp(20px, 3vw, 28px); text-align: center;
+}
+.ukc-countdown-card .lead { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; opacity: .85; margin-bottom: 14px; }
+.ukc-countdown-card .foot { font-size: .82rem; opacity: .9; margin-top: 14px; }

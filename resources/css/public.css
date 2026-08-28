@@ -27,12 +27,15 @@
   font-size: 14px; font-weight: 900;
 }
 .brand span { display: block; font-size: 11px; font-weight: 600; color: var(--ukc-muted); }
+.brand .brand-logo { height: 44px; width: auto; display: block; flex-shrink: 0; }
+.brand .brand-tag { font-size: .95rem; font-weight: 800; color: var(--ukc-blue); line-height: 1.2; }
+@media (max-width: 560px) { .brand .brand-logo { height: 36px; } .brand .brand-tag { display: none; } }
 .nav { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-.nav a {
+.ukc-scope .nav a {
   font-size: 14px; font-weight: 600; color: var(--ukc-muted);
   padding: 8px 12px; border-radius: 8px;
 }
-.nav a:hover { color: var(--ukc-blue); background: var(--ukc-bg); }
+.ukc-scope .nav a:hover { color: var(--ukc-blue); background: var(--ukc-bg); }
 .burger { display: none; background: none; border: none; font-size: 1.5rem; color: var(--ukc-blue); cursor: pointer; padding: 4px; }
 
 @media (max-width: 900px) {
@@ -98,9 +101,11 @@
 /* Boutons « ghost » sur fonds sombres (hero, CTA, déroulement) : blanc translucide. */
 .hero-card .ukc-btn--ghost,
 .cta-band .ukc-btn--ghost,
+.ukc-hero-cta .ukc-btn--ghost,
 .live-hero .ukc-btn--ghost { background: rgba(255, 255, 255, .12); color: #fff; border: 1.5px solid rgba(255, 255, 255, .45); }
 .hero-card .ukc-btn--ghost:hover,
 .cta-band .ukc-btn--ghost:hover,
+.ukc-hero-cta .ukc-btn--ghost:hover,
 .live-hero .ukc-btn--ghost:hover { background: rgba(255, 255, 255, .22); color: #fff; }
 
 /* ---- Stats ---- */
@@ -297,6 +302,7 @@
 .edition-card .year-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .edition-card .year { font-size: 1.35rem; font-weight: 900; color: var(--ukc-blue); line-height: 1; }
 .edition-card h3 { font-size: 1.02rem; font-weight: 800; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; min-height: calc(1.35em * 2); }
+.edition-card .theme { font-size: 13px; color: var(--ukc-muted); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .edition-card .meta { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--ukc-muted); line-height: 1.35; }
 .edition-card .meta .meta-row { display: flex; align-items: flex-start; gap: 8px; }
 .edition-card .meta .meta-row svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; color: var(--ukc-blue); fill: currentColor; }
@@ -485,4 +491,311 @@
 .site-footer a { display: block; padding: 4px 0; color: #a8b3c9; }
 .site-footer a:hover { color: #fff; }
 .site-footer .brand-foot { color: #fff; font-weight: 900; font-size: 1.05rem; margin-bottom: 8px; }
+.site-footer .footer-logo { height: 40px; width: auto; display: block; margin-bottom: 12px; }
 .footer-bottom { border-top: 1px solid rgba(255, 255, 255, .1); padding-top: 18px; display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; font-size: 13px; }
+
+/* =========================================================================
+   Page colloque « édition en cours » — refonte fidèle au mockup
+   page-colloque-amelioree.html (hero + barre scrollspy sticky + countdown).
+   ========================================================================= */
+.ukc-hero {
+  position: relative;
+  background: linear-gradient(135deg, var(--ukc-blue) 0%, var(--ukc-blue-dark) 55%, #0f1f5c 100%);
+  color: #fff; padding: clamp(56px, 9vw, 100px) 0 clamp(48px, 7vw, 72px); overflow: hidden;
+}
+.ukc-hero::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 60% at 85% 20%, rgba(255,215,0,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 10% 80%, rgba(0,153,51,0.08) 0%, transparent 50%);
+}
+.ukc-hero-inner {
+  position: relative; z-index: 2;
+  display: grid; grid-template-columns: 1.4fr 1fr;
+  gap: clamp(32px, 5vw, 56px); align-items: center;
+}
+@media (max-width: 900px) { .ukc-hero-inner { grid-template-columns: 1fr; } }
+.ukc-hero-logo { height: 52px; width: auto; display: block; margin-bottom: 18px; }
+@media (max-width: 600px) { .ukc-hero-logo { height: 40px; margin-bottom: 14px; } }
+.ukc-hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25);
+  padding: 7px 16px; border-radius: 50px; font-size: 13px; font-weight: 600;
+  margin-bottom: 20px; backdrop-filter: blur(6px); color: #fff; max-width: 100%;
+}
+.ukc-hero-badge .dot { flex-shrink: 0; width: 8px; height: 8px; background: var(--ukc-green); border-radius: 50%; animation: heroPulse 2s infinite; }
+@keyframes heroPulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.ukc-hero h1 { font-size: clamp(18px, 2.8vw, 26px); font-weight: 800; line-height: 1.3; margin-bottom: 12px; text-shadow: 0 2px 12px rgba(0,0,0,0.2); }
+.ukc-hero-theme {
+  font-size: clamp(14px, 1.9vw, 17px); font-weight: 500; color: rgba(255,255,255,0.92);
+  line-height: 1.4; margin-bottom: 20px; max-width: 560px;
+  border-left: 3px solid var(--ukc-gold); padding-left: 14px;
+}
+.ukc-hero-meta { display: flex; flex-wrap: wrap; gap: 16px 28px; margin-bottom: 28px; font-size: clamp(14px, 1.6vw, 15.5px); color: rgba(255,255,255,0.88); }
+.ukc-hero-meta strong { color: var(--ukc-gold); font-weight: 700; }
+.ukc-hero-cta { display: flex; flex-wrap: wrap; gap: 14px; }
+.ukc-countdown {
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+  border-radius: var(--ukc-radius-lg); padding: clamp(20px, 3.5vw, 28px);
+  backdrop-filter: blur(10px); text-align: center;
+}
+.ukc-countdown-label { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.7); margin-bottom: 16px; }
+.ukc-countdown-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+.ukc-countdown-item { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 14px 8px; }
+.ukc-countdown-item .num { font-size: clamp(22px, 3.5vw, 32px); font-weight: 900; color: var(--ukc-gold); line-height: 1.1; }
+.ukc-countdown-item .unit { font-size: 11px; font-weight: 600; text-transform: uppercase; color: rgba(255,255,255,0.65); margin-top: 4px; }
+
+.ukc-nav-bar { position: sticky; top: 0; z-index: 100; background: #fff; border-bottom: 1px solid var(--ukc-border); box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+.ukc-nav-bar-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; overflow-x: auto; scrollbar-width: none; }
+.ukc-nav-bar-inner::-webkit-scrollbar { display: none; }
+.ukc-nav-links { display: flex; gap: 4px; list-style: none; margin: 0; padding: 0; }
+.ukc-nav-links a { display: block; padding: 8px 14px; border-radius: 50px; font-size: 13px; font-weight: 600; color: var(--ukc-muted); white-space: nowrap; transition: all .15s; }
+.ukc-scope .ukc-nav-links a:hover, .ukc-nav-links a.active { background: rgba(34,62,164,0.08); color: var(--ukc-blue); }
+.ukc-nav-actions { display: flex; gap: 10px; flex-shrink: 0; }
+
+/* ---- Sections page colloque (block-head + tarifs + faq, fidèles au mockup) ---- */
+.ukc-block-head { text-align: center; margin-bottom: clamp(32px, 5vw, 48px); }
+.ukc-block-head h2 { font-size: clamp(24px, 4vw, 34px); font-weight: 900; color: var(--ukc-blue); margin-bottom: 12px; line-height: 1.25; }
+.ukc-block-head .ukc-accent { display: flex; gap: 5px; justify-content: center; margin-bottom: 16px; }
+.ukc-block-head .ukc-accent i { display: block; height: 4px; border-radius: 3px; }
+.ukc-block-head .ukc-accent i:nth-child(1) { width: 52px; background: var(--ukc-blue); }
+.ukc-block-head .ukc-accent i:nth-child(2) { width: 26px; background: var(--ukc-gold); }
+.ukc-block-head .ukc-accent i:nth-child(3) { width: 13px; background: var(--ukc-green); }
+.ukc-block-head p { font-size: clamp(14px, 1.8vw, 16px); color: var(--ukc-muted); max-width: 640px; margin: 0 auto; }
+
+.ukc-pricing { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+.ukc-price-card { background: #fff; border: 1px solid var(--ukc-border); border-radius: var(--ukc-radius-lg); padding: 28px 24px; text-align: center; position: relative; }
+.ukc-price-card--featured { border: 2px solid var(--ukc-blue); box-shadow: var(--ukc-shadow-lg); }
+.ukc-price-card--featured::before { content: 'Recommandé'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--ukc-blue); color: #fff; font-size: 11.5px; font-weight: 700; padding: 4px 14px; border-radius: 50px; }
+.ukc-price-card h3 { font-size: 16px; font-weight: 700; color: var(--ukc-muted); margin-bottom: 8px; }
+.ukc-price-card .amount { font-size: clamp(28px, 4vw, 36px); font-weight: 900; color: var(--ukc-blue); line-height: 1.1; }
+.ukc-price-card .amount small { font-size: 14px; font-weight: 600; color: var(--ukc-light); }
+.ukc-price-card ul { list-style: none; margin: 20px 0; text-align: left; padding: 0; }
+.ukc-price-card li { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: var(--ukc-muted); margin-bottom: 10px; }
+.ukc-price-card li svg { flex-shrink: 0; margin-top: 3px; color: var(--ukc-green); }
+
+.ukc-faq { max-width: 800px; margin: 0 auto; }
+.ukc-faq-item { border: 1px solid var(--ukc-border); border-radius: var(--ukc-radius); margin-bottom: 12px; overflow: hidden; background: #fff; }
+.ukc-faq-item summary { padding: 16px 20px; font-weight: 700; font-size: 15px; color: var(--ukc-text); cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+.ukc-faq-item summary::-webkit-details-marker { display: none; }
+.ukc-faq-item summary::after { content: '+'; font-size: 20px; font-weight: 400; color: var(--ukc-blue); }
+.ukc-faq-item[open] summary::after { content: '−'; }
+.ukc-faq-item .answer { padding: 0 20px 18px; font-size: 14.5px; color: var(--ukc-muted); line-height: 1.6; }
+
+/* ---- Colloque : Dates clés + Axes/Thématiques (fidèles au mockup) ---- */
+.ukc-dates-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+.ukc-date-card { background: #fff; border-radius: var(--ukc-radius); border: 1px solid var(--ukc-border); padding: 22px 20px; text-align: center; position: relative; overflow: hidden; }
+.ukc-date-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; }
+.ukc-date-card:nth-child(1)::before { background: var(--ukc-blue); }
+.ukc-date-card:nth-child(2)::before { background: var(--ukc-gold); }
+.ukc-date-card:nth-child(3)::before { background: var(--ukc-green); }
+.ukc-date-card:nth-child(4)::before { background: #7c3aed; }
+.ukc-date-card .icon { width: 48px; height: 48px; margin: 0 auto 14px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+.ukc-date-card:nth-child(1) .icon { background: rgba(34,62,164,0.1); color: var(--ukc-blue); }
+.ukc-date-card:nth-child(2) .icon { background: rgba(255,215,0,0.15); color: #b45309; }
+.ukc-date-card:nth-child(3) .icon { background: rgba(0,153,51,0.1); color: var(--ukc-green); }
+.ukc-date-card:nth-child(4) .icon { background: rgba(124,58,237,0.1); color: #7c3aed; }
+.ukc-date-card h3 { font-size: 14px; font-weight: 700; color: var(--ukc-light); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+.ukc-date-card .date { font-size: 18px; font-weight: 800; color: var(--ukc-text); }
+.ukc-date-card .status { margin-top: 12px; }
+
+.ukc-themes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+.ukc-theme-card { background: #fff; border: 1px solid var(--ukc-border); border-radius: var(--ukc-radius); padding: 22px 20px; display: flex; gap: 16px; align-items: flex-start; transition: border-color .2s, box-shadow .2s; }
+.ukc-theme-card:hover { border-color: var(--ukc-blue); box-shadow: var(--ukc-shadow); }
+.ukc-theme-card .num { flex-shrink: 0; width: 40px; height: 40px; border-radius: 10px; background: rgba(34,62,164,0.08); color: var(--ukc-blue); font-weight: 800; font-size: 15px; display: flex; align-items: center; justify-content: center; }
+.ukc-theme-card h4 { font-size: 15.5px; font-weight: 700; color: var(--ukc-text); margin-bottom: 4px; }
+.ukc-theme-card p { font-size: 13.5px; color: var(--ukc-light); line-height: 1.5; }
+
+/* ---- Colloque : Présentation (two-col prose + callout) ---- */
+.ukc-two-col { display: grid; grid-template-columns: 1.2fr 1fr; gap: clamp(28px, 4vw, 48px); align-items: start; }
+@media (max-width: 800px) { .ukc-two-col { grid-template-columns: 1fr; } }
+.ukc-prose h3 { font-size: clamp(18px, 2.4vw, 22px); font-weight: 800; color: var(--ukc-blue); margin: 24px 0 10px; }
+.ukc-prose h3:first-child { margin-top: 0; }
+.ukc-prose p { font-size: clamp(14px, 1.7vw, 15.5px); color: var(--ukc-muted); margin-bottom: 14px; }
+.ukc-prose ul { margin: 12px 0 16px 20px; color: var(--ukc-muted); font-size: 15px; }
+.ukc-prose li { margin-bottom: 6px; }
+.ukc-callout { background: linear-gradient(135deg, var(--ukc-blue) 0%, var(--ukc-blue-dark) 100%); color: #fff; border-radius: var(--ukc-radius-lg); padding: clamp(24px, 4vw, 32px); position: relative; overflow: hidden; }
+.ukc-callout h3 { font-size: clamp(17px, 2.2vw, 20px); font-weight: 800; margin-bottom: 10px; }
+.ukc-callout p { font-size: 14.5px; color: rgba(255,255,255,0.85); margin-bottom: 20px; }
+
+/* ---- Colloque : Parcours (stepper) + Infos pratiques + Éditions ---- */
+.ukc-stepper { display: flex; justify-content: space-between; position: relative; max-width: 900px; margin: 0 auto; }
+.ukc-stepper::before { content: ''; position: absolute; top: 28px; left: 10%; right: 10%; height: 3px; background: var(--ukc-border); z-index: 0; }
+/* scopé à .ukc-stepper pour ne pas hériter du .ukc-step (box) du dashboard participant */
+.ukc-stepper .ukc-step { position: relative; z-index: 1; text-align: center; flex: 1; background: none; border: none; padding: 0; min-width: 0; }
+.ukc-stepper .ukc-step .circle { width: 56px; height: 56px; border-radius: 50%; background: #fff; border: 3px solid var(--ukc-border); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; font-weight: 800; font-size: 18px; color: var(--ukc-light); transition: all .2s; }
+.ukc-stepper .ukc-step.active .circle { border-color: var(--ukc-blue); background: var(--ukc-blue); color: #fff; box-shadow: 0 4px 14px rgba(34,62,164,0.3); }
+.ukc-stepper .ukc-step.active { background: none; }
+.ukc-stepper .ukc-step h4 { font-size: 13.5px; font-weight: 700; color: var(--ukc-text); }
+.ukc-stepper .ukc-step p { font-size: 12.5px; color: var(--ukc-light); margin-top: 2px; }
+@media (max-width: 600px) { .ukc-stepper { flex-direction: column; gap: 20px; } .ukc-stepper::before { display: none; } .ukc-stepper .ukc-step { display: flex; align-items: center; gap: 14px; text-align: left; } .ukc-stepper .ukc-step .circle { margin: 0; flex-shrink: 0; } }
+
+.ukc-practical { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+.ukc-practical-card { background: #fff; border: 1px solid var(--ukc-border); border-radius: var(--ukc-radius); padding: 24px 22px; }
+.ukc-practical-card .ico-wrap { width: 44px; height: 44px; border-radius: 12px; background: rgba(34,62,164,0.08); color: var(--ukc-blue); display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+.ukc-practical-card h4 { font-size: 15.5px; font-weight: 800; color: var(--ukc-text); margin-bottom: 8px; }
+.ukc-practical-card p, .ukc-practical-card ul { font-size: 14px; color: var(--ukc-muted); line-height: 1.55; }
+.ukc-practical-card ul { margin: 8px 0 0 16px; }
+.ukc-practical-card li { margin-bottom: 4px; }
+
+.ukc-editions { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 28px; }
+.ukc-past-card { background: #fff; border: 1px solid var(--ukc-border); border-radius: var(--ukc-radius); overflow: hidden; transition: box-shadow .2s, transform .2s; display: flex; flex-direction: column; }
+.ukc-past-card:hover { box-shadow: var(--ukc-shadow-lg); transform: translateY(-3px); }
+.ukc-past-thumb { aspect-ratio: 16 / 10; background-size: cover; background-position: center; background-color: var(--ukc-blue); position: relative; }
+.ukc-past-thumb::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(15,31,92,0.45) 0%, transparent 55%); }
+.ukc-past-body { padding: 16px 18px 18px; display: flex; flex-direction: column; flex: 1; }
+.ukc-past-year { display: inline-block; font-size: 12px; font-weight: 700; color: var(--ukc-blue); background: rgba(34,62,164,0.08); padding: 3px 10px; border-radius: 50px; margin-bottom: 10px; width: fit-content; }
+.ukc-past-body h3 { font-size: 15.5px; font-weight: 700; color: var(--ukc-text); margin-bottom: 6px; line-height: 1.3; }
+.ukc-past-body p { font-size: 13.5px; color: var(--ukc-muted); margin-bottom: 14px; flex: 1; }
+.ukc-past-body .ukc-link { font-size: 13.5px; font-weight: 700; color: var(--ukc-blue); }
+.ukc-past-body .ukc-link:hover { text-decoration: underline; }
+
+/* ---- Colloque : Comités (cartes personne) + Programme (sessions) ---- */
+.ukc-people { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 18px; }
+.ukc-person { text-align: center; background: #fff; border: 1px solid var(--ukc-border); border-radius: var(--ukc-radius); padding: 22px 14px; transition: box-shadow .2s, border-color .2s; height: 100%; box-sizing: border-box; }
+.ukc-person:hover { border-color: var(--ukc-blue); box-shadow: var(--ukc-shadow); }
+.ukc-person .avatar { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, var(--ukc-blue), var(--ukc-blue-dark)); color: #fff; font-weight: 800; font-size: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
+.ukc-person h4 { font-size: 14.5px; font-weight: 700; color: var(--ukc-text); }
+.ukc-person .role { font-size: 12px; color: var(--ukc-blue); font-weight: 600; margin-top: 2px; }
+.ukc-person .affil { font-size: 12px; color: var(--ukc-light); margin-top: 2px; }
+.ukc-role-group { margin-bottom: 28px; }
+.ukc-role-group > h3 { font-size: 15px; font-weight: 800; color: var(--ukc-blue); margin-bottom: 14px; text-align: center; }
+
+/* Programme : onglets jours + sessions (exact mockup) */
+.ukc-program-day { display: none; }
+.ukc-program-day.active { display: block; }
+.ukc-session { display: grid; grid-template-columns: 100px 1fr; gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--ukc-border); }
+.ukc-session:last-child { border-bottom: none; }
+.ukc-session-time { font-weight: 800; font-size: 14px; color: var(--ukc-blue); padding-top: 2px; }
+.ukc-session-body h4 { font-size: 16px; font-weight: 700; color: var(--ukc-text); margin-bottom: 4px; }
+.ukc-session-body .meta { font-size: 13.5px; color: var(--ukc-light); margin-bottom: 6px; }
+.ukc-session-body .type { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: 50px; margin-right: 6px; }
+.type--plenary { background: #e0e7ff; color: #3730a3; }
+.type--workshop { background: #dcfce7; color: #166534; }
+.type--poster { background: #fef3c7; color: #b45309; }
+.ukc-session-comms { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.ukc-session-comms li { position: relative; padding-left: 16px; font-size: 13.5px; color: var(--ukc-text); }
+.ukc-session-comms li::before { content: ""; position: absolute; left: 2px; top: 8px; width: 5px; height: 5px; border-radius: 50%; background: var(--ukc-blue); }
+.type--break { background: #f1f5f9; color: #64748b; }
+
+/* Partenaires & Sponsors : marquee de logos (exact mockup) */
+.ukc-partners { padding: clamp(40px, 6vw, 64px) 0; border-top: 1px solid var(--ukc-border); }
+.ukc-marquee { overflow: hidden; position: relative; margin-top: 28px; padding: 8px 0 12px; -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
+.ukc-marquee-track { display: flex; gap: 28px; width: max-content; animation: ukc-scrollx 30s linear infinite; align-items: center; }
+.ukc-marquee:hover .ukc-marquee-track { animation-play-state: paused; }
+.ukc-marquee-track .logo-frame { flex-shrink: 0; width: 200px; height: 110px; background: #fff; border: 1.5px solid var(--ukc-border); border-radius: 12px; display: flex; align-items: center; justify-content: center; padding: 14px 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: border-color .25s, box-shadow .25s; text-decoration: none; color: var(--ukc-text); font-weight: 800; font-size: 14px; text-align: center; }
+.ukc-marquee-track .logo-frame:hover { border-color: var(--ukc-blue); box-shadow: 0 6px 18px rgba(34,62,164,0.12); }
+.ukc-marquee-track .logo-frame img { max-height: 72px; max-width: 160px; width: auto; height: auto; object-fit: contain; filter: grayscale(1); opacity: .75; transition: filter .25s, opacity .25s; }
+.ukc-marquee-track .logo-frame:hover img { filter: none; opacity: 1; }
+@keyframes ukc-scrollx { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .ukc-marquee-track { animation: none; flex-wrap: wrap; justify-content: center; max-width: 100%; } }
+
+/* Éditions : borne la largeur des cartes pour respecter la taille du mockup */
+.ukc-editions { grid-template-columns: repeat(auto-fill, minmax(260px, 320px)); justify-content: center; }
+
+/* ---- Colloque : CTA final (fidèle au mockup) ---- */
+.ukc-final-cta { background: linear-gradient(135deg, var(--ukc-blue) 0%, var(--ukc-blue-dark) 100%); border-radius: var(--ukc-radius-lg); padding: clamp(36px, 6vw, 56px) clamp(24px, 4vw, 40px); text-align: center; color: #fff; position: relative; overflow: hidden; }
+.ukc-final-cta::before { content: ''; position: absolute; right: -40px; bottom: -40px; width: 200px; height: 200px; background: rgba(255,215,0,0.08); border-radius: 50%; }
+.ukc-final-cta h2 { font-size: clamp(22px, 3.5vw, 30px); font-weight: 900; margin-bottom: 12px; position: relative; z-index: 1; }
+.ukc-final-cta p { color: rgba(255,255,255,0.9); max-width: 560px; margin: 0 auto 24px; position: relative; z-index: 1; font-size: 15px; line-height: 1.6; }
+.ukc-final-cta .actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
+.ukc-final-cta .ukc-btn--ghost { background: rgba(255,255,255,0.12); color: #fff; border: 1.5px solid rgba(255,255,255,0.45); }
+.ukc-final-cta .ukc-btn--ghost:hover { background: rgba(255,255,255,0.22); color: #fff; }
+
+/* ---- Colloque : Comité (onglets + carrousel, exact mockup) ---- */
+.ukc-tabs-scroll { display: flex; gap: 8px; margin-bottom: 28px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 4px; justify-content: flex-start; }
+.ukc-tabs-scroll::-webkit-scrollbar { display: none; }
+@media (min-width: 700px) { .ukc-tabs-scroll { justify-content: center; flex-wrap: wrap; overflow-x: visible; } }
+.ukc-tab { flex-shrink: 0; padding: 10px 22px; border-radius: 50px; font-weight: 700; font-size: 14px; border: 2px solid var(--ukc-border); background: #fff; color: var(--ukc-muted); cursor: pointer; transition: all .15s; font-family: var(--ukc-font); white-space: nowrap; }
+.ukc-tab.active, .ukc-tab:hover { border-color: var(--ukc-blue); background: var(--ukc-blue); color: #fff; }
+
+.ukc-swiper { position: relative; padding: 0 48px; }
+.ukc-swiper-track { display: flex; gap: 18px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+.ukc-swiper-track::-webkit-scrollbar { display: none; }
+.ukc-swiper-track > * { flex: 0 0 calc((100% - 54px) / 4); min-width: 190px; scroll-snap-align: start; }
+@media (max-width: 900px) { .ukc-swiper-track > * { flex-basis: calc((100% - 18px) / 2); } }
+@media (max-width: 560px) { .ukc-swiper-track > * { flex-basis: 82%; } .ukc-swiper { padding: 0 8px; } }
+.ukc-swiper .swiper-nav { position: absolute; top: 42%; width: 42px; height: 42px; border-radius: 50%; border: 2px solid var(--ukc-border); background: #fff; color: var(--ukc-blue); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; font-weight: 700; transition: background .2s, border-color .2s, color .2s; z-index: 2; }
+.ukc-swiper .swiper-nav:hover { background: var(--ukc-blue); border-color: var(--ukc-blue); color: #fff; }
+.ukc-swiper .swiper-nav.prev { left: 0; }
+.ukc-swiper .swiper-nav.next { right: 0; }
+@media (max-width: 560px) { .ukc-swiper .swiper-nav { display: none; } }
+
+/* ============================================================
+   BANNIÈRE COLLOQUE (fidèle mockup)
+   ============================================================ */
+.ukc-banner-frame {
+  border-radius: var(--ukc-radius-lg); overflow: hidden; border: 1px solid var(--ukc-border);
+  box-shadow: var(--ukc-shadow);
+  background: linear-gradient(135deg, var(--ukc-blue) 0%, var(--ukc-blue-dark) 50%, var(--ukc-green) 100%);
+  aspect-ratio: 21 / 9; max-height: 420px; position: relative;
+}
+.ukc-banner-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ukc-banner-frame .ukc-banner-placeholder {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: #fff; text-align: center; padding: 24px;
+  background:
+    radial-gradient(ellipse 70% 50% at 80% 20%, rgba(255,215,0,0.15) 0%, transparent 55%),
+    linear-gradient(135deg, rgba(34,62,164,0.92) 0%, rgba(27,49,130,0.95) 60%, rgba(0,153,51,0.85) 100%);
+}
+.ukc-banner-frame .ukc-banner-placeholder .tag { font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; opacity: .85; margin-bottom: 10px; }
+.ukc-banner-frame .ukc-banner-placeholder h2 { font-size: clamp(18px, 3vw, 28px); font-weight: 800; color: #fff; max-width: 640px; line-height: 1.25; margin-bottom: 8px; }
+.ukc-banner-frame .ukc-banner-placeholder p { font-size: clamp(13px, 1.6vw, 15px); color: rgba(255,255,255,0.88); max-width: 520px; }
+@media (max-width: 600px) { .ukc-banner-frame { aspect-ratio: 16 / 9; max-height: 260px; } }
+
+/* ============================================================
+   CHIFFRES CLÉS (fidèle mockup)
+   ============================================================ */
+.ukc-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+@media (max-width: 700px) { .ukc-stats { grid-template-columns: repeat(2, 1fr); } }
+.ukc-stats .ukc-stat { text-align: center; padding: 24px 12px; background: #fff; border-radius: var(--ukc-radius); border: 1px solid var(--ukc-border); }
+.ukc-stats .ukc-stat .num { font-size: clamp(28px, 4vw, 40px); font-weight: 900; color: var(--ukc-blue); line-height: 1.1; }
+.ukc-stats .ukc-stat .num sup { font-size: 0.5em; }
+.ukc-stats .ukc-stat .label { font-size: 13.5px; font-weight: 600; color: var(--ukc-muted); margin-top: 6px; }
+
+/* ============================================================
+   INTERVENANTS INVITÉS (fidèle mockup)
+   ============================================================ */
+.ukc-speakers { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 22px; }
+.ukc-speaker { background: #fff; border: 1px solid var(--ukc-border); border-radius: var(--ukc-radius); padding: 28px 20px; text-align: center; transition: box-shadow .2s, transform .2s; }
+.ukc-speaker:hover { box-shadow: var(--ukc-shadow-lg); transform: translateY(-3px); }
+.ukc-speaker .avatar { width: 88px; height: 88px; border-radius: 50%; background: linear-gradient(135deg, var(--ukc-blue), var(--ukc-blue-dark)); color: #fff; font-weight: 800; font-size: 28px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; border: 3px solid var(--ukc-gold); overflow: hidden; }
+.ukc-speaker .avatar img { width: 100%; height: 100%; object-fit: cover; }
+.ukc-speaker h4 { font-size: 16px; font-weight: 800; color: var(--ukc-text); }
+.ukc-speaker .role { font-size: 13px; font-weight: 600; color: var(--ukc-blue); margin-top: 4px; }
+.ukc-speaker .affil { font-size: 13px; color: var(--ukc-light); margin-top: 2px; }
+.ukc-speaker .talk { font-size: 13px; color: var(--ukc-muted); margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--ukc-border); font-style: italic; line-height: 1.45; }
+
+/* ============================================================
+   PLAN DU CAMPUS (fidèle mockup)
+   ============================================================ */
+.ukc-campus-map { margin-top: 28px; border-radius: var(--ukc-radius); overflow: hidden; border: 1px solid var(--ukc-border); box-shadow: var(--ukc-shadow); background: #fff; }
+.ukc-campus-map-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--ukc-border); }
+.ukc-campus-map-head h3 { font-size: 16px; font-weight: 800; color: var(--ukc-text); margin: 0; }
+.ukc-campus-map-head a { font-size: 13.5px; font-weight: 600; color: var(--ukc-blue); }
+.ukc-campus-map-head a:hover { text-decoration: underline; }
+.ukc-campus-map iframe { display: block; width: 100%; height: 360px; border: 0; }
+@media (max-width: 600px) { .ukc-campus-map iframe { height: 280px; } }
+
+/* ============================================================
+   FOOTER PROPRE AU COLLOQUE (barre d'info) — distinct du footer plateforme
+   ============================================================ */
+.ukc-info-bar { background: var(--ukc-bg); border-top: 1px solid var(--ukc-border); padding: 28px 0 20px; }
+.ukc-info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; font-size: 14px; color: var(--ukc-muted); }
+.ukc-info-grid strong { display: block; color: var(--ukc-blue); font-weight: 700; margin-bottom: 4px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; }
+.ukc-social { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.ukc-social a { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 50%; background: rgba(34,62,164,0.08); color: var(--ukc-blue); transition: background .2s, color .2s, transform .2s; }
+.ukc-social a:hover { background: var(--ukc-blue); color: #fff; transform: translateY(-2px); }
+.ukc-info-bottom { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--ukc-border); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; font-size: 13px; color: var(--ukc-light); }
+
+/* Barre sticky : rappel d'identité du colloque (contexte au scroll) */
+.ukc-nav-brand { display: none; align-items: center; gap: 8px; font-weight: 800; font-size: 14px; color: var(--ukc-blue); white-space: nowrap; text-decoration: none; flex-shrink: 0; margin-right: 8px; }
+.ukc-nav-brand .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ukc-green); flex-shrink: 0; }
+.ukc-nav-brand span { color: var(--ukc-light); font-weight: 600; }
+@media (min-width: 1200px) { .ukc-nav-brand { display: inline-flex; } .ukc-nav-links { margin-right: auto; } }
+
+/* Puces des listes (le preflight Tailwind retire list-style ; on le rétablit là où le mockup a des puces) */
+.ukc-prose ul { list-style: disc; margin: 12px 0 16px 20px; padding-left: 4px; color: var(--ukc-muted); font-size: 15px; }
+.ukc-prose li { margin-bottom: 6px; }
+.ukc-practical-card ul { list-style: disc; margin: 8px 0 0 18px; padding-left: 2px; font-size: 14px; color: var(--ukc-muted); line-height: 1.55; }
+.ukc-practical-card li { margin-bottom: 4px; }

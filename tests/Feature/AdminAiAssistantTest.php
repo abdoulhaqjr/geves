@@ -1,26 +1,23 @@
 <?php
 
-use App\Livewire\Admin\AiAssistant;
-use Livewire\Livewire;
-
 // fakeAiProvider(), bindFakeAi() -> GenerateReportTest ; adminStaff() -> helpers
 
 it('le copilote admin répond au staff', function () {
     bindFakeAi(fakeAiProvider(['answer' => 'Voici une synthèse de l’édition active.']));
 
-    Livewire::actingAs(adminStaff(), 'web')
-        ->test(AiAssistant::class)
-        ->assertSee('copilote', false)
-        ->set('input', 'Résume l’édition active.')
-        ->call('send')
-        ->assertSee('synthèse')
-        ->assertSet('input', '');
+    $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.ai'))
+        ->assertOk()
+        ->assertSee('copilote', false);
+
+    $this->actingAs(adminStaff(), 'web')
+        ->postJson(route('admin.ai.ask'), ['question' => 'Résume l’édition active.'])
+        ->assertOk()
+        ->assertJsonPath('answer', 'Voici une synthèse de l’édition active.');
 });
 
 it('exige une saisie', function () {
-    Livewire::actingAs(adminStaff(), 'web')
-        ->test(AiAssistant::class)
-        ->set('input', '')
-        ->call('send')
-        ->assertHasErrors('input');
+    $this->actingAs(adminStaff(), 'web')
+        ->postJson(route('admin.ai.ask'), ['question' => ''])
+        ->assertStatus(422);
 });

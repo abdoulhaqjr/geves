@@ -195,6 +195,60 @@
 .admin-submission-detail .coi-tag.low { background: #e0e7ff; color: #3730a3; }
 .admin-submission-detail .coi-tag.clear { background: #dcfce7; color: #166534; }
 
+/* ---- Utilisateurs (staff : liste, rôles, accès) ---- */
+.admin-users .user-cell { display: flex; align-items: center; gap: 10px; }
+.admin-users .user-cell .av { width: 34px; height: 34px; border-radius: 50%; background: #e0e7ff; color: var(--ukc-blue); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; flex-shrink: 0; }
+.admin-users .user-cell strong { display: block; font-size: 13.5px; }
+.admin-users .user-cell span { font-size: 12px; color: var(--ukc-muted); }
+.admin-users .ip-cell { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+.admin-users .role-pills { display: flex; flex-wrap: wrap; gap: 4px; }
+.admin-users table.ukc-table { min-width: 920px; }
+.admin-users table.ukc-table .ukc-actions { flex-wrap: nowrap; justify-content: flex-end; }
+
+.ukc-btn--icon { width: 34px; height: 34px; padding: 0; border-radius: 8px; background: #fff; border: 1px solid var(--ukc-border); color: var(--ukc-muted); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: .15s; }
+.ukc-btn--icon:hover { border-color: var(--ukc-blue); color: var(--ukc-blue); background: #eef2ff; }
+.ukc-btn--icon svg { width: 16px; height: 16px; }
+.ukc-btn--icon.danger:hover { border-color: #dc2626; color: #dc2626; background: #fef2f2; }
+
+/* Pastilles de rôle spécifiques (mockup) */
+.ukc-pill--sec { background: #fce7f3; color: #9d174d; }
+.ukc-pill--compta { background: #ecfdf5; color: #047857; }
+.ukc-pill--appui { background: #e0f2fe; color: #0369a1; }
+.ukc-pill--accueil { background: #fef9c3; color: #a16207; }
+
+.admin-users .role-card { border: 1px solid var(--ukc-border); border-radius: 12px; padding: 16px; margin-bottom: 12px; background: #fafbfd; }
+.admin-users .role-card h3 { font-size: 14px; font-weight: 800; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.admin-users .role-card p { font-size: 13px; color: var(--ukc-muted); margin-bottom: 10px; }
+.admin-users .role-card .meta { font-size: 12px; color: var(--ukc-light); }
+
+.admin-users .perm-grid { display: grid; grid-template-columns: 1.5fr repeat(8, minmax(52px, 1fr)); font-size: 11.5px; border: 1px solid var(--ukc-border); border-radius: 10px; overflow: auto; background: #fff; min-width: 720px; }
+.admin-users .perm-grid .cell { padding: 9px 8px; border-bottom: 1px solid var(--ukc-border); border-right: 1px solid var(--ukc-border); display: flex; align-items: center; justify-content: center; text-align: center; }
+.admin-users .perm-grid .cell:nth-child(9n) { border-right: none; }
+.admin-users .perm-grid .cell.head { background: #f8fafc; font-weight: 800; font-size: 10px; text-transform: uppercase; letter-spacing: .02em; color: var(--ukc-light); white-space: nowrap; }
+.admin-users .perm-grid .cell.label { justify-content: flex-start; font-weight: 600; color: var(--ukc-text); text-align: left; white-space: nowrap; }
+.admin-users .perm-grid .cell .yes { color: var(--ukc-green); font-weight: 800; }
+.admin-users .perm-grid .cell .no { color: #cbd5e1; }
+
+.admin-users .ukc-check { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.admin-users .ukc-check input { width: auto; margin-top: 3px; }
+
+/* ---- Documents (hub attestations / badges / livre) ---- */
+.admin-documents .ukc-nav-docs { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
+.admin-documents .ukc-nav-docs button { background: #fff; border: 1px solid var(--ukc-border); border-radius: 10px; padding: 10px 16px; font-weight: 700; font-size: 13.5px; color: var(--ukc-muted); cursor: pointer; }
+.admin-documents .ukc-nav-docs button:hover { border-color: var(--ukc-blue); color: var(--ukc-blue); }
+.admin-documents .ukc-nav-docs button.active { background: var(--ukc-blue); border-color: var(--ukc-blue); color: #fff; }
+.admin-documents .ukc-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; align-items: center; }
+.admin-documents .ukc-toolbar .sep { width: 1px; height: 24px; background: var(--ukc-border); margin: 0 4px; }
+.admin-documents .ukc-table-wrap { background: #fff; border: 1px solid var(--ukc-border); border-radius: var(--ukc-radius); overflow: auto; }
+.admin-documents table.ukc-table { min-width: 760px; }
+.admin-documents table.ukc-table th { background: #f8fafc; }
+.admin-documents table.ukc-table .ukc-actions { flex-wrap: nowrap; justify-content: flex-end; }
+.admin-documents .ukc-stat { font-size: 13px; font-weight: 800; color: var(--ukc-blue); }
+.admin-documents .ukc-card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 16px; }
+.admin-documents .ukc-check { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.admin-documents .ukc-check input { width: auto; }
+.admin-documents .ukc-hint { font-size: 12px; color: var(--ukc-light); line-height: 1.4; }
+
 /* ---- Éditions (liste en cartes) ---- */
 .admin-editions .ed-card { display: grid; grid-template-columns: 120px 1fr auto; gap: 16px; align-items: center; background: #fff; border: 1px solid var(--ukc-border); border-radius: var(--ukc-radius); padding: 16px; margin-bottom: 12px; }
 @media (max-width: 700px) { .admin-editions .ed-card { grid-template-columns: 1fr; } }
@@ -204,3 +258,133 @@
 .admin-editions .ed-card .body p { font-size: 13px; color: var(--ukc-muted); margin-bottom: 6px; line-height: 1.4; }
 .admin-editions .ed-card .meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; color: var(--ukc-light); }
 .admin-editions .ed-card.active-ed { border-color: var(--ukc-blue); box-shadow: 0 0 0 3px rgba(34, 62, 164, .1); }
+
+/* =========================================================================
+   Créneaux / Planning (admin) — refonte fidèle au mockup admin-creneaux.html
+   ========================================================================= */
+.admin-program .day-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.admin-program .day-tabs button { background: #fff; border: 1px solid var(--ukc-border); border-radius: 10px; padding: 10px 14px; font-weight: 700; font-size: 13px; color: var(--ukc-muted); cursor: pointer; text-align: left; }
+.admin-program .day-tabs button:hover { border-color: var(--ukc-blue); color: var(--ukc-blue); }
+.admin-program .day-tabs button.active { background: var(--ukc-blue); border-color: var(--ukc-blue); color: #fff; }
+.admin-program .day-tabs button .d-sub { display: block; font-size: 11px; font-weight: 600; opacity: .85; margin-top: 2px; }
+
+.admin-program .layout-plan { display: grid; grid-template-columns: 1fr 280px; gap: 16px; align-items: start; }
+@media (max-width: 1000px) { .admin-program .layout-plan { grid-template-columns: 1fr; } }
+
+.admin-program .atelier-block { border: 1px solid var(--ukc-border); border-radius: 12px; margin-bottom: 16px; overflow: hidden; background: #fff; }
+.admin-program .atelier-head { background: linear-gradient(135deg, #1a3080, #223ea4); color: #fff; padding: 12px 16px; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.admin-program .atelier-head h3 { font-size: 15px; font-weight: 800; margin-bottom: 4px; }
+.admin-program .atelier-head .meta { font-size: 12.5px; opacity: .9; line-height: 1.4; }
+.admin-program .atelier-head .room-badge { background: rgba(255,255,255,.18); border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.admin-program .atelier-head .room-badge.pending { background: #fef3c7; color: #92400e; }
+
+.admin-program .session-block { border-top: 1px solid var(--ukc-border); }
+.admin-program .session-head { background: #f8fafc; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; border-bottom: 1px solid var(--ukc-border); }
+.admin-program .session-head .s-title { font-weight: 800; font-size: 13.5px; }
+.admin-program .session-head .s-roles { font-size: 12px; color: var(--ukc-muted); }
+.admin-program .session-head .s-roles strong { color: var(--ukc-text); font-weight: 700; }
+
+.admin-program .slot-row { display: grid; grid-template-columns: 110px 1fr auto; gap: 10px; padding: 11px 16px; border-bottom: 1px solid var(--ukc-border); align-items: start; }
+.admin-program .slot-row:last-child { border-bottom: none; }
+.admin-program .slot-row:hover { background: #fafbfd; }
+.admin-program .slot-row.empty { opacity: .95; }
+.admin-program .slot-time { font-weight: 800; font-size: 13px; color: var(--ukc-blue); white-space: nowrap; }
+.admin-program .slot-time .dur { display: block; font-size: 11px; font-weight: 600; color: var(--ukc-muted); margin-top: 2px; }
+.admin-program .slot-body .title { font-weight: 700; font-size: 13.5px; margin-bottom: 2px; line-height: 1.35; }
+.admin-program .slot-body .meta { font-size: 12px; color: var(--ukc-muted); line-height: 1.4; }
+.admin-program .slot-body .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.admin-program .slot-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+.admin-program .pool-list { display: flex; flex-direction: column; gap: 8px; max-height: 520px; overflow: auto; }
+.admin-program .pool-item { border: 1px solid var(--ukc-border); border-radius: 10px; padding: 10px 12px; background: #fafbfd; }
+.admin-program .pool-item .t { font-size: 13px; font-weight: 700; line-height: 1.35; margin-bottom: 3px; }
+.admin-program .pool-item .m { font-size: 12px; color: var(--ukc-muted); }
+
+.admin-program .entity-card { border: 1px solid var(--ukc-border); border-radius: 12px; padding: 16px; margin-bottom: 12px; background: #fafbfd; }
+.admin-program .entity-card h3 { font-size: 14px; font-weight: 800; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.admin-program .entity-card .meta { font-size: 13px; color: var(--ukc-muted); line-height: 1.45; margin-bottom: 8px; }
+.admin-program .entity-card .row-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.admin-program .chip-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+
+.admin-program .settings-box { border: 1px solid var(--ukc-border); border-radius: 12px; padding: 16px; background: #f8fafc; margin-bottom: 12px; }
+.admin-program .settings-box h3 { font-size: 14px; font-weight: 800; margin-bottom: 8px; }
+
+/* Modale (créer/éditer atelier, session, créneau, espace) */
+.admin-program .ukc-modal { position: fixed; inset: 0; z-index: 100; background: rgba(15,26,51,.55); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.admin-program .ukc-modal .box { background: #fff; border-radius: 16px; width: 100%; max-width: 560px; max-height: 92vh; overflow: auto; box-shadow: 0 24px 60px rgba(0,0,0,.3); }
+.admin-program .ukc-modal .box-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--ukc-border); font-weight: 800; font-size: 15px; position: sticky; top: 0; background: #fff; z-index: 1; }
+.admin-program .ukc-modal .box-body { padding: 18px 20px 22px; }
+.admin-program .ukc-modal .box-foot { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--ukc-border); margin-top: 12px; }
+
+/* Pastilles de type/rôle (programme) */
+.ukc-pill--oral { background: #dbeafe; color: #1e40af; }
+.ukc-pill--poster { background: #fce7f3; color: #9d174d; }
+.ukc-pill--keynote { background: #fef3c7; color: #92400e; }
+.ukc-pill--pause { background: #f1f5f9; color: #475569; }
+.ukc-pill--auto { background: #ecfdf5; color: #047857; }
+.ukc-pill--mod { background: #ede9fe; color: #5b21b6; }
+.ukc-pill--rap { background: #fce7f3; color: #9d174d; }
+.admin-program .ukc-nav-docs { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
+.admin-program .ukc-nav-docs button { background: #fff; border: 1px solid var(--ukc-border); border-radius: 10px; padding: 10px 16px; font-weight: 700; font-size: 13.5px; color: var(--ukc-muted); cursor: pointer; }
+.admin-program .ukc-nav-docs button:hover { border-color: var(--ukc-blue); color: var(--ukc-blue); }
+.admin-program .ukc-nav-docs button.active { background: var(--ukc-blue); border-color: var(--ukc-blue); color: #fff; }
+
+/* Documents · Livre des résumés (Modèles & Apparence) — mockup admin-documents.html */
+.admin-documents .ukc-drop { border: 2px dashed var(--ukc-border); border-radius: 10px; padding: 20px; text-align: center; font-size: 13px; color: var(--ukc-muted); cursor: pointer; background: #fafbfd; }
+.admin-documents .ukc-drop:hover { border-color: var(--ukc-blue); color: var(--ukc-blue); background: #eef2ff; }
+.admin-documents .ukc-tpl-item { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--ukc-border); border-radius: 10px; margin-bottom: 8px; background: #fff; }
+.admin-documents .ukc-tpl-item .ico { width: 40px; height: 40px; border-radius: 8px; background: #eef2ff; display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--ukc-blue); font-size: 12px; flex-shrink: 0; }
+.admin-documents .ukc-tpl-item .meta { flex: 1; min-width: 0; }
+.admin-documents .ukc-tpl-item .meta strong { display: block; font-size: 13.5px; }
+.admin-documents .ukc-tpl-item .meta span { font-size: 12px; color: var(--ukc-muted); }
+.admin-documents .color-row { display: flex; gap: 10px; align-items: center; }
+.admin-documents .color-row input[type="color"] { width: 42px; height: 36px; border: 1px solid var(--ukc-border); border-radius: 8px; padding: 2px; background: #fff; }
+/* KPI compacts façon mockup (tout le back-office) */
+.admin-page .ukc-stat-card .val { font-size: 1.25rem; }
+.admin-page .ukc-stat-card .hint { font-size: 11.5px; }
+
+/* =========================================================================
+   Esthétique admin du mockup (boutons/cartes/pills 8px, bleu par défaut)
+   appliquée à TOUT le back-office (.admin-page) pour la fidélité 100%.
+   ========================================================================= */
+.ukc-shell--admin .ukc-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  font-weight: 600; font-size: .86rem; padding: .55rem 1.1rem;
+  border-radius: 8px; border: none; cursor: pointer; transition: .2s;
+  background: var(--ukc-blue); color: #fff;
+}
+.ukc-shell--admin .ukc-btn:hover { background: var(--ukc-blue-dark); transform: none; box-shadow: none; }
+.ukc-shell--admin .ukc-btn--ghost { background: #fff; color: var(--ukc-text); border: 1px solid var(--ukc-border); }
+.ukc-shell--admin .ukc-btn--ghost:hover { border-color: var(--ukc-blue); color: var(--ukc-blue); background: #fff; }
+.ukc-shell--admin .ukc-btn--blue { background: var(--ukc-blue); color: #fff; }
+.ukc-shell--admin .ukc-btn--green { background: var(--ukc-green); color: #fff; }
+.ukc-shell--admin .ukc-btn--green:hover { filter: brightness(.95); background: var(--ukc-green); transform: none; }
+.ukc-shell--admin .ukc-btn--outline { background: #fff; color: var(--ukc-blue); border: 1px solid var(--ukc-border); }
+.ukc-shell--admin .ukc-btn--danger { background: #fee2e2; color: #991b1b; }
+.ukc-shell--admin .ukc-btn--sm { padding: .4rem .85rem; font-size: .8rem; }
+.ukc-shell--admin .ukc-btn--icon {
+  width: 32px; height: 32px; padding: 0; border-radius: 8px;
+  background: #fff; border: 1px solid var(--ukc-border); color: var(--ukc-muted);
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.ukc-shell--admin .ukc-btn--icon:hover { border-color: var(--ukc-blue); color: var(--ukc-blue); background: #eef2ff; }
+
+.admin-page .ukc-card {
+  background: #fff; border: 1px solid var(--ukc-border);
+  border-radius: 12px; padding: 18px 20px; margin-bottom: 16px;
+}
+.admin-page .ukc-card h2 { font-size: 15px; font-weight: 800; margin-bottom: 6px; }
+.admin-page .ukc-card h3 { font-size: 14px; font-weight: 800; margin-bottom: 6px; }
+.admin-page .ukc-card .desc { font-size: 13px; color: var(--ukc-muted); margin-bottom: 14px; line-height: 1.45; }
+
+.admin-page .ukc-pill { display: inline-flex; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 50px; white-space: nowrap; }
+
+.admin-page .ukc-stat-card { border-radius: 12px; padding: 14px 16px; }
+.admin-page .ukc-table th { background: #f8fafc; padding: 12px 14px; }
+.admin-page .ukc-table td { padding: 11px 14px; }
+
+.admin-program .hierarchy-note {
+  background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 10px;
+  padding: 12px 14px; font-size: 13px; color: #3730a3; margin-bottom: 16px; line-height: 1.45;
+}
+.admin-program .hierarchy-note p { margin: 0; color: #3730a3; }

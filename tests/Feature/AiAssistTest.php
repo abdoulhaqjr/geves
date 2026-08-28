@@ -4,10 +4,8 @@ use App\Actions\ExtractEditionFromDocuments;
 use App\AI\AiManager;
 use App\AI\Contracts\AiProvider;
 use App\AI\Providers\AnthropicProvider;
-use App\Livewire\Admin\Editions\Form;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
-use Livewire\Livewire;
 
 // adminStaff() -> AdminSubmissionWorkflowTest
 
@@ -124,13 +122,14 @@ it('pré-remplit le formulaire d’édition depuis l’assistant IA', function (
     $this->app->instance(AiManager::class, fakeAiManager());
     $staff = adminStaff();
 
-    Livewire::actingAs($staff, 'web')
-        ->test(Form::class)
-        ->set('aiFiles', [UploadedFile::fake()->create('appel.pdf', 50, 'application/pdf')])
-        ->call('runAiAssist')
-        ->assertHasNoErrors()
-        ->assertSet('title', 'Colloque IA 2027')
-        ->assertSet('year', 2027)
-        ->assertSet('location', 'Kara, Togo')
-        ->assertSet('tracks', "Axe 1\nAxe 2");
+    $this->actingAs($staff, 'web')->post(route('admin.editions.ai-assist'), [
+        'aiFiles' => [UploadedFile::fake()->create('appel.pdf', 50, 'application/pdf')],
+    ])->assertSessionHasNoErrors()->assertSessionHas('ai_extracted');
+
+    // Les valeurs extraites sont flashées puis pré-remplies au rechargement du formulaire.
+    $d = session('ai_extracted');
+    expect($d['title'])->toBe('Colloque IA 2027');
+    expect($d['year'])->toBe(2027);
+    expect($d['location'])->toBe('Kara, Togo');
+    expect($d['tracks'])->toBe("Axe 1\nAxe 2");
 });

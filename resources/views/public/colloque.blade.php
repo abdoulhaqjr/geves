@@ -29,164 +29,257 @@
         </div>
     @endif
 
-    {{-- Barre de navigation --}}
-    <header style="position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid var(--ukc-border);">
-        <div style="height:3px;display:flex;">
-            <span style="flex:1;background:var(--ukc-blue);"></span>
-            <span style="flex:1;background:var(--ukc-gold);"></span>
-            <span style="flex:1;background:var(--ukc-green);"></span>
-        </div>
-        <div style="max-width:1120px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;
-                    gap:16px;padding:12px clamp(16px,4vw,32px);">
-            <div>
-                <div style="font-weight:900;color:var(--ukc-blue);font-size:1rem;line-height:1.2;">{{ $e->colloque?->name }}</div>
-                <div style="font-size:.78rem;color:var(--ukc-muted);font-weight:600;">Université de Kara</div>
+    {{-- ===== Hero (fidèle au mockup page-colloque-amelioree.html) ===== --}}
+    @php
+        $languages = $e->settings['languages'] ?? null;
+        $countdownToDeadline = $e->submission_open && $e->submission_deadline && $e->submission_deadline->isFuture();
+        $cdTarget = $countdownToDeadline ? $e->submission_deadline : $e->date_start;
+        $cdLabel = $countdownToDeadline ? 'Clôture des soumissions dans' : 'Le colloque commence dans';
+        $hasCountdown = $cdTarget && $cdTarget->isFuture();
+    @endphp
+    <header class="ukc-hero" id="top">
+        @if ($heroVideo)
+            <video autoplay muted loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;">
+                <source src="{{ $heroVideo }}" type="video/mp4">
+            </video>
+            <div style="position:absolute;inset:0;z-index:1;background:linear-gradient(135deg, rgba(15,26,51,.86), rgba(34,62,164,.78));"></div>
+        @elseif ($heroImage)
+            <img src="{{ $heroImage }}" alt="" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;">
+            <div style="position:absolute;inset:0;z-index:1;background:linear-gradient(135deg, rgba(15,26,51,.88), rgba(34,62,164,.72));"></div>
+        @endif
+        <div class="ukc-container" style="position:relative;z-index:2;">
+            <div class="ukc-hero-inner">
+                <div>
+                    <img src="{{ asset('img/logo-uk-white.png') }}" alt="Université de Kara" class="ukc-hero-logo">
+                    <div class="ukc-hero-badge">
+                        <span class="dot" aria-hidden="true"></span>
+                        <span>{{ $e->phase()->label() }}</span>
+                    </div>
+                    <h1>{{ $e->title }}</h1>
+                    @if ($e->subtitle)
+                        <p class="ukc-hero-theme">{{ $e->subtitle }}</p>
+                    @endif
+                    <div class="ukc-hero-meta">
+                        @if ($dateLabel)
+                            <div><x-ukc.icon name="calendar" :size="16" /> <strong>{{ $dateLabel }}</strong></div>
+                        @endif
+                        @if ($e->location)
+                            <div><x-ukc.icon name="pin" :size="16" /> {{ str_replace(["\r\n", "\r", "\n"], ' · ', $e->location) }}</div>
+                        @endif
+                        @if ($languages)
+                            <div><x-ukc.icon name="users" :size="16" /> {{ $languages }}</div>
+                        @endif
+                    </div>
+                    <div class="ukc-hero-cta">
+                        @if ($e->submission_open)
+                            <a href="{{ route('account.submissions.create', $e->slug) }}" class="ukc-btn ukc-btn--primary">
+                                <x-ukc.icon name="upload" :size="18" /> Soumettre une communication
+                            </a>
+                        @endif
+                        <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--ghost">S’inscrire</a>
+                    </div>
+                </div>
+
+                @if ($hasCountdown)
+                    <div class="ukc-countdown" x-data="ukcCountdown('{{ $cdTarget->toIso8601String() }}')" x-cloak>
+                        <div class="ukc-countdown-label">{{ $cdLabel }}</div>
+                        <div class="ukc-countdown-grid">
+                            <div class="ukc-countdown-item"><div class="num" x-text="String(days).padStart(2,'0')">--</div><div class="unit">Jours</div></div>
+                            <div class="ukc-countdown-item"><div class="num" x-text="String(hours).padStart(2,'0')">--</div><div class="unit">Heures</div></div>
+                            <div class="ukc-countdown-item"><div class="num" x-text="String(minutes).padStart(2,'0')">--</div><div class="unit">Min</div></div>
+                            <div class="ukc-countdown-item"><div class="num" x-text="String(seconds).padStart(2,'0')">--</div><div class="unit">Sec</div></div>
+                        </div>
+                        @if ($countdownToDeadline)
+                            <p style="margin-top:16px;font-size:13px;color:rgba(255,255,255,0.7);">
+                                Dernier délai : <strong style="color:var(--ukc-gold);">{{ $e->submission_deadline->translatedFormat('d F Y') }}</strong>
+                            </p>
+                        @elseif ($dateLabel)
+                            <p style="margin-top:16px;font-size:13px;color:rgba(255,255,255,0.7);">Dates : <strong style="color:var(--ukc-gold);">{{ $dateLabel }}</strong></p>
+                        @endif
+                    </div>
+                @endif
             </div>
-            <nav x-data="ukcScrollspy()" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                <a href="#presentation" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">Présentation</a>
-                <a href="#dates" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">Dates clés</a>
-                <a href="#axes" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">Axes</a>
-                @if ($plenaries->count() || $ateliers->count())
-                    <a href="#programme" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">Programme</a>
-                @endif
-                @if ($committees->count())
-                    <a href="#comites" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">Comités</a>
-                @endif
-                @if (count($faq))
-                    <a href="#faq" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">FAQ</a>
-                @endif
-                @if (! empty($practical['venue']) || ! empty($practical['accommodation']) || ! empty($practical['transport']))
-                    <a href="#infos" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">Infos pratiques</a>
-                @endif
-                @if ($siblings->count())
-                    <a href="#editions" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">Éditions</a>
-                @endif
-                <a href="#contact" data-spy class="ukc-btn ukc-btn--ghost ukc-btn--sm">Contact</a>
-                <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">Espace participant</a>
-            </nav>
         </div>
     </header>
 
-    {{-- Hero --}}
-    <section style="position:relative;color:#fff;overflow:hidden;
-                    background:linear-gradient(135deg, var(--ukc-blue-dark) 0%, var(--ukc-blue) 55%, #2b52c9 100%);">
-        @if ($heroVideo)
-            <video autoplay muted loop playsinline
-                   style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;">
-                <source src="{{ $heroVideo }}" type="video/mp4">
-            </video>
-            <div style="position:absolute;inset:0;z-index:1;background:linear-gradient(135deg, rgba(27,49,130,.86), rgba(43,82,201,.78));"></div>
-        @elseif ($heroImage)
-            <img src="{{ $heroImage }}" alt="" aria-hidden="true"
-                 style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;">
-            <div style="position:absolute;inset:0;z-index:1;background:linear-gradient(135deg, rgba(27,49,130,.88), rgba(43,82,201,.72));"></div>
-        @endif
-        <div style="position:relative;z-index:2;max-width:1120px;margin:0 auto;padding:clamp(48px,7vw,88px) clamp(16px,4vw,32px);">
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;">
-                @if ($e->edition_label)
-                    <span class="ukc-pill" style="background:rgba(255,255,255,.16);color:#fff;">{{ $e->edition_label }}</span>
-                @endif
-                <span class="ukc-pill ukc-pill--{{ $e->phase()->pill() }}">{{ $e->phase()->label() }}</span>
-            </div>
-            <h1 style="font-size:clamp(1.9rem,5vw,3rem);font-weight:900;line-height:1.12;letter-spacing:-.02em;max-width:18ch;">
-                {{ $e->title }}
-            </h1>
-            @if ($e->subtitle)
-                <p style="font-size:clamp(1rem,2.2vw,1.25rem);margin-top:14px;max-width:60ch;opacity:.95;">{{ $e->subtitle }}</p>
-            @endif
-
-            <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:24px;">
-                @if ($dateLabel)
-                    <span class="ukc-pill" style="background:rgba(255,255,255,.16);color:#fff;font-size:13px;padding:8px 14px;">
-                        <x-ukc.icon name="calendar" :size="16" /> {{ $dateLabel }}
-                    </span>
-                @endif
-                @if ($e->location)
-                    <span class="ukc-pill" style="background:rgba(255,255,255,.16);color:#fff;font-size:13px;padding:8px 14px;">
-                        <x-ukc.icon name="pin" :size="16" /> {{ $e->location }}
-                    </span>
-                @endif
-            </div>
-
-            <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:30px;">
-                @if ($e->submission_open)
-                    <a href="{{ route('account.submissions.create', $e->slug) }}" class="ukc-btn ukc-btn--gold">
-                        <x-ukc.icon name="upload" :size="18" /> Soumettre une communication
-                    </a>
-                @endif
-                <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--outline"
-                   style="background:transparent;color:#fff;border-color:rgba(255,255,255,.5);">
-                    <x-ukc.icon name="user" :size="18" /> S’inscrire pour assister
+    {{-- ===== Barre de navigation sticky (scrollspy) ===== --}}
+    <nav class="ukc-nav-bar">
+        <div class="ukc-container">
+            <div class="ukc-nav-bar-inner" x-data="ukcScrollspy()">
+                @php
+                    $cfShort = $e->settings['short_name'] ?? null;
+                    $cfShort = $cfShort ?: ($e->edition_label ?: \Illuminate\Support\Str::limit($e->colloque?->name ?? 'Colloque', 22));
+                @endphp
+                <a href="#top" class="ukc-nav-brand">
+                    <span class="dot" aria-hidden="true"></span>
+                    {{ $cfShort }} <span>· {{ $e->year ?: $e->date_start?->format('Y') }}</span>
                 </a>
-            </div>
-
-            @if ($e->submission_open && $e->submission_deadline)
-                <p style="margin-top:18px;font-size:.9rem;opacity:.9;">
-                    <x-ukc.icon name="clock" :size="15" /> Clôture des soumissions le
-                    {{ $e->submission_deadline->translatedFormat('d F Y') }}.
-                </p>
-            @endif
-
-            {{-- Compte à rebours --}}
-            @if ($e->date_start && $e->date_start->isFuture())
-                <div style="margin-top:28px;" x-data="ukcCountdown('{{ $e->date_start->toIso8601String() }}')" x-cloak>
-                    <div style="display:flex;gap:12px;flex-wrap:wrap;">
-                        @foreach (['days' => 'Jours', 'hours' => 'Heures', 'minutes' => 'Min', 'seconds' => 'Sec'] as $k => $lbl)
-                            <div style="min-width:70px;text-align:center;background:rgba(255,255,255,.14);border-radius:12px;padding:10px 8px;">
-                                <div style="font-size:1.6rem;font-weight:900;line-height:1;" x-text="String({{ $k }}).padStart(2,'0')">00</div>
-                                <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;opacity:.85;margin-top:4px;">{{ $lbl }}</div>
-                            </div>
-                        @endforeach
-                    </div>
+                <ul class="ukc-nav-links">
+                    @if (count($stats))
+                        <li><a href="#chiffres" data-spy>Chiffres</a></li>
+                    @endif
+                    @if ($e->date_start || $e->date_end || $e->submission_deadline)
+                        <li><a href="#dates" data-spy>Dates</a></li>
+                    @endif
+                    @if ($e->theme || $intro)
+                        <li><a href="#presentation" data-spy>Présentation</a></li>
+                    @endif
+                    @if ($plenaries->count() || $ateliers->count())
+                        <li><a href="#programme" data-spy>Programme</a></li>
+                    @endif
+                    @if (count($speakers))
+                        <li><a href="#intervenants" data-spy>Intervenants</a></li>
+                    @endif
+                    @if (count($fees))
+                        <li><a href="#tarifs" data-spy>Tarifs</a></li>
+                    @endif
+                    @if (array_filter($practical))
+                        <li><a href="#infos" data-spy>Infos pratiques</a></li>
+                    @endif
+                    @if (count($faq))
+                        <li><a href="#faq" data-spy>FAQ</a></li>
+                    @endif
+                </ul>
+                <div class="ukc-nav-actions">
+                    <a href="{{ route('home') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">Accueil</a>
+                    <a href="{{ route('public.deroulement') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">Déroulement</a>
+                    <a href="{{ route('account.dashboard') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">Mon espace</a>
+                    @if ($e->submission_open)
+                        <a href="{{ route('account.submissions.create', $e->slug) }}" class="ukc-btn ukc-btn--primary ukc-btn--sm">Soumettre</a>
+                    @endif
                 </div>
-            @endif
+            </div>
         </div>
-    </section>
+    </nav>
 
     <div style="background:var(--ukc-bg);">
-        <div style="max-width:1120px;margin:0 auto;padding:clamp(32px,5vw,56px) clamp(16px,4vw,32px);display:flex;flex-direction:column;gap:28px;">
+        <div style="max-width:1380px;margin:0 auto;padding:clamp(40px,6vw,72px) clamp(16px,4vw,32px);display:flex;flex-direction:column;gap:clamp(40px,6vw,64px);">
 
-            {{-- Présentation --}}
-            @if ($e->theme || $intro)
-                <section id="presentation" class="ukc-card">
-                    <h2 style="font-size:1.3rem;font-weight:800;color:var(--ukc-blue);">Présentation</h2>
-                    @if ($e->theme)
-                        <p style="font-weight:700;font-size:1.05rem;margin:6px 0 12px;">{{ $e->theme }}</p>
-                    @endif
-                    @if ($intro)
-                        <p style="color:var(--ukc-muted);line-height:1.7;white-space:pre-line;">{{ $intro }}</p>
-                    @endif
+            {{-- Bannière officielle (activable/désactivable ; fidèle au mockup) --}}
+            @if (($e->settings['banner_enabled'] ?? true))
+                <section id="banniere">
+                    <div class="ukc-banner-frame">
+                        @if ($e->banner_url)
+                            <img src="{{ $e->banner_url }}" alt="Bannière du colloque {{ $e->title }}" width="1200" height="514" loading="eager">
+                        @else
+                            <div class="ukc-banner-placeholder">
+                                <div class="tag">Bannière officielle</div>
+                                <h2>{{ $e->title }}</h2>
+                                @if ($dateLabel || $e->subtitle)
+                                    <p>{{ $dateLabel }}@if ($dateLabel && $e->subtitle) · @endif{{ $e->subtitle }}</p>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
                 </section>
             @endif
 
-            {{-- Dates clés --}}
+            {{-- Chiffres clés (fidèle au mockup) --}}
+            @if (count($stats))
+                <section id="chiffres" style="scroll-margin-top:72px;">
+                    <div class="ukc-stats">
+                        @foreach ($stats as $stat)
+                            <div class="ukc-stat">
+                                <div class="num">{!! $stat['num'] !!}</div>
+                                <div class="label">{{ $stat['label'] }}</div>
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
+            @endif
+
+            {{-- Présentation (fidèle au mockup : prose + callout) --}}
+            @if ($e->theme || $intro)
+                @php
+                    $objectives = is_array($e->settings['objectives'] ?? null) ? $e->settings['objectives'] : [];
+                @endphp
+                <section id="presentation" style="scroll-margin-top:72px;">
+                    <div class="ukc-two-col">
+                        <div class="ukc-prose">
+                            <h3>Thème général</h3>
+                            @if ($e->theme)<p><strong>{{ $e->theme }}</strong></p>@endif
+                            @if ($intro)<p style="white-space:pre-line;">{{ $intro }}</p>@endif
+                            @if (count($objectives))
+                                <h3>Objectifs</h3>
+                                <ul>@foreach ($objectives as $obj)<li>{{ $obj }}</li>@endforeach</ul>
+                            @endif
+                        </div>
+                        <div class="ukc-callout" id="soumettre">
+                            <h3>Appel à communications</h3>
+                            <p>
+                                Résumé de <strong>250 mots max.</strong> (FR ou EN), structure imposée. Support oral ou poster.
+                                @if ($e->submission_deadline) Dernier délai : <strong>{{ $e->submission_deadline->translatedFormat('d F Y') }}</strong>.@endif
+                            </p>
+                            @if ($e->submission_open)
+                                <a href="{{ route('account.submissions.create', $e->slug) }}" class="ukc-btn ukc-btn--primary">
+                                    <x-ukc.icon name="upload" :size="18" /> Déposer mon résumé
+                                </a>
+                            @else
+                                <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--primary">
+                                    <x-ukc.icon name="user" :size="18" /> Mon espace
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+                </section>
+            @endif
+
+            {{-- Dates clés (fidèle au mockup : cartes avec statut) --}}
             @php
                 $keyDates = [];
                 if ($e->submission_deadline) {
-                    $keyDates[] = ['icon' => 'upload', 'label' => 'Clôture des soumissions', 'value' => $e->submission_deadline->translatedFormat('d F Y'), 'accent' => 'gold'];
+                    $past = $e->submission_deadline->isPast();
+                    $keyDates[] = ['icon' => 'upload', 'label' => 'Soumissions', 'value' => $e->submission_deadline->translatedFormat('d M Y'), 'pill' => $past ? 'closed' : 'soon', 'pillLabel' => $past ? 'Clôturé' : 'À venir'];
                 }
                 if ($e->date_start) {
-                    $keyDates[] = ['icon' => 'calendar', 'label' => 'Ouverture du colloque', 'value' => $e->date_start->translatedFormat('d F Y'), 'accent' => 'blue'];
+                    $future = $e->date_start->isFuture();
+                    $keyDates[] = ['icon' => 'calendar', 'label' => 'Ouverture', 'value' => $e->date_start->translatedFormat('d M Y'), 'pill' => $future ? 'soon' : 'info', 'pillLabel' => $future ? 'À venir' : 'En cours'];
                 }
                 if ($e->date_end && (! $e->date_start || $e->date_end->ne($e->date_start))) {
-                    $keyDates[] = ['icon' => 'calendar-check', 'label' => 'Clôture du colloque', 'value' => $e->date_end->translatedFormat('d F Y'), 'accent' => 'green'];
+                    $days = ($e->date_start && $e->date_end) ? ((int) $e->date_start->startOfDay()->diffInDays($e->date_end->startOfDay()) + 1).' jours' : 'Clôture';
+                    $keyDates[] = ['icon' => 'calendar-check', 'label' => 'Colloque', 'value' => $e->date_end->translatedFormat('d M Y'), 'pill' => 'info', 'pillLabel' => $days];
                 }
             @endphp
             @if (count($keyDates))
-                <section id="dates" class="ukc-card">
-                    <h2 style="font-size:1.3rem;font-weight:800;color:var(--ukc-blue);margin-bottom:16px;">Dates clés</h2>
-                    <div class="ukc-grid-2" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));">
+                <section id="dates" style="scroll-margin-top:72px;">
+                    <div class="ukc-block-head">
+                        <h2>Dates clés</h2>
+                        <div class="ukc-accent"><i></i><i></i><i></i></div>
+                        <p>Retenez les échéances importantes de cette édition.</p>
+                    </div>
+                    <div class="ukc-dates-grid">
                         @foreach ($keyDates as $d)
-                            @php($col = ['gold' => 'var(--ukc-gold)', 'green' => 'var(--ukc-green)', 'blue' => 'var(--ukc-blue)'][$d['accent']])
-                            <div style="display:flex;gap:14px;align-items:center;padding:16px;background:var(--ukc-bg);
-                                        border:1px solid var(--ukc-border);border-left:4px solid {{ $col }};border-radius:12px;">
-                                <span style="flex-shrink:0;width:40px;height:40px;border-radius:10px;display:flex;align-items:center;
-                                             justify-content:center;background:{{ $col }};color:#fff;">
-                                    <x-ukc.icon :name="$d['icon']" :size="20" />
-                                </span>
+                            <div class="ukc-date-card">
+                                <div class="icon"><x-ukc.icon :name="$d['icon']" :size="24" /></div>
+                                <h3>{{ $d['label'] }}</h3>
+                                <div class="date">{{ $d['value'] }}</div>
+                                <div class="status"><span class="ukc-pill ukc-pill--{{ $d['pill'] }}">{{ $d['pillLabel'] }}</span></div>
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
+            @endif
+
+            {{-- Ateliers disciplinaires (fidèle au mockup : theme-cards titre + description) --}}
+            @php
+                $disciplines = count($workshops)
+                    ? $workshops
+                    : collect($tracks)->map(fn ($t) => ['title' => $t, 'desc' => null])->all();
+            @endphp
+            @if (count($disciplines))
+                <section id="thematiques" style="scroll-margin-top:72px;">
+                    <div class="ukc-block-head">
+                        <h2>Ateliers disciplinaires</h2>
+                        <div class="ukc-accent"><i></i><i></i><i></i></div>
+                        <p>{{ count($disciplines) }} ateliers regroupant les champs disciplinaires du colloque.</p>
+                    </div>
+                    <div class="ukc-themes">
+                        @foreach ($disciplines as $i => $disc)
+                            <div class="ukc-theme-card">
+                                <div class="num">{{ str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT) }}</div>
                                 <div>
-                                    <div style="font-size:.8rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ukc-muted);font-weight:700;">{{ $d['label'] }}</div>
-                                    <div style="font-weight:800;font-size:1.05rem;color:var(--ukc-text);">{{ $d['value'] }}</div>
+                                    <h4>{{ $disc['title'] }}</h4>
+                                    @if (! empty($disc['desc']))<p>{{ $disc['desc'] }}</p>@endif
                                 </div>
                             </div>
                         @endforeach
@@ -194,211 +287,306 @@
                 </section>
             @endif
 
-            {{-- Axes thématiques --}}
-            @if (count($tracks))
-                <section id="axes" class="ukc-card">
-                    <h2 style="font-size:1.3rem;font-weight:800;color:var(--ukc-blue);margin-bottom:16px;">Axes thématiques</h2>
-                    <div class="ukc-grid-2" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr));">
-                        @foreach ($tracks as $i => $track)
-                            <div style="display:flex;gap:12px;align-items:flex-start;padding:14px 16px;
-                                        background:var(--ukc-bg);border:1px solid var(--ukc-border);border-radius:12px;">
-                                <span style="flex-shrink:0;width:28px;height:28px;border-radius:8px;display:flex;
-                                             align-items:center;justify-content:center;background:var(--ukc-blue);color:#fff;
-                                             font-weight:800;font-size:13px;">{{ $i + 1 }}</span>
-                                <span style="font-weight:600;font-size:.95rem;">{{ $track }}</span>
-                            </div>
-                        @endforeach
-                    </div>
-                </section>
-            @endif
-
-            {{-- Programme (sessions plénières + ateliers) --}}
+            {{-- Programme (exact mockup : onglets jours + sessions) --}}
             @if ($plenaries->count() || $ateliers->count())
-                <section id="programme" class="ukc-card">
-                    <h2 style="font-size:1.3rem;font-weight:800;color:var(--ukc-blue);margin-bottom:16px;">Programme</h2>
-
-                    @if ($plenaries->count())
-                        <h3 style="font-size:1.05rem;font-weight:800;margin:6px 0 12px;display:flex;align-items:center;gap:8px;">
-                            <x-ukc.icon name="mic" :size="18" /> Sessions plénières
-                        </h3>
-                        @foreach ($plenaries as $session)
-                            @include('livewire.public._session', ['session' => $session, 'commsBySession' => $commsBySession])
-                        @endforeach
-                    @endif
-
-                    @foreach ($ateliers as $atelier)
-                        <div style="margin-top:18px;">
-                            <h3 style="font-size:1.05rem;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
-                                <x-ukc.icon name="layers" :size="18" /> {{ $atelier->title }}
-                            </h3>
-                            @if (count($atelier->tracks ?? []))
-                                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
-                                    @foreach ($atelier->tracks as $t)<span class="ukc-pill ukc-pill--info">{{ $t }}</span>@endforeach
-                                </div>
-                            @endif
-                            @forelse ($atelier->sessions as $session)
-                                @include('livewire.public._session', ['session' => $session, 'commsBySession' => $commsBySession])
-                            @empty
-                                <p style="font-size:.88rem;color:var(--ukc-muted);">Sessions à venir.</p>
-                            @endforelse
+                @php
+                    $atelierNames = $ateliers->pluck('title', 'id');
+                    $allSessions = $plenaries->concat($ateliers->flatMap->sessions)
+                        ->sortBy(fn ($s) => optional($s->starts_at)?->timestamp ?? 0)
+                        ->values();
+                    // Regroupe par jour ; les sessions non encore datées vont dans un bucket « » affiché en dernier.
+                    $byDay = $allSessions->groupBy(fn ($s) => optional($s->session_day ?? $s->starts_at)?->format('Y-m-d') ?? '');
+                    $progDays = $byDay->keys()
+                        ->sortBy(fn ($d) => $d === '' ? '9999' : $d)
+                        ->values();
+                @endphp
+                @if ($progDays->isNotEmpty())
+                    <section id="programme" style="scroll-margin-top:72px;" x-data="{ progDay: '{{ $progDays->first() }}' }">
+                        <div class="ukc-block-head">
+                            <h2>Programme</h2>
+                            <div class="ukc-accent"><i></i><i></i><i></i></div>
+                            <p>Aperçu du déroulement du colloque.</p>
                         </div>
-                    @endforeach
-                </section>
-            @endif
 
-            {{-- Comités --}}
-            @if ($committees->count())
-                @php($comLabels = ['organisation' => 'Comité d’organisation', 'scientifique' => 'Comité scientifique', 'supervision' => 'Comité de supervision'])
-                <section id="comites" class="ukc-card">
-                    <h2 style="font-size:1.3rem;font-weight:800;color:var(--ukc-blue);margin-bottom:16px;">Comités</h2>
-                    @foreach ($comLabels as $role => $label)
-                        @php($members = $committees[$role] ?? collect())
-                        @if ($members->count())
-                            <h3 style="font-size:1.05rem;font-weight:800;margin:14px 0 10px;">{{ $label }}</h3>
-                            <div class="ukc-grid-3" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">
-                                @foreach ($members as $m)
-                                    <div style="display:flex;gap:10px;align-items:center;padding:10px 12px;background:var(--ukc-bg);border:1px solid var(--ukc-border);border-radius:12px;">
-                                        <div style="width:44px;height:44px;border-radius:50%;flex-shrink:0;overflow:hidden;background:linear-gradient(135deg,var(--ukc-blue),var(--ukc-green));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;">
-                                            @if ($m->photo_url)<img src="{{ $m->photo_url }}" alt="" style="width:100%;height:100%;object-fit:cover;">@else{{ mb_substr($m->person_name, 0, 1) }}@endif
-                                        </div>
-                                        <div style="min-width:0;">
-                                            <div style="font-weight:700;font-size:.9rem;">{{ $m->person_name }}</div>
-                                            <div style="font-size:.78rem;color:var(--ukc-muted);">{{ $m->person_title }}@if ($m->institution) · {{ $m->institution }}@endif</div>
+                        <div class="ukc-tabs-scroll" role="tablist">
+                            @php $dayNo = 0; @endphp
+                            @foreach ($progDays as $d)
+                                <button type="button" class="ukc-tab" :class="{ active: progDay==='{{ $d }}' }" @click="progDay='{{ $d }}'" role="tab">@if ($d === ''){{ 'À programmer' }}@else{{ 'Jour '.(++$dayNo).' — '.\Illuminate\Support\Carbon::parse($d)->translatedFormat('d M') }}@endif</button>
+                            @endforeach
+                        </div>
+
+                        @foreach ($progDays as $d)
+                            <div class="ukc-program-day" :class="{ active: progDay==='{{ $d }}' }">
+                                @foreach ($byDay[$d] as $s)
+                                    @php
+                                        $isPlenary = $s->type === 'plenary';
+                                        $roles = collect([
+                                            $s->moderator_name ? 'Mod. '.$s->moderator_name : null,
+                                            $s->rapporteur_name ? 'Rapp. '.$s->rapporteur_name : null,
+                                        ])->filter()->implode(' · ');
+                                        $atelierTitle = $s->atelier_id ? ($atelierNames[$s->atelier_id] ?? null) : null;
+                                    @endphp
+                                    <div class="ukc-session">
+                                        <div class="ukc-session-time">{{ $s->starts_at?->format('H:i') ?: '—' }}</div>
+                                        <div class="ukc-session-body">
+                                            <span class="type {{ $isPlenary ? 'type--plenary' : 'type--workshop' }}">{{ $isPlenary ? 'Plénière' : 'Atelier' }}</span>
+                                            @if ($atelierTitle)<span class="type type--poster">{{ $atelierTitle }}</span>@endif
+                                            <h4>{{ $s->label }}</h4>
+                                            @if ($s->room || $roles)
+                                                <div class="meta">{{ $s->room }}@if ($s->room && $roles) · @endif{{ $roles }}</div>
+                                            @endif
+                                            @php $comms = ($commsBySession[$s->id] ?? collect())->pluck('submission')->filter(); @endphp
+                                            @if ($comms->isNotEmpty())
+                                                <ul class="ukc-session-comms">
+                                                    @foreach ($comms as $comm)
+                                                        <li>{{ $comm->title }}</li>
+                                                    @endforeach
+                                                </ul>
+                                            @endif
                                         </div>
                                     </div>
                                 @endforeach
+                            </div>
+                        @endforeach
+                    </section>
+                @endif
+            @endif
+
+            {{-- Intervenants invités (fidèle au mockup) --}}
+            @if (count($speakers))
+                <section id="intervenants" style="scroll-margin-top:72px;">
+                    <div class="ukc-block-head">
+                        <h2>Intervenants invités</h2>
+                        <div class="ukc-accent"><i></i><i></i><i></i></div>
+                        <p>Des chercheurs de renom qui partageront leur expertise.</p>
+                    </div>
+                    <div class="ukc-speakers">
+                        @foreach ($speakers as $sp)
+                            @php
+                                $initials = collect(explode(' ', preg_replace('/^(Pr\.|Dr\.|M\.|Mme|Mr)\s*/u', '', $sp['name'])))
+                                    ->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('');
+                            @endphp
+                            <div class="ukc-speaker">
+                                <div class="avatar">@if (! empty($sp['photo_url']))<img src="{{ $sp['photo_url'] }}" alt="">@else{{ $initials }}@endif</div>
+                                <h4>{{ $sp['name'] }}</h4>
+                                @if (! empty($sp['role']))<div class="role">{{ $sp['role'] }}</div>@endif
+                                @if (! empty($sp['affil']))<div class="affil">{{ $sp['affil'] }}</div>@endif
+                                @if (! empty($sp['talk']))<div class="talk">« {{ $sp['talk'] }} »</div>@endif
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
+            @endif
+
+            {{-- Comités (exact mockup : onglets + carrousel) --}}
+            @if ($committees->count())
+                @php
+                    $comLabels = ['organisation' => 'Comité d’organisation', 'scientifique' => 'Comité scientifique', 'supervision' => 'Comité de supervision'];
+                    $firstComRole = collect(array_keys($comLabels))->first(fn ($r) => ($committees[$r] ?? collect())->count()) ?? 'organisation';
+                @endphp
+                <section id="comites" style="scroll-margin-top:72px;" x-data="{ comTab: '{{ $firstComRole }}' }">
+                    <div class="ukc-block-head">
+                        <h2>Comités</h2>
+                        <div class="ukc-accent"><i></i><i></i><i></i></div>
+                        <p>Organisation et évaluation scientifique.</p>
+                    </div>
+
+                    <div class="ukc-tabs-scroll" role="tablist">
+                        @foreach ($comLabels as $role => $label)
+                            @if (($committees[$role] ?? collect())->count())
+                                <button type="button" class="ukc-tab" :class="{ active: comTab==='{{ $role }}' }" @click="comTab='{{ $role }}'" role="tab">{{ $label }}</button>
+                            @endif
+                        @endforeach
+                    </div>
+
+                    @foreach ($comLabels as $role => $label)
+                        @php $members = $committees[$role] ?? collect(); @endphp
+                        @if ($members->count())
+                            <div x-show="comTab==='{{ $role }}'" x-cloak>
+                                <div class="ukc-swiper" x-data="{ scroll(d) { const t = $refs.track; t.scrollBy({ left: d * t.clientWidth * 0.8, behavior: 'smooth' }); } }">
+                                    <button type="button" class="swiper-nav prev" @click="scroll(-1)" aria-label="Précédent">‹</button>
+                                    <div class="ukc-swiper-track" x-ref="track">
+                                        @foreach ($members as $m)
+                                            <div class="ukc-person">
+                                                <div class="avatar">
+                                                    @if ($m->photo_url)<img src="{{ $m->photo_url }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">@else{{ mb_substr($m->person_name, 0, 1) }}@endif
+                                                </div>
+                                                <h4>{{ $m->person_name }}</h4>
+                                                @if ($m->person_title)<div class="role">{{ $m->person_title }}</div>@endif
+                                                @if ($m->institution)<div class="affil">{{ $m->institution }}</div>@endif
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                    <button type="button" class="swiper-nav next" @click="scroll(1)" aria-label="Suivant">›</button>
+                                </div>
                             </div>
                         @endif
                     @endforeach
                 </section>
             @endif
 
-            {{-- Votre parcours en 5 étapes --}}
-            <section id="parcours" class="ukc-card">
-                <h2 style="font-size:1.3rem;font-weight:800;color:var(--ukc-blue);margin-bottom:6px;">Votre parcours en 5 étapes</h2>
-                <p style="color:var(--ukc-muted);font-size:.92rem;margin-bottom:18px;">De la soumission à l’attestation, le déroulé de votre participation.</p>
-                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;">
-                    @foreach ([
-                        ['n' => 1, 'icon' => 'upload', 'title' => 'Soumettre', 'desc' => 'Déposez votre résumé sur l’axe de votre choix depuis votre espace.'],
-                        ['n' => 2, 'icon' => 'search', 'title' => 'Évaluation', 'desc' => 'Relecture en aveugle par le comité scientifique.'],
-                        ['n' => 3, 'icon' => 'card', 'title' => 'Paiement', 'desc' => 'Réglez vos frais d’inscription selon votre profil.'],
-                        ['n' => 4, 'icon' => 'mic', 'title' => 'Présenter', 'desc' => 'Communiquez lors de la session programmée, en présentiel ou en visio.'],
-                        ['n' => 5, 'icon' => 'award', 'title' => 'Attestation', 'desc' => 'Recevez votre attestation vérifiable par QR code.'],
-                    ] as $step)
-                        <div style="position:relative;padding:18px 16px;background:var(--ukc-bg);border:1px solid var(--ukc-border);border-radius:12px;">
-                            <span style="position:absolute;top:12px;right:14px;font-size:1.6rem;font-weight:900;color:rgba(34,62,164,.12);line-height:1;">{{ $step['n'] }}</span>
-                            <span style="display:inline-flex;width:38px;height:38px;border-radius:10px;align-items:center;justify-content:center;
-                                         background:var(--ukc-blue);color:#fff;margin-bottom:10px;">
-                                <x-ukc.icon :name="$step['icon']" :size="19" />
-                            </span>
-                            <div style="font-weight:800;font-size:1rem;margin-bottom:4px;">{{ $step['title'] }}</div>
-                            <div style="font-size:.85rem;color:var(--ukc-muted);line-height:1.5;">{{ $step['desc'] }}</div>
-                        </div>
-                    @endforeach
+            {{-- Votre parcours en 5 étapes (fidèle au mockup : stepper) --}}
+            <section id="parcours" style="scroll-margin-top:72px;">
+                <div class="ukc-block-head">
+                    <h2>Votre parcours en 5 étapes</h2>
+                    <div class="ukc-accent"><i></i><i></i><i></i></div>
+                    <p>Du dépôt de résumé jusqu’à l’attestation de participation.</p>
+                </div>
+                <div class="ukc-stepper">
+                    <div class="ukc-step active"><div class="circle">1</div><h4>Compte</h4><p>Création &amp; vérification</p></div>
+                    <div class="ukc-step"><div class="circle">2</div><h4>Soumission</h4><p>Résumé en ligne</p></div>
+                    <div class="ukc-step"><div class="circle">3</div><h4>Évaluation</h4><p>Relecture en aveugle</p></div>
+                    <div class="ukc-step"><div class="circle">4</div><h4>Paiement</h4><p>Mobile money / carte</p></div>
+                    <div class="ukc-step"><div class="circle">5</div><h4>Attestation</h4><p>Documents &amp; livret</p></div>
                 </div>
             </section>
 
-            {{-- Frais d'inscription --}}
+            {{-- Frais de participation (fidèle au mockup : cartes de prix) --}}
             @if (count($fees))
-                <section id="tarifs" class="ukc-card">
-                    <h2 style="font-size:1.3rem;font-weight:800;color:var(--ukc-blue);margin-bottom:16px;">Frais d’inscription</h2>
-                    <div class="ukc-grid-3" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
-                        @foreach ($fees as $fee)
-                            <div style="text-align:center;padding:20px 16px;border:1px solid var(--ukc-border);
-                                        border-radius:14px;background:#fff;">
-                                <div style="font-size:.85rem;font-weight:700;color:var(--ukc-muted);text-transform:uppercase;
-                                            letter-spacing:.04em;">{{ $fee['label'] }}</div>
-                                <div style="font-size:1.6rem;font-weight:900;color:var(--ukc-blue);margin-top:8px;">
-                                    {{ number_format((float) ($fee['amount'] ?? 0), 0, ',', ' ') }}
-                                    <span style="font-size:.9rem;font-weight:700;">FCFA</span>
-                                </div>
+                @php $featuredIndex = intdiv(count($fees), 2); @endphp
+                <section id="tarifs" style="scroll-margin-top:72px;">
+                    <div class="ukc-block-head">
+                        <h2>Frais de participation</h2>
+                        <div class="ukc-accent"><i></i><i></i><i></i></div>
+                        <p>Tarifs officiels du colloque (FCFA).@if ($feesNote) {{ $feesNote }}@endif</p>
+                    </div>
+                    <div class="ukc-pricing">
+                        @foreach ($fees as $i => $fee)
+                            <div @class(['ukc-price-card', 'ukc-price-card--featured' => $i === $featuredIndex])>
+                                <h3>{{ $fee['label'] }}</h3>
+                                <div class="amount">{{ number_format((float) ($fee['amount'] ?? 0), 0, ',', ' ') }} <small>FCFA</small></div>
+                                <ul>
+                                    <li><x-ukc.icon name="check" :size="16" /> Accès aux sessions</li>
+                                    <li><x-ukc.icon name="check" :size="16" /> Communications &amp; ateliers</li>
+                                    <li><x-ukc.icon name="check" :size="16" /> Attestation de participation</li>
+                                </ul>
+                                <a href="{{ route('account.register') }}"
+                                   @class(['ukc-btn', 'ukc-btn--primary' => $i === $featuredIndex, 'ukc-btn--outline' => $i !== $featuredIndex])
+                                   style="width:100%;justify-content:center;">Choisir</a>
                             </div>
                         @endforeach
                     </div>
-                    <p style="margin:16px 0 0;font-size:.9rem;color:var(--ukc-muted);text-align:center;">
+                    <p style="margin:20px 0 0;font-size:.9rem;color:var(--ukc-muted);text-align:center;">
                         Co-auteur d’une communication acceptée ?
                         <a href="{{ route('public.coauthor', $edition->slug) }}" style="color:var(--ukc-blue);font-weight:700;">Réglez vos frais ici</a>.
                     </p>
                 </section>
             @endif
 
-            {{-- Partenaires --}}
+            {{-- Partenaires & Sponsors (exact mockup : marquee de logos) --}}
             @if (count($partners))
-                <section id="partenaires" class="ukc-card">
-                    <h2 style="font-size:1.3rem;font-weight:800;color:var(--ukc-blue);margin-bottom:16px;">Partenaires</h2>
-                    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:center;">
-                        @foreach ($partners as $p)
-                            @php($inner = !empty($p['logo_url'])
-                                ? '<img src="' . e($p['logo_url']) . '" alt="' . e($p['name']) . '" style="max-height:56px;max-width:150px;object-fit:contain;">'
-                                : '<span style="font-weight:700;color:var(--ukc-text);">' . e($p['name']) . '</span>')
-                            @if (!empty($p['url']))
-                                <a href="{{ $p['url'] }}" target="_blank" rel="noopener" title="{{ $p['name'] }}"
-                                   style="padding:12px 16px;background:#fff;border:1px solid var(--ukc-border);border-radius:12px;display:flex;align-items:center;">{!! $inner !!}</a>
-                            @else
-                                <div style="padding:12px 16px;background:#fff;border:1px solid var(--ukc-border);border-radius:12px;display:flex;align-items:center;">{!! $inner !!}</div>
-                            @endif
-                        @endforeach
+                <section id="partenaires" class="ukc-partners" style="scroll-margin-top:72px;">
+                    <div class="ukc-block-head" style="margin-bottom:0;">
+                        <h2>Partenaires &amp; Sponsors</h2>
+                        <div class="ukc-accent"><i></i><i></i><i></i></div>
+                        <p>Ils soutiennent cette édition.</p>
+                    </div>
+                    <div class="ukc-marquee">
+                        <div class="ukc-marquee-track">
+                            {{-- Dupliqué pour la boucle infinie (translateX -50%) --}}
+                            @foreach (array_merge($partners, $partners) as $p)
+                                <a class="logo-frame" @if (! empty($p['url'])) href="{{ $p['url'] }}" target="_blank" rel="noopener" @endif title="{{ $p['name'] }}">
+                                    @if (! empty($p['logo_url']))
+                                        <img src="{{ $p['logo_url'] }}" alt="{{ $p['name'] }}">
+                                    @else
+                                        {{ $p['name'] }}
+                                    @endif
+                                </a>
+                            @endforeach
+                        </div>
                     </div>
                 </section>
             @endif
 
-            {{-- FAQ --}}
+            {{-- FAQ (fidèle au mockup : accordéon) --}}
             @if (count($faq))
-                <section id="faq" class="ukc-card">
-                    <h2 style="font-size:1.3rem;font-weight:800;color:var(--ukc-blue);margin-bottom:16px;">Questions fréquentes</h2>
-                    @foreach ($faq as $item)
-                        <details style="border-bottom:1px solid var(--ukc-border);padding:12px 0;">
-                            <summary style="font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:10px;">
-                                {{ $item['question'] }}
-                                <x-ukc.icon name="chevron" :size="16" style="transform:rotate(90deg);flex-shrink:0;" />
-                            </summary>
-                            <p style="color:var(--ukc-muted);line-height:1.6;margin-top:8px;white-space:pre-line;">{{ $item['answer'] }}</p>
-                        </details>
-                    @endforeach
-                </section>
-            @endif
-
-            {{-- Infos pratiques --}}
-            @if (! empty($practical['venue']) || ! empty($practical['accommodation']) || ! empty($practical['transport']))
-                <section id="infos" class="ukc-card">
-                    <h2 style="font-size:1.3rem;font-weight:800;color:var(--ukc-blue);margin-bottom:16px;">Infos pratiques</h2>
-                    <div class="ukc-grid-3" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
-                        @php($infos = [
-                            ['pin', 'Lieu', $practical['venue'] ?? null],
-                            ['bed', 'Hébergement', $practical['accommodation'] ?? null],
-                            ['bus', 'Transport', $practical['transport'] ?? null],
-                        ])
-                        @foreach ($infos as [$icon, $label, $value])
-                            @if (! empty($value))
-                                <div style="padding:16px;border:1px solid var(--ukc-border);border-radius:12px;background:#fff;">
-                                    <div style="display:flex;align-items:center;gap:8px;font-weight:700;color:var(--ukc-blue);margin-bottom:8px;">
-                                        <x-ukc.icon :name="$icon" :size="18" /> {{ $label }}
-                                    </div>
-                                    <p style="color:var(--ukc-muted);line-height:1.6;white-space:pre-line;margin:0;font-size:.92rem;">{{ $value }}</p>
-                                </div>
-                            @endif
+                <section id="faq" style="scroll-margin-top:72px;">
+                    <div class="ukc-block-head">
+                        <h2>Questions fréquentes</h2>
+                        <div class="ukc-accent"><i></i><i></i><i></i></div>
+                    </div>
+                    <div class="ukc-faq">
+                        @foreach ($faq as $item)
+                            <details class="ukc-faq-item">
+                                <summary>{{ $item['question'] }}</summary>
+                                <div class="answer" style="white-space:pre-line;">{{ $item['answer'] }}</div>
+                            </details>
                         @endforeach
                     </div>
                 </section>
             @endif
 
-            {{-- Éditions précédentes --}}
-            @if ($siblings->count())
-                <section id="editions" class="ukc-card">
-                    <h2 style="font-size:1.3rem;font-weight:800;color:var(--ukc-blue);margin-bottom:16px;">Éditions précédentes</h2>
-                    <div class="ukc-grid-2" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr));">
-                        @foreach ($siblings as $sib)
-                            <a href="{{ route('public.archive', $sib->slug) }}"
-                               style="display:flex;flex-direction:column;gap:6px;padding:16px;background:var(--ukc-bg);
-                                      border:1px solid var(--ukc-border);border-radius:12px;color:inherit;transition:.15s;"
-                               onmouseover="this.style.borderColor='var(--ukc-blue)'" onmouseout="this.style.borderColor='var(--ukc-border)'">
-                                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                                    <span style="font-size:1.4rem;font-weight:900;color:var(--ukc-blue);line-height:1;">{{ $sib->year ?: $sib->date_start?->format('Y') }}</span>
-                                    <span class="ukc-pill ukc-pill--{{ $sib->status === 'open' ? 'ok' : 'muted' }}">{{ $sib->status === 'open' ? 'En cours' : 'Clôturé' }}</span>
+            {{-- Infos pratiques (fidèle au mockup : 6 cartes + plan du campus) --}}
+            @php
+                // Le 4e élément indique un rendu en liste à puces (comme le mockup pour Langues/Hébergement).
+                $infos = [
+                    ['pin', 'Lieu', $practical['venue'] ?? null, false],
+                    ['users', 'Langues', $practical['languages'] ?? null, true],
+                    ['bed', 'Hébergement', $practical['accommodation'] ?? null, true],
+                    ['video', 'Format hybride', $practical['hybrid'] ?? null, false],
+                    ['shield', 'Visa & formalités', $practical['visa'] ?? null, false],
+                    ['mail', 'Contacts', $practical['contacts'] ?? null, false],
+                    ['bus', 'Transport', $practical['transport'] ?? null, true],
+                ];
+                $infos = array_values(array_filter($infos, fn ($i) => ! empty($i[2])));
+            @endphp
+            @if (count($infos) || ! empty($map['embed']))
+                <section id="infos" style="scroll-margin-top:72px;">
+                    <div class="ukc-block-head">
+                        <h2>Informations pratiques</h2>
+                        <div class="ukc-accent"><i></i><i></i><i></i></div>
+                        <p>Tout ce qu’il faut savoir pour préparer votre venue.</p>
+                    </div>
+                    @if (count($infos))
+                        <div class="ukc-practical">
+                            @foreach ($infos as [$icon, $label, $value, $asList])
+                                <div class="ukc-practical-card">
+                                    <div class="ico-wrap"><x-ukc.icon :name="$icon" :size="22" /></div>
+                                    <h4>{{ $label }}</h4>
+                                    @php $lines = array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', (string) $value)), fn ($l) => $l !== '')); @endphp
+                                    @if ($asList && count($lines) > 1)
+                                        <ul>
+                                            @foreach ($lines as $line)<li>{{ $line }}</li>@endforeach
+                                        </ul>
+                                    @else
+                                        <p style="white-space:pre-line;">{{ $value }}</p>
+                                    @endif
                                 </div>
-                                <div style="font-weight:700;font-size:.95rem;line-height:1.35;">{{ \Illuminate\Support\Str::limit($sib->title ?: $sib->colloque?->name, 70) }}</div>
-                                @if ($sib->location)<div style="font-size:.82rem;color:var(--ukc-muted);">{{ $sib->location }}</div>@endif
-                                <span style="font-size:.82rem;font-weight:700;color:var(--ukc-blue);margin-top:2px;">Voir l’édition →</span>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    @if (! empty($map['embed']))
+                        <div class="ukc-campus-map">
+                            <div class="ukc-campus-map-head">
+                                <h3>Plan du campus</h3>
+                                @if (! empty($map['link']))
+                                    <a href="{{ $map['link'] }}" target="_blank" rel="noopener noreferrer">Ouvrir dans OpenStreetMap →</a>
+                                @endif
+                            </div>
+                            <iframe src="{{ $map['embed'] }}" title="Plan du campus — {{ $e->location }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+                        </div>
+                    @endif
+                </section>
+            @endif
+
+            {{-- Éditions précédentes (fidèle au mockup : past-cards) --}}
+            @if ($siblings->count())
+                <section id="editions" style="scroll-margin-top:72px;">
+                    <div class="ukc-block-head">
+                        <h2>Éditions précédentes</h2>
+                        <div class="ukc-accent"><i></i><i></i><i></i></div>
+                    </div>
+                    <div class="ukc-editions">
+                        @foreach ($siblings as $sib)
+                            <a href="{{ route('public.archive', $sib->slug) }}" class="ukc-past-card" style="color:inherit;">
+                                <div class="ukc-past-thumb" @if ($sib->banner_url) style="background-image:url('{{ $sib->banner_url }}')" @endif></div>
+                                <div class="ukc-past-body">
+                                    <span class="ukc-past-year">{{ $sib->year ?: $sib->date_start?->format('Y') }}</span>
+                                    <h3>{{ \Illuminate\Support\Str::limit($sib->title ?: $sib->colloque?->name, 70) }}</h3>
+                                    @if ($sib->location)<p>{{ $sib->location }}</p>@endif
+                                    <span class="ukc-link">Voir l’édition →</span>
+                                </div>
                             </a>
                         @endforeach
                     </div>
@@ -431,29 +619,65 @@
                         @endif
                     </div>
                     <div>
-                        @livewire('public.contact-form', ['editionId' => $e->id], key('contact-'.$e->id))
+                        @if (session('contact_sent'))
+                            <div class="ukc-alert ukc-alert--ok" style="margin:0;">
+                                <span class="ico"><x-ukc.icon name="check-circle" :size="18" /></span>
+                                <div>Merci, votre message a bien été envoyé. Nous vous répondrons rapidement.</div>
+                            </div>
+                        @else
+                            <form method="POST" action="{{ route('public.contact', $e->id) }}"
+                                  x-data="{ loadedAt: Math.floor(Date.now() / 1000) }"
+                                  style="display:flex;flex-direction:column;gap:12px;">
+                                @csrf
+                                <input type="hidden" name="loaded_at" :value="loadedAt">
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                                    <div class="ukc-field" style="margin:0;">
+                                        <label for="c_name">Votre nom</label>
+                                        <input type="text" id="c_name" name="name" value="{{ old('name') }}">
+                                        @error('name') <span class="error">{{ $message }}</span> @enderror
+                                    </div>
+                                    <div class="ukc-field" style="margin:0;">
+                                        <label for="c_email">Votre e-mail</label>
+                                        <input type="email" id="c_email" name="email" value="{{ old('email') }}">
+                                        @error('email') <span class="error">{{ $message }}</span> @enderror
+                                    </div>
+                                </div>
+                                <div class="ukc-field" style="margin:0;">
+                                    <label for="c_message">Message</label>
+                                    <textarea id="c_message" name="message" rows="5">{{ old('message') }}</textarea>
+                                    @error('message') <span class="error">{{ $message }}</span> @enderror
+                                </div>
+
+                                {{-- Honeypot anti-spam : masqué, doit rester vide. --}}
+                                <div style="position:absolute;left:-9999px;" aria-hidden="true">
+                                    <label>Ne pas remplir <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+                                </div>
+
+                                <div>
+                                    <button type="submit" class="ukc-btn ukc-btn--blue">
+                                        <x-ukc.icon name="mail" :size="18" /> Envoyer le message
+                                    </button>
+                                </div>
+                            </form>
+                        @endif
                     </div>
                 </div>
             </section>
 
-            {{-- CTA final --}}
-            <section class="ukc-card" style="text-align:center;background:
-                     linear-gradient(135deg, rgba(34,62,164,.06), rgba(0,153,51,.06));">
-                <h2 style="font-size:1.4rem;font-weight:900;">Prêt à participer ?</h2>
-                <p style="color:var(--ukc-muted);margin:8px 0 20px;">Créez votre compte pour soumettre une communication ou vous inscrire.</p>
-                <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-                    <a href="{{ route('account.register') }}" class="ukc-btn ukc-btn--blue">
+            {{-- CTA final (fidèle au mockup : bloc bleu) --}}
+            <div class="ukc-final-cta" id="inscription">
+                <h2>Prêt à participer ?</h2>
+                <p>Créez votre compte en quelques minutes, soumettez votre résumé ou inscrivez-vous comme auditeur. Tout se passe en ligne.</p>
+                <div class="actions">
+                    <a href="{{ route('account.register') }}" class="ukc-btn ukc-btn--primary">
                         <x-ukc.icon name="user-plus" :size="18" /> Créer mon compte
                     </a>
-                    <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--outline">
-                        <x-ukc.icon name="login" :size="18" /> Se connecter
-                    </a>
+                    <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--ghost">Se connecter</a>
                 </div>
-            </section>
+            </div>
         </div>
     </div>
 
-    <footer style="padding:24px;text-align:center;font-size:.82rem;color:var(--ukc-light);background:var(--ukc-bg);">
-        © {{ date('Y') }} {{ $e->colloque?->name }} — Université de Kara
-    </footer>
+    {{-- Footer PROPRE au colloque (barre d'info), et non le footer plateforme. --}}
+    @include('partials.colloque-footer', ['e' => $e])
 </x-layouts.app>

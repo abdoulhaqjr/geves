@@ -1,40 +1,11 @@
 <?php
 
-use App\Livewire\Account\Submissions\Create;
-use App\Livewire\Account\Submissions\Index;
 use App\Models\Account;
 use App\Models\Colloque;
-use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\Submission;
-use Livewire\Livewire;
 
-function openEdition(array $settings = []): Edition
-{
-    $colloque = Colloque::create(['name' => 'Colloque UK', 'slug' => 'uk']);
-
-    return $colloque->editions()->create([
-        'title' => 'UK 2026',
-        'edition_label' => '3e édition',
-        'year' => 2026,
-        'status' => 'open',
-        'slug' => 'uk-2026',
-        'submission_open' => true,
-        'settings' => array_merge(['tracks' => ['Sciences', 'Santé'], 'max_communications' => 3], $settings),
-    ]);
-}
-
-function verifiedAccount(): Account
-{
-    $account = Account::create([
-        'first_name' => 'Awa', 'last_name' => 'Kodjo',
-        'email' => 'awa@example.tg', 'password' => 'pass12345',
-        'grade' => 'Doctorante', 'affiliation' => 'Université de Kara',
-    ]);
-    $account->markEmailAsVerified();
-
-    return $account;
-}
+// openEdition() et verifiedAccount() sont définis dans tests/Pest.php (fabriques partagées).
 
 it('redirige les invités du formulaire de soumission vers la connexion', function () {
     $edition = openEdition();
@@ -48,9 +19,9 @@ it('renvoie 404 pour une édition non publiée', function () {
     $draft = $colloque->editions()->create(['title' => 'Brouillon', 'status' => 'draft', 'slug' => 'draft']);
     $account = verifiedAccount();
 
-    Livewire::actingAs($account, 'account')
-        ->test(Create::class, ['slug' => $draft->slug])
-        ->assertStatus(404);
+    $this->actingAs($account, 'account')
+        ->get(route('account.submissions.create', $draft->slug))
+        ->assertNotFound();
 });
 
 it('bloque la soumission si le profil est incomplet', function () {
@@ -59,12 +30,12 @@ it('bloque la soumission si le profil est incomplet', function () {
         'first_name' => 'Kofi', 'last_name' => 'M', 'email' => 'kofi@example.tg', 'password' => 'pass12345',
     ]); // ni vérifié ni affilié
 
-    Livewire::actingAs($account, 'account')
-        ->test(Create::class, ['slug' => $edition->slug])
-        ->set('title', 'Titre')
-        ->set('abstract', str_repeat('a', 60))
-        ->call('submit')
-        ->assertHasErrors('abstract');
+    $this->actingAs($account, 'account')
+        ->post(route('account.submissions.store', $edition->slug), [
+            'title' => 'Titre',
+            'abstract' => str_repeat('a', 60),
+        ])
+        ->assertSessionHasErrors('abstract');
 
     expect(Submission::count())->toBe(0);
 });
@@ -73,17 +44,17 @@ it('crée une communication reliée au compte avec co-auteur', function () {
     $edition = openEdition();
     $account = verifiedAccount();
 
-    Livewire::actingAs($account, 'account')
-        ->test(Create::class, ['slug' => $edition->slug])
-        ->set('title', 'Innovation et développement durable')
-        ->set('track', 'Santé')
-        ->set('type', 'oral')
-        ->set('keywords', 'innovation, durable')
-        ->set('abstract', str_repeat('Contexte et objectifs. ', 5))
-        ->set('coauthors', [['name' => 'Yao Doe', 'email' => 'yao@example.tg', 'affiliation' => 'UL', 'grade' => 'Dr']])
-        ->call('submit')
-        ->assertHasNoErrors()
-        ->assertSet('successRef', fn ($ref) => filled($ref));
+    $this->actingAs($account, 'account')
+        ->post(route('account.submissions.store', $edition->slug), [
+            'title' => 'Innovation et développement durable',
+            'track' => 'Santé',
+            'type' => 'oral',
+            'keywords' => 'innovation, durable',
+            'abstract' => str_repeat('Contexte et objectifs. ', 5),
+            'coauthors' => [['name' => 'Yao Doe', 'email' => 'yao@example.tg', 'affiliation' => 'UL', 'grade' => 'Dr']],
+        ])
+        ->assertRedirect(route('account.submissions.create', $edition->slug))
+        ->assertSessionHas('success_ref');
 
     $submission = Submission::first();
     expect($submission)->not->toBeNull();
@@ -105,24 +76,24 @@ it('applique le garde-fou du nombre max de communications', function () {
     $account = verifiedAccount();
 
     // 1re soumission : OK
-    Livewire::actingAs($account, 'account')
-        ->test(Create::class, ['slug' => $edition->slug])
-        ->set('title', 'Première')
-        ->set('track', 'Sciences')
-        ->set('abstract', str_repeat('a', 60))
-        ->call('submit')
-        ->assertHasNoErrors();
+    $this->actingAs($account, 'account')
+        ->post(route('account.submissions.store', $edition->slug), [
+            'title' => 'Première',
+            'track' => 'Sciences',
+            'abstract' => str_repeat('a', 60),
+        ])
+        ->assertSessionHasNoErrors();
 
     expect(Submission::count())->toBe(1);
 
     // 2e tentative : bloquée (limite atteinte)
-    Livewire::actingAs($account, 'account')
-        ->test(Create::class, ['slug' => $edition->slug])
-        ->set('title', 'Seconde')
-        ->set('track', 'Sciences')
-        ->set('abstract', str_repeat('a', 60))
-        ->call('submit')
-        ->assertHasErrors('abstract');
+    $this->actingAs($account, 'account')
+        ->post(route('account.submissions.store', $edition->slug), [
+            'title' => 'Seconde',
+            'track' => 'Sciences',
+            'abstract' => str_repeat('a', 60),
+        ])
+        ->assertSessionHasErrors('abstract');
 
     expect(Submission::count())->toBe(1);
 });
@@ -137,8 +108,9 @@ it('liste les communications du compte', function () {
         'participant_id' => $participant->id, 'ref_code' => '26-001', 'title' => 'Ma comm', 'status' => 'accepted',
     ]);
 
-    Livewire::actingAs($account, 'account')
-        ->test(Index::class)
+    $this->actingAs($account, 'account')
+        ->get(route('account.submissions.index'))
+        ->assertOk()
         ->assertSee('Ma comm')
         ->assertSee('26-001')
         ->assertSee('Acceptée');

@@ -6,8 +6,10 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? config('app.name', 'GESCO') }}</title>
     <meta name="description" content="{{ $description ?? 'Gestion des colloques scientifiques — Université de Kara.' }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('img/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('img/favicon-16.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('img/apple-touch-icon.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @livewireStyles
     @stack('head')
 </head>
 <body class="ukc-scope antialiased">
@@ -16,10 +18,9 @@
     {{-- Widget flottant Gesco — public + espace participant ; pas dans le
          back-office, le portail relecteur, la salle visio, ni la page chat dédiée. --}}
     @unless (request()->routeIs('admin.*') || request()->routeIs('reviewer.*') || request()->routeIs('session.meeting') || request()->routeIs('public.gesco'))
-        <livewire:public.gesco-widget />
+        <x-ukc.gesco-widget />
     @endunless
 
-    @livewireScripts
     @stack('scripts')
 </body>
 </html>

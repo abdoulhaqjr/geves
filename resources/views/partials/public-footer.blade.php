@@ -3,7 +3,7 @@
     <div class="ukc-container">
         <div class="footer-grid">
             <div>
-                <div class="brand-foot">UK Colloques</div>
+                <img src="{{ asset('img/logo-uk-white.png') }}" alt="Université de Kara" class="footer-logo">
                 Service de l’Université de Kara — Direction de la Recherche et de l’Innovation (DRI). Plateforme non commerciale.
             </div>
             <div>

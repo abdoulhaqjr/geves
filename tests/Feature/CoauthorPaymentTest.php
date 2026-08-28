@@ -1,9 +1,6 @@
 <?php
 
 use App\Actions\NotifyCoauthorsForPayment;
-use App\Livewire\Admin\Documents\Attestations;
-use App\Livewire\Admin\Submissions\Show;
-use App\Livewire\Public\CoauthorPayment;
 use App\Mail\CoauthorPaymentInvitationMail;
 use App\Models\Attestation;
 use App\Models\Edition;
@@ -13,7 +10,6 @@ use App\Models\Payment;
 use App\Models\Submission;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
-use Livewire\Livewire;
 
 // adminStaff() -> AdminSubmissionWorkflowTest ; openEdition() -> AccountSubmissionTest
 
@@ -49,43 +45,42 @@ it('retrouve les communications acceptées du co-auteur et calcule le montant du
     $edition = coauthorEdition();
     acceptedWithCoauthor($edition);
 
-    Livewire::test(CoauthorPayment::class, ['slug' => $edition->slug])
-        ->set('email', 'co@example.tg')
-        ->call('search')
-        ->assertSet('grade', 'Docteur')
-        ->assertSet('amount', 20000.0)
-        ->assertSee('AA-001');
+    $this->get(route('public.coauthor', $edition->slug).'?email=co@example.tg')
+        ->assertOk()
+        ->assertSee('AA-001')
+        ->assertSee('Docteur')
+        ->assertSee('20 000'); // tarif du grade dans la grille (montant calculé côté client)
 });
 
 it('n’associe rien à un e-mail inconnu', function () {
     $edition = coauthorEdition();
     acceptedWithCoauthor($edition);
 
-    Livewire::test(CoauthorPayment::class, ['slug' => $edition->slug])
-        ->set('email', 'personne@example.tg')
-        ->call('search')
+    $this->get(route('public.coauthor', $edition->slug).'?email=personne@example.tg')
         ->assertSee('Aucune communication');
 });
 
-it('recalcule le montant quand le co-auteur corrige son grade', function () {
+it('expose la grille tarifaire pour recalculer le montant selon le grade (client)', function () {
     $edition = coauthorEdition();
     acceptedWithCoauthor($edition);
 
-    Livewire::test(CoauthorPayment::class, ['slug' => $edition->slug])
-        ->set('email', 'co@example.tg')
-        ->call('search')
-        ->set('grade', 'Doctorant')
-        ->assertSet('amount', 10000.0);
+    // Le montant est recalculé côté client (Alpine) depuis la grille exposée.
+    $this->get(route('public.coauthor', $edition->slug).'?email=co@example.tg')
+        ->assertOk()
+        ->assertSee('Doctorant')
+        ->assertSee('10 000')
+        ->assertSee('20 000');
 });
 
 it('crée un participant co-auteur et un paiement en attente marqué flow=coauthor', function () {
     $edition = coauthorEdition();
     acceptedWithCoauthor($edition);
 
-    Livewire::test(CoauthorPayment::class, ['slug' => $edition->slug])
-        ->set('email', 'co@example.tg')
-        ->call('search')
-        ->call('pay', 'manual');
+    $this->post(route('public.coauthor.pay', $edition->slug), [
+        'email' => 'co@example.tg',
+        'grade' => 'Docteur',
+        'gateway' => 'manual',
+    ]);
 
     $participant = Participant::where('edition_id', $edition->id)->where('email', 'co@example.tg')->first();
     expect($participant)->not->toBeNull();
@@ -105,9 +100,7 @@ it('affiche l’état « déjà réglé » pour un co-auteur ayant payé', funct
     $co = $edition->participants()->create(['first_name' => 'Ben', 'last_name' => 'Co', 'email' => 'co@example.tg', 'role' => 'coauthor', 'title' => 'Docteur']);
     $edition->payments()->create(['participant_id' => $co->id, 'amount' => 20000, 'status' => 'paid', 'gateway' => 'manual', 'method' => 'cash', 'receipt_no' => 'REC-2026-001', 'paid_at' => now()]);
 
-    Livewire::test(CoauthorPayment::class, ['slug' => $edition->slug])
-        ->set('email', 'co@example.tg')
-        ->call('search')
+    $this->get(route('public.coauthor', $edition->slug).'?email=co@example.tg')
         ->assertSee('Frais déjà réglés');
 });
 
@@ -137,9 +130,8 @@ it('déclenche la notification des co-auteurs depuis l’acceptation admin', fun
     $edition = coauthorEdition();
     $submission = acceptedWithCoauthor($edition, status: 'submitted');
 
-    Livewire::actingAs(adminStaff(), 'web')
-        ->test(Show::class, ['submission' => $submission])
-        ->call('applyStatus', 'accepted');
+    $this->actingAs(adminStaff(), 'web')
+        ->post(route('admin.submissions.status', $submission), ['status' => 'accepted']);
 
     Mail::assertQueued(CoauthorPaymentInvitationMail::class, 1);
 });
@@ -151,12 +143,10 @@ it('rend un co-auteur payé éligible à l’attestation de communication', func
     $co = $edition->participants()->create(['first_name' => 'Ben', 'last_name' => 'Co', 'email' => 'co@example.tg', 'role' => 'coauthor', 'title' => 'Docteur']);
     $edition->payments()->create(['participant_id' => $co->id, 'amount' => 20000, 'status' => 'paid', 'gateway' => 'manual', 'method' => 'cash', 'paid_at' => now()]);
 
-    Livewire::actingAs(adminStaff(), 'web')
-        ->test(Attestations::class)
-        ->set('edition_id', (string) $edition->id)
-        ->set('type', 'communication')
-        ->set('audience', 'communicants')
-        ->call('issue');
+    $this->actingAs(adminStaff(), 'web')->post(route('admin.documents.attestations.issue'), [
+        'edition_id' => (string) $edition->id,
+        'type' => 'communication',
+    ]);
 
     expect(Attestation::where('participant_id', $co->id)->where('type', 'communication')->exists())->toBeTrue();
 });
@@ -167,12 +157,10 @@ it('n’associe pas un co-auteur non payé à l’attestation de communication',
 
     $co = $edition->participants()->create(['first_name' => 'Ben', 'last_name' => 'Co', 'email' => 'co@example.tg', 'role' => 'coauthor', 'title' => 'Docteur']);
 
-    Livewire::actingAs(adminStaff(), 'web')
-        ->test(Attestations::class)
-        ->set('edition_id', (string) $edition->id)
-        ->set('type', 'communication')
-        ->set('audience', 'communicants')
-        ->call('issue');
+    $this->actingAs(adminStaff(), 'web')->post(route('admin.documents.attestations.issue'), [
+        'edition_id' => (string) $edition->id,
+        'type' => 'communication',
+    ]);
 
     expect(Attestation::where('participant_id', $co->id)->exists())->toBeFalse();
 });

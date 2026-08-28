@@ -1,12 +1,8 @@
 <?php
 
-use App\Livewire\Account\Submissions\Show as AccountSubmissionShow;
-use App\Livewire\Admin\Program\Sessions as ProgramSessions;
-use App\Livewire\Admin\Program\Slots as ProgramSlots;
 use App\Models\Atelier;
 use App\Models\EventSession;
 use App\Models\Slot;
-use Livewire\Livewire;
 
 // adminStaff(), seededSubmission() -> AdminSubmissionWorkflowTest ; openEdition() -> AccountSubmissionTest
 
@@ -14,27 +10,23 @@ it('crée un atelier et des sessions pour une édition', function () {
     $staff = adminStaff();
     $edition = openEdition();
 
-    Livewire::actingAs($staff, 'web')
-        ->test(ProgramSessions::class)
-        ->set('edition_id', (string) $edition->id)
-        ->set('atelierTitle', 'Atelier Santé')
-        ->set('atelierTracks', ['Santé'])
-        ->call('addAtelier')
-        ->assertHasNoErrors();
+    $this->actingAs($staff, 'web')->post(route('admin.program.ateliers.store'), [
+        'edition_id' => (string) $edition->id,
+        'atelierTitle' => 'Atelier Santé',
+        'atelierTracks' => ['Santé'],
+    ])->assertSessionHasNoErrors();
 
     $atelier = Atelier::first();
     expect($atelier->title)->toBe('Atelier Santé');
     expect($atelier->tracks)->toBe(['Santé']);
 
-    Livewire::actingAs($staff, 'web')
-        ->test(ProgramSessions::class)
-        ->set('edition_id', (string) $edition->id)
-        ->set('sType', 'plenary')
-        ->set('sLabel', 'Cérémonie d’ouverture')
-        ->set('sDay', '2026-11-18')
-        ->set('sStart', '09:00')
-        ->call('addSession')
-        ->assertHasNoErrors();
+    $this->actingAs($staff, 'web')->post(route('admin.program.sessions.store'), [
+        'edition_id' => (string) $edition->id,
+        'sType' => 'plenary',
+        'sLabel' => 'Cérémonie d’ouverture',
+        'sDay' => '2026-11-18',
+        'sStart' => '09:00',
+    ])->assertSessionHasNoErrors();
 
     $session = EventSession::first();
     expect($session->type)->toBe('plenary');
@@ -47,20 +39,91 @@ it('crée un créneau et y assigne une communication acceptée', function () {
     $submission = seededSubmission('accepted');
     $edition = $submission->edition;
 
-    $c = Livewire::actingAs($staff, 'web')
-        ->test(ProgramSlots::class)
-        ->set('edition_id', (string) $edition->id)
-        ->set('slRoom', 'Amphi A')
-        ->set('slDay', '2026-11-18')
-        ->set('slStart', '10:00')
-        ->call('addSlot')
-        ->assertHasNoErrors();
+    $this->actingAs($staff, 'web')->post(route('admin.program.slots.store'), [
+        'edition_id' => (string) $edition->id,
+        'slRoom' => 'Amphi A',
+        'slDay' => '2026-11-18',
+        'slStart' => '10:00',
+    ])->assertSessionHasNoErrors();
 
     $slot = Slot::first();
     expect($slot->room)->toBe('Amphi A');
 
-    $c->call('assign', $slot->id, $submission->id)->assertHasNoErrors();
+    $this->actingAs($staff, 'web')->post(route('admin.program.slots.assign', $slot), ['submission_id' => $submission->id]);
     expect($slot->fresh()->submission_id)->toBe($submission->id);
+});
+
+it('affecte automatiquement les communications acceptées non planifiées aux créneaux libres', function () {
+    $staff = adminStaff();
+    $submission = seededSubmission('accepted');
+    $edition = $submission->edition;
+
+    // Un créneau libre dans l'édition.
+    $slot = Slot::create(['edition_id' => $edition->id, 'room' => 'Amphi A', 'submission_id' => 0]);
+
+    $this->actingAs($staff, 'web')
+        ->post(route('admin.program.slots.auto', ['edition_id' => $edition->id]), ['match_axis' => '0'])
+        ->assertSessionHasNoErrors();
+
+    expect($slot->fresh()->submission_id)->toBe($submission->id);
+});
+
+it('met à jour un créneau (heure et communication assignée)', function () {
+    $staff = adminStaff();
+    $submission = seededSubmission('accepted');
+    $edition = $submission->edition;
+    $slot = Slot::create(['edition_id' => $edition->id, 'room' => 'Amphi A', 'submission_id' => 0]);
+
+    $this->actingAs($staff, 'web')->put(route('admin.program.slots.update', $slot), [
+        'slDay' => '2026-11-18',
+        'slStart' => '10:30',
+        'slRoom' => 'Salle B',
+        'submission_id' => $submission->id,
+    ])->assertSessionHasNoErrors();
+
+    $slot->refresh();
+    expect($slot->submission_id)->toBe($submission->id);
+    expect($slot->room)->toBe('Salle B');
+    expect($slot->starts_at->format('H:i'))->toBe('10:30');
+});
+
+it('enregistre les réglages du programme dans settings', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+
+    $this->actingAs($staff, 'web')
+        ->post(route('admin.program.config', ['edition_id' => $edition->id]), [
+            'auto_enabled' => '1',
+            'oral_min' => '25',
+            'day_start' => '09:00',
+        ])->assertSessionHasNoErrors();
+
+    $program = $edition->fresh()->settings['program'];
+    expect($program['auto']['enabled'])->toBeTrue();
+    expect($program['params']['oral_min'])->toBe(25);
+    expect($program['params']['day_start'])->toBe('09:00');
+});
+
+it('ajoute puis supprime un espace', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+
+    $this->actingAs($staff, 'web')
+        ->post(route('admin.program.spaces.store', ['edition_id' => $edition->id]), [
+            'spaceName' => 'Amphithéâtre principal',
+            'spaceCapacity' => '250',
+            'spaceBuilding' => 'Bâtiment A',
+        ])->assertSessionHasNoErrors();
+
+    $spaces = $edition->fresh()->settings['program']['spaces'];
+    expect($spaces)->toHaveCount(1);
+    expect($spaces[0]['name'])->toBe('Amphithéâtre principal');
+
+    $this->actingAs($staff, 'web')
+        ->delete(route('admin.program.spaces.destroy', ['index' => 0, 'edition_id' => $edition->id]))
+        ->assertSessionHasNoErrors();
+
+    expect($edition->fresh()->settings['program']['spaces'])->toBeEmpty();
 });
 
 it('laisse le participant choisir un créneau libre pour sa communication acceptée', function () {
@@ -68,10 +131,9 @@ it('laisse le participant choisir un créneau libre pour sa communication accept
     $account = $submission->participant->account;
     $slot = Slot::create(['edition_id' => $submission->edition_id, 'room' => 'Amphi B', 'submission_id' => 0]);
 
-    Livewire::actingAs($account, 'account')
-        ->test(AccountSubmissionShow::class, ['submission' => $submission->fresh()])
-        ->call('chooseSlot', $slot->id)
-        ->assertHasNoErrors();
+    $this->actingAs($account, 'account')
+        ->post(route('account.submissions.choose-slot', $submission), ['slot_id' => $slot->id])
+        ->assertSessionHasNoErrors();
 
     $slot->refresh();
     expect($slot->submission_id)->toBe($submission->id);
@@ -83,8 +145,7 @@ it('refuse le choix de créneau si la communication n’est pas acceptée', func
     $account = $submission->participant->account;
     $slot = Slot::create(['edition_id' => $submission->edition_id, 'room' => 'Amphi B', 'submission_id' => 0]);
 
-    Livewire::actingAs($account, 'account')
-        ->test(AccountSubmissionShow::class, ['submission' => $submission->fresh()])
-        ->call('chooseSlot', $slot->id)
-        ->assertStatus(403);
+    $this->actingAs($account, 'account')
+        ->post(route('account.submissions.choose-slot', $submission), ['slot_id' => $slot->id])
+        ->assertForbidden();
 });

@@ -18,10 +18,13 @@ class Attestation extends Model
 
     /** Types d'attestation. */
     public const TYPES = [
+        'soumission' => 'Soumission',
+        'acceptation' => 'Acceptation',
         'participation' => 'Participation',
         'communication' => 'Communication',
         'moderation' => 'Modération',
         'rapporteur' => 'Rapporteur',
+        'formation' => 'Formation',
     ];
 
     public function typeLabel(): string

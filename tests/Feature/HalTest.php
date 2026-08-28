@@ -1,12 +1,9 @@
 <?php
 
-use App\Livewire\Account\Profile;
-use App\Livewire\Admin\Settings\Index as SettingsPage;
 use App\Support\HalClient;
 use App\Support\Settings;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
-use Livewire\Livewire;
 
 // adminStaff() -> AdminSubmissionWorkflowTest ; verifiedAccount() -> AccountSubmissionTest
 
@@ -68,18 +65,15 @@ it('met en cache les résultats (une seule requête HTTP)', function () {
     Http::assertSentCount(1);
 });
 
-it('propose des suggestions HAL sur le profil et remplit à la sélection', function () {
+it('propose des suggestions HAL sur le profil (endpoint JSON)', function () {
     config()->set('services.hal.enabled', true);
     Http::fake(['*' => Http::response(halDocs(), 200)]);
     $account = verifiedAccount();
 
-    Livewire::actingAs($account, 'account')
-        ->test(Profile::class)
-        ->set('affiliation', 'Université de K')
-        ->assertSet('halSuggestions.0.label', 'Université de Kara')
-        ->call('chooseAffiliation', 'Université de Kara')
-        ->assertSet('affiliation', 'Université de Kara')
-        ->assertSet('halSuggestions', []);
+    $this->actingAs($account, 'account')
+        ->getJson(route('account.profile.affiliations', ['q' => 'Université de K']))
+        ->assertOk()
+        ->assertJsonPath('0.label', 'Université de Kara');
 });
 
 it('n’appelle pas HAL sur le profil quand désactivé', function () {
@@ -87,10 +81,10 @@ it('n’appelle pas HAL sur le profil quand désactivé', function () {
     Http::fake();
     $account = verifiedAccount();
 
-    Livewire::actingAs($account, 'account')
-        ->test(Profile::class)
-        ->set('affiliation', 'Université de K')
-        ->assertSet('halSuggestions', []);
+    $this->actingAs($account, 'account')
+        ->getJson(route('account.profile.affiliations', ['q' => 'Université de K']))
+        ->assertOk()
+        ->assertExactJson([]);
 
     Http::assertNothingSent();
 });
@@ -98,11 +92,14 @@ it('n’appelle pas HAL sur le profil quand désactivé', function () {
 it('enregistre le réglage HAL depuis le back-office', function () {
     $staff = adminStaff();
 
-    Livewire::actingAs($staff, 'web')
-        ->test(SettingsPage::class)
-        ->set('hal_enabled', true)
-        ->call('save')
-        ->assertHasNoErrors();
+    $this->actingAs($staff, 'web')->post(route('admin.settings.update'), [
+        'hal_enabled' => '1',
+        'payments_default' => 'manual',
+        'fedapay_mode' => 'test',
+        'ai_default' => 'claude',
+        'meeting_default' => 'livekit',
+        'sms_default' => 'log',
+    ])->assertSessionHasNoErrors();
 
     expect((bool) Settings::get('hal.enabled'))->toBeTrue();
 });

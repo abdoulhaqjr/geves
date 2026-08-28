@@ -63,6 +63,7 @@ class Participant extends Model
         $this->update(['meta' => $meta]);
     }
 
+    /** @return BelongsTo<Edition, $this> */
     public function edition(): BelongsTo
     {
         return $this->belongsTo(Edition::class);

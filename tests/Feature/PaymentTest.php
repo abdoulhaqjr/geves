@@ -1,8 +1,6 @@
 <?php
 
 use App\Actions\ConfirmPayment;
-use App\Livewire\Account\Payment\Pay;
-use App\Livewire\Admin\Payments\Record;
 use App\Mail\PaymentReceiptMail;
 use App\Models\Account;
 use App\Models\Colloque;
@@ -10,7 +8,6 @@ use App\Models\Edition;
 use App\Models\Payment;
 use App\Support\Fees;
 use Illuminate\Support\Facades\Mail;
-use Livewire\Livewire;
 
 // adminStaff() -> AdminSubmissionWorkflowTest
 
@@ -65,13 +62,12 @@ it('enregistre un encaissement manuel, génère le reçu et notifie', function (
     $staff = adminStaff();
     $edition = payEdition();
 
-    Livewire::actingAs($staff, 'web')
-        ->test(Record::class)
-        ->set('edition_id', (string) $edition->id)
-        ->set('first_name', 'Yao')->set('last_name', 'Doe')->set('email', 'yao@example.tg')
-        ->set('amount', '15000')->set('method', 'cash')->set('markPaidNow', true)
-        ->call('save')
-        ->assertHasNoErrors()
+    $this->actingAs($staff, 'web')
+        ->post(route('admin.payments.store'), [
+            'edition_id' => (string) $edition->id,
+            'first_name' => 'Yao', 'last_name' => 'Doe', 'email' => 'yao@example.tg',
+            'amount' => '15000', 'method' => 'cash', 'markPaidNow' => '1',
+        ])
         ->assertRedirect(route('admin.payments.index'));
 
     $payment = Payment::first();
@@ -108,11 +104,16 @@ it('ouvre le paiement participant quand une communication est acceptée', functi
     $edition = payEdition();
     [$account, $participant] = acceptedParticipant($edition);
 
-    $c = Livewire::actingAs($account, 'account')->test(Pay::class, ['edition' => $edition]);
-    expect($c->instance()->isEligible())->toBeTrue();
-    expect($c->instance()->amount)->toBe(15000.0);
+    // La page s'ouvre et affiche le montant + les moyens de paiement.
+    $this->actingAs($account, 'account')->get(route('account.payment', $edition))
+        ->assertOk()
+        ->assertSee('15 000');
 
-    $c->call('pay', 'manual')->assertHasNoErrors()->assertSet('instructions', fn ($v) => filled($v));
+    // Le règlement manuel enregistre un paiement en attente + des instructions.
+    $this->actingAs($account, 'account')
+        ->post(route('account.payment.pay', $edition), ['gateway' => 'manual'])
+        ->assertSessionHasNoErrors()
+        ->assertSessionHas('pay_instructions');
 
     $payment = Payment::first();
     expect($payment->status)->toBe('pending');
@@ -124,6 +125,12 @@ it('n’ouvre pas le paiement sans communication acceptée', function () {
     $account = Account::create(['first_name' => 'Z', 'last_name' => 'Z', 'email' => 'z@example.tg', 'password' => 'pass12345']);
     $edition->participants()->create(['account_id' => $account->id, 'first_name' => 'Z', 'last_name' => 'Z', 'email' => $account->email]);
 
-    $c = Livewire::actingAs($account, 'account')->test(Pay::class, ['edition' => $edition]);
-    expect($c->instance()->isEligible())->toBeFalse();
+    // La page affiche le message d'inéligibilité et refuse le règlement.
+    $this->actingAs($account, 'account')->get(route('account.payment', $edition))
+        ->assertOk()
+        ->assertSee('acceptée');
+
+    $this->actingAs($account, 'account')
+        ->post(route('account.payment.pay', $edition), ['gateway' => 'manual'])
+        ->assertSessionHasErrors('pay');
 });

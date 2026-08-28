@@ -3,11 +3,9 @@
 use App\Actions\IssueAttestation;
 use App\AI\AiManager;
 use App\AI\Contracts\AiProvider;
-use App\Livewire\Admin\Documents\TemplateDesigner;
 use App\Models\Colloque;
 use App\Models\DocumentTemplate;
 use App\Models\User;
-use Livewire\Livewire;
 
 // adminStaff() -> AdminSubmissionWorkflowTest ; openEdition() -> AccountSubmissionTest
 
@@ -67,27 +65,26 @@ it('génère une mise en page par IA dans l’éditeur', function () {
     $staff = adminStaff();
     $edition = openEdition();
 
-    Livewire::actingAs($staff, 'web')
-        ->test(TemplateDesigner::class)
-        ->set('edition_id', (string) $edition->id)
-        ->set('kind', 'badge')
-        ->set('prompt', 'sobre, bleu UK')
-        ->call('generate')
-        ->assertHasNoErrors()
-        ->assertSet('layoutJson', fn ($v) => str_contains($v, 'GEN'));
+    $resp = $this->actingAs($staff, 'web')->postJson(route('admin.documents.templates.generate'), [
+        'edition_id' => (string) $edition->id,
+        'kind' => 'badge',
+        'type' => 'default',
+        'prompt' => 'sobre, bleu UK',
+    ])->assertOk();
+
+    expect(json_encode($resp->json('layout')))->toContain('GEN');
 });
 
 it('enregistre le modèle', function () {
     $staff = adminStaff();
     $edition = openEdition();
 
-    Livewire::actingAs($staff, 'web')
-        ->test(TemplateDesigner::class)
-        ->set('edition_id', (string) $edition->id)
-        ->set('kind', 'attestation')
-        ->set('type', 'communication')
-        ->call('save')
-        ->assertHasNoErrors();
+    $this->actingAs($staff, 'web')->postJson(route('admin.documents.templates.save'), [
+        'edition_id' => (string) $edition->id,
+        'kind' => 'attestation',
+        'type' => 'communication',
+        'layout' => ['width' => 320, 'height' => 440, 'bg' => '#ffffff', 'accent' => '#223ea4', 'elements' => []],
+    ])->assertOk()->assertJsonPath('ok', true);
 
     expect(DocumentTemplate::where('edition_id', $edition->id)->where('kind', 'attestation')->where('type', 'communication')->exists())->toBeTrue();
 });
@@ -96,18 +93,17 @@ it('enregistre la mise en page de l’éditeur visuel (sanitisée)', function ()
     $staff = adminStaff();
     $edition = openEdition();
 
-    Livewire::actingAs($staff, 'web')
-        ->test(TemplateDesigner::class)
-        ->set('edition_id', (string) $edition->id)
-        ->set('kind', 'badge')
-        ->call('saveLayout', [
+    $this->actingAs($staff, 'web')->postJson(route('admin.documents.templates.save'), [
+        'edition_id' => (string) $edition->id,
+        'kind' => 'badge',
+        'layout' => [
             'width' => 320, 'height' => 440, 'bg' => '#ffffff', 'accent' => '#223ea4',
             'elements' => [
                 ['type' => 'text', 'x' => 5000, 'y' => 10, 'w' => 300, 'h' => 30, 'text' => 'EDIT {name}', 'size' => 20, 'weight' => 700, 'color' => '#111111', 'align' => 'center'],
                 ['type' => 'chaos', 'x' => 0, 'y' => 0], // type non listé → ignoré
             ],
-        ])
-        ->assertHasNoErrors();
+        ],
+    ])->assertOk();
 
     $tpl = DocumentTemplate::where('edition_id', $edition->id)->where('kind', 'badge')->where('type', 'default')->first();
 
@@ -116,16 +112,6 @@ it('enregistre la mise en page de l’éditeur visuel (sanitisée)', function ()
     expect($tpl->layout['elements'])->toHaveCount(1);
     expect($tpl->layout['elements'][0]['x'])->toBeLessThanOrEqual(320);
     expect($tpl->layout['elements'][0]['text'])->toBe('EDIT {name}');
-});
-
-it('rejette un JSON de mise en page invalide', function () {
-    $staff = adminStaff();
-
-    Livewire::actingAs($staff, 'web')
-        ->test(TemplateDesigner::class)
-        ->set('layoutJson', 'ceci n’est pas du json')
-        ->call('applyJson')
-        ->assertHasErrors('layoutJson');
 });
 
 it('protège l’éditeur de modèles sans permission', function () {

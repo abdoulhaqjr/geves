@@ -1,9 +1,7 @@
 <?php
 
-use App\Livewire\Admin\Participants\Index;
 use App\Mail\ParticipantInvitationMail;
 use Illuminate\Support\Facades\Mail;
-use Livewire\Livewire;
 
 // adminStaff() -> AdminSubmissionWorkflowTest ; openEdition() -> AccountSubmissionTest
 
@@ -13,9 +11,9 @@ it('liste les participants d’une édition avec rôle et paiement', function ()
     $p = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
     $edition->payments()->create(['participant_id' => $p->id, 'amount' => 15000, 'status' => 'paid']);
 
-    Livewire::actingAs($staff, 'web')
-        ->test(Index::class)
-        ->set('edition_id', (string) $edition->id)
+    $this->actingAs($staff, 'web')
+        ->get(route('admin.participants.index', ['edition_id' => $edition->id]))
+        ->assertOk()
         ->assertSee('Awa Kodjo')
         ->assertSee('Communicant')
         ->assertSee('Réglé');
@@ -27,10 +25,9 @@ it('invite un participant et le marque invité', function () {
     $edition = openEdition();
     $p = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
 
-    Livewire::actingAs($staff, 'web')
-        ->test(Index::class)
-        ->set('edition_id', (string) $edition->id)
-        ->call('invite', $p->id);
+    $this->actingAs($staff, 'web')
+        ->post(route('admin.participants.invite', $p))
+        ->assertRedirect();
 
     Mail::assertQueued(ParticipantInvitationMail::class, fn ($m) => $m->hasTo('awa@example.tg'));
     expect($p->fresh()->isInvited())->toBeTrue();
@@ -49,10 +46,9 @@ it('invite en masse les payés non invités uniquement', function () {
     $alreadyInvited = $edition->participants()->create(['first_name' => 'C', 'last_name' => 'Invité', 'email' => 'inv@example.tg', 'role' => 'author', 'meta' => ['invited_at' => now()->toDateTimeString()]]);
     $edition->payments()->create(['participant_id' => $alreadyInvited->id, 'amount' => 15000, 'status' => 'paid']);
 
-    Livewire::actingAs($staff, 'web')
-        ->test(Index::class)
-        ->set('edition_id', (string) $edition->id)
-        ->call('invitePaidUninvited');
+    $this->actingAs($staff, 'web')
+        ->post(route('admin.participants.invite-bulk'), ['edition_id' => (string) $edition->id])
+        ->assertRedirect();
 
     // Seul le payé non invité reçoit l'e-mail.
     Mail::assertQueued(ParticipantInvitationMail::class, 1);

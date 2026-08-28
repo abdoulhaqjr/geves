@@ -5,15 +5,10 @@ use App\Actions\ConfirmPayment;
 use App\Actions\IssueAttestation;
 use App\Actions\NotifySubmissionStatus;
 use App\Events\SubmissionStatusChanged;
-use App\Livewire\Account\Submissions\Create;
-use App\Livewire\Notifications\Bell;
-use App\Livewire\Notifications\Center;
-use App\Livewire\Public\ContactForm;
 use App\Mail\SubmissionStatusMail;
 use App\Models\Account;
 use App\Support\Notifier;
 use Illuminate\Support\Facades\Mail;
-use Livewire\Livewire;
 
 // helpers globaux : openEdition()/verifiedAccount() -> AccountSubmissionTest ;
 // adminStaff()/seededSubmission() -> AdminSubmissionWorkflowTest
@@ -70,14 +65,14 @@ it('notifie le staff d’une nouvelle communication', function () {
     $edition = openEdition();
     $account = verifiedAccount();
 
-    Livewire::actingAs($account, 'account')
-        ->test(Create::class, ['slug' => $edition->slug])
-        ->set('title', 'Innovation durable')
-        ->set('track', 'Santé')
-        ->set('type', 'oral')
-        ->set('abstract', str_repeat('Contexte et objectifs. ', 5))
-        ->call('submit')
-        ->assertHasNoErrors();
+    $this->actingAs($account, 'account')
+        ->post(route('account.submissions.store', $edition->slug), [
+            'title' => 'Innovation durable',
+            'track' => 'Santé',
+            'type' => 'oral',
+            'abstract' => str_repeat('Contexte et objectifs. ', 5),
+        ])
+        ->assertSessionHasNoErrors();
 
     expect($staff->fresh()->notifications->pluck('data.kind'))->toContain('submission_new');
 });
@@ -86,13 +81,12 @@ it('notifie le staff d’un message de contact', function () {
     $staff = adminStaff();
     $edition = openEdition();
 
-    Livewire::test(ContactForm::class, ['editionId' => $edition->id])
-        ->set('loadedAt', time() - 10)
-        ->set('name', 'Jean Dupont')
-        ->set('email', 'jean@example.tg')
-        ->set('message', 'Bonjour, je souhaite des informations sur le colloque.')
-        ->call('submit')
-        ->assertSet('sent', true);
+    $this->post(route('public.contact', $edition->id), [
+        'loaded_at' => time() - 10,
+        'name' => 'Jean Dupont',
+        'email' => 'jean@example.tg',
+        'message' => 'Bonjour, je souhaite des informations sur le colloque.',
+    ])->assertRedirect();
 
     expect($staff->fresh()->notifications->pluck('data.kind'))->toContain('contact');
 });
@@ -104,10 +98,13 @@ it('la cloche affiche les non-lus, ouvre et marque comme lu', function () {
     Notifier::account($account, 'test', 'Titre de test', 'Corps', route('account.dashboard'), 'bell');
     $id = $account->fresh()->notifications->first()->id;
 
-    Livewire::actingAs($account, 'account')
-        ->test(Bell::class)
-        ->assertSee('Titre de test')
-        ->call('open', $id)
+    // La cloche est rendue dans la topbar du layout participant.
+    $this->actingAs($account, 'account')
+        ->get(route('account.dashboard'))
+        ->assertSee('Titre de test');
+
+    $this->actingAs($account, 'account')
+        ->post(route('notifications.open', $id))
         ->assertRedirect(route('account.dashboard'));
 
     expect($account->fresh()->unreadNotifications)->toHaveCount(0);
@@ -120,10 +117,14 @@ it('la page Notifications marque tout comme lu', function () {
 
     expect($account->fresh()->unreadNotifications)->toHaveCount(2);
 
-    Livewire::actingAs($account, 'account')
-        ->test(Center::class)
-        ->assertSee('Notif 1')
-        ->call('markAllRead');
+    $this->actingAs($account, 'account')
+        ->get(route('account.notifications'))
+        ->assertOk()
+        ->assertSee('Notif 1');
+
+    $this->actingAs($account, 'account')
+        ->post(route('notifications.read-all'))
+        ->assertRedirect();
 
     expect($account->fresh()->unreadNotifications)->toHaveCount(0);
 });
@@ -204,10 +205,11 @@ it('la préférence e-mail gate le Mailable dédié (décision de soumission)', 
 it('enregistre les préférences depuis la page Notifications', function () {
     $account = verifiedAccount();
 
-    Livewire::actingAs($account, 'account')
-        ->test(Center::class)
-        ->set('prefs.submission_status.email', false)
-        ->call('savePrefs');
+    $this->actingAs($account, 'account')
+        ->post(route('notifications.prefs'), [
+            'prefs' => ['submission_status' => ['inapp' => '1']], // e-mail décoché → false
+        ])
+        ->assertRedirect();
 
     expect($account->fresh()->wantsNotification('submission_status', 'email'))->toBeFalse();
 });

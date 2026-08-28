@@ -1,8 +1,6 @@
 <?php
 
-use App\Livewire\Admin\BadgeScan;
 use App\Models\Participant;
-use Livewire\Livewire;
 
 // openEdition() -> AccountSubmissionTest ; adminStaff() -> helpers partagés
 
@@ -19,31 +17,39 @@ function scannableParticipant(): Participant
 it('retrouve un participant depuis le code du badge', function () {
     $p = scannableParticipant();
 
-    Livewire::actingAs(adminStaff(), 'web')
-        ->test(BadgeScan::class)
-        ->call('lookup', $p->edition_id.'-'.$p->id)
-        ->assertSet('found', fn ($f) => $f['id'] === $p->id && $f['checkedIn'] === false)
-        ->assertSee('Awa Kodjo');
+    $this->actingAs(adminStaff(), 'web')
+        ->postJson(route('admin.badges.lookup'), ['code' => $p->edition_id.'-'.$p->id])
+        ->assertOk()
+        ->assertJsonPath('found.id', $p->id)
+        ->assertJsonPath('found.checkedIn', false)
+        ->assertJsonPath('found.name', 'Awa Kodjo');
 });
 
 it('enregistre la présence puis reste idempotent', function () {
     $p = scannableParticipant();
 
-    $test = Livewire::actingAs(adminStaff(), 'web')
-        ->test(BadgeScan::class)
-        ->call('lookup', (string) $p->id)
-        ->call('checkIn')
-        ->assertSet('found', fn ($f) => $f['checkedIn'] === true);
+    $this->actingAs(adminStaff(), 'web')
+        ->postJson(route('admin.badges.lookup'), ['code' => (string) $p->id])
+        ->assertJsonPath('found.checkedIn', false);
+
+    $this->actingAs(adminStaff(), 'web')
+        ->postJson(route('admin.badges.checkin', $p))
+        ->assertOk()
+        ->assertJsonPath('found.checkedIn', true)
+        ->assertJsonPath('newlyCheckedIn', true);
 
     expect($p->fresh()->isCheckedIn())->toBeTrue();
 
-    $test->call('checkIn')->assertSet('message', fn ($m) => str_contains($m, 'déjà'));
+    $second = $this->actingAs(adminStaff(), 'web')->postJson(route('admin.badges.checkin', $p));
+    $second->assertJsonPath('newlyCheckedIn', false);
+    expect($second->json('message'))->toContain('déjà');
 });
 
 it('signale un badge non reconnu', function () {
-    Livewire::actingAs(adminStaff(), 'web')
-        ->test(BadgeScan::class)
-        ->call('lookup', '999999')
-        ->assertSet('found', null)
-        ->assertSee('non reconnu', false);
+    $resp = $this->actingAs(adminStaff(), 'web')
+        ->postJson(route('admin.badges.lookup'), ['code' => '999999'])
+        ->assertOk()
+        ->assertJsonPath('found', null);
+
+    expect($resp->json('error'))->toContain('non reconnu');
 });

@@ -1,10 +1,7 @@
 <?php
 
-use App\Livewire\Account\Submissions\Create;
-use App\Livewire\Admin\Editions\SubmissionFormEditor;
 use App\Models\Submission;
 use App\Support\SubmissionFormConfig;
-use Livewire\Livewire;
 
 // adminStaff() -> AdminSubmissionWorkflowTest ; openEdition()/verifiedAccount() -> AccountSubmissionTest
 
@@ -52,17 +49,16 @@ it('enregistre la configuration depuis l’éditeur admin', function () {
     $staff = adminStaff();
     $edition = openEdition();
 
-    Livewire::actingAs($staff, 'web')
-        ->test(SubmissionFormEditor::class, ['edition' => $edition])
-        ->set('fields.title.label', 'Intitulé de la communication')
-        ->set('fields.keywords.enabled', false)
-        ->set('fields.abstract.min', 120)
-        ->call('addCustom')
-        ->set('custom.0.label', 'Numéro ORCID')
-        ->set('custom.0.type', 'text')
-        ->set('custom.0.required', true)
-        ->call('save')
-        ->assertHasNoErrors();
+    $this->actingAs($staff, 'web')->put(route('admin.editions.form.update', $edition), [
+        'fields' => [
+            'title' => ['label' => 'Intitulé de la communication'],
+            'abstract' => ['label' => 'Résumé', 'min' => 120, 'max' => 8000],
+            // keywords : case « Afficher » non cochée → désactivé.
+        ],
+        'custom' => [
+            ['key' => 'custom_x', 'label' => 'Numéro ORCID', 'type' => 'text', 'required' => '1'],
+        ],
+    ])->assertSessionHasNoErrors();
 
     $edition->refresh();
     $config = new SubmissionFormConfig($edition);
@@ -77,13 +73,15 @@ it('convertit les options de liste (une par ligne) en tableau', function () {
     $staff = adminStaff();
     $edition = openEdition();
 
-    Livewire::actingAs($staff, 'web')
-        ->test(SubmissionFormEditor::class, ['edition' => $edition])
-        ->call('addCustom')
-        ->set('custom.0.label', 'Session préférée')
-        ->set('custom.0.type', 'select')
-        ->set('custom.0.options_text', "Matin\nAprès-midi\n")
-        ->call('save');
+    $this->actingAs($staff, 'web')->put(route('admin.editions.form.update', $edition), [
+        'fields' => [
+            'title' => ['label' => 'Titre'],
+            'abstract' => ['label' => 'Résumé', 'min' => 50, 'max' => 8000],
+        ],
+        'custom' => [
+            ['key' => 'custom_x', 'label' => 'Session préférée', 'type' => 'select', 'options_text' => "Matin\nAprès-midi\n"],
+        ],
+    ])->assertSessionHasNoErrors();
 
     $edition->refresh();
     $field = (new SubmissionFormConfig($edition))->customFields()[0];
@@ -100,12 +98,18 @@ it('réordonne les champs personnalisés (monter/descendre) et persiste l’ordr
         ['key' => 'c', 'label' => 'Champ C', 'type' => 'text'],
     ]]]);
 
-    Livewire::actingAs($staff, 'web')
-        ->test(SubmissionFormEditor::class, ['edition' => $edition])
-        ->call('moveCustom', 2, -1) // C monte : A, C, B
-        ->call('moveCustom', 0, -1) // no-op (déjà en tête)
-        ->call('save')
-        ->assertHasNoErrors();
+    // Le réordonnancement est côté client (Alpine) ; le serveur persiste l'ordre soumis.
+    $this->actingAs($staff, 'web')->put(route('admin.editions.form.update', $edition), [
+        'fields' => [
+            'title' => ['label' => 'Titre'],
+            'abstract' => ['label' => 'Résumé', 'min' => 50, 'max' => 8000],
+        ],
+        'custom' => [
+            ['key' => 'a', 'label' => 'Champ A', 'type' => 'text'],
+            ['key' => 'c', 'label' => 'Champ C', 'type' => 'text'],
+            ['key' => 'b', 'label' => 'Champ B', 'type' => 'text'],
+        ],
+    ])->assertSessionHasNoErrors();
 
     $edition->refresh();
     $labels = array_column((new SubmissionFormConfig($edition))->customFields(), 'label');
@@ -120,22 +124,22 @@ it('accepte un champ personnalisé de type date', function () {
     $account = verifiedAccount();
 
     // Date invalide → erreur.
-    Livewire::actingAs($account, 'account')
-        ->test(Create::class, ['slug' => $edition->slug])
-        ->set('title', 'Ma communication')
-        ->set('abstract', str_repeat('a', 60))
-        ->set('customAnswers.dispo', 'pas-une-date')
-        ->call('submit')
-        ->assertHasErrors('customAnswers.dispo');
+    $this->actingAs($account, 'account')
+        ->post(route('account.submissions.store', $edition->slug), [
+            'title' => 'Ma communication',
+            'abstract' => str_repeat('a', 60),
+            'customAnswers' => ['dispo' => 'pas-une-date'],
+        ])
+        ->assertSessionHasErrors('customAnswers.dispo');
 
     // Date valide → enregistrée.
-    Livewire::actingAs($account, 'account')
-        ->test(Create::class, ['slug' => $edition->slug])
-        ->set('title', 'Ma communication')
-        ->set('abstract', str_repeat('a', 60))
-        ->set('customAnswers.dispo', '2026-09-15')
-        ->call('submit')
-        ->assertHasNoErrors();
+    $this->actingAs($account, 'account')
+        ->post(route('account.submissions.store', $edition->slug), [
+            'title' => 'Ma communication',
+            'abstract' => str_repeat('a', 60),
+            'customAnswers' => ['dispo' => '2026-09-15'],
+        ])
+        ->assertSessionHasNoErrors();
 
     $submission = Submission::where('edition_id', $edition->id)->latest('id')->first();
     $custom = collect($submission->meta['custom_fields'] ?? []);
@@ -150,8 +154,8 @@ it('respecte le libellé personnalisé et masque un champ désactivé sur le for
     ]]]);
     $account = verifiedAccount();
 
-    Livewire::actingAs($account, 'account')
-        ->test(Create::class, ['slug' => $edition->slug])
+    $this->actingAs($account, 'account')
+        ->get(route('account.submissions.create', $edition->slug))
         ->assertSee('Intitulé unique')
         ->assertDontSee('Mots-clés');
 });
@@ -164,22 +168,21 @@ it('valide et enregistre les champs personnalisés à la soumission', function (
     $account = verifiedAccount();
 
     // Requis manquant → erreur.
-    Livewire::actingAs($account, 'account')
-        ->test(Create::class, ['slug' => $edition->slug])
-        ->set('title', 'Ma communication')
-        ->set('abstract', str_repeat('a', 60))
-        ->call('submit')
-        ->assertHasErrors('customAnswers.orcid');
+    $this->actingAs($account, 'account')
+        ->post(route('account.submissions.store', $edition->slug), [
+            'title' => 'Ma communication',
+            'abstract' => str_repeat('a', 60),
+        ])
+        ->assertSessionHasErrors('customAnswers.orcid');
 
     // Renseigné → enregistré dans meta.
-    Livewire::actingAs($account, 'account')
-        ->test(Create::class, ['slug' => $edition->slug])
-        ->set('title', 'Ma communication')
-        ->set('abstract', str_repeat('a', 60))
-        ->set('customAnswers.orcid', '0000-0002-1825-0097')
-        ->set('customAnswers.session', 'Matin')
-        ->call('submit')
-        ->assertHasNoErrors();
+    $this->actingAs($account, 'account')
+        ->post(route('account.submissions.store', $edition->slug), [
+            'title' => 'Ma communication',
+            'abstract' => str_repeat('a', 60),
+            'customAnswers' => ['orcid' => '0000-0002-1825-0097', 'session' => 'Matin'],
+        ])
+        ->assertSessionHasNoErrors();
 
     $submission = Submission::where('edition_id', $edition->id)->latest('id')->first();
     $custom = collect($submission->meta['custom_fields'] ?? []);
@@ -192,10 +195,10 @@ it('impose la limite minimale de caractères du résumé configurée', function 
     $edition = openEdition(['submission_form' => ['fields' => ['abstract' => ['min' => 200, 'max' => 8000]]]]);
     $account = verifiedAccount();
 
-    Livewire::actingAs($account, 'account')
-        ->test(Create::class, ['slug' => $edition->slug])
-        ->set('title', 'Titre')
-        ->set('abstract', str_repeat('a', 100))
-        ->call('submit')
-        ->assertHasErrors('abstract');
+    $this->actingAs($account, 'account')
+        ->post(route('account.submissions.store', $edition->slug), [
+            'title' => 'Titre',
+            'abstract' => str_repeat('a', 100),
+        ])
+        ->assertSessionHasErrors('abstract');
 });

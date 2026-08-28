@@ -29,7 +29,7 @@ class DocumentController extends Controller
             ->groupBy(fn ($s) => $s->track ?: 'Autres');
 
         if ($request->query('format') === 'docx') {
-            return (new LivretDocx($edition, $groups))
+            return (new LivretDocx($edition, $groups, $request->boolean('harmonize')))
                 ->download('livret-'.($edition->slug ?: 'edition-'.$edition->id).'.docx');
         }
 

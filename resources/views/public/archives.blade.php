@@ -45,10 +45,10 @@
                             </div>
                             <div class="body">
                                 <div class="year-line">
-                                    <div class="year">{{ $e->year ?: $e->date_start?->format('Y') }}</div>
                                     <span class="ukc-pill ukc-pill--closed">Clôturé</span>
                                 </div>
                                 <h3>{{ $e->title ?: $e->colloque?->name }}</h3>
+                                @if ($e->theme)<p class="theme">{{ $e->theme }}</p>@endif
                                 <div class="meta">
                                     <div class="meta-row">
                                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z"/></svg>

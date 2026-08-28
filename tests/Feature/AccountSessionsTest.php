@@ -1,10 +1,10 @@
 <?php
 
-use App\Livewire\Account\Security;
+use App\Http\Controllers\Account\SecurityController;
 use App\Models\Account;
 use App\Support\UserAgent;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Livewire\Livewire;
 
 function sessionAccount(): Account
 {
@@ -41,9 +41,9 @@ it('liste les sessions actives du compte, la courante marquée', function () {
     insertSession('autre-compte-999', 999); // autre compte → exclu
 
     config(['session.driver' => 'database']); // en test le driver est « array »
-    $this->actingAs($account, 'account');
 
-    Livewire::test(Security::class)
+    $this->actingAs($account, 'account')->get(route('account.security'))
+        ->assertOk()
         ->assertSee('Sessions actives')
         ->assertSee('Chrome · Windows')      // appareil de bureau du compte
         ->assertSee('Firefox · Android')     // appareil mobile du compte
@@ -52,51 +52,55 @@ it('liste les sessions actives du compte, la courante marquée', function () {
 
 it('révoque une autre session', function () {
     $account = sessionAccount();
-    insertSession(session()->getId(), $account->id);
     insertSession('autre-appareil-123', $account->id);
 
-    Livewire::actingAs($account, 'account')->test(Security::class)
-        ->call('revokeSession', 'autre-appareil-123');
+    $this->actingAs($account, 'account')
+        ->post(route('account.security.sessions.revoke', 'autre-appareil-123'));
 
     expect(DB::table('sessions')->where('id', 'autre-appareil-123')->exists())->toBeFalse();
 });
 
 it('ne révoque pas la session courante via revokeSession', function () {
     $account = sessionAccount();
-    $current = session()->getId();
+    $current = str_repeat('a', 40); // identifiant de session valide (40 alphanum.)
+    $this->actingAs($account, 'account');
+    app('session')->setId($current);
     insertSession($current, $account->id);
+    insertSession('autre', $account->id);
 
-    Livewire::actingAs($account, 'account')->test(Security::class)
-        ->call('revokeSession', $current);
-
+    // La session courante est préservée…
+    (new SecurityController)->revokeSession($current);
     expect(DB::table('sessions')->where('id', $current)->exists())->toBeTrue();
+
+    // …mais une autre session est bien révoquée.
+    (new SecurityController)->revokeSession('autre');
+    expect(DB::table('sessions')->where('id', 'autre')->exists())->toBeFalse();
 });
 
 it('déconnecte les autres sessions avec le bon mot de passe', function () {
     $account = sessionAccount();
-    $current = session()->getId();
+    $current = str_repeat('b', 40);
+    $this->actingAs($account, 'account');
+    app('session')->setId($current);
     insertSession($current, $account->id);
     insertSession('autre-1', $account->id);
     insertSession('autre-2', $account->id);
 
-    Livewire::actingAs($account, 'account')->test(Security::class)
-        ->set('disable_password', 'MotDePasse123!')
-        ->call('revokeOtherSessions')
-        ->assertHasNoErrors();
+    $request = Request::create('/', 'POST', ['disable_password' => 'MotDePasse123!']);
+    (new SecurityController)->revokeOtherSessions($request);
 
+    // Seule la session courante subsiste.
     expect(DB::table('sessions')->where('account_id', $account->id)->count())->toBe(1);
     expect(DB::table('sessions')->where('id', $current)->exists())->toBeTrue();
 });
 
 it('refuse la déconnexion des autres sessions avec un mauvais mot de passe', function () {
     $account = sessionAccount();
-    insertSession(session()->getId(), $account->id);
     insertSession('autre-1', $account->id);
 
-    Livewire::actingAs($account, 'account')->test(Security::class)
-        ->set('disable_password', 'mauvais')
-        ->call('revokeOtherSessions')
-        ->assertHasErrors('disable_password');
+    $this->actingAs($account, 'account')
+        ->post(route('account.security.sessions.revoke-others'), ['disable_password' => 'mauvais'])
+        ->assertSessionHasErrors('disable_password');
 
     expect(DB::table('sessions')->where('id', 'autre-1')->exists())->toBeTrue();
 });

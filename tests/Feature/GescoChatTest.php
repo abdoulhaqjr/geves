@@ -1,9 +1,6 @@
 <?php
 
 use App\Actions\AskGesco;
-use App\Livewire\Public\GescoChat;
-use App\Livewire\Public\GescoWidget;
-use Livewire\Livewire;
 
 // fakeAiProvider(), bindFakeAi() -> GenerateReportTest
 
@@ -15,40 +12,43 @@ it('répond à une question via l’agent Gesco', function () {
     expect($answer)->toContain('espace participant');
 });
 
-it('affiche l’accueil puis répond dans le chat', function () {
+it('affiche la page dédiée de l’assistante Gesco', function () {
+    $this->get(route('public.gesco'))
+        ->assertOk()
+        ->assertSee('Gesco');
+});
+
+it('répond dans le chat via l’endpoint JSON', function () {
     bindFakeAi(fakeAiProvider(['answer' => 'Les tarifs dépendent de votre catégorie.']));
 
-    Livewire::test(GescoChat::class)
-        ->assertSee('Gesco')
-        ->set('input', 'Quels sont les tarifs ?')
-        ->call('send')
-        ->assertSee('Les tarifs dépendent')
-        ->assertSet('input', '');
+    $this->postJson(route('gesco.ask'), ['question' => 'Quels sont les tarifs ?'])
+        ->assertOk()
+        ->assertJsonPath('answer', 'Les tarifs dépendent de votre catégorie.');
+});
+
+it('conserve l’historique de conversation', function () {
+    bindFakeAi(fakeAiProvider(['answer' => 'Le programme est publié sur la page du colloque.']));
+
+    $this->postJson(route('gesco.ask'), [
+        'question' => 'Où est le programme ?',
+        'history' => [
+            ['role' => 'bot', 'text' => 'Bonjour'],
+            ['role' => 'user', 'text' => 'Salut'],
+        ],
+    ])
+        ->assertOk()
+        ->assertJsonPath('answer', 'Le programme est publié sur la page du colloque.');
 });
 
 it('refuse un message vide', function () {
-    Livewire::test(GescoChat::class)
-        ->set('input', '')
-        ->call('send')
-        ->assertHasErrors('input');
-});
-
-it('le widget flottant répond aussi', function () {
-    bindFakeAi(fakeAiProvider(['answer' => 'Le programme est publié sur la page du colloque.']));
-
-    Livewire::test(GescoWidget::class)
-        ->assertSee('Gesco')
-        ->set('input', 'Où est le programme ?')
-        ->call('send')
-        ->assertSee('Le programme est publié')
-        ->assertSet('input', '');
+    $this->postJson(route('gesco.ask'), ['question' => ''])
+        ->assertStatus(422);
 });
 
 it('gère proprement l’absence de fournisseur IA', function () {
     bindFakeAi(null);
 
-    Livewire::test(GescoChat::class)
-        ->set('input', 'Bonjour')
-        ->call('send')
-        ->assertSee('indisponible');
+    $this->postJson(route('gesco.ask'), ['question' => 'Bonjour'])
+        ->assertOk()
+        ->assertJsonFragment(['answer' => 'L’assistance Gesco est momentanément indisponible.']);
 });

@@ -1,8 +1,6 @@
 <?php
 
-use App\Livewire\Admin\Editions\Form;
 use App\Models\Colloque;
-use Livewire\Livewire;
 
 // adminStaff() -> AdminSubmissionWorkflowTest
 
@@ -11,19 +9,18 @@ it('enregistre comités, partenaires et FAQ depuis le formulaire d’édition', 
     $colloque = Colloque::create(['name' => 'UK', 'slug' => 'uk']);
     $edition = $colloque->editions()->create(['title' => 'UK 2026', 'status' => 'open', 'slug' => 'uk-2026']);
 
-    Livewire::actingAs($staff, 'web')
-        ->test(Form::class, ['edition' => $edition])
-        ->set('committees', [
+    $this->actingAs($staff, 'web')->put(route('admin.editions.update', $edition), [
+        'title' => $edition->title, 'status' => 'open', 'colloque_id' => $edition->colloque_id, 'max_communications' => 3,
+        'committees' => [
             ['role' => 'scientifique', 'person_name' => 'Pr Ama Doe', 'person_title' => 'Professeure', 'institution' => 'UK', 'photo_url' => ''],
-        ])
-        ->set('partners', [
+        ],
+        'partners' => [
             ['name' => 'UNESCO', 'url' => 'https://unesco.org', 'logo_url' => '', 'level' => 'platine'],
-        ])
-        ->set('faq', [
+        ],
+        'faq' => [
             ['question' => 'Comment soumettre ?', 'answer' => 'Depuis votre espace participant.'],
-        ])
-        ->call('save')
-        ->assertHasNoErrors();
+        ],
+    ])->assertSessionHasNoErrors();
 
     $edition->refresh();
     expect($edition->committeeMembers()->count())->toBe(1);
@@ -38,11 +35,10 @@ it('remplace les comités existants à l’enregistrement (sync)', function () {
     $edition = $colloque->editions()->create(['title' => 'UK 2026', 'status' => 'open', 'slug' => 'uk-2026']);
     $edition->committeeMembers()->create(['person_name' => 'Ancien membre', 'role' => 'organisation']);
 
-    Livewire::actingAs($staff, 'web')
-        ->test(Form::class, ['edition' => $edition])
-        ->set('committees', [['role' => 'organisation', 'person_name' => 'Nouveau membre', 'person_title' => '', 'institution' => '', 'photo_url' => '']])
-        ->call('save')
-        ->assertHasNoErrors();
+    $this->actingAs($staff, 'web')->put(route('admin.editions.update', $edition), [
+        'title' => $edition->title, 'status' => 'open', 'colloque_id' => $edition->colloque_id, 'max_communications' => 3,
+        'committees' => [['role' => 'organisation', 'person_name' => 'Nouveau membre', 'person_title' => '', 'institution' => '', 'photo_url' => '']],
+    ])->assertSessionHasNoErrors();
 
     expect($edition->committeeMembers()->count())->toBe(1);
     expect($edition->committeeMembers()->first()->person_name)->toBe('Nouveau membre');

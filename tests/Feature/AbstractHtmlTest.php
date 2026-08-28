@@ -1,9 +1,7 @@
 <?php
 
-use App\Livewire\Account\Submissions\Create;
 use App\Models\Submission;
 use App\Support\Html;
-use Livewire\Livewire;
 
 // openEdition(), verifiedAccount() -> AccountSubmissionTest
 
@@ -40,13 +38,13 @@ it('stocke un résumé enrichi assaini', function () {
     $edition = openEdition();
     $account = verifiedAccount();
 
-    Livewire::actingAs($account, 'account')
-        ->test(Create::class, ['slug' => $edition->slug])
-        ->set('title', 'Ma communication enrichie')
-        ->set('track', 'Santé')
-        ->set('abstract', '<p onclick="x">Contexte <strong>et</strong> objectifs détaillés du travail scientifique présenté ici.</p><script>alert(1)</script>')
-        ->call('submit')
-        ->assertHasNoErrors();
+    $this->actingAs($account, 'account')
+        ->post(route('account.submissions.store', $edition->slug), [
+            'title' => 'Ma communication enrichie',
+            'track' => 'Santé',
+            'abstract' => '<p onclick="x">Contexte <strong>et</strong> objectifs détaillés du travail scientifique présenté ici.</p><script>alert(1)</script>',
+        ])
+        ->assertSessionHasNoErrors();
 
     $sub = Submission::latest('id')->first();
     expect($sub->abstract)->toContain('<strong>et</strong>')
@@ -58,11 +56,11 @@ it('refuse un résumé trop court même en comptant hors balises', function () {
     $edition = openEdition();
     $account = verifiedAccount();
 
-    Livewire::actingAs($account, 'account')
-        ->test(Create::class, ['slug' => $edition->slug])
-        ->set('title', 'Court')
-        ->set('track', 'Santé')
-        ->set('abstract', '<p><strong>Trop court</strong></p>')
-        ->call('submit')
-        ->assertHasErrors('abstract');
+    $this->actingAs($account, 'account')
+        ->post(route('account.submissions.store', $edition->slug), [
+            'title' => 'Court',
+            'track' => 'Santé',
+            'abstract' => '<p><strong>Trop court</strong></p>',
+        ])
+        ->assertSessionHasErrors('abstract');
 });

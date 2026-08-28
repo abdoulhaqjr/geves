@@ -1,36 +1,36 @@
 <?php
 
-use App\Livewire\Admin\Settings\Index;
 use App\Meetings\Providers\LiveKitProvider;
 use App\Models\User;
 use App\Providers\AppServiceProvider;
 use App\Support\Settings;
-use Livewire\Livewire;
 
 // adminStaff() -> AdminSubmissionWorkflowTest
 
 it('affiche les réglages au staff habilité', function () {
     $staff = adminStaff();
 
-    Livewire::actingAs($staff, 'web')->test(Index::class)->assertOk()->assertSee('Général')->assertSee('SMTP');
+    $this->actingAs($staff, 'web')->get(route('admin.settings'))
+        ->assertOk()->assertSee('Général')->assertSee('SMTP');
 });
 
 it('enregistre les réglages', function () {
     $staff = adminStaff();
 
-    Livewire::actingAs($staff, 'web')
-        ->test(Index::class)
-        ->set('from_name', 'Colloques UK')
-        ->set('from_address', 'colloques@univkara.tg')
-        ->set('payments_default', 'cashpay')
-        ->set('mail_host', 'smtp.univkara.tg')
-        ->set('ai_default', 'grok')
-        ->set('ai_anthropic_key', 'sk-ant-xyz')
-        ->set('ai_anthropic_model', 'claude-sonnet-4-5')
-        ->set('ai_grok_key', 'xai-123')
-        ->set('ai_grok_model', 'grok-4')
-        ->call('save')
-        ->assertHasNoErrors();
+    $this->actingAs($staff, 'web')->post(route('admin.settings.update'), [
+        'from_name' => 'Colloques UK',
+        'from_address' => 'colloques@univkara.tg',
+        'payments_default' => 'cashpay',
+        'mail_host' => 'smtp.univkara.tg',
+        'ai_default' => 'grok',
+        'ai_anthropic_key' => 'sk-ant-xyz',
+        'ai_anthropic_model' => 'claude-sonnet-4-5',
+        'ai_grok_key' => 'xai-123',
+        'ai_grok_model' => 'grok-4',
+        'fedapay_mode' => 'test',
+        'meeting_default' => 'livekit',
+        'sms_default' => 'log',
+    ])->assertSessionHasNoErrors();
 
     expect(Settings::get('mail.from_name'))->toBe('Colloques UK');
     expect(Settings::get('payments.default'))->toBe('cashpay');
@@ -72,14 +72,16 @@ it('applique les réglages à la configuration au boot', function () {
 it('enregistre les identifiants LiveKit depuis l’admin et les applique', function () {
     $staff = adminStaff();
 
-    Livewire::actingAs($staff, 'web')
-        ->test(Index::class)
-        ->set('meeting_default', 'livekit')
-        ->set('livekit_url', 'wss://ukara.livekit.cloud')
-        ->set('livekit_api_key', 'APIkey')
-        ->set('livekit_api_secret', 'secret-value-1234567890')
-        ->call('save')
-        ->assertHasNoErrors();
+    $this->actingAs($staff, 'web')->post(route('admin.settings.update'), [
+        'meeting_default' => 'livekit',
+        'livekit_url' => 'wss://ukara.livekit.cloud',
+        'livekit_api_key' => 'APIkey',
+        'livekit_api_secret' => 'secret-value-1234567890',
+        'payments_default' => 'manual',
+        'fedapay_mode' => 'test',
+        'ai_default' => 'claude',
+        'sms_default' => 'log',
+    ])->assertSessionHasNoErrors();
 
     expect(Settings::get('livekit.url'))->toBe('wss://ukara.livekit.cloud');
     expect(Settings::get('livekit.api_secret'))->toBe('secret-value-1234567890');
@@ -96,11 +98,9 @@ it('enregistre les identifiants LiveKit depuis l’admin et les applique', funct
 it('envoie un e-mail de test sans erreur', function () {
     $staff = adminStaff();
 
-    Livewire::actingAs($staff, 'web')
-        ->test(Index::class)
-        ->set('test_email', 'admin@univkara.tg')
-        ->call('sendTest')
-        ->assertHasNoErrors();
+    $this->actingAs($staff, 'web')
+        ->post(route('admin.settings.test'), ['test_email' => 'admin@univkara.tg'])
+        ->assertSessionHasNoErrors();
 });
 
 it('protège les réglages sans permission', function () {

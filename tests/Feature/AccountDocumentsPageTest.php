@@ -1,9 +1,7 @@
 <?php
 
 use App\Actions\IssueAttestation;
-use App\Livewire\Account\Documents;
 use App\Models\Account;
-use Livewire\Livewire;
 
 // openEdition() / verifiedAccount() -> AccountSubmissionTest
 
@@ -17,8 +15,9 @@ it('affiche l’état vide quand le compte n’a aucun document', function () {
         'email' => 'vide@example.tg', 'password' => 'pass12345',
     ]);
 
-    Livewire::actingAs($account, 'account')
-        ->test(Documents::class)
+    $this->actingAs($account, 'account')
+        ->get(route('account.documents'))
+        ->assertOk()
         ->assertSee('Aucun document');
 });
 
@@ -42,8 +41,9 @@ it('liste attestations, reçus et livret sur la page Mes documents', function ()
     // Une attestation.
     (new IssueAttestation)->handle($participant, 'participation');
 
-    Livewire::actingAs($account, 'account')
-        ->test(Documents::class)
+    $this->actingAs($account, 'account')
+        ->get(route('account.documents'))
+        ->assertOk()
         ->assertSee('Mes attestations')
         ->assertSee('Livret (Word)')
         ->assertSee('Livret (imprimable)')

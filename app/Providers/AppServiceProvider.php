@@ -2,12 +2,16 @@
 
 namespace App\Providers;
 
+use App\Models\Edition;
+use App\Models\User;
 use App\Support\Settings;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -20,6 +24,20 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->applySettingsToConfig();
+
+        // RBAC back-office : `manage_colloques` est une super-capacité (staff
+        // pleinement habilité / administrateur) qui court-circuite les vérifications
+        // de permissions granulaires. Les autres rôles UKC (Comité, Relecteur,
+        // Organisateur, Secrétariat, Comptabilité, Appui, Accueil) sont gouvernés
+        // par leurs permissions granulaires (matrice d'accès), appliquées par route.
+        Gate::before(function ($user, string $ability) {
+            if ($user instanceof User
+                && ($user->hasRole('administrator') || $user->getAllPermissions()->contains('name', 'manage_colloques'))) {
+                return true;
+            }
+
+            return null;
+        });
 
         // Les effets de bord du changement de statut (NotifyAuthorOfStatus,
         // InviteCoauthorsOnAcceptance) sont câblés par l'auto-découverte des
@@ -42,6 +60,34 @@ class AppServiceProvider extends ServiceProvider
                     'hash' => sha1($notifiable->getEmailForVerification()),
                 ]
             );
+        });
+
+        // En-tête public : alimente les liens « Édition en cours » et
+        // « Déroulement » (mockup index.html) avec l'édition à la une —
+        // celle en cours, sinon la prochaine, sinon la dernière publiée.
+        View::composer('partials.public-header', function ($view) {
+            $edition = null;
+            $hasLive = false;
+
+            try {
+                $published = Edition::query()
+                    ->whereIn('status', ['open', 'closed', 'archived'])
+                    ->orderByDesc('date_start')
+                    ->get();
+
+                $ongoing = $published->first(fn (Edition $e) => $e->phase()->isOngoing());
+                $upcoming = $published
+                    ->filter(fn (Edition $e) => $e->phase()->publicView() === 'upcoming')
+                    ->sortBy('date_start')
+                    ->first();
+
+                $edition = $ongoing ?? $upcoming ?? $published->first();
+                $hasLive = (bool) $ongoing;
+            } catch (\Throwable) {
+                // Table absente (migrations/installation) : header sans ces liens.
+            }
+
+            $view->with('navEdition', $edition)->with('navHasLive', $hasLive);
         });
     }
 

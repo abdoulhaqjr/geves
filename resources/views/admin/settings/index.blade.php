@@ -1,0 +1,320 @@
+@php($v = fn ($k) => old($k, $values[$k]))
+<x-layouts.admin title="Réglages" subtitle="Configuration globale de la plateforme">
+    <div class="admin-page admin-settings" x-data="{ tab: '{{ session('settings_tab', 'general') }}' }">
+        <div class="ukc-tabs">
+            <button type="button" @click="tab='general'" :class="{ active: tab==='general' }">Général</button>
+            <button type="button" @click="tab='payments'" :class="{ active: tab==='payments' }">Paiements</button>
+            <button type="button" @click="tab='email'" :class="{ active: tab==='email' }">E-mail</button>
+            <button type="button" @click="tab='ai'" :class="{ active: tab==='ai' }">Intelligence artificielle</button>
+            <button type="button" @click="tab='meetings'" :class="{ active: tab==='meetings' }">Visio</button>
+            <button type="button" @click="tab='integrations'" :class="{ active: tab==='integrations' }">Intégrations</button>
+            <a href="{{ route('admin.settings.agents') }}" style="padding:10px 16px;font-weight:700;font-size:13.5px;color:var(--ukc-muted);text-decoration:none;">Agents IA ↗</a>
+        </div>
+
+        <form method="POST" action="{{ route('admin.settings.update') }}" style="max-width:820px;">
+            @csrf
+            {{-- Général --}}
+            <div class="ukc-panel" :class="{ active: tab==='general' }">
+                <div class="ukc-card">
+                    <h2><span><x-ukc.icon name="settings" :size="20" /> Général</span></h2>
+                    <p class="desc">Identité de l’expéditeur des e-mails et devise utilisée pour les frais.</p>
+                    <div class="ukc-form-grid">
+                        <div class="ukc-field">
+                            <label for="from_name">Nom de l’expéditeur</label>
+                            <input type="text" id="from_name" name="from_name" value="{{ $v('from_name') }}">
+                            @error('from_name') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-field">
+                            <label for="from_address">E-mail de l’expéditeur</label>
+                            <input type="email" id="from_address" name="from_address" value="{{ $v('from_address') }}">
+                            @error('from_address') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-field">
+                            <label for="currency">Devise</label>
+                            <input type="text" id="currency" name="currency" value="{{ $v('currency') }}" maxlength="10">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ukc-card" style="margin-top:18px;">
+                    <h2><span><x-ukc.icon name="globe" :size="20" /> Réseaux sociaux du site</span></h2>
+                    <p class="desc">Utilisés comme repli dans le pied de page d’un colloque qui n’a pas renseigné les siens.</p>
+                    <div class="ukc-form-grid">
+                        <div class="ukc-field">
+                            <label for="site_facebook">Facebook</label>
+                            <input type="url" id="site_facebook" name="site_facebook" value="{{ $v('site_facebook') }}" placeholder="https://facebook.com/…">
+                            @error('site_facebook') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-field">
+                            <label for="site_x">X (Twitter)</label>
+                            <input type="url" id="site_x" name="site_x" value="{{ $v('site_x') }}" placeholder="https://x.com/…">
+                            @error('site_x') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-field">
+                            <label for="site_youtube">YouTube</label>
+                            <input type="url" id="site_youtube" name="site_youtube" value="{{ $v('site_youtube') }}" placeholder="https://youtube.com/…">
+                            @error('site_youtube') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-field">
+                            <label for="site_linkedin">LinkedIn</label>
+                            <input type="url" id="site_linkedin" name="site_linkedin" value="{{ $v('site_linkedin') }}" placeholder="https://linkedin.com/…">
+                            @error('site_linkedin') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Paiement --}}
+            <div class="ukc-panel" :class="{ active: tab==='payments' }">
+                <div class="ukc-card">
+                    <h2><span><x-ukc.icon name="card" :size="20" /> Paiement</span></h2>
+                    <div class="ukc-form-grid">
+                        <div class="ukc-field full">
+                            <label for="payments_default">Passerelle par défaut</label>
+                            <select id="payments_default" name="payments_default">
+                                <option value="manual" @selected($v('payments_default') === 'manual')>Paiement sur place / virement (manuel)</option>
+                                <option value="cashpay" @selected($v('payments_default') === 'cashpay')>CashPay (SEMOA)</option>
+                                <option value="fedapay" @selected($v('payments_default') === 'fedapay')>FedaPay</option>
+                            </select>
+                            <span class="hint">Une passerelle n’est proposée que si ses identifiants sont renseignés.</span>
+                            @error('payments_default') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+
+                    <h3 style="font-size:.95rem;margin:16px 0 8px;">CashPay (SEMOA)</h3>
+                    <div class="ukc-form-grid">
+                        <div class="ukc-field full"><label for="cashpay_base_url">URL de base</label><input type="text" id="cashpay_base_url" name="cashpay_base_url" value="{{ $v('cashpay_base_url') }}"></div>
+                        <div class="ukc-field"><label for="cashpay_username">Identifiant</label><input type="text" id="cashpay_username" name="cashpay_username" value="{{ $v('cashpay_username') }}" autocomplete="off"></div>
+                        <div class="ukc-field"><label for="cashpay_password">Mot de passe</label><input type="password" id="cashpay_password" name="cashpay_password" value="{{ $v('cashpay_password') }}" autocomplete="new-password"></div>
+                        <div class="ukc-field"><label for="cashpay_client_secret">Client secret</label><input type="password" id="cashpay_client_secret" name="cashpay_client_secret" value="{{ $v('cashpay_client_secret') }}" autocomplete="new-password"></div>
+                        <div class="ukc-field"><label for="cashpay_api_key">API key (callback)</label><input type="password" id="cashpay_api_key" name="cashpay_api_key" value="{{ $v('cashpay_api_key') }}" autocomplete="new-password"></div>
+                    </div>
+
+                    <h3 style="font-size:.95rem;margin:16px 0 8px;">FedaPay</h3>
+                    <div class="ukc-form-grid">
+                        <div class="ukc-field"><label for="fedapay_secret">Clé secrète</label><input type="password" id="fedapay_secret" name="fedapay_secret" value="{{ $v('fedapay_secret') }}" autocomplete="new-password"></div>
+                        <div class="ukc-field"><label for="fedapay_mode">Mode</label>
+                            <select id="fedapay_mode" name="fedapay_mode">
+                                <option value="test" @selected($v('fedapay_mode') === 'test')>Sandbox (test)</option>
+                                <option value="live" @selected($v('fedapay_mode') === 'live')>Production (live)</option>
+                            </select>
+                            @error('fedapay_mode') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-field full"><label for="fedapay_webhook_secret">Secret de webhook</label><input type="password" id="fedapay_webhook_secret" name="fedapay_webhook_secret" value="{{ $v('fedapay_webhook_secret') }}" autocomplete="new-password"></div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- E-mail (SMTP) --}}
+            <div class="ukc-panel" :class="{ active: tab==='email' }">
+                <div class="ukc-card">
+                    <h2><span><x-ukc.icon name="mail" :size="20" /> Envoi des e-mails (SMTP)</span></h2>
+                    <p class="desc">Laissez l’hôte vide pour utiliser le transport par défaut (log en dev).</p>
+                    <div class="ukc-form-grid">
+                        <div class="ukc-field">
+                            <label for="mail_host">Hôte</label>
+                            <input type="text" id="mail_host" name="mail_host" value="{{ $v('mail_host') }}" placeholder="smtp.exemple.tg">
+                        </div>
+                        <div class="ukc-field">
+                            <label for="mail_port">Port</label>
+                            <input type="number" id="mail_port" name="mail_port" value="{{ $v('mail_port') }}">
+                            @error('mail_port') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-field">
+                            <label for="mail_encryption">Chiffrement</label>
+                            <select id="mail_encryption" name="mail_encryption">
+                                <option value="tls" @selected($v('mail_encryption') === 'tls')>TLS</option>
+                                <option value="ssl" @selected($v('mail_encryption') === 'ssl')>SSL</option>
+                                <option value="" @selected($v('mail_encryption') === '')>Aucun</option>
+                            </select>
+                        </div>
+                        <div class="ukc-field">
+                            <label for="mail_username">Identifiant</label>
+                            <input type="text" id="mail_username" name="mail_username" value="{{ $v('mail_username') }}" autocomplete="off">
+                        </div>
+                        <div class="ukc-field">
+                            <label for="mail_password">Mot de passe</label>
+                            <input type="password" id="mail_password" name="mail_password" value="{{ $v('mail_password') }}" autocomplete="new-password">
+                        </div>
+                    </div>
+
+                    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--ukc-border);">
+                        <div class="ukc-field" style="flex:1;min-width:220px;">
+                            <label for="test_email">Envoyer un e-mail de test à</label>
+                            <input type="email" id="test_email" name="test_email" value="{{ old('test_email') }}" placeholder="vous@exemple.tg">
+                            @error('test_email') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <button type="submit" formaction="{{ route('admin.settings.test') }}"
+                                class="ukc-btn ukc-btn--outline ukc-btn--sm">Envoyer le test</button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Intelligence artificielle --}}
+            <div class="ukc-panel" :class="{ active: tab==='ai' }">
+                <div class="ukc-card">
+                    <h2><span><x-ukc.icon name="sparkles" :size="20" /> Intelligence artificielle</span></h2>
+                    <p class="desc">
+                        Utilisée pour le paramétrage assisté d’une édition et la génération de modèles (badges, attestations).
+                        Les clés sont facultatives ; renseignez au moins le fournisseur par défaut.
+                    </p>
+                    <div class="ukc-field" style="max-width:360px;">
+                        <label for="ai_default">Fournisseur par défaut</label>
+                        <select id="ai_default" name="ai_default">
+                            <option value="claude" @selected($v('ai_default') === 'claude')>Claude (Anthropic)</option>
+                            <option value="openai" @selected($v('ai_default') === 'openai')>OpenAI</option>
+                            <option value="gemini" @selected($v('ai_default') === 'gemini')>Gemini (Google)</option>
+                            <option value="grok" @selected($v('ai_default') === 'grok')>Grok (xAI)</option>
+                        </select>
+                        <span class="hint">Repli automatique sur un autre fournisseur configuré si nécessaire.</span>
+                        @error('ai_default') <span class="error">{{ $message }}</span> @enderror
+                    </div>
+
+                    @php($aiProviders = [
+                        ['anthropic', 'Claude (Anthropic)', 'ex. claude-sonnet-4-5'],
+                        ['openai', 'OpenAI', 'ex. gpt-4o'],
+                        ['gemini', 'Gemini (Google)', 'ex. gemini-2.5-flash'],
+                        ['grok', 'Grok (xAI)', 'ex. grok-4'],
+                    ])
+                    <div style="margin-top:14px;display:flex;flex-direction:column;gap:12px;">
+                        <div style="display:grid;grid-template-columns:150px 1fr 1fr;gap:10px;font-size:.75rem;font-weight:700;color:var(--ukc-muted);text-transform:uppercase;letter-spacing:.04em;">
+                            <span>Fournisseur</span><span>Clé API</span><span>Modèle par défaut</span>
+                        </div>
+                        @foreach ($aiProviders as [$prov, $label, $ph])
+                            <div style="display:grid;grid-template-columns:150px 1fr 1fr;gap:10px;align-items:center;">
+                                <span style="font-weight:600;font-size:.88rem;">{{ $label }}</span>
+                                <input type="password" name="ai_{{ $prov }}_key" value="{{ $v('ai_'.$prov.'_key') }}" autocomplete="new-password" placeholder="Clé API"
+                                       style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13px;">
+                                <input type="text" name="ai_{{ $prov }}_model" value="{{ $v('ai_'.$prov.'_model') }}" placeholder="{{ $ph }}"
+                                       style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13px;">
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+
+            {{-- Visio (LiveKit) --}}
+            <div class="ukc-panel" :class="{ active: tab==='meetings' }">
+                <div class="ukc-card">
+                    <h2><span><x-ukc.icon name="video" :size="20" /> Visio des sessions</span></h2>
+                    <p class="desc">
+                        Plateforme de visio interactive pour les présentations en ligne. LiveKit nécessite un serveur
+                        (LiveKit Cloud ou self-host) et ses identifiants d’API. Sans identifiants, le système bascule
+                        automatiquement sur Jitsi (mode public, sans configuration).
+                    </p>
+
+                    <div class="ukc-field" style="max-width:360px;">
+                        <label for="meeting_default">Fournisseur par défaut</label>
+                        <select id="meeting_default" name="meeting_default">
+                            <option value="livekit" @selected($v('meeting_default') === 'livekit')>LiveKit</option>
+                            <option value="jitsi" @selected($v('meeting_default') === 'jitsi')>Jitsi (repli, sans config)</option>
+                        </select>
+                        @error('meeting_default') <span class="error">{{ $message }}</span> @enderror
+                    </div>
+
+                    <h3 style="font-size:.95rem;margin:16px 0 8px;">LiveKit</h3>
+                    <div class="ukc-form-grid">
+                        <div class="ukc-field full">
+                            <label for="livekit_url">URL du serveur <span class="hint">(wss://…)</span></label>
+                            <input type="text" id="livekit_url" name="livekit_url" value="{{ $v('livekit_url') }}" placeholder="wss://ton-projet.livekit.cloud">
+                        </div>
+                        <div class="ukc-field">
+                            <label for="livekit_api_key">Clé d’API</label>
+                            <input type="password" id="livekit_api_key" name="livekit_api_key" value="{{ $v('livekit_api_key') }}" autocomplete="new-password" placeholder="API key">
+                        </div>
+                        <div class="ukc-field">
+                            <label for="livekit_api_secret">Secret d’API</label>
+                            <input type="password" id="livekit_api_secret" name="livekit_api_secret" value="{{ $v('livekit_api_secret') }}" autocomplete="new-password" placeholder="API secret">
+                        </div>
+                        <div class="ukc-field full">
+                            <label for="livekit_meet_url">App LiveKit Meet <span class="hint">(par défaut l’app publique)</span></label>
+                            <input type="url" id="livekit_meet_url" name="livekit_meet_url" value="{{ $v('livekit_meet_url') }}" placeholder="https://meet.livekit.io/custom">
+                            @error('livekit_meet_url') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+
+                    <h3 style="font-size:.95rem;margin:16px 0 8px;">Enregistrement <span class="hint">(stockage S3)</span></h3>
+                    <p style="font-size:.84rem;color:var(--ukc-muted);margin:0 0 10px;">
+                        Les sessions peuvent être enregistrées (Egress RoomComposite → MP4). LiveKit dépose le fichier
+                        dans un bucket objet compatible S3. Sans ces valeurs, le bouton d’enregistrement reste indisponible.
+                    </p>
+                    <div class="ukc-form-grid">
+                        <div class="ukc-field">
+                            <label for="livekit_egress_s3_bucket">Bucket</label>
+                            <input type="text" id="livekit_egress_s3_bucket" name="livekit_egress_s3_bucket" value="{{ $v('livekit_egress_s3_bucket') }}" placeholder="gesco-recordings">
+                        </div>
+                        <div class="ukc-field">
+                            <label for="livekit_egress_s3_region">Région</label>
+                            <input type="text" id="livekit_egress_s3_region" name="livekit_egress_s3_region" value="{{ $v('livekit_egress_s3_region') }}" placeholder="eu-west-3">
+                        </div>
+                        <div class="ukc-field">
+                            <label for="livekit_egress_s3_access_key">Access key</label>
+                            <input type="password" id="livekit_egress_s3_access_key" name="livekit_egress_s3_access_key" value="{{ $v('livekit_egress_s3_access_key') }}" autocomplete="new-password" placeholder="AKIA…">
+                        </div>
+                        <div class="ukc-field">
+                            <label for="livekit_egress_s3_secret">Secret key</label>
+                            <input type="password" id="livekit_egress_s3_secret" name="livekit_egress_s3_secret" value="{{ $v('livekit_egress_s3_secret') }}" autocomplete="new-password" placeholder="Secret">
+                        </div>
+                        <div class="ukc-field full">
+                            <label for="livekit_egress_s3_endpoint">Endpoint <span class="hint">(optionnel — S3-compatible : MinIO…)</span></label>
+                            <input type="url" id="livekit_egress_s3_endpoint" name="livekit_egress_s3_endpoint" value="{{ $v('livekit_egress_s3_endpoint') }}" placeholder="https://s3.exemple.com">
+                            @error('livekit_egress_s3_endpoint') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Intégrations --}}
+            <div class="ukc-panel" :class="{ active: tab==='integrations' }">
+                <div class="ukc-card">
+                    <h2><span><x-ukc.icon name="globe" :size="20" /> Interconnexion HAL</span></h2>
+                    <p class="desc">
+                        Active l’autocomplétion des affiliations depuis le référentiel des structures HAL (AuréHAL),
+                        sur le profil des participants. Aucun compte HAL requis pour cette étape.
+                    </p>
+                    <label style="display:inline-flex;align-items:center;gap:8px;font-size:.95rem;">
+                        <input type="checkbox" name="hal_enabled" value="1" @checked(old('hal_enabled', $values['hal_enabled']))> Activer l’autocomplétion des affiliations (HAL)
+                    </label>
+                </div>
+
+                <div class="ukc-card">
+                    <h2><span><x-ukc.icon name="phone" :size="20" /> SMS (2FA par code)</span></h2>
+                    <p class="desc">
+                        Passerelle d’envoi des codes de vérification (OTP) pour la double authentification par SMS des
+                        comptes participants. « Journal » n’envoie rien (journalise, développement) ; « Passerelle HTTP »
+                        appelle une API d’envoi de SMS.
+                    </p>
+                    <div class="ukc-field" style="max-width:360px;">
+                        <label for="sms_default">Fournisseur par défaut</label>
+                        <select id="sms_default" name="sms_default">
+                            <option value="log" @selected($v('sms_default') === 'log')>Journal (développement)</option>
+                            <option value="http" @selected($v('sms_default') === 'http')>Passerelle HTTP (API)</option>
+                        </select>
+                        @error('sms_default') <span class="error">{{ $message }}</span> @enderror
+                    </div>
+
+                    <h3 style="font-size:.95rem;margin:16px 0 8px;">Passerelle HTTP</h3>
+                    <div class="ukc-form-grid">
+                        <div class="ukc-field full">
+                            <label for="sms_http_url">URL de l’API <span class="hint">(POST JSON : to, message, sender)</span></label>
+                            <input type="url" id="sms_http_url" name="sms_http_url" value="{{ $v('sms_http_url') }}" placeholder="https://api.passerelle-sms.tg/send">
+                            @error('sms_http_url') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-field">
+                            <label for="sms_http_token">Jeton (Bearer)</label>
+                            <input type="password" id="sms_http_token" name="sms_http_token" value="{{ $v('sms_http_token') }}" autocomplete="new-password">
+                        </div>
+                        <div class="ukc-field">
+                            <label for="sms_http_sender">Expéditeur (Sender ID)</label>
+                            <input type="text" id="sms_http_sender" name="sms_http_sender" value="{{ $v('sms_http_sender') }}" placeholder="UKColloques" maxlength="20">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ukc-form-actions" style="border-top:none;padding-top:0;margin-top:4px;">
+                <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer les réglages</button>
+            </div>
+        </form>
+    </div>
+</x-layouts.admin>

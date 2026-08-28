@@ -1,10 +1,6 @@
 <?php
 
 use App\Actions\AssignReviewer;
-use App\Livewire\Account\Submissions\Show as AccountSubmissionShow;
-use App\Livewire\Admin\Submissions\Show as AdminSubmissionShow;
-use App\Livewire\Reviewer\Evaluate;
-use App\Livewire\Reviewer\Portal;
 use App\Mail\ReviewerInvitationMail;
 use App\Mail\SubmissionStatusMail;
 use App\Models\Account;
@@ -12,7 +8,6 @@ use App\Models\Participant;
 use App\Models\Review;
 use App\Models\Submission;
 use Illuminate\Support\Facades\Mail;
-use Livewire\Livewire;
 
 // openEdition(), verifiedAccount() -> AccountSubmissionTest ; adminStaff(), seededSubmission() -> AdminSubmissionWorkflowTest
 
@@ -23,12 +18,12 @@ it('permet à l’auteur de resoumettre une version corrigée', function () {
     $submission = seededSubmission('revision');
     $account = $submission->participant->account;
 
-    Livewire::actingAs($account, 'account')
-        ->test(AccountSubmissionShow::class, ['submission' => $submission])
-        ->set('title', 'Titre corrigé')
-        ->set('abstract', str_repeat('Nouveau contenu. ', 6))
-        ->call('resubmit')
-        ->assertHasNoErrors();
+    $this->actingAs($account, 'account')
+        ->post(route('account.submissions.resubmit', $submission), [
+            'title' => 'Titre corrigé',
+            'abstract' => str_repeat('Nouveau contenu. ', 6),
+        ])
+        ->assertSessionHasNoErrors();
 
     $canonical = $submission->fresh();
     expect($canonical->title)->toBe('Titre corrigé');
@@ -47,19 +42,21 @@ it('bloque la resoumission si aucune correction n’est demandée', function () 
     $submission = seededSubmission('under_review');
     $account = $submission->participant->account;
 
-    Livewire::actingAs($account, 'account')
-        ->test(AccountSubmissionShow::class, ['submission' => $submission])
-        ->call('resubmit')
-        ->assertStatus(403);
+    $this->actingAs($account, 'account')
+        ->post(route('account.submissions.resubmit', $submission), [
+            'title' => 'x',
+            'abstract' => str_repeat('a', 60),
+        ])
+        ->assertForbidden();
 });
 
 it('interdit l’accès à la fiche d’une communication d’un autre compte', function () {
     $submission = seededSubmission();
     $other = Account::create(['first_name' => 'X', 'last_name' => 'Y', 'email' => 'x@example.tg', 'password' => 'pass12345']);
 
-    Livewire::actingAs($other, 'account')
-        ->test(AccountSubmissionShow::class, ['submission' => $submission])
-        ->assertStatus(404);
+    $this->actingAs($other, 'account')
+        ->get(route('account.submissions.show', $submission))
+        ->assertNotFound();
 });
 
 /* ------------------------------- Relecture -------------------------------- */
@@ -69,12 +66,10 @@ it('assigne un relecteur, passe en relecture et l’invite par e-mail', function
     $staff = adminStaff();
     $submission = seededSubmission('submitted');
 
-    Livewire::actingAs($staff, 'web')
-        ->test(AdminSubmissionShow::class, ['submission' => $submission])
-        ->set('reviewerName', 'Pr Kossi Anani')
-        ->set('reviewerEmail', 'kossi@example.tg')
-        ->call('assignReviewer')
-        ->assertHasNoErrors();
+    $this->actingAs($staff, 'web')->post(route('admin.submissions.review.assign', $submission), [
+        'reviewerName' => 'Pr Kossi Anani',
+        'reviewerEmail' => 'kossi@example.tg',
+    ])->assertSessionHasNoErrors();
 
     expect($submission->fresh()->status)->toBe('under_review');
 
@@ -90,12 +85,12 @@ it('donne accès au portail relecteur par jeton et le refuse sinon', function ()
     $submission = seededSubmission('submitted');
     $reviewer = (new AssignReviewer)->handle($submission, 'Kossi Anani', 'kossi@example.tg');
 
-    Livewire::test(Portal::class, ['token' => $reviewer->reviewer->access_token])
+    $this->get(route('reviewer.portal', $reviewer->reviewer->access_token))
         ->assertOk()
         ->assertSee($submission->ref_code)
         ->assertDontSee('Awa Kodjo'); // aveugle : pas d'auteur
 
-    Livewire::test(Portal::class, ['token' => 'jeton-invalide'])->assertStatus(404);
+    $this->get(route('reviewer.portal', 'jeton-invalide'))->assertNotFound();
 });
 
 it('enregistre une évaluation de relecteur', function () {
@@ -103,14 +98,16 @@ it('enregistre une évaluation de relecteur', function () {
     $review = (new AssignReviewer)->handle($submission, 'Kossi Anani', 'kossi@example.tg');
     $reviewer = $review->reviewer;
 
-    Livewire::test(Evaluate::class, ['token' => $reviewer->access_token, 'review' => $review])
-        ->assertDontSee('Awa Kodjo')
-        ->set('recommendation', 'minor')
-        ->set('score', '15.5')
-        ->set('comments', 'Bon travail, préciser la méthode.')
-        ->set('comments_private', 'Solide dans l’ensemble.')
-        ->call('submitEvaluation')
-        ->assertHasNoErrors();
+    $this->get(route('reviewer.evaluate', [$reviewer->access_token, $review->id]))
+        ->assertOk()
+        ->assertDontSee('Awa Kodjo');
+
+    $this->post(route('reviewer.evaluate.submit', [$reviewer->access_token, $review->id]), [
+        'recommendation' => 'minor',
+        'score' => '15.5',
+        'comments' => 'Bon travail, préciser la méthode.',
+        'comments_private' => 'Solide dans l’ensemble.',
+    ])->assertSessionHasNoErrors();
 
     $review->refresh();
     expect($review->status)->toBe('completed');
@@ -125,7 +122,7 @@ it('révèle le retour des relecteurs à l’auteur après décision', function 
     $submission->update(['status' => 'revision']);
     $account = $submission->participant->account;
 
-    Livewire::actingAs($account, 'account')
-        ->test(AccountSubmissionShow::class, ['submission' => $submission->fresh()])
+    $this->actingAs($account, 'account')
+        ->get(route('account.submissions.show', $submission->fresh()))
         ->assertSee('Merci de clarifier la section 2.');
 });

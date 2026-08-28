@@ -100,6 +100,9 @@ composer.bat check                   # pint --test + phpstan + tests (= le CI)
 ### Vérification visuelle
 Le **navigateur intégré exige une approbation par action** sur `gesco.test`. Se rabattre sur `curl` (statut HTTP + `grep` du contenu attendu + absence d'erreur) comme méthode de contrôle rapide.
 
+### Fidélité au mockup — couverture des 31 maquettes
+La correspondance **maquette → route → vue Blade → niveau de test** est tenue à jour dans [`docs/COUVERTURE-FIDELITE.md`](docs/COUVERTURE-FIDELITE.md) : les 31 maquettes du dossier de référence `~/Downloads/gesco-mockup/*.html` sont toutes portées sur une route implémentée. La suite de fumée `tests/Feature/SmokeTest.php` parcourt chaque famille de routes et asserte un rendu `200` (verrou de non-régression).
+
 ---
 
 ## 3. Architecture — points de repère
@@ -265,7 +268,7 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 - **Reçus / documents imprimables** : vue Blade + `window.print()` (règle `@media print`), pas de dépendance obligatoire. Passer à dompdf si un vrai PDF serveur est requis.
 - **CSS — reset de liens vs boutons `<a>`** : le reset `.ukc-scope a { … }` a une spécificité (0,1,1) qui **bat** `.ukc-btn--primary { color:#fff }` (0,1,0) → les liens-boutons héritaient de `--ukc-text` (texte navy foncé) au lieu de leur couleur (glaring sur `--primary`/`--green` = **noir sur bleu/vert**). Corrigé en excluant les boutons du reset : `.ukc-scope a:not(.ukc-btn) { … }`. ⚠️ Règle générale : tout sélecteur de reset ciblant `a`/`button` doit exclure `.ukc-btn`, ou rester sous la spécificité des variantes de bouton. Diagnostic fiable : `getComputedStyle` en navigateur (le fond bleu s'appliquait mais pas la couleur → une autre règle gagnait sur `color`).
 - **Front servi par Vite dev** : `public/hot` présent = `@vite` pointe vers le serveur Vite (`http://[::1]:5173`, IPv6). Si le serveur est **éteint**, toutes les pages sont **non stylées** (CSS 404) — relancer `npm run dev` (ou `composer dev`). Vérifier le vrai rendu = navigateur, pas seulement la source (cf. piège CSS ci-dessus).
-- **Tests** : `RefreshDatabase` est activé globalement (`tests/Pest.php`), base `:memory:`. Des **helpers globaux** sont partagés entre fichiers de test (`openEdition()`, `verifiedAccount()` dans `AccountSubmissionTest`; `adminStaff()`, `seededSubmission()` dans `AdminSubmissionWorkflowTest`; `payEdition()` dans `PaymentTest`). Réutiliser plutôt que redéclarer (sinon « cannot redeclare »).
+- **Tests** : `RefreshDatabase` est activé globalement (`tests/Pest.php`), base `:memory:`. Les **fabriques partagées** `openEdition()`, `verifiedAccount()`, `adminStaff()`, `seededSubmission()` sont désormais centralisées dans **`tests/Pest.php`** (globales quel que soit l'ordre de chargement → suites exécutables en isolation). Ne pas les redéclarer dans un fichier de test (sinon « cannot redeclare »). `payEdition()` reste local à `PaymentTest`.
 
 ---
 

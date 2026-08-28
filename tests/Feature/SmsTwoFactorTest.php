@@ -1,11 +1,8 @@
 <?php
 
-use App\Livewire\Account\Login;
-use App\Livewire\Account\Security;
 use App\Models\Account;
 use App\Sms\SmsManager;
 use Illuminate\Support\Facades\Auth;
-use Livewire\Livewire;
 
 /** Faux fournisseur SMS : capture les messages au lieu de les envoyer. */
 function fakeSms(): SmsManager
@@ -46,18 +43,17 @@ it('active la 2FA par SMS : numéro → code → confirmation', function () {
     $fake = fakeSms();
     $account = verifiedAccountForSms();
 
-    $comp = Livewire::actingAs($account, 'account')->test(Security::class)
-        ->call('startSmsSetup')
-        ->set('phone', '+228 90 11 22 33')
-        ->call('sendSmsSetupCode')
-        ->assertHasNoErrors();
+    $this->actingAs($account, 'account')->post(route('account.security.sms.start'));
+    $this->actingAs($account, 'account')
+        ->post(route('account.security.sms.send'), ['phone' => '+228 90 11 22 33'])
+        ->assertSessionHasNoErrors();
 
     expect($fake->sent)->toHaveCount(1);
     expect($fake->sent[0]['to'])->toBe('+228 90 11 22 33');
 
-    $comp->set('code', otpFrom($fake))
-        ->call('confirmSmsSetup')
-        ->assertHasNoErrors();
+    $this->actingAs($account, 'account')
+        ->post(route('account.security.sms.confirm'), ['code' => otpFrom($fake)])
+        ->assertSessionHasNoErrors();
 
     $account->refresh();
     expect($account->hasSmsEnabled())->toBeTrue();
@@ -70,13 +66,11 @@ it('rejette un mauvais code à l’activation SMS', function () {
     $fake = fakeSms();
     $account = verifiedAccountForSms();
 
-    Livewire::actingAs($account, 'account')->test(Security::class)
-        ->call('startSmsSetup')
-        ->set('phone', '+22890000000')
-        ->call('sendSmsSetupCode')
-        ->set('code', '000000')
-        ->call('confirmSmsSetup')
-        ->assertHasErrors('code');
+    $this->actingAs($account, 'account')->post(route('account.security.sms.start'));
+    $this->actingAs($account, 'account')->post(route('account.security.sms.send'), ['phone' => '+22890000000']);
+    $this->actingAs($account, 'account')
+        ->post(route('account.security.sms.confirm'), ['code' => '000000'])
+        ->assertSessionHasErrors('code');
 
     expect($account->fresh()->hasSmsEnabled())->toBeFalse();
 });
@@ -90,17 +84,17 @@ it('exige un OTP SMS à la connexion et finalise après vérification', function
         'two_factor_confirmed_at' => now(),
     ])->save();
 
-    $comp = Livewire::test(Login::class)
-        ->set('email', 'awa@example.tg')
-        ->set('password', 'MotDePasse123!')
-        ->call('authenticate')
-        ->assertSet('twoFactor', true)
-        ->assertSet('method', 'sms');
+    $this->post(route('account.login.store'), [
+        'email' => 'awa@example.tg',
+        'password' => 'MotDePasse123!',
+    ])->assertRedirect(route('account.login')); // renvoi vers l'écran de second facteur
 
     expect($fake->sent)->toHaveCount(1); // OTP envoyé
 
-    $comp->set('code', otpFrom($fake))
-        ->call('confirmChallenge')
+    // L'écran de connexion affiche bien le second facteur (méthode SMS).
+    $this->get(route('account.login'))->assertOk()->assertSee('Vérification en deux étapes');
+
+    $this->post(route('account.login.confirm'), ['code' => otpFrom($fake)])
         ->assertRedirect(route('account.dashboard'));
 
     expect(Auth::guard('account')->check())->toBeTrue();
@@ -116,13 +110,11 @@ it('active SMS désactive le TOTP (méthode exclusive)', function () {
     ])->save();
     expect($account->hasTotpEnabled())->toBeTrue();
 
-    Livewire::actingAs($account, 'account')->test(Security::class)
-        ->call('startSmsSetup')
-        ->set('phone', '+22890000000')
-        ->call('sendSmsSetupCode')
-        ->set('code', otpFrom($fake))
-        ->call('confirmSmsSetup')
-        ->assertHasNoErrors();
+    $this->actingAs($account, 'account')->post(route('account.security.sms.start'));
+    $this->actingAs($account, 'account')->post(route('account.security.sms.send'), ['phone' => '+22890000000']);
+    $this->actingAs($account, 'account')
+        ->post(route('account.security.sms.confirm'), ['code' => otpFrom($fake)])
+        ->assertSessionHasNoErrors();
 
     $account->refresh();
     expect($account->hasTotpEnabled())->toBeFalse();

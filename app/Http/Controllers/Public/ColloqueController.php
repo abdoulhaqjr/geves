@@ -10,10 +10,9 @@ use Illuminate\Contracts\View\View;
  * Page publique d'une édition de colloque (accessible seulement si publiée).
  *
  * Vue statique en lecture seule rendue par contrôleur + Blade : la page ne porte
- * aucune interactivité serveur (elle est donc cacheable en HTTP, sans snapshot
- * Livewire). Les parties dynamiques restent des îlots — le formulaire de contact
- * est un composant Livewire imbriqué (`<livewire:public.contact-form>`), le
- * compte à rebours et le scrollspy sont gérés côté client par Alpine.
+ * aucune interactivité serveur (elle est donc cacheable en HTTP). Le formulaire
+ * de contact est un simple POST (`public.contact`) ; le compte à rebours et le
+ * scrollspy sont gérés côté client par Alpine.
  */
 class ColloqueController extends Controller
 {
@@ -38,6 +37,11 @@ class ColloqueController extends Controller
             'intro' => $settings['intro'] ?? null,
             'tracks' => $settings['tracks'] ?? [],
             'fees' => $settings['fees'] ?? [],
+            'feesNote' => $settings['fees_note'] ?? null,
+            'stats' => $settings['stats'] ?? [],
+            'workshops' => $settings['workshops'] ?? [],
+            'speakers' => $settings['speakers'] ?? [],
+            'map' => $settings['map'] ?? [],
             'partners' => $settings['partners'] ?? [],
             'faq' => $settings['faq'] ?? [],
             'contact' => $settings['contact'] ?? [],

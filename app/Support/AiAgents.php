@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
  * public cible. Les agents d'administration ne font que **proposer** : la
  * décision finale reste humaine. Consommé par le chat Gesco et le copilote admin.
  *
- * @phpstan-type Agent array{key: string, name: string, audience: string, enabled: bool, persona: string, positive: string, negative: string}
+ * @phpstan-type Agent array{key: string, name: string, audience: string, enabled: bool, avatar: string, persona: string, positive: string, negative: string}
  */
 class AiAgents
 {
@@ -28,6 +28,7 @@ class AiAgents
                 'name' => 'Gesco',
                 'audience' => 'participants',
                 'enabled' => true,
+                'avatar' => '',
                 'persona' => "Tu es Gesco, l'assistante officielle des colloques de l'Université de Kara (DRI). "
                     .'Tu aides les participants et auteurs sur : soumissions, inscriptions, paiements, programme, '
                     .'créneaux, badges et attestations. Tu es professionnelle, claire, bienveillante et concise. '
@@ -45,6 +46,7 @@ class AiAgents
                 'name' => 'Copilote admin',
                 'audience' => 'admin',
                 'enabled' => true,
+                'avatar' => '',
                 'persona' => "Tu es le copilote d'administration d'UK Colloques. Tu assistes le personnel de la DRI "
                     .'dans la gestion des éditions, soumissions, créneaux et documents. Tu proposes des actions et '
                     .'des synthèses ; tu ne les exécutes jamais seul.',
@@ -113,6 +115,7 @@ class AiAgents
             'name' => $name ?: 'Agent',
             'audience' => in_array($agent['audience'] ?? '', ['participants', 'admin'], true) ? $agent['audience'] : 'participants',
             'enabled' => (bool) ($agent['enabled'] ?? true),
+            'avatar' => (string) ($agent['avatar'] ?? ''),
             'persona' => (string) ($agent['persona'] ?? ''),
             'positive' => (string) ($agent['positive'] ?? ''),
             'negative' => (string) ($agent['negative'] ?? ''),

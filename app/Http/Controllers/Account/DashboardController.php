@@ -1,0 +1,107 @@
+<?php
+
+namespace App\Http\Controllers\Account;
+
+use App\Http\Controllers\Controller;
+use App\Models\Attestation;
+use App\Models\Edition;
+use App\Models\EventSession;
+use App\Models\Participant;
+use App\Models\Payment;
+use App\Models\Submission;
+use App\Support\AccountActivity;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
+
+/**
+ * Tableau de bord du participant (Blade, fidèle au mockup espace-participant.html) :
+ * parcours (stepper), prochaine étape, et blocs personnels — communications,
+ * paiements & reçus, attestations, documents, sessions en direct, rôles dérivés.
+ * Lecture seule → Blade.
+ */
+class DashboardController extends Controller
+{
+    public function __invoke(): View
+    {
+        $account = Auth::guard('account')->user();
+
+        $participantIds = Participant::where('account_id', $account->id)->pluck('id');
+
+        // Rôles et activité dérivés (inter-éditions, par rapprochement d'e-mail).
+        $activity = new AccountActivity($account);
+
+        // Éditions auxquelles le compte participe → leurs documents (médias + livret).
+        $editionIds = Participant::where('account_id', $account->id)
+            ->pluck('edition_id')->unique()->filter();
+
+        // Sessions en direct des éditions du compte qu'il peut rejoindre.
+        $liveSessions = EventSession::query()->live()
+            ->whereIn('edition_id', $editionIds)
+            ->with('edition')
+            ->get()
+            ->filter(fn (EventSession $s) => $s->canJoin($account))
+            ->values();
+
+        $editionDocuments = Edition::whereIn('id', $editionIds)
+            ->with(['media' => fn ($q) => $q->orderBy('ordre')->orderBy('id')])
+            ->latest('id')
+            ->get()
+            ->map(fn (Edition $e) => [
+                'edition' => $e,
+                'media' => $e->media,
+                'hasBooklet' => $e->submissions()
+                    ->where('revision_of', 0)->where('status', 'accepted')->exists(),
+            ])
+            ->filter(fn ($d) => $d['media']->isNotEmpty() || $d['hasBooklet'])
+            ->values();
+
+        // Édition où une communication est acceptée et les frais non encore réglés.
+        $payable = Participant::whereIn('id', $participantIds)
+            ->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted'))
+            ->whereDoesntHave('payments', fn ($q) => $q->where('status', 'paid'))
+            ->with('edition')
+            ->first();
+
+        $openEdition = Edition::where('status', 'open')
+            ->where('submission_open', true)
+            ->latest('id')
+            ->first();
+
+        // Indicateurs synthétiques (rangée de cartes KPI du mockup) :
+        // communications, profil, paiement, jours restants avant l'échéance.
+        $commsCount = Submission::whereIn('participant_id', $participantIds)
+            ->where('revision_of', 0)->count();
+        $hasPaid = Payment::whereIn('participant_id', $participantIds)
+            ->where('status', 'paid')->exists();
+        $deadlineEdition = $payable?->edition ?? $openEdition;
+        $deadline = $deadlineEdition?->submission_deadline;
+        $daysRemaining = $deadline && $deadline->isFuture()
+            ? (int) ceil(now()->diffInDays($deadline, false))
+            : null;
+
+        return view('account.dashboard', [
+            'account' => $account,
+            'openEdition' => $openEdition,
+            'payableEdition' => $payable?->edition,
+            'kpi' => [
+                'communications' => $commsCount,
+                'profileComplete' => $account->hasVerifiedEmail() && filled($account->affiliation),
+                'hasPaid' => $hasPaid,
+                'daysRemaining' => $daysRemaining,
+                'deadline' => $deadline,
+            ],
+            'submissions' => Submission::whereIn('participant_id', $participantIds)
+                ->where('revision_of', 0)->with('edition')->latest('id')->limit(5)->get(),
+            'payments' => Payment::whereIn('participant_id', $participantIds)
+                ->where('status', 'paid')->with('edition')->latest('id')->get(),
+            'attestations' => Attestation::whereIn('participant_id', $participantIds)
+                ->where('revoked', false)->with('edition')->latest('id')->get(),
+            'editionDocuments' => $editionDocuments,
+            'liveSessions' => $liveSessions,
+            'roles' => $activity->roles(),
+            'moderatedSessions' => $activity->moderatedSessions(),
+            'reportedSessions' => $activity->reportedSessions(),
+            'committees' => $activity->committees(),
+        ]);
+    }
+}

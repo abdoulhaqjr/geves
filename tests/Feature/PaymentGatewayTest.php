@@ -1,6 +1,5 @@
 <?php
 
-use App\Livewire\Account\Payment\Pay;
 use App\Models\Account;
 use App\Models\Colloque;
 use App\Models\Payment;
@@ -10,7 +9,6 @@ use Firebase\JWT\JWT;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
-use Livewire\Livewire;
 
 function onlineSetup(): array
 {
@@ -117,7 +115,7 @@ it('CashPay : le retour navigateur vérifie et confirme', function () {
     expect($payment->fresh()->status)->toBe('paid');
 });
 
-it('CashPay : le composant Pay initie et redirige', function () {
+it('CashPay : la page de paiement initie et redirige', function () {
     configureCashpay();
     [$edition, $account, $participant] = onlineSetup();
 
@@ -127,9 +125,8 @@ it('CashPay : le composant Pay initie et redirige', function () {
         '*/orders' => Http::response(['order_reference' => 'REF-9', 'bill_url' => 'https://lk.semoa.tg/pay9'], 201),
     ]);
 
-    Livewire::actingAs($account, 'account')
-        ->test(Pay::class, ['edition' => $edition])
-        ->call('pay', 'cashpay')
+    $this->actingAs($account, 'account')
+        ->post(route('account.payment.pay', $edition), ['gateway' => 'cashpay'])
         ->assertRedirect('https://lk.semoa.tg/pay9');
 
     expect(Payment::where('gateway', 'cashpay')->first()->gateway_ref)->toBe('REF-9');

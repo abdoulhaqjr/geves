@@ -1,3 +1,8 @@
+import Alpine from 'alpinejs';
+
+// Alpine est désormais une dépendance autonome (Livewire retiré du projet).
+window.Alpine = Alpine;
+
 // Interactions du site public (menu mobile, galerie/lightbox, filtres).
 import './public.js';
 
@@ -12,22 +17,70 @@ if (document.getElementById('badge-scanner')) {
     import('./scanner.js').then((m) => m.startBadgeScanner()).catch(() => {});
 }
 
-// Tableau de bord admin : charge Chart.js quand des graphiques sont présents.
-// Réexécuté après une navigation Livewire (wire:navigate) — l'admin en use.
-function initDashboardCharts() {
-    if (document.getElementById('dashboardData')) {
-        import('./charts.js').then((m) => m.startDashboardCharts()).catch(() => {});
-    }
+// Tableau de bord admin & rapports : charge Chart.js quand des graphiques sont
+// présents (chaque page est un rendu serveur complet → init au chargement).
+if (document.getElementById('dashboardData')) {
+    import('./charts.js').then((m) => m.startDashboardCharts()).catch(() => {});
 }
-initDashboardCharts();
-document.addEventListener('livewire:navigated', initDashboardCharts);
-// Rafraîchissement à la demande (ex. page Rapports : changement d'édition).
-document.addEventListener('livewire:init', () => {
-    window.Livewire?.on('charts-refresh', () => setTimeout(initDashboardCharts, 50));
-});
 
-// Alpine est fourni par Livewire 4. On enregistre nos composants au démarrage.
+// Enregistrement de nos composants Alpine (l'évènement est émis par Alpine.start()).
 document.addEventListener('alpine:init', () => {
+    // Assistante Gesco (widget flottant + page dédiée) : conversation côté client,
+    // chaque tour appelle l'endpoint JSON /gesco/demander. Aucune action serveur
+    // n'est déclenchée par l'IA — elle informe seulement.
+    window.Alpine.data('gescoChat', (seed = '', endpoint = '/gesco/demander') => ({
+        messages: [],
+        input: '',
+        sending: false,
+        endpoint,
+        init() {
+            this.messages = [{ role: 'bot', text: seed || 'Bonjour, je suis Gesco.' }];
+            this.scrollSoon();
+        },
+        ask(text) {
+            this.input = text;
+            this.send();
+        },
+        async send() {
+            const question = this.input.trim();
+            if (!question || this.sending) return;
+
+            const history = this.messages.slice();
+            this.messages.push({ role: 'user', text: question });
+            this.input = '';
+            this.sending = true;
+            this.scrollSoon();
+
+            try {
+                const res = await fetch(this.endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    },
+                    body: JSON.stringify({ question, history }),
+                });
+                const data = await res.json().catch(() => ({}));
+                this.messages.push({
+                    role: 'bot',
+                    text: data.answer || 'Une erreur est survenue. Réessayez dans un instant.',
+                });
+            } catch (e) {
+                this.messages.push({ role: 'bot', text: 'Connexion impossible. Vérifiez votre réseau et réessayez.' });
+            } finally {
+                this.sending = false;
+                this.scrollSoon();
+            }
+        },
+        scrollSoon() {
+            this.$nextTick(() => {
+                const log = this.$refs.log;
+                if (log) log.scrollTop = log.scrollHeight;
+            });
+        },
+    }));
+
     // Surbrillance de la section active dans la navigation (scrollspy).
     window.Alpine.data('ukcScrollspy', () => ({
         observer: null,
@@ -44,8 +97,15 @@ document.addEventListener('alpine:init', () => {
             this.observer = new IntersectionObserver((entries) => {
                 entries.forEach((entry) => {
                     if (!entry.isIntersecting) return;
-                    links.forEach((l) => l.classList.remove('spy-active'));
-                    map.get(entry.target)?.classList.add('spy-active');
+                    links.forEach((l) => {
+                        l.classList.remove('spy-active');
+                        l.removeAttribute('aria-current');
+                    });
+                    const active = map.get(entry.target);
+                    if (active) {
+                        active.classList.add('spy-active');
+                        active.setAttribute('aria-current', 'true');
+                    }
                 });
             }, { rootMargin: '-45% 0px -50% 0px', threshold: 0 });
 
@@ -56,8 +116,195 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
+    // Wizard de soumission (sans Livewire) : navigation d'étapes, co-auteurs
+    // répétables, mots-clés « tags », récapitulatif. Les valeurs vivent côté
+    // client et sont soumises via un POST multipart classique.
+    window.Alpine.data('submissionWizard', (initial = {}) => ({
+        step: initial.errorStep || 1,
+        title: initial.title || '',
+        track: initial.track || '',
+        type: initial.type || 'oral',
+        keywords: Array.isArray(initial.keywords) ? initial.keywords : [],
+        kwDraft: '',
+        coauthors: Array.isArray(initial.coauthors) ? initial.coauthors : [],
+
+        get keywordsString() {
+            return this.keywords.join(', ');
+        },
+        addTag() {
+            const v = this.kwDraft.trim().replace(/,+$/, '').trim();
+            if (v && !this.keywords.includes(v)) this.keywords.push(v);
+            this.kwDraft = '';
+        },
+        removeTag(i) {
+            this.keywords.splice(i, 1);
+        },
+        tagBackspace() {
+            if (this.kwDraft === '' && this.keywords.length) this.keywords.pop();
+        },
+        addCoauthor() {
+            this.coauthors.push({ name: '', email: '', affiliation: '', grade: '' });
+        },
+        removeCoauthor(i) {
+            this.coauthors.splice(i, 1);
+        },
+        get coauthorCount() {
+            return this.coauthors.filter((c) => (c.name || '').trim() || (c.email || '').trim()).length;
+        },
+        abstractFilled() {
+            const el = document.querySelector('input[name="abstract"]');
+            return !!(el && el.value.replace(/<[^>]*>/g, '').trim().length);
+        },
+        fileChosen() {
+            const el = document.getElementById('file');
+            return !!(el && el.files && el.files.length);
+        },
+    }));
+
+    // Pointage des badges (admin) : recherche + check-in par fetch (JSON) ;
+    // la caméra reste gérée par scanner.js qui émet un évènement « scan ».
+    window.Alpine.data('badgeScan', (checkedCount = 0, totalCount = 0) => ({
+        found: null,
+        message: '',
+        messageType: '',
+        recent: [],
+        code: '',
+        checkedCount,
+        totalCount,
+        _csrf() {
+            return document.querySelector('meta[name="csrf-token"]')?.content || '';
+        },
+        async lookup(raw) {
+            const text = String(raw ?? this.code).trim();
+            this.code = '';
+            if (!text) return;
+            try {
+                const res = await fetch('/admin/pointage/rechercher', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this._csrf() },
+                    body: JSON.stringify({ code: text }),
+                });
+                const data = await res.json();
+                if (data.error) { this.found = null; this.flash(data.error, 'err'); }
+                else if (data.found) { this.found = data.found; this.message = ''; }
+            } catch (e) {
+                this.flash('Recherche impossible. Réessayez.', 'err');
+            }
+        },
+        async checkIn() {
+            if (!this.found) return;
+            try {
+                const res = await fetch('/admin/pointage/' + this.found.id + '/pointer', {
+                    method: 'POST',
+                    headers: { Accept: 'application/json', 'X-CSRF-TOKEN': this._csrf() },
+                });
+                const data = await res.json();
+                this.found = data.found;
+                this.flash(data.message, 'ok');
+                if (data.newlyCheckedIn) {
+                    this.checkedCount++;
+                    this.recent.unshift(data.recentEntry);
+                    this.recent = this.recent.slice(0, 8);
+                }
+            } catch (e) {
+                this.flash('Pointage impossible. Réessayez.', 'err');
+            }
+        },
+        clearFound() { this.found = null; this.message = ''; },
+        flash(m, t) { this.message = m; this.messageType = t; },
+    }));
+
+    // Éditeur d'agents IA (admin) : onglets, ajout/suppression côté client ;
+    // les avatars sont téléversés à l'enregistrement du formulaire.
+    window.Alpine.data('agentsEditor', (agents = []) => ({
+        agents: Array.isArray(agents) ? agents : [],
+        active: 0,
+        addAgent() {
+            this.agents.push({
+                key: 'agent-' + Math.random().toString(36).slice(2, 6),
+                name: 'Nouvel agent', audience: 'participants', enabled: true,
+                avatar: '', persona: '', positive: '', negative: '',
+            });
+            this.active = this.agents.length - 1;
+        },
+        removeAgent(i) {
+            this.agents.splice(i, 1);
+            this.active = Math.max(0, Math.min(this.active, this.agents.length - 1));
+        },
+    }));
+
+    // Listes répétables du formulaire d'édition (admin) : tarifs, comités,
+    // partenaires, FAQ — ajout/suppression côté client.
+    window.Alpine.data('editionArrays', (init = {}) => ({
+        fees: Array.isArray(init.fees) ? init.fees : [],
+        committees: Array.isArray(init.committees) ? init.committees : [],
+        partners: Array.isArray(init.partners) ? init.partners : [],
+        faq: Array.isArray(init.faq) ? init.faq : [],
+        addFee() { this.fees.push({ label: '', amount: '' }); },
+        removeFee(i) { this.fees.splice(i, 1); },
+        addCommittee() { this.committees.push({ role: 'organisation', person_name: '', person_title: '', institution: '', photo_url: '' }); },
+        removeCommittee(i) { this.committees.splice(i, 1); },
+        addPartner() { this.partners.push({ name: '', url: '', logo_url: '', level: '' }); },
+        removePartner(i) { this.partners.splice(i, 1); },
+        addFaq() { this.faq.push({ question: '', answer: '' }); },
+        removeFaq(i) { this.faq.splice(i, 1); },
+    }));
+
+    // Éditeur de champs personnalisés du formulaire de soumission (admin), sans
+    // Livewire : ajout / suppression / réordonnancement côté client.
+    window.Alpine.data('formEditor', (custom = []) => ({
+        custom: Array.isArray(custom) ? custom : [],
+        add() {
+            this.custom.push({
+                key: 'custom_' + Math.random().toString(36).slice(2, 8),
+                label: '', type: 'text', required: false, help: '', options_text: '',
+            });
+        },
+        remove(i) {
+            this.custom.splice(i, 1);
+        },
+        move(i, dir) {
+            const j = i + dir;
+            if (j < 0 || j >= this.custom.length) return;
+            [this.custom[i], this.custom[j]] = [this.custom[j], this.custom[i]];
+        },
+    }));
+
+    // Autocomplétion de l'affiliation via HAL (endpoint JSON), sans Livewire.
+    window.Alpine.data('ukcAffiliation', (enabled = false) => ({
+        enabled,
+        suggestions: [],
+        open: false,
+        timer: null,
+        onInput() {
+            if (!this.enabled) return;
+            clearTimeout(this.timer);
+            const q = this.$refs.input.value.trim();
+            if (q.length < 3) { this.suggestions = []; this.open = false; return; }
+            this.timer = setTimeout(() => this.search(q), 400);
+        },
+        async search(q) {
+            try {
+                const res = await fetch('/mon-profil/affiliations?q=' + encodeURIComponent(q), {
+                    headers: { Accept: 'application/json' },
+                });
+                const data = await res.json();
+                this.suggestions = Array.isArray(data) ? data : [];
+                this.open = this.suggestions.length > 0;
+            } catch (e) {
+                this.suggestions = [];
+                this.open = false;
+            }
+        },
+        choose(label) {
+            this.$refs.input.value = label;
+            this.suggestions = [];
+            this.open = false;
+        },
+    }));
+
     // Champ de mots-clés « tags » (style Select2, multi) — sans dépendance.
-    // Synchronise la liste vers une propriété Livewire (chaîne « a, b, c »).
+    // La liste est synchronisée vers un input caché « a, b, c » côté vue.
     window.Alpine.data('ukcTags', (initial = '') => ({
         tags: String(initial || '').split(',').map((t) => t.trim()).filter(Boolean),
         draft: '',
@@ -75,12 +322,12 @@ document.addEventListener('alpine:init', () => {
     }));
 
     // Éditeur de texte enrichi minimal (WYSIWYG) — gras/italique/souligné/listes.
-    // Sync le HTML vers une propriété Livewire ; le bloc est en wire:ignore.
-    window.Alpine.data('ukcEditor', (initial = '', wireProp = 'abstract') => ({
+    // Sync le HTML vers un input caché (soumission de formulaire classique).
+    window.Alpine.data('ukcEditor', (initial = '') => ({
         count: 0,
         init() {
             this.$refs.area.innerHTML = initial || '';
-            this.updateCount();
+            this.sync();
         },
         cmd(command) {
             this.$refs.area.focus();
@@ -88,7 +335,7 @@ document.addEventListener('alpine:init', () => {
             this.sync();
         },
         sync() {
-            this.$wire.set(wireProp, this.$refs.area.innerHTML, false);
+            if (this.$refs.hidden) this.$refs.hidden.value = this.$refs.area.innerHTML;
             this.updateCount();
         },
         updateCount() {
@@ -130,19 +377,20 @@ document.addEventListener('alpine:init', () => {
         _onMove: null,
         _onUp: null,
 
+        cfg: {},
+        status: '',
         init() {
+            this.cfg = config || {};
             this.setLayout(config.layout, config.vars);
             this._fit = () => this.fit();
             window.addEventListener('resize', this._fit);
-            if (window.Livewire) {
-                window.Livewire.on('layout-updated', (payload) => {
-                    const p = Array.isArray(payload) ? payload[0] : payload;
-                    if (p && p.layout) this.setLayout(p.layout, p.vars);
-                });
-            }
+            // Mise à jour du canvas poussée par la génération IA (évènement fenêtre).
+            this._onLayout = (e) => { if (e.detail && e.detail.layout) this.setLayout(e.detail.layout, e.detail.vars); };
+            window.addEventListener('layout-updated', this._onLayout);
         },
         destroy() {
             window.removeEventListener('resize', this._fit);
+            window.removeEventListener('layout-updated', this._onLayout);
         },
 
         setLayout(layout, vars) {
@@ -255,8 +503,34 @@ document.addEventListener('alpine:init', () => {
             this.layout.elements.forEach((el) => { if (el.type === 'rect') el.color = color; });
         },
 
-        save() {
-            this.$wire.saveLayout(JSON.parse(JSON.stringify(this.layout)));
+        async save() {
+            if (!this.cfg.saveUrl) return;
+            try {
+                const res = await fetch(this.cfg.saveUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json', Accept: 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    },
+                    body: JSON.stringify({
+                        edition_id: this.cfg.edition_id, kind: this.cfg.kind, type: this.cfg.type,
+                        layout: JSON.parse(JSON.stringify(this.layout)),
+                    }),
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    if (data.layout) this.setLayout(data.layout, this.vars);
+                    this.status = 'Modèle enregistré.';
+                    setTimeout(() => { this.status = ''; }, 2500);
+                } else {
+                    this.status = data.error || 'Enregistrement impossible.';
+                }
+            } catch (e) {
+                this.status = 'Enregistrement impossible.';
+            }
         },
     }));
 });
+
+// Démarre Alpine une fois tous les composants enregistrés.
+Alpine.start();

@@ -5,7 +5,7 @@
     <p>Vos informations, préférences de notification et sécurité (mot de passe, double authentification).</p>
 </div>
 <nav class="account-nav">
-    <a href="{{ route('account.profile') }}" wire:navigate @class(['active' => request()->routeIs('account.profile')])>Préférences</a>
-    <a href="{{ route('account.notifications') }}" wire:navigate @class(['active' => request()->routeIs('account.notifications')])>Notifications</a>
-    <a href="{{ route('account.security') }}" wire:navigate @class(['active' => request()->routeIs('account.security')])>Sécurité</a>
+    <a href="{{ route('account.profile') }}" @class(['active' => request()->routeIs('account.profile')])>Préférences</a>
+    <a href="{{ route('account.notifications') }}" @class(['active' => request()->routeIs('account.notifications')])>Notifications</a>
+    <a href="{{ route('account.security') }}" @class(['active' => request()->routeIs('account.security')])>Sécurité</a>
 </nav>
