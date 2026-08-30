@@ -9,7 +9,7 @@
     $atelierRoomName = fn ($atelier) => $atelierRooms[(string) $atelier->id] ?? ($atelier->sessions->firstWhere('room', '!=', null)?->room);
 @endphp
 
-<x-layouts.admin title="Créneaux" subtitle="Créneaux de passage · planning">
+<x-layouts.admin title="Créneaux de passage" subtitle="Ateliers · Sessions · Planning">
     <div class="admin-page admin-program"
          x-data="{
             tab: 'planning',
@@ -20,6 +20,7 @@
             openSession(s) { this.form = s ? {...s} : { id:'', type:'atelier', atelier_id:'', label:'', day:'', start:'', end:'', room:'', moderator:'', rapporteur:'' }; this.modal='session'; },
             openSlot(s) { this.form = s ? {...s} : { id:'', session_id:'', day:'', start:'', room:'', submission_id:'', title:'' }; this.modal='slot'; },
             openSpace() { this.form = { name:'', capacity:'', building:'', note:'' }; this.modal='space'; },
+            openRoom(a) { this.form = { ...a }; this.modal='room'; },
          }"
          @keydown.escape.window="modal=null">
 
@@ -186,6 +187,8 @@
                             <div class="row-actions">
                                 <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm"
                                         @click="openAtelier({ id:{{ $atelier->id }}, title:@js($atelier->title), tracks:@js($atelier->tracks ?: []), room:@js($room ?: '') })">Modifier</button>
+                                <button type="button" class="{{ $room ? 'ukc-btn ukc-btn--ghost' : 'ukc-btn' }} ukc-btn--sm"
+                                        @click="openRoom({ id:{{ $atelier->id }}, title:@js($atelier->title), room:@js($room ?: '') })">{{ $room ? 'Changer la salle' : 'Associer une salle' }}</button>
                                 <form method="POST" action="{{ route('admin.program.ateliers.destroy', $atelier) }}" onsubmit="return confirm('Supprimer cet atelier ? Ses sessions deviendront plénières.')">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="ukc-btn ukc-btn--danger ukc-btn--sm">Supprimer</button>
@@ -196,6 +199,27 @@
                         <div class="ukc-empty"><h3>Aucun atelier</h3><p>Créez un premier atelier pour organiser les sessions.</p></div>
                     @endforelse
                 </div>
+
+                {{-- Lien avec le programme de l'édition (fidèle au mockup). --}}
+                @if ($edition)
+                    <div class="ukc-card">
+                        <h2 style="font-size:1rem;font-weight:800;margin-bottom:8px;">Lien avec le programme de l’édition</h2>
+                        <div class="desc" style="font-size:13px;color:var(--ukc-muted);margin-bottom:14px;">
+                            Le planning et les sessions s’appuient sur le programme défini dans
+                            <a href="{{ route('admin.editions.edit', $edition) }}?tab=programme" style="color:var(--ukc-blue);font-weight:600;">Édition → Programme</a>
+                            (jours, horaires, type Session / Atelier, intitulés).
+                        </div>
+                        <div class="settings-box">
+                            <h3>Création automatique des sessions</h3>
+                            <p style="font-size:13px;color:var(--ukc-muted);margin-bottom:10px;line-height:1.45;">
+                                Le système lit les lignes du programme de type « Session » / « Atelier » dont l’axe ou l’intitulé correspond
+                                et génère les sessions (créneaux horaires) dans le planning. Les modérateurs et rapporteurs restent à compléter.
+                            </p>
+                            <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.editions.edit', $edition) }}?tab=programme">Ouvrir le programme de l’édition</a>
+                        </div>
+                        <p class="ukc-hint" style="font-size:12px;color:var(--ukc-light);margin-top:12px;">La gestion détaillée des salles (amphi, A/B/C, hall) se fait dans l’onglet <strong>Espaces</strong>.</p>
+                    </div>
+                @endif
             </div>
 
             {{-- ============================ SESSIONS ============================ --}}
@@ -301,12 +325,22 @@
                     </h2>
                     <div class="desc" style="font-size:13px;color:var(--ukc-muted);margin-bottom:14px;">Amphithéâtres, salles et hall posters. Un espace peut être associé à un atelier.</div>
 
+                    @php($linkedRooms = collect($atelierRooms)->values()->all())
                     @forelse ($spaces as $i => $space)
+                        @php($isLinked = in_array($space['name'], $linkedRooms, true))
                         <div class="entity-card">
-                            <h3>{{ $space['name'] }} @if (! empty($space['capacity']))<span class="ukc-pill ukc-pill--info">Cap. {{ $space['capacity'] }}</span>@endif</h3>
+                            <h3>
+                                {{ $space['name'] }}
+                                @if ($isLinked)<span class="ukc-pill ukc-pill--info">Liée</span>
+                                @else<span class="ukc-pill ukc-pill--ok">Actif</span>@endif
+                            </h3>
                             <div class="meta">
-                                @if (! empty($space['building'])){{ $space['building'] }}@endif
-                                @if (! empty($space['note'])) · {{ $space['note'] }}@endif
+                                @php($bits = array_filter([
+                                    ! empty($space['capacity']) ? 'Capacité '.$space['capacity'] : null,
+                                    $space['building'] ?? null,
+                                    $space['note'] ?? null,
+                                ]))
+                                {{ implode(' · ', $bits) ?: '—' }}
                             </div>
                             <div class="row-actions">
                                 <form method="POST" action="{{ route('admin.program.spaces.destroy', $i) }}?edition_id={{ $edition_id }}" onsubmit="return confirm('Supprimer cet espace ?')">
@@ -403,6 +437,19 @@
                     </form>
 
                     <div class="settings-box" style="margin-top:16px;">
+                        <h3>Générer les créneaux</h3>
+                        <p style="font-size:13px;color:var(--ukc-muted);margin-bottom:10px;line-height:1.45;">
+                            Crée des créneaux libres à partir des sessions horodatées (découpage par la durée d'une communication orale, réglée dans « Paramètres créneaux »). Les sessions déjà pourvues sont ignorées.
+                        </p>
+                        <form method="POST" action="{{ route('admin.program.slots.generate') }}?edition_id={{ $edition_id }}">
+                            @csrf
+                            <button type="submit" class="ukc-btn ukc-btn--sm">
+                                <x-ukc.icon name="plus" :size="15" /> Générer les créneaux depuis les sessions
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="settings-box" style="margin-top:16px;">
                         <h3>Lancer une passe maintenant</h3>
                         <form method="POST" action="{{ route('admin.program.slots.auto') }}?edition_id={{ $edition_id }}">
                             @csrf
@@ -413,6 +460,9 @@
                                 </button>
                                 <span style="font-size:12.5px;color:var(--ukc-muted);">{{ $stats['toPlan'] }} à planifier · {{ $creneaux->where('submission_id', 0)->count() }} créneau(x) libre(s)</span>
                             </div>
+                            @if ($creneaux->where('submission_id', 0)->isEmpty())
+                                <p class="ukc-hint" style="font-size:12px;color:var(--ukc-light);margin-top:8px;">Aucun créneau libre : générez-les d'abord ci-dessus, ou ajoutez-en manuellement.</p>
+                            @endif
                         </form>
                     </div>
                 </div>

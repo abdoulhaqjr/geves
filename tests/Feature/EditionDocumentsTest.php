@@ -107,5 +107,5 @@ it('refuse le livret à un compte non participant', function () {
 
 it('refuse la gestion des documents aux invités', function () {
     $edition = openEdition();
-    $this->get(route('admin.editions.documents', $edition))->assertRedirect(route('admin.login'));
+    $this->get(route('admin.editions.documents', $edition))->assertRedirect(route('account.login'));
 });

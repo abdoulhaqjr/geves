@@ -76,7 +76,7 @@ it('vérifie l’adresse via le lien signé', function () {
         'id' => $u->id, 'hash' => sha1($u->email),
     ]);
 
-    $this->get($url)->assertRedirect(route('admin.login'));
+    $this->get($url)->assertRedirect(route('account.login'));
     expect($u->fresh()->hasVerifiedEmail())->toBeTrue();
 });
 

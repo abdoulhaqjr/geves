@@ -168,10 +168,9 @@ Route::middleware(['auth:account', StampAccountSession::class])->group(function 
 |--------------------------------------------------------------------------
 */
 Route::prefix('admin')->group(function () {
-    Route::middleware('guest:web')->group(function () {
-        Route::get('/connexion', [AdminLoginController::class, 'create'])->name('admin.login');
-        Route::post('/connexion', [AdminLoginController::class, 'store'])->name('admin.login.store');
-    });
+    // Page de connexion unique : /admin/connexion redirige vers /connexion
+    // (le repli staff est géré par le contrôleur de connexion participant).
+    Route::get('/connexion', [AdminLoginController::class, 'create'])->name('admin.login');
 
     // Vérification d'e-mail du staff (lien signé, sans session requise).
     Route::get('/verifier-email/{id}/{hash}', App\Http\Controllers\Admin\EmailVerificationController::class)
@@ -191,6 +190,7 @@ Route::prefix('admin')->group(function () {
             Route::get('/editions/creer', [EditionFormController::class, 'create'])->name('admin.editions.create');
             Route::post('/editions/creer', [EditionFormController::class, 'store'])->name('admin.editions.store');
             Route::post('/editions/ia-assist', [EditionFormController::class, 'aiAssist'])->name('admin.editions.ai-assist');
+            Route::post('/editions/ia-assist-json', [EditionFormController::class, 'aiAssistJson'])->name('admin.editions.ai-assist-json');
             Route::get('/editions/{edition}/modifier', [EditionFormController::class, 'edit'])->name('admin.editions.edit');
             Route::put('/editions/{edition}/modifier', [EditionFormController::class, 'update'])->name('admin.editions.update');
             Route::get('/editions/{edition}/formulaire', [SubmissionFormController::class, 'edit'])->name('admin.editions.form');
@@ -266,6 +266,7 @@ Route::prefix('admin')->group(function () {
             Route::get('/programme', [ProgramController::class, 'sessions'])->name('admin.program.sessions');
             Route::post('/programme/ateliers', [ProgramController::class, 'storeAtelier'])->name('admin.program.ateliers.store');
             Route::put('/programme/ateliers/{atelier}', [ProgramController::class, 'updateAtelier'])->name('admin.program.ateliers.update');
+            Route::post('/programme/ateliers/{atelier}/salle', [ProgramController::class, 'assignAtelierRoom'])->name('admin.program.ateliers.room');
             Route::delete('/programme/ateliers/{atelier}', [ProgramController::class, 'deleteAtelier'])->name('admin.program.ateliers.destroy');
             Route::post('/programme/sessions', [ProgramController::class, 'storeSession'])->name('admin.program.sessions.store');
             Route::put('/programme/sessions/{session}', [ProgramController::class, 'updateSession'])->name('admin.program.sessions.update');
@@ -278,6 +279,7 @@ Route::prefix('admin')->group(function () {
             Route::delete('/programme/creneaux/{slot}', [ProgramController::class, 'deleteSlot'])->name('admin.program.slots.destroy');
             Route::put('/programme/creneaux/{slot}', [ProgramController::class, 'updateSlot'])->name('admin.program.slots.update');
             Route::post('/programme/creneaux/{slot}/assigner', [ProgramController::class, 'assignSlot'])->name('admin.program.slots.assign');
+            Route::post('/programme/creneaux/generer', [ProgramController::class, 'generateSlots'])->name('admin.program.slots.generate');
             Route::post('/programme/affectation-auto', [ProgramController::class, 'autoAssignSlots'])->name('admin.program.slots.auto');
             Route::post('/programme/config', [ProgramController::class, 'saveProgramConfig'])->name('admin.program.config');
             Route::post('/programme/espaces', [ProgramController::class, 'storeSpace'])->name('admin.program.spaces.store');

@@ -7,12 +7,6 @@
             <x-ukc.icon name="chevron" :size="16" style="transform:rotate(180deg);" /> Mes relectures
         </a>
 
-        @if (session('ukc_status'))
-            <div class="ukc-alert ukc-alert--ok">
-                <span class="ico"><x-ukc.icon name="check-circle" :size="18" /></span>
-                <div>{{ session('ukc_status') }}</div>
-            </div>
-        @endif
 
         {{-- Communication (en aveugle : pas d'auteurs) --}}
         <div class="ukc-card" style="margin-bottom:18px;">

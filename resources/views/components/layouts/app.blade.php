@@ -15,6 +15,9 @@
 <body class="ukc-scope antialiased">
     {{ $slot }}
 
+    {{-- Notifications en popups fermables (toasts) — global, toutes zones. --}}
+    <x-ukc.toast />
+
     {{-- Widget flottant Gesco — public + espace participant ; pas dans le
          back-office, le portail relecteur, la salle visio, ni la page chat dédiée. --}}
     @unless (request()->routeIs('admin.*') || request()->routeIs('reviewer.*') || request()->routeIs('session.meeting') || request()->routeIs('public.gesco'))

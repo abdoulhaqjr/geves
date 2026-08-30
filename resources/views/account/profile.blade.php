@@ -1,12 +1,6 @@
 <x-layouts.participant title="Mon profil" subtitle="Vos informations, préférences & sécurité">
     @include('partials.account-nav')
 
-    @if (session('ukc_status'))
-        <div class="ukc-alert ukc-alert--ok">
-            <span class="ico"><x-ukc.icon name="check-circle" :size="18" /></span>
-            <div>{{ session('ukc_status') }}</div>
-        </div>
-    @endif
 
     <div class="ukc-card">
         <h2><x-ukc.icon name="user" :size="20" /> Mon profil</h2>

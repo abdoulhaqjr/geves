@@ -115,12 +115,14 @@ it('enregistre promo et infos pratiques depuis le formulaire d’édition', func
     $this->actingAs($staff, 'web')->put(route('admin.editions.update', $edition), [
         'title' => $edition->title, 'status' => $edition->status, 'colloque_id' => $edition->colloque_id, 'max_communications' => 3,
         'promo_text' => 'Inscriptions ouvertes',
-        'practical_venue' => 'Université de Kara',
+        'infoCards' => [['title' => 'Lieu', 'text' => 'Université de Kara']],
     ])->assertSessionHasNoErrors();
 
     $settings = $edition->fresh()->settings;
     expect($settings['promo']['text'])->toBe('Inscriptions ouvertes');
-    expect($settings['practical']['venue'])->toBe('Université de Kara');
+    // Le formulaire édite désormais les infos pratiques en « cartes » (fidèle au mockup).
+    expect($settings['info_cards'][0]['title'])->toBe('Lieu');
+    expect($settings['info_cards'][0]['text'])->toBe('Université de Kara');
 });
 
 it('affiche « Sa page » d’un participant en lecture seule', function () {
@@ -144,5 +146,5 @@ it('refuse « Sa page » aux invités', function () {
     $edition = openEdition();
     $p = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
 
-    $this->get(route('admin.participants.preview', $p))->assertRedirect(route('admin.login'));
+    $this->get(route('admin.participants.preview', $p))->assertRedirect(route('account.login'));
 });

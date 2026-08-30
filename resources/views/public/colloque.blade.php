@@ -32,6 +32,7 @@
     {{-- ===== Hero (fidèle au mockup page-colloque-amelioree.html) ===== --}}
     @php
         $languages = $e->settings['languages'] ?? null;
+        $languages = is_array($languages) ? implode(' · ', $languages) : $languages;
         $countdownToDeadline = $e->submission_open && $e->submission_deadline && $e->submission_deadline->isFuture();
         $cdTarget = $countdownToDeadline ? $e->submission_deadline : $e->date_start;
         $cdLabel = $countdownToDeadline ? 'Clôture des soumissions dans' : 'Le colloque commence dans';

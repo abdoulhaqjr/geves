@@ -99,5 +99,5 @@ it('expose la valeur courante et le défaut (réinitialisation côté client)', 
 });
 
 it('refuse l’édition des modèles aux invités', function () {
-    $this->get(route('admin.emails.templates'))->assertRedirect(route('admin.login'));
+    $this->get(route('admin.emails.templates'))->assertRedirect(route('account.login'));
 });

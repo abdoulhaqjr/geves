@@ -1,5 +1,5 @@
 <x-layouts.admin title="Documents" :subtitle="$edition ? 'Édition active · '.($edition->title ?: $edition->year) : 'Attestations, badges & livre des résumés'">
-    <div class="admin-page admin-documents" x-data="{ page: 'attestations', att: 'list', badge: 'list', livre: 'main' }">
+    <div class="admin-page admin-documents" x-data="{ page: new URLSearchParams(window.location.search).get('tab') || 'attestations', att: 'list', badge: 'list', livre: 'main' }">
         {{-- Sélecteur d'édition partagé + vérification publique --}}
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
             <div class="ukc-field" style="max-width:340px;margin:0;">

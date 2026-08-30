@@ -29,6 +29,28 @@ it('enregistre comités, partenaires et FAQ depuis le formulaire d’édition', 
     expect($edition->settings['faq'][0]['question'])->toBe('Comment soumettre ?');
 });
 
+it('enregistre les comités par groupe (organisation / scientifique / supervision)', function () {
+    $staff = adminStaff();
+    $colloque = Colloque::create(['name' => 'UK', 'slug' => 'uk']);
+    $edition = $colloque->editions()->create(['title' => 'UK 2026', 'status' => 'open', 'slug' => 'uk-2026']);
+
+    $this->actingAs($staff, 'web')->put(route('admin.editions.update', $edition), [
+        'title' => $edition->title, 'status' => 'open', 'colloque_id' => $edition->colloque_id, 'max_communications' => 3,
+        'committees_org' => [['person_name' => 'Pr Kadouza', 'person_title' => 'Président', 'institution' => 'UK']],
+        'committees_sci' => [
+            ['person_name' => 'Pr Lawson', 'person_title' => 'Président', 'institution' => 'UP'],
+            ['person_name' => 'Pr Tchalla', 'person_title' => 'Membre', 'institution' => 'UK'],
+        ],
+        'committees_sup' => [['person_name' => '', 'person_title' => '', 'institution' => '']], // vide → ignoré
+    ])->assertSessionHasNoErrors();
+
+    $edition->refresh();
+    expect($edition->committeeMembers()->count())->toBe(3);
+    expect($edition->committeeMembers()->where('role', 'scientifique')->count())->toBe(2);
+    expect($edition->committeeMembers()->where('role', 'organisation')->first()->person_name)->toBe('Pr Kadouza');
+    expect($edition->committeeMembers()->where('role', 'supervision')->count())->toBe(0);
+});
+
 it('remplace les comités existants à l’enregistrement (sync)', function () {
     $staff = adminStaff();
     $colloque = Colloque::create(['name' => 'UK', 'slug' => 'uk']);

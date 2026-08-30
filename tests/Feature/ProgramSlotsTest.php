@@ -149,3 +149,52 @@ it('refuse le choix de créneau si la communication n’est pas acceptée', func
         ->post(route('account.submissions.choose-slot', $submission), ['slot_id' => $slot->id])
         ->assertForbidden();
 });
+
+it('génère des créneaux libres à partir des sessions horodatées', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+    // Session de 90 min → 4 créneaux de 20 min (durée orale par défaut).
+    $edition->sessions()->create([
+        'type' => 'plenary', 'atelier_id' => 0, 'label' => 'Session A',
+        'session_day' => '2026-11-18', 'starts_at' => '2026-11-18 14:00:00', 'ends_at' => '2026-11-18 15:30:00', 'ordre' => 0,
+    ]);
+
+    $this->actingAs($staff, 'web')
+        ->post(route('admin.program.slots.generate').'?edition_id='.$edition->id)
+        ->assertSessionHasNoErrors();
+
+    expect($edition->slots()->count())->toBe(4);
+    expect($edition->slots()->where('submission_id', 0)->count())->toBe(4);
+
+    // Idempotent : la session déjà pourvue n'est pas redécoupée.
+    $this->actingAs($staff, 'web')->post(route('admin.program.slots.generate').'?edition_id='.$edition->id);
+    expect($edition->slots()->count())->toBe(4);
+});
+
+it('affecte automatiquement les communications acceptées aux créneaux libres', function () {
+    $staff = adminStaff();
+    $submission = seededSubmission('accepted');
+    $edition = $submission->edition;
+    Slot::create(['edition_id' => $edition->id, 'room' => 'Salle A', 'submission_id' => 0, 'starts_at' => '2026-11-18 14:00:00']);
+    Slot::create(['edition_id' => $edition->id, 'room' => 'Salle A', 'submission_id' => 0, 'starts_at' => '2026-11-18 14:20:00']);
+
+    $this->actingAs($staff, 'web')
+        ->post(route('admin.program.slots.auto').'?edition_id='.$edition->id, ['match_axis' => '1'])
+        ->assertSessionHasNoErrors();
+
+    expect($edition->slots()->where('submission_id', $submission->id)->count())->toBe(1);
+});
+
+it('associe une salle à un atelier et la propage à ses sessions', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+    $atelier = $edition->ateliers()->create(['title' => 'Atelier Santé', 'tracks' => ['Santé'], 'ordre' => 0]);
+    $session = $edition->sessions()->create(['type' => 'atelier', 'atelier_id' => $atelier->id, 'label' => 'S1', 'ordre' => 0]);
+
+    $this->actingAs($staff, 'web')
+        ->post(route('admin.program.ateliers.room', $atelier).'?edition_id='.$edition->id, ['atelierRoom' => 'Salle B'])
+        ->assertSessionHasNoErrors();
+
+    expect($edition->fresh()->settings['program']['atelier_rooms'][(string) $atelier->id])->toBe('Salle B');
+    expect($session->fresh()->room)->toBe('Salle B');
+});

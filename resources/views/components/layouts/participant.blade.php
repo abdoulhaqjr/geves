@@ -139,19 +139,7 @@
                         </form>
                     </div>
                 @endif
-                @if (session('ukc_status'))
-                    <div class="ukc-alert ukc-alert--ok">
-                        <span class="ico"><x-ukc.icon name="check-circle" :size="18" /></span>
-                        <div>{{ session('ukc_status') }}</div>
-                    </div>
-                @endif
-                @if (session('ukc_error'))
-                    <div class="ukc-alert ukc-alert--err">
-                        <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
-                        <div>{{ session('ukc_error') }}</div>
-                    </div>
-                @endif
-
+                {{-- Les messages flash (ukc_status/ukc_error) s'affichent en toasts (layout app). --}}
                 {{ $slot }}
             </main>
         </div>

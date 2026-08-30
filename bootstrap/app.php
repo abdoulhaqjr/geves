@@ -12,10 +12,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Redirection des invités selon la zone : back-office vs front participant.
-        $middleware->redirectGuestsTo(fn ($request) => $request->is('admin', 'admin/*')
-            ? route('admin.login')
-            : route('account.login'));
+        // Page de connexion unique (participants + staff) : tous les invités y sont menés.
+        $middleware->redirectGuestsTo(fn () => route('account.login'));
 
         // Les webhooks de paiement sont des appels serveur-à-serveur (pas de CSRF).
         $middleware->validateCsrfTokens(except: ['webhooks/*']);

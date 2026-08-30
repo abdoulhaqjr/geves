@@ -12,12 +12,6 @@
 
     @if ($twoFactor)
         {{-- ===== Second facteur (2FA) ===== --}}
-        @if (session('ukc_status'))
-            <div class="ukc-alert ukc-alert--ok" style="margin-bottom:14px;">
-                <span class="ico"><x-ukc.icon name="check-circle" :size="18" /></span>
-                <div>{{ session('ukc_status') }}</div>
-            </div>
-        @endif
 
         <form method="POST" action="{{ route('account.login.confirm') }}" class="ukc-form-grid" style="gap:16px;">
             @csrf
@@ -91,9 +85,8 @@
         <div class="auth-divider">ou</div>
         <a href="{{ route('account.register') }}" class="ukc-btn ukc-btn--outline" style="width:100%;">Créer un compte</a>
 
-        <p class="auth-footer-link">
-            Espace administration ?
-            <a href="{{ route('admin.login') }}" style="color:var(--ukc-blue);font-weight:700;">Accès DRI / comités</a>
+        <p class="auth-footer-link" style="color:var(--ukc-muted);">
+            Personnel de gestion (DRI, comités) : connectez-vous avec vos identifiants ci-dessus.
         </p>
     @endif
 </x-layouts.auth>

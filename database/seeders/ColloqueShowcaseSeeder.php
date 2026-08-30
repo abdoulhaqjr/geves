@@ -94,8 +94,12 @@ class ColloqueShowcaseSeeder extends Seeder
     {
         $s = $edition->settings ?? [];
 
-        $s['languages'] = 'Français & Anglais';
+        $s['languages'] = ['Français', 'Anglais'];
+        $s['main_language'] = 'Français';
+        $s['format'] = 'Présentiel & hybride';
         $s['short_name'] = 'UP–UK';
+        $s['short_desc'] = 'Le colloque conjoint UP–UK rassemble chercheurs, doctorants et praticiens autour de la formation, '
+            .'la recherche et l’innovation face aux défis contemporains.';
 
         $s['intro'] = 'Organisé conjointement par l’Université de Parakou (Bénin) et l’Université de Kara (Togo), '
             .'ce colloque offre un cadre de réflexion et de dialogue entre universitaires, chercheurs, étudiants, '
@@ -177,9 +181,6 @@ class ColloqueShowcaseSeeder extends Seeder
             'address' => 'Université de Kara — Campus Sud, Kara, Togo',
         ], is_array($s['contact'] ?? null) ? $s['contact'] : []);
 
-        // Pied de page propre au colloque (barre d'info).
-        $s['format'] = "Présentiel & hybride\nSessions en français";
-
         $s['documents'] = [
             ['label' => 'Appel à communications (PDF)', 'url' => 'https://colloque.annales-up.com/'],
             ['label' => 'Programme prévisionnel', 'url' => '#programme'],
@@ -200,6 +201,63 @@ class ColloqueShowcaseSeeder extends Seeder
             ['question' => 'Puis-je obtenir une lettre d’invitation pour un visa ?', 'answer' => 'Oui. Après inscription et paiement, une lettre d’invitation officielle peut être demandée depuis votre tableau de bord.'],
             ['question' => 'Y a-t-il des tarifs préférentiels pour les étudiants ?', 'answer' => 'Oui. Le tarif étudiant est de 15 000 FCFA (justificatif de scolarité requis).'],
         ];
+
+        // ---- Données « fiche d'édition » fidèles au mockup admin-edition-detail ----
+        $s['key_dates'] = [
+            ['date' => '2026-04-01', 'label' => 'Lancement de l’appel à communications'],
+            ['date' => '2026-06-15', 'label' => 'Date limite de soumission'],
+            ['date' => '2026-07-15', 'label' => 'Notification aux auteurs'],
+            ['date' => '2026-08-31', 'label' => 'Fin des inscriptions'],
+            ['date' => '2026-09-15', 'label' => 'Ouverture du colloque'],
+            ['date' => '2026-09-18', 'label' => 'Clôture du colloque'],
+        ];
+
+        $s['programme'] = [
+            ['day' => 'Jour 1', 'time' => '09:00–10:30', 'type' => 'Conférence', 'title' => 'Conférence inaugurale', 'speaker' => 'Invité d’honneur', 'room' => 'Amphi A'],
+            ['day' => 'Jour 1', 'time' => '11:00–12:30', 'type' => 'Session', 'title' => 'Session Atelier 1 — Sciences médicales', 'speaker' => 'Modérateur : Pr. Mensah', 'room' => 'Salle B'],
+            ['day' => 'Jour 2', 'time' => '09:00–10:30', 'type' => 'Session', 'title' => 'Session Atelier 2 — Agronomie', 'speaker' => '', 'room' => 'Salle C'],
+            ['day' => 'Jour 4', 'time' => '16:00–17:00', 'type' => 'Clôture', 'title' => 'Cérémonie de clôture & recommandations', 'speaker' => 'Comité d’organisation', 'room' => 'Amphi A'],
+        ];
+
+        $s['why'] = [
+            ['title' => 'Visibilité scientifique', 'text' => 'Présentez vos travaux devant un public régional et international.'],
+            ['title' => 'Publication dans le livre des résumés', 'text' => 'Les résumés acceptés sont publiés dans l’ouvrage de l’édition.'],
+            ['title' => 'Réseau académique', 'text' => 'Échangez avec des chercheurs de la sous-région et au-delà.'],
+        ];
+
+        $s['info_cards'] = [
+            ['title' => 'Lieu', 'text' => 'Université de Kara — Campus Sud, Kara, Togo'],
+            ['title' => 'Format', 'text' => 'Présentiel & hybride · Sessions en français'],
+            ['title' => 'Contact', 'text' => 'colloque@univkara.tg · (+228) 26 68 52 28'],
+        ];
+
+        $s['ref_prefix_mode'] = 'global';
+        $s['ref_prefix'] = 'UKC-S-';
+        $s['attestation_max'] = 5;
+        $s['coauthors_max'] = 8;
+        $s['gen_participation'] = true;
+        $s['gen_communication'] = true;
+
+        $s['appearance'] = [
+            'hero_style' => 'Image + dégradé',
+            'hero_align' => 'Centre',
+            'color_primary' => '#223ea4',
+            'color_secondary' => '#009933',
+            'hero_video_enabled' => false,
+            'hero_video_muted' => true,
+            'news_enabled' => true,
+            'news_text' => 'Soumissions ouvertes jusqu’au 15 juin 2026',
+            'news_url' => '',
+            'stats_enabled' => true,
+            'stats' => [
+                ['label' => 'Soumissions', 'value' => '142'],
+                ['label' => 'Participants', 'value' => '215'],
+                ['label' => 'Ateliers', 'value' => '6'],
+                ['label' => 'Pays', 'value' => '12'],
+            ],
+        ];
+
+        $s['options'] = ['show_public' => true, 'hybrid' => true, 'livret' => true, 'badges' => true];
 
         $edition->update(['settings' => $s]);
     }
@@ -234,7 +292,19 @@ class ColloqueShowcaseSeeder extends Seeder
 
     private function seedProgramme(Edition $edition): void
     {
+        // Espaces + salles d'atelier (onglet « Espaces » de la page Créneaux) —
+        // 5 espaces nommés fidèles au mockup admin-creneaux.
+        $spaces = [
+            ['name' => 'Amphithéâtre principal', 'capacity' => 250, 'building' => 'Bâtiment A', 'note' => 'Plénières, ouverture, clôture, keynotes'],
+            ['name' => 'Salle A', 'capacity' => 80, 'building' => 'Bâtiment B — RDC', 'note' => 'Vidéoprojecteur, sonorisation'],
+            ['name' => 'Salle B', 'capacity' => 60, 'building' => 'Bâtiment B — 1er étage', 'note' => ''],
+            ['name' => 'Salle C', 'capacity' => 50, 'building' => 'Bâtiment C', 'note' => ''],
+            ['name' => 'Hall d’exposition / posters', 'capacity' => null, 'building' => '', 'note' => 'Sessions posters · Accueil · Restauration · Accès libre'],
+        ];
+
         if ($edition->sessions()->exists()) {
+            $this->writeSpaces($edition, $spaces);
+
             return;
         }
 
@@ -242,40 +312,81 @@ class ColloqueShowcaseSeeder extends Seeder
         $day2 = Carbon::create(2026, 9, 16);
         $day3 = Carbon::create(2026, 9, 17);
 
-        // Jour 1.
+        // Sessions plénières (amphithéâtre principal).
         $this->session($edition, 'plenary', 'Enregistrement des participants & café de bienvenue', $day1, 8, 30, 'Hall d’accueil', 0);
         $this->session($edition, 'plenary', 'Ouverture officielle', $day1, 9, 30, 'Amphithéâtre principal', 1, 'Présidence de l’Université');
         $this->session($edition, 'plenary', 'Conférence inaugurale', $day1, 10, 30, 'Amphithéâtre principal', 2, 'Pr. Afiwa Mensah');
-
-        // Jour 2.
         $this->session($edition, 'plenary', 'Conférence invitée', $day2, 9, 0, 'Amphithéâtre principal', 3, 'Dr. Koffi Tchalim');
         $this->session($edition, 'plenary', 'Table ronde : « Recherche et politiques publiques »', $day2, 17, 0, 'Amphithéâtre principal', 4);
-
-        // Jour 3.
         $this->session($edition, 'plenary', 'Séance de clôture & remise des prix', $day3, 11, 0, 'Amphithéâtre principal', 5);
 
-        // Deux ateliers disciplinaires avec sessions parallèles.
-        $tracks = ['Environnement · Technologies · Santé', 'Économie · Sciences exactes · Humanités'];
-        foreach ($tracks as $i => $track) {
+        // Quatre ateliers disciplinaires (mockup) + salle associée.
+        $ateliers = [
+            ['title' => 'Atelier Formation & pédagogie', 'tracks' => ['Formation & pédagogie'], 'room' => 'Salle A', 'day' => $day1],
+            ['title' => 'Atelier Recherche & innovation', 'tracks' => ['Recherche & innovation'], 'room' => null, 'day' => $day1],
+            ['title' => 'Atelier Développement durable', 'tracks' => ['Développement durable'], 'room' => 'Salle C', 'day' => $day2],
+            ['title' => 'Atelier Société, gouvernance & santé', 'tracks' => ['Société & gouvernance', 'Santé & nutrition'], 'room' => 'Salle B', 'day' => $day2],
+        ];
+
+        $atelierRooms = [];
+        foreach ($ateliers as $i => $a) {
             $atelier = $edition->ateliers()->create([
-                'title' => 'Ateliers thématiques '.($i === 0 ? 'A1 – A3' : 'B1 – B3'),
-                'tracks' => [$track],
+                'title' => $a['title'],
+                'tracks' => $a['tracks'],
                 'ordre' => $i,
             ]);
+            if ($a['room']) {
+                $atelierRooms[(string) $atelier->id] = $a['room'];
+            }
 
-            $edition->sessions()->create([
-                'type' => 'atelier',
-                'atelier_id' => $atelier->id,
-                'label' => 'Sessions parallèles — '.$track,
-                'session_day' => ($i === 0 ? $day1 : $day2)->toDateString(),
-                'starts_at' => ($i === 0 ? $day1 : $day2)->copy()->setTime(14, 0),
-                'ends_at' => ($i === 0 ? $day1 : $day2)->copy()->setTime(16, 0),
-                'room' => 'Salles A – C',
-                'moderator_name' => $i === 0 ? 'Pr. Yawovi Kuevi' : 'Dr. Paul Dossou',
-                'rapporteur_name' => $i === 0 ? 'Dr. Koffi Tchalim' : 'Pr. Mariam Adjei',
-                'ordre' => 10 + $i,
-            ]);
+            // Deux sessions parallèles par atelier, découpées en créneaux libres de 20 min.
+            foreach ([['14:00', '15:30'], ['16:00', '17:30']] as $j => [$start, $end]) {
+                $session = $edition->sessions()->create([
+                    'type' => 'atelier',
+                    'atelier_id' => $atelier->id,
+                    'label' => 'Session '.($j + 1).' — '.implode(' / ', $a['tracks']),
+                    'session_day' => $a['day']->toDateString(),
+                    'starts_at' => $a['day']->copy()->setTimeFromTimeString($start),
+                    'ends_at' => $a['day']->copy()->setTimeFromTimeString($end),
+                    'room' => $a['room'] ?: '',
+                    'moderator_name' => $i % 2 === 0 ? 'Pr. Yawovi Kuevi' : 'Dr. Paul Dossou',
+                    'rapporteur_name' => $i % 2 === 0 ? 'Dr. Koffi Tchalim' : 'Pr. Mariam Adjei',
+                    'ordre' => 10 + $i * 2 + $j,
+                ]);
+
+                // Créneaux libres (4 × 20 min) prêts pour l'affectation automatique.
+                $cursor = $a['day']->copy()->setTimeFromTimeString($start);
+                $stop = $a['day']->copy()->setTimeFromTimeString($end);
+                while ($cursor->copy()->addMinutes(20)->lessThanOrEqualTo($stop)) {
+                    $slotEnd = $cursor->copy()->addMinutes(20);
+                    $edition->slots()->create([
+                        'session_id' => $session->id,
+                        'session_label' => $session->label,
+                        'room' => $a['room'] ?: '',
+                        'starts_at' => $cursor->toDateTimeString(),
+                        'ends_at' => $slotEnd->toDateTimeString(),
+                        'submission_id' => 0,
+                        'participant_id' => 0,
+                    ]);
+                    $cursor = $slotEnd;
+                }
+            }
         }
+
+        $this->writeSpaces($edition, $spaces, $atelierRooms);
+    }
+
+    /** Écrit les espaces (et salles d'atelier) dans settings['program'] sans écraser le reste. */
+    private function writeSpaces(Edition $edition, array $spaces, array $atelierRooms = []): void
+    {
+        $settings = $edition->fresh()->settings ?? [];
+        $program = $settings['program'] ?? [];
+        $program['spaces'] = $spaces;
+        if ($atelierRooms !== []) {
+            $program['atelier_rooms'] = $atelierRooms;
+        }
+        $settings['program'] = $program;
+        $edition->update(['settings' => $settings]);
     }
 
     private function session(Edition $edition, string $type, string $label, Carbon $day, int $h, int $m, string $room, int $ordre, ?string $moderator = null): void

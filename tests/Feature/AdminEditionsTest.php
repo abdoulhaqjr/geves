@@ -18,7 +18,7 @@ function staffWithPermission(): User
 }
 
 it('redirige les invités du back-office vers la connexion admin', function () {
-    $this->get('/admin')->assertRedirect(route('admin.login'));
+    $this->get('/admin')->assertRedirect(route('account.login'));
 });
 
 it('refuse l’accès sans la permission manage_colloques', function () {
@@ -36,7 +36,7 @@ it('autorise le staff habilité à voir la liste des éditions', function () {
 it('crée une édition avec un nouveau colloque via le formulaire', function () {
     $user = staffWithPermission();
 
-    $this->actingAs($user, 'web')->post(route('admin.editions.store'), [
+    $response = $this->actingAs($user, 'web')->post(route('admin.editions.store'), [
         'new_colloque' => 'Colloque test',
         'title' => 'Édition inaugurale 2026',
         'status' => 'open',
@@ -44,14 +44,32 @@ it('crée une édition avec un nouveau colloque via le formulaire', function () 
         'max_communications' => 3,
         'tracks' => "Axe A\nAxe B",
         'fees' => [['label' => 'Doctorant', 'amount' => '15000']],
-    ])->assertSessionHasNoErrors()->assertRedirect(route('admin.editions.index'));
+    ]);
+    $response->assertSessionHasNoErrors();
 
     $edition = Edition::firstWhere('title', 'Édition inaugurale 2026');
     expect($edition)->not->toBeNull();
+    // Après enregistrement, on reste sur la fiche de l'édition (pas de retour à la liste).
+    $response->assertRedirect(route('admin.editions.edit', $edition));
     expect($edition->slug)->toBe('edition-inaugurale-2026');
     expect($edition->settings['tracks'])->toBe(['Axe A', 'Axe B']);
     expect((float) $edition->settings['fees'][0]['amount'])->toBe(15000.0);
     expect(Colloque::where('name', 'Colloque test')->exists())->toBeTrue();
+});
+
+it('affiche un toast de confirmation après enregistrement (reste sur la fiche)', function () {
+    $user = staffWithPermission();
+    $colloque = Colloque::create(['name' => 'C', 'slug' => 'c']);
+    $edition = $colloque->editions()->create(['title' => 'Ed', 'status' => 'draft', 'slug' => 'ed']);
+
+    $this->actingAs($user, 'web')->followingRedirects()
+        ->put(route('admin.editions.update', $edition), [
+            'title' => 'Ed', 'status' => 'draft', 'colloque_id' => $edition->colloque_id, 'max_communications' => 3,
+            'active_tab' => 'programme',
+        ])
+        ->assertOk()
+        ->assertSee('ukc-toasts', false)   // conteneur de toasts présent
+        ->assertSee("tab: 'programme'", false); // onglet actif restauré
 });
 
 it('modifie une édition existante', function () {
@@ -67,6 +85,58 @@ it('modifie une édition existante', function () {
     ])->assertSessionHasNoErrors();
 
     expect($edition->fresh()->title)->toBe('Nouveau titre');
+});
+
+it('enregistre tous les champs du mockup (programme, langues, apparence, options…)', function () {
+    $user = staffWithPermission();
+    $colloque = Colloque::create(['name' => 'C', 'slug' => 'c']);
+    $edition = $colloque->editions()->create([
+        'title' => 'Édition', 'status' => 'open', 'slug' => 'ed',
+        'settings' => ['practical' => ['venue' => 'Campus Sud']],
+    ]);
+
+    $this->actingAs($user, 'web')->put(route('admin.editions.update', $edition), [
+        'title' => 'Édition', 'status' => 'open', 'colloque_id' => $edition->colloque_id, 'max_communications' => 3,
+        'format' => 'Présentiel & hybride',
+        'short_name' => 'CSIUK 2026',
+        'languages' => ['Français', 'Anglais'],
+        'main_language' => 'Français',
+        'axes' => [['label' => 'Sciences'], ['label' => 'Santé'], ['label' => '']],
+        'keyDates' => [['date' => '2026-07-15', 'label' => 'Limite de soumission']],
+        'programme' => [['day' => 'Jour 1', 'time' => '09:00', 'type' => 'Conférence', 'title' => 'Ouverture', 'speaker' => 'X', 'room' => 'Amphi A']],
+        'why' => [['title' => 'Visibilité', 'text' => 'Devant un large public.']],
+        'infoCards' => [['title' => 'Lieu', 'text' => 'Kara, Togo']],
+        'ref_prefix_mode' => 'global',
+        'ref_prefix' => 'UKC-S-',
+        'attestation_max' => 5,
+        'coauthors_max' => 8,
+        'gen_participation' => '1',
+        'stats' => [['label' => 'Soumissions', 'value' => '142']],
+        'stats_enabled' => '1',
+        'color_primary' => '#223ea4',
+        'opt_livret' => '1',
+    ])->assertSessionHasNoErrors();
+
+    $s = $edition->fresh()->settings;
+    expect($s['format'])->toBe('Présentiel & hybride');
+    expect($s['short_name'])->toBe('CSIUK 2026');
+    expect($s['languages'])->toBe(['Français', 'Anglais']);
+    expect($s['tracks'])->toBe(['Sciences', 'Santé']); // axes vides ignorés
+    expect($s['key_dates'][0]['label'])->toBe('Limite de soumission');
+    expect($s['programme'][0]['title'])->toBe('Ouverture');
+    expect($s['why'][0]['title'])->toBe('Visibilité');
+    expect($s['info_cards'][0]['title'])->toBe('Lieu');
+    expect($s['ref_prefix'])->toBe('UKC-S-');
+    expect($s['attestation_max'])->toBe(5);
+    expect($s['gen_participation'])->toBeTrue();
+    expect($s['gen_communication'])->toBeFalse(); // non coché
+    expect($s['appearance']['stats'][0]['value'])->toBe('142');
+    expect($s['appearance']['stats_enabled'])->toBeTrue();
+    expect($s['appearance']['color_primary'])->toBe('#223ea4');
+    expect($s['options']['livret'])->toBeTrue();
+    expect($s['options']['badges'])->toBeFalse(); // non coché
+    // Le practical existant est préservé (non écrasé).
+    expect($s['practical']['venue'])->toBe('Campus Sud');
 });
 
 it('préserve submission_form et enregistre hero/contact au save', function () {

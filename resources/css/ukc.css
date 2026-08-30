@@ -183,6 +183,10 @@
 }
 .ukc-shell--admin .ukc-sidebar-nav a:hover { background: #2c3338; color: #fff; }
 .ukc-shell--admin .ukc-sidebar-nav a.active { background: #2c3338; color: #fff; border-left-color: var(--ukc-blue); font-weight: 600; }
+/* Sous-menus (mockup : items « — Label » indentés, bord vert à l'actif) */
+.ukc-shell--admin .ukc-sidebar-nav a.sub { padding: 7px 16px 7px 30px; font-size: 12px; color: #8c8f94; font-weight: 500; }
+.ukc-shell--admin .ukc-sidebar-nav a.sub:hover { background: #2c3338; color: #fff; }
+.ukc-shell--admin .ukc-sidebar-nav a.sub.active { background: #2c3338; color: #fff; border-left-color: var(--ukc-green); font-weight: 600; }
 .ukc-shell--admin .ukc-sidebar-foot { padding: 12px 14px 16px; }
 .ukc-shell--admin .ukc-main { margin-top: 32px; }
 
@@ -274,7 +278,36 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 
 /* ---- Formulaires ---- */
 .ukc-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-@media (max-width: 640px) { .ukc-form-grid { grid-template-columns: 1fr; } }
+.ukc-form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+@media (max-width: 640px) { .ukc-form-grid, .ukc-form-grid-3 { grid-template-columns: 1fr; } }
+
+/* Primitives « form-row » et « check » (globales) — utilisées par les fiches
+   d'édition et les modales de la page Créneaux (fidèles au mockup). */
+.ukc-form-row { margin-bottom: 12px; }
+.ukc-form-row > label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 5px; color: var(--ukc-text); }
+.ukc-form-row input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+.ukc-form-row select,
+.ukc-form-row textarea {
+  width: 100%; border: 1px solid var(--ukc-border); border-radius: 8px;
+  padding: 8px 10px; font-size: 13px; background: #fff; color: var(--ukc-text);
+}
+.ukc-form-row textarea { min-height: 80px; resize: vertical; }
+.ukc-form-row input:focus, .ukc-form-row select:focus, .ukc-form-row textarea:focus {
+  outline: none; border-color: var(--ukc-blue); box-shadow: 0 0 0 3px rgba(34, 62, 164, .12);
+}
+.ukc-check { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 8px; cursor: pointer; }
+.ukc-check input { width: auto; margin-top: 3px; }
+
+/* Sous-navigation en onglets « pilules » (globale) — Utilisateurs, Documents,
+   Soumissions, Rapports, E-mails, Créneaux… (fidèle au mockup, boutons ET liens). */
+.ukc-nav-docs { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
+.ukc-nav-docs button, .ukc-nav-docs a {
+  background: #fff; border: 1px solid var(--ukc-border); border-radius: 10px;
+  padding: 10px 16px; font-weight: 700; font-size: 13.5px; color: var(--ukc-muted);
+  cursor: pointer; text-decoration: none; display: inline-flex; align-items: center;
+}
+.ukc-nav-docs button:hover, .ukc-nav-docs a:hover { border-color: var(--ukc-blue); color: var(--ukc-blue); }
+.ukc-nav-docs button.active, .ukc-nav-docs a.active { background: var(--ukc-blue); border-color: var(--ukc-blue); color: #fff; }
 .ukc-field { display: flex; flex-direction: column; gap: 6px; }
 .ukc-field.full { grid-column: 1 / -1; }
 .ukc-field label { font-size: 13px; font-weight: 600; color: var(--ukc-text); }

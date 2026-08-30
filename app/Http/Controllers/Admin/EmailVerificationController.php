@@ -23,6 +23,6 @@ class EmailVerificationController extends Controller
             $user->markEmailAsVerified();
         }
 
-        return redirect()->route('admin.login')->with('ukc_status', 'Adresse e-mail vérifiée. Vous pouvez vous connecter.');
+        return redirect()->route('account.login')->with('ukc_status', 'Adresse e-mail vérifiée. Vous pouvez vous connecter.');
     }
 }

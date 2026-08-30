@@ -139,6 +139,39 @@
     </div>
 </div>
 
+{{-- ===== Modale « Associer une salle » à un atelier ===== --}}
+<div class="ukc-modal" x-show="modal==='room'" x-cloak @click.self="modal=null" style="display:none;">
+    <div class="box">
+        <div class="box-head">
+            <span x-text="'Salle — ' + (form.title || 'atelier')"></span>
+            <button type="button" @click="modal=null" style="font-size:22px;color:var(--ukc-muted);background:none;border:none;cursor:pointer;">×</button>
+        </div>
+        <div class="box-body">
+            <form method="POST" :action="'{{ url('admin/programme/ateliers') }}/'+form.id+'/salle'">
+                @csrf
+                <input type="hidden" name="edition_id" value="{{ $edition_id }}">
+                <div class="ukc-form-row">
+                    <label>Salle associée</label>
+                    <select name="atelierRoom" x-model="form.room">
+                        <option value="">— Aucune (salle à définir) —</option>
+                        @foreach ($spaces as $space)
+                            <option value="{{ $space['name'] }}">{{ $space['name'] }}@if (! empty($space['capacity'])) · cap. {{ $space['capacity'] }}@endif</option>
+                        @endforeach
+                        @foreach ($usedRooms as $r)
+                            @unless (collect($spaces)->pluck('name')->contains($r))<option value="{{ $r }}">{{ $r }}</option>@endunless
+                        @endforeach
+                    </select>
+                    <p class="ukc-hint">La salle est appliquée à l’atelier, à ses sessions et à leurs créneaux.</p>
+                </div>
+                <div class="box-foot">
+                    <button type="button" class="ukc-btn ukc-btn--ghost" @click="modal=null">Annuler</button>
+                    <button type="submit" class="ukc-btn">Enregistrer la salle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {{-- ===== Modale Espace ===== --}}
 <div class="ukc-modal" x-show="modal==='space'" x-cloak @click.self="modal=null" style="display:none;">
     <div class="box">

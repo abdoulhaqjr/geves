@@ -25,6 +25,24 @@ if (document.getElementById('dashboardData')) {
 
 // Enregistrement de nos composants Alpine (l'évènement est émis par Alpine.start()).
 document.addEventListener('alpine:init', () => {
+    // Notifications en popups fermables (toasts), affichées en bas à droite.
+    // Auto-fermeture après quelques secondes ; bouton de fermeture manuel.
+    window.Alpine.data('ukcToasts', (initial = []) => ({
+        items: [],
+        init() {
+            this.items = (Array.isArray(initial) ? initial : []).map((t, i) => ({
+                id: i, type: t.type || 'ok', msg: t.msg || '', show: false, timer: null,
+            }));
+            this.$nextTick(() => this.items.forEach((t, i) => setTimeout(() => {
+                t.show = true;
+                t.timer = setTimeout(() => this.dismiss(t.id), 6000);
+            }, i * 140)));
+        },
+        dismiss(id) {
+            const t = this.items.find((x) => x.id === id);
+            if (t) { clearTimeout(t.timer); t.show = false; }
+        },
+    }));
     // Assistante Gesco (widget flottant + page dédiée) : conversation côté client,
     // chaque tour appelle l'endpoint JSON /gesco/demander. Aucune action serveur
     // n'est déclenchée par l'IA — elle informe seulement.
@@ -235,11 +253,18 @@ document.addEventListener('alpine:init', () => {
 
     // Listes répétables du formulaire d'édition (admin) : tarifs, comités,
     // partenaires, FAQ — ajout/suppression côté client.
-    window.Alpine.data('editionArrays', (init = {}) => ({
+    const editionArraysFactory = (init = {}) => ({
         fees: Array.isArray(init.fees) ? init.fees : [],
         committees: Array.isArray(init.committees) ? init.committees : [],
         partners: Array.isArray(init.partners) ? init.partners : [],
         faq: Array.isArray(init.faq) ? init.faq : [],
+        keyDates: Array.isArray(init.keyDates) ? init.keyDates : [],
+        programme: Array.isArray(init.programme) ? init.programme : [],
+        axes: Array.isArray(init.axes) ? init.axes : [],
+        why: Array.isArray(init.why) ? init.why : [],
+        infoCards: Array.isArray(init.infoCards) ? init.infoCards : [],
+        stats: Array.isArray(init.stats) ? init.stats : [],
+        refAxes: Array.isArray(init.refAxes) ? init.refAxes : [],
         addFee() { this.fees.push({ label: '', amount: '' }); },
         removeFee(i) { this.fees.splice(i, 1); },
         addCommittee() { this.committees.push({ role: 'organisation', person_name: '', person_title: '', institution: '', photo_url: '' }); },
@@ -248,7 +273,21 @@ document.addEventListener('alpine:init', () => {
         removePartner(i) { this.partners.splice(i, 1); },
         addFaq() { this.faq.push({ question: '', answer: '' }); },
         removeFaq(i) { this.faq.splice(i, 1); },
-    }));
+        addKeyDate() { this.keyDates.push({ date: '', label: '' }); },
+        removeKeyDate(i) { this.keyDates.splice(i, 1); },
+        addProg() { this.programme.push({ day: '', time: '', type: 'Session', title: '', speaker: '', room: '' }); },
+        removeProg(i) { this.programme.splice(i, 1); },
+        addAxis() { this.axes.push({ label: '' }); },
+        removeAxis(i) { this.axes.splice(i, 1); },
+        addWhy() { this.why.push({ title: '', text: '' }); },
+        removeWhy(i) { this.why.splice(i, 1); },
+        addInfo() { this.infoCards.push({ title: '', text: '' }); },
+        removeInfo(i) { this.infoCards.splice(i, 1); },
+        addStat() { this.stats.push({ label: '', value: '' }); },
+        removeStat(i) { this.stats.splice(i, 1); },
+    });
+    window.Alpine.data('editionArrays', editionArraysFactory);
+    window.__editionArrays = editionArraysFactory;
 
     // Éditeur de champs personnalisés du formulaire de soumission (admin), sans
     // Livewire : ajout / suppression / réordonnancement côté client.

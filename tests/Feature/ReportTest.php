@@ -120,5 +120,5 @@ it('affiche le rapport PDF imprimable', function () {
 
 it('refuse l’accès aux invités', function () {
     $edition = reportEdition();
-    $this->get(route('admin.reports.xlsx', $edition))->assertRedirect(route('admin.login'));
+    $this->get(route('admin.reports.xlsx', $edition))->assertRedirect(route('account.login'));
 });

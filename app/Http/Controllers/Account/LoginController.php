@@ -55,6 +55,14 @@ class LoginController extends Controller
         $account = Account::where('email', $request->input('email'))->first();
 
         if (! $account || ! Hash::check((string) $request->input('password'), $account->password)) {
+            // Porte unique : à défaut d'un compte participant, tenter le personnel
+            // de gestion (guard « web ») avec les mêmes identifiants.
+            if ($this->attemptStaff($request)) {
+                RateLimiter::clear($this->throttleKey($request));
+
+                return redirect()->intended(route('admin.dashboard'));
+            }
+
             RateLimiter::hit($this->throttleKey($request));
 
             throw ValidationException::withMessages([
@@ -170,6 +178,31 @@ class LoginController extends Controller
             self::SESSION_METHOD,
             self::SESSION_PHONE_HINT,
         ]);
+    }
+
+    /**
+     * Repli « personnel de gestion » : connexion au guard « web » (back-office)
+     * quand les identifiants ne correspondent à aucun compte participant. Permet
+     * une page de connexion unique pour les participants et le staff.
+     */
+    private function attemptStaff(Request $request): bool
+    {
+        if (! Auth::guard('web')->attempt(
+            ['email' => $request->input('email'), 'password' => $request->input('password')],
+            $request->boolean('remember')
+        )) {
+            return false;
+        }
+
+        $request->session()->regenerate();
+
+        // Activité de connexion (page Utilisateurs) : date + IP.
+        Auth::guard('web')->user()?->forceFill([
+            'last_login_at' => now(),
+            'last_login_ip' => $request->ip(),
+        ])->save();
+
+        return true;
     }
 
     private function completeLogin(Request $request, Account $account, bool $remember): RedirectResponse

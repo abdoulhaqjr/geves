@@ -1,11 +1,5 @@
 <x-layouts.admin title="Agents IA" subtitle="Personas & garde-fous des agents IA">
     <div style="max-width:820px;" x-data="agentsEditor(@js($agents))">
-        @if (session('ukc_status'))
-            <div class="ukc-alert ukc-alert--ok">
-                <span class="ico"><x-ukc.icon name="check-circle" :size="18" /></span>
-                <div>{{ session('ukc_status') }}</div>
-            </div>
-        @endif
 
         <div class="ukc-card" style="margin-bottom:18px;">
             <h2>

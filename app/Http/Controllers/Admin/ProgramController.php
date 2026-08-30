@@ -12,6 +12,7 @@ use App\Models\Slot;
 use App\Models\Submission;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
 /**
@@ -244,8 +245,10 @@ class ProgramController extends Controller
             'auto' => array_merge($current['auto'], $patch['auto'] ?? []),
             'params' => array_merge($current['params'], $patch['params'] ?? []),
             'spaces' => array_key_exists('spaces', $patch) ? array_values($patch['spaces']) : $current['spaces'],
+            // Union (+) et non array_merge : préserve les clés = ids d'ateliers
+            // (array_merge réindexe les clés numériques et corromprait la carte).
             'atelier_rooms' => array_key_exists('atelier_rooms', $patch)
-                ? array_filter(array_merge($current['atelier_rooms'], $patch['atelier_rooms']))
+                ? array_filter($patch['atelier_rooms'] + $current['atelier_rooms'])
                 : $current['atelier_rooms'],
         ];
 
@@ -302,6 +305,81 @@ class ProgramController extends Controller
         return back()->with('ukc_status', $assigned > 0
             ? $assigned.' communication(s) affectée(s) automatiquement.'
             : 'Aucune affectation : pas de créneau libre ou rien à planifier.');
+    }
+
+    /**
+     * Génère des créneaux libres à partir des sessions horodatées : chaque session
+     * est découpée en créneaux de la durée d'une communication orale (réglages),
+     * héritant du libellé et de la salle de la session. Les sessions déjà pourvues
+     * sont ignorées. C'est le préalable à l'affectation automatique (qui remplit
+     * les créneaux libres avec les communications acceptées, comme le plugin WP).
+     */
+    public function generateSlots(Request $request): RedirectResponse
+    {
+        $edition = $this->currentEdition($request);
+        if (! $edition) {
+            return back();
+        }
+
+        $oralMin = max(5, (int) ($this->programConfig($edition)['params']['oral_min'] ?? 20));
+        $created = 0;
+
+        $sessions = $edition->sessions()->whereNotNull('starts_at')->whereNotNull('ends_at')->get();
+        foreach ($sessions as $session) {
+            if ($edition->slots()->where('session_id', $session->id)->exists()) {
+                continue; // déjà pourvue
+            }
+
+            $cursor = Carbon::parse($session->starts_at);
+            $end = Carbon::parse($session->ends_at);
+            $guard = 0;
+            while ($cursor->copy()->addMinutes($oralMin)->lessThanOrEqualTo($end) && $guard < 60) {
+                $slotEnd = $cursor->copy()->addMinutes($oralMin);
+                $edition->slots()->create([
+                    'session_id' => $session->id,
+                    'session_label' => $session->label,
+                    'room' => $session->room ?: '',
+                    'starts_at' => $cursor->toDateTimeString(),
+                    'ends_at' => $slotEnd->toDateTimeString(),
+                    'submission_id' => 0,
+                    'participant_id' => 0,
+                ]);
+                $cursor = $slotEnd;
+                $created++;
+                $guard++;
+            }
+        }
+
+        return back()->with('ukc_status', $created > 0
+            ? $created.' créneau(x) généré(s) depuis les sessions. Vous pouvez lancer l’affectation automatique.'
+            : 'Aucun créneau généré : sessions sans horaires, ou déjà pourvues en créneaux.');
+    }
+
+    /**
+     * Associe (ou change) la salle d'un atelier. La salle est mémorisée dans la
+     * config programme et propagée aux sessions de l'atelier ainsi qu'à leurs
+     * créneaux, pour un affichage cohérent dans le planning.
+     */
+    public function assignAtelierRoom(Request $request, Atelier $atelier): RedirectResponse
+    {
+        $data = $request->validate(['atelierRoom' => ['nullable', 'string', 'max:150']]);
+        $room = ($data['atelierRoom'] ?? null) ?: null;
+
+        $this->writeProgramConfig($atelier->edition, [
+            'atelier_rooms' => [(string) $atelier->id => $room],
+        ]);
+
+        if ($room) {
+            $sessionIds = $atelier->sessions()->pluck('id');
+            $atelier->sessions()->update(['room' => $room]);
+            if ($sessionIds->isNotEmpty()) {
+                $atelier->edition->slots()->whereIn('session_id', $sessionIds)->update(['room' => $room]);
+            }
+        }
+
+        return back()->with('ukc_status', $room
+            ? 'Salle « '.$room.' » associée à l’atelier « '.$atelier->title.' ».'
+            : 'Salle dissociée de l’atelier.');
     }
 
     public function storeSlot(Request $request): RedirectResponse

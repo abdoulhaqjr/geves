@@ -1,4 +1,5 @@
 @php($staff = auth('web')->user())
+@php($navEdition = \App\Models\Edition::where('status', 'open')->latest('id')->first() ?? \App\Models\Edition::latest('id')->first())
 @props(['title' => 'Back-office', 'subtitle' => null])
 <x-layouts.app :title="($title ?? 'Back-office') . ' — Colloques UK'">
     <div class="wp-bar">
@@ -26,11 +27,21 @@
                 @endcan
                 @can('submissions_list')
                     <a href="{{ route('admin.submissions.index') }}"
-                       @class(['active' => request()->routeIs('admin.submissions.*')])>Soumissions</a>
+                       @class(['active' => request()->routeIs('admin.submissions.*') || request()->routeIs('admin.editions.form')])>Soumissions</a>
+                    @if (request()->routeIs('admin.submissions.*') || request()->routeIs('admin.editions.form'))
+                        <a href="{{ route('admin.submissions.index') }}" @class(['sub', 'active' => request()->routeIs('admin.submissions.*')])>— Liste</a>
+                        <a href="{{ $navEdition ? route('admin.editions.form', $navEdition) : route('admin.editions.index') }}" @class(['sub', 'active' => request()->routeIs('admin.editions.form')])>— Formulaires</a>
+                    @endif
                 @endcan
                 @can('users_roles')
                     <a href="{{ route('admin.users.index') }}"
                        @class(['active' => request()->routeIs('admin.users.*')])>Utilisateurs</a>
+                    @if (request()->routeIs('admin.users.*'))
+                        @php($uTab = request('tab', 'list'))
+                        <a href="{{ route('admin.users.index') }}" @class(['sub', 'active' => $uTab === 'list'])>— Liste</a>
+                        <a href="{{ route('admin.users.index', ['tab' => 'roles']) }}" @class(['sub', 'active' => $uTab === 'roles'])>— Rôles</a>
+                        <a href="{{ route('admin.users.index', ['tab' => 'access']) }}" @class(['sub', 'active' => $uTab === 'access'])>— Accès</a>
+                    @endif
                 @endcan
                 @can('participants')
                     <a href="{{ route('admin.participants.index') }}"
@@ -43,10 +54,20 @@
                 @can('documents')
                     <a href="{{ route('admin.documents.attestations') }}"
                        @class(['active' => request()->routeIs('admin.documents.*') || request()->routeIs('admin.badges.*')])>Documents</a>
+                    @if (request()->routeIs('admin.documents.attestations'))
+                        @php($dTab = request('tab', 'attestations'))
+                        <a href="{{ route('admin.documents.attestations') }}" @class(['sub', 'active' => $dTab === 'attestations'])>— Attestations</a>
+                        <a href="{{ route('admin.documents.attestations', ['tab' => 'badges']) }}" @class(['sub', 'active' => $dTab === 'badges'])>— Badges</a>
+                        <a href="{{ route('admin.documents.attestations', ['tab' => 'livre']) }}" @class(['sub', 'active' => $dTab === 'livre'])>— Livre des résumés</a>
+                    @endif
                 @endcan
                 @can('emails')
                     <a href="{{ route('admin.emails.index') }}"
                        @class(['active' => request()->routeIs('admin.emails.*')])>E-mails</a>
+                    @if (request()->routeIs('admin.emails.*'))
+                        <a href="{{ route('admin.emails.index') }}" @class(['sub', 'active' => request()->routeIs('admin.emails.index')])>— Programmés</a>
+                        <a href="{{ route('admin.emails.templates') }}" @class(['sub', 'active' => request()->routeIs('admin.emails.templates')])>— Modèles</a>
+                    @endif
                 @endcan
                 @can('editions_read')
                     <a href="{{ route('admin.program.slots') }}"
@@ -100,19 +121,7 @@
             </header>
 
             <main class="ukc-admin-body">
-                @if (session('ukc_status'))
-                    <div class="ukc-alert ukc-alert--ok">
-                        <span class="ico"><x-ukc.icon name="check-circle" :size="18" /></span>
-                        <div>{{ session('ukc_status') }}</div>
-                    </div>
-                @endif
-                @if (session('ukc_error'))
-                    <div class="ukc-alert ukc-alert--err">
-                        <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
-                        <div>{{ session('ukc_error') }}</div>
-                    </div>
-                @endif
-
+                {{-- Les messages flash (ukc_status/ukc_error) s'affichent en toasts (layout app). --}}
                 {{ $slot }}
             </main>
         </div>
