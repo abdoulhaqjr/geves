@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Hub Documents d'une édition (contrôleur + Blade, fidèle au mockup
@@ -324,6 +325,85 @@ class DocumentHubController extends Controller
         }
 
         return back()->with('ukc_status', 'Modèle du livre enregistré.');
+    }
+
+    /**
+     * Page dédiée « Attestations délivrées » : liste des attestations émises pour
+     * l'édition (bénéficiaire, type, date, état) avec révocation / rétablissement.
+     * L'émission et les templates restent gérés dans le hub Documents.
+     */
+    public function issued(Request $request): View
+    {
+        $edition = $this->currentEdition($request);
+
+        $query = $edition ? Attestation::where('edition_id', $edition->id) : Attestation::query()->whereRaw('1 = 0');
+
+        if (($type = (string) $request->query('type', '')) !== '' && array_key_exists($type, Attestation::TYPES)) {
+            $query->where('type', $type);
+        }
+        if (($state = (string) $request->query('state', '')) === 'valid') {
+            $query->where('revoked', false);
+        } elseif ($state === 'revoked') {
+            $query->where('revoked', true);
+        }
+
+        $attestations = $query->with('participant')->latest('id')->paginate(20)->withQueryString();
+
+        $stats = $edition ? [
+            'total' => Attestation::where('edition_id', $edition->id)->count(),
+            'valid' => Attestation::where('edition_id', $edition->id)->where('revoked', false)->count(),
+            'revoked' => Attestation::where('edition_id', $edition->id)->where('revoked', true)->count(),
+            'byType' => Attestation::where('edition_id', $edition->id)->where('revoked', false)
+                ->selectRaw('type, count(*) as c')->groupBy('type')->pluck('c', 'type'),
+        ] : ['total' => 0, 'valid' => 0, 'revoked' => 0, 'byType' => collect()];
+
+        return view('admin.attestations.index', [
+            'editions' => Edition::latest('id')->get(),
+            'edition' => $edition,
+            'edition_id' => $edition ? (string) $edition->id : '',
+            'types' => Attestation::TYPES,
+            'type' => $type ?? '',
+            'state' => $state ?? '',
+            'attestations' => $attestations,
+            'stats' => $stats,
+        ]);
+    }
+
+    /**
+     * Télécharge un modèle de base .docx (starter) pour le livre des résumés :
+     * document Word minimal montrant la structure et les balises de fusion.
+     */
+    public function baseTemplate(): Response
+    {
+        $body = <<<'HTML'
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
+        <head><meta charset="utf-8"><title>Modèle de base — Livre des résumés</title>
+        <style>body{font-family:'Times New Roman',serif;font-size:11pt;line-height:1.4;}
+        h1{font-family:Jost,Arial,sans-serif;font-size:24pt;color:#223ea4;text-align:center;}
+        h2{font-family:Jost,Arial,sans-serif;font-size:16pt;color:#223ea4;}
+        h3{font-size:12pt;} .tag{color:#3730a3;font-family:Consolas,monospace;} .muted{color:#5a6577;}</style></head>
+        <body>
+        <h1>{{edition_name}}</h1>
+        <p style="text-align:center;" class="muted">Livre des résumés · Université de Kara</p>
+        <hr>
+        <h2>{{axis}}</h2>
+        <h3>{{abstract_title}}</h3>
+        <p><em>{{authors}}</em></p>
+        <p>{{abstract_body}}</p>
+        <hr>
+        <p class="muted">Balises de fusion disponibles :
+        <span class="tag">{{edition_name}}</span>, <span class="tag">{{axis}}</span>,
+        <span class="tag">{{abstract_title}}</span>, <span class="tag">{{authors}}</span>,
+        <span class="tag">{{abstract_body}}</span>, <span class="tag">{{session}}</span>.</p>
+        <p class="muted">Dupliquez le bloc « Axe → Résumé » autant que nécessaire, puis importez ce fichier
+        comme modèle personnalisé.</p>
+        </body></html>
+        HTML;
+
+        return response($body, 200, [
+            'Content-Type' => 'application/msword; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="ukc-livre-base.doc"',
+        ]);
     }
 
     /** Participants éligibles pour un type d'attestation donné. */

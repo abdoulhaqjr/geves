@@ -36,7 +36,32 @@ class SubmissionFormConfig
         'checkbox' => 'Case à cocher',
     ];
 
+    /** Règles & limites par défaut du formulaire (onglet « Règles » de l'éditeur). */
+    public const RULE_DEFAULTS = [
+        'word_min' => 0,       // résumé : minimum de MOTS (0 = pas de minimum)
+        'word_limit' => 300,   // résumé : maximum de MOTS
+        'keywords_min' => 0,   // mots-clés : minimum (0 = pas de minimum)
+        'keywords_max' => 6,   // mots-clés : maximum
+        'max_authors' => 8,
+        'file_max_mb' => 5,
+        'file_formats' => 'pdf, docx',
+        'require_account' => true,
+        'no_duplicate' => true,
+        'live_counter' => true,
+        'captcha' => false,
+    ];
+
     public function __construct(public Edition $edition) {}
+
+    /**
+     * Règles & limites du formulaire (fusionnées avec les valeurs par défaut).
+     *
+     * @return array<string, mixed>
+     */
+    public function rules(): array
+    {
+        return array_merge(self::RULE_DEFAULTS, (array) ($this->raw()['rules'] ?? []));
+    }
 
     /** @return array<string, mixed> */
     protected function raw(): array
@@ -80,17 +105,28 @@ class SubmissionFormConfig
         return $v === null ? (bool) (self::STANDARD_DEFAULTS[$key]['required'] ?? true) : (bool) $v;
     }
 
+    /** Résumé : minimum de MOTS (les limites du résumé sont en mots, pas en caractères). */
     public function abstractMin(): int
     {
-        return max(0, (int) ($this->fieldConf('abstract')['min'] ?? self::STANDARD_DEFAULTS['abstract']['min']));
+        return max(0, (int) $this->rules()['word_min']);
     }
 
+    /** Résumé : maximum de MOTS. */
     public function abstractMax(): int
     {
-        $min = $this->abstractMin();
-        $max = (int) ($this->fieldConf('abstract')['max'] ?? self::STANDARD_DEFAULTS['abstract']['max']);
+        return max($this->abstractMin() + 1, (int) $this->rules()['word_limit']);
+    }
 
-        return max($min + 1, $max);
+    /** Mots-clés : nombre minimum. */
+    public function keywordsMin(): int
+    {
+        return max(0, (int) $this->rules()['keywords_min']);
+    }
+
+    /** Mots-clés : nombre maximum. */
+    public function keywordsMax(): int
+    {
+        return max($this->keywordsMin(), (int) $this->rules()['keywords_max']);
     }
 
     /**

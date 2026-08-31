@@ -1,5 +1,12 @@
 <x-layouts.admin title="Rapports" subtitle="Statistiques, exports et bilans par édition">
-    <div class="admin-page admin-reports" x-data="{ tab: '{{ (session('ai_report') || session('ai_error')) ? 'ai' : 'overview' }}' }">
+    <div class="admin-page admin-reports" x-data="{
+            tab: '{{ (session('ai_report') || session('ai_error')) ? 'ai' : 'overview' }}',
+            aiMode: '{{ old('mode', 'describe') }}',
+            aiFileName: '',
+            pickFile() { const i = this.$refs.aiFile; if (i.files && i.files[0]) this.aiFileName = i.files[0].name; },
+            dropFile(e) { const dt = e.dataTransfer; if (dt && dt.files && dt.files[0]) { this.$refs.aiFile.files = dt.files; this.aiFileName = dt.files[0].name; this.aiMode = 'template'; } },
+            clearFile() { this.$refs.aiFile.value = ''; this.aiFileName = ''; }
+         }">
         {{-- Barre : sélecteur d'édition + exports globaux --}}
         <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
             <div class="ukc-field" style="min-width:220px;margin:0;">
@@ -37,15 +44,26 @@
                 <button type="button" @click="tab='ai'" :class="{ active: tab==='ai' }">Export personnalisé (IA)</button>
             </div>
 
+            @php
+                $byStatus = $summary['submissionsByStatus'];
+                $enRevue = ($byStatus['under_review'] ?? 0) + ($byStatus['revision'] ?? 0);
+                $rejected = $byStatus['rejected'] ?? 0;
+                $decided = $summary['accepted'] + $rejected;
+                $tauxAccept = $decided > 0 ? (int) round($summary['accepted'] / $decided * 100) : 0;
+                $rev = $report->reviewStats();
+                $revTotal = $rev['done'] + $rev['late'];
+                $revRate = $revTotal > 0 ? (int) round($rev['done'] / $revTotal * 100) : 0;
+            @endphp
+
             {{-- Vue d'ensemble --}}
             <div class="ukc-panel" :class="{ active: tab==='overview' }">
                 <div class="ukc-stats">
-                    <div class="ukc-stat-card"><div class="lbl">Participants</div><div class="val blue">{{ $summary['participants'] }}</div></div>
-                    <div class="ukc-stat-card"><div class="lbl">Communications</div><div class="val">{{ $summary['submissions'] }}</div></div>
-                    <div class="ukc-stat-card"><div class="lbl">Acceptées</div><div class="val green">{{ $summary['accepted'] }}</div></div>
-                    <div class="ukc-stat-card"><div class="lbl">Ont payé</div><div class="val">{{ $summary['paidCount'] }}</div></div>
-                    <div class="ukc-stat-card"><div class="lbl">Encaissé</div><div class="val green">{{ number_format($summary['collected'], 0, ',', ' ') }} <span style="font-size:.9rem;">{{ $summary['currency'] }}</span></div></div>
-                    <div class="ukc-stat-card"><div class="lbl">En attente</div><div class="val warn">{{ number_format($summary['pending'], 0, ',', ' ') }} <span style="font-size:.9rem;">{{ $summary['currency'] }}</span></div></div>
+                    <div class="ukc-stat-card"><div class="lbl">Soumissions</div><div class="val blue">{{ $summary['submissions'] }}</div><div class="hint">{{ $enRevue }} en revue · {{ $summary['accepted'] }} acceptées</div></div>
+                    <div class="ukc-stat-card"><div class="lbl">Participants</div><div class="val">{{ $summary['participants'] }}</div><div class="hint">{{ $summary['paidCount'] }} payés</div></div>
+                    <div class="ukc-stat-card"><div class="lbl">Recettes</div><div class="val green">{{ number_format($summary['collected'], 0, ',', ' ') }} <span style="font-size:.9rem;">{{ $summary['currency'] }}</span></div><div class="hint">{{ number_format($summary['pending'], 0, ',', ' ') }} en attente</div></div>
+                    <div class="ukc-stat-card"><div class="lbl">Taux d’acceptation</div><div class="val">{{ $tauxAccept }} %</div><div class="hint">{{ $summary['accepted'] }} / {{ $decided }} décidées</div></div>
+                    <div class="ukc-stat-card"><div class="lbl">Avis relecteurs</div><div class="val warn">{{ $revRate }} %</div><div class="hint">{{ $rev['late'] }} avis en attente</div></div>
+                    <div class="ukc-stat-card"><div class="lbl">Attestations</div><div class="val">{{ $counts['attestations'] }}</div><div class="hint">Émises</div></div>
                 </div>
 
                 <div class="charts-grid">
@@ -70,75 +88,351 @@
 
             {{-- Soumissions --}}
             <div class="ukc-panel" :class="{ active: tab==='submissions' }">
-                @include('admin.reports._table', ['title' => 'Communications', 'headers' => $report->submissionHeaders(), 'rows' => $report->submissionRows()])
+                <div class="ukc-card">
+                    <h2>Rapport soumissions
+                        <span class="card-actions">
+                            <a href="{{ route('admin.reports.export', [$edition, 'submissions', 'csv']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">CSV</a>
+                            <a href="{{ route('admin.reports.export', [$edition, 'submissions', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
+                        </span>
+                    </h2>
+                    <p class="desc">Synthèse par statut, type de communication et axe.</p>
+                    <div class="ukc-stats" style="margin-bottom:14px;">
+                        <div class="ukc-stat-card"><div class="lbl">Reçues</div><div class="val blue">{{ $summary['submissions'] }}</div></div>
+                        <div class="ukc-stat-card"><div class="lbl">En revue</div><div class="val warn">{{ $enRevue }}</div></div>
+                        <div class="ukc-stat-card"><div class="lbl">Acceptées</div><div class="val green">{{ $summary['accepted'] }}</div></div>
+                        <div class="ukc-stat-card"><div class="lbl">Refusées</div><div class="val">{{ $rejected }}</div></div>
+                        <div class="ukc-stat-card"><div class="lbl">Soumises</div><div class="val">{{ $byStatus['submitted'] ?? 0 }}</div></div>
+                    </div>
+                    <div class="ukc-table-wrap">
+                        <table class="ukc-table">
+                            <thead><tr><th>Axe</th><th class="num">Soumissions</th><th class="num">En revue</th><th class="num">Acceptées</th><th class="num">Refusées</th><th class="num">Taux accept.</th></tr></thead>
+                            <tbody>
+                                @forelse ($report->submissionsByAxis() as $r)
+                                    <tr>
+                                        <td>{{ $r['axe'] }}</td>
+                                        <td class="num">{{ $r['total'] }}</td>
+                                        <td class="num">{{ $r['review'] }}</td>
+                                        <td class="num">{{ $r['accepted'] }}</td>
+                                        <td class="num">{{ $r['rejected'] }}</td>
+                                        <td class="num">{{ $r['rate'] }} %</td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="6" style="text-align:center;color:var(--ukc-muted);padding:20px;">Aucune soumission.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="ukc-card">
+                    <h2>Types de communication</h2>
+                    <div class="ukc-table-wrap">
+                        <table class="ukc-table">
+                            <thead><tr><th>Type</th><th class="num">Nombre</th><th class="num">Acceptés</th><th class="num">Part</th></tr></thead>
+                            <tbody>
+                                @forelse ($report->submissionsByType() as $r)
+                                    <tr><td>{{ $r['type'] }}</td><td class="num">{{ $r['total'] }}</td><td class="num">{{ $r['accepted'] }}</td><td class="num">{{ $r['part'] }} %</td></tr>
+                                @empty
+                                    <tr><td colspan="4" style="text-align:center;color:var(--ukc-muted);padding:20px;">Aucune donnée.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             {{-- Participants --}}
             <div class="ukc-panel" :class="{ active: tab==='participants' }">
-                @include('admin.reports._table', ['title' => 'Participants', 'headers' => $report->participantHeaders(), 'rows' => $report->participantRows()])
+                <div class="ukc-card">
+                    <h2>Rapport participants
+                        <span class="card-actions">
+                            <a href="{{ route('admin.reports.export', [$edition, 'participants', 'csv']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">CSV</a>
+                            <a href="{{ route('admin.reports.export', [$edition, 'participants', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
+                        </span>
+                    </h2>
+                    <p class="desc">Inscriptions, catégories et provenance.</p>
+                    <div class="ukc-stats" style="margin-bottom:14px;">
+                        <div class="ukc-stat-card"><div class="lbl">Total inscrits</div><div class="val blue">{{ $summary['participants'] }}</div></div>
+                        <div class="ukc-stat-card"><div class="lbl">Payés</div><div class="val green">{{ $summary['paidCount'] }}</div></div>
+                        <div class="ukc-stat-card"><div class="lbl">Sans paiement</div><div class="val warn">{{ max(0, $summary['participants'] - $summary['paidCount']) }}</div></div>
+                        <div class="ukc-stat-card"><div class="lbl">Pays représentés</div><div class="val">{{ count($report->participantsByCountry()) }}</div></div>
+                    </div>
+                    <div class="layout-2">
+                        <div>
+                            <h3 class="sub-h">Par catégorie</h3>
+                            <div class="ukc-table-wrap">
+                                <table class="ukc-table" style="min-width:0;">
+                                    <thead><tr><th>Catégorie</th><th class="num">Inscrits</th><th class="num">Payés</th></tr></thead>
+                                    <tbody>
+                                        @forelse ($report->participantsByRole() as $r)
+                                            <tr><td>{{ $r['role'] }}</td><td class="num">{{ $r['count'] }}</td><td class="num">{{ $r['paid'] }}</td></tr>
+                                        @empty
+                                            <tr><td colspan="3" style="text-align:center;color:var(--ukc-muted);padding:16px;">Aucun participant.</td></tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="sub-h">Par pays (top 6)</h3>
+                            <div class="ukc-table-wrap">
+                                <table class="ukc-table" style="min-width:0;">
+                                    <thead><tr><th>Pays</th><th class="num">Participants</th><th class="num">Part</th></tr></thead>
+                                    <tbody>
+                                        @forelse ($report->participantsByCountry() as $r)
+                                            <tr><td>{{ $r['country'] }}</td><td class="num">{{ $r['count'] }}</td><td class="num">{{ $r['part'] }} %</td></tr>
+                                        @empty
+                                            <tr><td colspan="3" style="text-align:center;color:var(--ukc-muted);padding:16px;">Aucune donnée.</td></tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {{-- Paiements --}}
             <div class="ukc-panel" :class="{ active: tab==='payments' }">
-                @include('admin.reports._table', ['title' => 'Paiements', 'headers' => $report->paymentHeaders(), 'rows' => $report->paymentRows()])
+                @php($payStats = $report->paymentStats())
+                <div class="ukc-card">
+                    <h2>Rapport paiements
+                        <span class="card-actions">
+                            <a href="{{ route('admin.reports.export', [$edition, 'payments', 'csv']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">CSV</a>
+                            <a href="{{ route('admin.reports.export', [$edition, 'payments', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
+                        </span>
+                    </h2>
+                    <p class="desc">Recettes, passerelles et statut des transactions.</p>
+                    <div class="ukc-stats" style="margin-bottom:14px;">
+                        <div class="ukc-stat-card"><div class="lbl">Recettes totales</div><div class="val green">{{ number_format($summary['collected'], 0, ',', ' ') }}</div><div class="hint">{{ $summary['currency'] }}</div></div>
+                        <div class="ukc-stat-card"><div class="lbl">Transactions OK</div><div class="val blue">{{ $payStats['ok'] }}</div></div>
+                        <div class="ukc-stat-card"><div class="lbl">En attente</div><div class="val warn">{{ $payStats['pending'] }}</div></div>
+                        <div class="ukc-stat-card"><div class="lbl">Échouées / annulées</div><div class="val">{{ $payStats['failed'] }}</div></div>
+                    </div>
+                    <div class="layout-2">
+                        <div>
+                            <h3 class="sub-h">Par passerelle</h3>
+                            <div class="ukc-table-wrap">
+                                <table class="ukc-table" style="min-width:0;">
+                                    <thead><tr><th>Passerelle</th><th class="num">Nb</th><th class="num">Montant ({{ $summary['currency'] }})</th></tr></thead>
+                                    <tbody>
+                                        @foreach ($report->accountingRows() as $r)
+                                            <tr @if($r[0]==='Total') style="font-weight:800;background:#f8fafc;" @endif>
+                                                <td>{{ $r[0] }}</td><td class="num">{{ $r[1] }}</td><td class="num">{{ number_format($r[2], 0, ',', ' ') }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="sub-h">Par tarif</h3>
+                            <div class="ukc-table-wrap">
+                                <table class="ukc-table" style="min-width:0;">
+                                    <thead><tr><th>Tarif</th><th class="num">Nb</th><th class="num">Montant</th></tr></thead>
+                                    <tbody>
+                                        @forelse ($report->paymentsByTarif() as $r)
+                                            <tr><td>{{ number_format($r['tarif'], 0, ',', ' ') }} {{ $summary['currency'] }}</td><td class="num">{{ $r['count'] }}</td><td class="num">{{ number_format($r['total'], 0, ',', ' ') }}</td></tr>
+                                        @empty
+                                            <tr><td colspan="3" style="text-align:center;color:var(--ukc-muted);padding:16px;">Aucun paiement réglé.</td></tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {{-- Relectures --}}
             <div class="ukc-panel" :class="{ active: tab==='reviews' }">
-                @include('admin.reports._table', ['title' => 'Relectures', 'headers' => $reviewHeaders, 'rows' => $reviewRows])
+                <div class="ukc-card">
+                    <h2>Rapport relectures</h2>
+                    <p class="desc">Charge des relecteurs et délais moyens.</p>
+                    <div class="ukc-stats" style="margin-bottom:14px;">
+                        <div class="ukc-stat-card"><div class="lbl">Relecteurs actifs</div><div class="val blue">{{ $rev['reviewers'] }}</div></div>
+                        <div class="ukc-stat-card"><div class="lbl">Avis rendus</div><div class="val">{{ $rev['done'] }}</div></div>
+                        <div class="ukc-stat-card"><div class="lbl">En attente</div><div class="val warn">{{ $rev['late'] }}</div></div>
+                        <div class="ukc-stat-card"><div class="lbl">Délai moyen</div><div class="val">{{ number_format($rev['avgDays'], 1, ',', ' ') }} j</div></div>
+                    </div>
+                    <div class="ukc-table-wrap">
+                        <table class="ukc-table">
+                            <thead><tr><th>Relecteur</th><th class="num">Assignées</th><th class="num">Rendues</th><th class="num">En attente</th><th>Complétion</th></tr></thead>
+                            <tbody>
+                                @forelse ($report->reviewsByReviewer() as $r)
+                                    <tr>
+                                        <td>{{ $r['name'] }}</td>
+                                        <td class="num">{{ $r['assigned'] }}</td>
+                                        <td class="num">{{ $r['done'] }}</td>
+                                        <td class="num">{{ $r['late'] }}</td>
+                                        <td style="min-width:120px;">
+                                            <div style="font-size:12px;font-weight:700;">{{ $r['completion'] }} %</div>
+                                            <div class="progress-bar"><span style="width:{{ $r['completion'] }}%;@if($r['completion']>=100)background:var(--ukc-green);@elseif($r['completion']<80)background:#d97706;@endif"></span></div>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="5" style="text-align:center;color:var(--ukc-muted);padding:20px;">Aucune relecture assignée.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
-            {{-- Exports --}}
+            {{-- Exports prêts --}}
             <div class="ukc-panel" :class="{ active: tab==='exports' }">
                 <div class="ukc-card">
-                    <h2>Exports prêts</h2>
-                    <p class="desc">
-                        Le classeur Excel contient les feuilles <strong>Synthèse</strong>, <strong>Participants</strong>,
-                        <strong>Communications</strong> et <strong>Paiements</strong>. Le rapport PDF est imprimable
-                        (Imprimer → Enregistrer en PDF).
-                    </p>
-                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                        <a href="{{ route('admin.reports.xlsx', $edition) }}" class="ukc-btn ukc-btn--green">
-                            <x-ukc.icon name="sheet" :size="18" /> Exporter Excel (.xlsx)
-                        </a>
-                        <a href="{{ route('admin.reports.pdf', $edition) }}" target="_blank" class="ukc-btn ukc-btn--blue">
-                            <x-ukc.icon name="file" :size="18" /> Rapport PDF
-                        </a>
+                    <h2>Exports prêts à télécharger</h2>
+                    <p class="desc">Fichiers générés à la demande à partir des données réelles de l’édition. Formats CSV, Excel et PDF.</p>
+
+                    <div class="report-list">
+                        <div class="report-item">
+                            <h3>Liste complète des soumissions</h3>
+                            <p>Référence, titre, auteur correspondant, axe, type, statut, note moyenne.</p>
+                            <div class="meta">CSV · XLSX · ~{{ $counts['submissions'] }} lignes</div>
+                            <div class="dl">
+                                <a href="{{ route('admin.reports.export', [$edition, 'submissions', 'csv']) }}" class="ukc-btn ukc-btn--sm">CSV</a>
+                                <a href="{{ route('admin.reports.export', [$edition, 'submissions', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
+                            </div>
+                        </div>
+                        <div class="report-item">
+                            <h3>Liste des participants</h3>
+                            <p>Identité, catégorie, institution, pays, paiement, montant, invité.</p>
+                            <div class="meta">CSV · XLSX · ~{{ $counts['participants'] }} lignes</div>
+                            <div class="dl">
+                                <a href="{{ route('admin.reports.export', [$edition, 'participants', 'csv']) }}" class="ukc-btn ukc-btn--sm">CSV</a>
+                                <a href="{{ route('admin.reports.export', [$edition, 'participants', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
+                            </div>
+                        </div>
+                        <div class="report-item">
+                            <h3>Journal des paiements</h3>
+                            <p>Transactions FedaPay / CashPay : reçu, montant, passerelle, statut, date.</p>
+                            <div class="meta">CSV · XLSX · ~{{ $counts['payments'] }} lignes</div>
+                            <div class="dl">
+                                <a href="{{ route('admin.reports.export', [$edition, 'payments', 'csv']) }}" class="ukc-btn ukc-btn--sm">CSV</a>
+                                <a href="{{ route('admin.reports.export', [$edition, 'payments', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
+                            </div>
+                        </div>
+                        <div class="report-item">
+                            <h3>Bilan scientifique (PDF)</h3>
+                            <p>Synthèse : participants, communications, taux d’acceptation, paiements.</p>
+                            <div class="meta">PDF · {{ $edition->title ?: $edition->year }}</div>
+                            <div class="dl">
+                                <a href="{{ route('admin.reports.pdf', $edition) }}" target="_blank" class="ukc-btn ukc-btn--sm">Télécharger PDF</a>
+                            </div>
+                        </div>
+                        <div class="report-item">
+                            <h3>Attestations émises</h3>
+                            <p>Attestations générées avec UUID de vérification publique et statut.</p>
+                            <div class="meta">CSV · ~{{ $counts['attestations'] }} lignes</div>
+                            <div class="dl">
+                                <a href="{{ route('admin.reports.export', [$edition, 'attestations', 'csv']) }}" class="ukc-btn ukc-btn--sm">CSV</a>
+                            </div>
+                        </div>
+                        <div class="report-item">
+                            <h3>Export comptable</h3>
+                            <p>Récapitulatif des recettes réglées par passerelle, avec total.</p>
+                            <div class="meta">XLSX · {{ $summary['currency'] }}</div>
+                            <div class="dl">
+                                <a href="{{ route('admin.reports.export', [$edition, 'accounting', 'xlsx']) }}" class="ukc-btn ukc-btn--sm">Excel</a>
+                            </div>
+                        </div>
                     </div>
+                    <p class="ukc-hint" style="margin-top:14px;">Le classeur Excel « complet » (toutes les feuilles) reste disponible via <a href="{{ route('admin.reports.xlsx', $edition) }}">Excel (.xlsx)</a> en haut de page.</p>
                 </div>
             </div>
 
             {{-- Export personnalisé (IA) --}}
             <div class="ukc-panel" :class="{ active: tab==='ai' }">
                 <div class="ukc-card">
-                    <h2><span><x-ukc.icon name="sparkles" :size="18" /> Export personnalisé (IA)</span></h2>
+                    <h2><span><x-ukc.icon name="sparkles" :size="18" /> Export personnalisé assisté par l’IA</span></h2>
                     <p class="desc">
-                        Décrivez le rapport souhaité (ou joignez un exemple à reproduire). L’IA rédige un
-                        <strong>brouillon</strong> à partir des chiffres réels de l’édition — <strong>la décision et la
-                        diffusion restent à votre main</strong>.
+                        Décrivez le rapport souhaité <strong>ou</strong> joignez un modèle existant (PDF, Word, Excel).
+                        L’IA rédige un <strong>brouillon</strong> à partir des données réelles de l’édition —
+                        la décision et la diffusion restent à votre main.
                     </p>
 
-                    <form method="POST" action="{{ route('admin.reports.generate') }}" enctype="multipart/form-data">
+                    <form method="POST" action="{{ route('admin.reports.generate') }}" enctype="multipart/form-data" x-ref="aiForm">
                         @csrf
                         <input type="hidden" name="edition_id" value="{{ $edition->id }}">
-                        <div class="ukc-form-grid">
-                            <div class="ukc-field full">
-                                <label for="aiBrief">Que doit contenir le rapport ?</label>
-                                <textarea id="aiBrief" name="aiBrief" rows="3"
-                                          placeholder="Ex. : synthèse pour le conseil scientifique — chiffres clés, taux d’acceptation, recommandations.">{{ old('aiBrief') }}</textarea>
+                        <input type="hidden" name="mode" :value="aiMode">
+
+                        <div class="ai-mode-tabs">
+                            <button type="button" :class="{ active: aiMode==='describe' }" @click="aiMode='describe'">Décrire le rapport</button>
+                            <button type="button" :class="{ active: aiMode==='template' }" @click="aiMode='template'">Partir d’un modèle</button>
+                        </div>
+
+                        {{-- Mode description --}}
+                        <div x-show="aiMode==='describe'">
+                            <div class="ukc-form-row">
+                                <label for="aiBrief">Que voulez-vous comme rapport ?</label>
+                                <textarea id="aiBrief" name="aiBrief" rows="6"
+                                          placeholder="Ex. : Tableau des participants payés par pays et catégorie, colonnes Nom, Institution, Pays, Catégorie, Montant, Date. Inclure un résumé en tête.">{{ old('aiBrief') }}</textarea>
                                 @error('aiBrief') <span class="error">{{ $message }}</span> @enderror
-                            </div>
-                            <div class="ukc-field full">
-                                <label for="aiExample">Exemple de rapport <span class="hint">(optionnel — PDF/DOC/DOCX/TXT, l’IA reproduit sa structure)</span></label>
-                                <input type="file" id="aiExample" name="aiExample" accept=".pdf,.doc,.docx,.txt">
-                                @error('aiExample') <span class="error">{{ $message }}</span> @enderror
+                                <p class="ukc-hint">Soyez précis sur les colonnes, le regroupement, les filtres et le format de sortie.</p>
                             </div>
                         </div>
 
-                        <div class="ukc-form-actions">
-                            <button type="submit" class="ukc-btn ukc-btn--blue">
-                                <x-ukc.icon name="sparkles" :size="18" /> Générer le brouillon
-                            </button>
+                        {{-- Mode modèle --}}
+                        <div x-show="aiMode==='template'" x-cloak>
+                            <div class="ukc-form-row">
+                                <label>Modèle de rapport (exemple)</label>
+                                <div class="ai-dropzone" @click="$refs.aiFile.click()"
+                                     @dragover.prevent="$el.classList.add('dragover')"
+                                     @dragleave.prevent="$el.classList.remove('dragover')"
+                                     @drop.prevent="$el.classList.remove('dragover'); dropFile($event)">
+                                    <div class="icon">📄</div>
+                                    <strong>Glissez un fichier ici ou cliquez pour parcourir</strong>
+                                    <p>PDF, Word (.docx), Excel (.xlsx) · max. 10 Mo</p>
+                                    <input type="file" x-ref="aiFile" name="aiExample" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv" style="display:none;" @change="pickFile()">
+                                </div>
+                                <div class="ai-file-chip" x-show="aiFileName" x-cloak style="display:none;">
+                                    <span x-text="aiFileName"></span>
+                                    <button type="button" @click="clearFile()" title="Retirer">&times;</button>
+                                </div>
+                                @error('aiExample') <span class="error">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="ukc-form-row">
+                                <label for="aiNotes">Instructions complémentaires (optionnel)</label>
+                                <textarea id="aiNotes" name="aiNotes" rows="4"
+                                          placeholder="Ex. : Reprendre la structure et les en-têtes du modèle, remplacer les données par celles de l’édition.">{{ old('aiNotes') }}</textarea>
+                            </div>
+                        </div>
+
+                        <div class="ai-form-grid">
+                            <div class="ukc-form-row">
+                                <label for="aiFormat">Format de sortie</label>
+                                <select id="aiFormat" name="format">
+                                    <option value="xlsx" @selected(old('format')==='xlsx')>Excel (.xlsx)</option>
+                                    <option value="csv" @selected(old('format')==='csv')>CSV</option>
+                                    <option value="pdf" @selected(old('format')==='pdf')>PDF</option>
+                                    <option value="docx" @selected(old('format')==='docx')>Word (.docx)</option>
+                                </select>
+                            </div>
+                            <div class="ukc-form-row">
+                                <label for="aiScope">Périmètre des données</label>
+                                <select id="aiScope" name="scope">
+                                    <option value="edition" @selected(old('scope')==='edition')>Édition (participants + communications + paiements)</option>
+                                    <option value="subs" @selected(old('scope')==='subs')>Soumissions uniquement</option>
+                                    <option value="part" @selected(old('scope')==='part')>Participants uniquement</option>
+                                    <option value="pay" @selected(old('scope')==='pay')>Paiements uniquement</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="ukc-form-row">
+                            <label for="aiProvider">Fournisseur IA</label>
+                            <select id="aiProvider" name="aiProvider">
+                                <option value="default">Par défaut (réglages globaux)</option>
+                                <option value="claude" @selected(old('aiProvider')==='claude')>Claude</option>
+                                <option value="openai" @selected(old('aiProvider')==='openai')>OpenAI</option>
+                                <option value="gemini" @selected(old('aiProvider')==='gemini')>Gemini</option>
+                                <option value="grok" @selected(old('aiProvider')==='grok')>Grok</option>
+                            </select>
+                        </div>
+
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">
+                            <button type="submit" class="ukc-btn ukc-btn--blue"><x-ukc.icon name="sparkles" :size="16" /> Générer avec l’IA</button>
+                            <button type="reset" class="ukc-btn ukc-btn--ghost" @click="clearFile(); aiMode='describe'">Réinitialiser</button>
                         </div>
                     </form>
 
@@ -151,20 +445,42 @@
 
                     @if (session('ai_report'))
                         @php($aiReport = session('ai_report'))
-                        <div style="margin-top:18px;border-top:1px solid var(--ukc-border);padding-top:18px;">
-                            <div class="ukc-alert ukc-alert--warn" style="margin-bottom:14px;">
-                                <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
-                                <div>Brouillon généré par IA — <strong>à relire et valider</strong> avant toute diffusion officielle.</div>
+                        <div class="ai-result">
+                            <h3>Rapport généré</h3>
+                            <p style="font-size:13px;color:#166534;margin-bottom:10px;">
+                                Brouillon produit selon vos instructions et les données réelles de l’édition —
+                                à relire avant diffusion. Format : <strong>{{ strtoupper($aiReport['format'] ?? 'xlsx') }}</strong>.
+                            </p>
+                            <div class="actions" style="display:flex;gap:8px;flex-wrap:wrap;">
+                                <a href="{{ route('admin.reports.ai-download', [$edition, $aiReport['id']]) }}" @if(in_array(($aiReport['format'] ?? ''), ['pdf'], true)) target="_blank" @endif class="ukc-btn ukc-btn--sm">Télécharger</a>
                             </div>
-                            <article class="ukc-rte">
-                                <h3 style="font-size:1.15rem;font-weight:900;margin-bottom:12px;">{{ $aiReport['title'] }}</h3>
+                            <div style="margin-top:14px;border-top:1px solid #bbf7d0;padding-top:12px;">
+                                <h4 style="font-size:1.1rem;font-weight:900;margin-bottom:10px;color:var(--ukc-text);">{{ $aiReport['title'] }}</h4>
                                 @foreach ($aiReport['sections'] as $section)
-                                    @if ($section['heading'])<h4 style="font-weight:800;margin:14px 0 6px;">{{ $section['heading'] }}</h4>@endif
+                                    @if ($section['heading'])<h5 style="font-weight:800;margin:12px 0 6px;color:var(--ukc-text);">{{ $section['heading'] }}</h5>@endif
                                     <div style="white-space:pre-line;color:var(--ukc-text);line-height:1.7;">{{ $section['body'] }}</div>
                                 @endforeach
-                            </article>
+                            </div>
                         </div>
                     @endif
+                </div>
+
+                {{-- Historique des exports IA --}}
+                <div class="ukc-card">
+                    <h2>Historique des exports IA</h2>
+                    <p class="desc">Dernières générations pour cette édition (stockées côté serveur).</p>
+                    @forelse ($aiHistory as $h)
+                        <div class="ai-history-item">
+                            <div>
+                                <div class="title">{{ $h['title'] }}</div>
+                                <div class="meta">{{ strtoupper($h['format'] ?? 'xlsx') }} · {{ $h['created_at'] ?? '' }} ·
+                                    {{ ['describe' => 'Description libre', 'template' => 'À partir d’un modèle'][$h['mode'] ?? 'describe'] ?? 'Description libre' }}</div>
+                            </div>
+                            <a href="{{ route('admin.reports.ai-download', [$edition, $h['id']]) }}" @if(($h['format'] ?? '')==='pdf') target="_blank" @endif class="ukc-btn ukc-btn--ghost ukc-btn--sm">Télécharger</a>
+                        </div>
+                    @empty
+                        <p class="ukc-hint">Aucune génération pour l’instant. Décrivez un rapport ci-dessus pour commencer.</p>
+                    @endforelse
                 </div>
             </div>
         @else

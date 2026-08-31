@@ -1,5 +1,5 @@
 <x-layouts.participant title="Tableau de bord" subtitle="Votre parcours, communications & documents">
-<div>
+<div class="account-dashboard">
     {{-- Bandeau : prochaine étape --}}
     @if (! $account->hasVerifiedEmail())
         <div class="ukc-alert ukc-alert--warn">
@@ -21,27 +21,24 @@
         </div>
     @endif
 
-    {{-- En-tête de bienvenue --}}
-    <div class="ukc-card" style="margin-bottom:20px;">
-        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-            <div class="ukc-avatar-preview" style="width:64px;height:64px;font-size:20px;">
-                @if ($account->photo_path)
-                    <img src="{{ \Illuminate\Support\Facades\Storage::url($account->photo_path) }}" alt="">
-                @else
-                    {{ $account->initials }}
-                @endif
-            </div>
-            <div style="min-width:0;">
-                <h2 style="margin:0;font-size:1.2rem;">Bonjour {{ $account->first_name }}</h2>
-                <p style="font-size:.9rem;color:var(--ukc-muted);margin-top:2px;">
-                    {{ $account->email }}
-                    @if ($account->hasVerifiedEmail())
-                        <span class="ukc-pill ukc-pill--ok" style="margin-left:6px;">
-                            <x-ukc.icon name="check" :size="12" /> E-mail vérifié
-                        </span>
-                    @endif
-                </p>
-            </div>
+    {{-- Bandeau d'accueil (fidèle au mockup) : bienvenue + dates & lieu du colloque --}}
+    @php
+        $colloqueLine = null;
+        if ($contextEdition && $contextEdition->date_start) {
+            $d1 = $contextEdition->date_start;
+            $d2 = $contextEdition->date_end;
+            $dates = $d2 && $d2->ne($d1)
+                ? $d1->translatedFormat('j').' – '.$d2->translatedFormat('j F Y')
+                : $d1->translatedFormat('j F Y');
+            $colloqueLine = trim($dates.($contextEdition->location ? ' · '.\Illuminate\Support\Str::limit(strip_tags($contextEdition->location), 60) : ''));
+        }
+    @endphp
+    <div class="ukc-alert ukc-alert--info" style="margin-bottom:22px;">
+        <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
+        <div style="flex:1;">
+            Bonjour <strong>{{ $account->first_name }}</strong>. Suivez l’état de vos soumissions, finalisez votre
+            inscription et téléchargez vos documents.
+            @if ($colloqueLine)<br><strong>Colloque : {{ $colloqueLine }}</strong>@endif
         </div>
     </div>
 
@@ -96,17 +93,58 @@
         </div>
     @endif
 
-    {{-- Étapes du parcours --}}
-    <div class="ukc-steps">
-        <div class="ukc-step done">Compte créé</div>
-        <div @class(['ukc-step', 'done' => $account->hasVerifiedEmail(), 'active' => ! $account->hasVerifiedEmail()])>
-            E-mail vérifié
+    {{-- Bloc principal (fidèle au mockup) : Mes soumissions (table) + Prochaines étapes --}}
+    @php
+        $hasSubs = $submissions->isNotEmpty();
+        $decided = $submissions->contains(fn ($s) => in_array($s->status, ['accepted', 'rejected'], true));
+    @endphp
+    <div class="ukc-grid-2" style="align-items:start;margin-bottom:22px;">
+        {{-- Mes soumissions --}}
+        <div class="ukc-card">
+            <h3>Mes soumissions</h3>
+            <div class="ukc-table-wrap">
+                <table class="ukc-table">
+                    <thead>
+                        <tr><th>Titre</th><th>Atelier</th><th>Statut</th></tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($submissions as $s)
+                            <tr>
+                                <td>
+                                    <div class="title"><a href="{{ route('account.submissions.show', $s) }}" style="color:var(--ukc-blue);font-weight:600;">{{ \Illuminate\Support\Str::limit($s->title, 46) }}</a></div>
+                                    <div class="meta" style="font-size:12px;color:var(--ukc-muted);">{{ $s->type === 'poster' ? 'Poster' : 'Orale' }} · {{ $s->ref_code }}@if ($s->created_at) · Déposée le {{ $s->created_at->translatedFormat('j M Y') }}@endif</div>
+                                </td>
+                                <td>{{ $s->track ?: '—' }}</td>
+                                <td><span class="ukc-pill ukc-pill--{{ $s->statusPill() }}">{{ $s->statusLabel() }}</span></td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="3" style="padding:18px;text-align:center;color:var(--ukc-muted);">Aucune communication déposée.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:16px;">
+                <a href="{{ route('account.submissions.index') }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">Gérer les soumissions</a>
+            </div>
         </div>
-        <div @class(['ukc-step', 'done' => filled($account->affiliation), 'active' => $account->hasVerifiedEmail() && blank($account->affiliation)])>
-            Profil complet
+
+        {{-- Prochaines étapes --}}
+        <div class="ukc-card">
+            <h3>Prochaines étapes</h3>
+            <div class="ukc-steps" style="flex-direction:column;">
+                <div class="ukc-step done">1. Compte créé</div>
+                <div @class(['ukc-step', 'done' => $account->hasVerifiedEmail(), 'active' => ! $account->hasVerifiedEmail()])>2. E-mail vérifié</div>
+                <div @class(['ukc-step', 'done' => filled($account->affiliation), 'active' => $account->hasVerifiedEmail() && blank($account->affiliation)])>3. Profil renseigné</div>
+                <div @class(['ukc-step', 'done' => $hasSubs, 'active' => $account->hasVerifiedEmail() && filled($account->affiliation) && ! $hasSubs])>4. Résumé déposé</div>
+                <div @class(['ukc-step', 'done' => $decided, 'active' => $hasSubs && ! $decided])>5. Notification d’acceptation</div>
+                <div @class(['ukc-step', 'done' => $payments->isNotEmpty(), 'active' => $payableEdition && $payments->isEmpty()])>6. Inscription &amp; paiement</div>
+            </div>
+            @if ($kpi['deadline'])
+                <p style="font-size:13px;color:var(--ukc-muted);margin-top:6px;">
+                    Échéance de soumission : <strong>{{ $kpi['deadline']->translatedFormat('j F Y') }}</strong>.
+                </p>
+            @endif
         </div>
-        <div @class(['ukc-step', 'done' => $submissions->isNotEmpty() || $payments->isNotEmpty()])>Participation</div>
-        <div @class(['ukc-step', 'done' => $attestations->isNotEmpty()])>Attestation</div>
     </div>
 
     {{-- Mes rôles & activité (dérivés inter-éditions) --}}
@@ -176,28 +214,7 @@
 
     @if ($hasContent)
         <div class="ukc-grid-2" style="align-items:start;">
-            {{-- Communications --}}
-            <div class="ukc-card">
-                <h3 style="justify-content:space-between;">
-                    <span><x-ukc.icon name="inbox" :size="20" /> Mes communications</span>
-                    <a href="{{ route('account.submissions.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Tout voir</a>
-                </h3>
-                @forelse ($submissions as $s)
-                    <a href="{{ route('account.submissions.show', $s) }}"
-                       style="display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--ukc-border);align-items:center;">
-                        <span style="min-width:0;">
-                            <span style="font-family:ui-monospace,monospace;color:var(--ukc-blue);font-weight:700;font-size:.82rem;">{{ $s->ref_code }}</span>
-                            <span style="display:block;font-weight:600;font-size:.9rem;">{{ \Illuminate\Support\Str::limit($s->title, 44) }}</span>
-                        </span>
-                        <span class="ukc-pill ukc-pill--{{ $s->statusPill() }}" style="flex-shrink:0;">{{ $s->statusLabel() }}</span>
-                    </a>
-                @empty
-                    <p style="font-size:.88rem;color:var(--ukc-muted);">Aucune communication.</p>
-                @endforelse
-            </div>
-
-            {{-- Paiements & attestations --}}
-            <div style="display:flex;flex-direction:column;gap:20px;">
+            {{-- Paiements & reçus --}}
                 <div class="ukc-card">
                     <h3><x-ukc.icon name="receipt" :size="20" /> Paiements & reçus</h3>
                     @forelse ($payments as $p)
@@ -230,7 +247,6 @@
                         <p style="font-size:.88rem;color:var(--ukc-muted);">Aucune attestation pour le moment.</p>
                     @endforelse
                 </div>
-            </div>
         </div>
     @elseif (! $openEdition)
         <div class="ukc-empty">

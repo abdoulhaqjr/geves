@@ -60,14 +60,12 @@
                         <a href="{{ route('admin.documents.attestations', ['tab' => 'badges']) }}" @class(['sub', 'active' => $dTab === 'badges'])>— Badges</a>
                         <a href="{{ route('admin.documents.attestations', ['tab' => 'livre']) }}" @class(['sub', 'active' => $dTab === 'livre'])>— Livre des résumés</a>
                     @endif
+                    <a href="{{ route('admin.attestations.index') }}"
+                       @class(['active' => request()->routeIs('admin.attestations.*')])>Attestations délivrées</a>
                 @endcan
                 @can('emails')
                     <a href="{{ route('admin.emails.index') }}"
                        @class(['active' => request()->routeIs('admin.emails.*')])>E-mails</a>
-                    @if (request()->routeIs('admin.emails.*'))
-                        <a href="{{ route('admin.emails.index') }}" @class(['sub', 'active' => request()->routeIs('admin.emails.index')])>— Programmés</a>
-                        <a href="{{ route('admin.emails.templates') }}" @class(['sub', 'active' => request()->routeIs('admin.emails.templates')])>— Modèles</a>
-                    @endif
                 @endcan
                 @can('editions_read')
                     <a href="{{ route('admin.program.slots') }}"

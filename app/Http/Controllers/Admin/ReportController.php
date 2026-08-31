@@ -6,9 +6,9 @@ use App\Actions\GenerateReport;
 use App\Http\Controllers\Controller;
 use App\Models\Edition;
 use App\Models\Payment;
-use App\Models\Review;
 use App\Models\Submission;
 use App\Support\EditionReport;
+use App\Support\Settings;
 use App\Support\XlsxWriter;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Rapports d'une édition (contrôleur + Blade) : synthèse chiffrée + graphiques
@@ -36,19 +37,12 @@ class ReportController extends Controller
         $edition = $editionId !== '' ? Edition::find($editionId) : null;
         $report = $edition ? new EditionReport($edition) : null;
 
-        // Relectures de l'édition (onglet Relectures — mockup admin-reports).
-        $reviewRows = [];
-        if ($edition) {
-            $reviewRows = Review::whereHas('submission', fn ($q) => $q->where('edition_id', $edition->id))
-                ->with(['submission', 'reviewer'])->latest('id')->get()
-                ->map(fn ($r) => [
-                    trim(($r->submission?->ref_code ? $r->submission->ref_code.' — ' : '').Str::limit((string) $r->submission?->title, 40)),
-                    $r->reviewer?->full_name ?: '—',
-                    $r->recommendation ?: '—',
-                    $r->score !== null ? (string) $r->score : '—',
-                    $r->status === 'completed' ? 'Terminé' : ($r->status === 'pending' ? 'En cours' : $r->status),
-                ])->all();
-        }
+        // Historique des exports IA (persisté), filtré sur l'édition courante.
+        $aiHistory = collect((array) Settings::get('report_ai_history', []))
+            ->filter(fn ($h) => (string) ($h['edition_id'] ?? '') === $editionId)
+            ->take(12)
+            ->values()
+            ->all();
 
         return view('admin.reports.index', [
             'editions' => Edition::latest('id')->get(),
@@ -58,21 +52,145 @@ class ReportController extends Controller
             'statuses' => Submission::statuses(),
             'chartData' => $edition ? $this->chartData($edition->id) : null,
             'report' => $report,
-            'reviewHeaders' => ['Communication', 'Relecteur', 'Recommandation', 'Note', 'Statut'],
-            'reviewRows' => $reviewRows,
+            'counts' => $report?->counts(),
+            'aiHistory' => $aiHistory,
         ]);
     }
 
-    /** Génère un brouillon de rapport via IA (brief + exemple optionnel). */
-    public function generate(Request $request, GenerateReport $action): RedirectResponse
+    /**
+     * Export d'un jeu de données de l'édition en CSV ou Excel (onglet
+     * « Exports prêts »). Réutilise les lignes d'EditionReport.
+     */
+    public function export(Edition $edition, string $dataset, string $format): Response
     {
-        $request->validate([
-            'edition_id' => ['required', 'exists:editions,id'],
-            'aiBrief' => ['required', 'string', 'min:5', 'max:2000'],
-            'aiExample' => ['nullable', 'file', 'mimes:pdf,txt,doc,docx', 'max:8192'],
+        abort_unless(in_array($dataset, ['submissions', 'participants', 'payments', 'attestations', 'accounting'], true), 404);
+        abort_unless(in_array($format, ['csv', 'xlsx'], true), 404);
+
+        $report = new EditionReport($edition);
+        [$sheet, $headers, $rows] = match ($dataset) {
+            'submissions' => ['Communications', $report->submissionHeaders(), $report->submissionRows()],
+            'participants' => ['Participants', $report->participantHeaders(), $report->participantRows()],
+            'payments' => ['Paiements', $report->paymentHeaders(), $report->paymentRows()],
+            'attestations' => ['Attestations', $report->attestationHeaders(), $report->attestationRows()],
+            'accounting' => ['Comptabilité', $report->accountingHeaders(), $report->accountingRows()],
+        };
+
+        $filename = $report->filenameBase().'-'.$dataset;
+
+        if ($format === 'xlsx') {
+            return (new XlsxWriter)->sheet($sheet, $headers, $rows)->download($filename.'.xlsx');
+        }
+
+        return $this->csv($filename.'.csv', $headers, $rows);
+    }
+
+    /**
+     * Télécharge un rapport IA de l'historique dans son format d'origine.
+     * Le brouillon (narratif) est stocké ; les données réelles sont réagrégées.
+     */
+    public function aiDownload(Edition $edition, string $id): Response
+    {
+        $entry = collect((array) Settings::get('report_ai_history', []))
+            ->firstWhere('id', $id);
+        abort_if($entry === null, 404);
+
+        $format = (string) ($entry['format'] ?? 'pdf');
+        $scope = (string) ($entry['scope'] ?? 'edition');
+        $report = new EditionReport($edition);
+        $base = 'rapport-ia-'.Str::slug((string) ($entry['title'] ?? 'rapport')).'-'.$id;
+
+        // Feuilles/tables du périmètre demandé.
+        $datasets = match ($scope) {
+            'subs' => [['Communications', $report->submissionHeaders(), $report->submissionRows()]],
+            'part' => [['Participants', $report->participantHeaders(), $report->participantRows()]],
+            'pay' => [['Paiements', $report->paymentHeaders(), $report->paymentRows()]],
+            default => [
+                ['Participants', $report->participantHeaders(), $report->participantRows()],
+                ['Communications', $report->submissionHeaders(), $report->submissionRows()],
+                ['Paiements', $report->paymentHeaders(), $report->paymentRows()],
+            ],
+        };
+
+        if ($format === 'xlsx') {
+            $writer = new XlsxWriter;
+            // Feuille de tête : le brouillon narratif de l'IA.
+            $narrative = [];
+            foreach ((array) ($entry['sections'] ?? []) as $s) {
+                $narrative[] = [(string) ($s['heading'] ?? ''), (string) ($s['body'] ?? '')];
+            }
+            $writer->sheet('Rapport', ['Section', 'Contenu'], $narrative ?: [['Rapport', (string) ($entry['title'] ?? '')]]);
+            foreach ($datasets as [$name, $headers, $rows]) {
+                $writer->sheet($name, $headers, $rows);
+            }
+
+            return $writer->download($base.'.xlsx');
+        }
+
+        if ($format === 'csv') {
+            [$name, $headers, $rows] = $datasets[0];
+
+            return $this->csv($base.'.csv', $headers, $rows);
+        }
+
+        // pdf / docx → vue imprimable (le docx s'ouvre dans Word via l'en-tête).
+        $view = view('reports.ai', [
+            'edition' => $edition,
+            'entry' => $entry,
+            'datasets' => $datasets,
         ]);
 
-        $edition = Edition::findOrFail($request->input('edition_id'));
+        if ($format === 'docx') {
+            return response($view->render(), 200, [
+                'Content-Type' => 'application/msword; charset=UTF-8',
+                'Content-Disposition' => 'attachment; filename="'.$base.'.doc"',
+            ]);
+        }
+
+        // PDF : page imprimable (Imprimer → Enregistrer en PDF).
+        return response($view->render());
+    }
+
+    /** Écrit un CSV en flux (UTF-8 BOM pour Excel). */
+    protected function csv(string $filename, array $headers, array $rows): StreamedResponse
+    {
+        return response()->streamDownload(function () use ($headers, $rows) {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF"); // BOM UTF-8
+            fputcsv($out, $headers);
+            foreach ($rows as $row) {
+                fputcsv($out, $row);
+            }
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /** Génère un brouillon de rapport via IA (description ou modèle joint). */
+    public function generate(Request $request, GenerateReport $action): RedirectResponse
+    {
+        $data = $request->validate([
+            'edition_id' => ['required', 'exists:editions,id'],
+            'mode' => ['nullable', 'in:describe,template'],
+            'aiBrief' => ['nullable', 'string', 'max:2000'],
+            'aiNotes' => ['nullable', 'string', 'max:2000'],
+            'aiExample' => ['nullable', 'file', 'mimes:pdf,txt,doc,docx,xls,xlsx,csv', 'max:10240'],
+            'format' => ['nullable', 'in:xlsx,csv,pdf,docx'],
+            'scope' => ['nullable', 'in:edition,subs,part,pay,all'],
+            'aiProvider' => ['nullable', 'in:default,claude,openai,gemini,grok'],
+        ]);
+
+        $mode = $data['mode'] ?? 'describe';
+        $format = $data['format'] ?? 'xlsx';
+        $scope = $data['scope'] ?? 'edition';
+
+        // En mode « description » le brief est requis ; en mode « modèle » le fichier l'est.
+        if ($mode === 'describe' && Str::length(trim((string) ($data['aiBrief'] ?? ''))) < 5) {
+            return back()->withInput()->withErrors(['aiBrief' => 'Décrivez le rapport souhaité (au moins quelques mots).']);
+        }
+        if ($mode === 'template' && ! $request->hasFile('aiExample')) {
+            return back()->withInput()->withErrors(['aiExample' => 'Joignez un modèle de rapport (PDF, Word, Excel).']);
+        }
+
+        $edition = Edition::findOrFail($data['edition_id']);
 
         $files = [];
         if ($request->hasFile('aiExample')) {
@@ -80,13 +198,38 @@ class ReportController extends Controller
             $files[] = ['mime' => (string) $file->getMimeType(), 'data' => base64_encode((string) $file->get())];
         }
 
-        try {
-            $report = $action->handle($edition, (string) $request->input('aiBrief'), $files);
+        $brief = trim((string) ($data['aiBrief'] ?? ''));
+        if ($mode === 'template') {
+            $brief = trim('Reproduis la structure du modèle joint. '.(string) ($data['aiNotes'] ?? ''));
+        }
 
-            return back()->with('ai_report', ['title' => $report['title'], 'sections' => $report['sections']]);
+        try {
+            $report = $action->handle($edition, $brief, $files, $data['aiProvider'] ?? null);
+
+            $entry = [
+                'id' => (string) Str::uuid(),
+                'edition_id' => (string) $edition->id,
+                'title' => $report['title'],
+                'sections' => $report['sections'],
+                'format' => $format,
+                'scope' => $scope,
+                'mode' => $mode,
+                'created_at' => now()->format('d/m/Y · H:i'),
+            ];
+            $this->pushHistory($entry);
+
+            return back()->with('ai_report', $entry);
         } catch (\Throwable $e) {
             return back()->withInput()->with('ai_error', $e->getMessage());
         }
+    }
+
+    /** Ajoute une entrée en tête de l'historique IA (max 30 conservées). */
+    protected function pushHistory(array $entry): void
+    {
+        $history = (array) Settings::get('report_ai_history', []);
+        array_unshift($history, $entry);
+        Settings::set('report_ai_history', array_slice($history, 0, 30));
     }
 
     public function xlsx(Edition $edition): Response

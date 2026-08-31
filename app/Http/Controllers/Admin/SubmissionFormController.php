@@ -51,6 +51,7 @@ class SubmissionFormController extends Controller
             'fields' => $fields,
             'custom' => $custom,
             'customTypes' => SubmissionFormConfig::CUSTOM_TYPES,
+            'rules' => $config->rules(),
         ]);
     }
 
@@ -59,8 +60,6 @@ class SubmissionFormController extends Controller
         $request->validate([
             'fields.title.label' => ['required', 'string', 'max:120'],
             'fields.abstract.label' => ['required', 'string', 'max:120'],
-            'fields.abstract.min' => ['required', 'integer', 'min:0', 'max:100000'],
-            'fields.abstract.max' => ['required', 'integer', 'min:1', 'max:100000'],
             'custom.*.label' => ['nullable', 'string', 'max:120'],
             'custom.*.type' => ['required', 'in:'.implode(',', array_keys(SubmissionFormConfig::CUSTOM_TYPES))],
         ]);
@@ -79,12 +78,6 @@ class SubmissionFormController extends Controller
                 'enabled' => $enabledToggle ? $request->boolean("fields.$key.enabled") : true,
                 'required' => $requiredToggle ? $request->boolean("fields.$key.required") : false,
             ];
-            if ($key === 'abstract') {
-                $min = max(0, (int) ($conf['min'] ?? 50));
-                $max = max($min + 1, (int) ($conf['max'] ?? 8000));
-                $entry['min'] = $min;
-                $entry['max'] = $max;
-            }
             $fields[$key] = $entry;
         }
 
@@ -110,8 +103,22 @@ class SubmissionFormController extends Controller
             ];
         }
 
+        $rules = [
+            'word_min' => max(0, (int) $request->input('rules.word_min', 50)),
+            'word_limit' => max(1, (int) $request->input('rules.word_limit', 300)),
+            'keywords_min' => max(0, (int) $request->input('rules.keywords_min', 3)),
+            'keywords_max' => max(1, (int) $request->input('rules.keywords_max', 6)),
+            'max_authors' => max(1, (int) $request->input('rules.max_authors', 8)),
+            'file_max_mb' => max(1, (int) $request->input('rules.file_max_mb', 5)),
+            'file_formats' => trim((string) $request->input('rules.file_formats', 'pdf, docx')) ?: 'pdf, docx',
+            'require_account' => $request->boolean('rules.require_account'),
+            'no_duplicate' => $request->boolean('rules.no_duplicate'),
+            'live_counter' => $request->boolean('rules.live_counter'),
+            'captcha' => $request->boolean('rules.captcha'),
+        ];
+
         $settings = $edition->settings ?? [];
-        $settings['submission_form'] = ['fields' => $fields, 'custom' => $custom];
+        $settings['submission_form'] = ['fields' => $fields, 'custom' => $custom, 'rules' => $rules];
         $edition->update(['settings' => $settings]);
 
         return back()->with('ukc_status', 'Formulaire de soumission enregistré.');

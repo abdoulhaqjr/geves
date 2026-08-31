@@ -57,9 +57,12 @@ class XlsxWriter
             $this->sheet('Feuille1', [], []);
         }
 
-        $tmp = tempnam(sys_get_temp_dir(), 'ukc_xlsx_');
+        // Fichier temporaire dans un dossier garanti inscriptible (sous Windows,
+        // tempnam(sys_get_temp_dir()) peut échouer/avertir selon la configuration).
+        $dir = is_dir($base = \storage_path('framework/cache')) ? $base : sys_get_temp_dir();
+        $tmp = rtrim($dir, '/\\').DIRECTORY_SEPARATOR.'ukc_xlsx_'.bin2hex(random_bytes(8)).'.zip';
         $zip = new ZipArchive;
-        $zip->open($tmp, ZipArchive::OVERWRITE);
+        $zip->open($tmp, ZipArchive::CREATE | ZipArchive::OVERWRITE);
 
         $zip->addFromString('[Content_Types].xml', $this->contentTypes());
         $zip->addFromString('_rels/.rels', $this->rootRels());

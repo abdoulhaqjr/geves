@@ -42,7 +42,6 @@ it('les pages du back-office répondent sans erreur (staff)', function () {
         route('admin.editions.index'),
         route('admin.editions.create'),
         route('admin.emails.index'),
-        route('admin.emails.templates'),
         route('admin.reports.index'),
         route('admin.users.index'),
         route('admin.users.create'),

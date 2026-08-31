@@ -225,14 +225,15 @@ class SubmissionController extends Controller
         $this->authorizeOwnership($submission);
         abort_unless($submission->canBeRevised(), 403);
 
+        $c = new SubmissionFormConfig($submission->edition);
         $data = $request->validate([
             'title' => ['required', 'string', 'max:500'],
-            'abstract' => ['required', 'string', 'max:20000', function (string $attr, string $value, \Closure $fail): void {
-                $len = Html::textLength($value);
-                if ($len < 50) {
-                    $fail('Le résumé doit contenir au moins 50 caractères.');
-                } elseif ($len > 8000) {
-                    $fail('Le résumé ne doit pas dépasser 8000 caractères.');
+            'abstract' => ['required', 'string', 'max:20000', function (string $attr, string $value, \Closure $fail) use ($c): void {
+                $words = self::wordCount($value);
+                if ($words < $c->abstractMin()) {
+                    $fail('Le résumé doit contenir au moins '.$c->abstractMin().' mots.');
+                } elseif ($words > $c->abstractMax()) {
+                    $fail('Le résumé ne doit pas dépasser '.$c->abstractMax().' mots.');
                 }
             }],
             'keywords' => ['nullable', 'string', 'max:500'],
@@ -286,16 +287,24 @@ class SubmissionController extends Controller
      * @param  array<int, string>  $tracks
      * @return array<string, mixed>
      */
+    /** Compte les mots d'un résumé (texte brut, balises HTML retirées). */
+    private static function wordCount(string $value): int
+    {
+        $text = trim(preg_replace('/\s+/', ' ', strip_tags($value)) ?? '');
+
+        return $text === '' ? 0 : count(preg_split('/\s+/', $text));
+    }
+
     private function rulesFor(SubmissionFormConfig $c, array $tracks): array
     {
         $rules = [
             'title' => ['required', 'string', 'max:500'],
             'abstract' => ['required', 'string', 'max:20000', function (string $attr, string $value, \Closure $fail) use ($c): void {
-                $len = Html::textLength($value);
-                if ($len < $c->abstractMin()) {
-                    $fail('Le résumé doit contenir au moins '.$c->abstractMin().' caractères.');
-                } elseif ($len > $c->abstractMax()) {
-                    $fail('Le résumé ne doit pas dépasser '.$c->abstractMax().' caractères.');
+                $words = self::wordCount($value);
+                if ($words < $c->abstractMin()) {
+                    $fail('Le résumé doit contenir au moins '.$c->abstractMin().' mots.');
+                } elseif ($words > $c->abstractMax()) {
+                    $fail('Le résumé ne doit pas dépasser '.$c->abstractMax().' mots.');
                 }
             }],
             'coauthors' => ['array'],
@@ -314,7 +323,15 @@ class SubmissionController extends Controller
         }
 
         if ($c->enabled('keywords')) {
-            $rules['keywords'] = [$c->required('keywords') ? 'required' : 'nullable', 'string', 'max:500'];
+            $rules['keywords'] = [$c->required('keywords') ? 'required' : 'nullable', 'string', 'max:500',
+                function (string $attr, string $value, \Closure $fail) use ($c): void {
+                    $n = count(array_filter(array_map('trim', preg_split('/[,;\n]+/', $value)), fn ($k) => $k !== ''));
+                    if ($n > 0 && $n < $c->keywordsMin()) {
+                        $fail('Indiquez au moins '.$c->keywordsMin().' mots-clés.');
+                    } elseif ($n > $c->keywordsMax()) {
+                        $fail('Indiquez au plus '.$c->keywordsMax().' mots-clés.');
+                    }
+                }];
         }
 
         if ($c->enabled('file')) {

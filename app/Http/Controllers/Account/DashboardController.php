@@ -79,10 +79,15 @@ class DashboardController extends Controller
             ? (int) ceil(now()->diffInDays($deadline, false))
             : null;
 
+        // Édition de contexte (pour le bandeau d'accueil : dates & lieu du colloque).
+        $contextEdition = $payable?->edition ?? $openEdition
+            ?? Edition::whereIn('id', $editionIds)->latest('id')->first();
+
         return view('account.dashboard', [
             'account' => $account,
             'openEdition' => $openEdition,
             'payableEdition' => $payable?->edition,
+            'contextEdition' => $contextEdition,
             'kpi' => [
                 'communications' => $commsCount,
                 'profileComplete' => $account->hasVerifiedEmail() && filled($account->affiliation),

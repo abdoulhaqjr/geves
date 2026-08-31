@@ -99,6 +99,85 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
+    // Copilote d'administration (page Assistant IA — mockup admin-ai-assistant).
+    // Chat réel (AskAdmin) + propositions à décider + journal des décisions persisté.
+    window.Alpine.data('adminCopilot', (seed = '', askUrl = '', decideUrl = '', log = [], name = 'Copilote') => ({
+        messages: [],
+        input: '',
+        sending: false,
+        agentName: name,
+        decisionLog: Array.isArray(log) ? log : [],
+        init() {
+            this.messages = [{ role: 'bot', text: seed, proposal: null, decision: null }];
+            this.scrollSoon();
+        },
+        ask(text) {
+            this.input = text;
+            this.send();
+        },
+        csrf() {
+            return document.querySelector('meta[name="csrf-token"]')?.content || '';
+        },
+        async send() {
+            const question = this.input.trim();
+            if (!question || this.sending) return;
+
+            const history = this.messages.map((m) => ({ role: m.role, text: m.text }));
+            this.messages.push({ role: 'user', text: question, proposal: null, decision: null });
+            this.input = '';
+            this.sending = true;
+            this.scrollSoon();
+
+            try {
+                const res = await fetch(askUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this.csrf() },
+                    body: JSON.stringify({ question, history }),
+                });
+                const data = await res.json().catch(() => ({}));
+                this.messages.push({
+                    role: 'bot',
+                    text: data.answer || 'Une erreur est survenue. Réessayez dans un instant.',
+                    proposal: data.proposal || null,
+                    decision: null,
+                });
+            } catch (e) {
+                this.messages.push({ role: 'bot', text: 'Connexion impossible. Vérifiez votre réseau et réessayez.', proposal: null, decision: null });
+            } finally {
+                this.sending = false;
+                this.scrollSoon();
+            }
+        },
+        async decide(index, decision) {
+            const m = this.messages[index];
+            if (!m || !m.proposal || m.decision) return;
+            m.decision = decision;
+            try {
+                const res = await fetch(decideUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this.csrf() },
+                    body: JSON.stringify({ title: m.proposal.title, decision }),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (data.entry) this.decisionLog.unshift(data.entry);
+            } catch (e) {
+                /* silencieux : la décision reste affichée côté chat */
+            }
+        },
+        decisionLabel(d) {
+            return { approve: 'Approuvé par admin', edit: 'À modifier', reject: 'Refusé par admin' }[d] || '';
+        },
+        decisionPill(d) {
+            return { approve: 'ok', edit: 'info', reject: 'warn' }[d] || 'muted';
+        },
+        scrollSoon() {
+            this.$nextTick(() => {
+                const log = this.$refs.log;
+                if (log) log.scrollTop = log.scrollHeight;
+            });
+        },
+    }));
+
     // Surbrillance de la section active dans la navigation (scrollspy).
     window.Alpine.data('ukcScrollspy', () => ({
         observer: null,
@@ -293,10 +372,10 @@ document.addEventListener('alpine:init', () => {
     // Livewire : ajout / suppression / réordonnancement côté client.
     window.Alpine.data('formEditor', (custom = []) => ({
         custom: Array.isArray(custom) ? custom : [],
-        add() {
+        add(type = 'text') {
             this.custom.push({
                 key: 'custom_' + Math.random().toString(36).slice(2, 8),
-                label: '', type: 'text', required: false, help: '', options_text: '',
+                label: '', type: type || 'text', required: false, help: '', options_text: '', open: true,
             });
         },
         remove(i) {

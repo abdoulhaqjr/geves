@@ -82,43 +82,15 @@
                         <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13" style="vertical-align:-2px;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> = notifie les destinataires par e-mail.
                     </p>
 
-                    @if ($attestations->count())
-                        <div class="ukc-card" style="padding:0;margin-top:16px;">
-                            <div style="padding:16px 18px;border-bottom:1px solid var(--ukc-border);"><h3 style="margin:0;">Attestations émises ({{ $counts['issued'] }})</h3></div>
-                            <div class="ukc-table-wrap">
-                                <table class="ukc-table">
-                                    <thead><tr><th>Bénéficiaire</th><th>Type</th><th>Émise le</th><th>État</th><th style="text-align:right;">Actions</th></tr></thead>
-                                    <tbody>
-                                        @foreach ($attestations as $a)
-                                            <tr>
-                                                <td><div class="title">{{ $a->recipient_name }}</div><div class="meta">{{ $a->recipient_email }}</div></td>
-                                                <td><span class="ukc-pill ukc-pill--info">{{ $a->typeLabel() }}</span></td>
-                                                <td>{{ $a->issued_at?->format('d/m/Y') }}</td>
-                                                <td>@if ($a->revoked)<span class="ukc-pill ukc-pill--err">Révoquée</span>@else<span class="ukc-pill ukc-pill--ok">Valide</span>@endif</td>
-                                                <td style="text-align:right;white-space:nowrap;">
-                                                    <div class="ukc-actions">
-                                                        <a href="{{ route('attestation.document', $a->uuid) }}" target="_blank" class="ukc-btn--icon" title="Document"><x-ukc.icon name="diploma" :size="16" /></a>
-                                                        <a href="{{ route('attestation.verify', $a->uuid) }}" target="_blank" class="ukc-btn--icon" title="Vérifier"><x-ukc.icon name="check-circle" :size="16" /></a>
-                                                        @if ($a->revoked)
-                                                            <form method="POST" action="{{ route('admin.documents.attestations.restore', $a) }}">
-                                                                @csrf
-                                                                <button type="submit" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Rétablir</button>
-                                                            </form>
-                                                        @else
-                                                            <form method="POST" action="{{ route('admin.documents.attestations.revoke', $a) }}" onsubmit="return confirm('Révoquer cette attestation ?')">
-                                                                @csrf
-                                                                <button type="submit" class="ukc-btn ukc-btn--danger ukc-btn--sm">Révoquer</button>
-                                                            </form>
-                                                        @endif
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
+                    <div class="ukc-card" style="margin-top:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                        <div>
+                            <h3 style="margin:0 0 2px;">Attestations délivrées</h3>
+                            <div style="font-size:13px;color:var(--ukc-muted);">{{ $counts['issued'] }} attestation(s) valide(s) pour cette édition — consultez, vérifiez ou révoquez sur la page dédiée.</div>
                         </div>
-                    @endif
+                        <a href="{{ route('admin.attestations.index', ['edition_id' => $edition->id]) }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">
+                            <x-ukc.icon name="diploma" :size="16" /> Voir les attestations délivrées
+                        </a>
+                    </div>
                 </div>
 
                 {{-- Options générales attestations --}}
@@ -318,7 +290,10 @@
                                 @endforeach
                             </select>
                         </div>
-                        <button type="submit" class="ukc-btn ukc-btn--sm"><x-ukc.icon name="check" :size="16" /> Enregistrer le modèle actif</button>
+                        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                            <a href="{{ route('admin.documents.livret.base-template') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="download" :size="16" /> Télécharger un modèle de base</a>
+                            <button type="submit" class="ukc-btn ukc-btn--sm"><x-ukc.icon name="check" :size="16" /> Enregistrer le modèle actif</button>
+                        </div>
                     </form>
 
                     <div class="ukc-card">
@@ -340,14 +315,33 @@
                                 <div class="meta"><strong>Modèle par défaut</strong><span>Généré depuis l’onglet Apparence · non modifiable ici</span></div>
                                 <span class="ukc-pill ukc-pill--ok">Par défaut</span>
                             </div>
+                            <div class="ukc-tpl-item">
+                                <div class="ico">DOC</div>
+                                <div class="meta"><strong>Modèle de base UK Colloques</strong><span>ukc-livre-base.doc · balises de fusion</span></div>
+                                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                                    <a href="{{ route('admin.documents.livret.base-template') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Télécharger</a>
+                                    <form method="POST" action="{{ route('admin.documents.livret.template') }}" style="display:inline;">
+                                        @csrf
+                                        <input type="hidden" name="livretTemplate" value="base">
+                                        <button type="submit" class="ukc-btn ukc-btn--sm">Utiliser</button>
+                                    </form>
+                                </div>
+                            </div>
                             @forelse ($templates as $tpl)
                                 <div class="ukc-tpl-item">
                                     <div class="ico">DOC</div>
                                     <div class="meta"><strong>{{ $tpl['name'] }}</strong><span>{{ number_format(($tpl['size'] ?? 0) / 1024, 0) }} Ko · importé le {{ $tpl['date'] ?? '—' }}</span></div>
-                                    <a href="{{ \Illuminate\Support\Facades\Storage::url($tpl['path']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm" target="_blank">Télécharger</a>
+                                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                                        <a href="{{ \Illuminate\Support\Facades\Storage::url($tpl['path']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm" target="_blank">Télécharger</a>
+                                        @php($isActive = $opts['livretTemplate'] === $tpl['name'])
+                                        <form method="POST" action="{{ route('admin.documents.livret.template') }}" style="display:inline;">
+                                            @csrf
+                                            <input type="hidden" name="livretTemplate" value="{{ $tpl['name'] }}">
+                                            <button type="submit" class="ukc-btn ukc-btn--sm" @disabled($isActive)>{{ $isActive ? 'Actif' : 'Utiliser' }}</button>
+                                        </form>
+                                    </div>
                                 </div>
                             @empty
-                                <p class="ukc-hint" style="margin-top:8px;">Aucun modèle personnalisé importé.</p>
                             @endforelse
                         </div>
                     </div>

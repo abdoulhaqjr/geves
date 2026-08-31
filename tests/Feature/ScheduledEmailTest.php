@@ -6,6 +6,7 @@ use App\Mail\CampaignMail;
 use App\Models\Edition;
 use App\Models\Email;
 use App\Support\EmailAudience;
+use App\Support\Settings;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
@@ -48,12 +49,20 @@ it('met une campagne immédiate en file et l’envoie tout de suite', function (
     $staff = adminStaff();
     $edition = audienceEdition();
 
+    // Personnalise le modèle e-mail utilisé par la campagne.
+    Settings::set('email_templates', [
+        'participant_invitation' => [
+            'subject' => 'Bonjour {prenom}',
+            'body' => 'Merci {nom_complet} pour {edition}.',
+            'active' => true,
+        ],
+    ]);
+
     $this->actingAs($staff, 'web')
         ->post(route('admin.emails.send'), [
             'edition_id' => (string) $edition->id,
+            'template' => 'participant_invitation',
             'audience' => 'paid',
-            'subject' => 'Bonjour {prenom}',
-            'body' => 'Merci {nom_complet} pour {edition}.',
         ])
         ->assertSessionHasNoErrors();
 
@@ -137,10 +146,34 @@ it('refuse une audience sans destinataire', function () {
     $this->actingAs($staff, 'web')
         ->post(route('admin.emails.send'), [
             'edition_id' => (string) $edition->id,
+            'template' => 'participant_invitation',
             'audience' => 'paid',
-            'subject' => 'Objet',
-            'body' => 'Corps',
         ]);
 
     expect(Email::count())->toBe(0);
+});
+
+it('regroupe une campagne (batch_id + audience) et l’annule par lot', function () {
+    $staff = adminStaff();
+    $edition = audienceEdition();
+
+    // Programme une campagne à l'audience « payés » → e-mails en file avec batch_id.
+    $this->actingAs($staff, 'web')->post(route('admin.emails.send'), [
+        'edition_id' => (string) $edition->id,
+        'template' => 'participant_invitation',
+        'audience' => 'all',
+        'date' => now()->addDays(3)->toDateString(),
+        'heure' => '09:00',
+    ])->assertSessionHasNoErrors();
+
+    $batch = Email::whereNotNull('batch_id')->first();
+    expect($batch)->not->toBeNull();
+    expect($batch->audience)->toBe('all');
+    expect(Email::where('batch_id', $batch->batch_id)->where('status', 'queued')->count())->toBeGreaterThan(0);
+
+    // Annulation par lot : toute la campagne en file est retirée.
+    $this->actingAs($staff, 'web')->post(route('admin.emails.cancel-batch'), ['batch_id' => $batch->batch_id])
+        ->assertSessionHasNoErrors();
+
+    expect(Email::where('batch_id', $batch->batch_id)->where('status', 'queued')->count())->toBe(0);
 });

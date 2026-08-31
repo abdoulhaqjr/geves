@@ -8,9 +8,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Edition;
 use App\Models\Email;
 use App\Support\EmailAudience;
+use App\Support\EmailTemplates;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 /**
@@ -39,6 +41,7 @@ class EmailController extends Controller
             $recipientCounts[$key] = $edition ? EmailAudience::count($edition, $key) : 0;
         }
 
+        // Journal détaillé (par destinataire) — conservé pour le filtrage/log.
         $journal = Email::query()
             ->with('participant')
             ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId))
@@ -47,11 +50,75 @@ class EmailController extends Controller
             ->paginate(15)
             ->withQueryString();
 
+        // Campagnes agrégées (fidèle au mockup « E-mails · Programmés ») : on
+        // regroupe les e-mails par lot d'envoi (batch_id) ou par déclencheur auto.
+        $campaigns = Email::query()
+            ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId))
+            ->when($status !== '', fn ($q) => $q->where('status', $status))
+            ->orderByDesc('id')
+            ->get()
+            ->groupBy(fn (Email $e) => $e->batch_id ?: 'tpl:'.$e->template)
+            ->map(function ($group) {
+                $first = $group->first();
+                $sent = $group->where('status', 'sent')->count();
+                $queued = $group->whereIn('status', ['queued'])->count();
+                $failed = $group->where('status', 'failed')->count();
+                $cancelled = $group->where('status', 'cancelled')->count();
+
+                $rollup = match (true) {
+                    $queued > 0 => 'queued',
+                    $failed > 0 && $sent > 0 => 'partial',
+                    $failed > 0 => 'failed',
+                    $cancelled === $group->count() => 'cancelled',
+                    default => 'sent',
+                };
+
+                return [
+                    'batch_id' => $first->batch_id,
+                    'is_campaign' => (bool) $first->batch_id,
+                    'template' => $first->template,
+                    'label' => (string) ($first->subject ?: EmailTemplates::label((string) $first->template)),
+                    'audience' => $first->audience ? EmailAudience::label($first->audience) : 'Auto (événement)',
+                    'scheduled_at' => $first->scheduled_at,
+                    'total' => $group->count(),
+                    'sent' => $sent,
+                    'failed' => $failed,
+                    'status' => $rollup,
+                    // Journal d'envoi (par destinataire, plafonné pour l'aperçu).
+                    'log' => $group->take(60)->map(fn (Email $e) => [
+                        'to' => (string) $e->recipient,
+                        'status' => (string) $e->status,
+                        'at' => optional($e->sent_at ?: $e->scheduled_at)?->format('d/m/Y H:i') ?? '—',
+                    ])->values()->all(),
+                ];
+            })
+            ->sortByDesc(fn ($c) => optional($c['scheduled_at'])?->timestamp ?? 0)
+            ->values();
+
         $counts = Email::query()
             ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId))
             ->selectRaw('status, count(*) as c')
             ->groupBy('status')
             ->pluck('c', 'status');
+
+        // Modèles d'e-mails (onglet « Modèles ») : intégrés puis personnalisés.
+        $templates = collect(EmailTemplates::keys())
+            ->map(function ($key) {
+                $raw = EmailTemplates::raw($key);
+
+                return [
+                    'key' => $key,
+                    'label' => EmailTemplates::label($key),
+                    'trigger' => EmailTemplates::trigger($key),
+                    'subject' => $raw['subject'],
+                    'heading' => $raw['heading'],
+                    'intro' => $raw['intro'],
+                    'body' => EmailTemplates::body($key),
+                    'active' => EmailTemplates::active($key),
+                    'custom' => EmailTemplates::isCustom($key),
+                ];
+            })
+            ->values();
 
         return view('admin.emails.index', [
             'editions' => Edition::latest('id')->get(),
@@ -60,6 +127,8 @@ class EmailController extends Controller
             'status' => $status,
             'recipientCounts' => $recipientCounts,
             'journal' => $journal,
+            'campaigns' => $campaigns,
+            'templates' => $templates,
             'queuedDue' => Email::where('status', 'queued')->whereNotNull('scheduled_at')->where('scheduled_at', '<=', now())->count(),
             'stats' => [
                 'total' => (int) $counts->sum(),
@@ -75,29 +144,51 @@ class EmailController extends Controller
     {
         $data = $request->validate([
             'edition_id' => ['required', 'exists:editions,id'],
+            'template' => ['required', 'string'],
             'audience' => ['required', 'in:'.implode(',', array_keys(EmailAudience::AUDIENCES))],
-            'subject' => ['required', 'string', 'max:200'],
-            'body' => ['required', 'string', 'max:5000'],
-            'scheduled_at' => ['nullable', 'date'],
+            'date' => ['nullable', 'date'],
+            'heure' => ['nullable', 'date_format:H:i'],
+            'test' => ['nullable', 'boolean'],
         ]);
 
-        $edition = Edition::findOrFail($data['edition_id']);
-        $scheduled = ! empty($data['scheduled_at']) ? Carbon::parse($data['scheduled_at']) : null;
+        if (! EmailTemplates::isValid($data['template'])) {
+            return back()->withInput()->with('ukc_error', 'Modèle e-mail inconnu.');
+        }
 
-        $count = $action->handle($edition, $data['audience'], $data['subject'], $data['body'], $scheduled);
+        $edition = Edition::findOrFail($data['edition_id']);
+        $subject = EmailTemplates::raw($data['template'])['subject'];
+        $body = EmailTemplates::body($data['template']);
+
+        // Date + heure → planification (date vide = envoi immédiat).
+        $scheduled = ! empty($data['date'])
+            ? Carbon::parse($data['date'].' '.($data['heure'] ?: '09:00'))
+            : null;
+
+        // E-mail test à l'admin d'abord (avant la campagne réelle).
+        $testSent = false;
+        if ($request->boolean('test') && ($adminEmail = optional($request->user())->email)) {
+            Mail::raw($body, function ($m) use ($adminEmail, $subject) {
+                $m->to($adminEmail)->subject('[TEST] '.$subject);
+            });
+            $testSent = true;
+        }
+
+        $count = $action->handle($edition, $data['audience'], $subject, $body, $scheduled);
 
         if ($count === 0) {
-            return back()->withInput()->with('ukc_error', 'Aucun destinataire pour cette audience.');
+            return back()->withInput()->with('ukc_error', 'Aucun destinataire pour cette audience.'.($testSent ? ' (E-mail test envoyé à l’admin.)' : ''));
         }
+
+        $suffix = $testSent ? ' E-mail test envoyé à l’admin.' : '';
 
         // Envoi immédiat : on vide tout de suite la file arrivée à échéance.
         if ($scheduled === null || $scheduled->lessThanOrEqualTo(now())) {
             $sender->handle();
 
-            return back()->with('ukc_status', "Campagne envoyée à {$count} destinataire(s).");
+            return back()->with('ukc_status', "Campagne envoyée à {$count} destinataire(s).".$suffix);
         }
 
-        return back()->with('ukc_status', "Campagne programmée pour {$count} destinataire(s) le {$scheduled->format('d/m/Y H:i')}.");
+        return back()->with('ukc_status', "Campagne programmée pour {$count} destinataire(s) le {$scheduled->format('d/m/Y H:i')}.".$suffix);
     }
 
     /** Force l'envoi des e-mails programmés arrivés à échéance. */
@@ -116,5 +207,45 @@ class EmailController extends Controller
         }
 
         return back()->with('ukc_status', 'E-mail annulé.');
+    }
+
+    /** Relance les e-mails en échec d'une campagne (lot) ou d'un déclencheur auto. */
+    public function retryBatch(Request $request, SendDueEmails $sender): RedirectResponse
+    {
+        $batch = (string) $request->input('batch_id');
+        $template = (string) $request->input('template');
+        $editionId = (string) $request->input('edition_id');
+
+        $query = Email::where('status', 'failed');
+        if ($batch !== '') {
+            $query->where('batch_id', $batch);
+        } elseif ($template !== '' && $editionId !== '') {
+            $query->where('template', $template)->where('edition_id', $editionId);
+        } else {
+            return back()->with('ukc_error', 'Campagne introuvable pour la relance.');
+        }
+
+        $n = $query->update(['status' => 'queued', 'sent_at' => null, 'scheduled_at' => now()]);
+
+        if ($n === 0) {
+            return back()->with('ukc_status', 'Aucun e-mail en échec à relancer.');
+        }
+
+        $report = $sender->handle();
+
+        return back()->with('ukc_status', "Relance : {$report['sent']} envoyé(s), {$report['failed']} échec(s).");
+    }
+
+    /** Annule toute une campagne (lot) encore en file. */
+    public function cancelBatch(Request $request): RedirectResponse
+    {
+        $batch = (string) $request->input('batch_id');
+        if ($batch === '') {
+            return back();
+        }
+
+        $n = Email::where('batch_id', $batch)->where('status', 'queued')->delete();
+
+        return back()->with('ukc_status', $n > 0 ? "Campagne annulée ({$n} e-mail(s) retiré(s) de la file)." : 'Aucun e-mail en file à annuler.');
     }
 }

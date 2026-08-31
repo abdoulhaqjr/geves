@@ -17,8 +17,8 @@
          })">
 
         {{-- ===== En-tête ===== --}}
-        <header class="ukc-admin-head" style="background:transparent;border:none;padding:0;margin-bottom:16px;">
-            <div>
+        <header class="ukc-admin-head" style="background:transparent;border:none;padding:0;margin-bottom:16px;flex-wrap:nowrap;align-items:flex-start;">
+            <div style="flex:1;min-width:0;">
                 <div style="font-size:12px;margin-bottom:4px;color:var(--ukc-light);">
                     <a href="{{ route('admin.editions.index') }}" style="color:var(--ukc-blue);font-weight:600;">Éditions</a>
                     <span> / </span><span style="color:var(--ukc-muted);">{{ $edition ? 'Modifier' : 'Nouvelle' }}</span>
@@ -30,10 +30,20 @@
                     &nbsp; Paramétrage complet · assisté IA
                 </div>
             </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0;" x-data="{}">
                 <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.editions.index') }}">← Liste</a>
                 @if ($edition)
-                    <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('public.colloque', $edition->slug) }}" target="_blank" x-show="statusLive()">Aperçu public</a>
+                    {{-- Importer la configuration dans cette édition (fichier JSON) --}}
+                    <form method="POST" action="{{ route('admin.editions.import', $edition) }}" enctype="multipart/form-data" x-ref="importForm" style="display:none;">
+                        @csrf
+                        <input type="file" name="file" accept=".json,application/json" x-ref="importFile" @change="$refs.importForm.submit()">
+                    </form>
+                    <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="$refs.importFile.click()" title="Importer une configuration (JSON) dans cette édition">
+                        <x-ukc.icon name="upload" :size="15" /> Importer
+                    </button>
+                    <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.editions.export', $edition) }}" title="Exporter cette édition (JSON)">
+                        <x-ukc.icon name="download" :size="15" /> Exporter
+                    </a>
                 @endif
                 <button type="submit" form="editionForm" class="ukc-btn ukc-btn--blue ukc-btn--sm">
                     <x-ukc.icon name="check" :size="16" /> Enregistrer

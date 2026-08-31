@@ -68,14 +68,15 @@ it('valide les champs requis du formulaire de contact', function () {
     ])->assertSessionHasErrors(['name', 'email', 'message']);
 });
 
-it('affiche la section contact et le formulaire sur la page publique', function () {
+it('affiche les coordonnées de contact sur la page publique (barre d’info)', function () {
+    // Fidèle au mockup : pas de formulaire de contact sur la page colloque ;
+    // les coordonnées apparaissent dans la barre d’info / infos pratiques.
     $edition = openEdition(['contact' => ['email' => 'colloque@univkara.tg', 'phone' => '+228 90 00 00 00']]);
 
     $this->get(route('public.colloque', $edition->slug))
         ->assertOk()
-        ->assertSee('Contact')
-        ->assertSee('+228 90 00 00 00')
-        ->assertSee('Envoyer le message');
+        ->assertSee('colloque@univkara.tg')
+        ->assertDontSee('Envoyer le message'); // formulaire retiré (absent du mockup)
 });
 
 it('affiche la bannière promo quand elle est renseignée', function () {

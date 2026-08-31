@@ -13,7 +13,9 @@ it('applique les valeurs par défaut sans configuration', function () {
     expect($config->enabled('keywords'))->toBeTrue();
     expect($config->required('keywords'))->toBeFalse();
     expect($config->required('track'))->toBeTrue();
-    expect($config->abstractMin())->toBe(50);
+    expect($config->abstractMin())->toBe(0);       // pas de minimum par défaut (en mots)
+    expect($config->abstractMax())->toBe(300);     // 300 mots max par défaut
+    expect($config->keywordsMax())->toBe(6);
     expect($config->customFields())->toBe([]);
 });
 
@@ -21,8 +23,8 @@ it('lit une configuration personnalisée depuis settings', function () {
     $edition = openEdition(['submission_form' => [
         'fields' => [
             'keywords' => ['label' => 'Mots-clés libres', 'enabled' => false],
-            'abstract' => ['min' => 100, 'max' => 500],
         ],
+        'rules' => ['word_min' => 100, 'word_limit' => 500, 'keywords_min' => 4, 'keywords_max' => 8],
         'custom' => [
             ['key' => 'orcid', 'label' => 'ORCID', 'type' => 'text', 'required' => true],
         ],
@@ -31,14 +33,17 @@ it('lit une configuration personnalisée depuis settings', function () {
 
     expect($config->label('keywords'))->toBe('Mots-clés libres');
     expect($config->enabled('keywords'))->toBeFalse();
+    // Limites du résumé désormais en MOTS (via les règles).
     expect($config->abstractMin())->toBe(100);
     expect($config->abstractMax())->toBe(500);
+    expect($config->keywordsMin())->toBe(4);
+    expect($config->keywordsMax())->toBe(8);
     expect($config->customFields())->toHaveCount(1);
     expect($config->customFields()[0]['key'])->toBe('orcid');
 });
 
-it('garantit un max de résumé supérieur au min', function () {
-    $edition = openEdition(['submission_form' => ['fields' => ['abstract' => ['min' => 200, 'max' => 50]]]]);
+it('garantit un max de résumé (mots) supérieur au min', function () {
+    $edition = openEdition(['submission_form' => ['rules' => ['word_min' => 200, 'word_limit' => 50]]]);
     $config = new SubmissionFormConfig($edition);
 
     expect($config->abstractMin())->toBe(200);
@@ -52,9 +57,10 @@ it('enregistre la configuration depuis l’éditeur admin', function () {
     $this->actingAs($staff, 'web')->put(route('admin.editions.form.update', $edition), [
         'fields' => [
             'title' => ['label' => 'Intitulé de la communication'],
-            'abstract' => ['label' => 'Résumé', 'min' => 120, 'max' => 8000],
+            'abstract' => ['label' => 'Résumé'],
             // keywords : case « Afficher » non cochée → désactivé.
         ],
+        'rules' => ['word_min' => 120, 'word_limit' => 400],
         'custom' => [
             ['key' => 'custom_x', 'label' => 'Numéro ORCID', 'type' => 'text', 'required' => '1'],
         ],
@@ -65,8 +71,33 @@ it('enregistre la configuration depuis l’éditeur admin', function () {
 
     expect($config->label('title'))->toBe('Intitulé de la communication');
     expect($config->enabled('keywords'))->toBeFalse();
-    expect($config->abstractMin())->toBe(120);
+    expect($config->abstractMin())->toBe(120); // en mots
     expect($config->customFields()[0]['label'])->toBe('Numéro ORCID');
+});
+
+it('enregistre les règles & limites du formulaire', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+
+    $this->actingAs($staff, 'web')->put(route('admin.editions.form.update', $edition), [
+        'fields' => [
+            'title' => ['label' => 'Titre'],
+            'abstract' => ['label' => 'Résumé', 'min' => 50, 'max' => 8000],
+        ],
+        'rules' => [
+            'word_limit' => '350', 'max_authors' => '10', 'file_max_mb' => '8', 'file_formats' => 'pdf, docx, odt',
+            'no_duplicate' => '1', 'live_counter' => '1', // require_account & captcha non cochés
+        ],
+    ])->assertSessionHasNoErrors();
+
+    $rules = (new SubmissionFormConfig($edition->refresh()))->rules();
+    expect($rules['word_limit'])->toBe(350);
+    expect($rules['max_authors'])->toBe(10);
+    expect($rules['file_max_mb'])->toBe(8);
+    expect($rules['file_formats'])->toBe('pdf, docx, odt');
+    expect($rules['no_duplicate'])->toBeTrue();
+    expect($rules['require_account'])->toBeFalse();
+    expect($rules['captcha'])->toBeFalse();
 });
 
 it('convertit les options de liste (une par ligne) en tableau', function () {
@@ -191,14 +222,15 @@ it('valide et enregistre les champs personnalisés à la soumission', function (
     expect($custom->firstWhere('key', 'session')['value'])->toBe('Matin');
 });
 
-it('impose la limite minimale de caractères du résumé configurée', function () {
-    $edition = openEdition(['submission_form' => ['fields' => ['abstract' => ['min' => 200, 'max' => 8000]]]]);
+it('impose la limite minimale de mots du résumé configurée', function () {
+    $edition = openEdition(['submission_form' => ['rules' => ['word_min' => 40, 'word_limit' => 300]]]);
     $account = verifiedAccount();
 
+    // 10 mots < 40 requis → refusé.
     $this->actingAs($account, 'account')
         ->post(route('account.submissions.store', $edition->slug), [
             'title' => 'Titre',
-            'abstract' => str_repeat('a', 100),
+            'abstract' => str_repeat('mot ', 10),
         ])
         ->assertSessionHasErrors('abstract');
 });

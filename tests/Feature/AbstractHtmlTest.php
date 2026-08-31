@@ -53,7 +53,8 @@ it('stocke un résumé enrichi assaini', function () {
 });
 
 it('refuse un résumé trop court même en comptant hors balises', function () {
-    $edition = openEdition();
+    // Minimum de mots configuré → un résumé de 2 mots (hors balises) est refusé.
+    $edition = openEdition(['submission_form' => ['rules' => ['word_min' => 20]]]);
     $account = verifiedAccount();
 
     $this->actingAs($account, 'account')

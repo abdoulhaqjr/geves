@@ -24,11 +24,20 @@ class GenerateReport
      * @param  array<int, array{mime: string, data: string}>  $files
      * @return array{title: string, sections: list<ReportSection>}
      */
-    public function handle(Edition $edition, string $brief, array $files = []): array
+    public function handle(Edition $edition, string $brief, array $files = [], ?string $providerKey = null): array
     {
         $needsPdf = collect($files)->contains(fn ($f) => str_contains($f['mime'], 'pdf'));
 
-        $provider = $this->manager->resolve($needsPdf);
+        // Fournisseur explicitement choisi (s'il est disponible), sinon résolution auto.
+        $provider = null;
+        if ($providerKey !== null && $providerKey !== '' && $providerKey !== 'default') {
+            $key = $providerKey === 'claude' ? 'anthropic' : $providerKey;
+            $candidate = $this->manager->get($key);
+            if ($candidate && $candidate->isAvailable() && (! $needsPdf || $candidate->supportsPdf())) {
+                $provider = $candidate;
+            }
+        }
+        $provider ??= $this->manager->resolve($needsPdf);
         if (! $provider) {
             throw new \RuntimeException('Aucun fournisseur d’IA n’est configuré (voir Réglages).');
         }

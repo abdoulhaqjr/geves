@@ -193,12 +193,14 @@
 /* En-tête blanc par page (mockup .ukc-admin-head) + corps (.ukc-admin-body) */
 .ukc-admin-head {
   background: #fff; border-bottom: 1px solid var(--ukc-border); padding: 16px 24px;
-  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: nowrap;
 }
-.ukc-admin-head .head-title { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.ukc-admin-head h1 { font-size: 1.35rem; font-weight: 800; line-height: 1.2; }
+/* Titre flexible (peut s'enrouler) ; actions figées à droite sur la même ligne. */
+.ukc-admin-head .head-title { display: flex; align-items: flex-start; gap: 12px; min-width: 0; flex: 1 1 auto; }
+.ukc-admin-head h1 { font-size: 1.2rem; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
 .ukc-admin-head .sub { font-size: 13px; color: var(--ukc-muted); margin-top: 2px; }
-.ukc-admin-head .head-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ukc-admin-head .head-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; flex-shrink: 0; }
+@media (max-width: 640px) { .ukc-admin-head { flex-wrap: wrap; } }
 .ukc-admin-body { padding: 20px 24px 48px; width: 100%; min-width: 0; }
 
 .ukc-main { flex: 1; margin-left: var(--ukc-sidebar); min-width: 0; display: flex; flex-direction: column; }
@@ -234,6 +236,8 @@
   font-size: 1rem; font-weight: 800; margin-bottom: 14px;
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
 }
+/* Dashboard participant : icône + titre restent groupés à gauche (pas d'action à droite). */
+.account-dashboard .ukc-card h2, .account-dashboard .ukc-card h3 { justify-content: flex-start; gap: 8px; }
 .ukc-stat-card {
   background: #fff; border: 1px solid var(--ukc-border);
   border-radius: var(--ukc-radius); padding: 18px 16px; text-align: center;
@@ -456,3 +460,19 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 }
 .ukc-countdown-card .lead { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; opacity: .85; margin-bottom: 14px; }
 .ukc-countdown-card .foot { font-size: .82rem; opacity: .9; margin-top: 14px; }
+
+/* Modale générique (fidèle au mockup) — visibilité pilotée par Alpine (x-show).
+   Les pages qui la scopent déjà (.admin-program, .admin-edition-detail) gardent
+   la priorité via leur spécificité. */
+.ukc-modal { position: fixed; inset: 0; z-index: 100; background: rgba(15, 26, 51, .55); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.ukc-modal .box { background: #fff; border-radius: 16px; width: 100%; max-width: 720px; max-height: 92vh; overflow: auto; box-shadow: 0 24px 60px rgba(0, 0, 0, .3); }
+.ukc-modal .box.narrow { max-width: 480px; }
+.ukc-modal .box-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--ukc-border); font-weight: 800; font-size: 15px; position: sticky; top: 0; background: #fff; z-index: 1; }
+.ukc-modal .box-body { padding: 18px 20px 22px; }
+.ukc-modal .box-foot { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--ukc-border); margin-top: 12px; }
+
+.detail-grid { display: grid; grid-template-columns: 130px 1fr; gap: 8px 12px; font-size: 13.5px; margin-bottom: 14px; }
+.detail-grid .k { color: var(--ukc-muted); font-weight: 600; }
+.detail-grid .v { font-weight: 600; }
+
+.abstract-box { background: #f8fafc; border: 1px solid var(--ukc-border); border-radius: 10px; padding: 14px; font-size: 13.5px; line-height: 1.55; color: var(--ukc-text); max-height: 220px; overflow-y: auto; white-space: pre-line; }

@@ -3,6 +3,7 @@
 use App\Models\Colloque;
 use App\Models\Edition;
 use App\Models\User;
+use Illuminate\Http\Testing\File;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -31,6 +32,53 @@ it('autorise le staff habilité à voir la liste des éditions', function () {
     $user = staffWithPermission();
 
     $this->actingAs($user, 'web')->get(route('admin.editions.index'))->assertOk();
+});
+
+it('liste les éditions de la plus récente à la plus ancienne (par année)', function () {
+    $user = staffWithPermission();
+    $colloque = Colloque::create(['name' => 'C', 'slug' => 'c']);
+    $colloque->editions()->create(['title' => 'E 2024', 'status' => 'open', 'slug' => 'e-2024', 'year' => 2024]);
+    $colloque->editions()->create(['title' => 'E 2026', 'status' => 'open', 'slug' => 'e-2026', 'year' => 2026]);
+    $colloque->editions()->create(['title' => 'E 2025', 'status' => 'open', 'slug' => 'e-2025', 'year' => 2025]);
+
+    $this->actingAs($user, 'web')->get(route('admin.editions.index'))
+        ->assertOk()
+        ->assertSeeInOrder(['E 2026', 'E 2025', 'E 2024']);
+});
+
+it('exporte une édition donnée en JSON', function () {
+    $user = staffWithPermission();
+    $colloque = Colloque::create(['name' => 'UK', 'slug' => 'uk']);
+    $edition = $colloque->editions()->create(['title' => 'UK 2026', 'status' => 'open', 'slug' => 'uk-2026', 'year' => 2026, 'settings' => ['tracks' => ['A']]]);
+
+    $res = $this->actingAs($user, 'web')->get(route('admin.editions.export', $edition));
+    $res->assertOk();
+    $res->assertHeader('content-type', 'application/json');
+    $json = json_decode($res->streamedContent(), true);
+    expect($json['editions'])->toHaveCount(1);
+    expect($json['editions'][0]['title'])->toBe('UK 2026');
+    expect($json['editions'][0]['settings']['tracks'])->toBe(['A']);
+});
+
+it('importe une configuration dans l’édition courante (identité conservée)', function () {
+    $user = staffWithPermission();
+    $colloque = Colloque::create(['name' => 'UK', 'slug' => 'uk']);
+    $edition = $colloque->editions()->create(['title' => 'Ancien titre', 'status' => 'draft', 'slug' => 'uk-2026', 'year' => 2026]);
+
+    $payload = json_encode(['editions' => [
+        ['title' => 'Config importée', 'slug' => 'autre-slug', 'year' => 2027, 'status' => 'open', 'settings' => ['tracks' => ['X', 'Y']]],
+    ]]);
+    $file = File::createWithContent('edition.json', $payload);
+
+    $this->actingAs($user, 'web')->post(route('admin.editions.import', $edition), ['file' => $file])
+        ->assertSessionHasNoErrors();
+
+    $edition->refresh();
+    expect($edition->title)->toBe('Config importée');
+    expect($edition->settings['tracks'])->toBe(['X', 'Y']);
+    expect($edition->status)->toBe('open');
+    // Identité conservée : le slug de l'édition n'est PAS écrasé par le fichier.
+    expect($edition->slug)->toBe('uk-2026');
 });
 
 it('crée une édition avec un nouveau colloque via le formulaire', function () {

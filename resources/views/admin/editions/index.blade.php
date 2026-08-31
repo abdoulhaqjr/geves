@@ -64,8 +64,10 @@
                 </div>
                 <div class="ukc-actions">
                     <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.editions.edit', $e) }}"><x-ukc.icon name="pen" :size="14" /> Éditer</a>
-                    <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.submissions.index') }}"><x-ukc.icon name="inbox" :size="14" /> Soumissions</a>
-                    @if ($e->status !== 'open')
+                    <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.editions.export', $e) }}" title="Exporter cette édition (JSON)"><x-ukc.icon name="download" :size="14" /> Exporter</a>
+                    @if ($e->status === 'open')
+                        <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="{{ route('admin.submissions.index', ['edition_id' => $e->id]) }}"><x-ukc.icon name="inbox" :size="14" /> Soumissions</a>
+                    @else
                         <form method="POST" action="{{ route('admin.editions.activate', $e) }}">
                             @csrf
                             <button type="submit" class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="check" :size="14" /> Activer</button>
@@ -75,7 +77,7 @@
                           onsubmit="return confirm('Supprimer cette édition et tout son contenu ?');">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="ukc-btn ukc-btn--danger ukc-btn--sm"><x-ukc.icon name="trash" :size="14" /></button>
+                        <button type="submit" class="ukc-btn ukc-btn--danger ukc-btn--sm" title="Supprimer"><x-ukc.icon name="trash" :size="14" /></button>
                     </form>
                 </div>
             </div>

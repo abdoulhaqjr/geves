@@ -60,9 +60,100 @@ class EmailTemplates
         ],
     ];
 
+    /** Balises de fusion proposées dans l'éditeur de modèle (puces cliquables). */
+    public const MERGE_TAGS = [
+        '{{participant_name}}', '{{participant_email}}', '{{edition_name}}', '{{edition_dates}}',
+        '{{communication_title}}', '{{amount}}', '{{payment_ref}}', '{{attestation_url}}',
+        '{{badge_url}}', '{{login_url}}', '{{session_date}}', '{{session_room}}',
+    ];
+
+    /** Options de déclencheur proposées à la création/édition d'un modèle. */
+    public const TRIGGER_OPTIONS = [
+        'Manuel / programmé', 'Paiement reçu', 'Soumission reçue', 'Correction demandée',
+        'Résumé accepté', 'Résumé refusé', 'Envoi attestation', 'Badge disponible', 'Rappel (programmé)',
+    ];
+
+    /** Déclencheur (événement) qui envoie automatiquement chaque modèle. */
+    public const TRIGGERS = [
+        'submission_submitted' => 'Soumission reçue',
+        'submission_under_review' => 'Mise en relecture',
+        'submission_revision' => 'Correction demandée',
+        'submission_accepted' => 'Résumé accepté',
+        'submission_rejected' => 'Résumé refusé',
+        'participant_invitation' => 'Invitation (manuel)',
+    ];
+
+    /** Modèles personnalisés créés depuis le back-office (hors modèles intégrés). */
+    public static function customKeys(): array
+    {
+        $store = (array) Settings::get('email_templates', []);
+
+        return array_values(array_diff(array_keys($store), array_keys(self::TEMPLATES)));
+    }
+
+    /** Toutes les clés de modèles : intégrés puis personnalisés. */
+    public static function keys(): array
+    {
+        return array_merge(array_keys(self::TEMPLATES), self::customKeys());
+    }
+
     public static function isValid(string $key): bool
     {
-        return array_key_exists($key, self::TEMPLATES);
+        return array_key_exists($key, self::TEMPLATES)
+            || array_key_exists($key, (array) Settings::get('email_templates', []));
+    }
+
+    /** Un modèle personnalisé (créé par l'admin) vs. un modèle intégré. */
+    public static function isCustom(string $key): bool
+    {
+        return ! array_key_exists($key, self::TEMPLATES)
+            && array_key_exists($key, (array) Settings::get('email_templates', []));
+    }
+
+    /** Libellé lisible d'un modèle (repli sur « Campagne » / la clé). */
+    public static function label(string $key): string
+    {
+        if ($key === 'campaign') {
+            return 'Campagne';
+        }
+        if (isset(self::TEMPLATES[$key]['label'])) {
+            return (string) self::TEMPLATES[$key]['label'];
+        }
+        $store = (array) Settings::get('email_templates', []);
+
+        return (string) ($store[$key]['label'] ?? $key);
+    }
+
+    /** Déclencheur lisible d'un modèle. */
+    public static function trigger(string $key): string
+    {
+        if (isset(self::TRIGGERS[$key])) {
+            return self::TRIGGERS[$key];
+        }
+        $store = (array) Settings::get('email_templates', []);
+
+        return (string) ($store[$key]['trigger'] ?? self::TRIGGER_OPTIONS[0]);
+    }
+
+    /** Corps du message (override admin, sinon dérivé du titre + intro par défaut). */
+    public static function body(string $key): string
+    {
+        $override = (array) (Settings::get('email_templates', [])[$key] ?? []);
+        if (filled($override['body'] ?? null)) {
+            return (string) $override['body'];
+        }
+
+        $raw = self::raw($key);
+
+        return trim(($raw['heading'] ? $raw['heading']."\n\n" : '').$raw['intro']);
+    }
+
+    /** Modèle actif (override admin, sinon actif par défaut). */
+    public static function active(string $key): bool
+    {
+        $override = (array) (Settings::get('email_templates', [])[$key] ?? []);
+
+        return ! array_key_exists('active', $override) || (bool) $override['active'];
     }
 
     /**

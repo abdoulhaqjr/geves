@@ -22,8 +22,9 @@ class AskAdmin
 
     /**
      * @param  list<ChatTurn>  $history
+     * @return array{answer: string, proposal: array{title: string, detail: string, impact: string}|null}
      */
-    public function handle(array $history, string $question, ?Edition $edition = null): string
+    public function handle(array $history, string $question, ?Edition $edition = null): array
     {
         $provider = $this->manager->resolve(false);
         if (! $provider) {
@@ -33,7 +34,33 @@ class AskAdmin
         $raw = $provider->extract($this->instruction($history, $question, $edition), []);
         $answer = trim((string) ($raw['answer'] ?? ''));
 
-        return $answer !== '' ? Str::limit($answer, 4000, '') : 'Je n’ai pas d’élément suffisant pour répondre.';
+        return [
+            'answer' => $answer !== '' ? Str::limit($answer, 4000, '') : 'Je n’ai pas d’élément suffisant pour répondre.',
+            'proposal' => $this->sanitizeProposal($raw['proposal'] ?? null),
+        ];
+    }
+
+    /**
+     * Normalise la proposition d'action éventuelle (titre + détail + impact).
+     *
+     * @return array{title: string, detail: string, impact: string}|null
+     */
+    protected function sanitizeProposal(mixed $proposal): ?array
+    {
+        if (! is_array($proposal)) {
+            return null;
+        }
+
+        $title = Str::limit(trim((string) ($proposal['title'] ?? '')), 120, '');
+        if ($title === '') {
+            return null;
+        }
+
+        return [
+            'title' => $title,
+            'detail' => Str::limit(trim((string) ($proposal['detail'] ?? '')), 400, ''),
+            'impact' => Str::limit(trim((string) ($proposal['impact'] ?? '')), 200, ''),
+        ];
     }
 
     /**
@@ -76,8 +103,15 @@ class AskAdmin
         Nouvelle demande de l'administrateur : {$question}
 
         Tu PROPOSES uniquement (synthèses, brouillons, points de vigilance) ; tu ne réalises aucune
-        action. Réponds en texte simple sans markdown. Réponds UNIQUEMENT par un objet JSON STRICT
-        (aucun texte autour) : { "answer": string }.
+        action. Réponds en texte simple sans markdown.
+
+        Quand ta réponse suggère une action concrète que l'administrateur pourrait approuver (relance
+        d'e-mails, export, génération de document, plan d'actions…), ajoute une "proposal" décrivant
+        cette action : "title" (intitulé court), "detail" (ce qui serait fait), "impact" (portée /
+        garde-fou). Sinon mets "proposal" à null. La proposition n'est JAMAIS exécutée automatiquement.
+
+        Réponds UNIQUEMENT par un objet JSON STRICT (aucun texte autour) :
+        { "answer": string, "proposal": { "title": string, "detail": string, "impact": string } | null }.
         TXT;
     }
 }

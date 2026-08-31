@@ -87,17 +87,16 @@ it('enregistre les modèles depuis le back-office', function () {
     expect(EmailTemplates::raw('submission_accepted')['subject'])->toBe('Sujet personnalisé');
 });
 
-it('expose la valeur courante et le défaut (réinitialisation côté client)', function () {
+it('affiche la valeur courante du modèle dans l’onglet Modèles', function () {
     $staff = adminStaff();
     Settings::set('email_templates', ['submission_accepted' => ['subject' => 'Autre chose', 'heading' => '', 'intro' => '']]);
 
     $this->actingAs($staff, 'web')
-        ->get(route('admin.emails.templates'))
+        ->get(route('admin.emails.index'))
         ->assertOk()
-        ->assertSee('Autre chose')                        // valeur courante
-        ->assertSee('Votre communication est acceptée');  // défaut disponible pour le bouton « Défaut » (Alpine)
+        ->assertSee('Autre chose'); // objet courant listé dans l'onglet « Modèles »
 });
 
 it('refuse l’édition des modèles aux invités', function () {
-    $this->get(route('admin.emails.templates'))->assertRedirect(route('account.login'));
+    $this->put(route('admin.emails.templates.update'))->assertRedirect(route('account.login'));
 });

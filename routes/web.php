@@ -184,7 +184,9 @@ Route::prefix('admin')->group(function () {
 
         // Éditions : lecture / écriture.
         Route::get('/editions', [EditionController::class, 'index'])->middleware('can:editions_read')->name('admin.editions.index');
+        Route::get('/editions/{edition}/exporter', [EditionController::class, 'export'])->middleware('can:editions_read')->name('admin.editions.export');
         Route::middleware('can:editions_write')->group(function () {
+            Route::post('/editions/{edition}/importer', [EditionController::class, 'import'])->name('admin.editions.import');
             Route::post('/editions/{edition}/activer', [EditionController::class, 'activate'])->name('admin.editions.activate');
             Route::delete('/editions/{edition}', [EditionController::class, 'destroy'])->name('admin.editions.destroy');
             Route::get('/editions/creer', [EditionFormController::class, 'create'])->name('admin.editions.create');
@@ -249,8 +251,11 @@ Route::prefix('admin')->group(function () {
             Route::post('/emails/envoyer', [EmailController::class, 'send'])->name('admin.emails.send');
             Route::post('/emails/envoyer-dus', [EmailController::class, 'sendDue'])->name('admin.emails.send-due');
             Route::delete('/emails/{email}', [EmailController::class, 'cancel'])->name('admin.emails.cancel');
-            Route::get('/emails/modeles', [EmailTemplateController::class, 'edit'])->name('admin.emails.templates');
+            Route::post('/emails/annuler-campagne', [EmailController::class, 'cancelBatch'])->name('admin.emails.cancel-batch');
+            Route::post('/emails/relancer-campagne', [EmailController::class, 'retryBatch'])->name('admin.emails.retry-batch');
             Route::put('/emails/modeles', [EmailTemplateController::class, 'update'])->name('admin.emails.templates.update');
+            Route::post('/emails/modeles/nouveau', [EmailTemplateController::class, 'store'])->name('admin.emails.templates.store');
+            Route::delete('/emails/modeles/{key}', [EmailTemplateController::class, 'destroy'])->name('admin.emails.templates.destroy');
         });
 
         // Rapports (lecture d'ensemble).
@@ -259,6 +264,8 @@ Route::prefix('admin')->group(function () {
             Route::post('/rapports/generer', [ReportController::class, 'generate'])->name('admin.reports.generate');
             Route::get('/rapports/{edition}/excel', [ReportController::class, 'xlsx'])->name('admin.reports.xlsx');
             Route::get('/rapports/{edition}/pdf', [ReportController::class, 'pdf'])->name('admin.reports.pdf');
+            Route::get('/rapports/{edition}/export/{dataset}/{format}', [ReportController::class, 'export'])->name('admin.reports.export');
+            Route::get('/rapports/{edition}/ia/{id}/telecharger', [ReportController::class, 'aiDownload'])->name('admin.reports.ai-download');
         });
 
         // Programme / créneaux (structure de l'édition).
@@ -288,7 +295,8 @@ Route::prefix('admin')->group(function () {
 
         // Documents (attestations, badges, livret, fiches).
         Route::middleware('can:documents')->group(function () {
-            Route::get('/attestations', [DocumentHubController::class, 'index'])->name('admin.documents.attestations');
+            Route::get('/documents', [DocumentHubController::class, 'index'])->name('admin.documents.attestations');
+            Route::get('/attestations', [DocumentHubController::class, 'issued'])->name('admin.attestations.index');
             Route::post('/attestations/emettre', [DocumentHubController::class, 'issueType'])->name('admin.documents.attestations.issue');
             Route::post('/attestations/{attestation}/revoquer', [DocumentHubController::class, 'revoke'])->name('admin.documents.attestations.revoke');
             Route::post('/attestations/{attestation}/retablir', [DocumentHubController::class, 'restore'])->name('admin.documents.attestations.restore');
@@ -298,6 +306,7 @@ Route::prefix('admin')->group(function () {
             Route::post('/livret/avant-propos-ia', [DocumentHubController::class, 'generateForewordAi'])->name('admin.documents.livret.foreword-ai');
             Route::post('/livret/apparence', [DocumentHubController::class, 'saveLivretApparence'])->name('admin.documents.livret.apparence');
             Route::post('/livret/modele', [DocumentHubController::class, 'saveLivretTemplate'])->name('admin.documents.livret.template');
+            Route::get('/livret/modele-base', [DocumentHubController::class, 'baseTemplate'])->name('admin.documents.livret.base-template');
             Route::get('/modeles', [TemplateDesignerController::class, 'index'])->name('admin.documents.templates');
             Route::post('/modeles/generer', [TemplateDesignerController::class, 'generate'])->name('admin.documents.templates.generate');
             Route::post('/modeles/enregistrer', [TemplateDesignerController::class, 'save'])->name('admin.documents.templates.save');
@@ -325,5 +334,6 @@ Route::prefix('admin')->group(function () {
         // Copilote IA (outil d'aide, décision humaine).
         Route::get('/assistant-ia', [AiAssistantController::class, 'page'])->middleware('can:view_dashboard')->name('admin.ai');
         Route::post('/assistant-ia/demander', [AiAssistantController::class, 'ask'])->middleware('can:view_dashboard')->name('admin.ai.ask');
+        Route::post('/assistant-ia/decider', [AiAssistantController::class, 'decide'])->middleware('can:view_dashboard')->name('admin.ai.decide');
     });
 });

@@ -189,6 +189,42 @@
                 </section>
             @endif
 
+            {{-- Dates clés (fidèle au mockup : cartes avec statut) — placées avant la présentation --}}
+            @php
+                $keyDates = [];
+                if ($e->submission_deadline) {
+                    $past = $e->submission_deadline->isPast();
+                    $keyDates[] = ['icon' => 'upload', 'label' => 'Soumissions', 'value' => $e->submission_deadline->translatedFormat('d M Y'), 'pill' => $past ? 'closed' : 'soon', 'pillLabel' => $past ? 'Clôturé' : 'À venir'];
+                }
+                if ($e->date_start) {
+                    $future = $e->date_start->isFuture();
+                    $keyDates[] = ['icon' => 'calendar', 'label' => 'Ouverture', 'value' => $e->date_start->translatedFormat('d M Y'), 'pill' => $future ? 'soon' : 'info', 'pillLabel' => $future ? 'À venir' : 'En cours'];
+                }
+                if ($e->date_end && (! $e->date_start || $e->date_end->ne($e->date_start))) {
+                    $days = ($e->date_start && $e->date_end) ? ((int) $e->date_start->startOfDay()->diffInDays($e->date_end->startOfDay()) + 1).' jours' : 'Clôture';
+                    $keyDates[] = ['icon' => 'calendar-check', 'label' => 'Colloque', 'value' => $e->date_end->translatedFormat('d M Y'), 'pill' => 'info', 'pillLabel' => $days];
+                }
+            @endphp
+            @if (count($keyDates))
+                <section id="dates" style="scroll-margin-top:72px;">
+                    <div class="ukc-block-head">
+                        <h2>Dates clés</h2>
+                        <div class="ukc-accent"><i></i><i></i><i></i></div>
+                        <p>Retenez les échéances importantes de cette édition.</p>
+                    </div>
+                    <div class="ukc-dates-grid">
+                        @foreach ($keyDates as $d)
+                            <div class="ukc-date-card">
+                                <div class="icon"><x-ukc.icon :name="$d['icon']" :size="24" /></div>
+                                <h3>{{ $d['label'] }}</h3>
+                                <div class="date">{{ $d['value'] }}</div>
+                                <div class="status"><span class="ukc-pill ukc-pill--{{ $d['pill'] }}">{{ $d['pillLabel'] }}</span></div>
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
+            @endif
+
             {{-- Présentation (fidèle au mockup : prose + callout) --}}
             @if ($e->theme || $intro)
                 @php
@@ -221,42 +257,6 @@
                                 </a>
                             @endif
                         </div>
-                    </div>
-                </section>
-            @endif
-
-            {{-- Dates clés (fidèle au mockup : cartes avec statut) --}}
-            @php
-                $keyDates = [];
-                if ($e->submission_deadline) {
-                    $past = $e->submission_deadline->isPast();
-                    $keyDates[] = ['icon' => 'upload', 'label' => 'Soumissions', 'value' => $e->submission_deadline->translatedFormat('d M Y'), 'pill' => $past ? 'closed' : 'soon', 'pillLabel' => $past ? 'Clôturé' : 'À venir'];
-                }
-                if ($e->date_start) {
-                    $future = $e->date_start->isFuture();
-                    $keyDates[] = ['icon' => 'calendar', 'label' => 'Ouverture', 'value' => $e->date_start->translatedFormat('d M Y'), 'pill' => $future ? 'soon' : 'info', 'pillLabel' => $future ? 'À venir' : 'En cours'];
-                }
-                if ($e->date_end && (! $e->date_start || $e->date_end->ne($e->date_start))) {
-                    $days = ($e->date_start && $e->date_end) ? ((int) $e->date_start->startOfDay()->diffInDays($e->date_end->startOfDay()) + 1).' jours' : 'Clôture';
-                    $keyDates[] = ['icon' => 'calendar-check', 'label' => 'Colloque', 'value' => $e->date_end->translatedFormat('d M Y'), 'pill' => 'info', 'pillLabel' => $days];
-                }
-            @endphp
-            @if (count($keyDates))
-                <section id="dates" style="scroll-margin-top:72px;">
-                    <div class="ukc-block-head">
-                        <h2>Dates clés</h2>
-                        <div class="ukc-accent"><i></i><i></i><i></i></div>
-                        <p>Retenez les échéances importantes de cette édition.</p>
-                    </div>
-                    <div class="ukc-dates-grid">
-                        @foreach ($keyDates as $d)
-                            <div class="ukc-date-card">
-                                <div class="icon"><x-ukc.icon :name="$d['icon']" :size="24" /></div>
-                                <h3>{{ $d['label'] }}</h3>
-                                <div class="date">{{ $d['value'] }}</div>
-                                <div class="status"><span class="ukc-pill ukc-pill--{{ $d['pill'] }}">{{ $d['pillLabel'] }}</span></div>
-                            </div>
-                        @endforeach
                     </div>
                 </section>
             @endif
@@ -379,53 +379,6 @@
                 </section>
             @endif
 
-            {{-- Comités (exact mockup : onglets + carrousel) --}}
-            @if ($committees->count())
-                @php
-                    $comLabels = ['organisation' => 'Comité d’organisation', 'scientifique' => 'Comité scientifique', 'supervision' => 'Comité de supervision'];
-                    $firstComRole = collect(array_keys($comLabels))->first(fn ($r) => ($committees[$r] ?? collect())->count()) ?? 'organisation';
-                @endphp
-                <section id="comites" style="scroll-margin-top:72px;" x-data="{ comTab: '{{ $firstComRole }}' }">
-                    <div class="ukc-block-head">
-                        <h2>Comités</h2>
-                        <div class="ukc-accent"><i></i><i></i><i></i></div>
-                        <p>Organisation et évaluation scientifique.</p>
-                    </div>
-
-                    <div class="ukc-tabs-scroll" role="tablist">
-                        @foreach ($comLabels as $role => $label)
-                            @if (($committees[$role] ?? collect())->count())
-                                <button type="button" class="ukc-tab" :class="{ active: comTab==='{{ $role }}' }" @click="comTab='{{ $role }}'" role="tab">{{ $label }}</button>
-                            @endif
-                        @endforeach
-                    </div>
-
-                    @foreach ($comLabels as $role => $label)
-                        @php $members = $committees[$role] ?? collect(); @endphp
-                        @if ($members->count())
-                            <div x-show="comTab==='{{ $role }}'" x-cloak>
-                                <div class="ukc-swiper" x-data="{ scroll(d) { const t = $refs.track; t.scrollBy({ left: d * t.clientWidth * 0.8, behavior: 'smooth' }); } }">
-                                    <button type="button" class="swiper-nav prev" @click="scroll(-1)" aria-label="Précédent">‹</button>
-                                    <div class="ukc-swiper-track" x-ref="track">
-                                        @foreach ($members as $m)
-                                            <div class="ukc-person">
-                                                <div class="avatar">
-                                                    @if ($m->photo_url)<img src="{{ $m->photo_url }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">@else{{ mb_substr($m->person_name, 0, 1) }}@endif
-                                                </div>
-                                                <h4>{{ $m->person_name }}</h4>
-                                                @if ($m->person_title)<div class="role">{{ $m->person_title }}</div>@endif
-                                                @if ($m->institution)<div class="affil">{{ $m->institution }}</div>@endif
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                    <button type="button" class="swiper-nav next" @click="scroll(1)" aria-label="Suivant">›</button>
-                                </div>
-                            </div>
-                        @endif
-                    @endforeach
-                </section>
-            @endif
-
             {{-- Votre parcours en 5 étapes (fidèle au mockup : stepper) --}}
             <section id="parcours" style="scroll-margin-top:72px;">
                 <div class="ukc-block-head">
@@ -471,49 +424,6 @@
                         Co-auteur d’une communication acceptée ?
                         <a href="{{ route('public.coauthor', $edition->slug) }}" style="color:var(--ukc-blue);font-weight:700;">Réglez vos frais ici</a>.
                     </p>
-                </section>
-            @endif
-
-            {{-- Partenaires & Sponsors (exact mockup : marquee de logos) --}}
-            @if (count($partners))
-                <section id="partenaires" class="ukc-partners" style="scroll-margin-top:72px;">
-                    <div class="ukc-block-head" style="margin-bottom:0;">
-                        <h2>Partenaires &amp; Sponsors</h2>
-                        <div class="ukc-accent"><i></i><i></i><i></i></div>
-                        <p>Ils soutiennent cette édition.</p>
-                    </div>
-                    <div class="ukc-marquee">
-                        <div class="ukc-marquee-track">
-                            {{-- Dupliqué pour la boucle infinie (translateX -50%) --}}
-                            @foreach (array_merge($partners, $partners) as $p)
-                                <a class="logo-frame" @if (! empty($p['url'])) href="{{ $p['url'] }}" target="_blank" rel="noopener" @endif title="{{ $p['name'] }}">
-                                    @if (! empty($p['logo_url']))
-                                        <img src="{{ $p['logo_url'] }}" alt="{{ $p['name'] }}">
-                                    @else
-                                        {{ $p['name'] }}
-                                    @endif
-                                </a>
-                            @endforeach
-                        </div>
-                    </div>
-                </section>
-            @endif
-
-            {{-- FAQ (fidèle au mockup : accordéon) --}}
-            @if (count($faq))
-                <section id="faq" style="scroll-margin-top:72px;">
-                    <div class="ukc-block-head">
-                        <h2>Questions fréquentes</h2>
-                        <div class="ukc-accent"><i></i><i></i><i></i></div>
-                    </div>
-                    <div class="ukc-faq">
-                        @foreach ($faq as $item)
-                            <details class="ukc-faq-item">
-                                <summary>{{ $item['question'] }}</summary>
-                                <div class="answer" style="white-space:pre-line;">{{ $item['answer'] }}</div>
-                            </details>
-                        @endforeach
-                    </div>
                 </section>
             @endif
 
@@ -571,6 +481,96 @@
                 </section>
             @endif
 
+            {{-- Comités (exact mockup : onglets + carrousel) --}}
+            @if ($committees->count())
+                @php
+                    $comLabels = ['organisation' => 'Comité d’organisation', 'scientifique' => 'Comité scientifique', 'supervision' => 'Comité de supervision'];
+                    $firstComRole = collect(array_keys($comLabels))->first(fn ($r) => ($committees[$r] ?? collect())->count()) ?? 'organisation';
+                @endphp
+                <section id="comites" style="scroll-margin-top:72px;" x-data="{ comTab: '{{ $firstComRole }}' }">
+                    <div class="ukc-block-head">
+                        <h2>Comités</h2>
+                        <div class="ukc-accent"><i></i><i></i><i></i></div>
+                        <p>Organisation et évaluation scientifique.</p>
+                    </div>
+
+                    <div class="ukc-tabs-scroll" role="tablist">
+                        @foreach ($comLabels as $role => $label)
+                            @if (($committees[$role] ?? collect())->count())
+                                <button type="button" class="ukc-tab" :class="{ active: comTab==='{{ $role }}' }" @click="comTab='{{ $role }}'" role="tab">{{ $label }}</button>
+                            @endif
+                        @endforeach
+                    </div>
+
+                    @foreach ($comLabels as $role => $label)
+                        @php $members = $committees[$role] ?? collect(); @endphp
+                        @if ($members->count())
+                            <div x-show="comTab==='{{ $role }}'" x-cloak>
+                                <div class="ukc-swiper" x-data="{ scroll(d) { const t = $refs.track; t.scrollBy({ left: d * t.clientWidth * 0.8, behavior: 'smooth' }); } }">
+                                    <button type="button" class="swiper-nav prev" @click="scroll(-1)" aria-label="Précédent">‹</button>
+                                    <div class="ukc-swiper-track" x-ref="track">
+                                        @foreach ($members as $m)
+                                            <div class="ukc-person">
+                                                <div class="avatar">
+                                                    @if ($m->photo_url)<img src="{{ $m->photo_url }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">@else{{ mb_substr($m->person_name, 0, 1) }}@endif
+                                                </div>
+                                                <h4>{{ $m->person_name }}</h4>
+                                                @if ($m->person_title)<div class="role">{{ $m->person_title }}</div>@endif
+                                                @if ($m->institution)<div class="affil">{{ $m->institution }}</div>@endif
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                    <button type="button" class="swiper-nav next" @click="scroll(1)" aria-label="Suivant">›</button>
+                                </div>
+                            </div>
+                        @endif
+                    @endforeach
+                </section>
+            @endif
+
+            {{-- Partenaires & Sponsors (exact mockup : marquee de logos) --}}
+            @if (count($partners))
+                <section id="partenaires" class="ukc-partners" style="scroll-margin-top:72px;">
+                    <div class="ukc-block-head" style="margin-bottom:0;">
+                        <h2>Partenaires &amp; Sponsors</h2>
+                        <div class="ukc-accent"><i></i><i></i><i></i></div>
+                        <p>Ils soutiennent cette édition.</p>
+                    </div>
+                    <div class="ukc-marquee">
+                        <div class="ukc-marquee-track">
+                            {{-- Dupliqué pour la boucle infinie (translateX -50%) --}}
+                            @foreach (array_merge($partners, $partners) as $p)
+                                <a class="logo-frame" @if (! empty($p['url'])) href="{{ $p['url'] }}" target="_blank" rel="noopener" @endif title="{{ $p['name'] }}">
+                                    @if (! empty($p['logo_url']))
+                                        <img src="{{ $p['logo_url'] }}" alt="{{ $p['name'] }}">
+                                    @else
+                                        {{ $p['name'] }}
+                                    @endif
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                </section>
+            @endif
+
+            {{-- FAQ (fidèle au mockup : accordéon) --}}
+            @if (count($faq))
+                <section id="faq" style="scroll-margin-top:72px;">
+                    <div class="ukc-block-head">
+                        <h2>Questions fréquentes</h2>
+                        <div class="ukc-accent"><i></i><i></i><i></i></div>
+                    </div>
+                    <div class="ukc-faq">
+                        @foreach ($faq as $item)
+                            <details class="ukc-faq-item">
+                                <summary>{{ $item['question'] }}</summary>
+                                <div class="answer" style="white-space:pre-line;">{{ $item['answer'] }}</div>
+                            </details>
+                        @endforeach
+                    </div>
+                </section>
+            @endif
+
             {{-- Éditions précédentes (fidèle au mockup : past-cards) --}}
             @if ($siblings->count())
                 <section id="editions" style="scroll-margin-top:72px;">
@@ -593,77 +593,6 @@
                     </div>
                 </section>
             @endif
-
-            {{-- Contact --}}
-            <section id="contact" class="ukc-card">
-                <h2 style="font-size:1.3rem;font-weight:800;color:var(--ukc-blue);margin-bottom:16px;">Contact</h2>
-                <div class="ukc-grid-2" style="grid-template-columns:1fr 1.2fr;gap:24px;align-items:start;">
-                    <div style="display:flex;flex-direction:column;gap:12px;">
-                        @if (!empty($contact['email']))
-                            <div style="display:flex;gap:10px;align-items:center;">
-                                <x-ukc.icon name="mail" :size="18" />
-                                <a href="mailto:{{ $contact['email'] }}" style="color:var(--ukc-text);">{{ $contact['email'] }}</a>
-                            </div>
-                        @endif
-                        @if (!empty($contact['phone']))
-                            <div style="display:flex;gap:10px;align-items:center;">
-                                <x-ukc.icon name="phone" :size="18" /> <span>{{ $contact['phone'] }}</span>
-                            </div>
-                        @endif
-                        @if (!empty($contact['address']))
-                            <div style="display:flex;gap:10px;align-items:flex-start;">
-                                <x-ukc.icon name="pin" :size="18" /> <span>{{ $contact['address'] }}</span>
-                            </div>
-                        @endif
-                        @if (empty($contact['email']) && empty($contact['phone']) && empty($contact['address']))
-                            <p style="color:var(--ukc-muted);margin:0;">Envoyez-nous un message via le formulaire.</p>
-                        @endif
-                    </div>
-                    <div>
-                        @if (session('contact_sent'))
-                            <div class="ukc-alert ukc-alert--ok" style="margin:0;">
-                                <span class="ico"><x-ukc.icon name="check-circle" :size="18" /></span>
-                                <div>Merci, votre message a bien été envoyé. Nous vous répondrons rapidement.</div>
-                            </div>
-                        @else
-                            <form method="POST" action="{{ route('public.contact', $e->id) }}"
-                                  x-data="{ loadedAt: Math.floor(Date.now() / 1000) }"
-                                  style="display:flex;flex-direction:column;gap:12px;">
-                                @csrf
-                                <input type="hidden" name="loaded_at" :value="loadedAt">
-                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                                    <div class="ukc-field" style="margin:0;">
-                                        <label for="c_name">Votre nom</label>
-                                        <input type="text" id="c_name" name="name" value="{{ old('name') }}">
-                                        @error('name') <span class="error">{{ $message }}</span> @enderror
-                                    </div>
-                                    <div class="ukc-field" style="margin:0;">
-                                        <label for="c_email">Votre e-mail</label>
-                                        <input type="email" id="c_email" name="email" value="{{ old('email') }}">
-                                        @error('email') <span class="error">{{ $message }}</span> @enderror
-                                    </div>
-                                </div>
-                                <div class="ukc-field" style="margin:0;">
-                                    <label for="c_message">Message</label>
-                                    <textarea id="c_message" name="message" rows="5">{{ old('message') }}</textarea>
-                                    @error('message') <span class="error">{{ $message }}</span> @enderror
-                                </div>
-
-                                {{-- Honeypot anti-spam : masqué, doit rester vide. --}}
-                                <div style="position:absolute;left:-9999px;" aria-hidden="true">
-                                    <label>Ne pas remplir <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
-                                </div>
-
-                                <div>
-                                    <button type="submit" class="ukc-btn ukc-btn--blue">
-                                        <x-ukc.icon name="mail" :size="18" /> Envoyer le message
-                                    </button>
-                                </div>
-                            </form>
-                        @endif
-                    </div>
-                </div>
-            </section>
 
             {{-- CTA final (fidèle au mockup : bloc bleu) --}}
             <div class="ukc-final-cta" id="inscription">
