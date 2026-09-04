@@ -134,8 +134,12 @@
             </div>
 
             {{-- ===== Modale Programme ===== --}}
+            @php
+                $currentDayIndex = array_search($now->format('Y-m-d'), $byDay->keys()->all());
+                $currentDayIndex = $currentDayIndex === false ? 0 : $currentDayIndex;
+            @endphp
             <div class="modal-overlay" x-cloak x-show="modal === 'programme'" x-transition @click.self="modal = null">
-                <div class="modal modal--lg" x-data="{ day: 0 }">
+                <div class="modal modal--lg" x-data="{ day: {{ $currentDayIndex }} }">
                     <div class="modal-head">
                         <div><h2>Programme du colloque</h2><div class="sub">{{ $edition->title ?: $edition->colloque?->name }} · {{ $dates }}</div></div>
                         <button type="button" class="modal-close" @click="modal = null">×</button>
@@ -160,7 +164,7 @@
                                             <div class="meta">
                                                 {{ $s->room ?: 'Lieu à préciser' }}
                                                 @if (($isNow)($s)) · En cours @elseif ($s->ends_at && $s->ends_at->lt($now)) · Terminé @else · À venir @endif
-                                                @if ($s->isLive()) · Visio @endif
+                                                @if ($s->isLive()) · Visio {{ ucfirst($s->meeting_provider ?: 'en direct') }} @endif
                                             </div>
                                         </div>
                                     @endforeach
@@ -179,12 +183,18 @@
                         <button type="button" class="modal-close" @click="modal = null">×</button>
                     </div>
                     <div class="modal-body">
+                        @php($set = $edition->settings ?? [])
                         <div class="info-grid">
                             @if ($edition->theme)<div class="info-item"><strong>Thème</strong>{{ $edition->theme }}</div>@endif
                             <div class="info-item"><strong>Dates</strong>{{ $dates }}</div>
                             @if ($edition->location)<div class="info-item"><strong>Lieu</strong>{{ $edition->location }}</div>@endif
-                            <div class="info-item"><strong>Organisation</strong>{{ $edition->colloque?->name }} · DRI · Université de Kara</div>
+                            <div class="info-item"><strong>Organisateurs</strong>{{ $set['organisers'] ?? ($edition->colloque?->name.' · DRI · Université de Kara') }}</div>
+                            @if (! empty($set['formats']))<div class="info-item"><strong>Formats</strong>{{ $set['formats'] }}</div>@endif
+                            @if (! empty($set['visio']))<div class="info-item"><strong>Visio</strong>{{ $set['visio'] }}</div>@endif
                         </div>
+                        <p style="margin-top:16px;font-size:14px;color:var(--ukc-muted);line-height:1.55;">
+                            {{ $set['infos_note'] ?? 'Les participants disposent d’un badge et de documents dans l’espace participant. Les communicateurs rejoignent la salle de leur atelier pour présenter lorsque la visio est activée.' }}
+                        </p>
                         <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;">
                             @if ($edition->slug)<a href="{{ route('public.colloque', $edition->slug) }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">Page officielle</a>@endif
                             <a href="{{ route('account.dashboard') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">Espace participant</a>
@@ -195,13 +205,36 @@
 
             {{-- ===== Modale Indications ===== --}}
             <div class="modal-overlay" x-cloak x-show="modal === 'indications'" x-transition @click.self="modal = null">
-                <div class="modal modal--lg">
+                <div class="modal modal--xl">
                     <div class="modal-head">
                         <div><h2>Indications — salles &amp; lieux</h2><div class="sub">Où se déroulent les plénières, ateliers et sessions</div></div>
                         <button type="button" class="modal-close" @click="modal = null">×</button>
                     </div>
                     <div class="modal-body">
-                        @if ($rooms->isEmpty())
+                        @php($guide = $edition->settings['venue_guide'] ?? [])
+                        @if (! empty($guide))
+                            <p style="font-size:13.5px;color:var(--ukc-muted);margin-bottom:14px;line-height:1.5;">
+                                {{ $edition->settings['venue_intro'] ?? 'Plan de repérage sur le campus. En cas de changement de salle, une annonce est publiée en temps réel.' }}
+                            </p>
+                            <div style="overflow-x:auto;">
+                                <table class="ind-table">
+                                    <thead><tr><th>Type</th><th>Session / atelier</th><th>Salle / lieu</th><th>Repère</th></tr></thead>
+                                    <tbody>
+                                        @foreach ($guide as $row)
+                                            <tr>
+                                                <td><span class="type">{{ $row['type'] ?? '' }}</span></td>
+                                                <td>{{ $row['sessions'] ?? '' }}</td>
+                                                <td class="room">{{ $row['room'] ?? '' }}</td>
+                                                <td>{{ $row['landmark'] ?? '' }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p style="margin-top:14px;font-size:12.5px;color:var(--ukc-muted);">
+                                {{ $edition->settings['venue_note'] ?? 'Les sessions en visioconférence indiquent « Visio ON » sur la carte atelier ; le lieu présentiel reste la salle listée ci-dessus.' }}
+                            </p>
+                        @elseif ($rooms->isEmpty())
                             <p style="color:var(--ukc-muted);">Les salles seront précisées avec le programme.</p>
                         @else
                             <div style="overflow-x:auto;">
@@ -232,8 +265,9 @@
                     </div>
                     <div class="modal-body">
                         @forelse ($announcements as $a)
-                            <div class="annonce {{ ($a['urgent'] ?? false) ? 'urgent' : '' }}">
-                                @if (! empty($a['when']))<div class="when">{{ $a['when'] }}</div>@endif
+                            @php($urgent = $a['urgent'] ?? false)
+                            <div class="annonce {{ $urgent ? 'urgent' : '' }}">
+                                @if (! empty($a['when']) || $urgent)<div class="when">{{ $a['when'] ?? '' }}@if ($urgent) · Urgent @endif</div>@endif
                                 <strong>{{ $a['title'] ?? '' }}</strong>
                                 <span class="desc">{{ $a['text'] ?? '' }}</span>
                             </div>

@@ -1,18 +1,24 @@
 @php
-    $seed = 'Bonjour, je suis Gesco, l’assistante des colloques de l’Université de Kara. '
-        .'Posez-moi vos questions sur les soumissions, inscriptions, tarifs, programme ou documents.';
+    $seed = 'Bonjour ! Je suis '.$agentName.', l’assistante du colloque de l’Université de Kara. '
+        .'Comment puis-je vous aider aujourd’hui ?';
 @endphp
-<x-layouts.app title="Assistante Gesco">
+<x-layouts.app title="Assistante {{ $agentName }}">
     @include('partials.public-header')
 
     <section class="ukc-section ukc-section--tight">
         <div class="ukc-container" style="max-width:820px;">
-            <div class="gesco-chat" x-data="gescoChat(@js($seed))">
+            <div class="gesco-chat" x-data="gescoChat(@js($seed), '{{ route('gesco.ask') }}', @js($agentName))">
                 <div class="chat-hero">
-                    <div class="av">G</div>
+                    <div class="av">
+                        @if ($agentAvatar)
+                            <img src="{{ $agentAvatar }}" alt="{{ $agentName }}" style="width:100%;height:100%;object-fit:cover;">
+                        @else
+                            {{ \Illuminate\Support\Str::substr($agentName, 0, 1) }}
+                        @endif
+                    </div>
                     <div>
-                        <h1>Assistante Gesco</h1>
-                        <p>Soumissions, inscriptions, tarifs, programme, documents — je vous oriente. Je n’effectue aucune action à votre place.</p>
+                        <h1>{{ $agentName }} — votre assistante colloque</h1>
+                        <p>Questions sur les soumissions, l’inscription, les tarifs, le programme et les documents.</p>
                     </div>
                 </div>
 
@@ -20,22 +26,25 @@
                     <div class="chat-messages" x-ref="log">
                         <template x-for="(m, i) in messages" :key="i">
                             <div class="msg" :class="m.role === 'user' ? 'user' : 'bot'">
-                                <div class="who" x-text="m.role === 'user' ? 'Vous' : 'Gesco'"></div>
-                                <div style="white-space:pre-wrap;" x-text="m.text"></div>
+                                <div class="who" x-text="m.role === 'user' ? 'Vous' : agentName"></div>
+                                <template x-if="m.role === 'user'"><div style="white-space:pre-wrap;" x-text="m.text"></div></template>
+                                <template x-if="m.role !== 'user'"><div class="chat-md" x-html="render(m.text)"></div></template>
                             </div>
                         </template>
-                        <div class="msg bot typing" x-show="sending">Gesco écrit…</div>
+                        <div class="msg bot typing" x-show="sending" aria-label="{{ '…' }}">
+                            <span class="typing-dots"><span></span><span></span><span></span></span>
+                        </div>
                     </div>
 
                     <div class="suggestions" x-show="messages.length <= 1">
-                        <button type="button" @click="ask('Comment soumettre une communication ?')">Comment soumettre ?</button>
-                        <button type="button" @click="ask('Quels sont les tarifs et moyens de paiement ?')">Tarifs &amp; paiement</button>
-                        <button type="button" @click="ask('Où trouver le programme du colloque ?')">Le programme</button>
-                        <button type="button" @click="ask('Comment vérifier une attestation ?')">Vérifier une attestation</button>
+                        <button type="button" @click="ask('Comment soumettre une communication ?')">Soumettre une communication</button>
+                        <button type="button" @click="ask('Quels sont les tarifs d’inscription ?')">Tarifs d’inscription</button>
+                        <button type="button" @click="ask('Où voir mon badge et mon attestation ?')">Badge &amp; attestation</button>
+                        <button type="button" @click="ask('Quel est le programme du colloque ?')">Programme</button>
                     </div>
 
                     <div class="chat-input">
-                        <textarea x-model="input" rows="1" placeholder="Écrivez votre question…"
+                        <textarea x-model="input" rows="1" placeholder="Écrivez votre message…"
                                   @keydown.enter.prevent="if (!$event.shiftKey) { send(); }"
                                   :disabled="sending"></textarea>
                         <button type="button" class="send" @click="send()" aria-label="Envoyer" :disabled="sending">
@@ -44,8 +53,8 @@
                     </div>
                 </div>
 
-                <p style="text-align:center;font-size:12px;color:var(--ukc-light);">
-                    Réponses générées par IA à titre indicatif — pour toute décision officielle, contactez la DRI.
+                <p class="hint" style="text-align:center;font-size:12.5px;color:var(--ukc-muted);margin-top:10px;">
+                    {{ $agentName }} s’appuie sur les informations officielles du colloque. Pour une demande sensible, contactez le secrétariat.
                 </p>
             </div>
         </div>

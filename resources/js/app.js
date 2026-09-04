@@ -23,6 +23,47 @@ if (document.getElementById('dashboardData')) {
     import('./charts.js').then((m) => m.startDashboardCharts()).catch(() => {});
 }
 
+// Formateur « markdown léger » SÛR pour les réponses des agents IA : on échappe
+// tout le HTML d'abord, puis on n'applique que des transformations sur liste
+// blanche (gras, liens http(s), listes à puces/numérotées, paragraphes). Aucun
+// HTML de l'IA n'est jamais rendu tel quel → pas d'injection.
+function ukcMarkdownLite(text) {
+    const esc = (s) => String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const inline = (s) => esc(s)
+        .replace(/\b(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">$1</a>')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    const lines = String(text == null ? '' : text).split(/\n/);
+    let html = '', inUl = false, inOl = false;
+    const closeLists = () => {
+        if (inUl) { html += '</ul>'; inUl = false; }
+        if (inOl) { html += '</ol>'; inOl = false; }
+    };
+    for (const raw of lines) {
+        const line = raw.trim();
+        if (line === '') { closeLists(); continue; }
+        const ul = line.match(/^[-*•]\s+(.*)$/);
+        const ol = line.match(/^\d+[.)]\s+(.*)$/);
+        if (ul) {
+            if (!inUl) { closeLists(); html += '<ul class="chat-md-list">'; inUl = true; }
+            html += '<li>' + inline(ul[1]) + '</li>';
+        } else if (ol) {
+            if (!inOl) { closeLists(); html += '<ol class="chat-md-list">'; inOl = true; }
+            html += '<li>' + inline(ol[1]) + '</li>';
+        } else {
+            closeLists();
+            const h = line.match(/^#{1,4}\s+(.*)$/);
+            html += h ? '<p class="chat-md-h">' + inline(h[1]) + '</p>' : '<p>' + inline(line) + '</p>';
+        }
+    }
+    closeLists();
+    return html;
+}
+window.ukcMarkdownLite = ukcMarkdownLite;
+
 // Enregistrement de nos composants Alpine (l'évènement est émis par Alpine.start()).
 document.addEventListener('alpine:init', () => {
     // Notifications en popups fermables (toasts), affichées en bas à droite.
@@ -46,11 +87,12 @@ document.addEventListener('alpine:init', () => {
     // Assistante Gesco (widget flottant + page dédiée) : conversation côté client,
     // chaque tour appelle l'endpoint JSON /gesco/demander. Aucune action serveur
     // n'est déclenchée par l'IA — elle informe seulement.
-    window.Alpine.data('gescoChat', (seed = '', endpoint = '/gesco/demander') => ({
+    window.Alpine.data('gescoChat', (seed = '', endpoint = '/gesco/demander', name = 'Gesco') => ({
         messages: [],
         input: '',
         sending: false,
         endpoint,
+        agentName: name,
         init() {
             this.messages = [{ role: 'bot', text: seed || 'Bonjour, je suis Gesco.' }];
             this.scrollSoon();
@@ -58,6 +100,9 @@ document.addEventListener('alpine:init', () => {
         ask(text) {
             this.input = text;
             this.send();
+        },
+        render(text) {
+            return window.ukcMarkdownLite(text);
         },
         async send() {
             const question = this.input.trim();
@@ -114,6 +159,9 @@ document.addEventListener('alpine:init', () => {
         ask(text) {
             this.input = text;
             this.send();
+        },
+        render(text) {
+            return window.ukcMarkdownLite(text);
         },
         csrf() {
             return document.querySelector('meta[name="csrf-token"]')?.content || '';

@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Account;
 use App\Actions\NotifySubmissionStatus;
 use App\Actions\UpsertParticipantForAccount;
 use App\Http\Controllers\Controller;
+use App\Models\Attestation;
 use App\Models\Edition;
 use App\Models\Slot;
 use App\Models\Submission;
+use App\Support\CurrentColloque;
 use App\Support\Html;
 use App\Support\Notifier;
 use App\Support\SubmissionFormConfig;
@@ -33,15 +35,29 @@ class SubmissionController extends Controller
     {
         $account = Auth::guard('account')->user();
 
+        // Colloque courant (sélecteur) : la liste se scope dessus.
+        $current = CurrentColloque::current($account);
+
         $submissions = Submission::query()
             ->canonical()
             ->with('edition')
             ->whereHas('participant', fn ($q) => $q->where('account_id', $account->id))
+            ->when($current, fn ($q) => $q->where('edition_id', $current->id))
             ->latest('id')
             ->get();
 
+        // Édition ouverte aux soumissions (pour « Nouvelle soumission ») + échéance.
+        $openEdition = Edition::where('status', 'open')->where('submission_open', true)
+            ->latest('id')->first();
+        $deadlineEdition = $openEdition
+            ?? $submissions->first()?->edition
+            ?? Edition::latest('id')->first();
+
         return view('account.submissions.index', [
             'submissions' => $submissions,
+            'openEdition' => $openEdition,
+            'deadline' => $deadlineEdition?->submission_deadline,
+            'callOpen' => (bool) $openEdition,
         ]);
     }
 
@@ -183,12 +199,20 @@ class SubmissionController extends Controller
     {
         $this->authorizeOwnership($submission);
 
+        $soumissionAtt = $submission->participant_id
+            ? Attestation::where('participant_id', $submission->participant_id)
+                ->where('edition_id', $submission->edition_id)
+                ->where('type', 'soumission')->where('revoked', false)->first()
+            : null;
+
         return view('account.submissions.show', [
             'submission' => $submission,
             'feedback' => $this->authorFeedback($submission),
             'versions' => $submission->versions()->get(),
             'slot' => $this->currentSlot($submission),
             'availableSlots' => $this->availableSlots($submission),
+            'soumissionAtt' => $soumissionAtt,
+            'abstractMax' => (new SubmissionFormConfig($submission->edition))->abstractMax(),
         ]);
     }
 

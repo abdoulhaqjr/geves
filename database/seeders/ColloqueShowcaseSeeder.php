@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Edition;
 use App\Support\Settings;
+use App\Support\SubmissionFormConfig;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -74,25 +75,56 @@ class ColloqueShowcaseSeeder extends Seeder
     /** Champs de cœur alignés sur le mockup (titre, thème, lieu, dates, deadline). */
     private function seedCore(Edition $edition): void
     {
+        // Chronologie ancrée sur « aujourd'hui » pour rester COHÉRENTE quelle que
+        // soit la date de seed : appel → clôture soumissions → notifications →
+        // fin des inscriptions → événement, tous futurs et dans l'ordre. La vitrine
+        // reste ainsi dans l'état « soumissions ouvertes » sans jamais se contredire.
+        $dates = self::timeline();
+
         $edition->update([
             'title' => 'VIIIe Colloque scientifique international conjoint Université de Parakou & Université de Kara',
             'subtitle' => 'Innover pour un avenir durable : enjeux, défis et rôles des universités africaines',
             'theme' => 'Innover pour un avenir durable : enjeux, défis et rôles des universités africaines',
             'location' => 'Campus universitaire de Parakou · Bénin',
-            'date_start' => Carbon::create(2026, 9, 15),
-            'date_end' => Carbon::create(2026, 9, 18),
+            'date_start' => $dates['event_start'],
+            'date_end' => $dates['event_end'],
             'submission_open' => true,
-            // Deadline maintenue dans le futur proche pour que la vitrine reste dans
-            // l'état « soumissions ouvertes » du mockup (compte à rebours actif).
-            'submission_deadline' => now()->addDays(21)->setTime(23, 59),
-            'year' => 2026,
+            'submission_deadline' => $dates['deadline'],
+            'year' => $dates['event_start']->year,
         ]);
+    }
+
+    /**
+     * Jalons de l'édition, dérivés de « maintenant » pour une chronologie toujours
+     * cohérente (ordre et futur garantis). Source unique pour les dates du cœur et
+     * les « dates clés » affichées.
+     *
+     * @return array{call:Carbon, deadline:Carbon, notification:Carbon, registration_end:Carbon, event_start:Carbon, event_end:Carbon}
+     */
+    private static function timeline(): array
+    {
+        $now = Carbon::now();
+
+        return [
+            'call' => $now->copy()->subWeeks(4)->setTime(9, 0),        // appel lancé il y a 1 mois
+            'deadline' => $now->copy()->addWeeks(3)->setTime(23, 59),   // clôture des soumissions
+            'notification' => $now->copy()->addWeeks(6)->startOfDay(),  // notifications aux auteurs
+            'registration_end' => $now->copy()->addWeeks(9)->setTime(23, 59),
+            'event_start' => $now->copy()->addWeeks(11)->startOfDay(),
+            'event_end' => $now->copy()->addWeeks(11)->addDays(3)->startOfDay(),
+        ];
     }
 
     /** Contenu enrichi (settings JSON) fidèle au mockup. */
     private function seedSettings(Edition $edition): void
     {
         $s = $edition->settings ?? [];
+
+        // Dates réelles de l'édition (persistées par seedCore) : toutes les mentions
+        // de dates ci-dessous en dérivent, pour rester cohérentes entre elles.
+        $d = self::timeline();
+        $deadlineFr = $d['deadline']->translatedFormat('j F Y');
+        $abstractMax = (new SubmissionFormConfig($edition))->abstractMax();
 
         $s['languages'] = ['Français', 'Anglais'];
         $s['main_language'] = 'Français';
@@ -158,9 +190,9 @@ class ColloqueShowcaseSeeder extends Seeder
             ['name' => 'Partenaire', 'url' => 'https://univkara.tg/', 'logo_url' => 'https://univkara.tg/wp-content/uploads/2026/01/LOGO-COULEUR-TRANSP-scaled-e1769130750648.png'],
         ];
 
-        // Infos pratiques : 6 cartes fidèles au mockup.
+        // Infos pratiques : 6 cartes fidèles au mockup. Lieu = campus hôte (Parakou).
         $s['practical'] = [
-            'venue' => "Université de Kara — Campus Sud\nRoute de l’ex-ENI, BP 43, Kara — Togo",
+            'venue' => "Université de Parakou — Campus universitaire\nBP 123, Parakou — Bénin",
             'languages' => "Français\nAnglais\nCommunications orales ou posters",
             'accommodation' => "Hôtels partenaires à tarifs préférentiels\nListe communiquée après inscription\nPossibilité de résidence universitaire (places limitées)",
             'hybrid' => 'Sessions plénières retransmises en direct. Lien de connexion envoyé aux participants distants 48 h avant.',
@@ -168,17 +200,17 @@ class ColloqueShowcaseSeeder extends Seeder
             'contacts' => "colloque@univkara.tg\n(+228) 26 68 52 28",
         ];
 
-        // Plan du campus (OpenStreetMap).
+        // Plan du campus (OpenStreetMap) — Université de Parakou (≈ 9.34 N, 2.61 E).
         $s['map'] = [
-            'embed' => 'https://www.openstreetmap.org/export/embed.html?bbox=1.15%2C9.53%2C1.22%2C9.58&layer=mapnik&marker=9.555%2C1.185',
-            'link' => 'https://www.openstreetmap.org/?mlat=9.555&mlon=1.185#map=15/9.555/1.185',
+            'embed' => 'https://www.openstreetmap.org/export/embed.html?bbox=2.58%2C9.32%2C2.65%2C9.37&layer=mapnik&marker=9.345%2C2.612',
+            'link' => 'https://www.openstreetmap.org/?mlat=9.345&mlon=2.612#map=15/9.345/2.612',
         ];
 
-        // Contact (barre d'info).
+        // Contact (barre d'info). Secrétariat porté par l'UK, adresse = lieu de l'événement.
         $s['contact'] = array_merge([
             'email' => 'colloque@univkara.tg',
             'phone' => '(+228) 26 68 52 28',
-            'address' => 'Université de Kara — Campus Sud, Kara, Togo',
+            'address' => 'Université de Parakou — Campus universitaire, Parakou, Bénin',
         ], is_array($s['contact'] ?? null) ? $s['contact'] : []);
 
         $s['documents'] = [
@@ -194,22 +226,23 @@ class ColloqueShowcaseSeeder extends Seeder
         ];
 
         $s['faq'] = [
-            ['question' => 'Comment soumettre une communication ?', 'answer' => 'Soumettez votre résumé (250 mots max., FR ou EN) via le site du colloque avant le 15 juin 2026. Structure imposée : titre, auteurs, atelier, type (orale/poster), objectifs, méthodes, résultats, mots-clés.'],
+            ['question' => 'Comment soumettre une communication ?', 'answer' => 'Soumettez votre résumé ('.$abstractMax.' mots max., FR ou EN) via le site du colloque avant le '.$deadlineFr.'. Structure imposée : titre, auteurs, atelier, type (orale/poster), objectifs, méthodes, résultats, mots-clés.'],
             ['question' => 'Quels modes de paiement sont acceptés ?', 'answer' => 'Paiement en ligne via FedaPay (Mobile Money MTN, Moov, Togocom et cartes Visa/Mastercard) ou paiement manuel sur place après validation.'],
             ['question' => 'Le colloque est-il hybride ?', 'answer' => 'Oui. Les sessions plénières sont retransmises en direct. Les participants distants reçoivent un lien de connexion 48 h avant le début.'],
             ['question' => 'Quand recevrai-je mon attestation ?', 'answer' => 'L’attestation est disponible dans votre espace personnel dès la fin du colloque (ou après validation de votre participation pour les auditeurs distants).'],
             ['question' => 'Puis-je obtenir une lettre d’invitation pour un visa ?', 'answer' => 'Oui. Après inscription et paiement, une lettre d’invitation officielle peut être demandée depuis votre tableau de bord.'],
-            ['question' => 'Y a-t-il des tarifs préférentiels pour les étudiants ?', 'answer' => 'Oui. Le tarif étudiant est de 15 000 FCFA (justificatif de scolarité requis).'],
+            ['question' => 'Y a-t-il des tarifs préférentiels pour les doctorants ?', 'answer' => 'Oui. Le tarif « Doctorants & assimilés » est de 15 000 FCFA (justificatif de scolarité requis).'],
         ];
 
         // ---- Données « fiche d'édition » fidèles au mockup admin-edition-detail ----
+        // Dérivées de la chronologie réelle → toujours cohérentes et ordonnées.
         $s['key_dates'] = [
-            ['date' => '2026-04-01', 'label' => 'Lancement de l’appel à communications'],
-            ['date' => '2026-06-15', 'label' => 'Date limite de soumission'],
-            ['date' => '2026-07-15', 'label' => 'Notification aux auteurs'],
-            ['date' => '2026-08-31', 'label' => 'Fin des inscriptions'],
-            ['date' => '2026-09-15', 'label' => 'Ouverture du colloque'],
-            ['date' => '2026-09-18', 'label' => 'Clôture du colloque'],
+            ['date' => $d['call']->toDateString(), 'label' => 'Lancement de l’appel à communications'],
+            ['date' => $d['deadline']->toDateString(), 'label' => 'Date limite de soumission'],
+            ['date' => $d['notification']->toDateString(), 'label' => 'Notification aux auteurs'],
+            ['date' => $d['registration_end']->toDateString(), 'label' => 'Fin des inscriptions'],
+            ['date' => $d['event_start']->toDateString(), 'label' => 'Ouverture du colloque'],
+            ['date' => $d['event_end']->toDateString(), 'label' => 'Clôture du colloque'],
         ];
 
         $s['programme'] = [
@@ -226,7 +259,7 @@ class ColloqueShowcaseSeeder extends Seeder
         ];
 
         $s['info_cards'] = [
-            ['title' => 'Lieu', 'text' => 'Université de Kara — Campus Sud, Kara, Togo'],
+            ['title' => 'Lieu', 'text' => 'Université de Parakou — Campus universitaire, Parakou, Bénin'],
             ['title' => 'Format', 'text' => 'Présentiel & hybride · Sessions en français'],
             ['title' => 'Contact', 'text' => 'colloque@univkara.tg · (+228) 26 68 52 28'],
         ];
@@ -246,7 +279,7 @@ class ColloqueShowcaseSeeder extends Seeder
             'hero_video_enabled' => false,
             'hero_video_muted' => true,
             'news_enabled' => true,
-            'news_text' => 'Soumissions ouvertes jusqu’au 15 juin 2026',
+            'news_text' => 'Soumissions ouvertes jusqu’au '.$deadlineFr,
             'news_url' => '',
             'stats_enabled' => true,
             'stats' => [

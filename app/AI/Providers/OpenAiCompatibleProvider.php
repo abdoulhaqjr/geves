@@ -58,6 +58,8 @@ abstract class OpenAiCompatibleProvider implements AiProvider
             ->acceptJson()->timeout(120)
             ->post($this->endpoint(), [
                 'model' => $this->model(),
+                // Température basse : réponses factuelles et précises (peu d'invention).
+                'temperature' => 0.2,
                 'messages' => [['role' => 'user', 'content' => $content]],
                 'response_format' => ['type' => 'json_object'],
             ])->throw()->json();

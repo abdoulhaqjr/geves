@@ -53,7 +53,8 @@ class GeminiProvider implements AiProvider
             ->withHeaders(['x-goog-api-key' => (string) config('services.gemini.key')])
             ->post($url, [
                 'contents' => [['parts' => $parts]],
-                'generationConfig' => ['responseMimeType' => 'application/json'],
+                // Température basse : réponses factuelles et précises (peu d'invention).
+                'generationConfig' => ['responseMimeType' => 'application/json', 'temperature' => 0.2],
             ])->throw()->json();
 
         $text = $res['candidates'][0]['content']['parts'][0]['text'] ?? '';

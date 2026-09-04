@@ -681,7 +681,30 @@
 .admin-ai .msg.user { align-self: flex-end; background: var(--ukc-blue); color: #fff; border-bottom-right-radius: 4px; }
 .admin-ai .msg .who { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; opacity: .7; }
 .admin-ai .msg .actions { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
-.admin-ai .msg.typing { opacity: .75; font-style: italic; }
+.admin-ai .msg.typing { padding: 14px 16px; }
+
+/* Rendu structuré des réponses du copilote (markdown léger) */
+.admin-ai .msg.bot .chat-md > :first-child { margin-top: 0; }
+.admin-ai .msg.bot .chat-md > :last-child { margin-bottom: 0; }
+.admin-ai .msg.bot .chat-md p { margin: 0 0 8px; }
+.admin-ai .msg.bot .chat-md .chat-md-h { font-weight: 800; margin: 10px 0 6px; }
+.admin-ai .msg.bot .chat-md ul,
+.admin-ai .msg.bot .chat-md ol { margin: 4px 0 10px; padding-left: 20px; }
+.admin-ai .msg.bot .chat-md li { margin: 2px 0; }
+.admin-ai .msg.bot .chat-md code { background: rgba(34, 62, 164, .08); border-radius: 5px; padding: 1px 5px; font-size: .92em; }
+
+/* Points animés « en train d'écrire » (copie autonome : admin.css ne charge pas public.css) */
+.admin-ai .typing-dots { display: inline-flex; align-items: center; gap: 5px; height: 12px; }
+.admin-ai .typing-dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--ukc-blue); opacity: .45; animation: ukc-typing 1.2s infinite ease-in-out; }
+.admin-ai .typing-dots span:nth-child(2) { animation-delay: .18s; }
+.admin-ai .typing-dots span:nth-child(3) { animation-delay: .36s; }
+@keyframes ukc-typing {
+    0%, 60%, 100% { transform: translateY(0); opacity: .35; }
+    30% { transform: translateY(-4px); opacity: .95; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .admin-ai .typing-dots span { animation: none; opacity: .6; }
+}
 .admin-ai .proposal { border: 1px solid #c7d2fe; background: #f8faff; border-radius: 10px; padding: 12px; margin-top: 8px; }
 .admin-ai .proposal strong { display: block; font-size: 13.5px; margin-bottom: 4px; color: var(--ukc-text); }
 .admin-ai .proposal p { font-size: 13px; color: var(--ukc-muted); margin-bottom: 8px; }

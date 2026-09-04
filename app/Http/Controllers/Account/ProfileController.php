@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 /**
@@ -22,7 +23,8 @@ class ProfileController extends Controller
     {
         return view('account.profile', [
             'account' => Auth::guard('account')->user(),
-            'civilities' => ['M.', 'Mme', 'Dr', 'Pr'],
+            'civilities' => ['M.', 'Mme', 'Pr', 'Dr'],
+            'participantTypes' => ['Enseignant / Chercheur', 'Doctorant', 'Autre participant'],
             'halEnabled' => HalClient::enabled(),
         ]);
     }
@@ -37,12 +39,34 @@ class ProfileController extends Controller
             'phone' => ['nullable', 'string', 'max:50'],
             'affiliation' => ['nullable', 'string', 'max:255'],
             'country' => ['nullable', 'string', 'max:100'],
+            'city' => ['nullable', 'string', 'max:120'],
             'bio' => ['nullable', 'string', 'max:2000'],
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
-        Auth::guard('account')->user()->update($data);
+        $account = Auth::guard('account')->user();
+
+        // Photo de profil : suppression explicite ou remplacement.
+        if ($request->boolean('remove_photo')) {
+            $this->deletePhoto($account->photo_path);
+            $account->photo_path = null;
+        } elseif ($request->hasFile('photo')) {
+            $path = $request->file('photo')->store('account-photos', 'public');
+            $this->deletePhoto($account->photo_path);
+            $account->photo_path = $path;
+        }
+
+        $account->fill(collect($data)->except('photo')->all());
+        $account->save();
 
         return back()->with('ukc_status', 'Profil enregistré.');
+    }
+
+    private function deletePhoto(?string $path): void
+    {
+        if (filled($path) && Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->delete($path);
+        }
     }
 
     /** Autocomplétion HAL de l'affiliation (endpoint JSON pour l'Alpine). */

@@ -1,77 +1,116 @@
-<x-layouts.participant title="Payer mes frais" subtitle="Frais d’inscription au colloque">
-    <div class="ukc-card" style="margin-bottom:18px;">
-        <div style="font-size:.8rem;font-weight:700;color:var(--ukc-muted);text-transform:uppercase;letter-spacing:.04em;">
-            {{ $edition->edition_label }}
+<x-layouts.participant title="Inscription" subtitle="Frais d’inscription au colloque">
+<div>
+    @php
+        $step = $paid ? 4 : ($eligible ? 3 : 2);
+    @endphp
+
+    {{-- Statut d'inscription --}}
+    <div class="ukc-card" style="margin-bottom:20px;">
+        <h3>Statut d’inscription — {{ $edition->title ?: $edition->year }}</h3>
+        <div class="ukc-steps">
+            <div class="ukc-step done">Profil</div>
+            <div @class(['ukc-step', 'done' => $step > 2, 'active' => $step === 2])>Choix du tarif</div>
+            <div @class(['ukc-step', 'done' => $step > 3, 'active' => $step === 3])>Paiement</div>
+            <div @class(['ukc-step', 'done' => $step === 4])>Confirmé</div>
         </div>
-        <div style="font-weight:800;font-size:1.1rem;margin-top:2px;">{{ $edition->title }}</div>
+        <p style="font-size:14px;color:var(--ukc-muted);margin:0;">
+            @if ($paid)
+                Votre inscription est <strong>confirmée</strong>. Merci !
+            @elseif ($eligible)
+                Une de vos communications est acceptée : réglez vos frais ci-dessous pour finaliser votre inscription.
+            @else
+                Votre inscription s’ouvrira après <strong>acceptation</strong> de votre communication (ou pour les auditeurs).
+            @endif
+        </p>
     </div>
 
-    @if (! $participant)
-        <div class="ukc-alert ukc-alert--info">
-            <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
-            <div>Aucune participation trouvée pour cette édition.</div>
+    {{-- Grille des tarifs --}}
+    @if (! empty($tiers))
+        <div class="ukc-grid-3" style="margin-bottom:20px;">
+            @foreach ($tiers as $tier)
+                @php($isApplicable = $applicableLabel !== null && ($tier['label'] ?? null) === $applicableLabel)
+                <div class="ukc-card ukc-tariff-card {{ $isApplicable ? 'selected' : '' }}" style="text-align:center;">
+                    @if ($isApplicable)<div style="font-size:11px;font-weight:700;color:var(--ukc-blue);margin-bottom:4px;">VOTRE TARIF</div>@endif
+                    <div style="font-size:13px;font-weight:700;color:var(--ukc-muted);margin-bottom:8px;">{{ $tier['label'] ?? 'Tarif' }}</div>
+                    <div style="font-size:1.6rem;font-weight:900;color:var(--ukc-blue);">{{ number_format((float) ($tier['amount'] ?? 0), 0, ',', ' ') }} <small style="font-size:.7em;">FCFA</small></div>
+                    <div style="margin-top:14px;">
+                        @if ($isApplicable)
+                            <span class="ukc-pill ukc-pill--ok">Applicable</span>
+                        @else
+                            <span class="ukc-pill ukc-pill--muted">Selon profil</span>
+                        @endif
+                    </div>
+                </div>
+            @endforeach
         </div>
+        <p class="ukc-hint" style="margin:-8px 0 20px;">Le tarif est déterminé par votre <strong>type de participant</strong> (modifiable dans Profil).</p>
+    @endif
+
+    {{-- Paiement --}}
+    @if (! $participant)
+        <div class="ukc-alert ukc-alert--info"><span class="ico"><x-ukc.icon name="info" :size="18" /></span><div>Aucune participation trouvée pour cette édition.</div></div>
     @elseif ($paid)
         <div class="ukc-card" style="text-align:center;">
-            <div style="width:56px;height:56px;border-radius:50%;margin:0 auto 14px;background:#dcfce7;color:#166534;
-                        display:flex;align-items:center;justify-content:center;">
+            <div style="width:56px;height:56px;border-radius:50%;margin:0 auto 14px;background:#dcfce7;color:#166534;display:flex;align-items:center;justify-content:center;">
                 <x-ukc.icon name="check" :size="28" />
             </div>
-            <h2 style="justify-content:center;">Frais déjà réglés</h2>
+            <h3 style="justify-content:center;">Frais déjà réglés</h3>
             <p style="color:var(--ukc-muted);">Merci, votre inscription est à jour.</p>
-            @if ($paidReceipt)
-                <p style="margin-top:8px;font-size:.9rem;">Reçu n° <strong style="font-family:ui-monospace,monospace;">{{ $paidReceipt->receipt_no }}</strong></p>
-            @endif
+            @if ($paidReceipt)<p style="margin-top:8px;font-size:.9rem;">Reçu n° <strong style="font-family:ui-monospace,monospace;">{{ $paidReceipt->receipt_no }}</strong> — disponible dans <a href="{{ route('account.documents') }}" style="color:var(--ukc-blue);font-weight:700;">Documents</a>.</p>@endif
         </div>
     @elseif (! $eligible)
-        <div class="ukc-alert ukc-alert--warn">
-            <span class="ico"><x-ukc.icon name="lock" :size="18" /></span>
-            <div>Le paiement s’ouvrira dès qu’au moins une de vos communications sera <strong>acceptée</strong>.</div>
-        </div>
+        <div class="ukc-alert ukc-alert--warn"><span class="ico"><x-ukc.icon name="lock" :size="18" /></span><div>Le paiement s’ouvrira dès qu’au moins une de vos communications sera <strong>acceptée</strong>.</div></div>
     @elseif (session('pay_instructions'))
-        <div class="ukc-card">
-            <div class="ukc-alert ukc-alert--ok" style="margin-bottom:0;">
-                <span class="ico"><x-ukc.icon name="check-circle" :size="18" /></span>
-                <div>{{ session('pay_instructions') }}</div>
-            </div>
-        </div>
+        <div class="ukc-card"><div class="ukc-alert ukc-alert--ok" style="margin:0;"><span class="ico"><x-ukc.icon name="check-circle" :size="18" /></span><div>{{ session('pay_instructions') }}</div></div></div>
     @else
-        <div class="ukc-card">
-            <div class="ukc-pay-summary" style="display:flex;justify-content:space-between;align-items:center;gap:12px;
-                        padding:14px 16px;border-radius:12px;background:var(--ukc-bg);border:1px solid var(--ukc-border);margin-bottom:18px;">
-                <span style="font-weight:600;">Frais d’inscription</span>
-                <span style="font-size:1.35rem;font-weight:900;color:var(--ukc-blue);">
-                    {{ $amount ? number_format((float) $amount, 0, ',', ' ') . ' FCFA' : 'à préciser' }}
-                </span>
+        <div class="ukc-card" x-data="{ gw: '{{ optional($gateways[0] ?? null)->key() }}' }">
+            <h3>Paiement Mobile Money</h3>
+            <p style="font-size:14px;color:var(--ukc-muted);margin-bottom:16px;">
+                Paiement sécurisé via <strong>FedaPay</strong> (Mobile Money Togo / carte bancaire).
+                Le reçu PDF sera disponible dans <strong>Documents</strong> après confirmation.
+            </p>
+
+            <div class="ukc-pay-summary">
+                <div>
+                    <div style="font-size:12px;color:var(--ukc-muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Montant à régler</div>
+                    <div class="amount">{{ $amount ? number_format((float) $amount, 0, ',', ' ').' FCFA' : 'à préciser' }}</div>
+                    @if ($applicableLabel)<div style="font-size:13px;color:var(--ukc-muted);">Tarif : {{ $applicableLabel }}</div>@endif
+                </div>
+                <span class="ukc-pill ukc-pill--warn">En attente de paiement</span>
             </div>
 
-            @error('pay') <div class="ukc-alert ukc-alert--err"><span class="ico"><x-ukc.icon name="info" :size="18" /></span><div>{{ $message }}</div></div> @enderror
+            @error('pay') <div class="ukc-alert ukc-alert--err" style="margin-bottom:14px;"><span class="ico"><x-ukc.icon name="info" :size="18" /></span><div>{{ $message }}</div></div> @enderror
 
             @if (! $amount)
-                <div class="ukc-alert ukc-alert--warn" style="margin-bottom:0;">
-                    <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
-                    <div>Le montant n’a pas pu être déterminé automatiquement. Contactez l’organisation.</div>
-                </div>
+                <div class="ukc-alert ukc-alert--warn" style="margin:0;"><span class="ico"><x-ukc.icon name="info" :size="18" /></span><div>Le montant n’a pas pu être déterminé automatiquement. Contactez l’organisation.</div></div>
             @else
-                <p style="font-size:.9rem;color:var(--ukc-muted);margin-bottom:12px;">Choisissez un moyen de paiement :</p>
-                <div style="display:flex;flex-direction:column;gap:10px;">
-                    @foreach ($gateways as $gateway)
-                        <form method="POST" action="{{ route('account.payment.pay', $edition) }}">
-                            @csrf
-                            <input type="hidden" name="gateway" value="{{ $gateway->key() }}">
-                            <button type="submit" class="ukc-btn ukc-btn--outline" style="justify-content:space-between;width:100%;">
-                                <span style="display:inline-flex;align-items:center;gap:8px;">
-                                    <x-ukc.icon name="card" :size="18" /> {{ $gateway->label() }}
-                                </span>
-                                <x-ukc.icon name="chevron" :size="16" />
-                            </button>
-                        </form>
-                    @endforeach
-                </div>
-                <div class="ukc-pay-secure" style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ukc-muted);margin-top:14px;">
-                    <x-ukc.icon name="lock" :size="14" /> Paiement sécurisé — un reçu vous sera envoyé par e-mail.
+                <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--ukc-text);">Choisir un moyen de paiement</div>
+                <form method="POST" action="{{ route('account.payment.pay', $edition) }}">
+                    @csrf
+                    <input type="hidden" name="gateway" :value="gw">
+                    <div class="ukc-mm-methods">
+                        @foreach ($gateways as $gateway)
+                            @php($k = $gateway->key())
+                            <label class="ukc-mm-method" :class="{ selected: gw === '{{ $k }}' }" @click="gw = '{{ $k }}'">
+                                <input type="radio" name="mm" value="{{ $k }}" @checked($loop->first)>
+                                <div class="mm-logo {{ $k === 'manual' ? 'manual' : 'card' }}">{{ strtoupper(substr($k, 0, 4)) }}</div>
+                                <span class="mm-name">{{ $gateway->label() }}</span>
+                                <span class="mm-sub">{{ $k === 'manual' ? 'Validation admin' : 'Paiement en ligne' }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    <div class="ukc-form-actions">
+                        <button type="submit" class="ukc-btn ukc-btn--green">
+                            <x-ukc.icon name="card" :size="16" /> Payer {{ number_format((float) $amount, 0, ',', ' ') }} FCFA
+                        </button>
+                    </div>
+                </form>
+
+                <div class="ukc-pay-secure">
+                    <x-ukc.icon name="shield" :size="16" /> Paiement chiffré · FedaPay · Reçu automatique après confirmation
                 </div>
             @endif
         </div>
     @endif
+</div>
 </x-layouts.participant>

@@ -1,159 +1,293 @@
-<x-layouts.participant title="Ma communication" subtitle="Suivi, retours & resoumission">
-    @php($s = $submission)
+<x-layouts.participant title="Détail de la soumission" subtitle="Suivi, retours & resoumission">
+    @php
+        $s = $submission;
+        $words = preg_match_all('/\p{L}+/u', strip_tags((string) $s->abstract));
+        $decided = in_array($s->status, ['accepted', 'rejected'], true);
+        $authors = collect($s->authors ?? []);
+        $mainAuthor = $authors->firstWhere('corresponding', true) ?? $authors->first();
+        $coauthors = $authors->filter(fn ($a) => empty($a['corresponding']));
+        $fmtAuthor = fn ($a) => trim(($a['name'] ?? '').(filled($a['affiliation'] ?? null) ? ' ('.$a['affiliation'].')' : ''));
+        $kw = collect(is_array($s->keywords) ? $s->keywords : preg_split('/\s*,\s*/', (string) $s->keywords, -1, PREG_SPLIT_NO_EMPTY))->filter();
+    @endphp
 
-    <a href="{{ route('account.submissions.index') }}"
-       style="display:inline-flex;align-items:center;gap:6px;font-size:.9rem;color:var(--ukc-muted);margin-bottom:14px;">
-        <x-ukc.icon name="chevron" :size="16" style="transform:rotate(180deg);" /> Mes communications
-    </a>
-
-    <div class="ukc-card" style="margin-bottom:18px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-            <span style="font-family:ui-monospace,monospace;font-weight:700;color:var(--ukc-muted);">{{ $s->ref_code }}</span>
-            <span class="ukc-pill ukc-pill--{{ $s->statusPill() }}">{{ $s->statusLabel() }}</span>
+    <div class="account-submission-detail" x-data="{ slotModal: false }" @keydown.escape.window="slotModal = false">
+        {{-- Barre de retour + statut --}}
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+            <a href="{{ route('account.submissions.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">← Mes soumissions</a>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <span class="ukc-pill ukc-pill--{{ $s->statusPill() }}">{{ $s->statusLabel() }}</span>
+                <span class="ukc-pill ukc-pill--muted" style="font-family:ui-monospace,monospace;">{{ $s->ref_code }}</span>
+            </div>
         </div>
-        <h2 style="margin-top:10px;">{{ $s->title }}</h2>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
-            @if ($s->track)<span class="ukc-pill ukc-pill--info">{{ $s->track }}</span>@endif
-            <span class="ukc-pill ukc-pill--muted">{{ $s->type === 'poster' ? 'Poster' : 'Oral' }}</span>
-            <span class="ukc-pill ukc-pill--muted">Version {{ $s->version }}</span>
-        </div>
 
-        {{-- Progression du statut (fidèle au mockup soumission-detail) --}}
-        @php
-            $decided = in_array($s->status, ['accepted', 'rejected'], true);
-            $evaluated = in_array($s->status, ['under_review', 'revision', 'accepted', 'rejected'], true);
-        @endphp
-        <div class="ukc-steps" style="margin-top:16px;">
-            <div class="ukc-step done">Déposée</div>
-            <div @class(['ukc-step', 'done' => $evaluated && $s->status !== 'under_review', 'active' => $s->status === 'under_review'])>En évaluation</div>
-            <div @class(['ukc-step', 'done' => $decided, 'active' => $s->status === 'revision'])>{{ $s->status === 'rejected' ? 'Non retenue' : ($s->status === 'revision' ? 'Correction' : 'Décision') }}</div>
-        </div>
-    </div>
-
-    {{-- Retour des relecteurs --}}
-    @if (count($feedback))
+        {{-- En-tête + parcours --}}
         <div class="ukc-card" style="margin-bottom:18px;">
-            <h3><x-ukc.icon name="mic" :size="20" /> Retour des relecteurs</h3>
-            @foreach ($feedback as $fb)
-                <div style="padding:12px 0;border-bottom:1px solid var(--ukc-border);">
-                    <div style="font-weight:700;font-size:.9rem;color:var(--ukc-blue);">{{ $fb['label'] }}</div>
-                    <p style="color:var(--ukc-text);line-height:1.6;white-space:pre-line;margin-top:4px;">{{ $fb['comments'] }}</p>
-                </div>
-            @endforeach
-        </div>
-    @endif
-
-    {{-- Créneau de passage (communication acceptée) --}}
-    @if ($s->status === 'accepted')
-        <div class="ukc-card" style="margin-bottom:18px;">
-            <h3><x-ukc.icon name="calendar" :size="20" /> Créneau de passage</h3>
-            @if ($slot)
-                <div class="ukc-alert ukc-alert--ok" style="margin:8px 0 0;">
-                    <span class="ico"><x-ukc.icon name="check" :size="18" /></span>
-                    <div>
-                        <strong>{{ $slot->session_label ?: 'Présentation' }}</strong>
-                        @if ($slot->starts_at) — {{ $slot->starts_at->translatedFormat('d F, H:i') }} @endif
-                        @if ($slot->room) · Salle {{ $slot->room }} @endif
-                        @if ($slot->chosen_by_participant) <span class="ukc-pill ukc-pill--info" style="margin-left:6px;">Choisi</span> @endif
+            <div class="sub-header">
+                <div class="title-block">
+                    <h1>{{ $s->title }}</h1>
+                    <div class="meta">
+                        <span>{{ $s->type === 'poster' ? 'Poster' : 'Orale' }}</span><span>·</span>
+                        <span>{{ $s->track ?: 'Axe non précisé' }}</span><span>·</span>
+                        <span>Déposée le {{ $s->created_at?->format('d/m/Y') ?? '—' }}</span>
                     </div>
                 </div>
-            @endif
-
-            @if ($availableSlots->count())
-                <p style="font-size:.88rem;color:var(--ukc-muted);margin:14px 0 8px;">
-                    {{ $slot ? 'Vous pouvez changer de créneau :' : 'Choisissez votre créneau de passage :' }}
-                </p>
-                <div style="display:flex;flex-direction:column;gap:8px;">
-                    @foreach ($availableSlots as $av)
-                        <form method="POST" action="{{ route('account.submissions.choose-slot', $s) }}">
-                            @csrf
-                            <input type="hidden" name="slot_id" value="{{ $av->id }}">
-                            <button type="submit" class="ukc-btn ukc-btn--outline" style="justify-content:space-between;width:100%;">
-                                <span>{{ $av->session_label ?: 'Créneau' }}
-                                    @if ($av->starts_at) — {{ $av->starts_at->translatedFormat('d F, H:i') }} @endif
-                                    @if ($av->room) · {{ $av->room }} @endif
-                                </span>
-                                <x-ukc.icon name="chevron" :size="16" />
-                            </button>
-                        </form>
-                    @endforeach
-                </div>
-            @elseif (! $slot)
-                <p style="font-size:.88rem;color:var(--ukc-muted);">Aucun créneau disponible pour l’instant — l’organisation vous en attribuera un.</p>
-            @endif
-        </div>
-    @endif
-
-    {{-- Resoumission --}}
-    @if ($s->canBeRevised())
-        <div class="ukc-card" style="margin-bottom:18px;">
-            <div class="ukc-alert ukc-alert--warn" style="margin-bottom:16px;">
-                <span class="ico"><x-ukc.icon name="pen" :size="18" /></span>
-                <div>Une <strong>correction</strong> vous est demandée. Modifiez votre communication ci-dessous puis renvoyez-la.</div>
             </div>
 
-            <form method="POST" action="{{ route('account.submissions.resubmit', $s) }}" enctype="multipart/form-data" class="ukc-form-grid">
-                @csrf
-                <div class="ukc-field full">
-                    <label for="title">Titre <span class="req">*</span></label>
-                    <input type="text" id="title" name="title" value="{{ old('title', $s->title) }}">
-                    @error('title') <span class="error">{{ $message }}</span> @enderror
-                </div>
-                <div class="ukc-field full" x-data="ukcTags(@js(old('keywords', $s->keywords)))">
-                    <input type="hidden" name="keywords" :value="tags.join(', ')">
-                    <label for="keywords-input">Mots-clés</label>
-                    <div class="ukc-tags" @click="$refs.kwinput.focus()">
-                        <template x-for="(tag, i) in tags" :key="tag">
-                            <span class="ukc-tag"><span x-text="tag"></span><button type="button" @click="remove(i)" aria-label="Retirer">&times;</button></span>
-                        </template>
-                        <input type="text" id="keywords-input" x-ref="kwinput" x-model="draft"
-                               @keydown.enter.prevent="add()" @keydown.comma.prevent="add()"
-                               @keydown.backspace="backspace()" @blur="add()"
-                               placeholder="Saisir un mot-clé puis Entrée…">
-                    </div>
-                    @error('keywords') <span class="error">{{ $message }}</span> @enderror
-                </div>
-                <div class="ukc-field full">
-                    <label>Résumé <span class="req">*</span></label>
-                    @include('partials.abstract-editor', ['name' => 'abstract', 'initial' => old('abstract', $s->abstract), 'min' => 50])
-                    @error('abstract') <span class="error">{{ $message }}</span> @enderror
-                </div>
-                <div class="ukc-field full">
-                    <label for="file">Remplacer le fichier <span class="hint">(optionnel)</span></label>
-                    <input type="file" id="file" name="file" accept=".pdf,.doc,.docx">
-                    @error('file') <span class="error">{{ $message }}</span> @enderror
-                </div>
-                <div class="ukc-form-actions full">
-                    <button type="submit" class="ukc-btn ukc-btn--blue">
-                        <x-ukc.icon name="upload" :size="18" /> Renvoyer la version corrigée
-                    </button>
-                </div>
-            </form>
+            <div class="status-track" aria-label="Parcours de la soumission">
+                <div class="step done"><div class="lbl">Déposée</div></div>
+                <div class="step done"><div class="lbl">Reçue</div></div>
+                <div @class(['step', 'done' => $decided || $s->status === 'revision', 'active' => $s->status === 'under_review'])><div class="lbl">En évaluation</div></div>
+                <div @class(['step', 'done' => $decided, 'active' => $s->status === 'revision'])><div class="lbl">Décision</div></div>
+                <div @class(['step', 'done' => (bool) $slot, 'active' => $s->status === 'accepted' && ! $slot])><div class="lbl">Créneau</div></div>
+                <div class="step"><div class="lbl">Présentée</div></div>
+            </div>
+            <p class="hint">
+                @if ($s->status === 'accepted')
+                    Communication <strong>acceptée</strong>. Finalisez votre inscription et choisissez votre créneau.
+                @elseif ($s->status === 'rejected')
+                    Après examen, votre communication n’a pas été retenue pour cette édition.
+                @elseif ($s->status === 'revision')
+                    Une <strong>correction</strong> est demandée : modifiez puis renvoyez votre communication.
+                @else
+                    Vous recevrez un e-mail à chaque changement d’état de votre soumission.
+                @endif
+            </p>
         </div>
-    @else
-        <div class="ukc-card" style="margin-bottom:18px;">
-            <h3>Résumé</h3>
-            <div class="ukc-rte">{!! \App\Support\Html::render($s->abstract) !!}</div>
-            @if ($s->file_url)
-                <a href="{{ $s->file_url }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm" style="margin-top:14px;">
-                    <x-ukc.icon name="file" :size="16" /> Fichier joint
-                </a>
-            @endif
-        </div>
-    @endif
 
-    {{-- Historique des versions --}}
-    @if ($versions->count())
-        <div class="ukc-card">
-            <h3><x-ukc.icon name="clock" :size="20" /> Historique des versions</h3>
-            <ul style="list-style:none;">
-                @foreach ($versions as $v)
-                    <li style="display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--ukc-border);font-size:.9rem;">
-                        <span>Version {{ $v->version }} — {{ \Illuminate\Support\Str::limit($v->title, 60) }}</span>
-                        <span style="color:var(--ukc-muted);">{{ $v->created_at?->format('d/m/Y H:i') }}</span>
-                    </li>
-                @endforeach
-            </ul>
+        {{-- Correction demandée : resoumission (fonctionnalité réelle) --}}
+        @if ($s->canBeRevised())
+            <div class="ukc-card" style="margin-bottom:18px;border-color:#fde68a;background:#fffbeb;">
+                <div class="ukc-alert ukc-alert--warn" style="margin-bottom:16px;">
+                    <span class="ico"><x-ukc.icon name="pen" :size="18" /></span>
+                    <div>Une <strong>correction</strong> vous est demandée. Modifiez votre communication ci-dessous puis renvoyez-la.</div>
+                </div>
+                <a href="#resubmit" class="ukc-btn ukc-btn--blue ukc-btn--sm">Corriger &amp; renvoyer</a>
+            </div>
+        @endif
+
+        <div class="layout-2">
+            {{-- Colonne principale --}}
+            <div style="display:flex;flex-direction:column;gap:18px;">
+                <div class="ukc-card">
+                    <h2>Informations</h2>
+                    <dl class="kv">
+                        <dt>Référence</dt><dd><strong>{{ $s->ref_code }}</strong></dd>
+                        <dt>Type</dt><dd>{{ $s->type === 'poster' ? 'Poster' : 'Communication orale' }}</dd>
+                        <dt>Atelier / axe</dt><dd>{{ $s->track ?: '—' }}</dd>
+                        <dt>Langue</dt><dd>{{ $s->meta['language'] ?? 'Français' }}</dd>
+                        <dt>Mots (résumé)</dt><dd>{{ $words }} / {{ $abstractMax }}</dd>
+                        <dt>Auteur principal</dt><dd>{{ $mainAuthor ? $fmtAuthor($mainAuthor) : ($s->correspondingAuthorName() ?: '—') }}</dd>
+                        @if ($coauthors->isNotEmpty())
+                            <dt>Co-auteurs</dt><dd>{{ $coauthors->map($fmtAuthor)->filter()->implode(', ') }}</dd>
+                        @endif
+                    </dl>
+
+                    <h3 style="font-size:14px;font-weight:800;margin:16px 0 8px;">Résumé</h3>
+                    @if (filled($s->abstract))
+                        <div class="abstract">{{ strip_tags((string) $s->abstract) }}</div>
+                    @else
+                        <div class="abstract" style="color:var(--ukc-muted);font-style:italic;">Aucun résumé n’a été enregistré pour cette communication.</div>
+                    @endif
+
+                    <h3 style="font-size:14px;font-weight:800;margin:16px 0 8px;">Mots-clés</h3>
+                    @if ($kw->isNotEmpty())
+                        <div class="keywords">@foreach ($kw as $k)<span>{{ $k }}</span>@endforeach</div>
+                    @else
+                        <p class="hint" style="margin:0;">Aucun mot-clé renseigné.</p>
+                    @endif
+                </div>
+
+                <div class="ukc-card">
+                    <h2>Fichiers</h2>
+                    @if ($s->file_url)
+                        <div class="file-row">
+                            <div class="ico"><x-ukc.icon name="file" :size="20" /></div>
+                            <div style="flex:1;min-width:0;">
+                                <div class="name" style="word-break:break-all;">{{ basename(parse_url($s->file_url, PHP_URL_PATH) ?: $s->file_url) }}</div>
+                                <div class="meta">PDF · Déposé le {{ $s->created_at?->format('d/m/Y') }}</div>
+                            </div>
+                            <a href="{{ $s->file_url }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">Télécharger</a>
+                        </div>
+                    @endif
+                    <div class="file-row">
+                        <div class="ico"><x-ukc.icon name="diploma" :size="20" /></div>
+                        <div style="flex:1;min-width:0;">
+                            <div class="name">Attestation de soumission</div>
+                            <div class="meta">PDF · Générée automatiquement · QR de vérification</div>
+                        </div>
+                        @if ($soumissionAtt)
+                            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                                <a href="{{ route('attestation.document', $soumissionAtt->uuid) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">Télécharger</a>
+                                <a href="{{ route('attestation.verify', $soumissionAtt->uuid) }}" target="_blank" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Vérifier</a>
+                            </div>
+                        @else
+                            <span class="ukc-pill ukc-pill--muted">En attente</span>
+                        @endif
+                    </div>
+                    <p class="hint">En cas d’erreur matérielle sur le titre, les auteurs ou le fichier, contactez le secrétariat avant la décision du comité.</p>
+                </div>
+
+                <div class="ukc-card">
+                    <h2>Messages du comité</h2>
+                    @forelse ($feedback as $fb)
+                        <div class="msg-box">
+                            <div class="from">{{ $fb['label'] ?? 'Comité scientifique' }}</div>
+                            <p>{{ $fb['comments'] }}</p>
+                        </div>
+                    @empty
+                        <div class="msg-box">
+                            <div class="from">Secrétariat scientifique</div>
+                            <p>Votre soumission a bien été enregistrée et transmise aux relecteurs. Aucune action n’est requise de votre part pour le moment.</p>
+                        </div>
+                    @endforelse
+                    <p class="hint">Les avis détaillés des relecteurs restent confidentiels. Seule la décision finale et d’éventuels commentaires destinés aux auteurs vous sont communiqués.</p>
+                </div>
+            </div>
+
+            {{-- Colonne latérale --}}
+            <div style="display:flex;flex-direction:column;gap:18px;">
+                <div class="ukc-card">
+                    <h2>Historique</h2>
+                    <ul class="timeline">
+                        <li>
+                            <div class="when">{{ $s->created_at?->format('d/m/Y · H:i') }}</div>
+                            <div class="what">Soumission déposée</div>
+                            <div class="detail">Formulaire validé@if($s->file_url) · fichier résumé joint @endif</div>
+                        </li>
+                        <li>
+                            <div class="when">{{ $s->created_at?->format('d/m/Y · H:i') }}</div>
+                            <div class="what">Accusé de réception</div>
+                            <div class="detail">E-mail envoyé@if($soumissionAtt) · attestation de soumission générée @endif</div>
+                        </li>
+                        <li @class(['muted' => $s->status === 'submitted'])>
+                            <div class="when">{{ $s->status === 'submitted' ? 'À venir' : 'En cours' }}</div>
+                            <div class="what">Évaluation scientifique</div>
+                            <div class="detail">{{ $decided ? 'Avis rendus' : 'En attente des avis des relecteurs' }}</div>
+                        </li>
+                        <li @class(['muted' => ! $decided && $s->status !== 'revision'])>
+                            <div class="when">{{ $decided ? $s->updated_at?->format('d/m/Y') : 'À venir' }}</div>
+                            <div class="what">Notification de décision</div>
+                            <div class="detail">
+                                @if ($s->status === 'accepted') Acceptée
+                                @elseif ($s->status === 'rejected') Non retenue
+                                @elseif ($s->status === 'revision') Corrections demandées
+                                @else Acceptée / refusée / révisions @endif
+                            </div>
+                        </li>
+                        <li @class(['muted' => ! $slot])>
+                            <div class="when">{{ $slot ? 'Confirmé' : 'À venir' }}</div>
+                            <div class="what">Affectation de créneau</div>
+                            <div class="detail">Après acceptation et paiement de l’inscription</div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="ukc-card">
+                    <h2>Créneau de passage</h2>
+                    @if ($slot)
+                        <div class="slot-card">
+                            <strong>{{ $slot->session_label ?: 'Présentation' }}</strong>
+                            @if ($slot->starts_at){{ $slot->starts_at->translatedFormat('d F, H:i') }}@endif
+                            @if ($slot->room) · Salle {{ $slot->room }}@endif
+                            @if ($slot->chosen_by_participant) <span class="ukc-pill ukc-pill--info" style="margin-left:6px;">Choisi</span>@endif
+                        </div>
+                        @if ($availableSlots->count())
+                            <button type="button" class="ukc-btn ukc-btn--outline ukc-btn--sm" style="margin-top:12px;" @click="slotModal = true">
+                                <x-ukc.icon name="calendar" :size="16" /> Changer de créneau
+                            </button>
+                        @endif
+                    @elseif ($s->status === 'accepted' && $availableSlots->count())
+                        <p class="hint" style="margin-top:0;">Aucun créneau choisi pour l’instant.</p>
+                        <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" style="margin-top:8px;" @click="slotModal = true">
+                            <x-ukc.icon name="calendar" :size="16" /> Choisir un créneau
+                        </button>
+                    @else
+                        <div class="slot-card">
+                            <strong>Pas encore attribué</strong>
+                            Un créneau (jour, horaire, session, salle) sera proposé après acceptation et règlement des frais d’inscription, selon l’axe de votre communication.
+                        </div>
+                    @endif
+                </div>
+
+                <div class="ukc-card">
+                    <h2>Documents liés</h2>
+                    <div style="display:flex;flex-direction:column;gap:8px;">
+                        <a href="{{ route('account.documents') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm" style="justify-content:flex-start;">Attestations &amp; reçus</a>
+                        <a href="{{ route('account.payment', $s->edition) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm" style="justify-content:flex-start;">Inscription &amp; paiement</a>
+                    </div>
+                </div>
+            </div>
         </div>
-    @endif
+
+        {{-- Formulaire de resoumission (correction) --}}
+        @if ($s->canBeRevised())
+            <div class="ukc-card" id="resubmit" style="margin-top:18px;">
+                <h2>Corriger &amp; renvoyer</h2>
+                <form method="POST" action="{{ route('account.submissions.resubmit', $s) }}" enctype="multipart/form-data" class="ukc-form-grid">
+                    @csrf
+                    <div class="ukc-field full">
+                        <label for="title">Titre <span class="req">*</span></label>
+                        <input type="text" id="title" name="title" value="{{ old('title', $s->title) }}">
+                        @error('title') <span class="error">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="ukc-field full">
+                        <label for="abstract">Résumé <span class="req">*</span></label>
+                        <textarea id="abstract" name="abstract" rows="6">{{ old('abstract', $s->abstract) }}</textarea>
+                        @error('abstract') <span class="error">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="ukc-field full">
+                        <label for="keywords">Mots-clés <span class="hint">(séparés par des virgules)</span></label>
+                        <input type="text" id="keywords" name="keywords" value="{{ old('keywords', is_array($s->keywords) ? implode(', ', $s->keywords) : $s->keywords) }}">
+                        @error('keywords') <span class="error">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="ukc-field full">
+                        <label for="file">Nouveau fichier (PDF, optionnel)</label>
+                        <input type="file" id="file" name="file" accept=".pdf">
+                        @error('file') <span class="error">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="ukc-field full">
+                        <button type="submit" class="ukc-btn ukc-btn--blue"><x-ukc.icon name="upload" :size="16" /> Renvoyer la communication</button>
+                    </div>
+                </form>
+            </div>
+        @endif
+
+        {{-- Modale : choix / changement de créneau --}}
+        @if ($availableSlots->count() && ($slot || $s->status === 'accepted'))
+            <div class="ukc-modal" x-show="slotModal" x-cloak @click.self="slotModal = false" style="display:none;">
+                <div class="box">
+                    <div class="box-head">
+                        <span>Choisir un créneau de passage</span>
+                        <button type="button" @click="slotModal = false" style="font-size:22px;color:var(--ukc-muted);background:none;border:none;cursor:pointer;">&times;</button>
+                    </div>
+                    <div class="box-body">
+                        @if ($slot)
+                            <p style="font-size:.88rem;color:var(--ukc-muted);margin:0 0 12px;">
+                                Créneau actuel : <strong>{{ $slot->session_label ?: 'Présentation' }}@if ($slot->starts_at) — {{ $slot->starts_at->translatedFormat('d F, H:i') }}@endif</strong>. Sélectionnez-en un autre ci-dessous.
+                            </p>
+                        @endif
+                        <div style="max-height:56vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-right:2px;">
+                            @foreach ($availableSlots as $av)
+                                <form method="POST" action="{{ route('account.submissions.choose-slot', $s) }}">
+                                    @csrf
+                                    <input type="hidden" name="slot_id" value="{{ $av->id }}">
+                                    <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm" style="justify-content:space-between;width:100%;text-align:left;">
+                                        <span>
+                                            <strong>{{ $av->session_label ?: 'Créneau' }}</strong>
+                                            @if ($av->starts_at)<span style="color:var(--ukc-muted);"> — {{ $av->starts_at->translatedFormat('d F, H:i') }}</span>@endif
+                                            @if ($av->room)<span style="color:var(--ukc-muted);"> · Salle {{ $av->room }}</span>@endif
+                                        </span>
+                                        <x-ukc.icon name="chevron" :size="16" />
+                                    </button>
+                                </form>
+                            @endforeach
+                        </div>
+                    </div>
+                    <div class="box-foot">
+                        <button type="button" class="ukc-btn ukc-btn--ghost" @click="slotModal = false">Fermer</button>
+                    </div>
+                </div>
+            </div>
+        @endif
+    </div>
 </x-layouts.participant>

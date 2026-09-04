@@ -2,6 +2,7 @@
 
 use App\Actions\IssueAttestation;
 use App\Models\Account;
+use App\Models\DocumentTemplate;
 
 // openEdition() / verifiedAccount() -> AccountSubmissionTest
 
@@ -44,8 +45,44 @@ it('liste attestations, reçus et livret sur la page Mes documents', function ()
     $this->actingAs($account, 'account')
         ->get(route('account.documents'))
         ->assertOk()
-        ->assertSee('Mes attestations')
+        ->assertSee('Mon badge participant')
+        ->assertSee('Mes documents')
+        ->assertSee('Attestation de participation')
         ->assertSee('Livret (Word)')
         ->assertSee('Livret (imprimable)')
         ->assertSee('Reçu');
+});
+
+it('rend l’aperçu du badge à partir du modèle admin, avec les vraies données', function () {
+    $edition = openEdition();
+    $account = verifiedAccount();
+    $edition->participants()->create([
+        'account_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email, 'role' => 'author',
+    ]);
+
+    // Modèle de badge conçu dans l'admin (schéma [namespace.key] de l'éditeur).
+    DocumentTemplate::create([
+        'edition_id' => $edition->id, 'kind' => 'badge', 'type' => 'default',
+        'layout' => [
+            'width' => 320, 'height' => 440, 'bg' => '#ffffff', 'accent' => '#223ea4',
+            'elements' => [
+                ['type' => 'text', 'x' => 20, 'y' => 70, 'w' => 280, 'h' => 22, 'text' => '[edition.name]', 'size' => 12, 'weight' => 700, 'color' => '#223ea4', 'align' => 'center'],
+                ['type' => 'text', 'x' => 20, 'y' => 210, 'w' => 280, 'h' => 40, 'text' => '[recipient.name]', 'size' => 22, 'weight' => 800, 'color' => '#1a2332', 'align' => 'center'],
+                ['type' => 'text', 'x' => 20, 'y' => 252, 'w' => 280, 'h' => 24, 'text' => '[RECIPIENT.ROLE]', 'size' => 13, 'weight' => 600, 'color' => '#5a6577', 'align' => 'center'],
+                ['type' => 'text', 'x' => 20, 'y' => 392, 'w' => 280, 'h' => 20, 'text' => '[badge.ref]', 'size' => 11, 'weight' => 700, 'color' => '#8b95a8', 'align' => 'center'],
+            ],
+        ],
+    ]);
+
+    $html = $this->actingAs($account, 'account')
+        ->get(route('account.documents'))
+        ->assertOk()
+        ->assertSee('Awa Kodjo')          // [recipient.name] substitué
+        ->assertSee('ukc-doc-canvas', false) // le canvas du modèle est rendu
+        ->getContent();
+
+    // Aucun jeton brut ne doit subsister dans l'aperçu.
+    expect($html)->not->toContain('[recipient.name]')
+        ->not->toContain('[edition.name]')
+        ->not->toContain('[badge.ref]');
 });

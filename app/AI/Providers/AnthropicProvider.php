@@ -56,6 +56,8 @@ class AnthropicProvider implements AiProvider
             ->post('https://api.anthropic.com/v1/messages', [
                 'model' => $this->model(),
                 'max_tokens' => 4096,
+                // Température basse : réponses factuelles et précises (peu d'invention).
+                'temperature' => 0.2,
                 'messages' => [['role' => 'user', 'content' => $content]],
             ])->throw()->json();
 

@@ -73,7 +73,8 @@
                     <template x-for="(m, i) in messages" :key="i">
                         <div class="msg" :class="m.role === 'user' ? 'user' : 'bot'">
                             <div class="who" x-text="m.role === 'user' ? 'Vous' : (agentName + ' · copilote')"></div>
-                            <div style="white-space:pre-wrap;" x-text="m.text"></div>
+                            <template x-if="m.role === 'user'"><div style="white-space:pre-wrap;" x-text="m.text"></div></template>
+                            <template x-if="m.role !== 'user'"><div class="chat-md" x-html="render(m.text)"></div></template>
 
                             {{-- Proposition d'action à décider --}}
                             <template x-if="m.proposal">
@@ -97,7 +98,9 @@
                             </template>
                         </div>
                     </template>
-                    <div class="msg bot typing" x-show="sending"><span x-text="agentName"></span> réfléchit…</div>
+                    <div class="msg bot typing" x-show="sending">
+                        <span class="typing-dots"><span></span><span></span><span></span></span>
+                    </div>
                 </div>
 
                 <div class="chat-suggestions" x-show="messages.length <= 1">

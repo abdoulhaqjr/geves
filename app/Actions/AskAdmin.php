@@ -4,7 +4,9 @@ namespace App\Actions;
 
 use App\AI\AiManager;
 use App\Models\Edition;
+use App\Models\Submission;
 use App\Support\AiAgents;
+use App\Support\ColloqueKnowledge;
 use App\Support\EditionReport;
 use Illuminate\Support\Str;
 
@@ -71,15 +73,36 @@ class AskAdmin
         $agent = AiAgents::find('admin') ?? AiAgents::defaults()[1];
 
         $context = 'Aucune édition active.';
+        $knowledge = '';
         if ($edition) {
-            $s = (new EditionReport($edition))->summary();
-            $context = implode(' · ', [
-                ($edition->title ?: 'Édition').' ('.$edition->year.')',
+            $report = new EditionReport($edition);
+            $s = $report->summary();
+            $pay = $report->paymentStats();
+
+            // Répartition des soumissions par statut (libellés réels).
+            $statusLabels = Submission::statuses();
+            $byStatus = collect($s['submissionsByStatus'] ?? [])
+                ->filter(fn ($n) => $n > 0)
+                ->map(fn ($n, $k) => ($statusLabels[$k] ?? $k).' : '.$n)
+                ->implode(', ');
+
+            // Axes principaux (top 4 par volume).
+            $axes = collect($report->submissionsByAxis())->take(4)
+                ->map(fn ($a) => $a['axe'].' ('.$a['total'].', acceptées '.$a['accepted'].')')
+                ->implode(', ');
+
+            $context = implode("\n", array_filter([
+                'Édition : '.($edition->title ?: 'Édition').' ('.$edition->year.') · statut '.$edition->status
+                    .($edition->submission_deadline ? ' · clôture soumissions le '.$edition->submission_deadline->translatedFormat('d/m/Y') : ''),
                 'Participants : '.$s['participants'],
-                'Communications : '.$s['submissions'].' (acceptées : '.$s['accepted'].')',
-                'Encaissé : '.$s['collected'].' '.$s['currency'],
-                'En attente : '.$s['pending'].' '.$s['currency'],
-            ]);
+                'Communications : '.$s['submissions'].' (acceptées : '.$s['accepted'].')'.($byStatus ? ' — '.$byStatus : ''),
+                $axes ? 'Axes principaux : '.$axes : null,
+                'Paiements : '.$pay['ok'].' réglés, '.$pay['pending'].' en attente, '.$pay['failed'].' échoués/annulés',
+                'Recettes : '.number_format($s['collected'], 0, ',', ' ').' '.$s['currency'].' encaissés · '
+                    .number_format($s['pending'], 0, ',', ' ').' '.$s['currency'].' en attente',
+            ]));
+
+            $knowledge = ColloqueKnowledge::brief($edition);
         }
 
         $convo = collect($history)->slice(-8)
@@ -95,7 +118,16 @@ class AskAdmin
         À NE JAMAIS FAIRE :
         {$agent['negative']}
 
-        Contexte (chiffres réels de l'édition active) : {$context}
+        CHIFFRES RÉELS DE L'ÉDITION ACTIVE :
+        {$context}
+
+        BASE DE CONNAISSANCE DU COLLOQUE (paramétrage officiel : tarifs, axes, échéances, règles, FAQ…) :
+        {$knowledge}
+
+        RÈGLE DE PRÉCISION (impérative) : appuie-toi UNIQUEMENT sur les chiffres et la base de
+        connaissance ci-dessus. Cite les valeurs exactes (montants, effectifs, dates). Si une
+        donnée n'y figure pas, dis-le explicitement et propose où la vérifier ; n'invente aucun
+        chiffre ni aucune procédure. Réponds précisément à la demande, sans digression.
 
         Historique récent :
         {$convo}
@@ -103,7 +135,9 @@ class AskAdmin
         Nouvelle demande de l'administrateur : {$question}
 
         Tu PROPOSES uniquement (synthèses, brouillons, points de vigilance) ; tu ne réalises aucune
-        action. Réponds en texte simple sans markdown.
+        action. Structure ta réponse pour la rendre lisible : phrases courtes, un saut de ligne entre
+        les idées, une liste à puces (« - ») pour énumérer, **gras** pour les points clés. N'utilise
+        ni titres « # » ni tableaux. Reste synthétique.
 
         Quand ta réponse suggère une action concrète que l'administrateur pourrait approuver (relance
         d'e-mails, export, génération de document, plan d'actions…), ajoute une "proposal" décrivant

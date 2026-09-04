@@ -1,20 +1,27 @@
 @php
     $account = auth('account')->user();
 
-    // Éditions auxquelles le compte participe (pour les liens contextuels).
-    $myEditionIds = \App\Models\Participant::where('account_id', $account?->id)
-        ->pluck('edition_id')->unique()->filter();
+    // Colloque courant (sélection en session, sinon défaut) + liste des colloques
+    // du compte pour le sélecteur. Toutes les pages personnelles s'y scopent.
+    $myColloques = $account ? \App\Support\CurrentColloque::editions($account) : collect();
+    $colloqueEdition = $account ? \App\Support\CurrentColloque::current($account) : null;
 
-    // Édition à régler en priorité (communication acceptée, frais non payés),
-    // sinon la dernière à laquelle le compte participe.
-    $payEditionId = \App\Models\Participant::where('account_id', $account?->id)
-        ->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted'))
-        ->whereDoesntHave('payments', fn ($q) => $q->where('status', 'paid'))
-        ->latest('id')->value('edition_id') ?? $myEditionIds->first();
-
-    // Édition « du colloque » pour les liens publics (participée, sinon ouverte).
-    $colloqueEdition = \App\Models\Edition::whereIn('id', $myEditionIds)->latest('id')->first()
+    // Repli pour les liens publics si le compte ne participe encore à rien.
+    $colloqueEdition = $colloqueEdition
         ?? \App\Models\Edition::where('status', 'open')->latest('id')->first();
+
+    // Paiement : l'édition courante si elle est à régler, sinon la première à régler.
+    $payEditionId = ($colloqueEdition
+        && \App\Models\Participant::where('account_id', $account?->id)
+            ->where('edition_id', $colloqueEdition->id)
+            ->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted'))
+            ->whereDoesntHave('payments', fn ($q) => $q->where('status', 'paid'))
+            ->exists())
+        ? $colloqueEdition->id
+        : \App\Models\Participant::where('account_id', $account?->id)
+            ->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted'))
+            ->whereDoesntHave('payments', fn ($q) => $q->where('status', 'paid'))
+            ->latest('id')->value('edition_id');
 @endphp
 <x-layouts.app :title="$title ?? 'Mon espace'">
     <div class="ukc-shell" x-data="{ open: false }">
@@ -24,7 +31,37 @@
                     <img src="{{ asset('img/logo-uk.png') }}" alt="Université de Kara">
                 </a>
                 <div class="logo-sub" style="margin-top:8px;">Espace participant</div>
-                <div class="sub">{{ $colloqueEdition?->title ?: 'Colloques · Université de Kara' }}</div>
+
+                @if ($myColloques->count() > 1)
+                    {{-- Sélecteur de colloque : le compte participe à plusieurs colloques. --}}
+                    <div class="ukc-colloque-switch" x-data="{ open: false }" @click.outside="open = false">
+                        <button type="button" class="switch-btn" @click="open = !open" :aria-expanded="open">
+                            <span class="lbl">
+                                <span class="cur">{{ $colloqueEdition?->colloque?->name ?: 'Colloque' }}</span>
+                                <span class="ed">{{ $colloqueEdition?->title }}</span>
+                            </span>
+                            <x-ukc.icon name="chevron" :size="16" />
+                        </button>
+                        <div class="switch-menu" x-show="open" x-cloak x-transition.origin.top>
+                            <div class="switch-head">Mes colloques</div>
+                            @foreach ($myColloques as $ed)
+                                <form method="POST" action="{{ route('account.colloque.switch') }}">
+                                    @csrf
+                                    <input type="hidden" name="edition_id" value="{{ $ed->id }}">
+                                    <button type="submit" @class(['item', 'active' => $colloqueEdition?->id === $ed->id])>
+                                        <span class="tick">@if ($colloqueEdition?->id === $ed->id)<x-ukc.icon name="check" :size="14" />@endif</span>
+                                        <span class="txt">
+                                            <span class="c">{{ $ed->colloque?->name ?: 'Colloque' }}</span>
+                                            <span class="e">{{ $ed->title }} · {{ $ed->year }}</span>
+                                        </span>
+                                    </button>
+                                </form>
+                            @endforeach
+                        </div>
+                    </div>
+                @else
+                    <div class="sub">{{ $colloqueEdition?->title ?: 'Colloques · Université de Kara' }}</div>
+                @endif
             </div>
             <nav class="ukc-sidebar-nav">
                 <a href="{{ route('account.dashboard') }}"
@@ -39,7 +76,7 @@
                 </a>
                 <a href="{{ route('account.submissions.index') }}"
                    @class(['active' => request()->routeIs('account.submissions.*')])>
-                    <x-ukc.icon name="inbox" :size="18" /> Soumissions
+                    <x-ukc.icon name="file" :size="18" /> Soumissions
                 </a>
                 <a href="{{ $payEditionId ? route('account.payment', $payEditionId) : ($colloqueEdition ? route('public.colloque', $colloqueEdition->slug) : route('account.dashboard')) }}"
                    @class(['active' => request()->routeIs('account.payment')])>
@@ -49,8 +86,8 @@
                    @class(['active' => request()->routeIs('account.documents')])>
                     <x-ukc.icon name="folder" :size="18" /> Documents
                 </a>
-                <a href="{{ route('account.security') }}"
-                   @class(['active' => request()->routeIs('account.security')])>
+                <a href="{{ route('account.preferences') }}"
+                   @class(['active' => request()->routeIs('account.preferences') || request()->routeIs('account.notifications') || request()->routeIs('account.security')])>
                     <x-ukc.icon name="shield" :size="18" /> Mon compte
                 </a>
 

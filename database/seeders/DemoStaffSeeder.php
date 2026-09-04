@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Account;
 use App\Models\Edition;
 use App\Models\Participant;
+use App\Models\Submission;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -65,5 +66,59 @@ class DemoStaffSeeder extends Seeder
                 ['first_name' => 'Koffi', 'last_name' => 'Mensah', 'email' => 'participant@demo.tg', 'role' => 'author', 'access_token' => Str::random(64)],
             );
         }
+
+        // Deuxième colloque : le même compte participe aussi à une AUTRE édition
+        // (colloque différent), pour illustrer le sélecteur « basculer de colloque ».
+        $this->enrollSecondColloque($account);
+    }
+
+    /**
+     * Inscrit le compte de démo à un second colloque (édition d'un autre colloque
+     * que « edition-2026 »), avec une communication, pour que le sélecteur de
+     * colloque affiche au moins deux entrées avec du contenu.
+     */
+    private function enrollSecondColloque(Account $account): void
+    {
+        // Colloques auxquels le compte participe déjà (pour en choisir un AUTRE).
+        $myColloqueIds = Participant::where('account_id', $account->id)
+            ->with('edition:id,colloque_id')
+            ->get()
+            ->pluck('edition.colloque_id')
+            ->filter()
+            ->unique()
+            ->all();
+
+        $edition = Edition::with('colloque')
+            ->whereNotIn('colloque_id', $myColloqueIds ?: [0])
+            ->whereIn('status', ['open', 'closed', 'archived'])
+            ->orderByDesc('id')
+            ->first();
+
+        if (! $edition) {
+            return;
+        }
+
+        $participant = Participant::firstOrCreate(
+            ['edition_id' => $edition->id, 'account_id' => $account->id],
+            ['first_name' => 'Koffi', 'last_name' => 'Mensah', 'email' => 'participant@demo.tg', 'role' => 'author', 'access_token' => Str::random(64)],
+        );
+
+        Submission::firstOrCreate(
+            ['edition_id' => $edition->id, 'participant_id' => $participant->id, 'revision_of' => 0],
+            [
+                'ref_code' => 'UKC-'.$edition->year.'-DEMO2',
+                'title' => 'Approches interdisciplinaires de la donnée en santé publique',
+                'type' => 'oral',
+                'track' => $edition->settings['tracks'][0] ?? 'Sciences de la santé',
+                'status' => 'under_review',
+                'abstract' => 'Cette communication propose une lecture interdisciplinaire de l’usage des données '
+                    .'en santé publique, croisant épidémiologie, sciences sociales et informatique. Elle met en '
+                    .'évidence les apports d’une gouvernance partagée de la donnée pour la décision sanitaire.',
+                'keywords' => 'santé publique, données, interdisciplinarité, gouvernance',
+                'authors' => [
+                    ['name' => 'Koffi Mensah', 'affiliation' => 'Université de Kara', 'corresponding' => true],
+                ],
+            ],
+        );
     }
 }

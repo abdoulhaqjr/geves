@@ -10,6 +10,7 @@ use App\Models\Participant;
 use App\Models\Payment;
 use App\Models\Submission;
 use App\Support\AccountActivity;
+use App\Support\CurrentColloque;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -25,14 +26,20 @@ class DashboardController extends Controller
     {
         $account = Auth::guard('account')->user();
 
-        $participantIds = Participant::where('account_id', $account->id)->pluck('id');
+        // Colloque courant (sélecteur) : le tableau de bord se scope dessus.
+        $current = CurrentColloque::current($account);
+
+        $participantIds = Participant::where('account_id', $account->id)
+            ->when($current, fn ($q) => $q->where('edition_id', $current->id))
+            ->pluck('id');
 
         // Rôles et activité dérivés (inter-éditions, par rapprochement d'e-mail).
         $activity = new AccountActivity($account);
 
-        // Éditions auxquelles le compte participe → leurs documents (médias + livret).
-        $editionIds = Participant::where('account_id', $account->id)
-            ->pluck('edition_id')->unique()->filter();
+        // Documents du colloque courant (médias + livret).
+        $editionIds = $current
+            ? collect([$current->id])
+            : Participant::where('account_id', $account->id)->pluck('edition_id')->unique()->filter();
 
         // Sessions en direct des éditions du compte qu'il peut rejoindre.
         $liveSessions = EventSession::query()->live()
@@ -79,8 +86,9 @@ class DashboardController extends Controller
             ? (int) ceil(now()->diffInDays($deadline, false))
             : null;
 
-        // Édition de contexte (pour le bandeau d'accueil : dates & lieu du colloque).
-        $contextEdition = $payable?->edition ?? $openEdition
+        // Édition de contexte (pour le bandeau d'accueil : dates & lieu du colloque)
+        // = colloque courant sélectionné, avec replis.
+        $contextEdition = $current ?? $payable?->edition ?? $openEdition
             ?? Edition::whereIn('id', $editionIds)->latest('id')->first();
 
         return view('account.dashboard', [

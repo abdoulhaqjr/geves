@@ -27,14 +27,24 @@ class PaymentController extends Controller
             ->where('account_id', $account->id)
             ->first();
 
-        $amount = $participant
-            ? (Fees::resolveAmount($edition, $participant->title) ?? Fees::highestAmount($edition))
-            : null;
+        $applicable = $participant ? Fees::resolveAmount($edition, $participant->title) : null;
+        $amount = $applicable ?? ($participant ? Fees::highestAmount($edition) : null);
+
+        // Libellé du tarif applicable (rapproché du grade du participant).
+        $applicableLabel = null;
+        foreach (Fees::grid($edition) as $tier) {
+            if ((float) ($tier['amount'] ?? 0) === (float) $amount) {
+                $applicableLabel = $tier['label'] ?? null;
+                break;
+            }
+        }
 
         return view('account.payment.pay', [
             'edition' => $edition,
             'participant' => $participant,
             'amount' => $amount,
+            'tiers' => Fees::grid($edition),
+            'applicableLabel' => $applicableLabel,
             'eligible' => $participant && $participant->hasAcceptedSubmission(),
             'paid' => $participant && $participant->hasPaid(),
             'paidReceipt' => $participant?->payments()->where('status', 'paid')->latest('id')->first(),
