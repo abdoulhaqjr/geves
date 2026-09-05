@@ -1,5 +1,9 @@
 <x-layouts.admin title="Soumissions" subtitle="Communications & résumés">
     <x-slot:actions>
+        <a class="ukc-btn ukc-btn--outline ukc-btn--sm"
+           href="{{ route('admin.submissions.auto-assign', request()->only('edition_id')) }}">
+            <x-ukc.icon name="users" :size="14" /> Attribution auto
+        </a>
         <a class="ukc-btn ukc-btn--ghost ukc-btn--sm"
            href="{{ route('admin.submissions.export', request()->only('edition_id', 'status', 'type', 'track', 'search')) }}">
             <x-ukc.icon name="download" :size="14" /> Exporter

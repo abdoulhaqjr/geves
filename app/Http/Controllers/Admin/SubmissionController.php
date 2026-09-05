@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Actions\AssignReviewer;
+use App\Actions\AutoAssignReviewers;
 use App\Events\SubmissionStatusChanged;
 use App\Http\Controllers\Controller;
 use App\Mail\ReviewerInvitationMail;
@@ -15,6 +16,7 @@ use App\Support\Notifier;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -237,6 +239,110 @@ class SubmissionController extends Controller
         }
 
         return back()->with('ukc_status', 'Assignation retirée.');
+    }
+
+    /**
+     * Attribution automatique des relecteurs (aperçu) : sélectionne une édition,
+     * règle la cible et le plafond, propose un plan (matching axe + COI + charge)
+     * et permet d'éditer l'expertise des relecteurs pour affiner.
+     */
+    public function autoAssign(Request $request, AutoAssignReviewers $engine): View
+    {
+        $editions = Edition::latest('id')->get();
+        $editionId = (string) $request->query('edition_id', (string) ($editions->first()->id ?? ''));
+        $edition = $editionId !== '' ? $editions->firstWhere('id', (int) $editionId) : null;
+
+        $target = max(1, min(5, (int) $request->query('target', 2)));
+        $maxLoad = max(0, min(50, (int) $request->query('max_load', 0)));
+
+        $preview = null;
+        $reviewers = collect();
+        $axes = collect();
+        if ($edition) {
+            $preview = $engine->preview($edition, $target, $maxLoad);
+            $reviewers = Participant::where('edition_id', $edition->id)
+                ->where('role', 'reviewer')->orderBy('last_name')->get();
+            $axes = $this->editionAxes($edition);
+        }
+
+        return view('admin.submissions.auto-assign', [
+            'editions' => $editions,
+            'edition' => $edition,
+            'edition_id' => $editionId,
+            'target' => $target,
+            'maxLoad' => $maxLoad,
+            'preview' => $preview,
+            'reviewers' => $reviewers,
+            'axes' => $axes,
+        ]);
+    }
+
+    /** Applique le plan validé (paires soumission→relecteur cochées). */
+    public function autoAssignApply(Request $request, AutoAssignReviewers $engine): RedirectResponse
+    {
+        $data = $request->validate([
+            'edition_id' => ['required', 'exists:editions,id'],
+            'pairs' => ['required', 'array', 'min:1'],
+            'pairs.*' => ['string'],
+        ]);
+
+        $edition = Edition::findOrFail($data['edition_id']);
+
+        $pairs = [];
+        foreach ($data['pairs'] as $token) {
+            [$subId, $revId] = array_pad(explode(':', (string) $token, 2), 2, null);
+            if (ctype_digit((string) $subId) && ctype_digit((string) $revId)) {
+                $pairs[] = ['submission_id' => (int) $subId, 'reviewer_id' => (int) $revId];
+            }
+        }
+
+        $created = $engine->apply($edition, $pairs);
+
+        return redirect()
+            ->route('admin.submissions.auto-assign', ['edition_id' => $edition->id])
+            ->with('ukc_status', $created > 0
+                ? $created.' relecteur(s) assigné(s) et invité(s) par e-mail.'
+                : 'Aucune nouvelle assignation (déjà en place ou conflit d’intérêt).');
+    }
+
+    /** Met à jour l'expertise (axes) d'un relecteur, pour affiner le matching. */
+    public function updateReviewerExpertise(Request $request, Participant $participant): RedirectResponse
+    {
+        abort_unless($participant->role === 'reviewer', 404);
+
+        $data = $request->validate([
+            'tracks' => ['array'],
+            'tracks.*' => ['string', 'max:200'],
+        ]);
+
+        $meta = $participant->meta ?? [];
+        $meta['review_tracks'] = array_values(array_unique(array_filter($data['tracks'] ?? [])));
+        $participant->update(['meta' => $meta]);
+
+        return redirect()
+            ->route('admin.submissions.auto-assign', ['edition_id' => $participant->edition_id])
+            ->with('ukc_status', 'Expertise mise à jour pour '.$participant->full_name.'.');
+    }
+
+    /**
+     * Axes thématiques d'une édition (réglages), avec repli sur les axes réellement
+     * présents dans les soumissions.
+     *
+     * @return Collection<int, string>
+     */
+    private function editionAxes(Edition $edition): Collection
+    {
+        $axes = collect($edition->settings['axes'] ?? [])
+            ->map(fn ($a) => is_array($a) ? (string) ($a['label'] ?? '') : (string) $a)
+            ->filter()->values();
+
+        if ($axes->isEmpty()) {
+            $axes = Submission::where('edition_id', $edition->id)->where('revision_of', 0)
+                ->whereNotNull('track')->where('track', '!=', '')
+                ->distinct()->orderBy('track')->pluck('track');
+        }
+
+        return $axes->map(fn ($t): string => trim((string) $t))->values();
     }
 
     /**
