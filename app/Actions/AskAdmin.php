@@ -81,7 +81,7 @@ class AskAdmin
 
             // Répartition des soumissions par statut (libellés réels).
             $statusLabels = Submission::statuses();
-            $byStatus = collect($s['submissionsByStatus'] ?? [])
+            $byStatus = collect($s['submissionsByStatus'])
                 ->filter(fn ($n) => $n > 0)
                 ->map(fn ($n, $k) => ($statusLabels[$k] ?? $k).' : '.$n)
                 ->implode(', ');

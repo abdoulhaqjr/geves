@@ -1,8 +1,9 @@
 includes:
     - vendor/larastan/larastan/extension.neon
-    # Dette existante (surtout inférence Eloquent générique et accès aux
-    # tableaux JSON) figée : le CI ne bloque que sur les NOUVELLES erreurs.
-    # À réduire progressivement (annoter les modèles, etc.).
+    # Résidu figé : essentiellement des faux positifs Larastan « nullsafe.neverNull »
+    # sur les relations BelongsTo (typées non-nulles par l'extension, alors que
+    # l'accès reste nullable au runtime → le `?->` est nécessaire). Les vrais bugs
+    # de type (Model générique) ont été corrigés en annotant les modèles.
     - phpstan-baseline.neon
 
 parameters:

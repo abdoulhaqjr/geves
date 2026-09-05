@@ -166,7 +166,7 @@ class EditionFormController extends Controller
      * Valeurs initiales du formulaire : édition existante, écrasée par les
      * valeurs extraites par IA (flash) le cas échéant.
      *
-     * @return array{scalars: array<string, mixed>, fees: array, committees: array, partners: array, faq: array}
+     * @return array<string, mixed>
      */
     private function initValues(?Edition $edition): array
     {

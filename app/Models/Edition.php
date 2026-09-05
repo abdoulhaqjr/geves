@@ -47,21 +47,25 @@ class Edition extends Model
         return $this->belongsTo(Colloque::class);
     }
 
+    /** @return HasMany<Participant, $this> */
     public function participants(): HasMany
     {
         return $this->hasMany(Participant::class);
     }
 
+    /** @return HasMany<Submission, $this> */
     public function submissions(): HasMany
     {
         return $this->hasMany(Submission::class);
     }
 
+    /** @return HasMany<Payment, $this> */
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
     }
 
+    /** @return HasMany<Atelier, $this> */
     public function ateliers(): HasMany
     {
         return $this->hasMany(Atelier::class);
@@ -73,21 +77,25 @@ class Edition extends Model
         return $this->hasMany(EventSession::class);
     }
 
+    /** @return HasMany<Slot, $this> */
     public function slots(): HasMany
     {
         return $this->hasMany(Slot::class);
     }
 
+    /** @return HasMany<Attestation, $this> */
     public function attestations(): HasMany
     {
         return $this->hasMany(Attestation::class);
     }
 
+    /** @return HasMany<Email, $this> */
     public function emails(): HasMany
     {
         return $this->hasMany(Email::class);
     }
 
+    /** @return HasMany<CommitteeMember, $this> */
     public function committeeMembers(): HasMany
     {
         return $this->hasMany(CommitteeMember::class);

@@ -26,6 +26,7 @@ use Lab404\Impersonate\Models\Impersonate;
  * @property Carbon|null $two_factor_otp_expires_at
  * @property string|null $phone
  * @property array<string, array{inapp: bool, email: bool}>|null $notification_preferences
+ * @property array<string, mixed>|null $meta
  */
 class Account extends Authenticatable implements MustVerifyEmail
 {
@@ -165,7 +166,11 @@ class Account extends Authenticatable implements MustVerifyEmail
         $this->two_factor_otp_expires_at = null;
     }
 
-    /** Présences de ce compte sur les différentes éditions. */
+    /**
+     * Présences de ce compte sur les différentes éditions.
+     *
+     * @return HasMany<Participant, $this>
+     */
     public function participations(): HasMany
     {
         return $this->hasMany(Participant::class);

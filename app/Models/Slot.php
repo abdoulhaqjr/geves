@@ -22,11 +22,13 @@ class Slot extends Model
         ];
     }
 
+    /** @return BelongsTo<Edition, $this> */
     public function edition(): BelongsTo
     {
         return $this->belongsTo(Edition::class);
     }
 
+    /** @return BelongsTo<EventSession, $this> */
     public function session(): BelongsTo
     {
         return $this->belongsTo(EventSession::class, 'session_id');
@@ -38,6 +40,7 @@ class Slot extends Model
         return $this->belongsTo(Submission::class);
     }
 
+    /** @return BelongsTo<Participant, $this> */
     public function participant(): BelongsTo
     {
         return $this->belongsTo(Participant::class);

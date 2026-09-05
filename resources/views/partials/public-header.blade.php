@@ -22,8 +22,11 @@
             <a href="{{ route('home') }}#apropos">À propos</a>
             <a href="{{ route('home') }}#contact">Contact</a>
             <a href="{{ route('attestation.verify.landing') }}">Vérifier une attestation</a>
-            <a href="{{ route('account.login') }}">Se connecter</a>
-            <a href="{{ route('account.dashboard') }}">Espace participant</a>
+            @guest('account')
+                <a href="{{ route('account.login') }}">Se connecter</a>
+            @else
+                <a href="{{ route('account.dashboard') }}">Espace participant</a>
+            @endguest
         </nav>
     </div>
 </header>

@@ -426,8 +426,12 @@
                     <p>Créez votre espace, déposez un résumé ou consultez le programme de l’édition en cours. Un accompagnement est disponible via l’assistante Gesco.</p>
                 </div>
                 <div style="display:flex;flex-wrap:wrap;gap:10px;">
-                    <a href="{{ route('account.register') }}" class="ukc-btn ukc-btn--primary">Créer un compte</a>
-                    <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--ghost">Se connecter</a>
+                    @guest('account')
+                        <a href="{{ route('account.register') }}" class="ukc-btn ukc-btn--primary">Créer un compte</a>
+                        <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--ghost">Se connecter</a>
+                    @else
+                        <a href="{{ route('account.dashboard') }}" class="ukc-btn ukc-btn--primary">Mon espace participant</a>
+                    @endguest
                     @if ($featured)
                         <a href="{{ $colloqueUrl($featured) }}" class="ukc-btn ukc-btn--ghost">Édition en cours</a>
                     @endif

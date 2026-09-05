@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * Entrée du journal / de la file d'e-mails : envoi immédiat journalisé ou
  * campagne programmée (rappel à une audience).
+ *
+ * @property Edition|null $edition
+ * @property Participant|null $participant
  */
 class Email extends Model
 {
@@ -21,11 +24,13 @@ class Email extends Model
         ];
     }
 
+    /** @return BelongsTo<Edition, $this> */
     public function edition(): BelongsTo
     {
         return $this->belongsTo(Edition::class);
     }
 
+    /** @return BelongsTo<Participant, $this> */
     public function participant(): BelongsTo
     {
         return $this->belongsTo(Participant::class);

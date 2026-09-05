@@ -1,94 +1,52 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$year\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/ConfirmPayment.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Actions/NotifyCoauthorsForPayment.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>title" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
-			count: 1
+			count: 2
 			path: app/Actions/QueueEmailCampaign.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$track\.$#'
-			identifier: property.notFound
+			message: '#^Using nullsafe property access "\?\-\>timestamp" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Documents/LivretDocx.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>edition" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Http/Controllers/Account/DashboardController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>tracks" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Account/DashboardController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>layout" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Http/Controllers/Account/DocumentController.php
 
 		-
-			message: '#^Parameter \#2 \$groups of class App\\Documents\\LivretDocx constructor expects Illuminate\\Support\\Collection\<string, Illuminate\\Support\\Collection\<int, App\\Models\\Submission\>\>, Illuminate\\Database\\Eloquent\\Collection\<\(int\|string\), Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\> given\.$#'
-			identifier: argument.type
+			message: '#^Using nullsafe property access "\?\-\>edition" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
 			count: 1
-			path: app/Http/Controllers/Account/DocumentController.php
+			path: app/Http/Controllers/Account/SubmissionController.php
 
 		-
-			message: '#^Offset ''type'' on array\{type\: ''instructions''\|''redirect'', url\?\: string, message\?\: string\} on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
+			message: '#^Using nullsafe property access "\?\-\>settings" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
 			count: 1
-			path: app/Http/Controllers/Account/PaymentController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$full_name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Admin/DocumentController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Admin/DocumentController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$institution\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Admin/DocumentController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$track\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Admin/DocumentController.php
-
-		-
-			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:roleLabel\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: app/Http/Controllers/Admin/DocumentController.php
-
-		-
-			message: '#^Parameter \#1 \$raw of static method App\\Documents\\LayoutSanitizer\:\:sanitize\(\) expects array, string given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Http/Controllers/Admin/DocumentController.php
-
-		-
-			message: '#^Parameter \#2 \$groups of class App\\Documents\\LivretDocx constructor expects Illuminate\\Support\\Collection\<string, Illuminate\\Support\\Collection\<int, App\\Models\\Submission\>\>, Illuminate\\Database\\Eloquent\\Collection\<\(int\|string\), Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\> given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Http/Controllers/Admin/DocumentController.php
+			path: app/Http/Controllers/Admin/DashboardController.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Http/Controllers/Admin/DocumentController.php
-
-		-
-			message: '#^Parameter \#1 \$participant of method App\\Actions\\IssueAttestation\:\:handle\(\) expects App\\Models\\Participant, Illuminate\\Database\\Eloquent\\Model given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Http/Controllers/Admin/DocumentHubController.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>edition_label" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
@@ -105,7 +63,7 @@ parameters:
 		-
 			message: '#^Using nullsafe property access "\?\-\>settings" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
-			count: 2
+			count: 1
 			path: app/Http/Controllers/Admin/EditionFormController.php
 
 		-
@@ -145,16 +103,34 @@ parameters:
 			path: app/Http/Controllers/Admin/EditionFormController.php
 
 		-
+			message: '#^Using nullsafe property access "\?\-\>timestamp" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Admin/EmailController.php
+
+		-
 			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 4
+			path: app/Http/Controllers/Admin/ProgramController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>participant_id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Http/Controllers/Admin/ProgramController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>tracks" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Http/Controllers/Admin/ProgramController.php
 
 		-
-			message: '#^Parameter \#1 \$raw of static method App\\Documents\\LayoutSanitizer\:\:sanitize\(\) expects array, string given\.$#'
-			identifier: argument.type
+			message: '#^Using nullsafe property access "\?\-\>full_name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
 			count: 1
-			path: app/Http/Controllers/Admin/TemplateDesignerController.php
+			path: app/Http/Controllers/Admin/SubmissionController.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>location" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
@@ -175,94 +151,22 @@ parameters:
 			path: app/Http/Controllers/Admin/TemplateDesignerController.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$colloque\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/AttestationController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$location\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/AttestationController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$title\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/AttestationController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$year\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/AttestationController.php
-
-		-
-			message: '#^Cannot call method format\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Http/Controllers/AttestationController.php
-
-		-
-			message: '#^Parameter \#1 \$raw of static method App\\Documents\\LayoutSanitizer\:\:sanitize\(\) expects array, string given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Http/Controllers/AttestationController.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>location" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
-			count: 1
+			count: 2
 			path: app/Http/Controllers/AttestationController.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
-			count: 1
+			count: 2
 			path: app/Http/Controllers/AttestationController.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>title" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
-			count: 1
+			count: 2
 			path: app/Http/Controllers/AttestationController.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/PaymentController.php
-
-		-
-			message: '#^Offset ''flow'' on string\|null on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Http/Controllers/PaymentController.php
-
-		-
-			message: '#^Result of && is always false\.$#'
-			identifier: booleanAnd.alwaysFalse
-			count: 1
-			path: app/Http/Controllers/PaymentController.php
-
-		-
-			message: '#^Strict comparison using \=\=\= between null and ''coauthor'' will always evaluate to false\.$#'
-			identifier: identical.alwaysFalse
-			count: 1
-			path: app/Http/Controllers/PaymentController.php
-
-		-
-			message: '#^Offset ''type'' on array\{type\: ''instructions''\|''redirect'', url\?\: string, message\?\: string\} on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Http/Controllers/Public/CoauthorController.php
-
-		-
-			message: '#^Parameter \#1 \$boolean of function abort_unless expects bool, App\\Models\\Participant\|null given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Http/Controllers/Reviewer/ReviewerController.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>title" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
@@ -271,14 +175,8 @@ parameters:
 			path: app/Mail/ParticipantInvitationMail.php
 
 		-
-			message: '#^Offset ''invited_at'' on string\|null on left side of \?\? does not exist\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Models/Participant.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$title\.$#'
-			identifier: property.notFound
+			message: '#^Using nullsafe property access "\?\-\>title" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Payments/Gateways/CashpayGateway.php
 
@@ -286,76 +184,22 @@ parameters:
 			message: '#^Using nullsafe property access "\?\-\>title" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
-			path: app/Payments/Gateways/CashpayGateway.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$title\.$#'
-			identifier: property.notFound
-			count: 1
 			path: app/Payments/Gateways/FedaPayGateway.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>title" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Payments/Gateways/FedaPayGateway.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\Submission\:\:\$reviews_avg_score\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Support/EditionReport.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$amount\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Support/EditionReport.php
-
-		-
-			message: '#^Cannot call method format\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 1
-			path: app/Support/EditionReport.php
-
-		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Payment\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: argument.unresolvableType
-			count: 1
-			path: app/Support/EditionReport.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>email" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
-			count: 1
+			count: 2
 			path: app/Support/EditionReport.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>full_name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
-			count: 1
+			count: 2
 			path: app/Support/EditionReport.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$title\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Support/EmailTemplates.php
-
-		-
-			message: '#^Offset 0 on non\-empty\-list\<string\> on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Support/EmailTemplates.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>title" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 2
 			path: app/Support/EmailTemplates.php
-
-		-
-			message: '#^Parameter \#1 \$array \(non\-empty\-list\<string\>\) of array_values is already a list, call has no effect\.$#'
-			identifier: arrayValues.list
-			count: 1
-			path: app/Support/XlsxWriter.php

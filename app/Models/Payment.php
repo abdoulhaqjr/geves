@@ -6,11 +6,15 @@ use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * Paiement des frais d'inscription (mobile money, carte via passerelle, ou
  * encaissement manuel). Un règlement par participant et par édition.
  * Statuts : {@see PaymentStatus}.
+ *
+ * @property Carbon|null $paid_at
+ * @property array<string, mixed>|null $meta
  */
 class Payment extends Model
 {
@@ -70,6 +74,7 @@ class Payment extends Model
         return self::MANUAL_METHODS[$this->method] ?? ucfirst((string) $this->method);
     }
 
+    /** @return BelongsTo<Edition, $this> */
     public function edition(): BelongsTo
     {
         return $this->belongsTo(Edition::class);

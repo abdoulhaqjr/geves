@@ -32,7 +32,7 @@ class AiAssistantController extends Controller
     {
         // Identité de l'assistant (nom + avatar) paramétrée dans Réglages · Agents IA.
         $agent = AiAgents::find('admin') ?? AiAgents::defaults()[1];
-        $avatarUrl = filled($agent['avatar'] ?? null) ? '/storage/'.ltrim((string) $agent['avatar'], '/') : null;
+        $avatarUrl = filled($agent['avatar']) ? '/storage/'.ltrim((string) $agent['avatar'], '/') : null;
 
         return view('admin.ai-assistant', [
             'agentName' => $agent['name'] ?: 'Assistant',

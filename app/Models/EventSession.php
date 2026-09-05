@@ -27,6 +27,8 @@ use Illuminate\Support\Str;
  * @property Carbon|null $starts_at
  * @property Carbon|null $ends_at
  * @property Carbon|null $session_day
+ * @property Atelier|null $atelier
+ * @property Edition|null $edition
  */
 class EventSession extends Model
 {

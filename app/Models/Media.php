@@ -28,6 +28,7 @@ class Media extends Model
         return self::TYPES[$this->type] ?? ucfirst((string) $this->type);
     }
 
+    /** @return BelongsTo<Edition, $this> */
     public function edition(): BelongsTo
     {
         return $this->belongsTo(Edition::class);

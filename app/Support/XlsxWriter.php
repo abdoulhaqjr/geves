@@ -34,7 +34,7 @@ class XlsxWriter
         $data = [];
 
         if ($headers !== []) {
-            $data[] = array_values($headers);
+            $data[] = $headers;
         }
 
         foreach ($rows as $row) {

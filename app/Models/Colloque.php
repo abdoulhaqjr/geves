@@ -16,6 +16,7 @@ class Colloque extends Model
 
     protected $guarded = ['id'];
 
+    /** @return HasMany<Edition, $this> */
     public function editions(): HasMany
     {
         return $this->hasMany(Edition::class);

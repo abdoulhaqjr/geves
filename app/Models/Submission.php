@@ -16,6 +16,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *
  * @property array<int, array<string, mixed>>|null $authors
  * @property array<string, mixed>|null $meta
+ * @property Edition|null $edition
+ * @property Participant|null $participant
+ * @property float|null $reviews_avg_score agrégat withAvg('reviews', 'score')
  */
 #[ObservedBy([SubmissionObserver::class])]
 class Submission extends Model
@@ -91,6 +94,7 @@ class Submission extends Model
         return $this->authors[0]['email'] ?? $this->participant?->email;
     }
 
+    /** @return BelongsTo<Edition, $this> */
     public function edition(): BelongsTo
     {
         return $this->belongsTo(Edition::class);

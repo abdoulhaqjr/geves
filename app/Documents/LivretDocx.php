@@ -50,7 +50,7 @@ class LivretDocx
     private array $affMap = [];
 
     /**
-     * @param  Collection<string, Collection<int, Submission>>  $groups
+     * @param  Collection<int|string, \Illuminate\Database\Eloquent\Collection<int, Submission>>  $groups  soumissions groupées par axe
      */
     public function __construct(
         private readonly Edition $edition,
@@ -372,7 +372,7 @@ class LivretDocx
             // Auteur correspondant : nom (e-mail : …).
             $corr = $people->firstWhere('corr', true);
             if ($corr && $corr['email'] !== '') {
-                $section->addText('*Auteur correspondant : '.($corr['name'] !== '' ? $corr['name'].' ' : '').'(e-mail : '.$corr['email'].')',
+                $section->addText('*Auteur correspondant : '.$corr['name'].' (e-mail : '.$corr['email'].')',
                     ['size' => 9, 'color' => self::MUTED], ['spaceBefore' => 20, 'spaceAfter' => 60]);
             }
         }

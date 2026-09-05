@@ -35,6 +35,7 @@ class Review extends Model
         return $this->status === 'completed';
     }
 
+    /** @return BelongsTo<Submission, $this> */
     public function submission(): BelongsTo
     {
         return $this->belongsTo(Submission::class);

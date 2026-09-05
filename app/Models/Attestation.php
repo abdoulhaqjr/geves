@@ -6,10 +6,13 @@ use App\Observers\AttestationObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * Attestation émise (participation, communication, modération, rapporteur) avec
  * UUID de vérification publique.
+ *
+ * @property Carbon|null $issued_at
  */
 #[ObservedBy([AttestationObserver::class])]
 class Attestation extends Model
@@ -46,11 +49,13 @@ class Attestation extends Model
         ];
     }
 
+    /** @return BelongsTo<Edition, $this> */
     public function edition(): BelongsTo
     {
         return $this->belongsTo(Edition::class);
     }
 
+    /** @return BelongsTo<Participant, $this> */
     public function participant(): BelongsTo
     {
         return $this->belongsTo(Participant::class);

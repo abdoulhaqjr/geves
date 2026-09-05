@@ -70,6 +70,10 @@ class PaymentController extends Controller
     }
 
     /** Applique les filtres communs (liste + export). */
+    /**
+     * @param  Builder<Payment>  $q
+     * @return Builder<Payment>
+     */
     private function applyFilters(Builder $q, string $status, string $method, string $search, string $from, string $to): Builder
     {
         return $q

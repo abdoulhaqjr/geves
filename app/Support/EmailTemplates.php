@@ -238,6 +238,6 @@ class EmailTemplates
 
     protected static function firstName(?string $fullName): string
     {
-        return trim(explode(' ', trim((string) $fullName), 2)[0] ?? '');
+        return trim(explode(' ', trim((string) $fullName), 2)[0]);
     }
 }

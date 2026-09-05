@@ -195,6 +195,7 @@ class EditionReport
             ->selectRaw('gateway, count(*) as c, sum(amount) as total')
             ->groupBy('gateway')
             ->orderByDesc('total')
+            ->toBase()
             ->get()
             ->map(fn ($r) => [
                 (string) ($r->gateway ?: 'Autre'),
@@ -262,6 +263,7 @@ class EditionReport
             ->selectRaw("sum(case when status = 'rejected' then 1 else 0 end) as rejected")
             ->groupBy('axe')
             ->orderByDesc('total')
+            ->toBase()
             ->get()
             ->map(function ($r) {
                 $decided = (int) $r->accepted + (int) $r->rejected;
@@ -292,6 +294,7 @@ class EditionReport
             ->selectRaw("sum(case when status = 'accepted' then 1 else 0 end) as accepted")
             ->groupBy('type')
             ->orderByDesc('total')
+            ->toBase()
             ->get()
             ->map(fn ($r) => [
                 'type' => $r->type === 'poster' ? 'Poster' : 'Communication orale',
@@ -316,7 +319,7 @@ class EditionReport
             ->map(fn ($group, $role) => [
                 'role' => Participant::ROLES[$role] ?? ucfirst((string) $role),
                 'count' => $group->count(),
-                'paid' => $group->filter(fn (Participant $p) => $p->payments->firstWhere('status', 'paid'))->count(),
+                'paid' => $group->filter(fn (Participant $p) => $p->payments->firstWhere('status', 'paid') !== null)->count(),
             ])
             ->sortByDesc('count')
             ->values()
@@ -336,6 +339,7 @@ class EditionReport
             ->selectRaw("COALESCE(NULLIF(country, ''), 'Non précisé') as country, count(*) as c")
             ->groupBy('country')
             ->orderByDesc('c')
+            ->toBase()
             ->get();
 
         $top = $byCountry->take(6);
@@ -380,6 +384,7 @@ class EditionReport
             ->selectRaw('amount as tarif, count(*) as c, sum(amount) as total')
             ->groupBy('amount')
             ->orderByDesc('total')
+            ->toBase()
             ->get()
             ->map(fn ($r) => ['tarif' => (float) $r->tarif, 'count' => (int) $r->c, 'total' => (float) $r->total])
             ->all();

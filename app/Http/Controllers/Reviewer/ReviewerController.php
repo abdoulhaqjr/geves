@@ -66,7 +66,7 @@ class ReviewerController extends Controller
     private function reviewer(string $token): Participant
     {
         $reviewer = Participant::where('access_token', $token)->where('role', 'reviewer')->first();
-        abort_unless($reviewer, 404);
+        abort_unless($reviewer !== null, 404);
 
         return $reviewer;
     }

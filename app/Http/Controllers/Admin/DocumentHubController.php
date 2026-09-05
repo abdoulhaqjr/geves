@@ -47,7 +47,7 @@ class DocumentHubController extends Controller
             foreach ($typeMeta as $key => $meta) {
                 $eligible = $this->targetsFor($edition, $key)->count();
                 $rows[$key] = [
-                    'label' => Attestation::TYPES[$key] ?? $meta['title'],
+                    'label' => Attestation::TYPES[$key],
                     'title' => $meta['title'],
                     'sub' => $meta['sub'],
                     'scope' => $meta['scope'],
@@ -362,8 +362,8 @@ class DocumentHubController extends Controller
             'edition' => $edition,
             'edition_id' => $edition ? (string) $edition->id : '',
             'types' => Attestation::TYPES,
-            'type' => $type ?? '',
-            'state' => $state ?? '',
+            'type' => $type,
+            'state' => $state,
             'attestations' => $attestations,
             'stats' => $stats,
         ]);
@@ -407,6 +407,7 @@ class DocumentHubController extends Controller
     }
 
     /** Participants éligibles pour un type d'attestation donné. */
+    /** @return Collection<int, Participant> */
     private function targetsFor(Edition $edition, string $type): Collection
     {
         $base = fn () => Participant::where('edition_id', $edition->id);

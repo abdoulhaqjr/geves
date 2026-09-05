@@ -16,6 +16,9 @@ use Illuminate\Support\Carbon;
  * connue.
  *
  * @property Carbon|null $checked_in_at
+ * @property array<string, mixed>|null $meta
+ * @property Edition|null $edition
+ * @property Account|null $account
  */
 #[ObservedBy([ParticipantObserver::class])]
 class Participant extends Model
@@ -75,11 +78,13 @@ class Participant extends Model
         return $this->belongsTo(Account::class);
     }
 
+    /** @return HasMany<Submission, $this> */
     public function submissions(): HasMany
     {
         return $this->hasMany(Submission::class);
     }
 
+    /** @return HasMany<Payment, $this> */
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);

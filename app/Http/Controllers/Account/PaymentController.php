@@ -95,7 +95,7 @@ class PaymentController extends Controller
             return back()->withErrors(['pay' => 'Le service de paiement est momentanément indisponible. Réessayez plus tard.']);
         }
 
-        if (($result['type'] ?? null) === 'redirect' && ! empty($result['url'])) {
+        if ($result['type'] === 'redirect' && ! empty($result['url'])) {
             return redirect()->away($result['url']);
         }
 
