@@ -200,6 +200,7 @@ Route::prefix('admin')->group(function () {
             Route::post('/editions/ia-assist-json', [EditionFormController::class, 'aiAssistJson'])->name('admin.editions.ai-assist-json');
             Route::get('/editions/{edition}/modifier', [EditionFormController::class, 'edit'])->name('admin.editions.edit');
             Route::put('/editions/{edition}/modifier', [EditionFormController::class, 'update'])->name('admin.editions.update');
+            Route::post('/editions/{edition}/relecteurs/expertise', [EditionFormController::class, 'saveReviewerExpertise'])->name('admin.editions.reviewers.expertise');
             Route::get('/editions/{edition}/formulaire', [SubmissionFormController::class, 'edit'])->name('admin.editions.form');
             Route::put('/editions/{edition}/formulaire', [SubmissionFormController::class, 'update'])->name('admin.editions.form.update');
             Route::get('/editions/{edition}/documents', [EditionMediaController::class, 'index'])->name('admin.editions.documents');
@@ -214,7 +215,6 @@ Route::prefix('admin')->group(function () {
             // Attribution automatique des relecteurs (route statique AVANT le joker {submission}).
             Route::get('/soumissions/attribution-auto', [App\Http\Controllers\Admin\SubmissionController::class, 'autoAssign'])->name('admin.submissions.auto-assign');
             Route::post('/soumissions/attribution-auto', [App\Http\Controllers\Admin\SubmissionController::class, 'autoAssignApply'])->name('admin.submissions.auto-assign.apply');
-            Route::post('/soumissions/relecteurs/{participant}/expertise', [App\Http\Controllers\Admin\SubmissionController::class, 'updateReviewerExpertise'])->name('admin.submissions.reviewer.expertise');
             Route::get('/soumissions/{submission}', [App\Http\Controllers\Admin\SubmissionController::class, 'show'])->name('admin.submissions.show');
             Route::post('/soumissions/{submission}/statut', [App\Http\Controllers\Admin\SubmissionController::class, 'applyStatus'])->name('admin.submissions.status');
             Route::post('/soumissions/{submission}/relecteur', [App\Http\Controllers\Admin\SubmissionController::class, 'assignReviewer'])->name('admin.submissions.review.assign');

@@ -9,9 +9,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SaveEditionRequest;
 use App\Models\Colloque;
 use App\Models\Edition;
+use App\Models\Participant;
+use App\Models\Review;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 /**
@@ -159,7 +162,83 @@ class EditionFormController extends Controller
             'colloques' => Colloque::orderBy('name')->get(),
             'committeeRoles' => self::COMMITTEE_ROLES,
             'aiAvailable' => app(AiManager::class)->available() !== [],
+            'reviewers' => $this->reviewersFor($edition),
+            'reviewerAxes' => $this->reviewerAxes($edition),
         ]);
+    }
+
+    /**
+     * Relecteurs de l'édition avec expertise déclarée et charge courante
+     * (pour l'onglet « Relecteurs » de la fiche).
+     *
+     * @return Collection<int, array{id:int, name:string, institution:string, tracks:array<int, string>, load:int}>
+     */
+    private function reviewersFor(?Edition $edition): Collection
+    {
+        if (! $edition) {
+            return collect();
+        }
+
+        $reviewers = Participant::where('edition_id', $edition->id)
+            ->where('role', 'reviewer')->orderBy('last_name')->get();
+
+        $load = Review::query()
+            ->whereIn('reviewer_id', $reviewers->pluck('id'))
+            ->whereHas('submission', fn ($q) => $q->where('edition_id', $edition->id))
+            ->selectRaw('reviewer_id, count(*) as c')->groupBy('reviewer_id')->pluck('c', 'reviewer_id');
+
+        return $reviewers->map(fn (Participant $r) => [
+            'id' => $r->id,
+            'name' => $r->full_name,
+            'institution' => (string) ($r->institution ?? ''),
+            'tracks' => collect($r->meta['review_tracks'] ?? [])
+                ->filter()->map(fn ($t): string => trim((string) $t))->values()->all(),
+            'load' => (int) ($load[$r->id] ?? 0),
+        ])->values();
+    }
+
+    /**
+     * Axes thématiques de l'édition (réglages), pour cocher l'expertise.
+     *
+     * @return list<string>
+     */
+    private function reviewerAxes(?Edition $edition): array
+    {
+        return collect($edition?->settings['tracks'] ?? [])
+            ->map(fn ($t): string => trim((string) $t))
+            ->filter()->unique()->values()->all();
+    }
+
+    /** Enregistre l'expertise (axes) des relecteurs de l'édition (onglet Relecteurs). */
+    public function saveReviewerExpertise(Request $request, Edition $edition): RedirectResponse
+    {
+        $data = $request->validate([
+            'reviewer_ids' => ['array'],
+            'reviewer_ids.*' => ['integer'],
+            'expertise' => ['array'],
+            'expertise.*' => ['array'],
+            'expertise.*.*' => ['string', 'max:200'],
+        ]);
+
+        $reviewers = Participant::where('edition_id', $edition->id)
+            ->where('role', 'reviewer')->get()->keyBy('id');
+
+        foreach ($data['reviewer_ids'] ?? [] as $id) {
+            $reviewer = $reviewers->get((int) $id);
+            if (! $reviewer) {
+                continue;
+            }
+            $tracks = array_values(array_unique(array_filter(
+                array_map(fn ($t) => trim((string) $t), (array) ($data['expertise'][$id] ?? []))
+            )));
+            $meta = $reviewer->meta ?? [];
+            $meta['review_tracks'] = $tracks;
+            $reviewer->update(['meta' => $meta]);
+        }
+
+        return redirect()->route('admin.editions.edit', $edition)
+            ->with('ukc_status', 'Expertise des relecteurs mise à jour.')
+            ->with('edition_tab', 'reviewers');
     }
 
     /**

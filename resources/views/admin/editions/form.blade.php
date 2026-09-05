@@ -60,6 +60,7 @@
                     <button type="button" @click="tab='content'" :class="{ active: tab==='content' }">Appel &amp; contenu</button>
                     <button type="button" @click="tab='submissions'" :class="{ active: tab==='submissions' }">Soumissions &amp; tarifs</button>
                     <button type="button" @click="tab='committees'" :class="{ active: tab==='committees' }">Comités</button>
+                    @if ($edition)<button type="button" @click="tab='reviewers'" :class="{ active: tab==='reviewers' }">Relecteurs</button>@endif
                     <button type="button" @click="tab='partners'" :class="{ active: tab==='partners' }">Partenaires</button>
                     <button type="button" @click="tab='appearance'" :class="{ active: tab==='appearance' }">Apparence</button>
                     @if ($edition)<button type="button" @click="tab='options'" :class="{ active: tab==='options' }">Options</button>@endif
@@ -564,6 +565,60 @@
                         <a href="{{ route('admin.editions.index') }}" class="ukc-btn ukc-btn--ghost">Annuler</a>
                     </div>
                 </form>
+
+                {{-- ===== RELECTEURS (hors du formulaire d'édition : sauvegarde dédiée) ===== --}}
+                @if ($edition)
+                    <div class="ukc-panel" :class="{ active: tab==='reviewers' }">
+                        <div class="ukc-card">
+                            <h2>Relecteurs &amp; expertise</h2>
+                            <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 4px;">
+                                Cochez les axes que chaque relecteur peut évaluer. Ces expertises alimentent l’attribution automatique
+                                (<a href="{{ route('admin.submissions.auto-assign', ['edition_id' => $edition->id]) }}" style="color:var(--ukc-blue);font-weight:600;">page dédiée</a>) :
+                                un relecteur dont l’expertise couvre l’axe d’une soumission est priorisé.
+                            </p>
+
+                            @if ($reviewers->isEmpty())
+                                <div class="ukc-empty" style="padding:24px 0;color:var(--ukc-muted);">
+                                    Aucun relecteur sur cette édition. Assignez un relecteur depuis une soumission
+                                    (ou depuis la page d’attribution), il apparaîtra ici.
+                                </div>
+                            @elseif (empty($reviewerAxes))
+                                <div class="ukc-empty" style="padding:24px 0;color:var(--ukc-muted);">
+                                    Aucun axe thématique défini pour cette édition. Renseignez les axes dans l’onglet
+                                    <strong>Appel &amp; contenu</strong>, puis revenez ici.
+                                </div>
+                            @else
+                                <form method="POST" action="{{ route('admin.editions.reviewers.expertise', $edition) }}">
+                                    @csrf
+                                    <div class="reviewer-expertise">
+                                        @foreach ($reviewers as $rev)
+                                            <div class="reviewer-row">
+                                                <input type="hidden" name="reviewer_ids[]" value="{{ $rev['id'] }}">
+                                                <div class="reviewer-id">
+                                                    <strong>{{ $rev['name'] }}</strong>
+                                                    <span>{{ $rev['institution'] ?: '—' }}</span>
+                                                    <span class="load">Charge : {{ $rev['load'] }}</span>
+                                                </div>
+                                                <div class="reviewer-axes">
+                                                    @foreach ($reviewerAxes as $axis)
+                                                        <label class="axis-check">
+                                                            <input type="checkbox" name="expertise[{{ $rev['id'] }}][]" value="{{ $axis }}"
+                                                                @checked(in_array($axis, $rev['tracks'], true))>
+                                                            <span>{{ $axis }}</span>
+                                                        </label>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                    <div class="ukc-form-actions" style="margin-top:16px;">
+                                        <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer les expertises</button>
+                                    </div>
+                                </form>
+                            @endif
+                        </div>
+                    </div>
+                @endif
             </div>
 
             {{-- ===================== SIDEBAR STICKY ===================== --}}

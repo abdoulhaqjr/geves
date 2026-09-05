@@ -28,7 +28,7 @@
 
         @if (! $edition)
             <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);">Sélectionnez une édition pour lancer l’attribution.</p></div>
-        @elseif ($reviewers->isEmpty())
+        @elseif (empty($preview['reviewers']))
             <div class="ukc-card">
                 <p style="margin:0;color:var(--ukc-muted);">Aucun relecteur sur cette édition. Assignez d’abord un relecteur depuis une soumission,
                     ou invitez des relecteurs, puis revenez ici.</p>
@@ -36,7 +36,7 @@
         @else
             {{-- Indicateurs du plan --}}
             <div class="ukc-stats">
-                <div class="ukc-stat-card"><div class="lbl">Relecteurs</div><div class="val blue">{{ $reviewers->count() }}</div></div>
+                <div class="ukc-stat-card"><div class="lbl">Relecteurs</div><div class="val blue">{{ count($preview['reviewers']) }}</div></div>
                 <div class="ukc-stat-card"><div class="lbl">À couvrir</div><div class="val warn">{{ $preview['needing'] }}</div></div>
                 <div class="ukc-stat-card"><div class="lbl">Proposées</div><div class="val green">{{ count($preview['proposals']) }}</div></div>
                 <div class="ukc-stat-card"><div class="lbl">Non couvertes</div><div class="val" style="color:{{ $preview['uncovered'] ? '#dc2626' : 'var(--ukc-green)' }};">{{ $preview['uncovered'] }}</div></div>
@@ -100,44 +100,30 @@
                     @endif
                 </div>
 
-                {{-- Expertise des relecteurs (affine le matching) --}}
+                {{-- Charge des relecteurs (lecture seule) — l'expertise se règle dans l'édition --}}
                 <div class="ukc-card" style="padding:0;">
-                    <div style="padding:14px 18px;border-bottom:1px solid var(--ukc-border);">
-                        <strong>Expertise des relecteurs</strong>
-                        <span style="color:var(--ukc-muted);font-size:13px;">— cochez les axes que chaque relecteur peut évaluer, puis relancez l’aperçu.
-                        @if ($axes->isEmpty()) <em>Aucun axe défini pour cette édition.</em> @endif</span>
+                    <div style="padding:14px 18px;border-bottom:1px solid var(--ukc-border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                        <div><strong>Charge des relecteurs</strong> <span style="color:var(--ukc-muted);font-size:13px;">— l’expertise (axes) se règle dans l’onglet <em>Relecteurs</em> de l’édition.</span></div>
+                        <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.editions.edit', ['edition' => $edition->id, 'tab' => 'reviewers']) }}">Gérer l’expertise</a>
                     </div>
                     <div class="ukc-table-wrap">
                         <table class="ukc-table">
-                            <thead><tr><th>Relecteur</th><th>Charge</th><th>Proposé</th><th>Axes d’expertise</th><th></th></tr></thead>
+                            <thead><tr><th>Relecteur</th><th>Axes d’expertise</th><th style="text-align:center;">Charge</th><th style="text-align:center;">Proposé</th></tr></thead>
                             <tbody>
-                                @php $loadById = collect($preview['reviewers'])->keyBy('id'); @endphp
-                                @foreach ($reviewers as $rev)
-                                    @php $info = $loadById[$rev->id] ?? ['current' => 0, 'proposed' => 0, 'tracks' => []]; @endphp
+                                @forelse ($preview['reviewers'] as $rev)
                                     <tr>
-                                        <td><strong>{{ $rev->full_name }}</strong><div class="meta" style="font-size:12px;color:var(--ukc-muted);">{{ $rev->institution ?: '—' }}</div></td>
-                                        <td>{{ $info['current'] }}</td>
-                                        <td>@if ($info['proposed'])<span class="ukc-pill ukc-pill--info">+{{ $info['proposed'] }}</span>@else — @endif</td>
-                                        <td colspan="2">
-                                            @if ($axes->isEmpty())
-                                                <span style="color:var(--ukc-light);">—</span>
-                                            @else
-                                                <form method="POST" action="{{ route('admin.submissions.reviewer.expertise', $rev->id) }}"
-                                                      style="display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;">
-                                                    @csrf
-                                                    @php $mine = collect($info['tracks']); @endphp
-                                                    @foreach ($axes as $axis)
-                                                        <label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;">
-                                                            <input type="checkbox" name="tracks[]" value="{{ $axis }}" @checked($mine->contains($axis))>
-                                                            {{ \Illuminate\Support\Str::limit($axis, 30) }}
-                                                        </label>
-                                                    @endforeach
-                                                    <button type="submit" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Enregistrer</button>
-                                                </form>
-                                            @endif
+                                        <td><strong>{{ $rev['name'] }}</strong></td>
+                                        <td>
+                                            @forelse ($rev['tracks'] as $t)<span class="axis-tag">{{ \Illuminate\Support\Str::limit($t, 26) }}</span> @empty
+                                                <span style="color:var(--ukc-light);font-size:13px;">Généraliste</span>
+                                            @endforelse
                                         </td>
+                                        <td style="text-align:center;">{{ $rev['current'] }}</td>
+                                        <td style="text-align:center;">@if ($rev['proposed'])<span class="ukc-pill ukc-pill--info">+{{ $rev['proposed'] }}</span>@else — @endif</td>
                                     </tr>
-                                @endforeach
+                                @empty
+                                    <tr><td colspan="4" style="color:var(--ukc-muted);">Aucun relecteur.</td></tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>

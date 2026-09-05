@@ -62,26 +62,51 @@ it('n’applique jamais un conflit d’intérêt élevé (même e-mail que l’a
     expect(Review::where('reviewer_id', $conflicted->id)->exists())->toBeFalse();
 });
 
-it('met à jour l’expertise d’un relecteur', function () {
+it('met à jour l’expertise des relecteurs depuis l’onglet de l’édition', function () {
     $staff = adminStaff();
     $submission = seededSubmission('submitted');
-    $reviewer = $submission->edition->participants()->create([
+    $edition = $submission->edition;
+    $reviewer = $edition->participants()->create([
         'first_name' => 'Ama', 'last_name' => 'Sow', 'email' => 'ama@rev.tg', 'role' => 'reviewer',
     ]);
 
     $this->actingAs($staff, 'web')
-        ->post(route('admin.submissions.reviewer.expertise', $reviewer->id), ['tracks' => ['Santé', 'Sciences']])
+        ->post(route('admin.editions.reviewers.expertise', $edition), [
+            'reviewer_ids' => [$reviewer->id],
+            'expertise' => [$reviewer->id => ['Santé', 'Sciences']],
+        ])
         ->assertRedirect();
 
     expect($reviewer->fresh()->meta['review_tracks'])->toContain('Santé')->toContain('Sciences');
 });
 
-it('refuse la mise à jour d’expertise sur un non-relecteur', function () {
+it('ignore les identifiants qui ne sont pas des relecteurs de l’édition', function () {
     $staff = adminStaff();
     $submission = seededSubmission('submitted');
+    $edition = $submission->edition;
     $author = $submission->participant; // rôle auteur, pas relecteur
 
     $this->actingAs($staff, 'web')
-        ->post(route('admin.submissions.reviewer.expertise', $author->id), ['tracks' => ['Sciences']])
-        ->assertNotFound();
+        ->post(route('admin.editions.reviewers.expertise', $edition), [
+            'reviewer_ids' => [$author->id],
+            'expertise' => [$author->id => ['Sciences']],
+        ])
+        ->assertRedirect();
+
+    expect($author->fresh()->meta['review_tracks'] ?? null)->toBeNull();
+});
+
+it('affiche l’onglet Relecteurs sur la fiche d’édition', function () {
+    $staff = adminStaff();
+    $submission = seededSubmission('submitted');
+    $edition = $submission->edition;
+    $edition->participants()->create([
+        'first_name' => 'Ama', 'last_name' => 'Sow', 'email' => 'ama@rev.tg', 'role' => 'reviewer',
+    ]);
+
+    $this->actingAs($staff, 'web')
+        ->get(route('admin.editions.edit', $edition))
+        ->assertOk()
+        ->assertSee('Relecteurs &amp; expertise', false)
+        ->assertSee('Ama Sow');
 });
