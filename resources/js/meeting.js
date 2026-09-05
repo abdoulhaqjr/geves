@@ -53,6 +53,12 @@ export async function startFromConfig() {
     function hidePerm() { const b = $('permBanner'); if (b) b.classList.remove('on'); }
     async function ensureMedia(needCam, needMic) {
         if ((!needCam || mediaPerm.cam) && (!needMic || mediaPerm.mic)) return true;
+        // Contexte sécurisé requis : hors HTTPS (et hors localhost) les navigateurs
+        // désactivent l'accès caméra/micro — le cadenas « Autoriser » n'y change rien.
+        if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showPerm('La visioconférence nécessite une connexion sécurisée (HTTPS). Ouvrez le site en https:// (ex. « herd secure »), ou via localhost, puis réessayez.');
+            return false;
+        }
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: needCam && !mediaPerm.cam, audio: needMic && !mediaPerm.mic });
             stream.getTracks().forEach((tr) => tr.stop());
@@ -61,7 +67,18 @@ export async function startFromConfig() {
             hidePerm();
             return true;
         } catch (e) {
-            showPerm('Accès caméra / micro refusé. Ouvrez le cadenas de la barre d’adresse → Autoriser, puis réessayez.');
+            const name = (e && e.name) || '';
+            let msg;
+            if (name === 'NotAllowedError' || name === 'SecurityError') {
+                msg = 'Accès caméra / micro refusé. Ouvrez le cadenas de la barre d’adresse → Autoriser, puis réessayez.';
+            } else if (name === 'NotFoundError' || name === 'OverconstrainedError') {
+                msg = 'Aucune caméra / micro détecté. Branchez un périphérique, puis réessayez.';
+            } else if (name === 'NotReadableError' || name === 'AbortError') {
+                msg = 'Caméra / micro déjà utilisé par une autre application. Fermez-la, puis réessayez.';
+            } else {
+                msg = 'Impossible d’accéder à la caméra / au micro' + (name ? ' (' + name + ')' : '') + '. Vérifiez les autorisations du navigateur, puis réessayez.';
+            }
+            showPerm(msg);
             return false;
         }
     }
@@ -356,9 +373,23 @@ export async function startFromConfig() {
             if (btn) btn.classList.toggle('active', mode !== 'none');
             if (mode === 'none') { blurState.mode = 'none'; toast('Arrière-plan : aucun'); return; }
             const mod = await loadProcessors();
-            if (!mod || !mod.BackgroundBlur || !pub || !pub.track || typeof pub.track.setProcessor !== 'function') { toast('Flou non disponible sur ce navigateur'); mode = 'none'; if (btn) btn.classList.remove('active'); return; }
-            await pub.track.setProcessor(mod.BackgroundBlur(8));
-            blurState.mode = 'blur'; toast('Arrière-plan : flou');
+            if (!mod || !pub || !pub.track || typeof pub.track.setProcessor !== 'function') { toast('Arrière-plan non disponible sur ce navigateur'); mode = 'none'; if (btn) btn.classList.remove('active'); return; }
+            if (mode === 'blur') {
+                if (!mod.BackgroundBlur) { toast('Flou non disponible sur ce navigateur'); mode = 'none'; if (btn) btn.classList.remove('active'); return; }
+                await pub.track.setProcessor(mod.BackgroundBlur(8));
+                blurState.mode = 'blur'; toast('Arrière-plan : flou');
+            } else {
+                // « mode » est une URL d'image (arrière-plan admin ou image perso).
+                if (mod.VirtualBackground) {
+                    await pub.track.setProcessor(mod.VirtualBackground(mode));
+                    blurState.mode = 'image'; toast('Arrière-plan : image');
+                } else if (mod.BackgroundBlur) {
+                    await pub.track.setProcessor(mod.BackgroundBlur(8));
+                    toast('Image non supportée par ce navigateur — flou appliqué');
+                } else {
+                    toast('Arrière-plan image non disponible'); mode = 'none'; if (btn) btn.classList.remove('active');
+                }
+            }
         } catch (e) { toast('Impossible d’appliquer l’arrière-plan'); }
         finally { blurState.loading = false; if (btn) btn.disabled = false; }
     }
@@ -544,7 +575,18 @@ export async function startFromConfig() {
     $('btnFs').addEventListener('click', () => { const sm = $('stageMain'); if (!document.fullscreenElement) sm.requestFullscreen?.(); else document.exitFullscreen?.(); });
     document.addEventListener('fullscreenchange', () => $('btnFs').classList.toggle('active', !!document.fullscreenElement));
     $('btnBg').addEventListener('click', (e) => { e.stopPropagation(); $('shareMenu')?.classList.remove('open'); $('bgMenu').classList.toggle('open'); });
-    document.querySelectorAll('#bgMenu .bg-opt').forEach((o) => o.addEventListener('click', () => { applyBackground(o.getAttribute('data-bg')); $('bgMenu').classList.remove('open'); }));
+    document.querySelectorAll('#bgMenu .bg-opt:not(.bg-upload)').forEach((o) => o.addEventListener('click', () => { applyBackground(o.getAttribute('data-bg')); $('bgMenu').classList.remove('open'); }));
+    // Arrière-plan personnel : image chargée par l'utilisateur (URL blob, locale).
+    $('bgUpload')?.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const url = URL.createObjectURL(file);
+        const opt = e.target.closest('.bg-upload');
+        if (opt) { opt.style.backgroundImage = 'url(' + url + ')'; opt.style.backgroundSize = 'cover'; opt.style.backgroundPosition = 'center'; opt.querySelector('span')?.remove(); }
+        applyBackground(url);
+        $('bgMenu').classList.remove('open');
+        e.target.value = '';
+    });
     $('btnRec').addEventListener('click', toggleRecording);
     $('btnSendChat').addEventListener('click', sendChat);
     $('chatInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChat(); });

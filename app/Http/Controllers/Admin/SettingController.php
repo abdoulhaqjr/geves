@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Providers\AppServiceProvider;
 use App\Support\Settings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -49,6 +50,7 @@ class SettingController extends Controller
         'ai_grok_key' => 'ai.grok_key',
         'ai_grok_model' => 'ai.grok_model',
         'meeting_default' => 'meetings.default',
+        'meetings_backgrounds' => 'meetings.backgrounds',
         'livekit_url' => 'livekit.url',
         'livekit_api_key' => 'livekit.api_key',
         'livekit_api_secret' => 'livekit.api_secret',
@@ -100,6 +102,7 @@ class SettingController extends Controller
             'ai_grok_key' => $g('ai.grok_key'),
             'ai_grok_model' => $g('ai.grok_model', (string) config('services.grok.model')),
             'meeting_default' => $g('meetings.default', (string) config('meetings.default', 'livekit')),
+            'meetings_backgrounds' => $g('meetings.backgrounds'),
             'livekit_url' => $g('livekit.url', (string) config('meetings.livekit.url')),
             'livekit_api_key' => $g('livekit.api_key', (string) config('meetings.livekit.api_key')),
             'livekit_api_secret' => $g('livekit.api_secret', (string) config('meetings.livekit.api_secret')),
@@ -149,6 +152,14 @@ class SettingController extends Controller
             $payload[$key] = (string) $request->input($field, '');
         }
         $payload['hal.enabled'] = $request->boolean('hal_enabled');
+
+        // Tolère le collage d'une ligne d'.env entière (« LIVEKIT_API_KEY=xxx »)
+        // dans un champ d'identifiant : on ne conserve que la valeur.
+        foreach (['livekit.url', 'livekit.api_key', 'livekit.api_secret', 'livekit.meet_url'] as $key) {
+            if (isset($payload[$key])) {
+                $payload[$key] = AppServiceProvider::stripEnvPrefix($payload[$key]);
+            }
+        }
 
         Settings::setMany($payload);
 

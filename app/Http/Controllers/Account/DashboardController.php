@@ -8,9 +8,11 @@ use App\Models\Edition;
 use App\Models\EventSession;
 use App\Models\Participant;
 use App\Models\Payment;
+use App\Models\Slot;
 use App\Models\Submission;
 use App\Support\AccountActivity;
 use App\Support\CurrentColloque;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -41,12 +43,38 @@ class DashboardController extends Controller
             ? collect([$current->id])
             : Participant::where('account_id', $account->id)->pluck('edition_id')->unique()->filter();
 
-        // Sessions en direct des éditions du compte qu'il peut rejoindre.
+        // Sessions en direct : uniquement les séances EN COURS aujourd'hui qui le
+        // concernent — soit il y présente une communication, soit elles portent sur
+        // l'un de ses axes thématiques.
+        $mySubmissionIds = Submission::whereIn('participant_id', $participantIds)
+            ->where('revision_of', 0)->pluck('id');
+        $myTracks = Submission::whereIn('id', $mySubmissionIds)
+            ->pluck('track')->filter()
+            ->map(fn ($t) => mb_strtolower(trim((string) $t)))->unique();
+        $mySessionIds = Slot::whereIn('submission_id', $mySubmissionIds)
+            ->whereNotNull('session_id')->pluck('session_id')->unique();
+
+        $now = Carbon::now();
         $liveSessions = EventSession::query()->live()
             ->whereIn('edition_id', $editionIds)
-            ->with('edition')
+            ->with(['edition', 'atelier'])
             ->get()
-            ->filter(fn (EventSession $s) => $s->canJoin($account))
+            ->filter(function (EventSession $s) use ($now, $account, $mySessionIds, $myTracks) {
+                // En cours maintenant (fenêtre horaire de la séance).
+                $inProgress = $s->starts_at && $s->ends_at && $s->starts_at->lte($now) && $s->ends_at->gte($now);
+                if (! $inProgress || ! $s->canJoin($account)) {
+                    return false;
+                }
+                // Le participant y présente une communication ?
+                if ($mySessionIds->contains($s->id)) {
+                    return true;
+                }
+                // La séance porte-t-elle sur l'un de ses axes thématiques ?
+                $sessionTracks = collect($s->atelier?->tracks ?? [])
+                    ->map(fn ($t) => mb_strtolower(trim((string) $t)));
+
+                return $sessionTracks->intersect($myTracks)->isNotEmpty();
+            })
             ->values();
 
         $editionDocuments = Edition::whereIn('id', $editionIds)

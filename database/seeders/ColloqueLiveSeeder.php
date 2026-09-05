@@ -7,6 +7,9 @@ use App\Models\Colloque;
 use App\Models\Edition;
 use App\Models\EventSession;
 use App\Models\Participant;
+use App\Models\Slot;
+use App\Models\Submission;
+use App\Support\Settings;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -23,6 +26,17 @@ class ColloqueLiveSeeder extends Seeder
     {
         $start = Carbon::create(2026, 9, 3);
         $end = Carbon::create(2026, 9, 7);
+
+        // Arrière-plans virtuels proposés par défaut (modifiables dans Réglages ·
+        // Visio). Uniquement si l'admin n'en a pas encore configuré.
+        if (blank(Settings::get('meetings.backgrounds'))) {
+            Settings::set('meetings.backgrounds', implode("\n", [
+                'https://images.unsplash.com/photo-1497366216548-37526070297c?w=640&q=60',
+                'https://images.unsplash.com/photo-1562774053-701939374585?w=640&q=60',
+                'https://images.unsplash.com/photo-1557683316-973673baf926?w=640&q=60',
+                'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=640&q=60',
+            ]));
+        }
 
         $colloque = Colloque::updateOrCreate(
             ['slug' => 'colloque-live-uk'],
@@ -44,6 +58,7 @@ class ColloqueLiveSeeder extends Seeder
                 'date_end' => $end,
                 'settings' => [
                     'intro' => 'Colloque en cours : les séances plénières sont diffusées en direct chaque jour de 8 h à 23 h.',
+                    'tracks' => ['Sciences de la santé', 'Sciences & technologies', 'Sciences humaines & sociales'],
                     // Modale « Informations du colloque ».
                     'organisers' => 'Université de Kara · Université de Parakou · DRI',
                     'formats' => 'Plénières, ateliers parallèles, posters, table ronde',
@@ -70,14 +85,15 @@ class ColloqueLiveSeeder extends Seeder
             ],
         );
 
-        // Une séance plénière active par jour (08:00 → 23:00), visio Jitsi en direct.
+        // Une séance plénière active par jour (08:00 → 23:00), visio LiveKit en direct.
         $edition->sessions()->delete();
 
+        $sessionsByDay = [];  // 'Y-m-d' => EventSession
         $day = $start->copy();
         $i = 0;
         while ($day->lte($end)) {
             $i++;
-            EventSession::create([
+            $sessionsByDay[$day->toDateString()] = EventSession::create([
                 'edition_id' => $edition->id,
                 'type' => 'plenary',
                 'label' => 'Séance plénière — Jour '.$i.' ('.$day->translatedFormat('d/m').')',
@@ -87,8 +103,11 @@ class ColloqueLiveSeeder extends Seeder
                 'ends_at' => $day->copy()->setTime(23, 0),
                 'moderator_name' => 'Comité d’organisation',
                 'ordre' => $i,
-                'meeting_provider' => 'jitsi',
-                'meeting_room' => 'ukc-live-2026-j'.$i.'-'.Str::lower(Str::random(6)),
+                // LiveKit (visio type Teams/BBB, fidèle au mockup colloque-visio).
+                // Sans identifiants LiveKit configurés, le registre retombe
+                // proprement sur Jitsi : la salle reste fonctionnelle.
+                'meeting_provider' => 'livekit',
+                'meeting_room' => 'ukc-live-2026-j'.$i,
                 'meeting_status' => 'live',
                 'meeting_visibility' => 'public',
             ]);
@@ -98,12 +117,65 @@ class ColloqueLiveSeeder extends Seeder
         // Enrôle le compte de démonstration à ce colloque (visible dans son espace).
         $account = Account::where('email', 'participant@demo.tg')->first();
         if ($account) {
-            Participant::firstOrCreate(
+            $participant = Participant::firstOrCreate(
                 ['edition_id' => $edition->id, 'account_id' => $account->id],
                 ['first_name' => $account->first_name, 'last_name' => $account->last_name, 'email' => $account->email, 'role' => 'author', 'access_token' => Str::random(64)],
             );
+
+            $this->seedDemoCommunications($edition, $participant, $sessionsByDay);
         }
 
         $this->command?->info("Colloque en direct simulé : édition #{$edition->id} ({$edition->date_start->format('d/m')}–{$edition->date_end->format('d/m/Y')}), {$i} séances plénières 8 h–23 h.");
+    }
+
+    /**
+     * Trois communications du compte démo programmées les 4, 5 et 6/09/2026
+     * (créneau relié à la séance plénière du jour), chacune sur un axe distinct —
+     * pour tester le filtrage « sessions du jour liées à mes communications / mon axe ».
+     *
+     * @param  array<string, EventSession>  $sessionsByDay
+     */
+    private function seedDemoCommunications(Edition $edition, Participant $participant, array $sessionsByDay): void
+    {
+        $tracks = $edition->settings['tracks'] ?? ['Sciences de la santé', 'Sciences & technologies', 'Sciences humaines & sociales'];
+
+        $comms = [
+            ['2026-09-04', 'Télémédecine et accès aux soins en milieu rural', $tracks[0] ?? 'Sciences de la santé'],
+            ['2026-09-05', 'Énergies renouvelables pour les campus universitaires', $tracks[1] ?? 'Sciences & technologies'],
+            ['2026-09-06', 'Langues nationales et réussite éducative', $tracks[2] ?? 'Sciences humaines & sociales'],
+        ];
+
+        foreach ($comms as $idx => [$date, $title, $track]) {
+            $session = $sessionsByDay[$date] ?? null;
+
+            $submission = Submission::firstOrCreate(
+                ['edition_id' => $edition->id, 'participant_id' => $participant->id, 'title' => $title, 'revision_of' => 0],
+                [
+                    'ref_code' => 'UKC-LIVE-'.($idx + 1),
+                    'type' => 'oral',
+                    'track' => $track,
+                    'status' => 'accepted',
+                    'abstract' => 'Communication de démonstration présentée lors de la séance plénière du '
+                        .Carbon::parse($date)->translatedFormat('d/m/Y').', sur l’axe « '.$track.' ».',
+                    'keywords' => Str::slug($track, ', '),
+                    'authors' => [['name' => $participant->first_name.' '.$participant->last_name, 'affiliation' => 'Université de Kara', 'corresponding' => true]],
+                ],
+            );
+
+            if ($session) {
+                Slot::updateOrCreate(
+                    ['edition_id' => $edition->id, 'submission_id' => $submission->id],
+                    [
+                        'session_id' => $session->id,
+                        'session_label' => $session->label,
+                        'room' => $session->room,
+                        'participant_id' => $participant->id,
+                        'starts_at' => Carbon::parse($date)->setTime(9, 0),
+                        'ends_at' => Carbon::parse($date)->setTime(9, 20),
+                        'chosen_by_participant' => true,
+                    ],
+                );
+            }
+        }
     }
 }

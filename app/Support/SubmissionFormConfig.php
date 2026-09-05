@@ -53,6 +53,14 @@ class SubmissionFormConfig
 
     public function __construct(public Edition $edition) {}
 
+    /** Compte les mots d'un texte (balises HTML retirées). Utilisé pour les limites du résumé. */
+    public static function wordCount(string $value): int
+    {
+        $text = trim(preg_replace('/\s+/', ' ', strip_tags($value)) ?? '');
+
+        return $text === '' ? 0 : count(preg_split('/\s+/', $text));
+    }
+
     /**
      * Règles & limites du formulaire (fusionnées avec les valeurs par défaut).
      *

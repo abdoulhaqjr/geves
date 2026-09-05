@@ -36,6 +36,23 @@ class Submission extends Model
         return SubmissionStatus::pills();
     }
 
+    /** Communications originales (non révisions) déjà déposées par un compte sur une édition. */
+    public static function usedCountFor(Edition $edition, Account $account): int
+    {
+        return self::where('edition_id', $edition->id)
+            ->where('revision_of', 0)
+            ->whereHas('participant', fn ($q) => $q->where('account_id', $account->id))
+            ->count();
+    }
+
+    /** Communications encore déposables par ce compte sur cette édition (0 = quota atteint). */
+    public static function remainingFor(Edition $edition, Account $account): int
+    {
+        $max = (int) ($edition->settings['max_communications'] ?? 3);
+
+        return max(0, $max - self::usedCountFor($edition, $account));
+    }
+
     protected function casts(): array
     {
         return [

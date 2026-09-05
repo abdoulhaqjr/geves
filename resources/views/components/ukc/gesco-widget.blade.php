@@ -20,11 +20,12 @@
         ? '<img src="'.e($agentAvatar).'" alt="'.e($agentName).'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
         : $mascot;
 
-    $seed = 'Bonjour, je suis '.$agentName.', l’assistante des colloques de l’Université de Kara. '
-        .'Posez-moi vos questions sur les soumissions, inscriptions, tarifs, programme ou documents.';
+    // Même message d'accueil que la page dédiée /assistante.
+    $seed = 'Bonjour ! Je suis '.$agentName.', l’assistante du colloque de l’Université de Kara. '
+        .'Comment puis-je vous aider aujourd’hui ?';
 @endphp
 
-<div class="ukc-cb-root" x-data="{ open: false, expanded: false, ...gescoChat(@js($seed)) }"
+<div class="ukc-cb-root" x-data="{ open: false, expanded: false, ...gescoChat(@js($seed), '{{ route('gesco.ask') }}', @js($agentName)) }"
      @keydown.escape.window="open = false">
     <div class="ukc-cb-panel" :class="{ 'open': open, 'expanded': expanded }">
         <div class="ukc-cb-head">
@@ -45,10 +46,14 @@
 
         <div class="ukc-cb-body" x-ref="log">
             <template x-for="(m, i) in messages" :key="i">
-                <div class="ukc-cb-msg" :class="m.role === 'user' ? 'user' : 'bot'"
-                     style="white-space:pre-wrap;" x-text="m.text"></div>
+                <div class="ukc-cb-msg" :class="m.role === 'user' ? 'user' : 'bot'">
+                    <template x-if="m.role === 'user'"><div style="white-space:pre-wrap;" x-text="m.text"></div></template>
+                    <template x-if="m.role !== 'user'"><div class="chat-md" x-html="render(m.text)"></div></template>
+                </div>
             </template>
-            <div class="ukc-cb-msg bot" x-show="sending" style="font-style:italic;opacity:.75;">Gesco écrit…</div>
+            <div class="ukc-cb-msg bot typing" x-show="sending">
+                <span class="typing-dots"><span></span><span></span><span></span></span>
+            </div>
         </div>
 
         <div class="ukc-cb-foot">

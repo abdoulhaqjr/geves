@@ -2,25 +2,23 @@
 
 namespace App\Http\Controllers\Account;
 
+use App\Actions\CreateSubmission;
 use App\Actions\NotifySubmissionStatus;
-use App\Actions\UpsertParticipantForAccount;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Account\ResubmitSubmissionRequest;
+use App\Http\Requests\Account\StoreSubmissionRequest;
 use App\Models\Attestation;
 use App\Models\Edition;
 use App\Models\Slot;
 use App\Models\Submission;
 use App\Support\CurrentColloque;
 use App\Support\Html;
-use App\Support\Notifier;
 use App\Support\SubmissionFormConfig;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
@@ -76,120 +74,18 @@ class SubmissionController extends Controller
             'account' => $account,
             'tracks' => $edition->settings['tracks'] ?? [],
             'maxCommunications' => (int) ($edition->settings['max_communications'] ?? 3),
-            'remaining' => $this->remainingFor($edition, $account),
+            'remaining' => Submission::remainingFor($edition, $account),
             'successRef' => session('success_ref'),
         ]);
     }
 
-    /** Enregistre la communication déposée. */
-    public function store(string $slug, Request $request, UpsertParticipantForAccount $upsert, NotifySubmissionStatus $notify): RedirectResponse
+    /** Enregistre la communication déposée (validation : StoreSubmissionRequest). */
+    public function store(StoreSubmissionRequest $request, CreateSubmission $action): RedirectResponse
     {
-        $edition = Edition::where('slug', $slug)->first();
-        abort_unless($edition && $edition->isPublished(), 404);
-
+        $edition = $request->edition();
         $account = Auth::guard('account')->user();
-        $config = new SubmissionFormConfig($edition);
-        $tracks = $edition->settings['tracks'] ?? [];
 
-        // Garde-fous serveur (en plus de l'affichage).
-        if (! $account->canSubmit()) {
-            return back()->withInput()->withErrors(['abstract' => 'Votre e-mail doit être vérifié et votre profil complété (affiliation).']);
-        }
-        if (! $edition->submission_open) {
-            return back()->withInput()->withErrors(['abstract' => 'Les soumissions sont fermées pour cette édition.']);
-        }
-        if ($this->remainingFor($edition, $account) <= 0) {
-            return back()->withInput()->withErrors(['abstract' => 'Vous avez atteint le nombre maximum de communications pour cette édition.']);
-        }
-
-        // Valeurs par défaut (que le wizard envoie toujours) : type « oral » et
-        // premier axe thématique — cohérent avec l'ancien composant.
-        if ($config->enabled('type') && ! $request->filled('type')) {
-            $request->merge(['type' => 'oral']);
-        }
-        if (count($tracks) && ! $request->filled('track')) {
-            $request->merge(['track' => $tracks[0]]);
-        }
-
-        $validator = Validator::make($request->all(), $this->rulesFor($config, $tracks), [], $this->attributesFor($config));
-
-        if ($validator->fails()) {
-            // Renvoie le wizard vers l'étape contenant la première erreur (masquée sinon).
-            $step = $this->stepForField((string) array_key_first($validator->errors()->toArray()));
-
-            return back()->withInput()->withErrors($validator)->with('submission_error_step', $step);
-        }
-
-        $data = $validator->validated();
-
-        // Téléversement du fichier (I/O) hors transaction.
-        $fileUrl = null;
-        if ($config->enabled('file') && $request->hasFile('file')) {
-            $path = $request->file('file')->store('submissions/'.$edition->id, 'public');
-            $fileUrl = Storage::disk('public')->url($path);
-        }
-
-        // Réponses aux champs personnalisés (label + valeur, pour affichage).
-        $customMeta = [];
-        foreach ($config->customFields() as $field) {
-            $value = $data['customAnswers'][$field['key']] ?? null;
-            if ($field['type'] === 'checkbox') {
-                $value = $value ? 'Oui' : 'Non';
-            }
-            if ($value === '' || $value === null) {
-                continue;
-            }
-            $customMeta[] = ['key' => $field['key'], 'label' => $field['label'], 'value' => (string) $value];
-        }
-
-        $coauthors = collect($data['coauthors'] ?? [])
-            ->filter(fn ($c) => filled($c['name'] ?? null))
-            ->map(fn ($c) => [
-                'name' => $c['name'],
-                'email' => $c['email'] ?? null,
-                'affiliation' => $c['affiliation'] ?? null,
-                'grade' => $c['grade'] ?? null,
-            ])->values()->all();
-
-        $authors = array_merge([[
-            'name' => $account->full_name,
-            'email' => $account->email,
-            'affiliation' => $account->affiliation,
-            'grade' => $account->grade,
-            'corresponding' => true,
-        ]], $coauthors);
-
-        // Création atomique : le participant (upsert) et la communication ensemble.
-        $submission = DB::transaction(function () use ($upsert, $account, $edition, $data, $authors, $fileUrl, $customMeta) {
-            $participant = $upsert->handle($edition, $account, 'author');
-
-            // ref_code + access_token sont générés par SubmissionObserver.
-            return Submission::create([
-                'edition_id' => $edition->id,
-                'participant_id' => $participant->id,
-                'title' => $data['title'],
-                'authors' => $authors,
-                'abstract' => Html::clean($data['abstract']),
-                'keywords' => ($data['keywords'] ?? null) ?: null,
-                'track' => ($data['track'] ?? null) ?: null,
-                'type' => $data['type'] ?? 'oral',
-                'status' => 'submitted',
-                'file_url' => $fileUrl,
-                'meta' => $customMeta !== [] ? ['custom_fields' => $customMeta] : null,
-            ]);
-        });
-
-        // Accusé de réception à l'auteur correspondant (hors transaction).
-        $notify->handle($submission, 'submitted');
-
-        // Notification in-app au back-office : une communication à traiter.
-        Notifier::staff(
-            kind: 'submission_new',
-            title: 'Nouvelle communication',
-            body: '« '.$submission->title.' » — '.$account->full_name,
-            url: route('admin.submissions.show', $submission),
-            icon: 'inbox',
-        );
+        $submission = $action->handle($edition, $account, $request->config(), $request->validated(), $request->file('file'));
 
         return redirect()->route('account.submissions.create', $edition->slug)
             ->with('success_ref', $submission->ref_code);
@@ -244,25 +140,12 @@ class SubmissionController extends Controller
         return back()->with('ukc_status', 'Votre créneau de passage est confirmé.');
     }
 
-    public function resubmit(Request $request, Submission $submission, NotifySubmissionStatus $notify): RedirectResponse
+    public function resubmit(ResubmitSubmissionRequest $request, Submission $submission, NotifySubmissionStatus $notify): RedirectResponse
     {
         $this->authorizeOwnership($submission);
         abort_unless($submission->canBeRevised(), 403);
 
-        $c = new SubmissionFormConfig($submission->edition);
-        $data = $request->validate([
-            'title' => ['required', 'string', 'max:500'],
-            'abstract' => ['required', 'string', 'max:20000', function (string $attr, string $value, \Closure $fail) use ($c): void {
-                $words = self::wordCount($value);
-                if ($words < $c->abstractMin()) {
-                    $fail('Le résumé doit contenir au moins '.$c->abstractMin().' mots.');
-                } elseif ($words > $c->abstractMax()) {
-                    $fail('Le résumé ne doit pas dépasser '.$c->abstractMax().' mots.');
-                }
-            }],
-            'keywords' => ['nullable', 'string', 'max:500'],
-            'file' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:8192'],
-        ]);
+        $data = $request->validated();
 
         // Archive la version courante (revision_of = canonique).
         Submission::create([
@@ -305,126 +188,7 @@ class SubmissionController extends Controller
             ->with('ukc_status', 'Version corrigée envoyée. Votre communication est de nouveau en cours d’examen.');
     }
 
-    // --- Règles & helpers du wizard -------------------------------------------
-
-    /**
-     * @param  array<int, string>  $tracks
-     * @return array<string, mixed>
-     */
-    /** Compte les mots d'un résumé (texte brut, balises HTML retirées). */
-    private static function wordCount(string $value): int
-    {
-        $text = trim(preg_replace('/\s+/', ' ', strip_tags($value)) ?? '');
-
-        return $text === '' ? 0 : count(preg_split('/\s+/', $text));
-    }
-
-    private function rulesFor(SubmissionFormConfig $c, array $tracks): array
-    {
-        $rules = [
-            'title' => ['required', 'string', 'max:500'],
-            'abstract' => ['required', 'string', 'max:20000', function (string $attr, string $value, \Closure $fail) use ($c): void {
-                $words = self::wordCount($value);
-                if ($words < $c->abstractMin()) {
-                    $fail('Le résumé doit contenir au moins '.$c->abstractMin().' mots.');
-                } elseif ($words > $c->abstractMax()) {
-                    $fail('Le résumé ne doit pas dépasser '.$c->abstractMax().' mots.');
-                }
-            }],
-            'coauthors' => ['array'],
-            'coauthors.*.name' => ['nullable', 'string', 'max:200'],
-            'coauthors.*.email' => ['nullable', 'email', 'max:200'],
-            'coauthors.*.affiliation' => ['nullable', 'string', 'max:255'],
-            'coauthors.*.grade' => ['nullable', 'string', 'max:100'],
-        ];
-
-        $rules['track'] = count($tracks)
-            ? [$c->required('track') ? 'required' : 'nullable', 'string', 'max:150']
-            : ['nullable', 'string', 'max:150'];
-
-        if ($c->enabled('type')) {
-            $rules['type'] = ['required', 'in:oral,poster'];
-        }
-
-        if ($c->enabled('keywords')) {
-            $rules['keywords'] = [$c->required('keywords') ? 'required' : 'nullable', 'string', 'max:500',
-                function (string $attr, string $value, \Closure $fail) use ($c): void {
-                    $n = count(array_filter(array_map('trim', preg_split('/[,;\n]+/', $value)), fn ($k) => $k !== ''));
-                    if ($n > 0 && $n < $c->keywordsMin()) {
-                        $fail('Indiquez au moins '.$c->keywordsMin().' mots-clés.');
-                    } elseif ($n > $c->keywordsMax()) {
-                        $fail('Indiquez au plus '.$c->keywordsMax().' mots-clés.');
-                    }
-                }];
-        }
-
-        if ($c->enabled('file')) {
-            $rules['file'] = [$c->required('file') ? 'required' : 'nullable', 'file', 'mimes:pdf,doc,docx', 'max:8192'];
-        }
-
-        foreach ($c->customFields() as $field) {
-            $key = 'customAnswers.'.$field['key'];
-
-            if ($field['type'] === 'checkbox') {
-                $rules[$key] = $field['required'] ? ['accepted'] : ['nullable', 'boolean'];
-
-                continue;
-            }
-
-            $rule = [$field['required'] ? 'required' : 'nullable'];
-            $rule[] = match ($field['type']) {
-                'email' => 'email',
-                'number' => 'numeric',
-                'date' => 'date',
-                default => 'string',
-            };
-            $rule[] = 'max:2000';
-            if ($field['type'] === 'select' && $field['options'] !== []) {
-                $rule[] = Rule::in($field['options']);
-            }
-            $rules[$key] = $rule;
-        }
-
-        return $rules;
-    }
-
-    /** @return array<string, string> */
-    private function attributesFor(SubmissionFormConfig $c): array
-    {
-        $attrs = [];
-        foreach ($c->customFields() as $field) {
-            $attrs['customAnswers.'.$field['key']] = mb_strtolower($field['label']);
-        }
-
-        return $attrs;
-    }
-
-    /** Étape du wizard (1..5) contenant un champ donné (pour le saut d'erreur). */
-    private function stepForField(string $field): int
-    {
-        return match (true) {
-            str_starts_with($field, 'coauthors') => 2,
-            $field === 'abstract', str_starts_with($field, 'customAnswers') => 3,
-            $field === 'file' => 4,
-            default => 1,
-        };
-    }
-
-    /** Communications originales déjà déposées par ce compte sur l'édition. */
-    private function usedCountFor(Edition $edition, object $account): int
-    {
-        return Submission::where('edition_id', $edition->id)
-            ->where('revision_of', 0)
-            ->whereHas('participant', fn ($q) => $q->where('account_id', $account->id))
-            ->count();
-    }
-
-    private function remainingFor(Edition $edition, object $account): int
-    {
-        $max = (int) ($edition->settings['max_communications'] ?? 3);
-
-        return max(0, $max - $this->usedCountFor($edition, $account));
-    }
+    // --- Helpers (suivi de communication) -------------------------------------
 
     /** La communication doit appartenir au compte connecté (version canonique). */
     private function authorizeOwnership(Submission $submission): void

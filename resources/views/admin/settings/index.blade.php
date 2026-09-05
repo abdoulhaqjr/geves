@@ -212,6 +212,13 @@
                         @error('meeting_default') <span class="error">{{ $message }}</span> @enderror
                     </div>
 
+                    <div class="ukc-field full" style="margin-top:12px;">
+                        <label for="meetings_backgrounds">Arrière-plans virtuels <span class="hint">(une URL d’image par ligne)</span></label>
+                        <textarea id="meetings_backgrounds" name="meetings_backgrounds" rows="4"
+                                  placeholder="https://exemple.tg/fonds/campus.jpg&#10;https://exemple.tg/fonds/amphi.jpg">{{ $v('meetings_backgrounds') }}</textarea>
+                        <span class="hint">Proposés dans la salle visio (en plus de « Aucun » et « Flou »). Les participants peuvent aussi charger leur propre image. Les images doivent être accessibles en HTTPS et autoriser le cross-origin (CORS).</span>
+                    </div>
+
                     <h3 style="font-size:.95rem;margin:16px 0 8px;">LiveKit</h3>
                     <div class="ukc-form-grid">
                         <div class="ukc-field full">

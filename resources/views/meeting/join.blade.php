@@ -61,9 +61,10 @@
         #visio-room .tile .name{position:absolute;left:10px;bottom:10px;z-index:3;background:rgba(0,0,0,.6);padding:5px 10px;border-radius:8px;font-size:12.5px;font-weight:700;max-width:calc(100% - 20px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
         #visio-room .tile .badges{position:absolute;top:10px;right:10px;z-index:3;display:flex;gap:4px;}
         #visio-room .tile .badges span{font-size:10px;font-weight:800;padding:4px 8px;border-radius:50px;background:rgba(0,0,0,.55);}
-        #visio-room .info-block{position:absolute;z-index:2;text-align:center;color:var(--vtext);}
-        #visio-room .info-block .info-name{font-size:1.1rem;font-weight:800;}
-        #visio-room .info-block .info-meta{font-size:.9rem;color:var(--vmuted);margin-top:4px;max-width:80vw;}
+        /* Bloc nom + indication : placé SOUS l'avatar centré (72px) pour ne pas se superposer. */
+        #visio-room .info-block{position:absolute;top:50%;left:50%;transform:translate(-50%,52px);z-index:2;text-align:center;color:var(--vtext);width:max-content;max-width:min(90%,420px);padding:0 12px;}
+        #visio-room .info-block .info-name{font-size:1.1rem;font-weight:800;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+        #visio-room .info-block .info-meta{font-size:.9rem;color:var(--vmuted);margin-top:4px;line-height:1.4;}
         #visio-room .pip-dropzone{display:none;position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:22;background:rgba(0,0,0,.6);border:1px dashed rgba(255,255,255,.4);border-radius:10px;padding:6px 12px;font-size:12px;color:#fff;}
         #visio-room .pip-dropzone.visible{display:block;}
         #visio-room .pip-dropzone.active{border-color:var(--vgold);color:var(--vgold);}
@@ -134,6 +135,8 @@
         #visio-room .bg-opt{border:2px solid transparent;border-radius:12px;overflow:hidden;cursor:pointer;background:var(--vbg-tile);padding:0;aspect-ratio:1;position:relative;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--vmuted);}
         #visio-room .bg-opt:hover{border-color:rgba(255,255,255,.25);}
         #visio-room .bg-opt.active{border-color:var(--vgold);color:var(--vtext);}
+        #visio-room .bg-opt.bg-upload{flex-direction:column;gap:2px;}
+        #visio-room .bg-opt.bg-upload span{font-size:10px;line-height:1.2;text-align:center;padding:0 4px;}
         #visio-room .share-menu button{display:flex;width:100%;align-items:center;gap:10px;padding:12px 14px;border:none;border-radius:10px;background:transparent;color:var(--vtext);font-weight:700;font-size:13.5px;text-align:left;}
         #visio-room .share-menu button:hover{background:rgba(255,255,255,.08);}
         #visio-room .share-menu .hint{font-size:11.5px;color:var(--vmuted);padding:8px 10px 4px;line-height:1.4;}
@@ -264,6 +267,14 @@
             <div class="bg-options">
                 <button type="button" class="bg-opt active" data-bg="none">Aucun</button>
                 <button type="button" class="bg-opt" data-bg="blur">Flou</button>
+                @foreach ($backgrounds as $bg)
+                    <button type="button" class="bg-opt bg-img" data-bg="{{ $bg }}" title="Arrière-plan"
+                            style="background-image:url('{{ e($bg) }}');background-size:cover;background-position:center;"></button>
+                @endforeach
+                <label class="bg-opt bg-upload" title="Utiliser mon image">
+                    <span>+ Mon image</span>
+                    <input type="file" id="bgUpload" accept="image/*" hidden>
+                </label>
             </div>
         </div>
         <div class="menu share-menu" id="shareMenu">

@@ -164,7 +164,7 @@
                                             <div class="meta">
                                                 {{ $s->room ?: 'Lieu à préciser' }}
                                                 @if (($isNow)($s)) · En cours @elseif ($s->ends_at && $s->ends_at->lt($now)) · Terminé @else · À venir @endif
-                                                @if ($s->isLive()) · Visio {{ ucfirst($s->meeting_provider ?: 'en direct') }} @endif
+                                                @if ($s->isLive()) · Visio @endif
                                             </div>
                                         </div>
                                     @endforeach

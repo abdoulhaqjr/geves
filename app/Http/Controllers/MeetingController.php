@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\MeetingRole;
 use App\Meetings\LiveKitEgress;
 use App\Models\EventSession;
+use App\Support\Settings;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 
@@ -34,7 +35,8 @@ class MeetingController extends Controller
         // Enrichit la config du lecteur LiveKit (lue par le bundle JS) : retour,
         // libellés, communications programmées, droit d'enregistrement.
         if ($liveKit) {
-            $liveKit['backUrl'] = url()->previous() ?: route('home');
+            // « Quitter » ramène toujours à la page de déroulement du colloque.
+            $liveKit['backUrl'] = route('public.deroulement');
             $liveKit['sessionLabel'] = (string) $session->label;
             $liveKit['editionTitle'] = (string) ($session->edition->title ?? '');
             $liveKit['communications'] = $session->scheduledCommunications();
@@ -53,6 +55,24 @@ class MeetingController extends Controller
             'embed' => $embed,
             'liveKit' => $liveKit,
             'externalUrl' => $externalUrl,
+            // Arrière-plans virtuels proposés (configurés dans Réglages · Visio).
+            'backgrounds' => $this->backgrounds(),
         ]);
+    }
+
+    /**
+     * Liste d'URL d'images d'arrière-plan configurées par l'admin (une par ligne
+     * dans le réglage meetings.backgrounds). L'utilisateur peut aussi charger la
+     * sienne depuis la salle.
+     *
+     * @return list<string>
+     */
+    private function backgrounds(): array
+    {
+        return collect(preg_split('/\r?\n/', (string) Settings::get('meetings.backgrounds', '')))
+            ->map(fn ($l) => trim($l))
+            ->filter(fn ($l) => $l !== '' && preg_match('#^https?://#i', $l))
+            ->values()
+            ->all();
     }
 }

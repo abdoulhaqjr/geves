@@ -147,10 +147,12 @@ class AppServiceProvider extends ServiceProvider
         Config::set('services.ai.default', $set('ai.default', config('services.ai.default')));
 
         // Visio : fournisseur par défaut + identifiants LiveKit (repli config/.env).
+        // On tolère un collage maladroit du type « LIVEKIT_API_KEY=xxx » : le
+        // préfixe « NOM= » est retiré pour ne garder que la valeur.
         Config::set('meetings.default', $set('meetings.default', config('meetings.default')));
         foreach (['url', 'api_key', 'api_secret', 'meet_url'] as $k) {
             if (filled($set("livekit.$k"))) {
-                Config::set("meetings.livekit.$k", $set("livekit.$k"));
+                Config::set("meetings.livekit.$k", self::stripEnvPrefix((string) $set("livekit.$k")));
             }
         }
         foreach (['s3_bucket', 's3_region', 's3_access_key', 's3_secret', 's3_endpoint'] as $k) {
@@ -171,5 +173,16 @@ class AppServiceProvider extends ServiceProvider
                 Config::set("sms.http.$k", $set("sms.http_$k"));
             }
         }
+    }
+
+    /**
+     * Retire un préfixe « NOM= » collé par erreur devant une valeur (ex. quand on
+     * copie une ligne d'.env entière — « LIVEKIT_API_KEY=abc » — dans le champ).
+     * Un nom d'variable est en MAJUSCULES/chiffres/underscore ; les vraies clés,
+     * secrets et URL n'ont pas ce motif en tête.
+     */
+    public static function stripEnvPrefix(string $value): string
+    {
+        return (string) preg_replace('/^\s*[A-Z][A-Z0-9_]*=/', '', trim($value));
     }
 }

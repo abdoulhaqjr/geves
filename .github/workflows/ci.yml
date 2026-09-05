@@ -47,10 +47,14 @@ jobs:
           node-version: '22'
           cache: npm
 
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: ESLint (front-end)
+        run: npm run lint
+
       - name: Build assets
-        run: |
-          npm ci
-          npm run build
+        run: npm run build
 
       - name: Tests (Pest)
         run: php artisan test
