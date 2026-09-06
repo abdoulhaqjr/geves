@@ -16,6 +16,7 @@ use App\Support\Notifier;
 use App\Support\Plagiarism\PlagiarismRegistry;
 use App\Support\SimilarityChecker;
 use Carbon\Carbon;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -227,6 +228,13 @@ class SubmissionController extends Controller
 
         try {
             $result = $provider->check((string) $submission->abstract);
+        } catch (RequestException $e) {
+            $status = $e->response->status();
+            $apiMsg = trim((string) ($e->response->json('message') ?? ''));
+
+            return back()->with('ukc_error', in_array($status, [401, 403], true)
+                ? 'Clé API '.$provider->label().' refusée'.($apiMsg !== '' ? ' ('.$apiMsg.')' : '').'. Vérifiez-la dans Réglages · Intégrations.'
+                : 'Service anti-plagiat indisponible (code '.$status.'). Réessayez plus tard.');
         } catch (\Throwable $e) {
             report($e);
 
