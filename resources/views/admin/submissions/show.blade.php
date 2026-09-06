@@ -72,6 +72,32 @@
                     @endif
                 </div>
 
+                {{-- Similarité interne (anti-plagiat gratuit) --}}
+                @if (! empty($similar))
+                    <div class="ukc-card">
+                        <h2><span><x-ukc.icon name="shield" :size="18" /> Similarité interne</span></h2>
+                        <p style="color:var(--ukc-muted);font-size:13px;margin:-4px 0 12px;">
+                            Comparé aux autres résumés de la plateforme (éditions accessibles). Un score élevé peut signaler un doublon,
+                            un résumé recyclé ou un auto-plagiat — à vérifier manuellement.
+                        </p>
+                        <div style="display:flex;flex-direction:column;gap:8px;">
+                            @foreach ($similar as $m)
+                                @php($pct = $m['percent'])
+                                @php($col = $pct >= 70 ? '#b4231c' : ($pct >= 50 ? '#8a5a00' : 'var(--ukc-muted)'))
+                                <a href="{{ route('admin.submissions.show', $m['submission']->id) }}"
+                                   style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--ukc-border);border-radius:10px;text-decoration:none;">
+                                    <span style="flex-shrink:0;font-weight:800;font-size:15px;color:{{ $col }};min-width:48px;">{{ $pct }}%</span>
+                                    <span style="flex:1;min-width:0;">
+                                        <span style="display:block;font-weight:600;color:var(--ukc-text);">{{ \Illuminate\Support\Str::limit($m['submission']->title, 70) }}</span>
+                                        <span style="font-size:12px;color:var(--ukc-muted);font-family:ui-monospace,monospace;">{{ $m['submission']->ref_code }}</span>
+                                    </span>
+                                    <x-ukc.icon name="chevron" :size="16" />
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
                 {{-- Fichiers joints --}}
                 @if ($s->file_url)
                     @php($ext = strtoupper(pathinfo(parse_url($s->file_url, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION) ?: 'FICH'))

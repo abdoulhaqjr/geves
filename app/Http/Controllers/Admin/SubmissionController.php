@@ -13,6 +13,7 @@ use App\Models\Review;
 use App\Models\Submission;
 use App\Support\ConflictOfInterest;
 use App\Support\Notifier;
+use App\Support\SimilarityChecker;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -152,12 +153,32 @@ class SubmissionController extends Controller
         }, 'soumissions-'.now()->format('Ymd-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
-    public function show(Submission $submission): View
+    public function show(Request $request, Submission $submission, SimilarityChecker $similarity): View
     {
         $submission->load(['edition', 'participant']);
 
         $reviews = $submission->reviews()->with('reviewer')->get();
         $completed = $reviews->where('status', 'completed');
+
+        // Similarité interne (gratuite) : autres soumissions les plus proches,
+        // restreintes aux éditions accessibles au membre du staff.
+        $scoped = $this->scopedEditionIds($request, 'submissions_list');
+        $corpus = Submission::query()
+            ->whereKeyNot($submission->id)
+            ->where('revision_of', 0)
+            ->when($scoped !== null, fn ($q) => $q->whereIn('edition_id', $scoped))
+            ->get(['id', 'ref_code', 'title', 'abstract', 'edition_id']);
+        $corpusById = $corpus->keyBy('id');
+        $similar = collect($similarity->against(
+            (string) $submission->abstract,
+            $corpus->map(fn ($s) => ['id' => $s->id, 'text' => (string) $s->abstract])->all(),
+            0.35,
+            5,
+        ))->map(fn ($m) => [
+            'submission' => $corpusById[$m['id']],
+            'score' => $m['score'],
+            'percent' => (int) round($m['score'] * 100),
+        ])->all();
 
         $existingReviewers = Participant::where('edition_id', $submission->edition_id)
             ->where('role', 'reviewer')->orderBy('last_name')->get();
@@ -189,6 +210,7 @@ class SubmissionController extends Controller
             'existingReviewers' => $existingReviewers,
             'coiByReview' => $coiByReview,
             'coiByReviewer' => $coiByReviewer,
+            'similar' => $similar,
         ]);
     }
 
