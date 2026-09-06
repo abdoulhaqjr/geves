@@ -17,22 +17,20 @@
                 <div class="logo-sub">Back-office · Colloques</div>
             </div>
             <nav class="ukc-sidebar-nav">
-                @can('view_dashboard')
-                    <a href="{{ route('admin.dashboard') }}"
-                       @class(['active' => request()->routeIs('admin.dashboard')])>Tableau de bord</a>
-                @endcan
-                @can('editions_read')
+                <a href="{{ route('admin.dashboard') }}"
+                   @class(['active' => request()->routeIs('admin.dashboard')])>Tableau de bord</a>
+                @if ($staff?->canAnyEdition('editions_read'))
                     <a href="{{ route('admin.editions.index') }}"
                        @class(['active' => request()->routeIs('admin.editions.*')])>Éditions</a>
-                @endcan
-                @can('submissions_list')
+                @endif
+                @if ($staff?->canAnyEdition('submissions_list'))
                     <a href="{{ route('admin.submissions.index') }}"
                        @class(['active' => request()->routeIs('admin.submissions.*') || request()->routeIs('admin.editions.form')])>Soumissions</a>
                     @if (request()->routeIs('admin.submissions.*') || request()->routeIs('admin.editions.form'))
                         <a href="{{ route('admin.submissions.index') }}" @class(['sub', 'active' => request()->routeIs('admin.submissions.*')])>— Liste</a>
                         <a href="{{ $navEdition ? route('admin.editions.form', $navEdition) : route('admin.editions.index') }}" @class(['sub', 'active' => request()->routeIs('admin.editions.form')])>— Formulaires</a>
                     @endif
-                @endcan
+                @endif
                 @can('users_roles')
                     <a href="{{ route('admin.users.index') }}"
                        @class(['active' => request()->routeIs('admin.users.*')])>Utilisateurs</a>
@@ -43,15 +41,15 @@
                         <a href="{{ route('admin.users.index', ['tab' => 'access']) }}" @class(['sub', 'active' => $uTab === 'access'])>— Accès</a>
                     @endif
                 @endcan
-                @can('participants')
+                @if ($staff?->canAnyEdition('participants'))
                     <a href="{{ route('admin.participants.index') }}"
                        @class(['active' => request()->routeIs('admin.participants.*')])>Participants</a>
-                @endcan
-                @can('payments')
+                @endif
+                @if ($staff?->canAnyEdition('payments'))
                     <a href="{{ route('admin.payments.index') }}"
                        @class(['active' => request()->routeIs('admin.payments.*')])>Paiements</a>
-                @endcan
-                @can('documents')
+                @endif
+                @if ($staff?->canAnyEdition('documents'))
                     <a href="{{ route('admin.documents.attestations') }}"
                        @class(['active' => request()->routeIs('admin.documents.*') || request()->routeIs('admin.badges.*')])>Documents</a>
                     @if (request()->routeIs('admin.documents.attestations'))
@@ -62,21 +60,21 @@
                     @endif
                     <a href="{{ route('admin.attestations.index') }}"
                        @class(['active' => request()->routeIs('admin.attestations.*')])>Attestations délivrées</a>
-                @endcan
-                @can('emails')
+                @endif
+                @if ($staff?->canAnyEdition('emails'))
                     <a href="{{ route('admin.emails.index') }}"
                        @class(['active' => request()->routeIs('admin.emails.*')])>E-mails</a>
-                @endcan
-                @can('editions_read')
+                @endif
+                @if ($staff?->canAnyEdition('editions_read'))
                     <a href="{{ route('admin.program.slots') }}"
                        @class(['active' => request()->routeIs('admin.program.*')])>Créneaux</a>
-                @endcan
-                @can('view_dashboard')
+                @endif
+                @if ($staff?->canAnyEdition('view_dashboard'))
                     <a href="{{ route('admin.reports.index') }}"
                        @class(['active' => request()->routeIs('admin.reports.*')])>Rapports</a>
                     <a href="{{ route('admin.ai') }}"
                        @class(['active' => request()->routeIs('admin.ai')])>Assistant IA</a>
-                @endcan
+                @endif
                 @can('settings')
                     <a href="{{ route('admin.settings') }}"
                        @class(['active' => request()->routeIs('admin.settings') || request()->routeIs('admin.settings.*')])>Réglages</a>

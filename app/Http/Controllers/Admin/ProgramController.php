@@ -23,6 +23,8 @@ use Illuminate\View\View;
  */
 class ProgramController extends Controller
 {
+    use Concerns\ScopesEditionAccess;
+
     // --- Ateliers & sessions --------------------------------------------------
 
     public function sessions(Request $request): View
@@ -30,7 +32,7 @@ class ProgramController extends Controller
         $edition = $this->currentEdition($request);
 
         return view('admin.program.sessions', [
-            'editions' => Edition::latest('id')->get(),
+            'editions' => $this->accessibleEditions($request, 'editions_read'),
             'edition_id' => $edition ? (string) $edition->id : '',
             'tracks' => $edition->settings['tracks'] ?? [],
             'ateliers' => $edition ? $edition->ateliers()->with('sessions')->orderBy('ordre')->get() : collect(),
@@ -180,7 +182,7 @@ class ProgramController extends Controller
             ->filter()->unique()->sort()->values();
 
         return view('admin.program.slots', [
-            'editions' => Edition::latest('id')->get(),
+            'editions' => $this->accessibleEditions($request, 'editions_read'),
             'edition' => $edition,
             'edition_id' => $edition ? (string) $edition->id : '',
             'ateliers' => $ateliers,
@@ -635,13 +637,14 @@ class ProgramController extends Controller
 
     private function currentEdition(Request $request): ?Edition
     {
+        $editions = $this->accessibleEditions($request, 'editions_read');
         $id = (string) $request->query('edition_id', '');
+
         if ($id === '') {
-            $id = (string) (Edition::where('status', 'open')->latest('id')->value('id')
-                ?? Edition::latest('id')->value('id') ?? '');
+            return $editions->firstWhere('status', 'open') ?? $editions->first();
         }
 
-        return $id !== '' ? Edition::find($id) : null;
+        return $editions->firstWhere('id', (int) $id);
     }
 
     private function composeDateTime(?string $day, ?string $time): ?string

@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Mail\ParticipantInvitationMail;
 use App\Models\Attestation;
-use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Models\Submission;
@@ -23,12 +22,14 @@ use Illuminate\View\View;
  */
 class ParticipantController extends Controller
 {
+    use Concerns\ScopesEditionAccess;
+
     public function index(Request $request): View
     {
+        $editions = $this->accessibleEditions($request, 'participants');
         $editionId = (string) $request->query('edition_id', '');
         if ($editionId === '') {
-            $editionId = (string) (Edition::where('status', 'open')->latest('id')->value('id')
-                ?? Edition::latest('id')->value('id') ?? '');
+            $editionId = (string) ($editions->firstWhere('status', 'open')?->id ?? $editions->first()?->id ?? '');
         }
         $role = (string) $request->query('role', '');
         $search = trim((string) $request->query('search', ''));
@@ -51,7 +52,7 @@ class ParticipantController extends Controller
         $paidCount = (clone $base)->whereHas('payments', fn ($q) => $q->where('status', 'paid'))->count();
 
         return view('admin.participants.index', [
-            'editions' => Edition::latest('id')->get(),
+            'editions' => $editions,
             'participants' => $participants,
             'roles' => Participant::ROLES,
             'edition_id' => $editionId,

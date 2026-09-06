@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Actions\ConfirmPayment;
 use App\Http\Controllers\Controller;
-use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Support\Fees;
@@ -24,6 +23,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class PaymentController extends Controller
 {
+    use Concerns\ScopesEditionAccess;
+
     public function index(Request $request): View
     {
         $search = trim((string) $request->query('search', ''));
@@ -32,8 +33,10 @@ class PaymentController extends Controller
         $method = (string) $request->query('method', '');
         $from = (string) $request->query('from', '');
         $to = (string) $request->query('to', '');
+        $scoped = $this->scopedEditionIds($request, 'payments');
 
         $base = Payment::query()
+            ->when($scoped !== null, fn ($q) => $q->whereIn('edition_id', $scoped))
             ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId));
 
         $payments = $this->applyFilters(clone $base, $status, $method, $search, $from, $to)
@@ -48,7 +51,7 @@ class PaymentController extends Controller
 
         return view('admin.payments.index', [
             'payments' => $payments,
-            'editions' => Edition::latest('id')->get(),
+            'editions' => $this->accessibleEditions($request, 'payments'),
             'statuses' => Payment::statuses(),
             'methods' => Payment::MANUAL_METHODS,
             'search' => $search,
@@ -95,7 +98,10 @@ class PaymentController extends Controller
     public function export(Request $request): StreamedResponse
     {
         $editionId = (string) $request->query('edition_id', '');
-        $base = Payment::query()->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId));
+        $scoped = $this->scopedEditionIds($request, 'payments');
+        $base = Payment::query()
+            ->when($scoped !== null, fn ($q) => $q->whereIn('edition_id', $scoped))
+            ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId));
 
         $rows = $this->applyFilters(
             $base,
@@ -129,21 +135,24 @@ class PaymentController extends Controller
     }
 
     /** Formulaire d'enregistrement manuel d'un encaissement. */
-    public function create(): View
+    public function create(Request $request): View
     {
-        $defaultEdition = (string) (Edition::where('status', 'open')->latest('id')->value('id')
-            ?? Edition::latest('id')->value('id') ?? '');
+        $editions = $this->accessibleEditions($request, 'payments');
+        $scoped = $this->scopedEditionIds($request, 'payments');
+        $defaultEdition = (string) ($editions->firstWhere('status', 'open')?->id ?? $editions->first()?->id ?? '');
 
-        $participants = Participant::with('edition')->orderBy('last_name')->get()->map(fn ($p) => [
-            'id' => (string) $p->id,
-            'name' => $p->full_name,
-            'email' => $p->email,
-            'edition_id' => (string) $p->edition_id,
-            'amount' => $p->edition ? Fees::resolveAmount($p->edition, $p->title) : null,
-        ])->values();
+        $participants = Participant::with('edition')
+            ->when($scoped !== null, fn ($q) => $q->whereIn('edition_id', $scoped))
+            ->orderBy('last_name')->get()->map(fn ($p) => [
+                'id' => (string) $p->id,
+                'name' => $p->full_name,
+                'email' => $p->email,
+                'edition_id' => (string) $p->edition_id,
+                'amount' => $p->edition ? Fees::resolveAmount($p->edition, $p->title) : null,
+            ])->values();
 
         return view('admin.payments.record', [
-            'editions' => Edition::latest('id')->get(),
+            'editions' => $editions,
             'participants' => $participants,
             'methods' => Payment::MANUAL_METHODS,
             'defaultEdition' => $defaultEdition,

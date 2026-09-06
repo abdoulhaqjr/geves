@@ -28,6 +28,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class SubmissionController extends Controller
 {
+    use Concerns\ScopesEditionAccess;
+
     /** Statuts que l'on peut appliquer depuis la fiche (le dépôt initial exclu). */
     public const ACTIONS = [
         'under_review' => ['Mettre en relecture', 'ghost'],
@@ -43,10 +45,12 @@ class SubmissionController extends Controller
         $editionId = (string) $request->query('edition_id', '');
         $type = (string) $request->query('type', '');
         $track = (string) $request->query('track', '');
+        $scoped = $this->scopedEditionIds($request, 'submissions_list');
 
         $submissions = Submission::query()
             ->with(['edition', 'participant'])
             ->where('revision_of', 0)
+            ->when($scoped !== null, fn ($q) => $q->whereIn('edition_id', $scoped))
             ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId))
             ->when($status !== '', fn ($q) => $q->where('status', $status))
             ->when($type !== '', fn ($q) => $q->where('type', $type))
@@ -67,6 +71,7 @@ class SubmissionController extends Controller
 
         // Indicateurs par statut (sur l'édition filtrée), indépendants des autres filtres.
         $counts = Submission::query()->where('revision_of', 0)
+            ->when($scoped !== null, fn ($q) => $q->whereIn('edition_id', $scoped))
             ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId))
             ->selectRaw('status, count(*) as c')->groupBy('status')->pluck('c', 'status');
         $c = fn (string $s): int => (int) ($counts[$s] ?? 0);
@@ -78,10 +83,11 @@ class SubmissionController extends Controller
             'edition_id' => $editionId,
             'type' => $type,
             'track' => $track,
-            'editions' => Edition::latest('id')->get(),
+            'editions' => $this->accessibleEditions($request, 'submissions_list'),
             'statuses' => Submission::statuses(),
             'statusPills' => Submission::statusPills(),
             'tracks' => Submission::query()->where('revision_of', 0)
+                ->when($scoped !== null, fn ($q) => $q->whereIn('edition_id', $scoped))
                 ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId))
                 ->whereNotNull('track')->where('track', '!=', '')->distinct()->orderBy('track')->pluck('track'),
             'stats' => [
@@ -102,10 +108,12 @@ class SubmissionController extends Controller
         $editionId = (string) $request->query('edition_id', '');
         $type = (string) $request->query('type', '');
         $track = (string) $request->query('track', '');
+        $scoped = $this->scopedEditionIds($request, 'submissions_list');
 
         $rows = Submission::query()
             ->with(['edition', 'participant'])
             ->where('revision_of', 0)
+            ->when($scoped !== null, fn ($q) => $q->whereIn('edition_id', $scoped))
             ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId))
             ->when($status !== '', fn ($q) => $q->where('status', $status))
             ->when($type !== '', fn ($q) => $q->where('type', $type))
@@ -248,7 +256,7 @@ class SubmissionController extends Controller
      */
     public function autoAssign(Request $request, AutoAssignReviewers $engine): View
     {
-        $editions = Edition::latest('id')->get();
+        $editions = $this->accessibleEditions($request, 'submissions_list');
         $editionId = (string) $request->query('edition_id', (string) ($editions->first()->id ?? ''));
         $edition = $editionId !== '' ? $editions->firstWhere('id', (int) $editionId) : null;
 

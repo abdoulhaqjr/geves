@@ -22,10 +22,14 @@ it('redirige les invités du back-office vers la connexion admin', function () {
     $this->get('/admin')->assertRedirect(route('account.login'));
 });
 
-it('refuse l’accès sans la permission manage_colloques', function () {
+it('limite un staff sans affectation aux zones par édition (shell accessible)', function () {
     $user = User::factory()->create();
 
-    $this->actingAs($user, 'web')->get('/admin')->assertForbidden();
+    // Le tableau de bord (shell) reste accessible à tout staff connecté…
+    $this->actingAs($user, 'web')->get('/admin')->assertOk();
+    // …mais aucune zone par édition sans affectation (modèle « pur »).
+    $this->actingAs($user, 'web')->get(route('admin.editions.index'))->assertForbidden();
+    $this->actingAs($user, 'web')->get(route('admin.payments.index'))->assertForbidden();
 });
 
 it('autorise le staff habilité à voir la liste des éditions', function () {

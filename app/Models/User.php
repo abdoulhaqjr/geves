@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Lab404\Impersonate\Models\Impersonate;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -104,6 +106,49 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->isColloqueSuperAdmin()
             || in_array($capability, $this->capabilitiesOnEdition($edition), true);
+    }
+
+    /**
+     * Identifiants des éditions accessibles à l'utilisateur (toutes s'il est
+     * super-admin ; sinon celles où il est affecté — filtrées par capacité si
+     * fournie).
+     *
+     * @return list<int>
+     */
+    public function accessibleEditionIds(?string $capability = null): array
+    {
+        if ($this->isColloqueSuperAdmin()) {
+            return Edition::query()->pluck('id')->map(fn ($id) => (int) $id)->all();
+        }
+
+        $ids = [];
+        foreach (DB::table('edition_user')->where('user_id', $this->id)->get(['edition_id', 'role']) as $row) {
+            if ($capability === null || in_array($capability, StaffRoles::permissionsFor((string) $row->role), true)) {
+                $ids[(int) $row->edition_id] = true;
+            }
+        }
+
+        return array_map('intval', array_keys($ids));
+    }
+
+    /**
+     * Éditions accessibles à l'utilisateur (pour les listes déroulantes du
+     * back-office), filtrées par capacité si fournie.
+     *
+     * @return Collection<int, Edition>
+     */
+    public function accessibleEditions(?string $capability = null): Collection
+    {
+        return Edition::whereIn('id', $this->accessibleEditionIds($capability))->latest('id')->get();
+    }
+
+    /**
+     * L'utilisateur a-t-il la capacité sur AU MOINS une édition (pilote la
+     * visibilité des sections du menu) ? Sans capacité : au moins une affectation.
+     */
+    public function canAnyEdition(?string $capability = null): bool
+    {
+        return $this->isColloqueSuperAdmin() || $this->accessibleEditionIds($capability) !== [];
     }
 
     /** Aucun Mailable dédié côté staff : l'e-mail passe par le canal générique. */

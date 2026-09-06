@@ -24,6 +24,8 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class DocumentHubController extends Controller
 {
+    use Concerns\ScopesEditionAccess;
+
     public function index(Request $request): View
     {
         $edition = $this->currentEdition($request);
@@ -67,7 +69,7 @@ class DocumentHubController extends Controller
         ] : ['participants' => 0, 'accepted' => 0, 'issued' => 0, 'sessions' => 0, 'axes' => 0];
 
         return view('admin.documents.attestations', [
-            'editions' => Edition::latest('id')->get(),
+            'editions' => $this->accessibleEditions($request, 'documents'),
             'edition' => $edition,
             'edition_id' => $edition ? (string) $edition->id : '',
             'types' => Attestation::TYPES,
@@ -358,7 +360,7 @@ class DocumentHubController extends Controller
         ] : ['total' => 0, 'valid' => 0, 'revoked' => 0, 'byType' => collect()];
 
         return view('admin.attestations.index', [
-            'editions' => Edition::latest('id')->get(),
+            'editions' => $this->accessibleEditions($request, 'documents'),
             'edition' => $edition,
             'edition_id' => $edition ? (string) $edition->id : '',
             'types' => Attestation::TYPES,
@@ -456,12 +458,13 @@ class DocumentHubController extends Controller
 
     private function currentEdition(Request $request): ?Edition
     {
+        $editions = $this->accessibleEditions($request, 'documents');
         $id = (string) $request->query('edition_id', '');
+
         if ($id === '') {
-            $id = (string) (Edition::where('status', 'open')->latest('id')->value('id')
-                ?? Edition::latest('id')->value('id') ?? '');
+            return $editions->firstWhere('status', 'open') ?? $editions->first();
         }
 
-        return $id !== '' ? Edition::find($id) : null;
+        return $editions->firstWhere('id', (int) $id);
     }
 }

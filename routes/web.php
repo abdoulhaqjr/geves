@@ -182,15 +182,16 @@ Route::prefix('admin')->group(function () {
         ->middleware('signed')->name('admin.verification.verify');
 
     Route::middleware('auth:web')->group(function () {
-        // Accès de base au back-office (tous les rôles UKC ont `view_dashboard`).
-        Route::get('/', App\Http\Controllers\Admin\DashboardController::class)->middleware('can:view_dashboard')->name('admin.dashboard');
-        Route::get('/notifications', [NotificationController::class, 'index'])->middleware('can:view_dashboard')->name('admin.notifications');
+        // Accès de base au back-office : ouvert à tout membre du staff connecté
+        // (le contenu est ensuite restreint aux éditions accessibles).
+        Route::get('/', App\Http\Controllers\Admin\DashboardController::class)->name('admin.dashboard');
+        Route::get('/notifications', [NotificationController::class, 'index'])->name('admin.notifications');
         Route::post('/deconnexion', AdminLogoutController::class)->name('admin.logout');
 
-        // Éditions : lecture / écriture.
-        Route::get('/editions', [EditionController::class, 'index'])->middleware('can:editions_read')->name('admin.editions.index');
-        Route::get('/editions/{edition}/exporter', [EditionController::class, 'export'])->middleware('can:editions_read')->name('admin.editions.export');
-        Route::middleware('can:editions_write')->group(function () {
+        // Éditions : lecture / écriture (étanchéité par édition).
+        Route::get('/editions', [EditionController::class, 'index'])->middleware('edition.cap:editions_read')->name('admin.editions.index');
+        Route::get('/editions/{edition}/exporter', [EditionController::class, 'export'])->middleware('edition.cap:editions_read')->name('admin.editions.export');
+        Route::middleware('edition.cap:editions_write')->group(function () {
             Route::post('/editions/{edition}/importer', [EditionController::class, 'import'])->name('admin.editions.import');
             Route::post('/editions/{edition}/activer', [EditionController::class, 'activate'])->name('admin.editions.activate');
             Route::delete('/editions/{edition}', [EditionController::class, 'destroy'])->name('admin.editions.destroy');
@@ -211,7 +212,7 @@ Route::prefix('admin')->group(function () {
         });
 
         // Soumissions.
-        Route::middleware('can:submissions_list')->group(function () {
+        Route::middleware('edition.cap:submissions_list')->group(function () {
             Route::get('/soumissions', [App\Http\Controllers\Admin\SubmissionController::class, 'index'])->name('admin.submissions.index');
             Route::get('/soumissions/export/csv', [App\Http\Controllers\Admin\SubmissionController::class, 'export'])->name('admin.submissions.export');
             // Attribution automatique des relecteurs (route statique AVANT le joker {submission}).
@@ -224,7 +225,7 @@ Route::prefix('admin')->group(function () {
         });
 
         // Paiements.
-        Route::middleware('can:payments')->group(function () {
+        Route::middleware('edition.cap:payments')->group(function () {
             Route::get('/paiements', [App\Http\Controllers\Admin\PaymentController::class, 'index'])->name('admin.payments.index');
             Route::get('/paiements/export/csv', [App\Http\Controllers\Admin\PaymentController::class, 'export'])->name('admin.payments.export');
             Route::post('/paiements/{payment}/regler', [App\Http\Controllers\Admin\PaymentController::class, 'markPaid'])->name('admin.payments.mark-paid');
@@ -248,7 +249,7 @@ Route::prefix('admin')->group(function () {
 
         // Participants (l'impersonation est en plus gardée par `manage_colloques`
         // dans le contrôleur).
-        Route::middleware('can:participants')->group(function () {
+        Route::middleware('edition.cap:participants')->group(function () {
             Route::get('/participants', [ParticipantController::class, 'index'])->name('admin.participants.index');
             Route::post('/participants/inviter-payes', [ParticipantController::class, 'inviteBulk'])->name('admin.participants.invite-bulk');
             Route::post('/participants/{participant}/inviter', [ParticipantController::class, 'invite'])->name('admin.participants.invite');
@@ -257,7 +258,7 @@ Route::prefix('admin')->group(function () {
         });
 
         // E-mails.
-        Route::middleware('can:emails')->group(function () {
+        Route::middleware('edition.cap:emails')->group(function () {
             Route::get('/emails', [EmailController::class, 'index'])->name('admin.emails.index');
             Route::post('/emails/envoyer', [EmailController::class, 'send'])->name('admin.emails.send');
             Route::post('/emails/envoyer-dus', [EmailController::class, 'sendDue'])->name('admin.emails.send-due');
@@ -269,8 +270,8 @@ Route::prefix('admin')->group(function () {
             Route::delete('/emails/modeles/{key}', [EmailTemplateController::class, 'destroy'])->name('admin.emails.templates.destroy');
         });
 
-        // Rapports (lecture d'ensemble).
-        Route::middleware('can:view_dashboard')->group(function () {
+        // Rapports (par édition).
+        Route::middleware('edition.cap:view_dashboard')->group(function () {
             Route::get('/rapports', [ReportController::class, 'index'])->name('admin.reports.index');
             Route::post('/rapports/generer', [ReportController::class, 'generate'])->name('admin.reports.generate');
             Route::get('/rapports/{edition}/excel', [ReportController::class, 'xlsx'])->name('admin.reports.xlsx');
@@ -280,7 +281,7 @@ Route::prefix('admin')->group(function () {
         });
 
         // Programme / créneaux (structure de l'édition).
-        Route::middleware('can:editions_read')->group(function () {
+        Route::middleware('edition.cap:editions_read')->group(function () {
             Route::get('/programme', [ProgramController::class, 'sessions'])->name('admin.program.sessions');
             Route::post('/programme/ateliers', [ProgramController::class, 'storeAtelier'])->name('admin.program.ateliers.store');
             Route::put('/programme/ateliers/{atelier}', [ProgramController::class, 'updateAtelier'])->name('admin.program.ateliers.update');
@@ -305,7 +306,7 @@ Route::prefix('admin')->group(function () {
         });
 
         // Documents (attestations, badges, livret, fiches).
-        Route::middleware('can:documents')->group(function () {
+        Route::middleware('edition.cap:documents')->group(function () {
             Route::get('/documents', [DocumentHubController::class, 'index'])->name('admin.documents.attestations');
             Route::get('/attestations', [DocumentHubController::class, 'issued'])->name('admin.attestations.index');
             Route::post('/attestations/emettre', [DocumentHubController::class, 'issueType'])->name('admin.documents.attestations.issue');
@@ -327,7 +328,7 @@ Route::prefix('admin')->group(function () {
         });
 
         // Pointage / scan de badges le jour J.
-        Route::middleware('can:badge_scan')->group(function () {
+        Route::middleware('edition.cap:badge_scan')->group(function () {
             Route::get('/pointage', [BadgeScanController::class, 'page'])->name('admin.badges.scan');
             Route::post('/pointage/rechercher', [BadgeScanController::class, 'lookup'])->name('admin.badges.lookup');
             Route::post('/pointage/{participant}/pointer', [BadgeScanController::class, 'checkIn'])->name('admin.badges.checkin');
@@ -343,8 +344,8 @@ Route::prefix('admin')->group(function () {
         });
 
         // Copilote IA (outil d'aide, décision humaine).
-        Route::get('/assistant-ia', [AiAssistantController::class, 'page'])->middleware('can:view_dashboard')->name('admin.ai');
-        Route::post('/assistant-ia/demander', [AiAssistantController::class, 'ask'])->middleware('can:view_dashboard')->name('admin.ai.ask');
-        Route::post('/assistant-ia/decider', [AiAssistantController::class, 'decide'])->middleware('can:view_dashboard')->name('admin.ai.decide');
+        Route::get('/assistant-ia', [AiAssistantController::class, 'page'])->middleware('edition.cap:view_dashboard')->name('admin.ai');
+        Route::post('/assistant-ia/demander', [AiAssistantController::class, 'ask'])->middleware('edition.cap:view_dashboard')->name('admin.ai.ask');
+        Route::post('/assistant-ia/decider', [AiAssistantController::class, 'decide'])->middleware('edition.cap:view_dashboard')->name('admin.ai.decide');
     });
 });

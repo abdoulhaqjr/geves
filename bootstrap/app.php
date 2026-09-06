@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureEditionAccess;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -17,6 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Les webhooks de paiement sont des appels serveur-à-serveur (pas de CSRF).
         $middleware->validateCsrfTokens(except: ['webhooks/*']);
+
+        // Étanchéité d'accès par édition (staff affecté à un colloque).
+        $middleware->alias(['edition.cap' => EnsureEditionAccess::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Rendu JSON des exceptions pour les appels d'API et tout appel qui

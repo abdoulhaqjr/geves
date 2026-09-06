@@ -20,10 +20,13 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class EditionController extends Controller
 {
+    use Concerns\ScopesEditionAccess;
+
     public function index(Request $request): View
     {
         $search = trim((string) $request->query('search', ''));
         $status = (string) $request->query('status', '');
+        $scoped = $this->scopedEditionIds($request, 'editions_read');
 
         $editions = Edition::query()
             ->with('colloque')
@@ -31,6 +34,7 @@ class EditionController extends Controller
                 'submissions as submissions_count' => fn ($q) => $q->where('revision_of', 0),
                 'participants as participants_count',
             ])
+            ->when($scoped !== null, fn ($q) => $q->whereIn('id', $scoped))
             ->when($search !== '', fn ($q) => $q->where('title', 'like', "%{$search}%"))
             ->when($status !== '', fn ($q) => $q->where('status', $status))
             ->orderByDesc('year')

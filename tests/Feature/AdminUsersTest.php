@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Colloque;
 use App\Models\User;
 use App\Notifications\StaffVerifyEmail;
 use Database\Seeders\RolesAndAdminSeeder;
@@ -114,28 +115,32 @@ it('modifie la matrice d’accès : ajoute et retire des permissions par rôle',
     expect(Role::findByName('administrator', 'web')->hasPermissionTo('manage_colloques'))->toBeTrue();
 });
 
-it('applique réellement les permissions par rôle (accès autorisés / refusés)', function () {
+it('applique l’étanchéité par édition (affectation → accès, modèle pur)', function () {
     usersAdmin(); // seed des rôles + permissions
+    $edition = openEdition();
+    $other = Colloque::create(['name' => 'Colloque C', 'slug' => 'colloque-c'])
+        ->editions()->create(['title' => 'C 2027', 'year' => 2027, 'status' => 'open', 'slug' => 'c-2027']);
 
-    // Comptabilité : tableau de bord + paiements uniquement.
+    // Comptable affecté à $edition : paiements de SON édition uniquement.
     $accountant = User::factory()->create();
-    $accountant->assignRole('accounting');
-    // La sidebar masque les sections interdites (liens absents), montre les permises.
-    $this->actingAs($accountant, 'web')->get(route('admin.dashboard'))
-        ->assertOk()
-        ->assertSee('admin/paiements', false)
-        ->assertDontSee('admin/reglages', false)
-        ->assertDontSee('admin/utilisateurs', false);
-    $this->actingAs($accountant, 'web')->get(route('admin.payments.index'))->assertOk();
-    $this->actingAs($accountant, 'web')->get(route('admin.settings'))->assertForbidden();
-    $this->actingAs($accountant, 'web')->get(route('admin.editions.index'))->assertForbidden();
+    $edition->team()->attach($accountant->id, ['role' => 'accounting']);
+    $this->actingAs($accountant, 'web')->get(route('admin.payments.index', ['edition_id' => $edition->id]))->assertOk();
+    $this->actingAs($accountant, 'web')->get(route('admin.payments.index', ['edition_id' => $other->id]))->assertForbidden();
+    $this->actingAs($accountant, 'web')->get(route('admin.payments.index'))->assertOk(); // liste scopée à ses éditions
+    $this->actingAs($accountant, 'web')->get(route('admin.submissions.index'))->assertForbidden(); // hors de sa fonction
+    $this->actingAs($accountant, 'web')->get(route('admin.settings'))->assertForbidden(); // zone globale
     $this->actingAs($accountant, 'web')->get(route('admin.users.index'))->assertForbidden();
 
-    // Relecteur : tableau de bord + soumissions, mais pas paiements.
-    $reviewer = User::factory()->create();
-    $reviewer->assignRole('reviewer');
-    $this->actingAs($reviewer, 'web')->get(route('admin.submissions.index'))->assertOk();
-    $this->actingAs($reviewer, 'web')->get(route('admin.payments.index'))->assertForbidden();
+    // Secrétariat affecté : soumissions + participants, mais pas paiements.
+    $secretary = User::factory()->create();
+    $edition->team()->attach($secretary->id, ['role' => 'secretariat']);
+    $this->actingAs($secretary, 'web')->get(route('admin.submissions.index', ['edition_id' => $edition->id]))->assertOk();
+    $this->actingAs($secretary, 'web')->get(route('admin.payments.index', ['edition_id' => $edition->id]))->assertForbidden();
+
+    // Staff sans affectation : shell OK, mais aucune zone par édition.
+    $orphan = User::factory()->create();
+    $this->actingAs($orphan, 'web')->get(route('admin.dashboard'))->assertOk();
+    $this->actingAs($orphan, 'web')->get(route('admin.payments.index'))->assertForbidden();
 
     // Administrateur : accès partout (super-capacité).
     $admin = usersAdmin();

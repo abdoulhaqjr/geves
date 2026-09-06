@@ -26,15 +26,17 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class ReportController extends Controller
 {
+    use Concerns\ScopesEditionAccess;
+
     public function index(Request $request): View
     {
+        $editions = $this->accessibleEditions($request, 'view_dashboard');
         $editionId = (string) $request->query('edition_id', '');
         if ($editionId === '') {
-            $editionId = (string) (Edition::where('status', 'open')->latest('id')->value('id')
-                ?? Edition::latest('id')->value('id') ?? '');
+            $editionId = (string) ($editions->firstWhere('status', 'open')?->id ?? $editions->first()?->id ?? '');
         }
 
-        $edition = $editionId !== '' ? Edition::find($editionId) : null;
+        $edition = $editionId !== '' ? $editions->firstWhere('id', (int) $editionId) : null;
         $report = $edition ? new EditionReport($edition) : null;
 
         // Historique des exports IA (persisté), filtré sur l'édition courante.
@@ -45,7 +47,7 @@ class ReportController extends Controller
             ->all();
 
         return view('admin.reports.index', [
-            'editions' => Edition::latest('id')->get(),
+            'editions' => $editions,
             'edition' => $edition,
             'edition_id' => $editionId,
             'summary' => $report?->summary(),

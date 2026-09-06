@@ -24,12 +24,14 @@ use Illuminate\View\View;
  */
 class EmailController extends Controller
 {
+    use Concerns\ScopesEditionAccess;
+
     public function index(Request $request): View
     {
+        $editions = $this->accessibleEditions($request, 'emails');
         $editionId = (string) $request->query('edition_id', '');
         if ($editionId === '') {
-            $editionId = (string) (Edition::where('status', 'open')->latest('id')->value('id')
-                ?? Edition::latest('id')->value('id') ?? '');
+            $editionId = (string) ($editions->firstWhere('status', 'open')?->id ?? $editions->first()?->id ?? '');
         }
         $status = (string) $request->query('status', '');
 
@@ -121,7 +123,7 @@ class EmailController extends Controller
             ->values();
 
         return view('admin.emails.index', [
-            'editions' => Edition::latest('id')->get(),
+            'editions' => $editions,
             'audiences' => EmailAudience::AUDIENCES,
             'edition_id' => $editionId,
             'status' => $status,
