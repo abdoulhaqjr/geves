@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\Plagiarism\GoogleSearchProvider;
 use App\Support\Plagiarism\PlagiarismRegistry;
 use App\Support\Plagiarism\PrepostseoProvider;
 use App\Support\Settings;
@@ -60,6 +61,34 @@ it('lance la vérification et met le résultat en cache sur la soumission', func
         ->assertRedirect();
 
     expect((float) $submission->fresh()->meta['web_plagiarism']['plagPercent'])->toBe(37.0);
+});
+
+it('Google Recherche calcule un score de présence web et remonte les sources', function () {
+    Settings::set('plagiarism.google_key', 'k');
+    Settings::set('plagiarism.google_cx', 'cx');
+    Http::fake([
+        '*googleapis.com/customsearch*' => Http::response([
+            'items' => [['link' => 'https://exemple.org/source', 'title' => 'T', 'snippet' => 'S']],
+        ], 200),
+    ]);
+
+    $text = 'Cette étude analyse en profondeur les déterminants socio économiques de la réussite scolaire au Sahel. '
+        .'Les résultats montrent une corrélation forte entre accompagnement familial et performance académique des élèves.';
+
+    $result = (new GoogleSearchProvider)->check($text);
+
+    expect($result['provider'])->toBe('google')
+        ->and($result['plagPercent'])->toBe(100.0)
+        ->and($result['sources'][0]['link'])->toBe('https://exemple.org/source');
+});
+
+it('le registre active Google si clé + cx sont présents', function () {
+    Settings::set('plagiarism.provider', 'google');
+    expect((new PlagiarismRegistry)->active())->toBeNull(); // clé/cx manquants
+
+    Settings::set('plagiarism.google_key', 'k');
+    Settings::set('plagiarism.google_cx', 'cx');
+    expect((new PlagiarismRegistry)->active())->not->toBeNull();
 });
 
 it('refuse la vérification si aucun fournisseur n’est configuré', function () {
