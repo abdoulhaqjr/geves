@@ -82,6 +82,7 @@ Route::post('/session/{session}/egress/stop', [EgressController::class, 'stop'])
 
 // Portail relecteur (accès par jeton, sans compte).
 Route::get('/relecture/{token}', [ReviewerController::class, 'portal'])->name('reviewer.portal');
+Route::post('/relecture/{token}/candidatures', [ReviewerController::class, 'saveBids'])->name('reviewer.bids.save');
 Route::get('/relecture/{token}/{review}', [ReviewerController::class, 'evaluate'])->name('reviewer.evaluate');
 Route::post('/relecture/{token}/{review}', [ReviewerController::class, 'submitEvaluation'])->name('reviewer.evaluate.submit');
 

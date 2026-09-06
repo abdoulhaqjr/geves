@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Models\ReviewerBid;
+
 /**
  * Moteur d'attribution automatique des relecteurs (déterministe, sans I/O donc
  * testable en isolation). À partir des soumissions à couvrir, des relecteurs
@@ -20,6 +22,13 @@ class ReviewerAssignmentPlanner
 
     private const SCORE_GENERALIST = 20;
 
+    private const SCORE_VOLUNTEER = 60;
+
+    /** Valeurs de candidature (miroir de {@see ReviewerBid}, sans couplage). */
+    private const BID_INTERESTED = 'interested';
+
+    private const BID_UNAVAILABLE = 'unavailable';
+
     private const PENALTY_COI_MEDIUM = 40;
 
     private const PENALTY_COI_LOW = 5;
@@ -31,9 +40,10 @@ class ReviewerAssignmentPlanner
      * @param  list<array{id:int, tracks:list<string>, load:int}>  $reviewers
      * @param  array<int, array<int, string|null>>  $coi  [submissionId][reviewerId] => niveau ConflictOfInterest ou null
      * @param  int  $maxLoad  charge maximale par relecteur (≤ 0 = illimitée)
+     * @param  array<int, array<int, array{interest?:string, conflict?:bool}>>  $bids  [submissionId][reviewerId] => candidature du relecteur
      * @return list<array{submission_id:int, reviewer_id:int, reason:string, coi:string|null, axis_match:bool}>
      */
-    public function plan(array $submissions, array $reviewers, array $coi, int $maxLoad): array
+    public function plan(array $submissions, array $reviewers, array $coi, int $maxLoad, array $bids = []): array
     {
         $cap = $maxLoad > 0 ? $maxLoad : PHP_INT_MAX;
 
@@ -69,12 +79,25 @@ class ReviewerAssignmentPlanner
                     continue; // conflit d'intérêt élevé : jamais proposé
                 }
 
+                $bid = $bids[$sub['id']][$rid] ?? null;
+                if (($bid['conflict'] ?? false) === true) {
+                    continue; // conflit auto-déclaré par le relecteur
+                }
+                $interest = $bid['interest'] ?? null;
+                if ($interest === self::BID_UNAVAILABLE) {
+                    continue; // le relecteur s'est déclaré indisponible
+                }
+                $volunteer = $interest === self::BID_INTERESTED;
+
                 $axisMatch = $sub['track'] !== '' && in_array($sub['track'], $tracksById[$rid], true);
                 $score = 0;
                 if ($axisMatch) {
                     $score += self::SCORE_AXIS_MATCH;
                 } elseif ($tracksById[$rid] === []) {
                     $score += self::SCORE_GENERALIST; // généraliste (aucune expertise déclarée)
+                }
+                if ($volunteer) {
+                    $score += self::SCORE_VOLUNTEER; // candidat volontaire
                 }
                 if ($level === ConflictOfInterest::MEDIUM) {
                     $score -= self::PENALTY_COI_MEDIUM;
@@ -83,7 +106,7 @@ class ReviewerAssignmentPlanner
                 }
                 $score -= $load[$rid] * self::PENALTY_PER_LOAD;
 
-                $ranked[] = ['id' => $rid, 'score' => $score, 'load' => $load[$rid], 'axis_match' => $axisMatch, 'coi' => $level];
+                $ranked[] = ['id' => $rid, 'score' => $score, 'load' => $load[$rid], 'axis_match' => $axisMatch, 'coi' => $level, 'volunteer' => $volunteer];
             }
 
             // Tri déterministe : score desc, puis charge asc, puis id asc.
@@ -95,7 +118,7 @@ class ReviewerAssignmentPlanner
                 $proposals[] = [
                     'submission_id' => $sub['id'],
                     'reviewer_id' => $pick['id'],
-                    'reason' => $this->reason($pick['axis_match'], $tracksById[$pick['id']] === []),
+                    'reason' => $this->reason($pick['axis_match'], $tracksById[$pick['id']] === [], $pick['volunteer']),
                     'coi' => $pick['coi'],
                     'axis_match' => $pick['axis_match'],
                 ];
@@ -106,12 +129,12 @@ class ReviewerAssignmentPlanner
         return $proposals;
     }
 
-    private function reason(bool $axisMatch, bool $generalist): string
+    private function reason(bool $axisMatch, bool $generalist, bool $volunteer = false): string
     {
-        if ($axisMatch) {
-            return 'Expertise sur l’axe';
-        }
+        $base = $axisMatch
+            ? 'Expertise sur l’axe'
+            : ($generalist ? 'Relecteur généraliste' : 'Hors axe (équilibrage)');
 
-        return $generalist ? 'Relecteur généraliste' : 'Hors axe (équilibrage)';
+        return $volunteer ? $base.' · volontaire' : $base;
     }
 }

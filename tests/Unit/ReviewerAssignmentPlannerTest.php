@@ -9,9 +9,9 @@ use App\Support\ReviewerAssignmentPlanner;
  * @param  array<int, array<int, string|null>>  $coi
  * @return list<array{submission_id:int, reviewer_id:int, reason:string, coi:string|null, axis_match:bool}>
  */
-function plan(array $subs, array $reviewers, array $coi = [], int $maxLoad = 0): array
+function plan(array $subs, array $reviewers, array $coi = [], int $maxLoad = 0, array $bids = []): array
 {
-    return (new ReviewerAssignmentPlanner)->plan($subs, $reviewers, $coi, $maxLoad);
+    return (new ReviewerAssignmentPlanner)->plan($subs, $reviewers, $coi, $maxLoad, $bids);
 }
 
 it('privilégie le relecteur dont l’expertise couvre l’axe', function () {
@@ -98,6 +98,52 @@ it('affecte le nombre de relecteurs demandé par soumission', function () {
     expect($proposals)->toHaveCount(2);
     // Les deux experts de l'axe passent avant le hors-axe.
     expect(collect($proposals)->pluck('reviewer_id')->sort()->values()->all())->toBe([10, 11]);
+});
+
+it('privilégie un relecteur volontaire (candidature « intéressé »)', function () {
+    $proposals = plan(
+        [['id' => 1, 'track' => 'IA', 'needed' => 1]],
+        [
+            ['id' => 10, 'tracks' => [], 'load' => 0],
+            ['id' => 11, 'tracks' => [], 'load' => 0],
+        ],
+        [],
+        0,
+        [1 => [11 => ['interest' => 'interested']]],
+    );
+
+    expect($proposals[0]['reviewer_id'])->toBe(11)
+        ->and($proposals[0]['reason'])->toContain('volontaire');
+});
+
+it('ne propose pas un relecteur qui s’est déclaré indisponible', function () {
+    $proposals = plan(
+        [['id' => 1, 'track' => 'IA', 'needed' => 1]],
+        [
+            ['id' => 10, 'tracks' => ['IA'], 'load' => 0],
+            ['id' => 11, 'tracks' => ['IA'], 'load' => 0],
+        ],
+        [],
+        0,
+        [1 => [10 => ['interest' => 'unavailable']]],
+    );
+
+    expect($proposals)->toHaveCount(1)->and($proposals[0]['reviewer_id'])->toBe(11);
+});
+
+it('exclut un relecteur ayant auto-déclaré un conflit', function () {
+    $proposals = plan(
+        [['id' => 1, 'track' => 'IA', 'needed' => 1]],
+        [
+            ['id' => 10, 'tracks' => ['IA'], 'load' => 0],
+            ['id' => 11, 'tracks' => ['IA'], 'load' => 0],
+        ],
+        [],
+        0,
+        [1 => [10 => ['conflict' => true]]],
+    );
+
+    expect($proposals)->toHaveCount(1)->and($proposals[0]['reviewer_id'])->toBe(11);
 });
 
 it('ignore les soumissions déjà couvertes (needed = 0)', function () {

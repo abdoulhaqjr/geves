@@ -57,5 +57,51 @@
                 </div>
             @endif
         </div>
+
+        {{-- ===== Appel à candidatures (bidding) ===== --}}
+        @if ($biddable->isNotEmpty())
+            <div style="margin-top:32px;">
+                <h2 style="font-size:1.15rem;font-weight:800;color:var(--ukc-text);">Appel à candidatures</h2>
+                <p style="color:var(--ukc-muted);font-size:14px;margin:4px 0 16px;">
+                    Indiquez les communications que vous souhaitez évaluer. Vos préférences aident le comité à répartir les relectures.
+                    Signalez tout conflit d’intérêt (auteur que vous pensez reconnaître, même laboratoire…).
+                </p>
+
+                <form method="POST" action="{{ route('reviewer.bids.save', $reviewer->access_token) }}">
+                    @csrf
+                    <div style="display:flex;flex-direction:column;gap:12px;">
+                        @foreach ($biddable as $sub)
+                            @php($bid = $bids[$sub->id] ?? null)
+                            <div class="ukc-card" style="padding:16px 18px;">
+                                <div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;">
+                                    <span style="font-family:ui-monospace,monospace;font-weight:700;font-size:12.5px;color:var(--ukc-blue);">{{ $sub->ref_code }}</span>
+                                    @if ($sub->track)<span class="ukc-pill ukc-pill--info">{{ \Illuminate\Support\Str::limit($sub->track, 28) }}</span>@endif
+                                </div>
+                                <div style="font-weight:700;color:var(--ukc-text);margin:6px 0 4px;line-height:1.35;">{{ $sub->title }}</div>
+                                <p style="color:var(--ukc-muted);font-size:13.5px;line-height:1.55;margin:0 0 12px;">{{ \Illuminate\Support\Str::limit(strip_tags((string) $sub->abstract), 260) }}</p>
+
+                                <div style="display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;">
+                                    @foreach ($interests as $key => $label)
+                                        <label style="display:inline-flex;align-items:center;gap:6px;font-size:13.5px;cursor:pointer;">
+                                            <input type="radio" name="bids[{{ $sub->id }}][interest]" value="{{ $key }}"
+                                                @checked(($bid?->interest ?? 'neutral') === $key)>
+                                            {{ $label }}
+                                        </label>
+                                    @endforeach
+                                    <span style="flex:1;"></span>
+                                    <label style="display:inline-flex;align-items:center;gap:6px;font-size:13.5px;cursor:pointer;color:#b4231c;">
+                                        <input type="checkbox" name="bids[{{ $sub->id }}][conflict]" value="1" @checked($bid?->conflict)>
+                                        Conflit d’intérêt
+                                    </label>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                    <div style="margin-top:16px;text-align:right;">
+                        <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer mes préférences</button>
+                    </div>
+                </form>
+            </div>
+        @endif
     </div>
 </x-layouts.app>

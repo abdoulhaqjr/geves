@@ -6,6 +6,7 @@ use App\Mail\ReviewerInvitationMail;
 use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\Review;
+use App\Models\ReviewerBid;
 use App\Models\Submission;
 use App\Support\ConflictOfInterest;
 use App\Support\Notifier;
@@ -76,7 +77,16 @@ class AutoAssignReviewers
             }
         }
 
-        $plan = $this->planner->plan($subDto, $reviewerDto, $coi, $maxLoad);
+        // Candidatures des relecteurs (préférences + conflits auto-déclarés).
+        $bids = [];
+        foreach (ReviewerBid::whereIn('submission_id', $submissions->pluck('id'))->get() as $bid) {
+            $bids[$bid->submission_id][$bid->reviewer_id] = [
+                'interest' => (string) $bid->interest,
+                'conflict' => (bool) $bid->conflict,
+            ];
+        }
+
+        $plan = $this->planner->plan($subDto, $reviewerDto, $coi, $maxLoad, $bids);
 
         // Enrichissement pour l'affichage.
         $reviewersById = $reviewers->keyBy('id');

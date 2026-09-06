@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Reviewer;
 use App\Http\Controllers\Controller;
 use App\Models\Participant;
 use App\Models\Review;
+use App\Models\ReviewerBid;
+use App\Models\Submission;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -20,11 +22,57 @@ class ReviewerController extends Controller
     {
         $reviewer = $this->reviewer($token);
 
+        // Appel à candidatures : soumissions de l'édition du relecteur, en aveugle,
+        // encore ouvertes et non déjà confiées à ce relecteur.
+        $biddable = Submission::where('edition_id', $reviewer->edition_id)
+            ->where('revision_of', 0)
+            ->whereIn('status', ['submitted', 'under_review'])
+            ->whereDoesntHave('reviews', fn ($q) => $q->where('reviewer_id', $reviewer->id))
+            ->orderBy('id')
+            ->get(['id', 'ref_code', 'title', 'abstract', 'track']);
+
+        $bids = ReviewerBid::where('reviewer_id', $reviewer->id)
+            ->get()->keyBy('submission_id');
+
         return view('reviewer.portal', [
             'reviewer' => $reviewer,
             'reviews' => Review::where('reviewer_id', $reviewer->id)
                 ->with('submission.edition')->latest('id')->get(),
+            'biddable' => $biddable,
+            'bids' => $bids,
+            'interests' => ReviewerBid::INTERESTS,
         ]);
+    }
+
+    /** Enregistre les candidatures (préférences + conflits) du relecteur. */
+    public function saveBids(Request $request, string $token): RedirectResponse
+    {
+        $reviewer = $this->reviewer($token);
+
+        $data = $request->validate([
+            'bids' => ['array'],
+            'bids.*.interest' => ['nullable', 'in:'.implode(',', array_keys(ReviewerBid::INTERESTS))],
+            'bids.*.conflict' => ['nullable', 'boolean'],
+        ]);
+
+        // N'accepte que les soumissions de l'édition du relecteur (garde-fou).
+        $allowed = Submission::where('edition_id', $reviewer->edition_id)
+            ->where('revision_of', 0)->pluck('id')->flip();
+
+        foreach ($data['bids'] ?? [] as $submissionId => $bid) {
+            if (! $allowed->has((int) $submissionId)) {
+                continue;
+            }
+            ReviewerBid::updateOrCreate(
+                ['submission_id' => (int) $submissionId, 'reviewer_id' => $reviewer->id],
+                [
+                    'interest' => $bid['interest'] ?? ReviewerBid::NEUTRAL,
+                    'conflict' => (bool) ($bid['conflict'] ?? false),
+                ],
+            );
+        }
+
+        return back()->with('ukc_status', 'Vos préférences ont été enregistrées. Merci !');
     }
 
     public function evaluate(string $token, Review $review): View
