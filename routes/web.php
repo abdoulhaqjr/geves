@@ -201,6 +201,8 @@ Route::prefix('admin')->group(function () {
             Route::get('/editions/{edition}/modifier', [EditionFormController::class, 'edit'])->name('admin.editions.edit');
             Route::put('/editions/{edition}/modifier', [EditionFormController::class, 'update'])->name('admin.editions.update');
             Route::post('/editions/{edition}/relecteurs/expertise', [EditionFormController::class, 'saveReviewerExpertise'])->name('admin.editions.reviewers.expertise');
+            Route::post('/editions/{edition}/equipe', [EditionFormController::class, 'attachTeamMember'])->name('admin.editions.team.attach');
+            Route::delete('/editions/{edition}/equipe', [EditionFormController::class, 'detachTeamMember'])->name('admin.editions.team.detach');
             Route::get('/editions/{edition}/formulaire', [SubmissionFormController::class, 'edit'])->name('admin.editions.form');
             Route::put('/editions/{edition}/formulaire', [SubmissionFormController::class, 'update'])->name('admin.editions.form.update');
             Route::get('/editions/{edition}/documents', [EditionMediaController::class, 'index'])->name('admin.editions.documents');

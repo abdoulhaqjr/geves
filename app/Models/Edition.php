@@ -6,6 +6,7 @@ use App\Enums\EditionPhase;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
@@ -51,6 +52,16 @@ class Edition extends Model
     public function participants(): HasMany
     {
         return $this->hasMany(Participant::class);
+    }
+
+    /**
+     * Équipe staff affectée à cette édition (fonction dans le pivot).
+     *
+     * @return BelongsToMany<User, $this>
+     */
+    public function team(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'edition_user')->withPivot('role')->withTimestamps();
     }
 
     /** @return HasMany<Submission, $this> */

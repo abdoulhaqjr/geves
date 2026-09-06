@@ -11,10 +11,13 @@ use App\Models\Colloque;
 use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\Review;
+use App\Models\User;
+use App\Support\StaffRoles;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 /**
@@ -164,7 +167,76 @@ class EditionFormController extends Controller
             'aiAvailable' => app(AiManager::class)->available() !== [],
             'reviewers' => $this->reviewersFor($edition),
             'reviewerAxes' => $this->reviewerAxes($edition),
+            'team' => $this->teamFor($edition),
+            'assignableUsers' => $edition ? User::orderBy('name')->get(['id', 'name', 'email']) : collect(),
+            'teamRoles' => StaffRoles::teamRoles(),
         ]);
+    }
+
+    /**
+     * Équipe staff de l'édition (une entrée par fonction) pour l'onglet « Équipe ».
+     *
+     * @return Collection<int, array{user_id:int, name:string, email:string, role:string, role_label:string, pill:string}>
+     */
+    private function teamFor(?Edition $edition): Collection
+    {
+        if (! $edition) {
+            return collect();
+        }
+
+        return DB::table('edition_user')
+            ->join('users', 'users.id', '=', 'edition_user.user_id')
+            ->where('edition_user.edition_id', $edition->id)
+            ->orderBy('users.name')
+            ->get(['users.id as user_id', 'users.name', 'users.email', 'edition_user.role'])
+            ->map(fn ($r) => [
+                'user_id' => (int) $r->user_id,
+                'name' => (string) $r->name,
+                'email' => (string) $r->email,
+                'role' => (string) $r->role,
+                'role_label' => StaffRoles::label((string) $r->role),
+                'pill' => StaffRoles::pill((string) $r->role),
+            ])->values();
+    }
+
+    /** Ajoute un membre du staff à l'équipe de l'édition avec une fonction. */
+    public function attachTeamMember(Request $request, Edition $edition): RedirectResponse
+    {
+        $data = $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'role' => ['required', 'string'],
+        ]);
+
+        abort_unless(StaffRoles::isTeamRole($data['role']), 422);
+
+        $exists = DB::table('edition_user')
+            ->where('edition_id', $edition->id)->where('user_id', $data['user_id'])->where('role', $data['role'])
+            ->exists();
+
+        if (! $exists) {
+            $edition->team()->attach($data['user_id'], ['role' => $data['role']]);
+        }
+
+        return redirect()->route('admin.editions.edit', $edition)
+            ->with('ukc_status', 'Membre ajouté à l’équipe.')
+            ->with('edition_tab', 'team');
+    }
+
+    /** Retire une fonction d'un membre du staff sur l'édition. */
+    public function detachTeamMember(Request $request, Edition $edition): RedirectResponse
+    {
+        $data = $request->validate([
+            'user_id' => ['required', 'integer'],
+            'role' => ['required', 'string'],
+        ]);
+
+        DB::table('edition_user')
+            ->where('edition_id', $edition->id)->where('user_id', $data['user_id'])->where('role', $data['role'])
+            ->delete();
+
+        return redirect()->route('admin.editions.edit', $edition)
+            ->with('ukc_status', 'Membre retiré de l’équipe.')
+            ->with('edition_tab', 'team');
     }
 
     /**

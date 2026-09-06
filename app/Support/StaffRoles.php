@@ -107,4 +107,36 @@ class StaffRoles
     {
         return array_map(fn ($r) => $r['label'], self::ROLES);
     }
+
+    /**
+     * Fonctions assignables à une équipe d'édition (staff ↔ édition). On exclut :
+     *  - `administrator` : capacité globale (transverse à tous les colloques) ;
+     *  - `reviewer` : la relecture scientifique passe par le Participant relecteur
+     *    (par édition, portail à jeton) — pas par un rôle staff global.
+     *
+     * @return array<string, string> nom => libellé
+     */
+    public static function teamRoles(): array
+    {
+        return collect(self::ROLES)
+            ->except(['administrator', 'reviewer'])
+            ->map(fn ($r) => $r['label'])
+            ->all();
+    }
+
+    /** Vrai si la fonction peut être affectée à une équipe d'édition. */
+    public static function isTeamRole(string $role): bool
+    {
+        return array_key_exists($role, self::teamRoles());
+    }
+
+    /**
+     * Permissions accordées par une fonction (vide si inconnue).
+     *
+     * @return list<string>
+     */
+    public static function permissionsFor(string $role): array
+    {
+        return self::ROLES[$role]['permissions'] ?? [];
+    }
 }

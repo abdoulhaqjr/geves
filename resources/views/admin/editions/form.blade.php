@@ -61,6 +61,7 @@
                     <button type="button" @click="tab='submissions'" :class="{ active: tab==='submissions' }">Soumissions &amp; tarifs</button>
                     <button type="button" @click="tab='committees'" :class="{ active: tab==='committees' }">Comités</button>
                     @if ($edition)<button type="button" @click="tab='reviewers'" :class="{ active: tab==='reviewers' }">Relecteurs</button>@endif
+                    @if ($edition)<button type="button" @click="tab='team'" :class="{ active: tab==='team' }">Équipe</button>@endif
                     <button type="button" @click="tab='partners'" :class="{ active: tab==='partners' }">Partenaires</button>
                     <button type="button" @click="tab='appearance'" :class="{ active: tab==='appearance' }">Apparence</button>
                     @if ($edition)<button type="button" @click="tab='options'" :class="{ active: tab==='options' }">Options</button>@endif
@@ -615,6 +616,63 @@
                                         <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer les expertises</button>
                                     </div>
                                 </form>
+                            @endif
+                        </div>
+                    </div>
+
+                    {{-- ===== ÉQUIPE (staff affecté à CETTE édition) ===== --}}
+                    <div class="ukc-panel" :class="{ active: tab==='team' }">
+                        <div class="ukc-card">
+                            <h2>Équipe du colloque</h2>
+                            <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 12px;">
+                                Affectez le personnel à <strong>cette édition</strong> avec une fonction (secrétariat, comptabilité, accueil…).
+                                Chaque colloque a sa propre équipe. La relecture scientifique se gère dans l’onglet <strong>Relecteurs</strong>.
+                            </p>
+
+                            <form method="POST" action="{{ route('admin.editions.team.attach', $edition) }}" class="team-add">
+                                @csrf
+                                <select name="user_id" required>
+                                    <option value="">— Choisir un membre du staff —</option>
+                                    @foreach ($assignableUsers as $u)
+                                        <option value="{{ $u->id }}">{{ $u->name }} · {{ $u->email }}</option>
+                                    @endforeach
+                                </select>
+                                <select name="role" required>
+                                    <option value="">— Fonction —</option>
+                                    @foreach ($teamRoles as $key => $label)
+                                        <option value="{{ $key }}">{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                                <button type="submit" class="ukc-btn ukc-btn--blue">Ajouter</button>
+                            </form>
+
+                            @if ($team->isEmpty())
+                                <div class="ukc-empty" style="padding:24px 0;">
+                                    <p style="margin:0;">Aucun membre affecté à cette édition pour l’instant.</p>
+                                </div>
+                            @else
+                                <div class="ukc-table-wrap" style="margin-top:16px;">
+                                    <table class="ukc-table">
+                                        <thead><tr><th>Membre</th><th>Fonction</th><th style="text-align:right;">Action</th></tr></thead>
+                                        <tbody>
+                                            @foreach ($team as $m)
+                                                <tr>
+                                                    <td><strong>{{ $m['name'] }}</strong><div style="font-size:12px;color:var(--ukc-muted);">{{ $m['email'] }}</div></td>
+                                                    <td><span class="ukc-pill ukc-pill--{{ $m['pill'] }}">{{ $m['role_label'] }}</span></td>
+                                                    <td style="text-align:right;">
+                                                        <form method="POST" action="{{ route('admin.editions.team.detach', $edition) }}"
+                                                              onsubmit="return confirm('Retirer {{ $m['name'] }} ({{ $m['role_label'] }}) de cette édition ?')" style="display:inline;">
+                                                            @csrf @method('DELETE')
+                                                            <input type="hidden" name="user_id" value="{{ $m['user_id'] }}">
+                                                            <input type="hidden" name="role" value="{{ $m['role'] }}">
+                                                            <button type="submit" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Retirer</button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
                             @endif
                         </div>
                     </div>
