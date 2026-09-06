@@ -230,11 +230,14 @@ class SubmissionController extends Controller
             $result = $provider->check((string) $submission->abstract);
         } catch (RequestException $e) {
             $status = $e->response->status();
-            $apiMsg = trim((string) ($e->response->json('message') ?? ''));
+            // Message d'API (Prepostseo : « message » ; Google : « error.message » imbriqué).
+            $apiMsg = trim((string) ($e->response->json('message') ?? $e->response->json('error.message') ?? ''));
 
-            return back()->with('ukc_error', in_array($status, [401, 403], true)
-                ? 'Clé API '.$provider->label().' refusée'.($apiMsg !== '' ? ' ('.$apiMsg.')' : '').'. Vérifiez-la dans Réglages · Intégrations.'
-                : 'Service anti-plagiat indisponible (code '.$status.'). Réessayez plus tard.');
+            return back()->with('ukc_error', match (true) {
+                $status === 429 => 'Quota du fournisseur anti-plagiat atteint. Réessayez plus tard.',
+                in_array($status, [401, 403], true) => 'Accès '.$provider->label().' refusé'.($apiMsg !== '' ? ' — '.$apiMsg : '').'. Vérifiez la configuration dans Réglages · Intégrations.',
+                default => 'Service anti-plagiat indisponible (code '.$status.'). Réessayez plus tard.',
+            });
         } catch (\Throwable $e) {
             report($e);
 
