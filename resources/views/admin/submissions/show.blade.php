@@ -98,6 +98,42 @@
                     </div>
                 @endif
 
+                {{-- Anti-plagiat web (couche 2, à la demande) --}}
+                @if ($webPlagProvider || $webPlag)
+                    <div class="ukc-card">
+                        <h2><span><x-ukc.icon name="globe" :size="18" /> Anti-plagiat web</span></h2>
+                        @if ($webPlag)
+                            @php($pp = (int) round($webPlag['plagPercent'] ?? 0))
+                            @php($col = $pp >= 30 ? '#b4231c' : ($pp >= 15 ? '#8a5a00' : 'var(--ukc-green)'))
+                            <div style="display:flex;align-items:baseline;gap:14px;">
+                                <span style="font-size:1.6rem;font-weight:800;color:{{ $col }};">{{ $pp }}%</span>
+                                <span style="color:var(--ukc-muted);font-size:13px;">de similarité web · {{ (int) round($webPlag['uniquePercent'] ?? 0) }}% unique · via {{ $webPlag['provider'] ?? 'externe' }}</span>
+                            </div>
+                            @if (! empty($webPlag['sources']))
+                                <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px;">
+                                    @foreach ($webPlag['sources'] as $src)
+                                        <div style="display:flex;gap:10px;font-size:13px;align-items:baseline;">
+                                            <span style="font-weight:700;min-width:44px;color:var(--ukc-muted);">{{ (int) round($src['percent'] ?? 0) }}%</span>
+                                            <a href="{{ $src['link'] }}" target="_blank" rel="noopener" style="color:var(--ukc-blue);word-break:break-all;">{{ \Illuminate\Support\Str::limit($src['link'], 80) }}</a>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
+                            <div style="font-size:11.5px;color:var(--ukc-light);margin-top:10px;">Dernière vérification : {{ \Illuminate\Support\Carbon::parse($webPlag['checked_at'])->format('d/m/Y H:i') }}</div>
+                        @else
+                            <p style="color:var(--ukc-muted);font-size:13px;margin:-4px 0 0;">
+                                Vérifie le résumé contre le web via <strong>{{ $webPlagProvider->label() }}</strong> — à la demande (consomme votre quota).
+                            </p>
+                        @endif
+                        @if ($webPlagProvider)
+                            <form method="POST" action="{{ route('admin.submissions.plagiarism', $s->id) }}" style="margin-top:12px;">
+                                @csrf
+                                <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm">{{ $webPlag ? 'Relancer la vérification' : 'Vérifier le plagiat (web)' }}</button>
+                            </form>
+                        @endif
+                    </div>
+                @endif
+
                 {{-- Fichiers joints --}}
                 @if ($s->file_url)
                     @php($ext = strtoupper(pathinfo(parse_url($s->file_url, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION) ?: 'FICH'))

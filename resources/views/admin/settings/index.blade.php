@@ -317,6 +317,27 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="ukc-card">
+                    <h2><span><x-ukc.icon name="shield" :size="20" /> Anti-plagiat (vérification web)</span></h2>
+                    <p class="desc">
+                        Complément à la <strong>similarité interne</strong> (toujours active, gratuite) : une vérification
+                        contre le web via un fournisseur externe, lancée à la demande depuis la fiche d’une soumission.
+                        « Aucun » désactive la vérification web.
+                    </p>
+                    <div class="ukc-field" style="max-width:360px;">
+                        <label for="plagiarism_provider">Fournisseur</label>
+                        <select id="plagiarism_provider" name="plagiarism_provider">
+                            <option value="none" @selected($v('plagiarism_provider') === 'none' || $v('plagiarism_provider') === '')>Aucun (similarité interne seule)</option>
+                            <option value="prepostseo" @selected($v('plagiarism_provider') === 'prepostseo')>Prepostseo</option>
+                        </select>
+                        @error('plagiarism_provider') <span class="error">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="ukc-field" style="max-width:480px;">
+                        <label for="plagiarism_prepostseo_key">Clé API Prepostseo <span class="hint">(2 500 mots max/vérif, quota selon votre offre)</span></label>
+                        <input type="password" id="plagiarism_prepostseo_key" name="plagiarism_prepostseo_key" value="{{ $v('plagiarism_prepostseo_key') }}" autocomplete="new-password" placeholder="clé fournie par prepostseo.com">
+                    </div>
+                </div>
             </div>
 
             <div class="ukc-form-actions" style="border-top:none;padding-top:0;margin-top:4px;">

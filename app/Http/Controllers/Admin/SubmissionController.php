@@ -13,6 +13,7 @@ use App\Models\Review;
 use App\Models\Submission;
 use App\Support\ConflictOfInterest;
 use App\Support\Notifier;
+use App\Support\Plagiarism\PlagiarismRegistry;
 use App\Support\SimilarityChecker;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -153,7 +154,7 @@ class SubmissionController extends Controller
         }, 'soumissions-'.now()->format('Ymd-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
-    public function show(Request $request, Submission $submission, SimilarityChecker $similarity): View
+    public function show(Request $request, Submission $submission, SimilarityChecker $similarity, PlagiarismRegistry $plagiarism): View
     {
         $submission->load(['edition', 'participant']);
 
@@ -211,7 +212,32 @@ class SubmissionController extends Controller
             'coiByReview' => $coiByReview,
             'coiByReviewer' => $coiByReviewer,
             'similar' => $similar,
+            'webPlagProvider' => $plagiarism->active(),
+            'webPlag' => $submission->meta['web_plagiarism'] ?? null,
         ]);
+    }
+
+    /** Lance une vérification anti-plagiat web (à la demande) et met le résultat en cache. */
+    public function checkPlagiarism(Submission $submission, PlagiarismRegistry $plagiarism): RedirectResponse
+    {
+        $provider = $plagiarism->active();
+        if ($provider === null) {
+            return back()->with('ukc_error', 'Aucun fournisseur anti-plagiat web n’est configuré (Réglages · Intégrations).');
+        }
+
+        try {
+            $result = $provider->check((string) $submission->abstract);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('ukc_error', 'Vérification anti-plagiat indisponible pour le moment. Réessayez plus tard.');
+        }
+
+        $meta = $submission->meta ?? [];
+        $meta['web_plagiarism'] = $result;
+        $submission->update(['meta' => $meta]);
+
+        return back()->with('ukc_status', 'Vérification anti-plagiat effectuée : '.(int) round($result['plagPercent']).' % de similarité web.');
     }
 
     public function applyStatus(Request $request, Submission $submission): RedirectResponse

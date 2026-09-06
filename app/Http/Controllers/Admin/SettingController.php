@@ -68,6 +68,8 @@ class SettingController extends Controller
         'site_x' => 'site.x',
         'site_youtube' => 'site.youtube',
         'site_linkedin' => 'site.linkedin',
+        'plagiarism_provider' => 'plagiarism.provider',
+        'plagiarism_prepostseo_key' => 'plagiarism.prepostseo_key',
     ];
 
     public function edit(): View
@@ -121,6 +123,8 @@ class SettingController extends Controller
             'site_x' => $g('site.x'),
             'site_youtube' => $g('site.youtube'),
             'site_linkedin' => $g('site.linkedin'),
+            'plagiarism_provider' => $g('plagiarism.provider', 'none'),
+            'plagiarism_prepostseo_key' => $g('plagiarism.prepostseo_key'),
         ];
 
         return view('admin.settings.index', ['values' => $values]);
@@ -139,6 +143,7 @@ class SettingController extends Controller
             'livekit_egress_s3_endpoint' => ['nullable', 'url'],
             'sms_default' => ['required', 'in:log,http'],
             'sms_http_url' => ['nullable', 'url'],
+            'plagiarism_provider' => ['nullable', 'in:none,prepostseo'],
         ]);
 
         if ($validator->fails()) {
@@ -204,7 +209,7 @@ class SettingController extends Controller
             str_starts_with($field, 'mail_'), $field === 'test_email' => 'email',
             str_starts_with($field, 'ai_') => 'ai',
             str_starts_with($field, 'meeting_'), str_starts_with($field, 'livekit_') => 'meetings',
-            $field === 'hal_enabled', str_starts_with($field, 'sms_') => 'integrations',
+            $field === 'hal_enabled', str_starts_with($field, 'sms_'), str_starts_with($field, 'plagiarism_') => 'integrations',
             default => 'general',
         };
     }
