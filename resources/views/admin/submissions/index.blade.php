@@ -6,7 +6,17 @@
         </a>
         <a class="ukc-btn ukc-btn--ghost ukc-btn--sm"
            href="{{ route('admin.submissions.export', request()->only('edition_id', 'status', 'type', 'track', 'search')) }}">
-            <x-ukc.icon name="download" :size="14" /> Exporter
+            <x-ukc.icon name="download" :size="14" /> CSV
+        </a>
+        <a class="ukc-btn ukc-btn--ghost ukc-btn--sm"
+           href="{{ route('admin.submissions.bibliography', ['format' => 'bibtex'] + request()->only('edition_id')) }}"
+           title="Actes des communications acceptées (BibTeX)">
+            <x-ukc.icon name="book" :size="14" /> BibTeX
+        </a>
+        <a class="ukc-btn ukc-btn--ghost ukc-btn--sm"
+           href="{{ route('admin.submissions.bibliography', ['format' => 'ris'] + request()->only('edition_id')) }}"
+           title="Actes des communications acceptées (RIS)">
+            <x-ukc.icon name="book" :size="14" /> RIS
         </a>
     </x-slot:actions>
 

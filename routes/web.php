@@ -217,6 +217,7 @@ Route::prefix('admin')->group(function () {
         Route::middleware('edition.cap:submissions_list')->group(function () {
             Route::get('/soumissions', [App\Http\Controllers\Admin\SubmissionController::class, 'index'])->name('admin.submissions.index');
             Route::get('/soumissions/export/csv', [App\Http\Controllers\Admin\SubmissionController::class, 'export'])->name('admin.submissions.export');
+            Route::get('/soumissions/export/actes/{format}', [App\Http\Controllers\Admin\SubmissionController::class, 'bibliography'])->name('admin.submissions.bibliography');
             // Attribution automatique des relecteurs (route statique AVANT le joker {submission}).
             Route::get('/soumissions/attribution-auto', [App\Http\Controllers\Admin\SubmissionController::class, 'autoAssign'])->name('admin.submissions.auto-assign');
             Route::post('/soumissions/attribution-auto', [App\Http\Controllers\Admin\SubmissionController::class, 'autoAssignApply'])->name('admin.submissions.auto-assign.apply');

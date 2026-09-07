@@ -11,6 +11,7 @@ use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\Review;
 use App\Models\Submission;
+use App\Support\BibliographyExporter;
 use App\Support\ConflictOfInterest;
 use App\Support\Notifier;
 use App\Support\Plagiarism\PlagiarismRegistry;
@@ -153,6 +154,31 @@ class SubmissionController extends Controller
             }
             fclose($out);
         }, 'soumissions-'.now()->format('Ymd-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /** Export bibliographique (actes) des communications ACCEPTÉES d'une édition. */
+    public function bibliography(Request $request, string $format, BibliographyExporter $exporter): StreamedResponse
+    {
+        abort_unless(in_array($format, ['bibtex', 'ris'], true), 404);
+
+        $editions = $this->accessibleEditions($request, 'submissions_list');
+        $editionId = (string) $request->query('edition_id', '');
+        $edition = $editionId !== '' ? $editions->firstWhere('id', (int) $editionId) : null;
+        $edition ??= $editions->first();
+        abort_if($edition === null, 404);
+
+        $submissions = Submission::where('edition_id', $edition->id)
+            ->where('revision_of', 0)->where('status', 'accepted')
+            ->with('participant')->orderBy('ref_code')->get();
+
+        $content = $format === 'bibtex' ? $exporter->bibtex($submissions, $edition) : $exporter->ris($submissions, $edition);
+        $ext = $format === 'bibtex' ? 'bib' : 'ris';
+        $mime = $format === 'bibtex' ? 'application/x-bibtex' : 'application/x-research-info-systems';
+        $name = 'actes-'.($edition->slug ?: $edition->id).'-'.($edition->year ?: date('Y')).'.'.$ext;
+
+        return response()->streamDownload(function () use ($content) {
+            echo $content;
+        }, $name, ['Content-Type' => $mime.'; charset=UTF-8']);
     }
 
     public function show(Request $request, Submission $submission, SimilarityChecker $similarity, PlagiarismRegistry $plagiarism): View
