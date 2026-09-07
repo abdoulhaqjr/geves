@@ -65,6 +65,48 @@
             </div>
         @endif
 
+        {{-- Version définitive (camera-ready) — après acceptation --}}
+        @if ($s->status === 'accepted')
+            @php($cr = $s->cameraReady())
+            <div class="ukc-card" style="margin-bottom:18px;" id="camera-ready">
+                <h2><x-ukc.icon name="file" :size="18" /> Version définitive</h2>
+                <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 14px;">
+                    Votre communication est acceptée : déposez la <strong>version finale</strong> (« prête à publier ») conforme au gabarit, pour le livre des résumés / les actes.
+                </p>
+
+                @if ($cr)
+                    <div class="ukc-alert ukc-alert--ok" style="margin-bottom:14px;">
+                        <span class="ico"><x-ukc.icon name="check-circle" :size="18" /></span>
+                        <div>
+                            Version définitive déposée le {{ \Illuminate\Support\Carbon::parse($cr['submitted_at'])->translatedFormat('d F Y à H:i') }}.
+                            <a href="{{ $cr['file_url'] }}" target="_blank" rel="noopener" style="color:var(--ukc-blue);font-weight:600;">Voir le fichier</a>
+                        </div>
+                    </div>
+                @endif
+
+                <form method="POST" action="{{ route('account.submissions.camera-ready', $s) }}" enctype="multipart/form-data">
+                    @csrf
+                    <div class="ukc-field" style="max-width:520px;">
+                        <label for="cr_file">Fichier de la version définitive <span class="hint">(PDF, DOC ou DOCX — 8 Mo max)</span></label>
+                        <input type="file" id="cr_file" name="file" accept=".pdf,.doc,.docx" required>
+                        @error('file') <span class="error">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div style="display:flex;flex-direction:column;gap:8px;margin:14px 0;">
+                        @foreach (\App\Models\Submission::CAMERA_READY_CHECKLIST as $key => $label)
+                            <label style="display:flex;align-items:flex-start;gap:9px;font-size:13.5px;cursor:pointer;">
+                                <input type="checkbox" name="checklist[{{ $key }}]" value="1" style="margin-top:2px;flex-shrink:0;" required>
+                                <span>{{ $label }}</span>
+                            </label>
+                        @endforeach
+                        @error('checklist.*') <span class="error">{{ $message }}</span> @enderror
+                    </div>
+
+                    <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm">{{ $cr ? 'Remplacer la version définitive' : 'Déposer la version définitive' }}</button>
+                </form>
+            </div>
+        @endif
+
         <div class="layout-2">
             {{-- Colonne principale --}}
             <div style="display:flex;flex-direction:column;gap:18px;">

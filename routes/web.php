@@ -145,6 +145,7 @@ Route::middleware(['auth:account', StampAccountSession::class])->group(function 
     Route::get('/mes-communications', [SubmissionController::class, 'index'])->name('account.submissions.index');
     Route::get('/mes-communications/{submission}', [SubmissionController::class, 'show'])->name('account.submissions.show');
     Route::post('/mes-communications/{submission}/resoumettre', [SubmissionController::class, 'resubmit'])->name('account.submissions.resubmit');
+    Route::post('/mes-communications/{submission}/version-definitive', [SubmissionController::class, 'cameraReady'])->name('account.submissions.camera-ready');
     Route::post('/mes-communications/{submission}/creneau', [SubmissionController::class, 'chooseSlot'])->name('account.submissions.choose-slot');
     Route::get('/colloque/{slug}/soumettre', [SubmissionController::class, 'create'])->name('account.submissions.create');
     Route::post('/colloque/{slug}/soumettre', [SubmissionController::class, 'store'])->name('account.submissions.store');

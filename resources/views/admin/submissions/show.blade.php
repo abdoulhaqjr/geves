@@ -150,6 +150,28 @@
                     </div>
                 @endif
 
+                {{-- Version définitive (camera-ready) --}}
+                @if ($s->status === 'accepted' || $s->hasCameraReady())
+                    @php($cr = $s->cameraReady())
+                    <div class="ukc-card">
+                        <h2><x-ukc.icon name="file" :size="18" /> Version définitive</h2>
+                        @if ($cr)
+                            <div class="file-row">
+                                <div class="ico" style="background:#ecfdf5;color:#0f7a3d;">OK</div>
+                                <div class="name">
+                                    <strong>Version définitive déposée</strong>
+                                    <div class="sub">Le {{ \Illuminate\Support\Carbon::parse($cr['submitted_at'])->format('d/m/Y H:i') }} · gabarit confirmé par l’auteur</div>
+                                </div>
+                                <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ $cr['file_url'] }}" target="_blank">Télécharger</a>
+                            </div>
+                        @else
+                            <p style="margin:0;color:var(--ukc-muted);font-size:13.5px;">
+                                <span class="ukc-pill ukc-pill--warn">En attente</span> L’auteur n’a pas encore déposé sa version définitive.
+                            </p>
+                        @endif
+                    </div>
+                @endif
+
                 {{-- Réponses complémentaires --}}
                 @if (! empty($s->meta['custom_fields']))
                     <div class="ukc-card">

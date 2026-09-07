@@ -27,10 +27,35 @@ class Submission extends Model
 
     protected $guarded = ['id'];
 
+    /** Points à confirmer par l'auteur au dépôt de la version définitive (camera-ready). */
+    public const CAMERA_READY_CHECKLIST = [
+        'template' => 'Le document respecte le gabarit officiel (format, marges, police).',
+        'final_authors' => 'La liste et l’ordre des auteurs sont définitifs.',
+        'clean' => 'Le document ne contient ni commentaires ni marques de révision.',
+        'final_content' => 'Le titre et le résumé correspondent à la version finale.',
+    ];
+
     /** @return array<string, string> valeur => libellé (filtres/affichage). */
     public static function statuses(): array
     {
         return SubmissionStatus::options();
+    }
+
+    /**
+     * Version définitive (camera-ready) déposée par l'auteur, ou null.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function cameraReady(): ?array
+    {
+        $cr = $this->meta['camera_ready'] ?? null;
+
+        return is_array($cr) ? $cr : null;
+    }
+
+    public function hasCameraReady(): bool
+    {
+        return $this->cameraReady() !== null;
     }
 
     /** @return array<string, string> valeur => variante de pastille. */

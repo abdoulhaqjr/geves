@@ -140,6 +140,35 @@ class SubmissionController extends Controller
         return back()->with('ukc_status', 'Votre créneau de passage est confirmé.');
     }
 
+    /** Dépôt de la version définitive (camera-ready) après acceptation. */
+    public function cameraReady(Request $request, Submission $submission): RedirectResponse
+    {
+        $this->authorizeOwnership($submission);
+        abort_unless($submission->status === 'accepted', 403);
+
+        $rules = ['file' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:8192']];
+        foreach (array_keys(Submission::CAMERA_READY_CHECKLIST) as $key) {
+            $rules['checklist.'.$key] = ['accepted'];
+        }
+        $request->validate($rules, [
+            'checklist.*.accepted' => 'Merci de confirmer tous les points de la liste avant de déposer.',
+            'file.required' => 'Joignez le fichier de la version définitive.',
+        ]);
+
+        $path = $request->file('file')->store('submissions/'.$submission->edition_id.'/camera-ready', 'public');
+
+        $meta = $submission->meta ?? [];
+        $meta['camera_ready'] = [
+            'file_url' => Storage::disk('public')->url($path),
+            'submitted_at' => now()->toIso8601String(),
+            'checklist' => array_keys(Submission::CAMERA_READY_CHECKLIST),
+        ];
+        $submission->update(['meta' => $meta]);
+
+        return redirect()->route('account.submissions.show', $submission)
+            ->with('ukc_status', 'Version définitive déposée. Merci !');
+    }
+
     public function resubmit(ResubmitSubmissionRequest $request, Submission $submission, NotifySubmissionStatus $notify): RedirectResponse
     {
         $this->authorizeOwnership($submission);
