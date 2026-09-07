@@ -111,7 +111,11 @@
                 </div>
 
                 <div class="ukc-field full">
-                    <label for="orcid">Identifiant ORCID <span class="hint">(facultatif)</span></label>
+                    <label for="orcid">Identifiant ORCID <span class="hint">(facultatif)</span>
+                        @if ($account->orcidVerified())
+                            <span class="ukc-pill ukc-pill--ok" style="margin-left:6px;"><x-ukc.icon name="check-circle" :size="12" /> Vérifié</span>
+                        @endif
+                    </label>
                     <input type="text" id="orcid" name="orcid" value="{{ old('orcid', $account->orcid) }}"
                            placeholder="0000-0002-1825-0097" inputmode="text" autocomplete="off">
                     @error('orcid')
@@ -125,6 +129,12 @@
                             <span class="hint">Votre identifiant chercheur (orcid.org) — apparaîtra sur vos communications et attestations.</span>
                         @endif
                     @enderror
+
+                    @if ($orcidConnect && ! $account->orcidVerified())
+                        <a href="{{ route('account.orcid.connect') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm" style="margin-top:8px;align-self:flex-start;">
+                            <x-ukc.icon name="check-circle" :size="15" /> Connecter avec ORCID (prouver l’appartenance)
+                        </a>
+                    @endif
                 </div>
 
                 <div class="ukc-field">

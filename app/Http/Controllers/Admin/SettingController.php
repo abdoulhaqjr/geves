@@ -70,6 +70,9 @@ class SettingController extends Controller
         'site_linkedin' => 'site.linkedin',
         'plagiarism_provider' => 'plagiarism.provider',
         'plagiarism_prepostseo_key' => 'plagiarism.prepostseo_key',
+        'orcid_environment' => 'orcid.environment',
+        'orcid_client_id' => 'orcid.client_id',
+        'orcid_client_secret' => 'orcid.client_secret',
     ];
 
     public function edit(): View
@@ -125,6 +128,9 @@ class SettingController extends Controller
             'site_linkedin' => $g('site.linkedin'),
             'plagiarism_provider' => $g('plagiarism.provider', 'none'),
             'plagiarism_prepostseo_key' => $g('plagiarism.prepostseo_key'),
+            'orcid_environment' => $g('orcid.environment', 'sandbox'),
+            'orcid_client_id' => $g('orcid.client_id'),
+            'orcid_client_secret' => $g('orcid.client_secret'),
         ];
 
         return view('admin.settings.index', ['values' => $values]);
@@ -144,6 +150,7 @@ class SettingController extends Controller
             'sms_default' => ['required', 'in:log,http'],
             'sms_http_url' => ['nullable', 'url'],
             'plagiarism_provider' => ['nullable', 'in:none,prepostseo'],
+            'orcid_environment' => ['nullable', 'in:sandbox,production'],
         ]);
 
         if ($validator->fails()) {
@@ -209,7 +216,7 @@ class SettingController extends Controller
             str_starts_with($field, 'mail_'), $field === 'test_email' => 'email',
             str_starts_with($field, 'ai_') => 'ai',
             str_starts_with($field, 'meeting_'), str_starts_with($field, 'livekit_') => 'meetings',
-            $field === 'hal_enabled', str_starts_with($field, 'sms_'), str_starts_with($field, 'plagiarism_') => 'integrations',
+            $field === 'hal_enabled', str_starts_with($field, 'sms_'), str_starts_with($field, 'plagiarism_'), str_starts_with($field, 'orcid_') => 'integrations',
             default => 'general',
         };
     }

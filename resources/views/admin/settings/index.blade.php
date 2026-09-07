@@ -340,6 +340,35 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="ukc-card">
+                    <h2><span><x-ukc.icon name="check-circle" :size="20" /> Connexion ORCID</span></h2>
+                    <p class="desc">
+                        Permet aux auteurs de <strong>prouver l’appartenance</strong> de leur identifiant ORCID (bouton « Connecter avec ORCID » sur leur profil).
+                        API publique gratuite : créez une application sur orcid.org (Developer tools) et enregistrez l’URL de redirection ci-dessous.
+                    </p>
+                    <div class="ukc-field full">
+                        <label>URL de redirection à enregistrer chez ORCID</label>
+                        <input type="text" value="{{ route('account.orcid.callback') }}" readonly onclick="this.select()" style="background:var(--ukc-bg);">
+                    </div>
+                    <div class="ukc-form-grid">
+                        <div class="ukc-field">
+                            <label for="orcid_environment">Environnement</label>
+                            <select id="orcid_environment" name="orcid_environment">
+                                <option value="sandbox" @selected($v('orcid_environment') !== 'production')>Sandbox (test)</option>
+                                <option value="production" @selected($v('orcid_environment') === 'production')>Production</option>
+                            </select>
+                        </div>
+                        <div class="ukc-field">
+                            <label for="orcid_client_id">Client ID</label>
+                            <input type="text" id="orcid_client_id" name="orcid_client_id" value="{{ $v('orcid_client_id') }}" autocomplete="off" placeholder="APP-XXXXXXXXXXXXXXXX">
+                        </div>
+                        <div class="ukc-field full">
+                            <label for="orcid_client_secret">Client secret</label>
+                            <input type="password" id="orcid_client_secret" name="orcid_client_secret" value="{{ $v('orcid_client_secret') }}" autocomplete="new-password">
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="ukc-form-actions" style="border-top:none;padding-top:0;margin-top:4px;">

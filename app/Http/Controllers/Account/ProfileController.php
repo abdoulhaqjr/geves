@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Account;
 use App\Http\Controllers\Controller;
 use App\Support\HalClient;
 use App\Support\Orcid;
+use App\Support\OrcidClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,6 +28,7 @@ class ProfileController extends Controller
             'civilities' => ['M.', 'Mme', 'Pr', 'Dr'],
             'participantTypes' => ['Enseignant / Chercheur', 'Doctorant', 'Autre participant'],
             'halEnabled' => HalClient::enabled(),
+            'orcidConnect' => app(OrcidClient::class)->isConfigured(),
         ]);
     }
 
@@ -54,6 +56,11 @@ class ProfileController extends Controller
         $data['orcid'] = filled($data['orcid'] ?? null) ? Orcid::normalize((string) $data['orcid']) : null;
 
         $account = Auth::guard('account')->user();
+
+        // Une modification manuelle de l'ORCID annule la vérification OAuth.
+        if (($data['orcid'] ?? null) !== $account->orcid) {
+            $account->orcid_verified_at = null;
+        }
 
         // Photo de profil : suppression explicite ou remplacement.
         if ($request->boolean('remove_photo')) {

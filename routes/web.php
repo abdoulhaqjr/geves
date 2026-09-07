@@ -5,6 +5,7 @@ use App\Http\Controllers\Account\DashboardController;
 use App\Http\Controllers\Account\EmailVerificationController;
 use App\Http\Controllers\Account\LoginController;
 use App\Http\Controllers\Account\LogoutController;
+use App\Http\Controllers\Account\OrcidController;
 use App\Http\Controllers\Account\PasswordResetController;
 use App\Http\Controllers\Account\PaymentController as AccountPaymentController;
 use App\Http\Controllers\Account\PreferencesController;
@@ -123,6 +124,8 @@ Route::middleware(['auth:account', StampAccountSession::class])->group(function 
     Route::get('/mon-profil', [ProfileController::class, 'edit'])->name('account.profile');
     Route::put('/mon-profil', [ProfileController::class, 'update'])->name('account.profile.update');
     Route::get('/mon-profil/affiliations', [ProfileController::class, 'affiliations'])->name('account.profile.affiliations');
+    Route::get('/mon-compte/orcid/connexion', [OrcidController::class, 'connect'])->name('account.orcid.connect');
+    Route::get('/mon-compte/orcid/callback', [OrcidController::class, 'callback'])->name('account.orcid.callback');
     Route::get('/mes-documents', [App\Http\Controllers\Account\DocumentController::class, 'index'])->name('account.documents');
     Route::get('/mes-notifications', [NotificationController::class, 'index'])->name('account.notifications');
     Route::get('/mon-compte/preferences', [PreferencesController::class, 'edit'])->name('account.preferences');

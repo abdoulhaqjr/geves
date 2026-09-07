@@ -29,6 +29,7 @@ use Lab404\Impersonate\Models\Impersonate;
  * @property array<string, array{inapp: bool, email: bool}>|null $notification_preferences
  * @property array<string, mixed>|null $meta
  * @property string|null $orcid identifiant ORCID canonique (0000-0002-1825-0097)
+ * @property Carbon|null $orcid_verified_at appartenance ORCID confirmée via OAuth
  */
 class Account extends Authenticatable implements MustVerifyEmail
 {
@@ -49,6 +50,7 @@ class Account extends Authenticatable implements MustVerifyEmail
             'two_factor_recovery_codes' => 'encrypted:array',
             'two_factor_confirmed_at' => 'datetime',
             'two_factor_otp_expires_at' => 'datetime',
+            'orcid_verified_at' => 'datetime',
         ];
     }
 
@@ -56,6 +58,12 @@ class Account extends Authenticatable implements MustVerifyEmail
     public function orcidUrl(): ?string
     {
         return filled($this->orcid) ? Orcid::url((string) $this->orcid) : null;
+    }
+
+    /** L'ORCID a-t-il été confirmé par l'utilisateur via OAuth ? */
+    public function orcidVerified(): bool
+    {
+        return $this->orcid_verified_at !== null && filled($this->orcid);
     }
 
     /** La double authentification par application (TOTP) est active et confirmée. */
