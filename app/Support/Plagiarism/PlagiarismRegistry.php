@@ -16,7 +16,6 @@ class PlagiarismRegistry
     {
         return [
             'prepostseo' => new PrepostseoProvider,
-            'google' => new GoogleSearchProvider,
         ];
     }
 

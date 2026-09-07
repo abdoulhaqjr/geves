@@ -230,7 +230,7 @@ class SubmissionController extends Controller
             $result = $provider->check((string) $submission->abstract);
         } catch (RequestException $e) {
             $status = $e->response->status();
-            // Message d'API (Prepostseo : « message » ; Google : « error.message » imbriqué).
+            // Message d'API (à plat « message » ou imbriqué « error.message » selon le fournisseur).
             $apiMsg = trim((string) ($e->response->json('message') ?? $e->response->json('error.message') ?? ''));
 
             return back()->with('ukc_error', match (true) {

@@ -330,29 +330,12 @@
                             <label for="plagiarism_provider">Fournisseur</label>
                             <select id="plagiarism_provider" name="plagiarism_provider" style="max-width:360px;">
                                 <option value="none" @selected($v('plagiarism_provider') === 'none' || $v('plagiarism_provider') === '')>Aucun (similarité interne seule)</option>
-                                <option value="google" @selected($v('plagiarism_provider') === 'google')>Google Recherche (gratuit — 100 requêtes/jour)</option>
                                 <option value="prepostseo" @selected($v('plagiarism_provider') === 'prepostseo')>Prepostseo (payant)</option>
                             </select>
                             @error('plagiarism_provider') <span class="error">{{ $message }}</span> @enderror
                         </div>
-                    </div>
-
-                    <h3 style="font-size:.95rem;margin:16px 0 8px;">Google Recherche <span class="hint">(gratuit, sans carte — Programmable Search)</span></h3>
-                    <div class="ukc-form-grid">
-                        <div class="ukc-field">
-                            <label for="plagiarism_google_key">Clé API Google</label>
-                            <input type="password" id="plagiarism_google_key" name="plagiarism_google_key" value="{{ $v('plagiarism_google_key') }}" autocomplete="new-password" placeholder="depuis console.cloud.google.com (Custom Search API)">
-                        </div>
-                        <div class="ukc-field">
-                            <label for="plagiarism_google_cx">ID du moteur (cx)</label>
-                            <input type="text" id="plagiarism_google_cx" name="plagiarism_google_cx" value="{{ $v('plagiarism_google_cx') }}" placeholder="depuis programmablesearchengine.google.com">
-                        </div>
-                    </div>
-
-                    <h3 style="font-size:.95rem;margin:16px 0 8px;">Prepostseo <span class="hint">(payant)</span></h3>
-                    <div class="ukc-form-grid">
                         <div class="ukc-field full">
-                            <label for="plagiarism_prepostseo_key">Clé API Prepostseo <span class="hint">(2 500 mots max/vérif)</span></label>
+                            <label for="plagiarism_prepostseo_key">Clé API Prepostseo <span class="hint">(2 500 mots max/vérif, quota selon votre offre)</span></label>
                             <input type="password" id="plagiarism_prepostseo_key" name="plagiarism_prepostseo_key" value="{{ $v('plagiarism_prepostseo_key') }}" autocomplete="new-password" placeholder="clé fournie par prepostseo.com">
                         </div>
                     </div>

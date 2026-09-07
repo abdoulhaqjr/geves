@@ -70,8 +70,6 @@ class SettingController extends Controller
         'site_linkedin' => 'site.linkedin',
         'plagiarism_provider' => 'plagiarism.provider',
         'plagiarism_prepostseo_key' => 'plagiarism.prepostseo_key',
-        'plagiarism_google_key' => 'plagiarism.google_key',
-        'plagiarism_google_cx' => 'plagiarism.google_cx',
     ];
 
     public function edit(): View
@@ -127,8 +125,6 @@ class SettingController extends Controller
             'site_linkedin' => $g('site.linkedin'),
             'plagiarism_provider' => $g('plagiarism.provider', 'none'),
             'plagiarism_prepostseo_key' => $g('plagiarism.prepostseo_key'),
-            'plagiarism_google_key' => $g('plagiarism.google_key'),
-            'plagiarism_google_cx' => $g('plagiarism.google_cx'),
         ];
 
         return view('admin.settings.index', ['values' => $values]);
@@ -147,7 +143,7 @@ class SettingController extends Controller
             'livekit_egress_s3_endpoint' => ['nullable', 'url'],
             'sms_default' => ['required', 'in:log,http'],
             'sms_http_url' => ['nullable', 'url'],
-            'plagiarism_provider' => ['nullable', 'in:none,prepostseo,google'],
+            'plagiarism_provider' => ['nullable', 'in:none,prepostseo'],
         ]);
 
         if ($validator->fails()) {
