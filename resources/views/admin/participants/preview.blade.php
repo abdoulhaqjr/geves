@@ -44,6 +44,12 @@
                     @if ($participant->title) — {{ $participant->title }} @endif
                     @if ($participant->institution) · {{ $participant->institution }} @endif
                 </div>
+                @if ($participant->account?->orcidUrl())
+                    <div style="font-size:.82rem;margin-top:4px;">
+                        <x-ukc.icon name="check-circle" :size="13" />
+                        ORCID : <a href="{{ $participant->account->orcidUrl() }}" target="_blank" rel="noopener" style="color:var(--ukc-blue);font-weight:600;">{{ $participant->account->orcid }}</a>
+                    </div>
+                @endif
             </div>
             <div style="font-size:.82rem;color:var(--ukc-muted);text-align:right;">
                 {{ $participant->edition?->title }}

@@ -110,6 +110,23 @@
                     @error('affiliation') <span class="error">{{ $message }}</span> @enderror
                 </div>
 
+                <div class="ukc-field full">
+                    <label for="orcid">Identifiant ORCID <span class="hint">(facultatif)</span></label>
+                    <input type="text" id="orcid" name="orcid" value="{{ old('orcid', $account->orcid) }}"
+                           placeholder="0000-0002-1825-0097" inputmode="text" autocomplete="off">
+                    @error('orcid')
+                        <span class="error">{{ $message }}</span>
+                    @else
+                        @if ($account->orcidUrl())
+                            <span class="hint">Vérifiable :
+                                <a href="{{ $account->orcidUrl() }}" target="_blank" rel="noopener" style="color:var(--ukc-blue);font-weight:600;">{{ $account->orcid }}</a>
+                            </span>
+                        @else
+                            <span class="hint">Votre identifiant chercheur (orcid.org) — apparaîtra sur vos communications et attestations.</span>
+                        @endif
+                    @enderror
+                </div>
+
                 <div class="ukc-field">
                     <label for="country">Pays</label>
                     <input type="text" id="country" name="country" value="{{ old('country', $account->country) }}" placeholder="Togo">

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
 use App\Support\HalClient;
+use App\Support\Orcid;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -41,8 +42,16 @@ class ProfileController extends Controller
             'country' => ['nullable', 'string', 'max:100'],
             'city' => ['nullable', 'string', 'max:120'],
             'bio' => ['nullable', 'string', 'max:2000'],
+            'orcid' => ['nullable', 'string', 'max:40', function ($attr, $value, $fail) {
+                if (filled($value) && ! Orcid::isValid((string) $value)) {
+                    $fail('L’identifiant ORCID est invalide (format 0000-0002-1825-0097).');
+                }
+            }],
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
+
+        // Normalise l'ORCID en forme canonique (ou null si vide).
+        $data['orcid'] = filled($data['orcid'] ?? null) ? Orcid::normalize((string) $data['orcid']) : null;
 
         $account = Auth::guard('account')->user();
 

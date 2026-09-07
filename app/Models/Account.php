@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasNotificationPreferences;
+use App\Support\Orcid;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -27,6 +28,7 @@ use Lab404\Impersonate\Models\Impersonate;
  * @property string|null $phone
  * @property array<string, array{inapp: bool, email: bool}>|null $notification_preferences
  * @property array<string, mixed>|null $meta
+ * @property string|null $orcid identifiant ORCID canonique (0000-0002-1825-0097)
  */
 class Account extends Authenticatable implements MustVerifyEmail
 {
@@ -48,6 +50,12 @@ class Account extends Authenticatable implements MustVerifyEmail
             'two_factor_confirmed_at' => 'datetime',
             'two_factor_otp_expires_at' => 'datetime',
         ];
+    }
+
+    /** Lien vérifiable vers la fiche ORCID, ou null si non renseigné/invalide. */
+    public function orcidUrl(): ?string
+    {
+        return filled($this->orcid) ? Orcid::url((string) $this->orcid) : null;
     }
 
     /** La double authentification par application (TOTP) est active et confirmée. */
