@@ -70,6 +70,21 @@
         </div>
     </div>
 
+    {{-- Mon agenda : passages datés → export calendrier (ICS / Google) --}}
+    @if ($hasAgenda)
+        <div class="ukc-card" style="margin-bottom:20px;display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap;">
+            <div style="min-width:0;">
+                <h3 style="margin:0;"><x-ukc.icon name="calendar" :size="20" /> Mon agenda</h3>
+                <p style="font-size:.86rem;color:var(--ukc-muted);margin:4px 0 0;">
+                    Vos créneaux de passage, avec un rappel une heure avant. Importez-les dans votre agenda.
+                </p>
+            </div>
+            <a href="{{ route('account.agenda.ics') }}" class="ukc-btn ukc-btn--blue ukc-btn--sm" style="flex-shrink:0;">
+                <x-ukc.icon name="download" :size="15" /> Télécharger (.ics)
+            </a>
+        </div>
+    @endif
+
     {{-- Sessions en direct maintenant --}}
     @if ($liveSessions->isNotEmpty())
         <div class="ukc-card" style="margin-bottom:20px;border-color:#fecaca;background:#fff5f5;">

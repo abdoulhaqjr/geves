@@ -4,10 +4,22 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * Créneau de passage : moment de présentation (salle, horaire) rattaché à une
  * communication acceptée.
+ *
+ * @property int $id
+ * @property int $edition_id
+ * @property int $submission_id
+ * @property int $participant_id
+ * @property int|null $session_id
+ * @property string|null $session_label
+ * @property string|null $room
+ * @property Carbon|null $starts_at
+ * @property Carbon|null $ends_at
+ * @property bool $chosen_by_participant
  */
 class Slot extends Model
 {

@@ -54,6 +54,13 @@ class DashboardController extends Controller
         $mySessionIds = Slot::whereIn('submission_id', $mySubmissionIds)
             ->whereNotNull('session_id')->pluck('session_id')->unique();
 
+        // Agenda personnel : le participant a-t-il au moins un créneau daté ?
+        $hasAgenda = Slot::whereNotNull('starts_at')
+            ->where(fn ($q) => $q
+                ->whereIn('submission_id', $mySubmissionIds)
+                ->orWhereIn('participant_id', $participantIds))
+            ->exists();
+
         $now = Carbon::now();
         $liveSessions = EventSession::query()->live()
             ->whereIn('edition_id', $editionIds)
@@ -139,6 +146,7 @@ class DashboardController extends Controller
                 ->where('revoked', false)->with('edition')->latest('id')->get(),
             'editionDocuments' => $editionDocuments,
             'liveSessions' => $liveSessions,
+            'hasAgenda' => $hasAgenda,
             'roles' => $activity->roles(),
             'moderatedSessions' => $activity->moderatedSessions(),
             'reportedSessions' => $activity->reportedSessions(),

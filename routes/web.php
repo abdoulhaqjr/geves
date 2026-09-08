@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Account\AgendaController;
 use App\Http\Controllers\Account\ColloqueContextController;
 use App\Http\Controllers\Account\DashboardController;
 use App\Http\Controllers\Account\EmailVerificationController;
@@ -120,6 +121,7 @@ Route::middleware('guest:account')->group(function () {
 
 Route::middleware(['auth:account', StampAccountSession::class])->group(function () {
     Route::get('/mon-compte', DashboardController::class)->name('account.dashboard');
+    Route::get('/mon-compte/agenda.ics', [AgendaController::class, 'ics'])->name('account.agenda.ics');
     Route::post('/mon-compte/colloque', [ColloqueContextController::class, 'switch'])->name('account.colloque.switch');
     Route::get('/mon-profil', [ProfileController::class, 'edit'])->name('account.profile');
     Route::put('/mon-profil', [ProfileController::class, 'update'])->name('account.profile.update');

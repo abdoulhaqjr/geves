@@ -11,6 +11,7 @@ use App\Models\Attestation;
 use App\Models\Edition;
 use App\Models\Slot;
 use App\Models\Submission;
+use App\Support\CalendarExport;
 use App\Support\CurrentColloque;
 use App\Support\Html;
 use App\Support\SubmissionFormConfig;
@@ -101,14 +102,19 @@ class SubmissionController extends Controller
                 ->where('type', 'soumission')->where('revoked', false)->first()
             : null;
 
+        $slot = $this->currentSlot($submission);
+
         return view('account.submissions.show', [
             'submission' => $submission,
             'feedback' => $this->authorFeedback($submission),
             'versions' => $submission->versions()->get(),
-            'slot' => $this->currentSlot($submission),
+            'slot' => $slot,
             'availableSlots' => $this->availableSlots($submission),
             'soumissionAtt' => $soumissionAtt,
             'abstractMax' => (new SubmissionFormConfig($submission->edition))->abstractMax(),
+            'googleCal' => $slot && $slot->starts_at
+                ? app(CalendarExport::class)->googleUrl(AgendaController::slotEvent($slot))
+                : null,
         ]);
     }
 

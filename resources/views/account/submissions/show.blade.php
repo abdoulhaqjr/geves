@@ -233,6 +233,18 @@
                             @if ($slot->room) · Salle {{ $slot->room }}@endif
                             @if ($slot->chosen_by_participant) <span class="ukc-pill ukc-pill--info" style="margin-left:6px;">Choisi</span>@endif
                         </div>
+                        @if ($slot->starts_at)
+                            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
+                                @if ($googleCal)
+                                    <a href="{{ $googleCal }}" target="_blank" rel="noopener" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+                                        <x-ukc.icon name="calendar" :size="15" /> Ajouter à Google Agenda
+                                    </a>
+                                @endif
+                                <a href="{{ route('account.agenda.ics') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
+                                    <x-ukc.icon name="download" :size="15" /> Mon agenda (.ics)
+                                </a>
+                            </div>
+                        @endif
                         @if ($availableSlots->count())
                             <button type="button" class="ukc-btn ukc-btn--outline ukc-btn--sm" style="margin-top:12px;" @click="slotModal = true">
                                 <x-ukc.icon name="calendar" :size="16" /> Changer de créneau
