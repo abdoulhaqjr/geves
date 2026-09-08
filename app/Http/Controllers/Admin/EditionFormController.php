@@ -12,6 +12,7 @@ use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\Review;
 use App\Models\User;
+use App\Support\ReviewGrid;
 use App\Support\StaffRoles;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -167,6 +168,8 @@ class EditionFormController extends Controller
             'aiAvailable' => app(AiManager::class)->available() !== [],
             'reviewers' => $this->reviewersFor($edition),
             'reviewerAxes' => $this->reviewerAxes($edition),
+            'reviewCriteria' => ReviewGrid::criteria($edition),
+            'reviewScale' => ReviewGrid::SCALE,
             'team' => $this->teamFor($edition),
             'assignableUsers' => $edition ? User::orderBy('name')->get(['id', 'name', 'email']) : collect(),
             'teamRoles' => StaffRoles::teamRoles(),
@@ -310,6 +313,28 @@ class EditionFormController extends Controller
 
         return redirect()->route('admin.editions.edit', $edition)
             ->with('ukc_status', 'Expertise des relecteurs mise à jour.')
+            ->with('edition_tab', 'reviewers');
+    }
+
+    /** Enregistre la grille d'évaluation (critères notés) de l'édition. */
+    public function saveReviewGrid(Request $request, Edition $edition): RedirectResponse
+    {
+        $data = $request->validate([
+            'criteria' => ['array'],
+            'criteria.*' => ['nullable', 'string', 'max:200'],
+        ]);
+
+        $criteria = ReviewGrid::normalize(
+            array_map(fn ($label) => ['label' => (string) $label], $data['criteria'] ?? [])
+        );
+
+        // On persiste tel quel ; la valeur par défaut n'est pas stockée (repli automatique).
+        $settings = $edition->settings ?? [];
+        $settings['review_criteria'] = $criteria;
+        $edition->update(['settings' => $settings]);
+
+        return redirect()->route('admin.editions.edit', $edition)
+            ->with('ukc_status', 'Grille d’évaluation mise à jour.')
             ->with('edition_tab', 'reviewers');
     }
 

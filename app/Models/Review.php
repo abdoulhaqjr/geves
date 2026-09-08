@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Relecture en aveugle d'une soumission par un relecteur (participant).
+ *
+ * @property array<string, int>|null $scores notes par critère de la grille
  */
 class Review extends Model
 {
@@ -22,12 +24,22 @@ class Review extends Model
 
     protected function casts(): array
     {
-        return ['score' => 'decimal:2'];
+        return ['score' => 'decimal:2', 'scores' => 'array'];
     }
 
     public function recommendationLabel(): ?string
     {
         return self::RECOMMENDATIONS[$this->recommendation] ?? ($this->recommendation ?: null);
+    }
+
+    /**
+     * Notes par critère (grille structurée).
+     *
+     * @return array<string, int>
+     */
+    public function criterionScores(): array
+    {
+        return is_array($this->scores) ? $this->scores : [];
     }
 
     public function isCompleted(): bool

@@ -102,9 +102,12 @@ it('enregistre une évaluation de relecteur', function () {
         ->assertOk()
         ->assertDontSee('Awa Kodjo');
 
+    // Grille par défaut : toutes les notes à 4/5 → note globale dérivée 16/20.
     $this->post(route('reviewer.evaluate.submit', [$reviewer->access_token, $review->id]), [
         'recommendation' => 'minor',
-        'score' => '15.5',
+        'scores' => [
+            'originality' => 4, 'rigor' => 4, 'clarity' => 4, 'relevance' => 4, 'contribution' => 4,
+        ],
         'comments' => 'Bon travail, préciser la méthode.',
         'comments_private' => 'Solide dans l’ensemble.',
     ])->assertSessionHasNoErrors();
@@ -112,7 +115,8 @@ it('enregistre une évaluation de relecteur', function () {
     $review->refresh();
     expect($review->status)->toBe('completed');
     expect($review->recommendation)->toBe('minor');
-    expect((float) $review->score)->toBe(15.5);
+    expect((float) $review->score)->toBe(16.0);
+    expect($review->criterionScores()['rigor'])->toBe(4);
 });
 
 it('révèle le retour des relecteurs à l’auteur après décision', function () {

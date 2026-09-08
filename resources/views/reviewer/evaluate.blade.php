@@ -32,8 +32,39 @@
             @csrf
             <h3><x-ukc.icon name="pen" :size="20" /> Votre évaluation</h3>
 
-            <div class="ukc-form-grid" style="margin-top:8px;">
-                <div class="ukc-field">
+            {{-- Grille de critères notés (0–{{ $scale }}). La note /20 en est dérivée. --}}
+            @php($savedScores = old('scores', $review->criterionScores()))
+            <div class="review-grid"
+                 x-data="{ scores: {{ Illuminate\Support\Js::from((object) $savedScores) }}, scale: {{ $scale }},
+                           get overall() {
+                               const v = Object.values(this.scores).map(Number).filter(n => !isNaN(n));
+                               if (!v.length) return null;
+                               return Math.round((v.reduce((a,b)=>a+b,0)/v.length)/this.scale*20*100)/100;
+                           } }">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin:6px 0 12px;">
+                    <p style="color:var(--ukc-muted);font-size:.9rem;margin:0;">Notez chaque critère de 0 à {{ $scale }}.</p>
+                    <div style="font-size:.9rem;">Note globale : <strong x-text="overall === null ? '—' : overall + '/20'"></strong></div>
+                </div>
+
+                @foreach ($criteria as $c)
+                    <div class="review-criterion" style="display:flex;justify-content:space-between;gap:14px;align-items:center;padding:10px 0;border-bottom:1px solid var(--ukc-border);flex-wrap:wrap;">
+                        <label for="crit-{{ $c['key'] }}" style="font-weight:600;flex:1;min-width:200px;">{{ $c['label'] }}</label>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            @for ($n = 0; $n <= $scale; $n++)
+                                <label class="axis-check" style="cursor:pointer;">
+                                    <input type="radio" name="scores[{{ $c['key'] }}]" value="{{ $n }}"
+                                           x-model.number="scores['{{ $c['key'] }}']">
+                                    <span>{{ $n }}</span>
+                                </label>
+                            @endfor
+                        </div>
+                        @error('scores.'.$c['key']) <span class="error" style="flex-basis:100%;">{{ $message }}</span> @enderror
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="ukc-form-grid" style="margin-top:16px;">
+                <div class="ukc-field full">
                     <label for="recommendation">Recommandation <span class="req">*</span></label>
                     <select id="recommendation" name="recommendation">
                         <option value="">— Choisir —</option>
@@ -42,11 +73,6 @@
                         @endforeach
                     </select>
                     @error('recommendation') <span class="error">{{ $message }}</span> @enderror
-                </div>
-                <div class="ukc-field">
-                    <label for="score">Note /20</label>
-                    <input type="number" id="score" name="score" value="{{ old('score', $review->score !== null ? (float) $review->score : '') }}" min="0" max="20" step="0.5">
-                    @error('score') <span class="error">{{ $message }}</span> @enderror
                 </div>
 
                 <div class="ukc-field full">

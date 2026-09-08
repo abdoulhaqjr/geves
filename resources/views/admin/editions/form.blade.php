@@ -618,6 +618,38 @@
                                 </form>
                             @endif
                         </div>
+
+                        {{-- Grille d'évaluation (critères notés 0–N) --}}
+                        <div class="ukc-card" style="margin-top:18px;"
+                             x-data="{ criteria: {{ Illuminate\Support\Js::from(collect($reviewCriteria)->pluck('label')->values()) }} }">
+                            <h2>Grille d’évaluation</h2>
+                            <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 10px;">
+                                Critères notés de 0 à {{ $reviewScale }} par les relecteurs ; la note globale /20 en est
+                                dérivée (moyenne). Laissez la grille par défaut ou personnalisez-la pour cette édition.
+                            </p>
+                            <form method="POST" action="{{ route('admin.editions.reviewers.criteria', $edition) }}">
+                                @csrf
+                                <template x-for="(label, i) in criteria" :key="i">
+                                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+                                        <span style="color:var(--ukc-muted);font-size:.85rem;width:20px;" x-text="(i+1)+'.'"></span>
+                                        <input type="text" :name="'criteria['+i+']'" x-model="criteria[i]"
+                                               placeholder="Intitulé du critère" style="flex:1;">
+                                        <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm"
+                                                @click="criteria.splice(i,1)" title="Retirer">
+                                            <x-ukc.icon name="close" :size="14" />
+                                        </button>
+                                    </div>
+                                </template>
+                                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+                                    <button type="button" class="ukc-btn ukc-btn--outline ukc-btn--sm" @click="criteria.push('')">
+                                        <x-ukc.icon name="plus" :size="14" /> Ajouter un critère
+                                    </button>
+                                </div>
+                                <div class="ukc-form-actions" style="margin-top:16px;">
+                                    <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer la grille</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
 
                     {{-- ===== ÉQUIPE (staff affecté à CETTE édition) ===== --}}

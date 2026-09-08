@@ -278,6 +278,16 @@
                                 @if ($review->isCompleted())
                                     <div class="rev-detail">
                                         <em>{{ $review->recommendationLabel() }}</em>@if ($review->score !== null) · {{ number_format((float) $review->score, 1, ',', ' ') }}/20 @endif
+                                        @php($critScores = $review->criterionScores())
+                                        @if (! empty($critScores))
+                                            <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;">
+                                                @foreach ($reviewCriteria as $c)
+                                                    @if (isset($critScores[$c['key']]))
+                                                        <span class="ukc-pill ukc-pill--muted" style="font-size:11px;" title="{{ $c['label'] }}">{{ \Illuminate\Support\Str::limit($c['label'], 18) }} : {{ $critScores[$c['key']] }}/{{ $reviewScale }}</span>
+                                                    @endif
+                                                @endforeach
+                                            </div>
+                                        @endif
                                         @if ($review->comments)<div style="margin-top:4px;"><em style="font-weight:600;">À l’auteur :</em> {{ $review->comments }}</div>@endif
                                         @if ($review->comments_private)<div style="margin-top:2px;"><em style="font-weight:600;">Confidentiel :</em> {{ $review->comments_private }}</div>@endif
                                     </div>

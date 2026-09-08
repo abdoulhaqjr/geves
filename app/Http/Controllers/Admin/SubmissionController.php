@@ -15,6 +15,7 @@ use App\Support\BibliographyExporter;
 use App\Support\ConflictOfInterest;
 use App\Support\Notifier;
 use App\Support\Plagiarism\PlagiarismRegistry;
+use App\Support\ReviewGrid;
 use App\Support\SimilarityChecker;
 use Carbon\Carbon;
 use Illuminate\Http\Client\RequestException;
@@ -241,6 +242,8 @@ class SubmissionController extends Controller
             'similar' => $similar,
             'webPlagProvider' => $plagiarism->active(),
             'webPlag' => $submission->meta['web_plagiarism'] ?? null,
+            'reviewCriteria' => ReviewGrid::criteria($submission->edition),
+            'reviewScale' => ReviewGrid::SCALE,
         ]);
     }
 

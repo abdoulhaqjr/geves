@@ -7,6 +7,7 @@ use App\Models\Participant;
 use App\Models\Review;
 use App\Models\ReviewerBid;
 use App\Models\Submission;
+use App\Support\ReviewGrid;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -80,10 +81,14 @@ class ReviewerController extends Controller
         $reviewer = $this->reviewer($token);
         abort_unless((int) $review->reviewer_id === (int) $reviewer->id, 404);
 
+        $review->load('submission.edition');
+
         return view('reviewer.evaluate', [
             'reviewer' => $reviewer,
-            'review' => $review->load('submission.edition'),
+            'review' => $review,
             'recommendations' => Review::RECOMMENDATIONS,
+            'criteria' => ReviewGrid::criteria($review->submission?->edition),
+            'scale' => ReviewGrid::SCALE,
         ]);
     }
 
@@ -92,16 +97,26 @@ class ReviewerController extends Controller
         $reviewer = $this->reviewer($token);
         abort_unless((int) $review->reviewer_id === (int) $reviewer->id, 404);
 
-        $data = $request->validate([
+        $review->load('submission.edition');
+        $criteria = ReviewGrid::criteria($review->submission?->edition);
+
+        $rules = [
             'recommendation' => ['required', 'in:'.implode(',', array_keys(Review::RECOMMENDATIONS))],
-            'score' => ['nullable', 'numeric', 'min:0', 'max:20'],
             'comments' => ['nullable', 'string', 'max:5000'],
             'comments_private' => ['nullable', 'string', 'max:5000'],
-        ]);
+        ];
+        foreach ($criteria as $c) {
+            $rules['scores.'.$c['key']] = ['nullable', 'integer', 'min:0', 'max:'.ReviewGrid::SCALE];
+        }
+        $data = $request->validate($rules);
+
+        $scores = ReviewGrid::sanitizeScores((array) $request->input('scores', []), $criteria);
+        $overall = ReviewGrid::overall($scores, $criteria);
 
         $review->update([
             'recommendation' => $data['recommendation'],
-            'score' => ($data['score'] ?? '') !== '' ? $data['score'] : null,
+            'scores' => $scores ?: null,
+            'score' => $overall,
             'comments' => ($data['comments'] ?? null) ?: null,
             'comments_private' => ($data['comments_private'] ?? null) ?: null,
             'status' => 'completed',
