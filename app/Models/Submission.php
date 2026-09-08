@@ -58,6 +58,37 @@ class Submission extends Model
         return $this->cameraReady() !== null;
     }
 
+    /**
+     * Phase de réponse aux relecteurs (rebuttal), ou null.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function rebuttal(): ?array
+    {
+        $r = $this->meta['rebuttal'] ?? null;
+
+        return is_array($r) ? $r : null;
+    }
+
+    /** La phase de réponse est-elle ouverte pour cette communication ? */
+    public function rebuttalOpen(): bool
+    {
+        return ! empty($this->rebuttal()['opened_at']);
+    }
+
+    /** L'auteur a-t-il déposé sa réponse ? */
+    public function hasRebuttal(): bool
+    {
+        return filled($this->rebuttal()['text'] ?? null);
+    }
+
+    public function rebuttalText(): ?string
+    {
+        $t = $this->rebuttal()['text'] ?? null;
+
+        return filled($t) ? (string) $t : null;
+    }
+
     /** @return array<string, string> valeur => variante de pastille. */
     public static function statusPills(): array
     {

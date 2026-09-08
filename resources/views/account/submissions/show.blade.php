@@ -184,6 +184,40 @@
                     @endforelse
                     <p class="hint">Les avis détaillés des relecteurs restent confidentiels. Seule la décision finale et d’éventuels commentaires destinés aux auteurs vous sont communiqués.</p>
                 </div>
+
+                {{-- Phase de réponse aux relecteurs (rebuttal) --}}
+                @if ($s->rebuttalOpen())
+                    @php($reb = $s->rebuttal())
+                    <div class="ukc-card" style="margin-top:18px;border-color:#c7d2fe;background:#f5f7ff;" id="rebuttal">
+                        <h2><x-ukc.icon name="pen" :size="18" /> Votre réponse aux relecteurs</h2>
+                        <p style="color:var(--ukc-muted);font-size:.9rem;margin:-2px 0 12px;">
+                            Le comité vous invite à répondre aux retours ci-dessus (préciser, corriger un malentendu,
+                            détailler les modifications prévues) avant la décision finale.
+                        </p>
+
+                        @if ($s->hasRebuttal())
+                            <div class="msg-box" style="background:#fff;">
+                                <div class="from">Réponse transmise{{ ! empty($reb['submitted_at']) ? ' le '.\Illuminate\Support\Carbon::parse($reb['submitted_at'])->translatedFormat('d F Y à H:i') : '' }}</div>
+                                <p style="white-space:pre-line;">{{ $s->rebuttalText() }}</p>
+                            </div>
+                        @endif
+
+                        <form method="POST" action="{{ route('account.submissions.rebuttal', $s) }}" style="margin-top:12px;">
+                            @csrf
+                            <div class="ukc-field">
+                                <label for="rebuttal">{{ $s->hasRebuttal() ? 'Modifier votre réponse' : 'Votre réponse' }} <span class="req">*</span></label>
+                                <textarea id="rebuttal" name="rebuttal" rows="6"
+                                          placeholder="Répondez point par point aux remarques des relecteurs.">{{ old('rebuttal', $s->rebuttalText()) }}</textarea>
+                                @error('rebuttal') <span class="error">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="ukc-form-actions" style="margin-top:12px;">
+                                <button type="submit" class="ukc-btn ukc-btn--blue">
+                                    <x-ukc.icon name="check" :size="16" /> {{ $s->hasRebuttal() ? 'Mettre à jour ma réponse' : 'Envoyer ma réponse' }}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                @endif
             </div>
 
             {{-- Colonne latérale --}}

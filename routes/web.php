@@ -152,6 +152,7 @@ Route::middleware(['auth:account', StampAccountSession::class])->group(function 
     Route::post('/mes-communications/{submission}/resoumettre', [SubmissionController::class, 'resubmit'])->name('account.submissions.resubmit');
     Route::post('/mes-communications/{submission}/version-definitive', [SubmissionController::class, 'cameraReady'])->name('account.submissions.camera-ready');
     Route::post('/mes-communications/{submission}/creneau', [SubmissionController::class, 'chooseSlot'])->name('account.submissions.choose-slot');
+    Route::post('/mes-communications/{submission}/reponse-relecteurs', [SubmissionController::class, 'rebuttal'])->name('account.submissions.rebuttal');
     Route::get('/colloque/{slug}/soumettre', [SubmissionController::class, 'create'])->name('account.submissions.create');
     Route::post('/colloque/{slug}/soumettre', [SubmissionController::class, 'store'])->name('account.submissions.store');
 
@@ -229,6 +230,7 @@ Route::prefix('admin')->group(function () {
             Route::post('/soumissions/attribution-auto', [App\Http\Controllers\Admin\SubmissionController::class, 'autoAssignApply'])->name('admin.submissions.auto-assign.apply');
             Route::get('/soumissions/{submission}', [App\Http\Controllers\Admin\SubmissionController::class, 'show'])->name('admin.submissions.show');
             Route::post('/soumissions/{submission}/statut', [App\Http\Controllers\Admin\SubmissionController::class, 'applyStatus'])->name('admin.submissions.status');
+            Route::post('/soumissions/{submission}/reponse-relecteurs', [App\Http\Controllers\Admin\SubmissionController::class, 'toggleRebuttal'])->name('admin.submissions.rebuttal.toggle');
             Route::post('/soumissions/{submission}/relecteur', [App\Http\Controllers\Admin\SubmissionController::class, 'assignReviewer'])->name('admin.submissions.review.assign');
             Route::delete('/soumissions/{submission}/relecteur/{review}', [App\Http\Controllers\Admin\SubmissionController::class, 'removeReview'])->name('admin.submissions.review.remove');
             Route::post('/soumissions/{submission}/plagiat', [App\Http\Controllers\Admin\SubmissionController::class, 'checkPlagiarism'])->name('admin.submissions.plagiarism');

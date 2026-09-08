@@ -296,6 +296,40 @@ class SubmissionController extends Controller
         return back()->with('ukc_status', 'Statut mis à jour : '.$submission->statusLabel().' — l’auteur a été notifié.');
     }
 
+    /**
+     * Ouvre (ou referme) la phase de réponse aux relecteurs (rebuttal) : révèle à
+     * l'auteur les commentaires « à l'auteur » et l'autorise à y répondre avant
+     * la décision finale.
+     */
+    public function toggleRebuttal(Submission $submission): RedirectResponse
+    {
+        $meta = $submission->meta ?? [];
+        $rebuttal = is_array($meta['rebuttal'] ?? null) ? $meta['rebuttal'] : [];
+
+        if ($submission->rebuttalOpen()) {
+            $rebuttal['opened_at'] = null;
+            $meta['rebuttal'] = $rebuttal;
+            $submission->update(['meta' => $meta]);
+
+            return back()->with('ukc_status', 'Phase de réponse fermée.');
+        }
+
+        $rebuttal['opened_at'] = now()->toIso8601String();
+        $meta['rebuttal'] = $rebuttal;
+        $submission->update(['meta' => $meta]);
+
+        Notifier::account(
+            $submission->participant?->account,
+            kind: 'rebuttal',
+            title: 'Phase de réponse ouverte',
+            body: 'Vous pouvez consulter les retours des relecteurs et y répondre pour « '.$submission->title.' ».',
+            url: route('account.submissions.show', $submission),
+            icon: 'pen',
+        );
+
+        return back()->with('ukc_status', 'Phase de réponse ouverte — l’auteur a été notifié.');
+    }
+
     public function assignReviewer(Request $request, Submission $submission, AssignReviewer $action): RedirectResponse
     {
         $name = trim((string) $request->input('reviewerName'));

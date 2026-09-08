@@ -347,6 +347,36 @@
                     </form>
                 </div>
 
+                {{-- Phase de réponse aux relecteurs (rebuttal) --}}
+                @if ($completedCount)
+                    <div class="ukc-card">
+                        <h2><span><x-ukc.icon name="pen" :size="18" /> Réponse de l’auteur</span></h2>
+                        <p class="desc">Ouvrez la phase de réponse pour révéler les commentaires « à l’auteur » et lui permettre d’y répondre avant la décision.</p>
+
+                        @if ($s->rebuttalOpen())
+                            <span class="ukc-pill ukc-pill--info" style="margin-bottom:10px;display:inline-block;">Phase ouverte</span>
+                            @if ($s->hasRebuttal())
+                                @php($reb = $s->rebuttal())
+                                <div style="background:#f5f7ff;border:1px solid #c7d2fe;border-radius:10px;padding:10px 12px;margin:8px 0;font-size:.9rem;">
+                                    <div style="font-weight:700;margin-bottom:4px;">Réponse de l’auteur{{ ! empty($reb['submitted_at']) ? ' · '.\Illuminate\Support\Carbon::parse($reb['submitted_at'])->translatedFormat('d/m/Y H:i') : '' }}</div>
+                                    <div style="white-space:pre-line;">{{ $s->rebuttalText() }}</div>
+                                </div>
+                            @else
+                                <p style="font-size:.88rem;color:var(--ukc-muted);">En attente de la réponse de l’auteur.</p>
+                            @endif
+                        @else
+                            <p style="font-size:.88rem;color:var(--ukc-muted);">Phase de réponse fermée.</p>
+                        @endif
+
+                        <form method="POST" action="{{ route('admin.submissions.rebuttal.toggle', $s) }}" style="margin-top:8px;">
+                            @csrf
+                            <button type="submit" class="ukc-btn ukc-btn--{{ $s->rebuttalOpen() ? 'ghost' : 'blue' }} ukc-btn--sm">
+                                {{ $s->rebuttalOpen() ? 'Fermer la phase de réponse' : 'Ouvrir la phase de réponse' }}
+                            </button>
+                        </form>
+                    </div>
+                @endif
+
                 {{-- Informations --}}
                 <div class="ukc-card">
                     <h2>Informations</h2>

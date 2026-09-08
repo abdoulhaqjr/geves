@@ -118,6 +118,29 @@ class SubmissionController extends Controller
         ]);
     }
 
+    /** Réponse de l'auteur aux relecteurs (rebuttal), tant que la phase est ouverte. */
+    public function rebuttal(Request $request, Submission $submission): RedirectResponse
+    {
+        $this->authorizeOwnership($submission);
+        abort_unless($submission->rebuttalOpen(), 403);
+
+        $data = $request->validate([
+            'rebuttal' => ['required', 'string', 'max:8000'],
+        ], [
+            'rebuttal.required' => 'Saisissez votre réponse aux relecteurs.',
+        ]);
+
+        $meta = $submission->meta ?? [];
+        $rebuttal = is_array($meta['rebuttal'] ?? null) ? $meta['rebuttal'] : [];
+        $rebuttal['text'] = trim($data['rebuttal']);
+        $rebuttal['submitted_at'] = now()->toIso8601String();
+        $meta['rebuttal'] = $rebuttal;
+        $submission->update(['meta' => $meta]);
+
+        return redirect()->route('account.submissions.show', $submission)
+            ->with('ukc_status', 'Votre réponse aux relecteurs a été transmise au comité.');
+    }
+
     /** Le participant choisit lui-même un créneau libre. */
     public function chooseSlot(Request $request, Submission $submission): RedirectResponse
     {
@@ -238,10 +261,10 @@ class SubmissionController extends Controller
         );
     }
 
-    /** Commentaires des relecteurs destinés à l'auteur (révélés après décision). */
+    /** Commentaires des relecteurs destinés à l'auteur (révélés après décision ou en phase de réponse). */
     private function authorFeedback(Submission $submission): array
     {
-        if (! in_array($submission->status, ['revision', 'accepted', 'rejected'], true)) {
+        if (! in_array($submission->status, ['revision', 'accepted', 'rejected'], true) && ! $submission->rebuttalOpen()) {
             return [];
         }
 
