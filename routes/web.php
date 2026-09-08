@@ -39,6 +39,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AttestationController;
 use App\Http\Controllers\EgressController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PaymentController;
@@ -93,6 +94,9 @@ Route::get('/session/{session}/echanges/sondages', [SessionEngagementController:
 Route::post('/session/{session}/echanges/sondages', [SessionEngagementController::class, 'createPoll'])->name('session.engagement.polls.create');
 Route::post('/session/{session}/echanges/sondages/{poll}/vote', [SessionEngagementController::class, 'votePoll'])->name('session.engagement.polls.vote');
 Route::post('/session/{session}/echanges/sondages/{poll}/etat', [SessionEngagementController::class, 'togglePoll'])->name('session.engagement.polls.toggle');
+
+// Changement de langue (i18n) — mémorisé en session (+ préférence si connecté).
+Route::get('/langue/{locale}', [LocaleController::class, 'switch'])->name('locale.switch');
 
 // Portail relecteur (accès par jeton, sans compte).
 Route::get('/relecture/{token}', [ReviewerController::class, 'portal'])->name('reviewer.portal');

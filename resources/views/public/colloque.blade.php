@@ -77,7 +77,7 @@
                                 <x-ukc.icon name="upload" :size="18" /> Soumettre une communication
                             </a>
                         @endif
-                        <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--ghost">S’inscrire</a>
+                        <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--ghost">{{ __('S’inscrire') }}</a>
                     </div>
                 </div>
 
@@ -142,12 +142,13 @@
                     @endif
                 </ul>
                 <div class="ukc-nav-actions">
-                    <a href="{{ route('home') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">Accueil</a>
-                    <a href="{{ route('public.deroulement') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">Déroulement</a>
-                    <a href="{{ route('account.dashboard') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">Mon espace</a>
+                    <a href="{{ route('home') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">{{ __('Accueil') }}</a>
+                    <a href="{{ route('public.deroulement') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">{{ __('Déroulement') }}</a>
+                    <a href="{{ route('account.dashboard') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">{{ __('Mon espace') }}</a>
                     @if ($e->submission_open)
-                        <a href="{{ route('account.submissions.create', $e->slug) }}" class="ukc-btn ukc-btn--primary ukc-btn--sm">Soumettre</a>
+                        <a href="{{ route('account.submissions.create', $e->slug) }}" class="ukc-btn ukc-btn--primary ukc-btn--sm">{{ __('Soumettre') }}</a>
                     @endif
+                    <x-ukc.lang-switcher />
                 </div>
             </div>
         </div>
@@ -602,7 +603,7 @@
                     <a href="{{ route('account.register') }}" class="ukc-btn ukc-btn--primary">
                         <x-ukc.icon name="user-plus" :size="18" /> Créer mon compte
                     </a>
-                    <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--ghost">Se connecter</a>
+                    <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--ghost">{{ __('Se connecter') }}</a>
                 </div>
             </div>
         </div>

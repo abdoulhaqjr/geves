@@ -78,9 +78,25 @@ return [
     |
     */
 
-    'locale' => env('APP_LOCALE', 'en'),
+    'locale' => env('APP_LOCALE', 'fr'),
 
-    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
+    /*
+    |--------------------------------------------------------------------------
+    | Locales prises en charge (i18n)
+    |--------------------------------------------------------------------------
+    |
+    | Langues proposées dans le sélecteur de langue. La clé est le code de
+    | locale, la valeur son libellé natif. Le français reste la langue par
+    | défaut et le repli (les chaînes non traduites restent en français).
+    |
+    */
+
+    'available_locales' => [
+        'fr' => 'Français',
+        'en' => 'English',
+    ],
+
+    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'fr'),
 
     'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
 

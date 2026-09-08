@@ -26,6 +26,7 @@ use Lab404\Impersonate\Models\Impersonate;
  * @property string|null $two_factor_otp code OTP SMS haché
  * @property Carbon|null $two_factor_otp_expires_at
  * @property string|null $phone
+ * @property string|null $locale langue préférée (i18n)
  * @property array<string, array{inapp: bool, email: bool}>|null $notification_preferences
  * @property array<string, mixed>|null $meta
  * @property string|null $orcid identifiant ORCID canonique (0000-0002-1825-0097)
