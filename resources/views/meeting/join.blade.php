@@ -171,6 +171,7 @@
                 <span class="pill lk">LiveKit</span>
                 <span class="pill warn" id="connPill">Connexion…</span>
                 <button type="button" class="v-btn ghost sm" id="btnToggleSide">Panneau</button>
+                <a href="{{ route('session.engagement', $session) }}" class="v-btn ghost sm">Questions &amp; sondages</a>
                 <a href="{{ $liveKit['backUrl'] }}" class="v-btn danger sm" id="btnLeaveTop">Quitter</a>
             </div>
         </header>
@@ -319,9 +320,16 @@
                     @endif
                 </div>
             </div>
-            <a href="{{ url()->previous() }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
-                <x-ukc.icon name="close" :size="16" /> Quitter
-            </a>
+            <div style="display:flex;gap:8px;">
+                @if ($role->canJoin())
+                    <a href="{{ route('session.engagement', $session) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+                        <x-ukc.icon name="inbox" :size="16" /> Questions &amp; sondages
+                    </a>
+                @endif
+                <a href="{{ url()->previous() }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
+                    <x-ukc.icon name="close" :size="16" /> Quitter
+                </a>
+            </div>
         </header>
 
         <main style="flex:1;min-height:0;display:flex;">

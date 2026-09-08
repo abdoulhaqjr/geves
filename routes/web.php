@@ -49,6 +49,7 @@ use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Public\DeroulementController;
 use App\Http\Controllers\Public\GescoController;
 use App\Http\Controllers\Reviewer\ReviewerController;
+use App\Http\Controllers\SessionEngagementController;
 use App\Http\Middleware\StampAccountSession;
 use Illuminate\Support\Facades\Route;
 
@@ -81,6 +82,13 @@ Route::get('/session/{session}/visio', [MeetingController::class, 'join'])->name
 // Enregistrement (LiveKit Egress) — réservé au modérateur (contrôle dans le contrôleur).
 Route::post('/session/{session}/egress/start', [EgressController::class, 'start'])->name('session.egress.start');
 Route::post('/session/{session}/egress/stop', [EgressController::class, 'stop'])->name('session.egress.stop');
+
+// Engagement live d'une séance (Q&A + sondages) — accès géré dans le contrôleur.
+Route::get('/session/{session}/echanges', [SessionEngagementController::class, 'page'])->name('session.engagement');
+Route::get('/session/{session}/echanges/questions', [SessionEngagementController::class, 'questions'])->name('session.engagement.questions');
+Route::post('/session/{session}/echanges/questions', [SessionEngagementController::class, 'ask'])->name('session.engagement.ask');
+Route::post('/session/{session}/echanges/questions/{question}/vote', [SessionEngagementController::class, 'vote'])->name('session.engagement.vote');
+Route::post('/session/{session}/echanges/questions/{question}/moderation', [SessionEngagementController::class, 'moderate'])->name('session.engagement.moderate');
 
 // Portail relecteur (accès par jeton, sans compte).
 Route::get('/relecture/{token}', [ReviewerController::class, 'portal'])->name('reviewer.portal');

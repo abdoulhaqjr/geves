@@ -363,6 +363,67 @@ document.addEventListener('alpine:init', () => {
         flash(m, t) { this.message = m; this.messageType = t; },
     }));
 
+    // Engagement live d'une séance (Q&A + sondages) : sondage périodique par fetch.
+    window.Alpine.data('sessionEngagement', (config = {}) => ({
+        urls: config.urls || {},
+        canPost: !!config.canPost,
+        canModerate: !!config.canModerate,
+        questions: [],
+        draft: '',
+        _timer: null,
+        _csrf() {
+            return document.querySelector('meta[name="csrf-token"]')?.content || '';
+        },
+        init() {
+            this.refresh();
+            // Rafraîchissement doux toutes les 8 s, en pause si l'onglet est masqué.
+            this._timer = setInterval(() => { if (!document.hidden) this.refresh(); }, 8000);
+        },
+        async refresh() {
+            try {
+                const res = await fetch(this.urls.questions, { headers: { Accept: 'application/json' } });
+                if (!res.ok) return;
+                const data = await res.json();
+                this.questions = data.questions || [];
+            } catch (e) { /* réseau : on retentera au prochain tick */ }
+        },
+        async ask() {
+            const body = this.draft.trim();
+            if (!body) return;
+            try {
+                const res = await fetch(this.urls.ask, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this._csrf() },
+                    body: JSON.stringify({ body }),
+                });
+                if (res.ok) { this.draft = ''; this.refresh(); }
+            } catch (e) { /* ignore */ }
+        },
+        async toggleVote(q) {
+            if (!this.canPost) return;
+            try {
+                const res = await fetch(this.urls.vote + '/' + q.id + '/vote', {
+                    method: 'POST',
+                    headers: { Accept: 'application/json', 'X-CSRF-TOKEN': this._csrf() },
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                q.voted = data.voted;
+                q.votes = data.votes;
+            } catch (e) { /* ignore */ }
+        },
+        async moderate(q, status) {
+            try {
+                const res = await fetch(this.urls.moderate + '/' + q.id + '/moderation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this._csrf() },
+                    body: JSON.stringify({ status }),
+                });
+                if (res.ok) { q.status = status; this.refresh(); }
+            } catch (e) { /* ignore */ }
+        },
+    }));
+
     // Éditeur d'agents IA (admin) : onglets, ajout/suppression côté client ;
     // les avatars sont téléversés à l'enregistrement du formulaire.
     window.Alpine.data('agentsEditor', (agents = []) => ({
