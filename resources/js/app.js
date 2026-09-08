@@ -369,7 +369,9 @@ document.addEventListener('alpine:init', () => {
         canPost: !!config.canPost,
         canModerate: !!config.canModerate,
         questions: [],
+        polls: [],
         draft: '',
+        pollDraft: { question: '', options: ['', ''] },
         _timer: null,
         _csrf() {
             return document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -380,12 +382,58 @@ document.addEventListener('alpine:init', () => {
             this._timer = setInterval(() => { if (!document.hidden) this.refresh(); }, 8000);
         },
         async refresh() {
+            await Promise.all([this.refreshQuestions(), this.refreshPolls()]);
+        },
+        async refreshQuestions() {
             try {
                 const res = await fetch(this.urls.questions, { headers: { Accept: 'application/json' } });
                 if (!res.ok) return;
                 const data = await res.json();
                 this.questions = data.questions || [];
             } catch (e) { /* réseau : on retentera au prochain tick */ }
+        },
+        async refreshPolls() {
+            if (!this.urls.polls) return;
+            try {
+                const res = await fetch(this.urls.polls, { headers: { Accept: 'application/json' } });
+                if (!res.ok) return;
+                const data = await res.json();
+                this.polls = data.polls || [];
+            } catch (e) { /* ignore */ }
+        },
+        pollReady() {
+            return this.pollDraft.question.trim() && this.pollDraft.options.filter(o => o.trim()).length >= 2;
+        },
+        async createPoll() {
+            if (!this.pollReady()) return;
+            try {
+                const res = await fetch(this.urls.createPoll, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this._csrf() },
+                    body: JSON.stringify({ question: this.pollDraft.question.trim(), options: this.pollDraft.options }),
+                });
+                if (res.ok) { this.pollDraft = { question: '', options: ['', ''] }; this.refreshPolls(); }
+            } catch (e) { /* ignore */ }
+        },
+        async votePoll(p, choice) {
+            if (!this.canPost || p.status !== 'open') return;
+            try {
+                const res = await fetch(this.urls.pollBase + '/' + p.id + '/vote', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this._csrf() },
+                    body: JSON.stringify({ choice }),
+                });
+                if (res.ok) { p.mine = choice; this.refreshPolls(); }
+            } catch (e) { /* ignore */ }
+        },
+        async togglePoll(p) {
+            try {
+                const res = await fetch(this.urls.pollBase + '/' + p.id + '/etat', {
+                    method: 'POST',
+                    headers: { Accept: 'application/json', 'X-CSRF-TOKEN': this._csrf() },
+                });
+                if (res.ok) { const d = await res.json(); p.status = d.status; this.refreshPolls(); }
+            } catch (e) { /* ignore */ }
         },
         async ask() {
             const body = this.draft.trim();

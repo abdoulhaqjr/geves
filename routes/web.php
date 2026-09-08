@@ -89,6 +89,10 @@ Route::get('/session/{session}/echanges/questions', [SessionEngagementController
 Route::post('/session/{session}/echanges/questions', [SessionEngagementController::class, 'ask'])->name('session.engagement.ask');
 Route::post('/session/{session}/echanges/questions/{question}/vote', [SessionEngagementController::class, 'vote'])->name('session.engagement.vote');
 Route::post('/session/{session}/echanges/questions/{question}/moderation', [SessionEngagementController::class, 'moderate'])->name('session.engagement.moderate');
+Route::get('/session/{session}/echanges/sondages', [SessionEngagementController::class, 'polls'])->name('session.engagement.polls');
+Route::post('/session/{session}/echanges/sondages', [SessionEngagementController::class, 'createPoll'])->name('session.engagement.polls.create');
+Route::post('/session/{session}/echanges/sondages/{poll}/vote', [SessionEngagementController::class, 'votePoll'])->name('session.engagement.polls.vote');
+Route::post('/session/{session}/echanges/sondages/{poll}/etat', [SessionEngagementController::class, 'togglePoll'])->name('session.engagement.polls.toggle');
 
 // Portail relecteur (accès par jeton, sans compte).
 Route::get('/relecture/{token}', [ReviewerController::class, 'portal'])->name('reviewer.portal');

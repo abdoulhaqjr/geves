@@ -6,6 +6,9 @@
                 ask: '{{ route('session.engagement.ask', $session) }}',
                 vote: '{{ url('session/'.$session->id.'/echanges/questions') }}',
                 moderate: '{{ url('session/'.$session->id.'/echanges/questions') }}',
+                polls: '{{ route('session.engagement.polls', $session) }}',
+                createPoll: '{{ route('session.engagement.polls.create', $session) }}',
+                pollBase: '{{ url('session/'.$session->id.'/echanges/sondages') }}',
             },
             canPost: {{ $canPost ? 'true' : 'false' }},
             canModerate: {{ $canModerate ? 'true' : 'false' }},
@@ -22,6 +25,74 @@
 
         <h1 style="font-size:1.5rem;margin:4px 0 2px;">Échanges</h1>
         <p style="color:var(--ukc-muted);margin:0 0 20px;">{{ $session->label }}@if ($session->edition?->title) · {{ $session->edition->title }}@endif</p>
+
+        {{-- ========================= Sondages ========================= --}}
+        <div class="ukc-card" style="margin-bottom:18px;">
+            <h2><x-ukc.icon name="chart" :size="20" /> Sondages</h2>
+
+            @if ($canModerate)
+                <form @submit.prevent="createPoll()" style="margin:10px 0 16px;padding:12px;border:1px dashed var(--ukc-border);border-radius:12px;">
+                    <div class="ukc-field">
+                        <label>Nouveau sondage</label>
+                        <input type="text" x-model="pollDraft.question" maxlength="300" placeholder="Question posée au public">
+                    </div>
+                    <template x-for="(opt, i) in pollDraft.options" :key="i">
+                        <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
+                            <input type="text" x-model="pollDraft.options[i]" maxlength="150" :placeholder="'Option ' + (i+1)" style="flex:1;">
+                            <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="pollDraft.options.splice(i,1)" x-show="pollDraft.options.length > 2">
+                                <x-ukc.icon name="close" :size="14" />
+                            </button>
+                        </div>
+                    </template>
+                    <div style="display:flex;justify-content:space-between;gap:10px;margin-top:10px;">
+                        <button type="button" class="ukc-btn ukc-btn--outline ukc-btn--sm" @click="pollDraft.options.push('')" x-show="pollDraft.options.length < 6">
+                            <x-ukc.icon name="plus" :size="14" /> Ajouter une option
+                        </button>
+                        <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm" :disabled="!pollReady()">
+                            <x-ukc.icon name="check" :size="15" /> Lancer le sondage
+                        </button>
+                    </div>
+                </form>
+            @endif
+
+            <div style="display:flex;flex-direction:column;gap:14px;">
+                <template x-for="p in polls" :key="p.id">
+                    <div style="border:1px solid var(--ukc-border);border-radius:12px;padding:14px;">
+                        <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;">
+                            <strong x-text="p.question" style="flex:1;"></strong>
+                            <template x-if="p.status === 'closed'"><span class="ukc-pill ukc-pill--muted">Clos</span></template>
+                        </div>
+                        <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">
+                            <template x-for="(opt, idx) in p.options" :key="idx">
+                                <div>
+                                    <button type="button" class="poll-opt"
+                                            @click="votePoll(p, idx)"
+                                            :disabled="!canPost || p.status !== 'open'"
+                                            :class="{ 'is-mine': p.mine === idx }"
+                                            style="width:100%;text-align:left;border:1px solid var(--ukc-border);border-radius:10px;padding:8px 12px;background:var(--ukc-bg);cursor:pointer;position:relative;overflow:hidden;">
+                                        <span style="position:absolute;inset:0;background:rgba(34,62,164,.10);transform-origin:left;"
+                                              :style="'width:' + (p.total ? Math.round(p.counts[idx]/p.total*100) : 0) + '%'"></span>
+                                        <span style="position:relative;display:flex;justify-content:space-between;gap:10px;">
+                                            <span x-text="opt"></span>
+                                            <strong x-show="p.mine !== null || p.status === 'closed' || canModerate"
+                                                    x-text="(p.total ? Math.round(p.counts[idx]/p.total*100) : 0) + '% (' + p.counts[idx] + ')'"></strong>
+                                        </span>
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+                            <span class="hint" x-text="p.total + ' vote(s)'"></span>
+                            <button type="button" x-show="canModerate" class="ukc-btn ukc-btn--ghost ukc-btn--sm"
+                                    @click="togglePoll(p)" x-text="p.status === 'open' ? 'Clore' : 'Rouvrir'"></button>
+                        </div>
+                    </div>
+                </template>
+                <p x-show="!polls.length" style="color:var(--ukc-muted);text-align:center;padding:12px 0;">
+                    {{ $canModerate ? 'Aucun sondage. Lancez-en un ci-dessus.' : 'Aucun sondage en cours.' }}
+                </p>
+            </div>
+        </div>
 
         {{-- ========================= Q&A ========================= --}}
         <div class="ukc-card">

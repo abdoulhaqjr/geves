@@ -3,6 +3,8 @@
 use App\Models\Account;
 use App\Models\Colloque;
 use App\Models\Edition;
+use App\Models\EventSession;
+use App\Models\Participant;
 use App\Models\Submission;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -118,4 +120,23 @@ function seededSubmission(string $status = 'submitted'): Submission
         'status' => $status,
         'authors' => [['name' => 'Awa Kodjo', 'email' => 'awa@example.tg', 'corresponding' => true]],
     ]);
+}
+
+function sessionFor(Edition $edition): EventSession
+{
+    return EventSession::create([
+        'edition_id' => $edition->id, 'label' => 'Séance plénière',
+        'session_day' => '2026-09-03', 'starts_at' => '2026-09-03 09:00', 'ends_at' => '2026-09-03 11:00',
+    ]);
+}
+
+function participantAccount(Edition $edition): Account
+{
+    $account = verifiedAccount();
+    Participant::create([
+        'edition_id' => $edition->id, 'account_id' => $account->id,
+        'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email, 'role' => 'author',
+    ]);
+
+    return $account;
 }
