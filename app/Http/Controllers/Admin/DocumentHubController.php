@@ -80,6 +80,7 @@ class DocumentHubController extends Controller
                 'attPrefix' => (string) Settings::get('attestations.prefix', 'UKC-ATT-2026-'),
                 'attAuto' => (bool) Settings::get('attestations.auto', true),
                 'attNotify' => (bool) Settings::get('attestations.notify', true),
+                'attRequirePresence' => (bool) Settings::get('attestations.require_presence', false),
                 'attIncludeQr' => (bool) Settings::get('attestations.include_qr', true),
                 'attAllowBeforeValidation' => (bool) Settings::get('attestations.allow_before_validation', false),
                 // Identité vérifiable (DIDs) — mockup admin-documents.
@@ -170,6 +171,7 @@ class DocumentHubController extends Controller
             'attestations.prefix' => (string) $request->input('attPrefix'),
             'attestations.auto' => $request->boolean('attAuto'),
             'attestations.notify' => $request->boolean('attNotify'),
+            'attestations.require_presence' => $request->boolean('attRequirePresence'),
             'attestations.include_qr' => $request->boolean('attIncludeQr'),
             'attestations.allow_before_validation' => $request->boolean('attAllowBeforeValidation'),
             'attestations.did_issuer' => (string) $request->input('attDidIssuer'),
@@ -421,8 +423,27 @@ class DocumentHubController extends Controller
             'moderation' => $base()->where('role', 'moderator')->get(),
             'rapporteur' => $base()->where('role', 'rapporteur')->get(),
             'formation' => $base()->where('role', 'trainee')->get(),
+            'participation' => $this->participationTargets($edition),
             default => $base()->whereHas('payments', fn ($q) => $q->where('status', 'paid'))->get(),
         };
+    }
+
+    /**
+     * Participants éligibles à l'attestation de participation : réglés, et — si
+     * l'option « présence requise » est active — effectivement présents (pointés
+     * à l'accueil ou à au moins une séance).
+     */
+    private function participationTargets(Edition $edition): Collection
+    {
+        $paid = Participant::where('edition_id', $edition->id)
+            ->whereHas('payments', fn ($q) => $q->where('status', 'paid'))
+            ->get();
+
+        if (! (bool) Settings::get('attestations.require_presence', false)) {
+            return $paid;
+        }
+
+        return $paid->filter(fn (Participant $p) => $p->wasPresent())->values();
     }
 
     /** Auteurs correspondants d'une communication acceptée (lettre d'acceptation). */

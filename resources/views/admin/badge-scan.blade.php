@@ -1,9 +1,28 @@
 <x-layouts.admin title="Pointage des badges" subtitle="Contrôle d’accès à l’entrée du colloque">
-    <div x-data="badgeScan({{ $checkedCount }}, {{ $totalCount }})" @scan.window="lookup($event.detail)">
+    <div x-data="badgeScan({{ $checkedCount }}, {{ $totalCount }}, {{ Illuminate\Support\Js::from($sessions) }})" @scan.window="lookup($event.detail)">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px;">
-            <p style="color:var(--ukc-muted);margin:0;">Scannez le QR d’un badge (ou saisissez son code) pour enregistrer la présence à l’accueil.</p>
-            <span class="ukc-pill ukc-pill--info"><span x-text="checkedCount"></span> / <span x-text="totalCount"></span> pointé(s)</span>
+            <p style="color:var(--ukc-muted);margin:0;">
+                <template x-if="!sessionId"><span>Scannez le QR d’un badge (ou saisissez son code) pour enregistrer la présence à l’accueil.</span></template>
+                <template x-if="sessionId"><span>Mode séance : chaque scan enregistre la présence <strong>à la séance sélectionnée</strong>.</span></template>
+            </p>
+            <span class="ukc-pill ukc-pill--info"><span x-text="checkedCount"></span> / <span x-text="totalCount"></span> pointé(s) à l’accueil</span>
         </div>
+
+        {{-- Sélecteur du mode de pointage : accueil (global) ou séance (présence effective) --}}
+        @if (count($sessions))
+            <div class="ukc-card" style="margin-bottom:18px;">
+                <div class="ukc-field" style="margin:0;">
+                    <label for="session-mode"><x-ukc.icon name="calendar" :size="16" /> Mode de pointage</label>
+                    <select id="session-mode" x-model.number="sessionId" style="max-width:520px;">
+                        <option value="0">Accueil — présence globale au colloque</option>
+                        @foreach ($sessions as $s)
+                            <option value="{{ $s['id'] }}">Séance · {{ $s['edition'] }} — {{ $s['label'] }}</option>
+                        @endforeach
+                    </select>
+                    <p class="hint" style="margin-top:6px;">La présence à une séance vaut présence à l’accueil et sert de preuve pour l’attestation de participation.</p>
+                </div>
+            </div>
+        @endif
 
         <div class="ukc-alert" x-show="message" x-cloak :class="messageType === 'ok' ? 'ukc-alert--ok' : 'ukc-alert--err'">
             <span class="ico">
@@ -42,13 +61,24 @@
                         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
                             <template x-if="found.paid"><span class="ukc-pill ukc-pill--ok">Réglé</span></template>
                             <template x-if="!found.paid"><span class="ukc-pill ukc-pill--muted">Paiement en attente</span></template>
-                            <template x-if="found.checkedIn"><span class="ukc-pill ukc-pill--info">Pointé à <span x-text="found.checkedAt"></span></span></template>
+                            <template x-if="found.checkedIn"><span class="ukc-pill ukc-pill--info">Accueil : pointé à <span x-text="found.checkedAt"></span></span></template>
                             <template x-if="!found.checkedIn"><span class="ukc-pill ukc-pill--soon">Non pointé</span></template>
+                            <template x-if="sessionId && found.inSession"><span class="ukc-pill ukc-pill--ok">Présent à cette séance</span></template>
+                            <template x-if="sessionId && found.sessionMismatch"><span class="ukc-pill ukc-pill--err">Autre édition</span></template>
                         </div>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                            <button type="button" class="ukc-btn ukc-btn--green" @click="checkIn()" :disabled="found.checkedIn">
-                                <x-ukc.icon name="check" :size="18" /> <span x-text="found.checkedIn ? 'Déjà présent' : 'Marquer présent'"></span>
-                            </button>
+                            {{-- Mode accueil --}}
+                            <template x-if="!sessionId">
+                                <button type="button" class="ukc-btn ukc-btn--green" @click="checkIn()" :disabled="found.checkedIn">
+                                    <x-ukc.icon name="check" :size="18" /> <span x-text="found.checkedIn ? 'Déjà présent' : 'Marquer présent'"></span>
+                                </button>
+                            </template>
+                            {{-- Mode séance --}}
+                            <template x-if="sessionId">
+                                <button type="button" class="ukc-btn ukc-btn--green" @click="checkIn()" :disabled="found.inSession || found.sessionMismatch">
+                                    <x-ukc.icon name="check" :size="18" /> <span x-text="found.inSession ? 'Déjà à la séance' : 'Pointer à la séance'"></span>
+                                </button>
+                            </template>
                             <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="clearFound()">Suivant</button>
                         </div>
                     </div>

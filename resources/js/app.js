@@ -308,7 +308,7 @@ document.addEventListener('alpine:init', () => {
 
     // Pointage des badges (admin) : recherche + check-in par fetch (JSON) ;
     // la caméra reste gérée par scanner.js qui émet un évènement « scan ».
-    window.Alpine.data('badgeScan', (checkedCount = 0, totalCount = 0) => ({
+    window.Alpine.data('badgeScan', (checkedCount = 0, totalCount = 0, sessions = []) => ({
         found: null,
         message: '',
         messageType: '',
@@ -316,6 +316,8 @@ document.addEventListener('alpine:init', () => {
         code: '',
         checkedCount,
         totalCount,
+        sessions: Array.isArray(sessions) ? sessions : [],
+        sessionId: 0, // 0 = mode accueil ; >0 = mode séance
         _csrf() {
             return document.querySelector('meta[name="csrf-token"]')?.content || '';
         },
@@ -327,7 +329,7 @@ document.addEventListener('alpine:init', () => {
                 const res = await fetch('/admin/pointage/rechercher', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this._csrf() },
-                    body: JSON.stringify({ code: text }),
+                    body: JSON.stringify({ code: text, session_id: this.sessionId }),
                 });
                 const data = await res.json();
                 if (data.error) { this.found = null; this.flash(data.error, 'err'); }
@@ -341,13 +343,15 @@ document.addEventListener('alpine:init', () => {
             try {
                 const res = await fetch('/admin/pointage/' + this.found.id + '/pointer', {
                     method: 'POST',
-                    headers: { Accept: 'application/json', 'X-CSRF-TOKEN': this._csrf() },
+                    headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this._csrf() },
+                    body: JSON.stringify({ session_id: this.sessionId }),
                 });
                 const data = await res.json();
-                this.found = data.found;
+                if (data.found) this.found = data.found;
+                if (data.error) { this.flash(data.error, 'err'); return; }
                 this.flash(data.message, 'ok');
                 if (data.newlyCheckedIn) {
-                    this.checkedCount++;
+                    if (!this.sessionId) this.checkedCount++;
                     this.recent.unshift(data.recentEntry);
                     this.recent = this.recent.slice(0, 8);
                 }

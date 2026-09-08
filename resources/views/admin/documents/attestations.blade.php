@@ -123,6 +123,7 @@
                         <label class="ukc-check"><input type="checkbox" name="attNotify" value="1" @checked($opts['attNotify'])> Notifier le participant par e-mail</label>
                         <label class="ukc-check"><input type="checkbox" name="attAllowBeforeValidation" value="1" @checked($opts['attAllowBeforeValidation'])> Autoriser le téléchargement avant validation admin</label>
                         <label class="ukc-check"><input type="checkbox" name="attIncludeQr" value="1" @checked($opts['attIncludeQr'])> Inclure le QR de vérification par défaut</label>
+                        <label class="ukc-check"><input type="checkbox" name="attRequirePresence" value="1" @checked($opts['attRequirePresence'])> Attestation de participation réservée aux présents (pointés à l’accueil ou à une séance)</label>
                         <div style="margin-top:16px;">
                             <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="check" :size="16" /> Enregistrer les options</button>
                         </div>
