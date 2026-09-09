@@ -1,5 +1,5 @@
 <x-dynamic-component :component="$isAccount ? 'layouts.participant' : 'layouts.admin'"
-                     title="Notifications" subtitle="Alertes, décisions et rappels">
+                     :title="__('Notifications')" :subtitle="__('Alertes, décisions et rappels')">
     <div>
         @if ($isAccount)
             @include('partials.account-nav')
@@ -7,30 +7,30 @@
 
         @php
             $kindDesc = [
-                'submission_status' => 'Acceptation, refus, demande de révision',
-                'review_assigned' => 'Nouvelle relecture qui vous est confiée',
-                'attestation' => 'Attestation ou reçu prêt à télécharger',
-                'invitation' => 'Invitations et rappels d’inscription',
-                'payment' => 'Confirmation, échec, remboursement',
-                'submission_new' => 'Nouvelle communication déposée',
-                'contact' => 'Nouveau message de contact',
+                'submission_status' => __('Acceptation, refus, demande de révision'),
+                'review_assigned' => __('Nouvelle relecture qui vous est confiée'),
+                'attestation' => __('Attestation ou reçu prêt à télécharger'),
+                'invitation' => __('Invitations et rappels d’inscription'),
+                'payment' => __('Confirmation, échec, remboursement'),
+                'submission_new' => __('Nouvelle communication déposée'),
+                'contact' => __('Nouveau message de contact'),
             ];
         @endphp
 
         {{-- ============ Centre de notifications ============ --}}
         <div class="ukc-card">
             <h3 style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-                Centre de notifications
+                {{ __('Centre de notifications') }}
                 @if ($unreadCount > 0)
                     <form method="POST" action="{{ route('notifications.read-all') }}" style="margin:0;">
                         @csrf
-                        <button type="submit" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Tout marquer comme lu</button>
+                        <button type="submit" class="ukc-btn ukc-btn--ghost ukc-btn--sm">{{ __('Tout marquer comme lu') }}</button>
                     </form>
                 @endif
             </h3>
             <p style="color:var(--ukc-muted);font-size:.9rem;margin:4px 0 6px;">
-                Alertes liées à vos soumissions, paiements et documents.
-                @if ($unreadCount > 0)<strong>{{ $unreadCount }} non lue{{ $unreadCount > 1 ? 's' : '' }}.</strong>@endif
+                {{ __('Alertes liées à vos soumissions, paiements et documents.') }}
+                @if ($unreadCount > 0)<strong>{{ trans_choice(':count non lue|:count non lues', $unreadCount, ['count' => $unreadCount]) }}.</strong>@endif
             </p>
 
             <div>
@@ -41,7 +41,7 @@
                                 style="width:100%;text-align:left;border:none;background:{{ $n->read_at ? 'none' : '' }};cursor:pointer;">
                             <span class="dot {{ $n->read_at ? 'read' : '' }}"></span>
                             <span class="body">
-                                <strong>{{ $n->data['title'] ?? 'Notification' }}</strong>
+                                <strong>{{ $n->data['title'] ?? __('Notification') }}</strong>
                                 @if (! empty($n->data['body']))<p>{{ $n->data['body'] }}</p>@endif
                             </span>
                             <span class="when">{{ $n->created_at->translatedFormat('d/m · H:i') }}</span>
@@ -50,8 +50,8 @@
                 @empty
                     <div class="ukc-empty" style="margin:0;border:none;">
                         <span class="ico"><x-ukc.icon name="bell" :size="28" /></span>
-                        <h3>Aucune notification</h3>
-                        <p>Vos notifications apparaîtront ici (décisions, paiements, attestations…).</p>
+                        <h3>{{ __('Aucune notification') }}</h3>
+                        <p>{{ __('Vos notifications apparaîtront ici (décisions, paiements, attestations…).') }}</p>
                     </div>
                 @endforelse
             </div>
@@ -65,8 +65,8 @@
 
         {{-- ============ Préférences de notification ============ --}}
         <div class="ukc-card">
-            <h3>Préférences de notification</h3>
-            <p style="color:var(--ukc-muted);font-size:.9rem;margin:4px 0 4px;">Activez ou désactivez chaque type d’alerte (in-app &amp; e-mail).</p>
+            <h3>{{ __('Préférences de notification') }}</h3>
+            <p style="color:var(--ukc-muted);font-size:.9rem;margin:4px 0 4px;">{{ __('Activez ou désactivez chaque type d’alerte (in-app & e-mail).') }}</p>
             <form method="POST" action="{{ route('notifications.prefs') }}">
                 @csrf
                 @foreach ($kinds as $kind => $def)
@@ -85,7 +85,7 @@
                     </div>
                 @endforeach
                 <div style="margin-top:16px;">
-                    <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer</button>
+                    <button type="submit" class="ukc-btn ukc-btn--blue">{{ __('Enregistrer') }}</button>
                 </div>
             </form>
         </div>

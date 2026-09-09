@@ -1,8 +1,7 @@
 @php
-    $seed = 'Bonjour ! Je suis '.$agentName.', l’assistante du colloque de l’Université de Kara. '
-        .'Comment puis-je vous aider aujourd’hui ?';
+    $seed = __('Bonjour ! Je suis :name, l’assistante du colloque de l’Université de Kara. Comment puis-je vous aider aujourd’hui ?', ['name' => $agentName]);
 @endphp
-<x-layouts.app title="Assistante {{ $agentName }}">
+<x-layouts.app :title="__('Assistante :name', ['name' => $agentName])">
     @include('partials.public-header')
 
     <section class="ukc-section ukc-section--tight">
@@ -17,8 +16,8 @@
                         @endif
                     </div>
                     <div>
-                        <h1>{{ $agentName }} — votre assistante colloque</h1>
-                        <p>Questions sur les soumissions, l’inscription, les tarifs, le programme et les documents.</p>
+                        <h1>{{ $agentName }} — {{ __('votre assistante colloque') }}</h1>
+                        <p>{{ __('Questions sur les soumissions, l’inscription, les tarifs, le programme et les documents.') }}</p>
                     </div>
                 </div>
 
@@ -26,7 +25,7 @@
                     <div class="chat-messages" x-ref="log">
                         <template x-for="(m, i) in messages" :key="i">
                             <div class="msg" :class="m.role === 'user' ? 'user' : 'bot'">
-                                <div class="who" x-text="m.role === 'user' ? 'Vous' : agentName"></div>
+                                <div class="who" x-text="m.role === 'user' ? '{{ __('Vous') }}' : agentName"></div>
                                 <template x-if="m.role === 'user'"><div style="white-space:pre-wrap;" x-text="m.text"></div></template>
                                 <template x-if="m.role !== 'user'"><div class="chat-md" x-html="render(m.text)"></div></template>
                             </div>
@@ -37,14 +36,14 @@
                     </div>
 
                     <div class="suggestions" x-show="messages.length <= 1">
-                        <button type="button" @click="ask('Comment soumettre une communication ?')">Soumettre une communication</button>
-                        <button type="button" @click="ask('Quels sont les tarifs d’inscription ?')">Tarifs d’inscription</button>
-                        <button type="button" @click="ask('Où voir mon badge et mon attestation ?')">Badge &amp; attestation</button>
-                        <button type="button" @click="ask('Quel est le programme du colloque ?')">Programme</button>
+                        <button type="button" @click="ask('{{ __('Comment soumettre une communication ?') }}')">{{ __('Soumettre une communication') }}</button>
+                        <button type="button" @click="ask('{{ __('Quels sont les tarifs d’inscription ?') }}')">{{ __('Tarifs d’inscription') }}</button>
+                        <button type="button" @click="ask('{{ __('Où voir mon badge et mon attestation ?') }}')">{{ __('Badge & attestation') }}</button>
+                        <button type="button" @click="ask('{{ __('Quel est le programme du colloque ?') }}')">{{ __('Programme') }}</button>
                     </div>
 
                     <div class="chat-input">
-                        <textarea x-model="input" rows="1" placeholder="Écrivez votre message…"
+                        <textarea x-model="input" rows="1" placeholder="{{ __('Écrivez votre message…') }}"
                                   @keydown.enter.prevent="if (!$event.shiftKey) { send(); }"
                                   :disabled="sending"></textarea>
                         <button type="button" class="send" @click="send()" aria-label="Envoyer" :disabled="sending">
@@ -54,7 +53,7 @@
                 </div>
 
                 <p class="hint" style="text-align:center;font-size:12.5px;color:var(--ukc-muted);margin-top:10px;">
-                    {{ $agentName }} s’appuie sur les informations officielles du colloque. Pour une demande sensible, contactez le secrétariat.
+                    {{ $agentName }} {{ __('s’appuie sur les informations officielles du colloque. Pour une demande sensible, contactez le secrétariat.') }}
                 </p>
             </div>
         </div>

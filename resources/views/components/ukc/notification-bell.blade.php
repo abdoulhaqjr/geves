@@ -8,7 +8,7 @@
 @endphp
 
 <div x-data="{ open: false }" @click.outside="open = false" style="position:relative;">
-    <button type="button" @click="open = !open" class="ukc-bell" aria-label="Notifications"
+    <button type="button" @click="open = !open" class="ukc-bell" aria-label="{{ __('Notifications') }}"
             style="position:relative;background:none;border:none;cursor:pointer;color:var(--ukc-text);
                    display:inline-flex;align-items:center;padding:6px;border-radius:10px;">
         <x-ukc.icon name="bell" :size="22" />
@@ -25,13 +25,13 @@
                 box-shadow:var(--ukc-shadow-lg);overflow:hidden;">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;
                     padding:12px 14px;border-bottom:1px solid var(--ukc-border);">
-            <strong style="font-size:.95rem;">Notifications</strong>
+            <strong style="font-size:.95rem;">{{ __('Notifications') }}</strong>
             @if ($unreadCount > 0)
                 <form method="POST" action="{{ route('notifications.read-all') }}">
                     @csrf
                     <button type="submit"
                             style="background:none;border:none;color:var(--ukc-blue);font-size:.78rem;font-weight:700;cursor:pointer;">
-                        Tout marquer comme lu
+                        {{ __('Tout marquer comme lu') }}
                     </button>
                 </form>
             @endif
@@ -49,7 +49,7 @@
                             <x-ukc.icon :name="$n->data['icon'] ?? 'bell'" :size="18" />
                         </span>
                         <span style="min-width:0;flex:1;">
-                            <span style="display:block;font-size:.85rem;font-weight:700;color:var(--ukc-text);">{{ $n->data['title'] ?? 'Notification' }}</span>
+                            <span style="display:block;font-size:.85rem;font-weight:700;color:var(--ukc-text);">{{ $n->data['title'] ?? __('Notification') }}</span>
                             @if (! empty($n->data['body']))
                                 <span style="display:block;font-size:.8rem;color:var(--ukc-muted);margin-top:1px;
                                              overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $n->data['body'] }}</span>
@@ -65,7 +65,7 @@
                 </form>
             @empty
                 <div style="padding:26px 14px;text-align:center;color:var(--ukc-muted);font-size:.85rem;">
-                    <x-ukc.icon name="bell" :size="26" /><br>Aucune notification.
+                    <x-ukc.icon name="bell" :size="26" /><br>{{ __('Aucune notification.') }}
                 </div>
             @endforelse
         </div>
@@ -73,7 +73,7 @@
         <a href="{{ route($allRoute) }}"
            style="display:block;text-align:center;padding:11px;font-size:.83rem;font-weight:700;
                   color:var(--ukc-blue);border-top:1px solid var(--ukc-border);">
-            Voir toutes les notifications
+            {{ __('Voir toutes les notifications') }}
         </a>
     </div>
 </div>
