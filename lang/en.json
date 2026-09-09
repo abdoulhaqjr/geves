@@ -137,5 +137,24 @@
     "Votre espace se remplira bientôt": "Your space will fill up soon",
     "Communications, paiements et attestation apparaîtront ici au fil de votre participation.": "Papers, payments and certificates will appear here as you participate.",
     "Documents de mes éditions": "Documents from my editions",
-    "Livret des résumés": "Book of abstracts"
+    "Livret des résumés": "Book of abstracts",
+
+    "Vos communications & dépôt d’un résumé": "Your papers & abstract submission",
+    "L’appel à communications est <strong>ouvert</strong>. Date limite de soumission :": "The call for papers is <strong>open</strong>. Submission deadline:",
+    "Utilisez le formulaire guidé pour déposer un résumé.": "Use the guided form to submit an abstract.",
+    "La date limite de soumission était le": "The submission deadline was",
+    "Consultez le statut de vos dépôts existants ci-dessous.": "Check the status of your existing submissions below.",
+    "Mes communications": "My papers",
+    "Nouvelle soumission": "New submission",
+    "Type": "Type",
+    "mots": "words",
+    "Correction demandée": "Revision requested",
+    "Voir": "View",
+    "Vous n’avez pas encore soumis de communication.": "You have not submitted any paper yet.",
+    "Déposer un nouveau résumé": "Submit a new abstract",
+    "Formulaire guidé : informations générales, auteurs, résumé structuré (≤ 250 mots), fichier PDF et validation.": "Guided form: general information, authors, structured abstract (≤ 250 words), PDF file and validation.",
+    "Consignes : français ou anglais · objectifs / méthodes / résultats · 3 à 5 mots-clés.": "Guidelines: French or English · objectives / methods / results · 3 to 5 keywords.",
+    "Ouvrir le formulaire de soumission": "Open the submission form",
+    "Appel à communications fermé": "Call for papers closed",
+    "Suivi de ma dernière soumission": "Track my latest submission"
 }
