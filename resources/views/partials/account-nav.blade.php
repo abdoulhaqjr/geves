@@ -6,17 +6,17 @@
     $navTwoFaMethod = $navAccount?->hasSmsEnabled() ? 'OTP SMS' : 'TOTP';
 @endphp
 <div class="account-head" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-    <h1>Mon compte</h1>
+    <h1>{{ __('Mon compte') }}</h1>
     @if ($navTwoFaOn)
-        <span class="ukc-pill ukc-pill--ok account-badge">2FA activée · {{ $navTwoFaMethod }}</span>
+        <span class="ukc-pill ukc-pill--ok account-badge">{{ __('2FA activée') }} · {{ $navTwoFaMethod }}</span>
     @else
-        <span class="ukc-pill ukc-pill--muted account-badge">2FA désactivée</span>
+        <span class="ukc-pill ukc-pill--muted account-badge">{{ __('2FA désactivée') }}</span>
     @endif
 </div>
 @php($isTwoFa = request()->routeIs('account.security') && request('tab') === '2fa')
 <nav class="account-nav">
-    <a href="{{ route('account.preferences') }}" @class(['active' => request()->routeIs('account.preferences')])>Préférences</a>
-    <a href="{{ route('account.notifications') }}" @class(['active' => request()->routeIs('account.notifications')])>Notifications</a>
-    <a href="{{ route('account.security') }}" @class(['active' => request()->routeIs('account.security') && ! $isTwoFa])>Sécurité</a>
-    <a href="{{ route('account.security', ['tab' => '2fa']) }}" @class(['active' => $isTwoFa])>Double authentification</a>
+    <a href="{{ route('account.preferences') }}" @class(['active' => request()->routeIs('account.preferences')])>{{ __('Préférences') }}</a>
+    <a href="{{ route('account.notifications') }}" @class(['active' => request()->routeIs('account.notifications')])>{{ __('Notifications') }}</a>
+    <a href="{{ route('account.security') }}" @class(['active' => request()->routeIs('account.security') && ! $isTwoFa])>{{ __('Sécurité') }}</a>
+    <a href="{{ route('account.security', ['tab' => '2fa']) }}" @class(['active' => $isTwoFa])>{{ __('Double authentification') }}</a>
 </nav>
