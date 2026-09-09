@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
     <style>
@@ -26,7 +26,7 @@
                 <div style="font-size:12px;" class="muted">Université de Kara</div>
             </td>
             <td style="text-align:right;vertical-align:top;">
-                <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;" class="muted">Reçu de paiement</div>
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;" class="muted">{{ __('Reçu de paiement') }}</div>
                 <div style="font-weight:bold;font-size:16px;">{{ $payment->receipt_no }}</div>
             </td>
         </tr>
@@ -35,16 +35,16 @@
     <hr style="border:none;border-top:1px solid #e5e7eb;margin:22px 0;">
 
     <table>
-        <tr><td class="muted" style="padding:7px 0;">Reçu de</td><td style="padding:7px 0;text-align:right;font-weight:bold;">{{ $payment->participant?->full_name }}</td></tr>
-        <tr><td class="muted" style="padding:7px 0;">E-mail</td><td style="padding:7px 0;text-align:right;">{{ $payment->participant?->email }}</td></tr>
-        <tr><td class="muted" style="padding:7px 0;">Édition</td><td style="padding:7px 0;text-align:right;">{{ $payment->edition?->title }}</td></tr>
-        <tr><td class="muted" style="padding:7px 0;">Moyen de paiement</td><td style="padding:7px 0;text-align:right;">{{ $payment->methodLabel() }}</td></tr>
-        <tr><td class="muted" style="padding:7px 0;">Date</td><td style="padding:7px 0;text-align:right;">{{ $payment->paid_at?->format('d/m/Y') }}</td></tr>
+        <tr><td class="muted" style="padding:7px 0;">{{ __('Reçu de') }}</td><td style="padding:7px 0;text-align:right;font-weight:bold;">{{ $payment->participant?->full_name }}</td></tr>
+        <tr><td class="muted" style="padding:7px 0;">{{ __('E-mail') }}</td><td style="padding:7px 0;text-align:right;">{{ $payment->participant?->email }}</td></tr>
+        <tr><td class="muted" style="padding:7px 0;">{{ __('Édition') }}</td><td style="padding:7px 0;text-align:right;">{{ $payment->edition?->title }}</td></tr>
+        <tr><td class="muted" style="padding:7px 0;">{{ __('Moyen de paiement') }}</td><td style="padding:7px 0;text-align:right;">{{ $payment->methodLabel() }}</td></tr>
+        <tr><td class="muted" style="padding:7px 0;">{{ __('Date') }}</td><td style="padding:7px 0;text-align:right;">{{ $payment->paid_at?->format('d/m/Y') }}</td></tr>
     </table>
 
     <table style="margin-top:22px;background:#f3f4f6;">
         <tr>
-            <td style="padding:16px 18px;font-weight:bold;">Montant réglé</td>
+            <td style="padding:16px 18px;font-weight:bold;">{{ __('Montant réglé') }}</td>
             <td style="padding:16px 18px;text-align:right;font-size:22px;font-weight:bold;color:#223ea4;">
                 {{ number_format((float) $payment->amount, 0, ',', ' ') }} {{ $payment->currency }}
             </td>
@@ -52,7 +52,7 @@
     </table>
 
     <p style="text-align:center;font-size:10px;color:#9ca3af;margin-top:24px;">
-        Reçu généré le {{ now()->format('d/m/Y') }} — {{ $payment->edition?->colloque?->name }}.
+        {{ __('Reçu généré le :date', ['date' => now()->format('d/m/Y')]) }} — {{ $payment->edition?->colloque?->name }}.
     </p>
 </body>
 </html>

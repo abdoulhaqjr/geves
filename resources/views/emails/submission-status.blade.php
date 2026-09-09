@@ -1,13 +1,13 @@
 <x-mail::message>
 # {{ $meta['heading'] }}
 
-Bonjour {{ $submission->correspondingAuthorName() }},
+{{ __('Bonjour') }} {{ $submission->correspondingAuthorName() }},
 
 {{ $meta['intro'] }}
 
-- **Référence :** {{ $submission->ref_code }}
-- **Titre :** {{ $submission->title }}
-- **Édition :** {{ $submission->edition?->title }}
+- **{{ __('Référence :') }}** {{ $submission->ref_code }}
+- **{{ __('Titre :') }}** {{ $submission->title }}
+- **{{ __('Édition :') }}** {{ $submission->edition?->title }}
 
 @if ($note)
 <x-mail::panel>
@@ -16,9 +16,9 @@ Bonjour {{ $submission->correspondingAuthorName() }},
 @endif
 
 <x-mail::button :url="route('account.submissions.index')">
-Voir mes communications
+{{ __('Voir mes communications') }}
 </x-mail::button>
 
-Cordialement,
-Le comité d’organisation
+{{ __('Cordialement,') }}
+{{ __('Le comité d’organisation') }}
 </x-mail::message>

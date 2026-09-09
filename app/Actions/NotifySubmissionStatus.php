@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Mail\SubmissionStatusMail;
 use App\Models\Email;
 use App\Models\Submission;
+use App\Support\EmailTemplates;
 use App\Support\Notifier;
 use Illuminate\Support\Facades\Mail;
 
@@ -27,16 +28,14 @@ class NotifySubmissionStatus
             return;
         }
 
-        $mail = new SubmissionStatusMail($submission, $statusKey, $note);
-
-        Mail::to($recipient)->send($mail);
+        Mail::to($recipient)->send(new SubmissionStatusMail($submission, $statusKey, $note));
 
         Email::create([
             'edition_id' => $submission->edition_id,
             'participant_id' => $submission->participant_id,
             'template' => 'submission_'.$statusKey,
             'recipient' => $recipient,
-            'subject' => $mail->meta['subject'],
+            'subject' => EmailTemplates::forSubmission($submission, $statusKey)['subject'],
             'body' => $note,
             'sent_at' => now(),
             'status' => 'sent',

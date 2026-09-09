@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Participant;
+use App\Support\Locales;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -21,11 +22,13 @@ class ReviewerInvitationMail extends Mailable implements ShouldQueue
     public function __construct(
         public Participant $reviewer,
         public int $assignedCount = 1,
-    ) {}
+    ) {
+        $this->locale(Locales::resolve($reviewer->account?->locale));
+    }
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Invitation à relire des communications');
+        return new Envelope(subject: __('Invitation à relire des communications'));
     }
 
     public function content(): Content

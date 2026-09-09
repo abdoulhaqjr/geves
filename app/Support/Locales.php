@@ -36,6 +36,12 @@ class Locales
         return (string) config('app.fallback_locale', 'fr');
     }
 
+    /** Locale prise en charge, sinon la langue par défaut (utile pour les e-mails/PDF). */
+    public static function resolve(?string $locale): string
+    {
+        return self::supported($locale) ? (string) $locale : self::default();
+    }
+
     /** Libellé natif d'une locale (ou le code si inconnu). */
     public static function label(string $locale): string
     {

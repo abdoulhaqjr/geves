@@ -54,7 +54,6 @@ it('propage le modèle personnalisé au Mailable de statut', function () {
 
     $mail = new SubmissionStatusMail($submission, 'accepted');
 
-    expect($mail->meta['subject'])->toBe('Bravo Awa !');
     $mail->assertHasSubject('Bravo Awa !');
     $mail->assertSeeInHtml('Youpi');
     $mail->assertSeeInHtml('Bien joué.');

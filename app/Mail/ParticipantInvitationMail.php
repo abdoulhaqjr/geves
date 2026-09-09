@@ -4,6 +4,7 @@ namespace App\Mail;
 
 use App\Models\Participant;
 use App\Support\EmailTemplates;
+use App\Support\Locales;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -20,23 +21,27 @@ class ParticipantInvitationMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    /** @var array{subject:string, heading:string, intro:string} */
-    public array $meta;
-
     public function __construct(public Participant $participant)
     {
-        $this->meta = EmailTemplates::forParticipant($participant);
+        $this->locale(Locales::resolve($participant->account?->locale));
+    }
+
+    /** @return array{subject:string, heading:string, intro:string} */
+    protected function meta(): array
+    {
+        return EmailTemplates::forParticipant($this->participant);
     }
 
     public function envelope(): Envelope
     {
-        $subject = $this->meta['subject'] !== '' ? $this->meta['subject'] : 'Invitation';
+        $meta = $this->meta();
+        $subject = $meta['subject'] !== '' ? $meta['subject'] : __('Invitation');
 
-        return new Envelope(subject: $subject.' — '.($this->participant->edition?->title ?? 'Colloque'));
+        return new Envelope(subject: $subject.' — '.($this->participant->edition?->title ?? __('Colloque')));
     }
 
     public function content(): Content
     {
-        return new Content(markdown: 'emails.participant-invitation', with: ['meta' => $this->meta]);
+        return new Content(markdown: 'emails.participant-invitation', with: ['meta' => $this->meta()]);
     }
 }

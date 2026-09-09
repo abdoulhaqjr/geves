@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
     <style>
@@ -28,14 +28,14 @@
             <div style="font-weight:bold;color:#223ea4;font-size:17px;">{{ $attestation->edition?->colloque?->name }}</div>
             <div style="font-size:12px;" class="muted">Université de Kara</div>
 
-            <h1>Attestation de {{ mb_strtolower($attestation->typeLabel()) }}</h1>
+            <h1>{{ __('Attestation de :type', ['type' => mb_strtolower(__($attestation->typeLabel()))]) }}</h1>
             <div style="width:80px;height:3px;background:#ffd700;margin:0 auto 26px;"></div>
 
-            <p style="font-size:14px;" class="muted">Décernée à</p>
+            <p style="font-size:14px;" class="muted">{{ __('Décernée à') }}</p>
             <p style="font-size:24px;font-weight:bold;color:#223ea4;margin:6px 0 22px;">{{ $attestation->recipient_name }}</p>
 
             <p style="font-size:14px;line-height:1.7;">
-                pour sa {{ mb_strtolower($attestation->typeLabel()) }} à
+                {{ __('pour sa :type à', ['type' => mb_strtolower(__($attestation->typeLabel()))]) }}
                 <strong>{{ $attestation->edition?->title }}</strong>@if ($attestation->edition?->location), {{ $attestation->edition->location }}@endif.
             </p>
         </div>
@@ -43,17 +43,17 @@
         <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:48px;">
             <tr>
                 <td style="vertical-align:bottom;font-size:12px;" class="muted">
-                    <div>Délivrée le {{ $attestation->issued_at?->format('d/m/Y') }}</div>
-                    <div style="margin-top:6px;font-size:10px;">Réf. {{ $attestation->uuid }}</div>
+                    <div>{{ __('Délivrée le :date', ['date' => $attestation->issued_at?->format('d/m/Y')]) }}</div>
+                    <div style="margin-top:6px;font-size:10px;">{{ __('Réf.') }} {{ $attestation->uuid }}</div>
                 </td>
                 <td style="text-align:right;width:150px;">
                     <div style="width:120px;height:120px;display:inline-block;">{!! $qr !!}</div>
-                    <div style="font-size:9px;color:#9ca3af;margin-top:2px;">Scannez pour vérifier</div>
+                    <div style="font-size:9px;color:#9ca3af;margin-top:2px;">{{ __('Scannez pour vérifier') }}</div>
                 </td>
             </tr>
         </table>
 
-        <p style="text-align:center;font-size:10px;color:#9ca3af;margin-top:28px;">Vérification : {{ $verifyUrl }}</p>
+        <p style="text-align:center;font-size:10px;color:#9ca3af;margin-top:28px;">{{ __('Vérification :') }} {{ $verifyUrl }}</p>
     </div>
 </body>
 </html>

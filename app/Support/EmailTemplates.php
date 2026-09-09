@@ -167,10 +167,14 @@ class EmailTemplates
         $overrides = (array) Settings::get('email_templates', []);
         $o = $overrides[$key] ?? [];
 
+        // Les valeurs par défaut (intégrées) sont traduisibles (i18n) ; un override
+        // admin est du contenu libre, utilisé tel quel.
+        $tr = fn (string $s): string => $s === '' ? '' : (string) __($s);
+
         return [
-            'subject' => filled($o['subject'] ?? null) ? (string) $o['subject'] : (string) $default['subject'],
-            'heading' => filled($o['heading'] ?? null) ? (string) $o['heading'] : (string) $default['heading'],
-            'intro' => filled($o['intro'] ?? null) ? (string) $o['intro'] : (string) $default['intro'],
+            'subject' => filled($o['subject'] ?? null) ? (string) $o['subject'] : $tr((string) $default['subject']),
+            'heading' => filled($o['heading'] ?? null) ? (string) $o['heading'] : $tr((string) $default['heading']),
+            'intro' => filled($o['intro'] ?? null) ? (string) $o['intro'] : $tr((string) $default['intro']),
         ];
     }
 

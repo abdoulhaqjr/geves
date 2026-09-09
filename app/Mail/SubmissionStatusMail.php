@@ -4,6 +4,7 @@ namespace App\Mail;
 
 use App\Models\Submission;
 use App\Support\EmailTemplates;
+use App\Support\Locales;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -21,24 +22,28 @@ class SubmissionStatusMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    /** @var array{subject:string, heading:string, intro:string} */
-    public array $meta;
-
     public function __construct(
         public Submission $submission,
         public string $statusKey,
         public ?string $note = null,
     ) {
-        $this->meta = EmailTemplates::forSubmission($submission, $statusKey);
+        // Rendu dans la langue de l'auteur (i18n) ; sujet/contenu calculés au rendu.
+        $this->locale(Locales::resolve($submission->participant?->account?->locale));
+    }
+
+    /** @return array{subject:string, heading:string, intro:string} */
+    protected function meta(): array
+    {
+        return EmailTemplates::forSubmission($this->submission, $this->statusKey);
     }
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: $this->meta['subject']);
+        return new Envelope(subject: $this->meta()['subject']);
     }
 
     public function content(): Content
     {
-        return new Content(markdown: 'emails.submission-status');
+        return new Content(markdown: 'emails.submission-status', with: ['meta' => $this->meta()]);
     }
 }

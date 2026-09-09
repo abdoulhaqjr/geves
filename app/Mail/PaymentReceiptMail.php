@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Payment;
+use App\Support\Locales;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -18,11 +19,14 @@ class PaymentReceiptMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public Payment $payment) {}
+    public function __construct(public Payment $payment)
+    {
+        $this->locale(Locales::resolve($payment->participant?->account?->locale));
+    }
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Paiement reçu — reçu '.$this->payment->receipt_no);
+        return new Envelope(subject: __('Paiement reçu — reçu :ref', ['ref' => $this->payment->receipt_no]));
     }
 
     public function content(): Content
