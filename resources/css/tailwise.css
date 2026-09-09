@@ -184,6 +184,20 @@
 .ukc-shell .account-dashboard .tw-stat { padding-top: 20px; }
 .ukc-shell .account-dashboard .tw-stat__icon { position: static; margin: 0 auto 10px; }
 
+/* ===================== Score de relecture (highlight) ===================== */
+.ukc-shell .tw-score {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 14px; margin-bottom: 14px;
+    border: 1px solid var(--tw-line); border-radius: 0.6rem; background: #f8fafc;
+}
+.ukc-shell .tw-score__num { font-size: 1.9rem; font-weight: 800; line-height: 1; color: var(--ukc-blue); }
+.ukc-shell .tw-score__num span { font-size: .8rem; font-weight: 700; color: #94a3b8; margin-left: 2px; }
+.ukc-shell .tw-score--green .tw-score__num { color: var(--ukc-green); }
+.ukc-shell .tw-score--amber .tw-score__num { color: #d97706; }
+.ukc-shell .tw-score--red .tw-score__num { color: #dc2626; }
+.ukc-shell .tw-score__label { font-weight: 700; color: var(--tw-ink-strong); font-size: .9rem; }
+.ukc-shell .tw-score__sub { font-size: .8rem; color: #94a3b8; }
+
 /* ===================== Onglets pilules (nav-docs) ===================== */
 .ukc-shell .ukc-nav-docs button.active,
 .ukc-shell .ukc-nav-docs a.active {

@@ -258,15 +258,21 @@
                     <h2><span><x-ukc.icon name="mic" :size="18" /> Relecteurs</span></h2>
 
                     @if ($completedCount)
-                        <div class="ukc-alert ukc-alert--info" style="margin-bottom:12px;">
-                            <span class="ico"><x-ukc.icon name="chart" :size="18" /></span>
-                            <div>
-                                {{ $completedCount }} relecture(s) rendue(s)
-                                @if ($averageScore !== null)
-                                    — note moyenne <strong>{{ number_format((float) $averageScore, 1, ',', ' ') }}/20</strong>
-                                @endif
+                        @if ($averageScore !== null)
+                            @php($scoreTone = $averageScore >= 14 ? 'green' : ($averageScore >= 10 ? 'amber' : 'red'))
+                            <div class="tw-score tw-score--{{ $scoreTone }}">
+                                <div class="tw-score__num">{{ number_format((float) $averageScore, 1, ',', ' ') }}<span>/20</span></div>
+                                <div>
+                                    <div class="tw-score__label">Note moyenne</div>
+                                    <div class="tw-score__sub">{{ $completedCount }} relecture(s) rendue(s)</div>
+                                </div>
                             </div>
-                        </div>
+                        @else
+                            <div class="ukc-alert ukc-alert--info" style="margin-bottom:12px;">
+                                <span class="ico"><x-ukc.icon name="chart" :size="18" /></span>
+                                <div>{{ $completedCount }} relecture(s) rendue(s)</div>
+                            </div>
+                        @endif
                     @endif
 
                     @forelse ($reviews as $review)
