@@ -11,9 +11,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Détermine la langue de la requête (i18n) selon l'ordre de priorité :
- * préférence du compte connecté → choix mémorisé en session → langue du
- * navigateur (Accept-Language) → langue par défaut. Applique la locale à
- * l'application pour toute la requête.
+ * préférence du compte connecté → choix mémorisé en session → langue par
+ * défaut (français). La langue n'est pas déduite du navigateur : le français
+ * reste l'expérience par défaut d'une institution francophone, l'anglais étant
+ * choisi explicitement via le sélecteur de langue.
  */
 class SetLocale
 {
@@ -38,13 +39,7 @@ class SetLocale
             return (string) $session;
         }
 
-        // 3. Langue préférée du navigateur, si prise en charge.
-        $browser = $request->getPreferredLanguage(Locales::codes());
-        if (Locales::supported($browser)) {
-            return (string) $browser;
-        }
-
-        // 4. Repli : langue par défaut.
+        // 3. Repli : langue par défaut (français).
         return Locales::default();
     }
 }
