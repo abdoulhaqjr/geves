@@ -562,7 +562,11 @@
                         </div>
                     @endif
 
-                    <div class="ukc-form-actions" style="margin-top:4px;border-top:none;padding-top:0;">
+                    {{-- Enregistrer/Annuler du formulaire principal : masqués sur les onglets
+                         à sauvegarde dédiée (Relecteurs, Équipe, Traductions) qui ont leurs
+                         propres boutons. --}}
+                    <div class="ukc-form-actions" style="margin-top:4px;border-top:none;padding-top:0;"
+                         x-show="!['reviewers','team','translations'].includes(tab)">
                         <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer</button>
                         <a href="{{ route('admin.editions.index') }}" class="ukc-btn ukc-btn--ghost">Annuler</a>
                     </div>

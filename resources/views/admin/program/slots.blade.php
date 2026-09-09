@@ -10,6 +10,18 @@
 @endphp
 
 <x-layouts.admin title="Créneaux de passage" subtitle="Ateliers · Sessions · Planning">
+    @if ($edition)
+        <x-slot:actions>
+            <a href="{{ route('public.colloque', $edition->slug) }}#programme" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+                <x-ukc.icon name="external" :size="15" /> Aperçu public
+            </a>
+            <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm"
+                    onclick="window.dispatchEvent(new CustomEvent('ukc-new-slot'))">
+                <x-ukc.icon name="plus" :size="15" /> Nouveau créneau
+            </button>
+        </x-slot:actions>
+    @endif
+
     <div class="admin-page admin-program"
          x-data="{
             tab: 'planning',
@@ -22,29 +34,18 @@
             openSpace() { this.form = { name:'', capacity:'', building:'', note:'' }; this.modal='space'; },
             openRoom(a) { this.form = { ...a }; this.modal='room'; },
          }"
-         @keydown.escape.window="modal=null">
+         @keydown.escape.window="modal=null"
+         @ukc-new-slot.window="openSlot(null)">
 
-        {{-- Barre d'outils : édition + actions --}}
-        <div class="ukc-toolbar" style="align-items:flex-end;">
-            <div class="ukc-field" style="max-width:340px;margin:0;">
-                <label>Édition</label>
-                <select onchange="window.location='{{ route('admin.program.slots') }}?edition_id='+this.value">
-                    <option value="">— Choisir —</option>
-                    @foreach ($editions as $ed)
-                        <option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <span class="sep"></span>
-            @if ($edition)
-                <a href="{{ route('public.colloque', $edition->slug) }}#programme" target="_blank" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
-                    <x-ukc.icon name="external" :size="15" /> Aperçu public
-                </a>
-                <button type="button" class="ukc-btn ukc-btn--sm" @click="openSlot(null)">
-                    <x-ukc.icon name="plus" :size="15" /> Nouveau créneau
-                </button>
-            @endif
-        </div>
+        {{-- Filtres (GET) : sélecteur d'édition --}}
+        <form method="GET" class="filter-bar">
+            <select name="edition_id" onchange="this.form.submit()">
+                <option value="">— Édition —</option>
+                @foreach ($editions as $ed)
+                    <option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>
+                @endforeach
+            </select>
+        </form>
 
         @if ($edition_id === '')
             <div class="ukc-empty"><h3>Choisissez une édition</h3></div>
