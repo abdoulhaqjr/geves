@@ -1,9 +1,5 @@
 <x-layouts.admin title="Soumissions" subtitle="Communications & résumés">
     <x-slot:actions>
-        <a class="ukc-btn ukc-btn--outline ukc-btn--sm"
-           href="{{ route('admin.submissions.auto-assign', request()->only('edition_id')) }}">
-            <x-ukc.icon name="users" :size="14" /> Attribution auto
-        </a>
         <a class="ukc-btn ukc-btn--ghost ukc-btn--sm"
            href="{{ route('admin.submissions.export', request()->only('edition_id', 'status', 'type', 'track', 'search')) }}">
             <x-ukc.icon name="download" :size="14" /> CSV
@@ -25,6 +21,7 @@
         <div class="ukc-nav-docs">
             <button type="button" class="active">Soumissions</button>
             <a href="{{ $edition_id !== '' ? route('admin.editions.form', $edition_id) : route('admin.editions.index') }}">Formulaires de soumissions</a>
+            <a href="{{ route('admin.submissions.auto-assign', ['edition_id' => $edition_id]) }}">Attribution auto</a>
         </div>
 
         {{-- Indicateurs --}}

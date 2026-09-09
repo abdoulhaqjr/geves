@@ -27,8 +27,9 @@
                     <a href="{{ route('admin.submissions.index') }}"
                        @class(['active' => request()->routeIs('admin.submissions.*') || request()->routeIs('admin.editions.form')])>Soumissions</a>
                     @if (request()->routeIs('admin.submissions.*') || request()->routeIs('admin.editions.form'))
-                        <a href="{{ route('admin.submissions.index') }}" @class(['sub', 'active' => request()->routeIs('admin.submissions.*')])>— Liste</a>
+                        <a href="{{ route('admin.submissions.index') }}" @class(['sub', 'active' => request()->routeIs('admin.submissions.index') || request()->routeIs('admin.submissions.show')])>— Liste</a>
                         <a href="{{ $navEdition ? route('admin.editions.form', $navEdition) : route('admin.editions.index') }}" @class(['sub', 'active' => request()->routeIs('admin.editions.form')])>— Formulaires</a>
+                        <a href="{{ route('admin.submissions.auto-assign') }}" @class(['sub', 'active' => request()->routeIs('admin.submissions.auto-assign')])>— Attribution auto</a>
                     @endif
                 @endif
                 @can('users_roles')

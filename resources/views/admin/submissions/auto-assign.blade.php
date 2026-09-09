@@ -1,13 +1,8 @@
 <x-layouts.admin title="Attribution automatique" subtitle="Relecteurs — matching par axe, conflits d’intérêts &amp; charge">
-    <x-slot:actions>
-        <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.submissions.index', ['edition_id' => $edition_id]) }}">
-            ← Retour aux soumissions
-        </a>
-    </x-slot:actions>
-
     <div class="admin-page">
         <div class="ukc-nav-docs">
             <a href="{{ route('admin.submissions.index', ['edition_id' => $edition_id]) }}">Soumissions</a>
+            <a href="{{ $edition_id !== '' ? route('admin.editions.form', $edition_id) : route('admin.editions.index') }}">Formulaires de soumissions</a>
             <button type="button" class="active">Attribution auto</button>
         </div>
 

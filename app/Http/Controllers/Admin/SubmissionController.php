@@ -21,6 +21,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -47,10 +48,17 @@ class SubmissionController extends Controller
     {
         $search = trim((string) $request->query('search', ''));
         $status = (string) $request->query('status', '');
-        $editionId = (string) $request->query('edition_id', '');
         $type = (string) $request->query('type', '');
         $track = (string) $request->query('track', '');
         $scoped = $this->scopedEditionIds($request, 'submissions_list');
+        $accessible = $this->accessibleEditions($request, 'submissions_list');
+
+        // Édition sélectionnée : si le paramètre est absent (1er accès), on cible le
+        // colloque courant par défaut ; s'il est présent mais vide, l'utilisateur a
+        // explicitement choisi « Toutes les éditions ».
+        $editionId = $request->has('edition_id')
+            ? (string) $request->query('edition_id', '')
+            : $this->currentEditionId($accessible);
 
         $submissions = Submission::query()
             ->with(['edition', 'participant'])
@@ -88,7 +96,7 @@ class SubmissionController extends Controller
             'edition_id' => $editionId,
             'type' => $type,
             'track' => $track,
-            'editions' => $this->accessibleEditions($request, 'submissions_list'),
+            'editions' => $accessible,
             'statuses' => Submission::statuses(),
             'statusPills' => Submission::statusPills(),
             'tracks' => Submission::query()->where('revision_of', 0)
@@ -103,6 +111,23 @@ class SubmissionController extends Controller
                 'rejected' => $c('rejected'),
             ],
         ]);
+    }
+
+    /**
+     * Identifiant du colloque courant par défaut (édition ouverte, sinon la plus
+     * récente accessible). Vide si aucune édition accessible.
+     *
+     * @param  Collection<int, Edition>  $editions
+     */
+    private function currentEditionId($editions): string
+    {
+        if ($editions->isEmpty()) {
+            return '';
+        }
+
+        $current = $editions->firstWhere('status', 'open') ?? $editions->first();
+
+        return (string) $current->id;
     }
 
     /** Export CSV des soumissions filtrées (mêmes filtres que la liste). */
@@ -379,7 +404,9 @@ class SubmissionController extends Controller
     public function autoAssign(Request $request, AutoAssignReviewers $engine): View
     {
         $editions = $this->accessibleEditions($request, 'submissions_list');
-        $editionId = (string) $request->query('edition_id', (string) ($editions->first()->id ?? ''));
+        $editionId = $request->has('edition_id')
+            ? (string) $request->query('edition_id', '')
+            : $this->currentEditionId($editions);
         $edition = $editionId !== '' ? $editions->firstWhere('id', (int) $editionId) : null;
 
         $target = max(1, min(5, (int) $request->query('target', 2)));
