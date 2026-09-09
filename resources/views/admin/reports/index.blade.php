@@ -58,12 +58,12 @@
             {{-- Vue d'ensemble --}}
             <div class="ukc-panel" :class="{ active: tab==='overview' }">
                 <div class="ukc-stats">
-                    <div class="ukc-stat-card"><div class="lbl">Soumissions</div><div class="val blue">{{ $summary['submissions'] }}</div><div class="hint">{{ $enRevue }} en revue · {{ $summary['accepted'] }} acceptées</div></div>
-                    <div class="ukc-stat-card"><div class="lbl">Participants</div><div class="val">{{ $summary['participants'] }}</div><div class="hint">{{ $summary['paidCount'] }} payés</div></div>
-                    <div class="ukc-stat-card"><div class="lbl">Recettes</div><div class="val green">{{ number_format($summary['collected'], 0, ',', ' ') }} <span style="font-size:.9rem;">{{ $summary['currency'] }}</span></div><div class="hint">{{ number_format($summary['pending'], 0, ',', ' ') }} en attente</div></div>
-                    <div class="ukc-stat-card"><div class="lbl">Taux d’acceptation</div><div class="val">{{ $tauxAccept }} %</div><div class="hint">{{ $summary['accepted'] }} / {{ $decided }} décidées</div></div>
-                    <div class="ukc-stat-card"><div class="lbl">Avis relecteurs</div><div class="val warn">{{ $revRate }} %</div><div class="hint">{{ $rev['late'] }} avis en attente</div></div>
-                    <div class="ukc-stat-card"><div class="lbl">Attestations</div><div class="val">{{ $counts['attestations'] }}</div><div class="hint">Émises</div></div>
+                    <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="inbox" :size="20" /></div><div class="lbl">Soumissions</div><div class="val blue">{{ $summary['submissions'] }}</div><div class="hint">{{ $enRevue }} en revue · {{ $summary['accepted'] }} acceptées</div></div>
+                    <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="users" :size="20" /></div><div class="lbl">Participants</div><div class="val">{{ $summary['participants'] }}</div><div class="hint">{{ $summary['paidCount'] }} payés</div></div>
+                    <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="card" :size="20" /></div><div class="lbl">Recettes</div><div class="val green">{{ number_format($summary['collected'], 0, ',', ' ') }} <span style="font-size:.9rem;">{{ $summary['currency'] }}</span></div><div class="hint">{{ number_format($summary['pending'], 0, ',', ' ') }} en attente</div></div>
+                    <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="check-circle" :size="20" /></div><div class="lbl">Taux d’acceptation</div><div class="val">{{ $tauxAccept }} %</div><div class="hint">{{ $summary['accepted'] }} / {{ $decided }} décidées</div></div>
+                    <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="mic" :size="20" /></div><div class="lbl">Avis relecteurs</div><div class="val warn">{{ $revRate }} %</div><div class="hint">{{ $rev['late'] }} avis en attente</div></div>
+                    <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="award" :size="20" /></div><div class="lbl">Attestations</div><div class="val">{{ $counts['attestations'] }}</div><div class="hint">Émises</div></div>
                 </div>
 
                 <div class="charts-grid">
