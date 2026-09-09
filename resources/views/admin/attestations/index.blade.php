@@ -25,10 +25,10 @@
         @else
             {{-- KPI --}}
             <div class="ukc-stats">
-                <div class="ukc-stat-card"><div class="lbl">Délivrées</div><div class="val blue">{{ $stats['total'] }}</div></div>
-                <div class="ukc-stat-card"><div class="lbl">Valides</div><div class="val green">{{ $stats['valid'] }}</div></div>
-                <div class="ukc-stat-card"><div class="lbl">Révoquées</div><div class="val" style="color:#dc2626;">{{ $stats['revoked'] }}</div></div>
-                <div class="ukc-stat-card"><div class="lbl">Types couverts</div><div class="val">{{ $stats['byType']->count() }}</div></div>
+                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="diploma" :size="20" /></div><div class="lbl">Délivrées</div><div class="val blue">{{ $stats['total'] }}</div></div>
+                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="check-circle" :size="20" /></div><div class="lbl">Valides</div><div class="val green">{{ $stats['valid'] }}</div></div>
+                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--red"><x-ukc.icon name="close" :size="20" /></div><div class="lbl">Révoquées</div><div class="val" style="color:#dc2626;">{{ $stats['revoked'] }}</div></div>
+                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="layers" :size="20" /></div><div class="lbl">Types couverts</div><div class="val">{{ $stats['byType']->count() }}</div></div>
             </div>
 
             {{-- Filtres --}}

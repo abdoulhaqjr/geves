@@ -44,10 +44,10 @@
 
         {{-- KPI --}}
         <div class="ukc-stats">
-            <div class="ukc-stat-card"><div class="lbl">Total</div><div class="val blue">{{ $stats['total'] }}</div></div>
-            <div class="ukc-stat-card"><div class="lbl">En file</div><div class="val warn">{{ $stats['queued'] }}</div></div>
-            <div class="ukc-stat-card"><div class="lbl">Envoyés</div><div class="val green">{{ $stats['sent'] }}</div></div>
-            <div class="ukc-stat-card"><div class="lbl">Échecs</div><div class="val" style="color:#dc2626;">{{ $stats['failed'] }}</div></div>
+            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="mail" :size="20" /></div><div class="lbl">Total</div><div class="val blue">{{ $stats['total'] }}</div></div>
+            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="clock" :size="20" /></div><div class="lbl">En file</div><div class="val warn">{{ $stats['queued'] }}</div></div>
+            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="check-circle" :size="20" /></div><div class="lbl">Envoyés</div><div class="val green">{{ $stats['sent'] }}</div></div>
+            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--red"><x-ukc.icon name="close" :size="20" /></div><div class="lbl">Échecs</div><div class="val" style="color:#dc2626;">{{ $stats['failed'] }}</div></div>
         </div>
 
         {{-- ===================== PROGRAMMÉS ===================== --}}

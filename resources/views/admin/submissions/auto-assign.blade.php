@@ -31,10 +31,10 @@
         @else
             {{-- Indicateurs du plan --}}
             <div class="ukc-stats">
-                <div class="ukc-stat-card"><div class="lbl">Relecteurs</div><div class="val blue">{{ count($preview['reviewers']) }}</div></div>
-                <div class="ukc-stat-card"><div class="lbl">À couvrir</div><div class="val warn">{{ $preview['needing'] }}</div></div>
-                <div class="ukc-stat-card"><div class="lbl">Proposées</div><div class="val green">{{ count($preview['proposals']) }}</div></div>
-                <div class="ukc-stat-card"><div class="lbl">Non couvertes</div><div class="val" style="color:{{ $preview['uncovered'] ? '#dc2626' : 'var(--ukc-green)' }};">{{ $preview['uncovered'] }}</div></div>
+                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="mic" :size="20" /></div><div class="lbl">Relecteurs</div><div class="val blue">{{ count($preview['reviewers']) }}</div></div>
+                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="inbox" :size="20" /></div><div class="lbl">À couvrir</div><div class="val warn">{{ $preview['needing'] }}</div></div>
+                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="check-circle" :size="20" /></div><div class="lbl">Proposées</div><div class="val green">{{ count($preview['proposals']) }}</div></div>
+                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--{{ $preview['uncovered'] ? 'red' : 'green' }}"><x-ukc.icon name="close" :size="20" /></div><div class="lbl">Non couvertes</div><div class="val" style="color:{{ $preview['uncovered'] ? '#dc2626' : 'var(--ukc-green)' }};">{{ $preview['uncovered'] }}</div></div>
             </div>
 
             <div style="display:grid;grid-template-columns:1fr;gap:18px;">
