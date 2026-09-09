@@ -1,16 +1,14 @@
 @use('App\Http\Controllers\Public\ArchiveController')
 
-<x-layouts.app title="Colloques passés — UK Colloques">
+<x-layouts.app :title="__('Colloques passés — UK Colloques')">
     @include('partials.public-header')
 
     <section class="page-hero">
         <div class="ukc-container">
-            <div class="eyebrow">Archives scientifiques</div>
-            <h1>Colloques passés</h1>
-            <p>Mémoire des manifestations scientifiques organisées sous l’égide de l’Université de Kara. La plateforme
-                UK Colloques est un service institutionnel de la <strong>Direction de la Recherche et de l’Innovation
-                (DRI)</strong> — sans vocation commerciale.</p>
-            <div class="note">Programmes · galeries · documents publics · actes</div>
+            <div class="eyebrow">{{ __('Archives scientifiques') }}</div>
+            <h1>{{ __('Colloques passés') }}</h1>
+            <p>{!! __('Mémoire des manifestations scientifiques organisées sous l’égide de l’Université de Kara. La plateforme UK Colloques est un service institutionnel de la <strong>Direction de la Recherche et de l’Innovation (DRI)</strong> — sans vocation commerciale.') !!}</p>
+            <div class="note">{{ __('Programmes · galeries · documents publics · actes') }}</div>
         </div>
     </section>
 
@@ -18,22 +16,22 @@
         <div class="ukc-container">
             <div class="toolbar-filter">
                 <div>
-                    <h2>Éditions archivées</h2>
-                    <p>Cliquez sur une carte pour consulter le détail de l’édition.</p>
+                    <h2>{{ __('Éditions archivées') }}</h2>
+                    <p>{{ __('Cliquez sur une carte pour consulter le détail de l’édition.') }}</p>
                 </div>
                 @if ($editions->count() > 1)
                     <div class="filters" id="filters">
-                        <button type="button" class="active" data-filter="all">Toutes</button>
-                        <button type="button" data-filter="colloque">Colloques</button>
-                        <button type="button" data-filter="journee">Journées / séminaires</button>
+                        <button type="button" class="active" data-filter="all">{{ __('Toutes') }}</button>
+                        <button type="button" data-filter="colloque">{{ __('Colloques') }}</button>
+                        <button type="button" data-filter="journee">{{ __('Journées / séminaires') }}</button>
                     </div>
                 @endif
             </div>
 
             @if ($editions->isEmpty())
                 <div class="ukc-empty">
-                    <h3>Aucune édition archivée pour le moment</h3>
-                    <p>Les éditions clôturées apparaîtront ici avec leurs programmes, galeries et documents.</p>
+                    <h3>{{ __('Aucune édition archivée pour le moment') }}</h3>
+                    <p>{{ __('Les éditions clôturées apparaîtront ici avec leurs programmes, galeries et documents.') }}</p>
                 </div>
             @else
                 <div class="editions-grid" id="editionsGrid">
@@ -45,7 +43,7 @@
                             </div>
                             <div class="body">
                                 <div class="year-line">
-                                    <span class="ukc-pill ukc-pill--closed">Clôturé</span>
+                                    <span class="ukc-pill ukc-pill--closed">{{ __('Clôturé') }}</span>
                                 </div>
                                 <h3>{{ $e->title ?: $e->colloque?->name }}</h3>
                                 @if ($e->theme)<p class="theme">{{ $e->theme }}</p>@endif
@@ -68,8 +66,8 @@
                                     @endif
                                 </div>
                                 <div class="foot">
-                                    <span class="cta">Voir le détail →</span>
-                                    <span class="ukc-pill ukc-pill--info">{{ ArchiveController::kind($e) === 'journee' ? 'Journée' : 'Colloque' }}</span>
+                                    <span class="cta">{{ __('Voir le détail →') }}</span>
+                                    <span class="ukc-pill ukc-pill--info">{{ ArchiveController::kind($e) === 'journee' ? __('Journée') : __('Colloque') }}</span>
                                 </div>
                             </div>
                         </a>

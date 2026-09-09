@@ -28,26 +28,26 @@
         <div class="ukc-info-grid">
             @if (! empty($cfContact['email']) || ! empty($cfContact['phone']))
                 <div>
-                    <strong>Contact organisation</strong>
+                    <strong>{{ __('Contact organisation') }}</strong>
                     @if (! empty($cfContact['email']))<a href="mailto:{{ $cfContact['email'] }}" style="color:inherit;">{{ $cfContact['email'] }}</a>@endif
                     @if (! empty($cfContact['phone']))<br>{{ $cfContact['phone'] }}@endif
                 </div>
             @endif
             @if ($e->location)
                 <div>
-                    <strong>Lieu</strong>
-                    <span style="white-space:pre-line;">{{ $e->location }}</span>
+                    <strong>{{ __('Lieu') }}</strong>
+                    <span style="white-space:pre-line;">{{ $e->tr('location') }}</span>
                 </div>
             @endif
             @if ($cfFormat)
                 <div>
-                    <strong>Format</strong>
+                    <strong>{{ __('Format') }}</strong>
                     <span style="white-space:pre-line;">{{ $cfFormat }}</span>
                 </div>
             @endif
             @if (count($cfDocuments))
                 <div>
-                    <strong>Documents</strong>
+                    <strong>{{ __('Documents') }}</strong>
                     @foreach ($cfDocuments as $doc)
                         <a href="{{ $doc['url'] ?? '#' }}" style="color:var(--ukc-blue);font-weight:600;"
                            @if (! empty($doc['url']) && \Illuminate\Support\Str::startsWith($doc['url'], 'http')) target="_blank" rel="noopener" @endif>{{ $doc['label'] }}</a>@if (! $loop->last)<br>@endif
@@ -59,7 +59,7 @@
         <div class="ukc-info-bottom">
             <div>
                 @if (count($cfSocial))
-                    <strong style="display:block;color:var(--ukc-blue);font-size:13px;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">Suivez-nous</strong>
+                    <strong style="display:block;color:var(--ukc-blue);font-size:13px;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">{{ __('Suivez-nous') }}</strong>
                     <div class="ukc-social">
                         @foreach ($cfSocial as $key => $url)
                             @if (isset($cfSocialPaths[$key]))
