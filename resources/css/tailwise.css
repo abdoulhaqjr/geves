@@ -164,6 +164,25 @@
     border-color: var(--ukc-blue); box-shadow: 0 0 0 3px rgba(34, 62, 164, .12);
 }
 
+/* ===================== Cartes KPI à icône (style report Tailwise) ===================== */
+.ukc-shell .tw-stat { position: relative; padding: 18px 18px 16px; }
+.ukc-shell .tw-stat__icon {
+    position: absolute; top: 16px; right: 16px;
+    width: 40px; height: 40px; border-radius: 0.6rem;
+    display: flex; align-items: center; justify-content: center;
+}
+.ukc-shell .tw-stat__icon svg { width: 20px; height: 20px; }
+.ukc-shell .tw-stat__icon--blue { background: rgba(34, 62, 164, .1); color: var(--ukc-blue); }
+.ukc-shell .tw-stat__icon--green { background: rgba(0, 153, 51, .12); color: var(--ukc-green); }
+.ukc-shell .tw-stat__icon--amber { background: rgba(217, 119, 6, .12); color: #d97706; }
+.ukc-shell .tw-stat__icon--violet { background: rgba(124, 58, 237, .12); color: #7c3aed; }
+.ukc-shell .tw-stat__icon--slate { background: rgba(100, 116, 139, .14); color: #475569; }
+.ukc-shell .admin-page .tw-stat .lbl { padding-right: 48px; }
+.ukc-shell .tw-stat .val { margin-top: 2px; }
+/* Cartes KPI centrées (espace participant) : icône centrée au-dessus du chiffre. */
+.ukc-shell .account-dashboard .tw-stat { padding-top: 20px; }
+.ukc-shell .account-dashboard .tw-stat__icon { position: static; margin: 0 auto 10px; }
+
 /* ===================== Onglets pilules (nav-docs) ===================== */
 .ukc-shell .ukc-nav-docs button.active,
 .ukc-shell .ukc-nav-docs a.active {

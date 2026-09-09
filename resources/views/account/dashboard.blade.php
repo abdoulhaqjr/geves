@@ -43,11 +43,13 @@
 
     {{-- Indicateurs synthétiques (rangée KPI, fidèle au mockup) --}}
     <div class="ukc-grid-4" style="margin-bottom:20px;">
-        <div class="ukc-stat-card">
+        <div class="ukc-stat-card tw-stat">
+            <div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="inbox" :size="20" /></div>
             <div class="num">{{ $kpi['communications'] }}</div>
             <div class="lbl">{{ __('Communications') }}</div>
         </div>
-        <div class="ukc-stat-card">
+        <div class="ukc-stat-card tw-stat">
+            <div class="tw-stat__icon tw-stat__icon--{{ $kpi['profileComplete'] ? 'green' : 'amber' }}"><x-ukc.icon name="user" :size="20" /></div>
             @if ($kpi['profileComplete'])
                 <div class="num" style="color:var(--ukc-green);">✓</div>
             @else
@@ -55,7 +57,8 @@
             @endif
             <div class="lbl">{{ __('Profil complet') }}</div>
         </div>
-        <div class="ukc-stat-card">
+        <div class="ukc-stat-card tw-stat">
+            <div class="tw-stat__icon tw-stat__icon--{{ $kpi['hasPaid'] ? 'green' : 'violet' }}"><x-ukc.icon name="card" :size="20" /></div>
             @if ($kpi['hasPaid'])
                 <div class="num" style="color:var(--ukc-green);">✓</div>
             @else
@@ -63,7 +66,8 @@
             @endif
             <div class="lbl">{{ __('Paiement') }}</div>
         </div>
-        <div class="ukc-stat-card">
+        <div class="ukc-stat-card tw-stat">
+            <div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="clock" :size="20" /></div>
             <div class="num">{{ $kpi['daysRemaining'] ?? '—' }}</div>
             <div class="lbl">{{ __('Jours restants') }}</div>
         </div>

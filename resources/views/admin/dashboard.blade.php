@@ -47,16 +47,32 @@
 
         {{-- Indicateurs --}}
         <div class="ukc-stats">
-            <div class="ukc-stat-card"><div class="lbl">Soumissions</div><div class="val blue">{{ $stats['submissions'] }}</div>
+            <div class="ukc-stat-card tw-stat">
+                <div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="inbox" :size="20" /></div>
+                <div class="lbl">Soumissions</div><div class="val blue">{{ $stats['submissions'] }}</div>
                 @if ($stats['subs7'] > 0)<div class="hint up">+{{ $stats['subs7'] }} cette semaine</div>@else<div class="hint">édition active</div>@endif
             </div>
-            <div class="ukc-stat-card"><div class="lbl">En revue</div><div class="val warn">{{ $stats['underReview'] }}</div><div class="hint">avis en attente</div></div>
-            <div class="ukc-stat-card"><div class="lbl">Acceptées</div><div class="val green">{{ $stats['accepted'] }}</div><div class="hint">{{ $stats['oral'] }} orales · {{ $stats['poster'] }} posters</div></div>
-            <div class="ukc-stat-card"><div class="lbl">Participants payés</div><div class="val blue">{{ $stats['paidParticipants'] }}</div>
+            <div class="ukc-stat-card tw-stat">
+                <div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="clock" :size="20" /></div>
+                <div class="lbl">En revue</div><div class="val warn">{{ $stats['underReview'] }}</div><div class="hint">avis en attente</div>
+            </div>
+            <div class="ukc-stat-card tw-stat">
+                <div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="check-circle" :size="20" /></div>
+                <div class="lbl">Acceptées</div><div class="val green">{{ $stats['accepted'] }}</div><div class="hint">{{ $stats['oral'] }} orales · {{ $stats['poster'] }} posters</div>
+            </div>
+            <div class="ukc-stat-card tw-stat">
+                <div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="users" :size="20" /></div>
+                <div class="lbl">Participants payés</div><div class="val blue">{{ $stats['paidParticipants'] }}</div>
                 @if ($stats['pay7'] > 0)<div class="hint up">+{{ $stats['pay7'] }} paiements (7 j.)</div>@else<div class="hint">inscriptions réglées</div>@endif
             </div>
-            <div class="ukc-stat-card"><div class="lbl">Recettes (FCFA)</div><div class="val">{{ $fmtRevenue($stats['revenue']) }}</div><div class="hint">FedaPay · Mobile Money</div></div>
-            <div class="ukc-stat-card"><div class="lbl">E-mails (7 j.)</div><div class="val">{{ $stats['emails7'] }}</div><div class="hint">envoyés (7 j.)</div></div>
+            <div class="ukc-stat-card tw-stat">
+                <div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="card" :size="20" /></div>
+                <div class="lbl">Recettes (FCFA)</div><div class="val">{{ $fmtRevenue($stats['revenue']) }}</div><div class="hint">FedaPay · Mobile Money</div>
+            </div>
+            <div class="ukc-stat-card tw-stat">
+                <div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="mail" :size="20" /></div>
+                <div class="lbl">E-mails (7 j.)</div><div class="val">{{ $stats['emails7'] }}</div><div class="hint">envoyés (7 j.)</div>
+            </div>
         </div>
 
         <div class="layout">
