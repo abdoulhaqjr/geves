@@ -177,6 +177,7 @@
 .ukc-shell .tw-stat__icon--amber { background: rgba(217, 119, 6, .12); color: #d97706; }
 .ukc-shell .tw-stat__icon--violet { background: rgba(124, 58, 237, .12); color: #7c3aed; }
 .ukc-shell .tw-stat__icon--slate { background: rgba(100, 116, 139, .14); color: #475569; }
+.ukc-shell .tw-stat__icon--red { background: rgba(220, 38, 38, .1); color: #dc2626; }
 .ukc-shell .admin-page .tw-stat .lbl { padding-right: 48px; }
 .ukc-shell .tw-stat .val { margin-top: 2px; }
 /* Cartes KPI centrées (espace participant) : icône centrée au-dessus du chiffre. */
