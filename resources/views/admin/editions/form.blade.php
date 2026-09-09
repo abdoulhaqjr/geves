@@ -64,6 +64,7 @@
                     @if ($edition)<button type="button" @click="tab='team'" :class="{ active: tab==='team' }">Équipe</button>@endif
                     <button type="button" @click="tab='partners'" :class="{ active: tab==='partners' }">Partenaires</button>
                     <button type="button" @click="tab='appearance'" :class="{ active: tab==='appearance' }">Apparence</button>
+                    @if ($edition)<button type="button" @click="tab='translations'" :class="{ active: tab==='translations' }">Traductions</button>@endif
                     @if ($edition)<button type="button" @click="tab='options'" :class="{ active: tab==='options' }">Options</button>@endif
                 </div>
 
@@ -706,6 +707,41 @@
                                     </table>
                                 </div>
                             @endif
+                        </div>
+                    </div>
+
+                    {{-- ===== TRADUCTIONS (i18n : contenu par langue) ===== --}}
+                    <div class="ukc-panel" :class="{ active: tab==='translations' }">
+                        @php($fallback = config('app.fallback_locale'))
+                        @php($fieldLabels = ['title' => 'Titre', 'theme' => 'Thème', 'edition_label' => 'Libellé de l’édition', 'location' => 'Lieu'])
+                        <div class="ukc-card">
+                            <h2>Traductions du contenu</h2>
+                            <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 10px;">
+                                Version française = contenu de base (onglets Général / Appel). Renseignez ici les
+                                autres langues ; un champ laissé vide affiche le français.
+                            </p>
+                            @foreach (\App\Support\Locales::available() as $code => $label)
+                                @continue($code === $fallback)
+                                <form method="POST" action="{{ route('admin.editions.translations', $edition) }}"
+                                      style="margin-bottom:18px;padding:14px;border:1px solid var(--ukc-border);border-radius:12px;">
+                                    @csrf
+                                    <input type="hidden" name="locale" value="{{ $code }}">
+                                    <h3 style="margin-top:0;">{{ $label }} <span class="ukc-hint" style="display:inline;">({{ strtoupper($code) }})</span></h3>
+                                    @foreach ($fieldLabels as $field => $flabel)
+                                        <div class="ukc-form-row">
+                                            <label>{{ $flabel }}
+                                                <span class="ukc-hint" style="display:inline;">— FR : {{ \Illuminate\Support\Str::limit((string) ($edition->{$field} ?? '—'), 60) }}</span>
+                                            </label>
+                                            <input type="text" name="tr[{{ $field }}]" maxlength="500"
+                                                   value="{{ $edition->translations($code)[$field] ?? '' }}"
+                                                   placeholder="{{ $flabel }} en {{ $label }}">
+                                        </div>
+                                    @endforeach
+                                    <div class="ukc-form-actions" style="margin-top:12px;">
+                                        <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer ({{ strtoupper($code) }})</button>
+                                    </div>
+                                </form>
+                            @endforeach
                         </div>
                     </div>
                 @endif

@@ -123,6 +123,41 @@ class Edition extends Model
         return in_array($this->status, ['open', 'closed', 'archived'], true);
     }
 
+    /** Champs de contenu traduisibles (i18n) : attribut de base = version française. */
+    public const TRANSLATABLE = ['title', 'theme', 'edition_label', 'location'];
+
+    /**
+     * Valeur d'un champ de contenu dans la langue courante (i18n) : renvoie la
+     * traduction stockée dans `settings['i18n'][<locale>]` si elle existe, sinon
+     * la valeur de base (français). Extensible à d'autres champs via TRANSLATABLE.
+     */
+    public function tr(string $field, ?string $locale = null): string
+    {
+        $base = (string) ($this->{$field} ?? '');
+        $locale ??= app()->getLocale();
+
+        if ($locale === config('app.fallback_locale')) {
+            return $base;
+        }
+
+        $value = $this->settings['i18n'][$locale][$field] ?? null;
+
+        return filled($value) ? (string) $value : $base;
+    }
+
+    /**
+     * Traductions saisies pour une locale (champ => valeur), pour préremplir le
+     * back-office.
+     *
+     * @return array<string, string>
+     */
+    public function translations(string $locale): array
+    {
+        $set = $this->settings['i18n'][$locale] ?? [];
+
+        return is_array($set) ? $set : [];
+    }
+
     /**
      * Phase du cycle de vie (guide §2.2), dérivée sans requête depuis le statut de
      * publication, les dates de l'événement et l'ouverture des soumissions.

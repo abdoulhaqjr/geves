@@ -12,6 +12,7 @@ use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\Review;
 use App\Models\User;
+use App\Support\Locales;
 use App\Support\ReviewGrid;
 use App\Support\StaffRoles;
 use Illuminate\Http\JsonResponse;
@@ -314,6 +315,36 @@ class EditionFormController extends Controller
         return redirect()->route('admin.editions.edit', $edition)
             ->with('ukc_status', 'Expertise des relecteurs mise à jour.')
             ->with('edition_tab', 'reviewers');
+    }
+
+    /** Enregistre les traductions de contenu (i18n) d'une locale non par défaut. */
+    public function saveTranslations(Request $request, Edition $edition): RedirectResponse
+    {
+        $locale = (string) $request->input('locale');
+        abort_unless(Locales::supported($locale) && $locale !== config('app.fallback_locale'), 404);
+
+        $data = $request->validate([
+            'tr' => ['array'],
+            'tr.*' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $translations = [];
+        foreach (Edition::TRANSLATABLE as $field) {
+            $value = trim((string) ($data['tr'][$field] ?? ''));
+            if ($value !== '') {
+                $translations[$field] = $value;
+            }
+        }
+
+        $settings = $edition->settings ?? [];
+        $i18n = is_array($settings['i18n'] ?? null) ? $settings['i18n'] : [];
+        $i18n[$locale] = $translations;      // remplace la locale (les champs vidés disparaissent)
+        $settings['i18n'] = array_filter($i18n, fn ($v) => $v !== []);
+        $edition->update(['settings' => $settings]);
+
+        return redirect()->route('admin.editions.edit', $edition)
+            ->with('ukc_status', 'Traductions enregistrées ('.mb_strtoupper($locale).').')
+            ->with('edition_tab', 'appearance');
     }
 
     /** Enregistre la grille d'évaluation (critères notés) de l'édition. */

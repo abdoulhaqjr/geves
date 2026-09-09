@@ -1,4 +1,4 @@
-<x-layouts.app :title="$edition->title">
+<x-layouts.app :title="$edition->tr('title')">
     <style>
         html { scroll-behavior: smooth; }
         section[id] { scroll-margin-top: 84px; }
@@ -56,7 +56,7 @@
                         <span class="dot" aria-hidden="true"></span>
                         <span>{{ $e->phase()->label() }}</span>
                     </div>
-                    <h1>{{ $e->title }}</h1>
+                    <h1>{{ $e->tr('title') }}</h1>
                     @if ($e->subtitle)
                         <p class="ukc-hero-theme">{{ $e->subtitle }}</p>
                     @endif
@@ -65,7 +65,7 @@
                             <div><x-ukc.icon name="calendar" :size="16" /> <strong>{{ $dateLabel }}</strong></div>
                         @endif
                         @if ($e->location)
-                            <div><x-ukc.icon name="pin" :size="16" /> {{ str_replace(["\r\n", "\r", "\n"], ' · ', $e->location) }}</div>
+                            <div><x-ukc.icon name="pin" :size="16" /> {{ str_replace(["\r\n", "\r", "\n"], ' · ', $e->tr('location')) }}</div>
                         @endif
                         @if ($languages)
                             <div><x-ukc.icon name="users" :size="16" /> {{ $languages }}</div>
@@ -109,7 +109,7 @@
             <div class="ukc-nav-bar-inner" x-data="ukcScrollspy()">
                 @php
                     $cfShort = $e->settings['short_name'] ?? null;
-                    $cfShort = $cfShort ?: ($e->edition_label ?: \Illuminate\Support\Str::limit($e->colloque?->name ?? 'Colloque', 22));
+                    $cfShort = $cfShort ?: ($e->tr('edition_label') ?: \Illuminate\Support\Str::limit($e->colloque?->name ?? 'Colloque', 22));
                 @endphp
                 <a href="#top" class="ukc-nav-brand">
                     <span class="dot" aria-hidden="true"></span>
@@ -166,7 +166,7 @@
                         @else
                             <div class="ukc-banner-placeholder">
                                 <div class="tag">Bannière officielle</div>
-                                <h2>{{ $e->title }}</h2>
+                                <h2>{{ $e->tr('title') }}</h2>
                                 @if ($dateLabel || $e->subtitle)
                                     <p>{{ $dateLabel }}@if ($dateLabel && $e->subtitle) · @endif{{ $e->subtitle }}</p>
                                 @endif
@@ -235,7 +235,7 @@
                     <div class="ukc-two-col">
                         <div class="ukc-prose">
                             <h3>Thème général</h3>
-                            @if ($e->theme)<p><strong>{{ $e->theme }}</strong></p>@endif
+                            @if ($e->theme)<p><strong>{{ $e->tr('theme') }}</strong></p>@endif
                             @if ($intro)<p style="white-space:pre-line;">{{ $intro }}</p>@endif
                             @if (count($objectives))
                                 <h3>Objectifs</h3>

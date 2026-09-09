@@ -227,6 +227,7 @@ Route::prefix('admin')->group(function () {
             Route::put('/editions/{edition}/modifier', [EditionFormController::class, 'update'])->name('admin.editions.update');
             Route::post('/editions/{edition}/relecteurs/expertise', [EditionFormController::class, 'saveReviewerExpertise'])->name('admin.editions.reviewers.expertise');
             Route::post('/editions/{edition}/relecteurs/grille', [EditionFormController::class, 'saveReviewGrid'])->name('admin.editions.reviewers.criteria');
+            Route::post('/editions/{edition}/traductions', [EditionFormController::class, 'saveTranslations'])->name('admin.editions.translations');
             Route::post('/editions/{edition}/equipe', [EditionFormController::class, 'attachTeamMember'])->name('admin.editions.team.attach');
             Route::delete('/editions/{edition}/equipe', [EditionFormController::class, 'detachTeamMember'])->name('admin.editions.team.detach');
             Route::get('/editions/{edition}/formulaire', [SubmissionFormController::class, 'edit'])->name('admin.editions.form');
