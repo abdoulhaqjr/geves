@@ -8,7 +8,7 @@
         'errorStep' => (int) session('submission_error_step', 1),
     ];
 @endphp
-<x-layouts.participant title="Soumettre une communication" subtitle="Dépôt d’un résumé">
+<x-layouts.participant :title="__('Soumettre une communication')" :subtitle="__('Dépôt d’un résumé')">
     @if ($successRef)
         {{-- Carte de succès --}}
         <div class="ukc-card" style="text-align:center;max-width:620px;margin:0 auto;">
@@ -16,19 +16,19 @@
                         display:flex;align-items:center;justify-content:center;">
                 <x-ukc.icon name="check" :size="32" />
             </div>
-            <h2 style="justify-content:center;">Communication reçue</h2>
+            <h2 style="justify-content:center;">{{ __('Communication reçue') }}</h2>
             <p style="color:var(--ukc-muted);line-height:1.6;">
-                Votre soumission a bien été enregistrée sous la référence
+                {{ __('Votre soumission a bien été enregistrée sous la référence') }}
                 <strong style="color:var(--ukc-text);font-family:ui-monospace,monospace;">{{ $successRef }}</strong>.
-                Vous pouvez suivre son statut depuis « Mes communications ».
+                {{ __('Vous pouvez suivre son statut depuis « Mes communications ».') }}
             </p>
             <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:20px;">
                 <a href="{{ route('account.submissions.index') }}" class="ukc-btn ukc-btn--blue">
-                    <x-ukc.icon name="inbox" :size="18" /> Mes communications
+                    <x-ukc.icon name="inbox" :size="18" /> {{ __('Mes communications') }}
                 </a>
                 @if ($remaining > 0)
                     <a href="{{ route('account.submissions.create', $edition->slug) }}" class="ukc-btn ukc-btn--outline">
-                        <x-ukc.icon name="plus" :size="18" /> Soumettre une autre
+                        <x-ukc.icon name="plus" :size="18" /> {{ __('Soumettre une autre') }}
                     </a>
                 @endif
             </div>
@@ -41,7 +41,7 @@
             </div>
             <div style="font-weight:800;font-size:1.1rem;margin-top:2px;">{{ $edition->title }}</div>
             <div style="font-size:.85rem;color:var(--ukc-muted);margin-top:6px;">
-                {{ $remaining }} communication(s) restante(s) sur {{ $maxCommunications }}.
+                {{ __(':count communication(s) restante(s) sur :max.', ['count' => $remaining, 'max' => $maxCommunications]) }}
             </div>
         </div>
 
@@ -58,11 +58,11 @@
                         <span style="font-weight:500;color:var(--ukc-muted);">· {{ $account->grade }}</span>
                     </div>
                     <div style="font-size:.85rem;color:var(--ukc-muted);">
-                        {{ $account->email }} — {{ $account->affiliation ?: 'affiliation manquante' }}
+                        {{ $account->email }} — {{ $account->affiliation ?: __('affiliation manquante') }}
                     </div>
                 </div>
                 <a href="{{ route('account.profile') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
-                    <x-ukc.icon name="pen" :size="16" /> Modifier mon profil
+                    <x-ukc.icon name="pen" :size="16" /> {{ __('Modifier mon profil') }}
                 </a>
             </div>
         </div>
@@ -72,42 +72,41 @@
             <div class="ukc-alert ukc-alert--warn">
                 <span class="ico"><x-ukc.icon name="lock" :size="18" /></span>
                 <div>
-                    Pour soumettre, votre <strong>e-mail doit être vérifié</strong> et votre
-                    <strong>profil complété</strong> (affiliation).
+                    {!! __('Pour soumettre, votre <strong>e-mail doit être vérifié</strong> et votre <strong>profil complété</strong> (affiliation).') !!}
                     @if (! $account->hasVerifiedEmail())
-                        <a href="{{ route('account.verification.notice') }}" style="text-decoration:underline;font-weight:700;">Vérifier mon e-mail</a>
+                        <a href="{{ route('account.verification.notice') }}" style="text-decoration:underline;font-weight:700;">{{ __('Vérifier mon e-mail') }}</a>
                     @endif
                     @if (blank($account->affiliation))
-                        <a href="{{ route('account.profile') }}" style="text-decoration:underline;font-weight:700;">Compléter mon profil</a>
+                        <a href="{{ route('account.profile') }}" style="text-decoration:underline;font-weight:700;">{{ __('Compléter mon profil') }}</a>
                     @endif
                 </div>
             </div>
         @elseif (! $edition->submission_open)
             <div class="ukc-alert ukc-alert--err">
                 <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
-                <div>Les soumissions sont actuellement <strong>fermées</strong> pour cette édition.</div>
+                <div>{!! __('Les soumissions sont actuellement <strong>fermées</strong> pour cette édition.') !!}</div>
             </div>
         @elseif ($remaining <= 0)
             <div class="ukc-alert ukc-alert--info">
                 <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
-                <div>Vous avez atteint le nombre maximum de communications pour cette édition.</div>
+                <div>{{ __('Vous avez atteint le nombre maximum de communications pour cette édition.') }}</div>
             </div>
         @else
             {{-- Formulaire multi-étapes (wizard) --}}
             <div x-data="submissionWizard(@js($wizardInit))">
                 <div class="form-steps">
-                    <div class="s" :class="{ active: step===1, done: step>1 }" @click="step=1"><span class="n">1</span> Général</div>
-                    <div class="s" :class="{ active: step===2, done: step>2 }" @click="step=2"><span class="n">2</span> Auteurs</div>
-                    <div class="s" :class="{ active: step===3, done: step>3 }" @click="step=3"><span class="n">3</span> Résumé</div>
-                    <div class="s" :class="{ active: step===4, done: step>4 }" @click="step=4"><span class="n">4</span> Fichiers</div>
-                    <div class="s" :class="{ active: step===5 }" @click="step=5"><span class="n">5</span> Validation</div>
+                    <div class="s" :class="{ active: step===1, done: step>1 }" @click="step=1"><span class="n">1</span> {{ __('Général') }}</div>
+                    <div class="s" :class="{ active: step===2, done: step>2 }" @click="step=2"><span class="n">2</span> {{ __('Auteurs') }}</div>
+                    <div class="s" :class="{ active: step===3, done: step>3 }" @click="step=3"><span class="n">3</span> {{ __('Résumé') }}</div>
+                    <div class="s" :class="{ active: step===4, done: step>4 }" @click="step=4"><span class="n">4</span> {{ __('Fichiers') }}</div>
+                    <div class="s" :class="{ active: step===5 }" @click="step=5"><span class="n">5</span> {{ __('Validation') }}</div>
                 </div>
 
                 <form method="POST" action="{{ route('account.submissions.store', $edition->slug) }}" enctype="multipart/form-data" class="ukc-card">
                     @csrf
                     {{-- Étape 1 : Général --}}
                     <div class="step-panel" :class="{ active: step===1 }">
-                        <h2><x-ukc.icon name="info" :size="20" /> Informations générales</h2>
+                        <h2><x-ukc.icon name="info" :size="20" /> {{ __('Informations générales') }}</h2>
                         <div class="ukc-form-grid">
                             <div class="ukc-field full">
                                 <label for="title">{{ $config->label('title') }} <span class="req">*</span></label>
@@ -133,8 +132,8 @@
                                 <div class="ukc-field">
                                     <label for="type">{{ $config->label('type') }} <span class="req">*</span></label>
                                     <select id="type" name="type" x-model="type">
-                                        <option value="oral">Communication orale</option>
-                                        <option value="poster">Poster</option>
+                                        <option value="oral">{{ __('Communication orale') }}</option>
+                                        <option value="poster">{{ __('Poster') }}</option>
                                     </select>
                                     @if ($config->help('type'))<span class="hint">{{ $config->help('type') }}</span>@endif
                                     @error('type') <span class="error">{{ $message }}</span> @enderror
@@ -157,9 +156,9 @@
                                         <input type="text" id="keywords-input" x-ref="kwinput" x-model="kwDraft"
                                                @keydown.enter.prevent="addTag()" @keydown.comma.prevent="addTag()"
                                                @keydown.backspace="tagBackspace()" @blur="addTag()"
-                                               placeholder="Saisir un mot-clé puis Entrée…">
+                                               placeholder="{{ __('Saisir un mot-clé puis Entrée…') }}">
                                     </div>
-                                    <span class="hint">{{ $config->help('keywords') ?: 'Entrée ou virgule pour ajouter un mot-clé.' }}</span>
+                                    <span class="hint">{{ $config->help('keywords') ?: __('Entrée ou virgule pour ajouter un mot-clé.') }}</span>
                                     @error('keywords') <span class="error">{{ $message }}</span> @enderror
                                 </div>
                             @endif
@@ -168,20 +167,20 @@
 
                     {{-- Étape 2 : Auteurs --}}
                     <div class="step-panel" :class="{ active: step===2 }">
-                        <h2><x-ukc.icon name="users" :size="20" /> Auteurs</h2>
+                        <h2><x-ukc.icon name="users" :size="20" /> {{ __('Auteurs') }}</h2>
                         <p class="ukc-muted" style="font-size:.88rem;margin-bottom:12px;">
-                            Vous êtes l’auteur correspondant. Ajoutez ici les co-auteurs de la communication.
+                            {{ __('Vous êtes l’auteur correspondant. Ajoutez ici les co-auteurs de la communication.') }}
                         </p>
                         <div style="display:flex;flex-direction:column;gap:10px;">
                             <template x-for="(co, i) in coauthors" :key="i">
                                 <div style="display:grid;grid-template-columns:1.2fr 1.2fr 1.4fr .8fr auto;gap:8px;align-items:center;">
-                                    <input type="text" :name="'coauthors['+i+'][name]'" x-model="co.name" placeholder="Nom Prénom"
+                                    <input type="text" :name="'coauthors['+i+'][name]'" x-model="co.name" placeholder="{{ __('Nom Prénom') }}"
                                            style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13.5px;">
-                                    <input type="email" :name="'coauthors['+i+'][email]'" x-model="co.email" placeholder="E-mail"
+                                    <input type="email" :name="'coauthors['+i+'][email]'" x-model="co.email" placeholder="{{ __('E-mail') }}"
                                            style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13.5px;">
-                                    <input type="text" :name="'coauthors['+i+'][affiliation]'" x-model="co.affiliation" placeholder="Affiliation"
+                                    <input type="text" :name="'coauthors['+i+'][affiliation]'" x-model="co.affiliation" placeholder="{{ __('Affiliation') }}"
                                            style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13.5px;">
-                                    <input type="text" :name="'coauthors['+i+'][grade]'" x-model="co.grade" placeholder="Grade"
+                                    <input type="text" :name="'coauthors['+i+'][grade]'" x-model="co.grade" placeholder="{{ __('Grade') }}"
                                            style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13.5px;">
                                     <button type="button" class="ukc-btn ukc-btn--danger ukc-btn--sm" @click="removeCoauthor(i)">
                                         <x-ukc.icon name="close" :size="16" />
@@ -190,14 +189,14 @@
                             </template>
                         </div>
                         <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="addCoauthor()" style="margin-top:10px;">
-                            <x-ukc.icon name="user-plus" :size="16" /> Ajouter un co-auteur
+                            <x-ukc.icon name="user-plus" :size="16" /> {{ __('Ajouter un co-auteur') }}
                         </button>
-                        @error('coauthors.*.email') <span class="error" style="display:block;margin-top:6px;">Un e-mail de co-auteur est invalide.</span> @enderror
+                        @error('coauthors.*.email') <span class="error" style="display:block;margin-top:6px;">{{ __('Un e-mail de co-auteur est invalide.') }}</span> @enderror
                     </div>
 
                     {{-- Étape 3 : Résumé --}}
                     <div class="step-panel" :class="{ active: step===3 }">
-                        <h2><x-ukc.icon name="pen" :size="20" /> Résumé</h2>
+                        <h2><x-ukc.icon name="pen" :size="20" /> {{ __('Résumé') }}</h2>
                         <div class="ukc-field full">
                             <label>{{ $config->label('abstract') }} <span class="req">*</span></label>
                             @include('partials.abstract-editor', ['name' => 'abstract', 'initial' => old('abstract', ''), 'min' => $config->abstractMin(), 'help' => $config->help('abstract') ?: null])
@@ -219,7 +218,7 @@
                                                 <textarea rows="4" name="customAnswers[{{ $field['key'] }}]">{{ old('customAnswers.'.$field['key']) }}</textarea>
                                             @elseif ($field['type'] === 'select')
                                                 <select name="customAnswers[{{ $field['key'] }}]">
-                                                    <option value="">— Choisir —</option>
+                                                    <option value="">— {{ __('Choisir') }} —</option>
                                                     @foreach ($field['options'] as $opt)
                                                         <option value="{{ $opt }}" @selected(old('customAnswers.'.$field['key']) === $opt)>{{ $opt }}</option>
                                                     @endforeach
@@ -239,40 +238,40 @@
 
                     {{-- Étape 4 : Fichier --}}
                     <div class="step-panel" :class="{ active: step===4 }">
-                        <h2><x-ukc.icon name="file" :size="20" /> Fichier joint</h2>
+                        <h2><x-ukc.icon name="file" :size="20" /> {{ __('Fichier joint') }}</h2>
                         @if ($config->enabled('file'))
                             <div class="ukc-field">
                                 <label for="file">{{ $config->label('file') }}
                                     @if ($config->required('file'))<span class="req">*</span>@endif
-                                    <span class="hint">({{ $config->help('file') ?: 'PDF/DOC/DOCX, max 8 Mo' }})</span>
+                                    <span class="hint">({{ $config->help('file') ?: __('PDF/DOC/DOCX, max 8 Mo') }})</span>
                                 </label>
                                 <input type="file" id="file" name="file" accept=".pdf,.doc,.docx">
                                 @error('file') <span class="error">{{ $message }}</span> @enderror
                             </div>
                         @else
-                            <p class="ukc-muted" style="font-size:.9rem;">Aucun fichier requis pour cette édition. Vous pouvez passer à la validation.</p>
+                            <p class="ukc-muted" style="font-size:.9rem;">{{ __('Aucun fichier requis pour cette édition. Vous pouvez passer à la validation.') }}</p>
                         @endif
                     </div>
 
                     {{-- Étape 5 : Validation --}}
                     <div class="step-panel" :class="{ active: step===5 }">
-                        <h2><x-ukc.icon name="check-circle" :size="20" /> Validation</h2>
-                        <p class="ukc-muted" style="font-size:.88rem;margin-bottom:14px;">Vérifiez le récapitulatif avant l’envoi.</p>
+                        <h2><x-ukc.icon name="check-circle" :size="20" /> {{ __('Validation') }}</h2>
+                        <p class="ukc-muted" style="font-size:.88rem;margin-bottom:14px;">{{ __('Vérifiez le récapitulatif avant l’envoi.') }}</p>
                         <div class="recap-list">
-                            <div class="r"><span class="k">Titre</span><span class="v" x-text="title || '—'"></span></div>
+                            <div class="r"><span class="k">{{ __('Titre') }}</span><span class="v" x-text="title || '—'"></span></div>
                             @if (count($tracks))
-                                <div class="r"><span class="k">Axe</span><span class="v" x-text="track || '—'"></span></div>
+                                <div class="r"><span class="k">{{ __('Axe') }}</span><span class="v" x-text="track || '—'"></span></div>
                             @endif
                             @if ($config->enabled('type'))
-                                <div class="r"><span class="k">Type</span><span class="v" x-text="type === 'poster' ? 'Poster' : 'Communication orale'"></span></div>
+                                <div class="r"><span class="k">{{ __('Type') }}</span><span class="v" x-text="type === 'poster' ? '{{ __('Poster') }}' : '{{ __('Communication orale') }}'"></span></div>
                             @endif
                             @if ($config->enabled('keywords'))
                                 <div class="r"><span class="k">{{ $config->label('keywords') }}</span><span class="v" x-text="keywordsString || '—'"></span></div>
                             @endif
-                            <div class="r"><span class="k">Résumé</span><span class="v" x-text="abstractFilled() ? 'Rédigé' : 'À compléter'"></span></div>
-                            <div class="r"><span class="k">Co-auteurs</span><span class="v" x-text="coauthorCount + ' co-auteur(s)'"></span></div>
+                            <div class="r"><span class="k">{{ __('Résumé') }}</span><span class="v" x-text="abstractFilled() ? '{{ __('Rédigé') }}' : '{{ __('À compléter') }}'"></span></div>
+                            <div class="r"><span class="k">{{ __('Co-auteurs') }}</span><span class="v" x-text="coauthorCount + ' {{ __('co-auteur(s)') }}'"></span></div>
                             @if ($config->enabled('file'))
-                                <div class="r"><span class="k">Fichier joint</span><span class="v" x-text="fileChosen() ? 'Ajouté' : 'Aucun'"></span></div>
+                                <div class="r"><span class="k">{{ __('Fichier joint') }}</span><span class="v" x-text="fileChosen() ? '{{ __('Ajouté') }}' : '{{ __('Aucun') }}'"></span></div>
                             @endif
                         </div>
                     </div>
@@ -280,14 +279,14 @@
                     {{-- Navigation du wizard --}}
                     <div class="wizard-nav">
                         <button type="button" class="ukc-btn ukc-btn--ghost" @click="step--" :style="step > 1 ? '' : 'visibility:hidden'">
-                            <x-ukc.icon name="chevron" :size="16" style="transform:rotate(180deg);" /> Précédent
+                            <x-ukc.icon name="chevron" :size="16" style="transform:rotate(180deg);" /> {{ __('Précédent') }}
                         </button>
                         <div style="display:flex;gap:8px;">
                             <button type="button" class="ukc-btn ukc-btn--blue" @click="step++" x-show="step < 5">
-                                Suivant <x-ukc.icon name="chevron" :size="16" />
+                                {{ __('Suivant') }} <x-ukc.icon name="chevron" :size="16" />
                             </button>
                             <button type="submit" class="ukc-btn ukc-btn--green" x-show="step === 5" x-cloak>
-                                <x-ukc.icon name="check" :size="18" /> Envoyer ma communication
+                                <x-ukc.icon name="check" :size="18" /> {{ __('Envoyer ma communication') }}
                             </button>
                         </div>
                     </div>
