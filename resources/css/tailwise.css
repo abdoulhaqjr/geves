@@ -1,0 +1,171 @@
+@import url('https://fonts.bunny.net/css?family=public-sans:400,500,600,700,800');
+
+/*
+|--------------------------------------------------------------------------
+| Couche de design « Tailwise » — back-offices uniquement
+|--------------------------------------------------------------------------
+|
+| Adapte le kit Tailwind « Tailwise » (ThemeForest) à la charte UK, dans le
+| pipeline Tailwind v4 de GESCO. Portée : tout est scopé sous `.ukc-shell`
+| (espace admin ET espace participant) ; les pages publiques (sans `.ukc-shell`)
+| conservent la charte UK d'origine. Importé APRÈS ukc/admin.css : à spécificité
+| égale, ces règles gagnent par l'ordre source.
+|
+| Signature Tailwise : Public Sans, fond ardoise dégradé, cartes « box » douces,
+| barre latérale blanche avec lien actif en dégradé navy→vert UK.
+*/
+
+.ukc-shell {
+    --ukc-radius: 0.6rem;
+    --ukc-radius-lg: 0.8rem;
+    --ukc-bg: #f1f5f9; /* slate-100 */
+    --tw-line: #e2e8f0; /* slate-200 */
+    --tw-line-soft: #eef2f6;
+    --tw-ink: #475569; /* slate-600 */
+    --tw-ink-strong: #0f172a; /* slate-900 */
+    --tw-box-shadow: 0px 3px 5px #0000000b;
+    font-family: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+    color: var(--tw-ink);
+    letter-spacing: .01em;
+    background: linear-gradient(to bottom, #f1f5f9, #f8fafc) fixed;
+}
+
+/* La barre « WordPress » de l'admin n'existe pas dans Tailwise : on la retire. */
+.wp-bar { display: none !important; }
+
+/* ===================== Barre latérale (style Tailwise) ===================== */
+.ukc-shell .ukc-sidebar,
+.ukc-shell--admin .ukc-sidebar {
+    background: #fff;
+    color: var(--tw-ink);
+    border-right: 1px solid var(--tw-line);
+    box-shadow: var(--tw-box-shadow);
+    top: 0;
+}
+.ukc-shell--admin { --ukc-sidebar: 260px; }
+.ukc-shell--admin .ukc-main { margin-top: 0; }
+
+.ukc-shell .ukc-sidebar-brand {
+    padding: 18px 18px 14px;
+    border-bottom: 1px solid var(--tw-line-soft);
+}
+.ukc-shell .ukc-sidebar-brand .logo-img {
+    background: #fff; padding: 0; border-radius: 10px;
+}
+.ukc-shell .ukc-sidebar-brand .logo-sub { color: #94a3b8; }
+.ukc-shell .ukc-sidebar-brand .sub { color: #94a3b8; }
+
+.ukc-shell .ukc-sidebar-nav { padding: 12px 12px; gap: 2px; }
+.ukc-shell .ukc-sidebar-nav a,
+.ukc-shell--admin .ukc-sidebar-nav a {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; margin: 0 0 2px;
+    border-radius: 0.6rem; border: 1px solid transparent;
+    color: var(--tw-ink); font-size: 13.5px; font-weight: 500;
+    border-left: 1px solid transparent; /* neutralise le liseré admin */
+    transition: all .2s ease;
+}
+.ukc-shell .ukc-sidebar-nav a:hover,
+.ukc-shell--admin .ukc-sidebar-nav a:hover {
+    background: rgba(148, 163, 184, .12);
+    border-color: rgba(226, 232, 240, .8);
+    color: var(--tw-ink-strong);
+}
+.ukc-shell .ukc-sidebar-nav a.active,
+.ukc-shell--admin .ukc-sidebar-nav a.active {
+    background: linear-gradient(to right, rgba(34, 62, 164, .96), rgba(0, 153, 51, .96));
+    color: #fff; font-weight: 600; border-color: #fff;
+    box-shadow: 0 2px 3px #0000000b;
+}
+.ukc-shell .ukc-sidebar-nav a svg { opacity: .85; }
+.ukc-shell .ukc-sidebar-nav a.active svg { opacity: 1; }
+
+/* Sous-liens (— Liste, — Attribution auto…) */
+.ukc-shell .ukc-sidebar-nav a.sub,
+.ukc-shell--admin .ukc-sidebar-nav a.sub {
+    padding: 8px 14px 8px 34px; font-size: 12.5px; color: #64748b; font-weight: 500;
+    background: transparent; border-color: transparent;
+}
+.ukc-shell .ukc-sidebar-nav a.sub:hover,
+.ukc-shell--admin .ukc-sidebar-nav a.sub:hover { background: rgba(148, 163, 184, .1); color: var(--tw-ink-strong); }
+.ukc-shell .ukc-sidebar-nav a.sub.active,
+.ukc-shell--admin .ukc-sidebar-nav a.sub.active {
+    background: rgba(34, 62, 164, .08); color: var(--ukc-blue); font-weight: 700;
+    box-shadow: none;
+}
+.ukc-shell .ukc-sidebar-nav .nav-label {
+    color: #94a3b8; font-size: 11px; letter-spacing: .06em; padding: 12px 14px 4px;
+}
+
+.ukc-shell .ukc-sidebar-foot { border-top: 1px solid var(--tw-line-soft); }
+.ukc-shell .ukc-user-chip { color: var(--tw-ink); }
+.ukc-shell .ukc-user-chip .name { color: var(--tw-ink-strong); }
+.ukc-shell .ukc-user-chip .role { color: #94a3b8; }
+.ukc-shell .ukc-user-chip .av {
+    background: linear-gradient(to right, var(--ukc-blue), var(--ukc-green)); color: #fff;
+}
+.ukc-shell .ukc-user-chip .logout { color: #94a3b8; }
+.ukc-shell .ukc-user-chip .logout:hover { color: #dc2626; }
+
+/* ===================== En-têtes de page ===================== */
+.ukc-shell .ukc-admin-head h1,
+.ukc-shell .ukc-topbar h1 { color: var(--tw-ink-strong); font-weight: 700; }
+.ukc-shell .ukc-admin-head .sub,
+.ukc-shell .ukc-topbar .sub { color: #94a3b8; }
+
+/* ===================== Cartes « box » ===================== */
+.ukc-shell .ukc-card {
+    background: #fff;
+    border: 1px solid var(--tw-line);
+    border-radius: 0.6rem;
+    box-shadow: var(--tw-box-shadow);
+}
+.ukc-shell .ukc-stat-card,
+.ukc-shell .admin-page .ukc-stat-card {
+    background: #fff;
+    border: 1px solid var(--tw-line);
+    border-radius: 0.6rem;
+    box-shadow: var(--tw-box-shadow);
+}
+
+/* ===================== Tableaux ===================== */
+.ukc-shell table.ukc-table th {
+    background: #f8fafc; color: #64748b;
+    text-transform: uppercase; font-size: 11px; letter-spacing: .04em;
+    border-bottom: 1px solid var(--tw-line);
+}
+.ukc-shell table.ukc-table td { border-bottom: 1px solid var(--tw-line-soft); }
+.ukc-shell .ukc-table-wrap {
+    border: 1px solid var(--tw-line); border-radius: 0.6rem; background: #fff; overflow: auto;
+}
+
+/* ===================== Boutons ===================== */
+.ukc-shell .ukc-btn { border-radius: 0.5rem; font-weight: 600; letter-spacing: 0; }
+.ukc-shell .ukc-btn--blue { background: var(--ukc-blue); color: #fff; }
+.ukc-shell .ukc-btn--blue:hover { background: var(--ukc-blue-dark); }
+.ukc-shell .ukc-btn--outline {
+    background: #fff; color: var(--tw-ink); border: 1px solid var(--tw-line);
+}
+.ukc-shell .ukc-btn--outline:hover { border-color: var(--ukc-blue); color: var(--ukc-blue); }
+.ukc-shell .ukc-btn--ghost { background: #fff; color: var(--tw-ink); border: 1px solid var(--tw-line); }
+.ukc-shell .ukc-btn--icon { border-radius: 0.5rem; }
+
+/* ===================== Champs de formulaire ===================== */
+.ukc-shell .ukc-field input,
+.ukc-shell .ukc-field select,
+.ukc-shell .ukc-field textarea,
+.ukc-shell .filter-bar input,
+.ukc-shell .filter-bar select {
+    border-radius: 0.5rem; border: 1px solid #cbd5e1;
+}
+.ukc-shell .ukc-field input:focus,
+.ukc-shell .ukc-field select:focus,
+.ukc-shell .ukc-field textarea:focus {
+    border-color: var(--ukc-blue); box-shadow: 0 0 0 3px rgba(34, 62, 164, .12);
+}
+
+/* ===================== Onglets pilules (nav-docs) ===================== */
+.ukc-shell .ukc-nav-docs button.active,
+.ukc-shell .ukc-nav-docs a.active {
+    background: var(--ukc-blue); color: #fff;
+}
