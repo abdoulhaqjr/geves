@@ -1,4 +1,4 @@
-<x-layouts.participant title="Détail de la soumission" subtitle="Suivi, retours & resoumission">
+<x-layouts.participant :title="__('Détail de la soumission')" :subtitle="__('Suivi, retours & resoumission')">
     @php
         $s = $submission;
         $words = preg_match_all('/\p{L}+/u', strip_tags((string) $s->abstract));
@@ -13,7 +13,7 @@
     <div class="account-submission-detail" x-data="{ slotModal: false }" @keydown.escape.window="slotModal = false">
         {{-- Barre de retour + statut --}}
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
-            <a href="{{ route('account.submissions.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">← Mes soumissions</a>
+            <a href="{{ route('account.submissions.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">← {{ __('Mes soumissions') }}</a>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
                 <span class="ukc-pill ukc-pill--{{ $s->statusPill() }}">{{ $s->statusLabel() }}</span>
                 <span class="ukc-pill ukc-pill--muted" style="font-family:ui-monospace,monospace;">{{ $s->ref_code }}</span>
@@ -26,30 +26,30 @@
                 <div class="title-block">
                     <h1>{{ $s->title }}</h1>
                     <div class="meta">
-                        <span>{{ $s->type === 'poster' ? 'Poster' : 'Orale' }}</span><span>·</span>
-                        <span>{{ $s->track ?: 'Axe non précisé' }}</span><span>·</span>
-                        <span>Déposée le {{ $s->created_at?->format('d/m/Y') ?? '—' }}</span>
+                        <span>{{ $s->type === 'poster' ? __('Poster') : __('Orale') }}</span><span>·</span>
+                        <span>{{ $s->track ?: __('Axe non précisé') }}</span><span>·</span>
+                        <span>{{ __('Déposée le') }} {{ $s->created_at?->format('d/m/Y') ?? '—' }}</span>
                     </div>
                 </div>
             </div>
 
-            <div class="status-track" aria-label="Parcours de la soumission">
-                <div class="step done"><div class="lbl">Déposée</div></div>
-                <div class="step done"><div class="lbl">Reçue</div></div>
-                <div @class(['step', 'done' => $decided || $s->status === 'revision', 'active' => $s->status === 'under_review'])><div class="lbl">En évaluation</div></div>
-                <div @class(['step', 'done' => $decided, 'active' => $s->status === 'revision'])><div class="lbl">Décision</div></div>
-                <div @class(['step', 'done' => (bool) $slot, 'active' => $s->status === 'accepted' && ! $slot])><div class="lbl">Créneau</div></div>
-                <div class="step"><div class="lbl">Présentée</div></div>
+            <div class="status-track" aria-label="{{ __('Parcours de la soumission') }}">
+                <div class="step done"><div class="lbl">{{ __('Déposée') }}</div></div>
+                <div class="step done"><div class="lbl">{{ __('Reçue') }}</div></div>
+                <div @class(['step', 'done' => $decided || $s->status === 'revision', 'active' => $s->status === 'under_review'])><div class="lbl">{{ __('En évaluation') }}</div></div>
+                <div @class(['step', 'done' => $decided, 'active' => $s->status === 'revision'])><div class="lbl">{{ __('Décision') }}</div></div>
+                <div @class(['step', 'done' => (bool) $slot, 'active' => $s->status === 'accepted' && ! $slot])><div class="lbl">{{ __('Créneau') }}</div></div>
+                <div class="step"><div class="lbl">{{ __('Présentée') }}</div></div>
             </div>
             <p class="hint">
                 @if ($s->status === 'accepted')
-                    Communication <strong>acceptée</strong>. Finalisez votre inscription et choisissez votre créneau.
+                    {!! __('Communication <strong>acceptée</strong>. Finalisez votre inscription et choisissez votre créneau.') !!}
                 @elseif ($s->status === 'rejected')
-                    Après examen, votre communication n’a pas été retenue pour cette édition.
+                    {{ __('Après examen, votre communication n’a pas été retenue pour cette édition.') }}
                 @elseif ($s->status === 'revision')
-                    Une <strong>correction</strong> est demandée : modifiez puis renvoyez votre communication.
+                    {!! __('Une <strong>correction</strong> est demandée : modifiez puis renvoyez votre communication.') !!}
                 @else
-                    Vous recevrez un e-mail à chaque changement d’état de votre soumission.
+                    {{ __('Vous recevrez un e-mail à chaque changement d’état de votre soumission.') }}
                 @endif
             </p>
         </div>
@@ -59,9 +59,9 @@
             <div class="ukc-card" style="margin-bottom:18px;border-color:#fde68a;background:#fffbeb;">
                 <div class="ukc-alert ukc-alert--warn" style="margin-bottom:16px;">
                     <span class="ico"><x-ukc.icon name="pen" :size="18" /></span>
-                    <div>Une <strong>correction</strong> vous est demandée. Modifiez votre communication ci-dessous puis renvoyez-la.</div>
+                    <div>{!! __('Une <strong>correction</strong> vous est demandée. Modifiez votre communication ci-dessous puis renvoyez-la.') !!}</div>
                 </div>
-                <a href="#resubmit" class="ukc-btn ukc-btn--blue ukc-btn--sm">Corriger &amp; renvoyer</a>
+                <a href="#resubmit" class="ukc-btn ukc-btn--blue ukc-btn--sm">{{ __('Corriger & renvoyer') }}</a>
             </div>
         @endif
 
@@ -69,17 +69,17 @@
         @if ($s->status === 'accepted')
             @php($cr = $s->cameraReady())
             <div class="ukc-card" style="margin-bottom:18px;" id="camera-ready">
-                <h2><x-ukc.icon name="file" :size="18" /> Version définitive</h2>
+                <h2><x-ukc.icon name="file" :size="18" /> {{ __('Version définitive') }}</h2>
                 <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 14px;">
-                    Votre communication est acceptée : déposez la <strong>version finale</strong> (« prête à publier ») conforme au gabarit, pour le livre des résumés / les actes.
+                    {!! __('Votre communication est acceptée : déposez la <strong>version finale</strong> (« prête à publier ») conforme au gabarit, pour le livre des résumés / les actes.') !!}
                 </p>
 
                 @if ($cr)
                     <div class="ukc-alert ukc-alert--ok" style="margin-bottom:14px;">
                         <span class="ico"><x-ukc.icon name="check-circle" :size="18" /></span>
                         <div>
-                            Version définitive déposée le {{ \Illuminate\Support\Carbon::parse($cr['submitted_at'])->translatedFormat('d F Y à H:i') }}.
-                            <a href="{{ $cr['file_url'] }}" target="_blank" rel="noopener" style="color:var(--ukc-blue);font-weight:600;">Voir le fichier</a>
+                            {{ __('Version définitive déposée le') }} {{ \Illuminate\Support\Carbon::parse($cr['submitted_at'])->translatedFormat('d F Y à H:i') }}.
+                            <a href="{{ $cr['file_url'] }}" target="_blank" rel="noopener" style="color:var(--ukc-blue);font-weight:600;">{{ __('Voir le fichier') }}</a>
                         </div>
                     </div>
                 @endif
@@ -87,7 +87,7 @@
                 <form method="POST" action="{{ route('account.submissions.camera-ready', $s) }}" enctype="multipart/form-data">
                     @csrf
                     <div class="ukc-field" style="max-width:520px;">
-                        <label for="cr_file">Fichier de la version définitive <span class="hint">(PDF, DOC ou DOCX — 8 Mo max)</span></label>
+                        <label for="cr_file">{{ __('Fichier de la version définitive') }} <span class="hint">{{ __('(PDF, DOC ou DOCX — 8 Mo max)') }}</span></label>
                         <input type="file" id="cr_file" name="file" accept=".pdf,.doc,.docx" required>
                         @error('file') <span class="error">{{ $message }}</span> @enderror
                     </div>
@@ -102,7 +102,7 @@
                         @error('checklist.*') <span class="error">{{ $message }}</span> @enderror
                     </div>
 
-                    <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm">{{ $cr ? 'Remplacer la version définitive' : 'Déposer la version définitive' }}</button>
+                    <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm">{{ $cr ? __('Remplacer la version définitive') : __('Déposer la version définitive') }}</button>
                 </form>
             </div>
         @endif
@@ -111,93 +111,92 @@
             {{-- Colonne principale --}}
             <div style="display:flex;flex-direction:column;gap:18px;">
                 <div class="ukc-card">
-                    <h2>Informations</h2>
+                    <h2>{{ __('Informations') }}</h2>
                     <dl class="kv">
-                        <dt>Référence</dt><dd><strong>{{ $s->ref_code }}</strong></dd>
-                        <dt>Type</dt><dd>{{ $s->type === 'poster' ? 'Poster' : 'Communication orale' }}</dd>
-                        <dt>Atelier / axe</dt><dd>{{ $s->track ?: '—' }}</dd>
-                        <dt>Langue</dt><dd>{{ $s->meta['language'] ?? 'Français' }}</dd>
-                        <dt>Mots (résumé)</dt><dd>{{ $words }} / {{ $abstractMax }}</dd>
-                        <dt>Auteur principal</dt><dd>{{ $mainAuthor ? $fmtAuthor($mainAuthor) : ($s->correspondingAuthorName() ?: '—') }}</dd>
+                        <dt>{{ __('Référence') }}</dt><dd><strong>{{ $s->ref_code }}</strong></dd>
+                        <dt>{{ __('Type') }}</dt><dd>{{ $s->type === 'poster' ? __('Poster') : __('Communication orale') }}</dd>
+                        <dt>{{ __('Atelier / axe') }}</dt><dd>{{ $s->track ?: '—' }}</dd>
+                        <dt>{{ __('Langue') }}</dt><dd>{{ $s->meta['language'] ?? 'Français' }}</dd>
+                        <dt>{{ __('Mots (résumé)') }}</dt><dd>{{ $words }} / {{ $abstractMax }}</dd>
+                        <dt>{{ __('Auteur principal') }}</dt><dd>{{ $mainAuthor ? $fmtAuthor($mainAuthor) : ($s->correspondingAuthorName() ?: '—') }}</dd>
                         @if ($coauthors->isNotEmpty())
-                            <dt>Co-auteurs</dt><dd>{{ $coauthors->map($fmtAuthor)->filter()->implode(', ') }}</dd>
+                            <dt>{{ __('Co-auteurs') }}</dt><dd>{{ $coauthors->map($fmtAuthor)->filter()->implode(', ') }}</dd>
                         @endif
                     </dl>
 
-                    <h3 style="font-size:14px;font-weight:800;margin:16px 0 8px;">Résumé</h3>
+                    <h3 style="font-size:14px;font-weight:800;margin:16px 0 8px;">{{ __('Résumé') }}</h3>
                     @if (filled($s->abstract))
                         <div class="abstract">{{ strip_tags((string) $s->abstract) }}</div>
                     @else
-                        <div class="abstract" style="color:var(--ukc-muted);font-style:italic;">Aucun résumé n’a été enregistré pour cette communication.</div>
+                        <div class="abstract" style="color:var(--ukc-muted);font-style:italic;">{{ __('Aucun résumé n’a été enregistré pour cette communication.') }}</div>
                     @endif
 
-                    <h3 style="font-size:14px;font-weight:800;margin:16px 0 8px;">Mots-clés</h3>
+                    <h3 style="font-size:14px;font-weight:800;margin:16px 0 8px;">{{ __('Mots-clés') }}</h3>
                     @if ($kw->isNotEmpty())
                         <div class="keywords">@foreach ($kw as $k)<span>{{ $k }}</span>@endforeach</div>
                     @else
-                        <p class="hint" style="margin:0;">Aucun mot-clé renseigné.</p>
+                        <p class="hint" style="margin:0;">{{ __('Aucun mot-clé renseigné.') }}</p>
                     @endif
                 </div>
 
                 <div class="ukc-card">
-                    <h2>Fichiers</h2>
+                    <h2>{{ __('Fichiers') }}</h2>
                     @if ($s->file_url)
                         <div class="file-row">
                             <div class="ico"><x-ukc.icon name="file" :size="20" /></div>
                             <div style="flex:1;min-width:0;">
                                 <div class="name" style="word-break:break-all;">{{ basename(parse_url($s->file_url, PHP_URL_PATH) ?: $s->file_url) }}</div>
-                                <div class="meta">PDF · Déposé le {{ $s->created_at?->format('d/m/Y') }}</div>
+                                <div class="meta">{{ __('PDF · Déposé le') }} {{ $s->created_at?->format('d/m/Y') }}</div>
                             </div>
-                            <a href="{{ $s->file_url }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">Télécharger</a>
+                            <a href="{{ $s->file_url }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">{{ __('Télécharger') }}</a>
                         </div>
                     @endif
                     <div class="file-row">
                         <div class="ico"><x-ukc.icon name="diploma" :size="20" /></div>
                         <div style="flex:1;min-width:0;">
-                            <div class="name">Attestation de soumission</div>
-                            <div class="meta">PDF · Générée automatiquement · QR de vérification</div>
+                            <div class="name">{{ __('Attestation de soumission') }}</div>
+                            <div class="meta">{{ __('PDF · Générée automatiquement · QR de vérification') }}</div>
                         </div>
                         @if ($soumissionAtt)
                             <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                                <a href="{{ route('attestation.document', $soumissionAtt->uuid) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">Télécharger</a>
-                                <a href="{{ route('attestation.verify', $soumissionAtt->uuid) }}" target="_blank" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Vérifier</a>
+                                <a href="{{ route('attestation.document', $soumissionAtt->uuid) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">{{ __('Télécharger') }}</a>
+                                <a href="{{ route('attestation.verify', $soumissionAtt->uuid) }}" target="_blank" class="ukc-btn ukc-btn--ghost ukc-btn--sm">{{ __('Vérifier') }}</a>
                             </div>
                         @else
-                            <span class="ukc-pill ukc-pill--muted">En attente</span>
+                            <span class="ukc-pill ukc-pill--muted">{{ __('En attente') }}</span>
                         @endif
                     </div>
-                    <p class="hint">En cas d’erreur matérielle sur le titre, les auteurs ou le fichier, contactez le secrétariat avant la décision du comité.</p>
+                    <p class="hint">{{ __('En cas d’erreur matérielle sur le titre, les auteurs ou le fichier, contactez le secrétariat avant la décision du comité.') }}</p>
                 </div>
 
                 <div class="ukc-card">
-                    <h2>Messages du comité</h2>
+                    <h2>{{ __('Messages du comité') }}</h2>
                     @forelse ($feedback as $fb)
                         <div class="msg-box">
-                            <div class="from">{{ $fb['label'] ?? 'Comité scientifique' }}</div>
+                            <div class="from">{{ $fb['label'] ?? __('Comité scientifique') }}</div>
                             <p>{{ $fb['comments'] }}</p>
                         </div>
                     @empty
                         <div class="msg-box">
-                            <div class="from">Secrétariat scientifique</div>
-                            <p>Votre soumission a bien été enregistrée et transmise aux relecteurs. Aucune action n’est requise de votre part pour le moment.</p>
+                            <div class="from">{{ __('Secrétariat scientifique') }}</div>
+                            <p>{{ __('Votre soumission a bien été enregistrée et transmise aux relecteurs. Aucune action n’est requise de votre part pour le moment.') }}</p>
                         </div>
                     @endforelse
-                    <p class="hint">Les avis détaillés des relecteurs restent confidentiels. Seule la décision finale et d’éventuels commentaires destinés aux auteurs vous sont communiqués.</p>
+                    <p class="hint">{{ __('Les avis détaillés des relecteurs restent confidentiels. Seule la décision finale et d’éventuels commentaires destinés aux auteurs vous sont communiqués.') }}</p>
                 </div>
 
                 {{-- Phase de réponse aux relecteurs (rebuttal) --}}
                 @if ($s->rebuttalOpen())
                     @php($reb = $s->rebuttal())
                     <div class="ukc-card" style="margin-top:18px;border-color:#c7d2fe;background:#f5f7ff;" id="rebuttal">
-                        <h2><x-ukc.icon name="pen" :size="18" /> Votre réponse aux relecteurs</h2>
+                        <h2><x-ukc.icon name="pen" :size="18" /> {{ __('Votre réponse aux relecteurs') }}</h2>
                         <p style="color:var(--ukc-muted);font-size:.9rem;margin:-2px 0 12px;">
-                            Le comité vous invite à répondre aux retours ci-dessus (préciser, corriger un malentendu,
-                            détailler les modifications prévues) avant la décision finale.
+                            {{ __('Le comité vous invite à répondre aux retours ci-dessus (préciser, corriger un malentendu, détailler les modifications prévues) avant la décision finale.') }}
                         </p>
 
                         @if ($s->hasRebuttal())
                             <div class="msg-box" style="background:#fff;">
-                                <div class="from">Réponse transmise{{ ! empty($reb['submitted_at']) ? ' le '.\Illuminate\Support\Carbon::parse($reb['submitted_at'])->translatedFormat('d F Y à H:i') : '' }}</div>
+                                <div class="from">{{ __('Réponse transmise') }}{{ ! empty($reb['submitted_at']) ? ' '.__('le').' '.\Illuminate\Support\Carbon::parse($reb['submitted_at'])->translatedFormat('d F Y à H:i') : '' }}</div>
                                 <p style="white-space:pre-line;">{{ $s->rebuttalText() }}</p>
                             </div>
                         @endif
@@ -205,14 +204,14 @@
                         <form method="POST" action="{{ route('account.submissions.rebuttal', $s) }}" style="margin-top:12px;">
                             @csrf
                             <div class="ukc-field">
-                                <label for="rebuttal">{{ $s->hasRebuttal() ? 'Modifier votre réponse' : 'Votre réponse' }} <span class="req">*</span></label>
+                                <label for="rebuttal">{{ $s->hasRebuttal() ? __('Modifier votre réponse') : __('Votre réponse') }} <span class="req">*</span></label>
                                 <textarea id="rebuttal" name="rebuttal" rows="6"
-                                          placeholder="Répondez point par point aux remarques des relecteurs.">{{ old('rebuttal', $s->rebuttalText()) }}</textarea>
+                                          placeholder="{{ __('Répondez point par point aux remarques des relecteurs.') }}">{{ old('rebuttal', $s->rebuttalText()) }}</textarea>
                                 @error('rebuttal') <span class="error">{{ $message }}</span> @enderror
                             </div>
                             <div class="ukc-form-actions" style="margin-top:12px;">
                                 <button type="submit" class="ukc-btn ukc-btn--blue">
-                                    <x-ukc.icon name="check" :size="16" /> {{ $s->hasRebuttal() ? 'Mettre à jour ma réponse' : 'Envoyer ma réponse' }}
+                                    <x-ukc.icon name="check" :size="16" /> {{ $s->hasRebuttal() ? __('Mettre à jour ma réponse') : __('Envoyer ma réponse') }}
                                 </button>
                             </div>
                         </form>
@@ -223,85 +222,85 @@
             {{-- Colonne latérale --}}
             <div style="display:flex;flex-direction:column;gap:18px;">
                 <div class="ukc-card">
-                    <h2>Historique</h2>
+                    <h2>{{ __('Historique') }}</h2>
                     <ul class="timeline">
                         <li>
                             <div class="when">{{ $s->created_at?->format('d/m/Y · H:i') }}</div>
-                            <div class="what">Soumission déposée</div>
-                            <div class="detail">Formulaire validé@if($s->file_url) · fichier résumé joint @endif</div>
+                            <div class="what">{{ __('Soumission déposée') }}</div>
+                            <div class="detail">{{ __('Formulaire validé') }}@if($s->file_url) · {{ __('fichier résumé joint') }} @endif</div>
                         </li>
                         <li>
                             <div class="when">{{ $s->created_at?->format('d/m/Y · H:i') }}</div>
-                            <div class="what">Accusé de réception</div>
-                            <div class="detail">E-mail envoyé@if($soumissionAtt) · attestation de soumission générée @endif</div>
+                            <div class="what">{{ __('Accusé de réception') }}</div>
+                            <div class="detail">{{ __('E-mail envoyé') }}@if($soumissionAtt) · {{ __('attestation de soumission générée') }} @endif</div>
                         </li>
                         <li @class(['muted' => $s->status === 'submitted'])>
-                            <div class="when">{{ $s->status === 'submitted' ? 'À venir' : 'En cours' }}</div>
-                            <div class="what">Évaluation scientifique</div>
-                            <div class="detail">{{ $decided ? 'Avis rendus' : 'En attente des avis des relecteurs' }}</div>
+                            <div class="when">{{ $s->status === 'submitted' ? __('À venir') : __('En cours') }}</div>
+                            <div class="what">{{ __('Évaluation scientifique') }}</div>
+                            <div class="detail">{{ $decided ? __('Avis rendus') : __('En attente des avis des relecteurs') }}</div>
                         </li>
                         <li @class(['muted' => ! $decided && $s->status !== 'revision'])>
-                            <div class="when">{{ $decided ? $s->updated_at?->format('d/m/Y') : 'À venir' }}</div>
-                            <div class="what">Notification de décision</div>
+                            <div class="when">{{ $decided ? $s->updated_at?->format('d/m/Y') : __('À venir') }}</div>
+                            <div class="what">{{ __('Notification de décision') }}</div>
                             <div class="detail">
-                                @if ($s->status === 'accepted') Acceptée
-                                @elseif ($s->status === 'rejected') Non retenue
-                                @elseif ($s->status === 'revision') Corrections demandées
-                                @else Acceptée / refusée / révisions @endif
+                                @if ($s->status === 'accepted') {{ __('Acceptée') }}
+                                @elseif ($s->status === 'rejected') {{ __('Non retenue') }}
+                                @elseif ($s->status === 'revision') {{ __('Corrections demandées') }}
+                                @else {{ __('Acceptée / refusée / révisions') }} @endif
                             </div>
                         </li>
                         <li @class(['muted' => ! $slot])>
-                            <div class="when">{{ $slot ? 'Confirmé' : 'À venir' }}</div>
-                            <div class="what">Affectation de créneau</div>
-                            <div class="detail">Après acceptation et paiement de l’inscription</div>
+                            <div class="when">{{ $slot ? __('Confirmé') : __('À venir') }}</div>
+                            <div class="what">{{ __('Affectation de créneau') }}</div>
+                            <div class="detail">{{ __('Après acceptation et paiement de l’inscription') }}</div>
                         </li>
                     </ul>
                 </div>
 
                 <div class="ukc-card">
-                    <h2>Créneau de passage</h2>
+                    <h2>{{ __('Créneau de passage') }}</h2>
                     @if ($slot)
                         <div class="slot-card">
-                            <strong>{{ $slot->session_label ?: 'Présentation' }}</strong>
+                            <strong>{{ $slot->session_label ?: __('Présentation') }}</strong>
                             @if ($slot->starts_at){{ $slot->starts_at->translatedFormat('d F, H:i') }}@endif
-                            @if ($slot->room) · Salle {{ $slot->room }}@endif
-                            @if ($slot->chosen_by_participant) <span class="ukc-pill ukc-pill--info" style="margin-left:6px;">Choisi</span>@endif
+                            @if ($slot->room) · {{ __('Salle') }} {{ $slot->room }}@endif
+                            @if ($slot->chosen_by_participant) <span class="ukc-pill ukc-pill--info" style="margin-left:6px;">{{ __('Choisi') }}</span>@endif
                         </div>
                         @if ($slot->starts_at)
                             <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
                                 @if ($googleCal)
                                     <a href="{{ $googleCal }}" target="_blank" rel="noopener" class="ukc-btn ukc-btn--outline ukc-btn--sm">
-                                        <x-ukc.icon name="calendar" :size="15" /> Ajouter à Google Agenda
+                                        <x-ukc.icon name="calendar" :size="15" /> {{ __('Ajouter à Google Agenda') }}
                                     </a>
                                 @endif
                                 <a href="{{ route('account.agenda.ics') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
-                                    <x-ukc.icon name="download" :size="15" /> Mon agenda (.ics)
+                                    <x-ukc.icon name="download" :size="15" /> {{ __('Mon agenda (.ics)') }}
                                 </a>
                             </div>
                         @endif
                         @if ($availableSlots->count())
                             <button type="button" class="ukc-btn ukc-btn--outline ukc-btn--sm" style="margin-top:12px;" @click="slotModal = true">
-                                <x-ukc.icon name="calendar" :size="16" /> Changer de créneau
+                                <x-ukc.icon name="calendar" :size="16" /> {{ __('Changer de créneau') }}
                             </button>
                         @endif
                     @elseif ($s->status === 'accepted' && $availableSlots->count())
-                        <p class="hint" style="margin-top:0;">Aucun créneau choisi pour l’instant.</p>
+                        <p class="hint" style="margin-top:0;">{{ __('Aucun créneau choisi pour l’instant.') }}</p>
                         <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" style="margin-top:8px;" @click="slotModal = true">
-                            <x-ukc.icon name="calendar" :size="16" /> Choisir un créneau
+                            <x-ukc.icon name="calendar" :size="16" /> {{ __('Choisir un créneau') }}
                         </button>
                     @else
                         <div class="slot-card">
-                            <strong>Pas encore attribué</strong>
-                            Un créneau (jour, horaire, session, salle) sera proposé après acceptation et règlement des frais d’inscription, selon l’axe de votre communication.
+                            <strong>{{ __('Pas encore attribué') }}</strong>
+                            {{ __('Un créneau (jour, horaire, session, salle) sera proposé après acceptation et règlement des frais d’inscription, selon l’axe de votre communication.') }}
                         </div>
                     @endif
                 </div>
 
                 <div class="ukc-card">
-                    <h2>Documents liés</h2>
+                    <h2>{{ __('Documents liés') }}</h2>
                     <div style="display:flex;flex-direction:column;gap:8px;">
-                        <a href="{{ route('account.documents') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm" style="justify-content:flex-start;">Attestations &amp; reçus</a>
-                        <a href="{{ route('account.payment', $s->edition) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm" style="justify-content:flex-start;">Inscription &amp; paiement</a>
+                        <a href="{{ route('account.documents') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm" style="justify-content:flex-start;">{{ __('Attestations & reçus') }}</a>
+                        <a href="{{ route('account.payment', $s->edition) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm" style="justify-content:flex-start;">{{ __('Inscription & paiement') }}</a>
                     </div>
                 </div>
             </div>
@@ -310,31 +309,31 @@
         {{-- Formulaire de resoumission (correction) --}}
         @if ($s->canBeRevised())
             <div class="ukc-card" id="resubmit" style="margin-top:18px;">
-                <h2>Corriger &amp; renvoyer</h2>
+                <h2>{{ __('Corriger & renvoyer') }}</h2>
                 <form method="POST" action="{{ route('account.submissions.resubmit', $s) }}" enctype="multipart/form-data" class="ukc-form-grid">
                     @csrf
                     <div class="ukc-field full">
-                        <label for="title">Titre <span class="req">*</span></label>
+                        <label for="title">{{ __('Titre') }} <span class="req">*</span></label>
                         <input type="text" id="title" name="title" value="{{ old('title', $s->title) }}">
                         @error('title') <span class="error">{{ $message }}</span> @enderror
                     </div>
                     <div class="ukc-field full">
-                        <label for="abstract">Résumé <span class="req">*</span></label>
+                        <label for="abstract">{{ __('Résumé') }} <span class="req">*</span></label>
                         <textarea id="abstract" name="abstract" rows="6">{{ old('abstract', $s->abstract) }}</textarea>
                         @error('abstract') <span class="error">{{ $message }}</span> @enderror
                     </div>
                     <div class="ukc-field full">
-                        <label for="keywords">Mots-clés <span class="hint">(séparés par des virgules)</span></label>
+                        <label for="keywords">{{ __('Mots-clés') }} <span class="hint">{{ __('(séparés par des virgules)') }}</span></label>
                         <input type="text" id="keywords" name="keywords" value="{{ old('keywords', is_array($s->keywords) ? implode(', ', $s->keywords) : $s->keywords) }}">
                         @error('keywords') <span class="error">{{ $message }}</span> @enderror
                     </div>
                     <div class="ukc-field full">
-                        <label for="file">Nouveau fichier (PDF, optionnel)</label>
+                        <label for="file">{{ __('Nouveau fichier (PDF, optionnel)') }}</label>
                         <input type="file" id="file" name="file" accept=".pdf">
                         @error('file') <span class="error">{{ $message }}</span> @enderror
                     </div>
                     <div class="ukc-field full">
-                        <button type="submit" class="ukc-btn ukc-btn--blue"><x-ukc.icon name="upload" :size="16" /> Renvoyer la communication</button>
+                        <button type="submit" class="ukc-btn ukc-btn--blue"><x-ukc.icon name="upload" :size="16" /> {{ __('Renvoyer la communication') }}</button>
                     </div>
                 </form>
             </div>
@@ -345,13 +344,13 @@
             <div class="ukc-modal" x-show="slotModal" x-cloak @click.self="slotModal = false" style="display:none;">
                 <div class="box">
                     <div class="box-head">
-                        <span>Choisir un créneau de passage</span>
+                        <span>{{ __('Choisir un créneau de passage') }}</span>
                         <button type="button" @click="slotModal = false" style="font-size:22px;color:var(--ukc-muted);background:none;border:none;cursor:pointer;">&times;</button>
                     </div>
                     <div class="box-body">
                         @if ($slot)
                             <p style="font-size:.88rem;color:var(--ukc-muted);margin:0 0 12px;">
-                                Créneau actuel : <strong>{{ $slot->session_label ?: 'Présentation' }}@if ($slot->starts_at) — {{ $slot->starts_at->translatedFormat('d F, H:i') }}@endif</strong>. Sélectionnez-en un autre ci-dessous.
+                                {{ __('Créneau actuel :') }} <strong>{{ $slot->session_label ?: __('Présentation') }}@if ($slot->starts_at) — {{ $slot->starts_at->translatedFormat('d F, H:i') }}@endif</strong>. {{ __('Sélectionnez-en un autre ci-dessous.') }}
                             </p>
                         @endif
                         <div style="max-height:56vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-right:2px;">
@@ -361,9 +360,9 @@
                                     <input type="hidden" name="slot_id" value="{{ $av->id }}">
                                     <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm" style="justify-content:space-between;width:100%;text-align:left;">
                                         <span>
-                                            <strong>{{ $av->session_label ?: 'Créneau' }}</strong>
+                                            <strong>{{ $av->session_label ?: __('Créneau') }}</strong>
                                             @if ($av->starts_at)<span style="color:var(--ukc-muted);"> — {{ $av->starts_at->translatedFormat('d F, H:i') }}</span>@endif
-                                            @if ($av->room)<span style="color:var(--ukc-muted);"> · Salle {{ $av->room }}</span>@endif
+                                            @if ($av->room)<span style="color:var(--ukc-muted);"> · {{ __('Salle') }} {{ $av->room }}</span>@endif
                                         </span>
                                         <x-ukc.icon name="chevron" :size="16" />
                                     </button>
@@ -372,7 +371,7 @@
                         </div>
                     </div>
                     <div class="box-foot">
-                        <button type="button" class="ukc-btn ukc-btn--ghost" @click="slotModal = false">Fermer</button>
+                        <button type="button" class="ukc-btn ukc-btn--ghost" @click="slotModal = false">{{ __('Fermer') }}</button>
                     </div>
                 </div>
             </div>
