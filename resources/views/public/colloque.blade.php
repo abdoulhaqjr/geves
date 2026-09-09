@@ -74,7 +74,7 @@
                     <div class="ukc-hero-cta">
                         @if ($e->submission_open)
                             <a href="{{ route('account.submissions.create', $e->slug) }}" class="ukc-btn ukc-btn--primary">
-                                <x-ukc.icon name="upload" :size="18" /> Soumettre une communication
+                                <x-ukc.icon name="upload" :size="18" /> {{ __('Soumettre une communication') }}
                             </a>
                         @endif
                         <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--ghost">{{ __('S’inscrire') }}</a>
@@ -85,17 +85,17 @@
                     <div class="ukc-countdown" x-data="ukcCountdown('{{ $cdTarget->toIso8601String() }}')" x-cloak>
                         <div class="ukc-countdown-label">{{ $cdLabel }}</div>
                         <div class="ukc-countdown-grid">
-                            <div class="ukc-countdown-item"><div class="num" x-text="String(days).padStart(2,'0')">--</div><div class="unit">Jours</div></div>
-                            <div class="ukc-countdown-item"><div class="num" x-text="String(hours).padStart(2,'0')">--</div><div class="unit">Heures</div></div>
-                            <div class="ukc-countdown-item"><div class="num" x-text="String(minutes).padStart(2,'0')">--</div><div class="unit">Min</div></div>
-                            <div class="ukc-countdown-item"><div class="num" x-text="String(seconds).padStart(2,'0')">--</div><div class="unit">Sec</div></div>
+                            <div class="ukc-countdown-item"><div class="num" x-text="String(days).padStart(2,'0')">--</div><div class="unit">{{ __('Jours') }}</div></div>
+                            <div class="ukc-countdown-item"><div class="num" x-text="String(hours).padStart(2,'0')">--</div><div class="unit">{{ __('Heures') }}</div></div>
+                            <div class="ukc-countdown-item"><div class="num" x-text="String(minutes).padStart(2,'0')">--</div><div class="unit">{{ __('Min') }}</div></div>
+                            <div class="ukc-countdown-item"><div class="num" x-text="String(seconds).padStart(2,'0')">--</div><div class="unit">{{ __('Sec') }}</div></div>
                         </div>
                         @if ($countdownToDeadline)
                             <p style="margin-top:16px;font-size:13px;color:rgba(255,255,255,0.7);">
-                                Dernier délai : <strong style="color:var(--ukc-gold);">{{ $e->submission_deadline->translatedFormat('d F Y') }}</strong>
+                                {{ __('Dernier délai :') }} <strong style="color:var(--ukc-gold);">{{ $e->submission_deadline->translatedFormat('d F Y') }}</strong>
                             </p>
                         @elseif ($dateLabel)
-                            <p style="margin-top:16px;font-size:13px;color:rgba(255,255,255,0.7);">Dates : <strong style="color:var(--ukc-gold);">{{ $dateLabel }}</strong></p>
+                            <p style="margin-top:16px;font-size:13px;color:rgba(255,255,255,0.7);">{{ __('Dates :') }} <strong style="color:var(--ukc-gold);">{{ $dateLabel }}</strong></p>
                         @endif
                     </div>
                 @endif
@@ -117,28 +117,28 @@
                 </a>
                 <ul class="ukc-nav-links">
                     @if (count($stats))
-                        <li><a href="#chiffres" data-spy>Chiffres</a></li>
+                        <li><a href="#chiffres" data-spy>{{ __('Chiffres') }}</a></li>
                     @endif
                     @if ($e->date_start || $e->date_end || $e->submission_deadline)
-                        <li><a href="#dates" data-spy>Dates</a></li>
+                        <li><a href="#dates" data-spy>{{ __('Dates') }}</a></li>
                     @endif
                     @if ($e->theme || $intro)
-                        <li><a href="#presentation" data-spy>Présentation</a></li>
+                        <li><a href="#presentation" data-spy>{{ __('Présentation') }}</a></li>
                     @endif
                     @if ($plenaries->count() || $ateliers->count())
-                        <li><a href="#programme" data-spy>Programme</a></li>
+                        <li><a href="#programme" data-spy>{{ __('Programme') }}</a></li>
                     @endif
                     @if (count($speakers))
-                        <li><a href="#intervenants" data-spy>Intervenants</a></li>
+                        <li><a href="#intervenants" data-spy>{{ __('Intervenants') }}</a></li>
                     @endif
                     @if (count($fees))
-                        <li><a href="#tarifs" data-spy>Tarifs</a></li>
+                        <li><a href="#tarifs" data-spy>{{ __('Tarifs') }}</a></li>
                     @endif
                     @if (array_filter($practical))
-                        <li><a href="#infos" data-spy>Infos pratiques</a></li>
+                        <li><a href="#infos" data-spy>{{ __('Infos pratiques') }}</a></li>
                     @endif
                     @if (count($faq))
-                        <li><a href="#faq" data-spy>FAQ</a></li>
+                        <li><a href="#faq" data-spy>{{ __('FAQ') }}</a></li>
                     @endif
                 </ul>
                 <div class="ukc-nav-actions">
@@ -165,7 +165,7 @@
                             <img src="{{ $e->banner_url }}" alt="Bannière du colloque {{ $e->title }}" width="1200" height="514" loading="eager">
                         @else
                             <div class="ukc-banner-placeholder">
-                                <div class="tag">Bannière officielle</div>
+                                <div class="tag">{{ __('Bannière officielle') }}</div>
                                 <h2>{{ $e->tr('title') }}</h2>
                                 @if ($dateLabel || $e->subtitle)
                                     <p>{{ $dateLabel }}@if ($dateLabel && $e->subtitle) · @endif{{ $e->subtitle }}</p>
@@ -195,23 +195,23 @@
                 $keyDates = [];
                 if ($e->submission_deadline) {
                     $past = $e->submission_deadline->isPast();
-                    $keyDates[] = ['icon' => 'upload', 'label' => 'Soumissions', 'value' => $e->submission_deadline->translatedFormat('d M Y'), 'pill' => $past ? 'closed' : 'soon', 'pillLabel' => $past ? 'Clôturé' : 'À venir'];
+                    $keyDates[] = ['icon' => 'upload', 'label' => __('Soumissions'), 'value' => $e->submission_deadline->translatedFormat('d M Y'), 'pill' => $past ? 'closed' : 'soon', 'pillLabel' => $past ? __('Clôturé') : __('À venir')];
                 }
                 if ($e->date_start) {
                     $future = $e->date_start->isFuture();
-                    $keyDates[] = ['icon' => 'calendar', 'label' => 'Ouverture', 'value' => $e->date_start->translatedFormat('d M Y'), 'pill' => $future ? 'soon' : 'info', 'pillLabel' => $future ? 'À venir' : 'En cours'];
+                    $keyDates[] = ['icon' => 'calendar', 'label' => __('Ouverture'), 'value' => $e->date_start->translatedFormat('d M Y'), 'pill' => $future ? 'soon' : 'info', 'pillLabel' => $future ? __('À venir') : __('En cours')];
                 }
                 if ($e->date_end && (! $e->date_start || $e->date_end->ne($e->date_start))) {
-                    $days = ($e->date_start && $e->date_end) ? ((int) $e->date_start->startOfDay()->diffInDays($e->date_end->startOfDay()) + 1).' jours' : 'Clôture';
-                    $keyDates[] = ['icon' => 'calendar-check', 'label' => 'Colloque', 'value' => $e->date_end->translatedFormat('d M Y'), 'pill' => 'info', 'pillLabel' => $days];
+                    $days = ($e->date_start && $e->date_end) ? ((int) $e->date_start->startOfDay()->diffInDays($e->date_end->startOfDay()) + 1).' '.__('jours') : __('Clôture');
+                    $keyDates[] = ['icon' => 'calendar-check', 'label' => __('Colloque'), 'value' => $e->date_end->translatedFormat('d M Y'), 'pill' => 'info', 'pillLabel' => $days];
                 }
             @endphp
             @if (count($keyDates))
                 <section id="dates" style="scroll-margin-top:72px;">
                     <div class="ukc-block-head">
-                        <h2>Dates clés</h2>
+                        <h2>{{ __('Dates clés') }}</h2>
                         <div class="ukc-accent"><i></i><i></i><i></i></div>
-                        <p>Retenez les échéances importantes de cette édition.</p>
+                        <p>{{ __('Retenez les échéances importantes de cette édition.') }}</p>
                     </div>
                     <div class="ukc-dates-grid">
                         @foreach ($keyDates as $d)
@@ -234,27 +234,27 @@
                 <section id="presentation" style="scroll-margin-top:72px;">
                     <div class="ukc-two-col">
                         <div class="ukc-prose">
-                            <h3>Thème général</h3>
+                            <h3>{{ __('Thème général') }}</h3>
                             @if ($e->theme)<p><strong>{{ $e->tr('theme') }}</strong></p>@endif
                             @if ($intro)<p style="white-space:pre-line;">{{ $intro }}</p>@endif
                             @if (count($objectives))
-                                <h3>Objectifs</h3>
+                                <h3>{{ __('Objectifs') }}</h3>
                                 <ul>@foreach ($objectives as $obj)<li>{{ $obj }}</li>@endforeach</ul>
                             @endif
                         </div>
                         <div class="ukc-callout" id="soumettre">
-                            <h3>Appel à communications</h3>
+                            <h3>{{ __('Appel à communications') }}</h3>
                             <p>
-                                Résumé de <strong>250 mots max.</strong> (FR ou EN), structure imposée. Support oral ou poster.
-                                @if ($e->submission_deadline) Dernier délai : <strong>{{ $e->submission_deadline->translatedFormat('d F Y') }}</strong>.@endif
+                                {!! __('Résumé de <strong>250 mots max.</strong> (FR ou EN), structure imposée. Support oral ou poster.') !!}
+                                @if ($e->submission_deadline) {{ __('Dernier délai :') }} <strong>{{ $e->submission_deadline->translatedFormat('d F Y') }}</strong>.@endif
                             </p>
                             @if ($e->submission_open)
                                 <a href="{{ route('account.submissions.create', $e->slug) }}" class="ukc-btn ukc-btn--primary">
-                                    <x-ukc.icon name="upload" :size="18" /> Déposer mon résumé
+                                    <x-ukc.icon name="upload" :size="18" /> {{ __('Déposer mon résumé') }}
                                 </a>
                             @else
                                 <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--primary">
-                                    <x-ukc.icon name="user" :size="18" /> Mon espace
+                                    <x-ukc.icon name="user" :size="18" /> {{ __('Mon espace') }}
                                 </a>
                             @endif
                         </div>
@@ -271,9 +271,9 @@
             @if (count($disciplines))
                 <section id="thematiques" style="scroll-margin-top:72px;">
                     <div class="ukc-block-head">
-                        <h2>Ateliers disciplinaires</h2>
+                        <h2>{{ __('Ateliers disciplinaires') }}</h2>
                         <div class="ukc-accent"><i></i><i></i><i></i></div>
-                        <p>{{ count($disciplines) }} ateliers regroupant les champs disciplinaires du colloque.</p>
+                        <p>{{ __(':count ateliers regroupant les champs disciplinaires du colloque.', ['count' => count($disciplines)]) }}</p>
                     </div>
                     <div class="ukc-themes">
                         @foreach ($disciplines as $i => $disc)
@@ -305,15 +305,15 @@
                 @if ($progDays->isNotEmpty())
                     <section id="programme" style="scroll-margin-top:72px;" x-data="{ progDay: '{{ $progDays->first() }}' }">
                         <div class="ukc-block-head">
-                            <h2>Programme</h2>
+                            <h2>{{ __('Programme') }}</h2>
                             <div class="ukc-accent"><i></i><i></i><i></i></div>
-                            <p>Aperçu du déroulement du colloque.</p>
+                            <p>{{ __('Aperçu du déroulement du colloque.') }}</p>
                         </div>
 
                         <div class="ukc-tabs-scroll" role="tablist">
                             @php $dayNo = 0; @endphp
                             @foreach ($progDays as $d)
-                                <button type="button" class="ukc-tab" :class="{ active: progDay==='{{ $d }}' }" @click="progDay='{{ $d }}'" role="tab">@if ($d === ''){{ 'À programmer' }}@else{{ 'Jour '.(++$dayNo).' — '.\Illuminate\Support\Carbon::parse($d)->translatedFormat('d M') }}@endif</button>
+                                <button type="button" class="ukc-tab" :class="{ active: progDay==='{{ $d }}' }" @click="progDay='{{ $d }}'" role="tab">@if ($d === ''){{ __('À programmer') }}@else{{ __('Jour :n — :date', ['n' => ++$dayNo, 'date' => \Illuminate\Support\Carbon::parse($d)->translatedFormat('d M')]) }}@endif</button>
                             @endforeach
                         </div>
 
@@ -331,7 +331,7 @@
                                     <div class="ukc-session">
                                         <div class="ukc-session-time">{{ $s->starts_at?->format('H:i') ?: '—' }}</div>
                                         <div class="ukc-session-body">
-                                            <span class="type {{ $isPlenary ? 'type--plenary' : 'type--workshop' }}">{{ $isPlenary ? 'Plénière' : 'Atelier' }}</span>
+                                            <span class="type {{ $isPlenary ? 'type--plenary' : 'type--workshop' }}">{{ $isPlenary ? __('Plénière') : __('Atelier') }}</span>
                                             @if ($atelierTitle)<span class="type type--poster">{{ $atelierTitle }}</span>@endif
                                             <h4>{{ $s->label }}</h4>
                                             @if ($s->room || $roles)
@@ -358,9 +358,9 @@
             @if (count($speakers))
                 <section id="intervenants" style="scroll-margin-top:72px;">
                     <div class="ukc-block-head">
-                        <h2>Intervenants invités</h2>
+                        <h2>{{ __('Intervenants invités') }}</h2>
                         <div class="ukc-accent"><i></i><i></i><i></i></div>
-                        <p>Des chercheurs de renom qui partageront leur expertise.</p>
+                        <p>{{ __('Des chercheurs de renom qui partageront leur expertise.') }}</p>
                     </div>
                     <div class="ukc-speakers">
                         @foreach ($speakers as $sp)
@@ -383,16 +383,16 @@
             {{-- Votre parcours en 5 étapes (fidèle au mockup : stepper) --}}
             <section id="parcours" style="scroll-margin-top:72px;">
                 <div class="ukc-block-head">
-                    <h2>Votre parcours en 5 étapes</h2>
+                    <h2>{{ __('Votre parcours en 5 étapes') }}</h2>
                     <div class="ukc-accent"><i></i><i></i><i></i></div>
-                    <p>Du dépôt de résumé jusqu’à l’attestation de participation.</p>
+                    <p>{{ __('Du dépôt de résumé jusqu’à l’attestation de participation.') }}</p>
                 </div>
                 <div class="ukc-stepper">
-                    <div class="ukc-step active"><div class="circle">1</div><h4>Compte</h4><p>Création &amp; vérification</p></div>
-                    <div class="ukc-step"><div class="circle">2</div><h4>Soumission</h4><p>Résumé en ligne</p></div>
-                    <div class="ukc-step"><div class="circle">3</div><h4>Évaluation</h4><p>Relecture en aveugle</p></div>
-                    <div class="ukc-step"><div class="circle">4</div><h4>Paiement</h4><p>Mobile money / carte</p></div>
-                    <div class="ukc-step"><div class="circle">5</div><h4>Attestation</h4><p>Documents &amp; livret</p></div>
+                    <div class="ukc-step active"><div class="circle">1</div><h4>{{ __('Compte') }}</h4><p>{{ __('Création & vérification') }}</p></div>
+                    <div class="ukc-step"><div class="circle">2</div><h4>{{ __('Soumission') }}</h4><p>{{ __('Résumé en ligne') }}</p></div>
+                    <div class="ukc-step"><div class="circle">3</div><h4>{{ __('Évaluation') }}</h4><p>{{ __('Relecture en aveugle') }}</p></div>
+                    <div class="ukc-step"><div class="circle">4</div><h4>{{ __('Paiement') }}</h4><p>{{ __('Mobile money / carte') }}</p></div>
+                    <div class="ukc-step"><div class="circle">5</div><h4>{{ __('Attestation') }}</h4><p>{{ __('Documents & livret') }}</p></div>
                 </div>
             </section>
 
@@ -401,9 +401,9 @@
                 @php $featuredIndex = intdiv(count($fees), 2); @endphp
                 <section id="tarifs" style="scroll-margin-top:72px;">
                     <div class="ukc-block-head">
-                        <h2>Frais de participation</h2>
+                        <h2>{{ __('Frais de participation') }}</h2>
                         <div class="ukc-accent"><i></i><i></i><i></i></div>
-                        <p>Tarifs officiels du colloque (FCFA).@if ($feesNote) {{ $feesNote }}@endif</p>
+                        <p>{{ __('Tarifs officiels du colloque (FCFA).') }}@if ($feesNote) {{ $feesNote }}@endif</p>
                     </div>
                     <div class="ukc-pricing">
                         @foreach ($fees as $i => $fee)
@@ -411,19 +411,19 @@
                                 <h3>{{ $fee['label'] }}</h3>
                                 <div class="amount">{{ number_format((float) ($fee['amount'] ?? 0), 0, ',', ' ') }} <small>FCFA</small></div>
                                 <ul>
-                                    <li><x-ukc.icon name="check" :size="16" /> Accès aux sessions</li>
-                                    <li><x-ukc.icon name="check" :size="16" /> Communications &amp; ateliers</li>
-                                    <li><x-ukc.icon name="check" :size="16" /> Attestation de participation</li>
+                                    <li><x-ukc.icon name="check" :size="16" /> {{ __('Accès aux sessions') }}</li>
+                                    <li><x-ukc.icon name="check" :size="16" /> {{ __('Communications & ateliers') }}</li>
+                                    <li><x-ukc.icon name="check" :size="16" /> {{ __('Attestation de participation') }}</li>
                                 </ul>
                                 <a href="{{ route('account.register') }}"
                                    @class(['ukc-btn', 'ukc-btn--primary' => $i === $featuredIndex, 'ukc-btn--outline' => $i !== $featuredIndex])
-                                   style="width:100%;justify-content:center;">Choisir</a>
+                                   style="width:100%;justify-content:center;">{{ __('Choisir') }}</a>
                             </div>
                         @endforeach
                     </div>
                     <p style="margin:20px 0 0;font-size:.9rem;color:var(--ukc-muted);text-align:center;">
-                        Co-auteur d’une communication acceptée ?
-                        <a href="{{ route('public.coauthor', $edition->slug) }}" style="color:var(--ukc-blue);font-weight:700;">Réglez vos frais ici</a>.
+                        {{ __('Co-auteur d’une communication acceptée ?') }}
+                        <a href="{{ route('public.coauthor', $edition->slug) }}" style="color:var(--ukc-blue);font-weight:700;">{{ __('Réglez vos frais ici') }}</a>.
                     </p>
                 </section>
             @endif
@@ -432,22 +432,22 @@
             @php
                 // Le 4e élément indique un rendu en liste à puces (comme le mockup pour Langues/Hébergement).
                 $infos = [
-                    ['pin', 'Lieu', $practical['venue'] ?? null, false],
-                    ['users', 'Langues', $practical['languages'] ?? null, true],
-                    ['bed', 'Hébergement', $practical['accommodation'] ?? null, true],
-                    ['video', 'Format hybride', $practical['hybrid'] ?? null, false],
-                    ['shield', 'Visa & formalités', $practical['visa'] ?? null, false],
-                    ['mail', 'Contacts', $practical['contacts'] ?? null, false],
-                    ['bus', 'Transport', $practical['transport'] ?? null, true],
+                    ['pin', __('Lieu'), $practical['venue'] ?? null, false],
+                    ['users', __('Langues'), $practical['languages'] ?? null, true],
+                    ['bed', __('Hébergement'), $practical['accommodation'] ?? null, true],
+                    ['video', __('Format hybride'), $practical['hybrid'] ?? null, false],
+                    ['shield', __('Visa & formalités'), $practical['visa'] ?? null, false],
+                    ['mail', __('Contacts'), $practical['contacts'] ?? null, false],
+                    ['bus', __('Transport'), $practical['transport'] ?? null, true],
                 ];
                 $infos = array_values(array_filter($infos, fn ($i) => ! empty($i[2])));
             @endphp
             @if (count($infos) || ! empty($map['embed']))
                 <section id="infos" style="scroll-margin-top:72px;">
                     <div class="ukc-block-head">
-                        <h2>Informations pratiques</h2>
+                        <h2>{{ __('Informations pratiques') }}</h2>
                         <div class="ukc-accent"><i></i><i></i><i></i></div>
-                        <p>Tout ce qu’il faut savoir pour préparer votre venue.</p>
+                        <p>{{ __('Tout ce qu’il faut savoir pour préparer votre venue.') }}</p>
                     </div>
                     @if (count($infos))
                         <div class="ukc-practical">
@@ -471,9 +471,9 @@
                     @if (! empty($map['embed']))
                         <div class="ukc-campus-map">
                             <div class="ukc-campus-map-head">
-                                <h3>Plan du campus</h3>
+                                <h3>{{ __('Plan du campus') }}</h3>
                                 @if (! empty($map['link']))
-                                    <a href="{{ $map['link'] }}" target="_blank" rel="noopener noreferrer">Ouvrir dans OpenStreetMap →</a>
+                                    <a href="{{ $map['link'] }}" target="_blank" rel="noopener noreferrer">{{ __('Ouvrir dans OpenStreetMap →') }}</a>
                                 @endif
                             </div>
                             <iframe src="{{ $map['embed'] }}" title="Plan du campus — {{ $e->location }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
@@ -485,14 +485,14 @@
             {{-- Comités (exact mockup : onglets + carrousel) --}}
             @if ($committees->count())
                 @php
-                    $comLabels = ['organisation' => 'Comité d’organisation', 'scientifique' => 'Comité scientifique', 'supervision' => 'Comité de supervision'];
+                    $comLabels = ['organisation' => __('Comité d’organisation'), 'scientifique' => __('Comité scientifique'), 'supervision' => __('Comité de supervision')];
                     $firstComRole = collect(array_keys($comLabels))->first(fn ($r) => ($committees[$r] ?? collect())->count()) ?? 'organisation';
                 @endphp
                 <section id="comites" style="scroll-margin-top:72px;" x-data="{ comTab: '{{ $firstComRole }}' }">
                     <div class="ukc-block-head">
-                        <h2>Comités</h2>
+                        <h2>{{ __('Comités') }}</h2>
                         <div class="ukc-accent"><i></i><i></i><i></i></div>
-                        <p>Organisation et évaluation scientifique.</p>
+                        <p>{{ __('Organisation et évaluation scientifique.') }}</p>
                     </div>
 
                     <div class="ukc-tabs-scroll" role="tablist">
@@ -533,9 +533,9 @@
             @if (count($partners))
                 <section id="partenaires" class="ukc-partners" style="scroll-margin-top:72px;">
                     <div class="ukc-block-head" style="margin-bottom:0;">
-                        <h2>Partenaires &amp; Sponsors</h2>
+                        <h2>{{ __('Partenaires & Sponsors') }}</h2>
                         <div class="ukc-accent"><i></i><i></i><i></i></div>
-                        <p>Ils soutiennent cette édition.</p>
+                        <p>{{ __('Ils soutiennent cette édition.') }}</p>
                     </div>
                     <div class="ukc-marquee">
                         <div class="ukc-marquee-track">
@@ -558,7 +558,7 @@
             @if (count($faq))
                 <section id="faq" style="scroll-margin-top:72px;">
                     <div class="ukc-block-head">
-                        <h2>Questions fréquentes</h2>
+                        <h2>{{ __('Questions fréquentes') }}</h2>
                         <div class="ukc-accent"><i></i><i></i><i></i></div>
                     </div>
                     <div class="ukc-faq">
@@ -576,7 +576,7 @@
             @if ($siblings->count())
                 <section id="editions" style="scroll-margin-top:72px;">
                     <div class="ukc-block-head">
-                        <h2>Éditions précédentes</h2>
+                        <h2>{{ __('Éditions précédentes') }}</h2>
                         <div class="ukc-accent"><i></i><i></i><i></i></div>
                     </div>
                     <div class="ukc-editions">
@@ -587,7 +587,7 @@
                                     <span class="ukc-past-year">{{ $sib->year ?: $sib->date_start?->format('Y') }}</span>
                                     <h3>{{ \Illuminate\Support\Str::limit($sib->title ?: $sib->colloque?->name, 70) }}</h3>
                                     @if ($sib->location)<p>{{ $sib->location }}</p>@endif
-                                    <span class="ukc-link">Voir l’édition →</span>
+                                    <span class="ukc-link">{{ __('Voir l’édition →') }}</span>
                                 </div>
                             </a>
                         @endforeach
@@ -597,11 +597,11 @@
 
             {{-- CTA final (fidèle au mockup : bloc bleu) --}}
             <div class="ukc-final-cta" id="inscription">
-                <h2>Prêt à participer ?</h2>
-                <p>Créez votre compte en quelques minutes, soumettez votre résumé ou inscrivez-vous comme auditeur. Tout se passe en ligne.</p>
+                <h2>{{ __('Prêt à participer ?') }}</h2>
+                <p>{{ __('Créez votre compte en quelques minutes, soumettez votre résumé ou inscrivez-vous comme auditeur. Tout se passe en ligne.') }}</p>
                 <div class="actions">
                     <a href="{{ route('account.register') }}" class="ukc-btn ukc-btn--primary">
-                        <x-ukc.icon name="user-plus" :size="18" /> Créer mon compte
+                        <x-ukc.icon name="user-plus" :size="18" /> {{ __('Créer mon compte') }}
                     </a>
                     <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--ghost">{{ __('Se connecter') }}</a>
                 </div>
