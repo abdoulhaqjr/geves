@@ -51,7 +51,14 @@ class ParticipantController extends Controller
 
         $paidCount = (clone $base)->whereHas('payments', fn ($q) => $q->where('status', 'paid'))->count();
 
+        // Tendance des inscriptions : 7 derniers jours vs les 7 précédents.
+        $trendTotal = \App\Support\Trend::of(
+            (int) (clone $base)->whereBetween('created_at', [now()->subDays(7), now()])->count(),
+            (int) (clone $base)->whereBetween('created_at', [now()->subDays(14), now()->subDays(7)])->count(),
+        );
+
         return view('admin.participants.index', [
+            'trendTotal' => $trendTotal,
             'editions' => $editions,
             'participants' => $participants,
             'roles' => Participant::ROLES,

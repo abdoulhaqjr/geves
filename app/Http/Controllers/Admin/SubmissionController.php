@@ -89,7 +89,17 @@ class SubmissionController extends Controller
             ->selectRaw('status, count(*) as c')->groupBy('status')->pluck('c', 'status');
         $c = fn (string $s): int => (int) ($counts[$s] ?? 0);
 
+        // Tendance des dépôts : 7 derniers jours vs les 7 précédents (même périmètre).
+        $trendBase = fn () => Submission::query()->where('revision_of', 0)
+            ->when($scoped !== null, fn ($q) => $q->whereIn('edition_id', $scoped))
+            ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId));
+        $trendTotal = \App\Support\Trend::of(
+            (int) $trendBase()->whereBetween('created_at', [now()->subDays(7), now()])->count(),
+            (int) $trendBase()->whereBetween('created_at', [now()->subDays(14), now()->subDays(7)])->count(),
+        );
+
         return view('admin.submissions.index', [
+            'trendTotal' => $trendTotal,
             'submissions' => $submissions,
             'search' => $search,
             'status' => $status,

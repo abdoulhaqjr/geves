@@ -295,6 +295,18 @@
 .ukc-shell .tw-stat__icon--red { background: rgba(220, 38, 38, .1); color: #dc2626; }
 .ukc-shell .admin-page .tw-stat .lbl { padding-right: 48px; }
 .ukc-shell .tw-stat .val { margin-top: 2px; }
+
+/* Puce de tendance ▲/▼ (variation vs période précédente). */
+.ukc-shell .tw-stat__trend {
+    display: inline-flex; align-items: center; gap: 5px;
+    margin-top: 8px; padding: 2px 8px; border-radius: 999px;
+    font-size: 11.5px; font-weight: 700; line-height: 1.4;
+}
+.ukc-shell .tw-stat__trend .ar { font-size: 9px; }
+.ukc-shell .tw-stat__trend .per { font-weight: 500; opacity: .7; }
+.ukc-shell .tw-stat__trend--up { background: rgba(0, 153, 51, .12); color: #16803c; }
+.ukc-shell .tw-stat__trend--down { background: rgba(220, 38, 38, .1); color: #dc2626; }
+.ukc-shell .tw-stat__trend--flat { background: rgba(100, 116, 139, .12); color: #64748b; }
 /* Cartes KPI centrées (espace participant) : icône centrée au-dessus du chiffre. */
 .ukc-shell .account-dashboard .tw-stat { padding-top: 20px; }
 .ukc-shell .account-dashboard .tw-stat__icon { position: static; margin: 0 auto 10px; }

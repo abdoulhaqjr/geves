@@ -49,7 +49,14 @@ class PaymentController extends Controller
         $pendingCount = (clone $base)->where('status', 'pending')->count();
         $totalCount = (clone $base)->count();
 
+        // Tendance des encaissements : 7 derniers jours vs les 7 précédents.
+        $trendPaid = \App\Support\Trend::of(
+            (int) (clone $base)->where('status', 'paid')->whereBetween('created_at', [now()->subDays(7), now()])->count(),
+            (int) (clone $base)->where('status', 'paid')->whereBetween('created_at', [now()->subDays(14), now()->subDays(7)])->count(),
+        );
+
         return view('admin.payments.index', [
+            'trendPaid' => $trendPaid,
             'payments' => $payments,
             'editions' => $this->accessibleEditions($request, 'payments'),
             'statuses' => Payment::statuses(),

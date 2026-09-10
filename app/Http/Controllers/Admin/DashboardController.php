@@ -56,9 +56,24 @@ class DashboardController extends Controller
 
         $recent = $subs()->with('participant')->latest('created_at')->limit(6)->get();
 
-        // Tendances 7 jours (hints « + … cette semaine »).
-        $subs7 = $subs()->where('created_at', '>=', now()->subDays(7))->count();
-        $pay7 = $pay()->where('status', 'paid')->where('created_at', '>=', now()->subDays(7))->count();
+        // Tendances 7 jours : période courante (0-7 j) vs précédente (7-14 j).
+        $cur = [now()->subDays(7), now()];
+        $prev = [now()->subDays(14), now()->subDays(7)];
+        $subs7 = $subs()->whereBetween('created_at', $cur)->count();
+        $pay7 = $pay()->where('status', 'paid')->whereBetween('created_at', $cur)->count();
+        $subsPrev7 = $subs()->whereBetween('created_at', $prev)->count();
+        $payPrev7 = $pay()->where('status', 'paid')->whereBetween('created_at', $prev)->count();
+        $emails7 = Email::when($edId, fn ($q) => $q->where('edition_id', $edId))->whereBetween('created_at', $cur)->count();
+        $emailsPrev7 = Email::when($edId, fn ($q) => $q->where('edition_id', $edId))->whereBetween('created_at', $prev)->count();
+        $paidPart7 = $pay()->where('status', 'paid')->whereBetween('created_at', $cur)->distinct('participant_id')->count('participant_id');
+        $paidPartPrev7 = $pay()->where('status', 'paid')->whereBetween('created_at', $prev)->distinct('participant_id')->count('participant_id');
+
+        $trends = [
+            'submissions' => \App\Support\Trend::of($subs7, $subsPrev7),
+            'revenue' => \App\Support\Trend::of($pay7, $payPrev7),
+            'participants' => \App\Support\Trend::of($paidPart7, $paidPartPrev7),
+            'emails' => \App\Support\Trend::of($emails7, $emailsPrev7),
+        ];
 
         // Calendrier clé : jalons datés de l'édition (réels, masqués si absents).
         $s = $edition?->settings ?? [];
@@ -118,10 +133,11 @@ class DashboardController extends Controller
                 'poster' => max(0, $accepted - $oral),
                 'paidParticipants' => $paidParticipants,
                 'revenue' => $revenue,
-                'emails7' => Email::when($edId, fn ($q) => $q->where('edition_id', $edId))->where('created_at', '>=', now()->subDays(7))->count(),
+                'emails7' => $emails7,
                 'subs7' => $subs7,
                 'pay7' => $pay7,
             ],
+            'trends' => $trends,
             'pipeline' => [
                 'submitted' => $n('submitted'), 'under_review' => $n('under_review'),
                 'revision' => $n('revision'), 'accepted' => $accepted, 'rejected' => $n('rejected'),

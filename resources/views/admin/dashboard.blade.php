@@ -50,7 +50,7 @@
             <div class="ukc-stat-card tw-stat">
                 <div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="inbox" :size="20" /></div>
                 <div class="lbl">Soumissions</div><div class="val blue">{{ $stats['submissions'] }}</div>
-                @if ($stats['subs7'] > 0)<div class="hint up">+{{ $stats['subs7'] }} cette semaine</div>@else<div class="hint">édition active</div>@endif
+                <x-ukc.trend :trend="$trends['submissions']" period="7 j" />
             </div>
             <div class="ukc-stat-card tw-stat">
                 <div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="clock" :size="20" /></div>
@@ -63,15 +63,17 @@
             <div class="ukc-stat-card tw-stat">
                 <div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="users" :size="20" /></div>
                 <div class="lbl">Participants payés</div><div class="val blue">{{ $stats['paidParticipants'] }}</div>
-                @if ($stats['pay7'] > 0)<div class="hint up">+{{ $stats['pay7'] }} paiements (7 j.)</div>@else<div class="hint">inscriptions réglées</div>@endif
+                <x-ukc.trend :trend="$trends['participants']" period="7 j" />
             </div>
             <div class="ukc-stat-card tw-stat">
                 <div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="card" :size="20" /></div>
-                <div class="lbl">Recettes (FCFA)</div><div class="val">{{ $fmtRevenue($stats['revenue']) }}</div><div class="hint">FedaPay · Mobile Money</div>
+                <div class="lbl">Recettes (FCFA)</div><div class="val">{{ $fmtRevenue($stats['revenue']) }}</div>
+                <x-ukc.trend :trend="$trends['revenue']" period="7 j" />
             </div>
             <div class="ukc-stat-card tw-stat">
                 <div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="mail" :size="20" /></div>
-                <div class="lbl">E-mails (7 j.)</div><div class="val">{{ $stats['emails7'] }}</div><div class="hint">envoyés (7 j.)</div>
+                <div class="lbl">E-mails (7 j.)</div><div class="val">{{ $stats['emails7'] }}</div>
+                <x-ukc.trend :trend="$trends['emails']" period="7 j" />
             </div>
         </div>
 

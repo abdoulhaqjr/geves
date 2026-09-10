@@ -10,7 +10,7 @@
 
     <div class="admin-page admin-payments">
         <div class="ukc-stats">
-            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="card" :size="20" /></div><div class="lbl">Encaissé</div><div class="val green">{{ number_format($stats['paid'], 0, ',', ' ') }}</div><div class="hint">{{ $currency }} · {{ $stats['paidCount'] }} paiement(s)</div></div>
+            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="card" :size="20" /></div><div class="lbl">Encaissé</div><div class="val green">{{ number_format($stats['paid'], 0, ',', ' ') }}</div><div class="hint">{{ $currency }} · {{ $stats['paidCount'] }} paiement(s)</div><x-ukc.trend :trend="$trendPaid" period="7 j" /></div>
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="clock" :size="20" /></div><div class="lbl">En attente</div><div class="val warn">{{ number_format($stats['pending'], 0, ',', ' ') }}</div><div class="hint">{{ $currency }} · {{ $stats['pendingCount'] }} transaction(s)</div></div>
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--red"><x-ukc.icon name="close" :size="20" /></div><div class="lbl">Échoués</div><div class="val" style="color:#dc2626;">{{ $stats['failed'] }}</div><div class="hint">à relancer / vérifier</div></div>
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="chart" :size="20" /></div><div class="lbl">Taux de conversion</div><div class="val blue">{{ $stats['rate'] }} %</div><div class="hint">inscriptions → payées</div></div>

@@ -26,7 +26,7 @@
 
         {{-- Indicateurs --}}
         <div class="ukc-stats">
-            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="inbox" :size="20" /></div><div class="lbl">Total</div><div class="val blue">{{ $stats['total'] }}</div></div>
+            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="inbox" :size="20" /></div><div class="lbl">Total</div><div class="val blue">{{ $stats['total'] }}</div><x-ukc.trend :trend="$trendTotal" period="7 j" /></div>
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="clock" :size="20" /></div><div class="lbl">En revue</div><div class="val warn">{{ $stats['underReview'] }}</div></div>
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="check-circle" :size="20" /></div><div class="lbl">Acceptées</div><div class="val green">{{ $stats['accepted'] }}</div></div>
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="pen" :size="20" /></div><div class="lbl">Corrections</div><div class="val warn">{{ $stats['revision'] }}</div></div>
