@@ -35,6 +35,7 @@ class ParticipantController extends Controller
         $search = trim((string) $request->query('search', ''));
 
         $base = Participant::query()->where('edition_id', $editionId);
+        $sort = \App\Support\ListSort::resolve($request, ['last_name', 'role', 'created_at'], 'last_name', 'asc');
 
         $participants = (clone $base)
             ->with('payments')
@@ -45,7 +46,8 @@ class ParticipantController extends Controller
                     ->orWhere('last_name', 'like', $term)
                     ->orWhere('email', 'like', $term));
             })
-            ->orderBy('last_name')
+            ->orderBy($sort['sort'], $sort['dir'])
+            ->orderBy('id', 'desc')
             ->paginate(20)
             ->withQueryString();
 
@@ -59,6 +61,8 @@ class ParticipantController extends Controller
 
         return view('admin.participants.index', [
             'trendTotal' => $trendTotal,
+            'sort' => $sort['sort'],
+            'dir' => $sort['dir'],
             'editions' => $editions,
             'participants' => $participants,
             'roles' => Participant::ROLES,

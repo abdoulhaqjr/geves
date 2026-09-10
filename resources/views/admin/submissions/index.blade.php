@@ -64,7 +64,14 @@
                 <table class="ukc-table">
                     <thead>
                         <tr>
-                            <th>Réf.</th><th>Communication</th><th>Auteur(s)</th><th>Type</th><th>Axe</th><th>Déposée</th><th>Statut</th><th style="text-align:right;">Actions</th>
+                            <x-ukc.th sort="ref_code" :current="$sort" :dir="$dir">Réf.</x-ukc.th>
+                            <x-ukc.th sort="title" :current="$sort" :dir="$dir">Communication</x-ukc.th>
+                            <th>Auteur(s)</th>
+                            <x-ukc.th sort="type" :current="$sort" :dir="$dir">Type</x-ukc.th>
+                            <x-ukc.th sort="track" :current="$sort" :dir="$dir">Axe</x-ukc.th>
+                            <x-ukc.th sort="created_at" :current="$sort" :dir="$dir">Déposée</x-ukc.th>
+                            <x-ukc.th sort="status" :current="$sort" :dir="$dir">Statut</x-ukc.th>
+                            <th style="text-align:right;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>

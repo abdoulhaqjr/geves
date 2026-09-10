@@ -39,9 +39,11 @@ class PaymentController extends Controller
             ->when($scoped !== null, fn ($q) => $q->whereIn('edition_id', $scoped))
             ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId));
 
+        $sort = \App\Support\ListSort::resolve($request, ['receipt_no', 'amount', 'created_at', 'status', 'method'], 'created_at', 'desc');
         $payments = $this->applyFilters(clone $base, $status, $method, $search, $from, $to)
             ->with(['participant', 'edition'])
-            ->latest('id')
+            ->orderBy($sort['sort'], $sort['dir'])
+            ->orderBy('id', 'desc')
             ->paginate(15)
             ->withQueryString();
 
@@ -57,6 +59,8 @@ class PaymentController extends Controller
 
         return view('admin.payments.index', [
             'trendPaid' => $trendPaid,
+            'sort' => $sort['sort'],
+            'dir' => $sort['dir'],
             'payments' => $payments,
             'editions' => $this->accessibleEditions($request, 'payments'),
             'statuses' => Payment::statuses(),

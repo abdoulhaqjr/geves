@@ -46,7 +46,13 @@
                     <table class="ukc-table">
                         <thead>
                             <tr>
-                                <th>Référence</th><th>Participant</th><th>Catégorie</th><th>Montant</th><th>Moyen</th><th>Date</th><th>Statut</th><th style="text-align:right;">Actions</th>
+                                <x-ukc.th sort="receipt_no" :current="$sort" :dir="$dir">Référence</x-ukc.th>
+                                <th>Participant</th><th>Catégorie</th>
+                                <x-ukc.th sort="amount" :current="$sort" :dir="$dir">Montant</x-ukc.th>
+                                <x-ukc.th sort="method" :current="$sort" :dir="$dir">Moyen</x-ukc.th>
+                                <x-ukc.th sort="created_at" :current="$sort" :dir="$dir">Date</x-ukc.th>
+                                <x-ukc.th sort="status" :current="$sort" :dir="$dir">Statut</x-ukc.th>
+                                <th style="text-align:right;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>

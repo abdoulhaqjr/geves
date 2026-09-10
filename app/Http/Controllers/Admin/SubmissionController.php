@@ -60,6 +60,8 @@ class SubmissionController extends Controller
             ? (string) $request->query('edition_id', '')
             : $this->currentEditionId($accessible);
 
+        $sort = \App\Support\ListSort::resolve($request, ['ref_code', 'title', 'type', 'track', 'created_at', 'status'], 'created_at', 'desc');
+
         $submissions = Submission::query()
             ->with(['edition', 'participant'])
             ->where('revision_of', 0)
@@ -78,7 +80,8 @@ class SubmissionController extends Controller
                         ->orWhere('last_name', 'like', $term)
                         ->orWhere('email', 'like', $term)));
             })
-            ->latest('id')
+            ->orderBy($sort['sort'], $sort['dir'])
+            ->orderBy('id', 'desc')
             ->paginate(15)
             ->withQueryString();
 
@@ -100,6 +103,8 @@ class SubmissionController extends Controller
 
         return view('admin.submissions.index', [
             'trendTotal' => $trendTotal,
+            'sort' => $sort['sort'],
+            'dir' => $sort['dir'],
             'submissions' => $submissions,
             'search' => $search,
             'status' => $status,

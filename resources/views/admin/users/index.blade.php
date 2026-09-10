@@ -45,7 +45,13 @@
                     <table class="ukc-table">
                         <thead>
                             <tr>
-                                <th>Utilisateur</th><th>Rôle(s) UKC</th><th>E-mail</th><th>Dernière connexion</th><th>IP</th><th>Statut</th><th style="text-align:right;">Actions</th>
+                                <x-ukc.th sort="name" :current="$sort" :dir="$dir">Utilisateur</x-ukc.th>
+                                <th>Rôle(s) UKC</th>
+                                <x-ukc.th sort="email" :current="$sort" :dir="$dir">E-mail</x-ukc.th>
+                                <x-ukc.th sort="last_login_at" :current="$sort" :dir="$dir">Dernière connexion</x-ukc.th>
+                                <th>IP</th>
+                                <x-ukc.th sort="is_active" :current="$sort" :dir="$dir">Statut</x-ukc.th>
+                                <th style="text-align:right;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>

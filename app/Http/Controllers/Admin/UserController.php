@@ -29,6 +29,7 @@ class UserController extends Controller
         $role = (string) $request->query('role', '');
         $status = (string) $request->query('status', '');
         $search = trim((string) $request->query('search', ''));
+        $sort = \App\Support\ListSort::resolve($request, ['name', 'email', 'last_login_at', 'is_active'], 'name', 'asc');
 
         $users = User::query()
             ->with('roles')
@@ -40,7 +41,8 @@ class UserController extends Controller
                     ->orWhere('email', 'like', $term)
                     ->orWhere('last_login_ip', 'like', $term));
             })
-            ->orderBy('name')
+            ->orderBy($sort['sort'], $sort['dir'])
+            ->orderBy('id', 'desc')
             ->paginate(20)
             ->withQueryString();
 
@@ -67,6 +69,8 @@ class UserController extends Controller
             'role' => $role,
             'status' => $status,
             'search' => $search,
+            'sort' => $sort['sort'],
+            'dir' => $sort['dir'],
             'roleOptions' => StaffRoles::options(),
             'roles' => StaffRoles::ROLES,
             'permissions' => StaffRoles::PERMISSIONS,

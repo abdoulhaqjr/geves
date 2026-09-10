@@ -254,6 +254,22 @@
     border: 1px solid var(--tw-line); border-radius: 0.6rem; background: #fff; overflow: auto;
 }
 
+/* En-têtes triables (clic pour trier ▲/▼). */
+.ukc-shell table.ukc-table th .ukc-th-sort {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: inherit; text-decoration: none; cursor: pointer;
+}
+.ukc-shell table.ukc-table th .ukc-th-sort:hover { color: var(--ukc-blue); }
+.ukc-shell table.ukc-table th .ukc-th-sort .ind {
+    width: 0; height: 0;
+    border-left: 4px solid transparent; border-right: 4px solid transparent;
+    border-top: 5px solid currentColor; opacity: .3;
+}
+.ukc-shell table.ukc-table th .ukc-th-sort.is-active { color: var(--ukc-blue); }
+.ukc-shell table.ukc-table th .ukc-th-sort.is-active .ind { opacity: 1; }
+.ukc-shell table.ukc-table th .ukc-th-sort.is-active:not(.is-desc) .ind { border-top: 0; border-bottom: 5px solid currentColor; }
+.ukc-shell table.ukc-table th .ukc-th-sort.is-active.is-desc .ind { border-top: 5px solid currentColor; border-bottom: 0; }
+
 /* ===================== Boutons ===================== */
 .ukc-shell .ukc-btn { border-radius: 0.5rem; font-weight: 600; letter-spacing: 0; }
 .ukc-shell .ukc-btn--blue { background: var(--ukc-blue); color: #fff; }

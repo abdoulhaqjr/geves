@@ -39,7 +39,11 @@
                 <div class="ukc-table-wrap">
                     <table class="ukc-table">
                         <thead>
-                            <tr><th>Participant</th><th>Rôle</th><th>Paiement</th><th>Invité</th><th style="text-align:right;">Action</th></tr>
+                            <tr>
+                                <x-ukc.th sort="last_name" :current="$sort" :dir="$dir">Participant</x-ukc.th>
+                                <x-ukc.th sort="role" :current="$sort" :dir="$dir">Rôle</x-ukc.th>
+                                <th>Paiement</th><th>Invité</th><th style="text-align:right;">Action</th>
+                            </tr>
                         </thead>
                         <tbody>
                             @foreach ($participants as $p)
