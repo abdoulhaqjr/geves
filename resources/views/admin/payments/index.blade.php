@@ -26,7 +26,7 @@
                 <option value="">Tous les moyens</option>
                 @foreach ($methods as $key => $label)<option value="{{ $key }}" @selected($method === $key)>{{ $label }}</option>@endforeach
             </select>
-            <select name="edition_id" onchange="this.form.submit()">
+            <select name="edition_id" onchange="this.form.submit()" data-tom data-placeholder="Édition…">
                 <option value="">Toutes les éditions</option>
                 @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
             </select>

@@ -1,7 +1,27 @@
 import Alpine from 'alpinejs';
+import TomSelect from 'tom-select';
+import 'tom-select/dist/css/tom-select.css';
 
 // Alpine est désormais une dépendance autonome (Livewire retiré du projet).
 window.Alpine = Alpine;
+
+// Tom Select (Tailwise) : transforme tout <select data-tom> en liste
+// recherchable ; data-tom-create autorise la saisie libre (tags). Le <select>
+// natif reste la source → onchange/submit et la validation serveur inchangés.
+function initTomSelects(root = document) {
+    root.querySelectorAll('select[data-tom]').forEach((el) => {
+        if (el.tomselect) return;
+        new TomSelect(el, {
+            create: el.hasAttribute('data-tom-create'),
+            allowEmptyOption: true,
+            persist: false,
+            plugins: el.multiple ? ['remove_button'] : [],
+            placeholder: el.getAttribute('data-placeholder') || undefined,
+        });
+    });
+}
+document.addEventListener('DOMContentLoaded', () => initTomSelects());
+window.initTomSelects = initTomSelects;
 
 // Interactions du site public (menu mobile, galerie/lightbox, filtres).
 import './public.js';

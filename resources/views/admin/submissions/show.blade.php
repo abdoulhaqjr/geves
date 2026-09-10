@@ -326,7 +326,7 @@
                         @if ($existingReviewers->count())
                             <div class="ukc-field" style="margin-bottom:8px;">
                                 <label for="existingReviewerId">Relecteur existant</label>
-                                <select id="existingReviewerId" name="existingReviewerId">
+                                <select id="existingReviewerId" name="existingReviewerId" data-tom data-placeholder="Rechercher un relecteur…">
                                     <option value="">— Nouveau relecteur —</option>
                                     @foreach ($existingReviewers as $rev)
                                         @php($worst = $coiByReviewer[$rev->id] ?? null)

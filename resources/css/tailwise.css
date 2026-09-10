@@ -347,6 +347,39 @@
     background: var(--ukc-blue); color: #fff;
 }
 
+/* ===================== Tom Select (listes recherchables) ===================== */
+.ukc-shell .ts-wrapper { min-width: 160px; }
+.ukc-shell .ts-control {
+    border: 1px solid #cbd5e1; border-radius: 0.5rem;
+    padding: 6px 10px; min-height: 38px; background: #fff;
+    font-size: 13.5px; color: var(--tw-ink-strong);
+    box-shadow: none;
+}
+.ukc-shell .ts-wrapper.focus .ts-control {
+    border-color: var(--ukc-blue); box-shadow: 0 0 0 3px rgba(34, 62, 164, .12);
+}
+.ukc-shell .ts-control .ts-control-input,
+.ukc-shell .ts-control input { color: var(--tw-ink-strong); }
+.ukc-shell .ts-dropdown {
+    border: 1px solid var(--tw-line); border-radius: 0.6rem;
+    box-shadow: 0px 3px 10px #00000017; margin-top: 6px; overflow: hidden; padding: 4px;
+}
+.ukc-shell .ts-dropdown .option {
+    border-radius: 0.4rem; padding: 8px 10px; font-size: 13.5px; color: var(--tw-ink);
+}
+.ukc-shell .ts-dropdown .option.active {
+    background: linear-gradient(to right, rgba(34, 62, 164, .1), rgba(0, 153, 51, .08));
+    color: var(--tw-ink-strong);
+}
+.ukc-shell .ts-dropdown .create { border-radius: 0.4rem; }
+/* Tags (multi + remove_button) au style pilule UK. */
+.ukc-shell .ts-control .item {
+    background: rgba(34, 62, 164, .1); color: var(--ukc-blue);
+    border-radius: 999px; padding: 2px 8px; font-weight: 600; font-size: 12.5px;
+}
+.ukc-shell .ts-control .item .remove { border-left-color: rgba(34, 62, 164, .2); }
+.ukc-shell .ts-dropdown .no-results { padding: 8px 10px; color: #94a3b8; }
+
 /* ===================== Éditeur de formulaire (form-builder) ===================== */
 .ukc-shell .admin-submission-forms .field-item {
     border: 1px solid var(--tw-line); border-radius: 0.6rem; background: #fff;

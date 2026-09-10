@@ -35,7 +35,7 @@
 
         {{-- Filtres (GET, auto-submit) --}}
         <form method="GET" class="filter-bar">
-            <select name="edition_id" onchange="this.form.submit()">
+            <select name="edition_id" onchange="this.form.submit()" data-tom data-placeholder="Édition…">
                 <option value="">Toutes les éditions</option>
                 @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
             </select>
@@ -48,7 +48,7 @@
                 <option value="oral" @selected($type === 'oral')>Orale</option>
                 <option value="poster" @selected($type === 'poster')>Poster</option>
             </select>
-            <select name="track" onchange="this.form.submit()">
+            <select name="track" onchange="this.form.submit()" data-tom data-placeholder="Axe…">
                 <option value="">Tous les axes</option>
                 @foreach ($tracks as $t)<option value="{{ $t }}" @selected($track === $t)>{{ $t }}</option>@endforeach
             </select>
