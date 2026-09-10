@@ -1,5 +1,6 @@
 @php($staff = auth('web')->user())
 @php($navEdition = \App\Models\Edition::where('status', 'open')->latest('id')->first() ?? \App\Models\Edition::latest('id')->first())
+@php($paletteItems = \App\Support\AdminPalette::items($staff))
 @props(['title' => 'Back-office', 'subtitle' => null])
 <x-layouts.app :title="($title ?? 'Back-office') . ' — Colloques UK'">
     <div class="wp-bar">
@@ -158,8 +159,29 @@
                     </div>
                 </div>
                 <div class="head-actions">
+                    <x-ukc.command-palette :items="$paletteItems" :search-base="route('admin.submissions.index').'?search='" />
                     {{ $actions ?? '' }}
                     <x-ukc.notification-bell />
+                    <div class="ukc-usermenu" x-data="{ open: false }" @click.outside="open = false">
+                        <button type="button" class="ukc-usermenu__btn" @click="open = !open" :aria-expanded="open" aria-label="Menu du compte">
+                            <span class="av">{{ strtoupper(mb_substr($staff?->name ?? 'A', 0, 1)) }}</span>
+                            <x-ukc.icon name="chevron" :size="14" />
+                        </button>
+                        <div class="ukc-usermenu__pop" x-show="open" x-cloak x-transition.origin.top.right style="display:none;">
+                            <div class="ukc-usermenu__head">
+                                <div class="name">{{ $staff?->name }}</div>
+                                <div class="mail">{{ $staff?->email }}</div>
+                            </div>
+                            @can('settings')
+                                <a href="{{ route('admin.settings') }}" class="ukc-usermenu__item"><x-ukc.icon name="settings" :size="16" /> Réglages</a>
+                            @endcan
+                            <a href="{{ route('admin.notifications') }}" class="ukc-usermenu__item"><x-ukc.icon name="bell" :size="16" /> Notifications</a>
+                            <form method="POST" action="{{ route('admin.logout') }}">
+                                @csrf
+                                <button type="submit" class="ukc-usermenu__item ukc-usermenu__item--danger"><x-ukc.icon name="logout" :size="16" /> Se déconnecter</button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </header>
 

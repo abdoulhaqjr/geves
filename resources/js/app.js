@@ -529,6 +529,59 @@ document.addEventListener('alpine:init', () => {
     window.Alpine.data('editionArrays', editionArraysFactory);
     window.__editionArrays = editionArraysFactory;
 
+    // Palette de commandes « Recherche rapide » (⌘K / Ctrl+K) — style Tailwise.
+    // Les items sont rendus côté serveur (avec leurs icônes) ; on filtre en
+    // masquant les lignes qui ne correspondent pas, sans backend.
+    window.Alpine.data('ukcPalette', () => ({
+        open: false,
+        q: '',
+        active: 0,
+        get rows() {
+            return this.$refs.list ? Array.from(this.$refs.list.querySelectorAll('[data-item]')) : [];
+        },
+        norm(s) {
+            return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+        },
+        get matches() {
+            const q = this.norm(this.q);
+            return this.rows.filter((el) => !q || this.norm(el.dataset.k).includes(q));
+        },
+        openPalette() {
+            this.open = true; this.q = ''; this.active = 0;
+            this.$nextTick(() => { this.$refs.input && this.$refs.input.focus(); this.paint(); });
+        },
+        close() { this.open = false; },
+        hotkey(e) {
+            if ((e.metaKey || e.ctrlKey) && String(e.key).toLowerCase() === 'k') {
+                e.preventDefault();
+                this.open ? this.close() : this.openPalette();
+            }
+        },
+        paint() {
+            const m = this.matches;
+            if (this.active >= m.length) this.active = Math.max(0, m.length - 1);
+            this.rows.forEach((el) => { el.hidden = true; el.classList.remove('active'); });
+            m.forEach((el, i) => { el.hidden = false; if (i === this.active) el.classList.add('active'); });
+            if (this.$refs.empty) this.$refs.empty.hidden = m.length > 0;
+        },
+        onInput() { this.active = 0; this.paint(); },
+        move(d) {
+            const m = this.matches;
+            if (!m.length) return;
+            this.active = (this.active + d + m.length) % m.length;
+            this.paint();
+            m[this.active] && m[this.active].scrollIntoView({ block: 'nearest' });
+        },
+        go() {
+            const m = this.matches;
+            if (m.length) { m[this.active].click(); }
+            else if (this.$refs.fallback && this.q.trim()) {
+                this.$refs.fallback.href = this.$refs.fallback.dataset.base + encodeURIComponent(this.q.trim());
+                this.$refs.fallback.click();
+            }
+        },
+    }));
+
     // Éditeur de champs personnalisés du formulaire de soumission (admin), sans
     // Livewire : ajout / suppression / réordonnancement côté client.
     window.Alpine.data('formEditor', (custom = []) => ({
