@@ -24,13 +24,19 @@
             ->latest('id')->value('edition_id');
 @endphp
 <x-layouts.app :title="$title ?? 'Mon espace'">
-    <div class="ukc-shell" x-data="{ open: false }">
+    <div class="ukc-shell"
+         x-data="{ open: false, compact: localStorage.getItem('ukcCompact')==='1', toggleCompact(){ this.compact=!this.compact; localStorage.setItem('ukcCompact', this.compact?'1':'0'); } }"
+         :class="{ 'ukc-compact': compact }">
         <aside class="ukc-sidebar" :class="{ 'open': open }">
             <div class="ukc-sidebar-brand">
                 <a href="{{ route('account.dashboard') }}" class="logo-img" aria-label="Université de Kara — espace participant">
                     <img src="{{ asset('img/logo-uk.png') }}" alt="Université de Kara">
                 </a>
                 <div class="logo-sub" style="margin-top:8px;">Espace participant</div>
+                <button type="button" class="ukc-compact-toggle" @click="toggleCompact()"
+                        :aria-pressed="compact" aria-label="Réduire ou déployer le menu" title="Réduire / déployer le menu">
+                    <x-ukc.icon name="chevron" :size="16" />
+                </button>
 
                 @if ($myColloques->count() > 1)
                     {{-- Sélecteur de colloque : le compte participe à plusieurs colloques. --}}
@@ -64,53 +70,53 @@
                 @endif
             </div>
             <nav class="ukc-sidebar-nav">
-                <a href="{{ route('account.dashboard') }}"
+                <a href="{{ route('account.dashboard') }}" title="{{ __('Tableau de bord') }}"
                    @class(['active' => request()->routeIs('account.dashboard')])>
-                    <x-ukc.icon name="home" :size="18" /> {{ __('Tableau de bord') }}
+                    <x-ukc.icon name="home" :size="18" /> <span class="txt">{{ __('Tableau de bord') }}</span>
                 </a>
 
                 <span class="nav-label">{{ __('Mon dossier') }}</span>
-                <a href="{{ route('account.profile') }}"
+                <a href="{{ route('account.profile') }}" title="{{ __('Mon profil') }}"
                    @class(['active' => request()->routeIs('account.profile')])>
-                    <x-ukc.icon name="user" :size="18" /> {{ __('Mon profil') }}
+                    <x-ukc.icon name="user" :size="18" /> <span class="txt">{{ __('Mon profil') }}</span>
                 </a>
-                <a href="{{ route('account.submissions.index') }}"
+                <a href="{{ route('account.submissions.index') }}" title="{{ __('Soumissions') }}"
                    @class(['active' => request()->routeIs('account.submissions.*')])>
-                    <x-ukc.icon name="file" :size="18" /> {{ __('Soumissions') }}
+                    <x-ukc.icon name="file" :size="18" /> <span class="txt">{{ __('Soumissions') }}</span>
                 </a>
-                <a href="{{ $payEditionId ? route('account.payment', $payEditionId) : ($colloqueEdition ? route('public.colloque', $colloqueEdition->slug) : route('account.dashboard')) }}"
+                <a href="{{ $payEditionId ? route('account.payment', $payEditionId) : ($colloqueEdition ? route('public.colloque', $colloqueEdition->slug) : route('account.dashboard')) }}" title="{{ __('Inscription & paiement') }}"
                    @class(['active' => request()->routeIs('account.payment')])>
-                    <x-ukc.icon name="card" :size="18" /> {{ __('Inscription & paiement') }}
+                    <x-ukc.icon name="card" :size="18" /> <span class="txt">{{ __('Inscription & paiement') }}</span>
                 </a>
-                <a href="{{ route('account.documents') }}"
+                <a href="{{ route('account.documents') }}" title="{{ __('Documents') }}"
                    @class(['active' => request()->routeIs('account.documents')])>
-                    <x-ukc.icon name="folder" :size="18" /> {{ __('Documents') }}
+                    <x-ukc.icon name="folder" :size="18" /> <span class="txt">{{ __('Documents') }}</span>
                 </a>
-                <a href="{{ route('account.preferences') }}"
+                <a href="{{ route('account.preferences') }}" title="{{ __('Mon compte') }}"
                    @class(['active' => request()->routeIs('account.preferences') || request()->routeIs('account.notifications') || request()->routeIs('account.security')])>
-                    <x-ukc.icon name="shield" :size="18" /> {{ __('Mon compte') }}
+                    <x-ukc.icon name="shield" :size="18" /> <span class="txt">{{ __('Mon compte') }}</span>
                 </a>
 
                 <span class="nav-label">{{ __('Colloque') }}</span>
                 @if ($colloqueEdition)
-                    <a href="{{ route('public.colloque', $colloqueEdition->slug) }}">
-                        <x-ukc.icon name="globe" :size="18" /> {{ __('Page du colloque') }}
+                    <a href="{{ route('public.colloque', $colloqueEdition->slug) }}" title="{{ __('Page du colloque') }}">
+                        <x-ukc.icon name="globe" :size="18" /> <span class="txt">{{ __('Page du colloque') }}</span>
                     </a>
-                    <a href="{{ route('public.colloque', $colloqueEdition->slug) }}#programme">
-                        <x-ukc.icon name="calendar" :size="18" /> {{ __('Programme') }}
+                    <a href="{{ route('public.colloque', $colloqueEdition->slug) }}#programme" title="{{ __('Programme') }}">
+                        <x-ukc.icon name="calendar" :size="18" /> <span class="txt">{{ __('Programme') }}</span>
                     </a>
                 @endif
-                <a href="{{ route('public.deroulement') }}">
-                    <x-ukc.icon name="video" :size="18" /> {{ __('Déroulement') }}
+                <a href="{{ route('public.deroulement') }}" title="{{ __('Déroulement') }}">
+                    <x-ukc.icon name="video" :size="18" /> <span class="txt">{{ __('Déroulement') }}</span>
                 </a>
-                <a href="{{ route('public.archives') }}">
-                    <x-ukc.icon name="book" :size="18" /> {{ __('Archives') }}
+                <a href="{{ route('public.archives') }}" title="{{ __('Archives') }}">
+                    <x-ukc.icon name="book" :size="18" /> <span class="txt">{{ __('Archives') }}</span>
                 </a>
-                <a href="{{ route('home') }}">
-                    <x-ukc.icon name="external" :size="18" /> {{ __('Accueil plateforme') }}
+                <a href="{{ route('home') }}" title="{{ __('Accueil plateforme') }}">
+                    <x-ukc.icon name="external" :size="18" /> <span class="txt">{{ __('Accueil plateforme') }}</span>
                 </a>
-                <a href="{{ route('public.gesco') }}">
-                    <x-ukc.icon name="sparkles" :size="18" /> {{ __('Assistant Gesco') }}
+                <a href="{{ route('public.gesco') }}" title="{{ __('Assistant Gesco') }}">
+                    <x-ukc.icon name="sparkles" :size="18" /> <span class="txt">{{ __('Assistant Gesco') }}</span>
                 </a>
             </nav>
             <div class="ukc-sidebar-foot">

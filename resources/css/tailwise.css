@@ -107,6 +107,66 @@
 .ukc-shell .ukc-user-chip .logout { color: #94a3b8; }
 .ukc-shell .ukc-user-chip .logout:hover { color: #dc2626; }
 
+/* ===================== Menu rétractable (signature Tailwise) ===================== */
+/* Bouton pour réduire / déployer la barre latérale (coin de la marque). */
+.ukc-shell .ukc-sidebar-brand { position: relative; }
+.ukc-shell .ukc-compact-toggle {
+    position: absolute; top: 16px; right: 14px;
+    width: 22px; height: 22px; display: none;
+    align-items: center; justify-content: center;
+    border-radius: 999px; border: 1px solid var(--tw-line);
+    background: #fff; color: #64748b; cursor: pointer;
+    transition: transform .25s ease, background .15s, color .15s;
+}
+.ukc-shell .ukc-compact-toggle:hover { background: rgba(148, 163, 184, .12); color: var(--ukc-blue); }
+.ukc-shell.ukc-compact .ukc-compact-toggle { transform: rotate(180deg); }
+
+@media (min-width: 1024px) {
+    .ukc-shell .ukc-compact-toggle { display: inline-flex; }
+
+    /* État compact : barre réduite ; la largeur pilote le décalage du contenu. */
+    .ukc-shell.ukc-compact { --ukc-sidebar: 78px; }
+    .ukc-shell.ukc-compact .ukc-sidebar { width: 78px; transition: width .26s ease, box-shadow .26s ease; }
+
+    /* Déploiement au survol : la barre flotte au-dessus du contenu (main ne bouge pas). */
+    .ukc-shell.ukc-compact .ukc-sidebar:hover {
+        width: 260px;
+        box-shadow: 6px 0 22px -6px rgba(15, 26, 51, .18);
+    }
+
+    /* Éléments masqués tant que la barre compacte n'est pas survolée
+       (le survol les ré-affiche automatiquement, sans règle miroir). */
+    .ukc-shell.ukc-compact .ukc-sidebar:not(:hover) .ukc-sidebar-nav a .txt,
+    .ukc-shell.ukc-compact .ukc-sidebar:not(:hover) .ukc-sidebar-nav .nav-label,
+    .ukc-shell.ukc-compact .ukc-sidebar:not(:hover) .ukc-sidebar-nav a.sub,
+    .ukc-shell.ukc-compact .ukc-sidebar:not(:hover) .ukc-sidebar-brand .logo-sub,
+    .ukc-shell.ukc-compact .ukc-sidebar:not(:hover) .ukc-sidebar-brand .sub,
+    .ukc-shell.ukc-compact .ukc-sidebar:not(:hover) .ukc-colloque-switch,
+    .ukc-shell.ukc-compact .ukc-sidebar:not(:hover) .ukc-compact-toggle,
+    .ukc-shell.ukc-compact .ukc-sidebar:not(:hover) .ukc-user-chip .meta,
+    .ukc-shell.ukc-compact .ukc-sidebar:not(:hover) .ukc-user-chip .logout { display: none; }
+
+    /* Icônes centrées en mode compact réduit. */
+    .ukc-shell.ukc-compact .ukc-sidebar:not(:hover) .ukc-sidebar-nav a {
+        justify-content: center; gap: 0; padding-left: 0; padding-right: 0;
+    }
+    .ukc-shell.ukc-compact .ukc-sidebar:not(:hover) .ukc-sidebar-brand {
+        padding-left: 0; padding-right: 0; text-align: center;
+    }
+    .ukc-shell.ukc-compact .ukc-sidebar:not(:hover) .ukc-sidebar-brand .logo-img { padding: 6px; }
+    .ukc-shell.ukc-compact .ukc-sidebar:not(:hover) .ukc-user-chip { justify-content: center; }
+}
+
+/* Pastille de compteur dans un lien du menu (badge Tailwise). */
+.ukc-shell .ukc-sidebar-nav a .side-badge {
+    margin-left: auto;
+    min-width: 1.2rem; height: 1.2rem; padding: 0 6px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; border-radius: 999px;
+    background: rgba(34, 62, 164, .14); color: var(--ukc-blue);
+}
+.ukc-shell .ukc-sidebar-nav a.active .side-badge { background: rgba(255, 255, 255, .2); color: #fff; }
+
 /* ===================== En-têtes de page ===================== */
 .ukc-shell .ukc-admin-head h1,
 .ukc-shell .ukc-topbar h1 { color: var(--tw-ink-strong); font-weight: 700; }
