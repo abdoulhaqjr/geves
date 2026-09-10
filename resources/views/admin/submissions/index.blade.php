@@ -120,40 +120,33 @@
 
         <div style="margin-top:12px;">{{ $submissions->links() }}</div>
 
-        {{-- Aperçu de la soumission (modale, fidèle au mockup admin-submissions) --}}
-        <div class="ukc-modal" x-show="pv" x-cloak @click.self="pv = null" style="display:none;">
-            <div class="box">
-                <div class="box-head">
-                    <span>Aperçu de la soumission</span>
-                    <button type="button" @click="pv = null" style="font-size:22px;color:var(--ukc-muted);background:none;border:none;cursor:pointer;">&times;</button>
-                </div>
-                <div class="box-body">
-                    <div class="detail-grid">
-                        <div class="k">Référence</div><div class="v" x-text="pv?.ref"></div>
-                        <div class="k">Auteur principal</div><div class="v" x-text="pv?.author"></div>
-                        <div class="k">Type</div><div class="v" x-text="pv?.type"></div>
-                        <div class="k">Axe</div><div class="v" x-text="pv?.axis"></div>
-                        <div class="k">Statut</div><div class="v"><span class="ukc-pill" :class="'ukc-pill--' + (pv?.statusPill)" x-text="pv?.status"></span></div>
-                        <div class="k">Déposée le</div><div class="v" x-text="pv?.date"></div>
-                    </div>
-                    <div class="ukc-form-row">
-                        <label>Titre</label>
-                        <div style="font-weight:700;font-size:14px;" x-text="pv?.title"></div>
-                    </div>
-                    <div class="ukc-form-row" x-show="pv?.keywords">
-                        <label>Mots-clés</label>
-                        <div style="font-size:13px;color:var(--ukc-muted);" x-text="pv?.keywords"></div>
-                    </div>
-                    <div class="ukc-form-row">
-                        <label>Résumé</label>
-                        <div class="abstract-box" x-text="pv?.abstract || '—'"></div>
-                    </div>
-                    <div class="box-foot">
-                        <a class="ukc-btn ukc-btn--ghost" :href="pv?.url">Ouvrir la fiche</a>
-                        <button type="button" class="ukc-btn ukc-btn--blue" @click="pv = null">Fermer</button>
-                    </div>
-                </div>
+        {{-- Aperçu de la soumission (panneau latéral Tailwise) --}}
+        <x-ukc.slideover open="pv" onClose="pv = null" width="460px">
+            <x-slot:header><span x-text="pv?.ref"></span> · Aperçu</x-slot:header>
+            <div class="detail-grid">
+                <div class="k">Référence</div><div class="v" x-text="pv?.ref"></div>
+                <div class="k">Auteur principal</div><div class="v" x-text="pv?.author"></div>
+                <div class="k">Type</div><div class="v" x-text="pv?.type"></div>
+                <div class="k">Axe</div><div class="v" x-text="pv?.axis"></div>
+                <div class="k">Statut</div><div class="v"><span class="ukc-pill" :class="'ukc-pill--' + (pv?.statusPill)" x-text="pv?.status"></span></div>
+                <div class="k">Déposée le</div><div class="v" x-text="pv?.date"></div>
             </div>
-        </div>
+            <div class="ukc-form-row">
+                <label>Titre</label>
+                <div style="font-weight:700;font-size:14px;" x-text="pv?.title"></div>
+            </div>
+            <div class="ukc-form-row" x-show="pv?.keywords">
+                <label>Mots-clés</label>
+                <div style="font-size:13px;color:var(--ukc-muted);" x-text="pv?.keywords"></div>
+            </div>
+            <div class="ukc-form-row">
+                <label>Résumé</label>
+                <div class="abstract-box" x-text="pv?.abstract || '—'"></div>
+            </div>
+            <x-slot:footer>
+                <a class="ukc-btn ukc-btn--ghost" :href="pv?.url">Ouvrir la fiche</a>
+                <button type="button" class="ukc-btn ukc-btn--blue" @click="pv = null">Fermer</button>
+            </x-slot:footer>
+        </x-ukc.slideover>
     </div>
 </x-layouts.admin>

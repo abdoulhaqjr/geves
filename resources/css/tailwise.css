@@ -347,6 +347,33 @@
     background: var(--ukc-blue); color: #fff;
 }
 
+/* ===================== Slideover (panneau latéral) ===================== */
+.ukc-shell .ukc-slideover { position: fixed; inset: 0; z-index: 60; display: flex; justify-content: flex-end; }
+.ukc-shell .ukc-slideover__backdrop { position: absolute; inset: 0; background: rgba(2, 6, 23, .4); }
+.ukc-shell .ukc-slideover__panel {
+    position: relative; height: 100%; max-width: 92vw; background: #fff;
+    box-shadow: -8px 0 30px rgba(2, 6, 23, .2);
+    display: flex; flex-direction: column; overflow: hidden;
+}
+.ukc-shell .ukc-so-anim { transition: transform .28s ease; }
+.ukc-shell .ukc-so-off { transform: translateX(100%); }
+.ukc-shell .ukc-so-on { transform: translateX(0); }
+.ukc-shell .ukc-slideover__head {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 16px 18px; border-bottom: 1px solid var(--tw-line); flex-shrink: 0;
+    font-weight: 700; color: var(--tw-ink-strong);
+}
+.ukc-shell .ukc-slideover__close {
+    font-size: 24px; line-height: 1; color: #94a3b8; background: none; border: 0; cursor: pointer;
+    width: 32px; height: 32px; border-radius: 0.5rem;
+}
+.ukc-shell .ukc-slideover__close:hover { background: rgba(148, 163, 184, .12); color: var(--tw-ink-strong); }
+.ukc-shell .ukc-slideover__body { flex: 1; overflow-y: auto; padding: 18px; }
+.ukc-shell .ukc-slideover__foot {
+    padding: 14px 18px; border-top: 1px solid var(--tw-line); flex-shrink: 0;
+    display: flex; gap: 8px; justify-content: flex-end;
+}
+
 /* ===================== Tom Select (listes recherchables) ===================== */
 .ukc-shell .ts-wrapper { min-width: 160px; }
 .ukc-shell .ts-control {
