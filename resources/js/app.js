@@ -549,6 +549,26 @@ document.addEventListener('alpine:init', () => {
     window.Alpine.data('editionArrays', editionArraysFactory);
     window.__editionArrays = editionArraysFactory;
 
+    // Zone de dépôt de fichier (Tailwise) : glisser-déposer + aperçu, l'input
+    // natif reste la source (envoi synchrone avec le formulaire).
+    window.Alpine.data('ukcFiledrop', () => ({
+        over: false,
+        file: null,
+        size: '',
+        pick(e) { this.set(e.target.files && e.target.files[0]); },
+        drop(e) {
+            this.over = false;
+            const dt = e.dataTransfer;
+            if (dt && dt.files && dt.files[0]) {
+                this.$refs.input.files = dt.files;
+                this.set(dt.files[0]);
+            }
+        },
+        set(f) { this.file = f || null; this.size = f ? this.fmt(f.size) : ''; },
+        clear() { this.file = null; this.size = ''; this.$refs.input.value = ''; },
+        fmt(b) { return b > 1048576 ? (b / 1048576).toFixed(1) + ' Mo' : Math.max(1, Math.round(b / 1024)) + ' Ko'; },
+    }));
+
     // Palette de commandes « Recherche rapide » (⌘K / Ctrl+K) — style Tailwise.
     // Les items sont rendus côté serveur (avec leurs icônes) ; on filtre en
     // masquant les lignes qui ne correspondent pas, sans backend.

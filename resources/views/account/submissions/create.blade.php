@@ -245,7 +245,7 @@
                                     @if ($config->required('file'))<span class="req">*</span>@endif
                                     <span class="hint">({{ $config->help('file') ?: __('PDF/DOC/DOCX, max 8 Mo') }})</span>
                                 </label>
-                                <input type="file" id="file" name="file" accept=".pdf,.doc,.docx">
+                                <x-ukc.filedrop name="file" id="file" accept=".pdf,.doc,.docx" :hint="__('PDF/DOC/DOCX, max 8 Mo')" />
                                 @error('file') <span class="error">{{ $message }}</span> @enderror
                             </div>
                         @else

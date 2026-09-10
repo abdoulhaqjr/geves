@@ -347,6 +347,28 @@
     background: var(--ukc-blue); color: #fff;
 }
 
+/* ===================== Zone de dépôt fichier (filedrop) ===================== */
+.ukc-shell .ukc-filedrop {
+    position: relative; border: 1.5px dashed #cbd5e1; border-radius: 0.6rem;
+    background: #f8fafc; padding: 22px 18px; cursor: pointer; text-align: center;
+    transition: border-color .15s, background .15s;
+}
+.ukc-shell .ukc-filedrop:hover { border-color: var(--ukc-blue); background: rgba(34, 62, 164, .03); }
+.ukc-shell .ukc-filedrop.is-over { border-color: var(--ukc-blue); background: rgba(34, 62, 164, .06); }
+.ukc-shell .ukc-filedrop.has-file { border-style: solid; border-color: var(--tw-line); background: #fff; text-align: left; }
+.ukc-shell .ukc-filedrop__input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.ukc-shell .ukc-filedrop__prompt { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #64748b; }
+.ukc-shell .ukc-filedrop__prompt svg { color: #94a3b8; margin-bottom: 4px; }
+.ukc-shell .ukc-filedrop__prompt strong { color: var(--tw-ink-strong); font-size: 14px; }
+.ukc-shell .ukc-filedrop__prompt span { font-size: 12.5px; }
+.ukc-shell .ukc-filedrop__file { display: flex; align-items: center; gap: 12px; }
+.ukc-shell .ukc-filedrop__file svg { color: var(--ukc-blue); flex-shrink: 0; }
+.ukc-shell .ukc-filedrop__file .meta { flex: 1; min-width: 0; }
+.ukc-shell .ukc-filedrop__file .meta strong { display: block; color: var(--tw-ink-strong); font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ukc-shell .ukc-filedrop__file .meta span { font-size: 12px; color: #94a3b8; }
+.ukc-shell .ukc-filedrop__file .rm { width: 28px; height: 28px; border-radius: 0.5rem; border: 1px solid var(--tw-line); background: #fff; color: #94a3b8; font-size: 18px; line-height: 1; cursor: pointer; flex-shrink: 0; }
+.ukc-shell .ukc-filedrop__file .rm:hover { border-color: #dc2626; color: #dc2626; }
+
 /* ===================== Slideover (panneau latéral) ===================== */
 .ukc-shell .ukc-slideover { position: fixed; inset: 0; z-index: 60; display: flex; justify-content: flex-end; }
 .ukc-shell .ukc-slideover__backdrop { position: absolute; inset: 0; background: rgba(2, 6, 23, .4); }

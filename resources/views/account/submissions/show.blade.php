@@ -88,7 +88,7 @@
                     @csrf
                     <div class="ukc-field" style="max-width:520px;">
                         <label for="cr_file">{{ __('Fichier de la version définitive') }} <span class="hint">{{ __('(PDF, DOC ou DOCX — 8 Mo max)') }}</span></label>
-                        <input type="file" id="cr_file" name="file" accept=".pdf,.doc,.docx" required>
+                        <x-ukc.filedrop name="file" id="cr_file" accept=".pdf,.doc,.docx" :required="true" :hint="__('PDF, DOC ou DOCX — 8 Mo max')" />
                         @error('file') <span class="error">{{ $message }}</span> @enderror
                     </div>
 
@@ -329,7 +329,7 @@
                     </div>
                     <div class="ukc-field full">
                         <label for="file">{{ __('Nouveau fichier (PDF, optionnel)') }}</label>
-                        <input type="file" id="file" name="file" accept=".pdf">
+                        <x-ukc.filedrop name="file" id="file" accept=".pdf" :hint="__('PDF')" />
                         @error('file') <span class="error">{{ $message }}</span> @enderror
                     </div>
                     <div class="ukc-field full">
