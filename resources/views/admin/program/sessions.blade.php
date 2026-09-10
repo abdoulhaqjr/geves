@@ -1,5 +1,5 @@
 <x-layouts.admin title="Programme" subtitle="Ateliers · Sessions · Modérateurs & rapporteurs">
-    <div class="admin-page admin-program">
+    <div class="admin-page admin-program" x-data="{ tab: 'list' }">
         <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
             <div class="ukc-field" style="max-width:320px;margin:0;">
                 <label>Édition</label>
@@ -31,7 +31,13 @@
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="clock" :size="20" /></div><div class="lbl">Créneaux</div><div class="val">{{ $stats['slots'] }}</div></div>
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="calendar-check" :size="20" /></div><div class="lbl">Communications programmées</div><div class="val green">{{ $stats['comms'] }}</div></div>
             </div>
-            <div class="ukc-grid-2" style="align-items:start;">
+
+            <div class="ukc-nav-docs">
+                <button type="button" @click="tab='list'" :class="{ active: tab==='list' }"><x-ukc.icon name="list" :size="15" /> Programme</button>
+                <button type="button" @click="tab='agenda'; $nextTick(() => window.__programCal && window.__programCal.updateSize())" :class="{ active: tab==='agenda' }"><x-ukc.icon name="calendar" :size="15" /> Agenda</button>
+            </div>
+
+            <div class="ukc-grid-2" style="align-items:start;" x-show="tab==='list'">
                 {{-- Colonne gauche : contenu --}}
                 <div style="display:flex;flex-direction:column;gap:18px;">
                     {{-- Sessions plénières --}}
@@ -158,6 +164,16 @@
                         </div>
                         <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm" style="margin-top:10px;">Ajouter la session</button>
                     </form>
+                </div>
+            </div>
+            {{-- Agenda (FullCalendar) --}}
+            <div x-show="tab==='agenda'" x-cloak>
+                <div class="ukc-card">
+                    @if ($calendarEvents->isEmpty())
+                        <p class="ukc-hint" style="margin-bottom:12px;">Aucune session horodatée pour l’instant — ajoutez des horaires aux sessions (jour, début, fin) pour les voir apparaître dans l’agenda.</p>
+                    @endif
+                    <script type="application/json" id="programEvents">{!! $calendarEvents->toJson() !!}</script>
+                    <div id="programCalendar"></div>
                 </div>
             </div>
         @endif

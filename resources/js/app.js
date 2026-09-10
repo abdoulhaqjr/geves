@@ -32,6 +32,11 @@ if (document.getElementById('lk-config')) {
     import('./meeting.js').then((m) => m.startFromConfig()).catch(() => {});
 }
 
+// Programme : charge l'agenda FullCalendar uniquement sur la page Programme.
+if (document.getElementById('programCalendar')) {
+    import('./program-calendar.js').then((m) => m.startProgramCalendar()).catch(() => {});
+}
+
 // Pointage : charge le scanner QR (html5-qrcode) uniquement sur la page de scan.
 if (document.getElementById('badge-scanner')) {
     import('./scanner.js').then((m) => m.startBadgeScanner()).catch(() => {});

@@ -31,10 +31,22 @@ class ProgramController extends Controller
     {
         $edition = $this->currentEdition($request);
 
+        // Événements agenda (FullCalendar) : toutes les sessions horodatées.
+        $calendarEvents = ($edition ? $edition->sessions()->with('atelier')->whereNotNull('starts_at')->get() : collect())
+            ->map(fn ($s) => [
+                'title' => trim(($s->label ?: 'Session').($s->room ? ' · '.$s->room : '')),
+                'start' => optional($s->starts_at)->toIso8601String(),
+                'end' => optional($s->ends_at)->toIso8601String(),
+                'color' => $s->type === 'plenary' ? '#223ea4' : '#009933',
+            ])
+            ->filter(fn ($e) => $e['start'])
+            ->values();
+
         return view('admin.program.sessions', [
             'editions' => $this->accessibleEditions($request, 'editions_read'),
             'edition_id' => $edition ? (string) $edition->id : '',
             'tracks' => $edition->settings['tracks'] ?? [],
+            'calendarEvents' => $calendarEvents,
             'ateliers' => $edition ? $edition->ateliers()->with('sessions')->orderBy('ordre')->get() : collect(),
             'plenaries' => $edition ? $edition->sessions()->where('type', 'plenary')->orderBy('ordre')->get() : collect(),
             'stats' => [
