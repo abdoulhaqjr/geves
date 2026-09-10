@@ -346,3 +346,28 @@
 .ukc-shell .ukc-nav-docs a.active {
     background: var(--ukc-blue); color: #fff;
 }
+
+/* ===================== Éditeur de formulaire (form-builder) ===================== */
+.ukc-shell .admin-submission-forms .field-item {
+    border: 1px solid var(--tw-line); border-radius: 0.6rem; background: #fff;
+    transition: border-color .15s, box-shadow .15s;
+}
+.ukc-shell .admin-submission-forms .field-item:hover {
+    border-color: #cbd5e1; box-shadow: 0px 3px 5px #0000000b;
+}
+.ukc-shell .admin-submission-forms .field-item .handle { color: #cbd5e1; }
+.ukc-shell .admin-submission-forms .field-item .handle:hover { color: var(--ukc-blue); }
+.ukc-shell .admin-submission-forms .field-item .meta strong { color: var(--tw-ink-strong); }
+.ukc-shell .admin-submission-forms .field-item .meta code {
+    background: #f1f5f9; color: #64748b; border-radius: 4px; padding: 1px 5px; font-size: 11px;
+}
+/* Panneau d'édition inline : prolonge la carte du champ (coins bas arrondis). */
+.ukc-shell .admin-submission-forms .field-edit {
+    border: 1px solid var(--tw-line); border-top: none;
+    border-radius: 0 0 0.6rem 0.6rem; background: #f8fafc;
+    margin: -8px 0 8px;
+}
+/* Palette de types : boutons alignés à gauche, survol navy doux. */
+.ukc-shell .admin-submission-forms .ukc-btn--ghost:hover {
+    border-color: var(--ukc-blue); color: var(--ukc-blue); background: rgba(34, 62, 164, .05);
+}
