@@ -154,7 +154,7 @@
                 @if ($s->status === 'accepted' || $s->hasCameraReady())
                     @php($cr = $s->cameraReady())
                     <div class="ukc-card">
-                        <h2><x-ukc.icon name="file" :size="18" /> Version définitive</h2>
+                        <h2><span><x-ukc.icon name="file" :size="18" /> Version définitive</span></h2>
                         @if ($cr)
                             <div class="file-row">
                                 <div class="ico" style="background:#ecfdf5;color:#0f7a3d;">OK</div>

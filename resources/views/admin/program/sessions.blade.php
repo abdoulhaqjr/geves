@@ -42,7 +42,7 @@
                 <div style="display:flex;flex-direction:column;gap:18px;">
                     {{-- Sessions plénières --}}
                     <div class="ukc-card">
-                        <h3><x-ukc.icon name="mic" :size="20" /> Sessions plénières</h3>
+                        <h3><span><x-ukc.icon name="mic" :size="20" /> Sessions plénières</span></h3>
                         @forelse ($plenaries as $s)
                             <div style="padding:10px 0;border-bottom:1px solid var(--ukc-border);">
                                 <div style="display:flex;justify-content:space-between;gap:10px;">
@@ -112,7 +112,7 @@
                     <form method="POST" action="{{ route('admin.program.ateliers.store') }}" class="ukc-card">
                         @csrf
                         <input type="hidden" name="edition_id" value="{{ $edition_id }}">
-                        <h3><x-ukc.icon name="plus" :size="18" /> Nouvel atelier</h3>
+                        <h3><span><x-ukc.icon name="plus" :size="18" /> Nouvel atelier</span></h3>
                         <div class="ukc-field">
                             <label for="atelierTitle">Titre</label>
                             <input type="text" id="atelierTitle" name="atelierTitle" value="{{ old('atelierTitle') }}">
@@ -134,7 +134,7 @@
                     <form method="POST" action="{{ route('admin.program.sessions.store') }}" class="ukc-card" x-data="{ type: '{{ old('sType', 'plenary') }}' }">
                         @csrf
                         <input type="hidden" name="edition_id" value="{{ $edition_id }}">
-                        <h3><x-ukc.icon name="plus" :size="18" /> Nouvelle session</h3>
+                        <h3><span><x-ukc.icon name="plus" :size="18" /> Nouvelle session</span></h3>
                         <div class="ukc-field">
                             <label for="sType">Type</label>
                             <select id="sType" name="sType" x-model="type">

@@ -35,7 +35,7 @@
         <div class="ukc-grid-2">
             {{-- Scanner + saisie manuelle --}}
             <div class="ukc-card">
-                <h2><x-ukc.icon name="video" :size="20" /> Scanner un badge</h2>
+                <h2><span><x-ukc.icon name="video" :size="20" /> Scanner un badge</span></h2>
                 <div id="badge-scanner" class="badge-scanner"></div>
                 <div class="ukc-field" style="margin-top:14px;">
                     <label for="code">Saisie manuelle du code <span class="hint">(sous le QR, ex. 3-42)</span></label>
@@ -48,7 +48,7 @@
 
             {{-- Résultat --}}
             <div class="ukc-card">
-                <h2><x-ukc.icon name="user" :size="20" /> Participant</h2>
+                <h2><span><x-ukc.icon name="user" :size="20" /> Participant</span></h2>
                 <template x-if="found">
                     <div>
                         <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">

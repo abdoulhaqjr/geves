@@ -17,7 +17,7 @@
               },
           }">
         @csrf
-        <h2><x-ukc.icon name="card" :size="20" /> Nouvel encaissement</h2>
+        <h2><span><x-ukc.icon name="card" :size="20" /> Nouvel encaissement</span></h2>
 
         <div class="ukc-form-grid">
             <div class="ukc-field full">
