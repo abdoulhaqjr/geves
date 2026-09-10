@@ -668,7 +668,7 @@
 
                             <form method="POST" action="{{ route('admin.editions.team.attach', $edition) }}" class="team-add">
                                 @csrf
-                                <select name="user_id" required>
+                                <select name="user_id" required data-tom data-placeholder="Rechercher un membre du staff…">
                                     <option value="">— Choisir un membre du staff —</option>
                                     @foreach ($assignableUsers as $u)
                                         <option value="{{ $u->id }}">{{ $u->name }} · {{ $u->email }}</option>
