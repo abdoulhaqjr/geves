@@ -13,6 +13,7 @@ export default defineConfig({
                 'resources/js/badge-designer.js',
                 'resources/css/template-designer.css',
                 'resources/js/template-designer.js',
+                'resources/css/designer-tailwise.css',
             ],
             refresh: true,
             fonts: [

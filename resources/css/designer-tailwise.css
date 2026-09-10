@@ -1,0 +1,72 @@
+@import url('https://fonts.bunny.net/css?family=public-sans:400,500,600,700,800');
+
+/*
+|--------------------------------------------------------------------------
+| Overlay « Tailwise » pour les éditeurs de documents (badge + template)
+|--------------------------------------------------------------------------
+|
+| Ces éditeurs sont des pages autonomes (hors `.ukc-shell`), avec leur propre
+| CSS. Cet overlay est chargé APRÈS et aligne leur chrome sur la charte Tailwise
+| (Public Sans, palette ardoise, cartes douces, bouton actif en dégradé UK).
+| Les variables sont surchargées via `html:root` (spécificité > `:root`) pour
+| ne pas dépendre de l'ordre d'émission des feuilles par Vite.
+|
+| Seul le CHROME de l'éditeur est retouché : les polices du canvas
+| (Jost / Playfair / Georgia des attestations) restent inchangées.
+*/
+
+html:root {
+    --ukc-font: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+    --ukc-border: #e2e8f0;   /* slate-200 */
+    --ukc-bg: #f1f5f9;       /* slate-100 */
+    --ukc-muted: #475569;    /* slate-600 */
+    --ukc-light: #94a3b8;    /* slate-400 */
+}
+
+/* Surfaces « box » douces (ombre signature Tailwise). */
+body .ed-top { box-shadow: 0px 3px 5px #0000000b; }
+body .ed-rail,
+body .ed-panel { box-shadow: 0px 3px 5px #0000000b; }
+
+/* Barre supérieure : contrôles arrondis. */
+body .ed-top .back { border-radius: 0.5rem; }
+body .ed-top .name-input { border-radius: 0.5rem; }
+body .ed-top .btn-save { border-radius: 0.5rem; font-weight: 700; }
+
+/* Rail : bouton actif en dégradé navy→vert (signature Tailwise). */
+body .ed-rail button { border-radius: 0.6rem; }
+body .ed-rail button.active {
+    background: linear-gradient(to right, rgba(34, 62, 164, .96), rgba(0, 153, 51, .96));
+    color: #fff;
+}
+body .ed-rail button.active svg { color: #fff; }
+
+/* Contrôles de panneau / outils arrondis. */
+body .ed-tool-btn,
+body .ed-shape,
+body .ed-thumb,
+body .ed-attr,
+body .ed-tpl-card { border-radius: 0.6rem; }
+body .ed-tool-btn:hover,
+body .ed-shape:hover { border-color: var(--ukc-blue); background: rgba(34, 62, 164, .05); }
+
+/* Chips de la barre d'outils : actif en navy plein. */
+body .ed-toolbar .chip { border-radius: 0.5rem; }
+body .ed-toolbar .chip.active {
+    background: var(--ukc-blue); color: #fff; border-color: var(--ukc-blue);
+}
+
+/* Champs : anneau de focus navy. */
+body .ed-top .name-input:focus,
+body .ed-stylebar input:focus,
+body .ed-stylebar select:focus {
+    outline: none; border-color: var(--ukc-blue);
+    box-shadow: 0 0 0 3px rgba(34, 62, 164, .12);
+}
+
+/* Modales de l'éditeur : coins Tailwise. */
+body .ed-modal-bg .box { border-radius: 0.8rem; }
+body .ed-tpl-card.active {
+    border-color: var(--ukc-blue);
+    box-shadow: 0 0 0 3px rgba(34, 62, 164, .12);
+}

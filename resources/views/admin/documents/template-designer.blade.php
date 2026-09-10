@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
-  @vite(['resources/css/template-designer.css', 'resources/js/template-designer.js'])
+  @vite(['resources/css/template-designer.css', 'resources/css/designer-tailwise.css', 'resources/js/template-designer.js'])
 </head>
 <body>
 
