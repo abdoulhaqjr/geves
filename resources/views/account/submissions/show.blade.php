@@ -323,8 +323,8 @@
                         @error('abstract') <span class="error">{{ $message }}</span> @enderror
                     </div>
                     <div class="ukc-field full">
-                        <label for="keywords">{{ __('Mots-clés') }} <span class="hint">{{ __('(séparés par des virgules)') }}</span></label>
-                        <input type="text" id="keywords" name="keywords" value="{{ old('keywords', is_array($s->keywords) ? implode(', ', $s->keywords) : $s->keywords) }}">
+                        <label for="keywords">{{ __('Mots-clés') }} <span class="hint">{{ __('(Entrée ou virgule pour ajouter)') }}</span></label>
+                        <input type="text" id="keywords" name="keywords" data-tom data-placeholder="{{ __('Saisir un mot-clé…') }}" value="{{ old('keywords', is_array($s->keywords) ? implode(', ', $s->keywords) : $s->keywords) }}">
                         @error('keywords') <span class="error">{{ $message }}</span> @enderror
                     </div>
                     <div class="ukc-field full">

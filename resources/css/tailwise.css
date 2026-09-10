@@ -460,6 +460,11 @@
 .ukc-shell .ts-control .item .remove { border-left-color: rgba(34, 62, 164, .2); }
 .ukc-shell .ts-dropdown .no-results { padding: 8px 10px; color: #94a3b8; }
 
+/* Champ tags « maison » du wizard (.ukc-tags) : aligné sur Tom Select. */
+.ukc-shell .ukc-tags { border-width: 1px; border-color: #cbd5e1; border-radius: 0.5rem; }
+.ukc-shell .ukc-tags:focus-within { border-color: var(--ukc-blue); }
+.ukc-shell .ukc-tags .ukc-tag { background: rgba(34, 62, 164, .1); border-radius: 999px; }
+
 /* ===================== Éditeur de formulaire (form-builder) ===================== */
 .ukc-shell .admin-submission-forms .field-item {
     border: 1px solid var(--tw-line); border-radius: 0.6rem; background: #fff;

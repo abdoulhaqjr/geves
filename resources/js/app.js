@@ -9,15 +9,29 @@ window.Alpine = Alpine;
 // recherchable ; data-tom-create autorise la saisie libre (tags). Le <select>
 // natif reste la source → onchange/submit et la validation serveur inchangés.
 function initTomSelects(root = document) {
-    root.querySelectorAll('select[data-tom]').forEach((el) => {
+    root.querySelectorAll('[data-tom]').forEach((el) => {
         if (el.tomselect) return;
-        new TomSelect(el, {
-            create: el.hasAttribute('data-tom-create'),
-            allowEmptyOption: true,
+        const isInput = el.tagName === 'INPUT';
+        const tags = isInput || el.hasAttribute('data-tom-create');
+        const max = parseInt(el.getAttribute('data-tom-max') || '', 10);
+        // Mode tags sur un <input> : on relit la valeur (mots séparés par des
+        // virgules) AVANT init pour ré-injecter les tags existants.
+        const seed = isInput ? String(el.value || '').split(',').map((s) => s.trim()).filter(Boolean) : [];
+        // On vide la valeur avant init : Tom Select ne ré-analyse pas (sinon des
+        // tags avec espaces en double) ; on ré-injecte des tags propres ensuite.
+        if (isInput) el.value = '';
+        const ts = new TomSelect(el, {
+            create: tags,
+            delimiter: isInput ? ',' : undefined,
+            createOnBlur: isInput,
             persist: false,
-            plugins: el.multiple ? ['remove_button'] : [],
+            allowEmptyOption: !isInput,
+            maxItems: Number.isFinite(max) && max > 0 ? max : null,
+            plugins: (el.multiple || isInput) ? ['remove_button'] : [],
             placeholder: el.getAttribute('data-placeholder') || undefined,
         });
+        seed.forEach((v) => { ts.addOption({ value: v, text: v }); ts.addItem(v, true); });
+        ts.refreshItems();
     });
 }
 document.addEventListener('DOMContentLoaded', () => initTomSelects());
