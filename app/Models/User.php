@@ -10,8 +10,8 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Concerns\ParticipantIdentity;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -32,13 +32,25 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $last_login_ip
  * @property bool $is_active
  * @property string|null $notes
+ * @property string|null $first_name
+ * @property string|null $last_name
+ * @property string|null $affiliation
+ * @property string|null $orcid
+ * @property Carbon|null $orcid_verified_at
+ * @property string|null $two_factor_secret
+ * @property array<int, string>|null $two_factor_recovery_codes
+ * @property Carbon|null $two_factor_confirmed_at
+ * @property string|null $two_factor_method
+ * @property string|null $two_factor_otp
+ * @property Carbon|null $two_factor_otp_expires_at
+ * @property bool $must_reset_password
  */
 #[Fillable(['name', 'email', 'password', 'is_active', 'notes'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasNotificationPreferences, HasRoles, Impersonate, Notifiable;
+    use HasFactory, HasNotificationPreferences, HasRoles, Impersonate, Notifiable, ParticipantIdentity;
 
     /** Seul le staff habilité peut impersonifier. */
     public function canImpersonate(): bool
@@ -57,16 +69,6 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsToMany(Edition::class, 'edition_user')->withPivot('role')->withTimestamps();
     }
 
-    /**
-     * Inscriptions de l'utilisateur à des éditions (fiche participant : paiement,
-     * badge, présence). Identité unifiée — Phase 1. Remplacera `Account::participations()`.
-     *
-     * @return HasMany<Participant, $this>
-     */
-    public function participations(): HasMany
-    {
-        return $this->hasMany(Participant::class);
-    }
 
     /** Super-administrateur back-office (capacité globale, transverse aux colloques). */
     public function isColloqueSuperAdmin(): bool
@@ -191,6 +193,8 @@ class User extends Authenticatable implements MustVerifyEmail
             // Identité unifiée (Phase 1 — profil repris d'`accounts`).
             'meta' => 'array',
             'orcid_verified_at' => 'datetime',
+            'two_factor_secret' => 'encrypted',
+            'two_factor_recovery_codes' => 'encrypted:array',
             'two_factor_confirmed_at' => 'datetime',
             'two_factor_otp_expires_at' => 'datetime',
             'must_reset_password' => 'boolean',

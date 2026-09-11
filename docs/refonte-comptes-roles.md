@@ -47,7 +47,10 @@
 |---|---|---|---|
 | **0** | Branche `sauvegarde/pre-rbac` + cette cartographie | Nul | ✅ fait |
 | **1** | Identité unifiée : migrer `accounts` → `users` (dédoublonnage par e-mail), ajouter les colonnes profil manquantes à `users`, rebrancher `participants.account_id`→`user_id`, sessions/questions/polls, notifications. Migration réversible + tests. | Élevé | ✅ fait |
-| **2** | Connexion unique (`/connexion`), redirection post-login selon rôles, fusion inscription/vérif e-mail/reset, impersonation. | Moyen | — |
+| **2** | Connexion unique + retrait du guard `account`. **Découpé** (voir ci-dessous). | Moyen→Élevé | 🔄 en cours |
+| — 2a | Capacités participant portées sur `User` via trait `ParticipantIdentity` (additif, sans changement runtime). | Faible | ✅ fait |
+| — 2b | Bascule du runtime participant vers l'identité `users` + retrait guard `account` (~32 fichiers app + ~35 fichiers de test). | Élevé | — |
+| — 2c | Fusion inscription / vérif e-mail / reset + enforcement `must_reset_password`. | Moyen | — |
 | **3** | 3 niveaux globaux (super_admin / colloque_admin / user) en remplacement du rôle unique `administrator`. | Moyen | — |
 | **4** | Rôles par colloque cumulables : pivot `(user, edition, role)` fusionnant `edition_user` + `participants.role`. Catalogue rôles + capacités, 2 comités distincts. | Élevé | — |
 | **5** | Relecture : rôle « Relecteur » (portail) + affectation soumissions par-dessus. | Faible | — |
