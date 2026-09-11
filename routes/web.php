@@ -315,10 +315,12 @@ Route::prefix('admin')->group(function () {
             Route::post('/projet/taches', [ProjectController::class, 'storeTask'])->name('admin.project.tasks.store');
             Route::put('/projet/taches/{task}', [ProjectController::class, 'updateTask'])->name('admin.project.tasks.update');
             Route::post('/projet/taches/{task}/deplacer', [ProjectController::class, 'moveTask'])->name('admin.project.tasks.move');
+            Route::post('/projet/taches/{task}/echeance', [ProjectController::class, 'rescheduleTask'])->name('admin.project.tasks.reschedule');
             Route::delete('/projet/taches/{task}', [ProjectController::class, 'destroyTask'])->name('admin.project.tasks.destroy');
             Route::post('/projet/jalons', [ProjectController::class, 'storeMilestone'])->name('admin.project.milestones.store');
             Route::put('/projet/jalons/{milestone}', [ProjectController::class, 'updateMilestone'])->name('admin.project.milestones.update');
             Route::post('/projet/jalons/{milestone}/basculer', [ProjectController::class, 'toggleMilestone'])->name('admin.project.milestones.toggle');
+            Route::post('/projet/jalons/{milestone}/echeance', [ProjectController::class, 'rescheduleMilestone'])->name('admin.project.milestones.reschedule');
             Route::delete('/projet/jalons/{milestone}', [ProjectController::class, 'destroyMilestone'])->name('admin.project.milestones.destroy');
         });
 

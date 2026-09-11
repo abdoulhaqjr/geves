@@ -18,6 +18,10 @@ export function startProjectCalendar() {
         events = [];
     }
 
+    const taskUrl = el.dataset.taskUrl || '';
+    const msUrl = el.dataset.msUrl || '';
+    const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
+
     const cal = new Calendar(el, {
         plugins: [dayGridPlugin, listPlugin],
         locale: frLocale,
@@ -31,7 +35,25 @@ export function startProjectCalendar() {
         },
         height: 'auto',
         displayEventTime: false,
+        editable: true,          // glisser-déposer pour re-planifier
+        eventStartEditable: true,
+        eventDurationEditable: false,
         events,
+        // Re-planification : persiste la nouvelle échéance ; annule si le serveur refuse.
+        eventDrop(info) {
+            const kind = info.event.extendedProps?.kind;
+            const id = info.event.extendedProps?.id;
+            const base = kind === 'milestone' ? msUrl : taskUrl;
+            if (!id || !base) { info.revert(); return; }
+
+            fetch(base.replace(':id', String(id)), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf() },
+                body: JSON.stringify({ due_date: info.event.startStr }),
+            })
+                .then((r) => { if (!r.ok) info.revert(); })
+                .catch(() => info.revert());
+        },
     });
     cal.render();
     window.__projectCal = cal;

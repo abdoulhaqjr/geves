@@ -103,6 +103,21 @@ it('déplace une tâche en kanban : nouveau statut + date d’achèvement + ordr
     expect($b->fresh()->position)->toBe(0);
 });
 
+it('re-planifie une tâche et un jalon par glisser-déposer (calendrier)', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+    $task = ProjectTask::create(['edition_id' => $edition->id, 'title' => 'T', 'status' => 'todo', 'priority' => 'normal', 'due_date' => now()->toDateString()]);
+    $ms = ProjectMilestone::create(['edition_id' => $edition->id, 'title' => 'J', 'due_date' => now()->toDateString()]);
+
+    $this->actingAs($staff, 'web')->postJson(route('admin.project.tasks.reschedule', $task), ['due_date' => '2026-12-01'])
+        ->assertOk()->assertJson(['ok' => true]);
+    expect($task->fresh()->due_date->toDateString())->toBe('2026-12-01');
+
+    $this->actingAs($staff, 'web')->postJson(route('admin.project.milestones.reschedule', $ms), ['due_date' => '2026-11-15'])
+        ->assertOk();
+    expect($ms->fresh()->due_date->toDateString())->toBe('2026-11-15');
+});
+
 it('ajoute un jalon puis le bascule atteint/à venir', function () {
     $staff = adminStaff();
     $edition = openEdition();

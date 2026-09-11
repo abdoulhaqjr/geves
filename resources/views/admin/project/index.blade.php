@@ -42,6 +42,7 @@
             'start' => $m->due_date->toDateString(),
             'allDay' => true,
             'color' => $m->isDone() ? '#16a34a' : ($m->isOverdue() ? '#dc2626' : '#7c3aed'),
+            'extendedProps' => ['kind' => 'milestone', 'id' => $m->id],
         ];
     }
     foreach ($tasks as $t) {
@@ -53,6 +54,7 @@
             'start' => $t->due_date->toDateString(),
             'allDay' => true,
             'color' => $t->isDone() ? '#16a34a' : ($t->isOverdue() ? '#dc2626' : '#223ea4'),
+            'extendedProps' => ['kind' => 'task', 'id' => $t->id],
         ];
     }
 @endphp
@@ -226,7 +228,10 @@
                     <span><span class="ukc-cal-dot" style="background:#16a34a;"></span> Terminé / atteint</span>
                     <span><span class="ukc-cal-dot" style="background:#dc2626;"></span> En retard</span>
                 </div>
-                <div id="projectCalendar"></div>
+                <div id="projectCalendar"
+                     data-task-url="{{ route('admin.project.tasks.reschedule', ':id') }}"
+                     data-ms-url="{{ route('admin.project.milestones.reschedule', ':id') }}"></div>
+                <p style="font-size:12px;color:var(--ukc-muted);margin-top:8px;">Astuce : faites glisser un événement pour changer son échéance.</p>
                 <script type="application/json" id="projectEvents">{!! json_encode($calendarEvents, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
             </div>
 

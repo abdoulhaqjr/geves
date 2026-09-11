@@ -136,6 +136,24 @@ class ProjectController extends Controller
         return back()->with('ukc_status', 'Tâche déplacée.');
     }
 
+    /** Re-planification depuis le calendrier (glisser-déposer) : échéance d'une tâche. */
+    public function rescheduleTask(Request $request, ProjectTask $task): JsonResponse
+    {
+        $data = $request->validate(['due_date' => ['nullable', 'date']]);
+        $task->update(['due_date' => $data['due_date'] ?? null]);
+
+        return response()->json(['ok' => true]);
+    }
+
+    /** Re-planification depuis le calendrier (glisser-déposer) : échéance d'un jalon. */
+    public function rescheduleMilestone(Request $request, ProjectMilestone $milestone): JsonResponse
+    {
+        $data = $request->validate(['due_date' => ['nullable', 'date']]);
+        $milestone->update(['due_date' => $data['due_date'] ?? null]);
+
+        return response()->json(['ok' => true]);
+    }
+
     public function storeMilestone(Request $request): RedirectResponse
     {
         $edition = $this->currentEdition($request);
