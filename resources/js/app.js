@@ -90,10 +90,6 @@ if (document.getElementById('programCalendar')) {
     import('./program-calendar.js').then((m) => m.startProgramCalendar()).catch(() => {});
 }
 
-// Projet : calendrier des échéances (jalons + tâches datées) — chargé à la demande.
-if (document.getElementById('projectCalendar')) {
-    import('./project-calendar.js').then((m) => m.startProjectCalendar()).catch(() => {});
-}
 
 // Pointage : charge le scanner QR (html5-qrcode) uniquement sur la page de scan.
 if (document.getElementById('badge-scanner')) {
@@ -189,6 +185,7 @@ document.addEventListener('alpine:init', () => {
         commentBusy: false,
         flash: '',
         flashType: 'ok',
+        cal: null,
 
         _csrf() {
             return document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -307,14 +304,14 @@ document.addEventListener('alpine:init', () => {
                 }),
             })
                 .then((r) => (r.ok ? r.json() : Promise.reject(r)))
-                .then((d) => { if (d.task) { this.upsertTask(d.task); this.taskOpen = false; this.notify(isEdit ? 'Tâche mise à jour.' : 'Tâche ajoutée.'); } })
+                .then((d) => { if (d.task) { this.upsertTask(d.task); this.taskOpen = false; this.refreshCal(); this.notify(isEdit ? 'Tâche mise à jour.' : 'Tâche ajoutée.'); } })
                 .catch(() => this.notify('Enregistrement impossible.', 'err'))
                 .finally(() => { this.saving = false; });
         },
         deleteTask(t) {
             if (!confirm('Supprimer cette tâche ?')) return;
             fetch((this.routes.taskDelete || '').replace(':id', String(t.id)), { method: 'DELETE', headers: this._headers() })
-                .then((r) => { if (r.ok) { this.tasks = this.tasks.filter((x) => x.id !== t.id); this.taskOpen = false; this.notify('Tâche supprimée.'); } })
+                .then((r) => { if (r.ok) { this.tasks = this.tasks.filter((x) => x.id !== t.id); this.taskOpen = false; this.refreshCal(); this.notify('Tâche supprimée.'); } })
                 .catch(() => this.notify('Suppression impossible.', 'err'));
         },
 
@@ -354,20 +351,20 @@ document.addEventListener('alpine:init', () => {
                 body: JSON.stringify({ title: this.ms.title, description: this.ms.description, due_date: this.ms.due_date || null }),
             })
                 .then((r) => (r.ok ? r.json() : Promise.reject(r)))
-                .then((d) => { if (d.milestone) { this.upsertMs(d.milestone); this.msOpen = false; this.notify(isEdit ? 'Jalon mis à jour.' : 'Jalon ajouté.'); } })
+                .then((d) => { if (d.milestone) { this.upsertMs(d.milestone); this.msOpen = false; this.refreshCal(); this.notify(isEdit ? 'Jalon mis à jour.' : 'Jalon ajouté.'); } })
                 .catch(() => this.notify('Enregistrement impossible.', 'err'))
                 .finally(() => { this.msSaving = false; });
         },
         toggleMs(m) {
             fetch((this.routes.msToggle || '').replace(':id', String(m.id)), { method: 'POST', headers: this._headers() })
                 .then((r) => (r.ok ? r.json() : null))
-                .then((d) => { if (d?.milestone) this.upsertMs(d.milestone); })
+                .then((d) => { if (d?.milestone) { this.upsertMs(d.milestone); this.refreshCal(); } })
                 .catch(() => {});
         },
         deleteMs(m) {
             if (!confirm('Supprimer ce jalon ?')) return;
             fetch((this.routes.msDelete || '').replace(':id', String(m.id)), { method: 'DELETE', headers: this._headers() })
-                .then((r) => { if (r.ok) { this.milestones = this.milestones.filter((x) => x.id !== m.id); this.notify('Jalon supprimé.'); } })
+                .then((r) => { if (r.ok) { this.milestones = this.milestones.filter((x) => x.id !== m.id); this.refreshCal(); this.notify('Jalon supprimé.'); } })
                 .catch(() => this.notify('Suppression impossible.', 'err'));
         },
 
@@ -377,9 +374,61 @@ document.addEventListener('alpine:init', () => {
             this.saving = true;
             fetch(this.routes.seed || '', { method: 'POST', headers: this._headers() })
                 .then((r) => (r.ok ? r.json() : Promise.reject(r)))
-                .then((d) => { this.tasks = d.tasks || []; this.milestones = d.milestones || []; this.notify('Projet initialisé.'); })
+                .then((d) => { this.tasks = d.tasks || []; this.milestones = d.milestones || []; this.refreshCal(); this.notify('Projet initialisé.'); })
                 .catch(() => this.notify('Initialisation impossible.', 'err'))
                 .finally(() => { this.saving = false; });
+        },
+
+        // ---- Calendrier des échéances (live, piloté par l'état) ----
+        calEvents() {
+            const evts = [];
+            this.milestones.forEach((m) => {
+                if (!m.due_date) return;
+                evts.push({ title: '◆ ' + m.title, start: m.due_date, allDay: true,
+                    color: m.done ? '#16a34a' : (m.overdue ? '#dc2626' : '#7c3aed'),
+                    extendedProps: { kind: 'milestone', id: m.id } });
+            });
+            this.tasks.forEach((t) => {
+                if (!t.due_date) return;
+                evts.push({ title: t.title, start: t.due_date, allDay: true,
+                    color: t.status === 'done' ? '#16a34a' : (t.overdue ? '#dc2626' : '#223ea4'),
+                    extendedProps: { kind: 'task', id: t.id } });
+            });
+            return evts;
+        },
+        refreshCal() {
+            if (!this.cal) return;
+            this.cal.removeAllEvents();
+            this.calEvents().forEach((e) => this.cal.addEvent(e));
+        },
+        openCalendar() {
+            this.view = 'calendar';
+            this.$nextTick(async () => {
+                const el = document.getElementById('projectCalendar');
+                if (!el) return;
+                if (!this.cal) {
+                    const m = await import('./project-calendar.js');
+                    this.cal = m.createProjectCalendar(el, {
+                        events: this.calEvents(),
+                        onEventDrop: (info) => this.onEventDrop(info),
+                    });
+                } else {
+                    this.refreshCal();
+                    this.cal.updateSize();
+                }
+            });
+        },
+        onEventDrop(info) {
+            const kind = info.event.extendedProps?.kind;
+            const id = info.event.extendedProps?.id;
+            const base = kind === 'milestone' ? this.routes.msReschedule : this.routes.taskReschedule;
+            if (!id || !base) { info.revert(); return; }
+            fetch(base.replace(':id', String(id)), {
+                method: 'POST', headers: this._headers(), body: JSON.stringify({ due_date: info.event.startStr }),
+            })
+                .then((r) => (r.ok ? r.json() : Promise.reject(r)))
+                .then((d) => { if (d.task) this.upsertTask(d.task); if (d.milestone) this.upsertMs(d.milestone); this.refreshCal(); })
+                .catch(() => info.revert());
         },
     }));
     // Assistante Gesco (widget flottant + page dédiée) : conversation côté client,

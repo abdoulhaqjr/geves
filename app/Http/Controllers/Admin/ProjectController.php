@@ -40,18 +40,8 @@ class ProjectController extends Controller
     {
         $edition = $this->currentEdition($request);
 
-        $tasks = $edition
-            ? ProjectTask::where('edition_id', $edition->id)
-                ->with('assignee')
-                ->orderBy('position')->orderBy('id')->get()
-            : collect();
-
-        $milestones = $edition
-            ? ProjectMilestone::where('edition_id', $edition->id)
-                ->orderByRaw('due_date is null')->orderBy('due_date')->orderBy('position')->get()
-            : collect();
-
-        // État initial pour le client (Alpine) — tout le CRUD ensuite en AJAX.
+        // État initial pour le client (Alpine) — tout le CRUD et le calendrier
+        // sont ensuite pilotés en direct depuis cet état (AJAX, sans rechargement).
         $payload = $edition ? $this->editionPayload($edition) : ['tasks' => [], 'milestones' => []];
 
         return view('admin.project.index', [
@@ -60,8 +50,6 @@ class ProjectController extends Controller
             'edition_id' => $edition ? (string) $edition->id : '',
             'tasksPayload' => $payload['tasks'],
             'milestonesPayload' => $payload['milestones'],
-            'milestones' => $milestones,   // pour le calendrier (rendu serveur au chargement)
-            'tasks' => $tasks,             // idem
             'team' => $edition ? $edition->team()->orderBy('name')->get() : collect(),
             'statuses' => ProjectTask::STATUSES,
             'priorities' => ProjectTask::PRIORITIES,
@@ -187,7 +175,9 @@ class ProjectController extends Controller
         $data = $request->validate(['due_date' => ['nullable', 'date']]);
         $task->update(['due_date' => $data['due_date'] ?? null]);
 
-        return response()->json(['ok' => true]);
+        $edition = $task->edition;
+
+        return response()->json($edition ? ['task' => $this->taskCard($task->fresh()->load('assignee'), $edition)] : ['ok' => true]);
     }
 
     /** Re-planification depuis le calendrier (glisser-déposer) : échéance d'un jalon. */
@@ -196,7 +186,7 @@ class ProjectController extends Controller
         $data = $request->validate(['due_date' => ['nullable', 'date']]);
         $milestone->update(['due_date' => $data['due_date'] ?? null]);
 
-        return response()->json(['ok' => true]);
+        return response()->json(['milestone' => $this->milestoneData($milestone->fresh())]);
     }
 
     public function storeMilestone(Request $request): RedirectResponse|JsonResponse

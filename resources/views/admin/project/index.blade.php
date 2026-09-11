@@ -10,30 +10,17 @@
             'taskMove' => route('admin.project.tasks.move', ':id'),
             'taskComments' => route('admin.project.tasks.comments', ':id'),
             'taskComment' => route('admin.project.tasks.comment', ':id'),
+            'taskReschedule' => route('admin.project.tasks.reschedule', ':id'),
             'msStore' => route('admin.project.milestones.store', ['edition_id' => $edition?->id]),
             'msUpdate' => route('admin.project.milestones.update', ':id'),
             'msToggle' => route('admin.project.milestones.toggle', ':id'),
             'msDelete' => route('admin.project.milestones.destroy', ':id'),
+            'msReschedule' => route('admin.project.milestones.reschedule', ':id'),
             'seed' => route('admin.project.seed', ['edition_id' => $edition?->id]),
         ],
     ];
     $phases = ['Cadrage', 'Appel à communications', 'Soumissions & relecture', 'Programme', 'Logistique', 'Tenue', 'Après-colloque'];
     $prioClass = "{'ukc-pill--muted':t.priority==='low','ukc-pill--info':t.priority==='normal','ukc-pill--warn':t.priority==='high','ukc-pill--err':t.priority==='urgent'}";
-
-    // Calendrier des échéances : rendu serveur au chargement (jalons ◆ + tâches datées).
-    $calendarEvents = [];
-    foreach ($milestones as $m) {
-        if (! $m->due_date) { continue; }
-        $calendarEvents[] = ['title' => '◆ '.$m->title, 'start' => $m->due_date->toDateString(), 'allDay' => true,
-            'color' => $m->isDone() ? '#16a34a' : ($m->isOverdue() ? '#dc2626' : '#7c3aed'),
-            'extendedProps' => ['kind' => 'milestone', 'id' => $m->id]];
-    }
-    foreach ($tasks as $t) {
-        if (! $t->due_date) { continue; }
-        $calendarEvents[] = ['title' => $t->title, 'start' => $t->due_date->toDateString(), 'allDay' => true,
-            'color' => $t->isDone() ? '#16a34a' : ($t->isOverdue() ? '#dc2626' : '#223ea4'),
-            'extendedProps' => ['kind' => 'task', 'id' => $t->id]];
-    }
 @endphp
 
 <x-layouts.admin title="Projet" :subtitle="$edition ? (($edition->title ?: $edition->year).' · piloté comme un projet') : 'Pilotez chaque édition comme un projet'">
@@ -97,7 +84,7 @@
                         <button type="button" :class="{ active: view==='board' }" @click="view='board'">Tableau</button>
                         <button type="button" :class="{ active: view==='list' }" @click="view='list'">Liste</button>
                         <button type="button" :class="{ active: view==='milestones' }" @click="view='milestones'">Jalons</button>
-                        <button type="button" :class="{ active: view==='calendar' }" @click="view='calendar'; $nextTick(() => window.__projectCal && window.__projectCal.updateSize())">Calendrier</button>
+                        <button type="button" :class="{ active: view==='calendar' }" @click="openCalendar()">Calendrier</button>
                     </div>
                     <div style="display:flex;gap:8px;">
                         <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" x-show="view==='milestones'" @click="openNewMs()"><x-ukc.icon name="plus" :size="14" /> Jalon</button>
@@ -201,11 +188,8 @@
                         <span><span class="ukc-cal-dot" style="background:#16a34a;"></span> Terminé / atteint</span>
                         <span><span class="ukc-cal-dot" style="background:#dc2626;"></span> En retard</span>
                     </div>
-                    <div id="projectCalendar"
-                         data-task-url="{{ route('admin.project.tasks.reschedule', ':id') }}"
-                         data-ms-url="{{ route('admin.project.milestones.reschedule', ':id') }}"></div>
+                    <div id="projectCalendar"></div>
                     <p style="font-size:12px;color:var(--ukc-muted);margin-top:8px;">Astuce : faites glisser un événement pour changer son échéance.</p>
-                    <script type="application/json" id="projectEvents">{!! json_encode($calendarEvents, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
                 </div>
             </div>
 

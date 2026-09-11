@@ -219,11 +219,11 @@ it('re-planifie une tâche et un jalon par glisser-déposer (calendrier)', funct
     $ms = ProjectMilestone::create(['edition_id' => $edition->id, 'title' => 'J', 'due_date' => now()->toDateString()]);
 
     $this->actingAs($staff, 'web')->postJson(route('admin.project.tasks.reschedule', $task), ['due_date' => '2026-12-01'])
-        ->assertOk()->assertJson(['ok' => true]);
+        ->assertOk()->assertJsonPath('task.id', $task->id);
     expect($task->fresh()->due_date->toDateString())->toBe('2026-12-01');
 
     $this->actingAs($staff, 'web')->postJson(route('admin.project.milestones.reschedule', $ms), ['due_date' => '2026-11-15'])
-        ->assertOk();
+        ->assertOk()->assertJsonPath('milestone.id', $ms->id);
     expect($ms->fresh()->due_date->toDateString())->toBe('2026-11-15');
 });
 
