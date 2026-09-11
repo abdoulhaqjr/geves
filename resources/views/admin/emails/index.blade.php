@@ -28,7 +28,8 @@
         <x-slot:actions>
             @if ($queuedDue > 0)
                 <form method="POST" action="{{ route('admin.emails.send-due') }}" style="display:inline;"
-                      onsubmit="return confirm('Envoyer maintenant les {{ $queuedDue }} e-mail(s) arrivés à échéance ?')">
+                      data-ajax data-ajax-target="emails" data-ajax-msg="Envoi des e-mails à échéance lancé."
+                      data-confirm="Envoyer maintenant les {{ $queuedDue }} e-mail(s) arrivés à échéance ?">
                     @csrf
                     <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="clock" :size="14" /> Envoyer les dus ({{ $queuedDue }})</button>
                 </form>
@@ -66,7 +67,7 @@
                 </select>
             </div>
 
-            <div class="ukc-card" style="padding:0;">
+            <div class="ukc-card" style="padding:0;" data-ajax-root="emails">
                 <div class="ukc-table-wrap">
                     <table class="ukc-table">
                         <thead>
@@ -105,7 +106,7 @@
                                                         'label' => $c['label'], 'total' => $c['total'], 'rows' => $c['log'],
                                                     ]) }}"><x-ukc.icon name="list" :size="16" /></button>
                                             @if (in_array($c['status'], ['failed', 'partial'], true))
-                                                <form method="POST" action="{{ route('admin.emails.retry-batch') }}" onsubmit="return confirm('Relancer les e-mails en échec de cette campagne ?')">
+                                                <form method="POST" action="{{ route('admin.emails.retry-batch') }}" data-ajax data-ajax-target="emails" data-ajax-msg="Relance des échecs lancée." data-confirm="Relancer les e-mails en échec de cette campagne ?">
                                                     @csrf
                                                     <input type="hidden" name="batch_id" value="{{ $c['batch_id'] }}">
                                                     <input type="hidden" name="template" value="{{ $c['template'] }}">
@@ -114,7 +115,7 @@
                                                 </form>
                                             @endif
                                             @if ($c['is_campaign'] && $c['status'] === 'queued')
-                                                <form method="POST" action="{{ route('admin.emails.cancel-batch') }}" onsubmit="return confirm('Annuler toute cette campagne programmée ?')">
+                                                <form method="POST" action="{{ route('admin.emails.cancel-batch') }}" data-ajax data-ajax-target="emails" data-ajax-msg="Campagne annulée." data-confirm="Annuler toute cette campagne programmée ?">
                                                     @csrf
                                                     <input type="hidden" name="batch_id" value="{{ $c['batch_id'] }}">
                                                     <button type="submit" class="ukc-btn--icon" title="Annuler" style="color:#dc2626;"><x-ukc.icon name="trash" :size="16" /></button>

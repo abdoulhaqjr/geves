@@ -1,5 +1,5 @@
 <x-layouts.admin :title="'Soumission '.$submission->ref_code" subtitle="Relecture, décision & historique">
-    <div class="admin-page admin-submission-detail">
+    <div class="admin-page admin-submission-detail" data-ajax-root="submission">
         @php($s = $submission)
         @php($initials = fn ($name) => \Illuminate\Support\Str::of($name ?: '?')->explode(' ')->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('') ?: '?')
 
@@ -187,7 +187,7 @@
                     <h2><span><x-ukc.icon name="check-circle" :size="18" /> Décision du comité</span></h2>
                     <p class="desc">Le message ci-dessous est inclus dans l’e-mail envoyé automatiquement à l’auteur correspondant.</p>
 
-                    <form method="POST" action="{{ route('admin.submissions.status', $s) }}">
+                    <form method="POST" action="{{ route('admin.submissions.status', $s) }}" data-ajax data-ajax-msg="Décision appliquée.">
                         @csrf
                         <div class="ukc-field">
                             <label for="note">Message à l’auteur <span class="hint">(optionnel)</span></label>
@@ -306,7 +306,7 @@
                                     <span class="ukc-pill ukc-pill--warn">En cours</span>
                                 @endif
                                 <form method="POST" action="{{ route('admin.submissions.review.remove', [$s, $review]) }}"
-                                      onsubmit="return confirm('Retirer cette assignation ?')">
+                                      data-ajax data-ajax-msg="Assignation retirée." data-confirm="Retirer cette assignation ?">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="ukc-btn ukc-btn--danger ukc-btn--sm">
@@ -321,6 +321,7 @@
 
                     {{-- Assigner --}}
                     <form method="POST" action="{{ route('admin.submissions.review.assign', $s) }}"
+                          data-ajax data-ajax-msg="Relecteur assigné."
                           style="margin-top:14px;padding-top:14px;border-top:1px solid var(--ukc-border);">
                         @csrf
                         @if ($existingReviewers->count())
@@ -374,7 +375,7 @@
                             <p style="font-size:.88rem;color:var(--ukc-muted);">Phase de réponse fermée.</p>
                         @endif
 
-                        <form method="POST" action="{{ route('admin.submissions.rebuttal.toggle', $s) }}" style="margin-top:8px;">
+                        <form method="POST" action="{{ route('admin.submissions.rebuttal.toggle', $s) }}" data-ajax data-ajax-msg="Phase de réponse mise à jour." style="margin-top:8px;">
                             @csrf
                             <button type="submit" class="ukc-btn ukc-btn--{{ $s->rebuttalOpen() ? 'ghost' : 'blue' }} ukc-btn--sm">
                                 {{ $s->rebuttalOpen() ? 'Fermer la phase de réponse' : 'Ouvrir la phase de réponse' }}
