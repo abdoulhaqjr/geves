@@ -52,6 +52,30 @@ function initTomSelects(root = document) {
 document.addEventListener('DOMContentLoaded', () => initTomSelects());
 window.initTomSelects = initTomSelects;
 
+// Barres de filtres (GET) : on retire les champs vides de l'URL. En surchargeant
+// form.submit(), on couvre tous les déclencheurs — selects natifs, Tom Select et
+// touche Entrée — sans modifier chaque vue. Le rechargement repart d'une page
+// neuve : l'état « disabled » posé juste avant l'envoi n'a aucun effet visible.
+function initFilterForms(root = document) {
+    root.querySelectorAll('form.filter-bar').forEach((form) => {
+        if (form.dataset.filterReady) return;
+        form.dataset.filterReady = '1';
+
+        const disableEmpties = () => {
+            form.querySelectorAll('input[name], select[name]').forEach((el) => {
+                if (! el.disabled && (el.value === '' || el.value == null)) {
+                    el.disabled = true;
+                }
+            });
+        };
+        const nativeSubmit = HTMLFormElement.prototype.submit.bind(form);
+        form.submit = () => { disableEmpties(); nativeSubmit(); };
+        form.addEventListener('submit', disableEmpties);
+    });
+}
+document.addEventListener('DOMContentLoaded', () => initFilterForms());
+window.initFilterForms = initFilterForms;
+
 // Interactions du site public (menu mobile, galerie/lightbox, filtres).
 import './public.js';
 
