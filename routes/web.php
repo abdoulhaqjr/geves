@@ -29,6 +29,7 @@ use App\Http\Controllers\Admin\LoginController as AdminLoginController;
 use App\Http\Controllers\Admin\LogoutController as AdminLogoutController;
 use App\Http\Controllers\Admin\ParticipantController;
 use App\Http\Controllers\Admin\ProgramController;
+use App\Http\Controllers\Admin\ProjectController;
 use App\Http\Controllers\Admin\ReceiptController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SettingAgentController;
@@ -307,6 +308,18 @@ Route::prefix('admin')->group(function () {
             Route::get('/rapports/{edition}/pdf', [ReportController::class, 'pdf'])->name('admin.reports.pdf');
             Route::get('/rapports/{edition}/export/{dataset}/{format}', [ReportController::class, 'export'])->name('admin.reports.export');
             Route::get('/rapports/{edition}/ia/{id}/telecharger', [ReportController::class, 'aiDownload'])->name('admin.reports.ai-download');
+
+            // Gestion de projet de l'édition (l'édition pilotée comme un projet).
+            Route::get('/projet', [ProjectController::class, 'index'])->name('admin.project.index');
+            Route::post('/projet/initialiser', [ProjectController::class, 'seedTemplate'])->name('admin.project.seed');
+            Route::post('/projet/taches', [ProjectController::class, 'storeTask'])->name('admin.project.tasks.store');
+            Route::put('/projet/taches/{task}', [ProjectController::class, 'updateTask'])->name('admin.project.tasks.update');
+            Route::post('/projet/taches/{task}/deplacer', [ProjectController::class, 'moveTask'])->name('admin.project.tasks.move');
+            Route::delete('/projet/taches/{task}', [ProjectController::class, 'destroyTask'])->name('admin.project.tasks.destroy');
+            Route::post('/projet/jalons', [ProjectController::class, 'storeMilestone'])->name('admin.project.milestones.store');
+            Route::put('/projet/jalons/{milestone}', [ProjectController::class, 'updateMilestone'])->name('admin.project.milestones.update');
+            Route::post('/projet/jalons/{milestone}/basculer', [ProjectController::class, 'toggleMilestone'])->name('admin.project.milestones.toggle');
+            Route::delete('/projet/jalons/{milestone}', [ProjectController::class, 'destroyMilestone'])->name('admin.project.milestones.destroy');
         });
 
         // Programme / créneaux (structure de l'édition).

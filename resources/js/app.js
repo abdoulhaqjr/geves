@@ -162,6 +162,83 @@ document.addEventListener('alpine:init', () => {
             if (t) { clearTimeout(t.timer); t.show = false; }
         },
     }));
+    // Gestion de projet d'une édition (kanban + liste + jalons). Un seul composant
+    // porte : les colonnes kanban (hydratées serveur, glisser-déposer + persistance
+    // POST tolérante), la bascule de vue, et l'état du panneau latéral d'édition
+    // (tâche / jalon). Les enregistrements passent par de vrais formulaires POST/PUT.
+    window.Alpine.data('ukcProject', (config = {}) => ({
+        cols: config.cols || { todo: [], doing: [], review: [], done: [] },
+        moveUrl: config.moveUrl || '',
+        routes: config.routes || {},
+        view: 'board',
+        dragId: null,
+        dragFrom: null,
+        taskOpen: false,
+        task: {},
+        msOpen: false,
+        ms: {},
+        _csrf() {
+            return document.querySelector('meta[name="csrf-token"]')?.content || '';
+        },
+        count(status) {
+            return (this.cols[status] || []).length;
+        },
+        onDragStart(id, from) {
+            this.dragId = id;
+            this.dragFrom = from;
+        },
+        onDrop(to) {
+            const id = this.dragId;
+            const from = this.dragFrom;
+            this.dragId = null;
+            this.dragFrom = null;
+            if (id === null || from === null || from === to) return;
+            const src = this.cols[from] || [];
+            const idx = src.findIndex((t) => t.id === id);
+            if (idx === -1) return;
+            const [task] = src.splice(idx, 1);
+            task.status = to;
+            (this.cols[to] = this.cols[to] || []).push(task);
+
+            const order = this.cols[to].map((t) => t.id);
+            fetch(this.moveUrl.replace(':id', String(id)), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this._csrf() },
+                body: JSON.stringify({ status: to, order }),
+            }).catch(() => {});
+        },
+        // ----- Panneau tâche -----
+        blankTask(status = 'todo') {
+            return { id: null, title: '', description: '', status, priority: 'normal', phase: '', assignee_id: '', due_date: '' };
+        },
+        openNewTask(status = 'todo') {
+            this.task = this.blankTask(status);
+            this.taskOpen = true;
+        },
+        openEditTask(t) {
+            this.task = {
+                id: t.id, title: t.title || '', description: t.description || '',
+                status: t.status || 'todo', priority: t.priority || 'normal',
+                phase: t.phase || '', assignee_id: t.assignee_id || '', due_date: t.due_date || '',
+            };
+            this.taskOpen = true;
+        },
+        taskAction() {
+            return this.task.id ? (this.routes.taskUpdate || '').replace(':id', String(this.task.id)) : (this.routes.taskStore || '');
+        },
+        // ----- Panneau jalon -----
+        openNewMs() {
+            this.ms = { id: null, title: '', description: '', due_date: '', status: 'pending' };
+            this.msOpen = true;
+        },
+        openEditMs(m) {
+            this.ms = { id: m.id, title: m.title || '', description: m.description || '', due_date: m.due_date || '', status: m.status || 'pending' };
+            this.msOpen = true;
+        },
+        msAction() {
+            return this.ms.id ? (this.routes.msUpdate || '').replace(':id', String(this.ms.id)) : (this.routes.msStore || '');
+        },
+    }));
     // Assistante Gesco (widget flottant + page dédiée) : conversation côté client,
     // chaque tour appelle l'endpoint JSON /gesco/demander. Aucune action serveur
     // n'est déclenchée par l'IA — elle informe seulement.
