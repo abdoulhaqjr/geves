@@ -16,6 +16,9 @@
         'checklist' => is_array($t->checklist) ? $t->checklist : [],
         'checkDone' => $t->checklistProgress()[0],
         'checkTotal' => $t->checklistProgress()[1],
+        'link_key' => (string) $t->link_key,
+        'linkUrl' => $linkUrlFor($t->link_key),
+        'linkLabel' => $t->link_key ? ($linkTargets[$t->link_key] ?? null) : null,
     ];
     $cols = [];
     foreach ($columns as $status => $list) {
@@ -150,6 +153,7 @@
                                     <div class="ukc-kanban__card-meta">
                                         <span class="ukc-pill" :class="{'ukc-pill--muted':t.priority==='low','ukc-pill--info':t.priority==='normal','ukc-pill--warn':t.priority==='high','ukc-pill--err':t.priority==='urgent'}" x-text="t.priorityLabel"></span>
                                         <span class="ukc-pill ukc-pill--muted" x-show="t.phase" x-text="t.phase"></span>
+                                        <a class="ukc-task-link" x-show="t.linkUrl" :href="t.linkUrl" @click.stop title="Ouvrir la page liée"><x-ukc.icon name="external" :size="12" /> <span x-text="t.linkLabel"></span></a>
                                     </div>
                                     <div class="ukc-kanban__card-foot">
                                         <span x-show="t.assignee" x-text="t.assignee" class="who"></span>
@@ -182,6 +186,9 @@
                                     <td>{{ $statuses[$t->status] ?? $t->status }}</td>
                                     <td>
                                         <div class="ukc-actions" style="justify-content:flex-end;">
+                                            @if ($url = $linkUrlFor($t->link_key))
+                                                <a href="{{ $url }}" class="ukc-btn--icon" title="Ouvrir : {{ $linkTargets[$t->link_key] ?? '' }}"><x-ukc.icon name="external" :size="16" /></a>
+                                            @endif
                                             <button type="button" class="ukc-btn--icon" title="Modifier" @click="openEditTask({{ \Illuminate\Support\Js::from($cardOf($t)) }})"><x-ukc.icon name="pen" :size="16" /></button>
                                             <form method="POST" action="{{ route('admin.project.tasks.destroy', $t) }}" onsubmit="return confirm('Supprimer cette tâche ?')" style="display:inline;">
                                                 @csrf @method('DELETE')
@@ -273,9 +280,17 @@
                         </div>
                         <div class="ukc-form-row"><label>Échéance</label><input type="date" name="due_date" x-model="task.due_date"></div>
                     </div>
-                    <div class="ukc-form-row"><label>Phase</label>
-                        <input type="text" name="phase" x-model="task.phase" list="projectPhases" placeholder="Ex. Programme">
-                        <datalist id="projectPhases">@foreach ($phases as $p)<option value="{{ $p }}">@endforeach</datalist>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                        <div class="ukc-form-row"><label>Phase</label>
+                            <input type="text" name="phase" x-model="task.phase" list="projectPhases" placeholder="Ex. Programme">
+                            <datalist id="projectPhases">@foreach ($phases as $p)<option value="{{ $p }}">@endforeach</datalist>
+                        </div>
+                        <div class="ukc-form-row"><label>Lien contextuel</label>
+                            <select name="link_key" x-model="task.link_key">
+                                <option value="">— Aucun —</option>
+                                @foreach ($linkTargets as $k => $l)<option value="{{ $k }}">{{ $l }}</option>@endforeach
+                            </select>
+                        </div>
                     </div>
 
                     {{-- Checklist (sous-tâches) — soumise avec le formulaire via JSON. --}}

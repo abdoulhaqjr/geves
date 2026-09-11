@@ -22,6 +22,20 @@ class ProjectController extends Controller
 {
     use Concerns\ScopesEditionAccess;
 
+    /** Liens contextuels tâche → feature (libellé). L'URL est bâtie par linkUrl(). */
+    public const LINK_TARGETS = [
+        'submissions' => 'Soumissions',
+        'reviewers' => 'Relecteurs / attribution',
+        'committees' => 'Comités',
+        'participants' => 'Participants',
+        'payments' => 'Paiements',
+        'documents' => 'Documents',
+        'emails' => 'E-mails',
+        'program' => 'Programme',
+        'reports' => 'Rapports',
+        'edition' => 'Fiche de l’édition',
+    ];
+
     public function index(Request $request): View
     {
         $edition = $this->currentEdition($request);
@@ -67,6 +81,8 @@ class ProjectController extends Controller
             'team' => $edition ? $edition->team()->orderBy('name')->get() : collect(),
             'statuses' => ProjectTask::STATUSES,
             'priorities' => ProjectTask::PRIORITIES,
+            'linkTargets' => self::LINK_TARGETS,
+            'linkUrlFor' => fn (?string $key) => $edition ? $this->linkUrl($key, $edition) : null,
             'stats' => $stats,
             'isEmpty' => $total === 0 && $milestones->isEmpty(),
         ]);
@@ -302,25 +318,25 @@ class ProjectController extends Controller
      */
     private function templateTasks(): array
     {
-        $t = fn (string $phase, string $title, string $priority = 'normal') => compact('phase', 'title', 'priority');
+        $t = fn (string $phase, string $title, string $priority = 'normal', ?string $link_key = null) => compact('phase', 'title', 'priority', 'link_key');
 
         return [
-            $t('Cadrage', 'Définir le thème et les axes thématiques', 'high'),
-            $t('Cadrage', 'Constituer les comités (scientifique & organisation)', 'high'),
+            $t('Cadrage', 'Définir le thème et les axes thématiques', 'high', 'edition'),
+            $t('Cadrage', 'Constituer les comités (scientifique & organisation)', 'high', 'committees'),
             $t('Cadrage', 'Établir le budget prévisionnel'),
-            $t('Appel à communications', 'Rédiger et diffuser l’appel à communications', 'high'),
-            $t('Appel à communications', 'Mettre en ligne le site de l’édition'),
-            $t('Soumissions & relecture', 'Configurer le formulaire de soumission'),
-            $t('Soumissions & relecture', 'Recruter et affecter les relecteurs'),
-            $t('Soumissions & relecture', 'Collecter les avis et arrêter les décisions'),
-            $t('Programme', 'Composer le programme (sessions, ateliers)'),
-            $t('Programme', 'Planifier les créneaux et les salles'),
-            $t('Logistique', 'Gérer les inscriptions et les paiements'),
-            $t('Logistique', 'Organiser l’accueil, les badges et la signalétique'),
-            $t('Tenue', 'Imprimer les badges et le livre des résumés'),
-            $t('Tenue', 'Coordonner l’accueil et le pointage sur place'),
-            $t('Après-colloque', 'Émettre les attestations'),
-            $t('Après-colloque', 'Compiler et publier les actes'),
+            $t('Appel à communications', 'Rédiger et diffuser l’appel à communications', 'high', 'emails'),
+            $t('Appel à communications', 'Mettre en ligne le site de l’édition', 'normal', 'edition'),
+            $t('Soumissions & relecture', 'Configurer le formulaire de soumission', 'normal', 'submissions'),
+            $t('Soumissions & relecture', 'Recruter et affecter les relecteurs', 'normal', 'reviewers'),
+            $t('Soumissions & relecture', 'Collecter les avis et arrêter les décisions', 'normal', 'submissions'),
+            $t('Programme', 'Composer le programme (sessions, ateliers)', 'normal', 'program'),
+            $t('Programme', 'Planifier les créneaux et les salles', 'normal', 'program'),
+            $t('Logistique', 'Gérer les inscriptions et les paiements', 'normal', 'payments'),
+            $t('Logistique', 'Organiser l’accueil, les badges et la signalétique', 'normal', 'documents'),
+            $t('Tenue', 'Imprimer les badges et le livre des résumés', 'normal', 'documents'),
+            $t('Tenue', 'Coordonner l’accueil et le pointage sur place', 'normal', 'participants'),
+            $t('Après-colloque', 'Émettre les attestations', 'normal', 'documents'),
+            $t('Après-colloque', 'Compiler et publier les actes', 'normal', 'documents'),
             $t('Après-colloque', 'Faire le bilan et remercier les parties prenantes'),
         ];
     }
@@ -336,6 +352,7 @@ class ProjectController extends Controller
             'status' => ['required', 'string', 'in:'.implode(',', array_keys(ProjectTask::STATUSES))],
             'priority' => ['required', 'string', 'in:'.implode(',', array_keys(ProjectTask::PRIORITIES))],
             'phase' => ['nullable', 'string', 'max:60'],
+            'link_key' => ['nullable', 'string', 'in:'.implode(',', array_keys(self::LINK_TARGETS))],
             'assignee_id' => ['nullable', 'integer'],
             'due_date' => ['nullable', 'date'],
             'checklist_json' => ['nullable', 'string'],
@@ -393,6 +410,30 @@ class ProjectController extends Controller
             'due_date' => ['nullable', 'date'],
             'status' => ['nullable', 'string', 'in:pending,done'],
         ]);
+    }
+
+    /** URL de la feature liée à une tâche, filtrée sur l'édition (ou null). */
+    private function linkUrl(?string $key, Edition $edition): ?string
+    {
+        if ($key === null || $key === '') {
+            return null;
+        }
+
+        $q = ['edition_id' => $edition->id];
+
+        return match ($key) {
+            'submissions' => route('admin.submissions.index', $q),
+            'participants' => route('admin.participants.index', $q),
+            'payments' => route('admin.payments.index', $q),
+            'documents' => route('admin.documents.attestations', $q),
+            'emails' => route('admin.emails.index', $q),
+            'program' => route('admin.program.slots', $q),
+            'reports' => route('admin.reports.index', $q),
+            'reviewers' => route('admin.editions.edit', ['edition' => $edition, 'tab' => 'reviewers']),
+            'committees' => route('admin.editions.edit', ['edition' => $edition, 'tab' => 'committees']),
+            'edition' => route('admin.editions.edit', ['edition' => $edition]),
+            default => null,
+        };
     }
 
     private function currentEdition(Request $request): ?Edition

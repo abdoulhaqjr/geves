@@ -217,7 +217,7 @@ document.addEventListener('alpine:init', () => {
         newComment: '',
         commentBusy: false,
         blankTask(status = 'todo') {
-            return { id: null, title: '', description: '', status, priority: 'normal', phase: '', assignee_id: '', due_date: '', checklist: [], comments: [] };
+            return { id: null, title: '', description: '', status, priority: 'normal', phase: '', link_key: '', assignee_id: '', due_date: '', checklist: [], comments: [] };
         },
         openNewTask(status = 'todo') {
             this.task = this.blankTask(status);
@@ -229,7 +229,7 @@ document.addEventListener('alpine:init', () => {
             this.task = {
                 id: t.id, title: t.title || '', description: t.description || '',
                 status: t.status || 'todo', priority: t.priority || 'normal',
-                phase: t.phase || '', assignee_id: t.assignee_id || '', due_date: t.due_date || '',
+                phase: t.phase || '', link_key: t.link_key || '', assignee_id: t.assignee_id || '', due_date: t.due_date || '',
                 checklist: Array.isArray(t.checklist) ? JSON.parse(JSON.stringify(t.checklist)) : [],
                 comments: [],
             };

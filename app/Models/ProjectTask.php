@@ -21,6 +21,7 @@ use Illuminate\Support\Carbon;
  * @property string $status
  * @property string $priority
  * @property string|null $phase
+ * @property string|null $link_key
  * @property int|null $assignee_id
  * @property int|null $created_by
  * @property Carbon|null $due_date

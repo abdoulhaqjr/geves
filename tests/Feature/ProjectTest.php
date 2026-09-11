@@ -58,6 +58,27 @@ it('initialise le projet avec le cycle de vie type (jalons + tâches), idempoten
         ->assertSee('projectCalendar', false); // le conteneur du calendrier des échéances
 });
 
+it('associe un lien contextuel à une tâche (modèle + saisie)', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+
+    // Les tâches modèles portent un lien vers la feature concernée.
+    $this->actingAs($staff, 'web')->post(route('admin.project.seed'), ['edition_id' => $edition->id]);
+    expect(ProjectTask::where('edition_id', $edition->id)->where('title', 'like', 'Composer le programme%')->value('link_key'))->toBe('program');
+
+    // Saisie manuelle : lien accepté s'il est connu, ignoré (erreur validation) sinon.
+    $this->actingAs($staff, 'web')->post(route('admin.project.tasks.store'), [
+        'edition_id' => $edition->id, 'title' => 'Ouvrir paiements', 'status' => 'todo', 'priority' => 'normal',
+        'link_key' => 'payments',
+    ])->assertSessionHasNoErrors();
+    expect(ProjectTask::where('title', 'Ouvrir paiements')->value('link_key'))->toBe('payments');
+
+    $this->actingAs($staff, 'web')->post(route('admin.project.tasks.store'), [
+        'edition_id' => $edition->id, 'title' => 'Lien bidon', 'status' => 'todo', 'priority' => 'normal',
+        'link_key' => 'inexistant',
+    ])->assertSessionHasErrors('link_key');
+});
+
 it('crée une tâche et l’ajoute en bas de sa colonne', function () {
     $staff = adminStaff();
     $edition = openEdition();
