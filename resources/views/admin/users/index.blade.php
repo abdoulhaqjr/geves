@@ -149,7 +149,7 @@
                     <h2>Matrice d’accès</h2>
                     <div class="desc">Cochez pour accorder une permission à un rôle. Enregistrez pour appliquer (spatie, guard « web »). L’administrateur conserve toujours toutes les permissions.</div>
                     <div style="overflow-x:auto;">
-                        <div class="perm-grid">
+                        <div class="perm-grid" style="grid-template-columns: minmax(160px, 1.6fr) repeat({{ count($roles) }}, minmax(58px, 1fr)); min-width: {{ 160 + count($roles) * 64 }}px;">
                             <div class="cell head label">Permission</div>
                             @foreach ($roles as $meta)<div class="cell head">{{ $meta['abbr'] }}</div>@endforeach
 
