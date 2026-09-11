@@ -20,6 +20,15 @@ function initTomSelects(root = document) {
         // On vide la valeur avant init : Tom Select ne ré-analyse pas (sinon des
         // tags avec espaces en double) ; on ré-injecte des tags propres ensuite.
         if (isInput) el.value = '';
+
+        // Filtres à soumission auto : Tom Select redéclenche un « change » à
+        // l'initialisation, ce qui relancerait `form.submit()` en boucle (page
+        // qui scintille). On retire le onchange natif et on ne soumet que sur un
+        // vrai changement utilisateur, une fois l'initialisation terminée.
+        const autoSubmit = /\.form\.submit\(\)/.test(el.getAttribute('onchange') || '');
+        if (autoSubmit) el.removeAttribute('onchange');
+        let ready = false;
+
         const ts = new TomSelect(el, {
             create: tags,
             delimiter: isInput ? ',' : undefined,
@@ -29,9 +38,15 @@ function initTomSelects(root = document) {
             maxItems: Number.isFinite(max) && max > 0 ? max : null,
             plugins: (el.multiple || isInput) ? ['remove_button'] : [],
             placeholder: el.getAttribute('data-placeholder') || undefined,
+            onChange() {
+                if (autoSubmit && ready && el.form) {
+                    el.form.submit();
+                }
+            },
         });
         seed.forEach((v) => { ts.addOption({ value: v, text: v }); ts.addItem(v, true); });
         ts.refreshItems();
+        ready = true;
     });
 }
 document.addEventListener('DOMContentLoaded', () => initTomSelects());
