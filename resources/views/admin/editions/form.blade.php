@@ -663,7 +663,7 @@
                             <h2>Équipe du colloque</h2>
                             <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 12px;">
                                 Attribuez à chaque personne un ou plusieurs <strong>rôles dans ce colloque</strong>
-                                (gérant, comité d’organisation, secrétariat, comptabilité, accueil…) — les rôles se cumulent.
+                                (gestionnaire, comité d’organisation, secrétariat, comptabilité, accueil…) — les rôles se cumulent.
                                 Chaque colloque a sa propre équipe. La relecture scientifique se gère dans l’onglet <strong>Relecteurs</strong>.
                             </p>
 

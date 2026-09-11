@@ -52,7 +52,7 @@ class EditionFormController extends Controller
     {
         $edition = $action->handle($request, null);
 
-        // L'administrateur de colloque qui crée l'édition en devient gérant
+        // L'administrateur de colloque qui crée l'édition en devient gestionnaire
         // (fonction pleine sur cette édition) afin de pouvoir la gérer. Le
         // super-admin voit déjà tout : pas besoin de l'affecter.
         $creator = $request->user();

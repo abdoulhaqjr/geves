@@ -47,8 +47,8 @@ class StaffRoles
             ],
         ],
         'gerant' => [
-            'label' => 'Gérant du colloque',
-            'category' => 'Système', 'pill' => 'ok', 'abbr' => 'Gérant',
+            'label' => 'Gestionnaire du colloque',
+            'category' => 'Système', 'pill' => 'ok', 'abbr' => 'Gestion.',
             'description' => 'Responsable d’un colloque : accès complet à CE colloque (soumissions, décisions, documents, paiements, e-mails, équipe).',
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
@@ -56,9 +56,9 @@ class StaffRoles
             ],
         ],
         'co_gerant' => [
-            'label' => 'Co-gérant du colloque',
-            'category' => 'Système', 'pill' => 'ok', 'abbr' => 'Co-gér.',
-            'description' => 'Co-responsable d’un colloque : mêmes accès que le gérant sur CE colloque.',
+            'label' => 'Co-gestionnaire du colloque',
+            'category' => 'Système', 'pill' => 'ok', 'abbr' => 'Co-gest.',
+            'description' => 'Co-responsable d’un colloque : mêmes accès que le gestionnaire sur CE colloque.',
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
                 'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'badge_scan',
