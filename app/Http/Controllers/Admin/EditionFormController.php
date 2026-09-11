@@ -60,7 +60,7 @@ class EditionFormController extends Controller
             $already = DB::table('edition_user')
                 ->where('edition_id', $edition->id)->where('user_id', $creator->id)->exists();
             if (! $already) {
-                $edition->team()->attach($creator->id, ['role' => 'administrator']);
+                $edition->team()->attach($creator->id, ['role' => 'gerant']);
             }
         }
 

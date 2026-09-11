@@ -46,11 +46,35 @@ class StaffRoles
                 'users_roles', 'settings',
             ],
         ],
+        'gerant' => [
+            'label' => 'Gérant du colloque',
+            'category' => 'Système', 'pill' => 'ok', 'abbr' => 'Gérant',
+            'description' => 'Responsable d’un colloque : accès complet à CE colloque (soumissions, décisions, documents, paiements, e-mails, équipe).',
+            'permissions' => [
+                'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
+                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'badge_scan',
+            ],
+        ],
+        'co_gerant' => [
+            'label' => 'Co-gérant du colloque',
+            'category' => 'Système', 'pill' => 'ok', 'abbr' => 'Co-gér.',
+            'description' => 'Co-responsable d’un colloque : mêmes accès que le gérant sur CE colloque.',
+            'permissions' => [
+                'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
+                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'badge_scan',
+            ],
+        ],
         'scientific' => [
             'label' => 'Comité scientifique',
-            'category' => 'Système', 'pill' => 'review', 'abbr' => 'Comité',
+            'category' => 'Système', 'pill' => 'review', 'abbr' => 'Comité sci.',
             'description' => 'Synthèse des avis, décisions d’acceptation / refus / corrections, vue sur les relectures.',
             'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'assign_reviewers', 'evaluate', 'final_decision'],
+        ],
+        'comite_organisation' => [
+            'label' => 'Comité d’organisation',
+            'category' => 'Support', 'pill' => 'warn', 'abbr' => 'Comité org.',
+            'description' => 'Membre du comité d’organisation : suivi des participants, documents et programme du colloque.',
+            'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'participants', 'documents', 'emails'],
         ],
         'reviewer' => [
             'label' => 'Relecteur',

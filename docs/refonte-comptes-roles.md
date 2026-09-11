@@ -68,8 +68,15 @@
 - `EditionFormController::store` : le créateur non super-admin est **auto-affecté gérant** de la nouvelle édition (fonction `administrator` dans `edition_user`) → capacités pleines dessus.
 - UI page Utilisateurs : sélecteur **« Niveau d'accès »** (form) + badge dans la liste.
 - Tests : `AccessLevelTest` (résolution des niveaux, création par admin de colloque + gérance, refus utilisateur simple). 487 tests verts, PHPStan clean.
+
+### Phase 4 — réalisé (cœur)
+- Catalogue `StaffRoles::ROLES` enrichi : **gerant** + **co_gerant** (capacités pleines sur le colloque), **comite_organisation** (org), aux côtés de **scientific** (« Comité scientifique ») → **2 comités distincts**. `teamRoles()` les propose ; `reviewer`/`administrator` restent exclus (relecture = affectation ; administrator = global).
+- Migration `..._000500_rename_edition_admin_to_gerant` : `edition_user.role` `administrator`→`gerant`. `EditionFormController::store` affecte le créateur comme **gerant**.
+- **Cumulabilité** : `edition_user` porte plusieurs fonctions d'organisation par personne/édition (déjà cumulable) ; les rôles **scientifiques** (Communicant, Relecteur, Modérateur, Rapporteur, Membre de comité, Auditeur) sont **dérivés cumulablement** par `AccountActivity` (affichés dans l'aperçu participant). `capabilitiesOnEdition` via `permissionsFor` couvre les nouveaux rôles.
+- Team UI + matrice Utilisateurs reflètent le catalogue automatiquement. Tests catalogue + co-gérant. **489 tests verts, PHPStan clean.**
+- **Reste (4 — polish)** : fusion PHYSIQUE de `participants.role` dans un store cumulable unique (aujourd'hui rôle « primaire » + dérivation) ; renommer le participant `committee`→comité scientifique ; affichage cumulable dans la LISTE participants (aujourd'hui aperçu seulement).
 | **3** | 3 niveaux globaux (super_admin / colloque_admin / user) en remplacement du rôle unique `administrator`. | Moyen | ✅ fait |
-| **4** | Rôles par colloque cumulables : pivot `(user, edition, role)` fusionnant `edition_user` + `participants.role`. Catalogue rôles + capacités, 2 comités distincts. | Élevé | — |
+| **4** | Rôles par colloque cumulables : catalogue à 2 natures, gérant/co-gérant, 2 comités distincts (org cumulable via `edition_user` ; scientifiques dérivés cumulablement via `AccountActivity`). | Élevé | ✅ fait (cœur) |
 | **5** | Relecture : rôle « Relecteur » (portail) + affectation soumissions par-dessus. | Faible | — |
 | **6** | UI & renommages (Niveau d'accès, Rôles dans ce colloque cumulables + capacités). | Faible | — |
 | **7** | Nettoyage : retrait guard `account`, anciennes routes/libellés, non-régression. | Moyen | — |
