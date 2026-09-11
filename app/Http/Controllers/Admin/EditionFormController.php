@@ -212,6 +212,9 @@ class EditionFormController extends Controller
                 'role' => (string) $r->role,
                 'role_label' => StaffRoles::label((string) $r->role),
                 'pill' => StaffRoles::pill((string) $r->role),
+                'caps' => collect(StaffRoles::permissionsFor((string) $r->role))
+                    ->map(fn ($c) => StaffRoles::PERMISSIONS[$c] ?? $c)
+                    ->implode(' · '),
             ])->values();
     }
 

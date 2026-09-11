@@ -74,11 +74,14 @@
 - Migration `..._000500_rename_edition_admin_to_gerant` : `edition_user.role` `administrator`→`gerant`. `EditionFormController::store` affecte le créateur comme **gerant**.
 - **Cumulabilité** : `edition_user` porte plusieurs fonctions d'organisation par personne/édition (déjà cumulable) ; les rôles **scientifiques** (Communicant, Relecteur, Modérateur, Rapporteur, Membre de comité, Auditeur) sont **dérivés cumulablement** par `AccountActivity` (affichés dans l'aperçu participant). `capabilitiesOnEdition` via `permissionsFor` couvre les nouveaux rôles.
 - Team UI + matrice Utilisateurs reflètent le catalogue automatiquement. Tests catalogue + co-gérant. **489 tests verts, PHPStan clean.**
-- **Reste (4 — polish)** : fusion PHYSIQUE de `participants.role` dans un store cumulable unique (aujourd'hui rôle « primaire » + dérivation) ; renommer le participant `committee`→comité scientifique ; affichage cumulable dans la LISTE participants (aujourd'hui aperçu seulement).
+### Phase 5 (relecture) & 6 (UI) — réalisé
+- **Phase 5** : la relecture est déjà un **rôle** (« Relecteur », accès portail d'évaluation) **+ affectation** des soumissions (assignation par nom/e-mail ou relecteur existant, jeton). Rien à refondre — conforme à la décision « rôle + affectation ».
+- **Phase 6** : onglet **Équipe** → libellés « Rôle(s) dans ce colloque » (au lieu de « Fonction ») + **capacités affichées** sous chaque membre + mention « les rôles se cumulent » ; le sélecteur propose gérant/co-gérant/2 comités/orga/secrétariat/comptabilité/appui/accueil (relecteur exclu). Liste **Participants** : rôle primaire + **fonctions d'organisation cumulées** (edition_user) affichées en pastilles (1 requête batch). « Niveau d'accès » déjà en place (Phase 3).
+- **Reste (polish optionnel)** : fusion PHYSIQUE de `participants.role` dans un store cumulable unique (aujourd'hui primaire + dérivation via AccountActivity) ; renommer le participant `committee`→comité scientifique ; Phase 2c (retrait `accounts`/`Account` + enforcement `must_reset_password`) ; Phase 7 (nettoyage).
 | **3** | 3 niveaux globaux (super_admin / colloque_admin / user) en remplacement du rôle unique `administrator`. | Moyen | ✅ fait |
 | **4** | Rôles par colloque cumulables : catalogue à 2 natures, gérant/co-gérant, 2 comités distincts (org cumulable via `edition_user` ; scientifiques dérivés cumulablement via `AccountActivity`). | Élevé | ✅ fait (cœur) |
-| **5** | Relecture : rôle « Relecteur » (portail) + affectation soumissions par-dessus. | Faible | — |
-| **6** | UI & renommages (Niveau d'accès, Rôles dans ce colloque cumulables + capacités). | Faible | — |
+| **5** | Relecture : rôle « Relecteur » (portail) + affectation soumissions par-dessus. | Faible | ✅ (déjà en place) |
+| **6** | UI & renommages (Niveau d'accès, Rôles dans ce colloque cumulables + capacités). | Faible | ✅ fait |
 | **7** | Nettoyage : retrait guard `account`, anciennes routes/libellés, non-régression. | Moyen | — |
 
 ### Phase 1 — approche détaillée (à valider avant exécution)

@@ -53,6 +53,15 @@ class ParticipantController extends Controller
 
         $paidCount = (clone $base)->whereHas('payments', fn ($q) => $q->where('status', 'paid'))->count();
 
+        // Rôles d'organisation cumulés par personne sur CE colloque (edition_user),
+        // pour montrer qu'un participant peut aussi porter une fonction d'équipe.
+        $editionRoles = $editionId === ''
+            ? collect()
+            : \Illuminate\Support\Facades\DB::table('edition_user')
+                ->where('edition_id', $editionId)->get()
+                ->groupBy('user_id')
+                ->map(fn ($rows) => $rows->pluck('role')->unique()->all());
+
         // Tendance des inscriptions : 7 derniers jours vs les 7 précédents.
         $trendTotal = \App\Support\Trend::of(
             (int) (clone $base)->whereBetween('created_at', [now()->subDays(7), now()])->count(),
@@ -61,6 +70,7 @@ class ParticipantController extends Controller
 
         return view('admin.participants.index', [
             'trendTotal' => $trendTotal,
+            'editionRoles' => $editionRoles,
             'sort' => $sort['sort'],
             'dir' => $sort['dir'],
             'editions' => $editions,

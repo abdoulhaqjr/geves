@@ -662,7 +662,8 @@
                         <div class="ukc-card">
                             <h2>Équipe du colloque</h2>
                             <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 12px;">
-                                Affectez le personnel à <strong>cette édition</strong> avec une fonction (secrétariat, comptabilité, accueil…).
+                                Attribuez à chaque personne un ou plusieurs <strong>rôles dans ce colloque</strong>
+                                (gérant, comité d’organisation, secrétariat, comptabilité, accueil…) — les rôles se cumulent.
                                 Chaque colloque a sa propre équipe. La relecture scientifique se gère dans l’onglet <strong>Relecteurs</strong>.
                             </p>
 
@@ -675,7 +676,7 @@
                                     @endforeach
                                 </select>
                                 <select name="role" required>
-                                    <option value="">— Fonction —</option>
+                                    <option value="">— Rôle dans ce colloque —</option>
                                     @foreach ($teamRoles as $key => $label)
                                         <option value="{{ $key }}">{{ $label }}</option>
                                     @endforeach
@@ -690,12 +691,15 @@
                             @else
                                 <div class="ukc-table-wrap" style="margin-top:16px;">
                                     <table class="ukc-table">
-                                        <thead><tr><th>Membre</th><th>Fonction</th><th style="text-align:right;">Action</th></tr></thead>
+                                        <thead><tr><th>Membre</th><th>Rôle dans ce colloque</th><th style="text-align:right;">Action</th></tr></thead>
                                         <tbody>
                                             @foreach ($team as $m)
                                                 <tr>
                                                     <td><strong>{{ $m['name'] }}</strong><div style="font-size:12px;color:var(--ukc-muted);">{{ $m['email'] }}</div></td>
-                                                    <td><span class="ukc-pill ukc-pill--{{ $m['pill'] }}">{{ $m['role_label'] }}</span></td>
+                                                    <td>
+                                                        <span class="ukc-pill ukc-pill--{{ $m['pill'] }}">{{ $m['role_label'] }}</span>
+                                                        @if (! empty($m['caps']))<div style="font-size:11.5px;color:var(--ukc-muted);margin-top:4px;">{{ $m['caps'] }}</div>@endif
+                                                    </td>
                                                     <td style="text-align:right;">
                                                         <form method="POST" action="{{ route('admin.editions.team.detach', $edition) }}"
                                                               onsubmit="return confirm('Retirer {{ $m['name'] }} ({{ $m['role_label'] }}) de cette édition ?')" style="display:inline;">

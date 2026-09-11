@@ -53,7 +53,14 @@
                                         <div class="title">{{ $p->full_name }}</div>
                                         <div class="meta">{{ $p->email }}</div>
                                     </td>
-                                    <td><span class="ukc-pill ukc-pill--info">{{ $p->roleLabel() }}</span></td>
+                                    <td>
+                                        <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                                            <span class="ukc-pill ukc-pill--info">{{ $p->roleLabel() }}</span>
+                                            @foreach (($p->user_id ? ($editionRoles[$p->user_id] ?? []) : []) as $r)
+                                                <span class="ukc-pill ukc-pill--{{ \App\Support\StaffRoles::pill($r) }}">{{ \App\Support\StaffRoles::label($r) }}</span>
+                                            @endforeach
+                                        </div>
+                                    </td>
                                     <td>
                                         @if ($paid)<span class="ukc-pill ukc-pill--ok">Réglé</span>
                                         @else<span class="ukc-pill ukc-pill--muted">Non</span>@endif
