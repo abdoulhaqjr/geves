@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
-use App\Models\Account;
+use App\Models\User;
 use App\Sms\SmsManager;
 use App\Support\Totp;
 use Illuminate\Auth\Events\Lockout;
@@ -52,17 +52,9 @@ class LoginController extends Controller
         ]);
         $this->ensureIsNotRateLimited($request);
 
-        $account = Account::where('email', $request->input('email'))->first();
+        $account = User::where('email', $request->input('email'))->first();
 
         if (! $account || ! Hash::check((string) $request->input('password'), $account->password)) {
-            // Porte unique : à défaut d'un compte participant, tenter le personnel
-            // de gestion (guard « web ») avec les mêmes identifiants.
-            if ($this->attemptStaff($request)) {
-                RateLimiter::clear($this->throttleKey($request));
-
-                return redirect()->intended(route('admin.dashboard'));
-            }
-
             RateLimiter::hit($this->throttleKey($request));
 
             throw ValidationException::withMessages([
@@ -71,6 +63,13 @@ class LoginController extends Controller
         }
 
         RateLimiter::clear($this->throttleKey($request));
+
+        // Identité unifiée : selon les rôles, on oriente vers le back-office
+        // (personnel de gestion) ou l'espace participant. Une seule page, deux
+        // destinations.
+        if ($this->hasBackOfficeAccess($account)) {
+            return $this->completeStaffLogin($request, $account);
+        }
 
         // Second facteur requis : ne pas connecter tout de suite.
         if ($account->hasTwoFactorEnabled()) {
@@ -96,7 +95,7 @@ class LoginController extends Controller
         $request->validate(['code' => ['required', 'string']]);
 
         $id = session(self::SESSION_LOGIN_ID);
-        $account = $id ? Account::find($id) : null;
+        $account = $id ? User::find($id) : null;
 
         if (! $account) {
             $this->resetChallenge();
@@ -132,7 +131,7 @@ class LoginController extends Controller
     public function resendOtp(SmsManager $sms): RedirectResponse
     {
         $id = session(self::SESSION_LOGIN_ID);
-        $account = $id ? Account::find($id) : null;
+        $account = $id ? User::find($id) : null;
 
         if ($account && $account->hasSmsEnabled()) {
             $this->sendOtp($account, $sms);
@@ -150,7 +149,7 @@ class LoginController extends Controller
         return redirect()->route('account.login');
     }
 
-    private function sendOtp(Account $account, SmsManager $sms): void
+    private function sendOtp(User $account, SmsManager $sms): void
     {
         $code = $account->generateOtp();
         $account->save();
@@ -181,31 +180,31 @@ class LoginController extends Controller
     }
 
     /**
-     * Repli « personnel de gestion » : connexion au guard « web » (back-office)
-     * quand les identifiants ne correspondent à aucun compte participant. Permet
-     * une page de connexion unique pour les participants et le staff.
+     * L'utilisateur a-t-il un accès back-office (super-admin, admin de colloque
+     * ou une fonction d'organisation sur au moins une édition) ? Détermine s'il
+     * est orienté vers le back-office plutôt que l'espace participant.
      */
-    private function attemptStaff(Request $request): bool
+    private function hasBackOfficeAccess(User $user): bool
     {
-        if (! Auth::guard('web')->attempt(
-            ['email' => $request->input('email'), 'password' => $request->input('password')],
-            $request->boolean('remember')
-        )) {
-            return false;
-        }
+        return $user->isColloqueSuperAdmin() || $user->canAnyEdition();
+    }
 
+    /** Connexion du personnel de gestion : guard « web » + orientation back-office. */
+    private function completeStaffLogin(Request $request, User $user): RedirectResponse
+    {
+        Auth::guard('web')->login($user, $request->boolean('remember'));
         $request->session()->regenerate();
 
         // Activité de connexion (page Utilisateurs) : date + IP.
-        Auth::guard('web')->user()?->forceFill([
+        $user->forceFill([
             'last_login_at' => now(),
             'last_login_ip' => $request->ip(),
         ])->save();
 
-        return true;
+        return redirect()->intended(route('admin.dashboard'));
     }
 
-    private function completeLogin(Request $request, Account $account, bool $remember): RedirectResponse
+    private function completeLogin(Request $request, User $account, bool $remember): RedirectResponse
     {
         Auth::guard('account')->login($account, $remember);
         $request->session()->regenerate();

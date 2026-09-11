@@ -79,16 +79,21 @@ function openEdition(array $settings = []): Edition
     ]);
 }
 
-function verifiedAccount(): Account
+/**
+ * Identité participant vérifiée (refonte « compte unifié » : c'est un User,
+ * connecté via le guard « account » qui résout désormais la table `users`).
+ */
+function verifiedAccount(): User
 {
-    $account = Account::create([
+    $user = User::create([
+        'name' => 'Awa Kodjo',
         'first_name' => 'Awa', 'last_name' => 'Kodjo',
         'email' => 'awa@example.tg', 'password' => 'pass12345',
         'grade' => 'Doctorante', 'affiliation' => 'Université de Kara',
     ]);
-    $account->markEmailAsVerified();
+    $user->markEmailAsVerified();
 
-    return $account;
+    return $user;
 }
 
 function adminStaff(): User
@@ -107,7 +112,7 @@ function seededSubmission(string $status = 'submitted'): Submission
     $edition = openEdition();
     $account = verifiedAccount();
     $participant = $edition->participants()->create([
-        'account_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
+        'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
     ]);
 
     return $edition->submissions()->create([
@@ -130,11 +135,11 @@ function sessionFor(Edition $edition): EventSession
     ]);
 }
 
-function participantAccount(Edition $edition): Account
+function participantAccount(Edition $edition): User
 {
     $account = verifiedAccount();
     Participant::create([
-        'edition_id' => $edition->id, 'account_id' => $account->id,
+        'edition_id' => $edition->id, 'user_id' => $account->id,
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email, 'role' => 'author',
     ]);
 

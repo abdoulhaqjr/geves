@@ -15,7 +15,7 @@ function accountInTwoColloques(): array
 
     foreach ([$edA, $edB] as $e) {
         $e->participants()->create([
-            'account_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo',
+            'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo',
             'email' => $account->email, 'role' => 'author',
         ]);
     }
@@ -61,8 +61,8 @@ it('refuse de basculer vers un colloque auquel le compte ne participe pas', func
 it('scope la liste des soumissions sur le colloque courant', function () {
     [$account, $edA, $edB] = accountInTwoColloques();
 
-    $pA = $edA->participants()->where('account_id', $account->id)->first();
-    $pB = $edB->participants()->where('account_id', $account->id)->first();
+    $pA = $edA->participants()->where('user_id', $account->id)->first();
+    $pB = $edB->participants()->where('user_id', $account->id)->first();
     $edA->submissions()->create(['participant_id' => $pA->id, 'title' => 'Sujet Alpha', 'status' => 'submitted', 'revision_of' => 0]);
     $edB->submissions()->create(['participant_id' => $pB->id, 'title' => 'Sujet Beta', 'status' => 'submitted', 'revision_of' => 0]);
 

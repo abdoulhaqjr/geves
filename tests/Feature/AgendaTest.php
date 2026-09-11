@@ -43,7 +43,7 @@ it('exporte l’agenda du participant en ICS (ses créneaux)', function () {
     $edition = openEdition();
     $account = verifiedAccount();
     $participant = $edition->participants()->create([
-        'account_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
+        'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
     ]);
     $submission = $edition->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => '26-1', 'title' => 'Ma communication',

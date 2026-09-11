@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
-use App\Models\Account;
+use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -37,7 +37,7 @@ class RegisterController extends Controller
             'last_name' => ['required', 'string', 'max:150'],
             'grade' => ['nullable', 'string', 'max:100'],
             'affiliation' => ['nullable', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:190', 'unique:accounts,email'],
+            'email' => ['required', 'string', 'email', 'max:190', 'unique:users,email'],
             'password' => ['required', 'string', 'confirmed', Password::defaults()],
             'terms' => ['accepted'],
         ]);
@@ -45,7 +45,7 @@ class RegisterController extends Controller
         // `terms` sert uniquement au consentement : on ne le persiste pas.
         unset($data['terms']);
 
-        $account = Account::create($data);
+        $account = User::create($data);
 
         event(new Registered($account));
 

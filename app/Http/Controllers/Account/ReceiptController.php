@@ -25,7 +25,7 @@ class ReceiptController extends Controller
         abort_unless(
             $payment->status === 'paid'
             && $payment->participant
-            && (int) $payment->participant->account_id === (int) $accountId,
+            && (int) $payment->participant->user_id === (int) $accountId,
             404
         );
 

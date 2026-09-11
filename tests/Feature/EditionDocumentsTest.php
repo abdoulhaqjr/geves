@@ -4,14 +4,15 @@ use App\Models\Account;
 use App\Models\Media;
 use App\Models\Participant;
 use Illuminate\Support\Str;
+use App\Models\User;
 
 // adminStaff() -> AdminSubmissionWorkflowTest ; openEdition()/verifiedAccount() -> AccountSubmissionTest
 
 /** Rattache le compte à l'édition en tant que participant. */
-function participantFor(Account $account, $edition, string $role = 'author'): Participant
+function participantFor(User $account, $edition, string $role = 'author'): Participant
 {
     return $edition->participants()->create([
-        'account_id' => $account->id,
+        'user_id' => $account->id,
         'first_name' => $account->first_name,
         'last_name' => $account->last_name,
         'email' => $account->email,

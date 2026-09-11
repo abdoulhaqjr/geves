@@ -52,7 +52,7 @@ class AssignReviewer
         // Notification in-app au relecteur, s'il dispose d'un compte lié.
         if ($review->wasRecentlyCreated) {
             Notifier::account(
-                $reviewer->account,
+                $reviewer->user,
                 kind: 'review_assigned',
                 title: 'Nouvelle relecture assignée',
                 body: 'Une communication vous a été confiée pour évaluation.',

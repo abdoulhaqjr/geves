@@ -28,7 +28,7 @@ class SubmissionStatusMail extends Mailable implements ShouldQueue
         public ?string $note = null,
     ) {
         // Rendu dans la langue de l'auteur (i18n) ; sujet/contenu calculés au rendu.
-        $this->locale(Locales::resolve($submission->participant?->account?->locale));
+        $this->locale(Locales::resolve($submission->participant?->user?->locale));
     }
 
     /** @return array{subject:string, heading:string, intro:string} */

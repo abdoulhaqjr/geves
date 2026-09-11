@@ -5,10 +5,11 @@ use App\Models\Account;
 use App\Support\UserAgent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\User;
 
-function sessionAccount(): Account
+function sessionAccount(): User
 {
-    return Account::create([
+    return User::create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg',
         'password' => 'MotDePasse123!', 'affiliation' => 'UK', 'email_verified_at' => now(),
     ]);
@@ -18,8 +19,7 @@ function insertSession(string $id, ?int $accountId, string $ua = 'Mozilla/5.0 (W
 {
     DB::table('sessions')->insert([
         'id' => $id,
-        'user_id' => null,
-        'account_id' => $accountId,
+        'user_id' => $accountId,
         'ip_address' => '127.0.0.1',
         'user_agent' => $ua,
         'payload' => 'x',
@@ -90,7 +90,7 @@ it('déconnecte les autres sessions avec le bon mot de passe', function () {
     (new SecurityController)->revokeOtherSessions($request);
 
     // Seule la session courante subsiste.
-    expect(DB::table('sessions')->where('account_id', $account->id)->count())->toBe(1);
+    expect(DB::table('sessions')->where('user_id', $account->id)->count())->toBe(1);
     expect(DB::table('sessions')->where('id', $current)->exists())->toBeTrue();
 });
 

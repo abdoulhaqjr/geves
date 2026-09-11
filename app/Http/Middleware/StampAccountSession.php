@@ -24,7 +24,7 @@ class StampAccountSession
         if ($accountId && config('session.driver') === 'database') {
             DB::table(config('session.table', 'sessions'))
                 ->where('id', $request->session()->getId())
-                ->update(['account_id' => $accountId]);
+                ->update(['user_id' => $accountId]);
         }
 
         return $next($request);

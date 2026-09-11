@@ -6,6 +6,7 @@ use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\Payment;
 use Illuminate\Support\Str;
+use App\Models\User;
 
 // adminStaff() -> AdminSubmissionWorkflowTest
 
@@ -63,9 +64,9 @@ it('sert le reçu en HTML sans le paramètre pdf', function () {
 });
 
 it('génère le PDF de reçu du participant propriétaire', function () {
-    $account = Account::factory()->create();
+    $account = User::factory()->create();
     $edition = Edition::factory()->create();
-    $participant = Participant::factory()->for($edition)->create(['account_id' => $account->id]);
+    $participant = Participant::factory()->for($edition)->create(['user_id' => $account->id]);
     $payment = Payment::factory()->for($edition)->for($participant)->paid()->create();
 
     $response = $this->actingAs($account, 'account')
@@ -76,7 +77,7 @@ it('génère le PDF de reçu du participant propriétaire', function () {
 });
 
 it('refuse le reçu PDF d’un autre participant', function () {
-    $account = Account::factory()->create();
+    $account = User::factory()->create();
     $edition = Edition::factory()->create();
     $participant = Participant::factory()->for($edition)->create(); // sans account_id
     $payment = Payment::factory()->for($edition)->for($participant)->paid()->create();

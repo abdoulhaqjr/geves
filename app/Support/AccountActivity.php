@@ -2,8 +2,8 @@
 
 namespace App\Support;
 
-use App\Models\Account;
 use App\Models\CommitteeMember;
+use App\Models\User;
 use App\Models\EventSession;
 use App\Models\Participant;
 use App\Models\Submission;
@@ -18,7 +18,7 @@ use Illuminate\Support\Collection;
  */
 class AccountActivity
 {
-    public function __construct(public Account $account) {}
+    public function __construct(public User $account) {}
 
     protected function email(): string
     {
@@ -28,7 +28,7 @@ class AccountActivity
     /** Identifiants des participations rattachées au compte. */
     protected function participantIds(): Collection
     {
-        return Participant::where('account_id', $this->account->id)->pluck('id');
+        return Participant::where('user_id', $this->account->id)->pluck('id');
     }
 
     /**
@@ -104,14 +104,14 @@ class AccountActivity
     /** Le compte a-t-il au moins une participation en tant que relecteur ? */
     public function isReviewer(): bool
     {
-        return Participant::where('account_id', $this->account->id)
+        return Participant::where('user_id', $this->account->id)
             ->where('role', 'reviewer')->exists();
     }
 
     /** Le compte a-t-il au moins une participation, quelle qu'elle soit ? */
     public function hasAnyParticipation(): bool
     {
-        return Participant::where('account_id', $this->account->id)->exists();
+        return Participant::where('user_id', $this->account->id)->exists();
     }
 
     /**

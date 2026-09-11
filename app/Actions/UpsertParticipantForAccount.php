@@ -2,9 +2,9 @@
 
 namespace App\Actions;
 
-use App\Models\Account;
 use App\Models\Edition;
 use App\Models\Participant;
+use App\Models\User;
 
 /**
  * Crée ou retrouve le participant d'un compte sur une édition donnée.
@@ -21,11 +21,11 @@ class UpsertParticipantForAccount
     /** Rôles à ne jamais rétrograder. */
     public const STRONG_ROLES = ['reviewer', 'committee', 'moderator', 'rapporteur'];
 
-    public function handle(Edition $edition, Account $account, string $role = 'author'): Participant
+    public function handle(Edition $edition, User $account, string $role = 'author'): Participant
     {
         $participant = Participant::firstOrNew([
             'edition_id' => $edition->id,
-            'account_id' => $account->id,
+            'user_id' => $account->id,
         ]);
 
         // access_token généré par ParticipantObserver à la création.

@@ -17,7 +17,7 @@ class NotifyAccountOfSubmissionStatus
     public function handle(SubmissionStatusChanged $event): void
     {
         $submission = $event->submission;
-        $account = $submission->participant?->account;
+        $account = $submission->participant?->user;
 
         if (! $account) {
             return;

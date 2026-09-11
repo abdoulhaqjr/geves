@@ -164,7 +164,7 @@ class AutoAssignReviewers
 
             if ($review->wasRecentlyCreated) {
                 $created++;
-                if (Notifier::emailAllowed($review->reviewer->account, 'review_assigned')) {
+                if (Notifier::emailAllowed($review->reviewer->user, 'review_assigned')) {
                     Mail::to((string) $reviewer->email)->send(new ReviewerInvitationMail($review->reviewer));
                 }
             }

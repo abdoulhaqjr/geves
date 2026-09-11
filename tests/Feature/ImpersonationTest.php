@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\Auth;
 
 it('permet au staff d’impersonifier un compte participant', function () {
     $staff = staffWithPermission();
-    $account = Account::factory()->create();
-    $participant = Participant::factory()->create(['account_id' => $account->id]);
+    $account = User::factory()->create();
+    $participant = Participant::factory()->create(['user_id' => $account->id]);
 
     $this->actingAs($staff, 'web')
         ->post(route('admin.participants.impersonate', $participant))
@@ -22,8 +22,8 @@ it('permet au staff d’impersonifier un compte participant', function () {
 
 it('affiche la bannière d’impersonation dans l’espace participant', function () {
     $staff = staffWithPermission();
-    $account = Account::factory()->create();
-    $participant = Participant::factory()->create(['account_id' => $account->id]);
+    $account = User::factory()->create();
+    $participant = Participant::factory()->create(['user_id' => $account->id]);
 
     $this->actingAs($staff, 'web')->post(route('admin.participants.impersonate', $participant));
 
@@ -35,8 +35,8 @@ it('affiche la bannière d’impersonation dans l’espace participant', functio
 
 it('quitte l’impersonation et rend la main au staff', function () {
     $staff = staffWithPermission();
-    $account = Account::factory()->create();
-    $participant = Participant::factory()->create(['account_id' => $account->id]);
+    $account = User::factory()->create();
+    $participant = Participant::factory()->create(['user_id' => $account->id]);
 
     $this->actingAs($staff, 'web')->post(route('admin.participants.impersonate', $participant));
     expect(app('impersonate')->isImpersonating())->toBeTrue();
@@ -61,8 +61,8 @@ it('refuse l’impersonation d’un participant sans compte lié', function () {
 
 it('interdit l’impersonation sans la permission manage_colloques', function () {
     $user = User::factory()->create();
-    $account = Account::factory()->create();
-    $participant = Participant::factory()->create(['account_id' => $account->id]);
+    $account = User::factory()->create();
+    $participant = Participant::factory()->create(['user_id' => $account->id]);
 
     $this->actingAs($user, 'web')
         ->post(route('admin.participants.impersonate', $participant))

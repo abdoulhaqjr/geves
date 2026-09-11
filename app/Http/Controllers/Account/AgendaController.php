@@ -39,7 +39,7 @@ class AgendaController extends Controller
         $account = Auth::guard('account')->user();
         $current = CurrentColloque::current($account);
 
-        $participantIds = Participant::where('account_id', $account->id)
+        $participantIds = Participant::where('user_id', $account->id)
             ->when($current, fn ($q) => $q->where('edition_id', $current->id))
             ->pluck('id');
 

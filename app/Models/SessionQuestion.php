@@ -15,6 +15,7 @@ use Illuminate\Support\Carbon;
  * @property int $session_id
  * @property int $edition_id
  * @property int|null $account_id
+ * @property int|null $user_id
  * @property string $author_name
  * @property string $body
  * @property string $status
@@ -48,10 +49,10 @@ class SessionQuestion extends Model
         return $this->belongsTo(EventSession::class, 'session_id');
     }
 
-    /** @return BelongsTo<Account, $this> */
-    public function account(): BelongsTo
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Account::class);
+        return $this->belongsTo(User::class);
     }
 
     /** @return HasMany<SessionQuestionVote, $this> */

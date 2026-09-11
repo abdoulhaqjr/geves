@@ -49,8 +49,17 @@
 | **1** | Identité unifiée : migrer `accounts` → `users` (dédoublonnage par e-mail), ajouter les colonnes profil manquantes à `users`, rebrancher `participants.account_id`→`user_id`, sessions/questions/polls, notifications. Migration réversible + tests. | Élevé | ✅ fait |
 | **2** | Connexion unique + retrait du guard `account`. **Découpé** (voir ci-dessous). | Moyen→Élevé | 🔄 en cours |
 | — 2a | Capacités participant portées sur `User` via trait `ParticipantIdentity` (additif, sans changement runtime). | Faible | ✅ fait |
-| — 2b | Bascule du runtime participant vers l'identité `users` + retrait guard `account` (~32 fichiers app + ~35 fichiers de test). | Élevé | — |
-| — 2c | Fusion inscription / vérif e-mail / reset + enforcement `must_reset_password`. | Moyen | — |
+| — 2b | Bascule du runtime participant vers l'identité `users` + retrait guard `account` (~32 fichiers app + ~35 fichiers de test). | Élevé | ✅ fait |
+| — 2c | Enforcement `must_reset_password` + suppression de la table/model `Account` (reste : `accounts` conservée en legacy). | Moyen | — |
+
+### Phase 2b — réalisé
+- **Guard `account` repointé sur le provider `users`** (config/auth.php) : les deux guards résolvent la même table `users` ; le guard « account » n'est plus qu'un CONTEXTE (espace participant) vs « web » (back-office).
+- **Connexion unique** (`LoginController`) : authentifie un `User` ; si accès back-office (`isColloqueSuperAdmin() || canAnyEdition()`) → guard web + `/admin`, sinon → 2FA puis guard account + espace participant.
+- **~32 fichiers app** convertis `Account`→`User`, `account_id`→`user_id`, `->account`→`->user` (contrôleurs Account/*, actions, mails, listeners, `EventSession`, `CurrentColloque`, `AccountActivity`, `SessionEngagement`, session Q&A). `Register`/`Login` créent/authentifient des `User`.
+- **Migration `..._000300_add_user_id_to_session_votes`** : `user_id` + unicité sur `session_question_votes` / `session_poll_votes` (backfill via `merged_account_id`).
+- **User** : `guard_name='web'` (spatie sans ambiguïté multi-guard) ; `booted()` remplit `name` depuis prénom/nom ; `usesDedicatedMailFor` via le registre (comme Account) ; vérif e-mail participant par défaut + `sendStaffEmailVerificationNotification()` explicite au back-office ; profil fillable.
+- **~35 fichiers de test** migrés `Account`→`User` (helper central `verifiedAccount()` renvoie un User ; `UserFactory` gagne first/last/affiliation + `incomplete()`).
+- **484 tests verts, PHPStan clean.** `Account`/`accounts` restent en base (données legacy) — suppression en 2c.
 | **3** | 3 niveaux globaux (super_admin / colloque_admin / user) en remplacement du rôle unique `administrator`. | Moyen | — |
 | **4** | Rôles par colloque cumulables : pivot `(user, edition, role)` fusionnant `edition_user` + `participants.role`. Catalogue rôles + capacités, 2 comités distincts. | Élevé | — |
 | **5** | Relecture : rôle « Relecteur » (portail) + affectation soumissions par-dessus. | Faible | — |

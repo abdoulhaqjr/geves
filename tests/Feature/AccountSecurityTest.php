@@ -3,11 +3,12 @@
 use App\Models\Account;
 use App\Support\Totp;
 use Illuminate\Support\Facades\Hash;
+use App\Models\User;
 
 /** Compte de test avec mot de passe connu. */
-function securityAccount(string $password = 'MotDePasse123!'): Account
+function securityAccount(string $password = 'MotDePasse123!'): User
 {
-    $account = Account::create([
+    $account = User::create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo',
         'email' => 'awa@example.tg', 'password' => $password,
     ]);
@@ -17,7 +18,7 @@ function securityAccount(string $password = 'MotDePasse123!'): Account
 }
 
 /** Active la 2FA sur un compte avec un secret et des codes connus. */
-function enableTotp(Account $account, string $secret, array $recovery = ['ABCDE-12345']): Account
+function enableTotp(User $account, string $secret, array $recovery = ['ABCDE-12345']): User
 {
     $account->forceFill([
         'two_factor_secret' => $secret,

@@ -15,10 +15,13 @@ use Illuminate\Support\Carbon;
  * relecteur, membre de comité, co-auteur…). Reliée au compte global quand
  * connue.
  *
+ * @property int|null $account_id
+ * @property int|null $user_id
  * @property Carbon|null $checked_in_at
  * @property array<string, mixed>|null $meta
  * @property Edition|null $edition
  * @property Account|null $account
+ * @property User|null $user
  */
 #[ObservedBy([ParticipantObserver::class])]
 class Participant extends Model

@@ -3,6 +3,7 @@
 use App\Actions\IssueAttestation;
 use App\Models\Account;
 use App\Models\DocumentTemplate;
+use App\Models\User;
 
 // openEdition() / verifiedAccount() -> AccountSubmissionTest
 
@@ -11,7 +12,7 @@ it('protège la page Mes documents derrière le guard account', function () {
 });
 
 it('affiche l’état vide quand le compte n’a aucun document', function () {
-    $account = Account::create([
+    $account = User::create([
         'first_name' => 'Sans', 'last_name' => 'Document',
         'email' => 'vide@example.tg', 'password' => 'pass12345',
     ]);
@@ -26,7 +27,7 @@ it('liste attestations, reçus et livret sur la page Mes documents', function ()
     $edition = openEdition();
     $account = verifiedAccount();
     $participant = $edition->participants()->create([
-        'account_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
+        'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
     ]);
 
     // Une communication acceptée -> livret (HTML + Word) disponible.
@@ -57,7 +58,7 @@ it('rend l’aperçu du badge à partir du modèle admin, avec les vraies donné
     $edition = openEdition();
     $account = verifiedAccount();
     $edition->participants()->create([
-        'account_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email, 'role' => 'author',
+        'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email, 'role' => 'author',
     ]);
 
     // Modèle de badge conçu dans l'admin (schéma [namespace.key] de l'éditeur).

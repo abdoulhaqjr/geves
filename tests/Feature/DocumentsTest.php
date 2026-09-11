@@ -144,7 +144,7 @@ it('génère le livret des résumés au format Word (.docx)', function () {
 it('permet au participant de télécharger le livret .docx de son édition', function () {
     $submission = seededSubmission('accepted');
     $edition = $submission->edition;
-    $account = $submission->participant->account;
+    $account = $submission->participant->user;
 
     $response = $this->actingAs($account, 'account')
         ->get(route('account.documents.livret', [$edition, 'format' => 'docx']));

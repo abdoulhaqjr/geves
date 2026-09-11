@@ -24,7 +24,7 @@ class PaymentController extends Controller
     {
         $account = Auth::guard('account')->user();
         $participant = Participant::where('edition_id', $edition->id)
-            ->where('account_id', $account->id)
+            ->where('user_id', $account->id)
             ->first();
 
         $applicable = $participant ? Fees::resolveAmount($edition, $participant->title) : null;
@@ -56,7 +56,7 @@ class PaymentController extends Controller
     {
         $account = Auth::guard('account')->user();
         $participant = Participant::where('edition_id', $edition->id)
-            ->where('account_id', $account->id)
+            ->where('user_id', $account->id)
             ->first();
 
         $amount = $participant

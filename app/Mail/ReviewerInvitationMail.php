@@ -23,7 +23,7 @@ class ReviewerInvitationMail extends Mailable implements ShouldQueue
         public Participant $reviewer,
         public int $assignedCount = 1,
     ) {
-        $this->locale(Locales::resolve($reviewer->account?->locale));
+        $this->locale(Locales::resolve($reviewer->user?->locale));
     }
 
     public function envelope(): Envelope

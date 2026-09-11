@@ -5,12 +5,13 @@ use App\Models\Colloque;
 use App\Models\Edition;
 use App\Support\AccountActivity;
 use Illuminate\Support\Str;
+use App\Models\User;
 
 // openEdition() -> AccountSubmissionTest
 
-function accountWith(string $email = 'pro@uk.tg'): Account
+function accountWith(string $email = 'pro@uk.tg'): User
 {
-    $account = Account::create([
+    $account = User::create([
         'first_name' => 'Pro', 'last_name' => 'Fesseur',
         'email' => $email, 'password' => 'pass12345',
         'grade' => 'Professeur', 'affiliation' => 'UK',
@@ -30,7 +31,7 @@ function otherEdition(string $slug = 'uk-2027'): Edition
 it('dérive « Communicant » depuis une communication de l’auteur', function () {
     $edition = openEdition();
     $account = accountWith();
-    $p = $edition->participants()->create(['account_id' => $account->id, 'first_name' => 'Pro', 'last_name' => 'Fesseur', 'email' => 'pro@uk.tg', 'role' => 'author']);
+    $p = $edition->participants()->create(['user_id' => $account->id, 'first_name' => 'Pro', 'last_name' => 'Fesseur', 'email' => 'pro@uk.tg', 'role' => 'author']);
     $edition->submissions()->create(['participant_id' => $p->id, 'title' => 'T', 'status' => 'submitted', 'revision_of' => 0, 'ref_code' => 'AA-001', 'access_token' => Str::random(64), 'authors' => [['name' => 'Pro Fesseur', 'email' => 'pro@uk.tg', 'corresponding' => true]]]);
 
     expect((new AccountActivity($account))->roles())->toContain('Communicant');
@@ -81,7 +82,7 @@ it('rapproche un membre de comité sans e-mail par le nom complet', function () 
 it('dérive « Relecteur » d’une participation relecteur', function () {
     $edition = openEdition();
     $account = accountWith();
-    $edition->participants()->create(['account_id' => $account->id, 'first_name' => 'Pro', 'last_name' => 'Fesseur', 'email' => 'pro@uk.tg', 'role' => 'reviewer']);
+    $edition->participants()->create(['user_id' => $account->id, 'first_name' => 'Pro', 'last_name' => 'Fesseur', 'email' => 'pro@uk.tg', 'role' => 'reviewer']);
 
     expect((new AccountActivity($account))->roles())->toContain('Relecteur');
 });
@@ -89,7 +90,7 @@ it('dérive « Relecteur » d’une participation relecteur', function () {
 it('retombe sur « Auditeur » pour une simple participation sans rôle fort', function () {
     $edition = openEdition();
     $account = accountWith();
-    $edition->participants()->create(['account_id' => $account->id, 'first_name' => 'Pro', 'last_name' => 'Fesseur', 'email' => 'pro@uk.tg', 'role' => 'attendee']);
+    $edition->participants()->create(['user_id' => $account->id, 'first_name' => 'Pro', 'last_name' => 'Fesseur', 'email' => 'pro@uk.tg', 'role' => 'attendee']);
 
     expect((new AccountActivity($account))->roles())->toBe(['Auditeur']);
 });

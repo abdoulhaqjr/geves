@@ -24,7 +24,7 @@ class NotifySubmissionStatus
         }
 
         // Préférence e-mail du compte auteur (le cas échéant) : interrupteur unique.
-        if (! Notifier::emailAllowed($submission->participant?->account, 'submission_status')) {
+        if (! Notifier::emailAllowed($submission->participant?->user, 'submission_status')) {
             return;
         }
 

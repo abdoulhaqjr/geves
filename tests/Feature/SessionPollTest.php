@@ -65,7 +65,7 @@ it('agrège les résultats et expose le choix du visiteur', function () {
         'session_id' => $session->id, 'edition_id' => $edition->id,
         'question' => 'Format ?', 'options' => ['A', 'B'], 'status' => 'open',
     ]);
-    SessionPollVote::create(['poll_id' => $poll->id, 'account_id' => $account->id, 'choice' => 0]);
+    SessionPollVote::create(['poll_id' => $poll->id, 'user_id' => $account->id, 'choice' => 0]);
 
     $resp = $this->actingAs($account, 'account')->getJson(route('session.engagement.polls', $session));
     $resp->assertOk()

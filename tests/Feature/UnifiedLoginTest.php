@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Account;
+use App\Models\User;
 
 /**
  * Page de connexion unique : /connexion authentifie aussi bien un participant
@@ -8,7 +8,7 @@ use App\Models\Account;
  * identifiants saisis. /admin/connexion redirige vers cette page unique.
  */
 it('connecte un participant via la page unique', function () {
-    $account = Account::create([
+    $account = User::create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg',
         'password' => 'pass12345', 'grade' => 'Doctorante', 'affiliation' => 'UK',
     ]);

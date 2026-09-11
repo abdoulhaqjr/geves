@@ -18,7 +18,7 @@ class ImpersonationController extends Controller
     public function take(Participant $participant): RedirectResponse
     {
         $staff = Auth::guard('web')->user();
-        $account = $participant->account;
+        $account = $participant->user;
 
         if (! $staff?->canImpersonate()) {
             abort(403);

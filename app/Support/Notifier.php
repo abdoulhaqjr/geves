@@ -17,7 +17,7 @@ use Spatie\Permission\Models\Permission;
 class Notifier
 {
     /** Notifie un compte participant. Ignore silencieusement un compte absent. */
-    public static function account(?Account $account, string $kind, string $title, string $body = '', ?string $url = null, string $icon = 'bell'): void
+    public static function account(?User $account, string $kind, string $title, string $body = '', ?string $url = null, string $icon = 'bell'): void
     {
         $account?->notify(new SystemNotification($kind, $title, $body, $url, $icon));
     }
@@ -28,7 +28,7 @@ class Notifier
      * sinon la préférence e-mail du type fait foi. Sert à gater les Mailables
      * riches existants (soumission, reçu, invitation, relecture).
      */
-    public static function emailAllowed(?Account $account, string $kind): bool
+    public static function emailAllowed(?User $account, string $kind): bool
     {
         return $account === null || $account->wantsNotification($kind, 'email');
     }

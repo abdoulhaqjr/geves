@@ -22,9 +22,9 @@ class SessionQuestionVote extends Model
         return $this->belongsTo(SessionQuestion::class, 'question_id');
     }
 
-    /** @return BelongsTo<Account, $this> */
-    public function account(): BelongsTo
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Account::class);
+        return $this->belongsTo(User::class);
     }
 }

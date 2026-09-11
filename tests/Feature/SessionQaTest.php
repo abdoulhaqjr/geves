@@ -32,7 +32,7 @@ it('bascule le vote sur une question et compte les votes', function () {
     $account = participantAccount($edition);
     $question = SessionQuestion::create([
         'session_id' => $session->id, 'edition_id' => $edition->id,
-        'account_id' => $account->id, 'author_name' => 'Awa Kodjo', 'body' => 'Q', 'status' => 'pending',
+        'user_id' => $account->id, 'author_name' => 'Awa Kodjo', 'body' => 'Q', 'status' => 'pending',
     ]);
 
     $up = $this->actingAs($account, 'account')->postJson(route('session.engagement.vote', [$session, $question]));
@@ -48,7 +48,7 @@ it('interdit la modération à un participant', function () {
     $account = participantAccount($edition);
     $question = SessionQuestion::create([
         'session_id' => $session->id, 'edition_id' => $edition->id,
-        'account_id' => $account->id, 'author_name' => 'Awa Kodjo', 'body' => 'Q', 'status' => 'pending',
+        'user_id' => $account->id, 'author_name' => 'Awa Kodjo', 'body' => 'Q', 'status' => 'pending',
     ]);
 
     $this->actingAs($account, 'account')
@@ -63,7 +63,7 @@ it('masque les questions cachées au public mais les garde pour le modérateur',
     $account = participantAccount($edition);
     SessionQuestion::create([
         'session_id' => $session->id, 'edition_id' => $edition->id,
-        'account_id' => $account->id, 'author_name' => 'Awa Kodjo', 'body' => 'Question sensible', 'status' => 'hidden',
+        'user_id' => $account->id, 'author_name' => 'Awa Kodjo', 'body' => 'Question sensible', 'status' => 'hidden',
     ]);
 
     // Vue participant d'abord (aucune session staff active) : la question masquée n'apparaît pas.

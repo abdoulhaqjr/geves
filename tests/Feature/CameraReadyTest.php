@@ -4,16 +4,17 @@ use App\Models\Account;
 use App\Models\Submission;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use App\Models\User;
 
 // openEdition() et verifiedAccount() sont définis dans tests/Pest.php.
 
-/** @return array{0: Account, 1: Submission} */
+/** @return array{0: User, 1: Submission} */
 function acceptedOwnedSubmission(string $status = 'accepted', string $ref = '26-CR'): array
 {
     $edition = openEdition();
     $account = verifiedAccount();
     $participant = $edition->participants()->create([
-        'account_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
+        'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
     ]);
     $submission = $edition->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => $ref, 'title' => 'Communication',
@@ -83,7 +84,7 @@ it('interdit le dépôt sur la communication d’un autre compte', function () {
     Storage::fake('public');
     [, $submission] = acceptedOwnedSubmission();
 
-    $other = Account::create([
+    $other = User::create([
         'first_name' => 'Kofi', 'last_name' => 'Autre', 'email' => 'autre@example.tg', 'password' => 'pass12345',
     ]);
     $other->markEmailAsVerified();

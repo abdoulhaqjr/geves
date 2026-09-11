@@ -233,7 +233,7 @@ class SecurityController extends Controller
     {
         if ($id !== session()->getId()) {
             DB::table(config('session.table', 'sessions'))
-                ->where('account_id', Auth::guard('account')->id())
+                ->where('user_id', Auth::guard('account')->id())
                 ->where('id', $id)
                 ->delete();
         }
@@ -249,7 +249,7 @@ class SecurityController extends Controller
         $this->requirePassword($request, $account);
 
         DB::table(config('session.table', 'sessions'))
-            ->where('account_id', $account->getAuthIdentifier())
+            ->where('user_id', $account->getAuthIdentifier())
             ->where('id', '!=', session()->getId())
             ->delete();
 
@@ -285,7 +285,7 @@ class SecurityController extends Controller
         $currentId = session()->getId();
 
         return DB::table(config('session.table', 'sessions'))
-            ->where('account_id', $accountId)
+            ->where('user_id', $accountId)
             ->orderByDesc('last_activity')
             ->get(['id', 'ip_address', 'user_agent', 'last_activity'])
             ->map(fn ($s) => [

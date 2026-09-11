@@ -23,7 +23,7 @@ class ParticipantInvitationMail extends Mailable implements ShouldQueue
 
     public function __construct(public Participant $participant)
     {
-        $this->locale(Locales::resolve($participant->account?->locale));
+        $this->locale(Locales::resolve($participant->user?->locale));
     }
 
     /** @return array{subject:string, heading:string, intro:string} */

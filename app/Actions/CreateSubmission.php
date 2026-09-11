@@ -3,8 +3,8 @@
 namespace App\Actions;
 
 use App\Http\Requests\Account\StoreSubmissionRequest;
-use App\Models\Account;
 use App\Models\Edition;
+use App\Models\User;
 use App\Models\Submission;
 use App\Support\Html;
 use App\Support\Notifier;
@@ -30,7 +30,7 @@ class CreateSubmission
     /**
      * @param  array<string, mixed>  $data  données validées
      */
-    public function handle(Edition $edition, Account $account, SubmissionFormConfig $config, array $data, ?UploadedFile $file): Submission
+    public function handle(Edition $edition, User $account, SubmissionFormConfig $config, array $data, ?UploadedFile $file): Submission
     {
         // Téléversement du fichier (I/O) hors transaction.
         $fileUrl = null;

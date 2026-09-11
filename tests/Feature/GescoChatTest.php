@@ -93,7 +93,7 @@ it('injecte les données personnelles du participant connecté dans le prompt', 
     $edition = openEdition();
     $account = verifiedAccount();
     $participant = $edition->participants()->create([
-        'account_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
+        'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
     ]);
     $edition->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => '26-XYZ', 'title' => 'Ma communication test',

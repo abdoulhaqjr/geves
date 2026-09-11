@@ -40,7 +40,7 @@ class SubmissionController extends Controller
         $submissions = Submission::query()
             ->canonical()
             ->with('edition')
-            ->whereHas('participant', fn ($q) => $q->where('account_id', $account->id))
+            ->whereHas('participant', fn ($q) => $q->where('user_id', $account->id))
             ->when($current, fn ($q) => $q->where('edition_id', $current->id))
             ->latest('id')
             ->get();
@@ -256,7 +256,7 @@ class SubmissionController extends Controller
         abort_unless(
             (int) $submission->revision_of === 0
             && $submission->participant
-            && (int) $submission->participant->account_id === (int) $account->id,
+            && (int) $submission->participant->user_id === (int) $account->id,
             404
         );
     }

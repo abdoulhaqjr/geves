@@ -4,12 +4,12 @@ namespace App\Http\Controllers\Public;
 
 use App\Actions\AskGesco;
 use App\Http\Controllers\Controller;
-use App\Models\Account;
 use App\Models\Attestation;
 use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Models\Submission;
+use App\Models\User;
 use App\Support\AiAgents;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -81,9 +81,9 @@ class GescoController extends Controller
      * Résumé des données réelles du participant connecté, pour que Gesco réponde
      * à ses questions personnelles (soumissions, paiement, badge, attestations).
      */
-    private function personalContext(Account $account): string
+    private function personalContext(User $account): string
     {
-        $participantIds = Participant::where('account_id', $account->id)->pluck('id');
+        $participantIds = Participant::where('user_id', $account->id)->pluck('id');
 
         $head = 'Utilisateur connecté : '.$account->full_name.' ('.$account->email.').'
             .' Profil : '.($account->affiliation ?: 'affiliation non renseignée').($account->grade ? ' · '.$account->grade : '').'.';

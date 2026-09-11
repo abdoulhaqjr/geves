@@ -128,7 +128,7 @@ it('ajoute puis supprime un espace', function () {
 
 it('laisse le participant choisir un créneau libre pour sa communication acceptée', function () {
     $submission = seededSubmission('accepted');
-    $account = $submission->participant->account;
+    $account = $submission->participant->user;
     $slot = Slot::create(['edition_id' => $submission->edition_id, 'room' => 'Amphi B', 'submission_id' => 0]);
 
     $this->actingAs($account, 'account')
@@ -142,7 +142,7 @@ it('laisse le participant choisir un créneau libre pour sa communication accept
 
 it('refuse le choix de créneau si la communication n’est pas acceptée', function () {
     $submission = seededSubmission('under_review');
-    $account = $submission->participant->account;
+    $account = $submission->participant->user;
     $slot = Slot::create(['edition_id' => $submission->edition_id, 'room' => 'Amphi B', 'submission_id' => 0]);
 
     $this->actingAs($account, 'account')

@@ -8,6 +8,7 @@ use App\Models\Edition;
 use App\Models\Payment;
 use App\Support\Fees;
 use Illuminate\Support\Facades\Mail;
+use App\Models\User;
 
 // adminStaff() -> AdminSubmissionWorkflowTest
 
@@ -27,14 +28,14 @@ function payEdition(): Edition
 
 function acceptedParticipant(Edition $edition): array
 {
-    $account = Account::create([
+    $account = User::create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg',
         'password' => 'pass12345', 'grade' => 'Doctorant', 'affiliation' => 'UK',
     ]);
     $account->markEmailAsVerified();
 
     $participant = $edition->participants()->create([
-        'account_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo',
+        'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo',
         'email' => $account->email, 'title' => 'Doctorant', 'role' => 'author',
     ]);
     $edition->submissions()->create([
@@ -122,8 +123,8 @@ it('ouvre le paiement participant quand une communication est acceptée', functi
 
 it('n’ouvre pas le paiement sans communication acceptée', function () {
     $edition = payEdition();
-    $account = Account::create(['first_name' => 'Z', 'last_name' => 'Z', 'email' => 'z@example.tg', 'password' => 'pass12345']);
-    $edition->participants()->create(['account_id' => $account->id, 'first_name' => 'Z', 'last_name' => 'Z', 'email' => $account->email]);
+    $account = User::create(['first_name' => 'Z', 'last_name' => 'Z', 'email' => 'z@example.tg', 'password' => 'pass12345']);
+    $edition->participants()->create(['user_id' => $account->id, 'first_name' => 'Z', 'last_name' => 'Z', 'email' => $account->email]);
 
     // La page affiche le message d'inéligibilité et refuse le règlement.
     $this->actingAs($account, 'account')->get(route('account.payment', $edition))

@@ -6,7 +6,7 @@ use App\Actions\IssueAttestation;
 use App\Actions\NotifySubmissionStatus;
 use App\Events\SubmissionStatusChanged;
 use App\Mail\SubmissionStatusMail;
-use App\Models\Account;
+use App\Models\User;
 use App\Support\Notifier;
 use Illuminate\Support\Facades\Mail;
 
@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Mail;
 function notifiedParticipant($edition, $account, array $attrs = [])
 {
     return $edition->participants()->create(array_merge([
-        'account_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo',
+        'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo',
         'email' => $account->email, 'role' => 'author',
     ], $attrs));
 }
@@ -26,7 +26,7 @@ function notifiedParticipant($edition, $account, array $attrs = [])
 
 it('notifie le compte auteur d’une décision de soumission', function () {
     $submission = seededSubmission('submitted');
-    $account = $submission->participant->account;
+    $account = $submission->participant->user;
 
     SubmissionStatusChanged::dispatch($submission, 'accepted');
 
@@ -139,11 +139,11 @@ it('notifie le compte du relecteur à l’assignation', function () {
     $submission = seededSubmission('submitted');
     $edition = $submission->edition;
 
-    $reviewerAccount = Account::create([
+    $reviewerAccount = User::create([
         'first_name' => 'Rel', 'last_name' => 'Ecteur', 'email' => 'rev@example.tg', 'password' => 'pass12345',
     ]);
     $edition->participants()->create([
-        'account_id' => $reviewerAccount->id, 'first_name' => 'Rel', 'last_name' => 'Ecteur',
+        'user_id' => $reviewerAccount->id, 'first_name' => 'Rel', 'last_name' => 'Ecteur',
         'email' => 'rev@example.tg', 'role' => 'author',
     ]);
 
@@ -189,7 +189,7 @@ it('n’ajoute le canal mail générique que pour les types sans Mailable dédi�
 it('la préférence e-mail gate le Mailable dédié (décision de soumission)', function () {
     Mail::fake();
     $submission = seededSubmission('submitted');
-    $account = $submission->participant->account;
+    $account = $submission->participant->user;
 
     // Par défaut (préférence ON) : le Mailable dédié part (en file).
     (new NotifySubmissionStatus)->handle($submission, 'accepted');

@@ -5,6 +5,7 @@ use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
+use App\Models\User;
 
 it('inscrit un participant, le connecte et envoie l’e-mail de vérification', function () {
     Notification::fake();
@@ -21,7 +22,7 @@ it('inscrit un participant, le connecte et envoie l’e-mail de vérification', 
         'terms' => '1',
     ])->assertRedirect(route('account.dashboard'));
 
-    $account = Account::firstWhere('email', 'awa@example.tg');
+    $account = User::firstWhere('email', 'awa@example.tg');
     expect($account)->not->toBeNull();
     expect($account->affiliation)->toBe('Université de Kara');
     expect($account->grade)->toBe('Enseignant-chercheur');
@@ -32,7 +33,7 @@ it('inscrit un participant, le connecte et envoie l’e-mail de vérification', 
 });
 
 it('refuse la connexion avec de mauvais identifiants', function () {
-    Account::create(['first_name' => 'Kofi', 'last_name' => 'M', 'email' => 'kofi@example.tg', 'password' => 'bonpass123']);
+    User::create(['first_name' => 'Kofi', 'last_name' => 'M', 'email' => 'kofi@example.tg', 'password' => 'bonpass123']);
 
     $this->post(route('account.login.store'), [
         'email' => 'kofi@example.tg',
@@ -43,7 +44,7 @@ it('refuse la connexion avec de mauvais identifiants', function () {
 });
 
 it('connecte un participant avec les bons identifiants', function () {
-    Account::create(['first_name' => 'Kofi', 'last_name' => 'M', 'email' => 'kofi@example.tg', 'password' => 'bonpass123']);
+    User::create(['first_name' => 'Kofi', 'last_name' => 'M', 'email' => 'kofi@example.tg', 'password' => 'bonpass123']);
 
     $this->post(route('account.login.store'), [
         'email' => 'kofi@example.tg',
@@ -58,7 +59,7 @@ it('protège le tableau de bord derrière le guard account', function () {
 });
 
 it('rend canSubmit vrai une fois le profil complété et l’e-mail vérifié', function () {
-    $account = Account::create([
+    $account = User::create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'password' => 'pass12345',
     ]);
     $account->markEmailAsVerified();
@@ -73,7 +74,7 @@ it('rend canSubmit vrai une fois le profil complété et l’e-mail vérifié', 
 });
 
 it('confirme l’adresse e-mail via le lien signé', function () {
-    $account = Account::create([
+    $account = User::create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'password' => 'pass12345',
     ]);
 

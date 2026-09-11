@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Enums\MeetingRole;
-use App\Models\Account;
 use App\Models\EventSession;
 use App\Models\SessionPoll;
 use App\Models\SessionPollVote;
 use App\Models\SessionQuestion;
 use App\Models\SessionQuestionVote;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -52,7 +52,7 @@ class SessionEngagementController extends Controller
 
         $myVotes = $account
             ? SessionQuestionVote::whereHas('question', fn ($q) => $q->where('session_id', $session->id))
-                ->where('account_id', $account->id)->pluck('question_id')->flip()
+                ->where('user_id', $account->id)->pluck('question_id')->flip()
             : collect();
 
         $questions = $query->orderByDesc('votes_count')->orderBy('id')->get()
@@ -62,7 +62,7 @@ class SessionEngagementController extends Controller
                 'body' => $q->body,
                 'status' => $q->status,
                 'votes' => (int) $q->votes_count,
-                'mine' => $account && (int) $q->account_id === (int) $account->id,
+                'mine' => $account && (int) $q->user_id === (int) $account->id,
                 'voted' => $myVotes->has($q->id),
             ])->values();
 
@@ -85,7 +85,7 @@ class SessionEngagementController extends Controller
         SessionQuestion::create([
             'session_id' => $session->id,
             'edition_id' => $session->edition_id,
-            'account_id' => $account->id,
+            'user_id' => $account->id,
             'author_name' => $account->full_name,
             'body' => trim($data['body']),
             'status' => 'pending',
@@ -103,13 +103,13 @@ class SessionEngagementController extends Controller
         abort_unless((int) $question->session_id === (int) $session->id, 404);
 
         $existing = SessionQuestionVote::where('question_id', $question->id)
-            ->where('account_id', $account->id)->first();
+            ->where('user_id', $account->id)->first();
 
         if ($existing) {
             $existing->delete();
             $voted = false;
         } else {
-            SessionQuestionVote::create(['question_id' => $question->id, 'account_id' => $account->id]);
+            SessionQuestionVote::create(['question_id' => $question->id, 'user_id' => $account->id]);
             $voted = true;
         }
 
@@ -158,7 +158,7 @@ class SessionEngagementController extends Controller
                     if (isset($counts[$vote->choice])) {
                         $counts[$vote->choice]++;
                     }
-                    if ($account && (int) $vote->account_id === (int) $account->id) {
+                    if ($account && (int) $vote->user_id === (int) $account->id) {
                         $mine = (int) $vote->choice;
                     }
                 }
@@ -221,7 +221,7 @@ class SessionEngagementController extends Controller
         $data = $request->validate(['choice' => ['required', 'integer', 'min:0', 'max:'.max(0, $max)]]);
 
         SessionPollVote::updateOrCreate(
-            ['poll_id' => $poll->id, 'account_id' => $account->id],
+            ['poll_id' => $poll->id, 'user_id' => $account->id],
             ['choice' => (int) $data['choice']],
         );
 
@@ -243,7 +243,7 @@ class SessionEngagementController extends Controller
     /**
      * Résout le visiteur : [account|null, isStaff, MeetingRole].
      *
-     * @return array{0: Account|null, 1: bool, 2: MeetingRole}
+     * @return array{0: User|null, 1: bool, 2: MeetingRole}
      */
     private function viewer(EventSession $session): array
     {

@@ -3,6 +3,7 @@
 use App\Models\Account;
 use App\Models\Colloque;
 use App\Models\EventSession;
+use App\Models\User;
 
 it('crée un colloque avec une édition et ses entités liées', function () {
     $colloque = Colloque::create(['name' => 'Colloque de Kara', 'slug' => 'kara']);
@@ -49,7 +50,7 @@ it('crée un colloque avec une édition et ses entités liées', function () {
 });
 
 it('gère un compte participant avec la règle canSubmit', function () {
-    $account = Account::create([
+    $account = User::create([
         'first_name' => 'Kofi', 'last_name' => 'Mensah',
         'email' => 'kofi@example.tg', 'password' => 'secret-pass',
     ]);
@@ -58,7 +59,8 @@ it('gère un compte participant avec la règle canSubmit', function () {
     expect($account->initials)->toBe('KM');
     expect($account->canSubmit())->toBeFalse(); // ni vérifié ni affilié
 
-    $account->update(['affiliation' => 'Université de Kara', 'email_verified_at' => now()]);
-    expect($account->canSubmit())->toBeTrue();
+    $account->update(['affiliation' => 'Université de Kara']);
+    $account->markEmailAsVerified();
+    expect($account->fresh()->canSubmit())->toBeTrue();
     expect(password_verify('secret-pass', $account->password))->toBeTrue(); // cast hashed
 });

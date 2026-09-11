@@ -45,12 +45,32 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $two_factor_otp_expires_at
  * @property bool $must_reset_password
  */
-#[Fillable(['name', 'email', 'password', 'is_active', 'notes'])]
+#[Fillable(['name', 'email', 'password', 'is_active', 'notes',
+    'civility', 'first_name', 'last_name', 'grade', 'phone', 'affiliation',
+    'orcid', 'country', 'city', 'bio', 'photo_path', 'locale'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasNotificationPreferences, HasRoles, Impersonate, Notifiable, ParticipantIdentity;
+
+    /**
+     * Rôles & permissions spatie toujours résolus sous le guard « web » : depuis
+     * l'identité unifiée, un User est authentifiable via « web » ET « account »,
+     * mais ses rôles back-office vivent sous « web ». Évite l'ambiguïté (spatie
+     * cherchait sinon une permission sous le guard « account »).
+     */
+    protected string $guard_name = 'web';
+
+    /** Renseigne `name` depuis prénom/nom quand il est vide (identité unifiée). */
+    protected static function booted(): void
+    {
+        static::saving(function (self $user) {
+            if (blank($user->name)) {
+                $user->name = trim(((string) $user->first_name).' '.((string) $user->last_name)) ?: (string) $user->email;
+            }
+        });
+    }
 
     /** Seul le staff habilité peut impersonifier. */
     public function canImpersonate(): bool
@@ -165,14 +185,18 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->isColloqueSuperAdmin() || $this->accessibleEditionIds($capability) !== [];
     }
 
-    /** Aucun Mailable dédié côté staff : l'e-mail passe par le canal générique. */
-    protected function usesDedicatedMailFor(string $kind): bool
+    /**
+     * Vérification d'e-mail par défaut = flux participant (route account signée,
+     * via VerifyEmail::createUrlUsing). Les comptes staff créés au back-office
+     * reçoivent explicitement {@see \App\Notifications\StaffVerifyEmail}.
+     */
+    public function sendEmailVerificationNotification(): void
     {
-        return false;
+        $this->notify(new \Illuminate\Auth\Notifications\VerifyEmail);
     }
 
-    /** Lien de vérification dédié au guard « web » (route admin signée). */
-    public function sendEmailVerificationNotification(): void
+    /** Lien de vérification staff (route admin signée) — création back-office. */
+    public function sendStaffEmailVerificationNotification(): void
     {
         $this->notify(new StaffVerifyEmail);
     }

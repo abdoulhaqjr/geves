@@ -3,6 +3,7 @@
 use App\Models\Account;
 use App\Sms\SmsManager;
 use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 
 /** Faux fournisseur SMS : capture les messages au lieu de les envoyer. */
 function fakeSms(): SmsManager
@@ -31,9 +32,9 @@ function otpFrom(SmsManager $fake): string
     return $m[1] ?? '';
 }
 
-function verifiedAccountForSms(): Account
+function verifiedAccountForSms(): User
 {
-    return Account::create([
+    return User::create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg',
         'password' => 'MotDePasse123!', 'affiliation' => 'UK', 'email_verified_at' => now(),
     ]);

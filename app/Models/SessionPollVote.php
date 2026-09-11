@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $id
  * @property int $poll_id
  * @property int $account_id
+ * @property int|null $user_id
  * @property int $choice index de l'option choisie
  */
 class SessionPollVote extends Model
@@ -28,9 +29,9 @@ class SessionPollVote extends Model
         return $this->belongsTo(SessionPoll::class, 'poll_id');
     }
 
-    /** @return BelongsTo<Account, $this> */
-    public function account(): BelongsTo
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Account::class);
+        return $this->belongsTo(User::class);
     }
 }

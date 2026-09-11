@@ -8,6 +8,7 @@ use App\Models\Participant;
 use App\Models\Review;
 use App\Models\Submission;
 use Illuminate\Support\Facades\Mail;
+use App\Models\User;
 
 // openEdition(), verifiedAccount() -> AccountSubmissionTest ; adminStaff(), seededSubmission() -> AdminSubmissionWorkflowTest
 
@@ -16,7 +17,7 @@ use Illuminate\Support\Facades\Mail;
 it('permet à l’auteur de resoumettre une version corrigée', function () {
     Mail::fake();
     $submission = seededSubmission('revision');
-    $account = $submission->participant->account;
+    $account = $submission->participant->user;
 
     $this->actingAs($account, 'account')
         ->post(route('account.submissions.resubmit', $submission), [
@@ -40,7 +41,7 @@ it('permet à l’auteur de resoumettre une version corrigée', function () {
 
 it('bloque la resoumission si aucune correction n’est demandée', function () {
     $submission = seededSubmission('under_review');
-    $account = $submission->participant->account;
+    $account = $submission->participant->user;
 
     $this->actingAs($account, 'account')
         ->post(route('account.submissions.resubmit', $submission), [
@@ -52,7 +53,7 @@ it('bloque la resoumission si aucune correction n’est demandée', function () 
 
 it('interdit l’accès à la fiche d’une communication d’un autre compte', function () {
     $submission = seededSubmission();
-    $other = Account::create(['first_name' => 'X', 'last_name' => 'Y', 'email' => 'x@example.tg', 'password' => 'pass12345']);
+    $other = User::create(['first_name' => 'X', 'last_name' => 'Y', 'email' => 'x@example.tg', 'password' => 'pass12345']);
 
     $this->actingAs($other, 'account')
         ->get(route('account.submissions.show', $submission))
@@ -124,7 +125,7 @@ it('révèle le retour des relecteurs à l’auteur après décision', function 
     $review = (new AssignReviewer)->handle($submission, 'Kossi Anani', 'kossi@example.tg');
     $review->update(['status' => 'completed', 'comments' => 'Merci de clarifier la section 2.']);
     $submission->update(['status' => 'revision']);
-    $account = $submission->participant->account;
+    $account = $submission->participant->user;
 
     $this->actingAs($account, 'account')
         ->get(route('account.submissions.show', $submission->fresh()))

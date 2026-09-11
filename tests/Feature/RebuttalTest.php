@@ -36,7 +36,7 @@ it('ouvre puis referme la phase de réponse (admin)', function () {
 
 it('révèle les retours relecteurs à l’auteur pendant la phase de réponse', function () {
     $submission = reviewedSubmission();
-    $account = $submission->participant->account;
+    $account = $submission->participant->user;
 
     // Avant ouverture : commentaires masqués (statut under_review).
     $this->actingAs($account, 'account')
@@ -55,7 +55,7 @@ it('révèle les retours relecteurs à l’auteur pendant la phase de réponse',
 it('enregistre la réponse de l’auteur tant que la phase est ouverte', function () {
     $submission = reviewedSubmission();
     $submission->update(['meta' => ['rebuttal' => ['opened_at' => now()->toIso8601String()]]]);
-    $account = $submission->participant->account;
+    $account = $submission->participant->user;
 
     $this->actingAs($account, 'account')
         ->post(route('account.submissions.rebuttal', $submission), [
@@ -70,7 +70,7 @@ it('enregistre la réponse de l’auteur tant que la phase est ouverte', functio
 
 it('refuse la réponse de l’auteur si la phase est fermée', function () {
     $submission = reviewedSubmission(); // phase non ouverte
-    $account = $submission->participant->account;
+    $account = $submission->participant->user;
 
     $this->actingAs($account, 'account')
         ->post(route('account.submissions.rebuttal', $submission), ['rebuttal' => 'Réponse'])

@@ -2,9 +2,9 @@
 
 namespace App\Support;
 
-use App\Models\Account;
 use App\Models\Edition;
 use App\Models\Participant;
+use App\Models\User;
 use Illuminate\Support\Collection;
 
 /**
@@ -24,9 +24,9 @@ class CurrentColloque
      *
      * @return Collection<int, Edition>
      */
-    public static function editions(Account $account): Collection
+    public static function editions(User $account): Collection
     {
-        $ids = Participant::where('account_id', $account->id)
+        $ids = Participant::where('user_id', $account->id)
             ->pluck('edition_id')->unique()->filter();
 
         if ($ids->isEmpty()) {
@@ -37,7 +37,7 @@ class CurrentColloque
     }
 
     /** Le compte participe à plus d'une édition → afficher le sélecteur de colloque. */
-    public static function hasMultiple(Account $account): bool
+    public static function hasMultiple(User $account): bool
     {
         return self::editions($account)->count() > 1;
     }
@@ -46,7 +46,7 @@ class CurrentColloque
      * Édition « courante » : la sélection en session si elle est valide (le compte
      * y participe), sinon l'édition par défaut. Null si aucune participation.
      */
-    public static function current(Account $account): ?Edition
+    public static function current(User $account): ?Edition
     {
         $editions = self::editions($account);
         if ($editions->isEmpty()) {
@@ -65,7 +65,7 @@ class CurrentColloque
      * Bascule le contexte vers une édition donnée. Ne fait rien (et retourne false)
      * si le compte ne participe pas à cette édition.
      */
-    public static function switchTo(Account $account, int $editionId): bool
+    public static function switchTo(User $account, int $editionId): bool
     {
         if (self::editions($account)->firstWhere('id', $editionId)) {
             session([self::SESSION_KEY => $editionId]);
@@ -82,9 +82,9 @@ class CurrentColloque
      *
      * @param  Collection<int, Edition>  $editions
      */
-    private static function default(Account $account, Collection $editions): Edition
+    private static function default(User $account, Collection $editions): Edition
     {
-        $payableId = Participant::where('account_id', $account->id)
+        $payableId = Participant::where('user_id', $account->id)
             ->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted'))
             ->whereDoesntHave('payments', fn ($q) => $q->where('status', 'paid'))
             ->latest('id')->value('edition_id');

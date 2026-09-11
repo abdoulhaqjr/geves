@@ -45,10 +45,14 @@ return [
             'provider' => 'users',
         ],
 
-        // Front : comptes participants (auth propre, distincte du back-office).
+        // Front : espace participant. Depuis la refonte « compte unifié »
+        // (option B), ce guard résout la MÊME table `users` que « web » : il ne
+        // distingue plus une autre identité, seulement le CONTEXTE (espace
+        // participant vs back-office). L'ancien provider `accounts` est conservé
+        // pour la lecture des données non encore migrées, mais n'authentifie plus.
         'account' => [
             'driver' => 'session',
-            'provider' => 'accounts',
+            'provider' => 'users',
         ],
     ],
 

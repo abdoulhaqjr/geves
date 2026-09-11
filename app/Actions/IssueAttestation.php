@@ -35,7 +35,7 @@ class IssueAttestation
         ]);
 
         Notifier::account(
-            $participant->account,
+            $participant->user,
             kind: 'attestation',
             title: 'Attestation disponible',
             body: 'Votre attestation ('.$attestation->typeLabel().') peut être téléchargée.',

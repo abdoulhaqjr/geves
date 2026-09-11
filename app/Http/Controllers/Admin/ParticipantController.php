@@ -89,7 +89,7 @@ class ParticipantController extends Controller
             'submissions' => Submission::where('participant_id', $id)->where('revision_of', 0)->latest('id')->get(),
             'payments' => Payment::where('participant_id', $id)->latest('id')->get(),
             'attestations' => Attestation::where('participant_id', $id)->where('revoked', false)->latest('id')->get(),
-            'derivedRoles' => $participant->account ? (new AccountActivity($participant->account))->roles() : [],
+            'derivedRoles' => $participant->user ? (new AccountActivity($participant->user))->roles() : [],
         ]);
     }
 
@@ -127,13 +127,13 @@ class ParticipantController extends Controller
     /** Envoie l'e-mail d'invitation (si permis), marque invité et notifie le compte. */
     private function sendInvitation(Participant $participant): void
     {
-        if (Notifier::emailAllowed($participant->account, 'invitation')) {
+        if (Notifier::emailAllowed($participant->user, 'invitation')) {
             Mail::to($participant->email)->send(new ParticipantInvitationMail($participant));
         }
         $participant->markInvited();
 
         Notifier::account(
-            $participant->account,
+            $participant->user,
             kind: 'invitation',
             title: 'Invitation au colloque',
             body: 'Vous êtes invité(e) à '.($participant->edition?->title ?: 'l’édition').'.',

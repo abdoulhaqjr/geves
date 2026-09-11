@@ -36,7 +36,7 @@ class DocumentController extends Controller
     {
         $account = Auth::guard('account')->user();
 
-        $participants = Participant::where('account_id', $account->id)->with('edition')->get();
+        $participants = Participant::where('user_id', $account->id)->with('edition')->get();
         $participantIds = $participants->pluck('id');
 
         // Édition de contexte = colloque courant sélectionné (repli : participation
@@ -177,7 +177,7 @@ class DocumentController extends Controller
         $account = Auth::guard('account')->user();
 
         $participates = Participant::where('edition_id', $edition->id)
-            ->where('account_id', $account->id)
+            ->where('user_id', $account->id)
             ->exists();
 
         abort_unless($participates, 403);

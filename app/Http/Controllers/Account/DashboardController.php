@@ -31,7 +31,7 @@ class DashboardController extends Controller
         // Colloque courant (sélecteur) : le tableau de bord se scope dessus.
         $current = CurrentColloque::current($account);
 
-        $participantIds = Participant::where('account_id', $account->id)
+        $participantIds = Participant::where('user_id', $account->id)
             ->when($current, fn ($q) => $q->where('edition_id', $current->id))
             ->pluck('id');
 
@@ -41,7 +41,7 @@ class DashboardController extends Controller
         // Documents du colloque courant (médias + livret).
         $editionIds = $current
             ? collect([$current->id])
-            : Participant::where('account_id', $account->id)->pluck('edition_id')->unique()->filter();
+            : Participant::where('user_id', $account->id)->pluck('edition_id')->unique()->filter();
 
         // Sessions en direct : uniquement les séances EN COURS aujourd'hui qui le
         // concernent — soit il y présente une communication, soit elles portent sur

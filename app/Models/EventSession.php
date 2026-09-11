@@ -109,7 +109,7 @@ class EventSession extends Model
         return Submission::whereIn('id', $submissionIds)
             ->with('participant')
             ->get()
-            ->map(fn (Submission $s) => (int) $s->participant?->account_id)
+            ->map(fn (Submission $s) => (int) $s->participant?->user_id)
             ->filter()
             ->unique()
             ->values()
@@ -122,7 +122,7 @@ class EventSession extends Model
      * communicant programmé → présentateur ; inscrit (ou public) → participant ;
      * sinon accès refusé. (Gating plus fin, ex. payés, à décider avec le mockup.)
      */
-    public function meetingRoleFor(?Account $account, bool $isStaff = false): MeetingRole
+    public function meetingRoleFor(?User $account, bool $isStaff = false): MeetingRole
     {
         if ($isStaff) {
             return MeetingRole::Moderator;
@@ -144,7 +144,7 @@ class EventSession extends Model
         }
 
         $isParticipant = Participant::where('edition_id', $this->edition_id)
-            ->where('account_id', $account->id)
+            ->where('user_id', $account->id)
             ->exists();
 
         if ($public || $isParticipant) {
@@ -155,13 +155,13 @@ class EventSession extends Model
     }
 
     /** Cet utilisateur peut-il rejoindre la visio ? */
-    public function canJoin(?Account $account, bool $isStaff = false): bool
+    public function canJoin(?User $account, bool $isStaff = false): bool
     {
         return $this->meetingRoleFor($account, $isStaff)->canJoin();
     }
 
     /** URL de connexion à la salle pour cet utilisateur (ou null si refusé/absente). */
-    public function joinUrl(?Account $account, bool $isStaff = false, ?string $displayName = null): ?string
+    public function joinUrl(?User $account, bool $isStaff = false, ?string $displayName = null): ?string
     {
         $role = $this->meetingRoleFor($account, $isStaff);
 
@@ -186,7 +186,7 @@ class EventSession extends Model
      *
      * @return array{domain: string, roomName: string, jwt: ?string, userName: string}|null
      */
-    public function meetingEmbedConfig(?Account $account, bool $isStaff = false, ?string $displayName = null): ?array
+    public function meetingEmbedConfig(?User $account, bool $isStaff = false, ?string $displayName = null): ?array
     {
         $role = $this->meetingRoleFor($account, $isStaff);
 
@@ -212,7 +212,7 @@ class EventSession extends Model
      *
      * @return array{url: string, token: string, userName: string, canPublish: bool}|null
      */
-    public function liveKitEmbedConfig(?Account $account, bool $isStaff = false, ?string $displayName = null): ?array
+    public function liveKitEmbedConfig(?User $account, bool $isStaff = false, ?string $displayName = null): ?array
     {
         $role = $this->meetingRoleFor($account, $isStaff);
 
@@ -269,7 +269,7 @@ class EventSession extends Model
                 'order' => $order++,
                 'name' => (string) $name,
                 'title' => (string) $sub->title,
-                'accountId' => $sub->participant?->account_id,
+                'accountId' => $sub->participant?->user_id,
             ];
         }
 

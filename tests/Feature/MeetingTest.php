@@ -9,6 +9,7 @@ use App\Models\Account;
 use App\Models\EventSession;
 use App\Support\StreamEmbed;
 use Illuminate\Support\Facades\Http;
+use App\Models\User;
 
 // openEdition() -> AccountSubmissionTest
 
@@ -96,7 +97,7 @@ it('le scope live ne retourne que les sessions en direct', function () {
 
 it('donne le rôle modérateur au staff et au modérateur assigné', function () {
     $edition = openEdition();
-    $modo = Account::create(['first_name' => 'Mo', 'last_name' => 'Do', 'email' => 'modo@example.tg', 'password' => 'pass12345']);
+    $modo = User::create(['first_name' => 'Mo', 'last_name' => 'Do', 'email' => 'modo@example.tg', 'password' => 'pass12345']);
     $session = liveSession($edition, 'participants', ['moderator_email' => 'modo@example.tg']);
 
     expect($session->meetingRoleFor(null, isStaff: true))->toBe(MeetingRole::Moderator);
@@ -105,8 +106,8 @@ it('donne le rôle modérateur au staff et au modérateur assigné', function ()
 
 it('donne le rôle présentateur au communicant programmé dans la session', function () {
     $edition = openEdition();
-    $account = Account::create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'password' => 'pass12345']);
-    $participant = $edition->participants()->create(['account_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $account = User::create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'password' => 'pass12345']);
+    $participant = $edition->participants()->create(['user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
     $submission = $edition->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => '26-001', 'title' => 'Com', 'abstract' => 'x',
         'status' => 'accepted', 'authors' => [['name' => 'Awa Kodjo', 'corresponding' => true]],
@@ -122,9 +123,9 @@ it('réserve la visio « participants » aux inscrits et fournit une URL de conn
     $edition = openEdition();
     $session = liveSession($edition, 'participants');
 
-    $inscrit = Account::create(['first_name' => 'In', 'last_name' => 'Scrit', 'email' => 'in@example.tg', 'password' => 'pass12345']);
-    $edition->participants()->create(['account_id' => $inscrit->id, 'first_name' => 'In', 'last_name' => 'Scrit', 'email' => 'in@example.tg', 'role' => 'author']);
-    $etranger = Account::create(['first_name' => 'Et', 'last_name' => 'Ranger', 'email' => 'et@example.tg', 'password' => 'pass12345']);
+    $inscrit = User::create(['first_name' => 'In', 'last_name' => 'Scrit', 'email' => 'in@example.tg', 'password' => 'pass12345']);
+    $edition->participants()->create(['user_id' => $inscrit->id, 'first_name' => 'In', 'last_name' => 'Scrit', 'email' => 'in@example.tg', 'role' => 'author']);
+    $etranger = User::create(['first_name' => 'Et', 'last_name' => 'Ranger', 'email' => 'et@example.tg', 'password' => 'pass12345']);
 
     expect($session->meetingRoleFor($inscrit))->toBe(MeetingRole::Attendee);
     expect($session->canJoin($inscrit))->toBeTrue();
@@ -161,8 +162,8 @@ it('le staff pilote l’état et la visibilité de la visio', function () {
 it('la page visio embarque la salle pour un inscrit', function () {
     $edition = openEdition();
     $session = liveSession($edition, 'participants');
-    $account = Account::create(['first_name' => 'In', 'last_name' => 'S', 'email' => 'in@example.tg', 'password' => 'pass12345']);
-    $edition->participants()->create(['account_id' => $account->id, 'first_name' => 'In', 'last_name' => 'S', 'email' => 'in@example.tg', 'role' => 'author']);
+    $account = User::create(['first_name' => 'In', 'last_name' => 'S', 'email' => 'in@example.tg', 'password' => 'pass12345']);
+    $edition->participants()->create(['user_id' => $account->id, 'first_name' => 'In', 'last_name' => 'S', 'email' => 'in@example.tg', 'role' => 'author']);
 
     $this->actingAs($account, 'account')->get(route('session.meeting', $session))
         ->assertOk()
@@ -173,7 +174,7 @@ it('la page visio embarque la salle pour un inscrit', function () {
 it('la page visio refuse un non-inscrit', function () {
     $edition = openEdition();
     $session = liveSession($edition, 'participants');
-    $etranger = Account::create(['first_name' => 'Et', 'last_name' => 'R', 'email' => 'et@example.tg', 'password' => 'pass12345']);
+    $etranger = User::create(['first_name' => 'Et', 'last_name' => 'R', 'email' => 'et@example.tg', 'password' => 'pass12345']);
 
     $this->actingAs($etranger, 'account')->get(route('session.meeting', $session))
         ->assertOk()
@@ -292,8 +293,8 @@ it('le staff peut choisir LiveKit pour une session', function () {
 
 it('liste les communications programmées de la session pour la salle', function () {
     $edition = openEdition();
-    $account = Account::create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'password' => 'pass12345']);
-    $participant = $edition->participants()->create(['account_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $account = User::create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'password' => 'pass12345']);
+    $participant = $edition->participants()->create(['user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
     $sub = $edition->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => '26-001', 'title' => 'Ma communication', 'abstract' => 'x',
         'status' => 'accepted', 'authors' => [['name' => 'Awa Kodjo', 'corresponding' => true]],

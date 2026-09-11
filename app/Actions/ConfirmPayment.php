@@ -45,7 +45,7 @@ class ConfirmPayment
 
         // Un paiement porte toujours un participant dans ce flux.
         $participant = $payment->participant;
-        $account = $participant?->account;
+        $account = $participant?->user;
 
         // E-mail hors transaction (I/O externe, ne doit pas la faire échouer),
         // soumis à la préférence e-mail du compte (interrupteur unique).

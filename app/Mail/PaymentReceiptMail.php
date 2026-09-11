@@ -21,7 +21,7 @@ class PaymentReceiptMail extends Mailable implements ShouldQueue
 
     public function __construct(public Payment $payment)
     {
-        $this->locale(Locales::resolve($payment->participant?->account?->locale));
+        $this->locale(Locales::resolve($payment->participant?->user?->locale));
     }
 
     public function envelope(): Envelope

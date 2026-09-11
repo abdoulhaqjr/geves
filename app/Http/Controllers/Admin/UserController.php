@@ -142,7 +142,7 @@ class UserController extends Controller
         $user->syncRoles($request->input('roles', []));
 
         if ($request->boolean('send_verification')) {
-            $user->sendEmailVerificationNotification();
+            $user->sendStaffEmailVerificationNotification();
         }
 
         return redirect()->route('admin.users.edit', $user)
@@ -181,7 +181,7 @@ class UserController extends Controller
         if ($user->hasVerifiedEmail()) {
             return back()->with('ukc_error', 'Cet utilisateur a déjà vérifié son adresse.');
         }
-        $user->sendEmailVerificationNotification();
+        $user->sendStaffEmailVerificationNotification();
 
         return back()->with('ukc_status', 'E-mail de vérification renvoyé à '.$user->email.'.');
     }

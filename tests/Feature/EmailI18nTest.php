@@ -11,7 +11,7 @@ function acceptedSubmissionFor(string $locale): Submission
     $account = verifiedAccount();
     $account->update(['locale' => $locale]);
     $participant = $edition->participants()->create([
-        'account_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
+        'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
     ]);
 
     return $edition->submissions()->create([

@@ -4,6 +4,7 @@ use App\Models\Account;
 use App\Models\Colloque;
 use App\Models\Participant;
 use App\Models\Submission;
+use App\Models\User;
 
 // openEdition() et verifiedAccount() sont définis dans tests/Pest.php (fabriques partagées).
 
@@ -26,7 +27,7 @@ it('renvoie 404 pour une édition non publiée', function () {
 
 it('bloque la soumission si le profil est incomplet', function () {
     $edition = openEdition();
-    $account = Account::create([
+    $account = User::create([
         'first_name' => 'Kofi', 'last_name' => 'M', 'email' => 'kofi@example.tg', 'password' => 'pass12345',
     ]); // ni vérifié ni affilié
 
@@ -66,7 +67,7 @@ it('crée une communication reliée au compte avec co-auteur', function () {
 
     // Participant créé et relié au compte (identité imposée).
     $participant = Participant::first();
-    expect($participant->account_id)->toBe($account->id);
+    expect($participant->user_id)->toBe($account->id);
     expect($participant->last_name)->toBe('Kodjo');
     expect($submission->participant_id)->toBe($participant->id);
 });
@@ -102,7 +103,7 @@ it('liste les communications du compte', function () {
     $edition = openEdition();
     $account = verifiedAccount();
     $participant = $edition->participants()->create([
-        'account_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
+        'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
     ]);
     $edition->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => '26-001', 'title' => 'Ma comm', 'status' => 'accepted',

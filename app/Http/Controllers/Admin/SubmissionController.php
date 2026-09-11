@@ -359,7 +359,7 @@ class SubmissionController extends Controller
         $submission->update(['meta' => $meta]);
 
         Notifier::account(
-            $submission->participant?->account,
+            $submission->participant?->user,
             kind: 'rebuttal',
             title: 'Phase de réponse ouverte',
             body: 'Vous pouvez consulter les retours des relecteurs et y répondre pour « '.$submission->title.' ».',
@@ -394,7 +394,7 @@ class SubmissionController extends Controller
         $review = $action->handle($submission, $name, $email);
 
         // Invitation par e-mail, soumise à la préférence du relecteur.
-        if (Notifier::emailAllowed($review->reviewer->account, 'review_assigned')) {
+        if (Notifier::emailAllowed($review->reviewer->user, 'review_assigned')) {
             Mail::to($email)->send(new ReviewerInvitationMail($review->reviewer));
         }
 

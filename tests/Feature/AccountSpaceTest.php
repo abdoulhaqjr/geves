@@ -2,6 +2,7 @@
 
 use App\Actions\IssueAttestation;
 use App\Models\Account;
+use App\Models\User;
 
 // openEdition(), verifiedAccount() -> AccountSubmissionTest
 
@@ -10,7 +11,7 @@ function participantWithActivity(): array
     $edition = openEdition();
     $account = verifiedAccount();
     $participant = $edition->participants()->create([
-        'account_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
+        'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
     ]);
     $submission = $edition->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => '26-007', 'title' => 'Innovation locale', 'status' => 'accepted',
@@ -47,7 +48,7 @@ it('donne au participant l’accès à son reçu', function () {
 
 it('interdit le reçu d’un autre participant', function () {
     $data = participantWithActivity();
-    $other = Account::create(['first_name' => 'X', 'last_name' => 'Y', 'email' => 'x@example.tg', 'password' => 'pass12345']);
+    $other = User::create(['first_name' => 'X', 'last_name' => 'Y', 'email' => 'x@example.tg', 'password' => 'pass12345']);
 
     $this->actingAs($other, 'account')
         ->get(route('account.receipt', $data['payment']))
@@ -57,7 +58,7 @@ it('interdit le reçu d’un autre participant', function () {
 it('refuse le reçu d’un paiement non réglé', function () {
     $edition = openEdition();
     $account = verifiedAccount();
-    $participant = $edition->participants()->create(['account_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'K', 'email' => $account->email]);
+    $participant = $edition->participants()->create(['user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'K', 'email' => $account->email]);
     $pending = $edition->payments()->create(['participant_id' => $participant->id, 'amount' => 15000, 'status' => 'pending']);
 
     $this->actingAs($account, 'account')->get(route('account.receipt', $pending))->assertNotFound();

@@ -24,8 +24,14 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        $first = fake()->firstName();
+        $last = fake()->lastName();
+
         return [
-            'name' => fake()->name(),
+            'name' => $first.' '.$last,
+            'first_name' => $first,
+            'last_name' => $last,
+            'affiliation' => fake()->company(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
@@ -41,5 +47,11 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
         ]);
+    }
+
+    /** Profil incomplet (affiliation manquante) : ne peut pas encore soumettre. */
+    public function incomplete(): static
+    {
+        return $this->state(fn () => ['affiliation' => null]);
     }
 }
