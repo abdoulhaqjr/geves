@@ -51,48 +51,31 @@ class ProjectController extends Controller
                 ->orderByRaw('due_date is null')->orderBy('due_date')->orderBy('position')->get()
             : collect();
 
-        // Regroupement des tâches par colonne kanban.
-        $columns = [];
-        foreach (array_keys(ProjectTask::STATUSES) as $status) {
-            $columns[$status] = $tasks->where('status', $status)->values();
-        }
-
-        $total = $tasks->count();
-        $done = $tasks->where('status', 'done')->count();
-
-        $stats = [
-            'total' => $total,
-            'done' => $done,
-            'open' => $total - $done,
-            'overdue' => $tasks->filter(fn (ProjectTask $t) => $t->isOverdue())->count(),
-            'progress' => $total > 0 ? (int) round($done / $total * 100) : 0,
-            'milestonesTotal' => $milestones->count(),
-            'milestonesDone' => $milestones->where('status', 'done')->count(),
-            'nextMilestone' => $milestones->first(fn (ProjectMilestone $m) => ! $m->isDone() && $m->due_date !== null),
-        ];
+        // État initial pour le client (Alpine) — tout le CRUD ensuite en AJAX.
+        $payload = $edition ? $this->editionPayload($edition) : ['tasks' => [], 'milestones' => []];
 
         return view('admin.project.index', [
             'editions' => $this->accessibleEditions($request, 'project'),
             'edition' => $edition,
             'edition_id' => $edition ? (string) $edition->id : '',
-            'columns' => $columns,
-            'tasks' => $tasks,
-            'milestones' => $milestones,
+            'tasksPayload' => $payload['tasks'],
+            'milestonesPayload' => $payload['milestones'],
+            'milestones' => $milestones,   // pour le calendrier (rendu serveur au chargement)
+            'tasks' => $tasks,             // idem
             'team' => $edition ? $edition->team()->orderBy('name')->get() : collect(),
             'statuses' => ProjectTask::STATUSES,
             'priorities' => ProjectTask::PRIORITIES,
             'linkTargets' => self::LINK_TARGETS,
-            'linkUrlFor' => fn (?string $key) => $edition ? $this->linkUrl($key, $edition) : null,
-            'stats' => $stats,
-            'isEmpty' => $total === 0 && $milestones->isEmpty(),
         ]);
     }
 
-    public function storeTask(Request $request): RedirectResponse
+    public function storeTask(Request $request): RedirectResponse|JsonResponse
     {
         $edition = $this->currentEdition($request);
         if (! $edition) {
-            return back()->with('ukc_error', 'Sélectionnez une édition.');
+            return $request->expectsJson()
+                ? response()->json(['error' => 'Sélectionnez une édition.'], 422)
+                : back()->with('ukc_error', 'Sélectionnez une édition.');
         }
 
         $data = $this->validateTask($request, $edition);
@@ -104,24 +87,37 @@ class ProjectController extends Controller
             $data['completed_at'] = now();
         }
 
-        ProjectTask::create($data);
+        $task = ProjectTask::create($data);
+
+        if ($request->expectsJson()) {
+            return response()->json(['task' => $this->taskCard($task->load('assignee'), $edition)]);
+        }
 
         return back()->with('ukc_status', 'Tâche ajoutée.');
     }
 
-    public function updateTask(Request $request, ProjectTask $task): RedirectResponse
+    public function updateTask(Request $request, ProjectTask $task): RedirectResponse|JsonResponse
     {
-        $data = $this->validateTask($request, $task->edition);
+        $edition = $task->edition;
+        $data = $this->validateTask($request, $edition);
         $data['completed_at'] = $data['status'] === 'done' ? ($task->completed_at ?? now()) : null;
 
         $task->update($data);
 
+        if ($request->expectsJson() && $edition) {
+            return response()->json(['task' => $this->taskCard($task->fresh()->load('assignee'), $edition)]);
+        }
+
         return back()->with('ukc_status', 'Tâche mise à jour.');
     }
 
-    public function destroyTask(ProjectTask $task): RedirectResponse
+    public function destroyTask(Request $request, ProjectTask $task): RedirectResponse|JsonResponse
     {
         $task->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
 
         return back()->with('ukc_status', 'Tâche supprimée.');
     }
@@ -203,30 +199,40 @@ class ProjectController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    public function storeMilestone(Request $request): RedirectResponse
+    public function storeMilestone(Request $request): RedirectResponse|JsonResponse
     {
         $edition = $this->currentEdition($request);
         if (! $edition) {
-            return back()->with('ukc_error', 'Sélectionnez une édition.');
+            return $request->expectsJson()
+                ? response()->json(['error' => 'Sélectionnez une édition.'], 422)
+                : back()->with('ukc_error', 'Sélectionnez une édition.');
         }
 
         $data = $this->validateMilestone($request);
         $data['edition_id'] = $edition->id;
         $data['position'] = (int) ProjectMilestone::where('edition_id', $edition->id)->max('position') + 1;
 
-        ProjectMilestone::create($data);
+        $milestone = ProjectMilestone::create($data);
+
+        if ($request->expectsJson()) {
+            return response()->json(['milestone' => $this->milestoneData($milestone)]);
+        }
 
         return back()->with('ukc_status', 'Jalon ajouté.');
     }
 
-    public function updateMilestone(Request $request, ProjectMilestone $milestone): RedirectResponse
+    public function updateMilestone(Request $request, ProjectMilestone $milestone): RedirectResponse|JsonResponse
     {
         $milestone->update($this->validateMilestone($request));
+
+        if ($request->expectsJson()) {
+            return response()->json(['milestone' => $this->milestoneData($milestone->fresh())]);
+        }
 
         return back()->with('ukc_status', 'Jalon mis à jour.');
     }
 
-    public function toggleMilestone(ProjectMilestone $milestone): RedirectResponse
+    public function toggleMilestone(Request $request, ProjectMilestone $milestone): RedirectResponse|JsonResponse
     {
         $done = ! $milestone->isDone();
         $milestone->update([
@@ -234,28 +240,40 @@ class ProjectController extends Controller
             'done_at' => $done ? now() : null,
         ]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['milestone' => $this->milestoneData($milestone->fresh())]);
+        }
+
         return back()->with('ukc_status', $done ? 'Jalon marqué atteint.' : 'Jalon rouvert.');
     }
 
-    public function destroyMilestone(ProjectMilestone $milestone): RedirectResponse
+    public function destroyMilestone(Request $request, ProjectMilestone $milestone): RedirectResponse|JsonResponse
     {
         $milestone->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
 
         return back()->with('ukc_status', 'Jalon supprimé.');
     }
 
     /** Amorce le projet avec le cycle de vie type d'un colloque (idempotent). */
-    public function seedTemplate(Request $request): RedirectResponse
+    public function seedTemplate(Request $request): RedirectResponse|JsonResponse
     {
         $edition = $this->currentEdition($request);
         if (! $edition) {
-            return back()->with('ukc_error', 'Sélectionnez une édition.');
+            return $request->expectsJson()
+                ? response()->json(['error' => 'Sélectionnez une édition.'], 422)
+                : back()->with('ukc_error', 'Sélectionnez une édition.');
         }
 
         // Sécurité : on n'amorce que si le projet est vierge.
         if (ProjectTask::where('edition_id', $edition->id)->exists()
             || ProjectMilestone::where('edition_id', $edition->id)->exists()) {
-            return back()->with('ukc_error', 'Le projet contient déjà des éléments — amorçage ignoré.');
+            return $request->expectsJson()
+                ? response()->json(['error' => 'Le projet contient déjà des éléments.'], 422)
+                : back()->with('ukc_error', 'Le projet contient déjà des éléments — amorçage ignoré.');
         }
 
         foreach ($this->templateMilestones($edition) as $i => $m) {
@@ -271,6 +289,10 @@ class ProjectController extends Controller
                 'created_by' => $request->user()?->id,
                 'position' => $pos[$status],
             ]);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json($this->editionPayload($edition));
         }
 
         return back()->with('ukc_status', 'Projet initialisé avec le cycle de vie type d’un colloque.');
@@ -434,6 +456,75 @@ class ProjectController extends Controller
             'edition' => route('admin.editions.edit', ['edition' => $edition]),
             default => null,
         };
+    }
+
+    /**
+     * Charge utile d'une tâche pour l'état client (Alpine) — même forme partout.
+     *
+     * @return array<string, mixed>
+     */
+    private function taskCard(ProjectTask $task, Edition $edition): array
+    {
+        [$checkDone, $checkTotal] = $task->checklistProgress();
+
+        return [
+            'id' => $task->id,
+            'title' => $task->title,
+            'description' => (string) $task->description,
+            'status' => $task->status,
+            'priority' => $task->priority,
+            'priorityLabel' => $task->priorityLabel(),
+            'phase' => (string) $task->phase,
+            'assignee_id' => $task->assignee_id,
+            'assignee' => optional($task->assignee)->name,
+            'due_date' => $task->due_date?->toDateString(),
+            'dueLabel' => $task->due_date?->format('d/m/Y'),
+            'overdue' => $task->isOverdue(),
+            'position' => $task->position,
+            'checklist' => is_array($task->checklist) ? $task->checklist : [],
+            'checkDone' => $checkDone,
+            'checkTotal' => $checkTotal,
+            'link_key' => (string) $task->link_key,
+            'linkUrl' => $this->linkUrl($task->link_key, $edition),
+            'linkLabel' => $task->link_key ? (self::LINK_TARGETS[$task->link_key] ?? null) : null,
+        ];
+    }
+
+    /**
+     * Charge utile d'un jalon pour l'état client.
+     *
+     * @return array<string, mixed>
+     */
+    private function milestoneData(ProjectMilestone $m): array
+    {
+        return [
+            'id' => $m->id,
+            'title' => $m->title,
+            'description' => (string) $m->description,
+            'due_date' => $m->due_date?->toDateString(),
+            'dueLabel' => $m->due_date?->format('d/m/Y'),
+            'status' => $m->status,
+            'done' => $m->isDone(),
+            'overdue' => $m->isOverdue(),
+        ];
+    }
+
+    /**
+     * Tâches + jalons d'une édition, mis en forme pour l'état client.
+     *
+     * @return array{tasks: array<int, array<string, mixed>>, milestones: array<int, array<string, mixed>>}
+     */
+    private function editionPayload(Edition $edition): array
+    {
+        $tasks = ProjectTask::where('edition_id', $edition->id)->with('assignee')
+            ->orderBy('position')->orderBy('id')->get()
+            ->map(fn (ProjectTask $t) => $this->taskCard($t, $edition))->all();
+
+        $milestones = ProjectMilestone::where('edition_id', $edition->id)
+            ->orderByRaw('due_date is null')->orderBy('due_date')->orderBy('position')->get()
+            ->map(fn (ProjectMilestone $m) => $this->milestoneData($m))->all();
+
+        return ['tasks' => $tasks, 'milestones' => $milestones];
     }
 
     private function currentEdition(Request $request): ?Edition

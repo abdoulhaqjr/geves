@@ -48,12 +48,12 @@ it('initialise le projet avec le cycle de vie type (jalons + tâches), idempoten
     $this->actingAs($staff, 'web')->post(route('admin.project.seed'), ['edition_id' => $edition->id]);
     expect(ProjectTask::where('edition_id', $edition->id)->count())->toBe($before);
 
-    // La vue peuplée (kanban + liste + jalons) se rend sans erreur.
+    // La vue peuplée (kanban + liste + jalons + calendrier) se rend sans erreur.
     $this->actingAs($staff, 'web')
         ->get(route('admin.project.index', ['edition_id' => $edition->id]))
         ->assertOk()
         ->assertSee('Avancement global')
-        ->assertSee('Clôture des soumissions')
+        ->assertSee('Tableau')
         ->assertSee('Calendrier')
         ->assertSee('projectCalendar', false); // le conteneur du calendrier des échéances
 });
@@ -77,6 +77,46 @@ it('associe un lien contextuel à une tâche (modèle + saisie)', function () {
         'edition_id' => $edition->id, 'title' => 'Lien bidon', 'status' => 'todo', 'priority' => 'normal',
         'link_key' => 'inexistant',
     ])->assertSessionHasErrors('link_key');
+});
+
+it('CRUD tâche en AJAX renvoie la carte JSON (sans rechargement)', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+
+    // Création → carte JSON.
+    $create = $this->actingAs($staff, 'web')->postJson(
+        route('admin.project.tasks.store', ['edition_id' => $edition->id]),
+        ['title' => 'Tâche AJAX', 'status' => 'todo', 'priority' => 'high', 'link_key' => 'payments', 'checklist_json' => json_encode([['text' => 'a', 'done' => false]])]
+    )->assertOk();
+    $create->assertJsonPath('task.title', 'Tâche AJAX');
+    $create->assertJsonPath('task.priorityLabel', 'Haute');
+    $create->assertJsonPath('task.checkTotal', 1);
+    expect($create->json('task.linkUrl'))->toContain('edition_id='.$edition->id);
+    $id = $create->json('task.id');
+
+    // Mise à jour → carte JSON à jour.
+    $this->actingAs($staff, 'web')->putJson(route('admin.project.tasks.update', $id), [
+        'title' => 'Tâche AJAX modifiée', 'status' => 'done', 'priority' => 'normal',
+    ])->assertOk()->assertJsonPath('task.title', 'Tâche AJAX modifiée')->assertJsonPath('task.status', 'done');
+
+    // Suppression → ok JSON.
+    $this->actingAs($staff, 'web')->deleteJson(route('admin.project.tasks.destroy', $id))
+        ->assertOk()->assertJson(['ok' => true]);
+    expect(ProjectTask::find($id))->toBeNull();
+});
+
+it('amorçage en AJAX renvoie l’état complet (tâches + jalons)', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+
+    $res = $this->actingAs($staff, 'web')
+        ->postJson(route('admin.project.seed', ['edition_id' => $edition->id]))->assertOk();
+    expect($res->json('tasks'))->not->toBeEmpty();
+    expect($res->json('milestones'))->not->toBeEmpty();
+
+    // Second amorçage en AJAX refusé (projet déjà peuplé) → 422.
+    $this->actingAs($staff, 'web')
+        ->postJson(route('admin.project.seed', ['edition_id' => $edition->id]))->assertStatus(422);
 });
 
 it('crée une tâche et l’ajoute en bas de sa colonne', function () {

@@ -167,62 +167,104 @@ document.addEventListener('alpine:init', () => {
             if (t) { clearTimeout(t.timer); t.show = false; }
         },
     }));
-    // Gestion de projet d'une édition (kanban + liste + jalons). Un seul composant
-    // porte : les colonnes kanban (hydratées serveur, glisser-déposer + persistance
-    // POST tolérante), la bascule de vue, et l'état du panneau latéral d'édition
-    // (tâche / jalon). Les enregistrements passent par de vrais formulaires POST/PUT.
+    // Gestion de projet d'une édition (kanban + liste + jalons), 100 % AJAX : un
+    // seul composant porte l'état (tasks[]/milestones[]) ; tout le CRUD passe par
+    // fetch et met à jour l'état en direct — aucun rechargement de page.
     window.Alpine.data('ukcProject', (config = {}) => ({
-        cols: config.cols || { todo: [], doing: [], review: [], done: [] },
-        moveUrl: config.moveUrl || '',
+        tasks: config.tasks || [],
+        milestones: config.milestones || [],
+        statuses: config.statuses || {},
         routes: config.routes || {},
         view: 'board',
         dragId: null,
         dragFrom: null,
         taskOpen: false,
         task: {},
+        saving: false,
         msOpen: false,
         ms: {},
-        _csrf() {
-            return document.querySelector('meta[name="csrf-token"]')?.content || '';
-        },
-        count(status) {
-            return (this.cols[status] || []).length;
-        },
-        onDragStart(id, from) {
-            this.dragId = id;
-            this.dragFrom = from;
-        },
-        onDrop(to) {
-            const id = this.dragId;
-            const from = this.dragFrom;
-            this.dragId = null;
-            this.dragFrom = null;
-            if (id === null || from === null || from === to) return;
-            const src = this.cols[from] || [];
-            const idx = src.findIndex((t) => t.id === id);
-            if (idx === -1) return;
-            const [task] = src.splice(idx, 1);
-            task.status = to;
-            (this.cols[to] = this.cols[to] || []).push(task);
-
-            const order = this.cols[to].map((t) => t.id);
-            fetch(this.moveUrl.replace(':id', String(id)), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this._csrf() },
-                body: JSON.stringify({ status: to, order }),
-            }).catch(() => {});
-        },
-        // ----- Panneau tâche -----
+        msSaving: false,
         newCheck: '',
         newComment: '',
         commentBusy: false,
+        flash: '',
+        flashType: 'ok',
+
+        _csrf() {
+            return document.querySelector('meta[name="csrf-token"]')?.content || '';
+        },
+        _headers() {
+            return { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this._csrf() };
+        },
+        notify(msg, type = 'ok') {
+            this.flash = msg;
+            this.flashType = type;
+            setTimeout(() => { if (this.flash === msg) this.flash = ''; }, 3500);
+        },
+
+        // ---- Dérivés (kanban / liste / indicateurs) ----
+        colTasks(status) {
+            return this.tasks.filter((t) => t.status === status).sort((a, b) => (a.position || 0) - (b.position || 0));
+        },
+        count(status) {
+            return this.tasks.filter((t) => t.status === status).length;
+        },
+        get st() {
+            const total = this.tasks.length;
+            const done = this.tasks.filter((t) => t.status === 'done').length;
+            const overdue = this.tasks.filter((t) => t.overdue && t.status !== 'done').length;
+            const msDone = this.milestones.filter((m) => m.done).length;
+            return {
+                total, done, open: total - done, overdue,
+                progress: total ? Math.round((done / total) * 100) : 0,
+                msTotal: this.milestones.length, msDone,
+                next: this.milestones.find((m) => !m.done && m.due_date) || null,
+            };
+        },
+        isEmpty() {
+            return this.tasks.length === 0 && this.milestones.length === 0;
+        },
+        upsertTask(t) {
+            const i = this.tasks.findIndex((x) => x.id === t.id);
+            if (i >= 0) this.tasks.splice(i, 1, t); else this.tasks.push(t);
+        },
+        upsertMs(m) {
+            const i = this.milestones.findIndex((x) => x.id === m.id);
+            if (i >= 0) this.milestones.splice(i, 1, m); else this.milestones.push(m);
+            this.sortMs();
+        },
+        sortMs() {
+            this.milestones.sort((a, b) => {
+                if (!a.due_date && !b.due_date) return 0;
+                if (!a.due_date) return 1;
+                if (!b.due_date) return -1;
+                return a.due_date.localeCompare(b.due_date);
+            });
+        },
+
+        // ---- Glisser-déposer kanban ----
+        onDragStart(id, from) { this.dragId = id; this.dragFrom = from; },
+        onDrop(to) {
+            const id = this.dragId; const from = this.dragFrom;
+            this.dragId = null; this.dragFrom = null;
+            if (id === null || from === null || from === to) return;
+            const task = this.tasks.find((t) => t.id === id);
+            if (!task) return;
+            task.status = to;
+            const order = this.colTasks(to).map((t) => t.id);
+            order.forEach((tid, i) => { const t = this.tasks.find((x) => x.id === tid); if (t) t.position = i; });
+            fetch((this.routes.taskMove || '').replace(':id', String(id)), {
+                method: 'POST', headers: this._headers(), body: JSON.stringify({ status: to, order }),
+            }).catch(() => {});
+        },
+
+        // ---- Panneau tâche ----
         blankTask(status = 'todo') {
             return { id: null, title: '', description: '', status, priority: 'normal', phase: '', link_key: '', assignee_id: '', due_date: '', checklist: [], comments: [] };
         },
         openNewTask(status = 'todo') {
             this.task = this.blankTask(status);
-            this.newCheck = '';
-            this.newComment = '';
+            this.newCheck = ''; this.newComment = '';
             this.taskOpen = true;
         },
         openEditTask(t) {
@@ -233,16 +275,9 @@ document.addEventListener('alpine:init', () => {
                 checklist: Array.isArray(t.checklist) ? JSON.parse(JSON.stringify(t.checklist)) : [],
                 comments: [],
             };
-            this.newCheck = '';
-            this.newComment = '';
+            this.newCheck = ''; this.newComment = '';
             this.taskOpen = true;
             if (t.id) this.loadComments(t.id);
-        },
-        taskAction() {
-            return this.task.id ? (this.routes.taskUpdate || '').replace(':id', String(this.task.id)) : (this.routes.taskStore || '');
-        },
-        checklistJson() {
-            return JSON.stringify(this.task.checklist || []);
         },
         checklistProgress() {
             const items = this.task.checklist || [];
@@ -254,10 +289,36 @@ document.addEventListener('alpine:init', () => {
             (this.task.checklist = this.task.checklist || []).push({ text, done: false });
             this.newCheck = '';
         },
-        removeCheck(i) {
-            this.task.checklist.splice(i, 1);
+        removeCheck(i) { this.task.checklist.splice(i, 1); },
+        saveTask() {
+            if (this.saving || !(this.task.title || '').trim()) return;
+            this.saving = true;
+            const isEdit = !!this.task.id;
+            const url = isEdit ? (this.routes.taskUpdate || '').replace(':id', String(this.task.id)) : (this.routes.taskStore || '');
+            fetch(url, {
+                method: isEdit ? 'PUT' : 'POST',
+                headers: this._headers(),
+                body: JSON.stringify({
+                    title: this.task.title, description: this.task.description,
+                    status: this.task.status, priority: this.task.priority,
+                    phase: this.task.phase, link_key: this.task.link_key,
+                    assignee_id: this.task.assignee_id || null, due_date: this.task.due_date || null,
+                    checklist_json: JSON.stringify(this.task.checklist || []),
+                }),
+            })
+                .then((r) => (r.ok ? r.json() : Promise.reject(r)))
+                .then((d) => { if (d.task) { this.upsertTask(d.task); this.taskOpen = false; this.notify(isEdit ? 'Tâche mise à jour.' : 'Tâche ajoutée.'); } })
+                .catch(() => this.notify('Enregistrement impossible.', 'err'))
+                .finally(() => { this.saving = false; });
         },
-        // ----- Commentaires (relationnels, chargés/ajoutés en fetch) -----
+        deleteTask(t) {
+            if (!confirm('Supprimer cette tâche ?')) return;
+            fetch((this.routes.taskDelete || '').replace(':id', String(t.id)), { method: 'DELETE', headers: this._headers() })
+                .then((r) => { if (r.ok) { this.tasks = this.tasks.filter((x) => x.id !== t.id); this.taskOpen = false; this.notify('Tâche supprimée.'); } })
+                .catch(() => this.notify('Suppression impossible.', 'err'));
+        },
+
+        // ---- Commentaires ----
         loadComments(id) {
             const url = (this.routes.taskComments || '').replace(':id', String(id));
             if (!url) return;
@@ -270,28 +331,55 @@ document.addEventListener('alpine:init', () => {
             const body = (this.newComment || '').trim();
             if (!body || !this.task.id || this.commentBusy) return;
             this.commentBusy = true;
-            const url = (this.routes.taskComment || '').replace(':id', String(this.task.id));
-            fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this._csrf() },
-                body: JSON.stringify({ body }),
+            fetch((this.routes.taskComment || '').replace(':id', String(this.task.id)), {
+                method: 'POST', headers: this._headers(), body: JSON.stringify({ body }),
             })
                 .then((r) => (r.ok ? r.json() : null))
                 .then((d) => { if (d?.comment) { this.task.comments.unshift(d.comment); this.newComment = ''; } })
                 .catch(() => {})
                 .finally(() => { this.commentBusy = false; });
         },
-        // ----- Panneau jalon -----
-        openNewMs() {
-            this.ms = { id: null, title: '', description: '', due_date: '', status: 'pending' };
-            this.msOpen = true;
+
+        // ---- Panneau jalon ----
+        openNewMs() { this.ms = { id: null, title: '', description: '', due_date: '', status: 'pending' }; this.msOpen = true; },
+        openEditMs(m) { this.ms = { id: m.id, title: m.title || '', description: m.description || '', due_date: m.due_date || '', status: m.status || 'pending' }; this.msOpen = true; },
+        saveMs() {
+            if (this.msSaving || !(this.ms.title || '').trim()) return;
+            this.msSaving = true;
+            const isEdit = !!this.ms.id;
+            const url = isEdit ? (this.routes.msUpdate || '').replace(':id', String(this.ms.id)) : (this.routes.msStore || '');
+            fetch(url, {
+                method: isEdit ? 'PUT' : 'POST',
+                headers: this._headers(),
+                body: JSON.stringify({ title: this.ms.title, description: this.ms.description, due_date: this.ms.due_date || null }),
+            })
+                .then((r) => (r.ok ? r.json() : Promise.reject(r)))
+                .then((d) => { if (d.milestone) { this.upsertMs(d.milestone); this.msOpen = false; this.notify(isEdit ? 'Jalon mis à jour.' : 'Jalon ajouté.'); } })
+                .catch(() => this.notify('Enregistrement impossible.', 'err'))
+                .finally(() => { this.msSaving = false; });
         },
-        openEditMs(m) {
-            this.ms = { id: m.id, title: m.title || '', description: m.description || '', due_date: m.due_date || '', status: m.status || 'pending' };
-            this.msOpen = true;
+        toggleMs(m) {
+            fetch((this.routes.msToggle || '').replace(':id', String(m.id)), { method: 'POST', headers: this._headers() })
+                .then((r) => (r.ok ? r.json() : null))
+                .then((d) => { if (d?.milestone) this.upsertMs(d.milestone); })
+                .catch(() => {});
         },
-        msAction() {
-            return this.ms.id ? (this.routes.msUpdate || '').replace(':id', String(this.ms.id)) : (this.routes.msStore || '');
+        deleteMs(m) {
+            if (!confirm('Supprimer ce jalon ?')) return;
+            fetch((this.routes.msDelete || '').replace(':id', String(m.id)), { method: 'DELETE', headers: this._headers() })
+                .then((r) => { if (r.ok) { this.milestones = this.milestones.filter((x) => x.id !== m.id); this.notify('Jalon supprimé.'); } })
+                .catch(() => this.notify('Suppression impossible.', 'err'));
+        },
+
+        // ---- Amorçage ----
+        seed() {
+            if (this.saving) return;
+            this.saving = true;
+            fetch(this.routes.seed || '', { method: 'POST', headers: this._headers() })
+                .then((r) => (r.ok ? r.json() : Promise.reject(r)))
+                .then((d) => { this.tasks = d.tasks || []; this.milestones = d.milestones || []; this.notify('Projet initialisé.'); })
+                .catch(() => this.notify('Initialisation impossible.', 'err'))
+                .finally(() => { this.saving = false; });
         },
     }));
     // Assistante Gesco (widget flottant + page dédiée) : conversation côté client,
