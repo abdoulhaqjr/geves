@@ -99,6 +99,7 @@
                         <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                         @csrf
                         <h3>Options générales · Attestations</h3>
+                        <x-ukc.scope-edition :edition="$edition" />
                         <div class="desc">Paramètres de génération, DIDs et notifications pour cette édition.</div>
                         <div class="ukc-field" style="margin-bottom:12px;">
                             <label>DID émetteur</label>
@@ -181,6 +182,7 @@
                         <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                         @csrf
                         <h3>Options générales · Badges</h3>
+                        <x-ukc.scope-edition :edition="$edition" />
                         <div class="desc">Génération, formats d’impression et contrôle d’accès.</div>
                         <div class="ukc-field" style="margin-bottom:12px;">
                             <label>Préfixe des références badge</label>
@@ -251,6 +253,7 @@
                         <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                         @csrf
                         <h3>Avant-propos du livre</h3>
+                        <x-ukc.scope-edition :edition="$edition" />
                         <div class="desc">Texte introductif signé (Président du comité / autorités), inséré après la page de garde.</div>
                         <div class="ukc-field" style="margin-bottom:12px;">
                             <label>Titre de la section</label>
@@ -284,6 +287,7 @@
                         @csrf
                         <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                         <h3>Modèle global pour cette édition</h3>
+                        <x-ukc.scope-edition :edition="$edition" />
                         <div class="desc">Définir le modèle Word utilisé pour compiler le livre des résumés.</div>
                         <div class="ukc-field" style="margin-bottom:14px;max-width:420px;">
                             <label>Modèle actif</label>
@@ -303,6 +307,7 @@
 
                     <div class="ukc-card">
                         <h3>Ajouter un modèle personnalisé</h3>
+                        <x-ukc.scope-edition :edition="$edition" />
                         <div class="desc">Déposez un fichier .docx contenant les balises de fusion (axes, résumés, auteurs…).</div>
                         <form method="POST" action="{{ route('admin.documents.livret.template') }}" enctype="multipart/form-data">
                             @csrf
@@ -361,6 +366,7 @@
                         <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                         @csrf
                         <h3>Apparence du livre · modèle par défaut</h3>
+                        <x-ukc.scope-edition :edition="$edition" />
                         <div class="desc">Ces paramètres construisent le « modèle par défaut » proposé dans l’onglet Modèles de document.</div>
 
                         <div class="ukc-form-grid">
