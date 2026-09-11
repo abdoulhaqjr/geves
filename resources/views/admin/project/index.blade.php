@@ -13,6 +13,9 @@
         'due_date' => $t->due_date?->toDateString(),
         'dueLabel' => $t->due_date?->format('d/m/Y'),
         'overdue' => $t->isOverdue(),
+        'checklist' => is_array($t->checklist) ? $t->checklist : [],
+        'checkDone' => $t->checklistProgress()[0],
+        'checkTotal' => $t->checklistProgress()[1],
     ];
     $cols = [];
     foreach ($columns as $status => $list) {
@@ -24,6 +27,8 @@
         'routes' => [
             'taskStore' => route('admin.project.tasks.store'),
             'taskUpdate' => route('admin.project.tasks.update', ':id'),
+            'taskComments' => route('admin.project.tasks.comments', ':id'),
+            'taskComment' => route('admin.project.tasks.comment', ':id'),
             'msStore' => route('admin.project.milestones.store'),
             'msUpdate' => route('admin.project.milestones.update', ':id'),
         ],
@@ -148,7 +153,10 @@
                                     </div>
                                     <div class="ukc-kanban__card-foot">
                                         <span x-show="t.assignee" x-text="t.assignee" class="who"></span>
-                                        <span x-show="t.dueLabel" :class="{ 'due-late': t.overdue }"><x-ukc.icon name="clock" :size="12" /> <span x-text="t.dueLabel"></span></span>
+                                        <span class="ukc-kanban__card-badges">
+                                            <span x-show="t.checkTotal > 0" class="chk" :class="{ 'chk--full': t.checkDone === t.checkTotal }"><x-ukc.icon name="check-circle" :size="12" /> <span x-text="t.checkDone + '/' + t.checkTotal"></span></span>
+                                            <span x-show="t.dueLabel" :class="{ 'due-late': t.overdue }"><x-ukc.icon name="clock" :size="12" /> <span x-text="t.dueLabel"></span></span>
+                                        </span>
                                     </div>
                                 </div>
                             </template>
@@ -269,7 +277,44 @@
                         <input type="text" name="phase" x-model="task.phase" list="projectPhases" placeholder="Ex. Programme">
                         <datalist id="projectPhases">@foreach ($phases as $p)<option value="{{ $p }}">@endforeach</datalist>
                     </div>
+
+                    {{-- Checklist (sous-tâches) — soumise avec le formulaire via JSON. --}}
+                    <div class="ukc-form-row">
+                        <label>Checklist <span x-show="checklistProgress().total" style="color:var(--ukc-muted);font-weight:500;" x-text="'· ' + checklistProgress().done + '/' + checklistProgress().total"></span></label>
+                        <input type="hidden" name="checklist_json" :value="checklistJson()">
+                        <div class="ukc-checklist">
+                            <template x-for="(item, i) in task.checklist" :key="i">
+                                <div class="ukc-checklist__item">
+                                    <input type="checkbox" x-model="item.done">
+                                    <span class="txt" :class="{ done: item.done }" x-text="item.text"></span>
+                                    <button type="button" class="ukc-btn--icon" @click="removeCheck(i)" title="Retirer">&times;</button>
+                                </div>
+                            </template>
+                            <div class="ukc-checklist__add">
+                                <input type="text" x-model="newCheck" placeholder="Ajouter un élément…" @keydown.enter.prevent="addCheck()">
+                                <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="addCheck()">Ajouter</button>
+                            </div>
+                        </div>
+                    </div>
                 </form>
+
+                {{-- Commentaires (fil relationnel) — uniquement sur une tâche existante. --}}
+                <div class="ukc-form-row" x-show="task.id" style="margin-top:4px;">
+                    <label>Commentaires</label>
+                    <div class="ukc-comment-add">
+                        <textarea x-model="newComment" rows="2" placeholder="Écrire un commentaire…" @keydown.enter.meta="submitComment()"></textarea>
+                        <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" :disabled="commentBusy" @click="submitComment()">Commenter</button>
+                    </div>
+                    <div class="ukc-comments">
+                        <template x-for="c in task.comments" :key="c.id">
+                            <div class="ukc-comment">
+                                <div class="ukc-comment__head"><strong x-text="c.author"></strong><span x-text="c.at"></span></div>
+                                <div class="ukc-comment__body" x-text="c.body"></div>
+                            </div>
+                        </template>
+                        <p x-show="task.comments.length === 0" style="color:var(--ukc-muted);font-size:12.5px;">Aucun commentaire pour l’instant.</p>
+                    </div>
+                </div>
                 <x-slot:footer>
                     <button type="button" class="ukc-btn ukc-btn--ghost" @click="taskOpen = false">Annuler</button>
                     <button type="submit" form="taskForm" class="ukc-btn ukc-btn--blue">Enregistrer</button>

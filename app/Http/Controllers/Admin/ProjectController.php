@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Edition;
 use App\Models\ProjectMilestone;
 use App\Models\ProjectTask;
+use App\Models\ProjectTaskComment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -134,6 +135,38 @@ class ProjectController extends Controller
         }
 
         return back()->with('ukc_status', 'Tâche déplacée.');
+    }
+
+    /** Fil de commentaires d'une tâche (chargé à la demande par le panneau). */
+    public function comments(ProjectTask $task): JsonResponse
+    {
+        $comments = $task->comments()->with('author')->orderByDesc('id')->get()
+            ->map(fn (ProjectTaskComment $c) => [
+                'id' => $c->id,
+                'body' => $c->body,
+                'author' => optional($c->author)->name ?? 'Utilisateur',
+                'at' => $c->created_at?->format('d/m/Y H:i'),
+            ]);
+
+        return response()->json(['comments' => $comments]);
+    }
+
+    /** Ajoute un commentaire à une tâche (auteur = utilisateur connecté). */
+    public function addComment(Request $request, ProjectTask $task): JsonResponse
+    {
+        $data = $request->validate(['body' => ['required', 'string', 'max:2000']]);
+
+        $comment = $task->comments()->create([
+            'user_id' => $request->user()?->id,
+            'body' => $data['body'],
+        ])->load('author');
+
+        return response()->json(['comment' => [
+            'id' => $comment->id,
+            'body' => $comment->body,
+            'author' => optional($comment->author)->name ?? 'Utilisateur',
+            'at' => $comment->created_at?->format('d/m/Y H:i'),
+        ]]);
     }
 
     /** Re-planification depuis le calendrier (glisser-déposer) : échéance d'une tâche. */
@@ -305,6 +338,7 @@ class ProjectController extends Controller
             'phase' => ['nullable', 'string', 'max:60'],
             'assignee_id' => ['nullable', 'integer'],
             'due_date' => ['nullable', 'date'],
+            'checklist_json' => ['nullable', 'string'],
         ]);
 
         // Le responsable doit appartenir à l'équipe de l'édition (sinon on ignore).
@@ -313,7 +347,39 @@ class ProjectController extends Controller
             $validated['assignee_id'] = null;
         }
 
+        // Checklist : JSON envoyé par le panneau, assaini en [{text, done}].
+        $validated['checklist'] = $this->parseChecklist($validated['checklist_json'] ?? null);
+        unset($validated['checklist_json']);
+
         return $validated;
+    }
+
+    /**
+     * Assainit la checklist reçue en JSON → tableau borné de [{text, done}].
+     *
+     * @return array<int, array{text: string, done: bool}>
+     */
+    private function parseChecklist(?string $json): array
+    {
+        if (! is_string($json) || $json === '') {
+            return [];
+        }
+
+        $decoded = json_decode($json, true);
+        if (! is_array($decoded)) {
+            return [];
+        }
+
+        $items = [];
+        foreach (array_slice($decoded, 0, 50) as $row) {
+            $text = trim((string) ($row['text'] ?? ''));
+            if ($text === '') {
+                continue;
+            }
+            $items[] = ['text' => mb_substr($text, 0, 200), 'done' => (bool) ($row['done'] ?? false)];
+        }
+
+        return $items;
     }
 
     /**

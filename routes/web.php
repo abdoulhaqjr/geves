@@ -316,6 +316,8 @@ Route::prefix('admin')->group(function () {
             Route::put('/projet/taches/{task}', [ProjectController::class, 'updateTask'])->name('admin.project.tasks.update');
             Route::post('/projet/taches/{task}/deplacer', [ProjectController::class, 'moveTask'])->name('admin.project.tasks.move');
             Route::post('/projet/taches/{task}/echeance', [ProjectController::class, 'rescheduleTask'])->name('admin.project.tasks.reschedule');
+            Route::get('/projet/taches/{task}/commentaires', [ProjectController::class, 'comments'])->name('admin.project.tasks.comments');
+            Route::post('/projet/taches/{task}/commentaires', [ProjectController::class, 'addComment'])->name('admin.project.tasks.comment');
             Route::delete('/projet/taches/{task}', [ProjectController::class, 'destroyTask'])->name('admin.project.tasks.destroy');
             Route::post('/projet/jalons', [ProjectController::class, 'storeMilestone'])->name('admin.project.milestones.store');
             Route::put('/projet/jalons/{milestone}', [ProjectController::class, 'updateMilestone'])->name('admin.project.milestones.update');

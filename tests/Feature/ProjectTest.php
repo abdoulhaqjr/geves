@@ -85,6 +85,41 @@ it('n’affecte un responsable que s’il appartient à l’équipe de l’édit
     expect(ProjectTask::where('title', 'T2')->value('assignee_id'))->toBeNull();
 });
 
+it('enregistre et assainit la checklist d’une tâche', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+
+    $this->actingAs($staff, 'web')->post(route('admin.project.tasks.store'), [
+        'edition_id' => $edition->id, 'title' => 'Avec checklist', 'status' => 'todo', 'priority' => 'normal',
+        'checklist_json' => json_encode([
+            ['text' => 'Étape 1', 'done' => true],
+            ['text' => '  ', 'done' => false],   // vide → ignorée
+            ['text' => 'Étape 2', 'done' => false],
+        ]),
+    ])->assertSessionHasNoErrors();
+
+    $task = ProjectTask::where('title', 'Avec checklist')->first();
+    expect($task->checklist)->toHaveCount(2);
+    expect($task->checklist[0])->toBe(['text' => 'Étape 1', 'done' => true]);
+    expect($task->checklistProgress())->toBe([1, 2]);
+});
+
+it('ajoute et liste les commentaires d’une tâche (avec auteur)', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+    $task = ProjectTask::create(['edition_id' => $edition->id, 'title' => 'T', 'status' => 'todo', 'priority' => 'normal']);
+
+    $this->actingAs($staff, 'web')->postJson(route('admin.project.tasks.comment', $task), ['body' => 'Premier commentaire'])
+        ->assertOk()->assertJsonPath('comment.body', 'Premier commentaire');
+    $this->actingAs($staff, 'web')->postJson(route('admin.project.tasks.comment', $task), ['body' => 'Deuxième']);
+
+    $res = $this->actingAs($staff, 'web')->getJson(route('admin.project.tasks.comments', $task))->assertOk();
+    $res->assertJsonCount(2, 'comments');
+    // Ordre anté-chronologique : le plus récent d'abord.
+    expect($res->json('comments.0.body'))->toBe('Deuxième');
+    expect($res->json('comments.1.author'))->not->toBeNull();
+});
+
 it('déplace une tâche en kanban : nouveau statut + date d’achèvement + ordre', function () {
     $staff = adminStaff();
     $edition = openEdition();

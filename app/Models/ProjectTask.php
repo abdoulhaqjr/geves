@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -16,6 +17,7 @@ use Illuminate\Support\Carbon;
  * @property int $edition_id
  * @property string $title
  * @property string|null $description
+ * @property array<int, array{text: string, done: bool}>|null $checklist
  * @property string $status
  * @property string $priority
  * @property string|null $phase
@@ -55,7 +57,21 @@ class ProjectTask extends Model
             'due_date' => 'date',
             'completed_at' => 'datetime',
             'position' => 'integer',
+            'checklist' => 'array',
         ];
+    }
+
+    /**
+     * Avancement de la checklist : [éléments cochés, total].
+     *
+     * @return array{0: int, 1: int}
+     */
+    public function checklistProgress(): array
+    {
+        $items = is_array($this->checklist) ? $this->checklist : [];
+        $done = count(array_filter($items, fn ($i) => ! empty($i['done'])));
+
+        return [$done, count($items)];
     }
 
     public function statusLabel(): string
@@ -89,5 +105,11 @@ class ProjectTask extends Model
     public function assignee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assignee_id');
+    }
+
+    /** @return HasMany<ProjectTaskComment, $this> */
+    public function comments(): HasMany
+    {
+        return $this->hasMany(ProjectTaskComment::class, 'task_id');
     }
 }

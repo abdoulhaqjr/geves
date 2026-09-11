@@ -534,3 +534,24 @@
 /* Légende du calendrier des échéances. */
 .ukc-cal-dot { display: inline-block; width: 9px; height: 9px; border-radius: 999px; margin-right: 4px; vertical-align: middle; }
 .admin-project #projectCalendar { font-size: 13px; }
+
+/* Projet — checklist & commentaires (panneau tâche) + badge checklist des cartes. */
+.ukc-kanban__card-badges { display: inline-flex; align-items: center; gap: 8px; }
+.ukc-kanban__card-badges .chk { display: inline-flex; align-items: center; gap: 3px; color: var(--ukc-muted); }
+.ukc-kanban__card-badges .chk--full { color: var(--ukc-green); font-weight: 700; }
+.ukc-kanban__card-foot .due-late { color: #dc2626; font-weight: 700; }
+
+.ukc-checklist { display: flex; flex-direction: column; gap: 4px; }
+.ukc-checklist__item { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.ukc-checklist__item .txt { flex: 1 1 auto; font-size: 13px; }
+.ukc-checklist__item .txt.done { text-decoration: line-through; color: var(--ukc-muted); }
+.ukc-checklist__add { display: flex; gap: 6px; margin-top: 4px; }
+.ukc-checklist__add input { flex: 1 1 auto; }
+
+.ukc-comment-add { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.ukc-comment-add .ukc-btn { align-self: flex-end; }
+.ukc-comments { display: flex; flex-direction: column; gap: 8px; }
+.ukc-comment { background: #f7f9fc; border: 1px solid var(--ukc-border); border-radius: 8px; padding: 8px 10px; }
+.ukc-comment__head { display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; color: var(--ukc-muted); margin-bottom: 3px; }
+.ukc-comment__head strong { color: var(--ukc-text); }
+.ukc-comment__body { font-size: 13px; white-space: pre-wrap; }

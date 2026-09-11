@@ -213,11 +213,16 @@ document.addEventListener('alpine:init', () => {
             }).catch(() => {});
         },
         // ----- Panneau tâche -----
+        newCheck: '',
+        newComment: '',
+        commentBusy: false,
         blankTask(status = 'todo') {
-            return { id: null, title: '', description: '', status, priority: 'normal', phase: '', assignee_id: '', due_date: '' };
+            return { id: null, title: '', description: '', status, priority: 'normal', phase: '', assignee_id: '', due_date: '', checklist: [], comments: [] };
         },
         openNewTask(status = 'todo') {
             this.task = this.blankTask(status);
+            this.newCheck = '';
+            this.newComment = '';
             this.taskOpen = true;
         },
         openEditTask(t) {
@@ -225,11 +230,56 @@ document.addEventListener('alpine:init', () => {
                 id: t.id, title: t.title || '', description: t.description || '',
                 status: t.status || 'todo', priority: t.priority || 'normal',
                 phase: t.phase || '', assignee_id: t.assignee_id || '', due_date: t.due_date || '',
+                checklist: Array.isArray(t.checklist) ? JSON.parse(JSON.stringify(t.checklist)) : [],
+                comments: [],
             };
+            this.newCheck = '';
+            this.newComment = '';
             this.taskOpen = true;
+            if (t.id) this.loadComments(t.id);
         },
         taskAction() {
             return this.task.id ? (this.routes.taskUpdate || '').replace(':id', String(this.task.id)) : (this.routes.taskStore || '');
+        },
+        checklistJson() {
+            return JSON.stringify(this.task.checklist || []);
+        },
+        checklistProgress() {
+            const items = this.task.checklist || [];
+            return { done: items.filter((i) => i.done).length, total: items.length };
+        },
+        addCheck() {
+            const text = (this.newCheck || '').trim();
+            if (!text) return;
+            (this.task.checklist = this.task.checklist || []).push({ text, done: false });
+            this.newCheck = '';
+        },
+        removeCheck(i) {
+            this.task.checklist.splice(i, 1);
+        },
+        // ----- Commentaires (relationnels, chargés/ajoutés en fetch) -----
+        loadComments(id) {
+            const url = (this.routes.taskComments || '').replace(':id', String(id));
+            if (!url) return;
+            fetch(url, { headers: { Accept: 'application/json' } })
+                .then((r) => (r.ok ? r.json() : { comments: [] }))
+                .then((d) => { this.task.comments = d.comments || []; })
+                .catch(() => {});
+        },
+        submitComment() {
+            const body = (this.newComment || '').trim();
+            if (!body || !this.task.id || this.commentBusy) return;
+            this.commentBusy = true;
+            const url = (this.routes.taskComment || '').replace(':id', String(this.task.id));
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this._csrf() },
+                body: JSON.stringify({ body }),
+            })
+                .then((r) => (r.ok ? r.json() : null))
+                .then((d) => { if (d?.comment) { this.task.comments.unshift(d.comment); this.newComment = ''; } })
+                .catch(() => {})
+                .finally(() => { this.commentBusy = false; });
         },
         // ----- Panneau jalon -----
         openNewMs() {
