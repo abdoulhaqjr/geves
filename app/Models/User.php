@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -54,6 +55,17 @@ class User extends Authenticatable implements MustVerifyEmail
     public function assignedEditions(): BelongsToMany
     {
         return $this->belongsToMany(Edition::class, 'edition_user')->withPivot('role')->withTimestamps();
+    }
+
+    /**
+     * Inscriptions de l'utilisateur à des éditions (fiche participant : paiement,
+     * badge, présence). Identité unifiée — Phase 1. Remplacera `Account::participations()`.
+     *
+     * @return HasMany<Participant, $this>
+     */
+    public function participations(): HasMany
+    {
+        return $this->hasMany(Participant::class);
     }
 
     /** Super-administrateur back-office (capacité globale, transverse aux colloques). */
@@ -176,6 +188,12 @@ class User extends Authenticatable implements MustVerifyEmail
             'is_active' => 'boolean',
             'password' => 'hashed',
             'notification_preferences' => 'array',
+            // Identité unifiée (Phase 1 — profil repris d'`accounts`).
+            'meta' => 'array',
+            'orcid_verified_at' => 'datetime',
+            'two_factor_confirmed_at' => 'datetime',
+            'two_factor_otp_expires_at' => 'datetime',
+            'must_reset_password' => 'boolean',
         ];
     }
 }

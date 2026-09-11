@@ -46,7 +46,7 @@
 | Phase | Contenu | Risque | État |
 |---|---|---|---|
 | **0** | Branche `sauvegarde/pre-rbac` + cette cartographie | Nul | ✅ fait |
-| **1** | Identité unifiée : migrer `accounts` → `users` (dédoublonnage par e-mail), ajouter les colonnes profil manquantes à `users`, rebrancher `participants.account_id`→`user_id`, sessions/questions/polls, notifications. Migration réversible + tests. | Élevé | ⏳ |
+| **1** | Identité unifiée : migrer `accounts` → `users` (dédoublonnage par e-mail), ajouter les colonnes profil manquantes à `users`, rebrancher `participants.account_id`→`user_id`, sessions/questions/polls, notifications. Migration réversible + tests. | Élevé | ✅ fait |
 | **2** | Connexion unique (`/connexion`), redirection post-login selon rôles, fusion inscription/vérif e-mail/reset, impersonation. | Moyen | — |
 | **3** | 3 niveaux globaux (super_admin / colloque_admin / user) en remplacement du rôle unique `administrator`. | Moyen | — |
 | **4** | Rôles par colloque cumulables : pivot `(user, edition, role)` fusionnant `edition_user` + `participants.role`. Catalogue rôles + capacités, 2 comités distincts. | Élevé | — |
@@ -64,4 +64,10 @@
 4. **Modèle** : `Participant::participations()` via `user()` ; helpers d'`Account` (full_name, initials, 2FA, orcid) portés sur `User`.
 5. **Tests** : suite complète verte à chaque étape ; garder le guard `account` fonctionnel jusqu'en Phase 2 (bascule connexion).
 
-**Points à trancher en Phase 1** : gestion des collisions de mot de passe (un e-mail à la fois staff et participant) ; `name` unique vs first/last name.
+**Décisions Phase 1** : collision e-mail staff+participant → **réinitialisation forcée** (`users.must_reset_password`, à honorer en Phase 2) ; migration **qui préserve les données** (réversible, testée sur le seed).
+
+### Phase 1 — réalisé
+- Migration `2026_09_11_000100_add_profile_columns_to_users` : colonnes profil + 2FA + ORCID + `merged_account_id` + `must_reset_password` sur `users` ; `user_id` sur `participants`, `session_questions`, `session_polls`. **down() réversible** (drop de l'index avant la colonne — SQLite).
+- Migration de données `..._000200_migrate_accounts_into_users` : accounts → users (dédoublonnage e-mail, création sinon), backfill `participants.user_id` + questions/sondages + repointage des notifications (morph). Réversible.
+- Modèles : `User::participations()`, `Participant::user()` (coexiste avec `account()`), casts profil.
+- **Vérifié sur le seed** : 1 compte participant → +1 user, 3 fiches participant rebranchées, 0 collision ; rollback/re-migrate OK ; 484 tests + PHPStan verts. `accounts` et le guard `account` restent fonctionnels (bascule en Phase 2).

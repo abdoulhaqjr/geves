@@ -87,6 +87,17 @@ class Participant extends Model
         return $this->belongsTo(Account::class);
     }
 
+    /**
+     * Utilisateur (identité unifiée — Phase 1). Coexiste avec `account()` le temps
+     * de la bascule ; deviendra la seule relation d'identité.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
     /** @return HasMany<Submission, $this> */
     public function submissions(): HasMany
     {
