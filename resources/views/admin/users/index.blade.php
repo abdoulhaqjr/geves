@@ -63,6 +63,8 @@
                                             <div>
                                                 <strong>{{ $u->name }}</strong>
                                                 <span>{{ $u->email }}</span>
+                                                @php($lvl = $u->access_level)
+                                                <span class="ukc-pill ukc-pill--{{ $lvl === 'super_admin' ? 'ok' : ($lvl === 'colloque_admin' ? 'info' : 'muted') }}" style="margin-top:4px;">{{ \App\Models\User::accessLevels()[$lvl] ?? 'Utilisateur' }}</span>
                                             </div>
                                         </div>
                                     </td>

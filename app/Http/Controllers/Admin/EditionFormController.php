@@ -52,6 +52,18 @@ class EditionFormController extends Controller
     {
         $edition = $action->handle($request, null);
 
+        // L'administrateur de colloque qui crée l'édition en devient gérant
+        // (fonction pleine sur cette édition) afin de pouvoir la gérer. Le
+        // super-admin voit déjà tout : pas besoin de l'affecter.
+        $creator = $request->user();
+        if ($creator instanceof \App\Models\User && ! $creator->isColloqueSuperAdmin()) {
+            $already = DB::table('edition_user')
+                ->where('edition_id', $edition->id)->where('user_id', $creator->id)->exists();
+            if (! $already) {
+                $edition->team()->attach($creator->id, ['role' => 'administrator']);
+            }
+        }
+
         return redirect()->route('admin.editions.edit', $edition)
             ->with('ukc_status', 'Édition créée.')
             ->with('edition_tab', $request->input('active_tab', 'general'));

@@ -137,6 +137,7 @@ class UserController extends Controller
             'email' => $data['email'],
             'password' => Hash::make($data['password'] ?? Str::password(16)),
             'is_active' => $request->boolean('is_active'),
+            'access_level' => $data['access_level'],
             'notes' => $data['notes'] ?? null,
         ]);
         $user->syncRoles($request->input('roles', []));
@@ -166,6 +167,7 @@ class UserController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'is_active' => $request->boolean('is_active'),
+            'access_level' => $data['access_level'],
             'notes' => $data['notes'] ?? null,
         ]);
         if (! empty($data['password'])) {
@@ -209,6 +211,7 @@ class UserController extends Controller
             'email' => ['required', 'email', 'max:190', Rule::unique('users', 'email')->ignore($user?->id)],
             'password' => [$user ? 'nullable' : 'nullable', 'string', 'min:8'],
             'notes' => ['nullable', 'string', 'max:500'],
+            'access_level' => ['required', Rule::in(array_keys(User::accessLevels()))],
             'roles' => ['array'],
             'roles.*' => [Rule::in(array_keys(StaffRoles::ROLES))],
         ]);

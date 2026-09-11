@@ -60,7 +60,15 @@
 - **User** : `guard_name='web'` (spatie sans ambiguïté multi-guard) ; `booted()` remplit `name` depuis prénom/nom ; `usesDedicatedMailFor` via le registre (comme Account) ; vérif e-mail participant par défaut + `sendStaffEmailVerificationNotification()` explicite au back-office ; profil fillable.
 - **~35 fichiers de test** migrés `Account`→`User` (helper central `verifiedAccount()` renvoie un User ; `UserFactory` gagne first/last/affiliation + `incomplete()`).
 - **484 tests verts, PHPStan clean.** `Account`/`accounts` restent en base (données legacy) — suppression en 2c.
-| **3** | 3 niveaux globaux (super_admin / colloque_admin / user) en remplacement du rôle unique `administrator`. | Moyen | — |
+
+### Phase 3 — réalisé
+- Migration `..._000400_add_access_level_to_users` : colonne `access_level` (super_admin / colloque_admin / user, défaut user) ; backfill super_admin depuis le rôle `administrator` / la permission `manage_colloques`. Réversible.
+- `User` : constantes `ACCESS_*`, `accessLevels()`, `isColloqueSuperAdmin()` (via access_level + repli spatie), `isColloqueAdmin()`, `canCreateColloque()`.
+- `EnsureEditionAccess` : la création d'un colloque (route sans édition en contexte) est autorisée aux **administrateurs de colloque** (`canCreateColloque()`).
+- `EditionFormController::store` : le créateur non super-admin est **auto-affecté gérant** de la nouvelle édition (fonction `administrator` dans `edition_user`) → capacités pleines dessus.
+- UI page Utilisateurs : sélecteur **« Niveau d'accès »** (form) + badge dans la liste.
+- Tests : `AccessLevelTest` (résolution des niveaux, création par admin de colloque + gérance, refus utilisateur simple). 487 tests verts, PHPStan clean.
+| **3** | 3 niveaux globaux (super_admin / colloque_admin / user) en remplacement du rôle unique `administrator`. | Moyen | ✅ fait |
 | **4** | Rôles par colloque cumulables : pivot `(user, edition, role)` fusionnant `edition_user` + `participants.role`. Catalogue rôles + capacités, 2 comités distincts. | Élevé | — |
 | **5** | Relecture : rôle « Relecteur » (portail) + affectation soumissions par-dessus. | Faible | — |
 | **6** | UI & renommages (Niveau d'accès, Rôles dans ce colloque cumulables + capacités). | Faible | — |

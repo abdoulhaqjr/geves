@@ -31,6 +31,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $last_login_at
  * @property string|null $last_login_ip
  * @property bool $is_active
+ * @property string $access_level
  * @property string|null $notes
  * @property string|null $first_name
  * @property string|null $last_name
@@ -45,7 +46,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $two_factor_otp_expires_at
  * @property bool $must_reset_password
  */
-#[Fillable(['name', 'email', 'password', 'is_active', 'notes',
+#[Fillable(['name', 'email', 'password', 'is_active', 'notes', 'access_level',
     'civility', 'first_name', 'last_name', 'grade', 'phone', 'affiliation',
     'orcid', 'country', 'city', 'bio', 'photo_path', 'locale'])]
 #[Hidden(['password', 'remember_token'])]
@@ -90,10 +91,45 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
 
-    /** Super-administrateur back-office (capacité globale, transverse aux colloques). */
+    /** Niveaux d'accès globaux (refonte Phase 3). */
+    public const ACCESS_SUPER_ADMIN = 'super_admin';
+
+    public const ACCESS_COLLOQUE_ADMIN = 'colloque_admin';
+
+    public const ACCESS_USER = 'user';
+
+    /** @return array<string, string> niveau => libellé */
+    public static function accessLevels(): array
+    {
+        return [
+            self::ACCESS_SUPER_ADMIN => 'Super administrateur',
+            self::ACCESS_COLLOQUE_ADMIN => 'Administrateur de colloque',
+            self::ACCESS_USER => 'Utilisateur',
+        ];
+    }
+
+    /**
+     * Super-administrateur back-office (toute la plateforme). Basé sur le niveau
+     * d'accès ; on garde le repli spatie (`administrator` / `manage_colloques`)
+     * le temps de la bascule complète.
+     */
     public function isColloqueSuperAdmin(): bool
     {
-        return $this->hasRole('administrator') || $this->getAllPermissions()->contains('name', 'manage_colloques');
+        return $this->access_level === self::ACCESS_SUPER_ADMIN
+            || $this->hasRole('administrator')
+            || $this->getAllPermissions()->contains('name', 'manage_colloques');
+    }
+
+    /** Administrateur de colloque (crée + gère/co-gère des colloques) — ou super-admin. */
+    public function isColloqueAdmin(): bool
+    {
+        return $this->isColloqueSuperAdmin() || $this->access_level === self::ACCESS_COLLOQUE_ADMIN;
+    }
+
+    /** Peut créer un nouveau colloque / une nouvelle édition (super-admin ou admin de colloque). */
+    public function canCreateColloque(): bool
+    {
+        return $this->isColloqueAdmin();
     }
 
     /**

@@ -66,6 +66,12 @@ class EnsureEditionAccess
             abort(403);
         }
 
+        // Création d'un colloque (aucune édition en contexte) : réservée aux
+        // administrateurs de colloque (Phase 3).
+        if ($capability === 'editions_write' && $user->canCreateColloque()) {
+            return $next($request);
+        }
+
         // Page de liste : accès si l'utilisateur a la capacité sur au moins une
         // édition (le contrôleur restreint ensuite aux éditions accessibles).
         abort_if($user->accessibleEditionIds($capability) === [], 403);

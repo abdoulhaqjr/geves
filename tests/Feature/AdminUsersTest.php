@@ -39,7 +39,7 @@ it('crée un utilisateur staff, l’associe à un rôle et envoie la vérificati
 
     $this->actingAs($admin, 'web')->post(route('admin.users.store'), [
         'name' => 'Awa Kodjo', 'email' => 'awa.staff@univkara.tg',
-        'roles' => ['reviewer'], 'is_active' => '1', 'send_verification' => '1',
+        'roles' => ['reviewer'], 'access_level' => 'user', 'is_active' => '1', 'send_verification' => '1',
     ])->assertRedirect();
 
     $u = User::where('email', 'awa.staff@univkara.tg')->firstOrFail();
@@ -54,7 +54,7 @@ it('met à jour les rôles d’un utilisateur depuis la page détail', function 
     $u->assignRole('reception');
 
     $this->actingAs($admin, 'web')->put(route('admin.users.update', $u), [
-        'name' => $u->name, 'email' => $u->email, 'roles' => ['organizer', 'accounting'],
+        'name' => $u->name, 'email' => $u->email, 'access_level' => 'user', 'roles' => ['organizer', 'accounting'],
     ])->assertRedirect(route('admin.users.edit', $u));
 
     expect($u->fresh()->getRoleNames()->sort()->values()->all())->toBe(['accounting', 'organizer']);

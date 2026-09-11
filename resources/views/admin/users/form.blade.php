@@ -33,6 +33,15 @@
                         <input type="password" id="password" name="password" autocomplete="new-password">
                     </div>
                     <div class="ukc-field">
+                        <label for="access_level">Niveau d’accès</label>
+                        <select id="access_level" name="access_level" required>
+                            @foreach (\App\Models\User::accessLevels() as $key => $label)
+                                <option value="{{ $key }}" @selected(old('access_level', $user->access_level ?? \App\Models\User::ACCESS_USER) === $key)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        <span class="hint">Super admin : toute la plateforme · Admin de colloque : crée &amp; gère des colloques · Utilisateur : accès par colloque.</span>
+                    </div>
+                    <div class="ukc-field">
                         <label for="notes">Notes internes</label>
                         <input type="text" id="notes" name="notes" value="{{ old('notes', $user->notes) }}" placeholder="Optionnel">
                     </div>
