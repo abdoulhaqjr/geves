@@ -308,8 +308,11 @@ Route::prefix('admin')->group(function () {
             Route::get('/rapports/{edition}/pdf', [ReportController::class, 'pdf'])->name('admin.reports.pdf');
             Route::get('/rapports/{edition}/export/{dataset}/{format}', [ReportController::class, 'export'])->name('admin.reports.export');
             Route::get('/rapports/{edition}/ia/{id}/telecharger', [ReportController::class, 'aiDownload'])->name('admin.reports.ai-download');
+        });
 
-            // Gestion de projet de l'édition (l'édition pilotée comme un projet).
+        // Gestion de projet de l'édition (l'édition pilotée comme un projet) —
+        // capacité dédiée « project ».
+        Route::middleware('edition.cap:project')->group(function () {
             Route::get('/projet', [ProjectController::class, 'index'])->name('admin.project.index');
             Route::post('/projet/initialiser', [ProjectController::class, 'seedTemplate'])->name('admin.project.seed');
             Route::post('/projet/taches', [ProjectController::class, 'storeTask'])->name('admin.project.tasks.store');

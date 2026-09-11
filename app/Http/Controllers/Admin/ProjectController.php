@@ -58,7 +58,7 @@ class ProjectController extends Controller
         ];
 
         return view('admin.project.index', [
-            'editions' => $this->accessibleEditions($request, 'view_dashboard'),
+            'editions' => $this->accessibleEditions($request, 'project'),
             'edition' => $edition,
             'edition_id' => $edition ? (string) $edition->id : '',
             'columns' => $columns,
@@ -397,7 +397,7 @@ class ProjectController extends Controller
 
     private function currentEdition(Request $request): ?Edition
     {
-        $editions = $this->accessibleEditions($request, 'view_dashboard');
+        $editions = $this->accessibleEditions($request, 'project');
         $id = (string) $request->input('edition_id', '');
 
         if ($id === '') {

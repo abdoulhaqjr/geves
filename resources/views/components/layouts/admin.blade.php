@@ -62,10 +62,10 @@
                     </a>
                 @endif
 
-                @if ($staff?->canAnyEdition('view_dashboard') || $staff?->canAnyEdition('payments') || $staff?->canAnyEdition('documents') || $staff?->canAnyEdition('emails'))
+                @if ($staff?->canAnyEdition('project') || $staff?->canAnyEdition('payments') || $staff?->canAnyEdition('documents') || $staff?->canAnyEdition('emails'))
                     <span class="nav-label">Gestion</span>
                 @endif
-                @if ($staff?->canAnyEdition('view_dashboard'))
+                @if ($staff?->canAnyEdition('project'))
                     <a href="{{ route('admin.project.index') }}" title="Projet"
                        @class(['active' => request()->routeIs('admin.project.*')])>
                         <x-ukc.icon name="layers" :size="18" /> <span class="txt">Projet</span>

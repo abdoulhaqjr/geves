@@ -24,6 +24,7 @@ class StaffRoles
         'payments' => 'Paiements',
         'documents' => 'Documents (attestations…)',
         'emails' => 'E-mails',
+        'project' => 'Projet (gestion)',
         'badge_scan' => 'Scan badges / QR',
         'users_roles' => 'Utilisateurs & rôles',
         'settings' => 'Réglages',
@@ -42,7 +43,7 @@ class StaffRoles
             'description' => 'Accès complet : éditions, soumissions, décisions, documents, paiements, e-mails, réglages.',
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
-                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'badge_scan',
+                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'project', 'badge_scan',
                 'users_roles', 'settings',
             ],
         ],
@@ -52,7 +53,7 @@ class StaffRoles
             'description' => 'Responsable d’un colloque : accès complet à CE colloque (soumissions, décisions, documents, paiements, e-mails, équipe).',
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
-                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'badge_scan',
+                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'project', 'badge_scan',
             ],
         ],
         'co_gerant' => [
@@ -61,7 +62,7 @@ class StaffRoles
             'description' => 'Co-responsable d’un colloque : mêmes accès que le gestionnaire sur CE colloque.',
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
-                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'badge_scan',
+                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'project', 'badge_scan',
             ],
         ],
         'scientific' => [
@@ -74,7 +75,7 @@ class StaffRoles
             'label' => 'Comité d’organisation',
             'category' => 'Support', 'pill' => 'warn', 'abbr' => 'Comité org.',
             'description' => 'Membre du comité d’organisation : suivi des participants, documents et programme du colloque.',
-            'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'participants', 'documents', 'emails'],
+            'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'participants', 'documents', 'emails', 'project'],
         ],
         'reviewer' => [
             'label' => 'Relecteur',
@@ -86,13 +87,13 @@ class StaffRoles
             'label' => 'Organisateur',
             'category' => 'Système', 'pill' => 'warn', 'abbr' => 'Organis.',
             'description' => 'Participants, paiements, e-mails, documents (attestations / badges) — sans décisions scientifiques.',
-            'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'participants', 'payments', 'documents', 'emails', 'badge_scan'],
+            'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'participants', 'payments', 'documents', 'emails', 'project', 'badge_scan'],
         ],
         'secretariat' => [
             'label' => 'Secrétariat',
             'category' => 'Support', 'pill' => 'sec', 'abbr' => 'Sécr.',
             'description' => 'Suivi administratif des soumissions et participants, relances, envoi de documents, assistance aux auteurs.',
-            'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'participants', 'documents', 'emails'],
+            'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'participants', 'documents', 'emails', 'project'],
         ],
         'accounting' => [
             'label' => 'Comptabilité',
@@ -104,7 +105,7 @@ class StaffRoles
             'label' => 'Appui à l’organisation',
             'category' => 'Support', 'pill' => 'appui', 'abbr' => 'Appui',
             'description' => 'Aide logistique (programme, salles, partenaires), consultation des listes participants, documents de session.',
-            'permissions' => ['view_dashboard', 'editions_read', 'participants', 'documents', 'badge_scan'],
+            'permissions' => ['view_dashboard', 'editions_read', 'participants', 'documents', 'project', 'badge_scan'],
         ],
         'reception' => [
             'label' => 'Accueil',

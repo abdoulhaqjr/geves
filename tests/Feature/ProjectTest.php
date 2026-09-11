@@ -15,6 +15,19 @@ it('affiche le hub Projet d’une édition', function () {
         ->assertSee('Initialiser le projet'); // projet vierge
 });
 
+it('réserve la page Projet aux rôles porteurs de la capacité « project »', function () {
+    $edition = openEdition();
+    $withCap = User::factory()->create(['access_level' => User::ACCESS_USER]);   // secrétariat → a « project »
+    $withoutCap = User::factory()->create(['access_level' => User::ACCESS_USER]); // accueil → n'a pas « project »
+    $edition->team()->attach($withCap->id, ['role' => 'secretariat']);
+    $edition->team()->attach($withoutCap->id, ['role' => 'reception']);
+
+    $this->actingAs($withCap, 'web')
+        ->get(route('admin.project.index', ['edition_id' => $edition->id]))->assertOk();
+    $this->actingAs($withoutCap, 'web')
+        ->get(route('admin.project.index', ['edition_id' => $edition->id]))->assertForbidden();
+});
+
 it('initialise le projet avec le cycle de vie type (jalons + tâches), idempotent', function () {
     $staff = adminStaff();
     $edition = openEdition();
