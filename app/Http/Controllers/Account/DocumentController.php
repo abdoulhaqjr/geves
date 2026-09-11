@@ -13,7 +13,7 @@ use App\Models\Participant;
 use App\Models\Payment;
 use App\Models\Submission;
 use App\Support\CurrentColloque;
-use App\Support\Settings;
+use App\Support\EditionSettings;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -73,12 +73,12 @@ class DocumentController extends Controller
         $edition->loadMissing(['media' => fn ($q) => $q->orderBy('ordre')->orderBy('id')]);
 
         // Référence de badge + rôle (débloqué après paiement).
-        $prefix = (string) Settings::get('badges.prefix', 'UKC-'.$edition->year.'-');
+        $prefix = (string) EditionSettings::get($edition, 'badges.prefix', 'UKC-'.$edition->year.'-');
         $badgeRef = $prefix.Str::upper($account->initials).'-'.str_pad((string) $participant->id, 4, '0', STR_PAD_LEFT);
         $grade = $participant->title ?: (string) $account->grade;
         $role = trim(($grade !== '' ? $grade.' · ' : '').$participant->roleLabel());
         $badgeRole = $role ?: 'Participant';
-        $didIssuer = (string) Settings::get('attestations.did_issuer', 'did:web:univkara.tg:colloques');
+        $didIssuer = (string) EditionSettings::get($edition, 'attestations.did_issuer', 'did:web:univkara.tg:colloques');
 
         // Aperçu du badge rendu à partir du MODÈLE conçu dans l'admin (même mise en
         // page que l'éditeur), peuplé des données réelles du participant.

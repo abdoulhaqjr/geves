@@ -96,6 +96,7 @@
                 {{-- Options générales attestations --}}
                 <div x-show="att==='options'" x-cloak>
                     <form method="POST" action="{{ route('admin.documents.attestations.options') }}" class="ukc-card" style="max-width:640px;">
+                        <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                         @csrf
                         <h3>Options générales · Attestations</h3>
                         <div class="desc">Paramètres de génération, DIDs et notifications pour cette édition.</div>
@@ -177,6 +178,7 @@
 
                 <div x-show="badge==='options'" x-cloak>
                     <form method="POST" action="{{ route('admin.documents.badges.options') }}" class="ukc-card" style="max-width:640px;">
+                        <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                         @csrf
                         <h3>Options générales · Badges</h3>
                         <div class="desc">Génération, formats d’impression et contrôle d’accès.</div>
@@ -246,6 +248,7 @@
                     </div>
 
                     <form method="POST" action="{{ route('admin.documents.livret.options') }}" class="ukc-card">
+                        <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                         @csrf
                         <h3>Avant-propos du livre</h3>
                         <div class="desc">Texte introductif signé (Président du comité / autorités), inséré après la page de garde.</div>
@@ -279,6 +282,7 @@
                 <div x-show="livre==='modeles'" x-cloak>
                     <form method="POST" action="{{ route('admin.documents.livret.template') }}" class="ukc-card">
                         @csrf
+                        <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                         <h3>Modèle global pour cette édition</h3>
                         <div class="desc">Définir le modèle Word utilisé pour compiler le livre des résumés.</div>
                         <div class="ukc-field" style="margin-bottom:14px;max-width:420px;">
@@ -302,6 +306,7 @@
                         <div class="desc">Déposez un fichier .docx contenant les balises de fusion (axes, résumés, auteurs…).</div>
                         <form method="POST" action="{{ route('admin.documents.livret.template') }}" enctype="multipart/form-data">
                             @csrf
+                            <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                             <label class="ukc-drop">
                                 Déposer un modèle .docx<br>
                                 <span style="font-size:11px;">Balises : @{{edition_name}}, @{{abstract_title}}, @{{authors}}, @{{axis}}…</span>
@@ -323,6 +328,7 @@
                                     <a href="{{ route('admin.documents.livret.base-template') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Télécharger</a>
                                     <form method="POST" action="{{ route('admin.documents.livret.template') }}" style="display:inline;">
                                         @csrf
+                                        <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                                         <input type="hidden" name="livretTemplate" value="base">
                                         <button type="submit" class="ukc-btn ukc-btn--sm">Utiliser</button>
                                     </form>
@@ -337,6 +343,7 @@
                                         @php($isActive = $opts['livretTemplate'] === $tpl['name'])
                                         <form method="POST" action="{{ route('admin.documents.livret.template') }}" style="display:inline;">
                                             @csrf
+                                            <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                                             <input type="hidden" name="livretTemplate" value="{{ $tpl['name'] }}">
                                             <button type="submit" class="ukc-btn ukc-btn--sm" @disabled($isActive)>{{ $isActive ? 'Actif' : 'Utiliser' }}</button>
                                         </form>
@@ -351,6 +358,7 @@
                 {{-- ---------- Apparence du livre ---------- --}}
                 <div x-show="livre==='apparence'" x-cloak>
                     <form method="POST" action="{{ route('admin.documents.livret.apparence') }}" class="ukc-card" enctype="multipart/form-data">
+                        <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                         @csrf
                         <h3>Apparence du livre · modèle par défaut</h3>
                         <div class="desc">Ces paramètres construisent le « modèle par défaut » proposé dans l’onglet Modèles de document.</div>

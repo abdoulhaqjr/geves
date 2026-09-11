@@ -9,7 +9,7 @@ use App\Models\Attestation;
 use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\Submission;
-use App\Support\Settings;
+use App\Support\EditionSettings;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -77,46 +77,46 @@ class DocumentHubController extends Controller
             'rows' => $rows,
             'counts' => $counts,
             'opts' => [
-                'attPrefix' => (string) Settings::get('attestations.prefix', 'UKC-ATT-2026-'),
-                'attAuto' => (bool) Settings::get('attestations.auto', true),
-                'attNotify' => (bool) Settings::get('attestations.notify', true),
-                'attRequirePresence' => (bool) Settings::get('attestations.require_presence', false),
-                'attIncludeQr' => (bool) Settings::get('attestations.include_qr', true),
-                'attAllowBeforeValidation' => (bool) Settings::get('attestations.allow_before_validation', false),
+                'attPrefix' => (string) EditionSettings::get($edition, 'attestations.prefix', 'UKC-ATT-2026-'),
+                'attAuto' => (bool) EditionSettings::get($edition, 'attestations.auto', true),
+                'attNotify' => (bool) EditionSettings::get($edition, 'attestations.notify', true),
+                'attRequirePresence' => (bool) EditionSettings::get($edition, 'attestations.require_presence', false),
+                'attIncludeQr' => (bool) EditionSettings::get($edition, 'attestations.include_qr', true),
+                'attAllowBeforeValidation' => (bool) EditionSettings::get($edition, 'attestations.allow_before_validation', false),
                 // Identité vérifiable (DIDs) — mockup admin-documents.
-                'attDidIssuer' => (string) Settings::get('attestations.did_issuer', 'did:web:univkara.tg:colloques'),
-                'attDidMethod' => (string) Settings::get('attestations.did_method', 'did:web:univkara.tg:colloques#key-ed25519-1'),
-                'attCryptoSuite' => (string) Settings::get('attestations.crypto_suite', 'Ed25519Signature2020'),
-                'badgePrefix' => (string) Settings::get('badges.prefix', 'UKC-2026-'),
-                'badgeFormat' => (string) Settings::get('badges.format', 'A6 Portrait'),
-                'badgePhotoRequired' => (bool) Settings::get('badges.photo_required', true),
-                'badgeQrAccess' => (bool) Settings::get('badges.qr_access', true),
-                'badgeGenerateAfterPayment' => (bool) Settings::get('badges.generate_after_payment', true),
-                'badgeBatchPrint' => (bool) Settings::get('badges.batch_print', false),
-                'forewordTitle' => (string) Settings::get('livret.foreword_title', 'Avant-propos'),
-                'forewordText' => (string) Settings::get('livret.foreword_text', ''),
-                'forewordSignature' => (string) Settings::get('livret.signature', ''),
-                'livretShowTheme' => (bool) Settings::get('livret.show_theme', true),
-                'livretShowDates' => (bool) Settings::get('livret.show_dates', true),
-                'livretNumber' => (bool) Settings::get('livret.number_abstracts', false),
+                'attDidIssuer' => (string) EditionSettings::get($edition, 'attestations.did_issuer', 'did:web:univkara.tg:colloques'),
+                'attDidMethod' => (string) EditionSettings::get($edition, 'attestations.did_method', 'did:web:univkara.tg:colloques#key-ed25519-1'),
+                'attCryptoSuite' => (string) EditionSettings::get($edition, 'attestations.crypto_suite', 'Ed25519Signature2020'),
+                'badgePrefix' => (string) EditionSettings::get($edition, 'badges.prefix', 'UKC-2026-'),
+                'badgeFormat' => (string) EditionSettings::get($edition, 'badges.format', 'A6 Portrait'),
+                'badgePhotoRequired' => (bool) EditionSettings::get($edition, 'badges.photo_required', true),
+                'badgeQrAccess' => (bool) EditionSettings::get($edition, 'badges.qr_access', true),
+                'badgeGenerateAfterPayment' => (bool) EditionSettings::get($edition, 'badges.generate_after_payment', true),
+                'badgeBatchPrint' => (bool) EditionSettings::get($edition, 'badges.batch_print', false),
+                'forewordTitle' => (string) EditionSettings::get($edition, 'livret.foreword_title', 'Avant-propos'),
+                'forewordText' => (string) EditionSettings::get($edition, 'livret.foreword_text', ''),
+                'forewordSignature' => (string) EditionSettings::get($edition, 'livret.signature', ''),
+                'livretShowTheme' => (bool) EditionSettings::get($edition, 'livret.show_theme', true),
+                'livretShowDates' => (bool) EditionSettings::get($edition, 'livret.show_dates', true),
+                'livretNumber' => (bool) EditionSettings::get($edition, 'livret.number_abstracts', false),
                 // Apparence du livre (modèle par défaut) — mockup admin-documents.
-                'livretFontBody' => (string) Settings::get('livret.font_body', 'Times New Roman'),
-                'livretFontHead' => (string) Settings::get('livret.font_head', 'Jost'),
-                'livretSizeBody' => (int) Settings::get('livret.size_body', 11),
-                'livretSizeCover' => (int) Settings::get('livret.size_cover', 24),
-                'livretSizeAxis' => (int) Settings::get('livret.size_axis', 16),
-                'livretSizeAbstract' => (int) Settings::get('livret.size_abstract', 12),
-                'livretSizeAuthors' => (int) Settings::get('livret.size_authors', 10),
-                'livretLineHeight' => (string) Settings::get('livret.line_height', '1.15'),
-                'livretColorPrimary' => (string) Settings::get('livret.color_primary', '#223ea4'),
-                'livretColorSecondary' => (string) Settings::get('livret.color_secondary', '#009933'),
-                'livretAlignTitles' => (string) Settings::get('livret.align_titles', 'Centré'),
-                'livretAlignBody' => (string) Settings::get('livret.align_body', 'Justifié'),
-                'livretCoverMention' => (string) Settings::get('livret.cover_mention', ''),
-                'livretCoverLogo' => (string) Settings::get('livret.cover_logo', ''),
-                'livretTemplate' => (string) Settings::get('livret.template', 'default'),
+                'livretFontBody' => (string) EditionSettings::get($edition, 'livret.font_body', 'Times New Roman'),
+                'livretFontHead' => (string) EditionSettings::get($edition, 'livret.font_head', 'Jost'),
+                'livretSizeBody' => (int) EditionSettings::get($edition, 'livret.size_body', 11),
+                'livretSizeCover' => (int) EditionSettings::get($edition, 'livret.size_cover', 24),
+                'livretSizeAxis' => (int) EditionSettings::get($edition, 'livret.size_axis', 16),
+                'livretSizeAbstract' => (int) EditionSettings::get($edition, 'livret.size_abstract', 12),
+                'livretSizeAuthors' => (int) EditionSettings::get($edition, 'livret.size_authors', 10),
+                'livretLineHeight' => (string) EditionSettings::get($edition, 'livret.line_height', '1.15'),
+                'livretColorPrimary' => (string) EditionSettings::get($edition, 'livret.color_primary', '#223ea4'),
+                'livretColorSecondary' => (string) EditionSettings::get($edition, 'livret.color_secondary', '#009933'),
+                'livretAlignTitles' => (string) EditionSettings::get($edition, 'livret.align_titles', 'Centré'),
+                'livretAlignBody' => (string) EditionSettings::get($edition, 'livret.align_body', 'Justifié'),
+                'livretCoverMention' => (string) EditionSettings::get($edition, 'livret.cover_mention', ''),
+                'livretCoverLogo' => (string) EditionSettings::get($edition, 'livret.cover_logo', ''),
+                'livretTemplate' => (string) EditionSettings::get($edition, 'livret.template', 'default'),
             ],
-            'templates' => is_array(Settings::get('livret.templates')) ? Settings::get('livret.templates') : [],
+            'templates' => is_array(EditionSettings::get($edition, 'livret.templates')) ? EditionSettings::get($edition, 'livret.templates') : [],
             // Badges : 4 types fidèles au mockup, destinataires réels.
             'badgeRows' => $edition ? [
                 ['type' => 'Participant', 'title' => 'Badge participant', 'sub' => 'Bandeau bleu UK', 'format' => 'A6 Portrait', 'count' => $counts['participants'], 'status' => 'Actif'],
@@ -125,8 +125,8 @@ class DocumentHubController extends Controller
                 ['type' => 'Carte', 'title' => 'Badge carte CR80', 'sub' => '85,6 × 54 mm', 'format' => 'CR80', 'count' => 0, 'status' => 'Brouillon'],
             ] : [],
             'livreState' => [
-                'lastGen' => Settings::get('livret.last_generated_at'),
-                'file' => (string) Settings::get('livret.last_file', ''),
+                'lastGen' => EditionSettings::get($edition, 'livret.last_generated_at'),
+                'file' => (string) EditionSettings::get($edition, 'livret.last_file', ''),
             ],
             'aiAvailable' => app(AiManager::class)->available() !== [],
         ]);
@@ -167,7 +167,12 @@ class DocumentHubController extends Controller
 
     public function saveAttestationOptions(Request $request): RedirectResponse
     {
-        Settings::setMany([
+        $edition = $this->currentEdition($request);
+        if (! $edition) {
+            return back()->with('ukc_error', 'Sélectionnez une édition.');
+        }
+
+        EditionSettings::setMany($edition, [
             'attestations.prefix' => (string) $request->input('attPrefix'),
             'attestations.auto' => $request->boolean('attAuto'),
             'attestations.notify' => $request->boolean('attNotify'),
@@ -184,7 +189,12 @@ class DocumentHubController extends Controller
 
     public function saveBadgeOptions(Request $request): RedirectResponse
     {
-        Settings::setMany([
+        $edition = $this->currentEdition($request);
+        if (! $edition) {
+            return back()->with('ukc_error', 'Sélectionnez une édition.');
+        }
+
+        EditionSettings::setMany($edition, [
             'badges.prefix' => (string) $request->input('badgePrefix'),
             'badges.format' => (string) $request->input('badgeFormat'),
             'badges.photo_required' => $request->boolean('badgePhotoRequired'),
@@ -198,7 +208,12 @@ class DocumentHubController extends Controller
 
     public function saveLivretOptions(Request $request): RedirectResponse
     {
-        Settings::setMany([
+        $edition = $this->currentEdition($request);
+        if (! $edition) {
+            return back()->with('ukc_error', 'Sélectionnez une édition.');
+        }
+
+        EditionSettings::setMany($edition, [
             'livret.foreword_title' => trim((string) $request->input('forewordTitle')),
             'livret.foreword_text' => trim((string) $request->input('forewordText')),
             'livret.signature' => trim((string) $request->input('forewordSignature')),
@@ -238,7 +253,7 @@ class DocumentHubController extends Controller
             $edition->location ? 'Lieu : '.$edition->location : null,
             $tracks ? 'Axes thématiques : '.implode(' ; ', $tracks) : null,
             'Nombre de résumés retenus : '.$nbAccepted,
-            trim((string) Settings::get('livret.signature', '')) ? 'Signataire : '.Settings::get('livret.signature') : null,
+            trim((string) EditionSettings::get($edition, 'livret.signature', '')) ? 'Signataire : '.EditionSettings::get($edition, 'livret.signature') : null,
         ]);
 
         $instruction = "Tu es un rédacteur académique francophone. Tu écris l'avant-propos (préface) d'un livre des résumés "
@@ -263,9 +278,9 @@ class DocumentHubController extends Controller
             return back()->with('ukc_error', 'L’IA n’a pas renvoyé d’avant-propos exploitable.');
         }
 
-        Settings::setMany([
+        EditionSettings::setMany($edition, [
             'livret.foreword_text' => $text,
-            'livret.foreword_title' => trim((string) Settings::get('livret.foreword_title', 'Avant-propos')) ?: 'Avant-propos',
+            'livret.foreword_title' => trim((string) EditionSettings::get($edition, 'livret.foreword_title', 'Avant-propos')) ?: 'Avant-propos',
         ]);
 
         return back()->with('ukc_status', 'Avant-propos généré par IA — vérifiez puis enregistrez.');
@@ -274,7 +289,12 @@ class DocumentHubController extends Controller
     /** Apparence du livre (typographie, couleurs, page de garde) → modèle par défaut. */
     public function saveLivretApparence(Request $request): RedirectResponse
     {
-        Settings::setMany([
+        $edition = $this->currentEdition($request);
+        if (! $edition) {
+            return back()->with('ukc_error', 'Sélectionnez une édition.');
+        }
+
+        EditionSettings::setMany($edition, [
             'livret.font_body' => (string) $request->input('livretFontBody', 'Times New Roman'),
             'livret.font_head' => (string) $request->input('livretFontHead', 'Jost'),
             'livret.size_body' => (int) $request->input('livretSizeBody', 11),
@@ -296,7 +316,7 @@ class DocumentHubController extends Controller
         // Logo(s) de la page de garde (optionnel).
         if ($request->hasFile('livretCoverLogo')) {
             $request->validate(['livretCoverLogo' => ['image', 'mimes:png,jpg,jpeg,webp,svg', 'max:4096']]);
-            Settings::set('livret.cover_logo', $request->file('livretCoverLogo')->store('livret', 'public'));
+            EditionSettings::set($edition, 'livret.cover_logo', $request->file('livretCoverLogo')->store('livret', 'public'));
         }
 
         return back()->with('ukc_status', 'Apparence du livre enregistrée.');
@@ -305,12 +325,17 @@ class DocumentHubController extends Controller
     /** Modèle actif + import optionnel d'un modèle .docx personnalisé. */
     public function saveLivretTemplate(Request $request): RedirectResponse
     {
+        $edition = $this->currentEdition($request);
+        if (! $edition) {
+            return back()->with('ukc_error', 'Sélectionnez une édition.');
+        }
+
         $request->validate([
             'livretTemplate' => ['nullable', 'string', 'max:100'],
             'templateFile' => ['nullable', 'file', 'mimes:doc,docx', 'max:5120'],
         ]);
 
-        $templates = is_array(Settings::get('livret.templates')) ? Settings::get('livret.templates') : [];
+        $templates = is_array(EditionSettings::get($edition, 'livret.templates')) ? EditionSettings::get($edition, 'livret.templates') : [];
 
         if ($request->hasFile('templateFile')) {
             $file = $request->file('templateFile');
@@ -321,11 +346,11 @@ class DocumentHubController extends Controller
                 'size' => $file->getSize(),
                 'date' => now()->format('d/m/Y'),
             ];
-            Settings::set('livret.templates', array_values($templates));
+            EditionSettings::set($edition, 'livret.templates', array_values($templates));
         }
 
         if ($request->filled('livretTemplate')) {
-            Settings::set('livret.template', (string) $request->input('livretTemplate'));
+            EditionSettings::set($edition, 'livret.template', (string) $request->input('livretTemplate'));
         }
 
         return back()->with('ukc_status', 'Modèle du livre enregistré.');
@@ -451,7 +476,7 @@ class DocumentHubController extends Controller
             ->whereHas('payments', fn ($q) => $q->where('status', 'paid'))
             ->get();
 
-        if (! (bool) Settings::get('attestations.require_presence', false)) {
+        if (! (bool) EditionSettings::get($edition, 'attestations.require_presence', false)) {
             return $paid;
         }
 
@@ -492,7 +517,9 @@ class DocumentHubController extends Controller
     private function currentEdition(Request $request): ?Edition
     {
         $editions = $this->accessibleEditions($request, 'documents');
-        $id = (string) $request->query('edition_id', '');
+        // `input` (et non `query`) pour résoudre aussi l'edition_id posté en POST
+        // par les formulaires d'options (réglages documents scopés par édition).
+        $id = (string) $request->input('edition_id', '');
 
         if ($id === '') {
             return $editions->firstWhere('status', 'open') ?? $editions->first();

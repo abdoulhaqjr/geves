@@ -5,7 +5,7 @@ namespace App\Documents;
 use App\AI\AiManager;
 use App\Models\Edition;
 use App\Models\Submission;
-use App\Support\Settings;
+use App\Support\EditionSettings;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
@@ -80,12 +80,12 @@ class LivretDocx
         $doc = new PhpWord;
         $doc->getSettings()->setUpdateFields(true);
 
-        $fontHead = (string) Settings::get('livret.font_head', 'Jost');
-        $primary = self::hex((string) Settings::get('livret.color_primary', '#223ea4'), self::BLUE);
-        $sizeAxis = (int) Settings::get('livret.size_axis', 16);
+        $fontHead = (string) EditionSettings::get($this->edition, 'livret.font_head', 'Jost');
+        $primary = self::hex((string) EditionSettings::get($this->edition, 'livret.color_primary', '#223ea4'), self::BLUE);
+        $sizeAxis = (int) EditionSettings::get($this->edition, 'livret.size_axis', 16);
 
-        $doc->setDefaultFontName((string) Settings::get('livret.font_body', 'Times New Roman'));
-        $doc->setDefaultFontSize((int) Settings::get('livret.size_body', 11));
+        $doc->setDefaultFontName((string) EditionSettings::get($this->edition, 'livret.font_body', 'Times New Roman'));
+        $doc->setDefaultFontSize((int) EditionSettings::get($this->edition, 'livret.size_body', 11));
 
         // Niveau 1 = sections (Avant-propos, Comités, Programme, Résumés) ; niveau 2 = axes.
         $doc->addTitleStyle(1, ['size' => 18, 'bold' => true, 'color' => $primary, 'name' => $fontHead], ['spaceBefore' => 240, 'spaceAfter' => 200]);
@@ -116,9 +116,9 @@ class LivretDocx
     /** Page de garde : logo, bandeau, colloque, titre, thème, dates, « LIVRE DES RÉSUMÉS ». */
     private function addCover(Section $section): void
     {
-        $coverSize = (int) Settings::get('livret.size_cover', 24);
-        $showTheme = (bool) Settings::get('livret.show_theme', true);
-        $showDates = (bool) Settings::get('livret.show_dates', true);
+        $coverSize = (int) EditionSettings::get($this->edition, 'livret.size_cover', 24);
+        $showTheme = (bool) EditionSettings::get($this->edition, 'livret.show_theme', true);
+        $showDates = (bool) EditionSettings::get($this->edition, 'livret.show_dates', true);
 
         // En-tête : nom du colloque en majuscules.
         if ($name = trim((string) $this->edition->colloque?->name)) {
@@ -126,7 +126,7 @@ class LivretDocx
         }
 
         // Logo(s) de couverture (réglage d'apparence), s'ils sont fournis et lisibles.
-        $logo = (string) Settings::get('livret.cover_logo', '');
+        $logo = (string) EditionSettings::get($this->edition, 'livret.cover_logo', '');
         if ($logo !== '' && Storage::disk('public')->exists($logo)) {
             try {
                 $section->addImage(Storage::disk('public')->path($logo), ['width' => 140, 'alignment' => 'center']);
@@ -171,7 +171,7 @@ class LivretDocx
         }
 
         // Libellé de couverture (réglage `cover_mention`, défaut « LIVRE DES RÉSUMÉS »).
-        $coverLabel = trim((string) Settings::get('livret.cover_mention', '')) ?: 'LIVRE DES RÉSUMÉS';
+        $coverLabel = trim((string) EditionSettings::get($this->edition, 'livret.cover_mention', '')) ?: 'LIVRE DES RÉSUMÉS';
         $section->addText($coverLabel, ['bold' => true, 'size' => 13, 'color' => self::BLUE], ['alignment' => 'center', 'spaceBefore' => 240]);
 
         $section->addPageBreak();
@@ -180,12 +180,12 @@ class LivretDocx
     /** Avant-propos signé (réglages `livret.*`). */
     private function addForeword(Section $section): void
     {
-        $text = trim((string) Settings::get('livret.foreword_text', ''));
+        $text = trim((string) EditionSettings::get($this->edition, 'livret.foreword_text', ''));
         if ($text === '') {
             return;
         }
 
-        $title = trim((string) Settings::get('livret.foreword_title', 'Avant-propos')) ?: 'Avant-propos';
+        $title = trim((string) EditionSettings::get($this->edition, 'livret.foreword_title', 'Avant-propos')) ?: 'Avant-propos';
         $section->addTitle($title, 1);
 
         foreach (preg_split('/\R{2,}/', $text) ?: [$text] as $paragraph) {
@@ -195,7 +195,7 @@ class LivretDocx
             }
         }
 
-        if ($signature = trim((string) Settings::get('livret.signature', ''))) {
+        if ($signature = trim((string) EditionSettings::get($this->edition, 'livret.signature', ''))) {
             $section->addText($signature, ['italic' => true, 'size' => 11, 'color' => self::MUTED], ['alignment' => 'right', 'spaceBefore' => 160]);
         }
 
@@ -238,8 +238,8 @@ class LivretDocx
     private function addToc(Section $section): void
     {
         // Titre simple (non indexé) : évite que « Sommaire » figure dans son propre sommaire.
-        $section->addText('Sommaire', ['bold' => true, 'size' => 18, 'color' => self::hex((string) Settings::get('livret.color_primary', '#223ea4'), self::BLUE), 'name' => (string) Settings::get('livret.font_head', 'Jost')], ['spaceBefore' => 240, 'spaceAfter' => 200]);
-        $section->addTOC(['size' => 11, 'name' => (string) Settings::get('livret.font_head', 'Jost')], ['spaceAfter' => 60], 1, 2);
+        $section->addText('Sommaire', ['bold' => true, 'size' => 18, 'color' => self::hex((string) EditionSettings::get($this->edition, 'livret.color_primary', '#223ea4'), self::BLUE), 'name' => (string) EditionSettings::get($this->edition, 'livret.font_head', 'Jost')], ['spaceBefore' => 240, 'spaceAfter' => 200]);
+        $section->addTOC(['size' => 11, 'name' => (string) EditionSettings::get($this->edition, 'livret.font_head', 'Jost')], ['spaceAfter' => 60], 1, 2);
         $section->addPageBreak();
     }
 
@@ -293,11 +293,11 @@ class LivretDocx
             return;
         }
 
-        $sizeAbstract = (int) Settings::get('livret.size_abstract', 12);
-        $sizeAuthors = (int) Settings::get('livret.size_authors', 10);
-        $sizeBody = (int) Settings::get('livret.size_body', 11);
-        $alignBody = Settings::get('livret.align_body', 'Justifié') === 'Gauche' ? 'left' : 'both';
-        $number = (bool) Settings::get('livret.number_abstracts', false);
+        $sizeAbstract = (int) EditionSettings::get($this->edition, 'livret.size_abstract', 12);
+        $sizeAuthors = (int) EditionSettings::get($this->edition, 'livret.size_authors', 10);
+        $sizeBody = (int) EditionSettings::get($this->edition, 'livret.size_body', 11);
+        $alignBody = EditionSettings::get($this->edition, 'livret.align_body', 'Justifié') === 'Gauche' ? 'left' : 'both';
+        $number = (bool) EditionSettings::get($this->edition, 'livret.number_abstracts', false);
 
         $n = 0;
         foreach ($this->groups as $track => $submissions) {

@@ -5,6 +5,7 @@ use App\Documents\LivretDocx;
 use App\Models\Attestation;
 use App\Models\DocumentTemplate;
 use App\Models\User;
+use App\Support\EditionSettings;
 use App\Support\Settings;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -226,12 +227,14 @@ it('persiste l’avant-propos du livre dans les réglages et l’injecte au .doc
     $edition = openEdition();
 
     $this->actingAs($staff, 'web')->post(route('admin.documents.livret.options'), [
+        'edition_id' => $edition->id,
         'forewordTitle' => 'Préface',
         'forewordText' => 'Un mot du comité.',
         'forewordSignature' => 'Le Président',
     ]);
 
-    expect(Settings::get('livret.foreword_text'))->toBe('Un mot du comité.');
+    // Réglages documents scopés par édition (« à chaque colloque ses templates »).
+    expect(EditionSettings::get($edition->fresh(), 'livret.foreword_text'))->toBe('Un mot du comité.');
 
     // Le .docx inclut l'avant-propos (réponse streamée → capture via tampon).
     $response = (new LivretDocx($edition->fresh(), collect()))->download('t.docx');
@@ -245,9 +248,10 @@ it('persiste l’avant-propos du livre dans les réglages et l’injecte au .doc
 
 it('persiste l’apparence du livre (typographie, couleurs, page de garde)', function () {
     $staff = adminStaff();
-    openEdition();
+    $edition = openEdition();
 
     $this->actingAs($staff, 'web')->post(route('admin.documents.livret.apparence'), [
+        'edition_id' => $edition->id,
         'livretFontBody' => 'Georgia',
         'livretSizeBody' => '12',
         'livretColorPrimary' => '#123456',
@@ -256,11 +260,12 @@ it('persiste l’apparence du livre (typographie, couleurs, page de garde)', fun
         'livretNumber' => '1',
     ])->assertSessionHasNoErrors();
 
-    expect(Settings::get('livret.font_body'))->toBe('Georgia');
-    expect((int) Settings::get('livret.size_body'))->toBe(12);
-    expect(Settings::get('livret.color_primary'))->toBe('#123456');
-    expect(Settings::get('livret.cover_mention'))->toBe('Livre des résumés · UK');
-    expect((bool) Settings::get('livret.number_abstracts'))->toBeTrue();
+    $edition = $edition->fresh();
+    expect(EditionSettings::get($edition, 'livret.font_body'))->toBe('Georgia');
+    expect((int) EditionSettings::get($edition, 'livret.size_body'))->toBe(12);
+    expect(EditionSettings::get($edition, 'livret.color_primary'))->toBe('#123456');
+    expect(EditionSettings::get($edition, 'livret.cover_mention'))->toBe('Livre des résumés · UK');
+    expect((bool) EditionSettings::get($edition, 'livret.number_abstracts'))->toBeTrue();
 });
 
 it('applique les réglages d’apparence au .docx (mention de couverture + numérotation)', function () {
@@ -348,9 +353,10 @@ it('avant-propos IA : endpoint sûr même sans fournisseur IA (redirige, aucun 5
 
 it('audit options : DIDs attestations et réglages badges se persistent sans erreur', function () {
     $staff = adminStaff();
-    openEdition();
+    $edition = openEdition();
 
     $this->actingAs($staff, 'web')->post(route('admin.documents.attestations.options'), [
+        'edition_id' => $edition->id,
         'attPrefix' => 'UKC-ATT-2026-',
         'attDidIssuer' => 'did:web:univkara.tg:colloques',
         'attDidMethod' => 'did:web:univkara.tg:colloques#key-ed25519-1',
@@ -358,34 +364,36 @@ it('audit options : DIDs attestations et réglages badges se persistent sans err
         'attAuto' => '1', 'attNotify' => '1', 'attIncludeQr' => '1',
     ])->assertSessionHasNoErrors();
 
-    expect(Settings::get('attestations.did_issuer'))->toBe('did:web:univkara.tg:colloques');
-    expect(Settings::get('attestations.crypto_suite'))->toBe('Ed25519Signature2020');
+    expect(EditionSettings::get($edition->fresh(), 'attestations.did_issuer'))->toBe('did:web:univkara.tg:colloques');
+    expect(EditionSettings::get($edition->fresh(), 'attestations.crypto_suite'))->toBe('Ed25519Signature2020');
 
     $this->actingAs($staff, 'web')->post(route('admin.documents.badges.options'), [
+        'edition_id' => $edition->id,
         'badgePrefix' => 'UKC-2026-',
         'badgeFormat' => 'CR80',
         'badgeGenerateAfterPayment' => '1',
         'badgeBatchPrint' => '1',
     ])->assertSessionHasNoErrors();
 
-    expect(Settings::get('badges.format'))->toBe('CR80');
-    expect((bool) Settings::get('badges.batch_print'))->toBeTrue();
+    expect(EditionSettings::get($edition->fresh(), 'badges.format'))->toBe('CR80');
+    expect((bool) EditionSettings::get($edition->fresh(), 'badges.batch_print'))->toBeTrue();
 });
 
 it('importe un modèle .docx et fixe le modèle actif', function () {
     Storage::fake('public');
     $staff = adminStaff();
-    openEdition();
+    $edition = openEdition();
 
     $this->actingAs($staff, 'web')->post(route('admin.documents.livret.template'), [
+        'edition_id' => $edition->id,
         'templateFile' => UploadedFile::fake()->create('modele.docx', 20, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
     ])->assertSessionHasNoErrors();
 
-    $templates = Settings::get('livret.templates');
+    $templates = EditionSettings::get($edition->fresh(), 'livret.templates');
     expect($templates)->toHaveCount(1);
     expect($templates[0]['name'])->toBe('modele.docx');
     Storage::disk('public')->assertExists($templates[0]['path']);
 
-    $this->actingAs($staff, 'web')->post(route('admin.documents.livret.template'), ['livretTemplate' => 'base']);
-    expect(Settings::get('livret.template'))->toBe('base');
+    $this->actingAs($staff, 'web')->post(route('admin.documents.livret.template'), ['edition_id' => $edition->id, 'livretTemplate' => 'base']);
+    expect(EditionSettings::get($edition->fresh(), 'livret.template'))->toBe('base');
 });
