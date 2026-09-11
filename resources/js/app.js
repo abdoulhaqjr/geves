@@ -90,6 +90,11 @@ if (document.getElementById('programCalendar')) {
     import('./program-calendar.js').then((m) => m.startProgramCalendar()).catch(() => {});
 }
 
+// Projet : calendrier des échéances (jalons + tâches datées) — chargé à la demande.
+if (document.getElementById('projectCalendar')) {
+    import('./project-calendar.js').then((m) => m.startProjectCalendar()).catch(() => {});
+}
+
 // Pointage : charge le scanner QR (html5-qrcode) uniquement sur la page de scan.
 if (document.getElementById('badge-scanner')) {
     import('./scanner.js').then((m) => m.startBadgeScanner()).catch(() => {});

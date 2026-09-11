@@ -530,3 +530,7 @@
 .ukc-milestone__date { flex: 0 0 auto; font-size: 12.5px; color: var(--ukc-muted); white-space: nowrap; }
 .ukc-milestone__date .due-late { color: #dc2626; font-weight: 700; }
 .ukc-milestone.is-overdue { background: rgba(220, 38, 38, .02); }
+
+/* Légende du calendrier des échéances. */
+.ukc-cal-dot { display: inline-block; width: 9px; height: 9px; border-radius: 999px; margin-right: 4px; vertical-align: middle; }
+.admin-project #projectCalendar { font-size: 13px; }

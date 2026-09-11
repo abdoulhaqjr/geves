@@ -30,6 +30,31 @@
     ];
     $phases = ['Cadrage', 'Appel à communications', 'Soumissions & relecture', 'Programme', 'Logistique', 'Tenue', 'Après-colloque'];
     $pill = ['low' => 'muted', 'normal' => 'info', 'high' => 'warn', 'urgent' => 'err'];
+
+    // Calendrier des échéances : jalons (◆) + tâches datées, couleur selon l'état.
+    $calendarEvents = [];
+    foreach ($milestones as $m) {
+        if (! $m->due_date) {
+            continue;
+        }
+        $calendarEvents[] = [
+            'title' => '◆ '.$m->title,
+            'start' => $m->due_date->toDateString(),
+            'allDay' => true,
+            'color' => $m->isDone() ? '#16a34a' : ($m->isOverdue() ? '#dc2626' : '#7c3aed'),
+        ];
+    }
+    foreach ($tasks as $t) {
+        if (! $t->due_date) {
+            continue;
+        }
+        $calendarEvents[] = [
+            'title' => $t->title,
+            'start' => $t->due_date->toDateString(),
+            'allDay' => true,
+            'color' => $t->isDone() ? '#16a34a' : ($t->isOverdue() ? '#dc2626' : '#223ea4'),
+        ];
+    }
 @endphp
 
 <x-layouts.admin title="Projet" :subtitle="$edition ? (($edition->title ?: $edition->year).' · piloté comme un projet') : 'Pilotez chaque édition comme un projet'">
@@ -92,6 +117,7 @@
                     <button type="button" :class="{ active: view==='board' }" @click="view='board'">Tableau</button>
                     <button type="button" :class="{ active: view==='list' }" @click="view='list'">Liste</button>
                     <button type="button" :class="{ active: view==='milestones' }" @click="view='milestones'">Jalons</button>
+                    <button type="button" :class="{ active: view==='calendar' }" @click="view='calendar'; $nextTick(() => window.__projectCal && window.__projectCal.updateSize())">Calendrier</button>
                 </div>
                 <div style="display:flex;gap:8px;">
                     <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" x-show="view==='milestones'" @click="openNewMs()"><x-ukc.icon name="plus" :size="14" /> Jalon</button>
@@ -190,6 +216,18 @@
                 @empty
                     <p style="color:var(--ukc-muted);text-align:center;padding:20px;">Aucun jalon. Ajoutez-en un ou initialisez le projet.</p>
                 @endforelse
+            </div>
+
+            {{-- ===== CALENDRIER DES ÉCHÉANCES ===== --}}
+            <div class="ukc-card" x-show="view==='calendar'" x-cloak>
+                <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ukc-muted);margin-bottom:10px;">
+                    <span><span class="ukc-cal-dot" style="background:#7c3aed;"></span> Jalon (◆)</span>
+                    <span><span class="ukc-cal-dot" style="background:#223ea4;"></span> Tâche</span>
+                    <span><span class="ukc-cal-dot" style="background:#16a34a;"></span> Terminé / atteint</span>
+                    <span><span class="ukc-cal-dot" style="background:#dc2626;"></span> En retard</span>
+                </div>
+                <div id="projectCalendar"></div>
+                <script type="application/json" id="projectEvents">{!! json_encode($calendarEvents, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
             </div>
 
             {{-- ===== Panneau latéral : tâche ===== --}}

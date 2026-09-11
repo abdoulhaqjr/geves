@@ -40,7 +40,9 @@ it('initialise le projet avec le cycle de vie type (jalons + tâches), idempoten
         ->get(route('admin.project.index', ['edition_id' => $edition->id]))
         ->assertOk()
         ->assertSee('Avancement global')
-        ->assertSee('Clôture des soumissions');
+        ->assertSee('Clôture des soumissions')
+        ->assertSee('Calendrier')
+        ->assertSee('projectCalendar', false); // le conteneur du calendrier des échéances
 });
 
 it('crée une tâche et l’ajoute en bas de sa colonne', function () {
