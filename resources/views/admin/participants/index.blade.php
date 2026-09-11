@@ -76,7 +76,7 @@
                                                 <x-ukc.icon name="eye" :size="14" /> Sa page
                                             </a>
                                             @can('manage_colloques')
-                                                @if ($p->account)
+                                                @if ($p->user)
                                                     <form method="POST" action="{{ route('admin.participants.impersonate', $p) }}"
                                                           onsubmit="return confirm('Se connecter en tant que {{ addslashes($p->full_name) }} ?\n\nVous agirez réellement dans son espace participant jusqu’à « Quitter l’impersonation ».');">
                                                         @csrf

@@ -20,7 +20,6 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $checked_in_at
  * @property array<string, mixed>|null $meta
  * @property Edition|null $edition
- * @property Account|null $account
  * @property User|null $user
  */
 #[ObservedBy([ParticipantObserver::class])]
@@ -84,15 +83,8 @@ class Participant extends Model
         return $this->belongsTo(Edition::class);
     }
 
-    /** @return BelongsTo<Account, $this> */
-    public function account(): BelongsTo
-    {
-        return $this->belongsTo(Account::class);
-    }
-
     /**
-     * Utilisateur (identité unifiée — Phase 1). Coexiste avec `account()` le temps
-     * de la bascule ; deviendra la seule relation d'identité.
+     * Utilisateur rattaché à cette inscription (identité unifiée — option B).
      *
      * @return BelongsTo<User, $this>
      */

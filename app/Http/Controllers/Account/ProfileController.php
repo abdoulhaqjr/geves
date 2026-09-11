@@ -15,7 +15,7 @@ use Illuminate\View\View;
 
 /**
  * Édition du profil du compte participant (contrôleur + Blade, sans Livewire).
- * L'affiliation est requise pour pouvoir soumettre (cf. Account::canSubmit()).
+ * L'affiliation est requise pour pouvoir soumettre (cf. User::canSubmit()).
  * Autocomplétion des affiliations via HAL/AuréHAL (endpoint JSON) quand le
  * réglage est activé.
  */

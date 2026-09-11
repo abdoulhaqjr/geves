@@ -91,7 +91,7 @@ class ParticipantController extends Controller
     /** « Sa page » — aperçu en lecture seule de l'espace d'un participant. */
     public function preview(Participant $participant): View
     {
-        $participant->load('edition', 'account');
+        $participant->load('edition', 'user');
         $id = $participant->id;
 
         return view('admin.participants.preview', [

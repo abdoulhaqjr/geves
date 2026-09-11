@@ -15,7 +15,7 @@ use Illuminate\View\View;
  * Inscription d'un compte participant (contrôleur + Blade, sans Livewire).
  * Envoie l'e-mail de vérification puis connecte la personne (l'accès à la
  * soumission reste conditionné à la vérification + profil complet, cf.
- * Account::canSubmit()).
+ * User::canSubmit()).
  */
 class RegisterController extends Controller
 {

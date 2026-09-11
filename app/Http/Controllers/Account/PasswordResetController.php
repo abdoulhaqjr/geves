@@ -29,7 +29,7 @@ class PasswordResetController extends Controller
     {
         $request->validate(['email' => ['required', 'string', 'email']]);
 
-        Password::broker('accounts')->sendResetLink(['email' => $request->input('email')]);
+        Password::broker('users')->sendResetLink(['email' => $request->input('email')]);
 
         // Toujours neutre (ne pas révéler si l'e-mail existe).
         return back()->with('password_reset_sent', true);
@@ -53,12 +53,13 @@ class PasswordResetController extends Controller
             'password' => ['required', 'string', 'confirmed', PasswordRule::defaults()],
         ]);
 
-        $status = Password::broker('accounts')->reset(
+        $status = Password::broker('users')->reset(
             $data,
             function ($account) use ($data) {
                 $account->forceFill([
                     'password' => $data['password'],
                     'remember_token' => Str::random(60),
+                    'must_reset_password' => false,
                 ])->save();
 
                 event(new PasswordReset($account));

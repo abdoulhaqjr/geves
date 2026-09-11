@@ -5,7 +5,7 @@
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;width:100%;">
             <div>Aperçu de l’espace de <strong>{{ $participant->full_name }}</strong> — lecture seule.</div>
             <div style="display:flex;gap:8px;">
-                @if ($participant->account)
+                @if ($participant->user)
                     <form method="POST" action="{{ route('admin.participants.impersonate', $participant) }}">
                         @csrf
                         <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"
@@ -29,7 +29,7 @@
             <div style="min-width:0;flex:1;">
                 <div style="font-weight:800;font-size:1.1rem;">{{ $participant->full_name }}
                     <span class="ukc-pill ukc-pill--info" style="margin-left:6px;">{{ $participant->roleLabel() }}</span>
-                    @if ($participant->account)
+                    @if ($participant->user)
                         <span class="ukc-pill ukc-pill--ok" style="margin-left:2px;">Compte lié</span>
                     @endif
                 </div>
@@ -44,10 +44,10 @@
                     @if ($participant->title) — {{ $participant->title }} @endif
                     @if ($participant->institution) · {{ $participant->institution }} @endif
                 </div>
-                @if ($participant->account?->orcidUrl())
+                @if ($participant->user?->orcidUrl())
                     <div style="font-size:.82rem;margin-top:4px;">
                         <x-ukc.icon name="check-circle" :size="13" />
-                        ORCID : <a href="{{ $participant->account->orcidUrl() }}" target="_blank" rel="noopener" style="color:var(--ukc-blue);font-weight:600;">{{ $participant->account->orcid }}</a>
+                        ORCID : <a href="{{ $participant->user->orcidUrl() }}" target="_blank" rel="noopener" style="color:var(--ukc-blue);font-weight:600;">{{ $participant->user->orcid }}</a>
                     </div>
                 @endif
             </div>

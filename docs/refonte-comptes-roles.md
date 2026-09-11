@@ -50,7 +50,7 @@
 | **2** | Connexion unique + retrait du guard `account`. **Découpé** (voir ci-dessous). | Moyen→Élevé | 🔄 en cours |
 | — 2a | Capacités participant portées sur `User` via trait `ParticipantIdentity` (additif, sans changement runtime). | Faible | ✅ fait |
 | — 2b | Bascule du runtime participant vers l'identité `users` + retrait guard `account` (~32 fichiers app + ~35 fichiers de test). | Élevé | ✅ fait |
-| — 2c | Enforcement `must_reset_password` + suppression de la table/model `Account` (reste : `accounts` conservée en legacy). | Moyen | — |
+| — 2c | Enforcement `must_reset_password` (login) + retrait provider/broker `accounts`. | Moyen | ✅ fait |
 
 ### Phase 2b — réalisé
 - **Guard `account` repointé sur le provider `users`** (config/auth.php) : les deux guards résolvent la même table `users` ; le guard « account » n'est plus qu'un CONTEXTE (espace participant) vs « web » (back-office).
@@ -77,12 +77,19 @@
 ### Phase 5 (relecture) & 6 (UI) — réalisé
 - **Phase 5** : la relecture est déjà un **rôle** (« Relecteur », accès portail d'évaluation) **+ affectation** des soumissions (assignation par nom/e-mail ou relecteur existant, jeton). Rien à refondre — conforme à la décision « rôle + affectation ».
 - **Phase 6** : onglet **Équipe** → libellés « Rôle(s) dans ce colloque » (au lieu de « Fonction ») + **capacités affichées** sous chaque membre + mention « les rôles se cumulent » ; le sélecteur propose gérant/co-gérant/2 comités/orga/secrétariat/comptabilité/appui/accueil (relecteur exclu). Liste **Participants** : rôle primaire + **fonctions d'organisation cumulées** (edition_user) affichées en pastilles (1 requête batch). « Niveau d'accès » déjà en place (Phase 3).
-- **Reste (polish optionnel)** : fusion PHYSIQUE de `participants.role` dans un store cumulable unique (aujourd'hui primaire + dérivation via AccountActivity) ; renommer le participant `committee`→comité scientifique ; Phase 2c (retrait `accounts`/`Account` + enforcement `must_reset_password`) ; Phase 7 (nettoyage).
+### Phases 2c & 7 — réalisé (nettoyage)
+- Vues admin `participants` : `->account`→`->user` ; relation legacy `Participant::account()` **retirée** ; `preview` charge `user`.
+- `config/auth.php` : provider `accounts` + broker de reset `accounts` **retirés** (le guard `account` était déjà sur le provider `users`). `PasswordResetController` participant → **broker `users`**.
+- **`must_reset_password`** appliqué à la connexion (redirection vers la définition d'un nouveau mot de passe) et **remis à false** après reset.
+- Vestiges gardés volontairement (non destructif) : **table `accounts`** + **modèle `Account`** (référencés par la migration de données Phase 1 — les supprimer casserait `migrate:fresh` ; ils sont inertes, plus aucun guard/route ne les utilise).
+- **489 tests verts, PHPStan clean.**
+
+**Refonte comptes & rôles : TERMINÉE.** Modèle option B fonctionnel de bout en bout. Seul polish restant, non nécessaire : fusion physique de `participants.role` dans un store cumulable unique (aujourd'hui primaire + dérivation), renommer participant `committee`→comité scientifique.
 | **3** | 3 niveaux globaux (super_admin / colloque_admin / user) en remplacement du rôle unique `administrator`. | Moyen | ✅ fait |
 | **4** | Rôles par colloque cumulables : catalogue à 2 natures, gérant/co-gérant, 2 comités distincts (org cumulable via `edition_user` ; scientifiques dérivés cumulablement via `AccountActivity`). | Élevé | ✅ fait (cœur) |
 | **5** | Relecture : rôle « Relecteur » (portail) + affectation soumissions par-dessus. | Faible | ✅ (déjà en place) |
 | **6** | UI & renommages (Niveau d'accès, Rôles dans ce colloque cumulables + capacités). | Faible | ✅ fait |
-| **7** | Nettoyage : retrait guard `account`, anciennes routes/libellés, non-régression. | Moyen | — |
+| **7** | Nettoyage : provider `accounts` retiré, relation legacy, must_reset appliqué. | Moyen | ✅ fait |
 
 ### Phase 1 — approche détaillée (à valider avant exécution)
 1. **Colonnes** : ajouter à `users` les champs profil d'`accounts` (first_name, last_name, civility, grade, phone, affiliation, country, city, bio, photo_path, meta, 2FA, orcid…). Garder `name` (rempli depuis first+last).

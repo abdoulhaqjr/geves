@@ -192,7 +192,7 @@ class EditionFormController extends Controller
     /**
      * Équipe staff de l'édition (une entrée par fonction) pour l'onglet « Équipe ».
      *
-     * @return Collection<int, array{user_id:int, name:string, email:string, role:string, role_label:string, pill:string}>
+     * @return Collection<int, array{user_id:int, name:string, email:string, role:string, role_label:string, pill:string, caps:string}>
      */
     private function teamFor(?Edition $edition): Collection
     {

@@ -64,6 +64,14 @@ class LoginController extends Controller
 
         RateLimiter::clear($this->throttleKey($request));
 
+        // Réinitialisation forcée (fusion de comptes : deux mots de passe en
+        // conflit) : on ne connecte pas, on oriente vers la définition d'un
+        // nouveau mot de passe.
+        if ($account->must_reset_password) {
+            return redirect()->route('account.password.request')
+                ->with('ukc_status', __('Pour votre sécurité, définissez un nouveau mot de passe pour continuer.'));
+        }
+
         // Identité unifiée : selon les rôles, on oriente vers le back-office
         // (personnel de gestion) ou l'espace participant. Une seule page, deux
         // destinations.
