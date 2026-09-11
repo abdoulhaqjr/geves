@@ -44,7 +44,7 @@
                 </select>
             </div>
 
-            <div class="ukc-card" style="padding:0;">
+            <div class="ukc-card" style="padding:0;" data-ajax-root="attestations">
                 <div class="ukc-table-wrap">
                     <table class="ukc-table">
                         <thead>
@@ -70,12 +70,12 @@
                                             <a href="{{ route('attestation.document', $a->uuid) }}" target="_blank" class="ukc-btn--icon" title="Document"><x-ukc.icon name="diploma" :size="16" /></a>
                                             <a href="{{ route('attestation.verify', $a->uuid) }}" target="_blank" class="ukc-btn--icon" title="Vérifier"><x-ukc.icon name="check-circle" :size="16" /></a>
                                             @if ($a->revoked)
-                                                <form method="POST" action="{{ route('admin.documents.attestations.restore', $a) }}" style="display:inline;">
+                                                <form method="POST" action="{{ route('admin.documents.attestations.restore', $a) }}" data-ajax data-ajax-msg="Attestation rétablie." style="display:inline;">
                                                     @csrf
                                                     <button type="submit" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Rétablir</button>
                                                 </form>
                                             @else
-                                                <form method="POST" action="{{ route('admin.documents.attestations.revoke', $a) }}" onsubmit="return confirm('Révoquer cette attestation ?')" style="display:inline;">
+                                                <form method="POST" action="{{ route('admin.documents.attestations.revoke', $a) }}" data-ajax data-ajax-msg="Attestation révoquée." data-confirm="Révoquer cette attestation ?" style="display:inline;">
                                                     @csrf
                                                     <button type="submit" class="ukc-btn ukc-btn--danger ukc-btn--sm">Révoquer</button>
                                                 </form>

@@ -45,6 +45,7 @@
         </form>
 
         {{-- Cartes éditions --}}
+        <div data-ajax-root="editions">
         @forelse ($editions as $e)
             <div class="ed-card {{ $e->status === 'open' ? 'active-ed' : '' }}">
                 <div class="thumb" style="{{ $thumbStyle($e) }}"></div>
@@ -68,13 +69,15 @@
                     @if ($e->status === 'open')
                         <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="{{ route('admin.submissions.index', ['edition_id' => $e->id]) }}"><x-ukc.icon name="inbox" :size="14" /> Soumissions</a>
                     @else
-                        <form method="POST" action="{{ route('admin.editions.activate', $e) }}">
+                        <form method="POST" action="{{ route('admin.editions.activate', $e) }}"
+                              data-ajax data-ajax-target="editions" data-ajax-msg="Édition activée.">
                             @csrf
                             <button type="submit" class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="check" :size="14" /> Activer</button>
                         </form>
                     @endif
                     <form method="POST" action="{{ route('admin.editions.destroy', $e) }}"
-                          onsubmit="return confirm('Supprimer cette édition et tout son contenu ?');">
+                          data-ajax data-ajax-target="editions" data-ajax-msg="Édition supprimée."
+                          data-confirm="Supprimer cette édition et tout son contenu ?">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="ukc-btn ukc-btn--danger ukc-btn--sm" title="Supprimer"><x-ukc.icon name="trash" :size="14" /></button>
@@ -84,6 +87,7 @@
         @empty
             <div class="ukc-card"><div class="ukc-empty"><h3>Aucune édition</h3><p>Créez votre première édition de colloque.</p><a href="{{ route('admin.editions.create') }}" class="ukc-btn ukc-btn--blue">Nouvelle édition</a></div></div>
         @endforelse
+        </div>
 
         <div style="margin-top:12px;">{{ $editions->links() }}</div>
     </div>

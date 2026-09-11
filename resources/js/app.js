@@ -102,6 +102,63 @@ if (document.getElementById('dashboardData')) {
     import('./charts.js').then((m) => m.startDashboardCharts()).catch(() => {});
 }
 
+// ---------------------------------------------------------------------------
+// AJAX générique pour les actions inline du back-office (bascules, marquages,
+// suppressions…). Un formulaire marqué `data-ajax` est soumis en fetch, puis on
+// rafraîchit uniquement le conteneur `data-ajax-root` visé (par `data-ajax-target`
+// ou le plus proche) au lieu de recharger toute la page. Toast de confirmation.
+// ---------------------------------------------------------------------------
+function ukcToast(msg, type = 'ok') {
+    let host = document.getElementById('ukc-toasts');
+    if (!host) {
+        host = document.createElement('div');
+        host.id = 'ukc-toasts';
+        host.style.cssText = 'position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;';
+        document.body.appendChild(host);
+    }
+    const el = document.createElement('div');
+    el.className = 'ukc-flash ' + (type === 'err' ? 'ukc-flash--err' : 'ukc-flash--ok');
+    el.style.position = 'static';
+    el.textContent = msg;
+    host.appendChild(el);
+    setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3000);
+}
+window.ukcToast = ukcToast;
+
+async function ukcAjaxSubmit(form) {
+    const key = form.dataset.ajaxTarget || form.closest('[data-ajax-root]')?.getAttribute('data-ajax-root');
+    const btns = form.querySelectorAll('button, [type=submit]');
+    btns.forEach((b) => { b.disabled = true; });
+    try {
+        const res = await fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: { 'X-Requested-With': 'fetch', Accept: 'text/html' },
+        });
+        if (!res.ok) throw new Error('http');
+        ukcToast(form.dataset.ajaxMsg || 'Action effectuée.');
+        if (key) {
+            const html = await (await fetch(window.location.href, { headers: { 'X-Requested-With': 'fetch' } })).text();
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const fresh = doc.querySelector('[data-ajax-root="' + key + '"]');
+            const cur = document.querySelector('[data-ajax-root="' + key + '"]');
+            if (fresh && cur) { cur.innerHTML = fresh.innerHTML; window.Alpine?.initTree?.(cur); }
+        }
+    } catch (e) {
+        ukcToast('Action impossible.', 'err');
+    } finally {
+        btns.forEach((b) => { b.disabled = false; });
+    }
+}
+
+document.addEventListener('submit', (e) => {
+    const form = e.target;
+    if (!form.matches || !form.matches('form[data-ajax]')) return;
+    if (form.dataset.confirm && !window.confirm(form.dataset.confirm)) { e.preventDefault(); return; }
+    e.preventDefault();
+    ukcAjaxSubmit(form);
+});
+
 // Formateur « markdown léger » SÛR pour les réponses des agents IA : on échappe
 // tout le HTML d'abord, puis on n'applique que des transformations sur liste
 // blanche (gras, liens http(s), listes à puces/numérotées, paragraphes). Aucun

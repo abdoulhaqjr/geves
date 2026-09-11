@@ -2,7 +2,8 @@
     <x-slot:actions>
         @if ($edition_id !== '')
             <form method="POST" action="{{ route('admin.participants.invite-bulk') }}"
-                  onsubmit="return confirm('Envoyer une invitation à tous les payés non encore invités ?');">
+                  data-ajax data-ajax-target="participants" data-ajax-msg="Invitations envoyées."
+                  data-confirm="Envoyer une invitation à tous les payés non encore invités ?">
                 @csrf
                 <input type="hidden" name="edition_id" value="{{ $edition_id }}">
                 <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm">
@@ -34,7 +35,7 @@
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="pen" :size="20" /></div><div class="lbl">Auteurs</div><div class="val">{{ $stats['authors'] }}</div></div>
         </div>
 
-        <div class="ukc-card" style="padding:0;">
+        <div class="ukc-card" style="padding:0;" data-ajax-root="participants">
             @if ($participants->count())
                 <div class="ukc-table-wrap">
                     <table class="ukc-table">
@@ -87,7 +88,8 @@
                                                     </form>
                                                 @endif
                                             @endcan
-                                            <form method="POST" action="{{ route('admin.participants.invite', $p) }}">
+                                            <form method="POST" action="{{ route('admin.participants.invite', $p) }}"
+                                                  data-ajax data-ajax-target="participants" data-ajax-msg="Invitation envoyée.">
                                                 @csrf
                                                 <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm" @disabled(blank($p->email))>
                                                     <x-ukc.icon name="mail" :size="14" /> {{ $p->isInvited() ? 'Relancer' : 'Inviter' }}

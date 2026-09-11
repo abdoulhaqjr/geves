@@ -40,7 +40,7 @@
             @endif
         </form>
 
-        <div class="ukc-card" style="padding:0;">
+        <div class="ukc-card" style="padding:0;" data-ajax-root="payments">
             @if ($payments->count())
                 <div class="ukc-table-wrap">
                     <table class="ukc-table">
@@ -72,7 +72,8 @@
                                         <div class="ukc-actions">
                                             @if ($p->status === 'pending')
                                                 <form method="POST" action="{{ route('admin.payments.mark-paid', $p) }}"
-                                                      onsubmit="return confirm('Marquer ce paiement comme réglé ? Un reçu sera envoyé.');">
+                                                      data-ajax data-ajax-msg="Paiement marqué réglé."
+                                                      data-confirm="Marquer ce paiement comme réglé ? Un reçu sera envoyé.">
                                                     @csrf
                                                     <button type="submit" class="ukc-btn ukc-btn--green ukc-btn--sm"><x-ukc.icon name="check" :size="14" /> Marquer réglé</button>
                                                 </form>
@@ -82,7 +83,8 @@
                                                     <x-ukc.icon name="receipt" :size="14" /> Reçu
                                                 </a>
                                                 <form method="POST" action="{{ route('admin.payments.refund', $p) }}"
-                                                      onsubmit="return confirm('Rembourser ce paiement ?');">
+                                                      data-ajax data-ajax-msg="Paiement remboursé."
+                                                      data-confirm="Rembourser ce paiement ?">
                                                     @csrf
                                                     <button type="submit" class="ukc-btn ukc-btn--danger ukc-btn--sm">Rembourser</button>
                                                 </form>
