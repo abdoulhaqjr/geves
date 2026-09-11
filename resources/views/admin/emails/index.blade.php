@@ -70,7 +70,14 @@
                 <div class="ukc-table-wrap">
                     <table class="ukc-table">
                         <thead>
-                            <tr><th>Campagne</th><th>Audience</th><th>Programmé le</th><th>Destinataires</th><th>Statut</th><th style="text-align:right;">Actions</th></tr>
+                            <tr>
+                                <x-ukc.th sort="label" :current="$sort" :dir="$dir">Campagne</x-ukc.th>
+                                <x-ukc.th sort="audience" :current="$sort" :dir="$dir">Audience</x-ukc.th>
+                                <x-ukc.th sort="scheduled_at" :current="$sort" :dir="$dir">Programmé le</x-ukc.th>
+                                <x-ukc.th sort="total" :current="$sort" :dir="$dir">Destinataires</x-ukc.th>
+                                <x-ukc.th sort="status" :current="$sort" :dir="$dir">Statut</x-ukc.th>
+                                <th style="text-align:right;">Actions</th>
+                            </tr>
                         </thead>
                         <tbody>
                             @forelse ($campaigns as $c)

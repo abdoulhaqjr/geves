@@ -351,7 +351,17 @@ class DocumentHubController extends Controller
             $query->where('revoked', true);
         }
 
-        $attestations = $query->with('participant')->latest('id')->paginate(20)->withQueryString();
+        $sort = \App\Support\ListSort::resolve(
+            $request,
+            ['recipient_name', 'type', 'uuid', 'issued_at', 'revoked'],
+            'issued_at',
+            'desc'
+        );
+
+        $attestations = $query->with('participant')
+            ->orderBy($sort['sort'], $sort['dir'])
+            ->orderBy('id', 'desc')
+            ->paginate(20)->withQueryString();
 
         $stats = $edition ? [
             'total' => Attestation::where('edition_id', $edition->id)->count(),
@@ -368,6 +378,8 @@ class DocumentHubController extends Controller
             'types' => Attestation::TYPES,
             'type' => $type,
             'state' => $state,
+            'sort' => $sort['sort'],
+            'dir' => $sort['dir'],
             'attestations' => $attestations,
             'stats' => $stats,
         ]);

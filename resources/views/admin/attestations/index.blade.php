@@ -48,7 +48,14 @@
                 <div class="ukc-table-wrap">
                     <table class="ukc-table">
                         <thead>
-                            <tr><th>Bénéficiaire</th><th>Type</th><th>Référence</th><th>Émise le</th><th>État</th><th style="text-align:right;">Actions</th></tr>
+                            <tr>
+                                <x-ukc.th sort="recipient_name" :current="$sort" :dir="$dir">Bénéficiaire</x-ukc.th>
+                                <x-ukc.th sort="type" :current="$sort" :dir="$dir">Type</x-ukc.th>
+                                <x-ukc.th sort="uuid" :current="$sort" :dir="$dir">Référence</x-ukc.th>
+                                <x-ukc.th sort="issued_at" :current="$sort" :dir="$dir">Émise le</x-ukc.th>
+                                <x-ukc.th sort="revoked" :current="$sort" :dir="$dir">État</x-ukc.th>
+                                <th style="text-align:right;">Actions</th>
+                            </tr>
                         </thead>
                         <tbody>
                             @forelse ($attestations as $a)

@@ -93,8 +93,23 @@ class EmailController extends Controller
                         'at' => optional($e->sent_at ?: $e->scheduled_at)?->format('d/m/Y H:i') ?? '—',
                     ])->values()->all(),
                 ];
-            })
-            ->sortByDesc(fn ($c) => optional($c['scheduled_at'])?->timestamp ?? 0)
+            });
+
+        // Tri par en-tête de colonne (campagnes) — collection agrégée triée en mémoire.
+        $sort = \App\Support\ListSort::resolve(
+            $request,
+            ['label', 'audience', 'scheduled_at', 'total', 'status'],
+            'scheduled_at',
+            'desc'
+        );
+        $campaigns = $campaigns
+            ->sortBy(
+                fn ($c) => $sort['sort'] === 'scheduled_at'
+                    ? (optional($c['scheduled_at'])?->timestamp ?? 0)
+                    : $c[$sort['sort']],
+                SORT_REGULAR,
+                $sort['dir'] === 'desc'
+            )
             ->values();
 
         $counts = Email::query()
@@ -130,6 +145,8 @@ class EmailController extends Controller
             'recipientCounts' => $recipientCounts,
             'journal' => $journal,
             'campaigns' => $campaigns,
+            'sort' => $sort['sort'],
+            'dir' => $sort['dir'],
             'templates' => $templates,
             'queuedDue' => Email::where('status', 'queued')->whereNotNull('scheduled_at')->where('scheduled_at', '<=', now())->count(),
             'stats' => [
