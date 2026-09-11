@@ -54,5 +54,8 @@ class RolesAndAdminSeeder extends Seeder
         if (! $user->hasRole('administrator')) {
             $user->assignRole('administrator');
         }
+        if ($user->access_level !== User::ACCESS_SUPER_ADMIN) {
+            $user->forceFill(['access_level' => User::ACCESS_SUPER_ADMIN])->save();
+        }
     }
 }
