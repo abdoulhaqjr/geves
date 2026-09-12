@@ -95,7 +95,7 @@
 
                 {{-- Options générales attestations --}}
                 <div x-show="att==='options'" x-cloak>
-                    <form method="POST" action="{{ route('admin.documents.attestations.options') }}" class="ukc-card" style="max-width:640px;">
+                    <form method="POST" action="{{ route('admin.documents.attestations.options') }}" data-ajax data-ajax-msg="Options des attestations enregistrées." class="ukc-card" style="max-width:640px;">
                         <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                         @csrf
                         <h3>Options générales · Attestations</h3>
@@ -178,7 +178,7 @@
                 </div>
 
                 <div x-show="badge==='options'" x-cloak>
-                    <form method="POST" action="{{ route('admin.documents.badges.options') }}" class="ukc-card" style="max-width:640px;">
+                    <form method="POST" action="{{ route('admin.documents.badges.options') }}" data-ajax data-ajax-msg="Options des badges enregistrées." class="ukc-card" style="max-width:640px;">
                         <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                         @csrf
                         <h3>Options générales · Badges</h3>
@@ -362,7 +362,7 @@
 
                 {{-- ---------- Apparence du livre ---------- --}}
                 <div x-show="livre==='apparence'" x-cloak>
-                    <form method="POST" action="{{ route('admin.documents.livret.apparence') }}" class="ukc-card" enctype="multipart/form-data">
+                    <form method="POST" action="{{ route('admin.documents.livret.apparence') }}" data-ajax data-ajax-msg="Apparence du livre enregistrée." class="ukc-card" enctype="multipart/form-data">
                         <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                         @csrf
                         <h3>Apparence du livre · modèle par défaut</h3>
