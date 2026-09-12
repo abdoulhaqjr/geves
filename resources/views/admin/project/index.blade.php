@@ -92,6 +92,7 @@
                         <button type="button" :class="{ active: view==='list' }" @click="view='list'">Liste</button>
                         <button type="button" :class="{ active: view==='milestones' }" @click="view='milestones'">Jalons</button>
                         <button type="button" :class="{ active: view==='calendar' }" @click="openCalendar()">Calendrier</button>
+                        <button type="button" :class="{ active: view==='gantt' }" @click="view='gantt'">Gantt</button>
                         <button type="button" :class="{ active: view==='charts' }" @click="openCharts()">Diagrammes</button>
                     </div>
                     <div style="display:flex;gap:8px;">
@@ -200,6 +201,49 @@
                     <p style="font-size:12px;color:var(--ukc-muted);margin-top:8px;">Astuce : faites glisser un événement pour changer son échéance.</p>
                 </div>
 
+                {{-- ===== GANTT ===== --}}
+                <div class="ukc-card" x-show="view==='gantt'" x-cloak>
+                    <p x-show="ganttRows().length === 0" style="color:var(--ukc-muted);text-align:center;padding:20px;">
+                        Aucune tâche datée. Renseignez une date de début et/ou une échéance sur les tâches pour les voir ici.
+                    </p>
+                    <div class="ukc-gantt" x-show="ganttRows().length > 0">
+                        <div class="ukc-gantt__grid">
+                            {{-- En-tête : échelle des mois --}}
+                            <div class="ukc-gantt__lbl ukc-gantt__lbl--head">Tâche</div>
+                            <div class="ukc-gantt__scale">
+                                <template x-for="tk in ganttTicks()" :key="tk.label">
+                                    <span class="tick" :style="'left:'+tk.left+'%'" x-text="tk.label"></span>
+                                </template>
+                            </div>
+
+                            {{-- Lignes de tâches --}}
+                            <template x-for="r in ganttRows()" :key="r.id">
+                                <template x-if="true">
+                                    <div style="display:contents;">
+                                        <div class="ukc-gantt__lbl" @click="openEditTask(r)" :title="r.title" x-text="r.title"></div>
+                                        <div class="ukc-gantt__track">
+                                            <div class="ukc-gantt__bar"
+                                                 :class="{ 'is-done': r.status==='done', 'is-overdue': r.overdue, 'is-review': r.status==='review' }"
+                                                 :style="'left:'+gPct(r.gs)+'%;width:'+gWidth(r)+'%'"
+                                                 @click="openEditTask(r)"
+                                                 :title="r.title"></div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </template>
+
+                            {{-- Ligne des jalons --}}
+                            <div class="ukc-gantt__lbl ukc-gantt__lbl--ms">Jalons</div>
+                            <div class="ukc-gantt__track ukc-gantt__track--ms">
+                                <template x-for="m in ganttMarkers()" :key="'g'+m.id">
+                                    <span class="ukc-gantt__ms" :class="{ 'is-done': m.done, 'is-overdue': m.overdue }"
+                                          :style="'left:'+m.left+'%'" :title="m.title"></span>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {{-- ===== DIAGRAMMES ===== --}}
                 <div x-show="view==='charts'" x-cloak>
                     <div class="ukc-charts-grid">
@@ -233,13 +277,14 @@
                             <select x-model="task.priority">@foreach ($priorities as $k => $l)<option value="{{ $k }}">{{ $l }}</option>@endforeach</select>
                         </div>
                     </div>
+                    <div class="ukc-form-row"><label>Responsable</label>
+                        <select x-model="task.assignee_id">
+                            <option value="">— Aucun —</option>
+                            @foreach ($team as $u)<option value="{{ $u->id }}">{{ $u->name }}</option>@endforeach
+                        </select>
+                    </div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                        <div class="ukc-form-row"><label>Responsable</label>
-                            <select x-model="task.assignee_id">
-                                <option value="">— Aucun —</option>
-                                @foreach ($team as $u)<option value="{{ $u->id }}">{{ $u->name }}</option>@endforeach
-                            </select>
-                        </div>
+                        <div class="ukc-form-row"><label>Début</label><input type="date" x-model="task.start_date"></div>
                         <div class="ukc-form-row"><label>Échéance</label><input type="date" x-model="task.due_date"></div>
                     </div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">

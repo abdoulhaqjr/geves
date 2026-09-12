@@ -568,3 +568,21 @@
 /* Grille des diagrammes du module Projet. */
 .admin-project .ukc-charts-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 @media (max-width: 760px) { .admin-project .ukc-charts-grid { grid-template-columns: 1fr; } }
+
+/* Diagramme de Gantt du module Projet (CSS, piloté par l'état). */
+.admin-project .ukc-gantt { overflow-x: auto; }
+.admin-project .ukc-gantt__grid { display: grid; grid-template-columns: 180px 1fr; min-width: 640px; }
+.admin-project .ukc-gantt__lbl { font-size: 12.5px; padding: 6px 12px 6px 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; align-self: center; }
+.admin-project .ukc-gantt__lbl--head, .admin-project .ukc-gantt__lbl--ms { font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: .02em; color: var(--ukc-muted); cursor: default; }
+.admin-project .ukc-gantt__scale { position: relative; height: 24px; border-bottom: 1px solid var(--ukc-border); }
+.admin-project .ukc-gantt__scale .tick { position: absolute; top: 4px; font-size: 10px; color: var(--ukc-muted); white-space: nowrap; border-left: 1px solid #eef2f7; padding-left: 4px; height: 20px; }
+.admin-project .ukc-gantt__track { position: relative; height: 30px; border-bottom: 1px dashed #eef2f7; }
+.admin-project .ukc-gantt__bar { position: absolute; top: 7px; height: 16px; border-radius: 6px; background: var(--ukc-blue); min-width: 4px; cursor: pointer; }
+.admin-project .ukc-gantt__bar.is-review { background: #7c3aed; }
+.admin-project .ukc-gantt__bar.is-done { background: #16a34a; }
+.admin-project .ukc-gantt__bar.is-overdue { background: #dc2626; }
+.admin-project .ukc-gantt__bar:hover { filter: brightness(1.08); }
+.admin-project .ukc-gantt__track--ms { height: 28px; }
+.admin-project .ukc-gantt__ms { position: absolute; top: 7px; width: 12px; height: 12px; background: #7c3aed; transform: translateX(-50%) rotate(45deg); border-radius: 2px; }
+.admin-project .ukc-gantt__ms.is-done { background: #16a34a; }
+.admin-project .ukc-gantt__ms.is-overdue { background: #dc2626; }

@@ -21,6 +21,7 @@ use Illuminate\Support\Carbon;
  * @property string $status
  * @property string $priority
  * @property string|null $phase
+ * @property Carbon|null $start_date
  * @property string|null $link_key
  * @property int|null $assignee_id
  * @property int|null $created_by
@@ -56,6 +57,7 @@ class ProjectTask extends Model
     {
         return [
             'due_date' => 'date',
+            'start_date' => 'date',
             'completed_at' => 'datetime',
             'position' => 'integer',
             'checklist' => 'array',

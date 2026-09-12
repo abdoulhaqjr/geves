@@ -309,6 +309,7 @@ class ProjectController extends Controller
             $t->statusLabel(),
             $t->priorityLabel(),
             optional($t->assignee)->name ?: '—',
+            $t->start_date?->format('d/m/Y') ?: '—',
             $t->due_date?->format('d/m/Y') ?: '—',
             implode('/', $t->checklistProgress()),
             $t->link_key ? (self::LINK_TARGETS[$t->link_key] ?? $t->link_key) : '—',
@@ -325,7 +326,7 @@ class ProjectController extends Controller
         ])->all();
 
         return (new XlsxWriter)
-            ->sheet('Tâches', ['Tâche', 'Phase', 'Statut', 'Priorité', 'Responsable', 'Échéance', 'Checklist', 'Lien'], $taskRows)
+            ->sheet('Tâches', ['Tâche', 'Phase', 'Statut', 'Priorité', 'Responsable', 'Début', 'Échéance', 'Checklist', 'Lien'], $taskRows)
             ->sheet('Jalons', ['Jalon', 'Échéance', 'Statut', 'Description'], $msRows)
             ->download('projet-'.($edition->slug ?: $edition->id).'.xlsx');
     }
@@ -446,6 +447,7 @@ class ProjectController extends Controller
             'phase' => ['nullable', 'string', 'max:60'],
             'link_key' => ['nullable', 'string', 'in:'.implode(',', array_keys(self::LINK_TARGETS))],
             'assignee_id' => ['nullable', 'integer'],
+            'start_date' => ['nullable', 'date'],
             'due_date' => ['nullable', 'date'],
             'checklist_json' => ['nullable', 'string'],
         ]);
@@ -545,6 +547,7 @@ class ProjectController extends Controller
             'priority' => $task->priority,
             'priorityLabel' => $task->priorityLabel(),
             'phase' => (string) $task->phase,
+            'start_date' => $task->start_date?->toDateString(),
             'assignee_id' => $task->assignee_id,
             'assignee' => optional($task->assignee)->name,
             'due_date' => $task->due_date?->toDateString(),

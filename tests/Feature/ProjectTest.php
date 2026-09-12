@@ -86,11 +86,12 @@ it('CRUD tâche en AJAX renvoie la carte JSON (sans rechargement)', function () 
     // Création → carte JSON.
     $create = $this->actingAs($staff, 'web')->postJson(
         route('admin.project.tasks.store', ['edition_id' => $edition->id]),
-        ['title' => 'Tâche AJAX', 'status' => 'todo', 'priority' => 'high', 'link_key' => 'payments', 'checklist_json' => json_encode([['text' => 'a', 'done' => false]])]
+        ['title' => 'Tâche AJAX', 'status' => 'todo', 'priority' => 'high', 'link_key' => 'payments', 'start_date' => '2026-10-01', 'due_date' => '2026-10-20', 'checklist_json' => json_encode([['text' => 'a', 'done' => false]])]
     )->assertOk();
     $create->assertJsonPath('task.title', 'Tâche AJAX');
     $create->assertJsonPath('task.priorityLabel', 'Haute');
     $create->assertJsonPath('task.checkTotal', 1);
+    $create->assertJsonPath('task.start_date', '2026-10-01');
     expect($create->json('task.linkUrl'))->toContain('edition_id='.$edition->id);
     $id = $create->json('task.id');
 

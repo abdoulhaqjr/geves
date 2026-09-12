@@ -317,7 +317,7 @@ document.addEventListener('alpine:init', () => {
 
         // ---- Panneau tâche ----
         blankTask(status = 'todo') {
-            return { id: null, title: '', description: '', status, priority: 'normal', phase: '', link_key: '', assignee_id: '', due_date: '', checklist: [], comments: [] };
+            return { id: null, title: '', description: '', status, priority: 'normal', phase: '', link_key: '', assignee_id: '', start_date: '', due_date: '', checklist: [], comments: [] };
         },
         openNewTask(status = 'todo') {
             this.task = this.blankTask(status);
@@ -328,7 +328,8 @@ document.addEventListener('alpine:init', () => {
             this.task = {
                 id: t.id, title: t.title || '', description: t.description || '',
                 status: t.status || 'todo', priority: t.priority || 'normal',
-                phase: t.phase || '', link_key: t.link_key || '', assignee_id: t.assignee_id || '', due_date: t.due_date || '',
+                phase: t.phase || '', link_key: t.link_key || '', assignee_id: t.assignee_id || '',
+                start_date: t.start_date || '', due_date: t.due_date || '',
                 checklist: Array.isArray(t.checklist) ? JSON.parse(JSON.stringify(t.checklist)) : [],
                 comments: [],
             };
@@ -359,7 +360,8 @@ document.addEventListener('alpine:init', () => {
                     title: this.task.title, description: this.task.description,
                     status: this.task.status, priority: this.task.priority,
                     phase: this.task.phase, link_key: this.task.link_key,
-                    assignee_id: this.task.assignee_id || null, due_date: this.task.due_date || null,
+                    assignee_id: this.task.assignee_id || null,
+                    start_date: this.task.start_date || null, due_date: this.task.due_date || null,
                     checklist_json: JSON.stringify(this.task.checklist || []),
                 }),
             })
@@ -528,6 +530,52 @@ document.addEventListener('alpine:init', () => {
                     this.refreshCharts();
                 }
             });
+        },
+
+        // ---- Diagramme de Gantt (CSS, live) ----
+        _d(iso) { return iso ? new Date(iso + 'T00:00:00') : null; },
+        ganttRows() {
+            return this.tasks
+                .filter((t) => t.start_date || t.due_date)
+                .map((t) => ({ ...t, gs: t.start_date || t.due_date, ge: t.due_date || t.start_date }))
+                .sort((a, b) => this._d(a.gs) - this._d(b.gs));
+        },
+        ganttBounds() {
+            const ts = [];
+            this.ganttRows().forEach((r) => { ts.push(this._d(r.gs).getTime(), this._d(r.ge).getTime()); });
+            this.milestones.forEach((m) => { if (m.due_date) ts.push(this._d(m.due_date).getTime()); });
+            if (!ts.length) return null;
+            let min = Math.min(...ts);
+            let max = Math.max(...ts);
+            if (max <= min) max = min + 7 * 86400000;
+            const pad = Math.round((max - min) * 0.04);
+            return { min: min - pad, max: max + pad };
+        },
+        gPct(iso) {
+            const b = this.ganttBounds();
+            if (!b) return 0;
+            return ((this._d(iso).getTime() - b.min) / (b.max - b.min)) * 100;
+        },
+        gWidth(r) {
+            return Math.max(1.5, this.gPct(r.ge) - this.gPct(r.gs));
+        },
+        ganttTicks() {
+            const b = this.ganttBounds();
+            if (!b) return [];
+            const ticks = [];
+            const d = new Date(b.min);
+            d.setDate(1);
+            let guard = 0;
+            while (d.getTime() <= b.max && guard < 60) {
+                const left = ((d.getTime() - b.min) / (b.max - b.min)) * 100;
+                if (left >= 0) ticks.push({ label: d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }), left });
+                d.setMonth(d.getMonth() + 1);
+                guard += 1;
+            }
+            return ticks;
+        },
+        ganttMarkers() {
+            return this.milestones.filter((m) => m.due_date).map((m) => ({ ...m, left: this.gPct(m.due_date) }));
         },
     }));
     // Assistante Gesco (widget flottant + page dédiée) : conversation côté client,
