@@ -8,6 +8,7 @@ use App\Models\ProjectMilestone;
 use App\Models\ProjectTask;
 use App\Models\ProjectTaskComment;
 use App\Models\User;
+use App\Support\Notifier;
 use App\Support\XlsxWriter;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
@@ -81,6 +82,7 @@ class ProjectController extends Controller
         }
 
         $task = ProjectTask::create($data);
+        $this->notifyAssignment($task, null, $request);
 
         if ($request->expectsJson()) {
             return response()->json(['task' => $this->taskCard($task->load('assignee'), $edition)]);
@@ -95,7 +97,9 @@ class ProjectController extends Controller
         $data = $this->validateTask($request, $edition);
         $data['completed_at'] = $data['status'] === 'done' ? ($task->completed_at ?? now()) : null;
 
+        $previousAssignee = $task->assignee_id;
         $task->update($data);
+        $this->notifyAssignment($task, $previousAssignee, $request);
 
         if ($request->expectsJson() && $edition) {
             return response()->json(['task' => $this->taskCard($task->fresh()->load('assignee'), $edition)]);
@@ -599,6 +603,35 @@ class ProjectController extends Controller
             ->map(fn (ProjectMilestone $m) => $this->milestoneData($m))->all();
 
         return ['tasks' => $tasks, 'milestones' => $milestones];
+    }
+
+    /**
+     * Notifie le responsable qu'une tâche lui a été assignée (in-app + e-mail
+     * selon ses préférences). Silencieux si pas de (nouveau) responsable, si
+     * inchangé, ou si l'on s'assigne soi-même.
+     */
+    private function notifyAssignment(ProjectTask $task, ?int $previousAssigneeId, Request $request): void
+    {
+        $newId = $task->assignee_id;
+        if (! $newId || $newId === $previousAssigneeId || $newId === $request->user()?->id) {
+            return;
+        }
+
+        $assignee = $task->assignee()->first();
+        if (! $assignee) {
+            return;
+        }
+
+        $edition = $task->edition;
+        Notifier::user(
+            $assignee,
+            kind: 'task_assigned',
+            title: 'Une tâche vous a été assignée',
+            body: '« '.$task->title.' » — '.($edition?->title ?: 'colloque')
+                .($task->due_date ? ' · échéance '.$task->due_date->format('d/m/Y') : ''),
+            url: $edition ? route('admin.project.index', ['edition_id' => $edition->id]) : null,
+            icon: 'layers',
+        );
     }
 
     /**

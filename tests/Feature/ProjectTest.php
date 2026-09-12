@@ -3,6 +3,8 @@
 use App\Models\ProjectMilestone;
 use App\Models\ProjectTask;
 use App\Models\User;
+use App\Notifications\SystemNotification;
+use Illuminate\Support\Facades\Notification;
 
 it('affiche le hub Projet d’une édition', function () {
     $staff = adminStaff();
@@ -120,6 +122,27 @@ it('amorçage en AJAX renvoie l’état complet (tâches + jalons)', function ()
     // Second amorçage en AJAX refusé (projet déjà peuplé) → 422.
     $this->actingAs($staff, 'web')
         ->postJson(route('admin.project.seed', ['edition_id' => $edition->id]))->assertStatus(422);
+});
+
+it('notifie le responsable quand une tâche lui est assignée (pas soi-même)', function () {
+    Notification::fake();
+    $staff = adminStaff();
+    $edition = openEdition();
+    $member = User::factory()->create();
+    $edition->team()->attach($member->id, ['role' => 'secretariat']);
+
+    // Assignation à un autre → notifié.
+    $this->actingAs($staff, 'web')->post(route('admin.project.tasks.store', ['edition_id' => $edition->id]), [
+        'title' => 'À faire par Mia', 'status' => 'todo', 'priority' => 'normal', 'assignee_id' => $member->id,
+    ]);
+    Notification::assertSentTo($member, SystemNotification::class,
+        fn ($n) => $n->kind === 'task_assigned');
+
+    // Auto-assignation (le membre s'assigne à lui-même) → pas de notification.
+    $this->actingAs($member, 'web')->post(route('admin.project.tasks.store', ['edition_id' => $edition->id]), [
+        'title' => 'Pour moi', 'status' => 'todo', 'priority' => 'normal', 'assignee_id' => $member->id,
+    ]);
+    Notification::assertSentToTimes($member, SystemNotification::class, 1); // toujours 1 (pas de 2e pour l'auto-assignation)
 });
 
 it('exporte le projet en Excel et rend le rapport imprimable', function () {

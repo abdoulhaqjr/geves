@@ -22,6 +22,12 @@ class Notifier
         $account?->notify(new SystemNotification($kind, $title, $body, $url, $icon));
     }
 
+    /** Notifie un utilisateur précis (staff/responsable). Ignore un destinataire absent. */
+    public static function user(?User $user, string $kind, string $title, string $body = '', ?string $url = null, string $icon = 'bell'): void
+    {
+        $user?->notify(new SystemNotification($kind, $title, $body, $url, $icon));
+    }
+
     /**
      * L'e-mail d'un Mailable dédié est-il autorisé pour ce destinataire ?
      * Un destinataire sans compte (pas de préférences) reçoit toujours l'e-mail ;
