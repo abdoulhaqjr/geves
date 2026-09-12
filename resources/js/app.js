@@ -243,6 +243,7 @@ document.addEventListener('alpine:init', () => {
         flash: '',
         flashType: 'ok',
         cal: null,
+        charts: null,
 
         _csrf() {
             return document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -307,6 +308,8 @@ document.addEventListener('alpine:init', () => {
             task.status = to;
             const order = this.colTasks(to).map((t) => t.id);
             order.forEach((tid, i) => { const t = this.tasks.find((x) => x.id === tid); if (t) t.position = i; });
+            this.refreshCal();
+            this.refreshCharts();
             fetch((this.routes.taskMove || '').replace(':id', String(id)), {
                 method: 'POST', headers: this._headers(), body: JSON.stringify({ status: to, order }),
             }).catch(() => {});
@@ -361,14 +364,14 @@ document.addEventListener('alpine:init', () => {
                 }),
             })
                 .then((r) => (r.ok ? r.json() : Promise.reject(r)))
-                .then((d) => { if (d.task) { this.upsertTask(d.task); this.taskOpen = false; this.refreshCal(); this.notify(isEdit ? 'Tâche mise à jour.' : 'Tâche ajoutée.'); } })
+                .then((d) => { if (d.task) { this.upsertTask(d.task); this.taskOpen = false; this.refreshCal(); this.refreshCharts(); this.notify(isEdit ? 'Tâche mise à jour.' : 'Tâche ajoutée.'); } })
                 .catch(() => this.notify('Enregistrement impossible.', 'err'))
                 .finally(() => { this.saving = false; });
         },
         deleteTask(t) {
             if (!confirm('Supprimer cette tâche ?')) return;
             fetch((this.routes.taskDelete || '').replace(':id', String(t.id)), { method: 'DELETE', headers: this._headers() })
-                .then((r) => { if (r.ok) { this.tasks = this.tasks.filter((x) => x.id !== t.id); this.taskOpen = false; this.refreshCal(); this.notify('Tâche supprimée.'); } })
+                .then((r) => { if (r.ok) { this.tasks = this.tasks.filter((x) => x.id !== t.id); this.taskOpen = false; this.refreshCal(); this.refreshCharts(); this.notify('Tâche supprimée.'); } })
                 .catch(() => this.notify('Suppression impossible.', 'err'));
         },
 
@@ -431,7 +434,7 @@ document.addEventListener('alpine:init', () => {
             this.saving = true;
             fetch(this.routes.seed || '', { method: 'POST', headers: this._headers() })
                 .then((r) => (r.ok ? r.json() : Promise.reject(r)))
-                .then((d) => { this.tasks = d.tasks || []; this.milestones = d.milestones || []; this.refreshCal(); this.notify('Projet initialisé.'); })
+                .then((d) => { this.tasks = d.tasks || []; this.milestones = d.milestones || []; this.refreshCal(); this.refreshCharts(); this.notify('Projet initialisé.'); })
                 .catch(() => this.notify('Initialisation impossible.', 'err'))
                 .finally(() => { this.saving = false; });
         },
@@ -486,6 +489,45 @@ document.addEventListener('alpine:init', () => {
                 .then((r) => (r.ok ? r.json() : Promise.reject(r)))
                 .then((d) => { if (d.task) this.upsertTask(d.task); if (d.milestone) this.upsertMs(d.milestone); this.refreshCal(); })
                 .catch(() => info.revert());
+        },
+
+        // ---- Diagrammes (live, pilotés par l'état) ----
+        chartsData() {
+            const keys = Object.keys(this.statuses);
+            const status = { labels: keys.map((k) => this.statuses[k]), data: keys.map((k) => this.count(k)) };
+
+            const phases = {};
+            this.tasks.forEach((t) => {
+                const p = t.phase || 'Sans phase';
+                phases[p] = phases[p] || { total: 0, done: 0 };
+                phases[p].total += 1;
+                if (t.status === 'done') phases[p].done += 1;
+            });
+            const phase = {
+                labels: Object.keys(phases),
+                done: Object.values(phases).map((x) => x.done),
+                remaining: Object.values(phases).map((x) => x.total - x.done),
+            };
+
+            const byAssignee = {};
+            this.tasks.forEach((t) => { const n = t.assignee || 'Non assigné'; byAssignee[n] = (byAssignee[n] || 0) + 1; });
+            const assignee = { labels: Object.keys(byAssignee), data: Object.values(byAssignee) };
+
+            return { status, phase, assignee };
+        },
+        refreshCharts() {
+            if (this.charts) this.charts.update(this.chartsData());
+        },
+        openCharts() {
+            this.view = 'charts';
+            this.$nextTick(async () => {
+                if (!this.charts) {
+                    const m = await import('./project-charts.js');
+                    this.charts = await m.createProjectCharts(this.chartsData());
+                } else {
+                    this.refreshCharts();
+                }
+            });
         },
     }));
     // Assistante Gesco (widget flottant + page dédiée) : conversation côté client,

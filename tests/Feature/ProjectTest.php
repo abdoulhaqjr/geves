@@ -151,26 +151,31 @@ it('crée une tâche et l’ajoute en bas de sa colonne', function () {
     expect($task->priority)->toBe('high');
 });
 
-it('n’affecte un responsable que s’il appartient à l’équipe de l’édition', function () {
+it('assigne une tâche à un membre de l’équipe ou à un admin, sinon ignore', function () {
     $staff = adminStaff();
     $edition = openEdition();
-    $member = User::factory()->create();
-    $outsider = User::factory()->create();
+    $member = User::factory()->create();                                             // équipe
+    $admin = User::factory()->create(['access_level' => User::ACCESS_COLLOQUE_ADMIN]); // admin hors équipe
+    $outsider = User::factory()->create();                                           // simple utilisateur hors équipe
     $edition->team()->attach($member->id, ['role' => 'secretariat']);
 
     // Membre de l'équipe → accepté.
     $this->actingAs($staff, 'web')->post(route('admin.project.tasks.store'), [
-        'edition_id' => $edition->id, 'title' => 'T1', 'status' => 'todo', 'priority' => 'normal',
-        'assignee_id' => $member->id,
+        'edition_id' => $edition->id, 'title' => 'T1', 'status' => 'todo', 'priority' => 'normal', 'assignee_id' => $member->id,
     ]);
     expect(ProjectTask::where('title', 'T1')->value('assignee_id'))->toBe($member->id);
 
-    // Hors équipe → ignoré (null).
+    // Administrateur de colloque (hors équipe mais accès au projet) → accepté.
     $this->actingAs($staff, 'web')->post(route('admin.project.tasks.store'), [
-        'edition_id' => $edition->id, 'title' => 'T2', 'status' => 'todo', 'priority' => 'normal',
-        'assignee_id' => $outsider->id,
+        'edition_id' => $edition->id, 'title' => 'T2', 'status' => 'todo', 'priority' => 'normal', 'assignee_id' => $admin->id,
     ]);
-    expect(ProjectTask::where('title', 'T2')->value('assignee_id'))->toBeNull();
+    expect(ProjectTask::where('title', 'T2')->value('assignee_id'))->toBe($admin->id);
+
+    // Simple utilisateur hors équipe → ignoré (null).
+    $this->actingAs($staff, 'web')->post(route('admin.project.tasks.store'), [
+        'edition_id' => $edition->id, 'title' => 'T3', 'status' => 'todo', 'priority' => 'normal', 'assignee_id' => $outsider->id,
+    ]);
+    expect(ProjectTask::where('title', 'T3')->value('assignee_id'))->toBeNull();
 });
 
 it('enregistre et assainit la checklist d’une tâche', function () {

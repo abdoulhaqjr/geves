@@ -7,7 +7,9 @@ use App\Models\Edition;
 use App\Models\ProjectMilestone;
 use App\Models\ProjectTask;
 use App\Models\ProjectTaskComment;
+use App\Models\User;
 use App\Support\XlsxWriter;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -52,7 +54,7 @@ class ProjectController extends Controller
             'edition_id' => $edition ? (string) $edition->id : '',
             'tasksPayload' => $payload['tasks'],
             'milestonesPayload' => $payload['milestones'],
-            'team' => $edition ? $edition->team()->orderBy('name')->get() : collect(),
+            'team' => $edition ? $this->assigneePool($edition) : collect(),
             'statuses' => ProjectTask::STATUSES,
             'priorities' => ProjectTask::PRIORITIES,
             'linkTargets' => self::LINK_TARGETS,
@@ -450,7 +452,7 @@ class ProjectController extends Controller
 
         // Le responsable doit appartenir à l'équipe de l'édition (sinon on ignore).
         if (! empty($validated['assignee_id']) && $edition
-            && ! $edition->team()->where('users.id', $validated['assignee_id'])->exists()) {
+            && ! $this->assigneePool($edition)->contains('id', (int) $validated['assignee_id'])) {
             $validated['assignee_id'] = null;
         }
 
@@ -593,6 +595,23 @@ class ProjectController extends Controller
             ->map(fn (ProjectMilestone $m) => $this->milestoneData($m))->all();
 
         return ['tasks' => $tasks, 'milestones' => $milestones];
+    }
+
+    /**
+     * Vivier des responsables assignables : l'équipe de l'édition + les
+     * administrateurs (super / de colloque), qui peuvent tous accéder au projet.
+     *
+     * @return EloquentCollection<int, User>
+     */
+    private function assigneePool(Edition $edition): EloquentCollection
+    {
+        $teamIds = $edition->team()->pluck('users.id')->all();
+
+        return User::query()
+            ->where(fn ($q) => $q
+                ->whereIn('id', $teamIds)
+                ->orWhereIn('access_level', [User::ACCESS_SUPER_ADMIN, User::ACCESS_COLLOQUE_ADMIN]))
+            ->orderBy('name')->get();
     }
 
     private function currentEdition(Request $request): ?Edition

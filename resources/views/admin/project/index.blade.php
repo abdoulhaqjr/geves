@@ -92,6 +92,7 @@
                         <button type="button" :class="{ active: view==='list' }" @click="view='list'">Liste</button>
                         <button type="button" :class="{ active: view==='milestones' }" @click="view='milestones'">Jalons</button>
                         <button type="button" :class="{ active: view==='calendar' }" @click="openCalendar()">Calendrier</button>
+                        <button type="button" :class="{ active: view==='charts' }" @click="openCharts()">Diagrammes</button>
                     </div>
                     <div style="display:flex;gap:8px;">
                         <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" x-show="view==='milestones'" @click="openNewMs()"><x-ukc.icon name="plus" :size="14" /> Jalon</button>
@@ -197,6 +198,24 @@
                     </div>
                     <div id="projectCalendar"></div>
                     <p style="font-size:12px;color:var(--ukc-muted);margin-top:8px;">Astuce : faites glisser un événement pour changer son échéance.</p>
+                </div>
+
+                {{-- ===== DIAGRAMMES ===== --}}
+                <div x-show="view==='charts'" x-cloak>
+                    <div class="ukc-charts-grid">
+                        <div class="ukc-card">
+                            <h3 style="margin:0 0 10px;font-size:14px;">Tâches par statut</h3>
+                            <div style="position:relative;height:260px;"><canvas id="projChartStatus"></canvas></div>
+                        </div>
+                        <div class="ukc-card">
+                            <h3 style="margin:0 0 10px;font-size:14px;">Avancement par phase</h3>
+                            <div style="position:relative;height:260px;"><canvas id="projChartPhase"></canvas></div>
+                        </div>
+                        <div class="ukc-card" style="grid-column:1 / -1;">
+                            <h3 style="margin:0 0 10px;font-size:14px;">Charge par responsable</h3>
+                            <div style="position:relative;height:280px;"><canvas id="projChartAssignee"></canvas></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
