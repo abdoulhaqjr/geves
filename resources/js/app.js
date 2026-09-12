@@ -228,6 +228,8 @@ document.addEventListener('alpine:init', () => {
         milestones: config.milestones || [],
         statuses: config.statuses || {},
         routes: config.routes || {},
+        currentUserId: config.currentUserId || null,
+        filters: { assignee: '', phase: '', q: '' },
         view: 'board',
         dragId: null,
         dragFrom: null,
@@ -257,12 +259,36 @@ document.addEventListener('alpine:init', () => {
             setTimeout(() => { if (this.flash === msg) this.flash = ''; }, 3500);
         },
 
+        // ---- Filtres (Tableau / Liste / Gantt / Diagrammes) ----
+        filtered() {
+            const f = this.filters;
+            const q = (f.q || '').trim().toLowerCase();
+            return this.tasks.filter((t) => {
+                if (f.assignee === '__none' && t.assignee_id) return false;
+                if (f.assignee === '__me' && String(t.assignee_id || '') !== String(this.currentUserId || '')) return false;
+                if (f.assignee && !['__none', '__me'].includes(f.assignee) && String(t.assignee_id || '') !== String(f.assignee)) return false;
+                if (f.phase && (t.phase || '') !== f.phase) return false;
+                if (q && !(t.title || '').toLowerCase().includes(q)) return false;
+                return true;
+            });
+        },
+        phaseOptions() {
+            return [...new Set(this.tasks.map((t) => t.phase).filter(Boolean))].sort();
+        },
+        hasFilter() {
+            return !!(this.filters.assignee || this.filters.phase || this.filters.q);
+        },
+        clearFilters() {
+            this.filters = { assignee: '', phase: '', q: '' };
+            this.refreshCharts();
+        },
+
         // ---- Dérivés (kanban / liste / indicateurs) ----
         colTasks(status) {
-            return this.tasks.filter((t) => t.status === status).sort((a, b) => (a.position || 0) - (b.position || 0));
+            return this.filtered().filter((t) => t.status === status).sort((a, b) => (a.position || 0) - (b.position || 0));
         },
         count(status) {
-            return this.tasks.filter((t) => t.status === status).length;
+            return this.filtered().filter((t) => t.status === status).length;
         },
         get st() {
             const total = this.tasks.length;
@@ -498,8 +524,9 @@ document.addEventListener('alpine:init', () => {
             const keys = Object.keys(this.statuses);
             const status = { labels: keys.map((k) => this.statuses[k]), data: keys.map((k) => this.count(k)) };
 
+            const rows = this.filtered();
             const phases = {};
-            this.tasks.forEach((t) => {
+            rows.forEach((t) => {
                 const p = t.phase || 'Sans phase';
                 phases[p] = phases[p] || { total: 0, done: 0 };
                 phases[p].total += 1;
@@ -512,7 +539,7 @@ document.addEventListener('alpine:init', () => {
             };
 
             const byAssignee = {};
-            this.tasks.forEach((t) => { const n = t.assignee || 'Non assigné'; byAssignee[n] = (byAssignee[n] || 0) + 1; });
+            rows.forEach((t) => { const n = t.assignee || 'Non assigné'; byAssignee[n] = (byAssignee[n] || 0) + 1; });
             const assignee = { labels: Object.keys(byAssignee), data: Object.values(byAssignee) };
 
             return { status, phase, assignee };
@@ -535,7 +562,7 @@ document.addEventListener('alpine:init', () => {
         // ---- Diagramme de Gantt (CSS, live) ----
         _d(iso) { return iso ? new Date(iso + 'T00:00:00') : null; },
         ganttRows() {
-            return this.tasks
+            return this.filtered()
                 .filter((t) => t.start_date || t.due_date)
                 .map((t) => ({ ...t, gs: t.start_date || t.due_date, ge: t.due_date || t.start_date }))
                 .sort((a, b) => this._d(a.gs) - this._d(b.gs));

@@ -54,6 +54,8 @@ it('initialise le projet avec le cycle de vie type (jalons + tâches), idempoten
         ->assertOk()
         ->assertSee('Avancement global')
         ->assertSee('Tableau')
+        ->assertSee('Gantt')
+        ->assertSee('Mes tâches')
         ->assertSee('Calendrier')
         ->assertSee('projectCalendar', false); // le conteneur du calendrier des échéances
 });

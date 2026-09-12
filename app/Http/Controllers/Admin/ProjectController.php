@@ -58,6 +58,7 @@ class ProjectController extends Controller
             'statuses' => ProjectTask::STATUSES,
             'priorities' => ProjectTask::PRIORITIES,
             'linkTargets' => self::LINK_TARGETS,
+            'currentUserId' => $request->user()?->id,
         ]);
     }
 

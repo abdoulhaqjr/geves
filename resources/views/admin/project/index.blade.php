@@ -3,6 +3,7 @@
         'tasks' => $tasksPayload,
         'milestones' => $milestonesPayload,
         'statuses' => $statuses,
+        'currentUserId' => $currentUserId,
         'routes' => [
             'taskStore' => route('admin.project.tasks.store', ['edition_id' => $edition?->id]),
             'taskUpdate' => route('admin.project.tasks.update', ':id'),
@@ -101,6 +102,22 @@
                     </div>
                 </div>
 
+                {{-- Filtres (client) : responsable / phase / recherche --}}
+                <div class="filter-bar" style="margin-bottom:14px;" x-show="['board','list','gantt','charts'].includes(view)">
+                    <select x-model="filters.assignee" @change="refreshCharts()">
+                        <option value="">Tous les responsables</option>
+                        <option value="__me">Mes tâches</option>
+                        <option value="__none">Non assigné</option>
+                        @foreach ($team as $u)<option value="{{ $u->id }}">{{ $u->name }}</option>@endforeach
+                    </select>
+                    <select x-model="filters.phase" @change="refreshCharts()">
+                        <option value="">Toutes les phases</option>
+                        <template x-for="p in phaseOptions()" :key="p"><option :value="p" x-text="p"></option></template>
+                    </select>
+                    <input type="search" x-model="filters.q" @input="refreshCharts()" placeholder="Rechercher une tâche…" style="min-width:200px;">
+                    <a href="#" x-show="hasFilter()" @click.prevent="clearFilters()" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
+                </div>
+
                 {{-- ===== TABLEAU KANBAN ===== --}}
                 <div class="ukc-kanban" x-show="view==='board'">
                     @foreach ($statuses as $key => $label)
@@ -142,7 +159,7 @@
                         <table class="ukc-table">
                             <thead><tr><th>Tâche</th><th>Phase</th><th>Responsable</th><th>Priorité</th><th>Échéance</th><th>Statut</th><th style="text-align:right;">Actions</th></tr></thead>
                             <tbody>
-                                <template x-for="t in tasks" :key="t.id">
+                                <template x-for="t in filtered()" :key="t.id">
                                     <tr :class="{ 'is-overdue-row': t.overdue }">
                                         <td><strong x-text="t.title"></strong></td>
                                         <td><span class="ukc-pill ukc-pill--muted" x-show="t.phase" x-text="t.phase"></span><span x-show="!t.phase">—</span></td>
@@ -159,7 +176,7 @@
                                         </td>
                                     </tr>
                                 </template>
-                                <tr x-show="tasks.length === 0"><td colspan="7" style="padding:24px;text-align:center;color:var(--ukc-muted);">Aucune tâche.</td></tr>
+                                <tr x-show="filtered().length === 0"><td colspan="7" style="padding:24px;text-align:center;color:var(--ukc-muted);">Aucune tâche.</td></tr>
                             </tbody>
                         </table>
                     </div>
