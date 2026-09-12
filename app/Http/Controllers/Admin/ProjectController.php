@@ -7,11 +7,13 @@ use App\Models\Edition;
 use App\Models\ProjectMilestone;
 use App\Models\ProjectTask;
 use App\Models\ProjectTaskComment;
+use App\Support\XlsxWriter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Gestion de projet d'une édition : chaque édition est pilotée comme un projet
@@ -286,6 +288,82 @@ class ProjectController extends Controller
         }
 
         return back()->with('ukc_status', 'Projet initialisé avec le cycle de vie type d’un colloque.');
+    }
+
+    /** Export Excel du projet : deux feuilles (Tâches, Jalons). */
+    public function exportXlsx(Request $request): Response|RedirectResponse
+    {
+        $edition = $this->currentEdition($request);
+        if (! $edition) {
+            return back()->with('ukc_error', 'Sélectionnez une édition.');
+        }
+
+        $tasks = ProjectTask::where('edition_id', $edition->id)->with('assignee')
+            ->orderBy('phase')->orderBy('status')->orderBy('position')->get();
+
+        $taskRows = $tasks->map(fn (ProjectTask $t) => [
+            $t->title,
+            $t->phase ?: '—',
+            $t->statusLabel(),
+            $t->priorityLabel(),
+            optional($t->assignee)->name ?: '—',
+            $t->due_date?->format('d/m/Y') ?: '—',
+            implode('/', $t->checklistProgress()),
+            $t->link_key ? (self::LINK_TARGETS[$t->link_key] ?? $t->link_key) : '—',
+        ])->all();
+
+        $milestones = ProjectMilestone::where('edition_id', $edition->id)
+            ->orderByRaw('due_date is null')->orderBy('due_date')->orderBy('position')->get();
+
+        $msRows = $milestones->map(fn (ProjectMilestone $m) => [
+            $m->title,
+            $m->due_date?->format('d/m/Y') ?: '—',
+            $m->isDone() ? 'Atteint' : 'À venir',
+            (string) $m->description,
+        ])->all();
+
+        return (new XlsxWriter)
+            ->sheet('Tâches', ['Tâche', 'Phase', 'Statut', 'Priorité', 'Responsable', 'Échéance', 'Checklist', 'Lien'], $taskRows)
+            ->sheet('Jalons', ['Jalon', 'Échéance', 'Statut', 'Description'], $msRows)
+            ->download('projet-'.($edition->slug ?: $edition->id).'.xlsx');
+    }
+
+    /** Rapport du projet (page imprimable → PDF) : synthèse d'avancement. */
+    public function report(Request $request): View|RedirectResponse
+    {
+        $edition = $this->currentEdition($request);
+        if (! $edition) {
+            return back()->with('ukc_error', 'Sélectionnez une édition.');
+        }
+
+        $tasks = ProjectTask::where('edition_id', $edition->id)->with('assignee')
+            ->orderBy('position')->orderBy('id')->get();
+        $milestones = ProjectMilestone::where('edition_id', $edition->id)
+            ->orderByRaw('due_date is null')->orderBy('due_date')->orderBy('position')->get();
+
+        $total = $tasks->count();
+        $done = $tasks->where('status', 'done')->count();
+
+        $byStatus = [];
+        foreach (ProjectTask::STATUSES as $key => $label) {
+            $byStatus[] = ['label' => $label, 'count' => $tasks->where('status', $key)->count()];
+        }
+
+        $byPhase = $tasks->groupBy(fn (ProjectTask $t) => $t->phase ?: 'Sans phase')
+            ->map(fn ($g) => ['total' => $g->count(), 'done' => $g->where('status', 'done')->count()]);
+
+        return view('admin.project.report', [
+            'edition' => $edition,
+            'tasks' => $tasks,
+            'milestones' => $milestones,
+            'total' => $total,
+            'done' => $done,
+            'progress' => $total > 0 ? (int) round($done / $total * 100) : 0,
+            'overdue' => $tasks->filter(fn (ProjectTask $t) => $t->isOverdue())->values(),
+            'byStatus' => $byStatus,
+            'byPhase' => $byPhase,
+            'msDone' => $milestones->where('status', 'done')->count(),
+        ]);
     }
 
     /**

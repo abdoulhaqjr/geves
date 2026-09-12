@@ -314,6 +314,8 @@ Route::prefix('admin')->group(function () {
         // capacité dédiée « project ».
         Route::middleware('edition.cap:project')->group(function () {
             Route::get('/projet', [ProjectController::class, 'index'])->name('admin.project.index');
+            Route::get('/projet/export', [ProjectController::class, 'exportXlsx'])->name('admin.project.export');
+            Route::get('/projet/rapport', [ProjectController::class, 'report'])->name('admin.project.report');
             Route::post('/projet/initialiser', [ProjectController::class, 'seedTemplate'])->name('admin.project.seed');
             Route::post('/projet/taches', [ProjectController::class, 'storeTask'])->name('admin.project.tasks.store');
             Route::put('/projet/taches/{task}', [ProjectController::class, 'updateTask'])->name('admin.project.tasks.update');

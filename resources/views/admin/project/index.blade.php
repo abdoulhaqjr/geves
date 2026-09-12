@@ -24,6 +24,13 @@
 @endphp
 
 <x-layouts.admin title="Projet" :subtitle="$edition ? (($edition->title ?: $edition->year).' · piloté comme un projet') : 'Pilotez chaque édition comme un projet'">
+    @if ($edition)
+        <x-slot:actions>
+            <a href="{{ route('admin.project.export', ['edition_id' => $edition->id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="sheet" :size="16" /> Export Excel</a>
+            <a href="{{ route('admin.project.report', ['edition_id' => $edition->id]) }}" target="_blank" class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="chart" :size="16" /> Rapport</a>
+        </x-slot:actions>
+    @endif
+
     <div class="admin-page admin-project" x-data="ukcProject({{ \Illuminate\Support\Js::from($projectConfig) }})">
 
         {{-- Notification AJAX (sans rechargement) --}}

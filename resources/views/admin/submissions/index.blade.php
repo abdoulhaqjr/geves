@@ -35,7 +35,7 @@
 
         {{-- Filtres (GET, auto-submit) --}}
         <form method="GET" class="filter-bar">
-            <select name="edition_id" onchange="this.form.submit()" data-tom data-placeholder="Édition…">
+            <select name="edition_id" onchange="this.form.submit()">
                 <option value="">Toutes les éditions</option>
                 @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
             </select>

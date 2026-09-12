@@ -119,6 +119,20 @@ it('amorçage en AJAX renvoie l’état complet (tâches + jalons)', function ()
         ->postJson(route('admin.project.seed', ['edition_id' => $edition->id]))->assertStatus(422);
 });
 
+it('exporte le projet en Excel et rend le rapport imprimable', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+    $this->actingAs($staff, 'web')->post(route('admin.project.seed', ['edition_id' => $edition->id]));
+
+    $this->actingAs($staff, 'web')
+        ->get(route('admin.project.export', ['edition_id' => $edition->id]))
+        ->assertOk()->assertDownload();
+
+    $this->actingAs($staff, 'web')
+        ->get(route('admin.project.report', ['edition_id' => $edition->id]))
+        ->assertOk()->assertSee('Rapport de projet')->assertSee('Avancement');
+});
+
 it('crée une tâche et l’ajoute en bas de sa colonne', function () {
     $staff = adminStaff();
     $edition = openEdition();

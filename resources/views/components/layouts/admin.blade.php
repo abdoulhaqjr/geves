@@ -43,11 +43,6 @@
                        @class(['active' => request()->routeIs('admin.submissions.*') || request()->routeIs('admin.editions.form')])>
                         <x-ukc.icon name="inbox" :size="18" /> <span class="txt">Soumissions</span>
                     </a>
-                    @if (request()->routeIs('admin.submissions.*') || request()->routeIs('admin.editions.form'))
-                        <a href="{{ route('admin.submissions.index') }}" @class(['sub', 'active' => request()->routeIs('admin.submissions.index') || request()->routeIs('admin.submissions.show')])><span class="txt">Liste</span></a>
-                        <a href="{{ $navEdition ? route('admin.editions.form', $navEdition) : route('admin.editions.index') }}" @class(['sub', 'active' => request()->routeIs('admin.editions.form')])><span class="txt">Formulaires</span></a>
-                        <a href="{{ route('admin.submissions.auto-assign') }}" @class(['sub', 'active' => request()->routeIs('admin.submissions.auto-assign')])><span class="txt">Attribution auto</span></a>
-                    @endif
                 @endif
                 @if ($staff?->canAnyEdition('participants'))
                     <a href="{{ route('admin.participants.index') }}" title="Participants"
@@ -82,12 +77,6 @@
                        @class(['active' => request()->routeIs('admin.documents.*') || request()->routeIs('admin.badges.*')])>
                         <x-ukc.icon name="folder" :size="18" /> <span class="txt">Documents</span>
                     </a>
-                    @if (request()->routeIs('admin.documents.attestations'))
-                        @php($dTab = request('tab', 'attestations'))
-                        <a href="{{ route('admin.documents.attestations') }}" @class(['sub', 'active' => $dTab === 'attestations'])><span class="txt">Attestations</span></a>
-                        <a href="{{ route('admin.documents.attestations', ['tab' => 'badges']) }}" @class(['sub', 'active' => $dTab === 'badges'])><span class="txt">Badges</span></a>
-                        <a href="{{ route('admin.documents.attestations', ['tab' => 'livre']) }}" @class(['sub', 'active' => $dTab === 'livre'])><span class="txt">Livre des résumés</span></a>
-                    @endif
                     <a href="{{ route('admin.attestations.index') }}" title="Attestations délivrées"
                        @class(['active' => request()->routeIs('admin.attestations.*')])>
                         <x-ukc.icon name="diploma" :size="18" /> <span class="txt">Attestations délivrées</span>
@@ -120,12 +109,6 @@
                        @class(['active' => request()->routeIs('admin.users.*')])>
                         <x-ukc.icon name="shield" :size="18" /> <span class="txt">Utilisateurs</span>
                     </a>
-                    @if (request()->routeIs('admin.users.*'))
-                        @php($uTab = request('tab', 'list'))
-                        <a href="{{ route('admin.users.index') }}" @class(['sub', 'active' => $uTab === 'list'])><span class="txt">Liste</span></a>
-                        <a href="{{ route('admin.users.index', ['tab' => 'roles']) }}" @class(['sub', 'active' => $uTab === 'roles'])><span class="txt">Rôles</span></a>
-                        <a href="{{ route('admin.users.index', ['tab' => 'access']) }}" @class(['sub', 'active' => $uTab === 'access'])><span class="txt">Accès</span></a>
-                    @endif
                 @endcan
                 @can('settings')
                     <a href="{{ route('admin.settings') }}" title="Réglages"

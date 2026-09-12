@@ -16,7 +16,7 @@
     <div class="admin-page admin-participants">
         {{-- Filtres (GET) --}}
         <form method="GET" class="filter-bar">
-            <select name="edition_id" onchange="this.form.submit()" data-tom data-placeholder="Édition…">
+            <select name="edition_id" onchange="this.form.submit()">
                 <option value="">— Édition —</option>
                 @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
             </select>
