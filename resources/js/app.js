@@ -246,6 +246,16 @@ document.addEventListener('alpine:init', () => {
         flashType: 'ok',
         cal: null,
         charts: null,
+        ganttLabelW: 200,
+        ganttZoom: 1,
+        init() {
+            try {
+                const w = parseInt(localStorage.getItem('ukc.gantt.labelW') || '', 10);
+                if (w >= 120 && w <= 600) this.ganttLabelW = w;
+                const z = parseFloat(localStorage.getItem('ukc.gantt.zoom') || '');
+                if (z >= 0.4 && z <= 4) this.ganttZoom = z;
+            } catch (e) { /* stockage indisponible : on garde les valeurs par défaut */ }
+        },
 
         _csrf() {
             return document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -604,6 +614,36 @@ document.addEventListener('alpine:init', () => {
         ganttMarkers() {
             return this.milestones.filter((m) => m.due_date).map((m) => ({ ...m, left: this.gPct(m.due_date) }));
         },
+        // Largeur de piste (px) pilotée par le zoom → règle la longueur des périodes.
+        ganttGridStyle() {
+            const track = Math.round(820 * this.ganttZoom);
+            return `grid-template-columns:${this.ganttLabelW}px ${track}px`;
+        },
+        _saveGantt() {
+            try {
+                localStorage.setItem('ukc.gantt.labelW', String(this.ganttLabelW));
+                localStorage.setItem('ukc.gantt.zoom', String(this.ganttZoom));
+            } catch (e) { /* ignore */ }
+        },
+        // Glisser la poignée pour élargir / réduire la colonne des tâches.
+        startLabelResize(e) {
+            e.preventDefault();
+            const startX = e.clientX;
+            const startW = this.ganttLabelW;
+            const move = (ev) => { this.ganttLabelW = Math.max(120, Math.min(560, startW + (ev.clientX - startX))); };
+            const up = () => {
+                window.removeEventListener('mousemove', move);
+                window.removeEventListener('mouseup', up);
+                document.body.style.userSelect = '';
+                this._saveGantt();
+            };
+            document.body.style.userSelect = 'none';
+            window.addEventListener('mousemove', move);
+            window.addEventListener('mouseup', up);
+        },
+        ganttZoomIn() { this.ganttZoom = Math.min(4, Math.round((this.ganttZoom + 0.25) * 100) / 100); this._saveGantt(); },
+        ganttZoomOut() { this.ganttZoom = Math.max(0.4, Math.round((this.ganttZoom - 0.25) * 100) / 100); this._saveGantt(); },
+        ganttZoomReset() { this.ganttZoom = 1; this._saveGantt(); },
     }));
     // Assistante Gesco (widget flottant + page dédiée) : conversation côté client,
     // chaque tour appelle l'endpoint JSON /gesco/demander. Aucune action serveur

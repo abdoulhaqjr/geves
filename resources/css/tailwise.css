@@ -571,9 +571,14 @@
 
 /* Diagramme de Gantt du module Projet (CSS, piloté par l'état). */
 .admin-project .ukc-gantt { overflow-x: auto; }
-.admin-project .ukc-gantt__grid { display: grid; grid-template-columns: 180px 1fr; min-width: 640px; }
-.admin-project .ukc-gantt__lbl { font-size: 12.5px; padding: 6px 12px 6px 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; align-self: center; }
+.admin-project .ukc-gantt__grid { display: grid; width: max-content; min-width: 100%; }
+.admin-project .ukc-gantt__toolbar { display: flex; align-items: center; gap: 6px; justify-content: flex-end; margin-bottom: 10px; }
+.admin-project .ukc-gantt__lbl { font-size: 12.5px; padding: 6px 12px 6px 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; align-self: center; border-right: 1px solid var(--ukc-border); }
 .admin-project .ukc-gantt__lbl--head, .admin-project .ukc-gantt__lbl--ms { font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: .02em; color: var(--ukc-muted); cursor: default; }
+.admin-project .ukc-gantt__lbl--head { position: relative; }
+.admin-project .ukc-gantt__grip { position: absolute; top: 0; right: -4px; width: 8px; height: 100%; cursor: col-resize; z-index: 2; }
+.admin-project .ukc-gantt__grip::after { content: ''; position: absolute; top: 0; left: 3px; width: 2px; height: 100%; background: transparent; }
+.admin-project .ukc-gantt__grip:hover::after { background: var(--ukc-blue); }
 .admin-project .ukc-gantt__scale { position: relative; height: 24px; border-bottom: 1px solid var(--ukc-border); }
 .admin-project .ukc-gantt__scale .tick { position: absolute; top: 4px; font-size: 10px; color: var(--ukc-muted); white-space: nowrap; border-left: 1px solid #eef2f7; padding-left: 4px; height: 20px; }
 .admin-project .ukc-gantt__track { position: relative; height: 30px; border-bottom: 1px dashed #eef2f7; }

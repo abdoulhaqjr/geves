@@ -223,10 +223,20 @@
                     <p x-show="ganttRows().length === 0" style="color:var(--ukc-muted);text-align:center;padding:20px;">
                         Aucune tâche datée. Renseignez une date de début et/ou une échéance sur les tâches pour les voir ici.
                     </p>
-                    <div class="ukc-gantt" x-show="ganttRows().length > 0">
-                        <div class="ukc-gantt__grid">
+                    <div x-show="ganttRows().length > 0">
+                        <div class="ukc-gantt__toolbar">
+                            <span style="font-size:12px;color:var(--ukc-muted);">Périodes</span>
+                            <button type="button" class="ukc-btn--icon" @click="ganttZoomOut()" title="Réduire"><x-ukc.icon name="close" :size="14" /></button>
+                            <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="ganttZoomReset()" x-text="Math.round(ganttZoom*100)+'%'"></button>
+                            <button type="button" class="ukc-btn--icon" @click="ganttZoomIn()" title="Agrandir"><x-ukc.icon name="plus" :size="14" /></button>
+                        </div>
+                        <div class="ukc-gantt">
+                        <div class="ukc-gantt__grid" :style="ganttGridStyle()">
                             {{-- En-tête : échelle des mois --}}
-                            <div class="ukc-gantt__lbl ukc-gantt__lbl--head">Tâche</div>
+                            <div class="ukc-gantt__lbl ukc-gantt__lbl--head">
+                                Tâche
+                                <span class="ukc-gantt__grip" @mousedown="startLabelResize($event)" title="Élargir / réduire la colonne"></span>
+                            </div>
                             <div class="ukc-gantt__scale">
                                 <template x-for="tk in ganttTicks()" :key="tk.label">
                                     <span class="tick" :style="'left:'+tk.left+'%'" x-text="tk.label"></span>
@@ -257,8 +267,9 @@
                                           :style="'left:'+m.left+'%'" :title="m.title"></span>
                                 </template>
                             </div>
-                        </div>
-                    </div>
+                        </div>{{-- .ukc-gantt__grid --}}
+                        </div>{{-- .ukc-gantt --}}
+                    </div>{{-- wrapper x-show --}}
                 </div>
 
                 {{-- ===== DIAGRAMMES ===== --}}
