@@ -1205,7 +1205,7 @@ document.addEventListener('alpine:init', () => {
         },
         async search(q) {
             try {
-                const res = await fetch('/mon-profil/affiliations?q=' + encodeURIComponent(q), {
+                const res = await fetch('/profil/affiliations?q=' + encodeURIComponent(q), {
                     headers: { Accept: 'application/json' },
                 });
                 const data = await res.json();

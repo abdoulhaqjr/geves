@@ -69,4 +69,40 @@
             </div>
         </div>
     </form>
+
+    {{-- Préférences de notification (par type / canal) --}}
+    @php
+        $kindDesc = [
+            'submission_status' => __('Acceptation, refus, demande de révision'),
+            'review_assigned' => __('Nouvelle relecture qui vous est confiée'),
+            'attestation' => __('Attestation ou reçu prêt à télécharger'),
+            'invitation' => __('Invitations et rappels d’inscription'),
+            'payment' => __('Confirmation, échec, remboursement'),
+        ];
+    @endphp
+    <div class="ukc-card" style="margin-top:20px;">
+        <h3>{{ __('Préférences de notification') }}</h3>
+        <p style="color:var(--ukc-muted);font-size:.9rem;margin:4px 0 8px;">{{ __('Activez ou désactivez chaque type d’alerte (in-app & e-mail).') }}</p>
+        <form method="POST" action="{{ route('notifications.prefs') }}">
+            @csrf
+            @foreach ($notifKinds as $kind => $def)
+                @php($on = ($notifPrefs[$kind]['inapp'] ?? false) || ($notifPrefs[$kind]['email'] ?? false))
+                <div class="switch-row" x-data="{ on: {{ $on ? 'true' : 'false' }} }">
+                    <div class="meta">
+                        <strong>{{ $def['label'] }}</strong>
+                        <span>{{ $kindDesc[$kind] ?? '' }}</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" x-model="on">
+                        <span class="slider"></span>
+                    </label>
+                    <input type="hidden" name="prefs[{{ $kind }}][inapp]" :value="on ? '1' : '0'">
+                    <input type="hidden" name="prefs[{{ $kind }}][email]" :value="on ? '1' : '0'">
+                </div>
+            @endforeach
+            <div style="margin-top:16px;">
+                <button type="submit" class="ukc-btn ukc-btn--blue"><x-ukc.icon name="check" :size="16" /> {{ __('Enregistrer') }}</button>
+            </div>
+        </form>
+    </div>
 </x-layouts.participant>

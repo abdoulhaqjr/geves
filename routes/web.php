@@ -137,47 +137,47 @@ Route::middleware('guest:account')->group(function () {
 });
 
 Route::middleware(['auth:account', StampAccountSession::class])->group(function () {
-    Route::get('/mon-compte', DashboardController::class)->name('account.dashboard');
-    Route::get('/mon-compte/agenda.ics', [AgendaController::class, 'ics'])->name('account.agenda.ics');
-    Route::post('/mon-compte/colloque', [ColloqueContextController::class, 'switch'])->name('account.colloque.switch');
-    Route::get('/mon-profil', [ProfileController::class, 'edit'])->name('account.profile');
-    Route::put('/mon-profil', [ProfileController::class, 'update'])->name('account.profile.update');
-    Route::get('/mon-profil/affiliations', [ProfileController::class, 'affiliations'])->name('account.profile.affiliations');
-    Route::get('/mon-compte/orcid/connexion', [OrcidController::class, 'connect'])->name('account.orcid.connect');
-    Route::get('/mon-compte/orcid/callback', [OrcidController::class, 'callback'])->name('account.orcid.callback');
-    Route::get('/mes-documents', [App\Http\Controllers\Account\DocumentController::class, 'index'])->name('account.documents');
-    Route::get('/mes-notifications', [NotificationController::class, 'index'])->name('account.notifications');
-    Route::get('/mon-compte/preferences', [PreferencesController::class, 'edit'])->name('account.preferences');
-    Route::put('/mon-compte/preferences', [PreferencesController::class, 'update'])->name('account.preferences.update');
-    Route::get('/mon-compte/securite', [SecurityController::class, 'index'])->name('account.security');
-    Route::post('/mon-compte/securite/mot-de-passe', [SecurityController::class, 'updatePassword'])->name('account.security.password');
-    Route::post('/mon-compte/securite/2fa/totp/demarrer', [SecurityController::class, 'startSetup'])->name('account.security.totp.start');
-    Route::post('/mon-compte/securite/2fa/totp/annuler', [SecurityController::class, 'cancelSetup'])->name('account.security.totp.cancel');
-    Route::post('/mon-compte/securite/2fa/totp/confirmer', [SecurityController::class, 'confirmTwoFactor'])->name('account.security.totp.confirm');
-    Route::post('/mon-compte/securite/2fa/sms/demarrer', [SecurityController::class, 'startSmsSetup'])->name('account.security.sms.start');
-    Route::post('/mon-compte/securite/2fa/sms/envoyer', [SecurityController::class, 'sendSmsSetupCode'])->name('account.security.sms.send');
-    Route::post('/mon-compte/securite/2fa/sms/confirmer', [SecurityController::class, 'confirmSmsSetup'])->name('account.security.sms.confirm');
-    Route::post('/mon-compte/securite/2fa/sms/annuler', [SecurityController::class, 'cancelSmsSetup'])->name('account.security.sms.cancel');
-    Route::post('/mon-compte/securite/2fa/codes', [SecurityController::class, 'regenerateRecoveryCodes'])->name('account.security.recovery');
-    Route::post('/mon-compte/securite/2fa/desactiver', [SecurityController::class, 'disableTwoFactor'])->name('account.security.disable');
-    Route::post('/mon-compte/securite/sessions/{id}/revoquer', [SecurityController::class, 'revokeSession'])->name('account.security.sessions.revoke');
-    Route::post('/mon-compte/securite/sessions/autres', [SecurityController::class, 'revokeOtherSessions'])->name('account.security.sessions.revoke-others');
+    Route::get('/compte', DashboardController::class)->name('account.dashboard');
+    Route::get('/compte/agenda.ics', [AgendaController::class, 'ics'])->name('account.agenda.ics');
+    Route::post('/compte/colloque', [ColloqueContextController::class, 'switch'])->name('account.colloque.switch');
+    Route::get('/profil', [ProfileController::class, 'edit'])->name('account.profile');
+    Route::put('/profil', [ProfileController::class, 'update'])->name('account.profile.update');
+    Route::get('/profil/affiliations', [ProfileController::class, 'affiliations'])->name('account.profile.affiliations');
+    Route::get('/compte/orcid/connexion', [OrcidController::class, 'connect'])->name('account.orcid.connect');
+    Route::get('/compte/orcid/callback', [OrcidController::class, 'callback'])->name('account.orcid.callback');
+    Route::get('/documents', [App\Http\Controllers\Account\DocumentController::class, 'index'])->name('account.documents');
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('account.notifications');
+    Route::get('/compte/preferences', [PreferencesController::class, 'edit'])->name('account.preferences');
+    Route::put('/compte/preferences', [PreferencesController::class, 'update'])->name('account.preferences.update');
+    Route::get('/compte/securite', [SecurityController::class, 'index'])->name('account.security');
+    Route::post('/compte/securite/mot-de-passe', [SecurityController::class, 'updatePassword'])->name('account.security.password');
+    Route::post('/compte/securite/2fa/totp/demarrer', [SecurityController::class, 'startSetup'])->name('account.security.totp.start');
+    Route::post('/compte/securite/2fa/totp/annuler', [SecurityController::class, 'cancelSetup'])->name('account.security.totp.cancel');
+    Route::post('/compte/securite/2fa/totp/confirmer', [SecurityController::class, 'confirmTwoFactor'])->name('account.security.totp.confirm');
+    Route::post('/compte/securite/2fa/sms/demarrer', [SecurityController::class, 'startSmsSetup'])->name('account.security.sms.start');
+    Route::post('/compte/securite/2fa/sms/envoyer', [SecurityController::class, 'sendSmsSetupCode'])->name('account.security.sms.send');
+    Route::post('/compte/securite/2fa/sms/confirmer', [SecurityController::class, 'confirmSmsSetup'])->name('account.security.sms.confirm');
+    Route::post('/compte/securite/2fa/sms/annuler', [SecurityController::class, 'cancelSmsSetup'])->name('account.security.sms.cancel');
+    Route::post('/compte/securite/2fa/codes', [SecurityController::class, 'regenerateRecoveryCodes'])->name('account.security.recovery');
+    Route::post('/compte/securite/2fa/desactiver', [SecurityController::class, 'disableTwoFactor'])->name('account.security.disable');
+    Route::post('/compte/securite/sessions/{id}/revoquer', [SecurityController::class, 'revokeSession'])->name('account.security.sessions.revoke');
+    Route::post('/compte/securite/sessions/autres', [SecurityController::class, 'revokeOtherSessions'])->name('account.security.sessions.revoke-others');
 
     // Communications
-    Route::get('/mes-communications', [SubmissionController::class, 'index'])->name('account.submissions.index');
-    Route::get('/mes-communications/{submission}', [SubmissionController::class, 'show'])->name('account.submissions.show');
-    Route::post('/mes-communications/{submission}/resoumettre', [SubmissionController::class, 'resubmit'])->name('account.submissions.resubmit');
-    Route::post('/mes-communications/{submission}/version-definitive', [SubmissionController::class, 'cameraReady'])->name('account.submissions.camera-ready');
-    Route::post('/mes-communications/{submission}/creneau', [SubmissionController::class, 'chooseSlot'])->name('account.submissions.choose-slot');
-    Route::post('/mes-communications/{submission}/reponse-relecteurs', [SubmissionController::class, 'rebuttal'])->name('account.submissions.rebuttal');
+    Route::get('/communications', [SubmissionController::class, 'index'])->name('account.submissions.index');
+    Route::get('/communications/{submission}', [SubmissionController::class, 'show'])->name('account.submissions.show');
+    Route::post('/communications/{submission}/resoumettre', [SubmissionController::class, 'resubmit'])->name('account.submissions.resubmit');
+    Route::post('/communications/{submission}/version-definitive', [SubmissionController::class, 'cameraReady'])->name('account.submissions.camera-ready');
+    Route::post('/communications/{submission}/creneau', [SubmissionController::class, 'chooseSlot'])->name('account.submissions.choose-slot');
+    Route::post('/communications/{submission}/reponse-relecteurs', [SubmissionController::class, 'rebuttal'])->name('account.submissions.rebuttal');
     Route::get('/colloque/{slug}/soumettre', [SubmissionController::class, 'create'])->name('account.submissions.create');
     Route::post('/colloque/{slug}/soumettre', [SubmissionController::class, 'store'])->name('account.submissions.store');
 
     // Paiement des frais
-    Route::get('/mon-compte/paiement/{edition}', [AccountPaymentController::class, 'show'])->name('account.payment');
-    Route::post('/mon-compte/paiement/{edition}', [AccountPaymentController::class, 'pay'])->name('account.payment.pay');
-    Route::get('/mon-compte/recu/{payment}', App\Http\Controllers\Account\ReceiptController::class)->name('account.receipt');
-    Route::get('/mon-compte/edition/{edition}/livret', [App\Http\Controllers\Account\DocumentController::class, 'livret'])->name('account.documents.livret');
+    Route::get('/compte/paiement/{edition}', [AccountPaymentController::class, 'show'])->name('account.payment');
+    Route::post('/compte/paiement/{edition}', [AccountPaymentController::class, 'pay'])->name('account.payment.pay');
+    Route::get('/compte/recu/{payment}', App\Http\Controllers\Account\ReceiptController::class)->name('account.receipt');
+    Route::get('/compte/edition/{edition}/livret', [App\Http\Controllers\Account\DocumentController::class, 'livret'])->name('account.documents.livret');
 
     // Vérification d'e-mail
     Route::get('/verification-email', [VerifyEmailController::class, 'notice'])->name('account.verification.notice');
@@ -214,17 +214,17 @@ Route::prefix('admin')->group(function () {
         Route::post('/deconnexion', AdminLogoutController::class)->name('admin.logout');
 
         // Basculer vers son propre espace participant (identité unifiée).
-        Route::post('/mon-espace-participant', [App\Http\Controllers\Admin\SpaceController::class, 'participant'])->name('admin.space.participant');
+        Route::post('/espace-participant', [App\Http\Controllers\Admin\SpaceController::class, 'participant'])->name('admin.space.participant');
 
         // Profil du staff connecté (identité, photo, mot de passe).
-        Route::get('/mon-profil', [App\Http\Controllers\Admin\ProfileController::class, 'edit'])->name('admin.profile');
-        Route::put('/mon-profil', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('admin.profile.update');
-        Route::put('/mon-profil/mot-de-passe', [App\Http\Controllers\Admin\ProfileController::class, 'updatePassword'])->name('admin.profile.password');
-        Route::post('/mon-profil/2fa/activer', [App\Http\Controllers\Admin\ProfileController::class, 'startTwoFactor'])->name('admin.profile.2fa.start');
-        Route::post('/mon-profil/2fa/annuler', [App\Http\Controllers\Admin\ProfileController::class, 'cancelTwoFactor'])->name('admin.profile.2fa.cancel');
-        Route::post('/mon-profil/2fa/confirmer', [App\Http\Controllers\Admin\ProfileController::class, 'confirmTwoFactor'])->name('admin.profile.2fa.confirm');
-        Route::post('/mon-profil/2fa/codes', [App\Http\Controllers\Admin\ProfileController::class, 'regenerateRecovery'])->name('admin.profile.2fa.recovery');
-        Route::delete('/mon-profil/2fa', [App\Http\Controllers\Admin\ProfileController::class, 'disableTwoFactor'])->name('admin.profile.2fa.disable');
+        Route::get('/profil', [App\Http\Controllers\Admin\ProfileController::class, 'edit'])->name('admin.profile');
+        Route::put('/profil', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('admin.profile.update');
+        Route::put('/profil/mot-de-passe', [App\Http\Controllers\Admin\ProfileController::class, 'updatePassword'])->name('admin.profile.password');
+        Route::post('/profil/2fa/activer', [App\Http\Controllers\Admin\ProfileController::class, 'startTwoFactor'])->name('admin.profile.2fa.start');
+        Route::post('/profil/2fa/annuler', [App\Http\Controllers\Admin\ProfileController::class, 'cancelTwoFactor'])->name('admin.profile.2fa.cancel');
+        Route::post('/profil/2fa/confirmer', [App\Http\Controllers\Admin\ProfileController::class, 'confirmTwoFactor'])->name('admin.profile.2fa.confirm');
+        Route::post('/profil/2fa/codes', [App\Http\Controllers\Admin\ProfileController::class, 'regenerateRecovery'])->name('admin.profile.2fa.recovery');
+        Route::delete('/profil/2fa', [App\Http\Controllers\Admin\ProfileController::class, 'disableTwoFactor'])->name('admin.profile.2fa.disable');
 
         // Éditions : lecture / écriture (étanchéité par édition).
         Route::get('/editions', [EditionController::class, 'index'])->middleware('edition.cap:editions_read')->name('admin.editions.index');

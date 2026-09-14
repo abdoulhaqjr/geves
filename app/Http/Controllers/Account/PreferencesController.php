@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Notifications\NotificationKinds;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -43,6 +45,14 @@ class PreferencesController extends Controller
         $account = Auth::guard('account')->user();
         $prefs = array_merge(self::DEFAULTS, (array) ($account->meta['prefs'] ?? []));
 
+        // Préférences de notification (par type / canal) — désormais dans cet onglet.
+        $notifPrefs = [];
+        if ($account instanceof User) {
+            foreach ($account->resolvedNotificationPreferences('account') as $kind => $p) {
+                $notifPrefs[$kind] = ['inapp' => $p['inapp'], 'email' => $p['email']];
+            }
+        }
+
         return view('account.preferences', [
             'account' => $account,
             'prefs' => $prefs,
@@ -50,6 +60,8 @@ class PreferencesController extends Controller
             'timezones' => self::TIMEZONES,
             'dateFormats' => self::DATE_FORMATS,
             'themes' => self::THEMES,
+            'notifKinds' => NotificationKinds::forAudience('account'),
+            'notifPrefs' => $notifPrefs,
         ]);
     }
 

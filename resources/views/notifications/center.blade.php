@@ -64,6 +64,8 @@
         </div>
 
         {{-- ============ Préférences de notification ============ --}}
+        {{-- Espace participant : les préférences vivent dans l'onglet « Préférences ». --}}
+        @unless ($isAccount)
         <div class="ukc-card">
             <h3>{{ __('Préférences de notification') }}</h3>
             <p style="color:var(--ukc-muted);font-size:.9rem;margin:4px 0 4px;">{{ __('Activez ou désactivez chaque type d’alerte (in-app & e-mail).') }}</p>
@@ -89,5 +91,6 @@
                 </div>
             </form>
         </div>
+        @endunless
     </div>
 </x-dynamic-component>

@@ -28,6 +28,7 @@ use Spatie\Permission\Traits\HasRoles;
  * Utilisateurs) — non bloquant à la connexion.
  *
  * @property array<string, array{inapp: bool, email: bool}>|null $notification_preferences
+ * @property array<string, mixed>|null $meta
  * @property Carbon|null $last_login_at
  * @property string|null $last_login_ip
  * @property bool $is_active
