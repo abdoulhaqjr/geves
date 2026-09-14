@@ -162,7 +162,7 @@
             </div>
 
             {{-- ============================ ATELIERS ============================ --}}
-            <div x-show="tab==='ateliers'" x-cloak>
+            <div x-show="tab==='ateliers'" x-cloak data-ajax-root="prog-ateliers">
                 <div class="ukc-card">
                     <h2 style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:1rem;font-weight:800;margin-bottom:8px;">
                         Ateliers
@@ -190,7 +190,7 @@
                                         @click="openAtelier({ id:{{ $atelier->id }}, title:@js($atelier->title), tracks:@js($atelier->tracks ?: []), room:@js($room ?: '') })">Modifier</button>
                                 <button type="button" class="{{ $room ? 'ukc-btn ukc-btn--ghost' : 'ukc-btn' }} ukc-btn--sm"
                                         @click="openRoom({ id:{{ $atelier->id }}, title:@js($atelier->title), room:@js($room ?: '') })">{{ $room ? 'Changer la salle' : 'Associer une salle' }}</button>
-                                <form method="POST" action="{{ route('admin.program.ateliers.destroy', $atelier) }}" onsubmit="return confirm('Supprimer cet atelier ? Ses sessions deviendront plénières.')">
+                                <form method="POST" action="{{ route('admin.program.ateliers.destroy', $atelier) }}" data-ajax data-ajax-target="prog-ateliers" data-ajax-msg="Atelier supprimé." data-confirm="Supprimer cet atelier ? Ses sessions deviendront plénières.">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="ukc-btn ukc-btn--danger ukc-btn--sm">Supprimer</button>
                                 </form>
@@ -224,7 +224,7 @@
             </div>
 
             {{-- ============================ SESSIONS ============================ --}}
-            <div x-show="tab==='sessions'" x-cloak>
+            <div x-show="tab==='sessions'" x-cloak data-ajax-root="prog-sessions">
                 <div class="ukc-card">
                     <h2 style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:1rem;font-weight:800;margin-bottom:8px;">
                         Sessions
@@ -257,7 +257,7 @@
                                                 <a href="{{ route('admin.documents.sessions', $edition) }}" class="ukc-btn--icon" title="Fiches (modération / rapport)"><x-ukc.icon name="file" :size="15" /></a>
                                                 <button type="button" class="ukc-btn--icon" title="Modifier"
                                                         @click="openSession({ id:{{ $session->id }}, type:@js($session->atelier_id ? 'atelier' : 'plenary'), atelier_id:@js((string) $session->atelier_id), label:@js($session->label), day:@js($sDay?->format('Y-m-d') ?? ''), start:@js($session->starts_at?->format('H:i') ?? ''), end:@js($session->ends_at?->format('H:i') ?? ''), room:@js($session->room ?? ''), moderator:@js($session->moderator_name ?? ''), rapporteur:@js($session->rapporteur_name ?? '') })"><x-ukc.icon name="pen" :size="15" /></button>
-                                                <form method="POST" action="{{ route('admin.program.sessions.destroy', $session) }}" onsubmit="return confirm('Supprimer cette session ?')">
+                                                <form method="POST" action="{{ route('admin.program.sessions.destroy', $session) }}" data-ajax data-ajax-target="prog-sessions" data-ajax-msg="Session supprimée." data-confirm="Supprimer cette session ?">
                                                     @csrf @method('DELETE')
                                                     <button type="submit" class="ukc-btn--icon" title="Supprimer"><x-ukc.icon name="trash" :size="15" /></button>
                                                 </form>
@@ -274,7 +274,7 @@
             </div>
 
             {{-- ============================ CRÉNEAUX (liste) ============================ --}}
-            <div x-show="tab==='list'" x-cloak>
+            <div x-show="tab==='list'" x-cloak data-ajax-root="prog-slots">
                 <div class="ukc-card">
                     <h2 style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:1rem;font-weight:800;margin-bottom:14px;">
                         Créneaux
@@ -301,7 +301,7 @@
                                             <div class="ukc-actions">
                                                 <button type="button" class="ukc-btn--icon" title="Modifier"
                                                         @click="openSlot({ id:{{ $slot->id }}, session_id:@js((string) $slot->session_id), day:@js($slot->starts_at?->format('Y-m-d') ?? ''), start:@js($slot->starts_at?->format('H:i') ?? ''), room:@js($slot->room ?? ''), submission_id:@js((string) $slot->submission_id), title:@js($slot->session_label ?? '') })"><x-ukc.icon name="pen" :size="15" /></button>
-                                                <form method="POST" action="{{ route('admin.program.slots.destroy', $slot) }}" onsubmit="return confirm('Supprimer ?')">
+                                                <form method="POST" action="{{ route('admin.program.slots.destroy', $slot) }}" data-ajax data-ajax-target="prog-slots" data-ajax-msg="Créneau supprimé." data-confirm="Supprimer ce créneau ?">
                                                     @csrf @method('DELETE')
                                                     <button type="submit" class="ukc-btn--icon" title="Supprimer"><x-ukc.icon name="trash" :size="15" /></button>
                                                 </form>
@@ -318,7 +318,7 @@
             </div>
 
             {{-- ============================ ESPACES ============================ --}}
-            <div x-show="tab==='spaces'" x-cloak>
+            <div x-show="tab==='spaces'" x-cloak data-ajax-root="prog-spaces">
                 <div class="ukc-card">
                     <h2 style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:1rem;font-weight:800;margin-bottom:8px;">
                         Gestion des espaces
@@ -344,7 +344,7 @@
                                 {{ implode(' · ', $bits) ?: '—' }}
                             </div>
                             <div class="row-actions">
-                                <form method="POST" action="{{ route('admin.program.spaces.destroy', $i) }}?edition_id={{ $edition_id }}" onsubmit="return confirm('Supprimer cet espace ?')">
+                                <form method="POST" action="{{ route('admin.program.spaces.destroy', $i) }}?edition_id={{ $edition_id }}" data-ajax data-ajax-target="prog-spaces" data-ajax-msg="Espace supprimé." data-confirm="Supprimer cet espace ?">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="ukc-btn ukc-btn--danger ukc-btn--sm">Supprimer</button>
                                 </form>
