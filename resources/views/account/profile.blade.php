@@ -1,6 +1,8 @@
-<x-layouts.participant :title="__('Mon profil')" :subtitle="__('Vos informations personnelles')">
+<x-layouts.participant :title="__('Mon compte')" :subtitle="__('Profil, préférences, notifications & sécurité')">
+    @include('partials.account-nav')
+
     <div class="ukc-card">
-        <h2><x-ukc.icon name="user" :size="20" /> {{ __('Mon profil') }}</h2>
+        <h3>{{ __('Mon profil') }}</h3>
 
         <form method="POST" action="{{ route('account.profile.update') }}" enctype="multipart/form-data">
             @csrf

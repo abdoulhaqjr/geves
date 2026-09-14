@@ -15,6 +15,7 @@
 </div>
 @php($isTwoFa = request()->routeIs('account.security') && request('tab') === '2fa')
 <nav class="account-nav">
+    <a href="{{ route('account.profile') }}" @class(['active' => request()->routeIs('account.profile')])>{{ __('Mon profil') }}</a>
     <a href="{{ route('account.preferences') }}" @class(['active' => request()->routeIs('account.preferences')])>{{ __('Préférences') }}</a>
     <a href="{{ route('account.notifications') }}" @class(['active' => request()->routeIs('account.notifications')])>{{ __('Notifications') }}</a>
     <a href="{{ route('account.security') }}" @class(['active' => request()->routeIs('account.security') && ! $isTwoFa])>{{ __('Sécurité') }}</a>
