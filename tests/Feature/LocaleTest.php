@@ -28,9 +28,9 @@ it('rend l’interface participant en anglais selon la préférence du compte', 
     $this->actingAs($account, 'account')
         ->get(route('account.dashboard'))
         ->assertOk()
-        ->assertSee('My profile')   // « Mon profil » traduit
+        ->assertSee('My account')   // « Mon compte » traduit (entrée de menu)
         ->assertSee('Submissions')  // « Soumissions » traduit
-        ->assertDontSee('Mon profil');
+        ->assertDontSee('Mon compte');
 });
 
 it('applique la langue choisie en session à la page publique', function () {

@@ -76,10 +76,6 @@
                 </a>
 
                 <span class="nav-label">{{ __('Mon dossier') }}</span>
-                <a href="{{ route('account.profile') }}" title="{{ __('Mon profil') }}"
-                   @class(['active' => request()->routeIs('account.profile')])>
-                    <x-ukc.icon name="user" :size="18" /> <span class="txt">{{ __('Mon profil') }}</span>
-                </a>
                 <a href="{{ route('account.submissions.index') }}" title="{{ __('Soumissions') }}"
                    @class(['active' => request()->routeIs('account.submissions.*')])>
                     <x-ukc.icon name="file" :size="18" /> <span class="txt">{{ __('Soumissions') }}</span>
@@ -92,9 +88,9 @@
                    @class(['active' => request()->routeIs('account.documents')])>
                     <x-ukc.icon name="folder" :size="18" /> <span class="txt">{{ __('Documents') }}</span>
                 </a>
-                <a href="{{ route('account.preferences') }}" title="{{ __('Mon compte') }}"
-                   @class(['active' => request()->routeIs('account.preferences') || request()->routeIs('account.notifications') || request()->routeIs('account.security')])>
-                    <x-ukc.icon name="shield" :size="18" /> <span class="txt">{{ __('Mon compte') }}</span>
+                <a href="{{ route('account.profile') }}" title="{{ __('Mon compte') }}"
+                   @class(['active' => request()->routeIs('account.profile') || request()->routeIs('account.preferences') || request()->routeIs('account.notifications') || request()->routeIs('account.security')])>
+                    <x-ukc.icon name="user" :size="18" /> <span class="txt">{{ __('Mon compte') }}</span>
                 </a>
 
                 <span class="nav-label">{{ __('Colloque') }}</span>
