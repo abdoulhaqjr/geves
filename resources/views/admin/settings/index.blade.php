@@ -11,7 +11,7 @@
             <a href="{{ route('admin.settings.agents') }}" style="padding:10px 16px;font-weight:700;font-size:13.5px;color:var(--ukc-muted);text-decoration:none;">Agents IA ↗</a>
         </div>
 
-        <form method="POST" action="{{ route('admin.settings.update') }}" style="max-width:820px;">
+        <form method="POST" action="{{ route('admin.settings.update') }}">
             @csrf
             {{-- Général --}}
             <div class="ukc-panel" :class="{ active: tab==='general' }">
