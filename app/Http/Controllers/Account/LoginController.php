@@ -37,8 +37,14 @@ class LoginController extends Controller
     private const SESSION_IS_STAFF = 'account.2fa.is_staff';
 
     /** Formulaire de connexion (ou écran de second facteur si un challenge est en cours). */
-    public function create(): View
+    public function create(): View|RedirectResponse
     {
+        // Déjà connecté au back-office (guard web) : ne pas afficher le formulaire,
+        // renvoyer vers l'espace. (Le guard `account` est déjà géré par `guest`.)
+        if (Auth::guard('web')->check()) {
+            return redirect()->route('admin.dashboard');
+        }
+
         return view('account.auth.login', [
             'twoFactor' => session()->has(self::SESSION_LOGIN_ID),
             'method' => (string) session(self::SESSION_METHOD, ''),

@@ -19,8 +19,14 @@ use Illuminate\View\View;
  */
 class RegisterController extends Controller
 {
-    public function create(): View
+    public function create(): View|RedirectResponse
     {
+        // Déjà connecté au back-office (guard web) : pas de création de compte,
+        // renvoyer vers l'espace. (Le guard `account` est déjà géré par `guest`.)
+        if (Auth::guard('web')->check()) {
+            return redirect()->route('admin.dashboard');
+        }
+
         return view('account.auth.register', [
             // Civilités par défaut (surchargeable plus tard par la config d'édition).
             'civilities' => ['M.', 'Mme', 'Dr', 'Pr'],
