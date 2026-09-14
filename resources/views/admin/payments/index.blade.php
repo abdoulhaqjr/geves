@@ -46,7 +46,7 @@
                     <table class="ukc-table">
                         <thead>
                             <tr>
-                                <x-ukc.th sort="receipt_no" :current="$sort" :dir="$dir">Référence</x-ukc.th>
+                                <x-ukc.th sort="reference" :current="$sort" :dir="$dir">Référence</x-ukc.th>
                                 <th>Participant</th><th>Catégorie</th>
                                 <x-ukc.th sort="amount" :current="$sort" :dir="$dir">Montant</x-ukc.th>
                                 <x-ukc.th sort="method" :current="$sort" :dir="$dir">Moyen</x-ukc.th>
@@ -58,7 +58,10 @@
                         <tbody>
                             @foreach ($payments as $p)
                                 <tr>
-                                    <td style="font-family:ui-monospace,monospace;">{{ $p->receipt_no ?: '—' }}</td>
+                                    <td style="font-family:ui-monospace,monospace;">
+                                        {{ $p->reference ?: '—' }}
+                                        @if ($p->receipt_no)<div style="font-size:11px;color:var(--ukc-muted);">Reçu {{ $p->receipt_no }}</div>@endif
+                                    </td>
                                     <td>
                                         <div class="title">{{ $p->participant?->full_name ?: '—' }}</div>
                                         <div class="meta">{{ $p->participant?->email }}</div>

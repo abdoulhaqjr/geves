@@ -135,3 +135,20 @@ it('n’ouvre pas le paiement sans communication acceptée', function () {
         ->post(route('account.payment.pay', $edition), ['gateway' => 'manual'])
         ->assertSessionHasErrors('pay');
 });
+
+it('attribue une référence unique à chaque paiement dès la création (avant confirmation)', function () {
+    $edition = payEdition();
+    [, $participant] = acceptedParticipant($edition);
+
+    $p1 = Payment::create(['edition_id' => $edition->id, 'participant_id' => $participant->id, 'amount' => 15000, 'status' => 'pending', 'method' => 'manual']);
+    $p2 = Payment::create(['edition_id' => $edition->id, 'participant_id' => $participant->id, 'amount' => 25000, 'status' => 'pending', 'method' => 'fedapay']);
+
+    expect($p1->reference)->toStartWith('PAY-2026-');
+    expect($p2->reference)->not->toBeNull();
+    expect($p1->reference)->not->toBe($p2->reference); // unicité
+    // La référence existe avant même la confirmation / le numéro de reçu.
+    expect($p1->receipt_no)->toBeNull();
+
+    // Le libellé de moyen reconnaît l'agrégateur en ligne.
+    expect($p2->methodLabel())->toContain('FedaPay');
+});

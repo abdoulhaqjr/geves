@@ -39,7 +39,7 @@ class PaymentController extends Controller
             ->when($scoped !== null, fn ($q) => $q->whereIn('edition_id', $scoped))
             ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId));
 
-        $sort = \App\Support\ListSort::resolve($request, ['receipt_no', 'amount', 'created_at', 'status', 'method'], 'created_at', 'desc');
+        $sort = \App\Support\ListSort::resolve($request, ['reference', 'receipt_no', 'amount', 'created_at', 'status', 'method'], 'created_at', 'desc');
         $payments = $this->applyFilters(clone $base, $status, $method, $search, $from, $to)
             ->with(['participant', 'edition'])
             ->orderBy($sort['sort'], $sort['dir'])
@@ -64,7 +64,7 @@ class PaymentController extends Controller
             'payments' => $payments,
             'editions' => $this->accessibleEditions($request, 'payments'),
             'statuses' => Payment::statuses(),
-            'methods' => Payment::MANUAL_METHODS,
+            'methods' => Payment::methodLabels(),
             'search' => $search,
             'status' => $status,
             'edition_id' => $editionId,
@@ -97,7 +97,8 @@ class PaymentController extends Controller
             ->when($to !== '', fn ($q) => $q->whereDate('created_at', '<=', $to))
             ->when($search !== '', function ($q) use ($search) {
                 $term = "%{$search}%";
-                $q->where(fn ($p) => $p->where('receipt_no', 'like', $term)
+                $q->where(fn ($p) => $p->where('reference', 'like', $term)
+                    ->orWhere('receipt_no', 'like', $term)
                     ->orWhereHas('participant', fn ($pa) => $pa
                         ->where('first_name', 'like', $term)
                         ->orWhere('last_name', 'like', $term)
@@ -126,9 +127,10 @@ class PaymentController extends Controller
         return response()->streamDownload(function () use ($rows) {
             $out = fopen('php://output', 'w');
             fprintf($out, "\xEF\xBB\xBF");
-            fputcsv($out, ['Reçu', 'Participant', 'E-mail', 'Catégorie', 'Montant', 'Devise', 'Moyen', 'Statut', 'Date', 'Édition']);
+            fputcsv($out, ['Référence', 'Reçu', 'Participant', 'E-mail', 'Catégorie', 'Montant', 'Devise', 'Moyen', 'Statut', 'Date', 'Édition']);
             foreach ($rows as $p) {
                 fputcsv($out, [
+                    $p->reference,
                     $p->receipt_no,
                     $p->participant?->full_name,
                     $p->participant?->email,
