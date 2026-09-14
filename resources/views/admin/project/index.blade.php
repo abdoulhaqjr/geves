@@ -34,10 +34,6 @@
 
     <div class="admin-page admin-project" x-data="ukcProject({{ \Illuminate\Support\Js::from($projectConfig) }})">
 
-        {{-- Notification AJAX (sans rechargement) --}}
-        <div class="ukc-flash" x-show="flash" x-cloak x-transition
-             :class="flashType==='err' ? 'ukc-flash--err' : 'ukc-flash--ok'" x-text="flash"></div>
-
         {{-- Sélecteur d'édition (change = navigation) --}}
         <div style="max-width:340px;margin-bottom:16px;">
             <div class="ukc-field" style="margin:0;">

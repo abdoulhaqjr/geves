@@ -108,20 +108,31 @@ if (document.getElementById('dashboardData')) {
 // rafraîchit uniquement le conteneur `data-ajax-root` visé (par `data-ajax-target`
 // ou le plus proche) au lieu de recharger toute la page. Toast de confirmation.
 // ---------------------------------------------------------------------------
+// Toast unifié (même rendu que <x-ukc.toast> : carte en bas à droite, icône +
+// fermeture). Réutilise le conteneur `.ukc-toasts` s'il existe (flash serveur),
+// sinon en crée un — un seul empilement, cohérent dans tout le projet.
 function ukcToast(msg, type = 'ok') {
-    let host = document.getElementById('ukc-toasts');
+    let host = document.querySelector('.ukc-toasts');
     if (!host) {
         host = document.createElement('div');
-        host.id = 'ukc-toasts';
-        host.style.cssText = 'position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;';
+        host.className = 'ukc-toasts';
+        host.setAttribute('aria-live', 'polite');
         document.body.appendChild(host);
     }
+    const icon = type === 'err'
+        ? '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-6h-2v4h2v-4z"/></svg>'
+        : '<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
     const el = document.createElement('div');
-    el.className = 'ukc-flash ' + (type === 'err' ? 'ukc-flash--err' : 'ukc-flash--ok');
-    el.style.position = 'static';
-    el.textContent = msg;
+    el.className = 'ukc-toast ukc-toast--' + (type === 'err' ? 'err' : 'ok');
+    el.setAttribute('role', 'status');
+    el.innerHTML = '<span class="ukc-toast__ico">' + icon + '</span><span class="ukc-toast__msg"></span>'
+        + '<button type="button" class="ukc-toast__close" aria-label="Fermer">'
+        + '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>';
+    el.querySelector('.ukc-toast__msg').textContent = msg;
+    const remove = () => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); };
+    el.querySelector('.ukc-toast__close').addEventListener('click', remove);
     host.appendChild(el);
-    setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3000);
+    setTimeout(remove, 4000);
 }
 window.ukcToast = ukcToast;
 
@@ -242,8 +253,6 @@ document.addEventListener('alpine:init', () => {
         newCheck: '',
         newComment: '',
         commentBusy: false,
-        flash: '',
-        flashType: 'ok',
         cal: null,
         charts: null,
         ganttLabelW: 200,
@@ -264,9 +273,7 @@ document.addEventListener('alpine:init', () => {
             return { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this._csrf() };
         },
         notify(msg, type = 'ok') {
-            this.flash = msg;
-            this.flashType = type;
-            setTimeout(() => { if (this.flash === msg) this.flash = ''; }, 3500);
+            window.ukcToast(msg, type);
         },
 
         // ---- Filtres (Tableau / Liste / Gantt / Diagrammes) ----

@@ -561,9 +561,6 @@
 .ukc-task-link:hover { background: #e0e7ff; }
 
 /* Notification AJAX du module Projet (sans rechargement). */
-.ukc-flash { position: fixed; top: 16px; right: 16px; z-index: 60; padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 700; color: #fff; box-shadow: 0 6px 20px rgba(15, 23, 42, .18); }
-.ukc-flash--ok { background: #16a34a; }
-.ukc-flash--err { background: #dc2626; }
 
 /* Grille des diagrammes du module Projet. */
 .admin-project .ukc-charts-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
