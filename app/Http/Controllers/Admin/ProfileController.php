@@ -21,9 +21,12 @@ class ProfileController extends Controller
 {
     public function edit(): View
     {
+        $staff = Auth::guard('web')->user();
+
         return view('admin.profile', [
-            'staff' => Auth::guard('web')->user(),
+            'staff' => $staff,
             'civilities' => ['M.', 'Mme', 'Pr', 'Dr'],
+            'notifPrefs' => $staff?->resolvedNotificationPreferences('staff') ?? [],
         ]);
     }
 

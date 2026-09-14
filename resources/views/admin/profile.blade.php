@@ -85,6 +85,32 @@
             <p class="ukc-hint" style="margin-top:10px;font-size:12px;color:var(--ukc-light);">L’adresse e-mail (identifiant de connexion) et le niveau d’accès sont gérés dans <strong>Utilisateurs</strong>.</p>
         </div>
 
+        {{-- Préférences de notification --}}
+        @if (! empty($notifPrefs))
+            <form method="POST" action="{{ route('notifications.prefs') }}" class="ukc-card" style="margin-top:16px;">
+                @csrf
+                <h2>Préférences de notification</h2>
+                <div class="desc" style="color:var(--ukc-muted);font-size:13px;margin-bottom:10px;">Choisissez, pour chaque type, où vous êtes notifié.</div>
+                <div class="ukc-table-wrap">
+                    <table class="ukc-table">
+                        <thead><tr><th>Type</th><th style="text-align:center;">Dans l’app</th><th style="text-align:center;">E-mail</th></tr></thead>
+                        <tbody>
+                            @foreach ($notifPrefs as $kind => $p)
+                                <tr>
+                                    <td>{{ $p['label'] }}</td>
+                                    <td style="text-align:center;"><input type="checkbox" name="prefs[{{ $kind }}][inapp]" value="1" @checked($p['inapp'])></td>
+                                    <td style="text-align:center;"><input type="checkbox" name="prefs[{{ $kind }}][email]" value="1" @checked($p['email'])></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                <div class="ukc-form-actions" style="margin-top:12px;">
+                    <button type="submit" class="ukc-btn ukc-btn--blue"><x-ukc.icon name="bell" :size="16" /> Enregistrer les préférences</button>
+                </div>
+            </form>
+        @endif
+
         {{-- Sécurité --}}
         <form method="POST" action="{{ route('admin.profile.password') }}" class="ukc-card" style="margin-top:16px;max-width:520px;">
             @csrf @method('PUT')

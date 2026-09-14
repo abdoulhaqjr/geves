@@ -11,6 +11,7 @@ it('affiche la page profil du staff', function () {
         ->assertOk()
         ->assertSee('Mon profil')
         ->assertSee('Identité')
+        ->assertSee('Préférences de notification')
         ->assertSee($staff->email);
 });
 
