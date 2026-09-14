@@ -217,6 +217,11 @@ Route::prefix('admin')->group(function () {
         Route::get('/mon-profil', [App\Http\Controllers\Admin\ProfileController::class, 'edit'])->name('admin.profile');
         Route::put('/mon-profil', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('admin.profile.update');
         Route::put('/mon-profil/mot-de-passe', [App\Http\Controllers\Admin\ProfileController::class, 'updatePassword'])->name('admin.profile.password');
+        Route::post('/mon-profil/2fa/activer', [App\Http\Controllers\Admin\ProfileController::class, 'startTwoFactor'])->name('admin.profile.2fa.start');
+        Route::post('/mon-profil/2fa/annuler', [App\Http\Controllers\Admin\ProfileController::class, 'cancelTwoFactor'])->name('admin.profile.2fa.cancel');
+        Route::post('/mon-profil/2fa/confirmer', [App\Http\Controllers\Admin\ProfileController::class, 'confirmTwoFactor'])->name('admin.profile.2fa.confirm');
+        Route::post('/mon-profil/2fa/codes', [App\Http\Controllers\Admin\ProfileController::class, 'regenerateRecovery'])->name('admin.profile.2fa.recovery');
+        Route::delete('/mon-profil/2fa', [App\Http\Controllers\Admin\ProfileController::class, 'disableTwoFactor'])->name('admin.profile.2fa.disable');
 
         // Éditions : lecture / écriture (étanchéité par édition).
         Route::get('/editions', [EditionController::class, 'index'])->middleware('edition.cap:editions_read')->name('admin.editions.index');

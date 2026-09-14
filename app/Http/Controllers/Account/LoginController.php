@@ -33,6 +33,9 @@ class LoginController extends Controller
 
     private const SESSION_PHONE_HINT = 'account.2fa.phone_hint';
 
+    /** Le login en attente de 2FA doit-il finaliser vers le back-office (staff) ? */
+    private const SESSION_IS_STAFF = 'account.2fa.is_staff';
+
     /** Formulaire de connexion (ou écran de second facteur si un challenge est en cours). */
     public function create(): View
     {
@@ -72,17 +75,13 @@ class LoginController extends Controller
                 ->with('ukc_status', __('Pour votre sécurité, définissez un nouveau mot de passe pour continuer.'));
         }
 
-        // Identité unifiée : selon les rôles, on oriente vers le back-office
-        // (personnel de gestion) ou l'espace participant. Une seule page, deux
-        // destinations.
-        if ($this->hasBackOfficeAccess($account)) {
-            return $this->completeStaffLogin($request, $account);
-        }
-
-        // Second facteur requis : ne pas connecter tout de suite.
+        // Second facteur requis : ne pas connecter tout de suite (staff comme
+        // participant). La destination finale (back-office vs espace) est mise en
+        // attente jusqu'à la validation du code.
         if ($account->hasTwoFactorEnabled()) {
             session()->put(self::SESSION_LOGIN_ID, $account->id);
             session()->put(self::SESSION_LOGIN_REMEMBER, $request->boolean('remember'));
+            session()->put(self::SESSION_IS_STAFF, $this->hasBackOfficeAccess($account));
             $method = (string) $account->twoFactorMethod();
             session()->put(self::SESSION_METHOD, $method);
             session()->forget(self::SESSION_PHONE_HINT);
@@ -92,6 +91,13 @@ class LoginController extends Controller
             }
 
             return redirect()->route('account.login');
+        }
+
+        // Identité unifiée : selon les rôles, on oriente vers le back-office
+        // (personnel de gestion) ou l'espace participant. Une seule page, deux
+        // destinations.
+        if ($this->hasBackOfficeAccess($account)) {
+            return $this->completeStaffLogin($request, $account, $request->boolean('remember'));
         }
 
         return $this->completeLogin($request, $account, $request->boolean('remember'));
@@ -130,9 +136,12 @@ class LoginController extends Controller
         }
 
         $remember = (bool) session(self::SESSION_LOGIN_REMEMBER, false);
+        $isStaff = (bool) session(self::SESSION_IS_STAFF, false);
         $this->resetChallenge();
 
-        return $this->completeLogin($request, $account, $remember);
+        return $isStaff
+            ? $this->completeStaffLogin($request, $account, $remember)
+            : $this->completeLogin($request, $account, $remember);
     }
 
     /** Renvoie un nouveau code OTP par SMS pendant le challenge. */
@@ -184,6 +193,7 @@ class LoginController extends Controller
             self::SESSION_LOGIN_REMEMBER,
             self::SESSION_METHOD,
             self::SESSION_PHONE_HINT,
+            self::SESSION_IS_STAFF,
         ]);
     }
 
@@ -198,9 +208,9 @@ class LoginController extends Controller
     }
 
     /** Connexion du personnel de gestion : guard « web » + orientation back-office. */
-    private function completeStaffLogin(Request $request, User $user): RedirectResponse
+    private function completeStaffLogin(Request $request, User $user, bool $remember = false): RedirectResponse
     {
-        Auth::guard('web')->login($user, $request->boolean('remember'));
+        Auth::guard('web')->login($user, $remember);
         $request->session()->regenerate();
 
         // Activité de connexion (page Utilisateurs) : date + IP.

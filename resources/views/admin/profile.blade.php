@@ -111,6 +111,63 @@
             </form>
         @endif
 
+        {{-- Double authentification (TOTP) --}}
+        <div class="ukc-card" style="margin-top:16px;max-width:640px;" id="securite">
+            <h2>Double authentification</h2>
+            <div class="desc" style="color:var(--ukc-muted);font-size:13px;margin-bottom:10px;">Protège l’accès au back-office avec une application d’authentification (Google Authenticator, Authy…).</div>
+
+            @if (session('recovery_codes'))
+                <div class="ukc-note" style="background:#fef9c3;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+                    <strong>Codes de secours — notez-les maintenant</strong> (ils ne seront plus affichés).
+                    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px 16px;font-family:ui-monospace,monospace;margin-top:8px;">
+                        @foreach (session('recovery_codes') as $code)<span>{{ $code }}</span>@endforeach
+                    </div>
+                </div>
+            @endif
+
+            @if ($twoFactorEnabled)
+                <p><span class="ukc-pill ukc-pill--ok">Activée</span> · {{ $recoveryCount }} code(s) de secours restant(s).</p>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+                    <form method="POST" action="{{ route('admin.profile.2fa.recovery') }}" style="display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap;">
+                        @csrf
+                        <div class="ukc-form-row" style="margin:0;"><label>Mot de passe actuel</label><input type="password" name="current_password" required style="min-width:200px;"></div>
+                        <button type="submit" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Régénérer les codes</button>
+                    </form>
+                </div>
+                @error('current_password')<div class="error" style="margin-top:6px;">{{ $message }}</div>@enderror
+                <form method="POST" action="{{ route('admin.profile.2fa.disable') }}" onsubmit="return confirm('Désactiver la double authentification ?')" style="margin-top:12px;display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap;">
+                    @csrf @method('DELETE')
+                    <div class="ukc-form-row" style="margin:0;"><label>Mot de passe actuel</label><input type="password" name="current_password" required style="min-width:200px;"></div>
+                    <button type="submit" class="ukc-btn ukc-btn--danger ukc-btn--sm">Désactiver</button>
+                </form>
+            @elseif ($pendingSecret !== '')
+                <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
+                    <div style="width:180px;">{!! $setupQr !!}</div>
+                    <div style="flex:1;min-width:240px;">
+                        <p style="font-size:13px;">1. Scannez le QR code avec votre application, ou saisissez la clé :</p>
+                        <code style="display:block;background:#f1f5f9;padding:8px;border-radius:6px;font-size:13px;word-break:break-all;">{{ $setupSecretFormatted }}</code>
+                        <form method="POST" action="{{ route('admin.profile.2fa.confirm') }}" style="margin-top:12px;">
+                            @csrf
+                            <div class="ukc-form-row"><label>2. Code à 6 chiffres généré par l’app</label>
+                                <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" required style="max-width:180px;letter-spacing:3px;">
+                                @error('code')<div class="error">{{ $message }}</div>@enderror
+                            </div>
+                            <div style="display:flex;gap:8px;">
+                                <button type="submit" class="ukc-btn ukc-btn--blue"><x-ukc.icon name="check" :size="16" /> Activer</button>
+                                <button type="submit" formaction="{{ route('admin.profile.2fa.cancel') }}" class="ukc-btn ukc-btn--ghost">Annuler</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            @else
+                <p><span class="ukc-pill ukc-pill--muted">Désactivée</span></p>
+                <form method="POST" action="{{ route('admin.profile.2fa.start') }}" style="margin-top:10px;">
+                    @csrf
+                    <button type="submit" class="ukc-btn ukc-btn--blue"><x-ukc.icon name="shield" :size="16" /> Activer la double authentification</button>
+                </form>
+            @endif
+        </div>
+
         {{-- Sécurité --}}
         <form method="POST" action="{{ route('admin.profile.password') }}" class="ukc-card" style="margin-top:16px;max-width:520px;">
             @csrf @method('PUT')

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Support\Orcid;
+use App\Support\Totp;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,15 +20,98 @@ use Illuminate\View\View;
  */
 class ProfileController extends Controller
 {
+    /** Secret TOTP provisoire (avant confirmation) — en session. */
+    private const PENDING_SECRET = 'admin.2fa.pending_secret';
+
     public function edit(): View
     {
         $staff = Auth::guard('web')->user();
+        $pending = (string) session(self::PENDING_SECRET, '');
 
         return view('admin.profile', [
             'staff' => $staff,
             'civilities' => ['M.', 'Mme', 'Pr', 'Dr'],
             'notifPrefs' => $staff?->resolvedNotificationPreferences('staff') ?? [],
+            'twoFactorEnabled' => $staff?->hasTotpEnabled() ?? false,
+            'recoveryCount' => $staff?->countRecoveryCodes() ?? 0,
+            'pendingSecret' => $pending,
+            'setupQr' => $pending !== '' ? Totp::qrCodeSvg($pending, (string) $staff?->email) : '',
+            'setupSecretFormatted' => $pending !== '' ? trim(chunk_split($pending, 4, ' ')) : '',
         ]);
+    }
+
+    /** Étape 1 : génère un secret provisoire et affiche le QR. */
+    public function startTwoFactor(): RedirectResponse
+    {
+        session()->put(self::PENDING_SECRET, Totp::generateSecret());
+
+        return redirect()->route('admin.profile')->withFragment('securite');
+    }
+
+    public function cancelTwoFactor(): RedirectResponse
+    {
+        session()->forget(self::PENDING_SECRET);
+
+        return redirect()->route('admin.profile')->withFragment('securite');
+    }
+
+    /** Étape 2 : vérifie le code de l'app puis active la 2FA + codes de secours. */
+    public function confirmTwoFactor(Request $request): RedirectResponse
+    {
+        $request->validate(['code' => ['required', 'string']]);
+        $secret = (string) session(self::PENDING_SECRET);
+
+        if ($secret === '') {
+            return redirect()->route('admin.profile')->with('ukc_error', 'Reprenez l’activation de la double authentification.');
+        }
+
+        if (! Totp::verify($secret, (string) $request->input('code'))) {
+            return back()->withErrors(['code' => 'Code invalide — vérifiez l’heure de votre téléphone et réessayez.']);
+        }
+
+        /** @var \App\Models\User $staff */
+        $staff = Auth::guard('web')->user();
+        $staff->two_factor_secret = $secret;
+        $staff->two_factor_confirmed_at = now();
+        $codes = $staff->generateRecoveryCodes();
+        $staff->save();
+
+        session()->forget(self::PENDING_SECRET);
+
+        return redirect()->route('admin.profile')->withFragment('securite')
+            ->with('ukc_status', 'Double authentification activée.')
+            ->with('recovery_codes', $codes);
+    }
+
+    public function regenerateRecovery(Request $request): RedirectResponse
+    {
+        $request->validate(['current_password' => ['required', 'current_password:web']]);
+
+        /** @var \App\Models\User $staff */
+        $staff = Auth::guard('web')->user();
+        if (! $staff->hasTotpEnabled()) {
+            return back();
+        }
+
+        $codes = $staff->generateRecoveryCodes();
+        $staff->save();
+
+        return redirect()->route('admin.profile')->withFragment('securite')
+            ->with('ukc_status', 'Nouveaux codes de secours générés.')
+            ->with('recovery_codes', $codes);
+    }
+
+    public function disableTwoFactor(Request $request): RedirectResponse
+    {
+        $request->validate(['current_password' => ['required', 'current_password:web']]);
+
+        /** @var \App\Models\User $staff */
+        $staff = Auth::guard('web')->user();
+        $staff->disableTotp();
+        $staff->save();
+
+        return redirect()->route('admin.profile')->withFragment('securite')
+            ->with('ukc_status', 'Double authentification désactivée.');
     }
 
     public function update(Request $request): RedirectResponse
