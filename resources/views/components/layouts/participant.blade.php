@@ -156,6 +156,11 @@
                     </div>
                 </div>
                 <div class="actions">
+                    @if (auth('web')->check() && ! app('impersonate')->isImpersonating())
+                        <a href="{{ route('admin.dashboard') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm" title="{{ __('Revenir au back-office') }}">
+                            <x-ukc.icon name="shield" :size="14" /> {{ __('Back-office') }}
+                        </a>
+                    @endif
                     @if ($colloqueEdition)
                         <a href="{{ route('public.colloque', $colloqueEdition->slug) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">
                             <x-ukc.icon name="external" :size="14" /> {{ __('Voir le colloque') }}

@@ -213,6 +213,9 @@ Route::prefix('admin')->group(function () {
         Route::get('/notifications', [NotificationController::class, 'index'])->name('admin.notifications');
         Route::post('/deconnexion', AdminLogoutController::class)->name('admin.logout');
 
+        // Basculer vers son propre espace participant (identité unifiée).
+        Route::post('/mon-espace-participant', [App\Http\Controllers\Admin\SpaceController::class, 'participant'])->name('admin.space.participant');
+
         // Profil du staff connecté (identité, photo, mot de passe).
         Route::get('/mon-profil', [App\Http\Controllers\Admin\ProfileController::class, 'edit'])->name('admin.profile');
         Route::put('/mon-profil', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('admin.profile.update');
