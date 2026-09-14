@@ -213,6 +213,11 @@ Route::prefix('admin')->group(function () {
         Route::get('/notifications', [NotificationController::class, 'index'])->name('admin.notifications');
         Route::post('/deconnexion', AdminLogoutController::class)->name('admin.logout');
 
+        // Profil du staff connecté (identité, photo, mot de passe).
+        Route::get('/mon-profil', [App\Http\Controllers\Admin\ProfileController::class, 'edit'])->name('admin.profile');
+        Route::put('/mon-profil', [App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('admin.profile.update');
+        Route::put('/mon-profil/mot-de-passe', [App\Http\Controllers\Admin\ProfileController::class, 'updatePassword'])->name('admin.profile.password');
+
         // Éditions : lecture / écriture (étanchéité par édition).
         Route::get('/editions', [EditionController::class, 'index'])->middleware('edition.cap:editions_read')->name('admin.editions.index');
         Route::get('/editions/{edition}/exporter', [EditionController::class, 'export'])->middleware('edition.cap:editions_read')->name('admin.editions.export');

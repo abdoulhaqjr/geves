@@ -683,6 +683,7 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .ukc-modal .box-body { padding: 18px 20px 22px; }
 .ukc-modal .box-foot { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--ukc-border); margin-top: 12px; }
 
+.ukc-avatar-lg { width: 88px; height: 88px; border-radius: 50%; background: var(--ukc-blue); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: 800; overflow: hidden; margin: 0 auto; }
 .detail-grid { display: grid; grid-template-columns: 130px 1fr; gap: 8px 12px; font-size: 13.5px; margin-bottom: 14px; }
 .detail-grid .k { color: var(--ukc-muted); font-weight: 600; }
 .detail-grid .v { font-weight: 600; }

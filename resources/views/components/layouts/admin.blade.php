@@ -118,12 +118,15 @@
                 @endcan
             </nav>
             <div class="ukc-sidebar-foot">
+                @php($staffPhoto = $staff?->photo_path ? \Illuminate\Support\Facades\Storage::url($staff->photo_path) : null)
                 <div class="ukc-user-chip">
-                    <div class="av">{{ strtoupper(mb_substr($staff?->name ?? 'A', 0, 1)) }}</div>
-                    <div class="meta">
+                    <a href="{{ route('admin.profile') }}" class="av" title="Mon profil" style="text-decoration:none;">
+                        @if ($staffPhoto)<img src="{{ $staffPhoto }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">@else{{ strtoupper(mb_substr($staff?->name ?? 'A', 0, 1)) }}@endif
+                    </a>
+                    <a href="{{ route('admin.profile') }}" class="meta" style="text-decoration:none;color:inherit;">
                         <div class="name">{{ $staff?->name }}</div>
-                        <div class="role">Staff</div>
-                    </div>
+                        <div class="role">Mon profil</div>
+                    </a>
                     <form method="POST" action="{{ route('admin.logout') }}">
                         @csrf
                         <button type="submit" class="logout" aria-label="Se déconnecter">
@@ -153,7 +156,7 @@
                     <x-ukc.notification-bell />
                     <div class="ukc-usermenu" x-data="{ open: false }" @click.outside="open = false">
                         <button type="button" class="ukc-usermenu__btn" @click="open = !open" :aria-expanded="open" aria-label="Menu du compte">
-                            <span class="av">{{ strtoupper(mb_substr($staff?->name ?? 'A', 0, 1)) }}</span>
+                            <span class="av">@if ($staffPhoto)<img src="{{ $staffPhoto }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">@else{{ strtoupper(mb_substr($staff?->name ?? 'A', 0, 1)) }}@endif</span>
                             <x-ukc.icon name="chevron" :size="14" />
                         </button>
                         <div class="ukc-usermenu__pop" x-show="open" x-cloak x-transition.origin.top.right style="display:none;">
@@ -161,6 +164,7 @@
                                 <div class="name">{{ $staff?->name }}</div>
                                 <div class="mail">{{ $staff?->email }}</div>
                             </div>
+                            <a href="{{ route('admin.profile') }}" class="ukc-usermenu__item"><x-ukc.icon name="user" :size="16" /> Mon profil</a>
                             @can('settings')
                                 <a href="{{ route('admin.settings') }}" class="ukc-usermenu__item"><x-ukc.icon name="settings" :size="16" /> Réglages</a>
                             @endcan
