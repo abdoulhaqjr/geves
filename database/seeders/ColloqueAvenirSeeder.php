@@ -17,9 +17,11 @@ use Illuminate\Support\Str;
 
 /**
  * Colloque de test « Innover pour un avenir durable » (VIIIe colloque conjoint
- * Parakou–Kara), tenu du 15 au 18 septembre 2025. Crée l'édition, ses 6 ateliers
- * et sessions, des modérateurs et rapporteurs de test, et des communicants avec
- * des communications acceptées planifiées. Idempotent.
+ * Parakou–Kara). Dates calées AUTOUR D'AUJOURD'HUI (colloque « en cours » de
+ * 4 jours, hier → +2 j) pour tester le déroulement en direct : la 1re session
+ * est marquée « live ». Crée l'édition, ses 6 ateliers et sessions, des
+ * modérateurs et rapporteurs de test, et des communicants avec des
+ * communications acceptées planifiées. Idempotent.
  *
  *   php artisan db:seed --class=ColloqueAvenirSeeder
  *
@@ -38,6 +40,10 @@ class ColloqueAvenirSeeder extends Seeder
 
     public function run(): void
     {
+        // Dates autour d'aujourd'hui pour tester le « déroulement » (sessions en direct).
+        $start = Carbon::now()->startOfDay()->subDay();   // hier
+        $end = Carbon::now()->startOfDay()->addDays(2);   // dans 2 jours (colloque de 4 jours)
+
         $colloque = Colloque::updateOrCreate(
             ['slug' => 'parakou-kara'],
             ['name' => 'Colloque scientifique international conjoint Parakou–Kara']
@@ -50,13 +56,13 @@ class ColloqueAvenirSeeder extends Seeder
                 'edition_label' => 'VIIIe édition',
                 'subtitle' => 'Enjeux, défis et rôles des universités africaines',
                 'theme' => 'Innover pour un avenir durable : enjeux, défis et rôles des universités africaines',
-                'year' => 2025,
-                'date_start' => '2025-09-15',
-                'date_end' => '2025-09-18',
+                'year' => (int) $start->year,
+                'date_start' => $start->toDateString(),
+                'date_end' => $end->toDateString(),
                 'location' => 'Campus universitaire de Parakou (Bénin)',
                 'status' => 'open',
                 'submission_open' => true,
-                'submission_deadline' => '2025-06-15 23:59:00',
+                'submission_deadline' => Carbon::now()->subMonths(3),
                 'settings' => [
                     'intro' => 'Le colloque « Universités africaines et développement : innover pour un avenir durable » '
                         .'offre un cadre de réflexion, de partage d’expériences et de dialogue entre universitaires, chercheurs, '
@@ -75,10 +81,10 @@ class ColloqueAvenirSeeder extends Seeder
                     'coauthors_max' => 8,
                     'attestation_max' => 5,
                     'key_dates' => [
-                        ['date' => '2026-01-29', 'label' => 'Lancement de l’appel'],
-                        ['date' => '2025-06-15', 'label' => 'Date limite de réception des résumés'],
-                        ['date' => '2025-06-30', 'label' => 'Notification d’acceptation'],
-                        ['date' => '2025-09-15', 'label' => 'Déroulement du colloque'],
+                        ['date' => Carbon::now()->subMonths(6)->toDateString(), 'label' => 'Lancement de l’appel'],
+                        ['date' => Carbon::now()->subMonths(3)->toDateString(), 'label' => 'Date limite de réception des résumés'],
+                        ['date' => Carbon::now()->subMonths(2)->toDateString(), 'label' => 'Notification d’acceptation'],
+                        ['date' => $start->toDateString(), 'label' => 'Déroulement du colloque'],
                     ],
                     'contact' => [
                         'email' => 'colloque@annales-up.com',
@@ -105,8 +111,6 @@ class ColloqueAvenirSeeder extends Seeder
         }
 
         // --- Ateliers + sessions + communications acceptées et planifiées ---
-        $day = Carbon::parse('2025-09-15 09:00:00');
-
         foreach (self::ATELIERS as $i => $title) {
             $atelier = Atelier::updateOrCreate(
                 ['edition_id' => $edition->id, 'title' => $title],
@@ -115,7 +119,18 @@ class ColloqueAvenirSeeder extends Seeder
 
             $mod = $moderators[$i % 2];
             $rap = $rapporteurs[$i % 2];
-            $start = (clone $day)->addDays(intdiv($i, 2))->addHours(($i % 2) * 3);
+
+            // La 1re session est EN DIRECT maintenant (test visio / Q&A) ; les
+            // autres sont planifiées sur les 4 jours autour d'aujourd'hui.
+            if ($i === 0) {
+                $sStart = Carbon::now()->subMinutes(30);
+                $sEnd = Carbon::now()->addMinutes(90);
+                $meetingStatus = 'live';
+            } else {
+                $sStart = (clone $start)->addDays(intdiv($i, 2))->addHours(9 + ($i % 2) * 3);
+                $sEnd = (clone $sStart)->addHours(2);
+                $meetingStatus = 'scheduled';
+            }
 
             $session = EventSession::updateOrCreate(
                 ['edition_id' => $edition->id, 'label' => 'Session — '.$title],
@@ -123,9 +138,10 @@ class ColloqueAvenirSeeder extends Seeder
                     'atelier_id' => $atelier->id,
                     'type' => 'atelier',
                     'room' => 'Salle '.($i + 1),
-                    'session_day' => $start->toDateString(),
-                    'starts_at' => $start,
-                    'ends_at' => (clone $start)->addHours(2),
+                    'session_day' => $sStart->toDateString(),
+                    'starts_at' => $sStart,
+                    'ends_at' => $sEnd,
+                    'meeting_status' => $meetingStatus,
                     'moderator_name' => $mod->name,
                     'moderator_email' => $mod->email,
                     'rapporteur_name' => $rap->name,
@@ -159,8 +175,8 @@ class ColloqueAvenirSeeder extends Seeder
                     'edition_id' => $edition->id,
                     'session_label' => $session->label,
                     'room' => $session->room,
-                    'starts_at' => $start,
-                    'ends_at' => (clone $start)->addMinutes(30),
+                    'starts_at' => $sStart,
+                    'ends_at' => (clone $sStart)->addMinutes(30),
                     'participant_id' => $participant->id,
                 ]
             );
