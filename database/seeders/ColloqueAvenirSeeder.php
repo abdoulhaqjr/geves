@@ -220,36 +220,81 @@ class ColloqueAvenirSeeder extends Seeder
             }
         }
 
-        // --- Relecteurs de test + relectures (portail par jeton + workflow admin) ---
+        // --- Relecteurs de test + relectures ---
         $reviewers = [
             $this->reviewer($edition, 'relecteur1@test.tg', 'Rebecca', 'Relectrice'),
             $this->reviewer($edition, 'relecteur2@test.tg', 'Robert', 'Relecteur'),
         ];
 
-        // Assigne chaque soumission à un relecteur (round-robin) et met la
-        // soumission « en relecture ». La 1re relecture est déjà TERMINÉE
-        // (recommandation + note) pour tester l'affichage côté admin.
+        // Les communications ACCEPTÉES (déjà planifiées au programme) ont été
+        // relues et évaluées : chacune reçoit une relecture TERMINÉE. Le statut
+        // « accepté » n'est pas modifié (cohérent avec leur présence au programme).
         foreach ($submissions as $i => $submission) {
-            $reviewer = $reviewers[$i % 2];
-
             $review = Review::updateOrCreate(
-                ['submission_id' => $submission->id, 'reviewer_id' => $reviewer->id],
-                ['status' => $i === 0 ? 'completed' : 'assigned']
+                ['submission_id' => $submission->id, 'reviewer_id' => $reviewers[$i % 2]->id],
+                ['status' => 'completed']
+            );
+            $review->update([
+                'recommendation' => $i === 0 ? 'minor' : 'accept',
+                'score' => 15 + ($i % 4),
+                'scores' => ['originalite' => 4, 'methode' => 4, 'clarte' => 4 + ($i % 2), 'pertinence' => 4],
+                'comments' => 'Communication solide et bien structurée. Références actualisées ; '
+                    .'protocole clair et résultats convaincants.',
+                'comments_private' => 'Aucun conflit d’intérêts. Favorable à l’acceptation.',
+            ]);
+        }
+
+        // --- Pipeline d'évaluation EN COURS (soumissions non planifiées) ---
+        // Jeu de communications encore dans le circuit d'évaluation, pour tester
+        // le portail relecteur (« à faire »), le workflow de décision et la
+        // phase de réponse aux relecteurs (rebuttal).
+        $pending = [
+            // [ref, statut, état relecture, options]
+            ['UK-2025-101', 'submitted', 'assigned', []],
+            ['UK-2025-102', 'under_review', 'completed', ['rebuttal' => true]],
+            ['UK-2025-103', 'revision', 'completed', []],
+        ];
+        foreach ($pending as $k => [$ref, $status, $reviewState, $opts]) {
+            $author = $this->user('auteur'.($k + 1).'@test.tg', 'Auteur'.($k + 1), 'Évaluation');
+            $participant = $this->participant($edition, $author, 'author', 'Doctorant');
+            $track = self::ATELIERS[$k % count(self::ATELIERS)];
+
+            $submission = Submission::updateOrCreate(
+                ['edition_id' => $edition->id, 'ref_code' => $ref],
+                [
+                    'participant_id' => $participant->id,
+                    'access_token' => Str::random(40),
+                    'title' => 'Communication en évaluation '.($k + 1),
+                    'authors' => [['name' => $author->name, 'email' => $author->email, 'corresponding' => true]],
+                    'abstract' => 'Résumé d’une communication encore en cours d’évaluation, pour tester le circuit de relecture.',
+                    'keywords' => 'innovation, durabilité, universités',
+                    'track' => $track,
+                    'type' => 'oral',
+                    'status' => $status,
+                    'revision_of' => 0,
+                ]
             );
 
-            if ($i === 0) {
+            $review = Review::updateOrCreate(
+                ['submission_id' => $submission->id, 'reviewer_id' => $reviewers[$k % 2]->id],
+                ['status' => $reviewState]
+            );
+            if ($reviewState === 'completed') {
                 $review->update([
-                    'recommendation' => 'minor',
-                    'score' => 16.5,
-                    'scores' => ['originalite' => 4, 'methode' => 4, 'clarte' => 5, 'pertinence' => 4],
-                    'comments' => 'Communication solide et bien structurée. Quelques références à actualiser '
-                        .'et une clarification attendue sur le protocole expérimental.',
-                    'comments_private' => 'RAS côté conflit d’intérêts. À accepter après révisions mineures.',
+                    'recommendation' => $status === 'revision' ? 'major' : 'minor',
+                    'score' => 12 + $k,
+                    'scores' => ['originalite' => 3, 'methode' => 3, 'clarte' => 3, 'pertinence' => 4],
+                    'comments' => 'Contribution intéressante mais des révisions sont nécessaires : '
+                        .'préciser la méthodologie et étayer la discussion des résultats.',
+                    'comments_private' => 'À reconsidérer après réponse de l’auteur.',
                 ]);
             }
 
-            if (in_array($submission->status, ['submitted', 'accepted'], true) && $i !== 0) {
-                $submission->update(['status' => 'under_review']);
+            // Phase de réponse aux relecteurs ouverte (auteur invité à répondre).
+            if (! empty($opts['rebuttal'])) {
+                $meta = (array) $submission->meta;
+                $meta['rebuttal'] = ['opened_at' => Carbon::now()->subDays(2)->toIso8601String(), 'text' => null];
+                $submission->update(['meta' => $meta]);
             }
         }
 
@@ -257,6 +302,7 @@ class ColloqueAvenirSeeder extends Seeder
         $this->command?->info('Modérateurs : moderateur1@test.tg · moderateur2@test.tg');
         $this->command?->info('Rapporteurs : rapporteur1@test.tg · rapporteur2@test.tg');
         $this->command?->info('Communicants : comm1@test.tg … comm6@test.tg — mot de passe : password');
+        $this->command?->info('Auteurs en évaluation : auteur1@test.tg (soumise) · auteur2@test.tg (réponse ouverte) · auteur3@test.tg (correction demandée)');
         foreach ($reviewers as $r) {
             $this->command?->info('Relecteur : '.$r->email.' — portail : '.route('reviewer.portal', $r->access_token));
         }
