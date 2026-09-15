@@ -10,6 +10,8 @@ use App\Models\Edition;
 use App\Models\EventSession;
 use App\Models\Slot;
 use App\Models\Submission;
+use App\Models\User;
+use App\Support\Notifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -85,6 +87,43 @@ class ProgramController extends Controller
         ]);
     }
 
+    /**
+     * Notifie la personne désignée modérateur / rapporteur d'une séance, si un
+     * compte correspond à l'e-mail ET que la désignation est nouvelle (e-mail
+     * nouvellement renseigné ou modifié). Silencieux sinon.
+     */
+    private function notifyRoleAssignment(EventSession $session, string $roleKey, ?string $email, ?string $previousEmail): void
+    {
+        $email = filled($email) ? mb_strtolower(trim($email)) : null;
+        $previousEmail = filled($previousEmail) ? mb_strtolower(trim($previousEmail)) : null;
+
+        if ($email === null || $email === $previousEmail) {
+            return;
+        }
+
+        $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
+        if ($user === null) {
+            return;
+        }
+
+        $label = $session->label ?: 'une séance';
+        [$title, $body, $url, $icon] = $roleKey === 'moderator'
+            ? [
+                'Vous animez une séance',
+                'Vous avez été désigné(e) modérateur de « '.$label.' ».',
+                route('account.moderation'),
+                'mic',
+            ]
+            : [
+                'Vous rapportez une séance',
+                'Vous avez été désigné(e) rapporteur de « '.$label.' ».',
+                route('account.reports'),
+                'sheet',
+            ];
+
+        Notifier::account($user, kind: 'session_role', title: $title, body: $body, url: $url, icon: $icon);
+    }
+
     public function storeAtelier(Request $request): RedirectResponse
     {
         $data = $request->validate([
@@ -124,10 +163,12 @@ class ProgramController extends Controller
             'sEnd' => ['nullable', 'date_format:H:i'],
             'sRoom' => ['nullable', 'string', 'max:150'],
             'sModerator' => ['nullable', 'string', 'max:200'],
+            'sModeratorEmail' => ['nullable', 'email', 'max:200'],
             'sRapporteur' => ['nullable', 'string', 'max:200'],
+            'sRapporteurEmail' => ['nullable', 'email', 'max:200'],
         ]);
 
-        EventSession::create([
+        $session = EventSession::create([
             'edition_id' => $data['edition_id'],
             'atelier_id' => $data['sType'] === 'atelier' && ! empty($data['sAtelierId']) ? (int) $data['sAtelierId'] : 0,
             'type' => $data['sType'],
@@ -137,9 +178,14 @@ class ProgramController extends Controller
             'ends_at' => $this->composeDateTime($data['sDay'] ?? null, $data['sEnd'] ?? null),
             'room' => ($data['sRoom'] ?? null) ?: null,
             'moderator_name' => ($data['sModerator'] ?? null) ?: null,
+            'moderator_email' => ($data['sModeratorEmail'] ?? null) ?: null,
             'rapporteur_name' => ($data['sRapporteur'] ?? null) ?: null,
+            'rapporteur_email' => ($data['sRapporteurEmail'] ?? null) ?: null,
             'ordre' => EventSession::where('edition_id', $data['edition_id'])->count(),
         ]);
+
+        $this->notifyRoleAssignment($session, 'moderator', $session->moderator_email, null);
+        $this->notifyRoleAssignment($session, 'rapporteur', $session->rapporteur_email, null);
 
         return back()->with('ukc_status', 'Session ajoutée.');
     }
@@ -532,8 +578,13 @@ class ProgramController extends Controller
             'sEnd' => ['nullable', 'date_format:H:i'],
             'sRoom' => ['nullable', 'string', 'max:150'],
             'sModerator' => ['nullable', 'string', 'max:200'],
+            'sModeratorEmail' => ['nullable', 'email', 'max:200'],
             'sRapporteur' => ['nullable', 'string', 'max:200'],
+            'sRapporteurEmail' => ['nullable', 'email', 'max:200'],
         ]);
+
+        $beforeModerator = $session->moderator_email;
+        $beforeRapporteur = $session->rapporteur_email;
 
         $session->update([
             'atelier_id' => $data['sType'] === 'atelier' && ! empty($data['sAtelierId']) ? (int) $data['sAtelierId'] : 0,
@@ -544,8 +595,13 @@ class ProgramController extends Controller
             'ends_at' => $this->composeDateTime($data['sDay'] ?? null, $data['sEnd'] ?? null),
             'room' => ($data['sRoom'] ?? null) ?: null,
             'moderator_name' => ($data['sModerator'] ?? null) ?: null,
+            'moderator_email' => ($data['sModeratorEmail'] ?? null) ?: null,
             'rapporteur_name' => ($data['sRapporteur'] ?? null) ?: null,
+            'rapporteur_email' => ($data['sRapporteurEmail'] ?? null) ?: null,
         ]);
+
+        $this->notifyRoleAssignment($session, 'moderator', $session->moderator_email, $beforeModerator);
+        $this->notifyRoleAssignment($session, 'rapporteur', $session->rapporteur_email, $beforeRapporteur);
 
         return back()->with('ukc_status', 'Session mise à jour.');
     }

@@ -163,8 +163,11 @@
                             <div class="ukc-field"><label for="sStart">Début</label><input type="time" id="sStart" name="sStart" value="{{ old('sStart') }}">@error('sStart')<span class="error">{{ $message }}</span>@enderror</div>
                             <div class="ukc-field"><label for="sEnd">Fin</label><input type="time" id="sEnd" name="sEnd" value="{{ old('sEnd') }}">@error('sEnd')<span class="error">{{ $message }}</span>@enderror</div>
                             <div class="ukc-field"><label for="sModerator">Modérateur</label><input type="text" id="sModerator" name="sModerator" value="{{ old('sModerator') }}"></div>
+                            <div class="ukc-field"><label for="sModeratorEmail">E-mail modérateur</label><input type="email" id="sModeratorEmail" name="sModeratorEmail" value="{{ old('sModeratorEmail') }}" placeholder="pour le notifier">@error('sModeratorEmail')<span class="error">{{ $message }}</span>@enderror</div>
                             <div class="ukc-field"><label for="sRapporteur">Rapporteur</label><input type="text" id="sRapporteur" name="sRapporteur" value="{{ old('sRapporteur') }}"></div>
+                            <div class="ukc-field"><label for="sRapporteurEmail">E-mail rapporteur</label><input type="email" id="sRapporteurEmail" name="sRapporteurEmail" value="{{ old('sRapporteurEmail') }}" placeholder="pour le notifier">@error('sRapporteurEmail')<span class="error">{{ $message }}</span>@enderror</div>
                         </div>
+                        <p class="ukc-hint" style="font-size:.78rem;margin:6px 0 0;">L'e-mail permet à la personne d'accéder à son espace (animation / rapport) et d'être notifiée de sa désignation.</p>
                         <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm" style="margin-top:10px;">Ajouter la session</button>
                     </form>
                 </div>

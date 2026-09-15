@@ -139,6 +139,43 @@ it('affiche au comité les rapports de séance soumis (vue admin)', function () 
         ->assertSee('Soumis');
 });
 
+it('notifie le modérateur et le rapporteur à leur désignation sur une séance', function () {
+    $edition = openEdition();
+    $mod = eventActor('newmod@example.tg');
+    $rap = eventActor('newrap@example.tg');
+
+    $this->actingAs(adminStaff(), 'web')->post(route('admin.program.sessions.store'), [
+        'edition_id' => (string) $edition->id,
+        'sType' => 'plenary',
+        'sLabel' => 'Séance inaugurale',
+        'sDay' => '', 'sStart' => '', 'sEnd' => '', 'sRoom' => '',
+        'sModerator' => 'Test Acteur', 'sModeratorEmail' => 'newmod@example.tg',
+        'sRapporteur' => 'Test Acteur', 'sRapporteurEmail' => 'newrap@example.tg',
+    ])->assertRedirect();
+
+    expect($mod->notifications()->where('type', \App\Notifications\SystemNotification::class)->count())->toBe(1);
+    expect($rap->notifications()->count())->toBe(1);
+    expect($mod->notifications()->first()->data['title'])->toBe('Vous animez une séance');
+    expect($rap->notifications()->first()->data['title'])->toBe('Vous rapportez une séance');
+});
+
+it('ne renotifie pas un modérateur inchangé lors d’une mise à jour de séance', function () {
+    $edition = openEdition();
+    $mod = eventActor('stable@example.tg');
+    $session = $edition->sessions()->create([
+        'label' => 'Séance', 'type' => 'plenary',
+        'moderator_email' => 'stable@example.tg', 'moderator_name' => 'Test Acteur',
+    ]);
+
+    $this->actingAs(adminStaff(), 'web')->put(route('admin.program.sessions.update', $session), [
+        'sType' => 'plenary', 'sLabel' => 'Séance (renommée)',
+        'sDay' => '', 'sStart' => '', 'sEnd' => '', 'sRoom' => '',
+        'sModerator' => 'Test Acteur', 'sModeratorEmail' => 'stable@example.tg',
+    ])->assertRedirect();
+
+    expect($mod->notifications()->count())->toBe(0);
+});
+
 it('liste au relecteur ses relectures confiées', function () {
     $edition = openEdition();
     $rev = eventActor('rev@example.tg');
