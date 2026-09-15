@@ -8,6 +8,7 @@ use App\Models\Edition;
 use App\Models\EventSession;
 use App\Models\Participant;
 use App\Models\Payment;
+use App\Models\Review;
 use App\Models\SessionPoll;
 use App\Models\SessionQuestion;
 use App\Models\Slot;
@@ -114,6 +115,8 @@ class ColloqueAvenirSeeder extends Seeder
         }
 
         // --- Ateliers + sessions + communications acceptées et planifiées ---
+        /** @var list<Submission> $submissions */
+        $submissions = [];
         foreach (self::ATELIERS as $i => $title) {
             $atelier = Atelier::updateOrCreate(
                 ['edition_id' => $edition->id, 'title' => $title],
@@ -171,6 +174,7 @@ class ColloqueAvenirSeeder extends Seeder
                     'revision_of' => 0,
                 ]
             );
+            $submissions[] = $submission;
 
             Slot::updateOrCreate(
                 ['session_id' => $session->id, 'submission_id' => $submission->id],
@@ -216,10 +220,46 @@ class ColloqueAvenirSeeder extends Seeder
             }
         }
 
+        // --- Relecteurs de test + relectures (portail par jeton + workflow admin) ---
+        $reviewers = [
+            $this->reviewer($edition, 'relecteur1@test.tg', 'Rebecca', 'Relectrice'),
+            $this->reviewer($edition, 'relecteur2@test.tg', 'Robert', 'Relecteur'),
+        ];
+
+        // Assigne chaque soumission à un relecteur (round-robin) et met la
+        // soumission « en relecture ». La 1re relecture est déjà TERMINÉE
+        // (recommandation + note) pour tester l'affichage côté admin.
+        foreach ($submissions as $i => $submission) {
+            $reviewer = $reviewers[$i % 2];
+
+            $review = Review::updateOrCreate(
+                ['submission_id' => $submission->id, 'reviewer_id' => $reviewer->id],
+                ['status' => $i === 0 ? 'completed' : 'assigned']
+            );
+
+            if ($i === 0) {
+                $review->update([
+                    'recommendation' => 'minor',
+                    'score' => 16.5,
+                    'scores' => ['originalite' => 4, 'methode' => 4, 'clarte' => 5, 'pertinence' => 4],
+                    'comments' => 'Communication solide et bien structurée. Quelques références à actualiser '
+                        .'et une clarification attendue sur le protocole expérimental.',
+                    'comments_private' => 'RAS côté conflit d’intérêts. À accepter après révisions mineures.',
+                ]);
+            }
+
+            if (in_array($submission->status, ['submitted', 'accepted'], true) && $i !== 0) {
+                $submission->update(['status' => 'under_review']);
+            }
+        }
+
         $this->command?->info('Colloque de test « Avenir durable 2025 » créé (édition open, 6 ateliers).');
         $this->command?->info('Modérateurs : moderateur1@test.tg · moderateur2@test.tg');
         $this->command?->info('Rapporteurs : rapporteur1@test.tg · rapporteur2@test.tg');
         $this->command?->info('Communicants : comm1@test.tg … comm6@test.tg — mot de passe : password');
+        foreach ($reviewers as $r) {
+            $this->command?->info('Relecteur : '.$r->email.' — portail : '.route('reviewer.portal', $r->access_token));
+        }
     }
 
     private function user(string $email, string $first, string $last): User
@@ -254,5 +294,22 @@ class ColloqueAvenirSeeder extends Seeder
                 'country' => 'Togo',
             ]
         );
+    }
+
+    /**
+     * Relecteur de test : compte (login) + inscription « reviewer » sur l'édition
+     * avec jeton d'accès au portail de relecture. Garantit un jeton stable.
+     */
+    private function reviewer(Edition $edition, string $email, string $first, string $last): Participant
+    {
+        $user = $this->user($email, $first, $last);
+        $participant = $this->participant($edition, $user, 'reviewer', 'Enseignant-chercheur');
+
+        if (blank($participant->access_token)) {
+            $participant->access_token = Str::random(64);
+            $participant->save();
+        }
+
+        return $participant;
     }
 }
