@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\Concerns\ParticipantIdentity;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -220,6 +221,58 @@ class User extends Authenticatable implements MustVerifyEmail
     public function canAnyEdition(?string $capability = null): bool
     {
         return $this->isColloqueSuperAdmin() || $this->accessibleEditionIds($capability) !== [];
+    }
+
+    // --- Fonctions événementielles (côté participant, par e-mail / inscription) ---
+
+    /**
+     * Séances où cet utilisateur est le modérateur assigné (rapproché par e-mail).
+     *
+     * @return Builder<EventSession>
+     */
+    public function sessionsAsModerator(): Builder
+    {
+        return EventSession::query()
+            ->whereRaw('LOWER(moderator_email) = ?', [mb_strtolower((string) $this->email)]);
+    }
+
+    /**
+     * Séances où cet utilisateur est le rapporteur assigné (rapproché par e-mail).
+     *
+     * @return Builder<EventSession>
+     */
+    public function sessionsAsRapporteur(): Builder
+    {
+        return EventSession::query()
+            ->whereRaw('LOWER(rapporteur_email) = ?', [mb_strtolower((string) $this->email)]);
+    }
+
+    /**
+     * Inscriptions « relecteur » de cet utilisateur (par édition, jeton de portail).
+     *
+     * @return Builder<Participant>
+     */
+    public function reviewerParticipations(): Builder
+    {
+        return Participant::query()->where('user_id', $this->id)->where('role', 'reviewer');
+    }
+
+    /** A-t-il une séance à animer ? (pilote la visibilité du menu) */
+    public function isModeratorSomewhere(): bool
+    {
+        return filled($this->email) && $this->sessionsAsModerator()->exists();
+    }
+
+    /** A-t-il une séance à rapporter ? */
+    public function isRapporteurSomewhere(): bool
+    {
+        return filled($this->email) && $this->sessionsAsRapporteur()->exists();
+    }
+
+    /** A-t-il des relectures qui lui sont confiées ? */
+    public function isReviewerSomewhere(): bool
+    {
+        return $this->reviewerParticipations()->exists();
     }
 
     /**

@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
@@ -304,5 +305,11 @@ class EventSession extends Model
     public function attendances(): HasMany
     {
         return $this->hasMany(SessionAttendance::class, 'session_id');
+    }
+
+    /** @return HasOne<SessionReport, $this> */
+    public function report(): HasOne
+    {
+        return $this->hasOne(SessionReport::class, 'session_id');
     }
 }

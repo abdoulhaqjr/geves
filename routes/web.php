@@ -173,6 +173,13 @@ Route::middleware(['auth:account', StampAccountSession::class])->group(function 
     Route::get('/colloque/{slug}/soumettre', [SubmissionController::class, 'create'])->name('account.submissions.create');
     Route::post('/colloque/{slug}/soumettre', [SubmissionController::class, 'store'])->name('account.submissions.store');
 
+    // Fonctions événementielles (modérateur / rapporteur / relecteur)
+    Route::get('/animation', [App\Http\Controllers\Account\ModerationController::class, 'index'])->name('account.moderation');
+    Route::get('/rapports', [App\Http\Controllers\Account\SessionReportController::class, 'index'])->name('account.reports');
+    Route::get('/rapports/{session}', [App\Http\Controllers\Account\SessionReportController::class, 'edit'])->name('account.reports.edit');
+    Route::post('/rapports/{session}', [App\Http\Controllers\Account\SessionReportController::class, 'update'])->name('account.reports.update');
+    Route::get('/relectures', [App\Http\Controllers\Account\ReviewWorkspaceController::class, 'index'])->name('account.reviews');
+
     // Paiement des frais
     Route::get('/compte/paiement/{edition}', [AccountPaymentController::class, 'show'])->name('account.payment');
     Route::post('/compte/paiement/{edition}', [AccountPaymentController::class, 'pay'])->name('account.payment.pay');

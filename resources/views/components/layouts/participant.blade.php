@@ -93,6 +93,34 @@
                     <x-ukc.icon name="user" :size="18" /> <span class="txt">{{ __('Mon compte') }}</span>
                 </a>
 
+                {{-- Fonctions événementielles : n'apparaissent que pour les personnes concernées. --}}
+                @php
+                    $isModerator = $account?->isModeratorSomewhere() ?? false;
+                    $isRapporteur = $account?->isRapporteurSomewhere() ?? false;
+                    $isReviewer = $account?->isReviewerSomewhere() ?? false;
+                @endphp
+                @if ($isModerator || $isRapporteur || $isReviewer)
+                    <span class="nav-label">{{ __('Mes fonctions') }}</span>
+                    @if ($isModerator)
+                        <a href="{{ route('account.moderation') }}" title="{{ __('Séances à animer') }}"
+                           @class(['active' => request()->routeIs('account.moderation')])>
+                            <x-ukc.icon name="mic" :size="18" /> <span class="txt">{{ __('Séances à animer') }}</span>
+                        </a>
+                    @endif
+                    @if ($isRapporteur)
+                        <a href="{{ route('account.reports') }}" title="{{ __('Séances à rapporter') }}"
+                           @class(['active' => request()->routeIs('account.reports')])>
+                            <x-ukc.icon name="sheet" :size="18" /> <span class="txt">{{ __('Séances à rapporter') }}</span>
+                        </a>
+                    @endif
+                    @if ($isReviewer)
+                        <a href="{{ route('account.reviews') }}" title="{{ __('Mes relectures') }}"
+                           @class(['active' => request()->routeIs('account.reviews')])>
+                            <x-ukc.icon name="inbox" :size="18" /> <span class="txt">{{ __('Mes relectures') }}</span>
+                        </a>
+                    @endif
+                @endif
+
                 <span class="nav-label">{{ __('Colloque') }}</span>
                 @if ($colloqueEdition)
                     <a href="{{ route('public.colloque', $colloqueEdition->slug) }}" title="{{ __('Page du colloque') }}">
