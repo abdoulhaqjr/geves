@@ -40,6 +40,21 @@ it('liste au modérateur ses séances à animer', function () {
         ->assertSee('Espace d’échange');
 });
 
+it('propose au modérateur un accès à son espace depuis le tableau de bord', function () {
+    $edition = openEdition();
+    $mod = eventActor('moddash@example.tg');
+    $edition->sessions()->create([
+        'label' => 'Session — Atelier 9', 'type' => 'atelier',
+        'moderator_email' => 'moddash@example.tg', 'moderator_name' => 'Test Acteur',
+    ]);
+
+    $this->actingAs($mod, 'account')
+        ->get(route('account.dashboard'))
+        ->assertOk()
+        ->assertSee('Mes rôles &amp; activité', false)
+        ->assertSee(route('account.moderation'), false);
+});
+
 it('affiche l’état vide pour un compte sans séance à animer', function () {
     $mod = eventActor('rien@example.tg');
 

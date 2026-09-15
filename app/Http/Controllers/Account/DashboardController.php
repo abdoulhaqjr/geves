@@ -8,6 +8,7 @@ use App\Models\Edition;
 use App\Models\EventSession;
 use App\Models\Participant;
 use App\Models\Payment;
+use App\Models\Review;
 use App\Models\Slot;
 use App\Models\Submission;
 use App\Support\AccountActivity;
@@ -151,6 +152,12 @@ class DashboardController extends Controller
             'moderatedSessions' => $activity->moderatedSessions(),
             'reportedSessions' => $activity->reportedSessions(),
             'committees' => $activity->committees(),
+            'isReviewer' => $activity->isReviewer(),
+            'pendingReviews' => $activity->isReviewer()
+                ? Review::whereIn('reviewer_id', Participant::where('user_id', $account->id)
+                    ->where('role', 'reviewer')->pluck('id'))
+                    ->where('status', '!=', 'completed')->count()
+                : 0,
         ]);
     }
 }

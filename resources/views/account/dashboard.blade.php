@@ -166,7 +166,7 @@
     </div>
 
     {{-- Mes rôles & activité (dérivés inter-éditions) --}}
-    @if (count($roles) || $moderatedSessions->isNotEmpty() || $reportedSessions->isNotEmpty() || $committees->isNotEmpty())
+    @if (count($roles) || $moderatedSessions->isNotEmpty() || $reportedSessions->isNotEmpty() || $committees->isNotEmpty() || $isReviewer)
         <div class="ukc-card" style="margin-bottom:18px;">
             <h3><x-ukc.icon name="role" :size="20" /> {{ __('Mes rôles & activité') }}</h3>
             @if (count($roles))
@@ -187,11 +187,32 @@
                         </div>
                     @endforeach
                     @foreach ($reportedSessions as $s)
-                        <div style="padding:6px 0;font-size:.9rem;border-top:1px solid var(--ukc-border);">
+                        @php($rep = $s->report)
+                        <div style="padding:6px 0;font-size:.9rem;border-top:1px solid var(--ukc-border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                             <span class="ukc-pill ukc-pill--muted">{{ __('Rapporteur') }}</span>
                             {{ $s->label ?: __('Session') }} <span class="ukc-muted">— {{ $s->edition?->title }}</span>
+                            @if ($rep && $rep->isSubmitted())
+                                <span class="ukc-pill ukc-pill--ok">{{ __('Rapport soumis') }}</span>
+                            @elseif ($rep)
+                                <span class="ukc-pill ukc-pill--warn">{{ __('Brouillon') }}</span>
+                            @else
+                                <span class="ukc-pill ukc-pill--warn">{{ __('Rapport à rédiger') }}</span>
+                            @endif
                         </div>
                     @endforeach
+                </div>
+            @endif
+
+            @if ($isReviewer)
+                <div style="margin-top:8px;">
+                    <div style="padding:6px 0;font-size:.9rem;border-top:1px solid var(--ukc-border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <span class="ukc-pill ukc-pill--muted">{{ __('Relecteur') }}</span>
+                        @if ($pendingReviews > 0)
+                            <span class="ukc-pill ukc-pill--warn">{{ trans_choice(':count relecture à évaluer|:count relectures à évaluer', $pendingReviews, ['count' => $pendingReviews]) }}</span>
+                        @else
+                            <span class="ukc-pill ukc-pill--ok">{{ __('Relectures à jour') }}</span>
+                        @endif
+                    </div>
                 </div>
             @endif
 
@@ -203,6 +224,26 @@
                             {{ $c->person_title ?: __('Membre') }} <span class="ukc-muted">— {{ $c->edition?->title }}</span>
                         </div>
                     @endforeach
+                </div>
+            @endif
+
+            @if ($moderatedSessions->isNotEmpty() || $reportedSessions->isNotEmpty() || $isReviewer)
+                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;">
+                    @if ($moderatedSessions->isNotEmpty())
+                        <a href="{{ route('account.moderation') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+                            <x-ukc.icon name="mic" :size="16" /> {{ __('Séances à animer') }}
+                        </a>
+                    @endif
+                    @if ($reportedSessions->isNotEmpty())
+                        <a href="{{ route('account.reports') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+                            <x-ukc.icon name="sheet" :size="16" /> {{ __('Séances à rapporter') }}
+                        </a>
+                    @endif
+                    @if ($isReviewer)
+                        <a href="{{ route('account.reviews') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+                            <x-ukc.icon name="inbox" :size="16" /> {{ __('Mes relectures') }}
+                        </a>
+                    @endif
                 </div>
             @endif
         </div>

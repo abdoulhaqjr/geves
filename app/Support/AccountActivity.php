@@ -81,7 +81,7 @@ class AccountActivity
     public function reportedSessions(): Collection
     {
         return EventSession::whereRaw('LOWER(rapporteur_email) = ?', [$this->email()])
-            ->with('edition')->latest('id')->get();
+            ->with(['edition', 'report'])->latest('id')->get();
     }
 
     /** @return Collection<int, CommitteeMember> */
