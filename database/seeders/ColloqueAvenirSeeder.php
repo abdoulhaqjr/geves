@@ -109,9 +109,13 @@ class ColloqueAvenirSeeder extends Seeder
             $this->user('rapporteur2@test.tg', 'Rita', 'Rapporteuse'),
         ];
 
-        // Inscriptions (participants) des modérateurs / rapporteurs sur l'édition.
-        foreach (array_merge($moderators, $rapporteurs) as $u) {
-            $this->participant($edition, $u, 'attendee', 'Enseignant-chercheur');
+        // Inscriptions (participants) des modérateurs / rapporteurs sur l'édition,
+        // avec leur fonction (rôle) réelle pour piloter leurs espaces dédiés.
+        foreach ($moderators as $u) {
+            $this->participant($edition, $u, 'moderator', 'Enseignant-chercheur');
+        }
+        foreach ($rapporteurs as $u) {
+            $this->participant($edition, $u, 'rapporteur', 'Enseignant-chercheur');
         }
 
         // --- Ateliers + sessions + communications acceptées et planifiées ---

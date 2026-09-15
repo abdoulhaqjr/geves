@@ -12,13 +12,13 @@
 
     // Paiement : l'édition courante si elle est à régler, sinon la première à régler.
     $payEditionId = ($colloqueEdition
-        && \App\Models\Participant::where('account_id', $account?->id)
+        && \App\Models\Participant::where('user_id', $account?->id)
             ->where('edition_id', $colloqueEdition->id)
             ->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted'))
             ->whereDoesntHave('payments', fn ($q) => $q->where('status', 'paid'))
             ->exists())
         ? $colloqueEdition->id
-        : \App\Models\Participant::where('account_id', $account?->id)
+        : \App\Models\Participant::where('user_id', $account?->id)
             ->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted'))
             ->whereDoesntHave('payments', fn ($q) => $q->where('status', 'paid'))
             ->latest('id')->value('edition_id');
@@ -80,7 +80,7 @@
                    @class(['active' => request()->routeIs('account.submissions.*')])>
                     <x-ukc.icon name="file" :size="18" /> <span class="txt">{{ __('Soumissions') }}</span>
                 </a>
-                <a href="{{ $payEditionId ? route('account.payment', $payEditionId) : ($colloqueEdition ? route('public.colloque', $colloqueEdition->slug) : route('account.dashboard')) }}" title="{{ __('Inscription & paiement') }}"
+                <a href="{{ ($payEditionId ?: $colloqueEdition?->id) ? route('account.payment', $payEditionId ?: $colloqueEdition->id) : route('account.dashboard') }}" title="{{ __('Inscription & paiement') }}"
                    @class(['active' => request()->routeIs('account.payment')])>
                     <x-ukc.icon name="card" :size="18" /> <span class="txt">{{ __('Inscription & paiement') }}</span>
                 </a>
