@@ -58,6 +58,33 @@ class ProgramController extends Controller
         ]);
     }
 
+    /**
+     * Rapports de séance : consultation par le comité des synthèses rédigées par
+     * les rapporteurs (état à rédiger / brouillon / soumis).
+     */
+    public function reports(Request $request): View
+    {
+        $edition = $this->currentEdition($request);
+
+        $sessions = $edition
+            ? $edition->sessions()->with(['atelier', 'report'])
+                ->orderBy('starts_at')->orderBy('id')->get()
+            : collect();
+
+        $submitted = $sessions->filter(fn (EventSession $s) => $s->report && $s->report->isSubmitted())->count();
+
+        return view('admin.program.reports', [
+            'editions' => $this->accessibleEditions($request, 'editions_read'),
+            'edition_id' => $edition ? (string) $edition->id : '',
+            'sessions' => $sessions,
+            'stats' => [
+                'sessions' => $sessions->count(),
+                'with_rapporteur' => $sessions->filter(fn (EventSession $s) => filled($s->rapporteur_email))->count(),
+                'submitted' => $submitted,
+            ],
+        ]);
+    }
+
     public function storeAtelier(Request $request): RedirectResponse
     {
         $data = $request->validate([

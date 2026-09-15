@@ -10,6 +10,7 @@ use App\Models\Participant;
 use App\Models\Payment;
 use App\Models\Review;
 use App\Models\SessionPoll;
+use App\Models\SessionReport;
 use App\Models\SessionQuestion;
 use App\Models\Slot;
 use App\Models\Submission;
@@ -201,6 +202,36 @@ class ColloqueAvenirSeeder extends Seeder
                     'receipt_no' => sprintf('REC-%d-%03d', $start->year, $i + 1),
                 ]
             );
+
+            // Rapports de séance de démonstration : un soumis, un en brouillon,
+            // pour tester la vue de consultation côté comité (back-office).
+            if ($i === 1) {
+                SessionReport::updateOrCreate(
+                    ['session_id' => $session->id],
+                    [
+                        'edition_id' => $edition->id,
+                        'reported_by' => $rap->id,
+                        'summary' => 'La séance a réuni trois communications de qualité autour de l’innovation '
+                            ."durable. Les échanges avec la salle ont été nourris, en particulier sur le financement\n"
+                            .'de la recherche appliquée et les partenariats université–entreprise.',
+                        'highlights' => 'Recommander la publication des actes ; encourager une session de suivi '
+                            .'sur les mécanismes de valorisation.',
+                        'attendance' => 58,
+                        'status' => 'submitted',
+                        'submitted_at' => Carbon::now()->subHours(3),
+                    ]
+                );
+            } elseif ($i === 2) {
+                SessionReport::updateOrCreate(
+                    ['session_id' => $session->id],
+                    [
+                        'edition_id' => $edition->id,
+                        'reported_by' => $rap->id,
+                        'summary' => 'Brouillon en cours de rédaction…',
+                        'status' => 'draft',
+                    ]
+                );
+            }
 
             // Matière pour la session EN DIRECT : questions Q&A + un sondage ouvert.
             if ($i === 0) {

@@ -15,6 +15,9 @@
                     <a href="{{ route('admin.documents.sessions', $edition_id) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
                         <x-ukc.icon name="file" :size="16" /> Fiches de session
                     </a>
+                    <a href="{{ route('admin.program.reports') }}?edition_id={{ $edition_id }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
+                        <x-ukc.icon name="sheet" :size="16" /> Rapports de séance
+                    </a>
                     <a href="{{ route('admin.program.slots') }}?edition_id={{ $edition_id }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
                         <x-ukc.icon name="calendar" :size="16" /> Créneaux
                     </a>

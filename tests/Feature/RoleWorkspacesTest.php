@@ -101,6 +101,29 @@ it('refuse le rapport d’une séance à un non-rapporteur', function () {
         ->assertForbidden();
 });
 
+it('affiche au comité les rapports de séance soumis (vue admin)', function () {
+    $edition = openEdition();
+    $session = $edition->sessions()->create([
+        'label' => 'Session — Atelier 4', 'type' => 'atelier',
+        'rapporteur_email' => 'rap@example.tg', 'rapporteur_name' => 'Rita Rapporteuse',
+    ]);
+    \App\Models\SessionReport::create([
+        'session_id' => $session->id, 'edition_id' => $edition->id,
+        'summary' => 'Synthèse détaillée de la séance.',
+        'highlights' => 'Publier les actes.', 'attendance' => 42,
+        'status' => 'submitted', 'submitted_at' => now(),
+    ]);
+
+    $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.program.reports', ['edition_id' => $edition->id]))
+        ->assertOk()
+        ->assertSee('Session — Atelier 4')
+        ->assertSee('Rita Rapporteuse')
+        ->assertSee('Synthèse détaillée de la séance.')
+        ->assertSee('Publier les actes.')
+        ->assertSee('Soumis');
+});
+
 it('liste au relecteur ses relectures confiées', function () {
     $edition = openEdition();
     $rev = eventActor('rev@example.tg');
