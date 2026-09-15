@@ -7,6 +7,9 @@ use App\Models\Colloque;
 use App\Models\Edition;
 use App\Models\EventSession;
 use App\Models\Participant;
+use App\Models\Payment;
+use App\Models\SessionPoll;
+use App\Models\SessionQuestion;
 use App\Models\Slot;
 use App\Models\Submission;
 use App\Models\User;
@@ -180,6 +183,37 @@ class ColloqueAvenirSeeder extends Seeder
                     'participant_id' => $participant->id,
                 ]
             );
+
+            // Paiement réglé (inscription confirmée) pour ce communicant.
+            Payment::updateOrCreate(
+                ['edition_id' => $edition->id, 'participant_id' => $participant->id],
+                [
+                    'amount' => 15000, 'currency' => 'XOF', 'method' => 'cash', 'gateway' => 'manual',
+                    'status' => 'paid', 'paid_at' => Carbon::now()->subMonths(2),
+                    'receipt_no' => sprintf('REC-%d-%03d', $start->year, $i + 1),
+                ]
+            );
+
+            // Matière pour la session EN DIRECT : questions Q&A + un sondage ouvert.
+            if ($i === 0) {
+                foreach ([
+                    'Comment mesurer concrètement l’impact des universités sur les ODD ?',
+                    'Quels leviers de financement pour l’innovation à fort impact ?',
+                    'Comment articuler savoirs endogènes et recherche globale ?',
+                ] as $n => $q) {
+                    SessionQuestion::updateOrCreate(
+                        ['session_id' => $session->id, 'body' => $q],
+                        ['edition_id' => $edition->id, 'author_name' => 'Auditeur '.($n + 1), 'status' => 'pending']
+                    );
+                }
+                SessionPoll::updateOrCreate(
+                    ['session_id' => $session->id, 'question' => 'Quel est le principal frein à l’innovation universitaire ?'],
+                    [
+                        'edition_id' => $edition->id, 'status' => 'open',
+                        'options' => ['Financement', 'Gouvernance', 'Partenariats', 'Valorisation'],
+                    ]
+                );
+            }
         }
 
         $this->command?->info('Colloque de test « Avenir durable 2025 » créé (édition open, 6 ateliers).');
