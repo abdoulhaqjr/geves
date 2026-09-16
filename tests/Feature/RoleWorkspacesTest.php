@@ -172,6 +172,36 @@ it('affiche au secrétariat sa file de rapports à valider (scopée à ses édit
         ->assertSee('Rita R.');
 });
 
+it('relance un participant qui n’a pas réglé ses frais (secrétariat)', function () {
+    \Illuminate\Support\Facades\Mail::fake();
+    $edition = openEdition(['fees' => [['label' => 'Doctorants', 'amount' => 15000]]]);
+    $account = User::create(['first_name' => 'Non', 'last_name' => 'Payé', 'email' => 'nonpaye@example.tg', 'password' => 'pass12345']);
+    $participant = $edition->participants()->create([
+        'user_id' => $account->id, 'first_name' => 'Non', 'last_name' => 'Payé',
+        'email' => 'nonpaye@example.tg', 'title' => 'Doctorants', 'role' => 'author',
+    ]);
+    $edition->submissions()->create([
+        'participant_id' => $participant->id, 'ref_code' => '26-900', 'title' => 'Sans paiement',
+        'abstract' => 'x', 'track' => 'Sciences', 'type' => 'oral', 'status' => 'accepted', 'authors' => [],
+    ]);
+
+    // Page secrétariat : le participant apparaît dans les relances.
+    $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.secretariat'))
+        ->assertOk()
+        ->assertSee('Relances de paiement')
+        ->assertSee('nonpaye@example.tg');
+
+    // Relance : e-mail + notification + horodatage.
+    $this->actingAs(adminStaff(), 'web')
+        ->post(route('admin.secretariat.remind', $participant))
+        ->assertRedirect();
+
+    \Illuminate\Support\Facades\Mail::assertQueued(\App\Mail\PaymentReminderMail::class);
+    expect($participant->fresh()->meta['payment_reminded_at'] ?? null)->not->toBeNull();
+    expect($account->notifications()->count())->toBe(1);
+});
+
 it('valide un rapport en un clic sans écraser son contenu', function () {
     $edition = openEdition();
     $session = $edition->sessions()->create([

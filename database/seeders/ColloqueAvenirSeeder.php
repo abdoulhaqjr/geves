@@ -198,7 +198,11 @@ class ColloqueAvenirSeeder extends Seeder
                 ]
             );
 
-            // Paiement réglé (inscription confirmée) pour ce communicant.
+            // Paiement réglé (inscription confirmée) — sauf le dernier communicant,
+            // laissé NON réglé pour tester les relances de paiement du secrétariat.
+            if ($i === count(self::ATELIERS) - 1) {
+                continue;
+            }
             Payment::updateOrCreate(
                 ['edition_id' => $edition->id, 'participant_id' => $participant->id],
                 [
