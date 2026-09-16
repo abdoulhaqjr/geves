@@ -19,8 +19,8 @@
     <x-ukc.toast />
 
     {{-- Widget flottant Gesco — public + espace participant ; pas dans le
-         back-office, le portail relecteur, la salle visio, ni la page chat dédiée. --}}
-    @unless (request()->routeIs('admin.*') || request()->routeIs('reviewer.*') || request()->routeIs('session.meeting') || request()->routeIs('public.gesco'))
+         back-office, la salle visio, ni la page chat dédiée. --}}
+    @unless (request()->routeIs('admin.*') || request()->routeIs('session.meeting') || request()->routeIs('public.gesco'))
         <x-ukc.gesco-widget />
     @endunless
 

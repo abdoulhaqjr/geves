@@ -38,6 +38,15 @@ class AssignReviewer
             }
         }
 
+        // Relie l'inscription au compte correspondant (identité unifiée) : la
+        // relecture se fait désormais depuis l'espace « Mes relectures » connecté.
+        if (blank($reviewer->user_id)) {
+            $account = \App\Models\User::whereRaw('LOWER(email) = ?', [mb_strtolower(trim($email))])->first();
+            if ($account !== null) {
+                $reviewer->user_id = $account->id;
+            }
+        }
+
         $reviewer->save();
 
         $review = Review::firstOrCreate(
@@ -56,7 +65,7 @@ class AssignReviewer
                 kind: 'review_assigned',
                 title: 'Nouvelle relecture assignée',
                 body: 'Une communication vous a été confiée pour évaluation.',
-                url: route('reviewer.portal', $reviewer->access_token),
+                url: route('account.reviews'),
                 icon: 'inbox',
             );
         }

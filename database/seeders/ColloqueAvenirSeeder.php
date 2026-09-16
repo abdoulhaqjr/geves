@@ -339,7 +339,7 @@ class ColloqueAvenirSeeder extends Seeder
         $this->command?->info('Communicants : comm1@test.tg … comm6@test.tg — mot de passe : password');
         $this->command?->info('Auteurs en évaluation : auteur1@test.tg (soumise) · auteur2@test.tg (réponse ouverte) · auteur3@test.tg (correction demandée)');
         foreach ($reviewers as $r) {
-            $this->command?->info('Relecteur : '.$r->email.' — portail : '.route('reviewer.portal', $r->access_token));
+            $this->command?->info('Relecteur : '.$r->email.' — mot de passe : password (relectures dans « Mes relectures »)');
         }
     }
 

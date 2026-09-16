@@ -198,5 +198,56 @@ it('liste au relecteur ses relectures confiées', function () {
         ->assertOk()
         ->assertSee('Étude sur la durabilité')
         ->assertSee('À évaluer')
-        ->assertSee($reviewer->access_token); // lien vers le portail relecteur
+        ->assertDontSee('Auteur X'); // en aveugle : pas d'auteur
+});
+
+it('enregistre une évaluation de relecteur en place (AJAX)', function () {
+    $edition = openEdition();
+    $rev = eventActor('rev2@example.tg');
+    $reviewer = $edition->participants()->create([
+        'user_id' => $rev->id, 'first_name' => 'Test', 'last_name' => 'Acteur',
+        'email' => 'rev2@example.tg', 'role' => 'reviewer', 'access_token' => Str::random(64),
+    ]);
+    $participant = $edition->participants()->create([
+        'user_id' => null, 'first_name' => 'Auteur', 'last_name' => 'Z', 'email' => 'auteurz@example.tg',
+    ]);
+    $submission = $edition->submissions()->create([
+        'participant_id' => $participant->id, 'ref_code' => '26-778', 'title' => 'Autre étude',
+        'abstract' => 'Résumé.', 'track' => 'Sciences', 'type' => 'oral', 'status' => 'under_review',
+        'authors' => [],
+    ]);
+    $review = Review::create(['submission_id' => $submission->id, 'reviewer_id' => $reviewer->id, 'status' => 'assigned']);
+
+    $this->actingAs($rev, 'account')
+        ->postJson(route('account.reviews.submit', $review), [
+            'recommendation' => 'minor',
+            'scores' => ['originality' => 4, 'rigor' => 4, 'clarity' => 4, 'relevance' => 4, 'contribution' => 4],
+            'comments' => 'Bon travail.',
+        ])
+        ->assertOk()
+        ->assertJson(['ok' => true]);
+
+    $review->refresh();
+    expect($review->status)->toBe('completed');
+    expect($review->recommendation)->toBe('minor');
+    expect((float) $review->score)->toBe(16.0);
+});
+
+it('refuse une évaluation sur une relecture qui n’est pas la sienne', function () {
+    $edition = openEdition();
+    $intrus = eventActor('intrus2@example.tg');
+    $reviewer = $edition->participants()->create([
+        'user_id' => null, 'first_name' => 'Autre', 'last_name' => 'Relecteur',
+        'email' => 'autre@example.tg', 'role' => 'reviewer', 'access_token' => Str::random(64),
+    ]);
+    $participant = $edition->participants()->create(['user_id' => null, 'first_name' => 'A', 'last_name' => 'B', 'email' => 'ab@example.tg']);
+    $submission = $edition->submissions()->create([
+        'participant_id' => $participant->id, 'ref_code' => '26-779', 'title' => 'X',
+        'abstract' => 'x', 'track' => 'Sciences', 'type' => 'oral', 'status' => 'under_review', 'authors' => [],
+    ]);
+    $review = Review::create(['submission_id' => $submission->id, 'reviewer_id' => $reviewer->id, 'status' => 'assigned']);
+
+    $this->actingAs($intrus, 'account')
+        ->postJson(route('account.reviews.submit', $review), ['recommendation' => 'accept'])
+        ->assertForbidden();
 });

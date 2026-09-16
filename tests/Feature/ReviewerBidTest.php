@@ -5,13 +5,21 @@ use App\Models\Colloque;
 use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\ReviewerBid;
+use App\Models\User;
 use Illuminate\Support\Str;
 
 // adminStaff() et seededSubmission() sont définis dans tests/Pest.php.
 
 function reviewerOn(Edition $edition, string $email): Participant
 {
+    $user = User::firstOrCreate(
+        ['email' => $email],
+        ['first_name' => 'Rel', 'last_name' => ucfirst(explode('@', $email)[0]), 'password' => 'pass12345']
+    );
+    $user->markEmailAsVerified();
+
     return $edition->participants()->create([
+        'user_id' => $user->id,
         'first_name' => 'Rel', 'last_name' => ucfirst(explode('@', $email)[0]),
         'email' => $email, 'role' => 'reviewer', 'access_token' => Str::random(64),
     ]);
@@ -21,14 +29,16 @@ it('affiche l’appel à candidatures et enregistre une préférence', function 
     $submission = seededSubmission('submitted');
     $reviewer = reviewerOn($submission->edition, 'kofi@rev.tg');
 
-    $this->get(route('reviewer.portal', $reviewer->access_token))
+    $this->actingAs($reviewer->user, 'account')
+        ->get(route('account.reviews'))
         ->assertOk()
         ->assertSee('Appel à candidatures')
         ->assertSee($submission->ref_code);
 
-    $this->post(route('reviewer.bids.save', $reviewer->access_token), [
-        'bids' => [$submission->id => ['interest' => 'interested']],
-    ])->assertRedirect();
+    $this->actingAs($reviewer->user, 'account')
+        ->post(route('account.reviews.bids'), [
+            'bids' => [$submission->id => ['interest' => 'interested']],
+        ])->assertRedirect();
 
     expect(ReviewerBid::where('reviewer_id', $reviewer->id)->where('submission_id', $submission->id)->value('interest'))
         ->toBe('interested');
@@ -43,9 +53,10 @@ it('n’enregistre pas de candidature sur une soumission d’une autre édition'
     $otherEdition = $otherColloque->editions()->create(['title' => 'A', 'year' => 2027, 'status' => 'open', 'slug' => 'a-2027']);
     $foreign = $otherEdition->submissions()->create(['ref_code' => 'X-1', 'title' => 'Hors édition', 'abstract' => 'x', 'track' => 'IA', 'type' => 'oral', 'status' => 'submitted', 'authors' => []]);
 
-    $this->post(route('reviewer.bids.save', $reviewer->access_token), [
-        'bids' => [$foreign->id => ['interest' => 'interested']],
-    ])->assertRedirect();
+    $this->actingAs($reviewer->user, 'account')
+        ->post(route('account.reviews.bids'), [
+            'bids' => [$foreign->id => ['interest' => 'interested']],
+        ])->assertRedirect();
 
     expect(ReviewerBid::where('submission_id', $foreign->id)->exists())->toBeFalse();
 });

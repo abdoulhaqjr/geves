@@ -82,36 +82,34 @@ it('assigne un relecteur, passe en relecture et l’invite par e-mail', function
     Mail::assertQueued(ReviewerInvitationMail::class);
 });
 
-it('donne accès au portail relecteur par jeton et le refuse sinon', function () {
+it('affiche les relectures confiées dans « Mes relectures » (en aveugle)', function () {
     $submission = seededSubmission('submitted');
-    $reviewer = (new AssignReviewer)->handle($submission, 'Kossi Anani', 'kossi@example.tg');
+    // Le relecteur a un compte (identité unifiée) : l'assignation le relie.
+    $account = User::create(['first_name' => 'Kossi', 'last_name' => 'Anani', 'email' => 'kossi@example.tg', 'password' => 'pass12345']);
+    (new AssignReviewer)->handle($submission, 'Kossi Anani', 'kossi@example.tg');
 
-    $this->get(route('reviewer.portal', $reviewer->reviewer->access_token))
+    $this->actingAs($account, 'account')
+        ->get(route('account.reviews'))
         ->assertOk()
         ->assertSee($submission->ref_code)
         ->assertDontSee('Awa Kodjo'); // aveugle : pas d'auteur
-
-    $this->get(route('reviewer.portal', 'jeton-invalide'))->assertNotFound();
 });
 
-it('enregistre une évaluation de relecteur', function () {
+it('enregistre une évaluation de relecteur depuis Mes relectures', function () {
     $submission = seededSubmission('under_review');
+    $account = User::create(['first_name' => 'Kossi', 'last_name' => 'Anani', 'email' => 'kossi@example.tg', 'password' => 'pass12345']);
     $review = (new AssignReviewer)->handle($submission, 'Kossi Anani', 'kossi@example.tg');
-    $reviewer = $review->reviewer;
-
-    $this->get(route('reviewer.evaluate', [$reviewer->access_token, $review->id]))
-        ->assertOk()
-        ->assertDontSee('Awa Kodjo');
 
     // Grille par défaut : toutes les notes à 4/5 → note globale dérivée 16/20.
-    $this->post(route('reviewer.evaluate.submit', [$reviewer->access_token, $review->id]), [
-        'recommendation' => 'minor',
-        'scores' => [
-            'originality' => 4, 'rigor' => 4, 'clarity' => 4, 'relevance' => 4, 'contribution' => 4,
-        ],
-        'comments' => 'Bon travail, préciser la méthode.',
-        'comments_private' => 'Solide dans l’ensemble.',
-    ])->assertSessionHasNoErrors();
+    $this->actingAs($account, 'account')
+        ->postJson(route('account.reviews.submit', $review), [
+            'recommendation' => 'minor',
+            'scores' => [
+                'originality' => 4, 'rigor' => 4, 'clarity' => 4, 'relevance' => 4, 'contribution' => 4,
+            ],
+            'comments' => 'Bon travail, préciser la méthode.',
+            'comments_private' => 'Solide dans l’ensemble.',
+        ])->assertOk();
 
     $review->refresh();
     expect($review->status)->toBe('completed');

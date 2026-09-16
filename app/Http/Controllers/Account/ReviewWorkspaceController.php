@@ -3,33 +3,198 @@
 namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
+use App\Models\Participant;
 use App\Models\Review;
+use App\Models\ReviewerBid;
+use App\Models\Submission;
+use App\Support\Html;
+use App\Support\ReviewGrid;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 /**
  * Espace relecteur (côté participant) : « Mes relectures ». Regroupe les
  * relectures confiées à l'utilisateur au titre de ses inscriptions « relecteur »
- * (par édition). L'évaluation elle-même se fait dans le portail relecteur (accès
- * par jeton, en aveugle) déjà existant.
+ * (par édition) et l'évaluation se fait EN PLACE (panneau latéral, sans changer
+ * de page), en aveugle. Un appel à candidatures (préférences + conflits) est
+ * proposé pour les communications encore ouvertes. Remplace l'ancien portail à
+ * jeton public.
  */
 class ReviewWorkspaceController extends Controller
 {
     public function index(): View
     {
         $user = Auth::guard('account')->user();
-
-        // Inscriptions relecteur de l'utilisateur (une par édition), avec jeton.
-        $reviewerParticipants = $user->reviewerParticipations()->with('edition.colloque')->get();
+        $reviewerParticipants = $this->reviewerParticipants();
+        $editionIds = $reviewerParticipants->pluck('edition_id')->unique()->values();
 
         $reviews = Review::whereIn('reviewer_id', $reviewerParticipants->pluck('id'))
             ->with('submission.edition')
             ->latest('id')
             ->get();
 
+        // Données JSON pour l'évaluation en place (grille par édition incluse).
+        $reviewsData = $reviews->map(function (Review $r) {
+            $sub = $r->submission;
+            $criteria = ReviewGrid::criteria($sub?->edition);
+
+            return [
+                'id' => (int) $r->id,
+                'ref' => $sub?->ref_code,
+                'title' => $sub?->title ?: 'Communication',
+                'track' => $sub?->track,
+                'type' => $sub?->type === 'poster' ? 'Poster' : 'Oral',
+                'abstract' => Html::render($sub?->abstract),
+                'keywords' => $sub?->keywords,
+                'fileUrl' => $sub?->file_url,
+                'edition' => $sub?->edition?->title ?: (string) $sub?->edition?->year,
+                'completed' => $r->isCompleted(),
+                'recommendation' => $r->recommendation,
+                'comments' => $r->comments,
+                'comments_private' => $r->comments_private,
+                'scores' => (object) $r->criterionScores(),
+                'score' => $r->score !== null ? (float) $r->score : null,
+                'criteria' => $criteria,
+                'submitUrl' => route('account.reviews.submit', $r),
+            ];
+        })->values();
+
+        // Appel à candidatures : soumissions des éditions du relecteur, en aveugle,
+        // encore ouvertes et non déjà confiées à ce relecteur.
+        $reviewerIds = $reviewerParticipants->pluck('id');
+        $biddable = Submission::whereIn('edition_id', $editionIds)
+            ->where('revision_of', 0)
+            ->whereIn('status', ['submitted', 'under_review'])
+            ->whereDoesntHave('reviews', fn ($q) => $q->whereIn('reviewer_id', $reviewerIds))
+            ->orderBy('id')
+            ->get(['id', 'ref_code', 'title', 'abstract', 'track']);
+
+        $bids = ReviewerBid::whereIn('reviewer_id', $reviewerIds)->get()->keyBy('submission_id');
+
         return view('account.reviews.index', [
-            'reviewers' => $reviewerParticipants->keyBy('id'),
             'reviews' => $reviews,
+            'reviewsData' => $reviewsData,
+            'recommendations' => Review::RECOMMENDATIONS,
+            'scale' => ReviewGrid::SCALE,
+            'pendingCount' => $reviews->where('status', '!=', 'completed')->count(),
+            'doneCount' => $reviews->where('status', 'completed')->count(),
+            'biddable' => $biddable,
+            'bids' => $bids,
+            'interests' => ReviewerBid::INTERESTS,
         ]);
+    }
+
+    /** Enregistre l'évaluation en place (AJAX ou repli formulaire classique). */
+    public function submit(Request $request, Review $review): JsonResponse|RedirectResponse
+    {
+        $this->authorizeReview($review);
+        $review->load('submission.edition');
+        $criteria = ReviewGrid::criteria($review->submission?->edition);
+
+        $rules = [
+            'recommendation' => ['required', 'in:'.implode(',', array_keys(Review::RECOMMENDATIONS))],
+            'comments' => ['nullable', 'string', 'max:5000'],
+            'comments_private' => ['nullable', 'string', 'max:5000'],
+        ];
+        foreach ($criteria as $c) {
+            $rules['scores.'.$c['key']] = ['nullable', 'integer', 'min:0', 'max:'.ReviewGrid::SCALE];
+        }
+        $data = $request->validate($rules);
+
+        $scores = ReviewGrid::sanitizeScores((array) $request->input('scores', []), $criteria);
+        $overall = ReviewGrid::overall($scores, $criteria);
+
+        $review->update([
+            'recommendation' => $data['recommendation'],
+            'scores' => $scores ?: null,
+            'score' => $overall,
+            'comments' => ($data['comments'] ?? null) ?: null,
+            'comments_private' => ($data['comments_private'] ?? null) ?: null,
+            'status' => 'completed',
+        ]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'ok' => true,
+                'review' => [
+                    'id' => (int) $review->id,
+                    'completed' => true,
+                    'recommendation' => $review->recommendation,
+                    'score' => $review->score !== null ? (float) $review->score : null,
+                    'scores' => (object) $review->criterionScores(),
+                    'comments' => $review->comments,
+                    'comments_private' => $review->comments_private,
+                ],
+            ]);
+        }
+
+        return back()->with('ukc_status', 'Votre évaluation a été enregistrée. Merci !');
+    }
+
+    /** Enregistre les candidatures (préférences + conflits) du relecteur. */
+    public function saveBids(Request $request): RedirectResponse
+    {
+        $reviewerParticipants = $this->reviewerParticipants();
+        abort_if($reviewerParticipants->isEmpty(), 403);
+
+        $data = $request->validate([
+            'bids' => ['array'],
+            'bids.*.interest' => ['nullable', 'in:'.implode(',', array_keys(ReviewerBid::INTERESTS))],
+            'bids.*.conflict' => ['nullable', 'boolean'],
+        ]);
+
+        // Regroupe (soumission autorisée => inscription relecteur de la bonne édition).
+        $editionByReviewer = $reviewerParticipants->pluck('edition_id', 'id');
+        $allowed = Submission::whereIn('edition_id', $editionByReviewer->values()->unique())
+            ->where('revision_of', 0)
+            ->pluck('edition_id', 'id');
+
+        foreach ($data['bids'] ?? [] as $submissionId => $bid) {
+            $editionId = $allowed->get((int) $submissionId);
+            if ($editionId === null) {
+                continue;
+            }
+            $reviewerId = $reviewerParticipants->firstWhere('edition_id', $editionId)?->id;
+            if ($reviewerId === null) {
+                continue;
+            }
+            ReviewerBid::updateOrCreate(
+                ['submission_id' => (int) $submissionId, 'reviewer_id' => $reviewerId],
+                [
+                    'interest' => $bid['interest'] ?? ReviewerBid::NEUTRAL,
+                    'conflict' => (bool) ($bid['conflict'] ?? false),
+                ],
+            );
+        }
+
+        return back()->with('ukc_status', 'Vos préférences ont été enregistrées. Merci !');
+    }
+
+    /**
+     * Inscriptions « relecteur » de l'utilisateur connecté (une par édition).
+     *
+     * @return Collection<int, Participant>
+     */
+    private function reviewerParticipants(): Collection
+    {
+        $user = Auth::guard('account')->user();
+
+        return Participant::where('user_id', $user->id)
+            ->where('role', 'reviewer')
+            ->with('edition.colloque')
+            ->get();
+    }
+
+    /** La relecture appartient-elle bien à une inscription relecteur du compte ? */
+    private function authorizeReview(Review $review): void
+    {
+        abort_unless(
+            $this->reviewerParticipants()->pluck('id')->contains((int) $review->reviewer_id),
+            403
+        );
     }
 }

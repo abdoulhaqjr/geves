@@ -50,7 +50,6 @@ use App\Http\Controllers\Public\ColloqueController;
 use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Public\DeroulementController;
 use App\Http\Controllers\Public\GescoController;
-use App\Http\Controllers\Reviewer\ReviewerController;
 use App\Http\Controllers\SessionEngagementController;
 use App\Http\Middleware\StampAccountSession;
 use Illuminate\Support\Facades\Route;
@@ -99,11 +98,6 @@ Route::post('/session/{session}/echanges/sondages/{poll}/etat', [SessionEngageme
 // Changement de langue (i18n) — mémorisé en session (+ préférence si connecté).
 Route::get('/langue/{locale}', [LocaleController::class, 'switch'])->name('locale.switch');
 
-// Portail relecteur (accès par jeton, sans compte).
-Route::get('/relecture/{token}', [ReviewerController::class, 'portal'])->name('reviewer.portal');
-Route::post('/relecture/{token}/candidatures', [ReviewerController::class, 'saveBids'])->name('reviewer.bids.save');
-Route::get('/relecture/{token}/{review}', [ReviewerController::class, 'evaluate'])->name('reviewer.evaluate');
-Route::post('/relecture/{token}/{review}', [ReviewerController::class, 'submitEvaluation'])->name('reviewer.evaluate.submit');
 
 // Attestations : document imprimable + vérification publique (par UUID).
 Route::get('/attestation/{uuid}', [AttestationController::class, 'document'])->name('attestation.document');
@@ -179,6 +173,8 @@ Route::middleware(['auth:account', StampAccountSession::class])->group(function 
     Route::get('/rapports/{session}', [App\Http\Controllers\Account\SessionReportController::class, 'edit'])->name('account.reports.edit');
     Route::post('/rapports/{session}', [App\Http\Controllers\Account\SessionReportController::class, 'update'])->name('account.reports.update');
     Route::get('/relectures', [App\Http\Controllers\Account\ReviewWorkspaceController::class, 'index'])->name('account.reviews');
+    Route::post('/relectures/candidatures', [App\Http\Controllers\Account\ReviewWorkspaceController::class, 'saveBids'])->name('account.reviews.bids');
+    Route::post('/relectures/{review}', [App\Http\Controllers\Account\ReviewWorkspaceController::class, 'submit'])->name('account.reviews.submit');
 
     // Paiement des frais
     Route::get('/compte/paiement/{edition}', [AccountPaymentController::class, 'show'])->name('account.payment');

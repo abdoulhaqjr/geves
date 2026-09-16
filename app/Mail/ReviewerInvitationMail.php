@@ -12,8 +12,8 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
 /**
- * Invitation d'un relecteur : lien vers son portail de relecture (accès par
- * jeton, sans compte). Mise en file (ShouldQueue).
+ * Invitation d'un relecteur : lien vers son espace « Mes relectures » (dans le
+ * compte connecté). Mise en file (ShouldQueue).
  */
 class ReviewerInvitationMail extends Mailable implements ShouldQueue
 {
@@ -34,7 +34,7 @@ class ReviewerInvitationMail extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(markdown: 'emails.reviewer-invitation', with: [
-            'portalUrl' => route('reviewer.portal', $this->reviewer->access_token),
+            'portalUrl' => route('account.reviews'),
         ]);
     }
 }
