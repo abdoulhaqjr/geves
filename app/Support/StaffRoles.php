@@ -71,6 +71,12 @@ class StaffRoles
             'description' => 'Synthèse des avis, décisions d’acceptation / refus / corrections, vue sur les relectures.',
             'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'assign_reviewers', 'evaluate', 'final_decision'],
         ],
+        'comite_supervision' => [
+            'label' => 'Comité de supervision',
+            'category' => 'Système', 'pill' => 'info', 'abbr' => 'Comité sup.',
+            'description' => 'Supervision du colloque : vue d’ensemble et suivi (soumissions, participants, paiements), sans décision ni modification.',
+            'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'participants', 'payments'],
+        ],
         'comite_organisation' => [
             'label' => 'Comité d’organisation',
             'category' => 'Support', 'pill' => 'warn', 'abbr' => 'Comité org.',

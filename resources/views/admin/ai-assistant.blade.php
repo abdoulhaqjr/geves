@@ -13,9 +13,8 @@
     <div class="admin-page admin-ai"
          x-data="adminCopilot(@js($seed), '{{ route('admin.ai.ask') }}', '{{ route('admin.ai.decide') }}', @js($decisionLog), @js($agentName), @js((string) $currentEditionId))">
         @if ($editions->isNotEmpty())
-            <div class="ukc-field" style="max-width:340px;margin:0 0 14px;">
-                <label style="font-size:12px;color:var(--ukc-muted);">Colloque (les réponses sont cadrées sur votre/vos fonction(s) dans ce colloque)</label>
-                <select x-model="editionId">
+            <div class="ukc-field" style="margin:0 0 16px;">
+                <select x-model="editionId" style="width:100%;">
                     @foreach ($editions as $ed)
                         <option value="{{ $ed->id }}">{{ $ed->colloque?->name ? $ed->colloque->name.' — ' : '' }}{{ $ed->title ?: $ed->year }}</option>
                     @endforeach

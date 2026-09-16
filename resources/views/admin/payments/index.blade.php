@@ -1,6 +1,6 @@
 <x-layouts.admin title="Paiements" subtitle="Encaissements · FedaPay / Mobile Money">
     <x-slot:actions>
-        <a href="{{ route('admin.payments.export', request()->only('edition_id', 'status', 'method', 'search', 'from', 'to')) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
+        <a href="{{ route('admin.payments.export', array_merge(request()->only('status', 'method', 'search', 'from', 'to'), ['edition_id' => $edition_id])) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
             <x-ukc.icon name="download" :size="16" /> Exporter CSV
         </a>
         <a href="{{ route('admin.payments.create') }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">

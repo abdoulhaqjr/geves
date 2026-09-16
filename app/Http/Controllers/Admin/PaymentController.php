@@ -29,11 +29,21 @@ class PaymentController extends Controller
     {
         $search = trim((string) $request->query('search', ''));
         $status = (string) $request->query('status', '');
-        $editionId = (string) $request->query('edition_id', '');
         $method = (string) $request->query('method', '');
         $from = (string) $request->query('from', '');
         $to = (string) $request->query('to', '');
         $scoped = $this->scopedEditionIds($request, 'payments');
+        $editions = $this->accessibleEditions($request, 'payments');
+
+        // Par défaut (aucun filtre explicite), on se cale sur le colloque courant
+        // (ouvert le plus récent, sinon le plus récent) — pas « toutes les éditions ».
+        if ($request->has('edition_id')) {
+            $editionId = (string) $request->query('edition_id', '');
+        } else {
+            // La page est gardée par edition.cap:payments → au moins une édition accessible.
+            $default = $editions->firstWhere('status', 'open') ?? $editions->first();
+            $editionId = $default !== null ? (string) $default->id : '';
+        }
 
         $base = Payment::query()
             ->when($scoped !== null, fn ($q) => $q->whereIn('edition_id', $scoped))
@@ -62,7 +72,7 @@ class PaymentController extends Controller
             'sort' => $sort['sort'],
             'dir' => $sort['dir'],
             'payments' => $payments,
-            'editions' => $this->accessibleEditions($request, 'payments'),
+            'editions' => $editions,
             'statuses' => Payment::statuses(),
             'methods' => Payment::methodLabels(),
             'search' => $search,

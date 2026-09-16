@@ -152,3 +152,28 @@ it('attribue une référence unique à chaque paiement dès la création (avant 
     // Le libellé de moyen reconnaît l'agrégateur en ligne.
     expect($p2->methodLabel())->toContain('FedaPay');
 });
+
+it('la page paiements se cale par défaut sur le colloque courant (pas toutes les éditions)', function () {
+    $c = Colloque::create(['name' => 'UK', 'slug' => 'uk-x']);
+    $old = $c->editions()->create(['title' => 'UK 2025', 'year' => 2025, 'status' => 'closed', 'slug' => 'uk-2025']);
+    $new = $c->editions()->create(['title' => 'UK 2026', 'year' => 2026, 'status' => 'open', 'slug' => 'uk-2026']);
+
+    $pOld = $old->participants()->create(['first_name' => 'A', 'last_name' => 'Ancien', 'email' => 'a@x.tg']);
+    $pNew = $new->participants()->create(['first_name' => 'N', 'last_name' => 'Nouveau', 'email' => 'n@x.tg']);
+    $old->payments()->create(['participant_id' => $pOld->id, 'amount' => 15000, 'status' => 'paid', 'reference' => 'PAY-OLD-0001']);
+    $new->payments()->create(['participant_id' => $pNew->id, 'amount' => 15000, 'status' => 'paid', 'reference' => 'PAY-NEW-0001']);
+
+    // Sans filtre → colloque courant (édition ouverte la plus récente) uniquement.
+    $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.payments.index'))
+        ->assertOk()
+        ->assertSee('PAY-NEW-0001')
+        ->assertDontSee('PAY-OLD-0001');
+
+    // « Toutes les éditions » (edition_id explicitement vide) → tout.
+    $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.payments.index', ['edition_id' => '']))
+        ->assertOk()
+        ->assertSee('PAY-NEW-0001')
+        ->assertSee('PAY-OLD-0001');
+});
