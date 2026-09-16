@@ -203,7 +203,7 @@ class ColloqueAvenirSeeder extends Seeder
             );
 
             // Paiement réglé (inscription confirmée) — sauf le dernier communicant,
-            // laissé NON réglé pour tester les relances de paiement du secrétariat.
+            // laissé NON réglé pour tester les relances de paiement (page Paiements).
             if ($i === count(self::ATELIERS) - 1) {
                 continue;
             }

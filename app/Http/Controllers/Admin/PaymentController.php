@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Admin;
 
 use App\Actions\ConfirmPayment;
 use App\Http\Controllers\Controller;
+use App\Mail\PaymentReminderMail;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Support\Fees;
+use App\Support\Notifier;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -61,6 +64,25 @@ class PaymentController extends Controller
         $pendingCount = (clone $base)->where('status', 'pending')->count();
         $totalCount = (clone $base)->count();
 
+        // Relances de paiement : inscriptions avec communication acceptée et frais
+        // non encore réglés, sur le périmètre affiché (édition sélectionnée sinon
+        // toutes les éditions accessibles).
+        $remindEditionIds = $editionId !== ''
+            ? [(int) $editionId]
+            : ($scoped ?? $editions->pluck('id')->all());
+        $toRemind = $remindEditionIds === [] ? collect()
+            : Participant::whereIn('edition_id', $remindEditionIds)
+                ->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted'))
+                ->whereDoesntHave('payments', fn ($q) => $q->where('status', 'paid'))
+                ->with('edition')
+                ->orderBy('edition_id')->orderBy('last_name')
+                ->get()
+                ->map(fn (Participant $p) => [
+                    'participant' => $p,
+                    'amount' => Fees::resolveAmount($p->edition, $p->title) ?? Fees::highestAmount($p->edition),
+                    'remindedAt' => $p->meta['payment_reminded_at'] ?? null,
+                ])->values();
+
         // Tendance des encaissements : 7 derniers jours vs les 7 précédents.
         $trendPaid = \App\Support\Trend::of(
             (int) (clone $base)->where('status', 'paid')->whereBetween('created_at', [now()->subDays(7), now()])->count(),
@@ -73,6 +95,7 @@ class PaymentController extends Controller
             'dir' => $sort['dir'],
             'payments' => $payments,
             'editions' => $editions,
+            'toRemind' => $toRemind,
             'statuses' => Payment::statuses(),
             'methods' => Payment::methodLabels(),
             'search' => $search,
@@ -91,6 +114,38 @@ class PaymentController extends Controller
                 'rate' => $totalCount > 0 ? (int) round($paidCount / $totalCount * 100) : 0,
             ],
         ]);
+    }
+
+    /**
+     * Relance de paiement (comptabilité) : e-mail de rappel + notification in-app
+     * au participant dont la communication est acceptée mais les frais non réglés.
+     */
+    public function remindPayment(Request $request, Participant $participant): RedirectResponse
+    {
+        abort_unless($request->user()->canOnEdition('payments', $participant->edition_id), 403);
+
+        $edition = $participant->edition;
+        $amount = Fees::resolveAmount($edition, $participant->title) ?? Fees::highestAmount($edition);
+        $payUrl = route('account.payment', $edition);
+
+        if (filled($participant->email)) {
+            Mail::to($participant->email)->send(new PaymentReminderMail($participant, $edition, $payUrl, $amount));
+        }
+
+        Notifier::account(
+            $participant->user,
+            kind: 'payment',
+            title: 'Frais d’inscription à régler',
+            body: 'Un rappel vous a été envoyé pour finaliser le paiement de votre inscription.',
+            url: $payUrl,
+            icon: 'card',
+        );
+
+        $meta = (array) $participant->meta;
+        $meta['payment_reminded_at'] = now()->toDateTimeString();
+        $participant->update(['meta' => $meta]);
+
+        return back()->with('ukc_status', 'Relance de paiement envoyée à '.$participant->full_name.'.');
     }
 
     /** Applique les filtres communs (liste + export). */

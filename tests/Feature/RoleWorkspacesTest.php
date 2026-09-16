@@ -190,7 +190,7 @@ it('limite les onglets des Rapports à la fonction (comptable → Paiements)', f
     expect($html)->not->toContain("tab='submissions'");
 });
 
-it('relance un participant qui n’a pas réglé ses frais (secrétariat)', function () {
+it('relance un participant qui n’a pas réglé ses frais (page Paiements)', function () {
     \Illuminate\Support\Facades\Mail::fake();
     $edition = openEdition(['fees' => [['label' => 'Doctorants', 'amount' => 15000]]]);
     $account = User::create(['first_name' => 'Non', 'last_name' => 'Payé', 'email' => 'nonpaye@example.tg', 'password' => 'pass12345']);
@@ -203,16 +203,16 @@ it('relance un participant qui n’a pas réglé ses frais (secrétariat)', func
         'abstract' => 'x', 'track' => 'Sciences', 'type' => 'oral', 'status' => 'accepted', 'authors' => [],
     ]);
 
-    // Page secrétariat : le participant apparaît dans les relances.
+    // Page Paiements : le participant apparaît dans les relances.
     $this->actingAs(adminStaff(), 'web')
-        ->get(route('admin.secretariat'))
+        ->get(route('admin.payments.index'))
         ->assertOk()
         ->assertSee('Relances de paiement')
         ->assertSee('nonpaye@example.tg');
 
     // Relance : e-mail + notification + horodatage.
     $this->actingAs(adminStaff(), 'web')
-        ->post(route('admin.secretariat.remind', $participant))
+        ->post(route('admin.payments.remind', $participant))
         ->assertRedirect();
 
     \Illuminate\Support\Facades\Mail::assertQueued(\App\Mail\PaymentReminderMail::class);

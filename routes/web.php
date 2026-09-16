@@ -214,7 +214,6 @@ Route::prefix('admin')->group(function () {
         // (le contenu est ensuite restreint aux éditions accessibles).
         Route::get('/', App\Http\Controllers\Admin\DashboardController::class)->name('admin.dashboard');
         Route::get('/secretariat', [App\Http\Controllers\Admin\SecretariatController::class, 'index'])->name('admin.secretariat');
-        Route::post('/secretariat/relance-paiement/{participant}', [App\Http\Controllers\Admin\SecretariatController::class, 'remindPayment'])->name('admin.secretariat.remind');
         Route::get('/notifications', [NotificationController::class, 'index'])->name('admin.notifications');
         Route::post('/deconnexion', AdminLogoutController::class)->name('admin.logout');
 
@@ -276,6 +275,7 @@ Route::prefix('admin')->group(function () {
         Route::middleware('edition.cap:payments')->group(function () {
             Route::get('/paiements', [App\Http\Controllers\Admin\PaymentController::class, 'index'])->name('admin.payments.index');
             Route::get('/paiements/export/csv', [App\Http\Controllers\Admin\PaymentController::class, 'export'])->name('admin.payments.export');
+            Route::post('/paiements/relance/{participant}', [App\Http\Controllers\Admin\PaymentController::class, 'remindPayment'])->name('admin.payments.remind');
             Route::post('/paiements/{payment}/regler', [App\Http\Controllers\Admin\PaymentController::class, 'markPaid'])->name('admin.payments.mark-paid');
             Route::post('/paiements/{payment}/rembourser', [App\Http\Controllers\Admin\PaymentController::class, 'refund'])->name('admin.payments.refund');
             Route::get('/paiements/creer', [App\Http\Controllers\Admin\PaymentController::class, 'create'])->name('admin.payments.create');

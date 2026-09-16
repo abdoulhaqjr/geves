@@ -1,4 +1,18 @@
 <x-layouts.admin title="Secrétariat" subtitle="Rapports de séance à valider · suivi administratif">
+    @php($me = auth('web')->user())
+    <x-slot:actions>
+        <a href="{{ route('admin.program.reports') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="sheet" :size="15" /> Rapports</a>
+        @if ($me?->canAnyEdition('participants'))
+            <a href="{{ route('admin.participants.index') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="users" :size="15" /> Participants</a>
+        @endif
+        @if ($me?->canAnyEdition('documents'))
+            <a href="{{ route('admin.documents.attestations') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="diploma" :size="15" /> Documents</a>
+        @endif
+        @if ($me?->canAnyEdition('emails'))
+            <a href="{{ route('admin.emails.index') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="mail" :size="15" /> E-mails</a>
+        @endif
+    </x-slot:actions>
+
     <div class="admin-page">
 
         {{-- Indicateurs --}}
@@ -6,7 +20,6 @@
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="check-circle" :size="20" /></div><div class="lbl">Rapports à valider</div><div class="val">{{ $stats['to_validate'] }}</div></div>
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="pen" :size="20" /></div><div class="lbl">En attente de rédaction</div><div class="val">{{ $stats['awaiting'] }}</div></div>
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="check" :size="20" /></div><div class="lbl">Rapports validés</div><div class="val green">{{ $stats['validated'] }}</div></div>
-            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="card" :size="20" /></div><div class="lbl">Paiements à relancer</div><div class="val">{{ $stats['to_remind'] }}</div></div>
         </div>
 
         @if ($editions->isEmpty())
@@ -87,61 +100,6 @@
                 </div>
             </div>
 
-            {{-- ===== Relances de paiement ===== --}}
-            <div class="ukc-card" style="padding:0;margin-top:18px;">
-                <div style="padding:16px 18px 0;">
-                    <h3 style="margin:0;">Relances de paiement</h3>
-                    <p style="font-size:13px;color:var(--ukc-muted);margin:4px 0 0;">Communications acceptées dont les frais d'inscription ne sont pas encore réglés.</p>
-                </div>
-                @if ($toRemind->isNotEmpty())
-                    <div class="ukc-table-wrap" style="margin-top:12px;">
-                        <table class="ukc-table">
-                            <thead><tr><th>Participant</th><th>Édition</th><th>Montant dû</th><th>Dernière relance</th><th style="text-align:right;">Action</th></tr></thead>
-                            <tbody>
-                                @foreach ($toRemind as $row)
-                                    @php($p = $row['participant'])
-                                    <tr>
-                                        <td class="title">
-                                            {{ $p->full_name }}
-                                            <div style="font-size:12px;color:var(--ukc-muted);">{{ $p->email }}</div>
-                                        </td>
-                                        <td>{{ $p->edition?->title ?: $p->edition?->year }}</td>
-                                        <td>{{ $row['amount'] ? number_format($row['amount'], 0, ',', ' ').' FCFA' : '—' }}</td>
-                                        <td>
-                                            @if ($row['remindedAt'])
-                                                <span class="ukc-pill ukc-pill--muted">{{ \Illuminate\Support\Carbon::parse($row['remindedAt'])->translatedFormat('d/m H:i') }}</span>
-                                            @else
-                                                <span style="color:var(--ukc-muted);">—</span>
-                                            @endif
-                                        </td>
-                                        <td style="text-align:right;">
-                                            <form method="POST" action="{{ route('admin.secretariat.remind', $p) }}">
-                                                @csrf
-                                                <button type="submit" class="ukc-btn {{ $row['remindedAt'] ? 'ukc-btn--ghost' : 'ukc-btn--blue' }} ukc-btn--sm">
-                                                    <x-ukc.icon name="mail" :size="15" /> {{ $row['remindedAt'] ? 'Relancer à nouveau' : 'Relancer' }}
-                                                </button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @else
-                    <div class="ukc-empty" style="border:none;"><p style="margin:12px 0 18px;">Aucune inscription à relancer — tout est réglé. 🎉</p></div>
-                @endif
-            </div>
-
-            {{-- ===== Accès rapides ===== --}}
-            <div class="ukc-card" style="margin-top:18px;">
-                <h3>Suivi administratif</h3>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
-                    <a href="{{ route('admin.program.reports') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="sheet" :size="15" /> Tous les rapports</a>
-                    <a href="{{ route('admin.participants.index') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="users" :size="15" /> Participants</a>
-                    <a href="{{ route('admin.documents.attestations') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="diploma" :size="15" /> Documents</a>
-                    <a href="{{ route('admin.emails.index') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="mail" :size="15" /> E-mails</a>
-                </div>
-            </div>
         @endif
     </div>
 </x-layouts.admin>
