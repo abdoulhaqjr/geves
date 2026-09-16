@@ -115,14 +115,20 @@ class AppServiceProvider extends ServiceProvider
         Config::set('mail.from.address', $set('mail.from_address', config('mail.from.address')));
         Config::set('payments.currency', $set('payments.currency', config('payments.currency')));
 
-        // SMTP (seulement si un hôte est renseigné)
+        // SMTP (seulement si un hôte est renseigné). Les identifiants sont
+        // toujours chargés, mais MAIL_MAILER=log dans .env reste prioritaire
+        // (dev : on journalise les e-mails sans les envoyer) — les réglages SMTP
+        // demeurent stockés pour la production.
         if (filled($set('mail.host'))) {
-            Config::set('mail.default', 'smtp');
             Config::set('mail.mailers.smtp.host', $set('mail.host'));
             Config::set('mail.mailers.smtp.port', (int) $set('mail.port', 587));
             Config::set('mail.mailers.smtp.username', $set('mail.username'));
             Config::set('mail.mailers.smtp.password', $set('mail.password'));
             Config::set('mail.mailers.smtp.encryption', $set('mail.encryption', 'tls') ?: null);
+
+            if (config('mail.default') !== 'log') {
+                Config::set('mail.default', 'smtp');
+            }
         }
 
         // Passerelle par défaut
