@@ -11,10 +11,18 @@
                 </select>
             </div>
             @if ($edition_id !== '')
-                <div style="display:flex;gap:8px;">
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <a href="{{ route('admin.documents.sessions', $edition_id) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
                         <x-ukc.icon name="file" :size="16" /> Fiches de session
                     </a>
+                    <a href="{{ route('admin.documents.session-pv', $edition_id) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+                        <x-ukc.icon name="sheet" :size="16" /> PV (procès-verbaux)
+                    </a>
+                    @if (auth('web')->user()?->canAnyEdition('documents'))
+                        <a href="{{ route('admin.documents.session-layout', $edition_id) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
+                            <x-ukc.icon name="settings" :size="16" /> Mise en page
+                        </a>
+                    @endif
                     <a href="{{ route('admin.program.reports') }}?edition_id={{ $edition_id }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
                         <x-ukc.icon name="sheet" :size="16" /> Rapports de séance
                     </a>

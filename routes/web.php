@@ -399,6 +399,9 @@ Route::prefix('admin')->group(function () {
             Route::get('/editions/{edition}/livret', [DocumentController::class, 'livret'])->name('admin.documents.livret');
             Route::get('/editions/{edition}/badges', [DocumentController::class, 'badges'])->name('admin.documents.badges');
             Route::get('/editions/{edition}/fiches-session', [DocumentController::class, 'sessionSheets'])->name('admin.documents.sessions');
+            Route::get('/editions/{edition}/pv-seances', [DocumentController::class, 'sessionPv'])->name('admin.documents.session-pv');
+            Route::get('/editions/{edition}/mise-en-page-seances', [DocumentController::class, 'sessionLayout'])->name('admin.documents.session-layout');
+            Route::put('/editions/{edition}/mise-en-page-seances', [DocumentController::class, 'saveSessionLayout'])->name('admin.documents.session-layout.save');
         });
 
         // Pointage / scan de badges le jour J.

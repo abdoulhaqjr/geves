@@ -22,42 +22,31 @@
                 </div>
                 <h2 style="font-size:1.4rem;font-weight:900;margin:4px 0 10px;">{{ $session->label }}</h2>
 
-                <div style="display:flex;flex-wrap:wrap;gap:16px;font-size:.9rem;color:var(--ukc-text);margin-bottom:16px;">
-                    <span><strong>Date :</strong> {{ $session->session_day?->translatedFormat('l d F Y') ?: '—' }}</span>
-                    <span><strong>Horaire :</strong>
-                        @if ($session->starts_at){{ $session->starts_at->format('H:i') }}@if ($session->ends_at)–{{ $session->ends_at->format('H:i') }}@endif @else — @endif
-                    </span>
-                    <span><strong>Salle :</strong> {{ $session->room ?: '—' }}</span>
-                </div>
-                <div style="display:flex;flex-wrap:wrap;gap:16px;font-size:.9rem;color:var(--ukc-text);margin-bottom:18px;">
-                    <span><strong>Modérateur :</strong> {{ $session->moderator_name ?: '—' }}</span>
-                    <span><strong>Rapporteur :</strong> {{ $session->rapporteur_name ?: '—' }}</span>
-                </div>
+                @php($headerFields = \App\Support\SessionDocLayout::sheetHeader($edition))
+                @if ($headerFields)
+                    <div style="display:flex;flex-wrap:wrap;gap:16px;font-size:.9rem;color:var(--ukc-text);margin-bottom:18px;">
+                        @foreach ($headerFields as $f)
+                            <span><strong>{{ $f['label'] }} :</strong> {{ \App\Support\SessionDocLayout::headerValue($f['key'], $session) }}</span>
+                        @endforeach
+                    </div>
+                @endif
 
+                @php($cols = \App\Support\SessionDocLayout::sheetColumns($edition))
                 <table style="width:100%;border-collapse:collapse;font-size:.9rem;">
                     <thead>
                         <tr style="border-bottom:2px solid var(--ukc-border);">
-                            <th style="text-align:left;padding:8px 6px;width:70px;">Horaire</th>
-                            <th style="text-align:left;padding:8px 6px;">Communication</th>
+                            @foreach ($cols as $c)<th style="text-align:left;padding:8px 6px;">{{ $c['label'] }}</th>@endforeach
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($comms as $slot)
-                            @php($sub = $slot->submission)
                             <tr style="border-bottom:1px solid var(--ukc-border);">
-                                <td style="padding:10px 6px;font-family:var(--ukc-mono);vertical-align:top;">
-                                    {{ $slot->starts_at?->format('H:i') ?: '—' }}
-                                </td>
-                                <td style="padding:10px 6px;">
-                                    <div style="font-weight:700;">{{ $sub?->title }}</div>
-                                    <div style="color:var(--ukc-muted);font-size:.85rem;">
-                                        {{ collect($sub?->authors ?? [])->pluck('name')->filter()->join(', ') }}
-                                        @if ($sub?->ref_code) · réf. {{ $sub->ref_code }} @endif
-                                    </div>
-                                </td>
+                                @foreach ($cols as $c)
+                                    <td style="padding:10px 6px;vertical-align:top;@if ($c['key'] === 'emargement') min-width:130px;border-bottom:1px solid #94a3b8;@endif">{{ \App\Support\SessionDocLayout::cell($c['key'], $slot) }}</td>
+                                @endforeach
                             </tr>
                         @empty
-                            <tr><td colspan="2" style="padding:12px 6px;color:var(--ukc-muted);">Aucune communication programmée.</td></tr>
+                            <tr><td colspan="{{ max(1, count($cols)) }}" style="padding:12px 6px;color:var(--ukc-muted);">Aucune communication programmée.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
