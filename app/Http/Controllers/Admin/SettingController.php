@@ -26,6 +26,8 @@ class SettingController extends Controller
         'from_name' => 'mail.from_name',
         'from_address' => 'mail.from_address',
         'currency' => 'payments.currency',
+        'app_url' => 'app.url',
+        'mail_mailer' => 'mail.mailer',
         'mail_host' => 'mail.host',
         'mail_port' => 'mail.port',
         'mail_encryption' => 'mail.encryption',
@@ -83,6 +85,8 @@ class SettingController extends Controller
             'from_name' => $g('mail.from_name', (string) config('mail.from.name')),
             'from_address' => $g('mail.from_address', (string) config('mail.from.address')),
             'currency' => $g('payments.currency', (string) config('payments.currency', 'XOF')),
+            'app_url' => $g('app.url', (string) config('app.url')),
+            'mail_mailer' => $g('mail.mailer', (string) config('mail.default', 'log')),
             'mail_host' => $g('mail.host'),
             'mail_port' => $g('mail.port', '587'),
             'mail_encryption' => $g('mail.encryption', 'tls'),
@@ -140,6 +144,8 @@ class SettingController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'from_address' => ['nullable', 'email'],
+            'app_url' => ['nullable', 'url'],
+            'mail_mailer' => ['nullable', 'in:log,smtp'],
             'mail_port' => ['nullable', 'integer'],
             'payments_default' => ['required', 'in:manual,cashpay,fedapay'],
             'fedapay_mode' => ['required', 'in:test,live'],

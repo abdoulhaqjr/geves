@@ -33,6 +33,12 @@
                             <label for="currency">Devise</label>
                             <input type="text" id="currency" name="currency" value="{{ $v('currency') }}" maxlength="10">
                         </div>
+                        <div class="ukc-field">
+                            <label for="app_url">URL du site (APP_URL)</label>
+                            <input type="url" id="app_url" name="app_url" value="{{ $v('app_url') }}" placeholder="https://gesco.test">
+                            <span class="hint" style="font-size:12px;color:var(--ukc-muted);">Base des liens dans les e-mails et notifications (utile pour les envois en file d’attente).</span>
+                            @error('app_url') <span class="error">{{ $message }}</span> @enderror
+                        </div>
                     </div>
                 </div>
 
@@ -109,8 +115,16 @@
             <div class="ukc-panel" :class="{ active: tab==='email' }">
                 <div class="ukc-card">
                     <h2><span><x-ukc.icon name="mail" :size="20" /> Envoi des e-mails (SMTP)</span></h2>
-                    <p class="desc">Laissez l’hôte vide pour utiliser le transport par défaut (log en dev).</p>
+                    <p class="desc">« Journal » écrit les e-mails dans les logs sans les envoyer (dev) ; « SMTP » les expédie via les paramètres ci-dessous.</p>
                     <div class="ukc-form-grid">
+                        <div class="ukc-field">
+                            <label for="mail_mailer">Transport</label>
+                            <select id="mail_mailer" name="mail_mailer">
+                                <option value="log" @selected($v('mail_mailer') === 'log')>Journal (log — n’envoie rien)</option>
+                                <option value="smtp" @selected($v('mail_mailer') === 'smtp')>SMTP (envoi réel)</option>
+                            </select>
+                            @error('mail_mailer') <span class="error">{{ $message }}</span> @enderror
+                        </div>
                         <div class="ukc-field">
                             <label for="mail_host">Hôte</label>
                             <input type="text" id="mail_host" name="mail_host" value="{{ $v('mail_host') }}" placeholder="smtp.exemple.tg">

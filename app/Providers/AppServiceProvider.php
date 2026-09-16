@@ -110,25 +110,39 @@ class AppServiceProvider extends ServiceProvider
 
         $set = fn (string $key, mixed $default = null) => $s[$key] ?? $default;
 
+        // URL du site (source unique pour les liens des e-mails/notifs, y compris
+        // en file d'attente où il n'y a pas d'hôte de requête).
+        if (filled($set('app.url'))) {
+            $appUrl = (string) $set('app.url');
+            Config::set('app.url', $appUrl);
+            URL::forceRootUrl($appUrl);
+            if (str_starts_with($appUrl, 'https://')) {
+                URL::forceScheme('https');
+            }
+        }
+
         // Expéditeur & devise
         Config::set('mail.from.name', $set('mail.from_name', config('mail.from.name')));
         Config::set('mail.from.address', $set('mail.from_address', config('mail.from.address')));
         Config::set('payments.currency', $set('payments.currency', config('payments.currency')));
 
-        // SMTP (seulement si un hôte est renseigné). Les identifiants sont
-        // toujours chargés, mais MAIL_MAILER=log dans .env reste prioritaire
-        // (dev : on journalise les e-mails sans les envoyer) — les réglages SMTP
-        // demeurent stockés pour la production.
+        // SMTP : identifiants toujours chargés si un hôte est renseigné.
         if (filled($set('mail.host'))) {
             Config::set('mail.mailers.smtp.host', $set('mail.host'));
             Config::set('mail.mailers.smtp.port', (int) $set('mail.port', 587));
             Config::set('mail.mailers.smtp.username', $set('mail.username'));
             Config::set('mail.mailers.smtp.password', $set('mail.password'));
             Config::set('mail.mailers.smtp.encryption', $set('mail.encryption', 'tls') ?: null);
+        }
 
-            if (config('mail.default') !== 'log') {
-                Config::set('mail.default', 'smtp');
-            }
+        // Transport e-mail : les Réglages sont la source de vérité (mail.mailer).
+        // À défaut de réglage : MAIL_MAILER=log du .env reste prioritaire, sinon
+        // SMTP si un hôte est renseigné.
+        $mailer = (string) $set('mail.mailer');
+        if (in_array($mailer, ['log', 'smtp'], true)) {
+            Config::set('mail.default', $mailer);
+        } elseif (filled($set('mail.host')) && config('mail.default') !== 'log') {
+            Config::set('mail.default', 'smtp');
         }
 
         // Passerelle par défaut
