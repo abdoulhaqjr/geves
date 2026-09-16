@@ -64,7 +64,7 @@
             @forelse ($submissions as $s)
                 <div style="padding:10px 0;border-top:1px solid var(--ukc-border);">
                     <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;">
-                        <span style="font-family:ui-monospace,monospace;font-size:.82rem;color:var(--ukc-muted);">{{ $s->ref_code }}</span>
+                        <span style="font-family:var(--ukc-mono);font-size:.82rem;color:var(--ukc-muted);">{{ $s->ref_code }}</span>
                         <span class="ukc-pill ukc-pill--{{ $s->statusPill() }}">{{ $s->statusLabel() }}</span>
                     </div>
                     <div style="font-weight:600;margin-top:2px;">{{ $s->title }}</div>

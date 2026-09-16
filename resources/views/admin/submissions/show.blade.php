@@ -30,7 +30,7 @@
                 {{-- Résumé & auteurs --}}
                 <div class="ukc-card">
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
-                        <span style="font-family:ui-monospace,monospace;font-weight:700;color:var(--ukc-muted);font-size:.9rem;">{{ $s->ref_code }}</span>
+                        <span style="font-family:var(--ukc-mono);font-weight:700;color:var(--ukc-muted);font-size:.9rem;">{{ $s->ref_code }}</span>
                         <span class="ukc-pill ukc-pill--{{ $s->statusPill() }}">{{ $s->statusLabel() }}</span>
                     </div>
                     <div class="paper-title">{{ $s->title }}</div>
@@ -89,7 +89,7 @@
                                     <span style="flex-shrink:0;font-weight:800;font-size:15px;color:{{ $col }};min-width:48px;">{{ $pct }}%</span>
                                     <span style="flex:1;min-width:0;">
                                         <span style="display:block;font-weight:600;color:var(--ukc-text);">{{ \Illuminate\Support\Str::limit($m['submission']->title, 70) }}</span>
-                                        <span style="font-size:12px;color:var(--ukc-muted);font-family:ui-monospace,monospace;">{{ $m['submission']->ref_code }}</span>
+                                        <span style="font-size:12px;color:var(--ukc-muted);font-family:var(--ukc-mono);">{{ $m['submission']->ref_code }}</span>
                                     </span>
                                     <x-ukc.icon name="chevron" :size="16" />
                                 </a>

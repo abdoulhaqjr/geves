@@ -135,7 +135,7 @@
                     <x-ukc.icon name="info" :size="18" /> {{ __('Conservez vos codes de secours') }}
                 </div>
                 <p style="font-size:.85rem;margin:0;">{{ __('Chaque code ne fonctionne qu’une fois. Notez-les en lieu sûr.') }}</p>
-                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-family:ui-monospace,monospace;font-weight:700;
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-family:var(--ukc-mono);font-weight:700;
                             background:#fff;border:1px solid var(--ukc-border);border-radius:10px;padding:12px;">
                     @foreach ($recoveryCodes as $rc)<span>{{ $rc }}</span>@endforeach
                 </div>

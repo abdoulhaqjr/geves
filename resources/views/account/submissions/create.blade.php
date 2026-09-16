@@ -19,7 +19,7 @@
             <h2 style="justify-content:center;">{{ __('Communication reçue') }}</h2>
             <p style="color:var(--ukc-muted);line-height:1.6;">
                 {{ __('Votre soumission a bien été enregistrée sous la référence') }}
-                <strong style="color:var(--ukc-text);font-family:ui-monospace,monospace;">{{ $successRef }}</strong>.
+                <strong style="color:var(--ukc-text);font-family:var(--ukc-mono);">{{ $successRef }}</strong>.
                 {{ __('Vous pouvez suivre son statut depuis « Mes communications ».') }}
             </p>
             <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:20px;">

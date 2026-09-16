@@ -26,7 +26,7 @@
                     <tbody>
                         <template x-for="r in reviews" :key="r.id">
                             <tr>
-                                <td style="font-family:ui-monospace,monospace;font-weight:700;" x-text="r.ref || '—'"></td>
+                                <td style="font-family:var(--ukc-mono);font-weight:700;" x-text="r.ref || '—'"></td>
                                 <td class="title">
                                     <span x-text="r.title"></span>
                                     <div style="font-size:12px;color:var(--ukc-muted);" x-text="r.edition"></div>
@@ -78,7 +78,7 @@
                         @php($bid = $bids[$sub->id] ?? null)
                         <div class="ukc-card" style="padding:16px 18px;">
                             <div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;">
-                                <span style="font-family:ui-monospace,monospace;font-weight:700;font-size:12.5px;color:var(--ukc-blue);">{{ $sub->ref_code }}</span>
+                                <span style="font-family:var(--ukc-mono);font-weight:700;font-size:12.5px;color:var(--ukc-blue);">{{ $sub->ref_code }}</span>
                                 @if ($sub->track)<span class="ukc-pill ukc-pill--info">{{ \Illuminate\Support\Str::limit($sub->track, 28) }}</span>@endif
                             </div>
                             <div style="font-weight:700;margin:6px 0 4px;line-height:1.35;">{{ $sub->title }}</div>
@@ -112,7 +112,7 @@
 
         {{-- Communication (en aveugle : pas d'auteurs) --}}
         <div style="margin-bottom:16px;">
-            <div style="font-family:ui-monospace,monospace;font-weight:700;color:var(--ukc-muted);font-size:12.5px;" x-text="cur.ref"></div>
+            <div style="font-family:var(--ukc-mono);font-weight:700;color:var(--ukc-muted);font-size:12.5px;" x-text="cur.ref"></div>
             <h3 style="margin:6px 0;" x-text="cur.title"></h3>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
                 <template x-if="cur.track"><span class="ukc-pill ukc-pill--info" x-text="cur.track"></span></template>

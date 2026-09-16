@@ -34,7 +34,7 @@
             @foreach ($comms as $slot)
                 @php($sub = $slot->submission)
                 <li style="display:flex;gap:8px;align-items:baseline;font-size:.9rem;">
-                    @if ($slot->starts_at)<span style="font-family:ui-monospace,monospace;color:var(--ukc-blue);font-weight:700;flex-shrink:0;">{{ $slot->starts_at->format('H:i') }}</span>@endif
+                    @if ($slot->starts_at)<span style="font-family:var(--ukc-mono);color:var(--ukc-blue);font-weight:700;flex-shrink:0;">{{ $slot->starts_at->format('H:i') }}</span>@endif
                     <span>
                         <span style="font-weight:600;">{{ $sub?->title }}</span>
                         @if ($sub && filled($sub->authors))

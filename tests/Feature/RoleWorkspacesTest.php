@@ -172,27 +172,22 @@ it('affiche au secrétariat sa file de rapports à valider (scopée à ses édit
         ->assertSee('Rita R.');
 });
 
-it('affiche à la comptabilité la vue financière (recettes, moyens, encaissements)', function () {
+it('limite les onglets des Rapports à la fonction (comptable → Paiements)', function () {
     $edition = openEdition();
-    $participant = $edition->participants()->create([
-        'first_name' => 'Payeur', 'last_name' => 'Réglé', 'email' => 'payeur@example.tg', 'title' => 'Doctorants',
-    ]);
-    $edition->payments()->create([
-        'participant_id' => $participant->id, 'amount' => 15000, 'currency' => 'XOF',
-        'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'paid', 'paid_at' => now(),
-    ]);
-
-    // Staff « comptabilité » rattaché à l'édition (non super-admin).
     $staff = User::create(['first_name' => 'Carine', 'last_name' => 'Comptable', 'email' => 'compta@example.tg', 'password' => 'pass12345']);
     $staff->assignedEditions()->attach($edition->id, ['role' => 'accounting']);
 
-    $this->actingAs($staff, 'web')
-        ->get(route('admin.accounting'))
+    $html = $this->actingAs($staff, 'web')
+        ->get(route('admin.reports.index', ['edition_id' => $edition->id]))
         ->assertOk()
-        ->assertSee('Recettes encaissées')
-        ->assertSee('Recettes par moyen de paiement')
-        ->assertSee('FedaPay')          // libellé du moyen agrégateur
-        ->assertSee('Derniers encaissements');
+        ->assertSee('Rapport paiements')     // panneau Paiements rendu
+        ->assertDontSee('Rapport soumissions')
+        ->assertDontSee('Rapport relectures')
+        ->assertDontSee('Rapport participants')
+        ->getContent();
+
+    expect($html)->not->toContain("tab='reviews'");   // onglet Relectures absent
+    expect($html)->not->toContain("tab='submissions'");
 });
 
 it('relance un participant qui n’a pas réglé ses frais (secrétariat)', function () {

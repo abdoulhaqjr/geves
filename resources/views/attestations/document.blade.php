@@ -42,7 +42,7 @@
             <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:40px;gap:24px;flex-wrap:wrap;">
                 <div style="font-size:.85rem;color:var(--ukc-muted);">
                     <div>Délivrée le {{ $attestation->issued_at?->format('d/m/Y') }}</div>
-                    <div style="margin-top:6px;font-family:ui-monospace,monospace;font-size:.75rem;">Réf. {{ $attestation->uuid }}</div>
+                    <div style="margin-top:6px;font-family:var(--ukc-mono);font-size:.75rem;">Réf. {{ $attestation->uuid }}</div>
                 </div>
                 <div style="text-align:center;">
                     <div style="width:120px;height:120px;">{!! $qr !!}</div>

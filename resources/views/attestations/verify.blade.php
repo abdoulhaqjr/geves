@@ -38,7 +38,7 @@
 
                     <div style="margin-top:12px;text-align:left;">
                         <div style="font-size:.72rem;color:var(--ukc-muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-bottom:4px;">{{ __('Identifiant') }}</div>
-                        <div style="font-size:.78rem;color:var(--ukc-text);font-family:ui-monospace,monospace;background:var(--ukc-bg);border:1px solid var(--ukc-border);border-radius:8px;padding:8px 10px;word-break:break-all;">
+                        <div style="font-size:.78rem;color:var(--ukc-text);font-family:var(--ukc-mono);background:var(--ukc-bg);border:1px solid var(--ukc-border);border-radius:8px;padding:8px 10px;word-break:break-all;">
                             {{ $attestation->uuid }}
                         </div>
                     </div>
@@ -50,7 +50,7 @@
                 @endif
 
                 @unless ($attestation && ! $attestation->revoked)
-                    <p style="font-size:.72rem;color:var(--ukc-light);margin-top:20px;font-family:ui-monospace,monospace;">
+                    <p style="font-size:.72rem;color:var(--ukc-light);margin-top:20px;font-family:var(--ukc-mono);">
                         {{ request()->route('uuid') }}
                     </p>
                 @endunless

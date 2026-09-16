@@ -23,7 +23,7 @@
                 </div>
                 <div style="text-align:right;">
                     <div style="font-size:.8rem;color:var(--ukc-muted);text-transform:uppercase;letter-spacing:.05em;">Reçu de paiement</div>
-                    <div style="font-family:ui-monospace,monospace;font-weight:800;font-size:1.05rem;">{{ $payment->receipt_no }}</div>
+                    <div style="font-family:var(--ukc-mono);font-weight:800;font-size:1.05rem;">{{ $payment->receipt_no }}</div>
                 </div>
             </div>
 

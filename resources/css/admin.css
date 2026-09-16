@@ -110,7 +110,7 @@
 .admin-doc-designer .dp-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
 .admin-doc-designer .dp-grid2 .dp-row { margin-bottom: 0; }
 .admin-doc-designer .dp-vars { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 10px; }
-.admin-doc-designer .dp-var { font-size: 10.5px; font-family: ui-monospace, monospace; background: #eef2ff; color: #3730a3; border: none; border-radius: 5px; padding: 3px 6px; cursor: pointer; }
+.admin-doc-designer .dp-var { font-size: 10.5px; font-family: var(--ukc-mono); background: #eef2ff; color: #3730a3; border: none; border-radius: 5px; padding: 3px 6px; cursor: pointer; }
 .admin-doc-designer .dp-var:hover { background: var(--ukc-blue); color: #fff; }
 .admin-doc-designer .dp-hint { font-size: 11.5px; color: var(--ukc-light); line-height: 1.5; margin-top: 12px; }
 .admin-doc-designer .doc-note { font-size: .78rem; color: var(--ukc-muted); padding: 0 16px 14px; margin: 0; }
@@ -240,7 +240,7 @@
 .admin-users .user-cell .av { width: 34px; height: 34px; border-radius: 50%; background: #e0e7ff; color: var(--ukc-blue); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; flex-shrink: 0; }
 .admin-users .user-cell strong { display: block; font-size: 13.5px; }
 .admin-users .user-cell span { font-size: 12px; color: var(--ukc-muted); }
-.admin-users .ip-cell { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+.admin-users .ip-cell { font-family: var(--ukc-mono); font-size: 12.5px; }
 .admin-users .role-pills { display: flex; flex-wrap: wrap; gap: 4px; }
 .admin-users table.ukc-table { min-width: 920px; }
 .admin-users table.ukc-table .ukc-actions { flex-wrap: nowrap; justify-content: flex-end; }
@@ -636,7 +636,7 @@
 .admin-emails .merge-tags button {
   font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px;
   border: 1px dashed var(--ukc-border); background: #f8fafc; color: #3730a3;
-  cursor: pointer; font-family: ui-monospace, monospace;
+  cursor: pointer; font-family: var(--ukc-mono);
 }
 .admin-emails .merge-tags button:hover { border-color: var(--ukc-blue); background: #eef2ff; }
 .admin-emails .mail-preview { border: 1px solid var(--ukc-border); border-radius: 10px; background: #f8fafc; padding: 16px; font-size: 13.5px; line-height: 1.55; }

@@ -58,7 +58,7 @@
                         <tbody>
                             @foreach ($payments as $p)
                                 <tr>
-                                    <td style="font-family:ui-monospace,monospace;">
+                                    <td style="font-family:var(--ukc-mono);">
                                         {{ $p->reference ?: '—' }}
                                         @if ($p->receipt_no)<div style="font-size:11px;color:var(--ukc-muted);">Reçu {{ $p->receipt_no }}</div>@endif
                                     </td>

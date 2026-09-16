@@ -197,7 +197,7 @@
       font-size: 12px; font-weight: 600; padding: 8px 10px;
       border: 1px dashed var(--ukc-border); border-radius: 8px;
       margin-bottom: 6px; cursor: pointer; background: #fafafa;
-      font-family: ui-monospace, monospace; color: #3730a3;
+      font-family: var(--ukc-mono); color: #3730a3;
     }
     .ed-attr:hover { border-color: var(--ukc-blue); background: #eef2ff; }
 

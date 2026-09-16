@@ -153,7 +153,7 @@
                                     <td>
                                         <strong>{{ $t['label'] }}</strong>
                                         @if ($t['custom'])<span class="ukc-pill ukc-pill--info" style="margin-left:6px;font-size:10px;">Perso</span>@endif
-                                        <div style="font-size:12px;color:var(--ukc-muted);font-family:ui-monospace,monospace;">{{ $t['key'] }}</div>
+                                        <div style="font-size:12px;color:var(--ukc-muted);font-family:var(--ukc-mono);">{{ $t['key'] }}</div>
                                     </td>
                                     <td>{{ $t['trigger'] }}</td>
                                     <td><div style="color:var(--ukc-muted);font-size:13px;">{{ \Illuminate\Support\Str::limit($t['subject'], 52) }}</div></td>

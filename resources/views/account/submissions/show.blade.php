@@ -16,7 +16,7 @@
             <a href="{{ route('account.submissions.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">← {{ __('Mes soumissions') }}</a>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
                 <span class="ukc-pill ukc-pill--{{ $s->statusPill() }}">{{ $s->statusLabel() }}</span>
-                <span class="ukc-pill ukc-pill--muted" style="font-family:ui-monospace,monospace;">{{ $s->ref_code }}</span>
+                <span class="ukc-pill ukc-pill--muted" style="font-family:var(--ukc-mono);">{{ $s->ref_code }}</span>
             </div>
         </div>
 

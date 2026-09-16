@@ -37,7 +37,7 @@
                 <h2 style="justify-content:center;">{{ __('Frais déjà réglés') }}</h2>
                 <p style="color:var(--ukc-muted);">{{ __('Merci, votre participation est à jour. Votre attestation de communication vous sera délivrée.') }}</p>
                 @if ($paidReceipt)
-                    <p style="margin-top:8px;font-size:.9rem;">{{ __('Reçu n°') }} <strong style="font-family:ui-monospace,monospace;">{{ $paidReceipt->receipt_no }}</strong></p>
+                    <p style="margin-top:8px;font-size:.9rem;">{{ __('Reçu n°') }} <strong style="font-family:var(--ukc-mono);">{{ $paidReceipt->receipt_no }}</strong></p>
                 @endif
             </div>
         @elseif (session('pay_instructions'))
@@ -54,7 +54,7 @@
                 <ul style="list-style:none;padding:0;margin:0 0 18px;display:flex;flex-direction:column;gap:8px;">
                     @foreach ($foundSubmissions as $s)
                         <li style="display:flex;gap:10px;align-items:baseline;padding:10px 12px;border:1px solid var(--ukc-border);border-radius:10px;">
-                            <span class="ukc-pill ukc-pill--ok" style="font-family:ui-monospace,monospace;">{{ $s['ref'] }}</span>
+                            <span class="ukc-pill ukc-pill--ok" style="font-family:var(--ukc-mono);">{{ $s['ref'] }}</span>
                             <span>{{ $s['title'] }}</span>
                         </li>
                     @endforeach

@@ -5,9 +5,12 @@ namespace App\Actions;
 use App\AI\AiManager;
 use App\Models\Edition;
 use App\Models\Submission;
+use App\Models\User;
 use App\Support\AiAgents;
 use App\Support\ColloqueKnowledge;
 use App\Support\EditionReport;
+use App\Support\StaffRoles;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -26,14 +29,14 @@ class AskAdmin
      * @param  list<ChatTurn>  $history
      * @return array{answer: string, proposal: array{title: string, detail: string, impact: string}|null}
      */
-    public function handle(array $history, string $question, ?Edition $edition = null): array
+    public function handle(array $history, string $question, ?Edition $edition = null, ?User $staff = null): array
     {
         $provider = $this->manager->resolve(false);
         if (! $provider) {
             throw new \RuntimeException('Le copilote IA est momentanément indisponible (voir Réglages).');
         }
 
-        $raw = $provider->extract($this->instruction($history, $question, $edition), []);
+        $raw = $provider->extract($this->instruction($history, $question, $edition, $staff), []);
         $answer = trim((string) ($raw['answer'] ?? ''));
 
         return [
@@ -68,9 +71,47 @@ class AskAdmin
     /**
      * @param  list<ChatTurn>  $history
      */
-    protected function instruction(array $history, string $question, ?Edition $edition): string
+    /**
+     * Décrit la fonction du membre du staff et son périmètre autorisé, pour que
+     * le copilote réponde dans le cadre de sa fonction (ex. un comptable est
+     * cadré sur les paiements/finances).
+     *
+     * @return array{fonction: string, perimetre: string}
+     */
+    protected function role(?User $staff, ?Edition $edition): array
+    {
+        if ($staff === null) {
+            return ['fonction' => 'Membre du staff', 'perimetre' => 'périmètre limité'];
+        }
+        if ($staff->isColloqueSuperAdmin()) {
+            return ['fonction' => 'Administrateur du colloque (accès complet)', 'perimetre' => 'toutes les fonctions'];
+        }
+
+        $roles = $edition ? $staff->rolesOnEdition($edition) : [];
+        if ($roles === []) {
+            $roles = DB::table('edition_user')->where('user_id', $staff->id)->distinct()->pluck('role')->all();
+        }
+        $fonction = collect($roles)->map(fn ($r) => StaffRoles::label((string) $r))->unique()->implode(' + ');
+
+        $caps = $edition ? $staff->capabilitiesOnEdition($edition) : [];
+        if ($caps === []) {
+            foreach ($roles as $r) {
+                $caps = array_merge($caps, StaffRoles::permissionsFor((string) $r));
+            }
+            $caps = array_values(array_unique($caps));
+        }
+        $perimetre = collect($caps)->map(fn ($c) => StaffRoles::PERMISSIONS[$c] ?? $c)->implode(', ');
+
+        return [
+            'fonction' => $fonction !== '' ? $fonction : 'Membre du staff',
+            'perimetre' => $perimetre !== '' ? $perimetre : 'périmètre limité',
+        ];
+    }
+
+    protected function instruction(array $history, string $question, ?Edition $edition, ?User $staff = null): string
     {
         $agent = AiAgents::find('admin') ?? AiAgents::defaults()[1];
+        $role = $this->role($staff, $edition);
 
         $context = 'Aucune édition active.';
         $knowledge = '';
@@ -117,6 +158,15 @@ class AskAdmin
 
         À NE JAMAIS FAIRE :
         {$agent['negative']}
+
+        FONCTION DE L'UTILISATEUR : {$role['fonction']}
+        PÉRIMÈTRE AUTORISÉ (ses fonctions) : {$role['perimetre']}
+        RÈGLE DE PÉRIMÈTRE (impérative) : réponds STRICTEMENT dans le cadre de la fonction et du
+        périmètre ci-dessus, en adoptant ce rôle (ex. un comptable / assistant comptable est cadré
+        sur les paiements, encaissements et finances). Si la demande porte sur un domaine hors de ce
+        périmètre (ex. contenu scientifique, relectures, soumissions pour un comptable), explique
+        poliment que cela relève d'une autre fonction et oriente vers la personne ou l'onglet
+        compétent, sans divulguer ces informations.
 
         CHIFFRES RÉELS DE L'ÉDITION ACTIVE :
         {$context}

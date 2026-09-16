@@ -1,6 +1,23 @@
 <x-layouts.admin title="Rapports" subtitle="Statistiques, exports et bilans par édition">
+    @php
+        // Onglets visibles selon la fonction du membre du staff (capacités par édition).
+        $rStaff = auth('web')->user();
+        $rCan = fn ($c) => $rStaff?->canAnyEdition($c) ?? false;
+        $cManage = $rCan('submissions_list') || $rCan('participants');
+        $reportTabs = [
+            'overview' => $cManage,
+            'submissions' => $rCan('submissions_list'),
+            'participants' => $rCan('participants'),
+            'payments' => $rCan('payments'),
+            'reviews' => $rCan('evaluate') || $rCan('assign_reviewers'),
+            'exports' => $cManage,
+            'ai' => $cManage,
+        ];
+        $firstReportTab = collect($reportTabs)->filter()->keys()->first() ?? 'payments';
+        $defaultReportTab = ((session('ai_report') || session('ai_error')) && ($reportTabs['ai'] ?? false)) ? 'ai' : $firstReportTab;
+    @endphp
     <div class="admin-page admin-reports" x-data="{
-            tab: '{{ (session('ai_report') || session('ai_error')) ? 'ai' : 'overview' }}',
+            tab: '{{ $defaultReportTab }}',
             aiMode: '{{ old('mode', 'describe') }}',
             aiFileName: '',
             pickFile() { const i = this.$refs.aiFile; if (i.files && i.files[0]) this.aiFileName = i.files[0].name; },
@@ -18,7 +35,7 @@
                 </select>
             </div>
 
-            @if ($edition)
+            @if ($edition && ($rStaff?->canAnyEdition('submissions_list') || $rStaff?->canAnyEdition('participants')))
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <a href="{{ route('admin.reports.xlsx', $edition) }}" class="ukc-btn ukc-btn--green ukc-btn--sm">
                         <x-ukc.icon name="sheet" :size="16" /> Excel (.xlsx)
@@ -35,13 +52,13 @@
             <script type="application/json" id="dashboardData">@json($chartData)</script>
 
             <div class="ukc-nav-docs">
-                <button type="button" @click="tab='overview'" :class="{ active: tab==='overview' }">Vue d’ensemble</button>
-                <button type="button" @click="tab='submissions'" :class="{ active: tab==='submissions' }">Soumissions</button>
-                <button type="button" @click="tab='participants'" :class="{ active: tab==='participants' }">Participants</button>
-                <button type="button" @click="tab='payments'" :class="{ active: tab==='payments' }">Paiements</button>
-                <button type="button" @click="tab='reviews'" :class="{ active: tab==='reviews' }">Relectures</button>
-                <button type="button" @click="tab='exports'" :class="{ active: tab==='exports' }">Exports prêts</button>
-                <button type="button" @click="tab='ai'" :class="{ active: tab==='ai' }">Export personnalisé (IA)</button>
+                @if ($reportTabs['overview'])<button type="button" @click="tab='overview'" :class="{ active: tab==='overview' }">Vue d’ensemble</button>@endif
+                @if ($reportTabs['submissions'])<button type="button" @click="tab='submissions'" :class="{ active: tab==='submissions' }">Soumissions</button>@endif
+                @if ($reportTabs['participants'])<button type="button" @click="tab='participants'" :class="{ active: tab==='participants' }">Participants</button>@endif
+                @if ($reportTabs['payments'])<button type="button" @click="tab='payments'" :class="{ active: tab==='payments' }">Paiements</button>@endif
+                @if ($reportTabs['reviews'])<button type="button" @click="tab='reviews'" :class="{ active: tab==='reviews' }">Relectures</button>@endif
+                @if ($reportTabs['exports'])<button type="button" @click="tab='exports'" :class="{ active: tab==='exports' }">Exports prêts</button>@endif
+                @if ($reportTabs['ai'])<button type="button" @click="tab='ai'" :class="{ active: tab==='ai' }">Export personnalisé (IA)</button>@endif
             </div>
 
             @php
@@ -55,6 +72,7 @@
                 $revRate = $revTotal > 0 ? (int) round($rev['done'] / $revTotal * 100) : 0;
             @endphp
 
+            @if ($reportTabs['overview'])
             {{-- Vue d'ensemble --}}
             <div class="ukc-panel" :class="{ active: tab==='overview' }">
                 <div class="ukc-stats">
@@ -86,6 +104,8 @@
                 </div>
             </div>
 
+            @endif
+            @if ($reportTabs['submissions'])
             {{-- Soumissions --}}
             <div class="ukc-panel" :class="{ active: tab==='submissions' }">
                 <div class="ukc-card">
@@ -140,6 +160,8 @@
                 </div>
             </div>
 
+            @endif
+            @if ($reportTabs['participants'])
             {{-- Participants --}}
             <div class="ukc-panel" :class="{ active: tab==='participants' }">
                 <div class="ukc-card">
@@ -191,6 +213,8 @@
                 </div>
             </div>
 
+            @endif
+            @if ($reportTabs['payments'])
             {{-- Paiements --}}
             <div class="ukc-panel" :class="{ active: tab==='payments' }">
                 @php($payStats = $report->paymentStats())
@@ -243,6 +267,8 @@
                 </div>
             </div>
 
+            @endif
+            @if ($reportTabs['reviews'])
             {{-- Relectures --}}
             <div class="ukc-panel" :class="{ active: tab==='reviews' }">
                 <div class="ukc-card">
@@ -278,6 +304,8 @@
                 </div>
             </div>
 
+            @endif
+            @if ($reportTabs['exports'])
             {{-- Exports prêts --}}
             <div class="ukc-panel" :class="{ active: tab==='exports' }">
                 <div class="ukc-card">
@@ -341,6 +369,8 @@
                 </div>
             </div>
 
+            @endif
+            @if ($reportTabs['ai'])
             {{-- Export personnalisé (IA) --}}
             <div class="ukc-panel" :class="{ active: tab==='ai' }">
                 <div class="ukc-card">
@@ -483,6 +513,7 @@
                     @endforelse
                 </div>
             </div>
+            @endif
         @else
             <div class="ukc-empty"><h3>Aucune édition</h3><p>Sélectionnez une édition pour générer ses rapports.</p></div>
         @endif

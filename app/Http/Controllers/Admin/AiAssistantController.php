@@ -57,7 +57,7 @@ class AiAssistantController extends Controller
             ->all();
 
         try {
-            $result = $ask->handle($history, trim($data['question']), $this->activeEdition());
+            $result = $ask->handle($history, trim($data['question']), $this->activeEdition(), $request->user());
 
             return response()->json($result);
         } catch (\Throwable $e) {

@@ -62,7 +62,7 @@
                                 <tr>
                                     <td><strong>{{ $a->recipient_name ?: $a->participant?->full_name }}</strong><div style="font-size:12px;color:var(--ukc-muted);">{{ $a->recipient_email ?: $a->participant?->email }}</div></td>
                                     <td><span class="ukc-pill ukc-pill--info">{{ $a->typeLabel() }}</span></td>
-                                    <td style="font-family:ui-monospace,monospace;font-size:12px;">{{ \Illuminate\Support\Str::limit($a->uuid, 18) }}</td>
+                                    <td style="font-family:var(--ukc-mono);font-size:12px;">{{ \Illuminate\Support\Str::limit($a->uuid, 18) }}</td>
                                     <td style="white-space:nowrap;">{{ $a->issued_at?->format('d/m/Y H:i') ?? '—' }}</td>
                                     <td>@if ($a->revoked)<span class="ukc-pill ukc-pill--err">Révoquée</span>@else<span class="ukc-pill ukc-pill--ok">Valide</span>@endif</td>
                                     <td>

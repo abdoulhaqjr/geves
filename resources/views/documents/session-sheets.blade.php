@@ -45,7 +45,7 @@
                         @forelse ($comms as $slot)
                             @php($sub = $slot->submission)
                             <tr style="border-bottom:1px solid var(--ukc-border);">
-                                <td style="padding:10px 6px;font-family:ui-monospace,monospace;vertical-align:top;">
+                                <td style="padding:10px 6px;font-family:var(--ukc-mono);vertical-align:top;">
                                     {{ $slot->starts_at?->format('H:i') ?: '—' }}
                                 </td>
                                 <td style="padding:10px 6px;">

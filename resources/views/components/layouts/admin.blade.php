@@ -75,10 +75,6 @@
                        @class(['active' => request()->routeIs('admin.payments.*')])>
                         <x-ukc.icon name="card" :size="18" /> <span class="txt">Paiements</span>
                     </a>
-                    <a href="{{ route('admin.accounting') }}" title="Comptabilité"
-                       @class(['active' => request()->routeIs('admin.accounting')])>
-                        <x-ukc.icon name="chart" :size="18" /> <span class="txt">Comptabilité</span>
-                    </a>
                 @endif
                 @if ($staff?->canAnyEdition('documents'))
                     <a href="{{ route('admin.documents.attestations') }}" title="Documents"

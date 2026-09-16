@@ -52,7 +52,7 @@
                                 <dl>
                                     <dt>{{ __('Référence') }}</dt><dd><strong>{{ $badgeRef }}</strong></dd>
                                     <dt>{{ __('Participant') }}</dt><dd>{{ $account->first_name }} {{ $account->last_name }} · {{ __('ID compte') }} #{{ $participant->id }}</dd>
-                                    <dt>{{ __('DID émetteur') }}</dt><dd style="font-family:ui-monospace,monospace;font-size:12px;">{{ $didIssuer }}</dd>
+                                    <dt>{{ __('DID émetteur') }}</dt><dd style="font-family:var(--ukc-mono);font-size:12px;">{{ $didIssuer }}</dd>
                                     <dt>{{ __('Édition') }}</dt><dd>{{ $edition->title ?: $edition->year }}</dd>
                                     <dt>{{ __('Type d’accès') }}</dt><dd>{{ $participant->roleLabel() }} · {{ __('Sessions plénières + ateliers') }}</dd>
                                     <dt>{{ __('Validité') }}</dt><dd>{{ $edition->date_start?->translatedFormat('j') }} – {{ $edition->date_end?->translatedFormat('j F Y') ?? $edition->year }}</dd>

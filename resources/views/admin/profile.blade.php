@@ -133,7 +133,7 @@
                 @if (session('recovery_codes'))
                     <div class="ukc-note" style="background:#fef9c3;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;margin-bottom:14px;">
                         <strong>Codes de secours — notez-les maintenant</strong> (ils ne seront plus affichés).
-                        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px 16px;font-family:ui-monospace,monospace;margin-top:8px;">
+                        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px 16px;font-family:var(--ukc-mono);margin-top:8px;">
                             @foreach (session('recovery_codes') as $code)<span>{{ $code }}</span>@endforeach
                         </div>
                     </div>
