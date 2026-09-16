@@ -7,7 +7,9 @@
 [x-cloak] { display: none !important; }
 
 :root {
-  --ukc-mono: Consolas, Menlo, "Courier New", monospace;
+  /* Pas de police monospace dans le projet (décision) : les « codes »/références
+     utilisent la police normale. Ce token pointe donc sur la police courante. */
+  --ukc-mono: var(--ukc-font);
   --ukc-blue: #223ea4;
   --ukc-blue-dark: #1a3080;
   --ukc-green: #009933;
@@ -45,11 +47,12 @@
 .ukc-scope input,
 .ukc-scope select,
 .ukc-scope textarea { font-family: inherit; }
-/* Éléments « code » : police mono du projet (remplace le défaut ui-monospace de Tailwind). */
+/* Éléments « code » : police normale du projet (pas de monospace ; remplace le
+   défaut ui-monospace de Tailwind). */
 .ukc-scope code,
 .ukc-scope pre,
 .ukc-scope kbd,
-.ukc-scope samp { font-family: var(--ukc-mono); }
+.ukc-scope samp { font-family: var(--ukc-font); }
 
 /* ---- Boutons ---- */
 .ukc-btn {

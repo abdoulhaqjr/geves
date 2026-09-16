@@ -28,16 +28,24 @@ class AiAssistantController extends Controller
         'reject' => ['Refusé par admin', 'warn'],
     ];
 
-    public function page(): View
+    public function page(Request $request): View
     {
         // Identité de l'assistant (nom + avatar) paramétrée dans Réglages · Agents IA.
         $agent = AiAgents::find('admin') ?? AiAgents::defaults()[1];
         $avatarUrl = filled($agent['avatar']) ? '/storage/'.ltrim((string) $agent['avatar'], '/') : null;
 
+        // Colloques accessibles à l'utilisateur : l'assistant répond selon sa/ses
+        // fonction(s) DANS le colloque sélectionné.
+        $editionIds = $request->user()->accessibleEditionIds('view_dashboard');
+        $editions = Edition::with('colloque')->whereIn('id', $editionIds)->latest('id')->get();
+        $current = $editions->firstWhere('status', 'open') ?? $editions->first();
+
         return view('admin.ai-assistant', [
             'agentName' => $agent['name'] ?: 'Assistant',
             'agentAvatar' => $avatarUrl,
             'decisionLog' => array_slice((array) Settings::get('ai_decision_log', []), 0, 20),
+            'editions' => $editions,
+            'currentEditionId' => $current?->id,
         ]);
     }
 
@@ -45,6 +53,7 @@ class AiAssistantController extends Controller
     {
         $data = $request->validate([
             'question' => ['required', 'string', 'max:1500'],
+            'edition_id' => ['nullable', 'integer'],
             'history' => ['array'],
             'history.*.role' => ['string'],
             'history.*.text' => ['string'],
@@ -57,7 +66,7 @@ class AiAssistantController extends Controller
             ->all();
 
         try {
-            $result = $ask->handle($history, trim($data['question']), $this->activeEdition(), $request->user());
+            $result = $ask->handle($history, trim($data['question']), $this->activeEdition($request, $data['edition_id'] ?? null), $request->user());
 
             return response()->json($result);
         } catch (\Throwable $e) {
@@ -90,8 +99,25 @@ class AiAssistantController extends Controller
         return response()->json(['entry' => $entry]);
     }
 
-    private function activeEdition(): ?Edition
+    /**
+     * Édition de contexte = le colloque SÉLECTIONNÉ (s'il est accessible à
+     * l'utilisateur), sinon le colloque ouvert le plus récent parmi ses éditions
+     * accessibles. Garantit que l'assistant raisonne (et cadre la fonction) sur
+     * le bon colloque.
+     */
+    private function activeEdition(Request $request, ?int $editionId = null): ?Edition
     {
-        return Edition::with('colloque')->where('status', 'open')->latest('id')->first();
+        $accessible = $request->user()->accessibleEditions('view_dashboard');
+
+        if ($editionId !== null) {
+            $picked = $accessible->firstWhere('id', $editionId);
+            if ($picked !== null) {
+                return $picked->loadMissing('colloque');
+            }
+        }
+
+        $current = $accessible->firstWhere('status', 'open') ?? $accessible->first();
+
+        return $current?->loadMissing('colloque');
     }
 }

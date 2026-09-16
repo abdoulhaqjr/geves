@@ -714,11 +714,12 @@ document.addEventListener('alpine:init', () => {
 
     // Copilote d'administration (page Assistant IA — mockup admin-ai-assistant).
     // Chat réel (AskAdmin) + propositions à décider + journal des décisions persisté.
-    window.Alpine.data('adminCopilot', (seed = '', askUrl = '', decideUrl = '', log = [], name = 'Copilote') => ({
+    window.Alpine.data('adminCopilot', (seed = '', askUrl = '', decideUrl = '', log = [], name = 'Copilote', editionId = '') => ({
         messages: [],
         input: '',
         sending: false,
         agentName: name,
+        editionId: editionId ? String(editionId) : '',
         decisionLog: Array.isArray(log) ? log : [],
         init() {
             this.messages = [{ role: 'bot', text: seed, proposal: null, decision: null }];
@@ -748,7 +749,7 @@ document.addEventListener('alpine:init', () => {
                 const res = await fetch(askUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this.csrf() },
-                    body: JSON.stringify({ question, history }),
+                    body: JSON.stringify({ question, history, edition_id: this.editionId || null }),
                 });
                 const data = await res.json().catch(() => ({}));
                 this.messages.push({
