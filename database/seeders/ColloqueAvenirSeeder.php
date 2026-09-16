@@ -124,6 +124,10 @@ class ColloqueAvenirSeeder extends Seeder
         $secretaire = $this->user('secretaire@test.tg', 'Sara', 'Secrétaire');
         $secretaire->assignedEditions()->syncWithoutDetaching([$edition->id => ['role' => 'secretariat']]);
 
+        // Membre de la comptabilité (staff) : accès back-office + poste « Comptabilité ».
+        $comptable = $this->user('comptable@test.tg', 'Carine', 'Comptable');
+        $comptable->assignedEditions()->syncWithoutDetaching([$edition->id => ['role' => 'accounting']]);
+
         // --- Ateliers + sessions + communications acceptées et planifiées ---
         /** @var list<Submission> $submissions */
         $submissions = [];
@@ -346,6 +350,7 @@ class ColloqueAvenirSeeder extends Seeder
         $this->command?->info('Modérateurs : moderateur1@test.tg · moderateur2@test.tg');
         $this->command?->info('Rapporteurs : rapporteur1@test.tg · rapporteur2@test.tg');
         $this->command?->info('Secrétariat (back-office) : secretaire@test.tg — mot de passe : password');
+        $this->command?->info('Comptabilité (back-office) : comptable@test.tg — mot de passe : password');
         $this->command?->info('Communicants : comm1@test.tg … comm6@test.tg — mot de passe : password');
         $this->command?->info('Auteurs en évaluation : auteur1@test.tg (soumise) · auteur2@test.tg (réponse ouverte) · auteur3@test.tg (correction demandée)');
         foreach ($reviewers as $r) {

@@ -172,6 +172,29 @@ it('affiche au secrétariat sa file de rapports à valider (scopée à ses édit
         ->assertSee('Rita R.');
 });
 
+it('affiche à la comptabilité la vue financière (recettes, moyens, encaissements)', function () {
+    $edition = openEdition();
+    $participant = $edition->participants()->create([
+        'first_name' => 'Payeur', 'last_name' => 'Réglé', 'email' => 'payeur@example.tg', 'title' => 'Doctorants',
+    ]);
+    $edition->payments()->create([
+        'participant_id' => $participant->id, 'amount' => 15000, 'currency' => 'XOF',
+        'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'paid', 'paid_at' => now(),
+    ]);
+
+    // Staff « comptabilité » rattaché à l'édition (non super-admin).
+    $staff = User::create(['first_name' => 'Carine', 'last_name' => 'Comptable', 'email' => 'compta@example.tg', 'password' => 'pass12345']);
+    $staff->assignedEditions()->attach($edition->id, ['role' => 'accounting']);
+
+    $this->actingAs($staff, 'web')
+        ->get(route('admin.accounting'))
+        ->assertOk()
+        ->assertSee('Recettes encaissées')
+        ->assertSee('Recettes par moyen de paiement')
+        ->assertSee('FedaPay')          // libellé du moyen agrégateur
+        ->assertSee('Derniers encaissements');
+});
+
 it('relance un participant qui n’a pas réglé ses frais (secrétariat)', function () {
     \Illuminate\Support\Facades\Mail::fake();
     $edition = openEdition(['fees' => [['label' => 'Doctorants', 'amount' => 15000]]]);
