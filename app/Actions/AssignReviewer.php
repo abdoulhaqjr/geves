@@ -5,13 +5,15 @@ namespace App\Actions;
 use App\Models\Participant;
 use App\Models\Review;
 use App\Models\Submission;
+use App\Models\User;
 use App\Support\Notifier;
 use Illuminate\Support\Str;
 
 /**
  * Assigne un relecteur à une soumission : crée/retrouve le participant relecteur
- * (par e-mail sur l'édition, avec jeton d'accès au portail), crée la relecture
- * et passe la soumission « en relecture ».
+ * (par e-mail sur l'édition), le relie à un compte (provisionné au besoin pour
+ * accéder à « Mes relectures »), crée la relecture et passe la soumission
+ * « en relecture ».
  */
 class AssignReviewer
 {
@@ -38,13 +40,14 @@ class AssignReviewer
             }
         }
 
-        // Relie l'inscription au compte correspondant (identité unifiée) : la
-        // relecture se fait désormais depuis l'espace « Mes relectures » connecté.
+        // Relie l'inscription à un compte (identité unifiée) : la relecture se
+        // fait depuis « Mes relectures » connecté. Provisionne un compte si le
+        // relecteur n'en a pas encore (il définira son mot de passe via l'e-mail).
         if (blank($reviewer->user_id)) {
-            $account = \App\Models\User::whereRaw('LOWER(email) = ?', [mb_strtolower(trim($email))])->first();
-            if ($account !== null) {
-                $reviewer->user_id = $account->id;
-            }
+            $normalized = mb_strtolower(trim($email));
+            $account = User::whereRaw('LOWER(email) = ?', [$normalized])->first()
+                ?? $this->provisionAccount($normalized, $name);
+            $reviewer->user_id = $account->id;
         }
 
         $reviewer->save();
@@ -71,6 +74,29 @@ class AssignReviewer
         }
 
         return $review;
+    }
+
+    /**
+     * Provisionne un compte participant pour un relecteur invité sans compte.
+     * Compte vérifié (invitation par le comité) mais avec mot de passe à définir
+     * (`must_reset_password`) : le lien d'invitation l'amène à le créer.
+     */
+    protected function provisionAccount(string $email, string $name): User
+    {
+        [$first, $last] = $this->splitName($name);
+
+        $user = new User;
+        $user->forceFill([
+            'first_name' => $first ?: 'Relecteur',
+            'last_name' => $last,
+            'email' => $email,
+            'password' => Str::random(40),
+            'email_verified_at' => now(),
+            'must_reset_password' => true,
+            'access_level' => User::ACCESS_USER,
+        ])->save();
+
+        return $user;
     }
 
     /** Sépare « Prénom Nom » en [prénom, nom] (dernier mot = nom). */

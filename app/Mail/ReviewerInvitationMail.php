@@ -10,10 +10,12 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Password;
 
 /**
- * Invitation d'un relecteur : lien vers son espace « Mes relectures » (dans le
- * compte connecté). Mise en file (ShouldQueue).
+ * Invitation d'un relecteur : lien vers son espace « Mes relectures ». Pour un
+ * compte fraîchement provisionné (mot de passe à définir), le lien mène à la
+ * création du mot de passe (jeton). Mise en file (ShouldQueue).
  */
 class ReviewerInvitationMail extends Mailable implements ShouldQueue
 {
@@ -33,8 +35,19 @@ class ReviewerInvitationMail extends Mailable implements ShouldQueue
 
     public function content(): Content
     {
+        $user = $this->reviewer->user;
+        $needsPassword = $user !== null && $user->must_reset_password;
+
+        if ($needsPassword) {
+            $token = Password::broker('users')->createToken($user);
+            $url = route('account.password.reset', $token).'?email='.urlencode((string) $user->email);
+        } else {
+            $url = route('account.reviews');
+        }
+
         return new Content(markdown: 'emails.reviewer-invitation', with: [
-            'portalUrl' => route('account.reviews'),
+            'portalUrl' => $url,
+            'needsPassword' => $needsPassword,
         ]);
     }
 }

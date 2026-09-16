@@ -5,11 +5,21 @@
 
 {!! __('Vous êtes invité(e) à relire une ou plusieurs communications soumises au colloque. La relecture se fait **en aveugle** (l’identité des auteurs n’est pas affichée).') !!}
 
+@if (! empty($needsPassword))
+{{ __('Un espace relecteur a été créé pour vous. Définissez votre mot de passe pour y accéder :') }}
+
+<x-mail::button :url="$portalUrl">
+{{ __('Créer mon mot de passe') }}
+</x-mail::button>
+
+{{ __('Ensuite, retrouvez vos relectures dans « Mes relectures » de votre espace.') }}
+@else
 {{ __('Connectez-vous à votre espace pour accéder à vos relectures :') }}
 
 <x-mail::button :url="$portalUrl">
 {{ __('Accéder à mes relectures') }}
 </x-mail::button>
+@endif
 
 {{ __('Merci pour votre contribution scientifique.') }}
 

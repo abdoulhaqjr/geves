@@ -82,6 +82,29 @@ it('assigne un relecteur, passe en relecture et l’invite par e-mail', function
     Mail::assertQueued(ReviewerInvitationMail::class);
 });
 
+it('provisionne un compte relecteur (mot de passe à définir) à l’assignation', function () {
+    $submission = seededSubmission('submitted');
+
+    expect(User::whereRaw('LOWER(email) = ?', ['neuf@rev.tg'])->exists())->toBeFalse();
+
+    $review = (new AssignReviewer)->handle($submission, 'Nadia Neuf', 'neuf@rev.tg');
+
+    $user = User::whereRaw('LOWER(email) = ?', ['neuf@rev.tg'])->first();
+    expect($user)->not->toBeNull();
+    expect($user->must_reset_password)->toBeTrue();
+    expect((int) $review->reviewer->user_id)->toBe((int) $user->id);
+});
+
+it('relie au compte existant sans en créer un second', function () {
+    $submission = seededSubmission('submitted');
+    $existing = User::create(['first_name' => 'Ex', 'last_name' => 'Ist', 'email' => 'exist@rev.tg', 'password' => 'pass12345']);
+
+    (new AssignReviewer)->handle($submission, 'Ex Ist', 'exist@rev.tg');
+
+    expect(User::whereRaw('LOWER(email) = ?', ['exist@rev.tg'])->count())->toBe(1);
+    expect($existing->fresh()->must_reset_password)->toBeFalse();
+});
+
 it('affiche les relectures confiées dans « Mes relectures » (en aveugle)', function () {
     $submission = seededSubmission('submitted');
     // Le relecteur a un compte (identité unifiée) : l'assignation le relie.
