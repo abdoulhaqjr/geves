@@ -10,6 +10,8 @@ use Illuminate\Support\Carbon;
  * Rapport d'une séance rédigé par son rapporteur (une par séance).
  *
  * @property Carbon|null $submitted_at
+ * @property Carbon|null $validated_at
+ * @property int|null $validated_by
  * @property EventSession|null $session
  * @property Edition|null $edition
  */
@@ -19,12 +21,18 @@ class SessionReport extends Model
 
     protected function casts(): array
     {
-        return ['submitted_at' => 'datetime'];
+        return ['submitted_at' => 'datetime', 'validated_at' => 'datetime'];
     }
 
     public function isSubmitted(): bool
     {
         return $this->status === 'submitted';
+    }
+
+    /** Validé (ou amélioré) par le secrétariat : verrouillé pour le rapporteur. */
+    public function isValidated(): bool
+    {
+        return $this->status === 'validated';
     }
 
     /** @return BelongsTo<EventSession, $this> */

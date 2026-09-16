@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Atelier;
 use App\Models\Edition;
 use App\Models\EventSession;
+use App\Models\SessionReport;
 use App\Models\Slot;
 use App\Models\Submission;
 use App\Models\User;
@@ -85,6 +86,47 @@ class ProgramController extends Controller
                 'submitted' => $submitted,
             ],
         ]);
+    }
+
+    /**
+     * Secrétariat : améliore et VALIDE le rapport de séance. La validation
+     * verrouille le rapport côté rapporteur (il ne peut plus le modifier).
+     */
+    public function saveReport(Request $request, EventSession $session): RedirectResponse
+    {
+        $data = $request->validate([
+            'summary' => ['nullable', 'string', 'max:20000'],
+            'highlights' => ['nullable', 'string', 'max:5000'],
+            'attendance' => ['nullable', 'integer', 'min:0', 'max:100000'],
+        ]);
+
+        $report = SessionReport::firstOrNew(['session_id' => $session->id]);
+        $report->edition_id = $session->edition_id;
+        $report->summary = ($data['summary'] ?? null) ?: null;
+        $report->highlights = ($data['highlights'] ?? null) ?: null;
+        $report->attendance = $data['attendance'] ?? null;
+        $report->status = 'validated';
+        $report->submitted_at = $report->submitted_at ?? now();
+        $report->validated_at = now();
+        $report->validated_by = $request->user()?->id;
+        $report->save();
+
+        return back()->with('ukc_status', 'Rapport validé. Il est verrouillé pour le rapporteur.');
+    }
+
+    /** Rouvre le rapport au rapporteur (annule la validation du secrétariat). */
+    public function reopenReport(EventSession $session): RedirectResponse
+    {
+        $report = SessionReport::where('session_id', $session->id)->first();
+        if ($report !== null) {
+            $report->update([
+                'status' => filled($report->summary) ? 'submitted' : 'draft',
+                'validated_at' => null,
+                'validated_by' => null,
+            ]);
+        }
+
+        return back()->with('ukc_status', 'Rapport rouvert : le rapporteur peut de nouveau le modifier.');
     }
 
     /**

@@ -60,6 +60,24 @@ class EventSession extends Model
         return $this->meetingStatusEnum() === MeetingStatus::Live;
     }
 
+    /**
+     * La séance a-t-elle commencé (jour + heure atteints) ? Sert à n'ouvrir la
+     * rédaction du rapport qu'une fois la séance en cours ou passée. Repli sur le
+     * jour seul si l'heure n'est pas renseignée ; false si aucune date.
+     */
+    public function hasStarted(): bool
+    {
+        if ($this->starts_at !== null) {
+            return $this->starts_at->lte(now());
+        }
+
+        if ($this->session_day !== null) {
+            return $this->session_day->startOfDay()->lte(now());
+        }
+
+        return false;
+    }
+
     /** Un replay est disponible. */
     public function hasRecording(): bool
     {

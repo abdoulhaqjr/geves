@@ -43,12 +43,21 @@ class SessionReportController extends Controller
             'session' => $session,
             'report' => $report,
             'communications' => $session->scheduledCommunications(),
+            'canWrite' => $session->hasStarted() && ! $report->isValidated(),
+            'locked' => $report->isValidated(),
+            'notStarted' => ! $session->hasStarted(),
         ]);
     }
 
     public function update(Request $request, EventSession $session): RedirectResponse
     {
         $this->authorizeRapporteur($session);
+
+        // Fenêtre de rédaction : seulement une fois la séance commencée, et tant
+        // que le secrétariat n'a pas validé/verrouillé le rapport.
+        $report = SessionReport::firstOrNew(['session_id' => $session->id]);
+        abort_unless($session->hasStarted(), 403, 'La rédaction du rapport ouvrira au début de la séance.');
+        abort_if($report->isValidated(), 403, 'Le rapport a été validé par le secrétariat et n’est plus modifiable.');
 
         $data = $request->validate([
             'summary' => ['nullable', 'string', 'max:20000'],
@@ -60,7 +69,6 @@ class SessionReportController extends Controller
         $user = Auth::guard('account')->user();
         $submit = $data['action'] === 'submit';
 
-        $report = SessionReport::firstOrNew(['session_id' => $session->id]);
         $report->edition_id = $session->edition_id;
         $report->reported_by = $user->id;
         $report->summary = ($data['summary'] ?? null) ?: null;

@@ -361,6 +361,8 @@ Route::prefix('admin')->group(function () {
             Route::post('/programme/sessions/{session}/visio/acces', [ProgramController::class, 'setMeetingVisibility'])->name('admin.program.sessions.meeting-visibility');
             Route::post('/programme/sessions/{session}/visio', [ProgramController::class, 'saveMeeting'])->name('admin.program.sessions.meeting');
             Route::get('/programme/rapports', [ProgramController::class, 'reports'])->name('admin.program.reports');
+            Route::post('/programme/rapports/{session}', [ProgramController::class, 'saveReport'])->name('admin.program.reports.save');
+            Route::post('/programme/rapports/{session}/rouvrir', [ProgramController::class, 'reopenReport'])->name('admin.program.reports.reopen');
             Route::get('/programme/creneaux', [ProgramController::class, 'slots'])->name('admin.program.slots');
             Route::post('/programme/creneaux', [ProgramController::class, 'storeSlot'])->name('admin.program.slots.store');
             Route::delete('/programme/creneaux/{slot}', [ProgramController::class, 'deleteSlot'])->name('admin.program.slots.destroy');

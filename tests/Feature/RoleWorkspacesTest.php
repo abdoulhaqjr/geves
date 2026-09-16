@@ -64,11 +64,12 @@ it('affiche l’état vide pour un compte sans séance à animer', function () {
         ->assertSee('Aucune séance à animer');
 });
 
-it('permet au rapporteur de rédiger et soumettre un rapport de séance', function () {
+it('permet au rapporteur de rédiger et soumettre un rapport de séance commencée', function () {
     $edition = openEdition();
     $rap = eventActor('rap@example.tg');
     $session = $edition->sessions()->create([
         'label' => 'Session — Atelier 2', 'type' => 'atelier',
+        'starts_at' => now()->subHour(), // séance déjà commencée
         'rapporteur_email' => 'rap@example.tg', 'rapporteur_name' => 'Test Acteur',
     ]);
 
@@ -97,6 +98,84 @@ it('permet au rapporteur de rédiger et soumettre un rapport de séance', functi
     expect($report->status)->toBe('submitted');
     expect($report->submitted_at)->not->toBeNull();
     expect((int) $report->attendance)->toBe(42);
+});
+
+it('empêche le rapporteur de rédiger avant le début de la séance', function () {
+    $edition = openEdition();
+    $rap = eventActor('rapfutur@example.tg');
+    $session = $edition->sessions()->create([
+        'label' => 'Session future', 'type' => 'atelier',
+        'starts_at' => now()->addDay(), // pas encore commencée
+        'rapporteur_email' => 'rapfutur@example.tg',
+    ]);
+
+    $this->actingAs($rap, 'account')
+        ->get(route('account.reports.edit', $session))
+        ->assertOk()
+        ->assertSee('Rédaction pas encore ouverte');
+
+    $this->actingAs($rap, 'account')
+        ->post(route('account.reports.update', $session), ['action' => 'draft'])
+        ->assertForbidden();
+});
+
+it('verrouille le rapport pour le rapporteur une fois validé par le secrétariat', function () {
+    $edition = openEdition();
+    $rap = eventActor('rapval@example.tg');
+    $session = $edition->sessions()->create([
+        'label' => 'Session validée', 'type' => 'atelier',
+        'starts_at' => now()->subHour(),
+        'rapporteur_email' => 'rapval@example.tg',
+    ]);
+    SessionReport::create([
+        'session_id' => $session->id, 'edition_id' => $edition->id,
+        'summary' => 'Rapport rédigé.', 'status' => 'validated',
+        'submitted_at' => now()->subHour(), 'validated_at' => now(),
+    ]);
+
+    // Consultation possible, mais formulaire verrouillé.
+    $this->actingAs($rap, 'account')
+        ->get(route('account.reports.edit', $session))
+        ->assertOk()
+        ->assertSee('validé par le secrétariat');
+
+    // Toute modification est refusée.
+    $this->actingAs($rap, 'account')
+        ->post(route('account.reports.update', $session), [
+            'summary' => 'Tentative de modification.', 'action' => 'submit',
+        ])
+        ->assertForbidden();
+
+    expect(SessionReport::where('session_id', $session->id)->value('summary'))->toBe('Rapport rédigé.');
+});
+
+it('permet au secrétariat de valider un rapport (et de le rouvrir)', function () {
+    $edition = openEdition();
+    $session = $edition->sessions()->create([
+        'label' => 'Session à valider', 'type' => 'atelier',
+        'starts_at' => now()->subHour(), 'rapporteur_email' => 'rap@example.tg',
+    ]);
+    SessionReport::create([
+        'session_id' => $session->id, 'edition_id' => $edition->id,
+        'summary' => 'Brouillon rapporteur.', 'status' => 'submitted', 'submitted_at' => now(),
+    ]);
+
+    $this->actingAs(adminStaff(), 'web')
+        ->post(route('admin.program.reports.save', $session), [
+            'summary' => 'Synthèse améliorée par le secrétariat.',
+            'attendance' => 60,
+        ])->assertRedirect();
+
+    $report = SessionReport::where('session_id', $session->id)->first();
+    expect($report->status)->toBe('validated');
+    expect($report->validated_at)->not->toBeNull();
+    expect($report->summary)->toBe('Synthèse améliorée par le secrétariat.');
+
+    // Réouverture : redevient modifiable par le rapporteur.
+    $this->actingAs(adminStaff(), 'web')
+        ->post(route('admin.program.reports.reopen', $session))
+        ->assertRedirect();
+    expect(SessionReport::where('session_id', $session->id)->value('status'))->toBe('submitted');
 });
 
 it('refuse le rapport d’une séance à un non-rapporteur', function () {
