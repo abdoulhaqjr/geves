@@ -102,9 +102,17 @@ class ProgramController extends Controller
 
         $report = SessionReport::firstOrNew(['session_id' => $session->id]);
         $report->edition_id = $session->edition_id;
-        $report->summary = ($data['summary'] ?? null) ?: null;
-        $report->highlights = ($data['highlights'] ?? null) ?: null;
-        $report->attendance = $data['attendance'] ?? null;
+        // Ne touche au contenu que si les champs sont fournis : un POST « nu »
+        // (validation en un clic) verrouille sans écraser le rapport du rapporteur.
+        if ($request->has('summary')) {
+            $report->summary = ($data['summary'] ?? null) ?: null;
+        }
+        if ($request->has('highlights')) {
+            $report->highlights = ($data['highlights'] ?? null) ?: null;
+        }
+        if ($request->has('attendance')) {
+            $report->attendance = $data['attendance'] ?? null;
+        }
         $report->status = 'validated';
         $report->submitted_at = $report->submitted_at ?? now();
         $report->validated_at = now();

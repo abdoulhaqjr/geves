@@ -55,6 +55,10 @@
                        @class(['active' => request()->routeIs('admin.program.*')])>
                         <x-ukc.icon name="clock" :size="18" /> <span class="txt">Créneaux</span>
                     </a>
+                    <a href="{{ route('admin.secretariat') }}" title="Secrétariat"
+                       @class(['active' => request()->routeIs('admin.secretariat')])>
+                        <x-ukc.icon name="inbox" :size="18" /> <span class="txt">Secrétariat</span>
+                    </a>
                 @endif
 
                 @if ($staff?->canAnyEdition('project') || $staff?->canAnyEdition('payments') || $staff?->canAnyEdition('documents') || $staff?->canAnyEdition('emails'))

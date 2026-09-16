@@ -18,6 +18,7 @@
                             <th>{{ __('Réf.') }}</th>
                             <th>{{ __('Titre') }}</th>
                             <th>{{ __('Axe') }}</th>
+                            <th>{{ __('Recommandation') }}</th>
                             <th>{{ __('État') }}</th>
                             <th style="text-align:right;">{{ __('Action') }}</th>
                         </tr>
@@ -26,14 +27,26 @@
                         <template x-for="r in reviews" :key="r.id">
                             <tr>
                                 <td style="font-family:ui-monospace,monospace;font-weight:700;" x-text="r.ref || '—'"></td>
-                                <td class="title" x-text="r.title"></td>
+                                <td class="title">
+                                    <span x-text="r.title"></span>
+                                    <div style="font-size:12px;color:var(--ukc-muted);" x-text="r.edition"></div>
+                                </td>
                                 <td x-text="r.track || '—'"></td>
+                                <td>
+                                    <template x-if="r.completed">
+                                        <span style="font-size:13px;">
+                                            <span x-text="recoLabel(r.recommendation) || '—'"></span>
+                                            <template x-if="r.score !== null"><strong style="color:var(--ukc-blue);" x-text="' · ' + r.score + '/20'"></strong></template>
+                                        </span>
+                                    </template>
+                                    <template x-if="!r.completed"><span style="color:var(--ukc-muted);">—</span></template>
+                                </td>
                                 <td>
                                     <span class="ukc-pill ukc-pill--ok" x-show="r.completed">{{ __('Évaluée') }}</span>
                                     <span class="ukc-pill ukc-pill--warn" x-show="!r.completed">{{ __('À évaluer') }}</span>
                                 </td>
                                 <td style="text-align:right;">
-                                    <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" @click="edit(r)">
+                                    <button type="button" :class="r.completed ? 'ukc-btn ukc-btn--outline ukc-btn--sm' : 'ukc-btn ukc-btn--blue ukc-btn--sm'" @click="edit(r)">
                                         <x-ukc.icon name="pen" :size="15" /> <span x-text="r.completed ? '{{ __('Revoir') }}' : '{{ __('Évaluer') }}'"></span>
                                     </button>
                                 </td>
@@ -180,6 +193,10 @@ function ukcReviews(reviews, recommendations, scale) {
         open: false,
         saving: false,
         cur: { scores: {}, criteria: [] },
+
+        recoLabel(key) {
+            return key ? (this.recommendations[key] || '') : '';
+        },
 
         overall() {
             const c = this.cur;

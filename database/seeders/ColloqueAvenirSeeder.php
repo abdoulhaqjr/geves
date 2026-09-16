@@ -119,6 +119,11 @@ class ColloqueAvenirSeeder extends Seeder
             $this->participant($edition, $u, 'rapporteur', 'Enseignant-chercheur');
         }
 
+        // Membre du secrétariat (staff) rattaché à l'édition : accès back-office
+        // + poste de travail « Secrétariat » (validation des rapports de séance).
+        $secretaire = $this->user('secretaire@test.tg', 'Sara', 'Secrétaire');
+        $secretaire->assignedEditions()->syncWithoutDetaching([$edition->id => ['role' => 'secretariat']]);
+
         // --- Ateliers + sessions + communications acceptées et planifiées ---
         /** @var list<Submission> $submissions */
         $submissions = [];
@@ -336,6 +341,7 @@ class ColloqueAvenirSeeder extends Seeder
         $this->command?->info('Colloque de test « Avenir durable 2025 » créé (édition open, 6 ateliers).');
         $this->command?->info('Modérateurs : moderateur1@test.tg · moderateur2@test.tg');
         $this->command?->info('Rapporteurs : rapporteur1@test.tg · rapporteur2@test.tg');
+        $this->command?->info('Secrétariat (back-office) : secretaire@test.tg — mot de passe : password');
         $this->command?->info('Communicants : comm1@test.tg … comm6@test.tg — mot de passe : password');
         $this->command?->info('Auteurs en évaluation : auteur1@test.tg (soumise) · auteur2@test.tg (réponse ouverte) · auteur3@test.tg (correction demandée)');
         foreach ($reviewers as $r) {

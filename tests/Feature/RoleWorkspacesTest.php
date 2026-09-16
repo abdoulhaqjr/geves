@@ -149,6 +149,49 @@ it('verrouille le rapport pour le rapporteur une fois validé par le secrétaria
     expect(SessionReport::where('session_id', $session->id)->value('summary'))->toBe('Rapport rédigé.');
 });
 
+it('affiche au secrétariat sa file de rapports à valider (scopée à ses éditions)', function () {
+    $edition = openEdition();
+    $session = $edition->sessions()->create([
+        'label' => 'Séance à valider', 'type' => 'atelier',
+        'starts_at' => now()->subHour(), 'rapporteur_email' => 'rap@example.tg', 'rapporteur_name' => 'Rita R.',
+    ]);
+    SessionReport::create([
+        'session_id' => $session->id, 'edition_id' => $edition->id,
+        'summary' => 'Brouillon rapporteur.', 'status' => 'submitted', 'submitted_at' => now(),
+    ]);
+
+    // Staff « secrétariat » rattaché à l'édition (non super-admin).
+    $staff = User::create(['first_name' => 'Sara', 'last_name' => 'Secrétaire', 'email' => 'sec@example.tg', 'password' => 'pass12345']);
+    $staff->assignedEditions()->attach($edition->id, ['role' => 'secretariat']);
+
+    $this->actingAs($staff, 'web')
+        ->get(route('admin.secretariat'))
+        ->assertOk()
+        ->assertSee('Rapports à valider')
+        ->assertSee('Séance à valider')
+        ->assertSee('Rita R.');
+});
+
+it('valide un rapport en un clic sans écraser son contenu', function () {
+    $edition = openEdition();
+    $session = $edition->sessions()->create([
+        'label' => 'Séance', 'type' => 'atelier', 'starts_at' => now()->subHour(), 'rapporteur_email' => 'rap@example.tg',
+    ]);
+    SessionReport::create([
+        'session_id' => $session->id, 'edition_id' => $edition->id,
+        'summary' => 'Contenu rédigé par le rapporteur.', 'status' => 'submitted', 'submitted_at' => now(),
+    ]);
+
+    // POST « nu » (bouton Valider de la file secrétariat) : verrouille sans vider.
+    $this->actingAs(adminStaff(), 'web')
+        ->post(route('admin.program.reports.save', $session))
+        ->assertRedirect();
+
+    $report = SessionReport::where('session_id', $session->id)->first();
+    expect($report->status)->toBe('validated');
+    expect($report->summary)->toBe('Contenu rédigé par le rapporteur.');
+});
+
 it('permet au secrétariat de valider un rapport (et de le rouvrir)', function () {
     $edition = openEdition();
     $session = $edition->sessions()->create([

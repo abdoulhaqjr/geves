@@ -213,6 +213,7 @@ Route::prefix('admin')->group(function () {
         // Accès de base au back-office : ouvert à tout membre du staff connecté
         // (le contenu est ensuite restreint aux éditions accessibles).
         Route::get('/', App\Http\Controllers\Admin\DashboardController::class)->name('admin.dashboard');
+        Route::get('/secretariat', App\Http\Controllers\Admin\SecretariatController::class)->name('admin.secretariat');
         Route::get('/notifications', [NotificationController::class, 'index'])->name('admin.notifications');
         Route::post('/deconnexion', AdminLogoutController::class)->name('admin.logout');
 
