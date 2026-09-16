@@ -13,12 +13,14 @@
     <div class="admin-page admin-ai"
          x-data="adminCopilot(@js($seed), '{{ route('admin.ai.ask') }}', '{{ route('admin.ai.decide') }}', @js($decisionLog), @js($agentName), @js((string) $currentEditionId))">
         @if ($editions->isNotEmpty())
-            <div class="ukc-field" style="margin:0 0 16px;">
-                <select x-model="editionId" style="width:100%;">
-                    @foreach ($editions as $ed)
-                        <option value="{{ $ed->id }}">{{ $ed->colloque?->name ? $ed->colloque->name.' — ' : '' }}{{ $ed->title ?: $ed->year }}</option>
-                    @endforeach
-                </select>
+            <div style="display:flex;flex-wrap:wrap;margin-bottom:16px;">
+                <div class="ukc-field" style="min-width:220px;margin:0;">
+                    <select x-model="editionId">
+                        @foreach ($editions as $ed)
+                            <option value="{{ $ed->id }}">{{ $ed->colloque?->name ? $ed->colloque->name.' — ' : '' }}{{ $ed->title ?: $ed->year }}</option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
         @endif
         <div class="layout">
