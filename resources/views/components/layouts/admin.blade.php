@@ -92,6 +92,12 @@
                         <x-ukc.icon name="mail" :size="18" /> <span class="txt">E-mails</span>
                     </a>
                 @endif
+                @if ($staff?->canAnyEdition('claims'))
+                    <a href="{{ route('admin.claims.index') }}" title="Réclamations & incidents"
+                       @class(['active' => request()->routeIs('admin.claims.*')])>
+                        <x-ukc.icon name="inbox" :size="18" /> <span class="txt">Réclamations</span>
+                    </a>
+                @endif
 
                 @if ($staff?->canAnyEdition('view_dashboard'))
                     <span class="nav-label">Pilotage</span>

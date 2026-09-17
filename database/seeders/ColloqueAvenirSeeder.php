@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Atelier;
+use App\Models\Claim;
 use App\Models\Colloque;
 use App\Models\Edition;
 use App\Models\EventSession;
@@ -122,11 +123,11 @@ class ColloqueAvenirSeeder extends Seeder
         // Membre du secrétariat (staff) rattaché à l'édition : accès back-office
         // + poste de travail « Secrétariat » (validation des rapports de séance).
         $secretaire = $this->user('secretaire@test.tg', 'Sara', 'Secrétaire');
-        $secretaire->assignedEditions()->syncWithoutDetaching([$edition->id => ['role' => 'secretariat']]);
+        $this->assignStaff($secretaire, $edition, 'secretariat');
 
         // Membre de la comptabilité (staff) : accès back-office + poste « Comptabilité ».
         $comptable = $this->user('comptable@test.tg', 'Carine', 'Comptable');
-        $comptable->assignedEditions()->syncWithoutDetaching([$edition->id => ['role' => 'accounting']]);
+        $this->assignStaff($comptable, $edition, 'accounting');
 
         // --- Ateliers + sessions + communications acceptées et planifiées ---
         /** @var list<Submission> $submissions */
@@ -346,6 +347,32 @@ class ColloqueAvenirSeeder extends Seeder
             }
         }
 
+        // --- Réclamations / incidents de démonstration (comme via l'assistante Gesco) ---
+        $comm1 = User::whereRaw('LOWER(email) = ?', ['comm1@test.tg'])->first();
+        Claim::updateOrCreate(
+            ['reference' => 'REC-'.$start->year.'-DEMO01'],
+            [
+                'edition_id' => $edition->id, 'user_id' => $comm1?->id,
+                'name' => $comm1?->name ?: 'Communicant1 Test', 'email' => 'comm1@test.tg',
+                'type' => 'reclamation', 'category' => 'paiement',
+                'subject' => 'Paiement effectué mais inscription encore « à régler »',
+                'message' => "J'ai réglé mes frais via Mobile Money, mais mon espace indique toujours « à régler ». "
+                    .'Merci de vérifier et de régulariser mon inscription.',
+                'status' => 'open', 'source' => 'chatbot',
+            ]
+        );
+        Claim::updateOrCreate(
+            ['reference' => 'INC-'.$start->year.'-DEMO02'],
+            [
+                'edition_id' => $edition->id,
+                'name' => 'Auditeur externe', 'email' => 'auditeur@example.tg',
+                'type' => 'incident', 'category' => 'technique',
+                'subject' => 'Impossible de rejoindre la visio de la séance en direct',
+                'message' => "Le bouton « Rejoindre la visio » ne réagit pas sur mon navigateur pendant la séance en direct.",
+                'status' => 'in_progress', 'source' => 'chatbot',
+            ]
+        );
+
         $this->command?->info('Colloque de test « Avenir durable 2025 » créé (édition open, 6 ateliers).');
         $this->command?->info('Modérateurs : moderateur1@test.tg · moderateur2@test.tg');
         $this->command?->info('Rapporteurs : rapporteur1@test.tg · rapporteur2@test.tg');
@@ -355,6 +382,19 @@ class ColloqueAvenirSeeder extends Seeder
         $this->command?->info('Auteurs en évaluation : auteur1@test.tg (soumise) · auteur2@test.tg (réponse ouverte) · auteur3@test.tg (correction demandée)');
         foreach ($reviewers as $r) {
             $this->command?->info('Relecteur : '.$r->email.' — mot de passe : password (relectures dans « Mes relectures »)');
+        }
+    }
+
+    /** Rattache (idempotent) un membre du staff à une édition avec une fonction. */
+    private function assignStaff(User $user, Edition $edition, string $role): void
+    {
+        $exists = $user->assignedEditions()
+            ->where('editions.id', $edition->id)
+            ->wherePivot('role', $role)
+            ->exists();
+
+        if (! $exists) {
+            $user->assignedEditions()->attach($edition->id, ['role' => $role]);
         }
     }
 

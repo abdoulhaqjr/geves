@@ -214,6 +214,11 @@ Route::prefix('admin')->group(function () {
         // (le contenu est ensuite restreint aux éditions accessibles).
         Route::get('/', App\Http\Controllers\Admin\DashboardController::class)->name('admin.dashboard');
         Route::get('/secretariat', [App\Http\Controllers\Admin\SecretariatController::class, 'index'])->name('admin.secretariat');
+        Route::get('/reclamations', [App\Http\Controllers\Admin\ClaimController::class, 'index'])->name('admin.claims.index');
+        Route::get('/reclamations/{claim}', [App\Http\Controllers\Admin\ClaimController::class, 'show'])->name('admin.claims.show');
+        Route::post('/reclamations/{claim}/statut', [App\Http\Controllers\Admin\ClaimController::class, 'updateStatus'])->name('admin.claims.status');
+        Route::post('/reclamations/{claim}/assigner', [App\Http\Controllers\Admin\ClaimController::class, 'assign'])->name('admin.claims.assign');
+        Route::post('/reclamations/{claim}/analyser', [App\Http\Controllers\Admin\ClaimController::class, 'analyze'])->name('admin.claims.analyze');
         Route::post('/secretariat/assistant', [App\Http\Controllers\Admin\SecretariatController::class, 'generate'])->name('admin.secretariat.assist');
         Route::get('/secretariat/assistant/{edition}/{id}/telecharger', [App\Http\Controllers\Admin\SecretariatController::class, 'download'])->name('admin.secretariat.assist.download');
         Route::get('/notifications', [NotificationController::class, 'index'])->name('admin.notifications');

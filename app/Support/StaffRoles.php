@@ -26,6 +26,7 @@ class StaffRoles
         'emails' => 'E-mails',
         'project' => 'Projet (gestion)',
         'badge_scan' => 'Scan badges / QR',
+        'claims' => 'Réclamations & incidents',
         'users_roles' => 'Utilisateurs & rôles',
         'settings' => 'Réglages',
     ];
@@ -44,7 +45,7 @@ class StaffRoles
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
                 'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'project', 'badge_scan',
-                'users_roles', 'settings',
+                'claims', 'users_roles', 'settings',
             ],
         ],
         'gerant' => [
@@ -53,7 +54,7 @@ class StaffRoles
             'description' => 'Responsable d’un colloque : accès complet à CE colloque (soumissions, décisions, documents, paiements, e-mails, équipe).',
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
-                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'project', 'badge_scan',
+                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'project', 'badge_scan', 'claims',
             ],
         ],
         'co_gerant' => [
@@ -62,7 +63,7 @@ class StaffRoles
             'description' => 'Co-responsable d’un colloque : mêmes accès que le gestionnaire sur CE colloque.',
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
-                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'project', 'badge_scan',
+                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'project', 'badge_scan', 'claims',
             ],
         ],
         'scientific' => [
@@ -81,7 +82,7 @@ class StaffRoles
             'label' => 'Comité d’organisation',
             'category' => 'Support', 'pill' => 'warn', 'abbr' => 'Comité org.',
             'description' => 'Membre du comité d’organisation : suivi des participants, documents et programme du colloque.',
-            'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'participants', 'documents', 'emails', 'project'],
+            'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'participants', 'documents', 'emails', 'project', 'claims'],
         ],
         'reviewer' => [
             'label' => 'Relecteur',
@@ -99,7 +100,7 @@ class StaffRoles
             'label' => 'Secrétariat',
             'category' => 'Support', 'pill' => 'sec', 'abbr' => 'Sécr.',
             'description' => 'Suivi administratif des soumissions et participants, relances, envoi de documents, assistance aux auteurs.',
-            'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'participants', 'documents', 'emails', 'project'],
+            'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'participants', 'documents', 'emails', 'project', 'claims'],
         ],
         'accounting' => [
             'label' => 'Comptabilité',
@@ -111,7 +112,7 @@ class StaffRoles
             'label' => 'Appui à l’organisation',
             'category' => 'Support', 'pill' => 'appui', 'abbr' => 'Appui',
             'description' => 'Aide logistique (programme, salles, partenaires), consultation des listes participants, documents de session.',
-            'permissions' => ['view_dashboard', 'editions_read', 'participants', 'documents', 'project', 'badge_scan'],
+            'permissions' => ['view_dashboard', 'editions_read', 'participants', 'documents', 'project', 'badge_scan', 'claims'],
         ],
         'reception' => [
             'label' => 'Accueil',

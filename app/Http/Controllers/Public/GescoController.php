@@ -67,14 +67,64 @@ class GescoController extends Controller
         // Contexte personnel (données réelles) si un participant est connecté.
         $account = Auth::guard('account')->user();
         $personal = $account ? $this->personalContext($account) : null;
+        $contact = $account ? ['name' => $account->full_name, 'email' => $account->email] : null;
+        $edition = $this->activeEdition();
 
+        $claimRef = null;
         try {
-            $answer = $ask->handle($history, trim($data['question']), $this->activeEdition(), $personal);
+            $result = $ask->handle($history, trim($data['question']), $edition, $personal, $contact);
+            $answer = $result['answer'];
+
+            // Gesco n'a pas pu résoudre → enregistrement d'une réclamation/incident.
+            if ($result['claim'] !== null) {
+                $claimRef = $this->recordClaim($result['claim'], $account, $edition);
+                if ($claimRef !== null) {
+                    $answer .= "\n\nVotre demande a été enregistrée. **Référence de suivi : {$claimRef}**. "
+                        .'Elle sera traitée par l’organisation.';
+                }
+            }
         } catch (\Throwable $e) {
             $answer = $e->getMessage();
         }
 
-        return response()->json(['answer' => $answer]);
+        return response()->json(['answer' => $answer, 'claim' => $claimRef ? ['reference' => $claimRef] : null]);
+    }
+
+    /**
+     * Enregistre une réclamation/incident préparé par Gesco (si un e-mail de
+     * contact est disponible) et notifie le staff. Retourne la référence, ou null.
+     *
+     * @param  array<string, mixed>  $claim
+     */
+    private function recordClaim(array $claim, ?User $account, ?Edition $edition): ?string
+    {
+        $email = $account?->email ?: (filled($claim['contactEmail'] ?? null) ? (string) $claim['contactEmail'] : null);
+        if ($email === null) {
+            return null; // pas de contact fiable : Gesco redemandera l'e-mail
+        }
+
+        $record = \App\Models\Claim::create([
+            'edition_id' => $edition?->id,
+            'user_id' => $account?->id,
+            'name' => $account?->full_name ?: ((string) ($claim['contactName'] ?? '') ?: null),
+            'email' => $email,
+            'type' => (string) ($claim['type'] ?? 'reclamation'),
+            'category' => filled($claim['category'] ?? null) ? (string) $claim['category'] : null,
+            'subject' => (string) ($claim['subject'] ?? 'Réclamation'),
+            'message' => (string) ($claim['summary'] ?? ''),
+            'status' => 'open',
+            'source' => 'chatbot',
+        ]);
+
+        \App\Support\Notifier::staff(
+            kind: 'contact',
+            title: 'Nouvelle '.mb_strtolower($record->typeLabel()),
+            body: $record->subject.' — '.($record->name ?: $record->email),
+            url: route('admin.claims.show', $record),
+            icon: 'inbox',
+        );
+
+        return $record->reference;
     }
 
     /**

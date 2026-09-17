@@ -8,9 +8,9 @@ use App\AI\Contracts\AiProvider;
 it('répond à une question via l’agent Gesco', function () {
     bindFakeAi(fakeAiProvider(['answer' => 'Pour soumettre, connectez-vous à votre espace participant.']));
 
-    $answer = app(AskGesco::class)->handle([], 'Comment soumettre une communication ?');
+    $result = app(AskGesco::class)->handle([], 'Comment soumettre une communication ?');
 
-    expect($answer)->toContain('espace participant');
+    expect($result['answer'])->toContain('espace participant');
 });
 
 it('affiche la page dédiée de l’assistante Gesco', function () {

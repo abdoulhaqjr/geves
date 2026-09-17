@@ -23,27 +23,60 @@ class AskGesco
     /**
      * @param  list<ChatTurn>  $history  tours précédents (rôle bot|user)
      * @param  string|null  $personal  résumé (données réelles) de l'utilisateur connecté, ou null si visiteur anonyme
+     * @param  array{name: ?string, email: ?string}|null  $contact  identité de l'utilisateur connecté (pour une éventuelle réclamation)
+     * @return array{answer: string, claim: array<string, mixed>|null}
      */
-    public function handle(array $history, string $question, ?Edition $edition = null, ?string $personal = null): string
+    public function handle(array $history, string $question, ?Edition $edition = null, ?string $personal = null, ?array $contact = null): array
     {
         $provider = $this->manager->resolve(false);
         if (! $provider) {
             throw new \RuntimeException('L’assistance Gesco est momentanément indisponible.');
         }
 
-        $raw = $provider->extract($this->instruction($history, $question, $edition, $personal), []);
+        $raw = $provider->extract($this->instruction($history, $question, $edition, $personal, $contact), []);
 
         $answer = trim((string) ($raw['answer'] ?? ''));
 
-        return $answer !== ''
-            ? Str::limit($answer, 4000, '')
-            : 'Je ne suis pas sûre de pouvoir répondre à cela. Contactez la DRI à dri@univkara.tg pour toute question précise.';
+        return [
+            'answer' => $answer !== ''
+                ? Str::limit($answer, 4000, '')
+                : 'Je ne suis pas sûre de pouvoir répondre à cela. Contactez la DRI à dri@univkara.tg pour toute question précise.',
+            'claim' => $this->sanitizeClaim($raw['claim'] ?? null),
+        ];
+    }
+
+    /**
+     * Normalise l'éventuelle réclamation proposée par l'IA.
+     *
+     * @return array{type: string, category: string, subject: string, summary: string, contactName: string, contactEmail: string}|null
+     */
+    protected function sanitizeClaim(mixed $claim): ?array
+    {
+        if (! is_array($claim) || empty($claim['record'])) {
+            return null;
+        }
+
+        $subject = Str::limit(trim((string) ($claim['subject'] ?? '')), 160, '');
+        $summary = Str::limit(trim((string) ($claim['summary'] ?? '')), 4000, '');
+        if ($subject === '' && $summary === '') {
+            return null;
+        }
+
+        return [
+            'type' => in_array($claim['type'] ?? '', ['reclamation', 'incident'], true) ? (string) $claim['type'] : 'reclamation',
+            'category' => Str::limit(trim((string) ($claim['category'] ?? '')), 40, ''),
+            'subject' => $subject !== '' ? $subject : Str::limit($summary, 80, ''),
+            'summary' => $summary !== '' ? $summary : $subject,
+            'contactName' => Str::limit(trim((string) ($claim['contactName'] ?? '')), 120, ''),
+            'contactEmail' => Str::limit(trim((string) ($claim['contactEmail'] ?? '')), 190, ''),
+        ];
     }
 
     /**
      * @param  list<ChatTurn>  $history
+     * @param  array{name: ?string, email: ?string}|null  $contact
      */
-    protected function instruction(array $history, string $question, ?Edition $edition, ?string $personal = null): string
+    protected function instruction(array $history, string $question, ?Edition $edition, ?string $personal = null, ?array $contact = null): string
     {
         $agent = AiAgents::find('gesco') ?? AiAgents::defaults()[0];
 
@@ -67,6 +100,12 @@ class AskGesco
                 ."Ne divulgue JAMAIS les données d'un autre participant.\n\n"
             : "L'utilisateur n'est pas connecté : tu ne disposes d'aucune donnée personnelle. Pour toute question "
                 ."personnelle (statut d'une soumission, paiement, badge…), invite-le à se connecter à son espace participant.\n\n";
+
+        // Identité de contact (pour l'enregistrement d'une éventuelle réclamation).
+        $contactBlock = filled($contact['email'] ?? null)
+            ? 'CONTACT CONNU (utilisateur connecté) : '.trim((string) ($contact['name'] ?? '')).' <'.$contact['email'].'>. '
+                ."Utilise ce contact pour une réclamation sans le redemander.\n\n"
+            : '';
 
         return <<<TXT
         {$agent['persona']}
@@ -98,7 +137,23 @@ class AskGesco
         - Réponds directement à la question posée, sans digression ni informations non
           demandées.
 
-        {$personalBlock}Historique récent :
+        {$personalBlock}{$contactBlock}RÉCLAMATIONS & INCIDENTS :
+        - Si l'utilisateur exprime une réclamation, un problème, un incident ou une insatisfaction,
+          commence TOUJOURS par essayer de l'aider ou de résoudre à partir de la base de connaissance
+          (procédure, page concernée, contact). Ne l'enregistre pas si tu peux régler le souci.
+        - Si tu réponds/résous pleinement, mets "claim" à null.
+        - Si tu NE PEUX PAS résoudre et que l'utilisateur souhaite signaler/enregistrer son souci,
+          prépare "claim" avec record=true : "type" ("reclamation" par défaut, "incident" pour un
+          dysfonctionnement technique), "category" (paiement, soumission, inscription, badge,
+          attestation, programme, technique, autre), "subject" (titre court) et "summary" (résumé
+          fidèle et complet du problème, avec les éléments utiles au traitement).
+        - CONTACT pour le suivi : n'enregistre (record=true) que si tu disposes d'un e-mail.
+          Pour un utilisateur CONNECTÉ, utilise son identité (déjà connue, ne la redemande pas).
+          Pour un utilisateur ANONYME, demande d'abord son NOM et son E-MAIL ; renseigne
+          "contactName"/"contactEmail" uniquement quand il te les a fournis. Sans e-mail, garde
+          record=false et invite-le poliment à donner un e-mail ou à se connecter.
+
+        Historique récent :
         {$convo}
 
         Nouvelle question de l'utilisateur : {$question}
@@ -107,8 +162,13 @@ class AskGesco
         facile à lire : phrases courtes, un saut de ligne entre les idées, une liste à puces
         (« - ») quand tu énumères des étapes ou des éléments, et **gras** pour les points clés.
         N'utilise ni titres « # » ni tableaux. Reste bref (pas de remplissage).
-        Réponds UNIQUEMENT par un objet JSON STRICT (aucun texte autour) : { "answer": string }.
-        Le texte peut contenir des sauts de ligne (\n).
+        Quand tu enregistres une réclamation, confirme-le dans "answer" (l'utilisateur recevra une
+        référence de suivi).
+
+        Réponds UNIQUEMENT par un objet JSON STRICT (aucun texte autour) :
+        { "answer": string, "claim": { "record": boolean, "type": string, "category": string,
+          "subject": string, "summary": string, "contactName": string, "contactEmail": string } | null }.
+        Le texte de "answer" peut contenir des sauts de ligne (\n).
         TXT;
     }
 }
