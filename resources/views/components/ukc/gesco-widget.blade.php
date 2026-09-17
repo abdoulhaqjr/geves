@@ -70,7 +70,7 @@
 
         <div class="ukc-cb-foot">
             <textarea x-model="input" rows="1" x-ref="input" placeholder="Votre message… (Maj+Entrée = saut de ligne)"
-                      @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); send(); }" :disabled="sending"></textarea>
+                      @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); send(); }" @input="autogrow($event.target)" :disabled="sending"></textarea>
             <button type="button" @click="send()" :disabled="sending">Envoyer</button>
         </div>
     </div>

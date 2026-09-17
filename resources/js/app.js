@@ -685,7 +685,17 @@ document.addEventListener('alpine:init', () => {
             if (!m || m.role !== 'user' || this.sending) return;
             this.input = m.text;
             this.messages = this.messages.slice(0, i); // retire ce message + les suivants
-            this.$nextTick(() => { const el = this.$refs.input; if (el) { el.focus(); } });
+            this.$nextTick(() => { const el = this.$refs.input; if (el) { el.focus(); this.autogrow(el); } });
+        },
+        autogrow(el) {
+            if (!el) return;
+            const max = 160;
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, max) + 'px';
+            el.style.overflowY = el.scrollHeight > max ? 'auto' : 'hidden';
+        },
+        resetInputHeight() {
+            this.$nextTick(() => { const el = this.$refs.input; if (el) { el.style.height = 'auto'; el.style.overflowY = 'hidden'; } });
         },
         async send() {
             const question = this.input.trim();
@@ -694,6 +704,7 @@ document.addEventListener('alpine:init', () => {
             const history = this.messages.slice();
             this.messages.push({ role: 'user', text: question });
             this.input = '';
+            this.resetInputHeight();
             this.sending = true;
             this.scrollSoon();
 
@@ -760,7 +771,17 @@ document.addEventListener('alpine:init', () => {
             if (!m || m.role !== 'user' || this.sending) return;
             this.input = m.text;
             this.messages = this.messages.slice(0, i);
-            this.$nextTick(() => { const el = this.$refs.input; if (el) { el.focus(); } });
+            this.$nextTick(() => { const el = this.$refs.input; if (el) { el.focus(); this.autogrow(el); } });
+        },
+        autogrow(el) {
+            if (!el) return;
+            const max = 160;
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, max) + 'px';
+            el.style.overflowY = el.scrollHeight > max ? 'auto' : 'hidden';
+        },
+        resetInputHeight() {
+            this.$nextTick(() => { const el = this.$refs.input; if (el) { el.style.height = 'auto'; el.style.overflowY = 'hidden'; } });
         },
         csrf() {
             return document.querySelector('meta[name="csrf-token"]')?.content || '';
@@ -772,6 +793,7 @@ document.addEventListener('alpine:init', () => {
             const history = this.messages.map((m) => ({ role: m.role, text: m.text }));
             this.messages.push({ role: 'user', text: question, proposal: null, decision: null });
             this.input = '';
+            this.resetInputHeight();
             this.sending = true;
             this.scrollSoon();
 
