@@ -122,6 +122,21 @@
   50% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
 }
 
+/* ---- Actions sur les messages de chat (copier / modifier) ---- */
+.ukc-chat-act { display: flex; gap: 6px; margin-top: 5px; opacity: 0; transition: opacity .15s; }
+.msg:hover .ukc-chat-act,
+.ukc-msg:hover .ukc-chat-act,
+.ukc-chat-act:focus-within { opacity: 1; }
+.ukc-chat-act button {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11.5px; font-weight: 600; line-height: 1;
+  color: var(--ukc-muted); background: transparent;
+  border: 1px solid transparent; border-radius: 6px; padding: 3px 7px; cursor: pointer;
+  transition: background .12s, color .12s;
+}
+.ukc-chat-act button:hover { background: rgba(148, 163, 184, .16); color: var(--ukc-text); }
+@media (hover: none) { .ukc-chat-act { opacity: 1; } }
+
 /* ---- Scanner de badge (pointage) ---- */
 .badge-scanner { border-radius: 12px; overflow: hidden; background: #0f1a33; min-height: 240px; display: flex; align-items: center; justify-content: center; }
 .badge-scanner video { width: 100% !important; height: auto !important; display: block; }

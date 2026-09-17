@@ -28,6 +28,18 @@
                                 <div class="who" x-text="m.role === 'user' ? '{{ __('Vous') }}' : agentName"></div>
                                 <template x-if="m.role === 'user'"><div style="white-space:pre-wrap;" x-text="m.text"></div></template>
                                 <template x-if="m.role !== 'user'"><div class="chat-md" x-html="render(m.text)"></div></template>
+                                <div class="ukc-chat-act">
+                                    <button type="button" @click="copy(i, m.text)" :title="'{{ __('Copier') }}'">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                                        <span x-text="copiedIndex === i ? '{{ __('Copié') }}' : '{{ __('Copier') }}'"></span>
+                                    </button>
+                                    <template x-if="m.role === 'user'">
+                                        <button type="button" @click="editUser(i)" :title="'{{ __('Modifier et relancer') }}'">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                                            <span>{{ __('Modifier') }}</span>
+                                        </button>
+                                    </template>
+                                </div>
                             </div>
                         </template>
                         <div class="msg bot typing" x-show="sending" aria-label="{{ '…' }}">
@@ -43,8 +55,8 @@
                     </div>
 
                     <div class="chat-input">
-                        <textarea x-model="input" rows="1" placeholder="{{ __('Écrivez votre message…') }}"
-                                  @keydown.enter.prevent="if (!$event.shiftKey) { send(); }"
+                        <textarea x-model="input" rows="1" x-ref="input" placeholder="{{ __('Écrivez votre message… (Maj+Entrée pour un saut de ligne)') }}"
+                                  @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); send(); }"
                                   :disabled="sending"></textarea>
                         <button type="button" class="send" @click="send()" aria-label="Envoyer" :disabled="sending">
                             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>

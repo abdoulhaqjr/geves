@@ -661,6 +661,7 @@ document.addEventListener('alpine:init', () => {
         sending: false,
         endpoint,
         agentName: name,
+        copiedIndex: null,
         init() {
             this.messages = [{ role: 'bot', text: seed || 'Bonjour, je suis Gesco.' }];
             this.scrollSoon();
@@ -671,6 +672,20 @@ document.addEventListener('alpine:init', () => {
         },
         render(text) {
             return window.ukcMarkdownLite(text);
+        },
+        async copy(i, text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                this.copiedIndex = i;
+                setTimeout(() => { if (this.copiedIndex === i) this.copiedIndex = null; }, 1200);
+            } catch (e) { /* presse-papiers indisponible */ }
+        },
+        editUser(i) {
+            const m = this.messages[i];
+            if (!m || m.role !== 'user' || this.sending) return;
+            this.input = m.text;
+            this.messages = this.messages.slice(0, i); // retire ce message + les suivants
+            this.$nextTick(() => { const el = this.$refs.input; if (el) { el.focus(); } });
         },
         async send() {
             const question = this.input.trim();
@@ -721,6 +736,7 @@ document.addEventListener('alpine:init', () => {
         agentName: name,
         editionId: editionId ? String(editionId) : '',
         decisionLog: Array.isArray(log) ? log : [],
+        copiedIndex: null,
         init() {
             this.messages = [{ role: 'bot', text: seed, proposal: null, decision: null }];
             this.scrollSoon();
@@ -731,6 +747,20 @@ document.addEventListener('alpine:init', () => {
         },
         render(text) {
             return window.ukcMarkdownLite(text);
+        },
+        async copy(i, text) {
+            try {
+                await navigator.clipboard.writeText(text);
+                this.copiedIndex = i;
+                setTimeout(() => { if (this.copiedIndex === i) this.copiedIndex = null; }, 1200);
+            } catch (e) { /* presse-papiers indisponible */ }
+        },
+        editUser(i) {
+            const m = this.messages[i];
+            if (!m || m.role !== 'user' || this.sending) return;
+            this.input = m.text;
+            this.messages = this.messages.slice(0, i);
+            this.$nextTick(() => { const el = this.$refs.input; if (el) { el.focus(); } });
         },
         csrf() {
             return document.querySelector('meta[name="csrf-token"]')?.content || '';

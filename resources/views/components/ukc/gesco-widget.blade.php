@@ -49,6 +49,18 @@
                 <div class="ukc-cb-msg" :class="m.role === 'user' ? 'user' : 'bot'">
                     <template x-if="m.role === 'user'"><div style="white-space:pre-wrap;" x-text="m.text"></div></template>
                     <template x-if="m.role !== 'user'"><div class="chat-md" x-html="render(m.text)"></div></template>
+                    <div class="ukc-chat-act">
+                        <button type="button" @click="copy(i, m.text)" title="Copier">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                            <span x-text="copiedIndex === i ? 'Copié' : 'Copier'"></span>
+                        </button>
+                        <template x-if="m.role === 'user'">
+                            <button type="button" @click="editUser(i)" title="Modifier et relancer">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                                <span>Modifier</span>
+                            </button>
+                        </template>
+                    </div>
                 </div>
             </template>
             <div class="ukc-cb-msg bot typing" x-show="sending">
@@ -57,8 +69,8 @@
         </div>
 
         <div class="ukc-cb-foot">
-            <input type="text" x-model="input" placeholder="Votre message…"
-                   @keydown.enter="send()" :disabled="sending">
+            <textarea x-model="input" rows="1" x-ref="input" placeholder="Votre message… (Maj+Entrée = saut de ligne)"
+                      @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); send(); }" :disabled="sending"></textarea>
             <button type="button" @click="send()" :disabled="sending">Envoyer</button>
         </div>
     </div>
