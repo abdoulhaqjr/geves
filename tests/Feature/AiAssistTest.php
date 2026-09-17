@@ -33,7 +33,7 @@ function fakeAiManager(): AiManager
             return true;
         }
 
-        public function extract(string $instruction, array $files = []): array
+        public function extract(string $instruction, array $files = [], ?string $tier = null): array
         {
             return [
                 'title' => 'Colloque IA 2027',

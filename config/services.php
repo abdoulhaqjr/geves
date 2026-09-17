@@ -54,21 +54,31 @@ return [
     ],
 
     // Fournisseurs d'IA (paramétrage assisté, génération badges/attestations à venir).
+    // model = modèle par défaut ; model_fast/model_deep = paliers « économie » et
+    // « qualité » choisis automatiquement selon la tâche (cf. App\AI\AiRouter).
     'openai' => [
         'key' => env('OPENAI_API_KEY'),
         'model' => env('OPENAI_MODEL'),
+        'model_fast' => env('OPENAI_MODEL_FAST'),
+        'model_deep' => env('OPENAI_MODEL_DEEP'),
     ],
     'anthropic' => [
         'key' => env('ANTHROPIC_API_KEY'),
         'model' => env('ANTHROPIC_MODEL'),
+        'model_fast' => env('ANTHROPIC_MODEL_FAST'),
+        'model_deep' => env('ANTHROPIC_MODEL_DEEP'),
     ],
     'gemini' => [
         'key' => env('GEMINI_API_KEY'),
         'model' => env('GEMINI_MODEL'),
+        'model_fast' => env('GEMINI_MODEL_FAST'),
+        'model_deep' => env('GEMINI_MODEL_DEEP'),
     ],
     'grok' => [
         'key' => env('GROK_API_KEY'),
         'model' => env('GROK_MODEL'),
+        'model_fast' => env('GROK_MODEL_FAST'),
+        'model_deep' => env('GROK_MODEL_DEEP'),
     ],
     'ai' => [
         'default' => env('AI_PROVIDER', 'claude'), // openai | claude | gemini | grok

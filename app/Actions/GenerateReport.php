@@ -42,7 +42,8 @@ class GenerateReport
             throw new \RuntimeException('Aucun fournisseur d’IA n’est configuré (voir Réglages).');
         }
 
-        $raw = $provider->extract($this->instruction($edition, $brief, $files !== [], $style), $files);
+        // Génération de document/rapport : palier qualité (rédaction et structure soignées).
+        $raw = $provider->extract($this->instruction($edition, $brief, $files !== [], $style), $files, 'deep');
 
         return $this->sanitize($raw);
     }

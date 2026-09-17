@@ -168,6 +168,12 @@ class AppServiceProvider extends ServiceProvider
             if (filled($set("ai.{$svc}_model"))) {
                 Config::set("services.$svc.model", $set("ai.{$svc}_model"));
             }
+            // Paliers économie / qualité (facultatifs) : choisis automatiquement selon la tâche.
+            foreach (['fast', 'deep'] as $tier) {
+                if (filled($set("ai.{$svc}_model_{$tier}"))) {
+                    Config::set("services.$svc.model_{$tier}", $set("ai.{$svc}_model_{$tier}"));
+                }
+            }
         }
         Config::set('services.ai.default', $set('ai.default', config('services.ai.default')));
 

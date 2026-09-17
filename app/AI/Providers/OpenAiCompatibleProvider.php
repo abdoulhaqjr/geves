@@ -3,7 +3,9 @@
 namespace App\AI\Providers;
 
 use App\AI\Concerns\ParsesJsonResponse;
+use App\AI\Concerns\RetriesTransientFailures;
 use App\AI\Contracts\AiProvider;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -13,6 +15,7 @@ use Illuminate\Support\Facades\Http;
 abstract class OpenAiCompatibleProvider implements AiProvider
 {
     use ParsesJsonResponse;
+    use RetriesTransientFailures;
 
     abstract public function key(): string;
 
@@ -35,12 +38,39 @@ abstract class OpenAiCompatibleProvider implements AiProvider
         return false;
     }
 
-    protected function model(): string
+    /** Modèle concret pour le palier demandé (économie / qualité), repli sur le défaut. */
+    protected function model(?string $tier = null): string
     {
-        return (string) (config("services.{$this->service()}.model") ?: $this->fallbackModel());
+        $default = (string) (config("services.{$this->service()}.model") ?: $this->fallbackModel());
+
+        if ($tier === null) {
+            return $default;
+        }
+
+        // Un modèle de palier n'est utilisé que s'il est explicitement configuré ;
+        // sinon on conserve le modèle par défaut (pas de nom de modèle deviné).
+        return (string) (config("services.{$this->service()}.model_{$tier}") ?: $default);
     }
 
-    public function extract(string $instruction, array $files = []): array
+    public function extract(string $instruction, array $files = [], ?string $tier = null): array
+    {
+        try {
+            return $this->send($this->model($tier), $instruction, $files);
+        } catch (RequestException $e) {
+            // Palier de modèle refusé/indisponible (4xx) → repli transparent sur le modèle par défaut.
+            $status = (int) $e->response->status();
+            if ($tier !== null && $status >= 400 && $status < 500) {
+                return $this->send($this->model(), $instruction, $files);
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * @param  array<int, array{mime: string, data: string}>  $files
+     * @return array<string, mixed>
+     */
+    protected function send(string $model, string $instruction, array $files): array
     {
         $content = [['type' => 'text', 'text' => $instruction]];
 
@@ -54,15 +84,15 @@ abstract class OpenAiCompatibleProvider implements AiProvider
             ];
         }
 
-        $res = Http::withToken((string) config("services.{$this->service()}.key"))
+        $res = $this->retryOnOverload(fn () => Http::withToken((string) config("services.{$this->service()}.key"))
             ->acceptJson()->timeout(120)
             ->post($this->endpoint(), [
-                'model' => $this->model(),
+                'model' => $model,
                 // Température basse : réponses factuelles et précises (peu d'invention).
                 'temperature' => 0.2,
                 'messages' => [['role' => 'user', 'content' => $content]],
                 'response_format' => ['type' => 'json_object'],
-            ])->throw()->json();
+            ])->throw()->json());
 
         $text = $res['choices'][0]['message']['content'] ?? '';
 

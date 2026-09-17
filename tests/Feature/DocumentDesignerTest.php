@@ -35,7 +35,7 @@ function fakeLayoutManager(string $text): AiManager
             return true;
         }
 
-        public function extract(string $instruction, array $files = []): array
+        public function extract(string $instruction, array $files = [], ?string $tier = null): array
         {
             return ['width' => 320, 'height' => 440, 'bg' => '#ffffff', 'accent' => '#009933',
                 'elements' => [['type' => 'text', 'x' => 10, 'y' => 10, 'w' => 300, 'h' => 30, 'text' => $this->t, 'size' => 18, 'weight' => 700, 'color' => '#111111', 'align' => 'center']]];

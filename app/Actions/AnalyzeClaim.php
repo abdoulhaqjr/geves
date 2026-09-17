@@ -29,7 +29,8 @@ class AnalyzeClaim
             throw new \RuntimeException('L’IA est momentanément indisponible (voir Réglages).');
         }
 
-        $raw = $provider->extract($this->instruction($claim), []);
+        // Analyse de traitement : palier qualité (raisonnement plus fin).
+        $raw = $provider->extract($this->instruction($claim), [], 'deep');
 
         return $this->sanitize($raw);
     }

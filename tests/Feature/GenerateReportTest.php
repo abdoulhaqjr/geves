@@ -33,7 +33,7 @@ function fakeAiProvider(array $result): AiProvider
             return true;
         }
 
-        public function extract(string $instruction, array $files = []): array
+        public function extract(string $instruction, array $files = [], ?string $tier = null): array
         {
             return $this->result;
         }

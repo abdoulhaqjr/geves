@@ -41,7 +41,7 @@ it('cadre le copilote sur la fonction dans le colloque sélectionné', function 
 
         public function supportsPdf(): bool { return true; }
 
-        public function extract(string $instruction, array $files = []): array
+        public function extract(string $instruction, array $files = [], ?string $tier = null): array
         {
             $this->c->prompt = $instruction;
 

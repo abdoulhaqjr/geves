@@ -23,7 +23,8 @@ interface AiProvider
      * Envoie l'instruction + les fichiers et renvoie la réponse JSON décodée.
      *
      * @param  array<int, array{mime: string, data: string}>  $files  data = contenu base64
+     * @param  'fast'|'deep'|null  $tier  palier de modèle souhaité (économie / qualité), null = défaut
      * @return array<string, mixed>
      */
-    public function extract(string $instruction, array $files = []): array;
+    public function extract(string $instruction, array $files = [], ?string $tier = null): array;
 }

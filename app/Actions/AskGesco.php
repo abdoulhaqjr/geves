@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\AI\AiManager;
+use App\AI\AiRouter;
 use App\Models\Edition;
 use App\Support\AiAgents;
 use App\Support\ColloqueKnowledge;
@@ -18,7 +19,7 @@ use Illuminate\Support\Str;
  */
 class AskGesco
 {
-    public function __construct(protected AiManager $manager) {}
+    public function __construct(protected AiManager $manager, protected AiRouter $router) {}
 
     /**
      * @param  list<ChatTurn>  $history  tours précédents (rôle bot|user)
@@ -33,7 +34,10 @@ class AskGesco
             throw new \RuntimeException('L’assistance Gesco est momentanément indisponible.');
         }
 
-        $raw = $provider->extract($this->instruction($history, $question, $edition, $personal, $contact), []);
+        // Palier de modèle choisi selon la complexité (économie sur les questions simples).
+        $tier = $this->router->tier('chat_public', $question, historyTurns: count($history));
+
+        $raw = $provider->extract($this->instruction($history, $question, $edition, $personal, $contact), [], $tier);
 
         $answer = trim((string) ($raw['answer'] ?? ''));
 

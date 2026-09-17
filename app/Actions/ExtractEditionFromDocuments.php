@@ -28,7 +28,8 @@ class ExtractEditionFromDocuments
             throw new \RuntimeException('Aucun fournisseur d’IA n’est configuré.');
         }
 
-        return $this->normalize($provider->extract($this->instruction(), $files));
+        // Extraction depuis des documents : palier qualité (lecture fine des PDF).
+        return $this->normalize($provider->extract($this->instruction(), $files, 'deep'));
     }
 
     protected function instruction(): string

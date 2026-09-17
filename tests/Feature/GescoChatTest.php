@@ -81,7 +81,7 @@ it('injecte les données personnelles du participant connecté dans le prompt', 
             return true;
         }
 
-        public function extract(string $instruction, array $files = []): array
+        public function extract(string $instruction, array $files = [], ?string $tier = null): array
         {
             $this->captured = $instruction;
 
@@ -136,7 +136,7 @@ it('injecte la base de connaissance factuelle (tarifs, FAQ) dans le prompt', fun
             return true;
         }
 
-        public function extract(string $instruction, array $files = []): array
+        public function extract(string $instruction, array $files = [], ?string $tier = null): array
         {
             $this->captured = $instruction;
 
@@ -192,7 +192,7 @@ it('ne fuite aucune donnée personnelle pour un visiteur anonyme', function () {
             return true;
         }
 
-        public function extract(string $instruction, array $files = []): array
+        public function extract(string $instruction, array $files = [], ?string $tier = null): array
         {
             $this->captured = $instruction;
 

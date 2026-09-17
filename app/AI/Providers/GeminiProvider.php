@@ -3,7 +3,9 @@
 namespace App\AI\Providers;
 
 use App\AI\Concerns\ParsesJsonResponse;
+use App\AI\Concerns\RetriesTransientFailures;
 use App\AI\Contracts\AiProvider;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -12,6 +14,7 @@ use Illuminate\Support\Facades\Http;
 class GeminiProvider implements AiProvider
 {
     use ParsesJsonResponse;
+    use RetriesTransientFailures;
 
     public function key(): string
     {
@@ -33,12 +36,37 @@ class GeminiProvider implements AiProvider
         return true;
     }
 
-    protected function model(): string
+    /** Modèle concret pour le palier demandé (économie / qualité), repli sur le défaut. */
+    protected function model(?string $tier = null): string
     {
-        return (string) (config('services.gemini.model') ?: 'gemini-2.5-flash');
+        $default = (string) (config('services.gemini.model') ?: 'gemini-2.5-flash');
+
+        return match ($tier) {
+            'fast' => (string) (config('services.gemini.model_fast') ?: 'gemini-2.5-flash-lite'),
+            'deep' => (string) (config('services.gemini.model_deep') ?: 'gemini-2.5-pro'),
+            default => $default,
+        };
     }
 
-    public function extract(string $instruction, array $files = []): array
+    public function extract(string $instruction, array $files = [], ?string $tier = null): array
+    {
+        try {
+            return $this->send($this->model($tier), $instruction, $files);
+        } catch (RequestException $e) {
+            // Palier de modèle refusé/indisponible (4xx) → repli transparent sur le modèle par défaut.
+            $status = (int) $e->response->status();
+            if ($tier !== null && $status >= 400 && $status < 500) {
+                return $this->send($this->model(), $instruction, $files);
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * @param  array<int, array{mime: string, data: string}>  $files
+     * @return array<string, mixed>
+     */
+    protected function send(string $model, string $instruction, array $files): array
     {
         $parts = [['text' => $instruction]];
 
@@ -46,16 +74,15 @@ class GeminiProvider implements AiProvider
             $parts[] = ['inline_data' => ['mime_type' => $f['mime'], 'data' => $f['data']]];
         }
 
-        $url = 'https://generativelanguage.googleapis.com/v1beta/models/'
-            .$this->model().':generateContent';
+        $url = 'https://generativelanguage.googleapis.com/v1beta/models/'.$model.':generateContent';
 
-        $res = Http::acceptJson()->timeout(120)
+        $res = $this->retryOnOverload(fn () => Http::acceptJson()->timeout(120)
             ->withHeaders(['x-goog-api-key' => (string) config('services.gemini.key')])
             ->post($url, [
                 'contents' => [['parts' => $parts]],
                 // Température basse : réponses factuelles et précises (peu d'invention).
                 'generationConfig' => ['responseMimeType' => 'application/json', 'temperature' => 0.2],
-            ])->throw()->json();
+            ])->throw()->json());
 
         $text = $res['candidates'][0]['content']['parts'][0]['text'] ?? '';
 

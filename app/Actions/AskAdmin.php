@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\AI\AiManager;
+use App\AI\AiRouter;
 use App\Models\Edition;
 use App\Models\Submission;
 use App\Models\User;
@@ -23,7 +24,7 @@ use Illuminate\Support\Str;
  */
 class AskAdmin
 {
-    public function __construct(protected AiManager $manager) {}
+    public function __construct(protected AiManager $manager, protected AiRouter $router) {}
 
     /**
      * @param  list<ChatTurn>  $history
@@ -36,7 +37,10 @@ class AskAdmin
             throw new \RuntimeException('Le copilote IA est momentanément indisponible (voir Réglages).');
         }
 
-        $raw = $provider->extract($this->instruction($history, $question, $edition, $staff), []);
+        // Palier de modèle choisi selon la complexité (économie sur les demandes simples).
+        $tier = $this->router->tier('chat_admin', $question, historyTurns: count($history));
+
+        $raw = $provider->extract($this->instruction($history, $question, $edition, $staff), [], $tier);
         $answer = trim((string) ($raw['answer'] ?? ''));
 
         return [

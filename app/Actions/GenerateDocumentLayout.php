@@ -28,7 +28,8 @@ class GenerateDocumentLayout
             throw new \RuntimeException('Aucun fournisseur d’IA n’est configuré.');
         }
 
-        $raw = $provider->extract($this->instruction($kind, $prompt), $files);
+        // Conception de maquette de document : palier qualité.
+        $raw = $provider->extract($this->instruction($kind, $prompt), $files, 'deep');
 
         return LayoutSanitizer::sanitize($raw, $kind, $type);
     }
