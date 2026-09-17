@@ -23,13 +23,13 @@ class ExtractEditionFromDocuments
     {
         $needsPdf = collect($files)->contains(fn ($f) => str_contains($f['mime'], 'pdf'));
 
-        $provider = $this->manager->resolve($needsPdf);
-        if (! $provider) {
+        if (! $this->manager->resolve($needsPdf)) {
             throw new \RuntimeException('Aucun fournisseur d’IA n’est configuré.');
         }
 
-        // Extraction depuis des documents : palier qualité (lecture fine des PDF).
-        return $this->normalize($provider->extract($this->instruction(), $files, 'deep'));
+        // Extraction depuis des documents : palier qualité + bascule de fournisseur
+        // (indispensable ici : certains fournisseurs ne lisent pas les PDF).
+        return $this->normalize($this->manager->extract($this->instruction(), $files, 'deep'));
     }
 
     protected function instruction(): string

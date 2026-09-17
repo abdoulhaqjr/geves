@@ -3,6 +3,7 @@
 use App\Actions\GenerateReport;
 use App\AI\AiManager;
 use App\AI\Contracts\AiProvider;
+use App\AI\Exceptions\AiUnavailableException;
 
 // openEdition() -> AccountSubmissionTest ; adminStaff() -> helpers partagés
 
@@ -44,6 +45,16 @@ function bindFakeAi(?AiProvider $provider): void
 {
     $manager = Mockery::mock(AiManager::class);
     $manager->shouldReceive('resolve')->andReturn($provider);
+
+    // La bascule de fournisseurs passe par extract() : on la relaie au fournisseur factice.
+    if ($provider === null) {
+        $manager->shouldReceive('extract')->andThrow(new AiUnavailableException('Aucun assistant IA n’est configuré (voir Réglages).'));
+    } else {
+        $manager->shouldReceive('extract')->andReturnUsing(
+            fn (string $instruction, array $files = [], ?string $tier = null, ?string $preferKey = null) => $provider->extract($instruction, $files, $tier)
+        );
+    }
+
     app()->instance(AiManager::class, $manager);
 }
 

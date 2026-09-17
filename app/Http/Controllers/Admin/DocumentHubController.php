@@ -232,12 +232,11 @@ class DocumentHubController extends Controller
     public function generateForewordAi(Request $request, AiManager $ai): RedirectResponse
     {
         $edition = $this->currentEdition($request);
-        $provider = $ai->resolve();
 
         if (! $edition) {
             return back()->with('ukc_error', 'Sélectionnez une édition.');
         }
-        if (! $provider) {
+        if (! $ai->resolve()) {
             return back()->with('ukc_error', 'Aucun fournisseur IA configuré (Réglages → Intelligence artificielle).');
         }
 
@@ -266,7 +265,7 @@ class DocumentHubController extends Controller
             .'Réponds UNIQUEMENT par un objet JSON de la forme {"foreword": "…texte de l\'avant-propos avec des sauts de ligne…"}.';
 
         try {
-            $res = $provider->extract($instruction);
+            $res = $ai->extract($instruction, [], 'deep');
         } catch (\Throwable $e) {
             report($e);
 

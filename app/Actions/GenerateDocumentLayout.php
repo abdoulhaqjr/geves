@@ -23,13 +23,12 @@ class GenerateDocumentLayout
     {
         $needsPdf = collect($files)->contains(fn ($f) => str_contains($f['mime'], 'pdf'));
 
-        $provider = $this->manager->resolve($needsPdf);
-        if (! $provider) {
+        if (! $this->manager->resolve($needsPdf)) {
             throw new \RuntimeException('Aucun fournisseur d’IA n’est configuré.');
         }
 
-        // Conception de maquette de document : palier qualité.
-        $raw = $provider->extract($this->instruction($kind, $prompt), $files, 'deep');
+        // Conception de maquette de document : palier qualité + bascule de fournisseur.
+        $raw = $this->manager->extract($this->instruction($kind, $prompt), $files, 'deep');
 
         return LayoutSanitizer::sanitize($raw, $kind, $type);
     }

@@ -28,22 +28,13 @@ class GenerateReport
     {
         $needsPdf = collect($files)->contains(fn ($f) => str_contains($f['mime'], 'pdf'));
 
-        // Fournisseur explicitement choisi (s'il est disponible), sinon résolution auto.
-        $provider = null;
-        if ($providerKey !== null && $providerKey !== '' && $providerKey !== 'default') {
-            $key = $providerKey === 'claude' ? 'anthropic' : $providerKey;
-            $candidate = $this->manager->get($key);
-            if ($candidate && $candidate->isAvailable() && (! $needsPdf || $candidate->supportsPdf())) {
-                $provider = $candidate;
-            }
-        }
-        $provider ??= $this->manager->resolve($needsPdf);
-        if (! $provider) {
+        if (! $this->manager->resolve($needsPdf)) {
             throw new \RuntimeException('Aucun fournisseur d’IA n’est configuré (voir Réglages).');
         }
 
         // Génération de document/rapport : palier qualité (rédaction et structure soignées).
-        $raw = $provider->extract($this->instruction($edition, $brief, $files !== [], $style), $files, 'deep');
+        // Le fournisseur choisi est tenté en premier, avec bascule automatique en cas d'échec.
+        $raw = $this->manager->extract($this->instruction($edition, $brief, $files !== [], $style), $files, 'deep', $providerKey);
 
         return $this->sanitize($raw);
     }

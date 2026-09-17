@@ -29,15 +29,15 @@ class AskGesco
      */
     public function handle(array $history, string $question, ?Edition $edition = null, ?string $personal = null, ?array $contact = null): array
     {
-        $provider = $this->manager->resolve(false);
-        if (! $provider) {
+        if (! $this->manager->resolve(false)) {
             throw new \RuntimeException('L’assistance Gesco est momentanément indisponible.');
         }
 
         // Palier de modèle choisi selon la complexité (économie sur les questions simples).
         $tier = $this->router->tier('chat_public', $question, historyTurns: count($history));
 
-        $raw = $provider->extract($this->instruction($history, $question, $edition, $personal, $contact), [], $tier);
+        // Bascule automatique entre fournisseurs configurés en cas d'échec.
+        $raw = $this->manager->extract($this->instruction($history, $question, $edition, $personal, $contact), [], $tier);
 
         $answer = trim((string) ($raw['answer'] ?? ''));
 

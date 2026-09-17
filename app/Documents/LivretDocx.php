@@ -481,8 +481,8 @@ class LivretDocx
      */
     private function buildAiMaps(): void
     {
-        $provider = app(AiManager::class)->resolve();
-        if (! $provider) {
+        $manager = app(AiManager::class);
+        if (! $manager->resolve()) {
             return;
         }
 
@@ -515,7 +515,7 @@ class LivretDocx
             .'Réponds UNIQUEMENT en JSON : {"names": {"original": "normalisé", …}, "affiliations": {"original": "normalisé", …}}.';
 
         try {
-            $res = $provider->extract($instruction);
+            $res = $manager->extract($instruction);
         } catch (\Throwable $e) {
             report($e);
 

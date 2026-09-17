@@ -32,15 +32,15 @@ class AskAdmin
      */
     public function handle(array $history, string $question, ?Edition $edition = null, ?User $staff = null): array
     {
-        $provider = $this->manager->resolve(false);
-        if (! $provider) {
+        if (! $this->manager->resolve(false)) {
             throw new \RuntimeException('Le copilote IA est momentanément indisponible (voir Réglages).');
         }
 
         // Palier de modèle choisi selon la complexité (économie sur les demandes simples).
         $tier = $this->router->tier('chat_admin', $question, historyTurns: count($history));
 
-        $raw = $provider->extract($this->instruction($history, $question, $edition, $staff), [], $tier);
+        // Bascule automatique entre fournisseurs configurés en cas d'échec.
+        $raw = $this->manager->extract($this->instruction($history, $question, $edition, $staff), [], $tier);
         $answer = trim((string) ($raw['answer'] ?? ''));
 
         return [

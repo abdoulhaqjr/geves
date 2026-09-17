@@ -24,13 +24,12 @@ class AnalyzeClaim
      */
     public function handle(Claim $claim): array
     {
-        $provider = $this->manager->resolve(false);
-        if (! $provider) {
+        if (! $this->manager->resolve(false)) {
             throw new \RuntimeException('L’IA est momentanément indisponible (voir Réglages).');
         }
 
-        // Analyse de traitement : palier qualité (raisonnement plus fin).
-        $raw = $provider->extract($this->instruction($claim), [], 'deep');
+        // Analyse de traitement : palier qualité (raisonnement plus fin) + bascule de fournisseur.
+        $raw = $this->manager->extract($this->instruction($claim), [], 'deep');
 
         return $this->sanitize($raw);
     }

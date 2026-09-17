@@ -1,9 +1,60 @@
 <?php
 
+use App\AI\AiManager;
 use App\AI\AiRouter;
+use App\AI\Contracts\AiProvider;
 use App\AI\Exceptions\AiUnavailableException;
 use App\AI\Providers\GeminiProvider;
 use Illuminate\Support\Facades\Http;
+
+/** Fournisseur factice : clé, capacité PDF et comportement d'extraction configurables. */
+function aiProv(string $key, bool $pdf, Closure $onExtract): AiProvider
+{
+    return new class($key, $pdf, $onExtract) implements AiProvider
+    {
+        public function __construct(private string $k, private bool $pdf, private Closure $fn) {}
+
+        public function key(): string
+        {
+            return $this->k;
+        }
+
+        public function label(): string
+        {
+            return $this->k;
+        }
+
+        public function isAvailable(): bool
+        {
+            return true;
+        }
+
+        public function supportsPdf(): bool
+        {
+            return $this->pdf;
+        }
+
+        public function extract(string $instruction, array $files = [], ?string $tier = null): array
+        {
+            return ($this->fn)($instruction, $files, $tier);
+        }
+    };
+}
+
+/** Gestionnaire dont la liste de fournisseurs disponibles est imposée. */
+function aiManagerWith(array $providers): AiManager
+{
+    return new class($providers) extends AiManager
+    {
+        /** @param array<int, AiProvider> $p */
+        public function __construct(private array $p) {}
+
+        public function available(): array
+        {
+            return $this->p;
+        }
+    };
+}
 
 /* --------------------------- Relance transparente (503) ------------------- */
 
@@ -67,4 +118,57 @@ it('force le palier qualité pour les tâches lourdes', function () {
     expect((new AiRouter)->tier('report'))->toBe('deep');
     expect((new AiRouter)->tier('claim_analysis'))->toBe('deep');
     expect((new AiRouter)->tier('chat_public', 'question', hasFiles: true))->toBe('deep');
+});
+
+/* --------------------------- Bascule entre fournisseurs ------------------- */
+
+it('bascule sur un autre fournisseur quand le premier échoue', function () {
+    config(['services.ai.default' => 'gemini']);
+    $calls = [];
+
+    $first = aiProv('gemini', true, function () use (&$calls) {
+        $calls[] = 'gemini';
+        throw new AiUnavailableException('surcharge');
+    });
+    $second = aiProv('claude', true, function () use (&$calls) {
+        $calls[] = 'claude';
+
+        return ['answer' => 'via claude'];
+    });
+
+    $result = aiManagerWith([$first, $second])->extract('question');
+
+    expect($result['answer'])->toBe('via claude');
+    expect($calls)->toBe(['gemini', 'claude']); // le défaut d'abord, puis bascule
+});
+
+it('ignore les fournisseurs incapables de lire les PDF', function () {
+    config(['services.ai.default' => 'openai']);
+
+    $noPdf = aiProv('openai', false, fn () => throw new RuntimeException('ne doit pas être appelé'));
+    $pdf = aiProv('gemini', true, fn () => ['answer' => 'PDF lu']);
+
+    $result = aiManagerWith([$noPdf, $pdf])->extract('q', [['mime' => 'application/pdf', 'data' => 'x']]);
+
+    expect($result['answer'])->toBe('PDF lu');
+});
+
+it('signale l’absence de fournisseur capable de lire les PDF', function () {
+    config(['services.ai.default' => 'openai']);
+
+    $manager = aiManagerWith([aiProv('openai', false, fn () => [])]);
+
+    expect(fn () => $manager->extract('q', [['mime' => 'application/pdf', 'data' => 'x']]))
+        ->toThrow(AiUnavailableException::class, 'PDF');
+});
+
+it('signale l’indisponibilité quand tous les fournisseurs échouent', function () {
+    config(['services.ai.default' => 'gemini']);
+
+    $manager = aiManagerWith([
+        aiProv('gemini', true, fn () => throw new AiUnavailableException('x')),
+        aiProv('claude', true, fn () => throw new AiUnavailableException('y')),
+    ]);
+
+    expect(fn () => $manager->extract('q'))->toThrow(AiUnavailableException::class);
 });
