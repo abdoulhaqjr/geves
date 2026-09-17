@@ -136,8 +136,8 @@
                     <button type="button" @click="ask('Propose une répartition des créneaux libres')">Créneaux libres</button>
                 </div>
 
-                <div class="chat-input" :class="{ 'is-big': big }" x-data="{ big: false }">
-                    <button type="button" class="grow" @click="big = !big" :title="big ? 'Réduire' : 'Agrandir'" :aria-label="big ? 'Réduire la zone de saisie' : 'Agrandir la zone de saisie'">
+                <div class="chat-input" :class="{ 'is-big': big, 'has-grow': showGrow || big }" x-data="{ big: false }">
+                    <button type="button" class="grow" x-show="showGrow || big" x-cloak @click="big = !big" :title="big ? 'Réduire' : 'Agrandir'" :aria-label="big ? 'Réduire la zone de saisie' : 'Agrandir la zone de saisie'">
                         <svg x-show="!big" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
                         <svg x-show="big" x-cloak width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6"/><path d="M20 10h-6V4"/><path d="M14 10l7-7"/><path d="M3 21l7-7"/></svg>
                     </button>

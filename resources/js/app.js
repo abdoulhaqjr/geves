@@ -662,6 +662,7 @@ document.addEventListener('alpine:init', () => {
         endpoint,
         agentName: name,
         copiedIndex: null,
+        showGrow: false,
         init() {
             this.messages = [{ role: 'bot', text: seed || 'Bonjour, je suis Gesco.' }];
             this.scrollSoon();
@@ -693,8 +694,15 @@ document.addEventListener('alpine:init', () => {
             el.style.height = 'auto';
             el.style.height = Math.min(el.scrollHeight, max) + 'px';
             el.style.overflowY = el.scrollHeight > max ? 'auto' : 'hidden';
+            // Le bouton Agrandir/Réduire n'apparaît qu'à partir de plus de 3 lignes.
+            const cs = getComputedStyle(el);
+            const lh = parseFloat(cs.lineHeight) || 20;
+            const pt = parseFloat(cs.paddingTop) || 0;
+            const pb = parseFloat(cs.paddingBottom) || 0;
+            this.showGrow = Math.round((el.scrollHeight - pt - pb) / lh) > 3;
         },
         resetInputHeight() {
+            this.showGrow = false;
             this.$nextTick(() => { const el = this.$refs.input; if (el) { el.style.height = 'auto'; el.style.overflowY = 'hidden'; } });
         },
         async send() {
@@ -748,6 +756,7 @@ document.addEventListener('alpine:init', () => {
         editionId: editionId ? String(editionId) : '',
         decisionLog: Array.isArray(log) ? log : [],
         copiedIndex: null,
+        showGrow: false,
         init() {
             this.messages = [{ role: 'bot', text: seed, proposal: null, decision: null }];
             this.scrollSoon();
@@ -779,8 +788,15 @@ document.addEventListener('alpine:init', () => {
             el.style.height = 'auto';
             el.style.height = Math.min(el.scrollHeight, max) + 'px';
             el.style.overflowY = el.scrollHeight > max ? 'auto' : 'hidden';
+            // Le bouton Agrandir/Réduire n'apparaît qu'à partir de plus de 3 lignes.
+            const cs = getComputedStyle(el);
+            const lh = parseFloat(cs.lineHeight) || 20;
+            const pt = parseFloat(cs.paddingTop) || 0;
+            const pb = parseFloat(cs.paddingBottom) || 0;
+            this.showGrow = Math.round((el.scrollHeight - pt - pb) / lh) > 3;
         },
         resetInputHeight() {
+            this.showGrow = false;
             this.$nextTick(() => { const el = this.$refs.input; if (el) { el.style.height = 'auto'; el.style.overflowY = 'hidden'; } });
         },
         csrf() {
