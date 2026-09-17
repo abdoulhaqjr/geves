@@ -6,7 +6,7 @@
 
     <section class="ukc-section ukc-section--tight">
         <div class="ukc-container" style="max-width:820px;">
-            <div class="gesco-chat" x-data="gescoChat(@js($seed), '{{ route('gesco.ask') }}', @js($agentName))">
+            <div class="gesco-chat" x-data="gescoChat(@js($seed), '{{ route('gesco.ask') }}', @js($agentName), @js((string) (auth('account')->id() ?? 'guest')))">
                 <div class="chat-hero">
                     <div class="av">
                         @if ($agentAvatar)

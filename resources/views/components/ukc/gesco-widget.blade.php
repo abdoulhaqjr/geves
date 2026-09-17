@@ -25,7 +25,7 @@
         .'Comment puis-je vous aider aujourd’hui ?';
 @endphp
 
-<div class="ukc-cb-root" x-data="{ open: false, expanded: false, ...gescoChat(@js($seed), '{{ route('gesco.ask') }}', @js($agentName)) }"
+<div class="ukc-cb-root" x-data="{ open: false, expanded: false, ...gescoChat(@js($seed), '{{ route('gesco.ask') }}', @js($agentName), @js((string) (auth('account')->id() ?? 'guest'))) }"
      @keydown.escape.window="open = false">
     <div class="ukc-cb-panel" :class="{ 'open': open, 'expanded': expanded }">
         <div class="ukc-cb-head">

@@ -650,7 +650,7 @@ document.addEventListener('alpine:init', () => {
     // Assistante Gesco (widget flottant + page dédiée) : conversation côté client,
     // chaque tour appelle l'endpoint JSON /gesco/demander. Aucune action serveur
     // n'est déclenchée par l'IA — elle informe seulement.
-    window.Alpine.data('gescoChat', (seed = '', endpoint = '/gesco/demander', name = 'Gesco') => ({
+    window.Alpine.data('gescoChat', (seed = '', endpoint = '/gesco/demander', name = 'Gesco', scope = 'guest') => ({
         messages: [],
         input: '',
         sending: false,
@@ -660,13 +660,29 @@ document.addEventListener('alpine:init', () => {
         showGrow: false,
         // Conservation de la discussion pendant la session (survit aux rechargements
         // et à la navigation dans le même onglet) : sessionStorage + repli silencieux.
-        storageKey: 'gesco.chat.v1',
+        // La clé est cloisonnée par utilisateur : un autre utilisateur (ou un visiteur
+        // après déconnexion) ne voit jamais la discussion d'un autre.
+        storagePrefix: 'gesco.chat.v1.',
+        scope: String(scope || 'guest'),
+        get storageKey() { return this.storagePrefix + this.scope; },
         seedText: seed || 'Bonjour, je suis Gesco.',
         init() {
+            this.purgeForeignScopes();
             const saved = this.restore();
             this.messages = saved || [{ role: 'bot', text: this.seedText }];
             this.$watch('messages', () => this.persist());
             this.scrollSoon();
+        },
+        // Retire les discussions rattachées à un autre utilisateur (changement de compte).
+        purgeForeignScopes() {
+            try {
+                for (let i = sessionStorage.length - 1; i >= 0; i--) {
+                    const k = sessionStorage.key(i);
+                    if (k && k.startsWith(this.storagePrefix) && !k.endsWith('.' + this.scope)) {
+                        sessionStorage.removeItem(k);
+                    }
+                }
+            } catch (e) { /* stockage indisponible */ }
         },
         restore() {
             try {
@@ -766,7 +782,7 @@ document.addEventListener('alpine:init', () => {
 
     // Copilote d'administration (page Assistant IA — mockup admin-ai-assistant).
     // Chat réel (AskAdmin) + propositions à décider + journal des décisions persisté.
-    window.Alpine.data('adminCopilot', (seed = '', askUrl = '', decideUrl = '', log = [], name = 'Copilote', editionId = '') => ({
+    window.Alpine.data('adminCopilot', (seed = '', askUrl = '', decideUrl = '', log = [], name = 'Copilote', editionId = '', scope = '0') => ({
         messages: [],
         input: '',
         sending: false,
@@ -775,14 +791,29 @@ document.addEventListener('alpine:init', () => {
         decisionLog: Array.isArray(log) ? log : [],
         copiedIndex: null,
         showGrow: false,
-        // Discussion conservée pendant la session, cloisonnée par édition.
-        storageKey: 'gesco.copilot.v1.' + (editionId ? String(editionId) : 'x'),
+        // Discussion conservée pendant la session, cloisonnée par édition ET par
+        // utilisateur (un autre membre du staff ne voit jamais la discussion d'un autre).
+        storagePrefix: 'gesco.copilot.v1.',
+        scope: String(scope || '0'),
+        get storageKey() { return this.storagePrefix + (this.editionId || 'x') + '.' + this.scope; },
         seedText: seed,
         init() {
+            this.purgeForeignScopes();
             const saved = this.restore();
             this.messages = saved || [{ role: 'bot', text: this.seedText, proposal: null, decision: null }];
             this.$watch('messages', () => this.persist());
             this.scrollSoon();
+        },
+        // Retire les discussions d'un autre utilisateur (changement de compte), toutes éditions confondues.
+        purgeForeignScopes() {
+            try {
+                for (let i = sessionStorage.length - 1; i >= 0; i--) {
+                    const k = sessionStorage.key(i);
+                    if (k && k.startsWith(this.storagePrefix) && !k.endsWith('.' + this.scope)) {
+                        sessionStorage.removeItem(k);
+                    }
+                }
+            } catch (e) { /* stockage indisponible */ }
         },
         restore() {
             try {

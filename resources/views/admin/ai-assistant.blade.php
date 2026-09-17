@@ -11,7 +11,7 @@
     </x-slot:actions>
 
     <div class="admin-page admin-ai"
-         x-data="adminCopilot(@js($seed), '{{ route('admin.ai.ask') }}', '{{ route('admin.ai.decide') }}', @js($decisionLog), @js($agentName), @js((string) $currentEditionId))">
+         x-data="adminCopilot(@js($seed), '{{ route('admin.ai.ask') }}', '{{ route('admin.ai.decide') }}', @js($decisionLog), @js($agentName), @js((string) $currentEditionId), @js((string) (auth('web')->id() ?? '0')))">
         @if ($editions->isNotEmpty())
             <div style="display:flex;flex-wrap:wrap;margin-bottom:16px;">
                 <div class="ukc-field" style="min-width:220px;margin:0;">
