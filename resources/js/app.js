@@ -782,7 +782,7 @@ document.addEventListener('alpine:init', () => {
 
     // Copilote d'administration (page Assistant IA — mockup admin-ai-assistant).
     // Chat réel (AskAdmin) + propositions à décider + journal des décisions persisté.
-    window.Alpine.data('adminCopilot', (seed = '', askUrl = '', decideUrl = '', log = [], name = 'Copilote', editionId = '', scope = '0') => ({
+    window.Alpine.data('adminCopilot', (seed = '', askUrl = '', decideUrl = '', executeUrl = '', log = [], name = 'Copilote', editionId = '', scope = '0') => ({
         messages: [],
         input: '',
         sending: false,
@@ -895,10 +895,12 @@ document.addEventListener('alpine:init', () => {
                     role: 'bot',
                     text: data.answer || 'Une erreur est survenue. Réessayez dans un instant.',
                     proposal: data.proposal || null,
+                    action: data.action || null,
+                    actionState: null,
                     decision: null,
                 });
             } catch (e) {
-                this.messages.push({ role: 'bot', text: 'Connexion impossible. Vérifiez votre réseau et réessayez.', proposal: null, decision: null });
+                this.messages.push({ role: 'bot', text: 'Connexion impossible. Vérifiez votre réseau et réessayez.', proposal: null, action: null, decision: null });
             } finally {
                 this.sending = false;
                 this.scrollSoon();
@@ -919,6 +921,38 @@ document.addEventListener('alpine:init', () => {
             } catch (e) {
                 /* silencieux : la décision reste affichée côté chat */
             }
+        },
+        // Exécution d'une action APRÈS autorisation explicite de l'utilisateur : le
+        // serveur exécute (et revérifie la capacité), le résultat s'affiche dans le chat.
+        async runAction(index) {
+            const m = this.messages[index];
+            if (!m || !m.action || m.actionState === 'running' || m.actionState === 'done') return;
+            m.actionState = 'running';
+            try {
+                const res = await fetch(executeUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this.csrf() },
+                    body: JSON.stringify({ key: m.action.key, params: m.action.params || {}, edition_id: this.editionId || null }),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    m.actionState = 'error';
+                    this.messages.push({ role: 'bot', text: data.message || 'L’action a échoué.', proposal: null, action: null, decision: null });
+                } else {
+                    m.actionState = 'done';
+                    if (data.entry) this.decisionLog.unshift(data.entry);
+                    this.messages.push({ role: 'bot', text: '✅ ' + (data.message || 'Action exécutée.'), proposal: null, action: null, decision: null });
+                }
+            } catch (e) {
+                m.actionState = 'error';
+                this.messages.push({ role: 'bot', text: 'Connexion impossible. Réessayez.', proposal: null, action: null, decision: null });
+            } finally {
+                this.scrollSoon();
+            }
+        },
+        dismissAction(index) {
+            const m = this.messages[index];
+            if (m && m.action) m.actionState = 'dismissed';
         },
         decisionLabel(d) {
             return { approve: 'Approuvé par admin', edit: 'À modifier', reject: 'Refusé par admin' }[d] || '';

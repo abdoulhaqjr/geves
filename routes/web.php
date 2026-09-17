@@ -421,5 +421,6 @@ Route::prefix('admin')->group(function () {
         Route::get('/assistant-ia', [AiAssistantController::class, 'page'])->middleware('edition.cap:view_dashboard')->name('admin.ai');
         Route::post('/assistant-ia/demander', [AiAssistantController::class, 'ask'])->middleware('edition.cap:view_dashboard')->name('admin.ai.ask');
         Route::post('/assistant-ia/decider', [AiAssistantController::class, 'decide'])->middleware('edition.cap:view_dashboard')->name('admin.ai.decide');
+        Route::post('/assistant-ia/executer', [AiAssistantController::class, 'execute'])->middleware('edition.cap:view_dashboard')->name('admin.ai.execute');
     });
 });

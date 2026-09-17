@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Actions\AskAdmin;
+use App\AI\Copilot\CopilotActions;
 use App\Http\Controllers\Controller;
 use App\Models\Edition;
 use App\Support\AiAgents;
@@ -15,8 +16,9 @@ use Illuminate\View\View;
 /**
  * Copilote d'administration (chat), contrôleur + Blade + endpoints JSON. Assiste
  * le staff par des synthèses et brouillons à partir des chiffres réels de
- * l'édition active. Il propose ; la décision et l'exécution restent humaines —
- * chaque décision (approuver/modifier/refuser) est journalisée. Consomme l'agent
+ * l'édition active, et peut EXÉCUTER une action ({@see CopilotActions}) une fois
+ * celle-ci explicitement autorisée par l'utilisateur (endpoint execute, capacité
+ * RBAC revérifiée). Chaque décision/exécution est journalisée. Consomme l'agent
  * « admin » via {@see AskAdmin}.
  */
 class AiAssistantController extends Controller
@@ -72,6 +74,50 @@ class AiAssistantController extends Controller
         } catch (\Throwable $e) {
             return response()->json(['answer' => $e->getMessage(), 'proposal' => null]);
         }
+    }
+
+    /**
+     * Exécute une action du copilote APRÈS autorisation explicite de l'utilisateur.
+     * C'est le serveur qui exécute, sous l'autorité de l'utilisateur : la capacité
+     * RBAC sur l'édition est revérifiée ici (garde-fou indépendant de l'IA), puis
+     * l'exécution est journalisée.
+     */
+    public function execute(Request $request, CopilotActions $registry): JsonResponse
+    {
+        $data = $request->validate([
+            'key' => ['required', 'string', 'max:64'],
+            'edition_id' => ['nullable', 'integer'],
+            'params' => ['array'],
+        ]);
+
+        $edition = $this->activeEdition($request, $data['edition_id'] ?? null);
+        $user = $request->user();
+
+        $action = $registry->resolveFor($user, $edition, $data['key']);
+        if ($action === null || $edition === null) {
+            return response()->json(['message' => 'Action non autorisée ou indisponible pour votre fonction.'], 403);
+        }
+
+        try {
+            $message = $action->execute($data['params'] ?? [], $edition, $user);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json(['message' => 'L’action a échoué : '.$e->getMessage()], 500);
+        }
+
+        $entry = [
+            'id' => (string) Str::uuid(),
+            'when' => now()->format('d/m/Y · H:i'),
+            'what' => Str::limit($action->label(), 120, ''),
+            'label' => 'Exécutée',
+            'pill' => 'ok',
+        ];
+        $log = (array) Settings::get('ai_decision_log', []);
+        array_unshift($log, $entry);
+        Settings::set('ai_decision_log', array_slice($log, 0, 50));
+
+        return response()->json(['message' => $message, 'entry' => $entry]);
     }
 
     /** Journalise une décision humaine sur une proposition (approuver/modifier/refuser). */

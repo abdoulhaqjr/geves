@@ -11,7 +11,7 @@
     </x-slot:actions>
 
     <div class="admin-page admin-ai"
-         x-data="adminCopilot(@js($seed), '{{ route('admin.ai.ask') }}', '{{ route('admin.ai.decide') }}', @js($decisionLog), @js($agentName), @js((string) $currentEditionId), @js((string) (auth('web')->id() ?? '0')))">
+         x-data="adminCopilot(@js($seed), '{{ route('admin.ai.ask') }}', '{{ route('admin.ai.decide') }}', '{{ route('admin.ai.execute') }}', @js($decisionLog), @js($agentName), @js((string) $currentEditionId), @js((string) (auth('web')->id() ?? '0')))">
         @if ($editions->isNotEmpty())
             <div style="display:flex;flex-wrap:wrap;margin-bottom:16px;">
                 <div class="ukc-field" style="min-width:220px;margin:0;">
@@ -111,6 +111,26 @@
                                             <template x-if="m.decision">
                                                 <span class="ukc-pill" :class="'ukc-pill--' + decisionPill(m.decision)" x-text="decisionLabel(m.decision)"></span>
                                             </template>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                {{-- Action exécutable : autorisation explicite requise avant exécution --}}
+                                <template x-if="m.action && m.actionState !== 'dismissed'">
+                                    <div class="proposal copilot-action">
+                                        <strong x-text="m.action.label"></strong>
+                                        <p x-text="m.action.summary"></p>
+                                        <div class="impact">Nécessite votre autorisation — l’action sera exécutée par l’assistant en votre nom.</div>
+                                        <div class="actions">
+                                            <template x-if="!m.actionState || m.actionState === 'error'">
+                                                <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+                                                    <button type="button" class="ukc-btn ukc-btn--sm ukc-btn--green" @click="runAction(i)"><x-ukc.icon name="check" :size="15" /> Autoriser et exécuter</button>
+                                                    <button type="button" class="ukc-btn ukc-btn--sm ukc-btn--outline" @click="dismissAction(i)">Ignorer</button>
+                                                    <span class="error" x-show="m.actionState === 'error'" style="font-size:12px;">Échec — vous pouvez réessayer.</span>
+                                                </div>
+                                            </template>
+                                            <template x-if="m.actionState === 'running'"><span class="ukc-pill ukc-pill--info">Exécution en cours…</span></template>
+                                            <template x-if="m.actionState === 'done'"><span class="ukc-pill ukc-pill--ok">Action exécutée</span></template>
                                         </div>
                                     </div>
                                 </template>
