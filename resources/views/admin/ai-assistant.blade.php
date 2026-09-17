@@ -82,10 +82,33 @@
             <div class="ukc-card chat-shell">
                 <div class="chat-messages" x-ref="log">
                     <template x-for="(m, i) in messages" :key="i">
-                        <div class="msg" :class="m.role === 'user' ? 'user' : 'bot'">
-                            <div class="who" x-text="m.role === 'user' ? 'Vous' : (agentName + ' · copilote')"></div>
-                            <template x-if="m.role === 'user'"><div style="white-space:pre-wrap;" x-text="m.text"></div></template>
-                            <template x-if="m.role !== 'user'"><div class="chat-md" x-html="render(m.text)"></div></template>
+                        <div class="chat-row" :class="m.role === 'user' ? 'user' : 'bot'">
+                            <div class="msg" :class="m.role === 'user' ? 'user' : 'bot'">
+                                <div class="who" x-text="m.role === 'user' ? 'Vous' : (agentName + ' · copilote')"></div>
+                                <template x-if="m.role === 'user'"><div style="white-space:pre-wrap;" x-text="m.text"></div></template>
+                                <template x-if="m.role !== 'user'"><div class="chat-md" x-html="render(m.text)"></div></template>
+
+                                {{-- Proposition d'action à décider --}}
+                                <template x-if="m.proposal">
+                                    <div class="proposal">
+                                        <strong x-text="m.proposal.title"></strong>
+                                        <p x-show="m.proposal.detail" x-text="m.proposal.detail"></p>
+                                        <div class="impact" x-show="m.proposal.impact" x-text="'Impact : ' + m.proposal.impact"></div>
+                                        <div class="actions">
+                                            <template x-if="!m.decision">
+                                                <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                                                    <button type="button" class="ukc-btn ukc-btn--sm ukc-btn--green" @click="decide(i, 'approve')">Approuver</button>
+                                                    <button type="button" class="ukc-btn ukc-btn--sm ukc-btn--outline" @click="decide(i, 'edit')">Modifier avant</button>
+                                                    <button type="button" class="ukc-btn ukc-btn--sm" style="background:#fee2e2;color:#991b1b;" @click="decide(i, 'reject')">Refuser</button>
+                                                </div>
+                                            </template>
+                                            <template x-if="m.decision">
+                                                <span class="ukc-pill" :class="'ukc-pill--' + decisionPill(m.decision)" x-text="decisionLabel(m.decision)"></span>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
                             <div class="ukc-chat-act">
                                 <button type="button" @click="copy(i, m.text)" title="Copier">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
@@ -98,27 +121,6 @@
                                     </button>
                                 </template>
                             </div>
-
-                            {{-- Proposition d'action à décider --}}
-                            <template x-if="m.proposal">
-                                <div class="proposal">
-                                    <strong x-text="m.proposal.title"></strong>
-                                    <p x-show="m.proposal.detail" x-text="m.proposal.detail"></p>
-                                    <div class="impact" x-show="m.proposal.impact" x-text="'Impact : ' + m.proposal.impact"></div>
-                                    <div class="actions">
-                                        <template x-if="!m.decision">
-                                            <div style="display:flex;flex-wrap:wrap;gap:6px;">
-                                                <button type="button" class="ukc-btn ukc-btn--sm ukc-btn--green" @click="decide(i, 'approve')">Approuver</button>
-                                                <button type="button" class="ukc-btn ukc-btn--sm ukc-btn--outline" @click="decide(i, 'edit')">Modifier avant</button>
-                                                <button type="button" class="ukc-btn ukc-btn--sm" style="background:#fee2e2;color:#991b1b;" @click="decide(i, 'reject')">Refuser</button>
-                                            </div>
-                                        </template>
-                                        <template x-if="m.decision">
-                                            <span class="ukc-pill" :class="'ukc-pill--' + decisionPill(m.decision)" x-text="decisionLabel(m.decision)"></span>
-                                        </template>
-                                    </div>
-                                </div>
-                            </template>
                         </div>
                     </template>
                     <div class="msg bot typing" x-show="sending">
@@ -134,12 +136,18 @@
                     <button type="button" @click="ask('Propose une répartition des créneaux libres')">Créneaux libres</button>
                 </div>
 
-                <div class="chat-input">
+                <div class="chat-input" :class="{ 'is-big': big }" x-data="{ big: false }">
                     <textarea x-model="input" rows="1" x-ref="input" placeholder="Demandez une analyse ou une proposition d’action… (Maj+Entrée = saut de ligne)"
                               @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); send(); }" @input="autogrow($event.target)" :disabled="sending"></textarea>
-                    <button type="button" class="send" @click="send()" aria-label="Envoyer" :disabled="sending">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                    </button>
+                    <div class="chat-input-bar">
+                        <button type="button" class="grow" @click="big = !big" :title="big ? 'Réduire' : 'Agrandir'" :aria-label="big ? 'Réduire la zone de saisie' : 'Agrandir la zone de saisie'">
+                            <svg x-show="!big" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+                            <svg x-show="big" x-cloak width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6"/><path d="M20 10h-6V4"/><path d="M14 10l7-7"/><path d="M3 21l7-7"/></svg>
+                        </button>
+                        <button type="button" class="send" @click="send()" aria-label="Envoyer" :disabled="sending">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
 

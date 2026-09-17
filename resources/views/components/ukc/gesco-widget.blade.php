@@ -46,9 +46,11 @@
 
         <div class="ukc-cb-body" x-ref="log">
             <template x-for="(m, i) in messages" :key="i">
-                <div class="ukc-cb-msg" :class="m.role === 'user' ? 'user' : 'bot'">
-                    <template x-if="m.role === 'user'"><div style="white-space:pre-wrap;" x-text="m.text"></div></template>
-                    <template x-if="m.role !== 'user'"><div class="chat-md" x-html="render(m.text)"></div></template>
+                <div class="chat-row" :class="m.role === 'user' ? 'user' : 'bot'">
+                    <div class="ukc-cb-msg" :class="m.role === 'user' ? 'user' : 'bot'">
+                        <template x-if="m.role === 'user'"><div style="white-space:pre-wrap;" x-text="m.text"></div></template>
+                        <template x-if="m.role !== 'user'"><div class="chat-md" x-html="render(m.text)"></div></template>
+                    </div>
                     <div class="ukc-chat-act">
                         <button type="button" @click="copy(i, m.text)" title="Copier">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
@@ -68,10 +70,18 @@
             </div>
         </div>
 
-        <div class="ukc-cb-foot">
+        <div class="ukc-cb-foot" :class="{ 'is-big': big }" x-data="{ big: false }">
             <textarea x-model="input" rows="1" x-ref="input" placeholder="Votre message… (Maj+Entrée = saut de ligne)"
                       @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); send(); }" @input="autogrow($event.target)" :disabled="sending"></textarea>
-            <button type="button" @click="send()" :disabled="sending">Envoyer</button>
+            <div class="ukc-cb-bar">
+                <button type="button" class="grow" @click="big = !big" :title="big ? 'Réduire' : 'Agrandir'" :aria-label="big ? 'Réduire la zone de saisie' : 'Agrandir la zone de saisie'">
+                    <svg x-show="!big" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+                    <svg x-show="big" x-cloak width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6"/><path d="M20 10h-6V4"/><path d="M14 10l7-7"/><path d="M3 21l7-7"/></svg>
+                </button>
+                <button type="button" class="send" @click="send()" :disabled="sending" aria-label="Envoyer">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+            </div>
         </div>
     </div>
 
