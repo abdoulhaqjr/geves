@@ -24,7 +24,7 @@ class GenerateReport
      * @param  array<int, array{mime: string, data: string}>  $files
      * @return array{title: string, sections: list<ReportSection>}
      */
-    public function handle(Edition $edition, string $brief, array $files = [], ?string $providerKey = null): array
+    public function handle(Edition $edition, string $brief, array $files = [], ?string $providerKey = null, string $style = 'report'): array
     {
         $needsPdf = collect($files)->contains(fn ($f) => str_contains($f['mime'], 'pdf'));
 
@@ -42,12 +42,55 @@ class GenerateReport
             throw new \RuntimeException('Aucun fournisseur d’IA n’est configuré (voir Réglages).');
         }
 
-        $raw = $provider->extract($this->instruction($edition, $brief, $files !== []), $files);
+        $raw = $provider->extract($this->instruction($edition, $brief, $files !== [], $style), $files);
 
         return $this->sanitize($raw);
     }
 
-    protected function instruction(Edition $edition, string $brief, bool $hasExample): string
+    protected function instruction(Edition $edition, string $brief, bool $hasExample, string $style = 'report'): string
+    {
+        $title = $edition->title ?: ('Édition '.$edition->year);
+
+        $intro = $style === 'document'
+            ? $this->documentIntro($title, $edition->year, $hasExample)
+            : $this->reportIntro($edition, $title, $hasExample);
+
+        return <<<TXT
+        {$intro}
+
+        Demande : {$brief}
+
+        Réponds UNIQUEMENT par un objet JSON STRICT (aucun texte autour) :
+        { "title": string, "sections": [ { "heading": string, "body": string } ] }
+        Le champ "body" peut contenir plusieurs paragraphes séparés par des retours à la ligne.
+        N'utilise pas de HTML.
+        TXT;
+    }
+
+    /** Cadrage « document administratif » (secrétariat) : sortie épurée, pas d'analyse. */
+    protected function documentIntro(string $title, int|string $year, bool $hasExample): string
+    {
+        $example = $hasExample
+            ? 'Un exemple est joint : reproduis fidèlement sa STRUCTURE et son format (mêmes sections/colonnes).'
+            : '';
+
+        return <<<TXT
+        Tu es le SECRÉTARIAT du colloque « {$title} » ({$year}). Produis un DOCUMENT ADMINISTRATIF
+        prêt à imprimer (liste de présence, feuille d'émargement, affiche directionnelle, ordre du
+        jour, chevalets nominatifs…), et NON un rapport d'analyse.
+
+        Règles impératives :
+        - N'écris NI introduction analytique, NI section « chiffres clés », NI « analyse », NI
+          « recommandations ». Produis DIRECTEMENT le document demandé.
+        - Structure-le en sections COURTES correspondant à son contenu réel (en-tête / mentions,
+          puis les entrées : intitulés, salles, horaires, noms…). Reste concis, factuel et neutre.
+        - N'invente AUCUN nom ni donnée : utilise UNIQUEMENT les informations fournies ci-dessous
+          (programme réel et contexte de la demande). {$example}
+        TXT;
+    }
+
+    /** Cadrage « rapport factuel » (analyses/bilans d'édition). */
+    protected function reportIntro(Edition $edition, string $title, bool $hasExample): string
     {
         $s = (new EditionReport($edition))->summary();
         $cur = $s['currency'];
@@ -64,8 +107,6 @@ class GenerateReport
             ? 'Un exemple de rapport est joint : reproduis fidèlement sa STRUCTURE et son format (mêmes sections).'
             : 'Structure le rapport en sections claires (contexte, chiffres clés, analyse, recommandations).';
 
-        $title = $edition->title ?: ('Édition '.$edition->year);
-
         return <<<TXT
         Tu es analyste à la Direction de la Recherche et de l'Innovation (DRI) de l'Université de Kara.
         Rédige un rapport factuel en français, à partir des DONNÉES RÉELLES ci-dessous. N'invente
@@ -76,13 +117,6 @@ class GenerateReport
         {$data}
 
         {$example}
-
-        Demande de l'administrateur : {$brief}
-
-        Réponds UNIQUEMENT par un objet JSON STRICT (aucun texte autour) :
-        { "title": string, "sections": [ { "heading": string, "body": string } ] }
-        Le champ "body" peut contenir plusieurs paragraphes séparés par des retours à la ligne.
-        N'utilise pas de HTML.
         TXT;
     }
 

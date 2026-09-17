@@ -139,7 +139,7 @@ class SecretariatController extends Controller
         $brief = $prompt."\n\nContexte — programme réel de l’édition :\n".$this->programContext($edition);
 
         try {
-            $doc = $action->handle($edition, $brief, $files, $data['aiProvider'] ?? null);
+            $doc = $action->handle($edition, $brief, $files, $data['aiProvider'] ?? null, 'document');
 
             $entry = [
                 'id' => (string) Str::uuid(),
