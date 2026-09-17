@@ -9,8 +9,8 @@ it('affiche la page profil du staff', function () {
     $this->actingAs($staff, 'web')
         ->get(route('admin.profile'))
         ->assertOk()
+        ->assertSee('Mon compte')
         ->assertSee('Mon profil')
-        ->assertSee('Identité')
         ->assertSee('Préférences de notification')
         ->assertSee($staff->email);
 });

@@ -386,14 +386,7 @@
 .recap-list .r .k { color: var(--ukc-muted); font-weight: 600; }
 .recap-list .r .v { font-weight: 700; text-align: right; word-break: break-word; }
 
-/* Barre d'onglets « Mon compte » (espace participant) */
-.account-head h1 { font-size: 1.55rem; font-weight: 800; color: var(--ukc-text); }
-.account-head p { font-size: .9rem; color: var(--ukc-muted); margin-top: 4px; }
-/* Onglets « Mon compte » — pilules, fidèle au mockup compte.html (.ukc-tabs). */
-.account-nav { display: flex; gap: 6px; margin: 16px 0 20px; flex-wrap: wrap; }
-.account-nav a { padding: 10px 16px; border-radius: 50px; border: 1.5px solid var(--ukc-border); background: #fff; font-weight: 700; font-size: 13.5px; color: var(--ukc-muted); text-decoration: none; transition: .2s; }
-.account-nav a:hover { border-color: var(--ukc-blue); color: var(--ukc-blue); }
-.account-nav a.active { background: var(--ukc-blue); border-color: var(--ukc-blue); color: #fff; }
+/* Onglets « Mon compte » : styles partagés (participant + admin) déplacés dans ukc.css */
 
 .annonce { padding: 12px 0; border-bottom: 1px solid var(--ukc-border); font-size: 13.5px; }
 .annonce:last-child { border-bottom: none; }

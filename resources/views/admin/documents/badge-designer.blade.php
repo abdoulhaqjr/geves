@@ -153,7 +153,7 @@
         <div class="ed-panel-body">
           <button type="button" class="ed-tool-btn" data-add="qr-verify">+ QR verification badge</button>
           <button type="button" class="ed-tool-btn" data-add="qr-custom">+ Custom URL</button>
-          <p class="ly-meta">Par defaut : page badge-scan (DIDs / inscription).</p>
+          <p class="ly-meta">Par défaut : identifiant du participant (DIDs / inscription).</p>
         </div>
       </div>
 

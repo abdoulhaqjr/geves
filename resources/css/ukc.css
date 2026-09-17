@@ -143,11 +143,6 @@
 .ukc-chat-act button:hover { background: rgba(148, 163, 184, .16); color: var(--ukc-text); }
 @media (hover: none) { .ukc-chat-act { opacity: 1; } }
 
-/* ---- Scanner de badge (pointage) ---- */
-.badge-scanner { border-radius: 12px; overflow: hidden; background: #0f1a33; min-height: 240px; display: flex; align-items: center; justify-content: center; }
-.badge-scanner video { width: 100% !important; height: auto !important; display: block; }
-.badge-scanner .scan-fallback { color: #fff; padding: 20px; text-align: center; font-size: 14px; line-height: 1.5; }
-
 /* ---- Layout public (container + sections) ---- */
 .ukc-container { max-width: 1380px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 28px); width: 100%; }
 .ukc-section { padding: clamp(52px, 8vw, 88px) 0; }
@@ -426,6 +421,17 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .qr-box { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; padding: 16px; background: var(--ukc-bg); border-radius: 12px; border: 1px solid var(--ukc-border); margin-top: 12px; }
 .secret-code { font-family: var(--ukc-mono); font-size: 13px; font-weight: 700; letter-spacing: .06em; background: #fff; border: 1px solid var(--ukc-border); border-radius: 8px; padding: 8px 12px; display: inline-block; margin: 6px 0; }
 .account-badge { display: inline-flex; align-items: center; gap: 6px; }
+
+/* En-tête + onglets « Mon compte » — partagés espace participant ET back-office admin. */
+.account-head h1 { font-size: 1.55rem; font-weight: 800; color: var(--ukc-text); }
+.account-head p { font-size: .9rem; color: var(--ukc-muted); margin-top: 4px; }
+.account-nav { display: flex; gap: 6px; margin: 16px 0 20px; flex-wrap: wrap; }
+.account-nav a,
+.account-nav button { padding: 10px 16px; border-radius: 50px; border: 1.5px solid var(--ukc-border); background: #fff; font-weight: 700; font-size: 13.5px; color: var(--ukc-muted); text-decoration: none; transition: .2s; cursor: pointer; font-family: inherit; }
+.account-nav a:hover,
+.account-nav button:hover { border-color: var(--ukc-blue); color: var(--ukc-blue); }
+.account-nav a.active,
+.account-nav button.active { background: var(--ukc-blue); border-color: var(--ukc-blue); color: #fff; }
 
 /* Table des sessions actives (Mon compte · Sécurité — mockup compte.html) */
 .sessions-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; min-width: 520px; }

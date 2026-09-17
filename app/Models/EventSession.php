@@ -319,12 +319,6 @@ class EventSession extends Model
         return $this->hasMany(Slot::class, 'session_id');
     }
 
-    /** @return HasMany<SessionAttendance, $this> */
-    public function attendances(): HasMany
-    {
-        return $this->hasMany(SessionAttendance::class, 'session_id');
-    }
-
     /** @return HasOne<SessionReport, $this> */
     public function report(): HasOne
     {

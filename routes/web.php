@@ -16,7 +16,6 @@ use App\Http\Controllers\Account\SecurityController;
 use App\Http\Controllers\Account\SubmissionController;
 use App\Http\Controllers\Account\VerifyEmailController;
 use App\Http\Controllers\Admin\AiAssistantController;
-use App\Http\Controllers\Admin\BadgeScanController;
 use App\Http\Controllers\Admin\DocumentController;
 use App\Http\Controllers\Admin\DocumentHubController;
 use App\Http\Controllers\Admin\EditionController;
@@ -407,13 +406,6 @@ Route::prefix('admin')->group(function () {
             Route::get('/editions/{edition}/pv-seances', [DocumentController::class, 'sessionPv'])->name('admin.documents.session-pv');
             Route::get('/editions/{edition}/mise-en-page-seances', [DocumentController::class, 'sessionLayout'])->name('admin.documents.session-layout');
             Route::put('/editions/{edition}/mise-en-page-seances', [DocumentController::class, 'saveSessionLayout'])->name('admin.documents.session-layout.save');
-        });
-
-        // Pointage / scan de badges le jour J.
-        Route::middleware('edition.cap:badge_scan')->group(function () {
-            Route::get('/pointage', [BadgeScanController::class, 'page'])->name('admin.badges.scan');
-            Route::post('/pointage/rechercher', [BadgeScanController::class, 'lookup'])->name('admin.badges.lookup');
-            Route::post('/pointage/{participant}/pointer', [BadgeScanController::class, 'checkIn'])->name('admin.badges.checkin');
         });
 
         // Réglages (dont agents IA).

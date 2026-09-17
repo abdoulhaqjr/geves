@@ -49,7 +49,6 @@ it('les pages du back-office répondent sans erreur (staff)', function () {
         route('admin.settings'),
         route('admin.ai'),
         route('admin.participants.index'),
-        route('admin.badges.scan'),
     ];
 
     foreach ($routes as $url) {

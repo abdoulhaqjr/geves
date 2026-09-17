@@ -78,7 +78,7 @@
                 @endif
                 @if ($staff?->canAnyEdition('documents'))
                     <a href="{{ route('admin.documents.attestations') }}" title="Documents"
-                       @class(['active' => request()->routeIs('admin.documents.*') || request()->routeIs('admin.badges.*')])>
+                       @class(['active' => request()->routeIs('admin.documents.*')])>
                         <x-ukc.icon name="folder" :size="18" /> <span class="txt">Documents</span>
                     </a>
                     <a href="{{ route('admin.attestations.index') }}" title="Attestations délivrées"
@@ -130,12 +130,12 @@
             <div class="ukc-sidebar-foot">
                 @php($staffPhoto = $staff?->photo_path ? \Illuminate\Support\Facades\Storage::url($staff->photo_path) : null)
                 <div class="ukc-user-chip">
-                    <a href="{{ route('admin.profile') }}" class="av" title="Mon profil" style="text-decoration:none;">
+                    <a href="{{ route('admin.profile') }}" class="av" title="Mon compte" style="text-decoration:none;">
                         @if ($staffPhoto)<img src="{{ $staffPhoto }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">@else{{ strtoupper(mb_substr($staff?->name ?? 'A', 0, 1)) }}@endif
                     </a>
                     <a href="{{ route('admin.profile') }}" class="meta" style="text-decoration:none;color:inherit;">
                         <div class="name">{{ $staff?->name }}</div>
-                        <div class="role">Mon profil</div>
+                        <div class="role">Mon compte</div>
                     </a>
                     <form method="POST" action="{{ route('admin.logout') }}">
                         @csrf
@@ -174,7 +174,7 @@
                                 <div class="name">{{ $staff?->name }}</div>
                                 <div class="mail">{{ $staff?->email }}</div>
                             </div>
-                            <a href="{{ route('admin.profile') }}" class="ukc-usermenu__item"><x-ukc.icon name="user" :size="16" /> Mon profil</a>
+                            <a href="{{ route('admin.profile') }}" class="ukc-usermenu__item"><x-ukc.icon name="user" :size="16" /> Mon compte</a>
                             <form method="POST" action="{{ route('admin.space.participant') }}">
                                 @csrf
                                 <button type="submit" class="ukc-usermenu__item"><x-ukc.icon name="external" :size="16" /> Mon espace participant</button>

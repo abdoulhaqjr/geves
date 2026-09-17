@@ -144,7 +144,7 @@
                     <div class="ukc-toolbar">
                         <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="{{ route('admin.documents.templates', ['edition_id' => $edition->id, 'kind' => 'badge']) }}"><x-ukc.icon name="plus" :size="16" /> Nouveau template badge</a>
                         <span class="sep"></span>
-                        <span style="font-size:13px;color:var(--ukc-muted);">Formats A6 / A7 / CR80 · QR → pointage badges</span>
+                        <span style="font-size:13px;color:var(--ukc-muted);">Formats A6 / A7 / CR80 · QR d’identification</span>
                     </div>
 
                     <div class="ukc-table-wrap">
@@ -162,7 +162,6 @@
                                         <td>
                                             <div class="ukc-actions" style="justify-content:flex-end;">
                                                 <a class="ukc-btn--icon" title="Télécharger la planche (PDF)" href="{{ route('admin.documents.badges', $edition) }}" target="_blank"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></a>
-                                                <a class="ukc-btn--icon" title="Pointage / envoi" href="{{ route('admin.badges.scan') }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></a>
                                                 <a class="ukc-btn--icon" title="Éditer le template" href="{{ route('admin.documents.templates', ['edition_id' => $edition->id, 'kind' => 'badge']) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a>
                                                 <a class="ukc-btn--icon" title="Aperçu" href="{{ route('admin.documents.badges', $edition) }}" target="_blank"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></a>
                                             </div>
@@ -171,9 +170,6 @@
                                 @endforeach
                             </tbody>
                         </table>
-                    </div>
-                    <div class="ukc-toolbar" style="margin-top:14px;">
-                        <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.badges.scan') }}"><x-ukc.icon name="video" :size="16" /> Pointage à l’accueil</a>
                     </div>
                 </div>
 
@@ -204,7 +200,7 @@
                         </div>
                         <label class="ukc-check"><input type="checkbox" name="badgeGenerateAfterPayment" value="1" @checked($opts['badgeGenerateAfterPayment'])> Générer après confirmation de paiement</label>
                         <label class="ukc-check"><input type="checkbox" name="badgePhotoRequired" value="1" @checked($opts['badgePhotoRequired'])> Photo participant obligatoire sur le badge</label>
-                        <label class="ukc-check"><input type="checkbox" name="badgeQrAccess" value="1" @checked($opts['badgeQrAccess'])> QR de contrôle d’accès (badge-scan)</label>
+                        <label class="ukc-check"><input type="checkbox" name="badgeQrAccess" value="1" @checked($opts['badgeQrAccess'])> QR d’identification sur le badge</label>
                         <label class="ukc-check"><input type="checkbox" name="badgeBatchPrint" value="1" @checked($opts['badgeBatchPrint'])> Impression batch automatique (PDF planche)</label>
                         <div style="margin-top:16px;">
                             <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="check" :size="16" /> Enregistrer les options</button>

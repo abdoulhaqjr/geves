@@ -52,12 +52,12 @@ class Participant extends Model
     }
 
     /**
-     * Présence réelle avérée : pointé à l'accueil OU à au moins une séance.
-     * Sert à conditionner l'attestation de participation.
+     * Présence réelle avérée (pointé à l'accueil). Sert à conditionner
+     * l'attestation de participation.
      */
     public function wasPresent(): bool
     {
-        return $this->isCheckedIn() || $this->attendances()->exists();
+        return $this->isCheckedIn();
     }
 
     public function roleLabel(): string
@@ -103,12 +103,6 @@ class Participant extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
-    }
-
-    /** @return HasMany<SessionAttendance, $this> */
-    public function attendances(): HasMany
-    {
-        return $this->hasMany(SessionAttendance::class);
     }
 
     public function getFullNameAttribute(): string

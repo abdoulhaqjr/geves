@@ -91,11 +91,6 @@ if (document.getElementById('programCalendar')) {
 }
 
 
-// Pointage : charge le scanner QR (html5-qrcode) uniquement sur la page de scan.
-if (document.getElementById('badge-scanner')) {
-    import('./scanner.js').then((m) => m.startBadgeScanner()).catch(() => {});
-}
-
 // Tableau de bord admin & rapports : charge Chart.js quand des graphiques sont
 // présents (chaque page est un rendu serveur complet → init au chargement).
 if (document.getElementById('dashboardData')) {
@@ -941,63 +936,6 @@ document.addEventListener('alpine:init', () => {
             const el = document.getElementById('file');
             return !!(el && el.files && el.files.length);
         },
-    }));
-
-    // Pointage des badges (admin) : recherche + check-in par fetch (JSON) ;
-    // la caméra reste gérée par scanner.js qui émet un évènement « scan ».
-    window.Alpine.data('badgeScan', (checkedCount = 0, totalCount = 0, sessions = []) => ({
-        found: null,
-        message: '',
-        messageType: '',
-        recent: [],
-        code: '',
-        checkedCount,
-        totalCount,
-        sessions: Array.isArray(sessions) ? sessions : [],
-        sessionId: 0, // 0 = mode accueil ; >0 = mode séance
-        _csrf() {
-            return document.querySelector('meta[name="csrf-token"]')?.content || '';
-        },
-        async lookup(raw) {
-            const text = String(raw ?? this.code).trim();
-            this.code = '';
-            if (!text) return;
-            try {
-                const res = await fetch('/admin/pointage/rechercher', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this._csrf() },
-                    body: JSON.stringify({ code: text, session_id: this.sessionId }),
-                });
-                const data = await res.json();
-                if (data.error) { this.found = null; this.flash(data.error, 'err'); }
-                else if (data.found) { this.found = data.found; this.message = ''; }
-            } catch (e) {
-                this.flash('Recherche impossible. Réessayez.', 'err');
-            }
-        },
-        async checkIn() {
-            if (!this.found) return;
-            try {
-                const res = await fetch('/admin/pointage/' + this.found.id + '/pointer', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this._csrf() },
-                    body: JSON.stringify({ session_id: this.sessionId }),
-                });
-                const data = await res.json();
-                if (data.found) this.found = data.found;
-                if (data.error) { this.flash(data.error, 'err'); return; }
-                this.flash(data.message, 'ok');
-                if (data.newlyCheckedIn) {
-                    if (!this.sessionId) this.checkedCount++;
-                    this.recent.unshift(data.recentEntry);
-                    this.recent = this.recent.slice(0, 8);
-                }
-            } catch (e) {
-                this.flash('Pointage impossible. Réessayez.', 'err');
-            }
-        },
-        clearFound() { this.found = null; this.message = ''; },
-        flash(m, t) { this.message = m; this.messageType = t; },
     }));
 
     // Engagement live d'une séance (Q&A + sondages) : sondage périodique par fetch.

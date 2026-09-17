@@ -25,7 +25,6 @@ class StaffRoles
         'documents' => 'Documents (attestations…)',
         'emails' => 'E-mails',
         'project' => 'Projet (gestion)',
-        'badge_scan' => 'Scan badges / QR',
         'claims' => 'Réclamations & incidents',
         'users_roles' => 'Utilisateurs & rôles',
         'settings' => 'Réglages',
@@ -44,7 +43,7 @@ class StaffRoles
             'description' => 'Accès complet : éditions, soumissions, décisions, documents, paiements, e-mails, réglages.',
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
-                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'project', 'badge_scan',
+                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'project',
                 'claims', 'users_roles', 'settings',
             ],
         ],
@@ -54,7 +53,7 @@ class StaffRoles
             'description' => 'Responsable d’un colloque : accès complet à CE colloque (soumissions, décisions, documents, paiements, e-mails, équipe).',
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
-                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'project', 'badge_scan', 'claims',
+                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'project', 'claims',
             ],
         ],
         'co_gerant' => [
@@ -63,7 +62,7 @@ class StaffRoles
             'description' => 'Co-responsable d’un colloque : mêmes accès que le gestionnaire sur CE colloque.',
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
-                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'project', 'badge_scan', 'claims',
+                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'project', 'claims',
             ],
         ],
         'scientific' => [
@@ -94,7 +93,7 @@ class StaffRoles
             'label' => 'Organisateur',
             'category' => 'Système', 'pill' => 'warn', 'abbr' => 'Organis.',
             'description' => 'Participants, paiements, e-mails, documents (attestations / badges) — sans décisions scientifiques.',
-            'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'participants', 'payments', 'documents', 'emails', 'project', 'badge_scan'],
+            'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'participants', 'payments', 'documents', 'emails', 'project'],
         ],
         'secretariat' => [
             'label' => 'Secrétariat',
@@ -112,13 +111,13 @@ class StaffRoles
             'label' => 'Appui à l’organisation',
             'category' => 'Support', 'pill' => 'appui', 'abbr' => 'Appui',
             'description' => 'Aide logistique (programme, salles, partenaires), consultation des listes participants, documents de session.',
-            'permissions' => ['view_dashboard', 'editions_read', 'participants', 'documents', 'project', 'badge_scan', 'claims'],
+            'permissions' => ['view_dashboard', 'editions_read', 'participants', 'documents', 'project', 'claims'],
         ],
         'reception' => [
             'label' => 'Accueil',
             'category' => 'Support', 'pill' => 'accueil', 'abbr' => 'Accueil',
-            'description' => 'Vérification des badges / QR codes le jour J, pointage des présents, orientation des participants.',
-            'permissions' => ['view_dashboard', 'participants', 'badge_scan'],
+            'description' => 'Accueil et orientation des participants le jour J, consultation des listes d’inscrits.',
+            'permissions' => ['view_dashboard', 'participants'],
         ],
     ];
 
