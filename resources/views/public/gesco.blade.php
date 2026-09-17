@@ -65,11 +65,9 @@
                                   @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); send(); }"
                                   @input="autogrow($event.target)"
                                   :disabled="sending"></textarea>
-                        <div class="chat-input-bar">
-                            <button type="button" class="send" @click="send()" aria-label="{{ __('Envoyer') }}" :disabled="sending">
-                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-                            </button>
-                        </div>
+                        <button type="button" class="send" @click="send()" aria-label="{{ __('Envoyer') }}" :disabled="sending">
+                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                        </button>
                     </div>
                 </div>
 
