@@ -658,8 +658,31 @@ document.addEventListener('alpine:init', () => {
         agentName: name,
         copiedIndex: null,
         showGrow: false,
+        // Conservation de la discussion pendant la session (survit aux rechargements
+        // et à la navigation dans le même onglet) : sessionStorage + repli silencieux.
+        storageKey: 'gesco.chat.v1',
+        seedText: seed || 'Bonjour, je suis Gesco.',
         init() {
-            this.messages = [{ role: 'bot', text: seed || 'Bonjour, je suis Gesco.' }];
+            const saved = this.restore();
+            this.messages = saved || [{ role: 'bot', text: this.seedText }];
+            this.$watch('messages', () => this.persist());
+            this.scrollSoon();
+        },
+        restore() {
+            try {
+                const raw = sessionStorage.getItem(this.storageKey);
+                const arr = raw ? JSON.parse(raw) : null;
+                return Array.isArray(arr) && arr.length ? arr : null;
+            } catch (e) { return null; }
+        },
+        persist() {
+            try { sessionStorage.setItem(this.storageKey, JSON.stringify(this.messages)); } catch (e) { /* stockage indisponible */ }
+        },
+        reset() {
+            this.messages = [{ role: 'bot', text: this.seedText }];
+            this.input = '';
+            this.resetInputHeight();
+            this.persist();
             this.scrollSoon();
         },
         ask(text) {
@@ -752,8 +775,30 @@ document.addEventListener('alpine:init', () => {
         decisionLog: Array.isArray(log) ? log : [],
         copiedIndex: null,
         showGrow: false,
+        // Discussion conservée pendant la session, cloisonnée par édition.
+        storageKey: 'gesco.copilot.v1.' + (editionId ? String(editionId) : 'x'),
+        seedText: seed,
         init() {
-            this.messages = [{ role: 'bot', text: seed, proposal: null, decision: null }];
+            const saved = this.restore();
+            this.messages = saved || [{ role: 'bot', text: this.seedText, proposal: null, decision: null }];
+            this.$watch('messages', () => this.persist());
+            this.scrollSoon();
+        },
+        restore() {
+            try {
+                const raw = sessionStorage.getItem(this.storageKey);
+                const arr = raw ? JSON.parse(raw) : null;
+                return Array.isArray(arr) && arr.length ? arr : null;
+            } catch (e) { return null; }
+        },
+        persist() {
+            try { sessionStorage.setItem(this.storageKey, JSON.stringify(this.messages)); } catch (e) { /* stockage indisponible */ }
+        },
+        reset() {
+            this.messages = [{ role: 'bot', text: this.seedText, proposal: null, decision: null }];
+            this.input = '';
+            this.resetInputHeight();
+            this.persist();
             this.scrollSoon();
         },
         ask(text) {

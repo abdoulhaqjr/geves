@@ -19,6 +19,11 @@
                         <h1>{{ $agentName }} — {{ __('votre assistante colloque') }}</h1>
                         <p>{{ __('Questions sur les soumissions, l’inscription, les tarifs, le programme et les documents.') }}</p>
                     </div>
+                    <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" style="margin-left:auto;align-self:center;flex-shrink:0;"
+                            x-show="messages.length > 1" @click="reset()" :title="'{{ __('Nouvelle discussion') }}'">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+                        {{ __('Nouvelle discussion') }}
+                    </button>
                 </div>
 
                 <div class="chat-shell">

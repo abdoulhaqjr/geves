@@ -35,6 +35,9 @@
                 <span>Assistante colloque · en ligne</span>
             </div>
             <div class="tools">
+                <button type="button" @click="reset()" x-show="messages.length > 1" title="Nouvelle discussion" aria-label="Nouvelle discussion">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+                </button>
                 <button type="button" @click="expanded = !expanded" title="Agrandir / réduire" aria-label="Agrandir">
                     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
                 </button>
