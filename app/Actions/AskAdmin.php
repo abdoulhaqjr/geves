@@ -185,16 +185,30 @@ class AskAdmin
             ->map(fn (array $t) => ($t['role'] === 'user' ? 'Admin' : 'Copilote').' : '.Str::limit((string) $t['text'], 500, ''))
             ->implode("\n");
 
-        // Actions réellement exécutables pour CET utilisateur sur CETTE édition.
+        // Colloque en contexte : toutes les réponses et actions s'y rapportent.
+        $selected = $edition !== null
+            ? ($edition->title ?: 'Colloque').' ('.$edition->year.')'
+            : 'aucun colloque sélectionné';
+
+        // Actions réellement exécutables pour CET utilisateur sur CETTE édition,
+        // avec l'ÉTAT RÉEL de leur ciblage (pour décider sur les bonnes données).
         $available = $staff !== null ? $this->copilot->availableFor($staff, $edition) : [];
         $actionsBlock = $available === []
             ? 'ACTIONS EXÉCUTABLES : aucune action exécutable n’est disponible pour ta fonction sur ce colloque. Mets toujours "action" à null.'
-            : "ACTIONS EXÉCUTABLES DISPONIBLES (tu peux en proposer UNE, et une seule, quand la demande de l’utilisateur le justifie clairement) :\n"
-                .collect($available)->map(fn ($a) => '- key "'.$a->key().'" : '.$a->description())->implode("\n")."\n"
-                .'Règles d’action : ne propose une "action" QUE si l’utilisateur exprime clairement cette intention ; '
-                .'n’invente JAMAIS une "key" hors de la liste ci-dessus ; propose au plus UNE action. '
-                .'Elle n’est JAMAIS exécutée d’office — l’utilisateur devra l’autoriser explicitement (il cliquera pour l’exécuter). '
-                .'Dans "answer", dis en une phrase ce que tu vas faire et demande l’autorisation. Sinon mets "action" à null.';
+            : "ACTIONS EXÉCUTABLES DISPONIBLES (tu peux en proposer UNE, et une seule, quand la demande de l’utilisateur le justifie) :\n"
+                .collect($available)->map(function ($a) use ($edition) {
+                    $ctx = $edition !== null ? $a->context($edition) : null;
+
+                    return '- key "'.$a->key().'" : '.$a->description()
+                        .($ctx !== null && $ctx !== '' ? "\n  ÉTAT ACTUEL (ciblage réel de l’action) : ".$ctx : '');
+                })->implode("\n")."\n"
+                .'Règles d’action : pour décider s’il faut proposer une action, APPUIE-TOI SUR SON « ÉTAT ACTUEL » '
+                .'ci-dessus (le ciblage réel de l’action), et NON sur les seules statistiques du tableau de bord, qui '
+                .'peuvent couvrir un périmètre différent. Ne propose une "action" que si l’utilisateur exprime cette '
+                .'intention et qu’elle est pertinente au vu de cet état réel ; n’invente JAMAIS une "key" hors de la '
+                .'liste ; propose au plus UNE action. Elle n’est JAMAIS exécutée d’office — l’utilisateur devra '
+                .'l’autoriser explicitement (il cliquera pour l’exécuter). Dans "answer", dis en une phrase ce que tu '
+                .'vas faire et demande l’autorisation. Sinon mets "action" à null.';
 
         return <<<TXT
         {$agent['persona']}
@@ -214,16 +228,22 @@ class AskAdmin
         poliment que cela relève d'une autre fonction et oriente vers la personne ou l'onglet
         compétent, sans divulguer ces informations.
 
+        COLLOQUE SÉLECTIONNÉ (contexte de TOUTES tes réponses, analyses et actions) : {$selected}.
+        Raisonne exclusivement sur ce colloque et ses données ci-dessous ; ne mélange jamais avec
+        d'autres éditions.
+
         CHIFFRES RÉELS DE L'ÉDITION ACTIVE :
         {$context}
 
         BASE DE CONNAISSANCE DU COLLOQUE (paramétrage officiel : tarifs, axes, échéances, règles, FAQ…) :
         {$knowledge}
 
-        RÈGLE DE PRÉCISION (impérative) : appuie-toi UNIQUEMENT sur les chiffres et la base de
-        connaissance ci-dessus. Cite les valeurs exactes (montants, effectifs, dates). Si une
-        donnée n'y figure pas, dis-le explicitement et propose où la vérifier ; n'invente aucun
-        chiffre ni aucune procédure. Réponds précisément à la demande, sans digression.
+        RÈGLE DE PRÉCISION (impérative) : appuie-toi UNIQUEMENT sur les données de CE colloque
+        sélectionné (chiffres, base de connaissance et « état actuel » des actions ci-dessous). Cite les
+        valeurs exactes (montants, effectifs, dates). Pour juger de la pertinence d'une action, privilégie
+        l'« état actuel » propre à l'action plutôt qu'une statistique agrégée du tableau de bord. Si une
+        donnée n'y figure pas, dis-le explicitement et propose où la vérifier ; n'invente aucun chiffre ni
+        aucune procédure. Réponds précisément à la demande, sans digression.
 
         Historique récent :
         {$convo}

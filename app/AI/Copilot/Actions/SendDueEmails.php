@@ -42,6 +42,11 @@ class SendDueEmails implements CopilotAction
         return 'Envoyer maintenant '.$this->dueCount().' e-mail(s) programmé(s) arrivé(s) à échéance.';
     }
 
+    public function context(Edition $edition): ?string
+    {
+        return $this->dueCount().' e-mail(s) programmé(s) arrivé(s) à échéance, prêt(s) à être envoyés.';
+    }
+
     public function execute(array $params, Edition $edition, User $user): string
     {
         $report = app(SendDueEmailsAction::class)->handle();

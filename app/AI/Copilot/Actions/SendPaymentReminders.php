@@ -46,6 +46,14 @@ class SendPaymentReminders implements CopilotAction
             .' inscrit(s) en attente de règlement pour « '.($edition->title ?: $edition->year).' ».';
     }
 
+    public function context(Edition $edition): ?string
+    {
+        return $this->targets($edition)->count().' inscrit(s) actuellement concerné(s) par une relance '
+            .'(communication acceptée ET frais non réglés). Attention : ce nombre peut différer des '
+            .'« paiements en attente » du tableau de bord, qui ne comptent que les paiements déjà initiés '
+            .'(un inscrit accepté qui n’a jamais lancé de paiement est concerné mais n’apparaît pas en « attente »).';
+    }
+
     public function execute(array $params, Edition $edition, User $user): string
     {
         $targets = $this->targets($edition);

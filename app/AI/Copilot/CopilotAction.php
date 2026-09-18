@@ -27,6 +27,14 @@ interface CopilotAction
     public function description(): string;
 
     /**
+     * État actuel du ciblage RÉEL de l'action (ex. « 3 inscrits concernés »),
+     * injecté dans le prompt pour que l'IA décide sur les données propres à
+     * l'action et non sur une statistique générale du tableau de bord. Null si
+     * non pertinent.
+     */
+    public function context(Edition $edition): ?string;
+
+    /**
      * Résumé lisible de ce qui sera fait, pour l'écran d'autorisation.
      *
      * @param  array<string, mixed>  $params
