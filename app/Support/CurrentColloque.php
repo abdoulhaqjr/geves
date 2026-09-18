@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Enums\EditionPhase;
 use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\User;
@@ -77,20 +78,39 @@ class CurrentColloque
     }
 
     /**
-     * Défaut intelligent : l'édition à régler en priorité (communication acceptée,
-     * frais non réglés), sinon la plus récente.
+     * Défaut du colloque courant, parmi les éditions du compte :
+     *   1. un colloque EN COURS (l'événement se déroule actuellement) ;
+     *   2. sinon le PROCHAIN colloque à venir (date de début future la plus proche) ;
+     *   3. sinon le DERNIER colloque auquel l'utilisateur a participé (le plus récent).
      *
      * @param  Collection<int, Edition>  $editions
      */
     private static function default(User $account, Collection $editions): Edition
     {
-        $payableId = Participant::where('user_id', $account->id)
-            ->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted'))
-            ->whereDoesntHave('payments', fn ($q) => $q->where('status', 'paid'))
-            ->latest('id')->value('edition_id');
+        // Un colloque « vivant » = ni brouillon ni clôturé (appel ouvert, inscriptions,
+        // évaluation ou événement en déroulement).
+        $isLive = fn (Edition $e) => ! in_array($e->phase(), [EditionPhase::Draft, EditionPhase::Closed], true);
 
-        return ($payableId ? $editions->firstWhere('id', $payableId) : null)
-            ?? $editions->firstWhere('status', 'open')   // sinon un colloque en cours
-            ?? $editions->first();                        // sinon le plus récent
+        // 1. Un colloque EN COURS (l'événement se déroule actuellement).
+        $ongoing = $editions->first(fn (Edition $e) => $e->phase() === EditionPhase::Ongoing);
+        if ($ongoing !== null) {
+            return $ongoing;
+        }
+
+        // 2. Le PROCHAIN colloque qui arrive : un colloque vivant, au début le plus proche
+        //    (ceux sans date passent en dernier).
+        $upcoming = $editions
+            ->filter($isLive)
+            ->sortBy(fn (Edition $e) => optional($e->date_start)->timestamp ?? PHP_INT_MAX)
+            ->first();
+        if ($upcoming !== null) {
+            return $upcoming;
+        }
+
+        // 3. Sinon le DERNIER colloque auquel l'utilisateur a participé (le plus récent).
+        return $editions
+            ->sortByDesc(fn (Edition $e) => optional($e->date_start)->timestamp ?? 0)
+            ->first()
+            ?? $editions->first();
     }
 }

@@ -27,8 +27,8 @@
     <div class="ukc-card" style="margin-bottom:20px;">
         <h3 style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
             {{ __('Mes communications') }}
-            @if ($openEdition)
-                <a href="{{ route('account.submissions.create', $openEdition->slug) }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">
+            @if ($submitEdition && $submitEdition->submission_open && $submitRemaining > 0)
+                <a href="{{ route('account.submissions.create', $submitEdition->slug) }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">
                     <x-ukc.icon name="plus" :size="16" /> {{ __('Nouvelle soumission') }}
                 </a>
             @endif
@@ -79,11 +79,14 @@
             {{ __('Formulaire guidé : informations générales, auteurs, résumé structuré (≤ 250 mots), fichier PDF et validation.') }}
             {{ __('Consignes : français ou anglais · objectifs / méthodes / résultats · 3 à 5 mots-clés.') }}
         </p>
-        <div style="display:flex;flex-wrap:wrap;gap:10px;">
-            @if ($openEdition)
-                <a href="{{ route('account.submissions.create', $openEdition->slug) }}" class="ukc-btn ukc-btn--blue">
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+            @if ($submitEdition && $submitEdition->submission_open && $submitRemaining > 0)
+                <a href="{{ route('account.submissions.create', $submitEdition->slug) }}" class="ukc-btn ukc-btn--blue">
                     <x-ukc.icon name="upload" :size="16" /> {{ __('Ouvrir le formulaire de soumission') }}
                 </a>
+            @elseif ($submitEdition && $submitEdition->submission_open && $submitRemaining <= 0)
+                {{-- Contrôle en amont : quota atteint pour le colloque sélectionné. --}}
+                <span class="ukc-pill ukc-pill--muted">{{ __('Nombre maximum de communications atteint pour ce colloque.') }}</span>
             @else
                 <span class="ukc-pill ukc-pill--muted">{{ __('Appel à communications fermé') }}</span>
             @endif

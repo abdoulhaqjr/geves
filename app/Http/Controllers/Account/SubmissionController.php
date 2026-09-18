@@ -48,6 +48,12 @@ class SubmissionController extends Controller
         // Édition ouverte aux soumissions (pour « Nouvelle soumission ») + échéance.
         $openEdition = Edition::where('status', 'open')->where('submission_open', true)
             ->latest('id')->first();
+
+        // On soumet dans le colloque sélectionné (repli sur l'appel ouvert pour un
+        // compte sans participation). Contrôle en amont : place restante.
+        $submitEdition = $current ?? $openEdition;
+        $submitRemaining = $submitEdition ? Submission::remainingFor($submitEdition, $account) : 0;
+
         $deadlineEdition = $openEdition
             ?? $submissions->first()?->edition
             ?? Edition::latest('id')->first();
@@ -55,6 +61,8 @@ class SubmissionController extends Controller
         return view('account.submissions.index', [
             'submissions' => $submissions,
             'openEdition' => $openEdition,
+            'submitEdition' => $submitEdition,
+            'submitRemaining' => $submitRemaining,
             'deadline' => $deadlineEdition?->submission_deadline,
             'callOpen' => (bool) $openEdition,
         ]);

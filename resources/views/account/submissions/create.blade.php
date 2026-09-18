@@ -336,12 +336,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        {{-- Rappel du quota (paramètre de l'édition) --}}
-                        <div class="recap-quota">
-                            <x-ukc.icon name="info" :size="16" />
-                            <span>{{ __('Après cet envoi, il vous restera :left communication(s) sur :max pour cette édition.', ['left' => max(0, $remaining - 1), 'max' => $maxCommunications]) }}</span>
-                        </div>
                     </div>
 
                     {{-- Navigation du wizard --}}

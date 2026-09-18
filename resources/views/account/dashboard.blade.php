@@ -259,13 +259,18 @@
         </div>
     @endif
 
-    @if ($openEdition)
+    @if ($submitEdition && $submitEdition->submission_open)
         <div class="ukc-card" style="text-align:center;background:linear-gradient(135deg,rgba(34,62,164,.06),rgba(0,153,51,.06));margin-bottom:20px;">
             <h3 style="justify-content:center;">{{ __('Appel à communications ouvert') }}</h3>
-            <p style="color:var(--ukc-muted);margin:6px 0 18px;">{{ $openEdition->title }}</p>
-            <a href="{{ route('account.submissions.create', $openEdition->slug) }}" class="ukc-btn ukc-btn--blue">
-                <x-ukc.icon name="upload" :size="18" /> {{ __('Soumettre une communication') }}
-            </a>
+            <p style="color:var(--ukc-muted);margin:6px 0 18px;">{{ $submitEdition->title }}</p>
+            @if ($submitRemaining > 0)
+                <a href="{{ route('account.submissions.create', $submitEdition->slug) }}" class="ukc-btn ukc-btn--blue">
+                    <x-ukc.icon name="upload" :size="18" /> {{ __('Soumettre une communication') }}
+                </a>
+            @else
+                {{-- Contrôle en amont : quota atteint pour ce colloque, avant même d'ouvrir le formulaire. --}}
+                <span class="ukc-pill ukc-pill--muted">{{ __('Nombre maximum de communications atteint pour ce colloque.') }}</span>
+            @endif
         </div>
     @endif
 

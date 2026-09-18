@@ -110,6 +110,12 @@ class DashboardController extends Controller
             ->latest('id')
             ->first();
 
+        // On soumet TOUJOURS dans le colloque sélectionné. Repli sur l'appel ouvert
+        // uniquement pour un compte sans aucune participation (pas de colloque à sélectionner).
+        $submitEdition = $current ?? $openEdition;
+        // Contrôle en amont (avant la saisie) : place restante dans ce colloque.
+        $submitRemaining = $submitEdition ? Submission::remainingFor($submitEdition, $account) : 0;
+
         // Indicateurs synthétiques (rangée de cartes KPI du mockup) :
         // communications, profil, paiement, jours restants avant l'échéance.
         $commsCount = Submission::whereIn('participant_id', $participantIds)
@@ -130,6 +136,8 @@ class DashboardController extends Controller
         return view('account.dashboard', [
             'account' => $account,
             'openEdition' => $openEdition,
+            'submitEdition' => $submitEdition,
+            'submitRemaining' => $submitRemaining,
             'payableEdition' => $payable?->edition,
             'contextEdition' => $contextEdition,
             'kpi' => [
