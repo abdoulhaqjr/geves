@@ -255,24 +255,92 @@
 
                     {{-- Étape 5 : Validation --}}
                     <div class="step-panel" :class="{ active: step===5 }">
-                        <h2><x-ukc.icon name="check-circle" :size="20" /> {{ __('Validation') }}</h2>
-                        <p class="ukc-muted" style="font-size:.88rem;margin-bottom:14px;">{{ __('Vérifiez le récapitulatif avant l’envoi.') }}</p>
-                        <div class="recap-list">
-                            <div class="r"><span class="k">{{ __('Titre') }}</span><span class="v" x-text="title || '—'"></span></div>
-                            @if (count($tracks))
-                                <div class="r"><span class="k">{{ __('Axe') }}</span><span class="v" x-text="track || '—'"></span></div>
-                            @endif
-                            @if ($config->enabled('type'))
-                                <div class="r"><span class="k">{{ __('Type') }}</span><span class="v" x-text="type === 'poster' ? '{{ __('Poster') }}' : '{{ __('Communication orale') }}'"></span></div>
-                            @endif
-                            @if ($config->enabled('keywords'))
-                                <div class="r"><span class="k">{{ $config->label('keywords') }}</span><span class="v" x-text="keywordsString || '—'"></span></div>
-                            @endif
-                            <div class="r"><span class="k">{{ __('Résumé') }}</span><span class="v" x-text="abstractFilled() ? '{{ __('Rédigé') }}' : '{{ __('À compléter') }}'"></span></div>
-                            <div class="r"><span class="k">{{ __('Co-auteurs') }}</span><span class="v" x-text="coauthorCount + ' {{ __('co-auteur(s)') }}'"></span></div>
-                            @if ($config->enabled('file'))
-                                <div class="r"><span class="k">{{ __('Fichier joint') }}</span><span class="v" x-text="fileChosen() ? '{{ __('Ajouté') }}' : '{{ __('Aucun') }}'"></span></div>
-                            @endif
+                        <div class="recap-head">
+                            <span class="recap-head__icon"><x-ukc.icon name="check-circle" :size="24" /></span>
+                            <div>
+                                <h2 style="margin:0;">{{ __('Validation') }}</h2>
+                                <p class="ukc-muted" style="font-size:.88rem;margin-top:2px;">{{ __('Relisez votre communication avant l’envoi définitif. Cliquez une étape ci-dessus pour corriger.') }}</p>
+                            </div>
+                        </div>
+
+                        <div class="recap-doc">
+                            <div class="recap-doc__head">
+                                <h3 class="recap-doc__title" x-text="title || '{{ __('Titre non renseigné') }}'"></h3>
+                                <div class="recap-doc__chips">
+                                    @if (count($tracks))
+                                        <span class="recap-chip" x-show="track" x-cloak x-text="track"></span>
+                                    @endif
+                                    @if ($config->enabled('type'))
+                                        <span class="recap-chip recap-chip--type" x-text="type === 'poster' ? '{{ __('Poster') }}' : '{{ __('Communication orale') }}'"></span>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <div class="recap-doc__body">
+                                {{-- Auteur correspondant (identité du compte) --}}
+                                <div class="recap-field">
+                                    <div class="recap-field__label"><x-ukc.icon name="user" :size="15" /> {{ __('Auteur correspondant') }}</div>
+                                    <div class="recap-author">
+                                        <span class="recap-author__av">{{ $account->initials }}</span>
+                                        <div style="min-width:0;">
+                                            <div class="recap-author__name">{{ $account->full_name }}</div>
+                                            <div class="recap-author__meta">{{ $account->affiliation ?: __('affiliation manquante') }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Co-auteurs --}}
+                                <div class="recap-field">
+                                    <div class="recap-field__label"><x-ukc.icon name="users" :size="15" /> {{ __('Co-auteurs') }}
+                                        <span class="recap-badge-count" x-text="coauthorCount"></span>
+                                    </div>
+                                    <p class="recap-empty" x-show="coauthorCount === 0">{{ __('Aucun co-auteur.') }}</p>
+                                    <ul class="recap-colist" x-show="coauthorCount > 0" x-cloak>
+                                        <template x-for="(c, i) in coauthorList()" :key="i">
+                                            <li>
+                                                <span class="recap-colist__name" x-text="c.name || c.email"></span>
+                                                <span class="recap-colist__aff" x-show="c.affiliation" x-text="c.affiliation"></span>
+                                            </li>
+                                        </template>
+                                    </ul>
+                                </div>
+
+                                @if ($config->enabled('keywords'))
+                                    <div class="recap-field">
+                                        <div class="recap-field__label"><x-ukc.icon name="tag" :size="15" /> {{ $config->label('keywords') }}</div>
+                                        <p class="recap-empty" x-show="keywords.length === 0">—</p>
+                                        <div class="recap-tags" x-show="keywords.length" x-cloak>
+                                            <template x-for="(k, i) in keywords" :key="i"><span class="recap-tag" x-text="k"></span></template>
+                                        </div>
+                                    </div>
+                                @endif
+
+                                {{-- Statuts résumé + fichier --}}
+                                <div class="recap-statuses">
+                                    <div class="recap-status" :class="abstractFilled() ? 'is-ok' : 'is-todo'">
+                                        <x-ukc.icon name="file" :size="16" />
+                                        <div>
+                                            <div class="recap-status__k">{{ __('Résumé') }}</div>
+                                            <div class="recap-status__v" x-text="abstractFilled() ? (abstractWords() + ' {{ __('mots') }}') : '{{ __('à compléter') }}'"></div>
+                                        </div>
+                                    </div>
+                                    @if ($config->enabled('file'))
+                                        <div class="recap-status" :class="fileChosen() ? 'is-ok' : 'is-neutral'">
+                                            <x-ukc.icon name="upload" :size="16" />
+                                            <div>
+                                                <div class="recap-status__k">{{ __('Fichier joint') }}</div>
+                                                <div class="recap-status__v" x-text="fileChosen() ? '{{ __('Ajouté') }}' : '{{ __('Aucun') }}'"></div>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Rappel du quota (paramètre de l'édition) --}}
+                        <div class="recap-quota">
+                            <x-ukc.icon name="info" :size="16" />
+                            <span>{{ __('Après cet envoi, il vous restera :left communication(s) sur :max pour cette édition.', ['left' => max(0, $remaining - 1), 'max' => $maxCommunications]) }}</span>
                         </div>
                     </div>
 

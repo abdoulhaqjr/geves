@@ -1042,6 +1042,15 @@ document.addEventListener('alpine:init', () => {
             const el = document.querySelector('input[name="abstract"]');
             return !!(el && el.value.replace(/<[^>]*>/g, '').trim().length);
         },
+        abstractWords() {
+            const el = document.querySelector('input[name="abstract"]');
+            if (!el) return 0;
+            const txt = el.value.replace(/<[^>]*>/g, ' ').replace(/&[a-z]+;/gi, ' ').trim();
+            return txt ? txt.split(/\s+/).length : 0;
+        },
+        coauthorList() {
+            return this.coauthors.filter((c) => (c.name || '').trim() || (c.email || '').trim());
+        },
         fileChosen() {
             const el = document.getElementById('file');
             return !!(el && el.files && el.files.length);
