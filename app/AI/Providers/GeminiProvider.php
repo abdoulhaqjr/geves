@@ -36,14 +36,19 @@ class GeminiProvider implements AiProvider
         return true;
     }
 
-    /** Modèle concret pour le palier demandé (économie / qualité), repli sur le défaut. */
+    /**
+     * Modèle concret pour le palier demandé (économie / qualité), repli sur le
+     * défaut. On utilise les alias « -latest » de Google : ils pointent toujours
+     * vers le modèle GA courant, ce qui évite les 404 quand une version est
+     * retirée (les identifiants figés comme gemini-2.5-* finissent par disparaître).
+     */
     protected function model(?string $tier = null): string
     {
-        $default = (string) (config('services.gemini.model') ?: 'gemini-2.5-flash');
+        $default = (string) (config('services.gemini.model') ?: 'gemini-flash-latest');
 
         return match ($tier) {
-            'fast' => (string) (config('services.gemini.model_fast') ?: 'gemini-2.5-flash-lite'),
-            'deep' => (string) (config('services.gemini.model_deep') ?: 'gemini-2.5-pro'),
+            'fast' => (string) (config('services.gemini.model_fast') ?: 'gemini-flash-lite-latest'),
+            'deep' => (string) (config('services.gemini.model_deep') ?: $default),
             default => $default,
         };
     }
