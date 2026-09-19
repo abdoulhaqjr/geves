@@ -37,38 +37,78 @@ class CurrentColloque
         return Edition::whereIn('id', $ids)->with('colloque')->orderByDesc('id')->get();
     }
 
-    /** Le compte participe à plus d'une édition → afficher le sélecteur de colloque. */
-    public static function hasMultiple(User $account): bool
+    /**
+     * Colloques dont l'appel à communications est OUVERT (colloque vivant : en cours
+     * ou à venir) auxquels le compte ne participe pas encore. On peut les sélectionner
+     * pour y soumettre un résumé (la soumission crée la participation).
+     *
+     * @return Collection<int, Edition>
+     */
+    public static function openCalls(User $account): Collection
     {
-        return self::editions($account)->count() > 1;
+        $participatedIds = self::editions($account)->pluck('id')->all();
+
+        return Edition::query()
+            ->where('status', 'open')
+            ->where('submission_open', true)
+            ->whereNotIn('id', $participatedIds)
+            ->with('colloque')
+            ->get()
+            ->reject(fn (Edition $e) => in_array($e->phase(), [EditionPhase::Draft, EditionPhase::Closed], true))
+            ->sortBy(fn (Edition $e) => optional($e->date_start)->timestamp ?? PHP_INT_MAX)
+            ->values();
     }
 
     /**
-     * Édition « courante » : la sélection en session si elle est valide (le compte
-     * y participe), sinon l'édition par défaut. Null si aucune participation.
+     * Ensemble des colloques sélectionnables : ceux du compte + les appels ouverts
+     * (en cours / à venir) auxquels il peut soumettre.
+     *
+     * @return Collection<int, Edition>
+     */
+    public static function selectable(User $account): Collection
+    {
+        return self::editions($account)->concat(self::openCalls($account))->values();
+    }
+
+    /** Plus d'un colloque sélectionnable → afficher le sélecteur de colloque. */
+    public static function hasMultiple(User $account): bool
+    {
+        return self::selectable($account)->count() > 1;
+    }
+
+    /**
+     * Édition « courante » : la sélection en session si elle est sélectionnable
+     * (colloque du compte OU appel ouvert), sinon l'édition par défaut. Null si
+     * aucun colloque sélectionnable.
      */
     public static function current(User $account): ?Edition
     {
-        $editions = self::editions($account);
-        if ($editions->isEmpty()) {
+        $selectable = self::selectable($account);
+        if ($selectable->isEmpty()) {
             return null;
         }
 
         $selected = session(self::SESSION_KEY);
-        if ($selected && ($edition = $editions->firstWhere('id', (int) $selected))) {
+        if ($selected && ($edition = $selectable->firstWhere('id', (int) $selected))) {
             return $edition;
         }
 
-        return self::default($account, $editions);
+        // Défaut : parmi les colloques du compte (comportement inchangé) ; pour un
+        // compte sans participation, le premier appel ouvert (pour pouvoir soumettre).
+        $participated = self::editions($account);
+
+        return $participated->isNotEmpty()
+            ? self::default($account, $participated)
+            : self::openCalls($account)->first();
     }
 
     /**
      * Bascule le contexte vers une édition donnée. Ne fait rien (et retourne false)
-     * si le compte ne participe pas à cette édition.
+     * si l'édition n'est pas sélectionnable (ni participation, ni appel ouvert).
      */
     public static function switchTo(User $account, int $editionId): bool
     {
-        if (self::editions($account)->firstWhere('id', $editionId)) {
+        if (self::selectable($account)->firstWhere('id', $editionId)) {
             session([self::SESSION_KEY => $editionId]);
 
             return true;

@@ -4,6 +4,9 @@
     // Colloque courant (sélection en session, sinon défaut) + liste des colloques
     // du compte pour le sélecteur. Toutes les pages personnelles s'y scopent.
     $myColloques = $account ? \App\Support\CurrentColloque::editions($account) : collect();
+    // Appels à communications ouverts (colloques en cours / à venir) auxquels le
+    // compte ne participe pas encore : sélectionnables pour soumettre.
+    $openCalls = $account ? \App\Support\CurrentColloque::openCalls($account) : collect();
     $colloqueEdition = $account ? \App\Support\CurrentColloque::current($account) : null;
 
     // Repli pour les liens publics si le compte ne participe encore à rien.
@@ -38,8 +41,8 @@
                     <x-ukc.icon name="chevron" :size="16" />
                 </button>
 
-                @if ($myColloques->count() > 1)
-                    {{-- Sélecteur de colloque : le compte participe à plusieurs colloques. --}}
+                @if ($myColloques->count() + $openCalls->count() > 1)
+                    {{-- Sélecteur de colloque : colloques du compte + appels ouverts. --}}
                     <div class="ukc-colloque-switch" x-data="{ open: false }" @click.outside="open = false">
                         <button type="button" class="switch-btn" @click="open = !open" :aria-expanded="open">
                             <span class="lbl">
@@ -49,20 +52,38 @@
                             <x-ukc.icon name="chevron" :size="16" />
                         </button>
                         <div class="switch-menu" x-show="open" x-cloak x-transition.origin.top>
-                            <div class="switch-head">Mes colloques</div>
-                            @foreach ($myColloques as $ed)
-                                <form method="POST" action="{{ route('account.colloque.switch') }}">
-                                    @csrf
-                                    <input type="hidden" name="edition_id" value="{{ $ed->id }}">
-                                    <button type="submit" @class(['item', 'active' => $colloqueEdition?->id === $ed->id])>
-                                        <span class="tick">@if ($colloqueEdition?->id === $ed->id)<x-ukc.icon name="check" :size="14" />@endif</span>
-                                        <span class="txt">
-                                            <span class="c">{{ $ed->colloque?->name ?: 'Colloque' }}</span>
-                                            <span class="e">{{ $ed->title }} · {{ $ed->year }}</span>
-                                        </span>
-                                    </button>
-                                </form>
-                            @endforeach
+                            @if ($myColloques->isNotEmpty())
+                                <div class="switch-head">{{ __('Mes colloques') }}</div>
+                                @foreach ($myColloques as $ed)
+                                    <form method="POST" action="{{ route('account.colloque.switch') }}">
+                                        @csrf
+                                        <input type="hidden" name="edition_id" value="{{ $ed->id }}">
+                                        <button type="submit" @class(['item', 'active' => $colloqueEdition?->id === $ed->id])>
+                                            <span class="tick">@if ($colloqueEdition?->id === $ed->id)<x-ukc.icon name="check" :size="14" />@endif</span>
+                                            <span class="txt">
+                                                <span class="c">{{ $ed->colloque?->name ?: 'Colloque' }}</span>
+                                                <span class="e">{{ $ed->title }} · {{ $ed->year }}</span>
+                                            </span>
+                                        </button>
+                                    </form>
+                                @endforeach
+                            @endif
+                            @if ($openCalls->isNotEmpty())
+                                <div class="switch-head">{{ __('Appels à communications ouverts') }}</div>
+                                @foreach ($openCalls as $ed)
+                                    <form method="POST" action="{{ route('account.colloque.switch') }}">
+                                        @csrf
+                                        <input type="hidden" name="edition_id" value="{{ $ed->id }}">
+                                        <button type="submit" @class(['item', 'active' => $colloqueEdition?->id === $ed->id])>
+                                            <span class="tick">@if ($colloqueEdition?->id === $ed->id)<x-ukc.icon name="check" :size="14" />@endif</span>
+                                            <span class="txt">
+                                                <span class="c">{{ $ed->colloque?->name ?: 'Colloque' }}</span>
+                                                <span class="e">{{ $ed->title }} · {{ $ed->year }}</span>
+                                            </span>
+                                        </button>
+                                    </form>
+                                @endforeach
+                            @endif
                         </div>
                     </div>
                 @else

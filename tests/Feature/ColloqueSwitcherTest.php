@@ -58,6 +58,32 @@ it('refuse de basculer vers un colloque auquel le compte ne participe pas', func
     expect(CurrentColloque::current($account)?->id)->not->toBe($foreign->id);
 });
 
+it('permet de sélectionner un appel ouvert non encore rejoint (pour soumettre)', function () {
+    [$account] = accountInTwoColloques();
+
+    // Un colloque dont l'appel est ouvert, auquel le compte ne participe PAS encore.
+    $edC = Colloque::create(['name' => 'Colloque Gamma', 'slug' => 'gamma'])
+        ->editions()->create(['title' => 'Gamma 2026', 'year' => 2026, 'status' => 'open', 'slug' => 'gamma-2026', 'submission_open' => true]);
+
+    expect(CurrentColloque::openCalls($account)->pluck('id'))->toContain($edC->id)
+        ->and(CurrentColloque::selectable($account)->pluck('id'))->toContain($edC->id);
+
+    // On peut basculer dessus bien qu'on n'y participe pas encore.
+    $this->actingAs($account, 'account')
+        ->post(route('account.colloque.switch'), ['edition_id' => $edC->id])
+        ->assertRedirect();
+
+    expect(CurrentColloque::current($account)?->id)->toBe($edC->id);
+});
+
+it('propose par défaut un appel ouvert à un compte sans aucune participation', function () {
+    $account = verifiedAccount();
+    $edC = Colloque::create(['name' => 'Colloque Gamma', 'slug' => 'gamma'])
+        ->editions()->create(['title' => 'Gamma 2026', 'year' => 2026, 'status' => 'open', 'slug' => 'gamma-2026', 'submission_open' => true]);
+
+    expect(CurrentColloque::current($account)?->id)->toBe($edC->id);
+});
+
 it('scope la liste des soumissions sur le colloque courant', function () {
     [$account, $edA, $edB] = accountInTwoColloques();
 
