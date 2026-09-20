@@ -173,7 +173,7 @@
 .ukc-colloque-switch .switch-btn .cur { font-size: 12.5px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ukc-colloque-switch .switch-btn .ed { font-size: 11px; color: #8b97b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ukc-colloque-switch .switch-btn svg { flex-shrink: 0; color: #8b97b8; }
-.ukc-colloque-switch .switch-menu { position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 40; background: #fff; border: 1px solid var(--ukc-border); border-radius: 12px; box-shadow: 0 16px 40px rgba(10, 20, 50, .28); padding: 6px; max-height: 60vh; overflow-y: auto; }
+.ukc-colloque-switch .switch-menu { position: absolute; left: 0; right: auto; width: 350px; max-width: calc(100vw - 24px); top: calc(100% + 6px); z-index: 40; background: #fff; border: 1px solid var(--ukc-border); border-radius: 12px; box-shadow: 0 16px 40px rgba(10, 20, 50, .28); padding: 6px; max-height: 60vh; overflow-y: auto; }
 .ukc-colloque-switch .switch-head { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--ukc-muted); padding: 6px 8px 4px; }
 .ukc-colloque-switch .switch-menu form { margin: 0; }
 .ukc-colloque-switch .item { width: 100%; display: flex; align-items: flex-start; gap: 8px; background: none; border: none; border-radius: 8px; padding: 8px; cursor: pointer; text-align: left; }

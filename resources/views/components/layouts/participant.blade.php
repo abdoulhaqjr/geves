@@ -46,28 +46,12 @@
                     <div class="ukc-colloque-switch" x-data="{ open: false }" @click.outside="open = false">
                         <button type="button" class="switch-btn" @click="open = !open" :aria-expanded="open">
                             <span class="lbl">
-                                <span class="cur">{{ $colloqueEdition?->colloque?->name ?: 'Colloque' }}</span>
+                                <span class="cur">{{ $colloqueEdition?->colloque?->name ?: 'Évènement' }}</span>
                                 <span class="ed">{{ $colloqueEdition?->title }}</span>
                             </span>
                             <x-ukc.icon name="chevron" :size="16" />
                         </button>
                         <div class="switch-menu" x-show="open" x-cloak x-transition.origin.top>
-                            @if ($myColloques->isNotEmpty())
-                                <div class="switch-head">{{ __('Mes colloques') }}</div>
-                                @foreach ($myColloques as $ed)
-                                    <form method="POST" action="{{ route('account.colloque.switch') }}">
-                                        @csrf
-                                        <input type="hidden" name="edition_id" value="{{ $ed->id }}">
-                                        <button type="submit" @class(['item', 'active' => $colloqueEdition?->id === $ed->id])>
-                                            <span class="tick">@if ($colloqueEdition?->id === $ed->id)<x-ukc.icon name="check" :size="14" />@endif</span>
-                                            <span class="txt">
-                                                <span class="c">{{ $ed->colloque?->name ?: 'Colloque' }}</span>
-                                                <span class="e">{{ $ed->title }} · {{ $ed->year }}</span>
-                                            </span>
-                                        </button>
-                                    </form>
-                                @endforeach
-                            @endif
                             @if ($openCalls->isNotEmpty())
                                 <div class="switch-head">{{ __('Appels à communications ouverts') }}</div>
                                 @foreach ($openCalls as $ed)
@@ -77,7 +61,23 @@
                                         <button type="submit" @class(['item', 'active' => $colloqueEdition?->id === $ed->id])>
                                             <span class="tick">@if ($colloqueEdition?->id === $ed->id)<x-ukc.icon name="check" :size="14" />@endif</span>
                                             <span class="txt">
-                                                <span class="c">{{ $ed->colloque?->name ?: 'Colloque' }}</span>
+                                                <span class="c">{{ $ed->colloque?->name ?: 'Évènement' }}</span>
+                                                <span class="e">{{ $ed->title }} · {{ $ed->year }}</span>
+                                            </span>
+                                        </button>
+                                    </form>
+                                @endforeach
+                            @endif
+                            @if ($myColloques->isNotEmpty())
+                                <div class="switch-head">{{ __('Mes évènements') }}</div>
+                                @foreach ($myColloques as $ed)
+                                    <form method="POST" action="{{ route('account.colloque.switch') }}">
+                                        @csrf
+                                        <input type="hidden" name="edition_id" value="{{ $ed->id }}">
+                                        <button type="submit" @class(['item', 'active' => $colloqueEdition?->id === $ed->id])>
+                                            <span class="tick">@if ($colloqueEdition?->id === $ed->id)<x-ukc.icon name="check" :size="14" />@endif</span>
+                                            <span class="txt">
+                                                <span class="c">{{ $ed->colloque?->name ?: 'Évènement' }}</span>
                                                 <span class="e">{{ $ed->title }} · {{ $ed->year }}</span>
                                             </span>
                                         </button>
