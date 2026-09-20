@@ -25,6 +25,7 @@ class StaffRoles
         'documents' => 'Documents (attestations…)',
         'emails' => 'E-mails',
         'project' => 'Projet (gestion)',
+        'announcements' => 'Annonces (déroulement)',
         'claims' => 'Réclamations & incidents',
         'users_roles' => 'Utilisateurs & rôles',
         'settings' => 'Réglages',
@@ -44,7 +45,7 @@ class StaffRoles
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
                 'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'project',
-                'claims', 'users_roles', 'settings',
+                'announcements', 'claims', 'users_roles', 'settings',
             ],
         ],
         'gerant' => [
@@ -53,7 +54,7 @@ class StaffRoles
             'description' => 'Responsable d’un colloque : accès complet à CE colloque (soumissions, décisions, documents, paiements, e-mails, équipe).',
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
-                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'project', 'claims',
+                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'project', 'announcements', 'claims',
             ],
         ],
         'co_gerant' => [
@@ -62,7 +63,7 @@ class StaffRoles
             'description' => 'Co-responsable d’un colloque : mêmes accès que le gestionnaire sur CE colloque.',
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
-                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'project', 'claims',
+                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'project', 'announcements', 'claims',
             ],
         ],
         'scientific' => [
@@ -99,7 +100,7 @@ class StaffRoles
             'label' => 'Secrétariat',
             'category' => 'Support', 'pill' => 'sec', 'abbr' => 'Sécr.',
             'description' => 'Suivi administratif des soumissions et participants, relances, envoi de documents, assistance aux auteurs.',
-            'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'participants', 'documents', 'emails', 'project', 'claims'],
+            'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'participants', 'documents', 'emails', 'project', 'announcements', 'claims'],
         ],
         'accounting' => [
             'label' => 'Comptabilité',

@@ -16,6 +16,7 @@ use App\Http\Controllers\Account\SecurityController;
 use App\Http\Controllers\Account\SubmissionController;
 use App\Http\Controllers\Account\VerifyEmailController;
 use App\Http\Controllers\Admin\AiAssistantController;
+use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\DocumentController;
 use App\Http\Controllers\Admin\DocumentHubController;
 use App\Http\Controllers\Admin\EditionController;
@@ -381,6 +382,13 @@ Route::prefix('admin')->group(function () {
             Route::post('/programme/config', [ProgramController::class, 'saveProgramConfig'])->name('admin.program.config');
             Route::post('/programme/espaces', [ProgramController::class, 'storeSpace'])->name('admin.program.spaces.store');
             Route::delete('/programme/espaces/{index}', [ProgramController::class, 'deleteSpace'])->name('admin.program.spaces.destroy');
+        });
+
+        // Annonces du déroulement (admin, gestionnaire, secrétariat).
+        Route::middleware('edition.cap:announcements')->group(function () {
+            Route::get('/annonces', [AnnouncementController::class, 'index'])->name('admin.announcements');
+            Route::post('/editions/{edition}/annonces', [AnnouncementController::class, 'store'])->name('admin.announcements.store');
+            Route::delete('/editions/{edition}/annonces/{announcement}', [AnnouncementController::class, 'destroy'])->name('admin.announcements.destroy');
         });
 
         // Documents (attestations, badges, livret, fiches).

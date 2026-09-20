@@ -773,3 +773,14 @@
 }
 .team-add select:focus { outline: none; border-color: var(--ukc-blue); }
 .team-add .ukc-btn { flex-shrink: 0; }
+
+/* ---- Annonces du déroulement ---- */
+.admin-announcements .ukc-badge-count { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 7px; margin-left: 6px; border-radius: 50px; background: var(--ukc-blue); color: #fff; font-size: 12px; font-weight: 800; vertical-align: middle; }
+.admin-announcements .ann-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--ukc-border); }
+.admin-announcements .ann-row:last-child { border-bottom: none; }
+.admin-announcements .ann-row__main { flex: 1; min-width: 0; }
+.admin-announcements .ann-row__head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.admin-announcements .ann-row__when { font-size: 12px; font-weight: 800; color: var(--ukc-muted); font-variant-numeric: tabular-nums; }
+.admin-announcements .ann-row__head strong { font-size: 14px; color: var(--ukc-text); }
+.admin-announcements .ann-row__text { font-size: 13px; color: var(--ukc-muted); margin: 4px 0 0; line-height: 1.5; }
+.admin-announcements .ann-row.is-urgent { border-left: 3px solid #f59e0b; padding-left: 10px; background: #fffbeb; border-radius: 8px; }

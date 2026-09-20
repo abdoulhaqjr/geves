@@ -61,6 +61,13 @@
                     </a>
                 @endif
 
+                @if ($staff?->canAnyEdition('announcements'))
+                    <a href="{{ route('admin.announcements') }}" title="Annonces du déroulement"
+                       @class(['active' => request()->routeIs('admin.announcements')])>
+                        <x-ukc.icon name="bell" :size="18" /> <span class="txt">Annonces</span>
+                    </a>
+                @endif
+
                 @if ($staff?->canAnyEdition('project') || $staff?->canAnyEdition('payments') || $staff?->canAnyEdition('documents') || $staff?->canAnyEdition('emails'))
                     <span class="nav-label">Gestion</span>
                 @endif
