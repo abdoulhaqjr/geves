@@ -111,6 +111,10 @@ class AskGesco
                 ."Utilise ce contact pour une réclamation sans le redemander.\n\n"
             : '';
 
+        // Horloge : la date/heure courantes permettent de répondre aux questions
+        // temporelles (aujourd'hui, échéances à venir/passées, délais restants).
+        $now = now()->locale('fr')->translatedFormat('l j F Y, H:i');
+
         return <<<TXT
         {$agent['persona']}
 
@@ -119,6 +123,9 @@ class AskGesco
 
         À NE JAMAIS FAIRE :
         {$agent['negative']}
+
+        DATE ET HEURE ACTUELLES : {$now}. Appuie-toi dessus pour toute question temporelle
+        (« quel jour sommes-nous ? », échéances à venir ou passées, délais restants).
 
         ============================================================
         BASE DE CONNAISSANCE OFFICIELLE (informations réelles et à jour du colloque)

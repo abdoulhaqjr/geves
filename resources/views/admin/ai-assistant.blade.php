@@ -167,7 +167,7 @@
                         <svg x-show="!big" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
                         <svg x-show="big" x-cloak width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6"/><path d="M20 10h-6V4"/><path d="M14 10l7-7"/><path d="M3 21l7-7"/></svg>
                     </button>
-                    <textarea x-model="input" rows="1" x-ref="input" placeholder="Demandez une analyse ou une proposition d’action… (Maj+Entrée = saut de ligne)"
+                    <textarea x-model="input" rows="1" x-ref="input" placeholder="Demandez une analyse ou une proposition d’action…"
                               @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); send(); }" @input="autogrow($event.target)" :disabled="sending"></textarea>
                     <button type="button" class="send" @click="send()" aria-label="Envoyer" :disabled="sending">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>

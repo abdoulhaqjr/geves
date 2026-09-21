@@ -210,6 +210,10 @@ class AskAdmin
                 .'l’autoriser explicitement (il cliquera pour l’exécuter). Dans "answer", dis en une phrase ce que tu '
                 .'vas faire et demande l’autorisation. Sinon mets "action" à null.';
 
+        // Horloge : date/heure courantes pour les questions temporelles (échéances,
+        // délais, « aujourd'hui »).
+        $now = now()->locale('fr')->translatedFormat('l j F Y, H:i');
+
         return <<<TXT
         {$agent['persona']}
 
@@ -218,6 +222,9 @@ class AskAdmin
 
         À NE JAMAIS FAIRE :
         {$agent['negative']}
+
+        DATE ET HEURE ACTUELLES : {$now}. Appuie-toi dessus pour toute question temporelle
+        (échéances de soumission/inscription à venir ou passées, délais restants, planning).
 
         FONCTION DE L'UTILISATEUR : {$role['fonction']}
         PÉRIMÈTRE AUTORISÉ (ses fonctions) : {$role['perimetre']}
