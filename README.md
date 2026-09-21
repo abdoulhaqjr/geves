@@ -1,8 +1,8 @@
-# GESVES
+# GEVES
 
 **Plateforme de Gestion des ÉVénements Scientifiques — Université de Kara**
 
-GESVES est l'application web de la **Direction de la Recherche et de l'Innovation (DRI)** de l'Université de Kara pour piloter tout le cycle de vie des manifestations scientifiques — **colloques, séminaires et journées scientifiques** : appel à communications, soumission et évaluation des résumés, programme et déroulement en direct, inscriptions et paiements, documents officiels (attestations, badges, livret des résumés) et archives.
+GEVES est l'application web de la **Direction de la Recherche et de l'Innovation (DRI)** de l'Université de Kara pour piloter tout le cycle de vie des manifestations scientifiques — **colloques, séminaires et journées scientifiques** : appel à communications, soumission et évaluation des résumés, programme et déroulement en direct, inscriptions et paiements, documents officiels (attestations, badges, livret des résumés) et archives.
 
 Un espace unique pour les **organisateurs**, les **comités**, le **secrétariat** et la **communauté universitaire**.
 
@@ -58,7 +58,7 @@ npm run build
 
 > **Herd (Windows)** : PHP/Composer/artisan ne sont pas toujours dans le PATH.
 > Ajouter `export PATH="$HOME/.config/herd/bin:$PATH"` puis utiliser `php.bat` / `composer.bat`.
-> L'application est servie sur le domaine local `*.test` (ex. `https://gesves.test`).
+> L'application est servie sur le domaine local `*.test` (ex. `https://geves.test`).
 
 ## 🛠️ Développement
 
