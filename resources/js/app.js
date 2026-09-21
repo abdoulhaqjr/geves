@@ -1,9 +1,38 @@
 import Alpine from 'alpinejs';
 import TomSelect from 'tom-select';
 import 'tom-select/dist/css/tom-select.css';
+import intlTelInput from 'intl-tel-input/intlTelInputWithUtils';
+import 'intl-tel-input/styles';
 
 // Alpine est désormais une dépendance autonome (Livewire retiré du projet).
 window.Alpine = Alpine;
+
+// Champs téléphone internationaux (intl-tel-input) : drapeau + indicatif pays,
+// saisie nationale, et normalisation en E.164 (« +228… ») à la soumission du
+// formulaire — le champ reste nommé `phone`/`contact_phone`, validation serveur
+// inchangée. Togo en tête, voisins CEDEAO/CEMAC ensuite.
+function initPhoneInputs(root = document) {
+    root.querySelectorAll('input[data-ukc-tel]').forEach((input) => {
+        if (input.dataset.itiReady) return;
+        input.dataset.itiReady = '1';
+
+        const iti = intlTelInput(input, {
+            initialCountry: 'tg',
+            countryOrder: ['tg', 'bj', 'gh', 'ci', 'bf', 'ne', 'ng', 'sn', 'ml', 'cm', 'fr', 'be'],
+            separateDialCode: true,
+            strictMode: true,
+        });
+
+        // À la soumission : remplace la valeur par le format E.164 si disponible.
+        const form = input.form;
+        if (form) {
+            form.addEventListener('submit', () => {
+                const full = iti.getNumber();
+                if (full) input.value = full;
+            });
+        }
+    });
+}
 
 // Tom Select (Tailwise) : transforme tout <select data-tom> en liste
 // recherchable ; data-tom-create autorise la saisie libre (tags). Le <select>
@@ -49,7 +78,7 @@ function initTomSelects(root = document) {
         ready = true;
     });
 }
-document.addEventListener('DOMContentLoaded', () => initTomSelects());
+document.addEventListener('DOMContentLoaded', () => { initTomSelects(); initPhoneInputs(); });
 window.initTomSelects = initTomSelects;
 
 // Barres de filtres (GET) : on retire les champs vides de l'URL. En surchargeant

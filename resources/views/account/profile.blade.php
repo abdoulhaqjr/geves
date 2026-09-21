@@ -81,7 +81,7 @@
 
                 <div class="ukc-field">
                     <label for="phone">{{ __('Téléphone') }}</label>
-                    <input type="tel" id="phone" name="phone" value="{{ old('phone', $account->phone) }}" placeholder="+228 90 00 00 00">
+                    <x-ukc.phone name="phone" :value="old('phone', $account->phone)" />
                     @error('phone') <span class="error">{{ $message }}</span> @enderror
                 </div>
 

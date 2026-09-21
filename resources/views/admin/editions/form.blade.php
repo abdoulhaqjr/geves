@@ -309,7 +309,7 @@
                                 </div>
                                 <div class="ukc-form-row">
                                     <label for="contact_phone">Téléphone</label>
-                                    <input type="text" id="contact_phone" name="contact_phone" value="{{ $v('contact_phone') }}" placeholder="+228 …">
+                                    <x-ukc.phone name="contact_phone" :value="$v('contact_phone')" />
                                 </div>
                             </div>
                             <div class="ukc-form-row">

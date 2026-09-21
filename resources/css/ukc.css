@@ -564,6 +564,19 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .account-submission-detail .ukc-card h2 { font-size: 15px; font-weight: 800; margin-bottom: 12px; }
 .ukc-field label { font-size: 13px; font-weight: 600; color: var(--ukc-text); }
 .ukc-field label .req { color: #dc2626; }
+
+/* Champ téléphone international (intl-tel-input) : accord visuel avec les autres
+   champs (bordure, rayon, focus bleu). Le composant enveloppe l'input dans .iti. */
+.iti { width: 100%; display: block; }
+.iti__tel-input, input.ukc-tel {
+    width: 100%; border: 1px solid var(--ukc-border); border-radius: 10px;
+    background: #fff; color: var(--ukc-text); font-size: 14px; font-family: inherit; padding: 10px 12px;
+    transition: border-color .12s, box-shadow .12s; outline: none;
+}
+.iti__tel-input:focus { border-color: var(--ukc-blue); box-shadow: 0 0 0 3px rgba(34, 62, 164, .12); }
+.iti--separate-dial-code .iti__selected-dial-code { font-weight: 600; }
+.iti__dropdown-content { border-radius: 10px; box-shadow: 0 16px 40px rgba(10, 20, 50, .22); }
+.iti__search-input { padding: 9px 12px; font-size: 13.5px; }
 .ukc-field input, .ukc-field select, .ukc-field textarea {
   border: 1.5px solid var(--ukc-border); border-radius: 10px;
   padding: 10px 14px; font-size: 14px; color: var(--ukc-text);

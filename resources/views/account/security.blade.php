@@ -176,7 +176,7 @@
                         @csrf
                         <div class="ukc-field" style="max-width:280px;">
                             <label for="phone">{{ __('Numéro de téléphone') }} <span class="req">*</span></label>
-                            <input type="tel" id="phone" name="phone" value="{{ $phone }}" autocomplete="tel" placeholder="+228 90 00 00 00">
+                            <x-ukc.phone name="phone" :value="$phone" required />
                             <span class="hint">{{ __('Indicatif pays inclus · utilisé pour l’envoi des codes') }}</span>
                             @error('phone') <span class="error">{{ $message }}</span> @enderror
                         </div>
