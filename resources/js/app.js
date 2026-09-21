@@ -98,15 +98,21 @@ async function initAbstractEditors(root = document) {
             plugins: [Essentials, Paragraph, Heading, Bold, Italic, Underline, List, Link, BlockQuote, WordCount, Autoformat, PasteFromOffice],
             toolbar: ['heading', '|', 'bold', 'italic', 'underline', '|', 'bulletedList', 'numberedList', '|', 'link', 'blockQuote', '|', 'undo', 'redo'],
         }).then((editor) => {
-            const sync = () => { el.value = editor.getData(); };
-            editor.model.document.on('change:data', sync);
-            sync();
-
             const out = el.dataset.countTarget ? document.getElementById(el.dataset.countTarget) : null;
             const wc = editor.plugins.get('WordCount');
-            const render = () => { if (out) out.textContent = wc.words; };
-            wc.on('update', render);
-            render();
+            // Émet le contenu + le nombre de mots : la textarea (soumission) est tenue
+            // à jour, le compteur affiché, et un évènement notifie le wizard (Alpine).
+            const emit = () => {
+                const html = editor.getData();
+                el.value = html;
+                if (out) out.textContent = wc.words;
+                document.dispatchEvent(new CustomEvent('ukc:abstract', {
+                    detail: { name: el.name || 'abstract', html, words: wc.words },
+                }));
+            };
+            editor.model.document.on('change:data', emit);
+            wc.on('update', emit);
+            emit();
         }).catch((e) => {
             // Repli : si l'éditeur échoue, on révèle la textarea brute pour rester utilisable.
             console.error('CKEditor init failed:', e);
@@ -1078,6 +1084,19 @@ document.addEventListener('alpine:init', () => {
         track: initial.track || '',
         type: initial.type || 'oral',
         coauthors: Array.isArray(initial.coauthors) ? initial.coauthors : [],
+        abstractHtml: '',
+        abstractWordCount: 0,
+
+        init() {
+            // Le résumé (CKEditor) notifie son contenu + compteur : on le garde en
+            // état réactif pour le récapitulatif de l'étape Validation.
+            document.addEventListener('ukc:abstract', (e) => {
+                if ((e.detail?.name || 'abstract') === 'abstract') {
+                    this.abstractHtml = e.detail.html || '';
+                    this.abstractWordCount = e.detail.words || 0;
+                }
+            });
+        },
 
         addCoauthor() {
             this.coauthors.push({ name: '', email: '', affiliation: '', grade: '' });
@@ -1097,24 +1116,24 @@ document.addEventListener('alpine:init', () => {
             if (!el) return [];
             return String(el.value || '').split(',').map((s) => s.trim()).filter(Boolean);
         },
-        // Résumé : le champ CKEditor est une <textarea name="abstract"> tenue à jour.
-        _abstractEl() {
-            return document.querySelector('textarea[name="abstract"], input[name="abstract"]');
+        // Résumé : contenu réactif (émis par CKEditor), repli sur la textarea brute
+        // si l'éditeur n'a pas (encore) chargé.
+        _abstractRaw() {
+            if (this.abstractHtml) return this.abstractHtml;
+            const el = document.querySelector('textarea[name="abstract"], input[name="abstract"]');
+            return el ? el.value : '';
         },
         abstractFilled() {
-            const el = this._abstractEl();
-            return !!(el && el.value.replace(/<[^>]*>/g, '').replace(/&nbsp;/gi, ' ').trim().length);
+            return this._abstractRaw().replace(/<[^>]*>/g, '').replace(/&nbsp;/gi, ' ').trim().length > 0;
         },
         abstractWords() {
-            const el = this._abstractEl();
-            if (!el) return 0;
-            const txt = el.value.replace(/<[^>]*>/g, ' ').replace(/&[a-z]+;/gi, ' ').trim();
+            if (this.abstractHtml) return this.abstractWordCount;
+            const txt = this._abstractRaw().replace(/<[^>]*>/g, ' ').replace(/&[a-z]+;/gi, ' ').trim();
             return txt ? txt.split(/\s+/).length : 0;
         },
         // Aperçu HTML du résumé saisi (contenu de l'éditeur, pas du fichier joint).
         abstractPreview() {
-            const el = this._abstractEl();
-            return el ? el.value : '';
+            return this._abstractRaw();
         },
         fileChosen() {
             const el = document.getElementById('file');
