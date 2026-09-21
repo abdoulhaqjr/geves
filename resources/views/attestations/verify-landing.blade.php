@@ -1,4 +1,4 @@
-<x-layouts.app :title="__('Vérifier une attestation — UK Colloques')">
+<x-layouts.app :title="__('Vérifier une attestation — GEVES')">
     @include('partials.public-header')
 
     <section class="page-hero">

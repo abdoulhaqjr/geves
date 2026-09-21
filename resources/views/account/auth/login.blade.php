@@ -1,7 +1,7 @@
 @php
     $heading = $twoFactor ? __('Vérification en deux étapes') : __('Connexion');
     $sub = ! $twoFactor
-        ? __('Connectez-vous avec votre compte UK Colloques.')
+        ? __('Connectez-vous avec votre compte GEVES.')
         : ($method === 'sms'
             ? __('Saisissez le code envoyé par SMS').($phoneHint ? ' '.__('au').' '.$phoneHint : '').'.'
             : __('Saisissez le code de votre application d’authentification.'));

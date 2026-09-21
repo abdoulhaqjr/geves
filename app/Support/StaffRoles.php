@@ -3,7 +3,7 @@
 namespace App\Support;
 
 /**
- * Rôles métier UK Colloques et matrice de permissions du back-office
+ * Rôles métier GEVES et matrice de permissions du back-office
  * (fidèle au mockup admin-users). Source unique consommée par le seeder
  * (crée les rôles/permissions spatie, guard « web ») et par la page
  * Utilisateurs (onglets Rôles & Accès). Les libellés/pastilles/catégories

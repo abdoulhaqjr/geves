@@ -87,7 +87,7 @@
                         </div>
                     </div>
                 @else
-                    <div class="sub">{{ $colloqueEdition?->title ?: 'Colloques · Université de Kara' }}</div>
+                    <div class="sub">{{ $colloqueEdition?->title ?: 'GEVES · Université de Kara' }}</div>
                 @endif
             </div>
             <nav class="ukc-sidebar-nav">

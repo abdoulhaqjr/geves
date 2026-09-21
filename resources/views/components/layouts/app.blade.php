@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $title ?? config('app.name', 'GESCO') }}</title>
+    <title>{{ $title ?? config('app.name', 'GEVES') }}</title>
     <meta name="description" content="{{ $description ?? 'Gestion des colloques scientifiques — Université de Kara.' }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('img/favicon-32.png') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('img/favicon-16.png') }}">

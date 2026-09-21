@@ -1,4 +1,4 @@
-<x-layouts.app :title="__('Déroulement en direct — UK Colloques')">
+<x-layouts.app :title="__('Déroulement en direct — GEVES')">
     @include('partials.public-header')
 
     @if (! $edition)

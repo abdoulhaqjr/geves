@@ -1,13 +1,13 @@
 @use('App\Http\Controllers\Public\ArchiveController')
 
-<x-layouts.app :title="__('Colloques passés — UK Colloques')">
+<x-layouts.app :title="__('Colloques passés — GEVES')">
     @include('partials.public-header')
 
     <section class="page-hero">
         <div class="ukc-container">
             <div class="eyebrow">{{ __('Archives scientifiques') }}</div>
             <h1>{{ __('Colloques passés') }}</h1>
-            <p>{!! __('Mémoire des manifestations scientifiques organisées sous l’égide de l’Université de Kara. La plateforme UK Colloques est un service institutionnel de la <strong>Direction de la Recherche et de l’Innovation (DRI)</strong> — sans vocation commerciale.') !!}</p>
+            <p>{!! __('Mémoire des manifestations scientifiques organisées sous l’égide de l’Université de Kara. La plateforme GEVES est un service institutionnel de la <strong>Direction de la Recherche et de l’Innovation (DRI)</strong> — sans vocation commerciale.') !!}</p>
             <div class="note">{{ __('Programmes · galeries · documents publics · actes') }}</div>
         </div>
     </section>

@@ -27,7 +27,7 @@ class CalendarExport
         $lines = [
             'BEGIN:VCALENDAR',
             'VERSION:2.0',
-            'PRODID:-//UK Colloques//Agenda//FR',
+            'PRODID:-//GEVES//Agenda//FR',
             'CALSCALE:GREGORIAN',
             'METHOD:PUBLISH',
             'X-WR-CALNAME:'.$this->escape($calendarName),

@@ -2,9 +2,9 @@
 @php($navEdition = \App\Models\Edition::where('status', 'open')->latest('id')->first() ?? \App\Models\Edition::latest('id')->first())
 @php($paletteItems = \App\Support\AdminPalette::items($staff))
 @props(['title' => 'Back-office', 'subtitle' => null])
-<x-layouts.app :title="($title ?? 'Back-office') . ' — Colloques UK'">
+<x-layouts.app :title="($title ?? 'Back-office') . ' — GEVES'">
     <div class="wp-bar">
-        <strong>UK Colloques</strong>
+        <strong>GEVES</strong>
         <span>Back-office</span>
         <span class="right">Admin · Université de Kara</span>
     </div>

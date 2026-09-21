@@ -52,7 +52,7 @@ class Totp
     /** Émetteur affiché dans l'application d'authentification. */
     public static function issuer(): string
     {
-        return (string) config('app.name', 'GESCO');
+        return (string) config('app.name', 'GEVES');
     }
 
     /**

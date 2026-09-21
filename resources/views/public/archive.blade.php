@@ -1,4 +1,4 @@
-<x-layouts.app :title="($edition->title ?: 'Édition') . ' — Archives UK Colloques'">
+<x-layouts.app :title="($edition->title ?: 'Édition') . ' — Archives GEVES'">
     @php
         // Un axe thématique peut être une chaîne ou un objet { name/title/label }.
         $axeLabel = function ($a) {

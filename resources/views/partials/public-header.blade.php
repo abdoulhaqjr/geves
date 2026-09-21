@@ -4,7 +4,7 @@
         <a href="{{ route('home') }}" class="brand">
             <img src="{{ asset('img/logo-uk.png') }}" alt="Université de Kara" class="brand-logo">
             <div class="brand-tag">
-                {{ __('Colloques scientifiques') }}
+                GEVES
                 <span>{{ __('Direction de la Recherche et de l’Innovation') }}</span>
             </div>
         </a>

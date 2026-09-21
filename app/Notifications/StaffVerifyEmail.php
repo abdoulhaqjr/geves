@@ -30,9 +30,9 @@ class StaffVerifyEmail extends VerifyEmail
     protected function buildMailMessage($url): MailMessage
     {
         return (new MailMessage)
-            ->subject('Vérifiez votre adresse — Back-office UK Colloques')
+            ->subject('Vérifiez votre adresse — Back-office GEVES')
             ->greeting('Bonjour,')
-            ->line('Confirmez votre adresse e-mail pour activer votre accès au back-office UK Colloques.')
+            ->line('Confirmez votre adresse e-mail pour activer votre accès au back-office GEVES.')
             ->action('Vérifier mon adresse', $url)
             ->line('Si vous n’êtes pas concerné, ignorez cet e-mail.');
     }

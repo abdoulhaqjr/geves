@@ -5,7 +5,7 @@
 it('affiche la page d’accueil publique', function () {
     $this->get(route('home'))
         ->assertOk()
-        ->assertSee('UK Colloques')
+        ->assertSee('GEVES')
         ->assertSee('séminaires, colloques et journées scientifiques', false);
 });
 

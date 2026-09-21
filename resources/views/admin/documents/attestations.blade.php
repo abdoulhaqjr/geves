@@ -289,7 +289,7 @@
                             <label>Modèle actif</label>
                             <select name="livretTemplate">
                                 <option value="default" @selected($opts['livretTemplate'] === 'default')>Modèle par défaut (Apparence du livre)</option>
-                                <option value="base" @selected($opts['livretTemplate'] === 'base')>Modèle de base UK Colloques</option>
+                                <option value="base" @selected($opts['livretTemplate'] === 'base')>Modèle de base GEVES</option>
                                 @foreach ($templates as $tpl)
                                     <option value="{{ $tpl['name'] }}" @selected($opts['livretTemplate'] === $tpl['name'])>{{ $tpl['name'] }}</option>
                                 @endforeach
@@ -324,7 +324,7 @@
                             </div>
                             <div class="ukc-tpl-item">
                                 <div class="ico">DOC</div>
-                                <div class="meta"><strong>Modèle de base UK Colloques</strong><span>ukc-livre-base.doc · balises de fusion</span></div>
+                                <div class="meta"><strong>Modèle de base GEVES</strong><span>ukc-livre-base.doc · balises de fusion</span></div>
                                 <div style="display:flex;gap:6px;flex-wrap:wrap;">
                                     <a href="{{ route('admin.documents.livret.base-template') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Télécharger</a>
                                     <form method="POST" action="{{ route('admin.documents.livret.template') }}" style="display:inline;">
