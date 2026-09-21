@@ -38,6 +38,8 @@ class SubmissionFormConfig
 
     /** Règles & limites par défaut du formulaire (onglet « Règles » de l'éditeur). */
     public const RULE_DEFAULTS = [
+        'title_min' => 0,      // titre : minimum de CARACTÈRES (0 = pas de minimum)
+        'title_max' => 256,    // titre : maximum de CARACTÈRES
         'word_min' => 0,       // résumé : minimum de MOTS (0 = pas de minimum)
         'word_limit' => 300,   // résumé : maximum de MOTS
         'keywords_min' => 0,   // mots-clés : minimum (0 = pas de minimum)
@@ -111,6 +113,18 @@ class SubmissionFormConfig
         $v = $this->fieldConf($key)['required'] ?? null;
 
         return $v === null ? (bool) (self::STANDARD_DEFAULTS[$key]['required'] ?? true) : (bool) $v;
+    }
+
+    /** Titre : minimum de CARACTÈRES (0 = pas de minimum). */
+    public function titleMin(): int
+    {
+        return max(0, (int) $this->rules()['title_min']);
+    }
+
+    /** Titre : maximum de CARACTÈRES. */
+    public function titleMax(): int
+    {
+        return max($this->titleMin() + 1, (int) $this->rules()['title_max']);
     }
 
     /** Résumé : minimum de MOTS (les limites du résumé sont en mots, pas en caractères). */

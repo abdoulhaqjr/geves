@@ -153,6 +153,14 @@
                     <div class="desc" style="font-size:13px;color:var(--ukc-muted);margin-bottom:14px;">Appliquées au formulaire de dépôt de cette édition.</div>
                     <div class="ukc-form-grid">
                         <div class="ukc-form-row">
+                            <label>Titre — minimum de caractères <span style="color:var(--ukc-muted);font-weight:400;">(0 = aucun)</span></label>
+                            <input type="number" name="rules[title_min]" value="{{ old('rules.title_min', $rules['title_min'] ?? 0) }}" min="0" max="1000">
+                        </div>
+                        <div class="ukc-form-row">
+                            <label>Titre — maximum de caractères</label>
+                            <input type="number" name="rules[title_max]" value="{{ old('rules.title_max', $rules['title_max'] ?? 256) }}" min="1" max="1000">
+                        </div>
+                        <div class="ukc-form-row">
                             <label>Résumé — minimum de mots</label>
                             <input type="number" name="rules[word_min]" value="{{ old('rules.word_min', $rules['word_min']) }}" min="0" max="5000">
                         </div>

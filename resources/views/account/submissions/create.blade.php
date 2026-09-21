@@ -92,14 +92,22 @@
                 <div>{{ __('Vous avez atteint le nombre maximum de communications pour cette édition.') }}</div>
             </div>
         @else
-            {{-- Formulaire multi-étapes (wizard) --}}
+            {{-- Formulaire multi-étapes (wizard). L'étape « Fichiers » n'existe que si
+                 le dépôt de fichier est activé pour cette édition. --}}
+            @php
+                $fileStep = $config->enabled('file');
+                $validationStep = $fileStep ? 5 : 4;
+                $lastStep = $validationStep;
+            @endphp
             <div x-data="submissionWizard(@js($wizardInit))">
                 <div class="form-steps">
                     <div class="s" :class="{ active: step===1, done: step>1 }" @click="step=1"><span class="n">1</span> {{ __('Général') }}</div>
                     <div class="s" :class="{ active: step===2, done: step>2 }" @click="step=2"><span class="n">2</span> {{ __('Auteurs') }}</div>
                     <div class="s" :class="{ active: step===3, done: step>3 }" @click="step=3"><span class="n">3</span> {{ __('Résumé') }}</div>
-                    <div class="s" :class="{ active: step===4, done: step>4 }" @click="step=4"><span class="n">4</span> {{ __('Fichiers') }}</div>
-                    <div class="s" :class="{ active: step===5 }" @click="step=5"><span class="n">5</span> {{ __('Validation') }}</div>
+                    @if ($fileStep)
+                        <div class="s" :class="{ active: step===4, done: step>4 }" @click="step=4"><span class="n">4</span> {{ __('Fichiers') }}</div>
+                    @endif
+                    <div class="s" :class="{ active: step==={{ $validationStep }} }" @click="step={{ $validationStep }}"><span class="n">{{ $validationStep }}</span> {{ __('Validation') }}</div>
                 </div>
 
                 <form method="POST" action="{{ route('account.submissions.store', $edition->slug) }}" enctype="multipart/form-data" class="ukc-card">
@@ -110,8 +118,15 @@
                         <div class="ukc-form-grid">
                             <div class="ukc-field full">
                                 <label for="title">{{ $config->label('title') }} <span class="req">*</span></label>
-                                <input type="text" id="title" name="title" x-model="title">
-                                @if ($config->help('title'))<span class="hint">{{ $config->help('title') }}</span>@endif
+                                <input type="text" id="title" name="title" x-model="title" maxlength="{{ $config->titleMax() }}">
+                                <div style="display:flex;justify-content:space-between;gap:12px;">
+                                    <span class="hint">
+                                        @if ($config->help('title')){{ $config->help('title') }}
+                                        @elseif ($config->titleMin() > 0){{ __('Minimum :min caractères · maximum :max.', ['min' => $config->titleMin(), 'max' => $config->titleMax()]) }}
+                                        @else {{ __('Maximum :max caractères.', ['max' => $config->titleMax()]) }}@endif
+                                    </span>
+                                    <span class="hint"><span x-text="title.length"></span>/{{ $config->titleMax() }}</span>
+                                </div>
                                 @error('title') <span class="error">{{ $message }}</span> @enderror
                             </div>
 
@@ -140,28 +155,6 @@
                                 </div>
                             @endif
 
-                            @if ($config->enabled('keywords'))
-                                <div class="ukc-field full">
-                                    <input type="hidden" name="keywords" :value="keywordsString">
-                                    <label for="keywords-input">{{ $config->label('keywords') }}
-                                        @if ($config->required('keywords'))<span class="req">*</span>@endif
-                                    </label>
-                                    <div class="ukc-tags" @click="$refs.kwinput.focus()">
-                                        <template x-for="(tag, i) in keywords" :key="tag">
-                                            <span class="ukc-tag">
-                                                <span x-text="tag"></span>
-                                                <button type="button" @click="removeTag(i)" aria-label="Retirer">&times;</button>
-                                            </span>
-                                        </template>
-                                        <input type="text" id="keywords-input" x-ref="kwinput" x-model="kwDraft"
-                                               @keydown.enter.prevent="addTag()" @keydown.comma.prevent="addTag()"
-                                               @keydown.backspace="tagBackspace()" @blur="addTag()"
-                                               placeholder="{{ __('Saisir un mot-clé puis Entrée…') }}">
-                                    </div>
-                                    <span class="hint">{{ $config->help('keywords') ?: __('Entrée ou virgule pour ajouter un mot-clé.') }}</span>
-                                    @error('keywords') <span class="error">{{ $message }}</span> @enderror
-                                </div>
-                            @endif
                         </div>
                     </div>
 
@@ -199,9 +192,24 @@
                         <h2><x-ukc.icon name="pen" :size="20" /> {{ __('Résumé') }}</h2>
                         <div class="ukc-field full">
                             <label>{{ $config->label('abstract') }} <span class="req">*</span></label>
-                            @include('partials.abstract-editor', ['name' => 'abstract', 'initial' => old('abstract', ''), 'min' => $config->abstractMin(), 'help' => $config->help('abstract') ?: null])
+                            @include('partials.abstract-editor', ['name' => 'abstract', 'initial' => old('abstract', ''), 'min' => $config->abstractMin(), 'max' => $config->abstractMax(), 'help' => $config->help('abstract') ?: null])
                             @error('abstract') <span class="error">{{ $message }}</span> @enderror
                         </div>
+
+                        @if ($config->enabled('keywords'))
+                            <div class="ukc-field full" style="margin-top:14px;">
+                                <label for="keywords">{{ $config->label('keywords') }} @if ($config->required('keywords'))<span class="req">*</span>@endif</label>
+                                <input type="text" id="keywords" name="keywords" value="{{ old('keywords') }}"
+                                       data-tom data-tom-create data-tom-max="{{ $config->keywordsMax() }}"
+                                       placeholder="{{ __('Saisir un mot-clé puis Entrée…') }}">
+                                <span class="hint">
+                                    @if ($config->help('keywords')){{ $config->help('keywords') }}
+                                    @elseif ($config->keywordsMin() > 0){{ __('De :min à :max mots-clés.', ['min' => $config->keywordsMin(), 'max' => $config->keywordsMax()]) }}
+                                    @else {{ __('Jusqu’à :max mots-clés · Entrée ou virgule pour ajouter.', ['max' => $config->keywordsMax()]) }}@endif
+                                </span>
+                                @error('keywords') <span class="error">{{ $message }}</span> @enderror
+                            </div>
+                        @endif
 
                         @if (count($config->customFields()))
                             <div class="ukc-form-grid" style="margin-top:12px;">
@@ -236,10 +244,10 @@
                         @endif
                     </div>
 
-                    {{-- Étape 4 : Fichier --}}
-                    <div class="step-panel" :class="{ active: step===4 }">
-                        <h2><x-ukc.icon name="file" :size="20" /> {{ __('Fichier joint') }}</h2>
-                        @if ($config->enabled('file'))
+                    @if ($fileStep)
+                        {{-- Étape 4 : Fichier (seulement si le dépôt est activé) --}}
+                        <div class="step-panel" :class="{ active: step===4 }">
+                            <h2><x-ukc.icon name="file" :size="20" /> {{ __('Fichier joint') }}</h2>
                             <div class="ukc-field">
                                 <label for="file">{{ $config->label('file') }}
                                     @if ($config->required('file'))<span class="req">*</span>@endif
@@ -248,13 +256,11 @@
                                 <x-ukc.filedrop name="file" id="file" accept=".pdf,.doc,.docx" :hint="__('PDF/DOC/DOCX, max 8 Mo')" />
                                 @error('file') <span class="error">{{ $message }}</span> @enderror
                             </div>
-                        @else
-                            <p class="ukc-muted" style="font-size:.9rem;">{{ __('Aucun fichier requis pour cette édition. Vous pouvez passer à la validation.') }}</p>
-                        @endif
-                    </div>
+                        </div>
+                    @endif
 
-                    {{-- Étape 5 : Validation --}}
-                    <div class="step-panel" :class="{ active: step===5 }">
+                    {{-- Étape Validation --}}
+                    <div class="step-panel" :class="{ active: step==={{ $validationStep }} }">
                         <div class="recap-head">
                             <span class="recap-head__icon"><x-ukc.icon name="check-circle" :size="24" /></span>
                             <div>
@@ -308,32 +314,35 @@
                                 @if ($config->enabled('keywords'))
                                     <div class="recap-field">
                                         <div class="recap-field__label"><x-ukc.icon name="tag" :size="15" /> {{ $config->label('keywords') }}</div>
-                                        <p class="recap-empty" x-show="keywords.length === 0">—</p>
-                                        <div class="recap-tags" x-show="keywords.length" x-cloak>
-                                            <template x-for="(k, i) in keywords" :key="i"><span class="recap-tag" x-text="k"></span></template>
+                                        <p class="recap-empty" x-show="keywordList().length === 0">—</p>
+                                        <div class="recap-tags" x-show="keywordList().length" x-cloak>
+                                            <template x-for="(k, i) in keywordList()" :key="i"><span class="recap-tag" x-text="k"></span></template>
                                         </div>
                                     </div>
                                 @endif
 
-                                {{-- Statuts résumé + fichier --}}
-                                <div class="recap-statuses">
-                                    <div class="recap-status" :class="abstractFilled() ? 'is-ok' : 'is-todo'">
-                                        <x-ukc.icon name="file" :size="16" />
-                                        <div>
-                                            <div class="recap-status__k">{{ __('Résumé') }}</div>
-                                            <div class="recap-status__v" x-text="abstractFilled() ? (abstractWords() + ' {{ __('mots') }}') : '{{ __('à compléter') }}'"></div>
-                                        </div>
+                                {{-- Résumé : contenu réellement saisi dans l'éditeur (pas le fichier) --}}
+                                <div class="recap-field">
+                                    <div class="recap-field__label"><x-ukc.icon name="pen" :size="15" /> {{ __('Résumé') }}
+                                        <span class="recap-field__meta" x-show="abstractFilled()" x-cloak><span x-text="abstractWords()"></span> {{ __('mots') }}</span>
                                     </div>
-                                    @if ($config->enabled('file'))
-                                        <div class="recap-status" :class="fileChosen() ? 'is-ok' : 'is-neutral'">
-                                            <x-ukc.icon name="upload" :size="16" />
+                                    <p class="recap-empty" x-show="!abstractFilled()">{{ __('À compléter dans l’onglet Résumé.') }}</p>
+                                    <div class="recap-abstract chat-md" x-show="abstractFilled()" x-cloak x-html="abstractPreview()"></div>
+                                </div>
+
+                                @if ($fileStep)
+                                    {{-- Fichier joint --}}
+                                    <div class="recap-field">
+                                        <div class="recap-field__label"><x-ukc.icon name="file" :size="15" /> {{ __('Fichier joint') }}</div>
+                                        <div class="recap-status" :class="fileChosen() ? 'is-ok' : 'is-neutral'" style="max-width:300px;">
+                                            <x-ukc.icon name="upload" :size="18" />
                                             <div>
-                                                <div class="recap-status__k">{{ __('Fichier joint') }}</div>
+                                                <div class="recap-status__k">{{ __('Fichier') }}</div>
                                                 <div class="recap-status__v" x-text="fileChosen() ? '{{ __('Ajouté') }}' : '{{ __('Aucun') }}'"></div>
                                             </div>
                                         </div>
-                                    @endif
-                                </div>
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -344,10 +353,10 @@
                             <x-ukc.icon name="chevron" :size="16" style="transform:rotate(180deg);" /> {{ __('Précédent') }}
                         </button>
                         <div style="display:flex;gap:8px;">
-                            <button type="button" class="ukc-btn ukc-btn--blue" @click="step++" x-show="step < 5">
+                            <button type="button" class="ukc-btn ukc-btn--blue" @click="step++" x-show="step < {{ $lastStep }}">
                                 {{ __('Suivant') }} <x-ukc.icon name="chevron" :size="16" />
                             </button>
-                            <button type="submit" class="ukc-btn ukc-btn--green" x-show="step === 5" x-cloak>
+                            <button type="submit" class="ukc-btn ukc-btn--green" x-show="step === {{ $lastStep }}" x-cloak>
                                 <x-ukc.icon name="check" :size="18" /> {{ __('Envoyer ma communication') }}
                             </button>
                         </div>

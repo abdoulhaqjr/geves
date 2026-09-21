@@ -78,7 +78,38 @@ function initTomSelects(root = document) {
         ready = true;
     });
 }
-document.addEventListener('DOMContentLoaded', () => { initTomSelects(); initPhoneInputs(); });
+// Éditeur de résumé (CKEditor 5, WYSIWYG type Tailwise) : chargé à la demande
+// (import dynamique) uniquement sur les pages qui en ont besoin. Le champ reste
+// une <textarea name="…"> tenue à jour à chaque frappe ; compteur de MOTS natif.
+async function initAbstractEditors(root = document) {
+    const els = [...root.querySelectorAll('textarea[data-ckeditor]')].filter((el) => !el.dataset.ckReady);
+    if (!els.length) return;
+
+    const ck = await import('ckeditor5');
+    await import('ckeditor5/ckeditor5.css');
+    const { ClassicEditor, Essentials, Paragraph, Heading, Bold, Italic, Underline,
+        List, Link, BlockQuote, WordCount, Autoformat, PasteFromOffice } = ck;
+
+    els.forEach((el) => {
+        el.dataset.ckReady = '1';
+        ClassicEditor.create(el, {
+            plugins: [Essentials, Paragraph, Heading, Bold, Italic, Underline, List, Link, BlockQuote, WordCount, Autoformat, PasteFromOffice],
+            toolbar: ['heading', '|', 'bold', 'italic', 'underline', '|', 'bulletedList', 'numberedList', '|', 'link', 'blockQuote', '|', 'undo', 'redo'],
+        }).then((editor) => {
+            const sync = () => { el.value = editor.getData(); };
+            editor.model.document.on('change:data', sync);
+            sync();
+
+            const out = el.dataset.countTarget ? document.getElementById(el.dataset.countTarget) : null;
+            const wc = editor.plugins.get('WordCount');
+            const render = () => { if (out) out.textContent = wc.words; };
+            wc.on('update', render);
+            render();
+        }).catch(() => { /* éditeur non critique : le champ reste utilisable en texte */ });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => { initTomSelects(); initPhoneInputs(); initAbstractEditors(); });
 window.initTomSelects = initTomSelects;
 
 // Barres de filtres (GET) : on retire les champs vides de l'URL. En surchargeant
@@ -1033,31 +1064,15 @@ document.addEventListener('alpine:init', () => {
     }));
 
     // Wizard de soumission (sans Livewire) : navigation d'étapes, co-auteurs
-    // répétables, mots-clés « tags », récapitulatif. Les valeurs vivent côté
-    // client et sont soumises via un POST multipart classique.
+    // répétables, récapitulatif. Résumé (CKEditor) et mots-clés (Tom Select)
+    // sont lus depuis le DOM ; POST multipart classique.
     window.Alpine.data('submissionWizard', (initial = {}) => ({
         step: initial.errorStep || 1,
         title: initial.title || '',
         track: initial.track || '',
         type: initial.type || 'oral',
-        keywords: Array.isArray(initial.keywords) ? initial.keywords : [],
-        kwDraft: '',
         coauthors: Array.isArray(initial.coauthors) ? initial.coauthors : [],
 
-        get keywordsString() {
-            return this.keywords.join(', ');
-        },
-        addTag() {
-            const v = this.kwDraft.trim().replace(/,+$/, '').trim();
-            if (v && !this.keywords.includes(v)) this.keywords.push(v);
-            this.kwDraft = '';
-        },
-        removeTag(i) {
-            this.keywords.splice(i, 1);
-        },
-        tagBackspace() {
-            if (this.kwDraft === '' && this.keywords.length) this.keywords.pop();
-        },
         addCoauthor() {
             this.coauthors.push({ name: '', email: '', affiliation: '', grade: '' });
         },
@@ -1067,18 +1082,33 @@ document.addEventListener('alpine:init', () => {
         get coauthorCount() {
             return this.coauthors.filter((c) => (c.name || '').trim() || (c.email || '').trim()).length;
         },
+        coauthorList() {
+            return this.coauthors.filter((c) => (c.name || '').trim() || (c.email || '').trim());
+        },
+        // Mots-clés : lus depuis le champ Tom Select (valeur = liste séparée par des virgules).
+        keywordList() {
+            const el = document.getElementById('keywords');
+            if (!el) return [];
+            return String(el.value || '').split(',').map((s) => s.trim()).filter(Boolean);
+        },
+        // Résumé : le champ CKEditor est une <textarea name="abstract"> tenue à jour.
+        _abstractEl() {
+            return document.querySelector('textarea[name="abstract"], input[name="abstract"]');
+        },
         abstractFilled() {
-            const el = document.querySelector('input[name="abstract"]');
-            return !!(el && el.value.replace(/<[^>]*>/g, '').trim().length);
+            const el = this._abstractEl();
+            return !!(el && el.value.replace(/<[^>]*>/g, '').replace(/&nbsp;/gi, ' ').trim().length);
         },
         abstractWords() {
-            const el = document.querySelector('input[name="abstract"]');
+            const el = this._abstractEl();
             if (!el) return 0;
             const txt = el.value.replace(/<[^>]*>/g, ' ').replace(/&[a-z]+;/gi, ' ').trim();
             return txt ? txt.split(/\s+/).length : 0;
         },
-        coauthorList() {
-            return this.coauthors.filter((c) => (c.name || '').trim() || (c.email || '').trim());
+        // Aperçu HTML du résumé saisi (contenu de l'éditeur, pas du fichier joint).
+        abstractPreview() {
+            const el = this._abstractEl();
+            return el ? el.value : '';
         },
         fileChosen() {
             const el = document.getElementById('file');

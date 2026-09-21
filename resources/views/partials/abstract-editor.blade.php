@@ -1,25 +1,23 @@
 {{--
-    Éditeur WYSIWYG du résumé (soumission de formulaire classique, sans Livewire).
-    Variables : $name (nom du champ caché), $initial (HTML de départ),
-    $min (caractères), $help (facultatif).
+    Éditeur WYSIWYG du résumé — CKEditor 5 (initialisé par app.js : initAbstractEditors).
+    Variables : $name (nom du champ), $initial (HTML de départ), $min (MOTS, 0 = pas
+    de minimum), $max (MOTS), $help (facultatif).
 --}}
-<div x-data="ukcEditor(@js($initial ?? ''))">
-    <input type="hidden" name="{{ $name ?? 'abstract' }}" x-ref="hidden">
-    <div class="ukc-rte-editor">
-        <div class="ukc-rte-toolbar">
-            <button type="button" @click="cmd('bold')" title="Gras"><strong>B</strong></button>
-            <button type="button" @click="cmd('italic')" title="Italique"><em>I</em></button>
-            <button type="button" @click="cmd('underline')" title="Souligné" style="text-decoration:underline;font-weight:600;">U</button>
-            <button type="button" @click="cmd('insertUnorderedList')" title="Liste à puces">•</button>
-            <button type="button" @click="cmd('insertOrderedList')" title="Liste numérotée" style="font-size:12px;">1.</button>
-        </div>
-        <div class="ukc-rte-area" contenteditable="true" x-ref="area"
-             role="textbox" aria-multiline="true" aria-label="Résumé"
-             data-placeholder="Contexte, objectifs, méthode, résultats attendus…"
-             @input="sync()" @blur="sync()"></div>
-    </div>
-    <div style="display:flex;justify-content:space-between;gap:12px;margin-top:6px;">
-        <span class="hint">{{ $help ?? ('Minimum '.($min ?? 50).' caractères.') }}</span>
-        <span class="hint"><span x-text="count"></span> caractère(s)</span>
+@php($wcId = 'wc-'.\Illuminate\Support\Str::random(6))
+<div class="ukc-rte">
+    <textarea name="{{ $name ?? 'abstract' }}" data-ckeditor
+              data-min-words="{{ (int) ($min ?? 0) }}" data-max-words="{{ (int) ($max ?? 0) }}"
+              data-count-target="{{ $wcId }}" class="ukc-rte__source">{!! $initial ?? '' !!}</textarea>
+    <div class="ukc-rte__foot">
+        <span class="hint">
+            @if ($help)
+                {{ $help }}
+            @elseif (($min ?? 0) > 0)
+                {{ __('Minimum :min mots · maximum :max mots.', ['min' => (int) $min, 'max' => (int) ($max ?? 300)]) }}
+            @else
+                {{ __('Maximum :max mots.', ['max' => (int) ($max ?? 300)]) }}
+            @endif
+        </span>
+        <span class="hint ukc-rte__count"><strong id="{{ $wcId }}">0</strong> {{ __('mot(s)') }}</span>
     </div>
 </div>

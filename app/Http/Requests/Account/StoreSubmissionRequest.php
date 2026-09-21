@@ -75,8 +75,13 @@ class StoreSubmissionRequest extends FormRequest
         $c = $this->config();
         $tracks = $this->tracks();
 
+        $titleRule = ['required', 'string', 'max:'.$c->titleMax()];
+        if ($c->titleMin() > 0) {
+            $titleRule[] = 'min:'.$c->titleMin();
+        }
+
         $rules = [
-            'title' => ['required', 'string', 'max:500'],
+            'title' => $titleRule,
             'abstract' => ['required', 'string', 'max:20000', function (string $attr, string $value, \Closure $fail) use ($c): void {
                 $words = SubmissionFormConfig::wordCount($value);
                 if ($words < $c->abstractMin()) {

@@ -104,6 +104,8 @@ class SubmissionFormController extends Controller
         }
 
         $rules = [
+            'title_min' => max(0, (int) $request->input('rules.title_min', 0)),
+            'title_max' => max(1, (int) $request->input('rules.title_max', 256)),
             'word_min' => max(0, (int) $request->input('rules.word_min', 50)),
             'word_limit' => max(1, (int) $request->input('rules.word_limit', 300)),
             'keywords_min' => max(0, (int) $request->input('rules.keywords_min', 3)),
