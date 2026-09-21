@@ -1,4 +1,4 @@
-<x-layouts.app :title="__('Déroulement en direct — GEVES')">
+<x-layouts.app :title="__('Déroulement en direct — :app', ['app' => config('app.name')])">
     @include('partials.public-header')
 
     @if (! $edition)

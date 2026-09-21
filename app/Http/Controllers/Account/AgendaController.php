@@ -22,7 +22,7 @@ class AgendaController extends Controller
     public function ics(CalendarExport $calendar): StreamedResponse
     {
         $events = $this->events();
-        $ics = $calendar->ics($events, 'Mon agenda — GEVES');
+        $ics = $calendar->ics($events, 'Mon agenda — '.config('app.name'));
 
         return response()->streamDownload(function () use ($ics) {
             echo $ics;

@@ -1,5 +1,5 @@
 @php
-    $seed = 'Bonjour. Je suis '.$agentName.', votre assistant d’administration pour GEVES. '
+    $seed = 'Bonjour. Je suis '.$agentName.', votre assistant d’administration pour '.config('app.name').'. '
         ."Je peux analyser les soumissions, repérer les anomalies de paiement, préparer des e-mails, "
         ."suggérer des créneaux ou des rapports.\n\n"
         .'Dites-moi ce que vous souhaitez examiner — je proposerai, vous déciderez.';

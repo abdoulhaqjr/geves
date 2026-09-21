@@ -1,4 +1,4 @@
-<x-layouts.app :title="__('GEVES — Université de Kara')">
+<x-layouts.app :title="__(':app — Université de Kara', ['app' => config('app.name')])">
     @php
         // Style de bannière d'une édition : image si disponible, sinon dégradé UK.
         $bannerStyle = function ($edition) {
@@ -197,13 +197,13 @@
     <section class="ukc-section ukc-section--alt" id="apropos">
         <div class="ukc-container">
             <div class="block-head">
-                <h2>{{ __('À propos de GEVES') }}</h2>
+                <h2>{{ __('À propos de :app', ['app' => config('app.name')]) }}</h2>
                 <p>{{ __('Plateforme institutionnelle de l’Université de Kara pour la gestion des séminaires, colloques et journées scientifiques.') }}</p>
             </div>
             <div class="about-intro">
                 <div class="about-copy">
                     <h2>{{ __('Un service de la Direction de la Recherche et de l’Innovation') }}</h2>
-                    <p>{{ __('GEVES est le portail unique de l’Université de Kara pour organiser, suivre et valoriser les manifestations scientifiques placées sous l’égide de l’établissement. De l’appel à communications à la remise des attestations, la plateforme couvre l’ensemble du cycle de vie.') }}</p>
+                    <p>{{ __(':app est le portail unique de l’Université de Kara pour organiser, suivre et valoriser les manifestations scientifiques placées sous l’égide de l’établissement. De l’appel à communications à la remise des attestations, la plateforme couvre l’ensemble du cycle de vie.', ['app' => config('app.name')]) }}</p>
                     <p>{!! __('Elle n’a <strong>aucune vocation commerciale</strong> : il s’agit d’un outil institutionnel mis à disposition des chercheurs, doctorants, comités scientifiques et partenaires, sous la responsabilité de la <strong>Direction de la Recherche et de l’Innovation (DRI)</strong>.') !!}</p>
                     <div class="actions">
                         <a href="mailto:dri@univkara.tg" class="ukc-btn ukc-btn--blue ukc-btn--sm">{{ __('Écrire à la DRI') }}</a>

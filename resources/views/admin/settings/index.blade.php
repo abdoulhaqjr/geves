@@ -34,6 +34,11 @@
                             <input type="text" id="currency" name="currency" value="{{ $v('currency') }}" maxlength="10">
                         </div>
                         <div class="ukc-field">
+                            <label for="app_name">Nom de la plateforme</label>
+                            <input type="text" id="app_name" name="app_name" value="{{ $v('app_name') }}" maxlength="60" placeholder="GEVES">
+                            <span class="hint" style="font-size:12px;color:var(--ukc-muted);">Marque affichée partout (en-têtes, titres, e-mails, code TOTP). Laisser vide pour utiliser APP_NAME du .env.</span>
+                        </div>
+                        <div class="ukc-field">
                             <label for="app_url">URL du site (APP_URL)</label>
                             <input type="url" id="app_url" name="app_url" value="{{ $v('app_url') }}" placeholder="https://gesco.test">
                             <span class="hint" style="font-size:12px;color:var(--ukc-muted);">Base des liens dans les e-mails et notifications (utile pour les envois en file d’attente).</span>

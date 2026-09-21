@@ -1,6 +1,6 @@
 @php($editing = $user->exists)
 <x-layouts.admin :title="$editing ? 'Modifier — '.$user->name : 'Associer un utilisateur'"
-                 subtitle="Compte staff · rôles GEVES & permissions">
+                 :subtitle="'Compte staff · rôles '.config('app.name').' & permissions'">
     <x-slot:actions>
         <a href="{{ route('admin.users.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">← Utilisateurs</a>
     </x-slot:actions>
@@ -48,7 +48,7 @@
                     <div class="ukc-field full">
                         <label class="ukc-check" style="font-weight:600;">
                             <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $user->is_active ?? true))>
-                            Compte actif pour GEVES
+                            Compte actif pour {{ config('app.name') }}
                         </label>
                         @unless ($editing)
                             <label class="ukc-check" style="font-weight:600;">
@@ -61,7 +61,7 @@
             </div>
 
             <div class="ukc-card">
-                <h2>Rôles GEVES</h2>
+                <h2>Rôles {{ config('app.name') }}</h2>
                 <div class="desc">Un utilisateur peut cumuler plusieurs rôles. La matrice d’accès en découle.</div>
                 <div class="ukc-form-grid">
                     @foreach ($roleOptions as $key => $label)

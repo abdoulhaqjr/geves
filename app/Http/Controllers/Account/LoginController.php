@@ -179,7 +179,7 @@ class LoginController extends Controller
         session()->put(self::SESSION_PHONE_HINT, $this->maskPhone((string) $account->phone));
 
         try {
-            $sms->send((string) $account->phone, 'GEVES — votre code de connexion : '.$code.' (valide '.(int) config('sms.otp_ttl', 5).' min).');
+            $sms->send((string) $account->phone, config('app.name').' — votre code de connexion : '.$code.' (valide '.(int) config('sms.otp_ttl', 5).' min).');
         } catch (\Throwable $e) {
             report($e); // en dev (fournisseur « log ») l'envoi ne bloque pas
         }

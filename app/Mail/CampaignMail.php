@@ -21,7 +21,7 @@ class CampaignMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: $this->subjectLine !== '' ? $this->subjectLine : 'Message — GEVES');
+        return new Envelope(subject: $this->subjectLine !== '' ? $this->subjectLine : 'Message — '.config('app.name'));
     }
 
     public function content(): Content

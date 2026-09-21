@@ -153,7 +153,7 @@ class SecurityController extends Controller
         $account->save();
 
         try {
-            $sms->send((string) $account->phone, 'GEVES — code de vérification : '.$code.'.');
+            $sms->send((string) $account->phone, config('app.name').' — code de vérification : '.$code.'.');
         } catch (\Throwable $e) {
             report($e);
         }

@@ -1,4 +1,4 @@
-<x-layouts.admin title="Utilisateurs" subtitle="Comptes, rôles GEVES et permissions">
+<x-layouts.admin title="Utilisateurs" :subtitle="'Comptes, rôles '.config('app.name').' et permissions'">
     <x-slot:actions>
         <a href="{{ route('admin.users.create') }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
@@ -122,13 +122,13 @@
                 </div>
             </div>
             <div style="margin-top:12px;">{{ $users->links() }}</div>
-            <p class="ukc-hint" style="margin-top:12px;font-size:12px;color:var(--ukc-light);">L’adresse IP et la date de dernière connexion sont enregistrées à chaque connexion au back-office. Les rôles GEVES déterminent l’accès aux fonctionnalités (matrice ci-dessous).</p>
+            <p class="ukc-hint" style="margin-top:12px;font-size:12px;color:var(--ukc-light);">L’adresse IP et la date de dernière connexion sont enregistrées à chaque connexion au back-office. Les rôles {{ config('app.name') }} déterminent l’accès aux fonctionnalités (matrice ci-dessous).</p>
         </div>
 
         {{-- ===== ROLES ===== --}}
         <div x-show="tab==='roles'" x-cloak>
             <div class="ukc-card">
-                <h2>Rôles GEVES</h2>
+                <h2>Rôles {{ config('app.name') }}</h2>
                 <div class="desc">Rôles métier du module, avec leurs permissions dans le back-office.</div>
                 @foreach ($roles as $name => $meta)
                     <div class="role-card">

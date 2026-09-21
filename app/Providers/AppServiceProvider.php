@@ -110,6 +110,12 @@ class AppServiceProvider extends ServiceProvider
 
         $set = fn (string $key, mixed $default = null) => $s[$key] ?? $default;
 
+        // Nom de la plateforme (marque affichée partout, e-mails, TOTP…) : source
+        // unique surchargée depuis les Réglages, sinon APP_NAME du .env.
+        if (filled($set('app.name'))) {
+            Config::set('app.name', (string) $set('app.name'));
+        }
+
         // URL du site (source unique pour les liens des e-mails/notifs, y compris
         // en file d'attente où il n'y a pas d'hôte de requête).
         if (filled($set('app.url'))) {

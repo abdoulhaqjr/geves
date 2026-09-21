@@ -1,4 +1,4 @@
-<x-layouts.app :title="__('Vérifier une attestation — GEVES')">
+<x-layouts.app :title="__('Vérifier une attestation — :app', ['app' => config('app.name')])">
     @include('partials.public-header')
 
     <section class="page-hero">

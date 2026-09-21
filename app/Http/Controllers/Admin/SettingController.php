@@ -23,6 +23,7 @@ class SettingController extends Controller
 {
     /** Correspondance champ de formulaire → clé de réglage. */
     private const MAP = [
+        'app_name' => 'app.name',
         'from_name' => 'mail.from_name',
         'from_address' => 'mail.from_address',
         'currency' => 'payments.currency',
@@ -82,6 +83,7 @@ class SettingController extends Controller
         $g = fn (string $k, $def = '') => (string) Settings::get($k, $def);
 
         $values = [
+            'app_name' => $g('app.name', (string) config('app.name')),
             'from_name' => $g('mail.from_name', (string) config('mail.from.name')),
             'from_address' => $g('mail.from_address', (string) config('mail.from.address')),
             'currency' => $g('payments.currency', (string) config('payments.currency', 'XOF')),
@@ -204,8 +206,8 @@ class SettingController extends Controller
         $to = (string) $request->input('test_email');
 
         try {
-            Mail::raw('Ceci est un e-mail de test envoyé depuis GEVES.', function ($m) use ($to) {
-                $m->to($to)->subject('Test SMTP — GEVES');
+            Mail::raw('Ceci est un e-mail de test envoyé depuis '.config('app.name').'.', function ($m) use ($to) {
+                $m->to($to)->subject('Test SMTP — '.config('app.name'));
             });
 
             return back()->with('ukc_status', 'E-mail de test envoyé à '.$to.'.')->with('settings_tab', 'email');
