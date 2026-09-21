@@ -311,6 +311,16 @@
                                     </ul>
                                 </div>
 
+                                {{-- Résumé : contenu réellement saisi dans l'éditeur (pas le fichier) --}}
+                                <div class="recap-field">
+                                    <div class="recap-field__label"><x-ukc.icon name="pen" :size="15" /> {{ __('Résumé') }}
+                                        <span class="recap-field__meta" x-show="abstractFilled()" x-cloak><span x-text="abstractWords()"></span> {{ __('mots') }}</span>
+                                    </div>
+                                    <p class="recap-empty" x-show="!abstractFilled()">{{ __('À compléter dans l’onglet Résumé.') }}</p>
+                                    <div class="recap-abstract chat-md" x-show="abstractFilled()" x-cloak x-html="abstractPreview()"></div>
+                                </div>
+
+                                {{-- Mots-clés (sous le résumé) --}}
                                 @if ($config->enabled('keywords'))
                                     <div class="recap-field">
                                         <div class="recap-field__label"><x-ukc.icon name="tag" :size="15" /> {{ $config->label('keywords') }}</div>
@@ -320,15 +330,6 @@
                                         </div>
                                     </div>
                                 @endif
-
-                                {{-- Résumé : contenu réellement saisi dans l'éditeur (pas le fichier) --}}
-                                <div class="recap-field">
-                                    <div class="recap-field__label"><x-ukc.icon name="pen" :size="15" /> {{ __('Résumé') }}
-                                        <span class="recap-field__meta" x-show="abstractFilled()" x-cloak><span x-text="abstractWords()"></span> {{ __('mots') }}</span>
-                                    </div>
-                                    <p class="recap-empty" x-show="!abstractFilled()">{{ __('À compléter dans l’onglet Résumé.') }}</p>
-                                    <div class="recap-abstract chat-md" x-show="abstractFilled()" x-cloak x-html="abstractPreview()"></div>
-                                </div>
 
                                 @if ($fileStep)
                                     {{-- Fichier joint --}}

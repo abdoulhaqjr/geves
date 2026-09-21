@@ -1086,6 +1086,7 @@ document.addEventListener('alpine:init', () => {
         coauthors: Array.isArray(initial.coauthors) ? initial.coauthors : [],
         abstractHtml: '',
         abstractWordCount: 0,
+        keywords: [],
 
         init() {
             // Le résumé (CKEditor) notifie son contenu + compteur : on le garde en
@@ -1096,6 +1097,15 @@ document.addEventListener('alpine:init', () => {
                     this.abstractWordCount = e.detail.words || 0;
                 }
             });
+            // Mots-clés (Tom Select) : on capte les changements pour rester réactif.
+            const kw = document.getElementById('keywords');
+            if (kw) {
+                const readKw = () => {
+                    this.keywords = String(kw.value || '').split(',').map((s) => s.trim()).filter(Boolean);
+                };
+                kw.addEventListener('change', readKw);
+                readKw();
+            }
         },
 
         addCoauthor() {
@@ -1110,11 +1120,9 @@ document.addEventListener('alpine:init', () => {
         coauthorList() {
             return this.coauthors.filter((c) => (c.name || '').trim() || (c.email || '').trim());
         },
-        // Mots-clés : lus depuis le champ Tom Select (valeur = liste séparée par des virgules).
+        // Mots-clés : état réactif alimenté par le champ Tom Select (cf. init).
         keywordList() {
-            const el = document.getElementById('keywords');
-            if (!el) return [];
-            return String(el.value || '').split(',').map((s) => s.trim()).filter(Boolean);
+            return this.keywords;
         },
         // Résumé : contenu réactif (émis par CKEditor), repli sur la textarea brute
         // si l'éditeur n'a pas (encore) chargé.
