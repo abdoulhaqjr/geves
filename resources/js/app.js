@@ -93,6 +93,8 @@ async function initAbstractEditors(root = document) {
     els.forEach((el) => {
         el.dataset.ckReady = '1';
         ClassicEditor.create(el, {
+            // CKEditor 5 (v44+) impose une clé de licence ; usage open-source = « GPL ».
+            licenseKey: 'GPL',
             plugins: [Essentials, Paragraph, Heading, Bold, Italic, Underline, List, Link, BlockQuote, WordCount, Autoformat, PasteFromOffice],
             toolbar: ['heading', '|', 'bold', 'italic', 'underline', '|', 'bulletedList', 'numberedList', '|', 'link', 'blockQuote', '|', 'undo', 'redo'],
         }).then((editor) => {
@@ -105,7 +107,11 @@ async function initAbstractEditors(root = document) {
             const render = () => { if (out) out.textContent = wc.words; };
             wc.on('update', render);
             render();
-        }).catch(() => { /* éditeur non critique : le champ reste utilisable en texte */ });
+        }).catch((e) => {
+            // Repli : si l'éditeur échoue, on révèle la textarea brute pour rester utilisable.
+            console.error('CKEditor init failed:', e);
+            el.style.display = 'block';
+        });
     });
 }
 
