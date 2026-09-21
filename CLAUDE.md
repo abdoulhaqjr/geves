@@ -1,0 +1,130 @@
+# CLAUDE.md — Guide de contribution GEVES
+
+Ce fichier est lu automatiquement par Claude Code. Il résume l'essentiel pour être
+productif tout de suite. Le contexte détaillé (état, architecture, modules, pièges)
+est dans **[`PASSATION.md`](PASSATION.md)** — à lire avant de coder sur un domaine
+que vous ne connaissez pas.
+
+## Le projet en une phrase
+
+**GEVES** (Gestion des ÉVénements Scientifiques — Direction de la Recherche et de
+l'Innovation, **Université de Kara**) : plateforme **Laravel 13** qui gère de bout en
+bout des événements scientifiques (colloques, journées, séminaires) — soumissions,
+relecture en aveugle, paiements, programme/ateliers, documents (badges/attestations/
+livret), e-mails, rapports, comptes participants, et assistance **IA**.
+
+Stack : PHP 8.4, Blade + **Livewire 4** + Alpine 3, Tailwind v4 + design system maison
+(`resources/css/ukc.css`), Vite 8, SQLite en dev, **Pest** pour les tests, PHPStan/
+Larastan **niveau 5**.
+
+## Toolchain — ⚠️ PHP/Composer/artisan ne sont PAS dans le PATH
+
+Ils sont fournis par **Laravel Herd** sous forme de shims `.bat`. Pour toute commande
+(Git Bash) :
+
+```bash
+export PATH="$HOME/.config/herd/bin:$PATH"
+php.bat artisan ...        # PHP 8.4
+composer.bat ...           # Composer
+```
+
+Node/npm sont dans le PATH. Le site est servi par **Herd** sur **http://gesco.test**
+(le domaine de dev et le dossier local restent `gesco`, malgré le renommage GEVES).
+
+### Commandes utiles
+
+```bash
+php.bat artisan test                       # suite Pest (base :memory:)
+php.bat artisan test --filter=NomTest      # un fichier
+php.bat vendor/bin/phpstan analyse         # analyse statique (niveau 5)
+php.bat vendor/bin/pint                     # style (lancer AVANT de commiter)
+composer.bat check                          # pint --test + phpstan + tests (= le CI)
+npm run build                               # build des assets (requis pour voir le rendu)
+```
+
+⚠️ `vendor/bin/phpunit` ne marche pas (Pest requis). Le lanceur affiche une sortie
+JSON compacte, pas la trace complète.
+
+## Voir le rendu
+
+Builder les assets (`npm run build`) puis ouvrir **gesco.test** — **ne pas** compter
+sur le serveur Vite dev (bloqué en cross-origin ici). Le navigateur intégré exige une
+approbation par action sur `gesco.test` ; `curl` (statut HTTP + `grep`) est un contrôle
+rapide fiable.
+
+## Workflow Git
+
+- On travaille directement sur **`master`** (pas de branches de fonctionnalité sauf
+  demande explicite).
+- **`git pull --rebase` avant chaque `git push`** (on est plusieurs : évite les merges
+  et les conflits).
+- **Pousser vers GitHub à la fin de chaque tâche** — ne pas laisser du travail terminé
+  seulement en local. Dépôt privé : `https://github.com/abdoulhaqjr/geves`.
+- **Commits en français.** Éviter les heredoc PowerShell dans l'outil Bash.
+
+## Conventions qui comptent
+
+### Nom de la plateforme = dynamique
+
+Ne **jamais** écrire un littéral « Gesco »/« GEVES » dans l'UI. Le nom d'affichage est
+**`config('app.name')`**, surchargeable via **Réglages** (clé `app_name`). Pour les
+traductions, utiliser le placeholder **`:app`**. (Certaines classes historiques gardent
+le nom `Gesco` : `AskGesco`, `GescoController` — c'est du code, pas de l'affichage.)
+
+### Charte & design system
+
+- Source unique dans `resources/css/ukc.css` (tokens `--ukc-*`, composants `.ukc-*` :
+  `.ukc-btn--primary|green|gold|outline|ghost|danger`, `.ukc-card`, `.ukc-pill--ok|warn|
+  info|muted|err`, `.ukc-table`, `.ukc-field`, `.ukc-steps`, shell `.ukc-shell/-sidebar/
+  -topbar`). Préférer ces classes aux littéraux.
+- **Icônes = SVG uniquement** via `<x-ukc.icon name="…" :size="18" />`. **Jamais
+  d'emoji dans l'UI** (exception assumée : les e-mails).
+- Charte UK : bleu `#223ea4`, or `#ffd700`, vert `#009933`, police **Jost**.
+
+### Composants transverses à réutiliser
+
+- **Téléphone** : tout champ numéro de téléphone = `<x-ukc.phone>` (intl-tel-input,
+  drapeau + indicatif, valeur **E.164** à la soumission).
+- **Résumé de soumission** : CKEditor 5 (WYSIWYG, comptage en **mots**, `licenseKey:
+  'GPL'`). **Mots-clés** : **Tom Select** (`data-tom data-tom-create data-tom-max`).
+- **Config runtime** : mail/paiements/IA/visio/SMS/nom sont surchargés **depuis la base**
+  (`AppServiceProvider::applySettingsToConfig()`), pas le `.env`.
+
+### Architecture & sécurité
+
+- **RBAC à deux niveaux** : staff `User` global (spatie/permission) vs `Participant`
+  **par édition** (capacités = fonction affectée, middleware `edition.cap` ; l'admin est
+  super-admin). Toujours vérifier la capacité côté serveur.
+- Multi-guard : **`web`** (back-office) et **`account`** (participants).
+- Logique métier réutilisable → une **Action** dans `app/Actions` (testable), pas dans
+  le composant Livewire. Gardes d'autorisation dans `mount()` (`abort_unless`).
+- Écritures multi-étapes clés sous `DB::transaction` (paiement anti-doublon avec
+  `lockForUpdate`).
+- **IA** : couche `App\AI` (contrat `AiProvider`, `AiManager` = résolution + failover,
+  `AiRouter` = routage fast/deep). Le copilote back-office exécute de vraies actions
+  (`App\AI\Copilot`) **après autorisation explicite** + capacité RBAC revérifiée.
+
+### Tests
+
+- `RefreshDatabase` global (base `:memory:`). Fabriques partagées dans `tests/Pest.php`
+  (`openEdition()`, `verifiedAccount()`, `adminStaff()`, `seededSubmission()`) — ne pas
+  les redéclarer dans un fichier de test.
+- **Ajouter des tests Pest** pour toute nouvelle fonctionnalité. Après suppression d'un
+  composant, régénérer la baseline PHPStan.
+
+## Pièges fréquents
+
+Voir la liste complète en [§8 de PASSATION.md](PASSATION.md). Les plus courants :
+
+- **Livewire 4** : ne pas nommer une action `transition` (réservé) ni une variable de
+  vue `slots` (injectée par Livewire).
+- **Colonnes `nullable` traitées comme « 0 »** (`slots.submission_id`, `revision_of`) :
+  forcer `=> 0` à la création, un modèle fraîchement `create()` ne reflète pas les
+  défauts SQL en mémoire.
+- **Paiement en ligne** : le statut « payé » vient **toujours** d'une vérification
+  serveur ou d'un webhook à signature vérifiée (fail-closed), jamais d'un paramètre
+  d'URL de retour.
+- **`@php(...)`/`@json([...])` multi-ligne** dans une vue peut casser le compilateur
+  Blade — préparer la donnée dans le contrôleur/composant.
+- **Pint** applique un style projet-wide (concat sans espaces `'a'.$b`) — lancer `pint`
+  avant de commiter.

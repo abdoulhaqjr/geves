@@ -1,7 +1,9 @@
-# Passation — GESCO · Gestion des colloques scientifiques
+# Passation — GEVES · Gestion des ÉVénements Scientifiques (Université de Kara)
 
 > Document de passation pour la personne qui reprend le développement.
-> Dernière mise à jour : 2026-08-11 (système de notifications in-app ; correctif noir-sur-bleu ; page publique Blade ; espace participant « Mes documents » + « Sécurité » 2FA ; livret .docx).
+> Dernière mise à jour : 2026-09-21 (professionnalisation : renommage **GEVES** + nom dynamique, publication GitHub, refonte du wizard de soumission (CKEditor 5), champs téléphone intl-tel-input, résilience/routage/failover IA, copilote à actions exécutables, persistance du chat, limites du chatbot public. **Voir le journal détaillé en [§11](#11-évolutions-depuis-le-2026-08-11-professionnalisation).**)
+>
+> ⚠️ **Le projet s'appelle désormais GEVES** (ex-« Gesco »). Le nom d'affichage est **dynamique** (`config('app.name')`, surchargé via Réglages) — ne jamais coder un littéral « Gesco »/« GEVES » dans l'UI. Le **dossier local** reste `Herd/gesco` et le **domaine de dev** reste `gesco.test` (inchangés) ; certaines classes historiques gardent le nom `Gesco` (ex. `AskGesco`, `GescoController`).
 
 Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture**, les **conventions**, le **travail réalisé**, ce qui **reste à faire** et les **pièges** à connaître.
 
@@ -9,10 +11,11 @@ Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture
 
 ## 1. Vue d'ensemble
 
-**GESCO** est le portage **Laravel** d'une extension WordPress existante (`uk-colloques`) qui gère un colloque scientifique de bout en bout pour l'**Université de Kara** : séries de colloques → éditions datées → soumissions de résumés → relecture en aveugle → paiements → créneaux/ateliers → livret/badges/attestations → e-mails → rapports → comptes participants.
+**GEVES** (Gestion des ÉVénements Scientifiques — Direction de la Recherche et de l'Innovation, **Université de Kara**) est le portage **Laravel** d'une extension WordPress existante (`uk-colloques`). La plateforme gère de bout en bout non seulement des **colloques** mais tout **événement scientifique** (journées scientifiques, séminaires…) : séries → éditions datées → soumissions de résumés → relecture en aveugle → paiements → créneaux/ateliers → livret/badges/attestations → e-mails → rapports → comptes participants. Assistance **IA** intégrée (chatbot public « Gesco » + copilote back-office à actions exécutables).
 
 - **But** : plateforme professionnelle, autonome (sans WordPress).
-- **Stack** : Laravel 13 (PHP 8.4), **Blade + Livewire 4 + Alpine**, Tailwind v4 (+ design system maison), SQLite en dev, Pest pour les tests.
+- **Stack** : Laravel 13 (PHP 8.4), **Blade + Livewire 4 + Alpine 3**, Tailwind v4 (+ design system maison), Vite 8, SQLite en dev, Pest pour les tests.
+- **Dépôt** : **GitHub privé** `https://github.com/abdoulhaqjr/geves` (branche `master`). Voir le workflow Git en [§8](#8-pièges--bonnes-pratiques-à-lire-avant-de-coder).
 - **Périmètre couvert à ce jour** : fondations, comptes participants, back-office éditions, page publique, **soumission**, **relecture**, **resoumission**, **paiement**, **ateliers/sessions/créneaux**, **participants**, **documents (livret/badges/attestations QR)**, **paiement en ligne (CashPay/FedaPay)** (voir §6).
 
 ### Sources de référence (hors dépôt, dans `Downloads/`)
@@ -61,7 +64,7 @@ npm install && npm run build
 
 ### Lancer les tests & la qualité
 ```bash
-php.bat artisan test                 # 176 tests (base :memory:)
+php.bat artisan test                 # ≈568 tests (base :memory:)
 php.bat artisan test --filter=PaymentTest
 php.bat vendor/bin/phpstan analyse   # analyse statique (Larastan niveau 5)
 php.bat vendor/bin/pint              # style (Laravel Pint)
@@ -252,6 +255,7 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 
 ## 8. Pièges & bonnes pratiques (à lire avant de coder)
 
+- **Workflow Git (à plusieurs)** : on travaille sur `master`. Depuis l'arrivée d'un 2ᵉ contributeur, **toujours `git pull --rebase` avant chaque `git push`** (évite les commits de merge et les conflits), et **pousser vers GitHub à la fin de chaque tâche** (ne pas laisser de travail terminé uniquement en local). Commits en **français**. Dépôt privé `abdoulhaqjr/geves`.
 - **Toolchain Herd** : toujours `export PATH="$HOME/.config/herd/bin:$PATH"` puis `php.bat`/`composer.bat` (§2).
 - **Livewire 4 — méthodes réservées** : ne pas nommer une action `transition` (collision avec `Livewire\Component::transition`). Utiliser un autre nom (ex. `applyStatus`).
 - **Livewire 4 — variable de vue `$slots` réservée** : Livewire injecte `$slots` (slots nommés) dans chaque vue ; ne jamais passer une donnée de vue nommée `slots` (elle est shadowée par un `SlotProxy`). Renommer (ex. `creneaux`). Idem prudence avec d'autres noms magiques.
@@ -287,3 +291,38 @@ Pas encore mis en place. Pistes : cible **MySQL** en prod (migrations déjà por
 ---
 
 *Fil conducteur : cohérence de la charte (tokens + icônes SVG), sécurité (validation/autorisation/gardes métier dans les Actions), et **tests systématiques** (chaque module a ses tests Pest). Déployer souvent, par petits lots.*
+
+---
+
+## 11. Évolutions depuis le 2026-08-11 (professionnalisation)
+
+Phase de **professionnalisation** post-portage. Tout est testé (**≈568 tests Pest verts** au dernier lancement, **PHPStan niveau 5** propre) et poussé sur GitHub. Résumé par thème (les détails fins vivent dans l'historique Git et la mémoire projet locale).
+
+### Identité & publication
+- **Renommage GEVES + nom dynamique** — le nom d'affichage est **`config('app.name')`**, surchargeable via **Réglages** (champ « Nom de la plateforme », clé `app_name` → `app.name` dans `SettingController::MAP`, appliqué au boot par `AppServiceProvider::applySettingsToConfig()`). Placeholder de traduction **`:app`** pour les libellés. Persona des assistants IA aligné sur le nom dynamique. **Ne jamais** écrire un littéral de marque dans l'UI.
+- **Publication GitHub** — dépôt **privé** `https://github.com/abdoulhaqjr/geves` (branche `master`), `README.md` rédigé, `.env.example` (`APP_NAME=GEVES`), `phpunit.xml` (`APP_NAME=GEVES`). Identité Git : TOURE / touremouhariabdoulhaq@gmail.com.
+
+### Assistance IA
+- **Résilience & routage & failover** — relance transparente **3×** sur erreurs transitoires (503) via `RetriesTransientFailures` + `AiUnavailableException` ; **routage automatique** fast/deep selon la complexité (`App\AI\AiRouter`) ; **bascule entre fournisseurs** (`AiManager::extract`) selon la capacité (lecture PDF) et le quota, avec repli sur le modèle par défaut si un palier est refusé. Modèles Gemini passés en alias `-latest` (les versions datées 2.5 renvoyaient 404) + `licenseKey`.
+- **Copilote back-office à actions exécutables** — `App\AI\Copilot` : le copilote **exécute de vraies actions système** après **autorisation explicite** de l'utilisateur (endpoint `admin.ai.execute`, **capacité RBAC revérifiée** côté serveur). Il s'appuie sur le **colloque sélectionné** et le **ciblage réel de l'action**, pas seulement sur les statistiques du tableau de bord. Extensible.
+- **Réclamations & incidents** — le chatbot public enregistre les demandes non résolues → page back-office (capacité `claims`) avec analyse IA de traitement. ⚠️ **TODO** : améliorer la page `admin/reclamations/` (à cadrer avec le PO).
+- **Persistance du chat** — la discussion est conservée pendant la session (**sessionStorage scopé par utilisateur**, `gescoChat` + `adminCopilot`) + bouton « Nouvelle discussion » (reset). Correctif : fuite inter-utilisateurs après déconnexion.
+- **Horloge** — les agents IA reçoivent la date/heure courantes (`now()`) dans le prompt (questions temporelles). Placeholders des chatbots nettoyés (suppression de « Maj+Entrée = saut de ligne »).
+- **Limites du chatbot public** — dans `GescoController::ask()` : **rate-limit court terme** (anti-flood, `AI_PUBLIC_RATE_LIMIT`/h) **+ plafond journalier** (`AI_PUBLIC_DAILY_LIMIT`/jour), par utilisateur (par IP si anonyme). **Admins/gestionnaires exemptés** (`isColloqueSuperAdmin()` ou capacité `editions_write`). Config dans `config/services.php` (`services.ai.public_rate_limit`/`public_daily_limit`).
+
+### RBAC & espaces
+- **RBAC par édition** — 2 systèmes de rôles : **staff `User` global** (spatie) vs **`Participant` par édition**. Équipe par édition (pivot `edition_user`, onglet Équipe), étanchéité « pure » (capacités = fonction affectée) via middleware `edition.cap` ; l'admin est super-admin. Capacités type `editions_write`, `announcements`, `claims`. Espaces de fonction (modérateur/rapporteur/relecteur) côté participant (⚠️ colonne `account_id` morte → utiliser `user_id`).
+- **Annonces** — gestion des annonces depuis l'admin (capacité `announcements`, accordée à admin/gerant/co_gerant/secretariat), affichées sur la page de déroulement (onglet Annonces).
+
+### Formulaire de soumission (refonte)
+- **Wizard de soumission** — étapes dynamiques ; **résumé = CKEditor 5 WYSIWYG** (npm `ckeditor5` v48, import dynamique, `licenseKey: 'GPL'`, plugin WordCount → **comptage en MOTS**, badge « powered by » masqué en CSS) ; **mots-clés** déplacés dans l'onglet Résumé (**Tom Select**, sous le résumé) ; **étape Fichiers conditionnelle** (masquée si upload non activé) ; **titre min/max caractères par édition** (défaut 0/256, `SubmissionFormConfig::titleMin()/titleMax()`) ; l'écran de **validation affiche le contenu réel du résumé + les mots-clés** (état Alpine réactif alimenté par l'événement `ukc:abstract` et le `change` Tom Select — le DOM du textarea n'est pas réactif). Fichiers : `resources/views/account/submissions/create.blade.php`, `partials/abstract-editor.blade.php`, `resources/js/app.js` (`initAbstractEditors`, `submissionWizard`).
+
+### Composants transverses
+- **Champ téléphone** — tous les champs numéro de téléphone passent par le composant **`<x-ukc.phone>`** (intl-tel-input v29 : drapeau + indicatif, valeur **E.164** à la soumission via `getNumber()`). À réutiliser pour tout nouveau champ téléphone.
+- **Config via Réglages (DB)** — mail/paiements/IA/visio/SMS/nom de plateforme surchargés **au runtime depuis la base** (`AppServiceProvider::applySettingsToConfig()`), pas le `.env` (`MAIL_MAILER=log` prioritaire en dev ; `QUEUE_CONNECTION=database` → worker requis pour livrer).
+- **Suppression** — la fonctionnalité **scan de badge** a été retirée du projet. **Admin « Mon profil » → « Mon compte »** (aligné sur l'espace participant).
+
+### Règles métier de soumission
+- **Sélection du colloque avant saisie** — le contrôle d'éligibilité se fait **avant** le formulaire (pas à l'enregistrement). Sélecteur (350px) : groupe **« Appels ouverts »** en premier, puis **« Mes évènements »**. Colloque **sélectionné par défaut** = celui **en cours**, sinon le **prochain**, sinon le **dernier** auquel l'utilisateur a participé. On **soumet dans le colloque sélectionné**. Le rappel de quota de soumission a été retiré de l'étape de validation.
+
+> **Mémoire projet** : le contexte fin (décisions, conventions, TODO différés — DOI/DataCite, connecteur Google anti-plagiat, amélioration `admin/reclamations`) est aussi consigné dans la **mémoire locale de Claude Code** (`~/.claude/…/memory/`, non versionnée) et **résumé dans `CLAUDE.md`** (versionné) pour l'onboarding d'un nouveau contributeur.
