@@ -81,6 +81,27 @@ le nom `Gesco` : `AskGesco`, `GescoController` — c'est du code, pas de l'affic
   d'emoji dans l'UI** (exception assumée : les e-mails).
 - Charte UK : bleu `#223ea4`, or `#ffd700`, vert `#009933`, police **Jost**.
 
+### Kit Tailwise (back-office & espace participant)
+
+Le **back-office admin ET l'espace participant** sont habillés avec le kit dashboard
+**Tailwise** (bundle ThemeForest acheté, dans `Downloads/…/Tailwise Bundle`). ⚠️ On
+**n'utilise pas** la chaîne d'outils Tailwind v3 du kit : Tailwise est adopté comme
+**système de design dans le pipeline Tailwind v4 de GEVES**, via
+`resources/css/tailwise.css` (importé en dernier), **100 % scopé sous `.ukc-shell`**
+(police Public Sans, cartes `.box`, sidebar, KPI, etc.).
+
+- ⚠️ **Le public reste sur la charte UK** (fidèle aux maquettes) — **ne JAMAIS**
+  re-skinner le public avec Tailwise (le public n'a pas `.ukc-shell`).
+- Composants Tailwise déjà portés et **à réutiliser** côté back-office : menu latéral
+  rétractable à icônes, topbar + **palette ⌘K** (`<x-ukc.command-palette>`,
+  `App\Support\AdminPalette`), widgets stat à **tendance réelle** (`<x-ukc.trend>`,
+  `App\Support\Trend`), **tri par en-tête** (`<x-ukc.th>`, `App\Support\ListSort` — liste
+  blanche anti-injection), **Tom Select**, **slideover** (`<x-ukc.slideover>`),
+  **filedrop** (`<x-ukc.filedrop>`), **FullCalendar v6** (⚠️ pas v7 : classes CSS hachées).
+- Éditeurs de documents (badge/template) = **pages autonomes hors `.ukc-shell`**
+  (overlay `resources/css/designer-tailwise.css`, tokens surchargés via `html:root`).
+- Vérif visuelle : viewport ≥1024px pour voir le menu déployé (reset `desktop` après).
+
 ### Composants transverses à réutiliser
 
 - **Téléphone** : tout champ numéro de téléphone = `<x-ukc.phone>` (intl-tel-input,
