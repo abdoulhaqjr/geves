@@ -82,6 +82,9 @@ return [
     ],
     'ai' => [
         'default' => env('AI_PROVIDER', 'claude'), // openai | claude | gemini | grok
+        // Chatbot public : nombre max de questions par jour et par utilisateur
+        // (par IP pour un visiteur anonyme). Admins/gestionnaires non limités.
+        'public_daily_limit' => (int) env('AI_PUBLIC_DAILY_LIMIT', 30),
     ],
 
     // HAL / AuréHAL — autocomplétion des affiliations (référentiel des structures).

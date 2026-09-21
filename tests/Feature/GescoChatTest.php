@@ -19,6 +19,28 @@ it('affiche la page dédiée de l’assistante Gesco', function () {
         ->assertSee('Gesco');
 });
 
+it('limite le chatbot public à N questions par jour', function () {
+    config(['services.ai.public_daily_limit' => 2]);
+    bindFakeAi(fakeAiProvider(['answer' => 'Réponse.']));
+
+    $this->postJson(route('gesco.ask'), ['question' => 'Q1'])->assertOk()->assertJsonPath('answer', 'Réponse.');
+    $this->postJson(route('gesco.ask'), ['question' => 'Q2'])->assertOk()->assertJsonPath('answer', 'Réponse.');
+
+    $blocked = $this->postJson(route('gesco.ask'), ['question' => 'Q3'])->assertOk();
+    expect($blocked->json('answer'))->toContain('atteint la limite');
+});
+
+it('n’applique pas la limite aux administrateurs et gestionnaires', function () {
+    config(['services.ai.public_daily_limit' => 1]);
+    bindFakeAi(fakeAiProvider(['answer' => 'Réponse.']));
+
+    $this->actingAs(adminStaff(), 'web');
+
+    // Au-delà de la limite (1), l'admin continue d'obtenir des réponses.
+    $this->postJson(route('gesco.ask'), ['question' => 'Q1'])->assertJsonPath('answer', 'Réponse.');
+    $this->postJson(route('gesco.ask'), ['question' => 'Q2'])->assertJsonPath('answer', 'Réponse.');
+});
+
 it('répond dans le chat via l’endpoint JSON', function () {
     bindFakeAi(fakeAiProvider(['answer' => 'Les tarifs dépendent de votre catégorie.']));
 

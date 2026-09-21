@@ -49,13 +49,25 @@ class GescoController extends Controller
             'history.*.text' => ['string'],
         ]);
 
-        $key = 'gesco:'.$request->ip();
-        if (RateLimiter::tooManyAttempts($key, 20)) {
-            return response()->json([
-                'answer' => 'Vous avez envoyé beaucoup de messages. Merci de réessayer un peu plus tard.',
-            ]);
+        // Limite d'usage du chatbot public : X questions par JOUR et par utilisateur
+        // (par IP pour un visiteur anonyme). Les administrateurs et gestionnaires
+        // (capacité editions_write) ne sont PAS limités.
+        $requester = Auth::guard('account')->user() ?? Auth::guard('web')->user();
+        $unlimited = $requester instanceof User
+            && ($requester->isColloqueSuperAdmin() || $requester->canAnyEdition('editions_write'));
+
+        if (! $unlimited) {
+            $limit = max(1, (int) config('services.ai.public_daily_limit', 30));
+            $key = 'gesco-chat:'.now()->toDateString().':'.($requester ? 'u'.$requester->id : 'ip'.$request->ip());
+
+            if (RateLimiter::tooManyAttempts($key, $limit)) {
+                return response()->json([
+                    'answer' => 'Vous avez atteint la limite de '.$limit.' questions pour aujourd’hui. '
+                        .'Merci de réessayer demain, ou de contacter la DRI (dri@univkara.tg) pour une demande précise.',
+                ]);
+            }
+            RateLimiter::hit($key, 86400);
         }
-        RateLimiter::hit($key, 3600);
 
         // Normalise l'historique reçu au format attendu par l'action.
         $history = collect($data['history'] ?? [])
