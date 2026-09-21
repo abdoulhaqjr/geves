@@ -82,8 +82,9 @@ return [
     ],
     'ai' => [
         'default' => env('AI_PROVIDER', 'claude'), // openai | claude | gemini | grok
-        // Chatbot public : nombre max de questions par jour et par utilisateur
-        // (par IP pour un visiteur anonyme). Admins/gestionnaires non limités.
+        // Chatbot public (admins/gestionnaires non limités ; par IP si anonyme) :
+        // rate-limit court terme (questions / heure) + plafond journalier (questions / jour).
+        'public_rate_limit' => (int) env('AI_PUBLIC_RATE_LIMIT', 20),
         'public_daily_limit' => (int) env('AI_PUBLIC_DAILY_LIMIT', 30),
     ],
 

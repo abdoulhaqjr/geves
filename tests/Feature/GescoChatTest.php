@@ -30,6 +30,17 @@ it('limite le chatbot public à N questions par jour', function () {
     expect($blocked->json('answer'))->toContain('atteint la limite');
 });
 
+it('applique un rate-limit court terme (anti-flood)', function () {
+    config(['services.ai.public_rate_limit' => 2, 'services.ai.public_daily_limit' => 100]);
+    bindFakeAi(fakeAiProvider(['answer' => 'Réponse.']));
+
+    $this->postJson(route('gesco.ask'), ['question' => 'Q1'])->assertJsonPath('answer', 'Réponse.');
+    $this->postJson(route('gesco.ask'), ['question' => 'Q2'])->assertJsonPath('answer', 'Réponse.');
+
+    $blocked = $this->postJson(route('gesco.ask'), ['question' => 'Q3'])->assertOk();
+    expect($blocked->json('answer'))->toContain('trop rapidement');
+});
+
 it('n’applique pas la limite aux administrateurs et gestionnaires', function () {
     config(['services.ai.public_daily_limit' => 1]);
     bindFakeAi(fakeAiProvider(['answer' => 'Réponse.']));

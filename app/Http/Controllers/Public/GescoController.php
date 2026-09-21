@@ -57,16 +57,28 @@ class GescoController extends Controller
             && ($requester->isColloqueSuperAdmin() || $requester->canAnyEdition('editions_write'));
 
         if (! $unlimited) {
-            $limit = max(1, (int) config('services.ai.public_daily_limit', 30));
-            $key = 'gesco-chat:'.now()->toDateString().':'.($requester ? 'u'.$requester->id : 'ip'.$request->ip());
+            $scope = $requester ? 'u'.$requester->id : 'ip'.$request->ip();
 
-            if (RateLimiter::tooManyAttempts($key, $limit)) {
+            // 1) Rate-limit court terme (anti-flood) : N questions / heure.
+            $burstKey = 'gesco-chat-burst:'.$scope;
+            if (RateLimiter::tooManyAttempts($burstKey, max(1, (int) config('services.ai.public_rate_limit', 20)))) {
+                return response()->json([
+                    'answer' => 'Vous envoyez des messages trop rapidement. Merci de patienter un instant avant de réessayer.',
+                ]);
+            }
+
+            // 2) Limite journalière : N questions / jour.
+            $limit = max(1, (int) config('services.ai.public_daily_limit', 30));
+            $dayKey = 'gesco-chat:'.now()->toDateString().':'.$scope;
+            if (RateLimiter::tooManyAttempts($dayKey, $limit)) {
                 return response()->json([
                     'answer' => 'Vous avez atteint la limite de '.$limit.' questions pour aujourd’hui. '
                         .'Merci de réessayer demain, ou de contacter la DRI (dri@univkara.tg) pour une demande précise.',
                 ]);
             }
-            RateLimiter::hit($key, 86400);
+
+            RateLimiter::hit($burstKey, 3600);  // fenêtre 1 h
+            RateLimiter::hit($dayKey, 86400);   // fenêtre 24 h
         }
 
         // Normalise l'historique reçu au format attendu par l'action.
