@@ -400,6 +400,7 @@
 .author-hint--ok { color: var(--ukc-green); }
 .author-hint--info { color: var(--ukc-blue); }
 .author-hint--muted { color: var(--ukc-muted); font-weight: 500; }
+.author-hint--err { color: #b91c1c; }
 .recap-list { display: flex; flex-direction: column; gap: 0; }
 .recap-list .r { display: flex; justify-content: space-between; gap: 14px; padding: 11px 0; border-bottom: 1px solid var(--ukc-border); font-size: 14px; }
 .recap-list .r:last-child { border-bottom: none; }

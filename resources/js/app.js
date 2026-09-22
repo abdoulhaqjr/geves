@@ -1192,6 +1192,23 @@ document.addEventListener('alpine:init', () => {
         async lookupCoauthor(i) {
             const co = this.coauthors[i];
             if (! co) return;
+            const email = (co.email || '').trim().toLowerCase();
+
+            // Doublon détecté DÈS la saisie (prioritaire sur l'indice « compte trouvé »).
+            const corrEmail = ((this.corr.self ? this.account.email : this.corr.email) || '').trim().toLowerCase();
+            if (email && email === corrEmail) {
+                co.hint = 'Cette personne est déjà l’auteur correspondant : retirez cette ligne.';
+                co.hintType = 'err';
+                co.suggestion = '';
+                return;
+            }
+            if (email && this.coauthors.some((c, j) => j !== i && (c.email || '').trim().toLowerCase() === email)) {
+                co.hint = 'Même e-mail qu’un autre co-auteur : chaque auteur doit être unique.';
+                co.hintType = 'err';
+                co.suggestion = '';
+                return;
+            }
+
             const d = await this._authorLookup(co.name, co.email);
             if (d) {
                 co.hint = d.hint || '';
