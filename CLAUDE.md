@@ -158,9 +158,24 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   `App\Documents\LayoutRenderer` avec variables `{…}`), sinon un **défaut** fixe à la charte
   UK. Placeholders dispo dans `TemplateDesignerController::VARIABLES` — dont
   **`{communication}` / `{communication_ref}`** pour nommer la communication sur une
-  attestation de communication personnalisée. ⚠️ La « signature / identité vérifiable »
-  (DID/Ed25519) n'est **pas** implémentée : seulement des réglages d'UI ; la vérification
-  = UUID + QR → page publique (existence + non-révocation).
+  attestation de communication personnalisée.
+- **Certification cryptographique des attestations** (identité vérifiable) : chaque
+  attestation est scellée à l'émission par une **signature EdDSA (Ed25519)** de
+  l'émetteur, sous forme de **Verifiable Credential W3C sécurisé en JWS compact**
+  (« VC-JWT », via `firebase/php-jwt` — pas de crypto maison ; **pas** de JSON-LD
+  `Ed25519Signature2020` faute de canonicalisation RDF fiable en PHP). Cœur :
+  `App\Documents\AttestationCertifier` (sign/verify/didDocument/jwks). Clé privée =
+  **graine hors dépôt** (`config/attestations.php` ← `ATTESTATION_SIGNING_KEY`, générée par
+  `php artisan attestations:keygen`, **jamais** en base) ; clé publique publiée via
+  `did:web` (`/.well-known/did.json`, `/colloques/did.json`) + `/.well-known/jwks.json`.
+  Preuve stockée en colonnes dédiées (`attestations.credential`/`key_id`/`signed_at`).
+  **Fail-open à l'émission** (sans clé → attestation émise non signée) ; **fail-closed
+  sur la preuve** (« signature vérifiée » seulement si elle vérifie vraiment). La
+  révocation reste un état DB (une signature ne se « défait » pas). Page publique
+  `/verifier/{uuid}` : vérifie la signature + existence + non-révocation, et propose le
+  **VC JSON téléchargeable** (`/attestation/{uuid}/credential.json`). Rattrapage du stock :
+  `php artisan attestations:sign`. Réglages `attestations.did_*` / `crypto_suite`
+  (EditionSettings) désormais **effectifs**.
 
 ### Architecture & sécurité
 

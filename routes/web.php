@@ -113,8 +113,15 @@ Route::post('/association/{token}', [AuthorLinkController::class, 'decline'])->n
 // Attestations : document imprimable + vérification publique (par UUID).
 Route::get('/attestation/{uuid}', [AttestationController::class, 'document'])->name('attestation.document');
 Route::get('/attestation/{uuid}/pdf', [AttestationController::class, 'pdf'])->name('attestation.pdf');
+Route::get('/attestation/{uuid}/credential.json', [AttestationController::class, 'credential'])->name('attestation.credential');
 Route::get('/verifier', [AttestationController::class, 'verifyLanding'])->name('attestation.verify.landing');
 Route::get('/verifier/{uuid}', [AttestationController::class, 'verify'])->name('attestation.verify');
+
+// Identité vérifiable de l'émetteur : document DID (did:web) + JWKS. Deux formes
+// de résolution did:web (racine et forme par chemin « :colloques »).
+Route::get('/.well-known/did.json', [AttestationController::class, 'didDocument'])->name('attestation.did');
+Route::get('/colloques/did.json', [AttestationController::class, 'didDocument']);
+Route::get('/.well-known/jwks.json', [AttestationController::class, 'jwks'])->name('attestation.jwks');
 
 // Paiement en ligne : retour navigateur + webhook serveur-à-serveur.
 Route::get('/paiement/retour/{gateway}', [PaymentController::class, 'return'])->name('payment.return');

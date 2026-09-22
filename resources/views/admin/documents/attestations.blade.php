@@ -100,7 +100,21 @@
                         @csrf
                         <h3>Options générales · Attestations</h3>
                         <x-ukc.scope-edition :edition="$edition" />
-                        <div class="desc">Paramètres de génération, DIDs et notifications pour cette édition.</div>
+                        <div class="desc">Paramètres de génération, identité vérifiable (DID) et notifications pour cette édition.</div>
+                        @if ($opts['attCertEnabled'])
+                            <div class="ukc-pill--ok" style="display:inline-flex;align-items:center;gap:6px;margin-bottom:12px;">
+                                <x-ukc.icon name="shield" :size="14" /> Certification active — clé de signature configurée
+                            </div>
+                        @else
+                            <div class="ukc-pill--warn" style="display:inline-flex;align-items:center;gap:6px;margin-bottom:12px;">
+                                <x-ukc.icon name="info" :size="14" /> Certification inactive — attestations émises sans signature
+                            </div>
+                            <div class="desc" style="margin-bottom:12px;">
+                                Générez une clé émetteur avec <code>php artisan attestations:keygen</code>, ajoutez
+                                <code>ATTESTATION_SIGNING_KEY</code> au <code>.env</code>, puis signez le stock existant
+                                avec <code>php artisan attestations:sign</code>.
+                            </div>
+                        @endif
                         <div class="ukc-field" style="margin-bottom:12px;">
                             <label>DID émetteur</label>
                             <input type="text" name="attDidIssuer" value="{{ $opts['attDidIssuer'] }}">
@@ -112,10 +126,11 @@
                         <div class="ukc-field" style="margin-bottom:12px;">
                             <label>Suite cryptographique</label>
                             <select name="attCryptoSuite">
-                                @foreach (['Ed25519Signature2020', 'JsonWebSignature2020'] as $suite)
+                                @foreach (['EdDSA (VC-JWT)', 'JsonWebSignature2020'] as $suite)
                                     <option @selected($opts['attCryptoSuite'] === $suite)>{{ $suite }}</option>
                                 @endforeach
                             </select>
+                            <div class="desc">Signature Ed25519 d’un Verifiable Credential W3C porté par un JWS (VC-JWT).</div>
                         </div>
                         <div class="ukc-field" style="margin-bottom:12px;">
                             <label>Préfixe des références</label>

@@ -14,6 +14,9 @@ use Illuminate\Support\Carbon;
  *
  * @property array<string, mixed>|null $meta
  * @property Carbon|null $issued_at
+ * @property string|null $credential
+ * @property string|null $key_id
+ * @property Carbon|null $signed_at
  */
 #[ObservedBy([AttestationObserver::class])]
 class Attestation extends Model
@@ -41,12 +44,19 @@ class Attestation extends Model
         return ! $this->revoked;
     }
 
+    /** L'attestation porte-t-elle une signature cryptographique ? */
+    public function isSigned(): bool
+    {
+        return filled($this->credential);
+    }
+
     protected function casts(): array
     {
         return [
             'meta' => 'array',
             'revoked' => 'boolean',
             'issued_at' => 'datetime',
+            'signed_at' => 'datetime',
         ];
     }
 

@@ -17,12 +17,35 @@
                     </div>
                     <h1 style="font-size:1.3rem;font-weight:800;">{{ __('Attestation révoquée') }}</h1>
                     <p style="color:var(--ukc-muted);margin-top:6px;">{{ __('Ce document n’est plus valide.') }}</p>
+                @elseif ($proof && $proof['signed'] && ! $proof['valid'])
+                    {{-- Attestation présente mais signature illisible/altérée : alerte d'intégrité. --}}
+                    <div style="width:64px;height:64px;border-radius:50%;margin:0 auto 16px;background:#fef3c7;color:#92400e;
+                                display:flex;align-items:center;justify-content:center;">
+                        <x-ukc.icon name="info" :size="30" />
+                    </div>
+                    <h1 style="font-size:1.3rem;font-weight:800;color:#92400e;">{{ __('Signature non vérifiée') }}</h1>
+                    <p style="color:var(--ukc-muted);margin-top:6px;">{{ __('Ce document existe au registre mais sa signature cryptographique n’a pas pu être validée. Ne le considérez pas comme authentique.') }}</p>
+                    <div style="margin-top:12px;text-align:left;">
+                        <div style="font-size:.72rem;color:var(--ukc-muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-bottom:4px;">{{ __('Identifiant') }}</div>
+                        <div style="font-size:.78rem;color:var(--ukc-text);font-family:var(--ukc-mono);background:var(--ukc-bg);border:1px solid var(--ukc-border);border-radius:8px;padding:8px 10px;word-break:break-all;">
+                            {{ $attestation->uuid }}
+                        </div>
+                    </div>
                 @else
                     <div style="width:64px;height:64px;border-radius:50%;margin:0 auto 16px;background:#dcfce7;color:#166534;
                                 display:flex;align-items:center;justify-content:center;">
                         <x-ukc.icon name="check" :size="32" />
                     </div>
                     <h1 style="font-size:1.3rem;font-weight:800;color:#166534;">{{ __('Attestation authentique') }}</h1>
+                    @if ($proof && $proof['valid'])
+                        <div class="ukc-pill--ok" style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;font-size:.78rem;">
+                            <x-ukc.icon name="shield" :size="14" /> {{ __('Signature cryptographique vérifiée') }}
+                        </div>
+                    @else
+                        <div class="ukc-pill--muted" style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;font-size:.78rem;">
+                            <x-ukc.icon name="info" :size="14" /> {{ __('Vérifié par le registre officiel') }}
+                        </div>
+                    @endif
                     <div style="margin-top:20px;text-align:left;font-size:.95rem;">
                         <div style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--ukc-border);">
                             <span style="color:var(--ukc-muted);">{{ __('Bénéficiaire') }}</span><strong style="text-align:right;">{{ $attestation->recipient_name }}</strong></div>
@@ -47,6 +70,17 @@
                        class="ukc-btn ukc-btn--blue" style="width:100%;margin-top:16px;">
                         <x-ukc.icon name="download" :size="16" /> {{ __('Télécharger le document officiel') }}
                     </a>
+
+                    @if ($proof && $proof['valid'])
+                        <a href="{{ route('attestation.credential', $attestation->uuid) }}"
+                           class="ukc-btn ukc-btn--outline" style="width:100%;margin-top:8px;">
+                            <x-ukc.icon name="shield" :size="16" /> {{ __('Attestation vérifiable (JSON signé)') }}
+                        </a>
+                        <p style="font-size:.72rem;color:var(--ukc-muted);margin-top:10px;">
+                            {{ __('Signée par') }} <span style="font-family:var(--ukc-mono);">{{ $proof['payload']['iss'] ?? '' }}</span>.
+                            {{ __('Vérifiable de façon indépendante via la clé publique de l’émetteur (did:web / JWKS).') }}
+                        </p>
+                    @endif
                 @endif
 
                 @unless ($attestation && ! $attestation->revoked)

@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Documents\AttestationCertifier;
 use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
 use App\Models\Attestation;
 use App\Models\DocumentTemplate;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
@@ -117,14 +119,60 @@ class AttestationController extends Controller
     }
 
     /** Page publique de vérification d'authenticité. */
-    public function verify(string $uuid): View
+    public function verify(string $uuid, AttestationCertifier $certifier): View
     {
         $attestation = Attestation::with(['edition.colloque'])
             ->where('uuid', $uuid)->first();
 
+        // Vérification de la signature cryptographique (au-delà du registre).
+        $proof = $attestation ? $certifier->verify($attestation) : null;
+
         return view('attestations.verify', [
             'attestation' => $attestation,
+            'proof' => $proof,
         ]);
+    }
+
+    /**
+     * Verifiable Credential signé, téléchargeable en JSON (JWS compact + VC
+     * décodé pour lisibilité). Permet une vérification par un tiers.
+     */
+    public function credential(string $uuid, AttestationCertifier $certifier): JsonResponse
+    {
+        $attestation = Attestation::with(['edition.colloque'])
+            ->where('uuid', $uuid)->firstOrFail();
+
+        abort_unless($attestation->isSigned(), 404);
+
+        return response()->json([
+            'format' => 'vc+jwt',
+            'alg' => AttestationCertifier::ALG,
+            'jws' => $attestation->credential,
+            'credential' => $certifier->buildCredential($attestation),
+            'verify_url' => route('attestation.verify', $attestation->uuid),
+        ], 200, [
+            'Content-Disposition' => 'attachment; filename="attestation-'.$attestation->uuid.'.json"',
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    }
+
+    /** Document DID (did:web) publiant la clé publique de l'émetteur. */
+    public function didDocument(AttestationCertifier $certifier): JsonResponse
+    {
+        $document = $certifier->didDocument();
+
+        abort_if($document === null, 404);
+
+        return response()->json($document, 200, [], JSON_UNESCAPED_SLASHES);
+    }
+
+    /** JWKS de la clé publique de l'émetteur (vérification JOSE générique). */
+    public function jwks(AttestationCertifier $certifier): JsonResponse
+    {
+        $jwks = $certifier->jwks();
+
+        abort_if($jwks === null, 404);
+
+        return response()->json($jwks, 200, [], JSON_UNESCAPED_SLASHES);
     }
 
     /**

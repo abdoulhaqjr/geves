@@ -33,5 +33,8 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <!-- Certification des attestations désactivée par défaut : les tests qui
+             la vérifient activent une clé éphémère via config() à l'exécution. -->
+        <env name="ATTESTATION_SIGNING_KEY" value=""/>
     </php>
 </phpunit>

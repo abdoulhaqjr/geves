@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Actions\IssueAttestation;
 use App\AI\AiManager;
+use App\Documents\AttestationCertifier;
 use App\Http\Controllers\Controller;
 use App\Models\Attestation;
 use App\Models\Edition;
@@ -87,10 +88,11 @@ class DocumentHubController extends Controller
                 'attRequirePresence' => (bool) EditionSettings::get($edition, 'attestations.require_presence', false),
                 'attIncludeQr' => (bool) EditionSettings::get($edition, 'attestations.include_qr', true),
                 'attAllowBeforeValidation' => (bool) EditionSettings::get($edition, 'attestations.allow_before_validation', false),
-                // Identité vérifiable (DIDs) — mockup admin-documents.
+                // Identité vérifiable (DIDs) — signature EdDSA / VC-JWT effective.
                 'attDidIssuer' => (string) EditionSettings::get($edition, 'attestations.did_issuer', 'did:web:univkara.tg:colloques'),
                 'attDidMethod' => (string) EditionSettings::get($edition, 'attestations.did_method', 'did:web:univkara.tg:colloques#key-ed25519-1'),
-                'attCryptoSuite' => (string) EditionSettings::get($edition, 'attestations.crypto_suite', 'Ed25519Signature2020'),
+                'attCryptoSuite' => (string) EditionSettings::get($edition, 'attestations.crypto_suite', 'EdDSA (VC-JWT)'),
+                'attCertEnabled' => app(AttestationCertifier::class)->enabled(),
                 'badgePrefix' => (string) EditionSettings::get($edition, 'badges.prefix', 'UKC-2026-'),
                 'badgeFormat' => (string) EditionSettings::get($edition, 'badges.format', 'A6 Portrait'),
                 'badgePhotoRequired' => (bool) EditionSettings::get($edition, 'badges.photo_required', true),
