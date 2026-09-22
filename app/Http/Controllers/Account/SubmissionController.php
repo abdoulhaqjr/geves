@@ -38,10 +38,15 @@ class SubmissionController extends Controller
         // Colloque courant (sélecteur) : la liste se scope dessus.
         $current = CurrentColloque::current($account);
 
+        // « Mes communications » = celles que j'ai déposées OU celles où je suis
+        // rattaché comme auteur/co-auteur (liaison confirmée, non déclinée).
         $submissions = Submission::query()
             ->canonical()
             ->with('edition')
-            ->whereHas('participant', fn ($q) => $q->where('user_id', $account->id))
+            ->where(function ($q) use ($account): void {
+                $q->whereHas('participant', fn ($p) => $p->where('user_id', $account->id))
+                    ->orWhereHas('authorLinks', fn ($l) => $l->where('user_id', $account->id)->where('status', 'linked'));
+            })
             ->when($current, fn ($q) => $q->where('edition_id', $current->id))
             ->latest('id')
             ->get();
@@ -104,7 +109,9 @@ class SubmissionController extends Controller
 
     public function show(Submission $submission): View
     {
-        $this->authorizeOwnership($submission);
+        // Le déposant OU un auteur/co-auteur rattaché peut consulter la fiche ;
+        // seul le déposant peut la modifier (gardé par $isOwner dans la vue).
+        $isOwner = $this->authorizeView($submission);
 
         $soumissionAtt = $submission->participant_id
             ? Attestation::where('participant_id', $submission->participant_id)
@@ -121,6 +128,7 @@ class SubmissionController extends Controller
             'slot' => $slot,
             'availableSlots' => $this->availableSlots($submission),
             'soumissionAtt' => $soumissionAtt,
+            'isOwner' => $isOwner,
             'abstractMin' => (new SubmissionFormConfig($submission->edition))->abstractMin(),
             'abstractMax' => (new SubmissionFormConfig($submission->edition))->abstractMax(),
             'googleCal' => $slot && $slot->starts_at
@@ -314,6 +322,27 @@ class SubmissionController extends Controller
             && (int) $submission->participant->user_id === (int) $account->id,
             404
         );
+    }
+
+    /** Le déposant OU un auteur rattaché peut voir la fiche. Retourne « est propriétaire ». */
+    private function authorizeView(Submission $submission): bool
+    {
+        $account = Auth::guard('account')->user();
+        $isOwner = (int) $submission->revision_of === 0
+            && $submission->participant
+            && (int) $submission->participant->user_id === (int) $account->id;
+
+        if ($isOwner) {
+            return true;
+        }
+
+        $linked = (int) $submission->revision_of === 0
+            && $submission->authorLinks()
+                ->where('user_id', $account->id)->where('status', 'linked')->exists();
+
+        abort_unless($linked, 404);
+
+        return false;
     }
 
     /** Commentaires des relecteurs destinés à l'auteur (révélés après décision ou en phase de réponse). */

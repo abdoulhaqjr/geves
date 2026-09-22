@@ -20,6 +20,14 @@
             </div>
         </div>
 
+        {{-- Bandeau lecture seule pour un auteur rattaché qui n'est pas le déposant --}}
+        @unless ($isOwner)
+            <div class="ukc-alert ukc-alert--info" style="margin-bottom:14px;">
+                <span class="ico"><x-ukc.icon name="users" :size="18" /></span>
+                <div>{!! __('Vous êtes rattaché(e) à cette communication en tant qu’<strong>auteur</strong>. Seul le déposant peut la modifier.') !!}</div>
+            </div>
+        @endunless
+
         {{-- En-tête + parcours --}}
         <div class="ukc-card" style="margin-bottom:18px;">
             <div class="sub-header">
@@ -55,8 +63,8 @@
         </div>
 
         {{-- Correction libre du contenu tant qu'aucun relecteur / comité / gestionnaire
-             n'y a touché (statut « déposée », aucune relecture). --}}
-        @if ($s->isAuthorEditable())
+             n'y a touché (statut « déposée », aucune relecture). Déposant seulement. --}}
+        @if ($isOwner && $s->isAuthorEditable())
             <div class="ukc-card" style="margin-bottom:18px;" x-data="{ editing: {{ $errors->any() ? 'true' : 'false' }} }">
                 <div class="ukc-alert ukc-alert--info" style="margin:0;">
                     <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
@@ -97,7 +105,7 @@
         @endif
 
         {{-- Correction demandée : resoumission (fonctionnalité réelle) --}}
-        @if ($s->canBeRevised())
+        @if ($isOwner && $s->canBeRevised())
             <div class="ukc-card" style="margin-bottom:18px;border-color:#fde68a;background:#fffbeb;">
                 <div class="ukc-alert ukc-alert--warn" style="margin-bottom:16px;">
                     <span class="ico"><x-ukc.icon name="pen" :size="18" /></span>
@@ -107,8 +115,8 @@
             </div>
         @endif
 
-        {{-- Version définitive (camera-ready) — après acceptation --}}
-        @if ($s->status === 'accepted')
+        {{-- Version définitive (camera-ready) — après acceptation (déposant seulement) --}}
+        @if ($isOwner && $s->status === 'accepted')
             @php($cr = $s->cameraReady())
             <div class="ukc-card" style="margin-bottom:18px;" id="camera-ready">
                 <h2><x-ukc.icon name="file" :size="18" /> {{ __('Version définitive') }}</h2>
@@ -227,8 +235,8 @@
                     <p class="hint">{{ __('Les avis détaillés des relecteurs restent confidentiels. Seule la décision finale et d’éventuels commentaires destinés aux auteurs vous sont communiqués.') }}</p>
                 </div>
 
-                {{-- Phase de réponse aux relecteurs (rebuttal) --}}
-                @if ($s->rebuttalOpen())
+                {{-- Phase de réponse aux relecteurs (rebuttal) — déposant seulement --}}
+                @if ($isOwner && $s->rebuttalOpen())
                     @php($reb = $s->rebuttal())
                     <div class="ukc-card" style="margin-top:18px;border-color:#c7d2fe;background:#f5f7ff;" id="rebuttal">
                         <h2><x-ukc.icon name="pen" :size="18" /> {{ __('Votre réponse aux relecteurs') }}</h2>
@@ -320,16 +328,18 @@
                                 </a>
                             </div>
                         @endif
-                        @if ($availableSlots->count())
+                        @if ($isOwner && $availableSlots->count())
                             <button type="button" class="ukc-btn ukc-btn--outline ukc-btn--sm" style="margin-top:12px;" @click="slotModal = true">
                                 <x-ukc.icon name="calendar" :size="16" /> {{ __('Changer de créneau') }}
                             </button>
                         @endif
                     @elseif ($s->status === 'accepted' && $availableSlots->count())
                         <p class="hint" style="margin-top:0;">{{ __('Aucun créneau choisi pour l’instant.') }}</p>
-                        <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" style="margin-top:8px;" @click="slotModal = true">
-                            <x-ukc.icon name="calendar" :size="16" /> {{ __('Choisir un créneau') }}
-                        </button>
+                        @if ($isOwner)
+                            <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" style="margin-top:8px;" @click="slotModal = true">
+                                <x-ukc.icon name="calendar" :size="16" /> {{ __('Choisir un créneau') }}
+                            </button>
+                        @endif
                     @else
                         <div class="slot-card">
                             <strong>{{ __('Pas encore attribué') }}</strong>
@@ -348,8 +358,8 @@
             </div>
         </div>
 
-        {{-- Formulaire de resoumission (correction) --}}
-        @if ($s->canBeRevised())
+        {{-- Formulaire de resoumission (correction) — déposant seulement --}}
+        @if ($isOwner && $s->canBeRevised())
             <div class="ukc-card" id="resubmit" style="margin-top:18px;">
                 <h2>{{ __('Corriger & renvoyer') }}</h2>
                 <form method="POST" action="{{ route('account.submissions.resubmit', $s) }}" enctype="multipart/form-data" class="ukc-form-grid">
@@ -382,7 +392,7 @@
         @endif
 
         {{-- Modale : choix / changement de créneau --}}
-        @if ($availableSlots->count() && ($slot || $s->status === 'accepted'))
+        @if ($isOwner && $availableSlots->count() && ($slot || $s->status === 'accepted'))
             <div class="ukc-modal" x-show="slotModal" x-cloak @click.self="slotModal = false" style="display:none;">
                 <div class="box">
                     <div class="box-head">

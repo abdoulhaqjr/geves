@@ -169,6 +169,16 @@ class Submission extends Model
     }
 
     /**
+     * Liens auteurs ↔ comptes (correspondant + co-auteurs rapprochés/invités).
+     *
+     * @return HasMany<SubmissionAuthor, $this>
+     */
+    public function authorLinks(): HasMany
+    {
+        return $this->hasMany(SubmissionAuthor::class);
+    }
+
+    /**
      * Versions antérieures archivées lors des resoumissions.
      *
      * @return HasMany<Submission, $this>

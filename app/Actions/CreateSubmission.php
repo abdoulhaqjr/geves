@@ -25,6 +25,7 @@ class CreateSubmission
     public function __construct(
         protected UpsertParticipantForAccount $upsert,
         protected NotifySubmissionStatus $notify,
+        protected LinkSubmissionAuthors $linkAuthors,
     ) {}
 
     /**
@@ -103,6 +104,10 @@ class CreateSubmission
                 'meta' => $customMeta !== [] ? ['custom_fields' => $customMeta] : null,
             ]);
         });
+
+        // Rapproche les auteurs des comptes existants (liaison + notif/e-mail/SMS)
+        // ou invite les personnes non inscrites. Hors transaction (I/O réseau).
+        $this->linkAuthors->handle($submission, $account);
 
         // Accusé de réception à l'auteur correspondant (hors transaction).
         $this->notify->handle($submission, 'submitted');

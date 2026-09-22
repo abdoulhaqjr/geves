@@ -44,6 +44,7 @@ use App\Http\Controllers\Admin\SubmissionFormController;
 use App\Http\Controllers\Admin\TemplateDesignerController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AttestationController;
+use App\Http\Controllers\AuthorLinkController;
 use App\Http\Controllers\EgressController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LocaleController;
@@ -103,6 +104,10 @@ Route::post('/session/{session}/echanges/sondages/{poll}/etat', [SessionEngageme
 
 // Changement de langue (i18n) — mémorisé en session (+ préférence si connecté).
 Route::get('/langue/{locale}', [LocaleController::class, 'switch'])->name('locale.switch');
+
+// Association auteur ↔ communication : déclinaison publique par jeton.
+Route::get('/association/{token}', [AuthorLinkController::class, 'show'])->name('author.decline');
+Route::post('/association/{token}', [AuthorLinkController::class, 'decline'])->name('author.decline.confirm');
 
 // Attestations : document imprimable + vérification publique (par UUID).
 Route::get('/attestation/{uuid}', [AttestationController::class, 'document'])->name('attestation.document');

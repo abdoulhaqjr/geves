@@ -129,6 +129,13 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   `StoreSubmissionRequest::prepareForValidation`). L'auteur peut corriger son résumé en
   place tant que `Submission::isAuthorEditable()` (aucune relecture) — sinon
   resoumission officielle (`canBeRevised`).
+- **Liaison auteurs ↔ comptes** : table `submission_authors` (`Submission::authorLinks()`),
+  moteur `App\Support\AuthorMatcher` (fort = e-mail/téléphone ; faible = nom+affiliation,
+  IA en renfort, **déclinable**), action `LinkSubmissionAuthors` (appelée par
+  `CreateSubmission` : lie + notifie `authorship`/`AuthorLinkedMail`/SMS best-effort, ou
+  invite via `AuthorInviteMail`), listener `LinkPendingAuthorships` (auto-liaison à
+  l'inscription). Une communication liée apparaît dans « Mes communications » de chaque
+  auteur ; seul le déposant (`$isOwner`) peut la modifier.
 - **Config runtime** : mail/paiements/IA/visio/SMS/nom sont surchargés **depuis la base**
   (`AppServiceProvider::applySettingsToConfig()`), pas le `.env`.
 
