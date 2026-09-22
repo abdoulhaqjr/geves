@@ -8,7 +8,9 @@ use App\Mail\PaymentReminderMail;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Support\Fees;
+use App\Support\ListSort;
 use App\Support\Notifier;
+use App\Support\Trend;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -52,7 +54,7 @@ class PaymentController extends Controller
             ->when($scoped !== null, fn ($q) => $q->whereIn('edition_id', $scoped))
             ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId));
 
-        $sort = \App\Support\ListSort::resolve($request, ['reference', 'receipt_no', 'amount', 'created_at', 'status', 'method'], 'created_at', 'desc');
+        $sort = ListSort::resolve($request, ['reference', 'receipt_no', 'amount', 'created_at', 'status', 'method'], 'created_at', 'desc');
         $payments = $this->applyFilters(clone $base, $status, $method, $search, $from, $to)
             ->with(['participant', 'edition'])
             ->orderBy($sort['sort'], $sort['dir'])
@@ -84,7 +86,7 @@ class PaymentController extends Controller
                 ])->values();
 
         // Tendance des encaissements : 7 derniers jours vs les 7 précédents.
-        $trendPaid = \App\Support\Trend::of(
+        $trendPaid = Trend::of(
             (int) (clone $base)->where('status', 'paid')->whereBetween('created_at', [now()->subDays(7), now()])->count(),
             (int) (clone $base)->where('status', 'paid')->whereBetween('created_at', [now()->subDays(14), now()->subDays(7)])->count(),
         );

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
-use App\Models\EventSession;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 

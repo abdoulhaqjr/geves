@@ -9,6 +9,7 @@ use App\Models\Participant;
 use App\Models\User;
 use App\Support\Fees;
 use App\Support\Notifier;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Mail;
 
 /**
@@ -93,9 +94,9 @@ class SendPaymentReminders implements CopilotAction
     /**
      * Inscrits à relancer : communication acceptée, aucun paiement réglé.
      *
-     * @return \Illuminate\Support\Collection<int, Participant>
+     * @return Collection<int, Participant>
      */
-    private function targets(Edition $edition): \Illuminate\Support\Collection
+    private function targets(Edition $edition): Collection
     {
         return Participant::where('edition_id', $edition->id)
             ->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted'))

@@ -2,6 +2,7 @@
 
 use App\Actions\AskAdmin;
 use App\Mail\PaymentReminderMail;
+use App\Models\Participant;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -10,7 +11,7 @@ use Illuminate\Support\Str;
 // fakeAiProvider() / bindFakeAi() : GenerateReportTest.
 
 /** Inscrit avec communication acceptée et frais non réglés (cible d'une relance). */
-function unpaidAcceptedParticipant($edition): App\Models\Participant
+function unpaidAcceptedParticipant($edition): Participant
 {
     $p = $edition->participants()->create([
         'first_name' => 'Ama', 'last_name' => 'Dette', 'email' => 'ama.dette@example.tg', 'role' => 'author',

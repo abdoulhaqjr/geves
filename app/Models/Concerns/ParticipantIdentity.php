@@ -2,7 +2,9 @@
 
 namespace App\Models\Concerns;
 
+use App\Models\Account;
 use App\Models\Participant;
+use App\Models\User;
 use App\Support\Orcid;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Hash;
@@ -10,8 +12,8 @@ use Illuminate\Support\Facades\Hash;
 /**
  * Capacités « participant » d'une identité : profil (nom, initiales, ORCID),
  * double authentification (TOTP / OTP SMS / codes de secours) et inscriptions
- * aux éditions. Partagé par {@see \App\Models\Account} (guard historique) et
- * {@see \App\Models\User} (identité unifiée — refonte comptes & rôles), pour
+ * aux éditions. Partagé par {@see Account} (guard historique) et
+ * {@see User} (identité unifiée — refonte comptes & rôles), pour
  * que l'utilisateur puisse porter la connexion participant sans duplication.
  *
  * Suppose des colonnes : first_name, last_name, affiliation, orcid,

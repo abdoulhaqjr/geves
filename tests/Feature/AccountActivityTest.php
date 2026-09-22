@@ -1,11 +1,10 @@
 <?php
 
-use App\Models\Account;
 use App\Models\Colloque;
 use App\Models\Edition;
+use App\Models\User;
 use App\Support\AccountActivity;
 use Illuminate\Support\Str;
-use App\Models\User;
 
 // openEdition() -> AccountSubmissionTest
 

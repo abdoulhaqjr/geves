@@ -9,6 +9,7 @@ use App\Models\Edition;
 use App\Models\Email;
 use App\Support\EmailAudience;
 use App\Support\EmailTemplates;
+use App\Support\ListSort;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -96,7 +97,7 @@ class EmailController extends Controller
             });
 
         // Tri par en-tête de colonne (campagnes) — collection agrégée triée en mémoire.
-        $sort = \App\Support\ListSort::resolve(
+        $sort = ListSort::resolve(
             $request,
             ['label', 'audience', 'scheduled_at', 'total', 'status'],
             'scheduled_at',

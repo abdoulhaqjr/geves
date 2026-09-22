@@ -7,6 +7,7 @@ use App\Models\Edition;
 use App\Models\Email;
 use App\Models\Payment;
 use App\Models\Submission;
+use App\Support\Trend;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -69,10 +70,10 @@ class DashboardController extends Controller
         $paidPartPrev7 = $pay()->where('status', 'paid')->whereBetween('created_at', $prev)->distinct('participant_id')->count('participant_id');
 
         $trends = [
-            'submissions' => \App\Support\Trend::of($subs7, $subsPrev7),
-            'revenue' => \App\Support\Trend::of($pay7, $payPrev7),
-            'participants' => \App\Support\Trend::of($paidPart7, $paidPartPrev7),
-            'emails' => \App\Support\Trend::of($emails7, $emailsPrev7),
+            'submissions' => Trend::of($subs7, $subsPrev7),
+            'revenue' => Trend::of($pay7, $payPrev7),
+            'participants' => Trend::of($paidPart7, $paidPartPrev7),
+            'emails' => Trend::of($emails7, $emailsPrev7),
         ];
 
         // Calendrier clé : jalons datés de l'édition (réels, masqués si absents).

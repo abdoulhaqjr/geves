@@ -6,17 +6,21 @@ use App\Http\Controllers\Account\DashboardController;
 use App\Http\Controllers\Account\EmailVerificationController;
 use App\Http\Controllers\Account\LoginController;
 use App\Http\Controllers\Account\LogoutController;
+use App\Http\Controllers\Account\ModerationController;
 use App\Http\Controllers\Account\OrcidController;
 use App\Http\Controllers\Account\PasswordResetController;
 use App\Http\Controllers\Account\PaymentController as AccountPaymentController;
 use App\Http\Controllers\Account\PreferencesController;
 use App\Http\Controllers\Account\ProfileController;
 use App\Http\Controllers\Account\RegisterController;
+use App\Http\Controllers\Account\ReviewWorkspaceController;
 use App\Http\Controllers\Account\SecurityController;
+use App\Http\Controllers\Account\SessionReportController;
 use App\Http\Controllers\Account\SubmissionController;
 use App\Http\Controllers\Account\VerifyEmailController;
 use App\Http\Controllers\Admin\AiAssistantController;
 use App\Http\Controllers\Admin\AnnouncementController;
+use App\Http\Controllers\Admin\ClaimController;
 use App\Http\Controllers\Admin\DocumentController;
 use App\Http\Controllers\Admin\DocumentHubController;
 use App\Http\Controllers\Admin\EditionController;
@@ -32,8 +36,10 @@ use App\Http\Controllers\Admin\ProgramController;
 use App\Http\Controllers\Admin\ProjectController;
 use App\Http\Controllers\Admin\ReceiptController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\SecretariatController;
 use App\Http\Controllers\Admin\SettingAgentController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\SpaceController;
 use App\Http\Controllers\Admin\SubmissionFormController;
 use App\Http\Controllers\Admin\TemplateDesignerController;
 use App\Http\Controllers\Admin\UserController;
@@ -97,7 +103,6 @@ Route::post('/session/{session}/echanges/sondages/{poll}/etat', [SessionEngageme
 
 // Changement de langue (i18n) — mémorisé en session (+ préférence si connecté).
 Route::get('/langue/{locale}', [LocaleController::class, 'switch'])->name('locale.switch');
-
 
 // Attestations : document imprimable + vérification publique (par UUID).
 Route::get('/attestation/{uuid}', [AttestationController::class, 'document'])->name('attestation.document');
@@ -169,13 +174,13 @@ Route::middleware(['auth:account', StampAccountSession::class])->group(function 
     Route::post('/colloque/{slug}/soumettre', [SubmissionController::class, 'store'])->name('account.submissions.store');
 
     // Fonctions événementielles (modérateur / rapporteur / relecteur)
-    Route::get('/animation', [App\Http\Controllers\Account\ModerationController::class, 'index'])->name('account.moderation');
-    Route::get('/rapports', [App\Http\Controllers\Account\SessionReportController::class, 'index'])->name('account.reports');
-    Route::get('/rapports/{session}', [App\Http\Controllers\Account\SessionReportController::class, 'edit'])->name('account.reports.edit');
-    Route::post('/rapports/{session}', [App\Http\Controllers\Account\SessionReportController::class, 'update'])->name('account.reports.update');
-    Route::get('/relectures', [App\Http\Controllers\Account\ReviewWorkspaceController::class, 'index'])->name('account.reviews');
-    Route::post('/relectures/candidatures', [App\Http\Controllers\Account\ReviewWorkspaceController::class, 'saveBids'])->name('account.reviews.bids');
-    Route::post('/relectures/{review}', [App\Http\Controllers\Account\ReviewWorkspaceController::class, 'submit'])->name('account.reviews.submit');
+    Route::get('/animation', [ModerationController::class, 'index'])->name('account.moderation');
+    Route::get('/rapports', [SessionReportController::class, 'index'])->name('account.reports');
+    Route::get('/rapports/{session}', [SessionReportController::class, 'edit'])->name('account.reports.edit');
+    Route::post('/rapports/{session}', [SessionReportController::class, 'update'])->name('account.reports.update');
+    Route::get('/relectures', [ReviewWorkspaceController::class, 'index'])->name('account.reviews');
+    Route::post('/relectures/candidatures', [ReviewWorkspaceController::class, 'saveBids'])->name('account.reviews.bids');
+    Route::post('/relectures/{review}', [ReviewWorkspaceController::class, 'submit'])->name('account.reviews.submit');
 
     // Paiement des frais
     Route::get('/compte/paiement/{edition}', [AccountPaymentController::class, 'show'])->name('account.payment');
@@ -214,19 +219,19 @@ Route::prefix('admin')->group(function () {
         // Accès de base au back-office : ouvert à tout membre du staff connecté
         // (le contenu est ensuite restreint aux éditions accessibles).
         Route::get('/', App\Http\Controllers\Admin\DashboardController::class)->name('admin.dashboard');
-        Route::get('/secretariat', [App\Http\Controllers\Admin\SecretariatController::class, 'index'])->name('admin.secretariat');
-        Route::get('/reclamations', [App\Http\Controllers\Admin\ClaimController::class, 'index'])->name('admin.claims.index');
-        Route::get('/reclamations/{claim}', [App\Http\Controllers\Admin\ClaimController::class, 'show'])->name('admin.claims.show');
-        Route::post('/reclamations/{claim}/statut', [App\Http\Controllers\Admin\ClaimController::class, 'updateStatus'])->name('admin.claims.status');
-        Route::post('/reclamations/{claim}/assigner', [App\Http\Controllers\Admin\ClaimController::class, 'assign'])->name('admin.claims.assign');
-        Route::post('/reclamations/{claim}/analyser', [App\Http\Controllers\Admin\ClaimController::class, 'analyze'])->name('admin.claims.analyze');
-        Route::post('/secretariat/assistant', [App\Http\Controllers\Admin\SecretariatController::class, 'generate'])->name('admin.secretariat.assist');
-        Route::get('/secretariat/assistant/{edition}/{id}/telecharger', [App\Http\Controllers\Admin\SecretariatController::class, 'download'])->name('admin.secretariat.assist.download');
+        Route::get('/secretariat', [SecretariatController::class, 'index'])->name('admin.secretariat');
+        Route::get('/reclamations', [ClaimController::class, 'index'])->name('admin.claims.index');
+        Route::get('/reclamations/{claim}', [ClaimController::class, 'show'])->name('admin.claims.show');
+        Route::post('/reclamations/{claim}/statut', [ClaimController::class, 'updateStatus'])->name('admin.claims.status');
+        Route::post('/reclamations/{claim}/assigner', [ClaimController::class, 'assign'])->name('admin.claims.assign');
+        Route::post('/reclamations/{claim}/analyser', [ClaimController::class, 'analyze'])->name('admin.claims.analyze');
+        Route::post('/secretariat/assistant', [SecretariatController::class, 'generate'])->name('admin.secretariat.assist');
+        Route::get('/secretariat/assistant/{edition}/{id}/telecharger', [SecretariatController::class, 'download'])->name('admin.secretariat.assist.download');
         Route::get('/notifications', [NotificationController::class, 'index'])->name('admin.notifications');
         Route::post('/deconnexion', AdminLogoutController::class)->name('admin.logout');
 
         // Basculer vers son propre espace participant (identité unifiée).
-        Route::post('/espace-participant', [App\Http\Controllers\Admin\SpaceController::class, 'participant'])->name('admin.space.participant');
+        Route::post('/espace-participant', [SpaceController::class, 'participant'])->name('admin.space.participant');
 
         // Profil du staff connecté (identité, photo, mot de passe).
         Route::get('/profil', [App\Http\Controllers\Admin\ProfileController::class, 'edit'])->name('admin.profile');

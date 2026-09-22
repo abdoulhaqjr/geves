@@ -3,15 +3,16 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasNotificationPreferences;
+use App\Models\Concerns\ParticipantIdentity;
 use App\Notifications\StaffVerifyEmail;
 use App\Support\StaffRoles;
 use Database\Factories\UserFactory;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Models\Concerns\ParticipantIdentity;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -91,7 +92,6 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->belongsToMany(Edition::class, 'edition_user')->withPivot('role')->withTimestamps();
     }
-
 
     /** Niveaux d'accès globaux (refonte Phase 3). */
     public const ACCESS_SUPER_ADMIN = 'super_admin';
@@ -278,11 +278,11 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * Vérification d'e-mail par défaut = flux participant (route account signée,
      * via VerifyEmail::createUrlUsing). Les comptes staff créés au back-office
-     * reçoivent explicitement {@see \App\Notifications\StaffVerifyEmail}.
+     * reçoivent explicitement {@see StaffVerifyEmail}.
      */
     public function sendEmailVerificationNotification(): void
     {
-        $this->notify(new \Illuminate\Auth\Notifications\VerifyEmail);
+        $this->notify(new VerifyEmail);
     }
 
     /** Lien de vérification staff (route admin signée) — création back-office. */

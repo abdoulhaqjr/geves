@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Public;
 use App\Actions\AskGesco;
 use App\Http\Controllers\Controller;
 use App\Models\Attestation;
+use App\Models\Claim;
 use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Models\Submission;
 use App\Models\User;
 use App\Support\AiAgents;
+use App\Support\Notifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -127,7 +129,7 @@ class GescoController extends Controller
             return null; // pas de contact fiable : Gesco redemandera l'e-mail
         }
 
-        $record = \App\Models\Claim::create([
+        $record = Claim::create([
             'edition_id' => $edition?->id,
             'user_id' => $account?->id,
             'name' => $account?->full_name ?: ((string) ($claim['contactName'] ?? '') ?: null),
@@ -140,7 +142,7 @@ class GescoController extends Controller
             'source' => 'chatbot',
         ]);
 
-        \App\Support\Notifier::staff(
+        Notifier::staff(
             kind: 'contact',
             title: 'Nouvelle '.mb_strtolower($record->typeLabel()),
             body: $record->subject.' — '.($record->name ?: $record->email),

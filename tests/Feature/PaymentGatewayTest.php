@@ -1,15 +1,14 @@
 <?php
 
-use App\Models\Account;
 use App\Models\Colloque;
 use App\Models\Payment;
+use App\Models\User;
 use App\Payments\Gateways\CashpayGateway;
 use App\Payments\Gateways\FedaPayGateway;
 use Firebase\JWT\JWT;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
-use App\Models\User;
 
 function onlineSetup(): array
 {

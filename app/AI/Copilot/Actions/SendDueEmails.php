@@ -32,7 +32,7 @@ class SendDueEmails implements CopilotAction
 
     public function description(): string
     {
-        return "Envoie immédiatement les e-mails programmés arrivés à échéance (statut « en file » dont la "
+        return 'Envoie immédiatement les e-mails programmés arrivés à échéance (statut « en file » dont la '
             ."date d'envoi est passée). À proposer si l'utilisateur veut déclencher / forcer l'envoi des "
             .'e-mails planifiés en attente.';
     }

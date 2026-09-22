@@ -52,5 +52,4 @@ class Account extends Authenticatable implements MustVerifyEmail
             'orcid_verified_at' => 'datetime',
         ];
     }
-
 }

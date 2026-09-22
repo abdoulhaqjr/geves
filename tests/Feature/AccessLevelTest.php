@@ -2,6 +2,7 @@
 
 use App\Models\Edition;
 use App\Models\User;
+use App\Support\StaffRoles;
 
 /**
  * Phase 3 — niveaux d'accès globaux : super admin · admin de colloque · utilisateur.
@@ -55,16 +56,16 @@ it('un utilisateur simple ne peut pas créer de colloque', function () {
 });
 
 it('propose gérant, co-gérant et les deux comités comme rôles de colloque', function () {
-    $roles = \App\Support\StaffRoles::teamRoles();
+    $roles = StaffRoles::teamRoles();
 
     expect($roles)->toHaveKeys(['gerant', 'co_gerant', 'scientific', 'comite_organisation']);
     // Le gérant a les capacités pleines sur le colloque (dont l'écriture).
-    expect(\App\Support\StaffRoles::permissionsFor('gerant'))->toContain('editions_write', 'payments', 'final_decision');
+    expect(StaffRoles::permissionsFor('gerant'))->toContain('editions_write', 'payments', 'final_decision');
     // La relecture n'est PAS une fonction d'équipe (elle passe par l'affectation).
     expect($roles)->not->toHaveKey('reviewer');
     // Comité scientifique et comité d'organisation sont deux rôles distincts.
-    expect(\App\Support\StaffRoles::label('scientific'))->toBe('Comité scientifique');
-    expect(\App\Support\StaffRoles::label('comite_organisation'))->toBe('Comité d’organisation');
+    expect(StaffRoles::label('scientific'))->toBe('Comité scientifique');
+    expect(StaffRoles::label('comite_organisation'))->toBe('Comité d’organisation');
 });
 
 it('un co-gérant peut gérer le colloque', function () {

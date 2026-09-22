@@ -11,8 +11,8 @@ use App\Models\Participant;
 use App\Models\Payment;
 use App\Models\Review;
 use App\Models\SessionPoll;
-use App\Models\SessionReport;
 use App\Models\SessionQuestion;
+use App\Models\SessionReport;
 use App\Models\Slot;
 use App\Models\Submission;
 use App\Models\User;
@@ -368,7 +368,7 @@ class ColloqueAvenirSeeder extends Seeder
                 'name' => 'Auditeur externe', 'email' => 'auditeur@example.tg',
                 'type' => 'incident', 'category' => 'technique',
                 'subject' => 'Impossible de rejoindre la visio de la séance en direct',
-                'message' => "Le bouton « Rejoindre la visio » ne réagit pas sur mon navigateur pendant la séance en direct.",
+                'message' => 'Le bouton « Rejoindre la visio » ne réagit pas sur mon navigateur pendant la séance en direct.',
                 'status' => 'in_progress', 'source' => 'chatbot',
             ]
         );

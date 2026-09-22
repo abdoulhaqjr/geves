@@ -33,13 +33,25 @@ it('cadre le copilote sur la fonction dans le colloque sélectionné', function 
     {
         public function __construct(private object $c) {}
 
-        public function key(): string { return 'fake'; }
+        public function key(): string
+        {
+            return 'fake';
+        }
 
-        public function label(): string { return 'Fake'; }
+        public function label(): string
+        {
+            return 'Fake';
+        }
 
-        public function isAvailable(): bool { return true; }
+        public function isAvailable(): bool
+        {
+            return true;
+        }
 
-        public function supportsPdf(): bool { return true; }
+        public function supportsPdf(): bool
+        {
+            return true;
+        }
 
         public function extract(string $instruction, array $files = [], ?string $tier = null): array
         {

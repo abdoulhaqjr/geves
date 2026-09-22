@@ -9,9 +9,12 @@ use App\Models\Participant;
 use App\Models\Payment;
 use App\Models\Submission;
 use App\Support\AccountActivity;
+use App\Support\ListSort;
 use App\Support\Notifier;
+use App\Support\Trend;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
@@ -35,7 +38,7 @@ class ParticipantController extends Controller
         $search = trim((string) $request->query('search', ''));
 
         $base = Participant::query()->where('edition_id', $editionId);
-        $sort = \App\Support\ListSort::resolve($request, ['last_name', 'role', 'created_at'], 'last_name', 'asc');
+        $sort = ListSort::resolve($request, ['last_name', 'role', 'created_at'], 'last_name', 'asc');
 
         $participants = (clone $base)
             ->with('payments')
@@ -57,13 +60,13 @@ class ParticipantController extends Controller
         // pour montrer qu'un participant peut aussi porter une fonction d'équipe.
         $editionRoles = $editionId === ''
             ? collect()
-            : \Illuminate\Support\Facades\DB::table('edition_user')
+            : DB::table('edition_user')
                 ->where('edition_id', $editionId)->get()
                 ->groupBy('user_id')
                 ->map(fn ($rows) => $rows->pluck('role')->unique()->all());
 
         // Tendance des inscriptions : 7 derniers jours vs les 7 précédents.
-        $trendTotal = \App\Support\Trend::of(
+        $trendTotal = Trend::of(
             (int) (clone $base)->whereBetween('created_at', [now()->subDays(7), now()])->count(),
             (int) (clone $base)->whereBetween('created_at', [now()->subDays(14), now()->subDays(7)])->count(),
         );

@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Account;
 use App\Models\Colloque;
 use App\Models\EventSession;
 use App\Models\User;

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\ListSort;
 use App\Support\StaffRoles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,7 +30,7 @@ class UserController extends Controller
         $role = (string) $request->query('role', '');
         $status = (string) $request->query('status', '');
         $search = trim((string) $request->query('search', ''));
-        $sort = \App\Support\ListSort::resolve($request, ['name', 'email', 'last_login_at', 'is_active'], 'name', 'asc');
+        $sort = ListSort::resolve($request, ['name', 'email', 'last_login_at', 'is_active'], 'name', 'asc');
 
         $users = User::query()
             ->with('roles')

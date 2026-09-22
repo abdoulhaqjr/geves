@@ -1,9 +1,8 @@
 <?php
 
-use App\Models\Account;
+use App\Models\User;
 use App\Support\Totp;
 use Illuminate\Support\Facades\Hash;
-use App\Models\User;
 
 /** Compte de test avec mot de passe connu. */
 function securityAccount(string $password = 'MotDePasse123!'): User

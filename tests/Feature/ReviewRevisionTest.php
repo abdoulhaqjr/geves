@@ -3,12 +3,11 @@
 use App\Actions\AssignReviewer;
 use App\Mail\ReviewerInvitationMail;
 use App\Mail\SubmissionStatusMail;
-use App\Models\Account;
 use App\Models\Participant;
 use App\Models\Review;
 use App\Models\Submission;
-use Illuminate\Support\Facades\Mail;
 use App\Models\User;
+use Illuminate\Support\Facades\Mail;
 
 // openEdition(), verifiedAccount() -> AccountSubmissionTest ; adminStaff(), seededSubmission() -> AdminSubmissionWorkflowTest
 

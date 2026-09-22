@@ -3,10 +3,10 @@
 namespace App\Support;
 
 use App\Models\CommitteeMember;
-use App\Models\User;
 use App\Models\EventSession;
 use App\Models\Participant;
 use App\Models\Submission;
+use App\Models\User;
 use Illuminate\Support\Collection;
 
 /**

@@ -13,10 +13,12 @@ use App\Models\Review;
 use App\Models\Submission;
 use App\Support\BibliographyExporter;
 use App\Support\ConflictOfInterest;
+use App\Support\ListSort;
 use App\Support\Notifier;
 use App\Support\Plagiarism\PlagiarismRegistry;
 use App\Support\ReviewGrid;
 use App\Support\SimilarityChecker;
+use App\Support\Trend;
 use Carbon\Carbon;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
@@ -60,7 +62,7 @@ class SubmissionController extends Controller
             ? (string) $request->query('edition_id', '')
             : $this->currentEditionId($accessible);
 
-        $sort = \App\Support\ListSort::resolve($request, ['ref_code', 'title', 'type', 'track', 'created_at', 'status'], 'created_at', 'desc');
+        $sort = ListSort::resolve($request, ['ref_code', 'title', 'type', 'track', 'created_at', 'status'], 'created_at', 'desc');
 
         $submissions = Submission::query()
             ->with(['edition', 'participant'])
@@ -96,7 +98,7 @@ class SubmissionController extends Controller
         $trendBase = fn () => Submission::query()->where('revision_of', 0)
             ->when($scoped !== null, fn ($q) => $q->whereIn('edition_id', $scoped))
             ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId));
-        $trendTotal = \App\Support\Trend::of(
+        $trendTotal = Trend::of(
             (int) $trendBase()->whereBetween('created_at', [now()->subDays(7), now()])->count(),
             (int) $trendBase()->whereBetween('created_at', [now()->subDays(14), now()->subDays(7)])->count(),
         );

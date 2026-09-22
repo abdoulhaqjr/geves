@@ -1,9 +1,8 @@
 <?php
 
-use App\Models\Account;
+use App\Models\User;
 use App\Sms\SmsManager;
 use Illuminate\Support\Facades\Auth;
-use App\Models\User;
 
 /** Faux fournisseur SMS : capture les messages au lieu de les envoyer. */
 function fakeSms(): SmsManager

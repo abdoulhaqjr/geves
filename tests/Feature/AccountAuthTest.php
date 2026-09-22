@@ -1,11 +1,10 @@
 <?php
 
-use App\Models\Account;
+use App\Models\User;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
-use App\Models\User;
 
 it('inscrit un participant, le connecte et envoie l’e-mail de vérification', function () {
     Notification::fake();

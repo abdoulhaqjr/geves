@@ -5,11 +5,10 @@ use App\Meetings\LiveKitEgress;
 use App\Meetings\MeetingProviderRegistry;
 use App\Meetings\Providers\JitsiProvider;
 use App\Meetings\Providers\LiveKitProvider;
-use App\Models\Account;
 use App\Models\EventSession;
+use App\Models\User;
 use App\Support\StreamEmbed;
 use Illuminate\Support\Facades\Http;
-use App\Models\User;
 
 // openEdition() -> AccountSubmissionTest
 

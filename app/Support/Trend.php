@@ -11,7 +11,7 @@ class Trend
 {
     /**
      * @return array{current: int, previous: int, delta: int, dir: string, pct: int|null}
-     *   dir ∈ {up, down, flat}. pct null = pas de base de comparaison (nouveauté).
+     *                                                                                    dir ∈ {up, down, flat}. pct null = pas de base de comparaison (nouveauté).
      */
     public static function of(int $current, int $previous): array
     {

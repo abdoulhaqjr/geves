@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpWord\Element\Section;
 use PhpOffice\PhpWord\Element\TextRun;
 use PhpOffice\PhpWord\PhpWord;
+use PhpOffice\PhpWord\Settings;
 use PhpOffice\PhpWord\Shared\Converter;
 use PhpOffice\PhpWord\Writer\Word2007;
 use Symfony\Component\HttpFoundation\Response;
@@ -75,7 +76,7 @@ class LivretDocx
     {
         // PhpWord n'échappe PAS le texte par défaut : sans ceci, tout « & », « < » ou « > »
         // (ex. « Santé & environnement ») produit un document.xml malformé → .docx illisible.
-        \PhpOffice\PhpWord\Settings::setOutputEscapingEnabled(true);
+        Settings::setOutputEscapingEnabled(true);
 
         $doc = new PhpWord;
         $doc->getSettings()->setUpdateFields(true);

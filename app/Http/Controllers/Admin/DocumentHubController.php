@@ -10,6 +10,7 @@ use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\Submission;
 use App\Support\EditionSettings;
+use App\Support\ListSort;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -375,7 +376,7 @@ class DocumentHubController extends Controller
             $query->where('revoked', true);
         }
 
-        $sort = \App\Support\ListSort::resolve(
+        $sort = ListSort::resolve(
             $request,
             ['recipient_name', 'type', 'uuid', 'issued_at', 'revoked'],
             'issued_at',

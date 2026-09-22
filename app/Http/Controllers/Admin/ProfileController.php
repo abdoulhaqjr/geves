@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Support\Orcid;
 use App\Support\Totp;
 use Illuminate\Http\RedirectResponse;
@@ -69,7 +70,7 @@ class ProfileController extends Controller
             return back()->withErrors(['code' => 'Code invalide — vérifiez l’heure de votre téléphone et réessayez.']);
         }
 
-        /** @var \App\Models\User $staff */
+        /** @var User $staff */
         $staff = Auth::guard('web')->user();
         $staff->two_factor_secret = $secret;
         $staff->two_factor_confirmed_at = now();
@@ -87,7 +88,7 @@ class ProfileController extends Controller
     {
         $request->validate(['current_password' => ['required', 'current_password:web']]);
 
-        /** @var \App\Models\User $staff */
+        /** @var User $staff */
         $staff = Auth::guard('web')->user();
         if (! $staff->hasTotpEnabled()) {
             return back();
@@ -105,7 +106,7 @@ class ProfileController extends Controller
     {
         $request->validate(['current_password' => ['required', 'current_password:web']]);
 
-        /** @var \App\Models\User $staff */
+        /** @var User $staff */
         $staff = Auth::guard('web')->user();
         $staff->disableTotp();
         $staff->save();
@@ -134,7 +135,7 @@ class ProfileController extends Controller
 
         $data['orcid'] = filled($data['orcid'] ?? null) ? Orcid::normalize((string) $data['orcid']) : null;
 
-        /** @var \App\Models\User $staff */
+        /** @var User $staff */
         $staff = Auth::guard('web')->user();
 
         if (($data['orcid'] ?? null) !== $staff->orcid) {
@@ -163,7 +164,7 @@ class ProfileController extends Controller
             'password' => ['required', 'confirmed', Password::min(8)],
         ]);
 
-        /** @var \App\Models\User $staff */
+        /** @var User $staff */
         $staff = Auth::guard('web')->user();
         $staff->forceFill([
             'password' => Hash::make((string) $request->input('password')),

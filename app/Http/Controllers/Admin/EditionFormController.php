@@ -56,7 +56,7 @@ class EditionFormController extends Controller
         // (fonction pleine sur cette édition) afin de pouvoir la gérer. Le
         // super-admin voit déjà tout : pas besoin de l'affecter.
         $creator = $request->user();
-        if ($creator instanceof \App\Models\User && ! $creator->isColloqueSuperAdmin()) {
+        if ($creator instanceof User && ! $creator->isColloqueSuperAdmin()) {
             $already = DB::table('edition_user')
                 ->where('edition_id', $edition->id)->where('user_id', $creator->id)->exists();
             if (! $already) {

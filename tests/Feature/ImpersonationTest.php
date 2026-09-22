@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Account;
 use App\Models\Participant;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;

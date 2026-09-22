@@ -1,8 +1,11 @@
 <?php
 
+use App\Mail\PaymentReminderMail;
 use App\Models\Review;
 use App\Models\SessionReport;
 use App\Models\User;
+use App\Notifications\SystemNotification;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 // openEdition() / verifiedAccount() -> tests/Pest.php
@@ -191,7 +194,7 @@ it('limite les onglets des Rapports à la fonction (comptable → Paiements)', f
 });
 
 it('relance un participant qui n’a pas réglé ses frais (page Paiements)', function () {
-    \Illuminate\Support\Facades\Mail::fake();
+    Mail::fake();
     $edition = openEdition(['fees' => [['label' => 'Doctorants', 'amount' => 15000]]]);
     $account = User::create(['first_name' => 'Non', 'last_name' => 'Payé', 'email' => 'nonpaye@example.tg', 'password' => 'pass12345']);
     $participant = $edition->participants()->create([
@@ -215,7 +218,7 @@ it('relance un participant qui n’a pas réglé ses frais (page Paiements)', fu
         ->post(route('admin.payments.remind', $participant))
         ->assertRedirect();
 
-    \Illuminate\Support\Facades\Mail::assertQueued(\App\Mail\PaymentReminderMail::class);
+    Mail::assertQueued(PaymentReminderMail::class);
     expect($participant->fresh()->meta['payment_reminded_at'] ?? null)->not->toBeNull();
     expect($account->notifications()->count())->toBe(1);
 });
@@ -292,7 +295,7 @@ it('affiche au comité les rapports de séance soumis (vue admin)', function () 
         'label' => 'Session — Atelier 4', 'type' => 'atelier',
         'rapporteur_email' => 'rap@example.tg', 'rapporteur_name' => 'Rita Rapporteuse',
     ]);
-    \App\Models\SessionReport::create([
+    SessionReport::create([
         'session_id' => $session->id, 'edition_id' => $edition->id,
         'summary' => 'Synthèse détaillée de la séance.',
         'highlights' => 'Publier les actes.', 'attendance' => 42,
@@ -323,7 +326,7 @@ it('notifie le modérateur et le rapporteur à leur désignation sur une séance
         'sRapporteur' => 'Test Acteur', 'sRapporteurEmail' => 'newrap@example.tg',
     ])->assertRedirect();
 
-    expect($mod->notifications()->where('type', \App\Notifications\SystemNotification::class)->count())->toBe(1);
+    expect($mod->notifications()->where('type', SystemNotification::class)->count())->toBe(1);
     expect($rap->notifications()->count())->toBe(1);
     expect($mod->notifications()->first()->data['title'])->toBe('Vous animez une séance');
     expect($rap->notifications()->first()->data['title'])->toBe('Vous rapportez une séance');

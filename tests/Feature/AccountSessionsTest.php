@@ -1,11 +1,10 @@
 <?php
 
 use App\Http\Controllers\Account\SecurityController;
-use App\Models\Account;
+use App\Models\User;
 use App\Support\UserAgent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Models\User;
 
 function sessionAccount(): User
 {

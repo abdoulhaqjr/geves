@@ -1,10 +1,9 @@
 <?php
 
-use App\Models\Account;
 use App\Models\Submission;
+use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use App\Models\User;
 
 // openEdition() et verifiedAccount() sont définis dans tests/Pest.php.
 
