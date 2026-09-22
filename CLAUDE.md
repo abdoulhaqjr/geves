@@ -152,6 +152,15 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   on **privilégie les communications où la personne est auteur correspondant**, puis les
   autres par ordre chronologique). Calcul dans `App\Support\CommunicationAttestations` ;
   émission via `IssueAttestation::handle($participant, 'communication', $submission)`.
+- **Documents = modèles éditables** : badges/attestations utilisent le **modèle conçu par
+  l'admin** (concepteur `admin/modeles`, `TemplateDesignerController` : génération IA +
+  JSON éditable + aperçu ; `DocumentTemplate` par édition/kind/type, rendu
+  `App\Documents\LayoutRenderer` avec variables `{…}`), sinon un **défaut** fixe à la charte
+  UK. Placeholders dispo dans `TemplateDesignerController::VARIABLES` — dont
+  **`{communication}` / `{communication_ref}`** pour nommer la communication sur une
+  attestation de communication personnalisée. ⚠️ La « signature / identité vérifiable »
+  (DID/Ed25519) n'est **pas** implémentée : seulement des réglages d'UI ; la vérification
+  = UUID + QR → page publique (existence + non-révocation).
 
 ### Architecture & sécurité
 

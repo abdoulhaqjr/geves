@@ -37,6 +37,8 @@ class TemplateDesignerController extends Controller
         '{date}' => 'Date d’émission',
         '{ref}' => 'Référence',
         '{verify_url}' => 'URL de vérification',
+        '{communication}' => 'Titre de la communication',
+        '{communication_ref}' => 'Réf. communication',
     ];
 
     public function index(Request $request): View
@@ -153,6 +155,8 @@ class TemplateDesignerController extends Controller
             'date' => now()->format('d/m/Y'),
             'ref' => 'UK-2026-001',
             'verify_url' => url('/verifier/exemple'),
+            'communication' => 'L’apport du numérique dans l’enseignement supérieur',
+            'communication_ref' => 'CI-001',
         ];
     }
 }

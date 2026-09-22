@@ -12,6 +12,7 @@ use Illuminate\Support\Carbon;
  * Attestation émise (participation, communication, modération, rapporteur) avec
  * UUID de vérification publique.
  *
+ * @property array<string, mixed>|null $meta
  * @property Carbon|null $issued_at
  */
 #[ObservedBy([AttestationObserver::class])]

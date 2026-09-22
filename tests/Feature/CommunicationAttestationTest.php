@@ -1,6 +1,8 @@
 <?php
 
+use App\Actions\IssueAttestation;
 use App\Models\Attestation;
+use App\Models\DocumentTemplate;
 use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\Submission;
@@ -115,4 +117,27 @@ it('plafonne par personne et privilégie l’auteur correspondant (attestation_m
     expect($pAtts)->toHaveCount(1);
     // On garde celle où P est auteur correspondant (communication A).
     expect($pAtts->first()->submission_id)->toBe($subA->id);
+});
+
+it('nomme la communication dans un modèle personnalisé via {communication}', function () {
+    $edition = openEdition();
+    $author = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $sub = acceptedComm($edition, $author, 'CI-042');
+
+    // Modèle personnalisé d'attestation de communication utilisant {communication}.
+    DocumentTemplate::create([
+        'edition_id' => $edition->id,
+        'kind' => 'attestation',
+        'type' => 'communication',
+        'layout' => ['width' => 600, 'height' => 400, 'bg' => '#ffffff', 'accent' => '#223ea4', 'elements' => [
+            ['type' => 'text', 'x' => 20, 'y' => 20, 'w' => 560, 'h' => 40, 'text' => 'Communication : {communication} ({communication_ref})', 'size' => 16, 'weight' => 700, 'color' => '#111111', 'align' => 'center'],
+        ]],
+    ]);
+
+    $att = app(IssueAttestation::class)->handle($author, 'communication', $sub);
+
+    $this->get(route('attestation.document', $att->uuid))
+        ->assertOk()
+        ->assertSee($sub->title)
+        ->assertSee('CI-042');
 });

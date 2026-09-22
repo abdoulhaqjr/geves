@@ -39,9 +39,9 @@
                 <strong>{{ $attestation->edition?->title }}</strong>@if ($attestation->edition?->location), {{ $attestation->edition->location }}@endif.
             </p>
 
-            @php($communicationTitle = $attestation->meta['communication_title'] ?? $attestation->submission?->title)
+            @php($communicationTitle = data_get($attestation->meta, 'communication_title'))
             @if ($attestation->type === 'communication' && $communicationTitle)
-                @php($communicationRef = $attestation->meta['communication_ref'] ?? $attestation->submission?->ref_code)
+                @php($communicationRef = data_get($attestation->meta, 'communication_ref'))
                 <p style="font-size:14px;line-height:1.7;margin-top:10px;">
                     {{ __('pour la communication') }}
                     <strong>« {{ $communicationTitle }} »</strong>@if ($communicationRef) <span class="muted">({{ __('réf.') }} {{ $communicationRef }})</span>@endif.

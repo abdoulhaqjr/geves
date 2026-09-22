@@ -43,6 +43,9 @@ class AttestationController extends Controller
                 'date' => $attestation->issued_at?->format('d/m/Y') ?? '',
                 'ref' => $attestation->uuid,
                 'verify_url' => $verifyUrl,
+                // Communication concernée (attestation de communication) — vide pour les autres types.
+                'communication' => (string) (($attestation->meta ?? [])['communication_title'] ?? ''),
+                'communication_ref' => (string) (($attestation->meta ?? [])['communication_ref'] ?? ''),
             ]);
 
             return view('attestations.document-template', [
@@ -86,6 +89,9 @@ class AttestationController extends Controller
                 'date' => $attestation->issued_at?->format('d/m/Y') ?? '',
                 'ref' => $attestation->uuid,
                 'verify_url' => $verifyUrl,
+                // Communication concernée (attestation de communication) — vide pour les autres types.
+                'communication' => (string) (($attestation->meta ?? [])['communication_title'] ?? ''),
+                'communication_ref' => (string) (($attestation->meta ?? [])['communication_ref'] ?? ''),
             ]);
 
             // Page à la taille exacte de la mise en page (px → points à 96 dpi).
