@@ -202,7 +202,8 @@
 .admin-submission-detail .cf-row { margin: 6px 0; font-size: 13.5px; }
 .admin-submission-detail .cf-row strong { color: var(--ukc-text); }
 
-.admin-submission-detail .decision-bar { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.admin-submission-detail .decision-bar { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.admin-submission-detail .decision-bar .ukc-btn { flex: 1 1 160px; justify-content: center; }
 
 .admin-submission-detail .timeline { list-style: none; padding: 0; margin: 0; }
 .admin-submission-detail .timeline li { position: relative; padding: 0 0 16px 18px; border-left: 2px solid var(--ukc-border); }
