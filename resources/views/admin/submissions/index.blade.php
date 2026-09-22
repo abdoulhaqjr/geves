@@ -54,7 +54,10 @@
             </select>
             <input type="search" name="search" value="{{ $search }}" placeholder="Titre, auteur, réf.…" style="min-width:200px;"
                    onkeydown="if(event.key==='Enter'){this.form.submit();}">
-            @if ($search !== '' || $status !== '' || $edition_id !== '' || $type !== '' || $track !== '')
+            <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;cursor:pointer;">
+                <input type="checkbox" name="unlinked" value="1" @checked($unlinked) onchange="this.form.submit()"> Co-auteurs non rattachés
+            </label>
+            @if ($search !== '' || $status !== '' || $edition_id !== '' || $type !== '' || $track !== '' || $unlinked)
                 <a href="{{ route('admin.submissions.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
             @endif
         </form>
@@ -83,7 +86,11 @@
                                     @php $words = str_word_count(strip_tags((string) $s->abstract)); @endphp
                                     <div class="meta">{{ count($s->authors ?? []) ?: 1 }} auteur(s)@if ($words) · {{ $words }} mots @endif</div>
                                 </td>
-                                <td>{{ $s->participant?->full_name ?? ($s->authors[0]['name'] ?? '—') }}</td>
+                                <td>{{ $s->participant?->full_name ?? ($s->authors[0]['name'] ?? '—') }}
+                                    @if (($s->unlinked_authors_count ?? 0) > 0)
+                                        <span class="ukc-pill ukc-pill--warn" style="margin-left:6px;" title="Co-auteur(s) non rattaché(s) à un compte">{{ $s->unlinked_authors_count }} non rattaché·s</span>
+                                    @endif
+                                </td>
                                 <td>{{ $s->type === 'poster' ? 'Poster' : 'Orale' }}</td>
                                 <td>@if ($s->track)<span class="axis-tag">{{ \Illuminate\Support\Str::limit($s->track, 22) }}</span>@else — @endif</td>
                                 <td style="white-space:nowrap;">{{ $s->created_at?->format('d/m/Y') }}</td>

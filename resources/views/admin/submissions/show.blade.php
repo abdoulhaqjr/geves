@@ -43,7 +43,7 @@
 
                     <h3>Auteurs</h3>
                     @php($links = $authorLinks->keyBy('author_index'))
-                    @php($matchLabels = ['self' => 'déposant', 'email' => 'e-mail', 'phone' => 'téléphone', 'name' => 'nom'])
+                    @php($matchLabels = ['email' => 'rapproché par e-mail', 'phone' => 'rapproché par téléphone', 'name' => 'rapproché par nom', 'manual' => 'rattaché manuellement'])
                     <ul class="authors-list">
                         @foreach (($s->authors ?? []) as $i => $author)
                             @php($link = $links[$i] ?? null)
@@ -71,12 +71,34 @@
                                     @if ($link && $link->user)
                                         <div class="aff" style="color:var(--ukc-green);">
                                             <x-ukc.icon name="check" :size="13" /> {{ $link->user->full_name ?: $link->user->name }}
-                                            @if ($link->match_type && ($matchLabels[$link->match_type] ?? null) && $link->match_type !== 'self')
-                                                <span style="color:var(--ukc-muted);">· rapproché par {{ $matchLabels[$link->match_type] }}</span>
+                                            @if ($link->match_type && ($matchLabels[$link->match_type] ?? null))
+                                                <span style="color:var(--ukc-muted);">· {{ $matchLabels[$link->match_type] }}</span>
                                             @endif
                                         </div>
                                     @elseif ($link && $link->status === 'invited')
                                         <div class="aff" style="color:var(--ukc-muted);">Invitation envoyée le {{ $link->invited_at?->format('d/m/Y') }} — en attente d’inscription</div>
+                                    @endif
+
+                                    {{-- Rattachement manuel à un compte (correction d'un rapprochement) --}}
+                                    @if ($link && $link->match_type !== 'self')
+                                        <div x-data="{ open: false }" style="margin-top:6px;">
+                                            @if ($link->user)
+                                                <form method="POST" action="{{ route('admin.submissions.author.detach', [$s, $link]) }}" style="display:inline;">
+                                                    @csrf
+                                                    <button type="submit" class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="close" :size="13" /> Détacher le compte</button>
+                                                </form>
+                                            @else
+                                                <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="open = !open" x-show="!open"><x-ukc.icon name="user-plus" :size="13" /> Rattacher à un compte</button>
+                                                <form method="POST" action="{{ route('admin.submissions.author.link', [$s, $link]) }}" x-show="open" x-cloak
+                                                      style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px;">
+                                                    @csrf
+                                                    <input type="email" name="email" value="{{ $link->email }}" placeholder="e-mail du compte"
+                                                           style="border:1.5px solid var(--ukc-border);border-radius:8px;padding:6px 10px;font-size:13px;min-width:220px;">
+                                                    <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm">Rattacher</button>
+                                                    <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="open = false">Annuler</button>
+                                                </form>
+                                            @endif
+                                        </div>
                                     @endif
                                 </div>
                             </li>

@@ -289,6 +289,9 @@ Route::prefix('admin')->group(function () {
             Route::post('/soumissions/{submission}/relecteur', [App\Http\Controllers\Admin\SubmissionController::class, 'assignReviewer'])->name('admin.submissions.review.assign');
             Route::delete('/soumissions/{submission}/relecteur/{review}', [App\Http\Controllers\Admin\SubmissionController::class, 'removeReview'])->name('admin.submissions.review.remove');
             Route::post('/soumissions/{submission}/plagiat', [App\Http\Controllers\Admin\SubmissionController::class, 'checkPlagiarism'])->name('admin.submissions.plagiarism');
+            // Rattachement manuel d'un auteur à un compte (correction d'un rapprochement).
+            Route::post('/soumissions/{submission}/auteurs/{link}/rattacher', [App\Http\Controllers\Admin\SubmissionController::class, 'linkAuthor'])->name('admin.submissions.author.link');
+            Route::post('/soumissions/{submission}/auteurs/{link}/detacher', [App\Http\Controllers\Admin\SubmissionController::class, 'detachAuthor'])->name('admin.submissions.author.detach');
         });
 
         // Paiements.

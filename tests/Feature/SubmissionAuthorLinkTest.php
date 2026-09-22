@@ -135,6 +135,72 @@ it('affiche le statut de rattachement des auteurs côté back-office', function 
         ->assertSee('Yao Doe');
 });
 
+it('permet au staff de rattacher manuellement un auteur à un compte', function () {
+    Mail::fake();
+    $edition = openEdition();
+    $submitter = verifiedAccount();
+    submitWithCoauthor($submitter, $edition, ['name' => 'Kossi Alpha', 'email' => 'kossi@x.tg']);
+    $sub = Submission::first();
+    $link = SubmissionAuthor::where('submission_id', $sub->id)->where('role', 'coauthor')->first();
+    expect($link->status)->toBe('invited');
+
+    // Le vrai compte existe sous un autre e-mail.
+    $user = User::create([
+        'name' => 'Kossi Alpha', 'first_name' => 'Kossi', 'last_name' => 'Alpha',
+        'email' => 'kossi.alpha@uk.tg', 'password' => 'pass12345',
+    ]);
+
+    $this->actingAs(adminStaff(), 'web')
+        ->post(route('admin.submissions.author.link', [$sub, $link]), ['email' => 'kossi.alpha@uk.tg'])
+        ->assertRedirect();
+
+    $link->refresh();
+    expect($link->user_id)->toBe($user->id);
+    expect($link->status)->toBe('linked');
+    expect($link->match_type)->toBe('manual');
+    expect(Participant::where('edition_id', $edition->id)->where('user_id', $user->id)->exists())->toBeTrue();
+});
+
+it('permet au staff de détacher un compte mal rapproché', function () {
+    Mail::fake();
+    $edition = openEdition();
+    $submitter = verifiedAccount();
+    $coauthor = User::create([
+        'name' => 'Yao Doe', 'first_name' => 'Yao', 'last_name' => 'Doe',
+        'email' => 'yao@uk.tg', 'password' => 'pass12345',
+    ]);
+    submitWithCoauthor($submitter, $edition, ['name' => 'Yao Doe', 'email' => 'yao@uk.tg']);
+    $sub = Submission::first();
+    $link = SubmissionAuthor::where('user_id', $coauthor->id)->first();
+
+    $this->actingAs(adminStaff(), 'web')
+        ->post(route('admin.submissions.author.detach', [$sub, $link]))
+        ->assertRedirect();
+
+    $link->refresh();
+    expect($link->user_id)->toBeNull();
+    expect($link->status)->toBe('unmatched');
+});
+
+it('filtre les soumissions ayant des co-auteurs non rattachés', function () {
+    Mail::fake();
+    $edition = openEdition();
+    $submitter = verifiedAccount();
+
+    submitWithCoauthor($submitter, $edition, ['name' => 'Inconnu Z', 'email' => 'inconnu@z.tg']); // -> invited (non rattaché)
+    $subA = Submission::orderBy('id')->first();
+
+    User::create(['name' => 'Lie Ok', 'first_name' => 'Lie', 'last_name' => 'Ok', 'email' => 'lie@uk.tg', 'password' => 'pass12345']);
+    submitWithCoauthor($submitter, $edition, ['name' => 'Lie Ok', 'email' => 'lie@uk.tg']); // -> linked
+    $subB = Submission::orderBy('id', 'desc')->first();
+
+    $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.submissions.index', ['unlinked' => 1]))
+        ->assertOk()
+        ->assertSee($subA->ref_code)
+        ->assertDontSee($subB->ref_code);
+});
+
 it('un co-auteur voit la fiche mais ne peut pas la modifier', function () {
     Mail::fake();
     $edition = openEdition();

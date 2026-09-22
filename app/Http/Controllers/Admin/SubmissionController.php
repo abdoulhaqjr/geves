@@ -4,13 +4,18 @@ namespace App\Http\Controllers\Admin;
 
 use App\Actions\AssignReviewer;
 use App\Actions\AutoAssignReviewers;
+use App\Actions\LinkSubmissionAuthors;
+use App\Actions\UpsertParticipantForAccount;
 use App\Events\SubmissionStatusChanged;
 use App\Http\Controllers\Controller;
+use App\Mail\AuthorLinkedMail;
 use App\Mail\ReviewerInvitationMail;
 use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\Review;
 use App\Models\Submission;
+use App\Models\SubmissionAuthor;
+use App\Models\User;
 use App\Support\BibliographyExporter;
 use App\Support\ConflictOfInterest;
 use App\Support\ListSort;
@@ -52,6 +57,10 @@ class SubmissionController extends Controller
         $status = (string) $request->query('status', '');
         $type = (string) $request->query('type', '');
         $track = (string) $request->query('track', '');
+        $unlinked = $request->boolean('unlinked');
+
+        // Un co-auteur « non rattaché » = lien invited/unmatched/declined (hors déposant).
+        $unlinkedScope = fn ($l) => $l->where('role', 'coauthor')->whereIn('status', ['invited', 'unmatched', 'declined']);
         $scoped = $this->scopedEditionIds($request, 'submissions_list');
         $accessible = $this->accessibleEditions($request, 'submissions_list');
 
@@ -66,12 +75,14 @@ class SubmissionController extends Controller
 
         $submissions = Submission::query()
             ->with(['edition', 'participant'])
+            ->withCount(['authorLinks as unlinked_authors_count' => $unlinkedScope])
             ->where('revision_of', 0)
             ->when($scoped !== null, fn ($q) => $q->whereIn('edition_id', $scoped))
             ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId))
             ->when($status !== '', fn ($q) => $q->where('status', $status))
             ->when($type !== '', fn ($q) => $q->where('type', $type))
             ->when($track !== '', fn ($q) => $q->where('track', $track))
+            ->when($unlinked, fn ($q) => $q->whereHas('authorLinks', $unlinkedScope))
             ->when($search !== '', function ($q) use ($search) {
                 $term = "%{$search}%";
                 $q->where(fn ($sub) => $sub
@@ -113,6 +124,7 @@ class SubmissionController extends Controller
             'edition_id' => $editionId,
             'type' => $type,
             'track' => $track,
+            'unlinked' => $unlinked,
             'editions' => $accessible,
             'statuses' => Submission::statuses(),
             'statusPills' => Submission::statusPills(),
@@ -288,6 +300,61 @@ class SubmissionController extends Controller
             'reviewCriteria' => ReviewGrid::criteria($submission->edition),
             'reviewScale' => ReviewGrid::SCALE,
         ]);
+    }
+
+    /** Rattache manuellement un auteur à un compte (par e-mail) — correction d'un rapprochement. */
+    public function linkAuthor(Request $request, Submission $submission, SubmissionAuthor $link, UpsertParticipantForAccount $upsert): RedirectResponse
+    {
+        abort_unless($link->submission_id === $submission->id, 404);
+
+        $data = $request->validate(
+            ['email' => ['required', 'email']],
+            ['email.required' => 'Indiquez l’e-mail du compte à rattacher.']
+        );
+
+        $user = User::whereRaw('LOWER(email) = ?', [mb_strtolower(trim($data['email']))])->first();
+        if (! $user) {
+            return back()->with('ukc_error', 'Aucun compte ne correspond à cet e-mail.');
+        }
+
+        $edition = $submission->edition;
+        $upsert->handle($edition, $user, $link->role === 'corresponding' ? 'author' : 'coauthor');
+
+        $link->update(['user_id' => $user->id, 'status' => 'linked', 'match_type' => 'manual', 'notified_at' => now()]);
+
+        Notifier::account(
+            $user,
+            'authorship',
+            __('Vous êtes associé(e) à une communication'),
+            '« '.$submission->title.' » — '.($edition->title ?? ''),
+            route('account.submissions.show', $submission),
+            'inbox',
+        );
+        if (Notifier::emailAllowed($user, 'authorship')) {
+            Mail::to($user->email)->send(new AuthorLinkedMail(
+                $submission,
+                $user->full_name ?: (string) $user->name,
+                LinkSubmissionAuthors::roleLabel($link->role),
+                route('account.submissions.show', $submission),
+                route('author.decline', ['token' => $link->token]),
+            ));
+        }
+
+        return back()->with('ukc_status', 'Auteur rattaché au compte '.($user->full_name ?: $user->email).'.');
+    }
+
+    /** Détache un auteur d'un compte (rapprochement erroné). Le déposant est intouchable. */
+    public function detachAuthor(Submission $submission, SubmissionAuthor $link): RedirectResponse
+    {
+        abort_unless($link->submission_id === $submission->id, 404);
+
+        if ($link->match_type === 'self') {
+            return back()->with('ukc_error', 'Le déposant ne peut pas être détaché.');
+        }
+
+        $link->update(['user_id' => null, 'status' => 'unmatched', 'match_type' => null]);
+
+        return back()->with('ukc_status', 'Compte détaché de cet auteur.');
     }
 
     /** Lance une vérification anti-plagiat web (à la demande) et met le résultat en cache. */
