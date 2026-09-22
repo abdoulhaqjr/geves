@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Account\AgendaController;
+use App\Http\Controllers\Account\AuthorLookupController;
 use App\Http\Controllers\Account\ColloqueContextController;
 use App\Http\Controllers\Account\DashboardController;
 use App\Http\Controllers\Account\EmailVerificationController;
@@ -168,6 +169,7 @@ Route::middleware(['auth:account', StampAccountSession::class])->group(function 
     Route::post('/compte/securite/sessions/autres', [SecurityController::class, 'revokeOtherSessions'])->name('account.security.sessions.revoke-others');
 
     // Communications
+    Route::post('/communications/verifier-auteur', [AuthorLookupController::class, 'check'])->name('account.authors.check');
     Route::get('/communications', [SubmissionController::class, 'index'])->name('account.submissions.index');
     Route::get('/communications/{submission}', [SubmissionController::class, 'show'])->name('account.submissions.show');
     Route::post('/communications/{submission}/modifier', [SubmissionController::class, 'updateContent'])->name('account.submissions.update');

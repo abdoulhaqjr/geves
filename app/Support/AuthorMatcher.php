@@ -168,6 +168,17 @@ class AuthorMatcher
         return $tokens;
     }
 
+    /** Mise en forme d'un nom saisi (casse propre, espaces normalisés). */
+    public static function formatName(string $name): string
+    {
+        $clean = trim((string) preg_replace('/\s+/', ' ', $name));
+        if ($clean === '') {
+            return '';
+        }
+
+        return mb_convert_case($clean, MB_CASE_TITLE, 'UTF-8');
+    }
+
     /** Deux affiliations partagent-elles un token significatif (≥ 4 lettres) ? */
     public static function affiliationMatches(string $a, string $b): bool
     {

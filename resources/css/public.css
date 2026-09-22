@@ -393,6 +393,13 @@
 
 /* Champ verrouillé (identité reprise du compte, en lecture seule). */
 .ukc-field input.is-locked { background: var(--ukc-bg); color: var(--ukc-muted); cursor: not-allowed; }
+
+/* Indice discret de rapprochement d'auteur (existence d'un compte, mise en forme). */
+.author-hint { font-size: 12px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.author-hint .ukc-icon { flex: none; }
+.author-hint--ok { color: var(--ukc-green); }
+.author-hint--info { color: var(--ukc-blue); }
+.author-hint--muted { color: var(--ukc-muted); font-weight: 500; }
 .recap-list { display: flex; flex-direction: column; gap: 0; }
 .recap-list .r { display: flex; justify-content: space-between; gap: 14px; padding: 11px 0; border-bottom: 1px solid var(--ukc-border); font-size: 14px; }
 .recap-list .r:last-child { border-bottom: none; }

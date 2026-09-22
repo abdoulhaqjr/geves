@@ -1083,13 +1083,15 @@ document.addEventListener('alpine:init', () => {
         title: initial.title || '',
         track: initial.track || '',
         type: initial.type || 'oral',
-        coauthors: Array.isArray(initial.coauthors) ? initial.coauthors : [],
+        coauthors: (Array.isArray(initial.coauthors) ? initial.coauthors : [])
+            .map((c) => Object.assign({ name: '', email: '', affiliation: '', grade: '', hint: '', hintType: 'muted', suggestion: '' }, c)),
         abstractHtml: '',
         abstractWordCount: 0,
         keywords: [],
         rules: initial.rules || {},
+        lookupUrl: initial.lookupUrl || '',
         account: initial.account || { name: '', email: '', affiliation: '', grade: '' },
-        corr: initial.corr || { self: true, name: '', email: '', affiliation: '', grade: '' },
+        corr: Object.assign({ self: true, name: '', email: '', affiliation: '', grade: '', hint: '', hintType: 'muted', suggestion: '' }, initial.corr || {}),
 
         init() {
             // Le résumé (CKEditor) notifie son contenu + compteur : on le garde en
@@ -1112,10 +1114,49 @@ document.addEventListener('alpine:init', () => {
         },
 
         addCoauthor() {
-            this.coauthors.push({ name: '', email: '', affiliation: '', grade: '' });
+            this.coauthors.push({ name: '', email: '', affiliation: '', grade: '', hint: '', hintType: 'muted', suggestion: '' });
         },
         removeCoauthor(i) {
             this.coauthors.splice(i, 1);
+        },
+
+        // --- Vérification discrète d'existence d'un compte (AJAX) --------------
+        //     Guide le déposant sans révéler l'identité d'autrui : indice fondé
+        //     sur l'e-mail qu'il a saisi + suggestion de mise en forme du nom.
+        async _authorLookup(name, email) {
+            if (! this.lookupUrl || (! (name || '').trim() && ! (email || '').trim())) return null;
+            try {
+                const res = await fetch(this.lookupUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    },
+                    body: JSON.stringify({ name: name || '', email: email || '' }),
+                });
+                return res.ok ? await res.json() : null;
+            } catch (e) {
+                return null;
+            }
+        },
+        async lookupCorr() {
+            if (this.corr.self) { this.corr.hint = ''; this.corr.suggestion = ''; return; }
+            const d = await this._authorLookup(this.corr.name, this.corr.email);
+            if (d) { this.corr.hint = d.hint || ''; this.corr.hintType = d.type || 'muted'; this.corr.suggestion = d.suggestion || ''; }
+        },
+        applyCorrSuggestion() {
+            if (this.corr.suggestion) { this.corr.name = this.corr.suggestion; this.corr.suggestion = ''; }
+        },
+        async lookupCoauthor(i) {
+            const co = this.coauthors[i];
+            if (! co) return;
+            const d = await this._authorLookup(co.name, co.email);
+            if (d) { co.hint = d.hint || ''; co.hintType = d.type || 'muted'; co.suggestion = d.suggestion || ''; }
+        },
+        applyCoauthorSuggestion(i) {
+            const co = this.coauthors[i];
+            if (co && co.suggestion) { co.name = co.suggestion; co.suggestion = ''; }
         },
 
         // Auteur correspondant : quand « je suis l'auteur correspondant » est coché,

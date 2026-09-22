@@ -12,6 +12,7 @@
         'keywords' => array_values(array_filter(array_map('trim', explode(',', (string) old('keywords', ''))))),
         'coauthors' => array_values(old('coauthors', [])),
         'errorStep' => (int) session('submission_error_step', 1),
+        'lookupUrl' => route('account.authors.check'),
         // Auteur correspondant : prérempli avec le compte connecté, éditable.
         // Le grade saisi ici est enregistré POUR CE COLLOQUE (grade par édition).
         'account' => [
@@ -206,14 +207,14 @@
                         <div class="ukc-form-grid">
                             <div class="ukc-field">
                                 <label for="corr-name">{{ __('Nom & prénom') }} <span class="req">*</span></label>
-                                <input type="text" id="corr-name" name="corresponding[name]" x-model="corr.name"
+                                <input type="text" id="corr-name" name="corresponding[name]" x-model="corr.name" @blur="lookupCorr()"
                                        :readonly="corr.self" :class="corr.self ? 'is-locked' : ''" placeholder="{{ __('Nom Prénom') }}">
                                 <span class="hint" x-show="corr.self" x-cloak>{{ __('Repris de votre profil (identité vérifiée).') }}</span>
                                 @error('corresponding.name') <span class="error">{{ $message }}</span> @enderror
                             </div>
                             <div class="ukc-field">
                                 <label for="corr-email">{{ __('E-mail') }} <span class="req">*</span></label>
-                                <input type="email" id="corr-email" name="corresponding[email]" x-model="corr.email"
+                                <input type="email" id="corr-email" name="corresponding[email]" x-model="corr.email" @blur="lookupCorr()"
                                        :readonly="corr.self" :class="corr.self ? 'is-locked' : ''" placeholder="{{ __('E-mail') }}">
                                 @error('corresponding.email') <span class="error">{{ $message }}</span> @enderror
                             </div>
@@ -235,16 +236,27 @@
                             </div>
                         </div>
 
+                        {{-- Indice discret : le compte est-il connu ? (sans révéler l'identité d'autrui) --}}
+                        <div x-show="!corr.self && (corr.hint || corr.suggestion)" x-cloak style="margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
+                            <span class="author-hint" :class="'author-hint--'+corr.hintType" x-show="corr.hint">
+                                <x-ukc.icon name="info" :size="14" /> <span x-text="corr.hint"></span>
+                            </span>
+                            <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" x-show="corr.suggestion" @click="applyCorrSuggestion()">
+                                {{ __('Utiliser') }} « <span x-text="corr.suggestion"></span> »
+                            </button>
+                        </div>
+
                         <h3 style="font-size:14px;font-weight:800;margin:20px 0 6px;">{{ __('Co-auteurs') }}</h3>
                         <p class="ukc-muted" style="font-size:.88rem;margin-bottom:12px;">
                             {{ __('Ajoutez ici les co-auteurs de la communication.') }}
                         </p>
                         <div style="display:flex;flex-direction:column;gap:10px;">
                             <template x-for="(co, i) in coauthors" :key="i">
+                                <div>
                                 <div style="display:grid;grid-template-columns:1.2fr 1.2fr 1.4fr .8fr auto;gap:8px;align-items:center;">
-                                    <input type="text" :name="'coauthors['+i+'][name]'" x-model="co.name" placeholder="{{ __('Nom Prénom') }}"
+                                    <input type="text" :name="'coauthors['+i+'][name]'" x-model="co.name" @blur="lookupCoauthor(i)" placeholder="{{ __('Nom Prénom') }}"
                                            style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13.5px;">
-                                    <input type="email" :name="'coauthors['+i+'][email]'" x-model="co.email" placeholder="{{ __('E-mail') }}"
+                                    <input type="email" :name="'coauthors['+i+'][email]'" x-model="co.email" @blur="lookupCoauthor(i)" placeholder="{{ __('E-mail') }}"
                                            style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13.5px;">
                                     <input type="text" :name="'coauthors['+i+'][affiliation]'" x-model="co.affiliation" placeholder="{{ __('Affiliation') }}"
                                            style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13.5px;">
@@ -258,6 +270,16 @@
                                     <button type="button" class="ukc-btn ukc-btn--danger ukc-btn--sm" @click="removeCoauthor(i)">
                                         <x-ukc.icon name="close" :size="16" />
                                     </button>
+                                </div>
+                                {{-- Indice discret (existence d'un compte / mise en forme du nom) --}}
+                                <div x-show="co.hint || co.suggestion" x-cloak style="margin-top:5px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
+                                    <span class="author-hint" :class="'author-hint--'+co.hintType" x-show="co.hint">
+                                        <x-ukc.icon name="info" :size="14" /> <span x-text="co.hint"></span>
+                                    </span>
+                                    <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" x-show="co.suggestion" @click="applyCoauthorSuggestion(i)">
+                                        {{ __('Utiliser') }} « <span x-text="co.suggestion"></span> »
+                                    </button>
+                                </div>
                                 </div>
                             </template>
                         </div>
