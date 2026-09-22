@@ -280,6 +280,34 @@ window.ukcMarkdownLite = ukcMarkdownLite;
 
 // Enregistrement de nos composants Alpine (l'évènement est émis par Alpine.start()).
 document.addEventListener('alpine:init', () => {
+    // Comparateur de similarité : ouvre une modale montrant la soumission courante
+    // et une soumission proche côte à côte, avec surlignage des mots partagés
+    // (≥ 5 lettres, accents/casse ignorés). `self` = résumé de la soumission courante.
+    window.Alpine.data('simCompare', (self = '') => ({
+        self,
+        sim: null,
+        open(d) {
+            const shared = this._shared(this.self, d.abstract || '');
+            this.sim = Object.assign({}, d, {
+                aHtml: this._mark(this.self, shared),
+                bHtml: this._mark(d.abstract || '', shared),
+            });
+        },
+        _norm(w) { return w.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); },
+        _tokens(t) { return (String(t).match(/\p{L}+/gu) || []).map((w) => this._norm(w)).filter((w) => w.length >= 5); },
+        _shared(a, b) {
+            const A = new Set(this._tokens(a));
+            return new Set(this._tokens(b).filter((x) => A.has(x)));
+        },
+        _esc(t) { const d = document.createElement('div'); d.textContent = String(t); return d.innerHTML; },
+        _mark(text, shared) {
+            return String(text).replace(/(\p{L}+)|([^\p{L}]+)/gu, (m, word, other) => {
+                if (word) { const e = this._esc(word); return shared.has(this._norm(word)) ? '<mark>' + e + '</mark>' : e; }
+                return this._esc(other);
+            });
+        },
+    }));
+
     // Notifications en popups fermables (toasts), affichées en bas à droite.
     // Auto-fermeture après quelques secondes ; bouton de fermeture manuel.
     window.Alpine.data('ukcToasts', (initial = []) => ({

@@ -202,6 +202,16 @@
 .admin-submission-detail .cf-row { margin: 6px 0; font-size: 13.5px; }
 .admin-submission-detail .cf-row strong { color: var(--ukc-text); }
 
+/* Modale de comparaison de similarité (deux résumés côte à côte). */
+.sim-modal { position: fixed; inset: 0; z-index: 60; background: rgba(15, 23, 42, .55); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.sim-modal__box { background: #fff; border-radius: 14px; width: 100%; max-width: 1100px; max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0, 0, 0, .25); }
+.sim-modal__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--ukc-border); }
+.sim-modal__foot { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--ukc-border); }
+.sim-compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 18px 20px; overflow-y: auto; }
+@media (max-width: 720px) { .sim-compare-grid { grid-template-columns: 1fr; } }
+.sim-abstract { border: 1px solid var(--ukc-border); border-radius: 10px; padding: 12px 14px; background: #f8fafc; font-size: 13.5px; line-height: 1.6; color: var(--ukc-text); text-align: justify; white-space: normal; }
+.sim-abstract mark { background: #fde68a; color: inherit; padding: 0 1px; border-radius: 2px; }
+
 .admin-submission-detail .decision-bar { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
 .admin-submission-detail .decision-bar .ukc-btn { flex: 1 1 160px; justify-content: center; }
 

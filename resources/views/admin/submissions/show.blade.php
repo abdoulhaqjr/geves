@@ -118,26 +118,60 @@
 
                 {{-- Similarité interne (anti-plagiat gratuit) --}}
                 @if (! empty($similar))
-                    <div class="ukc-card">
+                    @php($selfPlain = trim((string) preg_replace('/\s+/', ' ', strip_tags((string) $s->abstract))))
+                    <div class="ukc-card" x-data="simCompare(@js($selfPlain))">
                         <h2><span><x-ukc.icon name="shield" :size="18" /> Similarité interne</span></h2>
                         <p style="color:var(--ukc-muted);font-size:13px;margin:-4px 0 12px;">
                             Comparé aux autres résumés de la plateforme (éditions accessibles). Un score élevé peut signaler un doublon,
-                            un résumé recyclé ou un auto-plagiat — à vérifier manuellement.
+                            un résumé recyclé ou un auto-plagiat — <strong>cliquez pour comparer côte à côte</strong>.
                         </p>
                         <div style="display:flex;flex-direction:column;gap:8px;">
                             @foreach ($similar as $m)
                                 @php($pct = $m['percent'])
                                 @php($col = $pct >= 70 ? '#b4231c' : ($pct >= 50 ? '#8a5a00' : 'var(--ukc-muted)'))
-                                <a href="{{ route('admin.submissions.show', $m['submission']->id) }}"
-                                   style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--ukc-border);border-radius:10px;text-decoration:none;">
+                                @php($simData = [
+                                    'percent' => $pct,
+                                    'ref' => $m['submission']->ref_code,
+                                    'title' => $m['submission']->title,
+                                    'abstract' => trim((string) preg_replace('/\s+/', ' ', strip_tags((string) $m['submission']->abstract))),
+                                    'url' => route('admin.submissions.show', $m['submission']->id),
+                                ])
+                                <button type="button" @click="open(@js($simData))"
+                                        style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--ukc-border);border-radius:10px;background:#fff;cursor:pointer;width:100%;text-align:left;">
                                     <span style="flex-shrink:0;font-weight:800;font-size:15px;color:{{ $col }};min-width:48px;">{{ $pct }}%</span>
                                     <span style="flex:1;min-width:0;">
                                         <span style="display:block;font-weight:600;color:var(--ukc-text);">{{ \Illuminate\Support\Str::limit($m['submission']->title, 70) }}</span>
                                         <span style="font-size:12px;color:var(--ukc-muted);font-family:var(--ukc-mono);">{{ $m['submission']->ref_code }}</span>
                                     </span>
-                                    <x-ukc.icon name="chevron" :size="16" />
-                                </a>
+                                    <x-ukc.icon name="search" :size="16" />
+                                </button>
                             @endforeach
+                        </div>
+
+                        {{-- Modale de comparaison côte à côte --}}
+                        <div x-show="sim" x-cloak @click.self="sim = null" @keydown.escape.window="sim = null" class="sim-modal">
+                            <div class="sim-modal__box">
+                                <div class="sim-modal__head">
+                                    <div style="font-weight:800;">Comparaison de similarité · <span x-text="(sim?.percent ?? 0) + '%'"></span></div>
+                                    <button type="button" class="ukc-btn--icon" @click="sim = null"><x-ukc.icon name="close" :size="18" /></button>
+                                </div>
+                                <div class="sim-compare-grid">
+                                    <div>
+                                        <div style="font-weight:700;">{{ \Illuminate\Support\Str::limit($s->title, 90) }}</div>
+                                        <div style="font-family:var(--ukc-mono);font-size:12px;color:var(--ukc-muted);margin-bottom:8px;">{{ $s->ref_code }} · cette soumission</div>
+                                        <div class="sim-abstract" x-html="sim?.aHtml"></div>
+                                    </div>
+                                    <div>
+                                        <div style="font-weight:700;" x-text="sim?.title"></div>
+                                        <div style="font-family:var(--ukc-mono);font-size:12px;color:var(--ukc-muted);margin-bottom:8px;"><span x-text="sim?.ref"></span> · soumission proche</div>
+                                        <div class="sim-abstract" x-html="sim?.bHtml"></div>
+                                    </div>
+                                </div>
+                                <div class="sim-modal__foot">
+                                    <a :href="sim?.url" class="ukc-btn ukc-btn--ghost">Ouvrir la fiche proche</a>
+                                    <button type="button" class="ukc-btn ukc-btn--blue" @click="sim = null">Fermer</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 @endif
