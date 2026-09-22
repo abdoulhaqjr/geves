@@ -60,4 +60,11 @@ class Attestation extends Model
     {
         return $this->belongsTo(Participant::class);
     }
+
+    /** Communication concernée (attestations de communication uniquement ; sinon null). */
+    /** @return BelongsTo<Submission, $this> */
+    public function submission(): BelongsTo
+    {
+        return $this->belongsTo(Submission::class);
+    }
 }

@@ -9,6 +9,7 @@ use App\Models\Attestation;
 use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\Submission;
+use App\Support\CommunicationAttestations;
 use App\Support\EditionSettings;
 use App\Support\ListSort;
 use Illuminate\Database\Eloquent\Collection;
@@ -48,7 +49,9 @@ class DocumentHubController extends Controller
         $rows = [];
         if ($edition) {
             foreach ($typeMeta as $key => $meta) {
-                $eligible = $this->targetsFor($edition, $key)->count();
+                $eligible = $key === 'communication'
+                    ? CommunicationAttestations::count($edition)
+                    : $this->targetsFor($edition, $key)->count();
                 $rows[$key] = [
                     'label' => Attestation::TYPES[$key],
                     'title' => $meta['title'],
@@ -144,9 +147,19 @@ class DocumentHubController extends Controller
         }
 
         $count = 0;
-        foreach ($this->targetsFor($edition, $type) as $participant) {
-            $action->handle($participant, $type);
-            $count++;
+        if ($type === 'communication') {
+            // Par communication : auteur correspondant + co-auteurs payés, dans la
+            // limite des plafonds (coauthors_max, attestation_max — priorité auteur
+            // correspondant). Une attestation à leur nom par communication associée.
+            foreach (CommunicationAttestations::entitlements($edition) as $ent) {
+                $action->handle($ent['participant'], 'communication', $ent['submission']);
+                $count++;
+            }
+        } else {
+            foreach ($this->targetsFor($edition, $type) as $participant) {
+                $action->handle($participant, $type);
+                $count++;
+            }
         }
 
         return back()->with('ukc_status', $count.' attestation(s) « '.Attestation::TYPES[$type].' » émise(s).');
@@ -456,7 +469,7 @@ class DocumentHubController extends Controller
         return match ($type) {
             'soumission' => $base()->whereHas('submissions', fn ($q) => $q->where('revision_of', 0))->get(),
             'acceptation' => $this->acceptedCorrespondingTargets($edition),
-            'communication' => $this->communicantTargets($edition),
+            // 'communication' est géré à part (par communication) via CommunicationAttestations.
             'moderation' => $base()->where('role', 'moderator')->get(),
             'rapporteur' => $base()->where('role', 'rapporteur')->get(),
             'formation' => $base()->where('role', 'trainee')->get(),
@@ -491,27 +504,6 @@ class DocumentHubController extends Controller
 
         return Participant::where('edition_id', $edition->id)
             ->whereIn('id', $accepted->pluck('participant_id')->filter()->unique())->get();
-    }
-
-    /** Communicants : auteurs correspondants acceptés + co-auteurs payés. */
-    private function communicantTargets(Edition $edition): Collection
-    {
-        $accepted = Submission::where('edition_id', $edition->id)
-            ->where('revision_of', 0)->where('status', 'accepted')->get();
-
-        $corresponding = Participant::where('edition_id', $edition->id)
-            ->whereIn('id', $accepted->pluck('participant_id')->filter()->unique())->get();
-
-        $coauthorEmails = $accepted
-            ->flatMap(fn (Submission $s) => collect($s->authors ?? [])
-                ->reject(fn ($a) => $a['corresponding'] ?? false)->pluck('email'))
-            ->filter()->map(fn ($e) => mb_strtolower(trim((string) $e)))->unique();
-
-        $paidCoauthors = Participant::where('edition_id', $edition->id)
-            ->whereHas('payments', fn ($q) => $q->where('status', 'paid'))->get()
-            ->filter(fn (Participant $p) => $coauthorEmails->contains(mb_strtolower(trim((string) $p->email))));
-
-        return $corresponding->concat($paidCoauthors)->unique('id')->values();
     }
 
     private function currentEdition(Request $request): ?Edition

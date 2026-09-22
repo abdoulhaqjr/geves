@@ -38,6 +38,15 @@
                 {{ __('pour sa :type à', ['type' => mb_strtolower(__($attestation->typeLabel()))]) }}
                 <strong>{{ $attestation->edition?->title }}</strong>@if ($attestation->edition?->location), {{ $attestation->edition->location }}@endif.
             </p>
+
+            @php($communicationTitle = $attestation->meta['communication_title'] ?? $attestation->submission?->title)
+            @if ($attestation->type === 'communication' && $communicationTitle)
+                @php($communicationRef = $attestation->meta['communication_ref'] ?? $attestation->submission?->ref_code)
+                <p style="font-size:14px;line-height:1.7;margin-top:10px;">
+                    {{ __('pour la communication') }}
+                    <strong>« {{ $communicationTitle }} »</strong>@if ($communicationRef) <span class="muted">({{ __('réf.') }} {{ $communicationRef }})</span>@endif.
+                </p>
+            @endif
         </div>
 
         <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:48px;">

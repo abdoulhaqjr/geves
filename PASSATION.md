@@ -1,7 +1,7 @@
 # Passation — GEVES · Gestion des ÉVénements Scientifiques (Université de Kara)
 
 > Document de passation pour la personne qui reprend le développement.
-> Dernière mise à jour : 2026-09-22 (professionnalisation : renommage **GEVES** + nom dynamique, publication GitHub, refonte du wizard de soumission (CKEditor 5, blocage d'étape, auteur correspondant éditable + **grade par colloque**, correction du résumé avant évaluation), champs téléphone intl-tel-input, résilience/routage/failover IA, copilote à actions exécutables, persistance du chat, limites du chatbot public, normalisation Pint du projet. **Voir le journal détaillé en [§11](#11-évolutions-depuis-le-2026-08-11-professionnalisation).**)
+> Dernière mise à jour : 2026-09-22 (attestations de communication **par communication + plafonds** ; refonte du wizard de soumission (CKEditor 5, blocage d'étape, auteur correspondant éditable + **grade par colloque**, correction du résumé avant évaluation) ; renommage **GEVES** + nom dynamique, publication GitHub, champs téléphone intl-tel-input, résilience/routage/failover IA, copilote à actions exécutables, persistance du chat, limites du chatbot public, normalisation Pint du projet. **Voir le journal détaillé en [§11](#11-évolutions-depuis-le-2026-08-11-professionnalisation).**)
 >
 > 👥 **Projet développé à plusieurs.** Chaque contributeur utilise Claude Code, dont la mémoire locale ne se transfère pas : **`CLAUDE.md` et ce fichier sont la mémoire/le contexte collectifs**. Tout agent doit les **tenir à jour** à chaque tâche notable (fonctionnalité, décision d'archi, changement de convention/workflow), puis committer et pousser (`git pull --rebase` avant `git push`).
 >
@@ -341,5 +341,17 @@ Phase de **professionnalisation** post-portage. Tout est testé (**≈568 tests 
 
 ### Règles métier de soumission
 - **Sélection du colloque avant saisie** — le contrôle d'éligibilité se fait **avant** le formulaire (pas à l'enregistrement). Sélecteur (350px) : groupe **« Appels ouverts »** en premier, puis **« Mes évènements »**. Colloque **sélectionné par défaut** = celui **en cours**, sinon le **prochain**, sinon le **dernier** auquel l'utilisateur a participé. On **soumet dans le colloque sélectionné**. Le rappel de quota de soumission a été retiré de l'étape de validation.
+
+### Attestations de communication — par communication + plafonds (2026-09-22)
+
+Règle métier clarifiée et **implémentée** (la fonctionnalité était prévue dans les réglages/UI de l'édition — carte « Attestations & co-auteurs » — mais jamais branchée dans l'émission ; `attestation_max`/`coauthors_max` étaient des réglages morts).
+
+- **Limite de communications** (à la soumission) : inchangée et déjà correcte — `Submission::usedCountFor()` ne compte que les communications où le compte est **auteur correspondant** (participant déposant) ; en **co-auteur**, illimité.
+- **Attestation de communication = par communication ET par personne** : sur chaque communication acceptée, l'**auteur correspondant** et chaque **co-auteur payé** ont une attestation **à leur nom**, reliée à la communication.
+  - Nouvelle colonne `attestations.submission_id` (nullable — les autres types restent liés au seul participant). Relation `Attestation::submission()`.
+  - `IssueAttestation::handle($participant, $type, ?Submission $submission = null)` : idempotence par `(édition, participant, type, submission_id)` ; `meta.communication_title`/`communication_ref` dénormalisés pour le PDF (vue `pdf/attestation.blade.php` nomme la communication).
+  - **Plafonds** (depuis `edition.settings`) : `coauthors_max` (défaut 8) = co-auteurs attestés / communication (ordre de la liste `authors`) ; `attestation_max` (défaut 5) = attestations de communication / personne — au-delà, on **privilégie les communications où la personne est auteur correspondant**, puis les autres par **ordre chronologique** (id de soumission).
+  - **Co-auteurs payés uniquement** (comportement module 20 conservé) ; l'auteur correspondant n'a pas de filtre paiement additionnel ici.
+  - Calcul centralisé : `App\Support\CommunicationAttestations::entitlements($edition)` / `::count($edition)`. Branché dans `Admin\DocumentHubController` (aperçu + `issueType`, le type `communication` sort de `targetsFor()`). Tests : `tests/Feature/CommunicationAttestationTest.php`. **579 tests verts.**
 
 > **Mémoire projet** : le contexte fin (décisions, conventions, TODO différés — DOI/DataCite, connecteur Google anti-plagiat, amélioration `admin/reclamations`) est aussi consigné dans la **mémoire locale de Claude Code** (`~/.claude/…/memory/`, non versionnée). Comme cette mémoire ne se partage pas entre contributeurs, **le contexte partageable doit vivre dans `CLAUDE.md` + ce fichier** (versionnés) : les tenir à jour à chaque tâche notable.

@@ -139,6 +139,20 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
 - **Config runtime** : mail/paiements/IA/visio/SMS/nom sont surchargés **depuis la base**
   (`AppServiceProvider::applySettingsToConfig()`), pas le `.env`.
 
+### Règles métier — limites communications & attestations
+
+- **Limite de communications** (`settings.max_communications`) : compte **seulement** les
+  communications où le compte est **auteur correspondant** (participant déposant,
+  `Submission::usedCountFor()`). Illimité en tant que **co-auteur**.
+- **Attestation de communication = par communication ET par personne** : sur chaque
+  communication acceptée, l'auteur correspondant **et** chaque co-auteur **payé** ont une
+  attestation à leur nom, liée à la communication (`attestations.submission_id`). Deux
+  plafonds : `settings.coauthors_max` (co-auteurs attestés / communication) et
+  `settings.attestation_max` (attestations de communication / personne — quand on dépasse,
+  on **privilégie les communications où la personne est auteur correspondant**, puis les
+  autres par ordre chronologique). Calcul dans `App\Support\CommunicationAttestations` ;
+  émission via `IssueAttestation::handle($participant, 'communication', $submission)`.
+
 ### Architecture & sécurité
 
 - **RBAC à deux niveaux** : staff `User` global (spatie/permission) vs `Participant`
