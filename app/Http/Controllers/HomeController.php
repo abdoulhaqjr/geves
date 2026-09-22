@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Colloque;
 use App\Models\Edition;
 use App\Models\Participant;
+use App\Models\Testimonial;
 use App\Support\Gallery;
 use Illuminate\Contracts\View\View;
 
@@ -55,6 +56,8 @@ class HomeController extends Controller
             'stats' => $stats,
             'galleryEdition' => $past->first(),
             'gallery' => $gallery,
+            // Témoignages « à la une » (approuvés + mis en avant, ordonnés).
+            'testimonials' => Testimonial::forHome()->take(6)->get(),
         ]);
     }
 }

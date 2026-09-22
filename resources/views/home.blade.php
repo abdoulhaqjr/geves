@@ -302,6 +302,7 @@
     @endif
 
     {{-- ===================== Témoignages ===================== --}}
+    @if ($testimonials->isNotEmpty())
     <section class="ukc-section" id="temoignages">
         <div class="ukc-container">
             <div class="block-head">
@@ -309,30 +310,22 @@
                 <p>{{ __('Retours de participants, communicateurs et membres de comités.') }}</p>
             </div>
             <div class="temo-grid">
-                <div class="temo-card">
-                    <p class="quote">{{ __('« La plateforme a simplifié le dépôt de mon résumé et le suivi jusqu’à l’acceptation. Interface claire pour les doctorants. »') }}</p>
-                    <div class="who">
-                        <div class="av"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>
-                        <div><strong>A. Kombate</strong><span>{{ __('Doctorante · Sciences sociales') }}</span></div>
-                    </div>
-                </div>
-                <div class="temo-card">
-                    <p class="quote">{{ __('« En tant que modérateur, l’accès au programme et aux fiches de session m’a fait gagner un temps précieux pendant le colloque. »') }}</p>
-                    <div class="who">
-                        <div class="av"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>
-                        <div><strong>Dr M. Ouattara</strong><span>{{ __('Enseignant-chercheur · UP') }}</span></div>
-                    </div>
-                </div>
-                <div class="temo-card">
-                    <p class="quote">{{ __('« La vérification des attestations par QR code renforce la crédibilité des documents délivrés par la DRI. »') }}</p>
-                    <div class="who">
-                        <div class="av"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>
-                        <div><strong>{{ __('Comité d’organisation') }}</strong><span>DRI · Université de Kara</span></div>
-                    </div>
-                </div>
+                @foreach ($testimonials as $t)
+                    <figure class="temo-card">
+                        <blockquote class="quote">« {{ $t->quote }} »</blockquote>
+                        <figcaption class="who">
+                            <div class="av" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>
+                            <div>
+                                <strong>{{ $t->author_name }}</strong>
+                                <span>{{ collect([$t->author_role, $t->author_affiliation])->filter()->implode(' · ') }}</span>
+                            </div>
+                        </figcaption>
+                    </figure>
+                @endforeach
             </div>
         </div>
     </section>
+    @endif
 
     {{-- ===================== Contact ===================== --}}
     <section class="ukc-section ukc-section--alt" id="contact">

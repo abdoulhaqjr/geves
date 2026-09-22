@@ -18,6 +18,7 @@ use App\Http\Controllers\Account\ReviewWorkspaceController;
 use App\Http\Controllers\Account\SecurityController;
 use App\Http\Controllers\Account\SessionReportController;
 use App\Http\Controllers\Account\SubmissionController;
+use App\Http\Controllers\Account\TestimonialController as AccountTestimonialController;
 use App\Http\Controllers\Account\VerifyEmailController;
 use App\Http\Controllers\Admin\AiAssistantController;
 use App\Http\Controllers\Admin\AnnouncementController;
@@ -43,6 +44,7 @@ use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\SpaceController;
 use App\Http\Controllers\Admin\SubmissionFormController;
 use App\Http\Controllers\Admin\TemplateDesignerController;
+use App\Http\Controllers\Admin\TestimonialController as AdminTestimonialController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\AttestationController;
 use App\Http\Controllers\AuthorLinkController;
@@ -158,6 +160,8 @@ Route::middleware(['auth:account', StampAccountSession::class])->group(function 
     Route::get('/compte/orcid/connexion', [OrcidController::class, 'connect'])->name('account.orcid.connect');
     Route::get('/compte/orcid/callback', [OrcidController::class, 'callback'])->name('account.orcid.callback');
     Route::get('/documents', [App\Http\Controllers\Account\DocumentController::class, 'index'])->name('account.documents');
+    Route::get('/mes-temoignages', [AccountTestimonialController::class, 'index'])->name('account.testimonials');
+    Route::post('/mes-temoignages', [AccountTestimonialController::class, 'store'])->name('account.testimonials.store');
     Route::get('/notifications', [NotificationController::class, 'index'])->name('account.notifications');
     Route::get('/compte/preferences', [PreferencesController::class, 'edit'])->name('account.preferences');
     Route::put('/compte/preferences', [PreferencesController::class, 'update'])->name('account.preferences.update');
@@ -440,6 +444,18 @@ Route::prefix('admin')->group(function () {
         });
 
         // Réglages (dont agents IA).
+        // Témoignages (niveau plateforme) — modération, mise en avant, sélection IA.
+        Route::middleware('can:testimonials')->group(function () {
+            Route::get('/temoignages', [AdminTestimonialController::class, 'index'])->name('admin.testimonials.index');
+            Route::post('/temoignages', [AdminTestimonialController::class, 'store'])->name('admin.testimonials.store');
+            Route::post('/temoignages/proposer', [AdminTestimonialController::class, 'propose'])->name('admin.testimonials.propose');
+            Route::post('/temoignages/ordre', [AdminTestimonialController::class, 'reorder'])->name('admin.testimonials.reorder');
+            Route::post('/temoignages/{testimonial}/approuver', [AdminTestimonialController::class, 'approve'])->name('admin.testimonials.approve');
+            Route::post('/temoignages/{testimonial}/refuser', [AdminTestimonialController::class, 'reject'])->name('admin.testimonials.reject');
+            Route::post('/temoignages/{testimonial}/mise-en-avant', [AdminTestimonialController::class, 'toggleFeatured'])->name('admin.testimonials.feature');
+            Route::delete('/temoignages/{testimonial}', [AdminTestimonialController::class, 'destroy'])->name('admin.testimonials.destroy');
+        });
+
         Route::middleware('can:settings')->group(function () {
             Route::get('/reglages', [SettingController::class, 'edit'])->name('admin.settings');
             Route::post('/reglages', [SettingController::class, 'update'])->name('admin.settings.update');

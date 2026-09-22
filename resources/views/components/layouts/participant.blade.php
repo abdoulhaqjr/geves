@@ -109,6 +109,10 @@
                    @class(['active' => request()->routeIs('account.documents')])>
                     <x-ukc.icon name="folder" :size="18" /> <span class="txt">{{ __('Documents') }}</span>
                 </a>
+                <a href="{{ route('account.testimonials') }}" title="{{ __('Mon témoignage') }}"
+                   @class(['active' => request()->routeIs('account.testimonials')])>
+                    <x-ukc.icon name="sparkles" :size="18" /> <span class="txt">{{ __('Mon témoignage') }}</span>
+                </a>
                 <a href="{{ route('account.profile') }}" title="{{ __('Mon compte') }}"
                    @class(['active' => request()->routeIs('account.profile') || request()->routeIs('account.preferences') || request()->routeIs('account.notifications') || request()->routeIs('account.security')])>
                     <x-ukc.icon name="user" :size="18" /> <span class="txt">{{ __('Mon compte') }}</span>

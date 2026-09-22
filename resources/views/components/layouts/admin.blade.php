@@ -118,9 +118,15 @@
                     </a>
                 @endif
 
-                @if (auth('web')->user()?->can('users_roles') || auth('web')->user()?->can('settings'))
+                @if (auth('web')->user()?->can('users_roles') || auth('web')->user()?->can('settings') || auth('web')->user()?->can('testimonials'))
                     <span class="nav-label">Système</span>
                 @endif
+                @can('testimonials')
+                    <a href="{{ route('admin.testimonials.index') }}" title="Témoignages (accueil)"
+                       @class(['active' => request()->routeIs('admin.testimonials.*')])>
+                        <x-ukc.icon name="sparkles" :size="18" /> <span class="txt">Témoignages</span>
+                    </a>
+                @endcan
                 @can('users_roles')
                     <a href="{{ route('admin.users.index') }}" title="Utilisateurs"
                        @class(['active' => request()->routeIs('admin.users.*')])>

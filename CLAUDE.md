@@ -176,6 +176,16 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   **VC JSON téléchargeable** (`/attestation/{uuid}/credential.json`). Rattrapage du stock :
   `php artisan attestations:sign`. Réglages `attestations.did_*` / `crypto_suite`
   (EditionSettings) désormais **effectifs**.
+- **Témoignages** (page d'accueil) : table `testimonials` (modèle `App\Models\Testimonial`,
+  scope `forHome()`). **Dépôt par un participant connecté** (`/mes-temoignages`,
+  `Account\TestimonialController`) → statut `pending` + consentement obligatoire ; l'admin
+  peut aussi saisir directement. **Modération plateforme** (`Admin\TestimonialController`,
+  capacité globale **`testimonials`** dans `StaffRoles`, route `/admin/temoignages`) :
+  approuver/refuser, **mettre à la une** + **réordonner**. Bouton **« Proposer la sélection
+  (IA) »** = `App\AI\ScoreTestimonials` (à la demande, `AiManager::extract`) note l'impact et
+  **pré-remplit** `featured`/`position` ; **l'admin garde le dernier mot**. L'accueil
+  ([home.blade.php](resources/views/home.blade.php), `HomeController`) n'affiche que les
+  `approved` + `featured` (triés `position`, `impact_score`) ; section masquée si vide.
 
 ### Architecture & sécurité
 

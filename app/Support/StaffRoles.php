@@ -27,6 +27,7 @@ class StaffRoles
         'project' => 'Projet (gestion)',
         'announcements' => 'Annonces (déroulement)',
         'claims' => 'Réclamations & incidents',
+        'testimonials' => 'Témoignages (accueil)',
         'users_roles' => 'Utilisateurs & rôles',
         'settings' => 'Réglages',
     ];
@@ -45,7 +46,7 @@ class StaffRoles
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
                 'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'project',
-                'announcements', 'claims', 'users_roles', 'settings',
+                'announcements', 'claims', 'testimonials', 'users_roles', 'settings',
             ],
         ],
         'gerant' => [
