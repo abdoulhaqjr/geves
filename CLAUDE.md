@@ -5,6 +5,15 @@ productif tout de suite. Le contexte détaillé (état, architecture, modules, p
 est dans **[`PASSATION.md`](PASSATION.md)** — à lire avant de coder sur un domaine
 que vous ne connaissez pas.
 
+## 👥 Mémoire collective (projet à plusieurs)
+
+Le projet est développé **à plusieurs**, chacun avec Claude Code. La **mémoire locale
+de Claude Code ne se transfère pas** entre postes/agents : **`CLAUDE.md` et
+`PASSATION.md` (versionnés) sont la mémoire et le contexte partagés**. À la fin de
+**chaque tâche notable** (nouvelle fonctionnalité, décision d'archi, changement de
+convention ou de workflow), **mettez-les à jour** puis committez/poussez avec le
+reste. C'est ce qui permet à tous les agents d'avoir le même contexte.
+
 ## Le projet en une phrase
 
 **GEVES** (Gestion des ÉVénements Scientifiques — Direction de la Recherche et de
@@ -107,7 +116,19 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
 - **Téléphone** : tout champ numéro de téléphone = `<x-ukc.phone>` (intl-tel-input,
   drapeau + indicatif, valeur **E.164** à la soumission).
 - **Résumé de soumission** : CKEditor 5 (WYSIWYG, comptage en **mots**, `licenseKey:
-  'GPL'`). **Mots-clés** : **Tom Select** (`data-tom data-tom-create data-tom-max`).
+  'GPL'`, texte justifié). **Mots-clés** : **Tom Select** (`data-tom data-tom-create
+  data-tom-max`). Affichage d'un résumé stocké : **`App\Support\Html::render()`** (HTML
+  assaini, jamais `strip_tags` brut).
+- **Grades de participant** : liste unique **`App\Support\ParticipantTypes::all()`**
+  (profil + auteur correspondant). Le **grade est capturé par édition** sur le
+  participant (`participant.title`) → une personne peut avoir des grades différents au
+  fil des colloques ; ne pas le lire uniquement depuis le profil global.
+- **Wizard de soumission** (`resources/js/app.js` → `submissionWizard`) : blocage
+  d'étape (`validateStep`), erreurs en **toast** (`window.ukcToast`), auteur
+  correspondant éditable (identité forcée côté serveur quand « self », cf.
+  `StoreSubmissionRequest::prepareForValidation`). L'auteur peut corriger son résumé en
+  place tant que `Submission::isAuthorEditable()` (aucune relecture) — sinon
+  resoumission officielle (`canBeRevised`).
 - **Config runtime** : mail/paiements/IA/visio/SMS/nom sont surchargés **depuis la base**
   (`AppServiceProvider::applySettingsToConfig()`), pas le `.env`.
 
