@@ -380,6 +380,19 @@
 .step-panel { display: none; }
 .step-panel.active { display: block; }
 .wizard-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 22px; }
+
+/* Interrupteur (toggle) — ex. « Je suis l'auteur correspondant ». */
+.ukc-switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 14px; }
+.ukc-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.ukc-switch__track { width: 40px; height: 22px; border-radius: 999px; background: var(--ukc-border); position: relative; transition: background .15s; flex: none; }
+.ukc-switch__knob { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .2); transition: transform .15s; }
+.ukc-switch input:checked + .ukc-switch__track { background: var(--ukc-blue); }
+.ukc-switch input:checked + .ukc-switch__track .ukc-switch__knob { transform: translateX(18px); }
+.ukc-switch input:focus-visible + .ukc-switch__track { box-shadow: 0 0 0 3px rgba(34, 62, 164, .25); }
+.ukc-switch__label { font-size: 14px; font-weight: 600; }
+
+/* Champ verrouillé (identité reprise du compte, en lecture seule). */
+.ukc-field input.is-locked { background: var(--ukc-bg); color: var(--ukc-muted); cursor: not-allowed; }
 .recap-list { display: flex; flex-direction: column; gap: 0; }
 .recap-list .r { display: flex; justify-content: space-between; gap: 14px; padding: 11px 0; border-bottom: 1px solid var(--ukc-border); font-size: 14px; }
 .recap-list .r:last-child { border-bottom: none; }

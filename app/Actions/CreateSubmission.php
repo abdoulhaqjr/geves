@@ -4,8 +4,8 @@ namespace App\Actions;
 
 use App\Http\Requests\Account\StoreSubmissionRequest;
 use App\Models\Edition;
-use App\Models\User;
 use App\Models\Submission;
+use App\Models\User;
 use App\Support\Html;
 use App\Support\Notifier;
 use App\Support\SubmissionFormConfig;
@@ -61,17 +61,32 @@ class CreateSubmission
                 'grade' => $c['grade'] ?? null,
             ])->values()->all();
 
+        // Auteur correspondant : prérempli avec le compte, éventuellement remplacé
+        // (soumission pour le compte d'un tiers). L'identité est déjà verrouillée sur
+        // le compte quand « self » (cf. StoreSubmissionRequest::prepareForValidation).
+        $corr = (array) ($data['corresponding'] ?? []);
+        $isSelf = (string) ($corr['self'] ?? '1') !== '0';
+        $corrGrade = ($corr['grade'] ?? null) ?: null;
+        $corrAffiliation = ($corr['affiliation'] ?? null) ?: null;
+
         $authors = array_merge([[
-            'name' => $account->full_name,
-            'email' => $account->email,
-            'affiliation' => $account->affiliation,
-            'grade' => $account->grade,
+            'name' => $corr['name'] ?? $account->full_name,
+            'email' => $corr['email'] ?? $account->email,
+            'affiliation' => $corrAffiliation ?? $account->affiliation,
+            'grade' => $corrGrade ?? $account->grade,
             'corresponding' => true,
+            'is_submitter' => $isSelf,
         ]], $coauthors);
 
+        // Grade/affiliation POUR CE COLLOQUE : quand le déposant est l'auteur
+        // correspondant, ce qu'il a saisi ici est enregistré sur son participant de
+        // cette édition (grades différents possibles d'un colloque à l'autre).
+        $editionGrade = $isSelf ? $corrGrade : null;
+        $editionAffiliation = $isSelf ? $corrAffiliation : null;
+
         // Création atomique : le participant (upsert) et la communication ensemble.
-        $submission = DB::transaction(function () use ($account, $edition, $data, $authors, $fileUrl, $customMeta): Submission {
-            $participant = $this->upsert->handle($edition, $account, 'author');
+        $submission = DB::transaction(function () use ($account, $edition, $data, $authors, $fileUrl, $customMeta, $editionGrade, $editionAffiliation): Submission {
+            $participant = $this->upsert->handle($edition, $account, 'author', $editionGrade, $editionAffiliation);
 
             // ref_code + access_token sont générés par SubmissionObserver.
             return Submission::create([

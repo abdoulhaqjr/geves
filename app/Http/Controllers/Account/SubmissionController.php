@@ -121,6 +121,7 @@ class SubmissionController extends Controller
             'slot' => $slot,
             'availableSlots' => $this->availableSlots($submission),
             'soumissionAtt' => $soumissionAtt,
+            'abstractMin' => (new SubmissionFormConfig($submission->edition))->abstractMin(),
             'abstractMax' => (new SubmissionFormConfig($submission->edition))->abstractMax(),
             'googleCal' => $slot && $slot->starts_at
                 ? app(CalendarExport::class)->googleUrl(AgendaController::slotEvent($slot))
@@ -206,6 +207,50 @@ class SubmissionController extends Controller
 
         return redirect()->route('account.submissions.show', $submission)
             ->with('ukc_status', 'Version définitive déposée. Merci !');
+    }
+
+    /**
+     * Correction en place du contenu (titre / résumé / mots-clés) tant que la
+     * communication n'a pas été touchée par le staff. Ne crée PAS de version :
+     * la communication est encore « déposée » et personne ne l'a évaluée.
+     */
+    public function updateContent(Request $request, Submission $submission): RedirectResponse
+    {
+        $this->authorizeOwnership($submission);
+        abort_unless($submission->isAuthorEditable(), 403);
+
+        $config = new SubmissionFormConfig($submission->edition);
+
+        $titleRule = ['required', 'string', 'max:'.$config->titleMax()];
+        if ($config->titleMin() > 0) {
+            $titleRule[] = 'min:'.$config->titleMin();
+        }
+
+        $rules = [
+            'title' => $titleRule,
+            'abstract' => ['required', 'string', 'max:20000', function (string $attr, string $value, \Closure $fail) use ($config): void {
+                $words = SubmissionFormConfig::wordCount($value);
+                if ($words < $config->abstractMin()) {
+                    $fail('Le résumé doit contenir au moins '.$config->abstractMin().' mots.');
+                } elseif ($words > $config->abstractMax()) {
+                    $fail('Le résumé ne doit pas dépasser '.$config->abstractMax().' mots.');
+                }
+            }],
+        ];
+        if ($config->enabled('keywords')) {
+            $rules['keywords'] = ['nullable', 'string', 'max:500'];
+        }
+
+        $data = $request->validate($rules);
+
+        $submission->update([
+            'title' => $data['title'],
+            'abstract' => Html::clean($data['abstract']),
+            'keywords' => ($data['keywords'] ?? null) ?: null,
+        ]);
+
+        return redirect()->route('account.submissions.show', $submission)
+            ->with('ukc_status', 'Votre résumé a été mis à jour.');
     }
 
     public function resubmit(ResubmitSubmissionRequest $request, Submission $submission, NotifySubmissionStatus $notify): RedirectResponse

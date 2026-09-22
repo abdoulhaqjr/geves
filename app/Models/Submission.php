@@ -189,4 +189,19 @@ class Submission extends Model
     {
         return $this->status === 'revision' && (int) $this->revision_of === 0;
     }
+
+    /**
+     * L'auteur peut encore corriger librement sa communication (titre/résumé/
+     * mots-clés) TANT QU'aucun relecteur, membre du comité ou gestionnaire n'y a
+     * touché : statut initial « déposée », aucune relecture créée, pas de version
+     * définitive déposée. Après la première intervention du staff, la correction
+     * passe par le circuit officiel de resoumission ({@see canBeRevised()}).
+     */
+    public function isAuthorEditable(): bool
+    {
+        return (int) $this->revision_of === 0
+            && $this->status === 'submitted'
+            && ! $this->hasCameraReady()
+            && ! $this->reviews()->exists();
+    }
 }

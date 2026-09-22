@@ -21,7 +21,13 @@ class UpsertParticipantForAccount
     /** Rôles à ne jamais rétrograder. */
     public const STRONG_ROLES = ['reviewer', 'committee', 'moderator', 'rapporteur'];
 
-    public function handle(Edition $edition, User $account, string $role = 'author'): Participant
+    /**
+     * @param  string|null  $grade  grade POUR CETTE ÉDITION (repli : grade du compte).
+     *                              Permet à une même personne d'avoir des grades
+     *                              différents au fil des colloques.
+     * @param  string|null  $affiliation  affiliation pour cette édition (repli : compte).
+     */
+    public function handle(Edition $edition, User $account, string $role = 'author', ?string $grade = null, ?string $affiliation = null): Participant
     {
         $participant = Participant::firstOrNew([
             'edition_id' => $edition->id,
@@ -33,14 +39,15 @@ class UpsertParticipantForAccount
             $participant->role = $role;
         }
 
-        // Identité + coordonnées depuis le compte (source de vérité).
+        // Identité + coordonnées depuis le compte (source de vérité). Le grade et
+        // l'affiliation sont propres à l'édition (repli sur le profil du compte).
         $participant->first_name = $account->first_name;
         $participant->last_name = $account->last_name;
         $participant->email = $account->email;
         $participant->phone = $account->phone;
-        $participant->institution = $account->affiliation;
+        $participant->institution = ($affiliation !== null && $affiliation !== '') ? $affiliation : $account->affiliation;
         $participant->country = $account->country;
-        $participant->title = $account->grade;
+        $participant->title = ($grade !== null && $grade !== '') ? $grade : $account->grade;
 
         // N'écrase pas un rôle fort par un rôle plus faible.
         if (! in_array($participant->role, self::STRONG_ROLES, true)) {

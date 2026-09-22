@@ -64,9 +64,23 @@ class StoreSubmissionRequest extends FormRequest
         if (count($tracks) && ! $this->filled('track')) {
             $merge['track'] = $tracks[0];
         }
-        if ($merge !== []) {
-            $this->merge($merge);
+
+        // Auteur correspondant : par défaut = le compte connecté. Quand l'utilisateur
+        // se déclare auteur correspondant (« self »), l'identité (nom + e-mail) est
+        // FORCÉE depuis le compte (non falsifiable), quoi que le client ait envoyé.
+        $account = Auth::guard('account')->user();
+        $corr = (array) $this->input('corresponding', []);
+        $self = (string) ($corr['self'] ?? '1') !== '0';
+        if ($self && $account) {
+            $corr['name'] = $account->full_name;
+            $corr['email'] = $account->email;
         }
+        $corr['self'] = $self ? '1' : '0';
+        $corr['name'] = $corr['name'] ?? $account?->full_name;
+        $corr['email'] = $corr['email'] ?? $account?->email;
+        $merge['corresponding'] = $corr;
+
+        $this->merge($merge);
     }
 
     /** @return array<string, mixed> */
@@ -90,6 +104,14 @@ class StoreSubmissionRequest extends FormRequest
                     $fail('Le résumé ne doit pas dépasser '.$c->abstractMax().' mots.');
                 }
             }],
+            // Auteur correspondant (prérempli avec le compte, éditable). L'identité
+            // est toujours transmise (verrouillée sur le compte quand « self »).
+            'corresponding' => ['array'],
+            'corresponding.self' => ['nullable'],
+            'corresponding.name' => ['required', 'string', 'max:200'],
+            'corresponding.email' => ['required', 'email', 'max:200'],
+            'corresponding.affiliation' => ['nullable', 'string', 'max:255'],
+            'corresponding.grade' => ['nullable', 'string', 'max:100'],
             'coauthors' => ['array'],
             'coauthors.*.name' => ['nullable', 'string', 'max:200'],
             'coauthors.*.email' => ['nullable', 'email', 'max:200'],
@@ -189,7 +211,7 @@ class StoreSubmissionRequest extends FormRequest
     private function stepForField(string $field): int
     {
         return match (true) {
-            str_starts_with($field, 'coauthors') => 2,
+            str_starts_with($field, 'coauthors'), str_starts_with($field, 'corresponding') => 2,
             $field === 'abstract', str_starts_with($field, 'customAnswers') => 3,
             $field === 'file' => 4,
             default => 1,

@@ -54,6 +54,48 @@
             </p>
         </div>
 
+        {{-- Correction libre du contenu tant qu'aucun relecteur / comité / gestionnaire
+             n'y a touché (statut « déposée », aucune relecture). --}}
+        @if ($s->isAuthorEditable())
+            <div class="ukc-card" style="margin-bottom:18px;" x-data="{ editing: {{ $errors->any() ? 'true' : 'false' }} }">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                    <div class="ukc-alert ukc-alert--info" style="margin:0;flex:1;min-width:240px;">
+                        <span class="ico"><x-ukc.icon name="pen" :size="18" /></span>
+                        <div>{!! __('Votre communication n’a pas encore été évaluée : vous pouvez <strong>corriger votre résumé</strong> librement. Après le début de l’évaluation, les corrections passeront par le comité.') !!}</div>
+                    </div>
+                    <button type="button" class="ukc-btn ukc-btn--outline ukc-btn--sm" @click="editing = !editing" x-show="!editing">
+                        <x-ukc.icon name="pen" :size="16" /> {{ __('Modifier mon résumé') }}
+                    </button>
+                </div>
+
+                <div x-show="editing" x-cloak style="margin-top:16px;">
+                    <form method="POST" action="{{ route('account.submissions.update', $s) }}" class="ukc-form-grid">
+                        @csrf
+                        <div class="ukc-field full">
+                            <label for="edit-title">{{ __('Titre') }} <span class="req">*</span></label>
+                            <input type="text" id="edit-title" name="title" value="{{ old('title', $s->title) }}">
+                            @error('title') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-field full">
+                            <label>{{ __('Résumé') }} <span class="req">*</span></label>
+                            @include('partials.abstract-editor', ['name' => 'abstract', 'initial' => old('abstract', $s->abstract), 'min' => $abstractMin, 'max' => $abstractMax, 'help' => null])
+                            @error('abstract') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-field full">
+                            <label for="edit-keywords">{{ __('Mots-clés') }} <span class="hint">{{ __('(Entrée ou virgule pour ajouter)') }}</span></label>
+                            <input type="text" id="edit-keywords" name="keywords" data-tom data-tom-create data-placeholder="{{ __('Saisir un mot-clé…') }}"
+                                   value="{{ old('keywords', is_array($s->keywords) ? implode(', ', $s->keywords) : $s->keywords) }}">
+                            @error('keywords') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-field full" style="display:flex;gap:8px;">
+                            <button type="submit" class="ukc-btn ukc-btn--blue"><x-ukc.icon name="check" :size="16" /> {{ __('Enregistrer les modifications') }}</button>
+                            <button type="button" class="ukc-btn ukc-btn--ghost" @click="editing = false">{{ __('Annuler') }}</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        @endif
+
         {{-- Correction demandée : resoumission (fonctionnalité réelle) --}}
         @if ($s->canBeRevised())
             <div class="ukc-card" style="margin-bottom:18px;border-color:#fde68a;background:#fffbeb;">

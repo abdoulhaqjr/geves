@@ -1088,6 +1088,8 @@ document.addEventListener('alpine:init', () => {
         abstractWordCount: 0,
         keywords: [],
         rules: initial.rules || {},
+        account: initial.account || { name: '', email: '', affiliation: '', grade: '' },
+        corr: initial.corr || { self: true, name: '', email: '', affiliation: '', grade: '' },
 
         init() {
             // Le résumé (CKEditor) notifie son contenu + compteur : on le garde en
@@ -1114,6 +1116,25 @@ document.addEventListener('alpine:init', () => {
         },
         removeCoauthor(i) {
             this.coauthors.splice(i, 1);
+        },
+
+        // Auteur correspondant : quand « je suis l'auteur correspondant » est coché,
+        // on rétablit l'identité (nom + e-mail) du compte connecté (non falsifiable).
+        onSelfToggle() {
+            if (this.corr.self) {
+                this.corr.name = this.account.name;
+                this.corr.email = this.account.email;
+            }
+        },
+        corrInitials() {
+            const s = (this.corr.name || '').trim();
+            if (!s) return '?';
+            const parts = s.split(/\s+/);
+            return ((parts[0]?.[0] || '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+        },
+        corrMeta() {
+            return [this.corr.affiliation, this.corr.grade].filter((v) => (v || '').trim()).join(' · ')
+                || 'Affiliation non renseignée';
         },
 
         // ---- Navigation contrôlée : on ne passe à l'étape suivante que si les
@@ -1149,6 +1170,10 @@ document.addEventListener('alpine:init', () => {
                 return this._ok();
             }
             if (n === 2) {
+                // Auteur correspondant : identité requise (surtout si ce n'est pas le
+                // compte connecté). Quand « self », l'identité vient du compte.
+                if (!(this.corr.name || '').trim()) return this._fail('Indiquez le nom de l’auteur correspondant.');
+                if (!/^\S+@\S+\.\S+$/.test((this.corr.email || '').trim())) return this._fail('L’auteur correspondant doit avoir un e-mail valide.');
                 for (const co of this.coauthors) {
                     const any = ['name', 'email', 'affiliation', 'grade'].some((k) => (co[k] || '').trim());
                     if (!any) continue; // ligne vide : ignorée à l'enregistrement

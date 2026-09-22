@@ -1,5 +1,10 @@
 @php
     $fileEnabled = $config->enabled('file');
+    // Options de grade : liste de référence + le grade actuel du compte s'il en sort.
+    $gradeChoices = $gradeOptions;
+    if (filled($account->grade) && ! in_array($account->grade, $gradeChoices, true)) {
+        $gradeChoices[] = $account->grade;
+    }
     $wizardInit = [
         'title' => old('title', ''),
         'track' => old('track', $tracks[0] ?? ''),
@@ -7,6 +12,21 @@
         'keywords' => array_values(array_filter(array_map('trim', explode(',', (string) old('keywords', ''))))),
         'coauthors' => array_values(old('coauthors', [])),
         'errorStep' => (int) session('submission_error_step', 1),
+        // Auteur correspondant : prérempli avec le compte connecté, éditable.
+        // Le grade saisi ici est enregistré POUR CE COLLOQUE (grade par édition).
+        'account' => [
+            'name' => $account->full_name,
+            'email' => $account->email,
+            'affiliation' => $account->affiliation,
+            'grade' => $account->grade,
+        ],
+        'corr' => [
+            'self' => old('corresponding.self', '1') !== '0',
+            'name' => old('corresponding.name', $account->full_name),
+            'email' => old('corresponding.email', $account->email),
+            'affiliation' => old('corresponding.affiliation', $account->affiliation),
+            'grade' => old('corresponding.grade', $account->grade),
+        ],
         // Règles de validation côté client : bloquent le passage à l'étape suivante
         // tant que les champs obligatoires de l'étape courante ne sont pas remplis.
         'rules' => [
@@ -173,9 +193,51 @@
 
                     {{-- Étape 2 : Auteurs --}}
                     <div class="step-panel" :class="{ active: step===2 }">
-                        <h2><x-ukc.icon name="users" :size="20" /> {{ __('Auteurs') }}</h2>
+                        <h2><x-ukc.icon name="users" :size="20" /> {{ __('Auteur correspondant') }}</h2>
+
+                        {{-- Auteur correspondant : prérempli avec le compte connecté ; le grade
+                             saisi vaut POUR CE COLLOQUE (il peut évoluer d'une édition à l'autre). --}}
+                        <input type="hidden" name="corresponding[self]" :value="corr.self ? 1 : 0">
+                        <label class="ukc-switch">
+                            <input type="checkbox" x-model="corr.self" @change="onSelfToggle()">
+                            <span class="ukc-switch__track"><span class="ukc-switch__knob"></span></span>
+                            <span class="ukc-switch__label">{{ __('Je suis l’auteur correspondant') }}</span>
+                        </label>
+                        <div class="ukc-form-grid">
+                            <div class="ukc-field">
+                                <label for="corr-name">{{ __('Nom & prénom') }} <span class="req">*</span></label>
+                                <input type="text" id="corr-name" name="corresponding[name]" x-model="corr.name"
+                                       :readonly="corr.self" :class="corr.self ? 'is-locked' : ''" placeholder="{{ __('Nom Prénom') }}">
+                                <span class="hint" x-show="corr.self" x-cloak>{{ __('Repris de votre profil (identité vérifiée).') }}</span>
+                                @error('corresponding.name') <span class="error">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="ukc-field">
+                                <label for="corr-email">{{ __('E-mail') }} <span class="req">*</span></label>
+                                <input type="email" id="corr-email" name="corresponding[email]" x-model="corr.email"
+                                       :readonly="corr.self" :class="corr.self ? 'is-locked' : ''" placeholder="{{ __('E-mail') }}">
+                                @error('corresponding.email') <span class="error">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="ukc-field">
+                                <label for="corr-affiliation">{{ __('Affiliation') }}</label>
+                                <input type="text" id="corr-affiliation" name="corresponding[affiliation]" x-model="corr.affiliation"
+                                       placeholder="{{ __('Établissement / laboratoire') }}">
+                                @error('corresponding.affiliation') <span class="error">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="ukc-field">
+                                <label for="corr-grade">{{ __('Grade') }} <span class="hint">{{ __('(pour ce colloque)') }}</span></label>
+                                <select id="corr-grade" name="corresponding[grade]" x-model="corr.grade">
+                                    <option value="">— {{ __('Choisir') }} —</option>
+                                    @foreach ($gradeChoices as $g)
+                                        <option value="{{ $g }}">{{ $g }}</option>
+                                    @endforeach
+                                </select>
+                                @error('corresponding.grade') <span class="error">{{ $message }}</span> @enderror
+                            </div>
+                        </div>
+
+                        <h3 style="font-size:14px;font-weight:800;margin:20px 0 6px;">{{ __('Co-auteurs') }}</h3>
                         <p class="ukc-muted" style="font-size:.88rem;margin-bottom:12px;">
-                            {{ __('Vous êtes l’auteur correspondant. Ajoutez ici les co-auteurs de la communication.') }}
+                            {{ __('Ajoutez ici les co-auteurs de la communication.') }}
                         </p>
                         <div style="display:flex;flex-direction:column;gap:10px;">
                             <template x-for="(co, i) in coauthors" :key="i">
@@ -306,10 +368,10 @@
                                 <div class="recap-field">
                                     <div class="recap-field__label"><x-ukc.icon name="user" :size="15" /> {{ __('Auteur correspondant') }}</div>
                                     <div class="recap-author">
-                                        <span class="recap-author__av">{{ $account->initials }}</span>
+                                        <span class="recap-author__av" x-text="corrInitials()"></span>
                                         <div style="min-width:0;">
-                                            <div class="recap-author__name">{{ $account->full_name }}</div>
-                                            <div class="recap-author__meta">{{ $account->affiliation ?: __('affiliation manquante') }}</div>
+                                            <div class="recap-author__name" x-text="corr.name || '{{ __('Nom non renseigné') }}'"></div>
+                                            <div class="recap-author__meta" x-text="corrMeta()"></div>
                                         </div>
                                     </div>
                                 </div>
