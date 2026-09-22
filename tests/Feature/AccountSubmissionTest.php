@@ -71,6 +71,38 @@ it('crée une communication reliée au compte avec co-auteur', function () {
     expect($submission->participant_id)->toBe($participant->id);
 });
 
+it('refuse un co-auteur identique à l’auteur correspondant (même e-mail)', function () {
+    $edition = openEdition();
+    $account = verifiedAccount(); // e-mail awa@example.tg (auteur correspondant « self »)
+
+    $this->actingAs($account, 'account')
+        ->post(route('account.submissions.store', $edition->slug), [
+            'title' => 'Doublon auteur',
+            'track' => 'Sciences',
+            'abstract' => str_repeat('a', 60),
+            'coauthors' => [['name' => 'Awa Kodjo', 'email' => 'awa@example.tg']],
+        ])
+        ->assertSessionHasErrors('coauthors');
+
+    expect(Submission::count())->toBe(0);
+});
+
+it('refuse deux co-auteurs avec le même e-mail', function () {
+    $edition = openEdition();
+    $account = verifiedAccount();
+
+    $this->actingAs($account, 'account')
+        ->post(route('account.submissions.store', $edition->slug), [
+            'title' => 'Doublon co-auteur',
+            'track' => 'Sciences',
+            'abstract' => str_repeat('a', 60),
+            'coauthors' => [['name' => 'A', 'email' => 'dup@x.tg'], ['name' => 'B', 'email' => 'dup@x.tg']],
+        ])
+        ->assertSessionHasErrors('coauthors');
+
+    expect(Submission::count())->toBe(0);
+});
+
 it('applique le garde-fou du nombre max de communications', function () {
     $edition = openEdition(['max_communications' => 1]);
     $account = verifiedAccount();

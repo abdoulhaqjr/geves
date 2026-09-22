@@ -1261,11 +1261,19 @@ document.addEventListener('alpine:init', () => {
                 // compte connecté). Quand « self », l'identité vient du compte.
                 if (!(this.corr.name || '').trim()) return this._fail('Indiquez le nom de l’auteur correspondant.');
                 if (!/^\S+@\S+\.\S+$/.test((this.corr.email || '').trim())) return this._fail('L’auteur correspondant doit avoir un e-mail valide.');
+
+                // E-mail de l'auteur correspondant (compte connecté si « self »).
+                const corrEmail = ((this.corr.self ? this.account.email : this.corr.email) || '').trim().toLowerCase();
+                const seen = new Set();
                 for (const co of this.coauthors) {
                     const any = ['name', 'email', 'affiliation', 'grade'].some((k) => (co[k] || '').trim());
                     if (!any) continue; // ligne vide : ignorée à l'enregistrement
                     if (!(co.name || '').trim()) return this._fail('Indiquez le nom de chaque co-auteur (ou retirez la ligne).');
-                    if (!/^\S+@\S+\.\S+$/.test((co.email || '').trim())) return this._fail('Chaque co-auteur doit avoir un e-mail valide.');
+                    const email = (co.email || '').trim().toLowerCase();
+                    if (!/^\S+@\S+\.\S+$/.test(email)) return this._fail('Chaque co-auteur doit avoir un e-mail valide.');
+                    if (email === corrEmail) return this._fail('Un co-auteur ne peut pas être aussi l’auteur correspondant (même e-mail).');
+                    if (seen.has(email)) return this._fail('Deux co-auteurs ont le même e-mail : chaque auteur doit être unique.');
+                    seen.add(email);
                 }
                 return this._ok();
             }

@@ -194,6 +194,29 @@ class StoreSubmissionRequest extends FormRequest
             } elseif (Submission::remainingFor($edition, $account) <= 0) {
                 $v->errors()->add('abstract', 'Vous avez atteint le nombre maximum de communications pour cette édition.');
             }
+
+            // Unicité des auteurs : un co-auteur ne peut pas être l'auteur
+            // correspondant, et deux co-auteurs ne peuvent pas partager un e-mail.
+            $corrEmail = mb_strtolower(trim((string) $this->input('corresponding.email', '')));
+            $seen = [];
+            foreach ((array) $this->input('coauthors', []) as $co) {
+                if (! is_array($co)) {
+                    continue;
+                }
+                $email = mb_strtolower(trim((string) ($co['email'] ?? '')));
+                if ($email === '') {
+                    continue;
+                }
+                if ($corrEmail !== '' && $email === $corrEmail) {
+                    $v->errors()->add('coauthors', 'Un co-auteur ne peut pas être aussi l’auteur correspondant (même e-mail).');
+                    break;
+                }
+                if (isset($seen[$email])) {
+                    $v->errors()->add('coauthors', 'Deux co-auteurs ont le même e-mail : chaque auteur doit être unique.');
+                    break;
+                }
+                $seen[$email] = true;
+            }
         });
     }
 
