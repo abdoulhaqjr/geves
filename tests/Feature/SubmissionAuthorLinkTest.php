@@ -117,6 +117,24 @@ it('permet de décliner une association', function () {
     expect($mine)->toBe(0);
 });
 
+it('affiche le statut de rattachement des auteurs côté back-office', function () {
+    Mail::fake();
+    $edition = openEdition();
+    $submitter = verifiedAccount();
+    $coauthor = User::create([
+        'name' => 'Yao Doe', 'first_name' => 'Yao', 'last_name' => 'Doe',
+        'email' => 'yao@uk.tg', 'password' => 'pass12345', 'affiliation' => 'UK',
+    ]);
+    submitWithCoauthor($submitter, $edition, ['name' => 'Yao Doe', 'email' => 'yao@uk.tg']);
+    $sub = Submission::first();
+
+    $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.submissions.show', $sub))
+        ->assertOk()
+        ->assertSee('Compte rattaché')
+        ->assertSee('Yao Doe');
+});
+
 it('un co-auteur voit la fiche mais ne peut pas la modifier', function () {
     Mail::fake();
     $edition = openEdition();

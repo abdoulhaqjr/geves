@@ -271,6 +271,7 @@ class SubmissionController extends Controller
 
         return view('admin.submissions.show', [
             'submission' => $submission,
+            'authorLinks' => $submission->authorLinks()->with('user')->orderBy('author_index')->get(),
             'actions' => self::ACTIONS,
             'reviews' => $reviews,
             'recommendations' => Review::RECOMMENDATIONS,

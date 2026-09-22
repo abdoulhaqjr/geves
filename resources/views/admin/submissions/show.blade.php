@@ -42,8 +42,11 @@
                     </div>
 
                     <h3>Auteurs</h3>
+                    @php($links = $authorLinks->keyBy('author_index'))
+                    @php($matchLabels = ['self' => 'déposant', 'email' => 'e-mail', 'phone' => 'téléphone', 'name' => 'nom'])
                     <ul class="authors-list">
-                        @foreach (($s->authors ?? []) as $author)
+                        @foreach (($s->authors ?? []) as $i => $author)
+                            @php($link = $links[$i] ?? null)
                             <li>
                                 <div class="av">{{ $initials($author['name'] ?? '?') }}</div>
                                 <div>
@@ -51,11 +54,30 @@
                                         @if (!empty($author['corresponding']))
                                             <span class="ukc-pill ukc-pill--info" style="margin-left:6px;">Correspondant</span>
                                         @endif
+                                        @if ($link)
+                                            @php([$pill, $txt] = match ($link->status) {
+                                                'linked' => $link->match_type === 'self' ? ['muted', 'Déposant'] : ['ok', 'Compte rattaché'],
+                                                'invited' => ['warn', 'Invité·e'],
+                                                'declined' => ['err', 'Association déclinée'],
+                                                default => ['muted', 'Non rattaché'],
+                                            })
+                                            <span class="ukc-pill ukc-pill--{{ $pill }}" style="margin-left:6px;">{{ $txt }}</span>
+                                        @endif
                                     </div>
                                     @if (!empty($author['affiliation']))
                                         <div class="aff">{{ $author['affiliation'] }}@if (!empty($author['grade'])) · {{ $author['grade'] }}@endif</div>
                                     @endif
                                     @if (!empty($author['email']))<div class="aff">{{ $author['email'] }}</div>@endif
+                                    @if ($link && $link->user)
+                                        <div class="aff" style="color:var(--ukc-green);">
+                                            <x-ukc.icon name="check" :size="13" /> {{ $link->user->full_name ?: $link->user->name }}
+                                            @if ($link->match_type && ($matchLabels[$link->match_type] ?? null) && $link->match_type !== 'self')
+                                                <span style="color:var(--ukc-muted);">· rapproché par {{ $matchLabels[$link->match_type] }}</span>
+                                            @endif
+                                        </div>
+                                    @elseif ($link && $link->status === 'invited')
+                                        <div class="aff" style="color:var(--ukc-muted);">Invitation envoyée le {{ $link->invited_at?->format('d/m/Y') }} — en attente d’inscription</div>
+                                    @endif
                                 </div>
                             </li>
                         @endforeach
