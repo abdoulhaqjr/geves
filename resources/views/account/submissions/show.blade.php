@@ -60,7 +60,7 @@
             <div class="ukc-card" style="margin-bottom:18px;" x-data="{ editing: {{ $errors->any() ? 'true' : 'false' }} }">
                 <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
                     <div class="ukc-alert ukc-alert--info" style="margin:0;flex:1;min-width:240px;">
-                        <span class="ico"><x-ukc.icon name="pen" :size="18" /></span>
+                        <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
                         <div>{!! __('Votre communication n’a pas encore été évaluée : vous pouvez <strong>corriger votre résumé</strong> librement. Après le début de l’évaluation, les corrections passeront par le comité.') !!}</div>
                     </div>
                     <button type="button" class="ukc-btn ukc-btn--outline ukc-btn--sm" @click="editing = !editing" x-show="!editing">
