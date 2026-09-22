@@ -269,6 +269,8 @@
 .ukc-burger { display: none; background: none; border: none; font-size: 1.4rem; color: var(--ukc-blue); cursor: pointer; padding: 4px; }
 /* Contenu participant : cadré 1100px et centré (fidèle au mockup espace-participant). */
 .ukc-content { padding: 24px clamp(16px, 3vw, 32px) 48px; width: 100%; min-width: 0; max-width: 1300px; margin: 0 auto; }
+/* Espace participant : occuper toute la largeur disponible (pas de max-width). */
+.ukc-shell:not(.ukc-shell--admin) .ukc-content { max-width: none; }
 
 /* Pagination (charte UKC / Tailwise) — vue par défaut de Laravel. */
 .ukc-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }

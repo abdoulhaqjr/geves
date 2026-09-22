@@ -1168,10 +1168,23 @@ document.addEventListener('alpine:init', () => {
                 return null;
             }
         },
+        // Pré-remplit les champs VIDES d'un auteur à partir d'un compte trouvé
+        // (l'e-mail a été fourni par le déposant). N'écrase jamais une saisie.
+        _fillFrom(target, account) {
+            if (! account) return;
+            if (! (target.name || '').trim() && account.name) target.name = account.name;
+            if (! (target.affiliation || '').trim() && account.affiliation) target.affiliation = account.affiliation;
+            if (! (target.grade || '').trim() && account.grade) target.grade = account.grade;
+        },
         async lookupCorr() {
             if (this.corr.self) { this.corr.hint = ''; this.corr.suggestion = ''; return; }
             const d = await this._authorLookup(this.corr.name, this.corr.email);
-            if (d) { this.corr.hint = d.hint || ''; this.corr.hintType = d.type || 'muted'; this.corr.suggestion = d.suggestion || ''; }
+            if (d) {
+                this.corr.hint = d.hint || '';
+                this.corr.hintType = d.type || 'muted';
+                this.corr.suggestion = d.account ? '' : (d.suggestion || '');
+                this._fillFrom(this.corr, d.account);
+            }
         },
         applyCorrSuggestion() {
             if (this.corr.suggestion) { this.corr.name = this.corr.suggestion; this.corr.suggestion = ''; }
@@ -1180,7 +1193,12 @@ document.addEventListener('alpine:init', () => {
             const co = this.coauthors[i];
             if (! co) return;
             const d = await this._authorLookup(co.name, co.email);
-            if (d) { co.hint = d.hint || ''; co.hintType = d.type || 'muted'; co.suggestion = d.suggestion || ''; }
+            if (d) {
+                co.hint = d.hint || '';
+                co.hintType = d.type || 'muted';
+                co.suggestion = d.account ? '' : (d.suggestion || '');
+                this._fillFrom(co, d.account);
+            }
         },
         applyCoauthorSuggestion(i) {
             const co = this.coauthors[i];

@@ -4,17 +4,21 @@ use App\Models\User;
 
 // Fabriques partagées : verifiedAccount() (tests/Pest.php).
 
-it('confirme discrètement qu’un compte correspond à l’e-mail saisi', function () {
+it('confirme un compte sur l’e-mail saisi et renvoie ses champs pour l’auto-complétion', function () {
     $submitter = verifiedAccount();
     User::create([
         'name' => 'Yao Doe', 'first_name' => 'Yao', 'last_name' => 'Doe',
         'email' => 'yao@uk.tg', 'password' => 'pass12345',
+        'affiliation' => 'Université de Kara', 'grade' => 'Doctorant',
     ]);
 
     $this->actingAs($submitter, 'account')
         ->postJson(route('account.authors.check'), ['email' => 'yao@uk.tg'])
         ->assertOk()
-        ->assertJsonPath('type', 'ok');
+        ->assertJsonPath('type', 'ok')
+        ->assertJsonPath('account.name', 'Yao Doe')
+        ->assertJsonPath('account.affiliation', 'Université de Kara')
+        ->assertJsonPath('account.grade', 'Doctorant');
 });
 
 it('signale qu’un e-mail inconnu donnera lieu à une invitation', function () {

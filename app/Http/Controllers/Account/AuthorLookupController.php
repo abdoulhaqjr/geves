@@ -36,13 +36,22 @@ class AuthorLookupController extends Controller
 
         $hint = null;
         $type = 'muted';
+        $account = null;
 
         // Indice fondé UNIQUEMENT sur des identifiants fournis par le déposant.
         if ($email !== '' || $phone !== '') {
             $match = $matcher->match(['email' => $email, 'phone' => $phone]);
             if ($match['user']) {
+                $u = $match['user'];
                 $hint = __('Un compte correspond : la personne sera associée à la communication et notifiée.');
                 $type = 'ok';
+                // L'identifiant a été fourni par le déposant → on peut pré-remplir
+                // les champs à partir du profil (nom, affiliation, grade).
+                $account = [
+                    'name' => $u->full_name ?: (string) $u->name,
+                    'affiliation' => (string) ($u->affiliation ?? ''),
+                    'grade' => (string) ($u->grade ?? ''),
+                ];
             } else {
                 $hint = __('Aucun compte pour l’instant : la personne sera invitée à créer le sien pour retrouver la communication.');
                 $type = 'info';
@@ -61,6 +70,6 @@ class AuthorLookupController extends Controller
             }
         }
 
-        return response()->json(['hint' => $hint, 'type' => $type, 'suggestion' => $suggestion]);
+        return response()->json(['hint' => $hint, 'type' => $type, 'suggestion' => $suggestion, 'account' => $account]);
     }
 }
