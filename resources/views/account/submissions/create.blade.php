@@ -367,12 +367,8 @@
                         </div>
                     </div>
 
-                    {{-- Message de validation d'étape (champs obligatoires manquants) --}}
-                    <p class="wizard-error" x-show="error" x-cloak>
-                        <x-ukc.icon name="info" :size="16" /> <span x-text="error"></span>
-                    </p>
-
-                    {{-- Navigation du wizard --}}
+                    {{-- Navigation du wizard (les erreurs de validation d'étape
+                         s'affichent en toast flottant, cf. submissionWizard.next). --}}
                     <div class="wizard-nav">
                         <button type="button" class="ukc-btn ukc-btn--ghost" @click="prev()" :style="step > 1 ? '' : 'visibility:hidden'">
                             <x-ukc.icon name="chevron" :size="16" style="transform:rotate(180deg);" /> {{ __('Précédent') }}

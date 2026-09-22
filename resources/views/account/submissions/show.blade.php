@@ -126,7 +126,7 @@
 
                     <h3 style="font-size:14px;font-weight:800;margin:16px 0 8px;">{{ __('Résumé') }}</h3>
                     @if (filled($s->abstract))
-                        <div class="abstract">{{ strip_tags((string) $s->abstract) }}</div>
+                        <div class="abstract">{!! \App\Support\Html::render($s->abstract) !!}</div>
                     @else
                         <div class="abstract" style="color:var(--ukc-muted);font-style:italic;">{{ __('Aucun résumé n’a été enregistré pour cette communication.') }}</div>
                     @endif

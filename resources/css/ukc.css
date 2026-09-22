@@ -539,7 +539,9 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .account-submission-detail .kv dt { color: var(--ukc-muted); font-weight: 600; }
 .account-submission-detail .kv dd { color: var(--ukc-text); font-weight: 500; margin: 0; }
 @media (max-width: 520px) { .account-submission-detail .kv { grid-template-columns: 1fr; gap: 2px 0; } .account-submission-detail .kv dt { margin-top: 8px; } }
-.account-submission-detail .abstract { background: var(--ukc-bg); border: 1px solid var(--ukc-border); border-radius: 12px; padding: 14px 16px; font-size: 14px; line-height: 1.6; color: var(--ukc-text); }
+.account-submission-detail .abstract { background: var(--ukc-bg); border: 1px solid var(--ukc-border); border-radius: 12px; padding: 14px 16px; font-size: 14px; line-height: 1.6; color: var(--ukc-text); text-align: justify; }
+.account-submission-detail .abstract > :first-child { margin-top: 0; }
+.account-submission-detail .abstract > :last-child { margin-bottom: 0; }
 .account-submission-detail .keywords { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .account-submission-detail .keywords span { background: #eef2ff; color: #3730a3; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 50px; }
 .account-submission-detail .file-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--ukc-border); font-size: 13.5px; }

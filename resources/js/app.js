@@ -1088,7 +1088,6 @@ document.addEventListener('alpine:init', () => {
         abstractWordCount: 0,
         keywords: [],
         rules: initial.rules || {},
-        error: '',
 
         init() {
             // Le résumé (CKEditor) notifie son contenu + compteur : on le garde en
@@ -1121,23 +1120,20 @@ document.addEventListener('alpine:init', () => {
         //      champs obligatoires de l'étape courante sont renseignés. -----------
         next() {
             const c = this.validateStep(this.step);
-            if (!c.ok) { this.error = c.msg; return; }
-            this.error = '';
+            if (!c.ok) { window.ukcToast?.(c.msg, 'err'); return; }
             if (this.step < (this.rules.lastStep || this.step)) this.step++;
         },
         prev() {
-            this.error = '';
             if (this.step > 1) this.step--;
         },
         // Saut direct via les pastilles d'étapes : en arrière libre, en avant on
         // valide chaque étape intermédiaire (impossible de sauter un champ requis).
         goTo(n) {
-            if (n <= this.step) { this.error = ''; this.step = n; return; }
+            if (n <= this.step) { this.step = n; return; }
             for (let s = this.step; s < n; s++) {
                 const c = this.validateStep(s);
-                if (!c.ok) { this.error = c.msg; this.step = s; return; }
+                if (!c.ok) { window.ukcToast?.(c.msg, 'err'); this.step = s; return; }
             }
-            this.error = '';
             this.step = n;
         },
         _ok() { return { ok: true, msg: '' }; },

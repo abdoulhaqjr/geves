@@ -380,10 +380,6 @@
 .step-panel { display: none; }
 .step-panel.active { display: block; }
 .wizard-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 22px; }
-/* Message d'étape (champ obligatoire manquant) au-dessus de la navigation. */
-.wizard-error { display: flex; align-items: center; gap: 8px; margin: 18px 0 0; padding: 9px 12px; border-radius: 10px;
-    background: rgba(220, 38, 38, .08); border: 1px solid rgba(220, 38, 38, .25); color: #b91c1c; font-size: 13px; font-weight: 600; }
-.wizard-error .ukc-icon { flex: none; }
 .recap-list { display: flex; flex-direction: column; gap: 0; }
 .recap-list .r { display: flex; justify-content: space-between; gap: 14px; padding: 11px 0; border-bottom: 1px solid var(--ukc-border); font-size: 14px; }
 .recap-list .r:last-child { border-bottom: none; }
