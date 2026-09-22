@@ -380,6 +380,10 @@
 .step-panel { display: none; }
 .step-panel.active { display: block; }
 .wizard-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 22px; }
+/* Message d'étape (champ obligatoire manquant) au-dessus de la navigation. */
+.wizard-error { display: flex; align-items: center; gap: 8px; margin: 18px 0 0; padding: 9px 12px; border-radius: 10px;
+    background: rgba(220, 38, 38, .08); border: 1px solid rgba(220, 38, 38, .25); color: #b91c1c; font-size: 13px; font-weight: 600; }
+.wizard-error .ukc-icon { flex: none; }
 .recap-list { display: flex; flex-direction: column; gap: 0; }
 .recap-list .r { display: flex; justify-content: space-between; gap: 14px; padding: 11px 0; border-bottom: 1px solid var(--ukc-border); font-size: 14px; }
 .recap-list .r:last-child { border-bottom: none; }
@@ -426,7 +430,7 @@
 .recap-status.is-todo .recap-status__v { color: #b45309; }
 .recap-status.is-neutral .ukc-icon { background: rgba(148, 163, 184, .16); color: var(--ukc-muted); }
 .recap-field__meta { margin-left: 6px; font-size: 12px; font-weight: 700; color: var(--ukc-blue); text-transform: none; }
-.recap-abstract { border: 1px solid var(--ukc-border); border-radius: 10px; padding: 12px 14px; background: var(--ukc-bg); font-size: 13.5px; line-height: 1.55; color: var(--ukc-text); max-height: 280px; overflow-y: auto; word-break: break-word; }
+.recap-abstract { border: 1px solid var(--ukc-border); border-radius: 10px; padding: 12px 14px; background: var(--ukc-bg); font-size: 13.5px; line-height: 1.55; color: var(--ukc-text); max-height: 280px; overflow-y: auto; word-break: break-word; text-align: justify; }
 .recap-abstract > :first-child { margin-top: 0; }
 .recap-abstract > :last-child { margin-bottom: 0; }
 .recap-abstract p { margin: 0 0 8px; }
@@ -436,6 +440,8 @@
 .ukc-rte__source { display: none; }
 .ukc-rte .ck.ck-editor { --ck-border-radius: 10px; --ck-color-focus-border: var(--ukc-blue); }
 .ukc-rte .ck.ck-editor__editable { min-height: 220px; font-size: 14px; line-height: 1.6; }
+/* Résumé justifié dans l'éditeur (et repris tel quel dans le récap de validation). */
+.ukc-rte .ck.ck-editor__editable p { text-align: justify; }
 .ukc-rte .ck.ck-editor__editable.ck-focused { border-color: var(--ukc-blue); box-shadow: 0 0 0 3px rgba(34, 62, 164, .12); }
 .ukc-rte__foot { display: flex; justify-content: space-between; gap: 12px; margin-top: 6px; }
 .ukc-rte__count strong { color: var(--ukc-blue); }

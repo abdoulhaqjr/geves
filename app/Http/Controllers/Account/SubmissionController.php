@@ -14,6 +14,7 @@ use App\Models\Submission;
 use App\Support\CalendarExport;
 use App\Support\CurrentColloque;
 use App\Support\Html;
+use App\Support\ParticipantTypes;
 use App\Support\SubmissionFormConfig;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -82,6 +83,7 @@ class SubmissionController extends Controller
             'config' => $config,
             'account' => $account,
             'tracks' => $edition->settings['tracks'] ?? [],
+            'gradeOptions' => ParticipantTypes::all(),
             'maxCommunications' => (int) ($edition->settings['max_communications'] ?? 3),
             'remaining' => Submission::remainingFor($edition, $account),
             'successRef' => session('success_ref'),

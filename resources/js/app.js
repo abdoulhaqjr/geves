@@ -1087,6 +1087,8 @@ document.addEventListener('alpine:init', () => {
         abstractHtml: '',
         abstractWordCount: 0,
         keywords: [],
+        rules: initial.rules || {},
+        error: '',
 
         init() {
             // Le résumé (CKEditor) notifie son contenu + compteur : on le garde en
@@ -1113,6 +1115,79 @@ document.addEventListener('alpine:init', () => {
         },
         removeCoauthor(i) {
             this.coauthors.splice(i, 1);
+        },
+
+        // ---- Navigation contrôlée : on ne passe à l'étape suivante que si les
+        //      champs obligatoires de l'étape courante sont renseignés. -----------
+        next() {
+            const c = this.validateStep(this.step);
+            if (!c.ok) { this.error = c.msg; return; }
+            this.error = '';
+            if (this.step < (this.rules.lastStep || this.step)) this.step++;
+        },
+        prev() {
+            this.error = '';
+            if (this.step > 1) this.step--;
+        },
+        // Saut direct via les pastilles d'étapes : en arrière libre, en avant on
+        // valide chaque étape intermédiaire (impossible de sauter un champ requis).
+        goTo(n) {
+            if (n <= this.step) { this.error = ''; this.step = n; return; }
+            for (let s = this.step; s < n; s++) {
+                const c = this.validateStep(s);
+                if (!c.ok) { this.error = c.msg; this.step = s; return; }
+            }
+            this.error = '';
+            this.step = n;
+        },
+        _ok() { return { ok: true, msg: '' }; },
+        _fail(msg) { return { ok: false, msg }; },
+        validateStep(n) {
+            const r = this.rules;
+            if (n === 1) {
+                if (!this.title.trim()) return this._fail('Le titre est obligatoire.');
+                if (r.titleMin > 0 && this.title.trim().length < r.titleMin) {
+                    return this._fail(`Le titre doit contenir au moins ${r.titleMin} caractères.`);
+                }
+                if (r.trackRequired && !this.track) return this._fail('Veuillez sélectionner un axe.');
+                return this._ok();
+            }
+            if (n === 2) {
+                for (const co of this.coauthors) {
+                    const any = ['name', 'email', 'affiliation', 'grade'].some((k) => (co[k] || '').trim());
+                    if (!any) continue; // ligne vide : ignorée à l'enregistrement
+                    if (!(co.name || '').trim()) return this._fail('Indiquez le nom de chaque co-auteur (ou retirez la ligne).');
+                    if (!/^\S+@\S+\.\S+$/.test((co.email || '').trim())) return this._fail('Chaque co-auteur doit avoir un e-mail valide.');
+                }
+                return this._ok();
+            }
+            if (n === 3) {
+                if (!this.abstractFilled()) return this._fail('Le résumé est obligatoire.');
+                if (r.abstractMin > 0 && this.abstractWords() < r.abstractMin) {
+                    return this._fail(`Le résumé doit contenir au moins ${r.abstractMin} mots.`);
+                }
+                if (r.keywordsRequired && this.keywords.length === 0) return this._fail('Ajoutez au moins un mot-clé.');
+                if (r.keywordsMin > 0 && this.keywords.length < r.keywordsMin) {
+                    return this._fail(`Ajoutez au moins ${r.keywordsMin} mots-clés.`);
+                }
+                const bad = this.invalidCustomField();
+                if (bad) return this._fail(bad);
+                return this._ok();
+            }
+            if (r.fileStep && n === 4) {
+                if (r.fileRequired && !this.fileChosen()) return this._fail('Veuillez joindre un fichier.');
+                return this._ok();
+            }
+            return this._ok();
+        },
+        // Champs personnalisés obligatoires (marqués data-custom-req) non remplis.
+        invalidCustomField() {
+            const els = document.querySelectorAll('[data-custom-req]');
+            for (const el of els) {
+                const filled = el.type === 'checkbox' ? el.checked : (el.value || '').trim() !== '';
+                if (!filled) return 'Veuillez renseigner les champs obligatoires.';
+            }
+            return null;
         },
         get coauthorCount() {
             return this.coauthors.filter((c) => (c.name || '').trim() || (c.email || '').trim()).length;

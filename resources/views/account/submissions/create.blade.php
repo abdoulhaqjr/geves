@@ -1,4 +1,5 @@
 @php
+    $fileEnabled = $config->enabled('file');
     $wizardInit = [
         'title' => old('title', ''),
         'track' => old('track', $tracks[0] ?? ''),
@@ -6,6 +7,18 @@
         'keywords' => array_values(array_filter(array_map('trim', explode(',', (string) old('keywords', ''))))),
         'coauthors' => array_values(old('coauthors', [])),
         'errorStep' => (int) session('submission_error_step', 1),
+        // Règles de validation côté client : bloquent le passage à l'étape suivante
+        // tant que les champs obligatoires de l'étape courante ne sont pas remplis.
+        'rules' => [
+            'titleMin' => $config->titleMin(),
+            'trackRequired' => count($tracks) > 0 && $config->required('track'),
+            'abstractMin' => $config->abstractMin(),
+            'keywordsRequired' => $config->enabled('keywords') && $config->required('keywords'),
+            'keywordsMin' => $config->enabled('keywords') ? $config->keywordsMin() : 0,
+            'fileStep' => $fileEnabled,
+            'fileRequired' => $fileEnabled && $config->required('file'),
+            'lastStep' => $fileEnabled ? 5 : 4,
+        ],
     ];
 @endphp
 <x-layouts.participant :title="__('Soumettre une communication')" :subtitle="__('Dépôt d’un résumé')">
@@ -101,13 +114,13 @@
             @endphp
             <div x-data="submissionWizard(@js($wizardInit))">
                 <div class="form-steps">
-                    <div class="s" :class="{ active: step===1, done: step>1 }" @click="step=1"><span class="n">1</span> {{ __('Général') }}</div>
-                    <div class="s" :class="{ active: step===2, done: step>2 }" @click="step=2"><span class="n">2</span> {{ __('Auteurs') }}</div>
-                    <div class="s" :class="{ active: step===3, done: step>3 }" @click="step=3"><span class="n">3</span> {{ __('Résumé') }}</div>
+                    <div class="s" :class="{ active: step===1, done: step>1 }" @click="goTo(1)"><span class="n">1</span> {{ __('Général') }}</div>
+                    <div class="s" :class="{ active: step===2, done: step>2 }" @click="goTo(2)"><span class="n">2</span> {{ __('Auteurs') }}</div>
+                    <div class="s" :class="{ active: step===3, done: step>3 }" @click="goTo(3)"><span class="n">3</span> {{ __('Résumé') }}</div>
                     @if ($fileStep)
-                        <div class="s" :class="{ active: step===4, done: step>4 }" @click="step=4"><span class="n">4</span> {{ __('Fichiers') }}</div>
+                        <div class="s" :class="{ active: step===4, done: step>4 }" @click="goTo(4)"><span class="n">4</span> {{ __('Fichiers') }}</div>
                     @endif
-                    <div class="s" :class="{ active: step==={{ $validationStep }} }" @click="step={{ $validationStep }}"><span class="n">{{ $validationStep }}</span> {{ __('Validation') }}</div>
+                    <div class="s" :class="{ active: step==={{ $validationStep }} }" @click="goTo({{ $validationStep }})"><span class="n">{{ $validationStep }}</span> {{ __('Validation') }}</div>
                 </div>
 
                 <form method="POST" action="{{ route('account.submissions.store', $edition->slug) }}" enctype="multipart/form-data" class="ukc-card">
@@ -173,8 +186,13 @@
                                            style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13.5px;">
                                     <input type="text" :name="'coauthors['+i+'][affiliation]'" x-model="co.affiliation" placeholder="{{ __('Affiliation') }}"
                                            style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13.5px;">
-                                    <input type="text" :name="'coauthors['+i+'][grade]'" x-model="co.grade" placeholder="{{ __('Grade') }}"
-                                           style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13.5px;">
+                                    <select :name="'coauthors['+i+'][grade]'" x-model="co.grade"
+                                            style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13.5px;background:#fff;">
+                                        <option value="">{{ __('Grade') }}</option>
+                                        @foreach ($gradeOptions as $g)
+                                            <option value="{{ $g }}">{{ $g }}</option>
+                                        @endforeach
+                                    </select>
                                     <button type="button" class="ukc-btn ukc-btn--danger ukc-btn--sm" @click="removeCoauthor(i)">
                                         <x-ukc.icon name="close" :size="16" />
                                     </button>
@@ -215,17 +233,18 @@
                             <div class="ukc-form-grid" style="margin-top:12px;">
                                 @foreach ($config->customFields() as $field)
                                     <div class="ukc-field full">
+                                        @php($reqAttr = $field['required'] ? 'data-custom-req=1' : '')
                                         @if ($field['type'] === 'checkbox')
                                             <label style="display:inline-flex;align-items:center;gap:8px;">
-                                                <input type="checkbox" name="customAnswers[{{ $field['key'] }}]" value="1" @checked(old('customAnswers.'.$field['key']))>
+                                                <input type="checkbox" name="customAnswers[{{ $field['key'] }}]" value="1" @checked(old('customAnswers.'.$field['key'])) {{ $reqAttr }}>
                                                 {{ $field['label'] }} @if ($field['required'])<span class="req">*</span>@endif
                                             </label>
                                         @else
                                             <label>{{ $field['label'] }} @if ($field['required'])<span class="req">*</span>@endif</label>
                                             @if ($field['type'] === 'textarea')
-                                                <textarea rows="4" name="customAnswers[{{ $field['key'] }}]">{{ old('customAnswers.'.$field['key']) }}</textarea>
+                                                <textarea rows="4" name="customAnswers[{{ $field['key'] }}]" {{ $reqAttr }}>{{ old('customAnswers.'.$field['key']) }}</textarea>
                                             @elseif ($field['type'] === 'select')
-                                                <select name="customAnswers[{{ $field['key'] }}]">
+                                                <select name="customAnswers[{{ $field['key'] }}]" {{ $reqAttr }}>
                                                     <option value="">— {{ __('Choisir') }} —</option>
                                                     @foreach ($field['options'] as $opt)
                                                         <option value="{{ $opt }}" @selected(old('customAnswers.'.$field['key']) === $opt)>{{ $opt }}</option>
@@ -233,7 +252,7 @@
                                                 </select>
                                             @else
                                                 <input type="{{ in_array($field['type'], ['number', 'email', 'date']) ? $field['type'] : 'text' }}"
-                                                       name="customAnswers[{{ $field['key'] }}]" value="{{ old('customAnswers.'.$field['key']) }}">
+                                                       name="customAnswers[{{ $field['key'] }}]" value="{{ old('customAnswers.'.$field['key']) }}" {{ $reqAttr }}>
                                             @endif
                                         @endif
                                         @if ($field['help'])<span class="hint">{{ $field['help'] }}</span>@endif
@@ -348,13 +367,18 @@
                         </div>
                     </div>
 
+                    {{-- Message de validation d'étape (champs obligatoires manquants) --}}
+                    <p class="wizard-error" x-show="error" x-cloak>
+                        <x-ukc.icon name="info" :size="16" /> <span x-text="error"></span>
+                    </p>
+
                     {{-- Navigation du wizard --}}
                     <div class="wizard-nav">
-                        <button type="button" class="ukc-btn ukc-btn--ghost" @click="step--" :style="step > 1 ? '' : 'visibility:hidden'">
+                        <button type="button" class="ukc-btn ukc-btn--ghost" @click="prev()" :style="step > 1 ? '' : 'visibility:hidden'">
                             <x-ukc.icon name="chevron" :size="16" style="transform:rotate(180deg);" /> {{ __('Précédent') }}
                         </button>
                         <div style="display:flex;gap:8px;">
-                            <button type="button" class="ukc-btn ukc-btn--blue" @click="step++" x-show="step < {{ $lastStep }}">
+                            <button type="button" class="ukc-btn ukc-btn--blue" @click="next()" x-show="step < {{ $lastStep }}">
                                 {{ __('Suivant') }} <x-ukc.icon name="chevron" :size="16" />
                             </button>
                             <button type="submit" class="ukc-btn ukc-btn--green" x-show="step === {{ $lastStep }}" x-cloak>

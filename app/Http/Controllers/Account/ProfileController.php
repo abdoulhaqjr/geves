@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Support\HalClient;
 use App\Support\Orcid;
 use App\Support\OrcidClient;
+use App\Support\ParticipantTypes;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,7 +27,7 @@ class ProfileController extends Controller
         return view('account.profile', [
             'account' => Auth::guard('account')->user(),
             'civilities' => ['M.', 'Mme', 'Pr', 'Dr'],
-            'participantTypes' => ['Enseignant / Chercheur', 'Doctorant', 'Autre participant'],
+            'participantTypes' => ParticipantTypes::all(),
             'halEnabled' => HalClient::enabled(),
             'orcidConnect' => app(OrcidClient::class)->isConfigured(),
         ]);
