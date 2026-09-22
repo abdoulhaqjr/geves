@@ -740,3 +740,5 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .detail-grid .v { font-weight: 600; }
 
 .abstract-box { background: #f8fafc; border: 1px solid var(--ukc-border); border-radius: 10px; padding: 14px; font-size: 13.5px; line-height: 1.55; color: var(--ukc-text); max-height: 220px; overflow-y: auto; white-space: pre-line; }
+/* Variante affichant l'intégralité du résumé, sans barre de défilement. */
+.abstract-box--full { max-height: none; overflow: visible; white-space: normal; }

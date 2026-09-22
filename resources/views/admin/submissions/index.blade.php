@@ -106,8 +106,10 @@
                                             'statusPill' => $statusPills[$s->status] ?? 'muted',
                                             'date' => $s->created_at?->format('d/m/Y') ?? '—',
                                             'title' => $s->title,
+                                            'coauthors' => collect($s->authors ?? [])->filter(fn ($a) => empty($a['corresponding']))
+                                                ->map(fn ($a) => trim((string) ($a['name'] ?? '')))->filter()->values()->all(),
                                             'keywords' => is_array($s->keywords) ? implode(', ', $s->keywords) : (string) $s->keywords,
-                                            'abstract' => \Illuminate\Support\Str::limit(trim(preg_replace('/\s+/', ' ', strip_tags((string) $s->abstract))), 900),
+                                            'abstract' => trim((string) preg_replace('/\s+/', ' ', strip_tags((string) $s->abstract))),
                                             'url' => route('admin.submissions.show', $s),
                                         ];
                                     @endphp
@@ -142,13 +144,19 @@
                 <label>Titre</label>
                 <div style="font-weight:700;font-size:14px;" x-text="pv?.title"></div>
             </div>
+            <div class="ukc-form-row" x-show="pv?.coauthors && pv.coauthors.length" x-cloak>
+                <label>Co-auteurs</label>
+                <div style="font-size:13px;display:flex;flex-direction:column;gap:2px;">
+                    <template x-for="(c, i) in (pv?.coauthors || [])" :key="i"><div x-text="c"></div></template>
+                </div>
+            </div>
             <div class="ukc-form-row" x-show="pv?.keywords">
                 <label>Mots-clés</label>
                 <div style="font-size:13px;color:var(--ukc-muted);" x-text="pv?.keywords"></div>
             </div>
             <div class="ukc-form-row">
                 <label>Résumé</label>
-                <div class="abstract-box" x-text="pv?.abstract || '—'"></div>
+                <div class="abstract-box abstract-box--full" x-text="pv?.abstract || '—'"></div>
             </div>
             <x-slot:footer>
                 <a class="ukc-btn ukc-btn--ghost" :href="pv?.url">Ouvrir la fiche</a>

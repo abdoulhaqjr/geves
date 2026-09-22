@@ -80,6 +80,19 @@
                     <form method="POST" action="{{ route('account.submissions.update', $s) }}" class="ukc-form-grid">
                         @csrf
                         <div class="ukc-field full">
+                            <label>{{ __('Auteurs') }}</label>
+                            <div style="display:flex;flex-direction:column;gap:6px;">
+                                @foreach ($authors as $a)
+                                    <div style="font-size:13.5px;">
+                                        <strong>{{ $a['name'] ?? '—' }}</strong>
+                                        @if (!empty($a['corresponding']))<span class="ukc-pill ukc-pill--info" style="margin-left:6px;">{{ __('Correspondant') }}</span>@endif
+                                        @if (!empty($a['affiliation']))<span style="color:var(--ukc-muted);"> · {{ $a['affiliation'] }}@if (!empty($a['grade'])) · {{ $a['grade'] }}@endif</span>@endif
+                                    </div>
+                                @endforeach
+                            </div>
+                            <span class="hint">{{ __('La correction en place porte sur le titre, le résumé et les mots-clés. Pour modifier les auteurs, contactez l’organisation.') }}</span>
+                        </div>
+                        <div class="ukc-field full">
                             <label for="edit-title">{{ __('Titre') }} <span class="req">*</span></label>
                             <input type="text" id="edit-title" name="title" value="{{ old('title', $s->title) }}">
                             @error('title') <span class="error">{{ $message }}</span> @enderror
