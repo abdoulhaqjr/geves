@@ -1178,6 +1178,24 @@ document.addEventListener('alpine:init', () => {
         },
         async lookupCorr() {
             if (this.corr.self) { this.corr.hint = ''; this.corr.suggestion = ''; return; }
+            const email = (this.corr.email || '').trim().toLowerCase();
+
+            // Le déposant a saisi SON propre e-mail alors qu'il déclare ne pas être
+            // l'auteur correspondant → l'inviter à (ré)activer l'interrupteur.
+            if (email && email === (this.account.email || '').trim().toLowerCase()) {
+                this.corr.hint = 'C’est votre e-mail : activez plutôt « Je suis l’auteur correspondant ».';
+                this.corr.hintType = 'err';
+                this.corr.suggestion = '';
+                return;
+            }
+            // Doublon avec un co-auteur déjà saisi.
+            if (email && this.coauthors.some((c) => (c.email || '').trim().toLowerCase() === email)) {
+                this.corr.hint = 'Cet e-mail est déjà celui d’un co-auteur : chaque auteur doit être unique.';
+                this.corr.hintType = 'err';
+                this.corr.suggestion = '';
+                return;
+            }
+
             const d = await this._authorLookup(this.corr.name, this.corr.email);
             if (d) {
                 this.corr.hint = d.hint || '';
@@ -1222,12 +1240,24 @@ document.addEventListener('alpine:init', () => {
             if (co && co.suggestion) { co.name = co.suggestion; co.suggestion = ''; }
         },
 
-        // Auteur correspondant : quand « je suis l'auteur correspondant » est coché,
-        // on rétablit l'identité (nom + e-mail) du compte connecté (non falsifiable).
+        // Interrupteur « Je suis l'auteur correspondant » :
+        // - activé  → rétablit l'identité (nom + e-mail + profil) du compte connecté ;
+        // - désactivé → vide les champs pour saisir une AUTRE personne (évite de
+        //   laisser l'identité du déposant préremplie, source de confusion/doublon).
         onSelfToggle() {
+            this.corr.hint = '';
+            this.corr.hintType = 'muted';
+            this.corr.suggestion = '';
             if (this.corr.self) {
                 this.corr.name = this.account.name;
                 this.corr.email = this.account.email;
+                this.corr.affiliation = this.account.affiliation;
+                this.corr.grade = this.account.grade;
+            } else {
+                this.corr.name = '';
+                this.corr.email = '';
+                this.corr.affiliation = '';
+                this.corr.grade = '';
             }
         },
         corrInitials() {
