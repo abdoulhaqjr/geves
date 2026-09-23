@@ -3,7 +3,6 @@
 use App\Models\Formation;
 use App\Models\FormationEnrollment;
 use App\Models\FormationTrainer;
-use App\Support\EditionSettings;
 
 // adminStaff() -> AdminSubmissionWorkflowTest ; openEdition()/verifiedAccount() -> tests/Pest.php
 
@@ -16,16 +15,19 @@ it('affiche la page Formations pour un membre du staff', function () {
         ->assertSee('Formations');
 });
 
-it('active puis désactive le module Formations pour une édition', function () {
+it('n’affiche les formations que si le module est activé dans les paramètres de l’édition', function () {
     $edition = openEdition();
+    Formation::create(['edition_id' => $edition->id, 'title' => 'Atelier module', 'fee' => 0, 'published' => true]);
 
-    $this->actingAs(adminStaff(), 'web')
-        ->post(route('admin.formations.module', $edition), ['enabled' => '1']);
-    expect((bool) EditionSettings::get($edition->fresh(), 'formation.enabled', false))->toBeTrue();
+    // Désactivé par défaut : la liste n'apparaît pas.
+    $this->actingAs(adminStaff(), 'web')->get(route('admin.formations').'?edition_id='.$edition->id)
+        ->assertOk()->assertDontSee('Atelier module')->assertSee('désactivé');
 
-    $this->actingAs(adminStaff(), 'web')
-        ->post(route('admin.formations.module', $edition), ['enabled' => '0']);
-    expect((bool) EditionSettings::get($edition->fresh(), 'formation.enabled', false))->toBeFalse();
+    // Activé via le réglage d'édition (case « Module Formations activé » du formulaire).
+    $edition->update(['settings' => array_merge($edition->settings ?? [], ['formation_enabled' => true])]);
+    expect($edition->fresh()->formationEnabled())->toBeTrue();
+    $this->actingAs(adminStaff(), 'web')->get(route('admin.formations').'?edition_id='.$edition->id)
+        ->assertOk()->assertSee('Atelier module');
 });
 
 it('crée, met à jour et supprime une formation', function () {
@@ -85,7 +87,7 @@ it('interdit l’accès aux Formations sans authentification staff', function ()
 
 it('affiche la liste nominative des inscrits pour l’admin', function () {
     $edition = openEdition();
-    EditionSettings::setMany($edition, ['formation.enabled' => true]);
+    $edition->update(['settings' => array_merge($edition->settings ?? [], ['formation_enabled' => true])]);
     $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'Atelier', 'fee' => 0, 'published' => true]);
     $user = verifiedAccount(); // Awa Kodjo
     $p = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'trainee', 'user_id' => $user->id]);

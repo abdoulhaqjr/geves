@@ -123,6 +123,12 @@ class Edition extends Model
         return in_array($this->status, ['open', 'closed', 'archived'], true);
     }
 
+    /** Le module Formations est-il activé pour cette édition ? (réglage du formulaire d'édition). */
+    public function formationEnabled(): bool
+    {
+        return (bool) ($this->settings['formation_enabled'] ?? false);
+    }
+
     /** Champs de contenu traduisibles (i18n) : attribut de base = version française. */
     public const TRANSLATABLE = ['title', 'theme', 'edition_label', 'location'];
 

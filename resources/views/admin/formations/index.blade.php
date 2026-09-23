@@ -11,14 +11,9 @@
                 </select>
             </div>
             @if ($edition)
-                <form method="POST" action="{{ route('admin.formations.module', $edition) }}">
-                    @csrf
-                    <input type="hidden" name="enabled" value="{{ $moduleEnabled ? '0' : '1' }}">
-                    <button type="submit" class="ukc-btn {{ $moduleEnabled ? 'ukc-btn--outline' : 'ukc-btn--green' }}">
-                        <x-ukc.icon name="{{ $moduleEnabled ? 'close' : 'check' }}" :size="16" />
-                        {{ $moduleEnabled ? 'Désactiver le module' : 'Activer le module' }}
-                    </button>
-                </form>
+                <a href="{{ route('admin.editions.edit', $edition) }}" class="ukc-btn ukc-btn--outline">
+                    <x-ukc.icon name="calendar" :size="16" /> Paramètres de l’édition
+                </a>
             @endif
         </div>
 
@@ -27,7 +22,7 @@
         @elseif (! $moduleEnabled)
             <div class="ukc-empty">
                 <h3>Module Formations désactivé</h3>
-                <p>Activez le module (bouton ci-dessus) pour proposer des formations sur cette édition.</p>
+                <p>Activez-le dans les <a href="{{ route('admin.editions.edit', $edition) }}" style="color:var(--ukc-blue);font-weight:600;">paramètres de l’édition</a> (onglet « Options ») pour proposer des formations.</p>
             </div>
         @else
             <div class="ukc-grid-2" style="align-items:start;gap:18px;">

@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Models\Edition;
 use App\Models\Formation;
-use App\Support\EditionSettings;
 use App\Support\Fees;
 use Illuminate\Contracts\View\View;
 
@@ -54,7 +53,7 @@ class ColloqueController extends Controller
             'promo' => $settings['promo'] ?? [],
             'practical' => $settings['practical'] ?? [],
             // Formations publiques (si le module est activé pour l'édition).
-            'formations' => (bool) EditionSettings::get($edition, 'formation.enabled', false)
+            'formations' => $edition->formationEnabled()
                 ? Formation::with('trainers')
                     ->where('edition_id', $edition->id)
                     ->where('published', true)->where('public', true)

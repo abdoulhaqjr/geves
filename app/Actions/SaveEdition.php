@@ -148,6 +148,7 @@ class SaveEdition
                     'badges' => $request->boolean('opt_badges'),
                 ],
                 'banner_enabled' => $request->boolean('banner_enabled'),
+                'formation_enabled' => $request->boolean('opt_formation'),
                 'social' => array_filter([
                     'facebook' => ($data['social_facebook'] ?? null) ?: null,
                     'x' => ($data['social_x'] ?? null) ?: null,

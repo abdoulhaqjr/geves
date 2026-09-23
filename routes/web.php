@@ -427,7 +427,6 @@ Route::prefix('admin')->group(function () {
         // Formations (module activable par édition).
         Route::middleware('edition.cap:formation')->group(function () {
             Route::get('/formations', [FormationController::class, 'index'])->name('admin.formations');
-            Route::post('/editions/{edition}/formations/module', [FormationController::class, 'toggleModule'])->name('admin.formations.module');
             Route::post('/editions/{edition}/formations', [FormationController::class, 'store'])->name('admin.formations.store');
             Route::put('/formations/{formation}', [FormationController::class, 'update'])->name('admin.formations.update');
             Route::delete('/formations/{formation}', [FormationController::class, 'destroy'])->name('admin.formations.destroy');

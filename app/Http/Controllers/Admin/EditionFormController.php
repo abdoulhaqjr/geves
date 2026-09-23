@@ -451,6 +451,7 @@ class EditionFormController extends Controller
             'news_url' => (string) ($s['appearance']['news_url'] ?? ''),
             'stats_enabled' => (bool) ($s['appearance']['stats_enabled'] ?? false),
             // Options
+            'opt_formation' => (bool) ($s['formation_enabled'] ?? false),
             'opt_show_public' => (bool) ($s['options']['show_public'] ?? true),
             'opt_hybrid' => (bool) ($s['options']['hybrid'] ?? true),
             'opt_livret' => (bool) ($s['options']['livret'] ?? true),

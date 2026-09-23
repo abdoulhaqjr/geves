@@ -13,7 +13,6 @@ use App\Models\Formation;
 use App\Models\FormationTrainer;
 use App\Models\Participant;
 use App\Models\User;
-use App\Support\EditionSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -38,7 +37,7 @@ class FormationController extends Controller
             'editions' => $this->accessibleEditions($request, 'formation'),
             'edition' => $edition,
             'edition_id' => $edition ? (string) $edition->id : '',
-            'moduleEnabled' => $edition ? (bool) EditionSettings::get($edition, 'formation.enabled', false) : false,
+            'moduleEnabled' => $edition ? $edition->formationEnabled() : false,
             'formations' => $edition
                 ? Formation::with(['trainers', 'enrollments' => fn ($q) => $q->with('user')->latest('id')])
                     ->withCount(['enrollments', 'enrollments as paid_count' => fn ($q) => $q->where('status', 'paid')])
@@ -46,16 +45,6 @@ class FormationController extends Controller
                     ->orderByRaw('starts_at is null, starts_at')->orderBy('id')->get()
                 : collect(),
         ]);
-    }
-
-    /** Active / désactive le module Formations pour l'édition. */
-    public function toggleModule(Request $request, Edition $edition): RedirectResponse
-    {
-        EditionSettings::setMany($edition, ['formation.enabled' => $request->boolean('enabled')]);
-
-        return back()->with('ukc_status', $request->boolean('enabled')
-            ? 'Module Formations activé pour cette édition.'
-            : 'Module Formations désactivé.');
     }
 
     public function store(Request $request, Edition $edition): RedirectResponse

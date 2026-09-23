@@ -544,6 +544,7 @@
                                 <label class="ukc-check"><input type="checkbox" name="opt_hybrid" value="1" @checked($v('opt_hybrid'))> Sessions hybrides</label>
                                 <label class="ukc-check"><input type="checkbox" name="opt_livret" value="1" @checked($v('opt_livret'))> Livre des résumés activé</label>
                                 <label class="ukc-check"><input type="checkbox" name="opt_badges" value="1" @checked($v('opt_badges'))> Badges participants activés</label>
+                                <label class="ukc-check"><input type="checkbox" name="opt_formation" value="1" @checked($v('opt_formation'))> Module Formations activé (gestion des formations de l’événement)</label>
 
                                 <h3>Liens rapides</h3>
                                 <div class="quick-links">
