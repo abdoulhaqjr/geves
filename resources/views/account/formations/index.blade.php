@@ -6,6 +6,7 @@
         </div>
 
         @if (session('ukc_status'))<div class="ukc-alert ukc-alert--ok" style="margin-bottom:14px;">{{ session('ukc_status') }}</div>@endif
+        @if (session('ukc_error'))<div class="ukc-alert ukc-alert--err" style="margin-bottom:14px;">{{ session('ukc_error') }}</div>@endif
         @if (session('pay_instructions'))<div class="ukc-alert ukc-alert--info" style="margin-bottom:14px;">{{ session('pay_instructions') }}</div>@endif
         @error('pay')<div class="ukc-alert ukc-alert--err" style="margin-bottom:14px;">{{ $message }}</div>@enderror
 
@@ -34,6 +35,12 @@
                                 {{ $f->isFree() ? __('Gratuite') : number_format((float) $f->fee, 0, ',', ' ').' '.config('payments.currency', 'XOF') }}
                             </span>
                         </div>
+
+                        @if ($f->isLive())
+                            <a href="{{ route('account.formations.visio', $f) }}" class="ukc-btn ukc-btn--green" style="margin-bottom:8px;">
+                                <x-ukc.icon name="video" :size="14" /> {{ __('EN DIRECT · Rejoindre') }}
+                            </a>
+                        @endif
 
                         @if ($enr && $enr->status === 'paid')
                             <span class="ukc-pill ukc-pill--ok"><x-ukc.icon name="check" :size="12" /> {{ __('Inscrit·e (réglé)') }}</span>

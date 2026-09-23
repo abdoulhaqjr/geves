@@ -47,6 +47,23 @@ class FormationController extends Controller
         ]);
     }
 
+    /** Rejoindre la visio de la formation (redirige vers la salle si en cours + autorisé). */
+    public function visio(Request $request, Formation $formation): RedirectResponse
+    {
+        $back = redirect()->route('account.formations');
+
+        if (! $formation->isLive()) {
+            return $back->with('ukc_error', 'La visio de cette formation n’est pas en cours.');
+        }
+
+        $url = $formation->joinUrl($request->user(), false);
+        if (! $url) {
+            return $back->with('ukc_error', 'Accès à la visio réservé aux inscrits et aux formateurs.');
+        }
+
+        return redirect()->away($url);
+    }
+
     public function enroll(Request $request, Formation $formation, UpsertParticipantForAccount $upsert, GatewayRegistry $registry): RedirectResponse
     {
         abort_unless($formation->published, 404);

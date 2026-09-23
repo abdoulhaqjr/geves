@@ -198,6 +198,28 @@ class FormationController extends Controller
         return back()->with('ukc_status', $count.' message(s) envoyé(s) aux inscrits.');
     }
 
+    /** Configure la visio de la formation (fournisseur, salle/lien, état, visibilité). */
+    public function setMeeting(Request $request, Formation $formation): RedirectResponse
+    {
+        $data = $request->validate([
+            'meeting_provider' => ['nullable', 'in:livekit,jitsi,custom'],
+            'meeting_room' => ['nullable', 'string', 'max:120', 'regex:/^[A-Za-z0-9 _-]*$/'],
+            'meeting_url' => ['nullable', 'url', 'max:500'],
+            'meeting_status' => ['required', 'in:none,scheduled,live,ended'],
+            'meeting_visibility' => ['nullable', 'in:public,participants'],
+        ]);
+
+        $formation->update([
+            'meeting_provider' => $data['meeting_provider'] ?? null,
+            'meeting_room' => $data['meeting_room'] ?? null,
+            'meeting_url' => $data['meeting_url'] ?? null,
+            'meeting_status' => $data['meeting_status'],
+            'meeting_visibility' => $data['meeting_visibility'] ?? 'participants',
+        ]);
+
+        return back()->with('ukc_status', 'Visio de la formation mise à jour.');
+    }
+
     /** @return array<string, mixed> */
     private function validated(Request $request): array
     {

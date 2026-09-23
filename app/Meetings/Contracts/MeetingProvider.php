@@ -3,7 +3,6 @@
 namespace App\Meetings\Contracts;
 
 use App\Enums\MeetingRole;
-use App\Models\EventSession;
 
 /**
  * Contrat commun aux fournisseurs de visio interactive. Un fournisseur s'annonce
@@ -30,5 +29,5 @@ interface MeetingProvider
      * Le rôle peut être matérialisé côté serveur (JWT) si le fournisseur le
      * supporte, sinon il n'est qu'indicatif (nom d'affichage).
      */
-    public function joinUrl(EventSession $session, MeetingRole $role, ?string $displayName = null): string;
+    public function joinUrl(Meetable $session, MeetingRole $role, ?string $displayName = null): string;
 }

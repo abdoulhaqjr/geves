@@ -121,6 +121,39 @@
                                 @endif
                             </div>
 
+                            {{-- Visio de la formation --}}
+                            @php($inp = 'padding:6px 8px;border:1px solid var(--ukc-border,#e5e7eb);border-radius:8px;')
+                            <details style="margin-top:8px;">
+                                <summary style="cursor:pointer;font-size:13px;color:var(--ukc-blue,#223ea4);">
+                                    Visio @if ($f->isLive())<span class="ukc-pill ukc-pill--err" style="margin-left:4px;">EN DIRECT</span>@endif
+                                </summary>
+                                <form method="POST" action="{{ route('admin.formations.meeting', $f) }}" style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">
+                                    @csrf
+                                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                                        <select name="meeting_provider" style="{{ $inp }}flex:1;min-width:130px;">
+                                            <option value="">Fournisseur par défaut</option>
+                                            <option value="livekit" @selected($f->meeting_provider === 'livekit')>LiveKit</option>
+                                            <option value="jitsi" @selected($f->meeting_provider === 'jitsi')>Jitsi</option>
+                                            <option value="custom" @selected($f->meeting_provider === 'custom')>Lien externe</option>
+                                        </select>
+                                        <select name="meeting_status" style="{{ $inp }}flex:1;min-width:130px;">
+                                            @foreach (['none' => 'Aucune', 'scheduled' => 'Programmée', 'live' => 'En direct', 'ended' => 'Terminée'] as $sv => $sl)
+                                                <option value="{{ $sv }}" @selected(($f->meeting_status ?: 'none') === $sv)>{{ $sl }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <input type="text" name="meeting_room" value="{{ $f->meeting_room }}" placeholder="Nom de salle (auto si vide)" style="{{ $inp }}">
+                                    <input type="url" name="meeting_url" value="{{ $f->meeting_url }}" placeholder="Lien externe (si fournisseur « Lien externe »)" style="{{ $inp }}">
+                                    <div style="display:flex;gap:8px;align-items:center;">
+                                        <select name="meeting_visibility" style="{{ $inp }}">
+                                            <option value="participants" @selected(($f->meeting_visibility ?: 'participants') === 'participants')>Réservée aux inscrits</option>
+                                            <option value="public" @selected($f->meeting_visibility === 'public')>Publique</option>
+                                        </select>
+                                        <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="video" :size="14" /> Enregistrer</button>
+                                    </div>
+                                </form>
+                            </details>
+
                             {{-- Édition de la formation --}}
                             <details style="margin-top:10px;">
                                 <summary style="cursor:pointer;font-size:13px;color:var(--ukc-blue,#223ea4);">Modifier</summary>

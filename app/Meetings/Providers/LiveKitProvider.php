@@ -3,8 +3,8 @@
 namespace App\Meetings\Providers;
 
 use App\Enums\MeetingRole;
+use App\Meetings\Contracts\Meetable;
 use App\Meetings\Contracts\MeetingProvider;
-use App\Models\EventSession;
 use Firebase\JWT\JWT;
 use Illuminate\Support\Str;
 
@@ -44,7 +44,7 @@ class LiveKitProvider implements MeetingProvider
         return true;
     }
 
-    public function joinUrl(EventSession $session, MeetingRole $role, ?string $displayName = null): string
+    public function joinUrl(Meetable $session, MeetingRole $role, ?string $displayName = null): string
     {
         $meet = rtrim((string) config('meetings.livekit.meet_url', 'https://meet.livekit.io/custom'), '/');
         $token = $this->token($session, $role, $displayName);
@@ -56,7 +56,7 @@ class LiveKitProvider implements MeetingProvider
     }
 
     /** Token d'accès LiveKit (JWT HS256) avec les droits dérivés du rôle. */
-    public function token(EventSession $session, MeetingRole $role, ?string $displayName = null): string
+    public function token(Meetable $session, MeetingRole $role, ?string $displayName = null): string
     {
         $now = time();
         $key = (string) config('meetings.livekit.api_key');

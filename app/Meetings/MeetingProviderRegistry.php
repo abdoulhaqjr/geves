@@ -2,11 +2,11 @@
 
 namespace App\Meetings;
 
+use App\Meetings\Contracts\Meetable;
 use App\Meetings\Contracts\MeetingProvider;
 use App\Meetings\Providers\CustomProvider;
 use App\Meetings\Providers\JitsiProvider;
 use App\Meetings\Providers\LiveKitProvider;
-use App\Models\EventSession;
 use App\Payments\GatewayRegistry;
 
 /**
@@ -60,9 +60,9 @@ class MeetingProviderRegistry
      * fournisseur choisi n'est pas configuré (ex. LiveKit sans identifiants), on
      * retombe sur le défaut disponible - pas de salle cassée.
      */
-    public function for(EventSession $session): MeetingProvider
+    public function for(Meetable $session): MeetingProvider
     {
-        $key = (string) ($session->meeting_provider ?: config('meetings.default', 'livekit'));
+        $key = (string) ($session->meetingProviderKey() ?: config('meetings.default', 'livekit'));
 
         $provider = $this->get($key);
 

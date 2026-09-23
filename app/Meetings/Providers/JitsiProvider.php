@@ -3,8 +3,8 @@
 namespace App\Meetings\Providers;
 
 use App\Enums\MeetingRole;
+use App\Meetings\Contracts\Meetable;
 use App\Meetings\Contracts\MeetingProvider;
-use App\Models\EventSession;
 use Firebase\JWT\JWT;
 
 /**
@@ -54,7 +54,7 @@ class JitsiProvider implements MeetingProvider
      *
      * @return array{domain: string, roomName: string, jwt: ?string, userName: string}
      */
-    public function embedConfig(EventSession $session, MeetingRole $role, ?string $displayName = null): array
+    public function embedConfig(Meetable $session, MeetingRole $role, ?string $displayName = null): array
     {
         return [
             'domain' => trim((string) config('meetings.jitsi.domain', 'meet.jit.si'), '/'),
@@ -64,7 +64,7 @@ class JitsiProvider implements MeetingProvider
         ];
     }
 
-    public function joinUrl(EventSession $session, MeetingRole $role, ?string $displayName = null): string
+    public function joinUrl(Meetable $session, MeetingRole $role, ?string $displayName = null): string
     {
         $domain = trim((string) config('meetings.jitsi.domain', 'meet.jit.si'), '/');
         $room = rawurlencode($session->meetingRoom());
@@ -83,7 +83,7 @@ class JitsiProvider implements MeetingProvider
     }
 
     /** Jeton JWT Jitsi (self-host) matérialisant rôle + identité. */
-    private function jwt(EventSession $session, MeetingRole $role, ?string $displayName): string
+    private function jwt(Meetable $session, MeetingRole $role, ?string $displayName): string
     {
         $now = time();
         $secret = (string) config('meetings.jitsi.app_secret');

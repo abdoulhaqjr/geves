@@ -3,8 +3,8 @@
 namespace App\Meetings\Providers;
 
 use App\Enums\MeetingRole;
+use App\Meetings\Contracts\Meetable;
 use App\Meetings\Contracts\MeetingProvider;
-use App\Models\EventSession;
 
 /**
  * Lien de réunion externe fourni par l'organisateur (Zoom, Google Meet, une
@@ -34,8 +34,8 @@ class CustomProvider implements MeetingProvider
         return false;
     }
 
-    public function joinUrl(EventSession $session, MeetingRole $role, ?string $displayName = null): string
+    public function joinUrl(Meetable $session, MeetingRole $role, ?string $displayName = null): string
     {
-        return (string) $session->meeting_url;
+        return (string) $session->meetingUrl();
     }
 }

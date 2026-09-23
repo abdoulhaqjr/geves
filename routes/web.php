@@ -208,6 +208,7 @@ Route::middleware(['auth:account', StampAccountSession::class])->group(function 
     Route::post('/compte/paiement/{edition}', [AccountPaymentController::class, 'pay'])->name('account.payment.pay');
     Route::get('/mes-formations', [AccountFormationController::class, 'index'])->name('account.formations');
     Route::post('/mes-formations/{formation}/inscription', [AccountFormationController::class, 'enroll'])->name('account.formations.enroll');
+    Route::get('/mes-formations/{formation}/visio', [AccountFormationController::class, 'visio'])->name('account.formations.visio');
     Route::get('/compte/recu/{payment}', App\Http\Controllers\Account\ReceiptController::class)->name('account.receipt');
     Route::get('/compte/edition/{edition}/livret', [App\Http\Controllers\Account\DocumentController::class, 'livret'])->name('account.documents.livret');
 
@@ -434,6 +435,7 @@ Route::prefix('admin')->group(function () {
             Route::delete('/formations/{formation}/formateurs/{trainer}', [FormationController::class, 'destroyTrainer'])->name('admin.formations.trainers.destroy');
             Route::post('/formations/{formation}/message', [FormationController::class, 'message'])->name('admin.formations.message');
             Route::post('/formations/{formation}/attestations', [FormationController::class, 'issueAttestations'])->name('admin.formations.attestations');
+            Route::post('/formations/{formation}/visio', [FormationController::class, 'setMeeting'])->name('admin.formations.meeting');
         });
 
         // Documents (attestations, badges, livret, fiches).

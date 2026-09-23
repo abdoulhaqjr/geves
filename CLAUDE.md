@@ -165,8 +165,11 @@ via `Public\ColloqueController`. E-mails : confirmation d'inscription (`Formatio
 kind notif `formation`) + message admin aux inscrits (`admin.formations.message`, réutilise
 `CampaignMail`). Attestations : type `formation` (inscrits) + nouveau `formation_animation`
 (formateurs), émises depuis la page Formations (`admin.formations.attestations`) ; colonne
-`attestations.formation_id`, variable `{formation}`. **Phases 1-5 faites (… + attestations)** ;
-reste la visio (`App\Meetings`) + suivi admin nominatif des inscrits. Détails en [§11 de PASSATION.md](PASSATION.md).
+`attestations.formation_id`, variable `{formation}`. **Visio** : interface `App\Meetings\Contracts\Meetable`
+(implémentée par `EventSession` **et** `Formation`) ; config admin (`admin.formations.meeting`), le
+participant rejoint via `account.formations.visio` (redirection vers la salle si live + autorisé :
+formateurs = modérateur, inscrits éligibles = participant). **Module complet (phases 1-6)** ; reste
+optionnel : suivi admin nominatif des inscrits + lecteur visio inline. Détails en [§11 de PASSATION.md](PASSATION.md).
 
 ### Règles métier - limites communications & attestations
 

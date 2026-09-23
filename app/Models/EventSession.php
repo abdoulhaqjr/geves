@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\MeetingRole;
 use App\Enums\MeetingStatus;
 use App\Enums\MeetingVisibility;
+use App\Meetings\Contracts\Meetable;
 use App\Meetings\MeetingProviderRegistry;
 use App\Meetings\Providers\JitsiProvider;
 use App\Meetings\Providers\LiveKitProvider;
@@ -31,7 +32,7 @@ use Illuminate\Support\Str;
  * @property Atelier|null $atelier
  * @property Edition|null $edition
  */
-class EventSession extends Model
+class EventSession extends Model implements Meetable
 {
     protected $table = 'event_sessions';
 
@@ -107,6 +108,18 @@ class EventSession extends Model
         $prefix = (string) config('meetings.jitsi.room_prefix', 'gesco');
 
         return Str::slug($prefix.'-'.$this->edition_id.'-'.$this->id);
+    }
+
+    /** Lien externe (fournisseur « custom »), pour le contrat Meetable. */
+    public function meetingUrl(): ?string
+    {
+        return $this->meeting_url;
+    }
+
+    /** Clé du fournisseur choisi, pour le contrat Meetable. */
+    public function meetingProviderKey(): ?string
+    {
+        return $this->meeting_provider;
     }
 
     /** URL embarquable du replay, ou null. */

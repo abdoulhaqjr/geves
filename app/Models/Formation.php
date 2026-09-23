@@ -2,10 +2,16 @@
 
 namespace App\Models;
 
+use App\Enums\MeetingRole;
+use App\Enums\MeetingStatus;
+use App\Enums\MeetingVisibility;
+use App\Meetings\Contracts\Meetable;
+use App\Meetings\MeetingProviderRegistry;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 /**
  * Formation proposée dans le cadre d'une édition (module activable). Une édition
@@ -17,7 +23,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $ends_at
  * @property Edition|null $edition
  */
-class Formation extends Model
+class Formation extends Model implements Meetable
 {
     protected $guarded = ['id'];
 
@@ -37,6 +43,97 @@ class Formation extends Model
     public function isFree(): bool
     {
         return (float) $this->fee <= 0.0;
+    }
+
+    /* ----------------------------- Visio (Meetable) ----------------------------- */
+
+    public function meetingStatusEnum(): MeetingStatus
+    {
+        return MeetingStatus::tryFrom((string) $this->meeting_status) ?? MeetingStatus::None;
+    }
+
+    public function meetingVisibilityEnum(): MeetingVisibility
+    {
+        return MeetingVisibility::tryFrom((string) $this->meeting_visibility) ?? MeetingVisibility::Participants;
+    }
+
+    public function hasMeeting(): bool
+    {
+        return $this->meetingStatusEnum() !== MeetingStatus::None;
+    }
+
+    public function isLive(): bool
+    {
+        return $this->meetingStatusEnum() === MeetingStatus::Live;
+    }
+
+    public function meetingRoom(): string
+    {
+        if (filled($this->meeting_room)) {
+            return (string) $this->meeting_room;
+        }
+
+        $prefix = (string) config('meetings.jitsi.room_prefix', 'gesco');
+
+        return Str::slug($prefix.'-formation-'.$this->edition_id.'-'.$this->id);
+    }
+
+    public function meetingUrl(): ?string
+    {
+        return $this->meeting_url;
+    }
+
+    public function meetingProviderKey(): ?string
+    {
+        return $this->meeting_provider;
+    }
+
+    /**
+     * Rôle visio : staff & formateurs = modérateur ; inscrit éligible (réglé, ou
+     * inscrit si gratuite) = participant ; sinon aucun. Pas d'accès public : la
+     * visio est réservée aux inscrits et aux formateurs.
+     */
+    public function meetingRoleFor(?User $account, bool $isStaff = false): MeetingRole
+    {
+        if ($isStaff) {
+            return MeetingRole::Moderator;
+        }
+        if ($account === null) {
+            return MeetingRole::None;
+        }
+
+        $isTrainer = $this->trainers()
+            ->where(fn ($q) => $q->where('user_id', $account->id)
+                ->orWhereRaw('LOWER(email) = ?', [mb_strtolower((string) $account->email)]))
+            ->exists();
+        if ($isTrainer) {
+            return MeetingRole::Moderator;
+        }
+
+        $eligible = $this->enrollments()
+            ->where('user_id', $account->id)
+            ->where(fn ($q) => $q->where('status', 'paid')
+                ->when($this->isFree(), fn ($q2) => $q2->orWhere('status', 'registered')))
+            ->exists();
+
+        return $eligible ? MeetingRole::Attendee : MeetingRole::None;
+    }
+
+    public function canJoin(?User $account, bool $isStaff = false): bool
+    {
+        return $this->meetingRoleFor($account, $isStaff)->canJoin();
+    }
+
+    public function joinUrl(?User $account, bool $isStaff = false, ?string $displayName = null): ?string
+    {
+        $role = $this->meetingRoleFor($account, $isStaff);
+        if (! $role->canJoin()) {
+            return null;
+        }
+
+        $name = $displayName ?: ($isStaff ? 'Organisation' : $account?->name);
+
+        return app(MeetingProviderRegistry::class)->for($this)->joinUrl($this, $role, $name) ?: null;
     }
 
     /** @return BelongsTo<Edition, $this> */
