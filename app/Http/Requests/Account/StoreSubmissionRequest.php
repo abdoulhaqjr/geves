@@ -237,6 +237,12 @@ class StoreSubmissionRequest extends FormRequest
                 }
                 $seen[$email] = true;
             }
+
+            // Plafond du nombre de co-auteurs (réglage `coauthors_max`, défaut 8).
+            $coauthorsMax = (int) ($edition->settings['coauthors_max'] ?? 8);
+            if (count($seen) > $coauthorsMax) {
+                $v->errors()->add('coauthors', 'Nombre maximum de co-auteurs atteint ('.$coauthorsMax.').');
+            }
         });
     }
 

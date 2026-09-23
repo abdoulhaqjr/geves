@@ -124,6 +124,25 @@ it('refuse deux co-auteurs avec le même e-mail', function () {
     expect(Submission::count())->toBe(0);
 });
 
+it('refuse de dépasser le nombre maximum de co-auteurs', function () {
+    $edition = openEdition(['coauthors_max' => 1]);
+    $account = verifiedAccount();
+
+    $this->actingAs($account, 'account')
+        ->post(route('account.submissions.store', $edition->slug), [
+            'title' => 'Trop de co-auteurs',
+            'track' => 'Sciences',
+            'abstract' => str_repeat('a', 60),
+            'coauthors' => [
+                ['first_name' => 'A', 'last_name' => 'Un', 'email' => 'a1@x.tg', 'affiliation' => 'UK'],
+                ['first_name' => 'B', 'last_name' => 'Deux', 'email' => 'b2@x.tg', 'affiliation' => 'UK'],
+            ],
+        ])
+        ->assertSessionHasErrors('coauthors');
+
+    expect(Submission::count())->toBe(0);
+});
+
 it('applique le garde-fou du nombre max de communications', function () {
     $edition = openEdition(['max_communications' => 1]);
     $account = verifiedAccount();

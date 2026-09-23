@@ -14,6 +14,7 @@
         'errorStep' => (int) session('submission_error_step', 1),
         'lookupUrl' => route('account.authors.check'),
         'suggestUrl' => route('account.affiliations'),
+        'coauthorsMax' => (int) ($edition->settings['coauthors_max'] ?? 8),
         // Auteur correspondant : prérempli avec le compte connecté, éditable.
         // Le grade saisi ici est enregistré POUR CE COLLOQUE (grade par édition).
         'account' => [
@@ -210,7 +211,7 @@
                             <span class="ukc-switch__track"><span class="ukc-switch__knob"></span></span>
                             <span class="ukc-switch__label">{{ __('Je suis l’auteur correspondant') }}</span>
                         </label>
-                        <div class="ukc-form-grid">
+                        <div class="ukc-form-grid-3">
                             <div class="ukc-field">
                                 <label for="corr-last">{{ __('Nom') }} <span class="req">*</span></label>
                                 <input type="text" id="corr-last" name="corresponding[last_name]" x-model="corr.last_name" data-uppercase

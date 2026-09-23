@@ -1142,6 +1142,7 @@ document.addEventListener('alpine:init', () => {
         rules: initial.rules || {},
         lookupUrl: initial.lookupUrl || '',
         suggestUrl: initial.suggestUrl || '',
+        coauthorsMax: initial.coauthorsMax || 8,
         _affLast: '',
         account: initial.account || { name: '', first_name: '', last_name: '', email: '', phone: '', affiliation: '', grade: '' },
         corr: Object.assign({ self: true, first_name: '', last_name: '', email: '', phone: '', affiliation: '', grade: '', hint: '', hintType: 'muted' }, initial.corr || {}),
@@ -1167,6 +1168,10 @@ document.addEventListener('alpine:init', () => {
         },
 
         addCoauthor() {
+            if (this.coauthors.length >= this.coauthorsMax) {
+                window.ukcToast?.(`Nombre maximum de co-auteurs atteint (${this.coauthorsMax}).`, 'err');
+                return;
+            }
             this.coauthors.push({ last_name: '', first_name: '', email: '', phone: '', affiliation: '', grade: '', hint: '', hintType: 'muted' });
         },
         coauthorName(co) {
