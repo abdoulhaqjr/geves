@@ -57,10 +57,16 @@ it('rejette une signature altérée', function () {
     enableAttestationCertification();
     $attestation = app(IssueAttestation::class)->handle(certParticipant(openEdition()), 'participation');
 
-    // On corrompt le segment de signature du JWS.
+    // On corrompt RÉELLEMENT les octets de la signature : on décode le segment,
+    // on inverse un bit d'un octet central, puis on ré-encode. Altération garantie
+    // (contrairement au flip du dernier caractère base64url, dont les 4 bits de
+    // bourrage rendaient certaines mutations sans effet sur les octets décodés).
     [$h, $p, $s] = explode('.', (string) $attestation->credential);
-    $last = substr($s, -1) === 'A' ? 'B' : 'A';
-    $attestation->credential = $h.'.'.$p.'.'.substr($s, 0, -1).$last;
+    $bin = sodium_base642bin($s, SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
+    $mid = intdiv(strlen($bin), 2);
+    $bin[$mid] = $bin[$mid] ^ "\x01";
+    $tampered = sodium_bin2base64($bin, SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
+    $attestation->credential = $h.'.'.$p.'.'.$tampered;
 
     $proof = app(AttestationCertifier::class)->verify($attestation);
     expect($proof['valid'])->toBeFalse()
