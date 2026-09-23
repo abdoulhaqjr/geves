@@ -428,6 +428,7 @@ Route::prefix('admin')->group(function () {
         Route::middleware('edition.cap:formation')->group(function () {
             Route::get('/formations', [FormationController::class, 'index'])->name('admin.formations');
             Route::post('/editions/{edition}/formations', [FormationController::class, 'store'])->name('admin.formations.store');
+            Route::post('/formations/ia', [FormationController::class, 'aiAssist'])->name('admin.formations.ai');
             Route::put('/formations/{formation}', [FormationController::class, 'update'])->name('admin.formations.update');
             Route::delete('/formations/{formation}', [FormationController::class, 'destroy'])->name('admin.formations.destroy');
             Route::post('/formations/{formation}/formateurs', [FormationController::class, 'storeTrainer'])->name('admin.formations.trainers.store');

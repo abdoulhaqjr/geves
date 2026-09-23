@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\ExtractFormationFromDocuments;
 use App\Actions\IssueAttestation;
 use App\Actions\UpsertParticipantForAccount;
+use App\AI\AiManager;
 use App\Http\Controllers\Admin\Concerns\ScopesEditionAccess;
 use App\Http\Controllers\Controller;
 use App\Mail\CampaignMail;
@@ -13,6 +15,7 @@ use App\Models\Formation;
 use App\Models\FormationTrainer;
 use App\Models\Participant;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -39,6 +42,7 @@ class FormationController extends Controller
             'edition' => $edition,
             'edition_id' => $edition ? (string) $edition->id : '',
             'moduleEnabled' => $edition ? $edition->formationEnabled() : false,
+            'aiAvailable' => app(AiManager::class)->resolve() !== null,
             'formations' => $edition
                 ? Formation::with(['trainers', 'enrollments' => fn ($q) => $q->with('user')->latest('id')])
                     ->withCount(['enrollments', 'enrollments as paid_count' => fn ($q) => $q->where('status', 'paid')])
@@ -207,6 +211,45 @@ class FormationController extends Controller
         }
 
         return back()->with('ukc_status', $count.' message(s) envoyé(s) aux inscrits.');
+    }
+
+    /**
+     * Paramétrage assisté par IA : analyse des documents / une consigne et renvoie
+     * les champs proposés (JSON) que le formulaire applique côté client.
+     */
+    public function aiAssist(Request $request, ExtractFormationFromDocuments $action): JsonResponse
+    {
+        $request->validate([
+            'aiFiles' => ['nullable', 'array', 'max:6'],
+            'aiFiles.*' => ['file', 'mimes:pdf,png,jpg,jpeg,webp', 'max:10240'],
+            'aiPrompt' => ['nullable', 'string', 'max:4000'],
+        ]);
+
+        $files = collect($request->file('aiFiles') ?? [])
+            ->map(fn ($f) => ['mime' => (string) $f->getMimeType(), 'data' => base64_encode((string) $f->get())])
+            ->all();
+
+        if (trim((string) $request->input('aiPrompt')) !== '') {
+            $files[] = ['mime' => 'text/plain', 'data' => base64_encode((string) $request->input('aiPrompt'))];
+        }
+
+        if ($files === []) {
+            return response()->json(['ok' => false, 'message' => 'Fournissez un document ou une consigne.'], 422);
+        }
+
+        try {
+            $fields = $action->handle($files);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json(['ok' => false, 'message' => 'Échec de l’analyse : '.$e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'fields' => $fields,
+            'message' => $fields === [] ? 'Aucune information exploitable extraite.' : count($fields).' champ(s) pré-rempli(s). Vérifiez puis créez.',
+        ]);
     }
 
     /** Configure la visio de la formation (fournisseur, salle/lien, état, visibilité). */

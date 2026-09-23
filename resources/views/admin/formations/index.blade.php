@@ -25,15 +25,9 @@
                 <p>Activez-le dans les <a href="{{ route('admin.editions.edit', $edition) }}" style="color:var(--ukc-blue);font-weight:600;">paramètres de l’édition</a> (onglet « Options ») pour proposer des formations.</p>
             </div>
         @else
-            <div class="ukc-grid-2" style="align-items:start;gap:18px;">
-                {{-- Nouvelle formation --}}
-                <div class="ukc-card">
-                    <h2>Nouvelle formation</h2>
-                    <form method="POST" action="{{ route('admin.formations.store', $edition) }}" enctype="multipart/form-data">
-                        @csrf
-                        @include('admin.formations._fields', ['f' => null])
-                        <button type="submit" class="ukc-btn ukc-btn--blue"><x-ukc.icon name="book" :size="16" /> Créer la formation</button>
-                    </form>
+            <div x-data="{ formOpen: false }">
+                <div style="text-align:right;margin-bottom:14px;">
+                    <button type="button" class="ukc-btn ukc-btn--blue" @click="formOpen = true"><x-ukc.icon name="plus" :size="16" /> Nouvelle formation</button>
                 </div>
 
                 {{-- Formations existantes --}}
@@ -174,6 +168,29 @@
                         <p style="font-size:13.5px;color:var(--ukc-light);">Aucune formation pour l’instant.</p>
                     @endforelse
                 </div>
+
+                {{-- Slideover : nouvelle formation (+ paramétrage assisté IA) --}}
+                <x-ukc.slideover open="formOpen" onClose="formOpen = false" width="520px">
+                    <x-slot:header>Nouvelle formation</x-slot:header>
+                    <form method="POST" action="{{ route('admin.formations.store', $edition) }}" enctype="multipart/form-data">
+                        @csrf
+                        @if ($aiAvailable)
+                            <div x-data="{ prompt: '', busy: false, msg: '', async run() { const form = $root.closest('form'); const fd = new FormData(); const files = $refs.aiFiles.files; for (const f of files) fd.append('aiFiles[]', f); if (this.prompt.trim()) fd.append('aiPrompt', this.prompt); if (!files.length && !this.prompt.trim()) { this.msg = 'Ajoutez un document ou une consigne.'; return; } this.busy = true; this.msg = ''; try { const t = form.querySelector('input[name=_token]')?.value; const r = await fetch('{{ route('admin.formations.ai') }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': t, 'Accept': 'application/json' }, body: fd }); const d = await r.json(); if (d.ok) { for (const [k, v] of Object.entries(d.fields || {})) { const el = form.querySelector('[name=\'' + k + '\']'); if (el) el.value = v; } this.msg = d.message || 'Appliqué.'; } else { this.msg = d.message || 'Échec.'; } } catch (e) { this.msg = 'Erreur réseau.'; } this.busy = false; } }"
+                                 style="border:1px solid var(--ukc-border,#e5e7eb);border-radius:10px;padding:12px;margin-bottom:14px;background:#faf9ff;">
+                                <div style="font-weight:600;display:flex;align-items:center;gap:6px;margin-bottom:4px;"><x-ukc.icon name="sparkles" :size="16" /> Paramétrage assisté (IA)</div>
+                                <p style="font-size:12.5px;color:var(--ukc-muted);margin:0 0 8px;">Analysez un document (flyer, programme…) ou décrivez la formation pour pré-remplir les champs ci-dessous.</p>
+                                <input type="file" x-ref="aiFiles" multiple accept=".pdf,.png,.jpg,.jpeg,.webp" style="font-size:12.5px;margin-bottom:6px;display:block;">
+                                <textarea x-model="prompt" rows="2" placeholder="Ex. : titre, objectifs, dates, lieu…" style="width:100%;padding:6px 8px;border:1px solid var(--ukc-border,#e5e7eb);border-radius:8px;margin-bottom:6px;"></textarea>
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <button type="button" class="ukc-btn ukc-btn--outline ukc-btn--sm" @click="run()" :disabled="busy"><x-ukc.icon name="sparkles" :size="14" /> <span x-text="busy ? 'Analyse…' : 'Analyser'"></span></button>
+                                    <span style="font-size:12px;color:var(--ukc-muted);" x-text="msg"></span>
+                                </div>
+                            </div>
+                        @endif
+                        @include('admin.formations._fields', ['f' => null])
+                        <button type="submit" class="ukc-btn ukc-btn--blue" style="width:100%;"><x-ukc.icon name="book" :size="16" /> Créer la formation</button>
+                    </form>
+                </x-ukc.slideover>
             </div>
         @endif
     </div>

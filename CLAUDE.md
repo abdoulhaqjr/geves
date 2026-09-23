@@ -168,8 +168,11 @@ kind notif `formation`) + message admin aux inscrits (`admin.formations.message`
 `attestations.formation_id`, variable `{formation}`. **Visio** : interface `App\Meetings\Contracts\Meetable`
 (implémentée par `EventSession` **et** `Formation`) ; config admin (`admin.formations.meeting`), le
 participant rejoint via `account.formations.visio` (redirection vers la salle si live + autorisé :
-formateurs = modérateur, inscrits éligibles = participant). **Module complet (phases 1-6)** ; reste
-optionnel : lecteur visio inline (au lieu de la redirection). Suivi admin nominatif des inscrits fait. Détails en [§11 de PASSATION.md](PASSATION.md).
+formateurs = modérateur, inscrits éligibles = participant). **Module complet (phases 1-6)** + raffinements admin :
+**activation via le formulaire d'édition** (onglet Options, `settings.formation_enabled`, `Edition::formationEnabled()`),
+**ajout via slideover** (bouton « Nouvelle formation »), **flyer** (`formations.flyer_path`, `<x-ukc.filedrop>`),
+**paramétrage assisté IA** (`ExtractFormationFromDocuments`, `admin.formations.ai`). Suivi admin nominatif des inscrits fait.
+Reste optionnel : lecteur visio inline. Détails en [§11 de PASSATION.md](PASSATION.md).
 
 ### Règles métier - limites communications & attestations
 
