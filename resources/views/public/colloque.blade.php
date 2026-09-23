@@ -454,6 +454,9 @@
                                 @if ($f->trainers->isNotEmpty())
                                     <div style="font-size:.82rem;color:var(--ukc-muted);margin-top:8px;">{{ __('Formateur(s)') }} : {{ $f->trainers->pluck('name')->join(', ') }}</div>
                                 @endif
+                                @if ($f->flyerUrl())
+                                    <a href="{{ $f->flyerUrl() }}" target="_blank" rel="noopener" style="font-size:.82rem;color:var(--ukc-blue);display:inline-flex;align-items:center;gap:4px;margin-top:8px;"><x-ukc.icon name="file" :size="14" /> {{ __('Flyer') }}</a>
+                                @endif
                                 <a href="{{ route('account.formations') }}" class="ukc-btn ukc-btn--blue" style="margin-top:12px;">
                                     <x-ukc.icon name="book" :size="15" /> {{ __('S’inscrire') }}
                                 </a>

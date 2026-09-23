@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -43,6 +44,14 @@ class Formation extends Model implements Meetable
     public function isFree(): bool
     {
         return (float) $this->fee <= 0.0;
+    }
+
+    /** URL publique du flyer/bannière téléversé, ou null. */
+    public function flyerUrl(): ?string
+    {
+        return filled($this->flyer_path)
+            ? Storage::disk('public')->url((string) $this->flyer_path)
+            : null;
     }
 
     /* ----------------------------- Visio (Meetable) ----------------------------- */

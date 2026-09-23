@@ -26,6 +26,16 @@
         <input type="text" name="room" value="{{ $val('room') }}" maxlength="120">
     </div>
 </div>
+<div class="ukc-field">
+    <label>Flyer / bannière (image ou PDF)</label>
+    @if ($f && $f->flyerUrl())
+        <div style="font-size:12.5px;margin-bottom:6px;">
+            <a href="{{ $f->flyerUrl() }}" target="_blank" rel="noopener" style="color:var(--ukc-blue);font-weight:600;">Voir le flyer actuel</a>
+            <label class="ukc-check" style="display:inline-flex;gap:6px;margin-left:12px;"><input type="checkbox" name="flyer_remove" value="1"> Retirer</label>
+        </div>
+    @endif
+    <x-ukc.filedrop name="flyer" accept="image/*,application/pdf" :hint="__('Image ou PDF, max 8 Mo')" />
+</div>
 <div style="display:flex;gap:10px;flex-wrap:wrap;">
     <div class="ukc-field" style="flex:1;min-width:120px;">
         <label>Frais (0 = gratuite)</label>

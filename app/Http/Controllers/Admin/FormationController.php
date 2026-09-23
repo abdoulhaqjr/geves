@@ -16,6 +16,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -51,7 +52,8 @@ class FormationController extends Controller
     {
         $data = $this->validated($request);
         $data['edition_id'] = $edition->id;
-        Formation::create($data);
+        $formation = Formation::create($data);
+        $this->handleFlyer($request, $formation);
 
         return back()->with('ukc_status', 'Formation créée.');
     }
@@ -59,8 +61,28 @@ class FormationController extends Controller
     public function update(Request $request, Formation $formation): RedirectResponse
     {
         $formation->update($this->validated($request));
+        $this->handleFlyer($request, $formation);
 
         return back()->with('ukc_status', 'Formation mise à jour.');
+    }
+
+    /** Téléversement / retrait du flyer (bannière) de la formation, disque public. */
+    private function handleFlyer(Request $request, Formation $formation): void
+    {
+        if ($request->boolean('flyer_remove') && filled($formation->flyer_path)) {
+            Storage::disk('public')->delete((string) $formation->flyer_path);
+            $formation->update(['flyer_path' => null]);
+
+            return;
+        }
+
+        if ($request->hasFile('flyer')) {
+            $request->validate(['flyer' => ['file', 'mimes:pdf,png,jpg,jpeg,webp', 'max:8192']]);
+            if (filled($formation->flyer_path)) {
+                Storage::disk('public')->delete((string) $formation->flyer_path);
+            }
+            $formation->update(['flyer_path' => $request->file('flyer')->store('formations', 'public')]);
+        }
     }
 
     public function destroy(Formation $formation): RedirectResponse

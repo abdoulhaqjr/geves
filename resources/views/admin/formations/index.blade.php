@@ -29,7 +29,7 @@
                 {{-- Nouvelle formation --}}
                 <div class="ukc-card">
                     <h2>Nouvelle formation</h2>
-                    <form method="POST" action="{{ route('admin.formations.store', $edition) }}">
+                    <form method="POST" action="{{ route('admin.formations.store', $edition) }}" enctype="multipart/form-data">
                         @csrf
                         @include('admin.formations._fields', ['f' => null])
                         <button type="submit" class="ukc-btn ukc-btn--blue"><x-ukc.icon name="book" :size="16" /> Créer la formation</button>
@@ -163,7 +163,7 @@
                             {{-- Édition de la formation --}}
                             <details style="margin-top:10px;">
                                 <summary style="cursor:pointer;font-size:13px;color:var(--ukc-blue,#223ea4);">Modifier</summary>
-                                <form method="POST" action="{{ route('admin.formations.update', $f) }}" style="margin-top:10px;">
+                                <form method="POST" action="{{ route('admin.formations.update', $f) }}" enctype="multipart/form-data" style="margin-top:10px;">
                                     @csrf @method('PUT')
                                     @include('admin.formations._fields', ['f' => $f])
                                     <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="check" :size="14" /> Enregistrer</button>

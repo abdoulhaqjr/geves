@@ -28,6 +28,9 @@
                                 {{ __('Formateur(s)') }} : {{ $f->trainers->pluck('name')->join(', ') }}
                             </div>
                         @endif
+                        @if ($f->flyerUrl())
+                            <a href="{{ $f->flyerUrl() }}" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--ukc-blue);display:inline-flex;align-items:center;gap:4px;margin-top:8px;"><x-ukc.icon name="file" :size="14" /> {{ __('Flyer') }}</a>
+                        @endif
                     </div>
                     <div style="text-align:right;min-width:150px;">
                         <div style="margin-bottom:8px;">
