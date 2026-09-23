@@ -47,6 +47,14 @@
                     <strong>« {{ $communicationTitle }} »</strong>@if ($communicationRef) <span class="muted">({{ __('réf.') }} {{ $communicationRef }})</span>@endif.
                 </p>
             @endif
+
+            @php($formationTitle = data_get($attestation->meta, 'formation_title'))
+            @if (in_array($attestation->type, ['formation', 'formation_animation'], true) && $formationTitle)
+                <p style="font-size:14px;line-height:1.7;margin-top:10px;">
+                    {{ $attestation->type === 'formation_animation' ? __('pour l’animation de la formation') : __('pour la formation') }}
+                    <strong>« {{ $formationTitle }} »</strong>.
+                </p>
+            @endif
         </div>
 
         <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:48px;">

@@ -90,8 +90,17 @@
 
                             {{-- Inscrits + message (convocation / rappel) --}}
                             <div style="margin-top:12px;">
-                                <div style="font-size:12.5px;font-weight:600;color:var(--ukc-muted);margin-bottom:4px;">
-                                    Inscrits : {{ $f->enrollments_count }}@if (! $f->isFree()) · {{ $f->paid_count }} réglé(s)@endif
+                                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;">
+                                    <span style="font-size:12.5px;font-weight:600;color:var(--ukc-muted);">
+                                        Inscrits : {{ $f->enrollments_count }}@if (! $f->isFree()) · {{ $f->paid_count }} réglé(s)@endif
+                                    </span>
+                                    <form method="POST" action="{{ route('admin.formations.attestations', $f) }}"
+                                          onsubmit="return confirm('Émettre les attestations (participation aux inscrits + animation aux formateurs) ?')">
+                                        @csrf
+                                        <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm" title="Émettre & envoyer les attestations">
+                                            <x-ukc.icon name="award" :size="14" /> Attestations
+                                        </button>
+                                    </form>
                                 </div>
                                 @if ($f->enrollments_count > 0)
                                     <details>

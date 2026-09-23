@@ -433,6 +433,7 @@ Route::prefix('admin')->group(function () {
             Route::post('/formations/{formation}/formateurs', [FormationController::class, 'storeTrainer'])->name('admin.formations.trainers.store');
             Route::delete('/formations/{formation}/formateurs/{trainer}', [FormationController::class, 'destroyTrainer'])->name('admin.formations.trainers.destroy');
             Route::post('/formations/{formation}/message', [FormationController::class, 'message'])->name('admin.formations.message');
+            Route::post('/formations/{formation}/attestations', [FormationController::class, 'issueAttestations'])->name('admin.formations.attestations');
         });
 
         // Documents (attestations, badges, livret, fiches).

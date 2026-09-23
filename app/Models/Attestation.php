@@ -32,6 +32,7 @@ class Attestation extends Model
         'moderation' => 'Modération',
         'rapporteur' => 'Rapporteur',
         'formation' => 'Formation',
+        'formation_animation' => 'Animation de formation',
     ];
 
     public function typeLabel(): string
@@ -77,5 +78,12 @@ class Attestation extends Model
     public function submission(): BelongsTo
     {
         return $this->belongsTo(Submission::class);
+    }
+
+    /** Formation concernée (attestations de formation / animation ; sinon null). */
+    /** @return BelongsTo<Formation, $this> */
+    public function formation(): BelongsTo
+    {
+        return $this->belongsTo(Formation::class);
     }
 }

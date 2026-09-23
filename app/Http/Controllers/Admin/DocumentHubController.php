@@ -44,7 +44,6 @@ class DocumentHubController extends Controller
             'communication' => ['title' => 'Attestation de communication', 'sub' => 'Orale / poster', 'scope' => 'Par communication'],
             'participation' => ['title' => 'Attestation de participation', 'sub' => 'Une par participant', 'scope' => 'Participant'],
             'moderation' => ['title' => 'Attestation de modération', 'sub' => 'Sessions', 'scope' => 'Par session'],
-            'formation' => ['title' => 'Attestation de formation', 'sub' => 'Ateliers en marge', 'scope' => 'Par formation'],
         ];
 
         $rows = [];
@@ -474,7 +473,8 @@ class DocumentHubController extends Controller
             // 'communication' est géré à part (par communication) via CommunicationAttestations.
             'moderation' => $base()->where('role', 'moderator')->get(),
             'rapporteur' => $base()->where('role', 'rapporteur')->get(),
-            'formation' => $base()->where('role', 'trainee')->get(),
+            // 'formation' et 'formation_animation' sont gérées par formation
+            // (émission depuis la page Formations, cf. Admin\FormationController).
             'participation' => $this->participationTargets($edition),
             default => $base()->whereHas('payments', fn ($q) => $q->where('status', 'paid'))->get(),
         };

@@ -39,6 +39,7 @@ class TemplateDesignerController extends Controller
         '{verify_url}' => 'URL de vérification',
         '{communication}' => 'Titre de la communication',
         '{communication_ref}' => 'Réf. communication',
+        '{formation}' => 'Titre de la formation',
     ];
 
     public function index(Request $request): View
@@ -157,6 +158,7 @@ class TemplateDesignerController extends Controller
             'verify_url' => url('/verifier/exemple'),
             'communication' => 'L’apport du numérique dans l’enseignement supérieur',
             'communication_ref' => 'CI-001',
+            'formation' => 'Rédaction scientifique et publication',
         ];
     }
 }

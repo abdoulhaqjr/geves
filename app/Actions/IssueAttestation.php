@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Documents\AttestationCertifier;
 use App\Models\Attestation;
+use App\Models\Formation;
 use App\Models\Participant;
 use App\Models\Submission;
 use App\Support\Notifier;
@@ -22,16 +23,26 @@ class IssueAttestation
 {
     public function __construct(private ?AttestationCertifier $certifier = null) {}
 
-    public function handle(Participant $participant, string $type, ?Submission $submission = null): Attestation
+    public function handle(Participant $participant, string $type, ?Submission $submission = null, ?Formation $formation = null): Attestation
     {
         $existing = Attestation::where('edition_id', $participant->edition_id)
             ->where('participant_id', $participant->id)
             ->where('type', $type)
             ->where('submission_id', $submission?->id)
+            ->where('formation_id', $formation?->id)
             ->first();
 
         if ($existing) {
             return $existing;
+        }
+
+        $meta = [];
+        if ($submission) {
+            $meta['communication_title'] = (string) $submission->title;
+            $meta['communication_ref'] = (string) $submission->ref_code;
+        }
+        if ($formation) {
+            $meta['formation_title'] = (string) $formation->title;
         }
 
         // uuid généré par AttestationObserver.
@@ -40,12 +51,10 @@ class IssueAttestation
             'type' => $type,
             'participant_id' => $participant->id,
             'submission_id' => $submission?->id,
+            'formation_id' => $formation?->id,
             'recipient_name' => $participant->full_name,
             'recipient_email' => $participant->email,
-            'meta' => $submission ? [
-                'communication_title' => (string) $submission->title,
-                'communication_ref' => (string) $submission->ref_code,
-            ] : null,
+            'meta' => $meta ?: null,
             'revoked' => false,
             'issued_at' => now(),
         ]);

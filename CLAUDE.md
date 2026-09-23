@@ -163,9 +163,10 @@ est flow-aware** — la garde anti-double ne vaut que pour la **participation**,
 formation(s) + co-auteur coexistent. Page publique : section `#formations` (formations `public`)
 via `Public\ColloqueController`. E-mails : confirmation d'inscription (`FormationEnrollmentMail`,
 kind notif `formation`) + message admin aux inscrits (`admin.formations.message`, réutilise
-`CampaignMail`). **Phases 1-4 faites (… + page publique + e-mails)** ; restent attestations
-(`formation` + nouveau `formation_animation`), visio (`App\Meetings`), suivi admin des inscriptions.
-Détails en [§11 de PASSATION.md](PASSATION.md).
+`CampaignMail`). Attestations : type `formation` (inscrits) + nouveau `formation_animation`
+(formateurs), émises depuis la page Formations (`admin.formations.attestations`) ; colonne
+`attestations.formation_id`, variable `{formation}`. **Phases 1-5 faites (… + attestations)** ;
+reste la visio (`App\Meetings`) + suivi admin nominatif des inscrits. Détails en [§11 de PASSATION.md](PASSATION.md).
 
 ### Règles métier - limites communications & attestations
 

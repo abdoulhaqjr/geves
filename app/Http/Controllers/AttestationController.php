@@ -48,6 +48,8 @@ class AttestationController extends Controller
                 // Communication concernée (attestation de communication) - vide pour les autres types.
                 'communication' => (string) (($attestation->meta ?? [])['communication_title'] ?? ''),
                 'communication_ref' => (string) (($attestation->meta ?? [])['communication_ref'] ?? ''),
+                // Formation concernée (attestation de formation / animation) - vide sinon.
+                'formation' => (string) (($attestation->meta ?? [])['formation_title'] ?? ''),
             ]);
 
             return view('attestations.document-template', [
@@ -94,6 +96,8 @@ class AttestationController extends Controller
                 // Communication concernée (attestation de communication) - vide pour les autres types.
                 'communication' => (string) (($attestation->meta ?? [])['communication_title'] ?? ''),
                 'communication_ref' => (string) (($attestation->meta ?? [])['communication_ref'] ?? ''),
+                // Formation concernée (attestation de formation / animation) - vide sinon.
+                'formation' => (string) (($attestation->meta ?? [])['formation_title'] ?? ''),
             ]);
 
             // Page à la taille exacte de la mise en page (px → points à 96 dpi).

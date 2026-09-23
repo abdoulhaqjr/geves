@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\IssueAttestation;
+use App\Actions\UpsertParticipantForAccount;
 use App\Http\Controllers\Admin\Concerns\ScopesEditionAccess;
 use App\Http\Controllers\Controller;
 use App\Mail\CampaignMail;
@@ -9,6 +11,7 @@ use App\Models\Edition;
 use App\Models\Email;
 use App\Models\Formation;
 use App\Models\FormationTrainer;
+use App\Models\Participant;
 use App\Models\User;
 use App\Support\EditionSettings;
 use Illuminate\Http\RedirectResponse;
@@ -104,6 +107,54 @@ class FormationController extends Controller
         $trainer->delete();
 
         return back()->with('ukc_status', 'Formateur retiré.');
+    }
+
+    /**
+     * Émet (et notifie/envoie) les attestations de la formation : participation
+     * aux inscrits éligibles (réglés, ou inscrits si gratuite) + animation aux
+     * formateurs. Idempotent (une attestation par personne/formation/type).
+     */
+    public function issueAttestations(Formation $formation, IssueAttestation $issue, UpsertParticipantForAccount $upsert): RedirectResponse
+    {
+        $edition = $formation->edition;
+        $count = 0;
+
+        foreach ($formation->enrollments()->with('participant')->get() as $enrollment) {
+            $eligible = $enrollment->status === 'paid'
+                || ($formation->isFree() && $enrollment->status === 'registered');
+            if (! $eligible || ! $enrollment->participant) {
+                continue;
+            }
+            $issue->handle($enrollment->participant, 'formation', null, $formation);
+            $count++;
+        }
+
+        foreach ($formation->trainers as $trainer) {
+            $participant = $this->participantForTrainer($edition, $trainer, $upsert);
+            $issue->handle($participant, 'formation_animation', null, $formation);
+            $count++;
+        }
+
+        return back()->with('ukc_status', $count.' attestation(s) de formation émise(s).');
+    }
+
+    /** Participant support d'un formateur (compte lié si possible, sinon par e-mail/nom). */
+    private function participantForTrainer(Edition $edition, FormationTrainer $trainer, UpsertParticipantForAccount $upsert): Participant
+    {
+        if ($trainer->user_id && ($user = User::find($trainer->user_id))) {
+            return $upsert->handle($edition, $user, role: 'trainer');
+        }
+
+        $key = filled($trainer->email)
+            ? ['edition_id' => $edition->id, 'email' => $trainer->email]
+            : ['edition_id' => $edition->id, 'first_name' => $trainer->name, 'last_name' => ''];
+
+        return Participant::firstOrCreate($key, [
+            'first_name' => $trainer->name,
+            'last_name' => '',
+            'role' => 'trainer',
+            'email' => $trainer->email,
+        ]);
     }
 
     /** Envoie un message (convocation / rappel) aux inscrits de la formation. */
