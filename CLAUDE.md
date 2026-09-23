@@ -119,6 +119,7 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   'GPL'`, texte justifié). **Mots-clés** : **Tom Select** (`data-tom data-tom-create
   data-tom-max`). Affichage d'un résumé stocké : **`App\Support\Html::render()`** (HTML
   assaini, jamais `strip_tags` brut).
+- **Affiliations (autocomplétion)** : API libre **ROR** (`App\Support\RorClient`, api.ror.org, sans clé, cache + fail-closed) via l'endpoint `account.affiliations` (repli local) ; le wizard alimente un `<datalist>` en direct. Ne pas revenir à un datalist statique alimenté par la base.
 - **Grades de participant** : liste unique **`App\Support\ParticipantTypes::all()`**
   (profil + auteur correspondant). Le **grade est capturé par édition** sur le
   participant (`participant.title`) → une personne peut avoir des grades différents au

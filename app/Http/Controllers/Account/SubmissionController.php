@@ -9,13 +9,17 @@ use App\Http\Requests\Account\ResubmitSubmissionRequest;
 use App\Http\Requests\Account\StoreSubmissionRequest;
 use App\Models\Attestation;
 use App\Models\Edition;
+use App\Models\Participant;
 use App\Models\Slot;
 use App\Models\Submission;
+use App\Models\User;
 use App\Support\CalendarExport;
 use App\Support\CurrentColloque;
 use App\Support\Html;
 use App\Support\ParticipantTypes;
+use App\Support\RorClient;
 use App\Support\SubmissionFormConfig;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -93,6 +97,45 @@ class SubmissionController extends Controller
             'remaining' => Submission::remainingFor($edition, $account),
             'successRef' => session('success_ref'),
         ]);
+    }
+
+    /**
+     * Autocomplétion des affiliations : suggestions **ROR** (référentiel mondial
+     * des organisations de recherche, API libre) ; repli sur les affiliations
+     * déjà connues localement si ROR ne répond pas / rien trouvé.
+     */
+    public function affiliations(Request $request): JsonResponse
+    {
+        $q = trim((string) $request->query('q', ''));
+        $items = RorClient::suggest($q);
+
+        if ($items === [] && mb_strlen($q) >= 2) {
+            $items = $this->knownAffiliations($q);
+        }
+
+        return response()->json(['items' => $items]);
+    }
+
+    /**
+     * Affiliations/institutions déjà connues localement (comptes + participants),
+     * filtrées par `$q` — repli hors-ligne de l'autocomplétion ROR.
+     *
+     * @return list<string>
+     */
+    private function knownAffiliations(string $q): array
+    {
+        $like = '%'.$q.'%';
+        $fromUsers = User::query()->where('affiliation', 'like', $like)->distinct()->pluck('affiliation');
+        $fromParticipants = Participant::query()->where('institution', 'like', $like)->distinct()->pluck('institution');
+
+        return $fromUsers->merge($fromParticipants)
+            ->map(fn ($a) => trim((string) $a))
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values()
+            ->take(8)
+            ->all();
     }
 
     /** Enregistre la communication déposée (validation : StoreSubmissionRequest). */

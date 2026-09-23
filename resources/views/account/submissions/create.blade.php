@@ -13,6 +13,7 @@
         'coauthors' => array_values(old('coauthors', [])),
         'errorStep' => (int) session('submission_error_step', 1),
         'lookupUrl' => route('account.authors.check'),
+        'suggestUrl' => route('account.affiliations'),
         // Auteur correspondant : prérempli avec le compte connecté, éditable.
         // Le grade saisi ici est enregistré POUR CE COLLOQUE (grade par édition).
         'account' => [
@@ -214,13 +215,14 @@
                             </div>
                             <div class="ukc-field">
                                 <label for="corr-email">{{ __('E-mail') }} <span class="req">*</span></label>
-                                <input type="email" id="corr-email" name="corresponding[email]" x-model="corr.email" @blur="lookupCorr()"
+                                <input type="email" id="corr-email" name="corresponding[email]" x-model="corr.email" @blur="lookupCorr()" @input.debounce.400ms="lookupCorr()"
                                        :readonly="corr.self" :class="corr.self ? 'is-locked' : ''" placeholder="{{ __('E-mail') }}">
                                 @error('corresponding.email') <span class="error">{{ $message }}</span> @enderror
                             </div>
                             <div class="ukc-field">
                                 <label for="corr-affiliation">{{ __('Affiliation') }}</label>
-                                <input type="text" id="corr-affiliation" name="corresponding[affiliation]" x-model="corr.affiliation"
+                                <input type="text" id="corr-affiliation" name="corresponding[affiliation]" x-model="corr.affiliation" list="ukc-affiliations"
+                                       @input.debounce.350ms="affiliationSuggest($event.target.value)" autocomplete="off"
                                        placeholder="{{ __('Établissement / laboratoire') }}">
                                 @error('corresponding.affiliation') <span class="error">{{ $message }}</span> @enderror
                             </div>
@@ -254,11 +256,12 @@
                             <template x-for="(co, i) in coauthors" :key="i">
                                 <div>
                                 <div style="display:grid;grid-template-columns:1.2fr 1.2fr 1.4fr .8fr auto;gap:8px;align-items:center;">
-                                    <input type="text" :name="'coauthors['+i+'][name]'" x-model="co.name" @blur="lookupCoauthor(i)" placeholder="{{ __('Nom Prénom') }}"
+                                    <input type="text" :name="'coauthors['+i+'][name]'" x-model="co.name" @blur="lookupCoauthor(i)" placeholder="{{ __('Nom Prénom *') }}"
                                            style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13.5px;">
-                                    <input type="email" :name="'coauthors['+i+'][email]'" x-model="co.email" @blur="lookupCoauthor(i)" placeholder="{{ __('E-mail') }}"
+                                    <input type="email" :name="'coauthors['+i+'][email]'" x-model="co.email" @blur="lookupCoauthor(i)" @input.debounce.400ms="lookupCoauthor(i)" placeholder="{{ __('E-mail *') }}"
                                            style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13.5px;">
-                                    <input type="text" :name="'coauthors['+i+'][affiliation]'" x-model="co.affiliation" placeholder="{{ __('Affiliation') }}"
+                                    <input type="text" :name="'coauthors['+i+'][affiliation]'" x-model="co.affiliation" list="ukc-affiliations" autocomplete="off"
+                                           @input.debounce.350ms="affiliationSuggest($event.target.value)" placeholder="{{ __('Affiliation *') }}"
                                            style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13.5px;">
                                     <select :name="'coauthors['+i+'][grade]'" x-model="co.grade"
                                             style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13.5px;background:#fff;">
@@ -286,7 +289,13 @@
                         <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="addCoauthor()" style="margin-top:10px;">
                             <x-ukc.icon name="user-plus" :size="16" /> {{ __('Ajouter un co-auteur') }}
                         </button>
+                        <p class="hint" style="margin-top:8px;">{{ __('Pour chaque co-auteur : nom, e-mail et affiliation sont obligatoires.') }}</p>
+                        @error('coauthors') <span class="error" style="display:block;margin-top:6px;">{{ $message }}</span> @enderror
                         @error('coauthors.*.email') <span class="error" style="display:block;margin-top:6px;">{{ __('Un e-mail de co-auteur est invalide.') }}</span> @enderror
+
+                        {{-- Autocomplétion des affiliations : le datalist est alimenté en direct
+                             par l'API ROR (référentiel mondial des organisations de recherche). --}}
+                        <datalist id="ukc-affiliations"></datalist>
                     </div>
 
                     {{-- Étape 3 : Résumé --}}

@@ -195,17 +195,29 @@ class StoreSubmissionRequest extends FormRequest
                 $v->errors()->add('abstract', 'Vous avez atteint le nombre maximum de communications pour cette édition.');
             }
 
-            // Unicité des auteurs : un co-auteur ne peut pas être l'auteur
-            // correspondant, et deux co-auteurs ne peuvent pas partager un e-mail.
+            // Co-auteurs : nom + e-mail + affiliation obligatoires (pour toute ligne
+            // entamée), e-mail valide, unicité (≠ correspondant, pas de doublon).
             $corrEmail = mb_strtolower(trim((string) $this->input('corresponding.email', '')));
             $seen = [];
             foreach ((array) $this->input('coauthors', []) as $co) {
                 if (! is_array($co)) {
                     continue;
                 }
+                $name = trim((string) ($co['name'] ?? ''));
                 $email = mb_strtolower(trim((string) ($co['email'] ?? '')));
-                if ($email === '') {
-                    continue;
+                $affiliation = trim((string) ($co['affiliation'] ?? ''));
+                $started = $name !== '' || $email !== '' || $affiliation !== '' || trim((string) ($co['grade'] ?? '')) !== '';
+                if (! $started) {
+                    continue; // ligne entièrement vide : ignorée
+                }
+
+                if ($name === '' || $email === '' || $affiliation === '') {
+                    $v->errors()->add('coauthors', 'Chaque co-auteur doit avoir un nom, un e-mail et une affiliation.');
+                    break;
+                }
+                if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    $v->errors()->add('coauthors', 'Un e-mail de co-auteur est invalide.');
+                    break;
                 }
                 if ($corrEmail !== '' && $email === $corrEmail) {
                     $v->errors()->add('coauthors', 'Un co-auteur ne peut pas être aussi l’auteur correspondant (même e-mail).');

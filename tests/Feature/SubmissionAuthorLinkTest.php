@@ -7,6 +7,7 @@ use App\Models\Submission;
 use App\Models\SubmissionAuthor;
 use App\Models\User;
 use App\Notifications\SystemNotification;
+use App\Support\AuthorMatcher;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
@@ -15,6 +16,10 @@ use Illuminate\Support\Facades\Notification;
 
 function submitWithCoauthor(User $submitter, $edition, array $coauthor): void
 {
+    // Nom + e-mail + affiliation sont obligatoires pour un co-auteur : on complète
+    // les champs manquants par défaut pour les scénarios qui ne les précisent pas.
+    $coauthor = array_merge(['affiliation' => 'Université de Kara'], $coauthor);
+
     test()->actingAs($submitter, 'account')
         ->post(route('account.submissions.store', $edition->slug), [
             'title' => 'Étude liée',
@@ -52,21 +57,18 @@ it('lie un co-auteur à son compte existant (e-mail) et le notifie', function ()
     Notification::assertSentTo($coauthor, SystemNotification::class);
 });
 
-it('lie un co-auteur par nom + affiliation (rapprochement faible)', function () {
-    Mail::fake();
-    $edition = openEdition();
-    $submitter = verifiedAccount();
+it('rapproche par nom + affiliation (AuthorMatcher, homonymes départagés)', function () {
+    // L'e-mail d'un co-auteur est désormais obligatoire dans le formulaire ; le
+    // rapprochement par nom reste utilisé (auto-liaison à l'inscription, admin).
     $coauthor = User::create([
         'name' => 'Ama Koffi', 'first_name' => 'Ama', 'last_name' => 'Koffi',
         'email' => 'ama@uk.tg', 'password' => 'pass12345', 'affiliation' => 'Université de Lomé',
     ]);
 
-    // Pas d'e-mail saisi : rapprochement par nom, départagé par l'affiliation.
-    submitWithCoauthor($submitter, $edition, ['name' => 'Koffi Ama', 'affiliation' => 'Université de Lomé']);
+    $match = app(AuthorMatcher::class)->match(['name' => 'Koffi Ama', 'affiliation' => 'Université de Lomé']);
 
-    $link = SubmissionAuthor::where('role', 'coauthor')->first();
-    expect($link->user_id)->toBe($coauthor->id);
-    expect($link->match_type)->toBe('name');
+    expect($match['user']?->id)->toBe($coauthor->id);
+    expect($match['type'])->toBe('name');
 });
 
 it('invite un co-auteur non inscrit', function () {

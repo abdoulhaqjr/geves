@@ -1118,6 +1118,8 @@ document.addEventListener('alpine:init', () => {
         keywords: [],
         rules: initial.rules || {},
         lookupUrl: initial.lookupUrl || '',
+        suggestUrl: initial.suggestUrl || '',
+        _affLast: '',
         account: initial.account || { name: '', email: '', affiliation: '', grade: '' },
         corr: Object.assign({ self: true, name: '', email: '', affiliation: '', grade: '', hint: '', hintType: 'muted', suggestion: '' }, initial.corr || {}),
 
@@ -1195,6 +1197,8 @@ document.addEventListener('alpine:init', () => {
                 this.corr.suggestion = '';
                 return;
             }
+            // Saisie live : on attend une adresse complète avant de proposer.
+            if (email && ! /^\S+@\S+\.\S+$/.test(email)) { this.corr.hint = ''; this.corr.suggestion = ''; return; }
 
             const d = await this._authorLookup(this.corr.name, this.corr.email);
             if (d) {
@@ -1226,6 +1230,9 @@ document.addEventListener('alpine:init', () => {
                 co.suggestion = '';
                 return;
             }
+            // Saisie live : tant que l'e-mail n'est pas complet, on n'affiche rien
+            // (on attend une adresse valide pour proposer une correspondance).
+            if (email && ! /^\S+@\S+\.\S+$/.test(email)) { co.hint = ''; co.suggestion = ''; return; }
 
             const d = await this._authorLookup(co.name, co.email);
             if (d) {
@@ -1238,6 +1245,26 @@ document.addEventListener('alpine:init', () => {
         applyCoauthorSuggestion(i) {
             const co = this.coauthors[i];
             if (co && co.suggestion) { co.name = co.suggestion; co.suggestion = ''; }
+        },
+
+        // Autocomplétion des affiliations via l'API ROR (référentiel mondial des
+        // organisations de recherche) : alimente le <datalist> partagé en direct.
+        async affiliationSuggest(q) {
+            q = (q || '').trim();
+            if (q.length < 3 || ! this.suggestUrl || q === this._affLast) return;
+            this._affLast = q;
+            try {
+                const res = await fetch(this.suggestUrl + '?q=' + encodeURIComponent(q), { headers: { Accept: 'application/json' } });
+                if (! res.ok) return;
+                const data = await res.json();
+                const dl = document.getElementById('ukc-affiliations');
+                if (! dl) return;
+                dl.replaceChildren(...(data.items || []).map((v) => {
+                    const o = document.createElement('option');
+                    o.value = v;
+                    return o;
+                }));
+            } catch (e) { /* réseau : saisie libre préservée */ }
         },
 
         // Interrupteur « Je suis l'auteur correspondant » :
@@ -1318,6 +1345,7 @@ document.addEventListener('alpine:init', () => {
                     if (!(co.name || '').trim()) return this._fail('Indiquez le nom de chaque co-auteur (ou retirez la ligne).');
                     const email = (co.email || '').trim().toLowerCase();
                     if (!/^\S+@\S+\.\S+$/.test(email)) return this._fail('Chaque co-auteur doit avoir un e-mail valide.');
+                    if (!(co.affiliation || '').trim()) return this._fail('Indiquez l’affiliation de chaque co-auteur.');
                     if (email === corrEmail) return this._fail('Un co-auteur ne peut pas être aussi l’auteur correspondant (même e-mail).');
                     if (seen.has(email)) return this._fail('Deux co-auteurs ont le même e-mail : chaque auteur doit être unique.');
                     seen.add(email);

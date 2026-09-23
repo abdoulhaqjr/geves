@@ -87,6 +87,23 @@ it('refuse un co-auteur identique à l’auteur correspondant (même e-mail)', f
     expect(Submission::count())->toBe(0);
 });
 
+it('exige nom, e-mail et affiliation pour un co-auteur', function () {
+    $edition = openEdition();
+    $account = verifiedAccount();
+
+    // Nom + e-mail mais affiliation manquante → refusé.
+    $this->actingAs($account, 'account')
+        ->post(route('account.submissions.store', $edition->slug), [
+            'title' => 'Co-auteur incomplet',
+            'track' => 'Sciences',
+            'abstract' => str_repeat('a', 60),
+            'coauthors' => [['name' => 'Yao Doe', 'email' => 'yao@x.tg', 'affiliation' => '']],
+        ])
+        ->assertSessionHasErrors('coauthors');
+
+    expect(Submission::count())->toBe(0);
+});
+
 it('refuse deux co-auteurs avec le même e-mail', function () {
     $edition = openEdition();
     $account = verifiedAccount();

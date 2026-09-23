@@ -181,6 +181,7 @@ Route::middleware(['auth:account', StampAccountSession::class])->group(function 
 
     // Communications
     Route::post('/communications/verifier-auteur', [AuthorLookupController::class, 'check'])->name('account.authors.check');
+    Route::get('/communications/affiliations', [SubmissionController::class, 'affiliations'])->name('account.affiliations');
     Route::get('/communications', [SubmissionController::class, 'index'])->name('account.submissions.index');
     Route::get('/communications/{submission}', [SubmissionController::class, 'show'])->name('account.submissions.show');
     Route::post('/communications/{submission}/modifier', [SubmissionController::class, 'updateContent'])->name('account.submissions.update');
