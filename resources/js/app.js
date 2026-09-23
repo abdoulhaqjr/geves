@@ -123,6 +123,26 @@ async function initAbstractEditors(root = document) {
 
 document.addEventListener('DOMContentLoaded', () => { initTomSelects(); initPhoneInputs(); initAbstractEditors(); });
 window.initTomSelects = initTomSelects;
+window.initPhoneInputs = initPhoneInputs;
+
+// Champs « nom de famille » en MAJUSCULES : dès la frappe, la valeur saisie est
+// mise en capitales (accents inclus). Cible tout champ last_name (y compris les
+// co-auteurs `coauthors[i][last_name]`), qu'il soit piloté par Alpine ou non.
+// L'affichage majuscule est aussi assuré en CSS (repli si JS indisponible).
+document.addEventListener('input', (e) => {
+    const el = e.target;
+    if (! (el instanceof HTMLInputElement)) return;
+    const name = el.getAttribute('name') || '';
+    const isLastName = el.hasAttribute('data-uppercase') || name === 'last_name' || /\[last_name\]$/.test(name);
+    if (! isLastName) return;
+    const up = el.value.toLocaleUpperCase('fr');
+    if (up !== el.value) {
+        const start = el.selectionStart;
+        const end = el.selectionEnd;
+        el.value = up;
+        try { el.setSelectionRange(start, end); } catch (_) { /* champs sans sélection */ }
+    }
+});
 
 // Barres de filtres (GET) : on retire les champs vides de l'URL. En surchargeant
 // form.submit(), on couvre tous les déclencheurs - selects natifs, Tom Select et
@@ -1112,7 +1132,7 @@ document.addEventListener('alpine:init', () => {
         track: initial.track || '',
         type: initial.type || 'oral',
         coauthors: (Array.isArray(initial.coauthors) ? initial.coauthors : [])
-            .map((c) => Object.assign({ name: '', email: '', affiliation: '', grade: '', hint: '', hintType: 'muted', suggestion: '' }, c)),
+            .map((c) => Object.assign({ last_name: '', first_name: '', email: '', phone: '', affiliation: '', grade: '', hint: '', hintType: 'muted' }, c)),
         abstractHtml: '',
         abstractWordCount: 0,
         keywords: [],
@@ -1144,7 +1164,10 @@ document.addEventListener('alpine:init', () => {
         },
 
         addCoauthor() {
-            this.coauthors.push({ name: '', email: '', affiliation: '', grade: '', hint: '', hintType: 'muted', suggestion: '' });
+            this.coauthors.push({ last_name: '', first_name: '', email: '', phone: '', affiliation: '', grade: '', hint: '', hintType: 'muted' });
+        },
+        coauthorName(co) {
+            return (((co.first_name || '') + ' ' + (co.last_name || '')).trim());
         },
         removeCoauthor(i) {
             this.coauthors.splice(i, 1);
@@ -1174,7 +1197,9 @@ document.addEventListener('alpine:init', () => {
         // (l'e-mail a été fourni par le déposant). N'écrase jamais une saisie.
         _fillFrom(target, account) {
             if (! account) return;
-            if (! (target.name || '').trim() && account.name) target.name = account.name;
+            if ('name' in target && ! (target.name || '').trim() && account.name) target.name = account.name;
+            if ('first_name' in target && ! (target.first_name || '').trim() && account.first_name) target.first_name = account.first_name;
+            if ('last_name' in target && ! (target.last_name || '').trim() && account.last_name) target.last_name = account.last_name;
             if (! (target.affiliation || '').trim() && account.affiliation) target.affiliation = account.affiliation;
             if (! (target.grade || '').trim() && account.grade) target.grade = account.grade;
         },
@@ -1232,19 +1257,14 @@ document.addEventListener('alpine:init', () => {
             }
             // Saisie live : tant que l'e-mail n'est pas complet, on n'affiche rien
             // (on attend une adresse valide pour proposer une correspondance).
-            if (email && ! /^\S+@\S+\.\S+$/.test(email)) { co.hint = ''; co.suggestion = ''; return; }
+            if (email && ! /^\S+@\S+\.\S+$/.test(email)) { co.hint = ''; return; }
 
-            const d = await this._authorLookup(co.name, co.email);
+            const d = await this._authorLookup(this.coauthorName(co), co.email);
             if (d) {
                 co.hint = d.hint || '';
                 co.hintType = d.type || 'muted';
-                co.suggestion = d.account ? '' : (d.suggestion || '');
                 this._fillFrom(co, d.account);
             }
-        },
-        applyCoauthorSuggestion(i) {
-            const co = this.coauthors[i];
-            if (co && co.suggestion) { co.name = co.suggestion; co.suggestion = ''; }
         },
 
         // Autocomplétion des affiliations via l'API ROR (référentiel mondial des
@@ -1340,9 +1360,9 @@ document.addEventListener('alpine:init', () => {
                 const corrEmail = ((this.corr.self ? this.account.email : this.corr.email) || '').trim().toLowerCase();
                 const seen = new Set();
                 for (const co of this.coauthors) {
-                    const any = ['name', 'email', 'affiliation', 'grade'].some((k) => (co[k] || '').trim());
+                    const any = ['last_name', 'first_name', 'email', 'phone', 'affiliation', 'grade'].some((k) => (co[k] || '').trim());
                     if (!any) continue; // ligne vide : ignorée à l'enregistrement
-                    if (!(co.name || '').trim()) return this._fail('Indiquez le nom de chaque co-auteur (ou retirez la ligne).');
+                    if (!(co.last_name || '').trim() || !(co.first_name || '').trim()) return this._fail('Indiquez le nom et le prénom de chaque co-auteur (ou retirez la ligne).');
                     const email = (co.email || '').trim().toLowerCase();
                     if (!/^\S+@\S+\.\S+$/.test(email)) return this._fail('Chaque co-auteur doit avoir un e-mail valide.');
                     if (!(co.affiliation || '').trim()) return this._fail('Indiquez l’affiliation de chaque co-auteur.');
@@ -1381,10 +1401,12 @@ document.addEventListener('alpine:init', () => {
             return null;
         },
         get coauthorCount() {
-            return this.coauthors.filter((c) => (c.name || '').trim() || (c.email || '').trim()).length;
+            return this.coauthors.filter((c) => this.coauthorName(c) || (c.email || '').trim()).length;
         },
         coauthorList() {
-            return this.coauthors.filter((c) => (c.name || '').trim() || (c.email || '').trim());
+            return this.coauthors
+                .filter((c) => this.coauthorName(c) || (c.email || '').trim())
+                .map((c) => ({ name: this.coauthorName(c) || c.email, affiliation: c.affiliation }));
         },
         // Mots-clés : état réactif alimenté par le champ Tom Select (cf. init).
         keywordList() {

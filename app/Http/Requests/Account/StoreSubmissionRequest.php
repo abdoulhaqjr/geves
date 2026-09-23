@@ -113,8 +113,10 @@ class StoreSubmissionRequest extends FormRequest
             'corresponding.affiliation' => ['nullable', 'string', 'max:255'],
             'corresponding.grade' => ['nullable', 'string', 'max:100'],
             'coauthors' => ['array'],
-            'coauthors.*.name' => ['nullable', 'string', 'max:200'],
+            'coauthors.*.last_name' => ['nullable', 'string', 'max:150'],
+            'coauthors.*.first_name' => ['nullable', 'string', 'max:150'],
             'coauthors.*.email' => ['nullable', 'email', 'max:200'],
+            'coauthors.*.phone' => ['nullable', 'string', 'max:50'],
             'coauthors.*.affiliation' => ['nullable', 'string', 'max:255'],
             'coauthors.*.grade' => ['nullable', 'string', 'max:100'],
         ];
@@ -203,16 +205,18 @@ class StoreSubmissionRequest extends FormRequest
                 if (! is_array($co)) {
                     continue;
                 }
-                $name = trim((string) ($co['name'] ?? ''));
+                $lastName = trim((string) ($co['last_name'] ?? ''));
+                $firstName = trim((string) ($co['first_name'] ?? ''));
                 $email = mb_strtolower(trim((string) ($co['email'] ?? '')));
                 $affiliation = trim((string) ($co['affiliation'] ?? ''));
-                $started = $name !== '' || $email !== '' || $affiliation !== '' || trim((string) ($co['grade'] ?? '')) !== '';
+                $started = $lastName !== '' || $firstName !== '' || $email !== '' || $affiliation !== ''
+                    || trim((string) ($co['phone'] ?? '')) !== '' || trim((string) ($co['grade'] ?? '')) !== '';
                 if (! $started) {
                     continue; // ligne entièrement vide : ignorée
                 }
 
-                if ($name === '' || $email === '' || $affiliation === '') {
-                    $v->errors()->add('coauthors', 'Chaque co-auteur doit avoir un nom, un e-mail et une affiliation.');
+                if ($lastName === '' || $firstName === '' || $email === '' || $affiliation === '') {
+                    $v->errors()->add('coauthors', 'Chaque co-auteur doit avoir un nom, un prénom, un e-mail et une affiliation.');
                     break;
                 }
                 if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {

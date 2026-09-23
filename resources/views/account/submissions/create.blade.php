@@ -252,37 +252,34 @@
                         <p class="ukc-muted" style="font-size:.88rem;margin-bottom:12px;">
                             {{ __('Ajoutez ici les co-auteurs de la communication.') }}
                         </p>
-                        <div style="display:flex;flex-direction:column;gap:10px;">
+                        <div style="display:flex;flex-direction:column;gap:12px;">
                             <template x-for="(co, i) in coauthors" :key="i">
                                 <div>
-                                <div style="display:grid;grid-template-columns:1.2fr 1.2fr 1.4fr .8fr auto;gap:8px;align-items:center;">
-                                    <input type="text" :name="'coauthors['+i+'][name]'" x-model="co.name" @blur="lookupCoauthor(i)" placeholder="{{ __('Nom Prénom *') }}"
-                                           style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13.5px;">
-                                    <input type="email" :name="'coauthors['+i+'][email]'" x-model="co.email" @blur="lookupCoauthor(i)" @input.debounce.400ms="lookupCoauthor(i)" placeholder="{{ __('E-mail *') }}"
-                                           style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13.5px;">
-                                    <input type="text" :name="'coauthors['+i+'][affiliation]'" x-model="co.affiliation" list="ukc-affiliations" autocomplete="off"
-                                           @input.debounce.350ms="affiliationSuggest($event.target.value)" placeholder="{{ __('Affiliation *') }}"
-                                           style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13.5px;">
-                                    <select :name="'coauthors['+i+'][grade]'" x-model="co.grade"
-                                            style="border:1.5px solid var(--ukc-border);border-radius:10px;padding:9px 12px;font-size:13.5px;background:#fff;">
-                                        <option value="">{{ __('Grade') }}</option>
-                                        @foreach ($gradeOptions as $g)
-                                            <option value="{{ $g }}">{{ $g }}</option>
-                                        @endforeach
-                                    </select>
-                                    <button type="button" class="ukc-btn ukc-btn--danger ukc-btn--sm" @click="removeCoauthor(i)">
-                                        <x-ukc.icon name="close" :size="16" />
-                                    </button>
-                                </div>
-                                {{-- Indice discret (existence d'un compte / mise en forme du nom) --}}
-                                <div x-show="co.hint || co.suggestion" x-cloak style="margin-top:5px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
-                                    <span class="author-hint" :class="'author-hint--'+co.hintType" x-show="co.hint">
-                                        <x-ukc.icon name="info" :size="14" /> <span x-text="co.hint"></span>
-                                    </span>
-                                    <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" x-show="co.suggestion" @click="applyCoauthorSuggestion(i)">
-                                        {{ __('Utiliser') }} « <span x-text="co.suggestion"></span> »
-                                    </button>
-                                </div>
+                                    <div class="coauthor-row">
+                                        <input type="text" :name="'coauthors['+i+'][last_name]'" x-model="co.last_name" data-uppercase placeholder="{{ __('NOM *') }}">
+                                        <input type="text" :name="'coauthors['+i+'][first_name]'" x-model="co.first_name" placeholder="{{ __('Prénom *') }}">
+                                        <input type="email" :name="'coauthors['+i+'][email]'" x-model="co.email"
+                                               @blur="lookupCoauthor(i)" @input.debounce.400ms="lookupCoauthor(i)" placeholder="{{ __('E-mail *') }}">
+                                        <input type="tel" :name="'coauthors['+i+'][phone]'" x-model="co.phone" data-ukc-tel autocomplete="tel"
+                                               x-init="$nextTick(() => window.initPhoneInputs && window.initPhoneInputs())" placeholder="{{ __('Téléphone') }}">
+                                        <input type="text" :name="'coauthors['+i+'][affiliation]'" x-model="co.affiliation" list="ukc-affiliations" autocomplete="off"
+                                               @input.debounce.350ms="affiliationSuggest($event.target.value)" placeholder="{{ __('Affiliation *') }}">
+                                        <select :name="'coauthors['+i+'][grade]'" x-model="co.grade">
+                                            <option value="">{{ __('Grade') }}</option>
+                                            @foreach ($gradeOptions as $g)
+                                                <option value="{{ $g }}">{{ $g }}</option>
+                                            @endforeach
+                                        </select>
+                                        <button type="button" class="ukc-btn ukc-btn--danger ukc-btn--sm" @click="removeCoauthor(i)" title="{{ __('Retirer ce co-auteur') }}">
+                                            <x-ukc.icon name="close" :size="15" />
+                                        </button>
+                                    </div>
+                                    {{-- Indice discret (existence d'un compte) --}}
+                                    <div x-show="co.hint" x-cloak style="margin-top:5px;">
+                                        <span class="author-hint" :class="'author-hint--'+co.hintType">
+                                            <x-ukc.icon name="info" :size="14" /> <span x-text="co.hint"></span>
+                                        </span>
+                                    </div>
                                 </div>
                             </template>
                         </div>

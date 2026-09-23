@@ -401,6 +401,19 @@
 .author-hint--info { color: var(--ukc-blue); }
 .author-hint--muted { color: var(--ukc-muted); font-weight: 500; }
 .author-hint--err { color: #b91c1c; }
+
+/* Co-auteur sur une seule ligne : nom / prénom / e-mail / téléphone / affiliation / grade / retirer. */
+.coauthor-row { display: grid; grid-template-columns: 1fr 1fr 1.3fr 1.2fr 1.3fr .9fr auto; gap: 8px; align-items: center; }
+.coauthor-row > input, .coauthor-row > select { border: 1.5px solid var(--ukc-border); border-radius: 10px; padding: 9px 12px; font-size: 13.5px; background: #fff; min-width: 0; width: 100%; }
+.coauthor-row .iti { width: 100%; }
+.coauthor-row .iti input { border: 1.5px solid var(--ukc-border); border-radius: 10px; padding: 9px 12px; font-size: 13.5px; width: 100%; }
+@media (max-width: 900px) { .coauthor-row { grid-template-columns: 1fr 1fr; } .coauthor-row > button { grid-column: 1 / -1; justify-self: end; } }
+
+/* Champs « nom de famille » toujours affichés en MAJUSCULES (la valeur est aussi
+   mise en capitales à la frappe, cf. app.js). */
+input[name="last_name"],
+input[name$="[last_name]"],
+input[data-uppercase] { text-transform: uppercase; }
 .recap-list { display: flex; flex-direction: column; gap: 0; }
 .recap-list .r { display: flex; justify-content: space-between; gap: 14px; padding: 11px 0; border-bottom: 1px solid var(--ukc-border); font-size: 14px; }
 .recap-list .r:last-child { border-bottom: none; }

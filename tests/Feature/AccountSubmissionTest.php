@@ -51,7 +51,7 @@ it('crée une communication reliée au compte avec co-auteur', function () {
             'type' => 'oral',
             'keywords' => 'innovation, durable',
             'abstract' => str_repeat('Contexte et objectifs. ', 5),
-            'coauthors' => [['name' => 'Yao Doe', 'email' => 'yao@example.tg', 'affiliation' => 'UL', 'grade' => 'Dr']],
+            'coauthors' => [['first_name' => 'Yao', 'last_name' => 'Doe', 'email' => 'yao@example.tg', 'affiliation' => 'UL', 'grade' => 'Dr']],
         ])
         ->assertRedirect(route('account.submissions.create', $edition->slug))
         ->assertSessionHas('success_ref');
@@ -62,7 +62,8 @@ it('crée une communication reliée au compte avec co-auteur', function () {
     expect($submission->status)->toBe('submitted');
     expect($submission->authors[0]['corresponding'])->toBeTrue();
     expect($submission->authors[0]['email'])->toBe('awa@example.tg');
-    expect($submission->authors[1]['name'])->toBe('Yao Doe');
+    expect($submission->authors[1]['name'])->toBe('Yao DOE'); // nom de famille en MAJUSCULES
+    expect($submission->authors[1]['last_name'])->toBe('DOE');
 
     // Participant créé et relié au compte (identité imposée).
     $participant = Participant::first();
@@ -80,7 +81,7 @@ it('refuse un co-auteur identique à l’auteur correspondant (même e-mail)', f
             'title' => 'Doublon auteur',
             'track' => 'Sciences',
             'abstract' => str_repeat('a', 60),
-            'coauthors' => [['name' => 'Awa Kodjo', 'email' => 'awa@example.tg']],
+            'coauthors' => [['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'affiliation' => 'UK']],
         ])
         ->assertSessionHasErrors('coauthors');
 
@@ -97,7 +98,7 @@ it('exige nom, e-mail et affiliation pour un co-auteur', function () {
             'title' => 'Co-auteur incomplet',
             'track' => 'Sciences',
             'abstract' => str_repeat('a', 60),
-            'coauthors' => [['name' => 'Yao Doe', 'email' => 'yao@x.tg', 'affiliation' => '']],
+            'coauthors' => [['first_name' => 'Yao', 'last_name' => 'Doe', 'email' => 'yao@x.tg', 'affiliation' => '']],
         ])
         ->assertSessionHasErrors('coauthors');
 
@@ -113,7 +114,10 @@ it('refuse deux co-auteurs avec le même e-mail', function () {
             'title' => 'Doublon co-auteur',
             'track' => 'Sciences',
             'abstract' => str_repeat('a', 60),
-            'coauthors' => [['name' => 'A', 'email' => 'dup@x.tg'], ['name' => 'B', 'email' => 'dup@x.tg']],
+            'coauthors' => [
+                ['first_name' => 'A', 'last_name' => 'Un', 'email' => 'dup@x.tg', 'affiliation' => 'UK'],
+                ['first_name' => 'B', 'last_name' => 'Deux', 'email' => 'dup@x.tg', 'affiliation' => 'UK'],
+            ],
         ])
         ->assertSessionHasErrors('coauthors');
 

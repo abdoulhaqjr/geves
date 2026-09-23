@@ -16,9 +16,15 @@ use Illuminate\Support\Facades\Notification;
 
 function submitWithCoauthor(User $submitter, $edition, array $coauthor): void
 {
-    // Nom + e-mail + affiliation sont obligatoires pour un co-auteur : on complète
-    // les champs manquants par défaut pour les scénarios qui ne les précisent pas.
-    $coauthor = array_merge(['affiliation' => 'Université de Kara'], $coauthor);
+    // Le nom du co-auteur est désormais séparé (nom/prénom) : on traduit un
+    // éventuel 'name' hérité, et on complète les champs obligatoires par défaut.
+    if (isset($coauthor['name'])) {
+        $parts = preg_split('/\s+/', trim((string) $coauthor['name']), 2);
+        $coauthor['first_name'] = $parts[0] ?? 'Co';
+        $coauthor['last_name'] = $parts[1] ?? 'Auteur';
+        unset($coauthor['name']);
+    }
+    $coauthor = array_merge(['first_name' => 'Co', 'last_name' => 'Auteur', 'affiliation' => 'Université de Kara'], $coauthor);
 
     test()->actingAs($submitter, 'account')
         ->post(route('account.submissions.store', $edition->slug), [

@@ -49,6 +49,8 @@ class AuthorLookupController extends Controller
                 // les champs à partir du profil (nom, affiliation, grade).
                 $account = [
                     'name' => $u->full_name ?: (string) $u->name,
+                    'first_name' => (string) ($u->first_name ?? ''),
+                    'last_name' => (string) ($u->last_name ?? ''),
                     'affiliation' => (string) ($u->affiliation ?? ''),
                     'grade' => (string) ($u->grade ?? ''),
                 ];

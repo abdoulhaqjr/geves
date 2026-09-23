@@ -54,13 +54,21 @@ class CreateSubmission
         }
 
         $coauthors = collect($data['coauthors'] ?? [])
-            ->filter(fn ($c) => filled($c['name'] ?? null))
-            ->map(fn ($c) => [
-                'name' => $c['name'],
-                'email' => $c['email'] ?? null,
-                'affiliation' => $c['affiliation'] ?? null,
-                'grade' => $c['grade'] ?? null,
-            ])->values()->all();
+            ->filter(fn ($c) => filled($c['last_name'] ?? null) || filled($c['first_name'] ?? null))
+            ->map(function ($c) {
+                $first = trim((string) ($c['first_name'] ?? ''));
+                $last = mb_strtoupper(trim((string) ($c['last_name'] ?? '')), 'UTF-8'); // nom de famille en MAJUSCULES
+
+                return [
+                    'name' => trim($first.' '.$last),
+                    'first_name' => $first,
+                    'last_name' => $last,
+                    'email' => $c['email'] ?? null,
+                    'phone' => ($c['phone'] ?? null) ?: null,
+                    'affiliation' => $c['affiliation'] ?? null,
+                    'grade' => $c['grade'] ?? null,
+                ];
+            })->values()->all();
 
         // Auteur correspondant : prérempli avec le compte, éventuellement remplacé
         // (soumission pour le compte d'un tiers). L'identité est déjà verrouillée sur
