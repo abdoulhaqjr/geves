@@ -21,6 +21,9 @@ function initPhoneInputs(root = document) {
             countryOrder: ['tg', 'bj', 'gh', 'ci', 'bf', 'ne', 'ng', 'sn', 'ml', 'cm', 'fr', 'be'],
             separateDialCode: true,
             strictMode: true,
+            // Exemple de numéro (adapté au pays choisi) affiché en placeholder.
+            autoPlaceholder: 'aggressive',
+            placeholderNumberType: 'MOBILE',
         });
 
         // À la soumission : remplace la valeur par le format E.164 si disponible.
@@ -1140,8 +1143,8 @@ document.addEventListener('alpine:init', () => {
         lookupUrl: initial.lookupUrl || '',
         suggestUrl: initial.suggestUrl || '',
         _affLast: '',
-        account: initial.account || { name: '', email: '', affiliation: '', grade: '' },
-        corr: Object.assign({ self: true, name: '', email: '', affiliation: '', grade: '', hint: '', hintType: 'muted', suggestion: '' }, initial.corr || {}),
+        account: initial.account || { name: '', first_name: '', last_name: '', email: '', phone: '', affiliation: '', grade: '' },
+        corr: Object.assign({ self: true, first_name: '', last_name: '', email: '', phone: '', affiliation: '', grade: '', hint: '', hintType: 'muted' }, initial.corr || {}),
 
         init() {
             // Le résumé (CKEditor) notifie son contenu + compteur : on le garde en
@@ -1203,8 +1206,11 @@ document.addEventListener('alpine:init', () => {
             if (! (target.affiliation || '').trim() && account.affiliation) target.affiliation = account.affiliation;
             if (! (target.grade || '').trim() && account.grade) target.grade = account.grade;
         },
+        corrName() {
+            return (((this.corr.first_name || '') + ' ' + (this.corr.last_name || '')).trim());
+        },
         async lookupCorr() {
-            if (this.corr.self) { this.corr.hint = ''; this.corr.suggestion = ''; return; }
+            if (this.corr.self) { this.corr.hint = ''; return; }
             const email = (this.corr.email || '').trim().toLowerCase();
 
             // Le déposant a saisi SON propre e-mail alors qu'il déclare ne pas être
@@ -1212,29 +1218,23 @@ document.addEventListener('alpine:init', () => {
             if (email && email === (this.account.email || '').trim().toLowerCase()) {
                 this.corr.hint = 'C’est votre e-mail : activez plutôt « Je suis l’auteur correspondant ».';
                 this.corr.hintType = 'err';
-                this.corr.suggestion = '';
                 return;
             }
             // Doublon avec un co-auteur déjà saisi.
             if (email && this.coauthors.some((c) => (c.email || '').trim().toLowerCase() === email)) {
                 this.corr.hint = 'Cet e-mail est déjà celui d’un co-auteur : chaque auteur doit être unique.';
                 this.corr.hintType = 'err';
-                this.corr.suggestion = '';
                 return;
             }
             // Saisie live : on attend une adresse complète avant de proposer.
-            if (email && ! /^\S+@\S+\.\S+$/.test(email)) { this.corr.hint = ''; this.corr.suggestion = ''; return; }
+            if (email && ! /^\S+@\S+\.\S+$/.test(email)) { this.corr.hint = ''; return; }
 
-            const d = await this._authorLookup(this.corr.name, this.corr.email);
+            const d = await this._authorLookup(this.corrName(), this.corr.email);
             if (d) {
                 this.corr.hint = d.hint || '';
                 this.corr.hintType = d.type || 'muted';
-                this.corr.suggestion = d.account ? '' : (d.suggestion || '');
                 this._fillFrom(this.corr, d.account);
             }
-        },
-        applyCorrSuggestion() {
-            if (this.corr.suggestion) { this.corr.name = this.corr.suggestion; this.corr.suggestion = ''; }
         },
         async lookupCoauthor(i) {
             const co = this.coauthors[i];
@@ -1294,23 +1294,20 @@ document.addEventListener('alpine:init', () => {
         onSelfToggle() {
             this.corr.hint = '';
             this.corr.hintType = 'muted';
-            this.corr.suggestion = '';
-            if (this.corr.self) {
-                this.corr.name = this.account.name;
-                this.corr.email = this.account.email;
-                this.corr.affiliation = this.account.affiliation;
-                this.corr.grade = this.account.grade;
-            } else {
-                this.corr.name = '';
-                this.corr.email = '';
-                this.corr.affiliation = '';
-                this.corr.grade = '';
-            }
+            const a = this.corr.self ? this.account : { first_name: '', last_name: '', email: '', phone: '', affiliation: '', grade: '' };
+            this.corr.first_name = a.first_name || '';
+            this.corr.last_name = a.last_name || '';
+            this.corr.email = a.email || '';
+            this.corr.affiliation = a.affiliation || '';
+            this.corr.grade = a.grade || '';
+            // Le champ téléphone est piloté par intl-tel-input (pas de x-model) :
+            // on met sa valeur à jour impérativement.
+            const ph = document.getElementById('corr-phone');
+            if (ph) { ph.value = a.phone || ''; ph.dispatchEvent(new Event('input')); }
         },
         corrInitials() {
-            const s = (this.corr.name || '').trim();
-            if (!s) return '?';
-            const parts = s.split(/\s+/);
+            const parts = this.corrName().split(/\s+/).filter(Boolean);
+            if (parts.length === 0) return '?';
             return ((parts[0]?.[0] || '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
         },
         corrMeta() {
@@ -1353,7 +1350,7 @@ document.addEventListener('alpine:init', () => {
             if (n === 2) {
                 // Auteur correspondant : identité requise (surtout si ce n'est pas le
                 // compte connecté). Quand « self », l'identité vient du compte.
-                if (!(this.corr.name || '').trim()) return this._fail('Indiquez le nom de l’auteur correspondant.');
+                if (!(this.corr.last_name || '').trim() || !(this.corr.first_name || '').trim()) return this._fail('Indiquez le nom et le prénom de l’auteur correspondant.');
                 if (!/^\S+@\S+\.\S+$/.test((this.corr.email || '').trim())) return this._fail('L’auteur correspondant doit avoir un e-mail valide.');
 
                 // E-mail de l'auteur correspondant (compte connecté si « self »).

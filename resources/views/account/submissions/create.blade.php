@@ -18,14 +18,19 @@
         // Le grade saisi ici est enregistré POUR CE COLLOQUE (grade par édition).
         'account' => [
             'name' => $account->full_name,
+            'first_name' => $account->first_name,
+            'last_name' => $account->last_name,
             'email' => $account->email,
+            'phone' => $account->phone,
             'affiliation' => $account->affiliation,
             'grade' => $account->grade,
         ],
         'corr' => [
             'self' => old('corresponding.self', '1') !== '0',
-            'name' => old('corresponding.name', $account->full_name),
+            'first_name' => old('corresponding.first_name', $account->first_name),
+            'last_name' => old('corresponding.last_name', $account->last_name),
             'email' => old('corresponding.email', $account->email),
+            'phone' => old('corresponding.phone', $account->phone),
             'affiliation' => old('corresponding.affiliation', $account->affiliation),
             'grade' => old('corresponding.grade', $account->grade),
         ],
@@ -207,17 +212,27 @@
                         </label>
                         <div class="ukc-form-grid">
                             <div class="ukc-field">
-                                <label for="corr-name">{{ __('Nom & prénom') }} <span class="req">*</span></label>
-                                <input type="text" id="corr-name" name="corresponding[name]" x-model="corr.name" @blur="lookupCorr()"
-                                       :readonly="corr.self" :class="corr.self ? 'is-locked' : ''" placeholder="{{ __('Nom Prénom') }}">
+                                <label for="corr-last">{{ __('Nom') }} <span class="req">*</span></label>
+                                <input type="text" id="corr-last" name="corresponding[last_name]" x-model="corr.last_name" data-uppercase
+                                       :readonly="corr.self" :class="corr.self ? 'is-locked' : ''" placeholder="{{ __('NOM') }}">
                                 <span class="hint" x-show="corr.self" x-cloak>{{ __('Repris de votre profil (identité vérifiée).') }}</span>
-                                @error('corresponding.name') <span class="error">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="ukc-field">
+                                <label for="corr-first">{{ __('Prénom') }} <span class="req">*</span></label>
+                                <input type="text" id="corr-first" name="corresponding[first_name]" x-model="corr.first_name"
+                                       :readonly="corr.self" :class="corr.self ? 'is-locked' : ''" placeholder="{{ __('Prénom') }}">
                             </div>
                             <div class="ukc-field">
                                 <label for="corr-email">{{ __('E-mail') }} <span class="req">*</span></label>
                                 <input type="email" id="corr-email" name="corresponding[email]" x-model="corr.email" @blur="lookupCorr()" @input.debounce.400ms="lookupCorr()"
                                        :readonly="corr.self" :class="corr.self ? 'is-locked' : ''" placeholder="{{ __('E-mail') }}">
                                 @error('corresponding.email') <span class="error">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="ukc-field">
+                                <label for="corr-phone">{{ __('Téléphone') }}</label>
+                                <input type="tel" id="corr-phone" name="corresponding[phone]" value="{{ old('corresponding.phone', $account->phone) }}"
+                                       data-ukc-tel autocomplete="tel"
+                                       x-init="$nextTick(() => window.initPhoneInputs && window.initPhoneInputs())">
                             </div>
                             <div class="ukc-field">
                                 <label for="corr-affiliation">{{ __('Affiliation') }}</label>
@@ -239,13 +254,10 @@
                         </div>
 
                         {{-- Indice discret : le compte est-il connu ? (sans révéler l'identité d'autrui) --}}
-                        <div x-show="!corr.self && (corr.hint || corr.suggestion)" x-cloak style="margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
-                            <span class="author-hint" :class="'author-hint--'+corr.hintType" x-show="corr.hint">
+                        <div x-show="!corr.self && corr.hint" x-cloak style="margin-top:8px;">
+                            <span class="author-hint" :class="'author-hint--'+corr.hintType">
                                 <x-ukc.icon name="info" :size="14" /> <span x-text="corr.hint"></span>
                             </span>
-                            <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" x-show="corr.suggestion" @click="applyCorrSuggestion()">
-                                {{ __('Utiliser') }} « <span x-text="corr.suggestion"></span> »
-                            </button>
                         </div>
 
                         <h3 style="font-size:14px;font-weight:800;margin:20px 0 6px;">{{ __('Co-auteurs') }}</h3>
@@ -260,8 +272,8 @@
                                         <input type="text" :name="'coauthors['+i+'][first_name]'" x-model="co.first_name" placeholder="{{ __('Prénom *') }}">
                                         <input type="email" :name="'coauthors['+i+'][email]'" x-model="co.email"
                                                @blur="lookupCoauthor(i)" @input.debounce.400ms="lookupCoauthor(i)" placeholder="{{ __('E-mail *') }}">
-                                        <input type="tel" :name="'coauthors['+i+'][phone]'" x-model="co.phone" data-ukc-tel autocomplete="tel"
-                                               x-init="$nextTick(() => window.initPhoneInputs && window.initPhoneInputs())" placeholder="{{ __('Téléphone') }}">
+                                        <input type="tel" :name="'coauthors['+i+'][phone]'" data-ukc-tel autocomplete="tel"
+                                               x-init="$el.value = co.phone || ''; $nextTick(() => window.initPhoneInputs && window.initPhoneInputs())">
                                         <input type="text" :name="'coauthors['+i+'][affiliation]'" x-model="co.affiliation" list="ukc-affiliations" autocomplete="off"
                                                @input.debounce.350ms="affiliationSuggest($event.target.value)" placeholder="{{ __('Affiliation *') }}">
                                         <select :name="'coauthors['+i+'][grade]'" x-model="co.grade">
@@ -397,7 +409,7 @@
                                     <div class="recap-author">
                                         <span class="recap-author__av" x-text="corrInitials()"></span>
                                         <div style="min-width:0;">
-                                            <div class="recap-author__name" x-text="corr.name || '{{ __('Nom non renseigné') }}'"></div>
+                                            <div class="recap-author__name" x-text="corrName() || '{{ __('Nom non renseigné') }}'"></div>
                                             <div class="recap-author__meta" x-text="corrMeta()"></div>
                                         </div>
                                     </div>

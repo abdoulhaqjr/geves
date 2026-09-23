@@ -77,10 +77,15 @@ class CreateSubmission
         $isSelf = (string) ($corr['self'] ?? '1') !== '0';
         $corrGrade = ($corr['grade'] ?? null) ?: null;
         $corrAffiliation = ($corr['affiliation'] ?? null) ?: null;
+        $corrFirst = trim((string) ($corr['first_name'] ?? $account->first_name));
+        $corrLast = mb_strtoupper(trim((string) ($corr['last_name'] ?? $account->last_name)), 'UTF-8'); // nom de famille en MAJUSCULES
 
         $authors = array_merge([[
-            'name' => $corr['name'] ?? $account->full_name,
+            'name' => trim($corrFirst.' '.$corrLast) ?: $account->full_name,
+            'first_name' => $corrFirst,
+            'last_name' => $corrLast,
             'email' => $corr['email'] ?? $account->email,
+            'phone' => ($corr['phone'] ?? null) ?: null,
             'affiliation' => $corrAffiliation ?? $account->affiliation,
             'grade' => $corrGrade ?? $account->grade,
             'corresponding' => true,

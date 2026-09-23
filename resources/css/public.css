@@ -403,7 +403,7 @@
 .author-hint--err { color: #b91c1c; }
 
 /* Co-auteur sur une seule ligne : nom / prénom / e-mail / téléphone / affiliation / grade / retirer. */
-.coauthor-row { display: grid; grid-template-columns: 1fr 1fr 1.3fr 1.2fr 1.3fr .9fr auto; gap: 8px; align-items: center; }
+.coauthor-row { display: grid; grid-template-columns: 1.3fr 1.3fr 1.3fr 1fr 1.05fr .75fr auto; gap: 8px; align-items: center; }
 .coauthor-row > input, .coauthor-row > select { border: 1.5px solid var(--ukc-border); border-radius: 10px; padding: 9px 12px; font-size: 13.5px; background: #fff; min-width: 0; width: 100%; }
 .coauthor-row .iti { width: 100%; }
 .coauthor-row .iti input { border: 1.5px solid var(--ukc-border); border-radius: 10px; padding: 9px 12px; font-size: 13.5px; width: 100%; }

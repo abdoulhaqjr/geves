@@ -66,17 +66,19 @@ class StoreSubmissionRequest extends FormRequest
         }
 
         // Auteur correspondant : par défaut = le compte connecté. Quand l'utilisateur
-        // se déclare auteur correspondant (« self »), l'identité (nom + e-mail) est
-        // FORCÉE depuis le compte (non falsifiable), quoi que le client ait envoyé.
+        // se déclare auteur correspondant (« self »), l'identité (nom + prénom + e-mail)
+        // est FORCÉE depuis le compte (non falsifiable), quoi que le client ait envoyé.
         $account = Auth::guard('account')->user();
         $corr = (array) $this->input('corresponding', []);
         $self = (string) ($corr['self'] ?? '1') !== '0';
         if ($self && $account) {
-            $corr['name'] = $account->full_name;
+            $corr['first_name'] = $account->first_name;
+            $corr['last_name'] = $account->last_name;
             $corr['email'] = $account->email;
         }
         $corr['self'] = $self ? '1' : '0';
-        $corr['name'] = $corr['name'] ?? $account?->full_name;
+        $corr['first_name'] = $corr['first_name'] ?? $account?->first_name;
+        $corr['last_name'] = $corr['last_name'] ?? $account?->last_name;
         $corr['email'] = $corr['email'] ?? $account?->email;
         $merge['corresponding'] = $corr;
 
@@ -108,8 +110,10 @@ class StoreSubmissionRequest extends FormRequest
             // est toujours transmise (verrouillée sur le compte quand « self »).
             'corresponding' => ['array'],
             'corresponding.self' => ['nullable'],
-            'corresponding.name' => ['required', 'string', 'max:200'],
+            'corresponding.first_name' => ['required', 'string', 'max:150'],
+            'corresponding.last_name' => ['required', 'string', 'max:150'],
             'corresponding.email' => ['required', 'email', 'max:200'],
+            'corresponding.phone' => ['nullable', 'string', 'max:50'],
             'corresponding.affiliation' => ['nullable', 'string', 'max:255'],
             'corresponding.grade' => ['nullable', 'string', 'max:100'],
             'coauthors' => ['array'],

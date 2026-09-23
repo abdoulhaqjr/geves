@@ -58,12 +58,12 @@ it('permet de désigner un autre auteur correspondant sans changer le déposant'
             'title' => 'Étude Y',
             'track' => 'Sciences',
             'abstract' => str_repeat('a', 60),
-            'corresponding' => ['self' => '0', 'name' => 'Pr Kossi', 'email' => 'kossi@example.tg', 'affiliation' => 'UL', 'grade' => 'Professeur'],
+            'corresponding' => ['self' => '0', 'first_name' => 'Kossi', 'last_name' => 'Adjo', 'email' => 'kossi@example.tg', 'affiliation' => 'UL', 'grade' => 'Professeur'],
         ])
         ->assertSessionHasNoErrors();
 
     $sub = Submission::first();
-    expect($sub->authors[0]['name'])->toBe('Pr Kossi');
+    expect($sub->authors[0]['name'])->toBe('Kossi ADJO'); // Prénom + NOM en MAJUSCULES
     expect($sub->authors[0]['email'])->toBe('kossi@example.tg');
     expect($sub->authors[0]['is_submitter'])->toBeFalse();
 
@@ -82,12 +82,12 @@ it('force l’identité du compte quand l’utilisateur se déclare auteur corre
             'title' => 'Étude Z',
             'track' => 'Sciences',
             'abstract' => str_repeat('a', 60),
-            'corresponding' => ['self' => '1', 'name' => 'Usurpateur', 'email' => 'fake@example.tg'],
+            'corresponding' => ['self' => '1', 'first_name' => 'Usurpateur', 'last_name' => 'Faux', 'email' => 'fake@example.tg'],
         ])
         ->assertSessionHasNoErrors();
 
     $sub = Submission::first();
-    expect($sub->authors[0]['name'])->toBe('Awa Kodjo');
+    expect($sub->authors[0]['name'])->toBe('Awa KODJO'); // identité forcée depuis le compte (NOM en majuscules)
     expect($sub->authors[0]['email'])->toBe('awa@example.tg');
 });
 
