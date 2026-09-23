@@ -390,4 +390,18 @@ La « signature / identité vérifiable » (DID/Ed25519) n'était qu'un **placeh
 - **Réglages effectifs** : `did_issuer` → `iss`/DID ; `crypto_suite` relibellé ; statut de certification (clé configurée ou non) affiché dans l'admin Documents. La clé de signature est **globale** (institution), les identifiants DID restent réglables par édition (`EditionSettings`).
 - **Tests** : `tests/Feature/AttestationCertificationTest.php` (10 cas : signe/vérifie, altération rejetée, anti-substitution, fail-open, page publique, révoqué malgré signature, DID+JWKS, VC JSON, 404). Clé figée à vide en test (`phpunit.xml`) → les tests de certif activent une clé éphémère via `config()`. **603 tests verts, PHPStan niveau 5 propre.**
 
+### Module Formation - Phase 1 : fondations (2026-09-23)
+
+Nouveau module **Formation** (activable par édition), construit **par phases**. Décisions cadrées avec le PO : **plusieurs formations par édition** (table dédiée), **formateurs par e-mail** (liés au compte unifié `users` s'il existe, sinon saisie libre), **frais uniques par formation** (0 = gratuite), **visio réservée aux inscrits payés + formateurs** (phases suivantes).
+
+**Phase 1 livrée (fondations + admin CRUD)** :
+- Tables `formations` (edition_id, title, theme, objective, location, room, `fee` decimal 0=gratuite, starts_at/ends_at, capacity, `published`, `public`, colonnes `meeting_*` prêtes pour la visio, meta) et `formation_trainers` (formation_id, **`user_id`** nullable = compte unifié, name, email, affiliation, `is_moderator`, meta). Modèles `App\Models\Formation` (`isFree()`, `trainers()`) et `FormationTrainer` (`user()`).
+- **Capacité RBAC `formation`** ajoutée à `App\Support\StaffRoles` (admin/gérant/co-gérant). Middleware `edition.cap:formation`.
+- **Activation par édition** : `settings['doc']['formation.enabled']` via `EditionSettings` (toggle porté par la page Formations, pas le gros formulaire d'édition).
+- **Admin** : `Admin\FormationController` (index sélecteur d'édition + toggle module + CRUD formations + formateurs), vues `admin/formations/index` + partiel `_fields`, routes `admin.formations*`, lien sidebar (icône `book`, capacité `formation`).
+- Tests `tests/Feature/FormationModuleTest.php`. **626 tests verts, PHPStan niveau 5 OK.**
+- ⚠️ Rappel **compte unifié (option B)** : participants = `App\Models\User` (les guards `web` et `account` résolvent la table `users`). Toute nouvelle table liée à un participant utilise **`user_id`** (le modèle/colonne `Account`/`account_id` est **legacy et mort**).
+
+**Reste (phases suivantes)** : inscription + paiement (`meta.flow='formation'`, distinct de participation/coauthor), section page publique, e-mails (audience « inscrits formation » + convocation/rappel/lien visio), attestations (type `formation` participants + nouveau `formation_animation` formateurs, envoi en fin de formation), visio (couche `App\Meetings`, accès inscrits payés + formateurs modérateurs).
+
 > **Mémoire projet** : le contexte fin (décisions, conventions, TODO différés - DOI/DataCite, connecteur Google anti-plagiat, amélioration `admin/reclamations`) est aussi consigné dans la **mémoire locale de Claude Code** (`~/.claude/…/memory/`, non versionnée). Comme cette mémoire ne se partage pas entre contributeurs, **le contexte partageable doit vivre dans `CLAUDE.md` + ce fichier** (versionnés) : les tenir à jour à chaque tâche notable.

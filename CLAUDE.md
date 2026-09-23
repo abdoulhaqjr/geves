@@ -142,6 +142,23 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
 - **Config runtime** : mail/paiements/IA/visio/SMS/nom sont surchargés **depuis la base**
   (`AppServiceProvider::applySettingsToConfig()`), pas le `.env`.
 
+### Comptes = `User` unifié (option B) — ⚠️ pas `Account`
+
+Les **participants sont des `App\Models\User`** : depuis la refonte « compte unifié »,
+les guards **`web`** (back-office) et **`account`** (espace participant) résolvent la
+**même table `users`** (seul le *contexte* diffère). Le modèle/colonne `Account`/`account_id`
+est **legacy et mort**. Toute nouvelle table liée à un participant référence **`user_id`**
+(users), jamais `account_id`. `Participant` (par édition) porte `user_id`.
+
+### Module Formation (en cours, par phases)
+
+Module **activable par édition** (`settings['doc']['formation.enabled']`, via `EditionSettings`),
+capacité RBAC **`formation`**. Tables `formations` (plusieurs par édition ; `fee` 0=gratuite ;
+colonnes `meeting_*` pour la visio) + `formation_trainers` (`user_id` + repli libre). Admin :
+`Admin\FormationController` (`admin.formations*`). **Phase 1 = fondations + CRUD faites** ;
+restent inscription+paiement (`meta.flow='formation'`), page publique, e-mails, attestations
+(`formation` + nouveau `formation_animation`), visio (`App\Meetings`). Détails en [§11 de PASSATION.md](PASSATION.md).
+
 ### Règles métier - limites communications & attestations
 
 - **Limite de communications** (`settings.max_communications`) : compte **seulement** les

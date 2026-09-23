@@ -30,6 +30,7 @@ use App\Http\Controllers\Admin\EditionFormController;
 use App\Http\Controllers\Admin\EditionMediaController;
 use App\Http\Controllers\Admin\EmailController;
 use App\Http\Controllers\Admin\EmailTemplateController;
+use App\Http\Controllers\Admin\FormationController;
 use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\LoginController as AdminLoginController;
 use App\Http\Controllers\Admin\LogoutController as AdminLogoutController;
@@ -417,6 +418,17 @@ Route::prefix('admin')->group(function () {
             Route::get('/annonces', [AnnouncementController::class, 'index'])->name('admin.announcements');
             Route::post('/editions/{edition}/annonces', [AnnouncementController::class, 'store'])->name('admin.announcements.store');
             Route::delete('/editions/{edition}/annonces/{announcement}', [AnnouncementController::class, 'destroy'])->name('admin.announcements.destroy');
+        });
+
+        // Formations (module activable par édition).
+        Route::middleware('edition.cap:formation')->group(function () {
+            Route::get('/formations', [FormationController::class, 'index'])->name('admin.formations');
+            Route::post('/editions/{edition}/formations/module', [FormationController::class, 'toggleModule'])->name('admin.formations.module');
+            Route::post('/editions/{edition}/formations', [FormationController::class, 'store'])->name('admin.formations.store');
+            Route::put('/formations/{formation}', [FormationController::class, 'update'])->name('admin.formations.update');
+            Route::delete('/formations/{formation}', [FormationController::class, 'destroy'])->name('admin.formations.destroy');
+            Route::post('/formations/{formation}/formateurs', [FormationController::class, 'storeTrainer'])->name('admin.formations.trainers.store');
+            Route::delete('/formations/{formation}/formateurs/{trainer}', [FormationController::class, 'destroyTrainer'])->name('admin.formations.trainers.destroy');
         });
 
         // Documents (attestations, badges, livret, fiches).

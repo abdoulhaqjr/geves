@@ -23,6 +23,7 @@ class StaffRoles
         'participants' => 'Participants',
         'payments' => 'Paiements',
         'documents' => 'Documents (attestations…)',
+        'formation' => 'Formations',
         'emails' => 'E-mails',
         'project' => 'Projet (gestion)',
         'announcements' => 'Annonces (déroulement)',
@@ -45,7 +46,7 @@ class StaffRoles
             'description' => 'Accès complet : éditions, soumissions, décisions, documents, paiements, e-mails, réglages.',
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
-                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'project',
+                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'formation', 'emails', 'project',
                 'announcements', 'claims', 'testimonials', 'users_roles', 'settings',
             ],
         ],
@@ -55,7 +56,7 @@ class StaffRoles
             'description' => 'Responsable d’un colloque : accès complet à CE colloque (soumissions, décisions, documents, paiements, e-mails, équipe).',
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
-                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'project', 'announcements', 'claims',
+                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'formation', 'emails', 'project', 'announcements', 'claims',
             ],
         ],
         'co_gerant' => [
@@ -64,7 +65,7 @@ class StaffRoles
             'description' => 'Co-responsable d’un colloque : mêmes accès que le gestionnaire sur CE colloque.',
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
-                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'emails', 'project', 'announcements', 'claims',
+                'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'formation', 'emails', 'project', 'announcements', 'claims',
             ],
         ],
         'scientific' => [
