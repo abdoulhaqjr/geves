@@ -88,6 +88,30 @@
                                 </form>
                             </div>
 
+                            {{-- Inscrits + message (convocation / rappel) --}}
+                            <div style="margin-top:12px;">
+                                <div style="font-size:12.5px;font-weight:600;color:var(--ukc-muted);margin-bottom:4px;">
+                                    Inscrits : {{ $f->enrollments_count }}@if (! $f->isFree()) · {{ $f->paid_count }} réglé(s)@endif
+                                </div>
+                                @if ($f->enrollments_count > 0)
+                                    <details>
+                                        <summary style="cursor:pointer;font-size:13px;color:var(--ukc-blue,#223ea4);">Contacter les inscrits</summary>
+                                        <form method="POST" action="{{ route('admin.formations.message', $f) }}" style="margin-top:8px;">
+                                            @csrf
+                                            <input type="text" name="subject" placeholder="Objet" required maxlength="200" style="width:100%;margin-bottom:6px;padding:6px 8px;border:1px solid var(--ukc-border,#e5e7eb);border-radius:8px;">
+                                            <textarea name="body" rows="3" placeholder="Message (convocation, rappel, lien visio…)" required maxlength="5000" style="width:100%;margin-bottom:6px;padding:6px 8px;border:1px solid var(--ukc-border,#e5e7eb);border-radius:8px;"></textarea>
+                                            <div style="display:flex;gap:8px;align-items:center;">
+                                                <select name="audience" style="padding:6px 8px;border:1px solid var(--ukc-border,#e5e7eb);border-radius:8px;">
+                                                    <option value="all">Tous les inscrits</option>
+                                                    <option value="paid">Inscrits ayant réglé</option>
+                                                </select>
+                                                <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="mail" :size="14" /> Envoyer</button>
+                                            </div>
+                                        </form>
+                                    </details>
+                                @endif
+                            </div>
+
                             {{-- Édition de la formation --}}
                             <details style="margin-top:10px;">
                                 <summary style="cursor:pointer;font-size:13px;color:var(--ukc-blue,#223ea4);">Modifier</summary>

@@ -50,4 +50,10 @@ class Formation extends Model
     {
         return $this->hasMany(FormationTrainer::class);
     }
+
+    /** @return HasMany<FormationEnrollment, $this> */
+    public function enrollments(): HasMany
+    {
+        return $this->hasMany(FormationEnrollment::class);
+    }
 }

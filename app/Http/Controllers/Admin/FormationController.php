@@ -4,13 +4,17 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\Concerns\ScopesEditionAccess;
 use App\Http\Controllers\Controller;
+use App\Mail\CampaignMail;
 use App\Models\Edition;
+use App\Models\Email;
 use App\Models\Formation;
 use App\Models\FormationTrainer;
 use App\Models\User;
 use App\Support\EditionSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 /**
@@ -33,7 +37,10 @@ class FormationController extends Controller
             'edition_id' => $edition ? (string) $edition->id : '',
             'moduleEnabled' => $edition ? (bool) EditionSettings::get($edition, 'formation.enabled', false) : false,
             'formations' => $edition
-                ? Formation::with('trainers')->where('edition_id', $edition->id)->orderByRaw('starts_at is null, starts_at')->orderBy('id')->get()
+                ? Formation::with('trainers')
+                    ->withCount(['enrollments', 'enrollments as paid_count' => fn ($q) => $q->where('status', 'paid')])
+                    ->where('edition_id', $edition->id)
+                    ->orderByRaw('starts_at is null, starts_at')->orderBy('id')->get()
                 : collect(),
         ]);
     }
@@ -97,6 +104,47 @@ class FormationController extends Controller
         $trainer->delete();
 
         return back()->with('ukc_status', 'Formateur retiré.');
+    }
+
+    /** Envoie un message (convocation / rappel) aux inscrits de la formation. */
+    public function message(Request $request, Formation $formation): RedirectResponse
+    {
+        $data = $request->validate([
+            'subject' => ['required', 'string', 'max:200'],
+            'body' => ['required', 'string', 'max:5000'],
+            'audience' => ['nullable', 'in:all,paid'],
+        ]);
+        $audience = $data['audience'] ?? 'all';
+
+        $query = $formation->enrollments()->with('user');
+        if ($audience === 'paid') {
+            $query->where('status', 'paid');
+        }
+
+        $batchId = (string) Str::uuid();
+        $count = 0;
+        foreach ($query->get() as $enrollment) {
+            $email = $enrollment->user?->email;
+            if (! $email) {
+                continue;
+            }
+            Email::create([
+                'edition_id' => $formation->edition_id,
+                'participant_id' => $enrollment->participant_id,
+                'template' => 'formation',
+                'audience' => $audience,
+                'batch_id' => $batchId,
+                'recipient' => $email,
+                'subject' => $data['subject'],
+                'body' => $data['body'],
+                'scheduled_at' => now(),
+                'status' => 'sent',
+            ]);
+            Mail::to($email)->send(new CampaignMail($data['subject'], $data['body']));
+            $count++;
+        }
+
+        return back()->with('ukc_status', $count.' message(s) envoyé(s) aux inscrits.');
     }
 
     /** @return array<string, mixed> */

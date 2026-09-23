@@ -432,6 +432,7 @@ Route::prefix('admin')->group(function () {
             Route::delete('/formations/{formation}', [FormationController::class, 'destroy'])->name('admin.formations.destroy');
             Route::post('/formations/{formation}/formateurs', [FormationController::class, 'storeTrainer'])->name('admin.formations.trainers.store');
             Route::delete('/formations/{formation}/formateurs/{trainer}', [FormationController::class, 'destroyTrainer'])->name('admin.formations.trainers.destroy');
+            Route::post('/formations/{formation}/message', [FormationController::class, 'message'])->name('admin.formations.message');
         });
 
         // Documents (attestations, badges, livret, fiches).

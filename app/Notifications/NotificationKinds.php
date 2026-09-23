@@ -23,6 +23,7 @@ class NotificationKinds
             'review_assigned' => ['label' => 'Relectures qui me sont assignées', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => true],
             'session_role' => ['label' => 'Désignations (modérateur / rapporteur)', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => false],
             'attestation' => ['label' => 'Attestations disponibles', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => false],
+            'formation' => ['label' => 'Formations (inscriptions)', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => true],
             'invitation' => ['label' => 'Invitations au colloque', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => true],
             'authorship' => ['label' => 'Communications où je suis auteur/co-auteur', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => true],
             'payment' => ['label' => 'Paiements', 'audience' => 'both', 'inapp' => true, 'email' => true, 'hasMail' => true],

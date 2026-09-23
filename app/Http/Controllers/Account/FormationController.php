@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Account;
 
 use App\Actions\UpsertParticipantForAccount;
 use App\Http\Controllers\Controller;
+use App\Mail\FormationEnrollmentMail;
 use App\Models\Formation;
 use App\Models\FormationEnrollment;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Payments\GatewayRegistry;
+use App\Support\Notifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 /**
@@ -62,6 +65,22 @@ class FormationController extends Controller
                 'status' => 'registered',
             ],
         );
+
+        // Confirmation d'inscription (une seule fois, à la création) : e-mail dédié
+        // (gaté par la préférence) + notification in-app.
+        if ($enrollment->wasRecentlyCreated) {
+            if ($user->email && Notifier::emailAllowed($user, 'formation')) {
+                Mail::to($user->email)->send(new FormationEnrollmentMail($enrollment));
+            }
+            Notifier::account(
+                $user,
+                kind: 'formation',
+                title: __('Inscription à une formation'),
+                body: __('Votre inscription à « :titre » est enregistrée.', ['titre' => $formation->title]),
+                url: route('account.formations'),
+                icon: 'book',
+            );
+        }
 
         if ($enrollment->isPaid()) {
             return $back->with('ukc_status', 'Vous êtes déjà inscrit·e à cette formation.');
