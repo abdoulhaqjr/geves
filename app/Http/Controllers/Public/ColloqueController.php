@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Models\Edition;
+use App\Models\Formation;
+use App\Support\EditionSettings;
 use Illuminate\Contracts\View\View;
 
 /**
@@ -49,6 +51,13 @@ class ColloqueController extends Controller
             'heroVideo' => $settings['hero_video'] ?? null,
             'promo' => $settings['promo'] ?? [],
             'practical' => $settings['practical'] ?? [],
+            // Formations publiques (si le module est activé pour l'édition).
+            'formations' => (bool) EditionSettings::get($edition, 'formation.enabled', false)
+                ? Formation::with('trainers')
+                    ->where('edition_id', $edition->id)
+                    ->where('published', true)->where('public', true)
+                    ->orderByRaw('starts_at is null, starts_at')->get()
+                : collect(),
             'plenaries' => $edition->sessions()->where('type', 'plenary')->orderBy('ordre')->orderBy('starts_at')->get(),
             'ateliers' => $edition->ateliers()->with(['sessions' => fn ($q) => $q->orderBy('ordre')])->orderBy('ordre')->get(),
             'commsBySession' => $commsBySession,

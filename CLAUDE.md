@@ -160,9 +160,10 @@ colonnes `meeting_*` pour la visio) + `formation_trainers` (`user_id` + repli li
 (`account.formations` = `/mes-formations`, inscription gratuite/payante). **Paiement de nature
 `formation`** : `Payment.meta.flow='formation'` (helper `Payment::flow()`) ; ⚠️ **`ConfirmPayment`
 est flow-aware** — la garde anti-double ne vaut que pour la **participation**, donc participation +
-formation(s) + co-auteur coexistent. **Phases 1-2 faites (fondations + admin + inscription/paiement)** ;
-restent page publique, e-mails, attestations (`formation` + nouveau `formation_animation`), visio
-(`App\Meetings`). Détails en [§11 de PASSATION.md](PASSATION.md).
+formation(s) + co-auteur coexistent. Page publique : section `#formations` (formations `public`)
+via `Public\ColloqueController`. **Phases 1-3 faites (fondations + admin + inscription/paiement +
+page publique)** ; restent e-mails, attestations (`formation` + nouveau `formation_animation`),
+visio (`App\Meetings`), suivi admin des inscriptions. Détails en [§11 de PASSATION.md](PASSATION.md).
 
 ### Règles métier - limites communications & attestations
 

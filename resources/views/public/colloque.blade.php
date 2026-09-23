@@ -134,6 +134,9 @@
                     @if (count($fees))
                         <li><a href="#tarifs" data-spy>{{ __('Tarifs') }}</a></li>
                     @endif
+                    @if ($formations->isNotEmpty())
+                        <li><a href="#formations" data-spy>{{ __('Formations') }}</a></li>
+                    @endif
                     @if (array_filter($practical))
                         <li><a href="#infos" data-spy>{{ __('Infos pratiques') }}</a></li>
                     @endif
@@ -425,6 +428,38 @@
                         {{ __('Co-auteur d’une communication acceptée ?') }}
                         <a href="{{ route('public.coauthor', $edition->slug) }}" style="color:var(--ukc-blue);font-weight:700;">{{ __('Réglez vos frais ici') }}</a>.
                     </p>
+                </section>
+            @endif
+
+            {{-- Formations (module activable ; formations publiées et publiques) --}}
+            @if ($formations->isNotEmpty())
+                <section id="formations" style="scroll-margin-top:72px;">
+                    <div class="ukc-block-head">
+                        <h2>{{ __('Formations') }}</h2>
+                        <div class="ukc-accent"><i></i><i></i><i></i></div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
+                        @foreach ($formations as $f)
+                            <div class="ukc-card">
+                                <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
+                                    <strong style="font-size:1.05rem;">{{ $f->title }}</strong>
+                                    <span class="ukc-pill {{ $f->isFree() ? 'ukc-pill--ok' : 'ukc-pill--muted' }}">{{ $f->isFree() ? __('Gratuite') : number_format((float) $f->fee, 0, ',', ' ').' '.config('payments.currency', 'XOF') }}</span>
+                                </div>
+                                @if ($f->theme)<div style="color:var(--ukc-muted);font-size:.9rem;">{{ $f->theme }}</div>@endif
+                                <div style="font-size:.82rem;color:var(--ukc-light);margin-top:6px;">
+                                    @if ($f->starts_at){{ $f->starts_at->format('d/m/Y H:i') }}@endif
+                                    @if ($f->location) · {{ $f->location }}@endif @if ($f->room) · {{ $f->room }}@endif
+                                </div>
+                                @if ($f->objective)<p style="font-size:.9rem;margin:10px 0 0;">{{ \Illuminate\Support\Str::limit($f->objective, 160) }}</p>@endif
+                                @if ($f->trainers->isNotEmpty())
+                                    <div style="font-size:.82rem;color:var(--ukc-muted);margin-top:8px;">{{ __('Formateur(s)') }} : {{ $f->trainers->pluck('name')->join(', ') }}</div>
+                                @endif
+                                <a href="{{ route('account.formations') }}" class="ukc-btn ukc-btn--blue" style="margin-top:12px;">
+                                    <x-ukc.icon name="book" :size="15" /> {{ __('S’inscrire') }}
+                                </a>
+                            </div>
+                        @endforeach
+                    </div>
                 </section>
             @endif
 
