@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Formation;
+use App\Models\FormationEnrollment;
 use App\Models\FormationTrainer;
 use App\Support\EditionSettings;
 
@@ -80,4 +81,19 @@ it('ajoute un formateur et le rattache au compte unifié si l’e-mail correspon
 
 it('interdit l’accès aux Formations sans authentification staff', function () {
     $this->get(route('admin.formations'))->assertRedirect();
+});
+
+it('affiche la liste nominative des inscrits pour l’admin', function () {
+    $edition = openEdition();
+    EditionSettings::setMany($edition, ['formation.enabled' => true]);
+    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'Atelier', 'fee' => 0, 'published' => true]);
+    $user = verifiedAccount(); // Awa Kodjo
+    $p = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'trainee', 'user_id' => $user->id]);
+    FormationEnrollment::create(['formation_id' => $formation->id, 'edition_id' => $edition->id, 'user_id' => $user->id, 'participant_id' => $p->id, 'status' => 'registered', 'amount' => 0]);
+
+    $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.formations').'?edition_id='.$edition->id)
+        ->assertOk()
+        ->assertSee('Awa Kodjo')
+        ->assertSee('Liste des inscrits');
 });

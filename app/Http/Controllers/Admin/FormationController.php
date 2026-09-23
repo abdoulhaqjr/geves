@@ -40,7 +40,7 @@ class FormationController extends Controller
             'edition_id' => $edition ? (string) $edition->id : '',
             'moduleEnabled' => $edition ? (bool) EditionSettings::get($edition, 'formation.enabled', false) : false,
             'formations' => $edition
-                ? Formation::with('trainers')
+                ? Formation::with(['trainers', 'enrollments' => fn ($q) => $q->with('user')->latest('id')])
                     ->withCount(['enrollments', 'enrollments as paid_count' => fn ($q) => $q->where('status', 'paid')])
                     ->where('edition_id', $edition->id)
                     ->orderByRaw('starts_at is null, starts_at')->orderBy('id')->get()

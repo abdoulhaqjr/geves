@@ -169,7 +169,7 @@ kind notif `formation`) + message admin aux inscrits (`admin.formations.message`
 (implémentée par `EventSession` **et** `Formation`) ; config admin (`admin.formations.meeting`), le
 participant rejoint via `account.formations.visio` (redirection vers la salle si live + autorisé :
 formateurs = modérateur, inscrits éligibles = participant). **Module complet (phases 1-6)** ; reste
-optionnel : suivi admin nominatif des inscrits + lecteur visio inline. Détails en [§11 de PASSATION.md](PASSATION.md).
+optionnel : lecteur visio inline (au lieu de la redirection). Suivi admin nominatif des inscrits fait. Détails en [§11 de PASSATION.md](PASSATION.md).
 
 ### Règles métier - limites communications & attestations
 

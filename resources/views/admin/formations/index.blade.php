@@ -103,6 +103,17 @@
                                     </form>
                                 </div>
                                 @if ($f->enrollments_count > 0)
+                                    <details style="margin-bottom:6px;">
+                                        <summary style="cursor:pointer;font-size:13px;color:var(--ukc-blue,#223ea4);">Liste des inscrits ({{ $f->enrollments_count }})</summary>
+                                        <div style="margin-top:6px;">
+                                            @foreach ($f->enrollments as $e)
+                                                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12.5px;padding:3px 0;border-bottom:1px solid var(--ukc-border,#f1f1f1);">
+                                                    <span>{{ $e->user?->name ?: '—' }}@if ($e->user?->email) <span style="color:var(--ukc-light);">· {{ $e->user->email }}</span>@endif</span>
+                                                    <span class="ukc-pill {{ $e->status === 'paid' ? 'ukc-pill--ok' : 'ukc-pill--muted' }}">{{ $e->status === 'paid' ? 'Réglé' : 'Inscrit' }}</span>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </details>
                                     <details>
                                         <summary style="cursor:pointer;font-size:13px;color:var(--ukc-blue,#223ea4);">Contacter les inscrits</summary>
                                         <form method="POST" action="{{ route('admin.formations.message', $f) }}" style="margin-top:8px;">
