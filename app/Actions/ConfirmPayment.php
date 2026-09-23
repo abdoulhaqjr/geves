@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Mail\PaymentReceiptMail;
+use App\Models\FormationEnrollment;
 use App\Models\Payment;
 use App\Support\Notifier;
 use Illuminate\Support\Facades\DB;
@@ -25,15 +26,23 @@ class ConfirmPayment
         // Transaction + verrou : la garde anti-double-paiement et l'écriture
         // sont atomiques (deux confirmations concurrentes ne peuvent pas passer).
         DB::transaction(function () use ($payment) {
-            $already = Payment::where('edition_id', $payment->edition_id)
-                ->where('participant_id', $payment->participant_id)
-                ->where('status', 'paid')
-                ->whereKeyNot($payment->id)
-                ->lockForUpdate()
-                ->exists();
+            // Garde anti-double-paiement : UNIQUEMENT pour les frais de
+            // participation (un seul règlement de participation par participant
+            // et par édition). Les autres natures (formation, co-auteur)
+            // coexistent — leur unicité est portée ailleurs (inscription unique
+            // par formation/personne, dédoublonnage co-auteur).
+            if ($payment->flow() === 'participation') {
+                $already = Payment::where('edition_id', $payment->edition_id)
+                    ->where('participant_id', $payment->participant_id)
+                    ->where('status', 'paid')
+                    ->whereKeyNot($payment->id)
+                    ->lockForUpdate()
+                    ->get()
+                    ->contains(fn (Payment $p) => $p->flow() === 'participation');
 
-            if ($already) {
-                throw new \DomainException('Ce participant a déjà réglé ses frais.');
+                if ($already) {
+                    throw new \DomainException('Ce participant a déjà réglé ses frais.');
+                }
             }
 
             $payment->forceFill([
@@ -42,6 +51,12 @@ class ConfirmPayment
                 'receipt_no' => $payment->receipt_no ?: $this->generateReceiptNo($payment),
             ])->save();
         });
+
+        // Inscription à une formation réglée → marquer l'inscription « payée »
+        // (chemin universel : retour de paiement, webhook, encaissement manuel).
+        if ($payment->flow() === 'formation' && ($enrollmentId = $payment->meta['enrollment_id'] ?? null)) {
+            FormationEnrollment::whereKey($enrollmentId)->update(['status' => 'paid']);
+        }
 
         // Un paiement porte toujours un participant dans ce flux.
         $participant = $payment->participant;

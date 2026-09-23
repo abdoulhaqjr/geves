@@ -105,6 +105,10 @@
                    @class(['active' => request()->routeIs('account.payment')])>
                     <x-ukc.icon name="card" :size="18" /> <span class="txt">{{ __('Inscription & paiement') }}</span>
                 </a>
+                <a href="{{ route('account.formations') }}" title="{{ __('Formations') }}"
+                   @class(['active' => request()->routeIs('account.formations')])>
+                    <x-ukc.icon name="book" :size="18" /> <span class="txt">{{ __('Formations') }}</span>
+                </a>
                 <a href="{{ route('account.documents') }}" title="{{ __('Documents') }}"
                    @class(['active' => request()->routeIs('account.documents')])>
                     <x-ukc.icon name="folder" :size="18" /> <span class="txt">{{ __('Documents') }}</span>

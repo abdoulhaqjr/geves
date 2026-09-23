@@ -154,10 +154,15 @@ est **legacy et mort**. Toute nouvelle table liée à un participant référence
 
 Module **activable par édition** (`settings['doc']['formation.enabled']`, via `EditionSettings`),
 capacité RBAC **`formation`**. Tables `formations` (plusieurs par édition ; `fee` 0=gratuite ;
-colonnes `meeting_*` pour la visio) + `formation_trainers` (`user_id` + repli libre). Admin :
-`Admin\FormationController` (`admin.formations*`). **Phase 1 = fondations + CRUD faites** ;
-restent inscription+paiement (`meta.flow='formation'`), page publique, e-mails, attestations
-(`formation` + nouveau `formation_animation`), visio (`App\Meetings`). Détails en [§11 de PASSATION.md](PASSATION.md).
+colonnes `meeting_*` pour la visio) + `formation_trainers` (`user_id` + repli libre) +
+`formation_enrollments` (inscription `user_id`, `status` registered→paid). Admin :
+`Admin\FormationController` (`admin.formations*`). Participant : `Account\FormationController`
+(`account.formations` = `/mes-formations`, inscription gratuite/payante). **Paiement de nature
+`formation`** : `Payment.meta.flow='formation'` (helper `Payment::flow()`) ; ⚠️ **`ConfirmPayment`
+est flow-aware** — la garde anti-double ne vaut que pour la **participation**, donc participation +
+formation(s) + co-auteur coexistent. **Phases 1-2 faites (fondations + admin + inscription/paiement)** ;
+restent page publique, e-mails, attestations (`formation` + nouveau `formation_animation`), visio
+(`App\Meetings`). Détails en [§11 de PASSATION.md](PASSATION.md).
 
 ### Règles métier - limites communications & attestations
 

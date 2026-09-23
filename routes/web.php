@@ -5,6 +5,7 @@ use App\Http\Controllers\Account\AuthorLookupController;
 use App\Http\Controllers\Account\ColloqueContextController;
 use App\Http\Controllers\Account\DashboardController;
 use App\Http\Controllers\Account\EmailVerificationController;
+use App\Http\Controllers\Account\FormationController as AccountFormationController;
 use App\Http\Controllers\Account\LoginController;
 use App\Http\Controllers\Account\LogoutController;
 use App\Http\Controllers\Account\ModerationController;
@@ -205,6 +206,8 @@ Route::middleware(['auth:account', StampAccountSession::class])->group(function 
     // Paiement des frais
     Route::get('/compte/paiement/{edition}', [AccountPaymentController::class, 'show'])->name('account.payment');
     Route::post('/compte/paiement/{edition}', [AccountPaymentController::class, 'pay'])->name('account.payment.pay');
+    Route::get('/mes-formations', [AccountFormationController::class, 'index'])->name('account.formations');
+    Route::post('/mes-formations/{formation}/inscription', [AccountFormationController::class, 'enroll'])->name('account.formations.enroll');
     Route::get('/compte/recu/{payment}', App\Http\Controllers\Account\ReceiptController::class)->name('account.receipt');
     Route::get('/compte/edition/{edition}/livret', [App\Http\Controllers\Account\DocumentController::class, 'livret'])->name('account.documents.livret');
 

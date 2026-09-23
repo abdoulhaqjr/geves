@@ -46,6 +46,11 @@ class PaymentController extends Controller
             ])->with($flash);
         }
 
+        // Inscription à une formation : retour sur l'espace « Mes formations ».
+        if ($payment->flow() === 'formation') {
+            return redirect()->route('account.formations')->with($flash);
+        }
+
         return redirect()->route('account.payment', $payment->edition_id)->with($flash);
     }
 

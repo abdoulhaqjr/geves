@@ -96,6 +96,18 @@ class Payment extends Model
         ];
     }
 
+    /**
+     * Nature du paiement (`meta.flow`) : « participation » par défaut, sinon
+     * « coauthor » (co-auteur) ou « formation ». Détermine notamment la garde
+     * anti-double-paiement (limitée à la participation).
+     */
+    public function flow(): string
+    {
+        $flow = $this->meta['flow'] ?? 'participation';
+
+        return $flow === '' ? 'participation' : (string) $flow;
+    }
+
     /** Statut typé (ou null si valeur inconnue). */
     public function statusEnum(): ?PaymentStatus
     {
