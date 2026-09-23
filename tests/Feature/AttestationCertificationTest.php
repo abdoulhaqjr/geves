@@ -87,6 +87,41 @@ it('rejette une signature valide portant sur une autre attestation (anti-substit
         ->and($proof['reason'])->toBe('subject_mismatch');
 });
 
+it('rejette un payload falsifié conservant l’ancienne signature (intégrité)', function () {
+    enableAttestationCertification();
+    $attestation = app(IssueAttestation::class)->handle(certParticipant(openEdition()), 'participation');
+
+    // On falsifie le bénéficiaire dans le payload puis on ré-encode, en gardant la
+    // signature d'origine : elle ne couvre plus le contenu -> rejet garanti (aucun
+    // aléa, contrairement à un flip de caractère base64url).
+    [$h, $p, $s] = explode('.', (string) $attestation->credential);
+    $claims = json_decode(sodium_base642bin($p, SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING), true);
+    $claims['credentialSubject']['name'] = 'Imposteur';
+    $forged = sodium_bin2base64((string) json_encode($claims), SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
+    $attestation->credential = $h.'.'.$forged.'.'.$s;
+
+    $proof = app(AttestationCertifier::class)->verify($attestation);
+    expect($proof['valid'])->toBeFalse()
+        ->and($proof['reason'])->toBe('invalid_signature');
+});
+
+it('rejette une signature référençant une clé inconnue (kid non publié)', function () {
+    enableAttestationCertification();
+    $attestation = app(IssueAttestation::class)->handle(certParticipant(openEdition()), 'participation');
+
+    // En-tête pointant vers un kid absent du JWKS : aucune clé publique candidate,
+    // rejet avant même la vérification cryptographique.
+    [$h, $p, $s] = explode('.', (string) $attestation->credential);
+    $header = json_decode(sodium_base642bin($h, SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING), true);
+    $header['kid'] = preg_replace('/#.*$/', '#key-fantome-42', (string) $header['kid']);
+    $forgedHeader = sodium_bin2base64((string) json_encode($header), SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
+    $attestation->credential = $forgedHeader.'.'.$p.'.'.$s;
+
+    $proof = app(AttestationCertifier::class)->verify($attestation);
+    expect($proof['valid'])->toBeFalse()
+        ->and($proof['reason'])->toBe('unknown_key');
+});
+
 it('émet sans signature quand aucune clé n’est configurée (fail-open)', function () {
     config()->set('attestations.signing_key', '');
     $attestation = app(IssueAttestation::class)->handle(certParticipant(openEdition()), 'participation');
