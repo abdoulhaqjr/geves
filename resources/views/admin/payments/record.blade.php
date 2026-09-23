@@ -23,7 +23,7 @@
             <div class="ukc-field full">
                 <label for="edition_id">Édition <span class="req">*</span></label>
                 <select id="edition_id" name="edition_id" x-model="editionId" @change="participantId=''">
-                    <option value="">— Choisir —</option>
+                    <option value="">- Choisir -</option>
                     @foreach ($editions as $ed)
                         <option value="{{ $ed->id }}">{{ $ed->title ?: $ed->year }}</option>
                     @endforeach
@@ -34,7 +34,7 @@
             <div class="ukc-field full">
                 <label for="participant_id">Participant existant</label>
                 <select id="participant_id" name="participant_id" x-model="participantId" @change="onParticipant()">
-                    <option value="">— Nouveau participant —</option>
+                    <option value="">- Nouveau participant -</option>
                     <template x-for="p in filtered" :key="p.id">
                         <option :value="p.id" x-text="p.name + ' (' + p.email + ')'"></option>
                     </template>

@@ -16,7 +16,7 @@ class StaffRoles
         'view_dashboard' => 'Tableau de bord',
         'editions_read' => 'Éditions (lecture)',
         'editions_write' => 'Éditions (écriture)',
-        'submissions_list' => 'Soumissions — liste',
+        'submissions_list' => 'Soumissions - liste',
         'assign_reviewers' => 'Assigner relecteurs',
         'evaluate' => 'Évaluer (avis)',
         'final_decision' => 'Décision finale',
@@ -94,7 +94,7 @@ class StaffRoles
         'organizer' => [
             'label' => 'Organisateur',
             'category' => 'Système', 'pill' => 'warn', 'abbr' => 'Organis.',
-            'description' => 'Participants, paiements, e-mails, documents (attestations / badges) — sans décisions scientifiques.',
+            'description' => 'Participants, paiements, e-mails, documents (attestations / badges) - sans décisions scientifiques.',
             'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'participants', 'payments', 'documents', 'emails', 'project'],
         ],
         'secretariat' => [
@@ -106,7 +106,7 @@ class StaffRoles
         'accounting' => [
             'label' => 'Comptabilité',
             'category' => 'Support', 'pill' => 'compta', 'abbr' => 'Compta',
-            'description' => 'Consultation et suivi des paiements, rapprochements, exports financiers — sans modification des tarifs.',
+            'description' => 'Consultation et suivi des paiements, rapprochements, exports financiers - sans modification des tarifs.',
             'permissions' => ['view_dashboard', 'payments'],
         ],
         'support' => [
@@ -145,7 +145,7 @@ class StaffRoles
      * Fonctions assignables à une équipe d'édition (staff ↔ édition). On exclut :
      *  - `administrator` : capacité globale (transverse à tous les colloques) ;
      *  - `reviewer` : la relecture scientifique passe par le Participant relecteur
-     *    (par édition, portail à jeton) — pas par un rôle staff global.
+     *    (par édition, portail à jeton) - pas par un rôle staff global.
      *
      * @return array<string, string> nom => libellé
      */

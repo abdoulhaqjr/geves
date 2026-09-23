@@ -39,7 +39,7 @@
                     <div class="ukc-badge-actions">
                         @if ($paid)
                             <ul>
-                                <li><x-ukc.icon name="check" :size="16" /> {{ __('Paiement confirmé — badge généré') }}</li>
+                                <li><x-ukc.icon name="check" :size="16" /> {{ __('Paiement confirmé - badge généré') }}</li>
                                 <li><x-ukc.icon name="check" :size="16" /> {{ __('Présentez-le à l’accueil (papier ou mobile)') }}</li>
                                 <li><x-ukc.icon name="check" :size="16" /> {{ __('QR code pour contrôle d’accès (réf. signée)') }}</li>
                             </ul>
@@ -86,7 +86,7 @@
                 <div class="ukc-doc-section">{{ __('Par communication') }}</div>
                 @foreach ($submissions as $i => $s)
                     <div class="ukc-doc-group">
-                        <div class="g-title">{{ __('Communication :num', ['num' => $i + 1]) }} — {{ $s->type === 'poster' ? __('Poster') : __('Orale') }}@if ($s->track) · {{ $s->track }}@endif</div>
+                        <div class="g-title">{{ __('Communication :num', ['num' => $i + 1]) }} - {{ $s->type === 'poster' ? __('Poster') : __('Orale') }}@if ($s->track) · {{ $s->track }}@endif</div>
                         <div class="g-sub">{{ $s->title }}</div>
                         <ul class="ukc-doc-list">
                             @include('account._doc-row', [

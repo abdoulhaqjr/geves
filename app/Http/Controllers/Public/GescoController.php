@@ -145,7 +145,7 @@ class GescoController extends Controller
         Notifier::staff(
             kind: 'contact',
             title: 'Nouvelle '.mb_strtolower($record->typeLabel()),
-            body: $record->subject.' — '.($record->name ?: $record->email),
+            body: $record->subject.' - '.($record->name ?: $record->email),
             url: route('admin.claims.show', $record),
             icon: 'inbox',
         );
@@ -172,7 +172,7 @@ class GescoController extends Controller
             ->where('revision_of', 0)->with('edition')->latest('id')->get();
 
         $subLines = $subs->map(fn (Submission $s) => '- « '.Str::limit((string) $s->title, 70).' » ('
-            .($s->edition?->title ?: $s->edition?->year).') — statut : '.$s->statusLabel()
+            .($s->edition?->title ?: $s->edition?->year).') - statut : '.$s->statusLabel()
             .($s->track ? ' · axe '.$s->track : '').($s->ref_code ? ' · réf '.$s->ref_code : ''))->implode("\n");
 
         $accepted = $subs->where('status', 'accepted')->count();
@@ -191,7 +191,7 @@ class GescoController extends Controller
             'Communications ('.$subs->count().') :',
             $subs->isEmpty() ? '- aucune soumission déposée' : $subLines,
             $paymentLine,
-            'Badge participant : '.($paidCount > 0 ? 'disponible (généré après paiement), non téléchargeable ici — imprimé par l’organisation.' : 'sera disponible après confirmation du paiement.'),
+            'Badge participant : '.($paidCount > 0 ? 'disponible (généré après paiement), non téléchargeable ici - imprimé par l’organisation.' : 'sera disponible après confirmation du paiement.'),
             'Attestations : '.($att->isNotEmpty() ? $att->map->typeLabel()->unique()->implode(', ') : 'aucune émise pour l’instant').'.',
             $account->hasVerifiedEmail() ? 'E-mail vérifié.' : 'E-mail NON vérifié (à confirmer pour soumettre).',
         ]));

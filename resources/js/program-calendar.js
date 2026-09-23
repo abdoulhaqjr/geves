@@ -5,7 +5,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction';
 
-// Agenda du programme (FullCalendar v6, CSS auto-injectée) — chargé à la demande.
+// Agenda du programme (FullCalendar v6, CSS auto-injectée) - chargé à la demande.
 // Les événements (sessions horodatées) sont fournis par le serveur en JSON.
 export function startProgramCalendar() {
     const el = document.getElementById('programCalendar');

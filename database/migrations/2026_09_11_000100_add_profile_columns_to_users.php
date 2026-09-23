@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Refonte comptes & rôles — Phase 1 (identité unifiée).
+ * Refonte comptes & rôles - Phase 1 (identité unifiée).
  *
  * Porte sur `users` les colonnes de profil qui n'existaient que sur `accounts`,
  * afin que `users` devienne l'identité unique (fusion à venir dans la migration

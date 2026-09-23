@@ -49,7 +49,7 @@
                                             <div style="font-size:12px;color:var(--ukc-muted);">{{ $s->edition?->title ?: $s->edition?->year }}@if ($s->room) · {{ $s->room }}@endif</div>
                                         </td>
                                         <td>{{ $s->rapporteur_name ?: $s->rapporteur_email }}</td>
-                                        <td>{{ $s->report?->submitted_at?->translatedFormat('d/m/Y H:i') ?: '—' }}</td>
+                                        <td>{{ $s->report?->submitted_at?->translatedFormat('d/m/Y H:i') ?: '-' }}</td>
                                         <td style="text-align:right;">
                                             <div style="display:inline-flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
                                                 <a href="{{ route('admin.program.reports') }}?edition_id={{ $s->edition_id }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="eye" :size="15" /> Lire / améliorer</a>
@@ -123,7 +123,7 @@
                             pick(k){ const p=this.presets[k]; if(!p) return; this.preset=k; this.prompt=p.prompt; this.format=p.format; this.dataset=p.dataset; }
                          }">
                         <h3><x-ukc.icon name="sparkles" :size="18" /> Générer un document</h3>
-                        <p style="font-size:13px;color:var(--ukc-muted);margin:4px 0 12px;">Choisissez un modèle, décrivez le document ou joignez un exemple. L'IA produit un <strong>brouillon</strong> à partir des données réelles de l'édition (participants, programme) — à relire avant diffusion.</p>
+                        <p style="font-size:13px;color:var(--ukc-muted);margin:4px 0 12px;">Choisissez un modèle, décrivez le document ou joignez un exemple. L'IA produit un <strong>brouillon</strong> à partir des données réelles de l'édition (participants, programme) - à relire avant diffusion.</p>
 
                         <form method="POST" action="{{ route('admin.secretariat.assist') }}" enctype="multipart/form-data">
                             @csrf
@@ -131,7 +131,7 @@
                                 <label>Colloque</label>
                                 <select name="edition_id">
                                     @foreach ($docEditions as $ed)
-                                        <option value="{{ $ed->id }}" @selected((string) $ed->id === (string) $currentDocEditionId)>{{ $ed->colloque?->name ? $ed->colloque->name.' — ' : '' }}{{ $ed->title ?: $ed->year }}</option>
+                                        <option value="{{ $ed->id }}" @selected((string) $ed->id === (string) $currentDocEditionId)>{{ $ed->colloque?->name ? $ed->colloque->name.' - ' : '' }}{{ $ed->title ?: $ed->year }}</option>
                                     @endforeach
                                 </select>
                             </div>

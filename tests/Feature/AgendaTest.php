@@ -9,7 +9,7 @@ use Illuminate\Support\Carbon;
 it('génère un ICS avec événement, rappel et échappement', function () {
     $ics = (new CalendarExport)->ics([[
         'uid' => 'e1@ukc',
-        'summary' => 'Présentation — Titre, avec; ponctuation',
+        'summary' => 'Présentation - Titre, avec; ponctuation',
         'start' => Carbon::parse('2026-09-03 09:00'),
         'end' => Carbon::parse('2026-09-03 09:20'),
         'location' => 'Amphi A',
@@ -19,7 +19,7 @@ it('génère un ICS avec événement, rappel et échappement', function () {
     expect($ics)->toContain('BEGIN:VCALENDAR')
         ->and($ics)->toContain('BEGIN:VEVENT')
         ->and($ics)->toContain('UID:e1@ukc')
-        ->and($ics)->toContain('SUMMARY:Présentation — Titre\\, avec\\; ponctuation') // virgule/; échappés
+        ->and($ics)->toContain('SUMMARY:Présentation - Titre\\, avec\\; ponctuation') // virgule/; échappés
         ->and($ics)->toContain('BEGIN:VALARM')
         ->and($ics)->toContain('TRIGGER:-PT60M')
         ->and($ics)->toContain('END:VCALENDAR');

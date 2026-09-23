@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
 /**
  * Communications de TEST pour le colloque en cours (édition ouverte) : un éventail
  * réaliste de soumissions (nouvelles, en revue, corrections, acceptées, refusées)
- * réparties sur les axes de l'édition, avec avis de relecture et paiements — pour
+ * réparties sur les axes de l'édition, avec avis de relecture et paiements - pour
  * pouvoir tester le back-office (pipeline, documents, livret, badges, paiements).
  *
  * Idempotent : ne fait rien si l'édition a déjà des soumissions.
@@ -47,7 +47,7 @@ class ColloqueTestSubmissionsSeeder extends Seeder
         }
 
         if ($edition->submissions()->where('revision_of', 0)->exists()) {
-            $this->command?->warn("L'édition #{$edition->id} a déjà des soumissions — seeder ignoré.");
+            $this->command?->warn("L'édition #{$edition->id} a déjà des soumissions - seeder ignoré.");
 
             return;
         }

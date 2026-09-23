@@ -32,7 +32,7 @@ class PaymentReminderMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: __('Rappel : frais d’inscription à régler').' — '.($this->edition->title ?? __('Colloque')));
+        return new Envelope(subject: __('Rappel : frais d’inscription à régler').' - '.($this->edition->title ?? __('Colloque')));
     }
 
     public function content(): Content

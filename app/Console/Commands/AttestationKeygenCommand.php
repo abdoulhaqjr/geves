@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
  * Génère un couple de clés Ed25519 pour la certification des attestations.
  *
  * La GRAINE PRIVÉE est affichée pour être copiée dans `.env`
- * (`ATTESTATION_SIGNING_KEY`) — elle ne doit JAMAIS être committée ni stockée en
+ * (`ATTESTATION_SIGNING_KEY`) - elle ne doit JAMAIS être committée ni stockée en
  * base. La clé publique est publiée automatiquement via le document `did:web` et
  * le JWKS une fois la graine en place.
  *

@@ -5,7 +5,7 @@
             <div class="ukc-field" style="max-width:340px;margin:0;">
                 <label>Édition</label>
                 <select onchange="window.location='{{ route('admin.documents.attestations') }}?edition_id='+this.value">
-                    <option value="">— Choisir —</option>
+                    <option value="">- Choisir -</option>
                     @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
                 </select>
             </div>
@@ -85,7 +85,7 @@
                     <div class="ukc-card" style="margin-top:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
                         <div>
                             <h3 style="margin:0 0 2px;">Attestations délivrées</h3>
-                            <div style="font-size:13px;color:var(--ukc-muted);">{{ $counts['issued'] }} attestation(s) valide(s) pour cette édition — consultez, vérifiez ou révoquez sur la page dédiée.</div>
+                            <div style="font-size:13px;color:var(--ukc-muted);">{{ $counts['issued'] }} attestation(s) valide(s) pour cette édition - consultez, vérifiez ou révoquez sur la page dédiée.</div>
                         </div>
                         <a href="{{ route('admin.attestations.index', ['edition_id' => $edition->id]) }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">
                             <x-ukc.icon name="diploma" :size="16" /> Voir les attestations délivrées
@@ -103,11 +103,11 @@
                         <div class="desc">Paramètres de génération, identité vérifiable (DID) et notifications pour cette édition.</div>
                         @if ($opts['attCertEnabled'])
                             <div class="ukc-pill--ok" style="display:inline-flex;align-items:center;gap:6px;margin-bottom:12px;">
-                                <x-ukc.icon name="shield" :size="14" /> Certification active — clé de signature configurée
+                                <x-ukc.icon name="shield" :size="14" /> Certification active - clé de signature configurée
                             </div>
                         @else
                             <div class="ukc-pill--warn" style="display:inline-flex;align-items:center;gap:6px;margin-bottom:12px;">
-                                <x-ukc.icon name="info" :size="14" /> Certification inactive — attestations émises sans signature
+                                <x-ukc.icon name="info" :size="14" /> Certification inactive - attestations émises sans signature
                             </div>
                             <div class="desc" style="margin-bottom:12px;">
                                 Générez une clé émetteur avec <code>php artisan attestations:keygen</code>, ajoutez
@@ -250,7 +250,7 @@
                             <h3>État de compilation</h3>
                             <div class="desc">Dernière génération et statistiques.</div>
                             <p style="font-size:13.5px;line-height:1.7;">
-                                <strong>Dernière génération :</strong> {{ $livreState['lastGen'] ? \Illuminate\Support\Carbon::parse($livreState['lastGen'])->format('d/m/Y H:i') : '—' }}<br>
+                                <strong>Dernière génération :</strong> {{ $livreState['lastGen'] ? \Illuminate\Support\Carbon::parse($livreState['lastGen'])->format('d/m/Y H:i') : '-' }}<br>
                                 <strong>Résumés inclus :</strong> {{ $counts['accepted'] }}<br>
                                 <strong>Axes :</strong> {{ $counts['axes'] }} · <strong>Sessions :</strong> {{ $counts['sessions'] }}<br>
                                 <strong>Modèle actif :</strong> {{ $opts['livretTemplate'] === 'default' ? 'Modèle par défaut (Apparence)' : $opts['livretTemplate'] }}<br>
@@ -276,7 +276,7 @@
                         </div>
                         <div class="ukc-field" style="margin-bottom:12px;">
                             <label>Signature (nom + fonction)</label>
-                            <input type="text" name="forewordSignature" value="{{ $opts['forewordSignature'] }}" placeholder="Prof. … — Président du Comité d’Organisation">
+                            <input type="text" name="forewordSignature" value="{{ $opts['forewordSignature'] }}" placeholder="Prof. … - Président du Comité d’Organisation">
                         </div>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;">
                             <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="check" :size="16" /> Enregistrer l’avant-propos</button>
@@ -353,7 +353,7 @@
                             @forelse ($templates as $tpl)
                                 <div class="ukc-tpl-item">
                                     <div class="ico">DOC</div>
-                                    <div class="meta"><strong>{{ $tpl['name'] }}</strong><span>{{ number_format(($tpl['size'] ?? 0) / 1024, 0) }} Ko · importé le {{ $tpl['date'] ?? '—' }}</span></div>
+                                    <div class="meta"><strong>{{ $tpl['name'] }}</strong><span>{{ number_format(($tpl['size'] ?? 0) / 1024, 0) }} Ko · importé le {{ $tpl['date'] ?? '-' }}</span></div>
                                     <div style="display:flex;gap:6px;flex-wrap:wrap;">
                                         <a href="{{ \Illuminate\Support\Facades\Storage::url($tpl['path']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm" target="_blank">Télécharger</a>
                                         @php($isActive = $opts['livretTemplate'] === $tpl['name'])
@@ -455,7 +455,7 @@
                             @if ($opts['livretCoverLogo'])
                                 <div style="margin-top:8px;display:flex;align-items:center;gap:10px;">
                                     <img src="{{ \Illuminate\Support\Facades\Storage::url($opts['livretCoverLogo']) }}" alt="Logo couverture" style="height:40px;border:1px solid var(--ukc-border);border-radius:6px;padding:4px;background:#fff;">
-                                    <span class="ukc-hint">Logo actuel — déposez-en un nouveau pour le remplacer.</span>
+                                    <span class="ukc-hint">Logo actuel - déposez-en un nouveau pour le remplacer.</span>
                                 </div>
                             @endif
                             @error('livretCoverLogo') <span class="error">{{ $message }}</span> @enderror

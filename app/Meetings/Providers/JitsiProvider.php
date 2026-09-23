@@ -8,7 +8,7 @@ use App\Models\EventSession;
 use Firebase\JWT\JWT;
 
 /**
- * Jitsi Meet — visio interactive open-source, embarquable. Deux modes :
+ * Jitsi Meet - visio interactive open-source, embarquable. Deux modes :
  *
  * - Public (`meet.jit.si`, sans secret JWT) : l'URL porte le nom d'affichage ;
  *   le rôle n'est pas imposé côté serveur (premier arrivé = modérateur Jitsi).

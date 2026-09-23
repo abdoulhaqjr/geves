@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
  * Bascule du personnel vers son propre espace participant. Identité unifiée
  * (option B) : un membre du staff est aussi un utilisateur qui peut participer,
  * communiquer, s'inscrire. On l'authentifie (en plus) sur le guard « account »
- * — la session back-office reste active, un lien « Retour au back-office »
+ * - la session back-office reste active, un lien « Retour au back-office »
  * permet de revenir.
  */
 class SpaceController extends Controller

@@ -7,7 +7,7 @@ use App\Enums\Concerns\HasLabels;
 /**
  * Qui peut rejoindre la visio d'une session : tout le monde (public) ou les
  * seuls participants inscrits de l'édition. Gating plus fin (payés seulement…)
- * à décider avec le mockup — cf. EventSession::meetingRoleFor().
+ * à décider avec le mockup - cf. EventSession::meetingRoleFor().
  */
 enum MeetingVisibility: string
 {

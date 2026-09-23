@@ -2,7 +2,7 @@
 
 namespace App\AI\Providers;
 
-/** Grok (xAI) — API compatible OpenAI. */
+/** Grok (xAI) - API compatible OpenAI. */
 class GrokProvider extends OpenAiCompatibleProvider
 {
     public function key(): string

@@ -109,7 +109,7 @@ class AuthorMatcher
         }
 
         $list = $candidates->map(fn (User $u) => "- id={$u->id} | ".($u->full_name ?: $u->name)
-            .' | affiliation: '.($u->affiliation ?: '—'))->implode("\n");
+            .' | affiliation: '.($u->affiliation ?: '-'))->implode("\n");
 
         $instruction = <<<TXT
         Tu aides à rapprocher un auteur d'une communication scientifique d'un compte utilisateur.
@@ -153,7 +153,7 @@ class AuthorMatcher
     }
 
     /**
-     * Jeu de tokens normalisés d'un nom (sans accents, minuscule, trié) — la
+     * Jeu de tokens normalisés d'un nom (sans accents, minuscule, trié) - la
      * comparaison est donc insensible à l'ordre « Prénom Nom » / « Nom Prénom ».
      *
      * @return list<string>

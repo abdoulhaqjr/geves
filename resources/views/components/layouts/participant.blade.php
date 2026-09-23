@@ -32,7 +32,7 @@
          :class="{ 'ukc-compact': compact }">
         <aside class="ukc-sidebar" :class="{ 'open': open }">
             <div class="ukc-sidebar-brand">
-                <a href="{{ route('account.dashboard') }}" class="logo-img" aria-label="Université de Kara — espace participant">
+                <a href="{{ route('account.dashboard') }}" class="logo-img" aria-label="Université de Kara - espace participant">
                     <img src="{{ asset('img/logo-uk.png') }}" alt="Université de Kara">
                 </a>
                 <div class="logo-sub" style="margin-top:8px;">Espace participant</div>
@@ -227,7 +227,7 @@
                                 justify-content:space-between;gap:12px;flex-wrap:wrap;">
                         <span style="display:inline-flex;align-items:center;gap:8px;font-weight:600;">
                             <x-ukc.icon name="eye" :size="16" />
-                            Impersonation en cours — vous agissez en tant que {{ $account?->full_name }}.
+                            Impersonation en cours - vous agissez en tant que {{ $account?->full_name }}.
                         </span>
                         <form method="POST" action="{{ route('impersonation.leave') }}">
                             @csrf

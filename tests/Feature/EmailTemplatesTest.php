@@ -69,7 +69,7 @@ it('personnalise l’invitation participant', function () {
 
     $mail = new ParticipantInvitationMail($p);
 
-    $mail->assertHasSubject('Bienvenue — UK 2026');
+    $mail->assertHasSubject('Bienvenue - UK 2026');
     $mail->assertSeeInHtml('Salut Awa');
     $mail->assertSeeInHtml('À bientôt à UK 2026.');
 });

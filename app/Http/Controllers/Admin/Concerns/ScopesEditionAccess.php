@@ -10,7 +10,7 @@ use Illuminate\Support\Collection;
 /**
  * Étanchéité par édition côté contrôleur (complément du middleware
  * {@see EnsureEditionAccess}). Restreint les listes et les
- * sélecteurs d'édition aux éditions accessibles au membre du staff — sauf
+ * sélecteurs d'édition aux éditions accessibles au membre du staff - sauf
  * super-administrateur, qui voit tout.
  */
 trait ScopesEditionAccess

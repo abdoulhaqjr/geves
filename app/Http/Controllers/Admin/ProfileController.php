@@ -21,7 +21,7 @@ use Illuminate\View\View;
  */
 class ProfileController extends Controller
 {
-    /** Secret TOTP provisoire (avant confirmation) — en session. */
+    /** Secret TOTP provisoire (avant confirmation) - en session. */
     private const PENDING_SECRET = 'admin.2fa.pending_secret';
 
     public function edit(): View
@@ -67,7 +67,7 @@ class ProfileController extends Controller
         }
 
         if (! Totp::verify($secret, (string) $request->input('code'))) {
-            return back()->withErrors(['code' => 'Code invalide — vérifiez l’heure de votre téléphone et réessayez.']);
+            return back()->withErrors(['code' => 'Code invalide - vérifiez l’heure de votre téléphone et réessayez.']);
         }
 
         /** @var User $staff */

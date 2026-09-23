@@ -302,7 +302,7 @@ class SubmissionController extends Controller
         ]);
     }
 
-    /** Rattache manuellement un auteur à un compte (par e-mail) — correction d'un rapprochement. */
+    /** Rattache manuellement un auteur à un compte (par e-mail) - correction d'un rapprochement. */
     public function linkAuthor(Request $request, Submission $submission, SubmissionAuthor $link, UpsertParticipantForAccount $upsert): RedirectResponse
     {
         abort_unless($link->submission_id === $submission->id, 404);
@@ -326,7 +326,7 @@ class SubmissionController extends Controller
             $user,
             'authorship',
             __('Vous êtes associé(e) à une communication'),
-            '« '.$submission->title.' » — '.($edition->title ?? ''),
+            '« '.$submission->title.' » - '.($edition->title ?? ''),
             route('account.submissions.show', $submission),
             'inbox',
         );
@@ -374,7 +374,7 @@ class SubmissionController extends Controller
 
             return back()->with('ukc_error', match (true) {
                 $status === 429 => 'Quota du fournisseur anti-plagiat atteint. Réessayez plus tard.',
-                in_array($status, [401, 403], true) => 'Accès '.$provider->label().' refusé'.($apiMsg !== '' ? ' — '.$apiMsg : '').'. Vérifiez la configuration dans Réglages · Intégrations.',
+                in_array($status, [401, 403], true) => 'Accès '.$provider->label().' refusé'.($apiMsg !== '' ? ' - '.$apiMsg : '').'. Vérifiez la configuration dans Réglages · Intégrations.',
                 default => 'Service anti-plagiat indisponible (code '.$status.'). Réessayez plus tard.',
             });
         } catch (\Throwable $e) {
@@ -403,7 +403,7 @@ class SubmissionController extends Controller
         // Effets de bord découplés : notification auteur, invitation co-auteurs…
         SubmissionStatusChanged::dispatch($submission, $status, ($data['note'] ?? null) ?: null);
 
-        return back()->with('ukc_status', 'Statut mis à jour : '.$submission->statusLabel().' — l’auteur a été notifié.');
+        return back()->with('ukc_status', 'Statut mis à jour : '.$submission->statusLabel().' - l’auteur a été notifié.');
     }
 
     /**
@@ -437,7 +437,7 @@ class SubmissionController extends Controller
             icon: 'pen',
         );
 
-        return back()->with('ukc_status', 'Phase de réponse ouverte — l’auteur a été notifié.');
+        return back()->with('ukc_status', 'Phase de réponse ouverte - l’auteur a été notifié.');
     }
 
     public function assignReviewer(Request $request, Submission $submission, AssignReviewer $action): RedirectResponse
@@ -559,7 +559,7 @@ class SubmissionController extends Controller
             $events[] = ['when' => $review->created_at, 'what' => 'Assignée à '.$name, 'done' => false];
             if ($review->isCompleted()) {
                 $reco = $review->recommendationLabel();
-                $events[] = ['when' => $review->updated_at, 'what' => 'Avis de '.$name.' reçu'.($reco ? ' — '.$reco : ''), 'done' => true];
+                $events[] = ['when' => $review->updated_at, 'what' => 'Avis de '.$name.' reçu'.($reco ? ' - '.$reco : ''), 'done' => true];
             }
         }
 

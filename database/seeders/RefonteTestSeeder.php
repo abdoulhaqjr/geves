@@ -24,7 +24,7 @@ class RefonteTestSeeder extends Seeder
         $edition = Edition::query()->where('status', 'open')->latest('id')->first()
             ?? Edition::query()->latest('id')->first();
 
-        // 1) Super administrateur — toute la plateforme.
+        // 1) Super administrateur - toute la plateforme.
         User::updateOrCreate(
             ['email' => 'super@uk.tg'],
             [
@@ -34,7 +34,7 @@ class RefonteTestSeeder extends Seeder
             ]
         );
 
-        // 2) Administrateur de colloque — peut créer un colloque (aucune édition
+        // 2) Administrateur de colloque - peut créer un colloque (aucune édition
         //    au départ, pour tester la création + la gérance automatique).
         User::updateOrCreate(
             ['email' => 'gerant@uk.tg'],
@@ -70,6 +70,6 @@ class RefonteTestSeeder extends Seeder
         }
 
         $this->command?->info('Comptes de test : super@uk.tg · gerant@uk.tg · membre@uk.tg (mot de passe : password)'
-            .($edition ? '' : ' — aucune édition trouvée, participant non rattaché.'));
+            .($edition ? '' : ' - aucune édition trouvée, participant non rattaché.'));
     }
 }

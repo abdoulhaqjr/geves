@@ -1,4 +1,4 @@
-<x-layouts.app :title="__('Déroulement en direct — :app', ['app' => config('app.name')])">
+<x-layouts.app :title="__('Déroulement en direct - :app', ['app' => config('app.name')])">
     @include('partials.public-header')
 
     @if (! $edition)
@@ -39,7 +39,7 @@
                         @endif
                     </div>
                     <h1>{{ $edition->title ?: $edition->colloque?->name }}</h1>
-                    @if ($edition->theme)<p class="sub">{{ $edition->tr('theme') }} — {{ __('suivez le programme, les ateliers en cours et les annonces.') }}</p>@endif
+                    @if ($edition->theme)<p class="sub">{{ $edition->tr('theme') }} - {{ __('suivez le programme, les ateliers en cours et les annonces.') }}</p>@endif
                     <div class="live-meta">
                         @if ($edition->location)<div>{!! $iconPin !!} {{ $edition->tr('location') }}</div>@endif
                         <div>{!! $iconCal !!} {{ $dates }}</div>
@@ -60,7 +60,7 @@
                     <div class="layout">
                         <div>
                             <div class="ukc-card">
-                                <h2>{{ __('En ce moment — par atelier') }} <span class="ukc-pill ukc-pill--live">● Live</span></h2>
+                                <h2>{{ __('En ce moment - par atelier') }} <span class="ukc-pill ukc-pill--live">● Live</span></h2>
                                 @if ($liveNow->isEmpty())
                                     <div class="ukc-empty" style="padding:24px 12px;">
                                         <p style="margin:0;">{{ __('Aucune session en cours en ce moment. Consultez le programme du jour pour les prochains créneaux.') }}</p>
@@ -159,7 +159,7 @@
                                 <div x-show="day === {{ $loop->index }}">
                                     @foreach ($daySessions as $s)
                                         <div class="session {{ ($isNow)($s) ? 'now' : '' }}">
-                                            <span class="time">{{ $s->starts_at?->format('H:i') ?? '—' }}@if ($s->ends_at) – {{ $s->ends_at->format('H:i') }}@endif</span>
+                                            <span class="time">{{ $s->starts_at?->format('H:i') ?? '-' }}@if ($s->ends_at) – {{ $s->ends_at->format('H:i') }}@endif</span>
                                             <h3>{{ $s->label }}</h3>
                                             <div class="meta">
                                                 {{ $s->room ?: __('Lieu à préciser') }}
@@ -207,7 +207,7 @@
             <div class="modal-overlay" x-cloak x-show="modal === 'indications'" x-transition @click.self="modal = null">
                 <div class="modal modal--xl">
                     <div class="modal-head">
-                        <div><h2>{{ __('Indications — salles & lieux') }}</h2><div class="sub">{{ __('Où se déroulent les plénières, ateliers et sessions') }}</div></div>
+                        <div><h2>{{ __('Indications - salles & lieux') }}</h2><div class="sub">{{ __('Où se déroulent les plénières, ateliers et sessions') }}</div></div>
                         <button type="button" class="modal-close" @click="modal = null">×</button>
                     </div>
                     <div class="modal-body">

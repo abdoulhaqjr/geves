@@ -9,7 +9,7 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 
 /**
- * Claude (Anthropic) — Messages API, multimodal (PDF via blocs « document »,
+ * Claude (Anthropic) - Messages API, multimodal (PDF via blocs « document »,
  * images via blocs « image »).
  */
 class AnthropicProvider implements AiProvider

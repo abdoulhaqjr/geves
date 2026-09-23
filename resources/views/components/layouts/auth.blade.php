@@ -1,6 +1,6 @@
 @props(['title' => null, 'width' => '460px'])
 <x-layouts.app :title="$title">
-    {{-- Pages d'authentification — mise en page deux colonnes fidèle au mockup
+    {{-- Pages d'authentification - mise en page deux colonnes fidèle au mockup
          connexion.html / inscription.html : panneau de marque à gauche, carte à droite. --}}
     <div class="auth-shell">
         <aside class="auth-brand">

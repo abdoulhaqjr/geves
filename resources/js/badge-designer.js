@@ -537,7 +537,7 @@
     document.querySelectorAll('[data-size]').forEach(function (b) { b.classList.remove('active'); });
 
     var T = {
-      /* A6 portrait 397×560 — disposition centree, photo 64px */
+      /* A6 portrait 397×560 - disposition centree, photo 64px */
       participant: function () {
         var chip = document.querySelector('[data-size="a6-portrait"]');
         if (chip) chip.classList.add('active');
@@ -545,12 +545,12 @@
         createEl({ type: 'logo', label: 'Logo UK', x: 24, y: 22, w: 130, html: '<div class="mark">UK</div> UNIVERSITE DE KARA' });
         createEl({ type: 'text', label: 'Edition', x: 24, y: 68, w: 350, cls: 'sub on-blue', text: '[edition.name]' });
         createEl({ type: 'text', label: 'Dates', x: 24, y: 92, w: 350, cls: 'sub on-blue', text: '[edition.dates]' });
-        // Zone blanche — photo centree (397/2 - 32 = 166.5)
+        // Zone blanche - photo centree (397/2 - 32 = 166.5)
         createEl({ type: 'photo', label: 'Photo', x: 166, y: 200, w: 64 });
         createEl({ type: 'text', label: 'Nom', x: 28, y: 285, w: 340, cls: 'name attr', text: '[recipient.name]' });
         createEl({ type: 'text', label: 'Role', x: 28, y: 318, w: 340, cls: 'role attr', text: '[recipient.role]' });
         createEl({ type: 'text', label: 'Institution', x: 28, y: 348, w: 340, cls: 'sub attr', text: '[recipient.institution]' });
-        // Bas — QR + ref
+        // Bas - QR + ref
         createEl({ type: 'qr', label: 'QR Badge', x: 166, y: 400, w: 64, qrUrl: DEFAULT_QR_URL });
         createEl({ type: 'text', label: 'Ref', x: 28, y: 480, w: 340, cls: 'sub attr', text: '[badge.ref]' });
       },

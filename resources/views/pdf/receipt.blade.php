@@ -52,7 +52,7 @@
     </table>
 
     <p style="text-align:center;font-size:10px;color:#9ca3af;margin-top:24px;">
-        {{ __('Reçu généré le :date', ['date' => now()->format('d/m/Y')]) }} — {{ $payment->edition?->colloque?->name }}.
+        {{ __('Reçu généré le :date', ['date' => now()->format('d/m/Y')]) }} - {{ $payment->edition?->colloque?->name }}.
     </p>
 </body>
 </html>

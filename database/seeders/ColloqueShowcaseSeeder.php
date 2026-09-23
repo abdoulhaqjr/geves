@@ -192,7 +192,7 @@ class ColloqueShowcaseSeeder extends Seeder
 
         // Infos pratiques : 6 cartes fidèles au mockup. Lieu = campus hôte (Parakou).
         $s['practical'] = [
-            'venue' => "Université de Parakou — Campus universitaire\nBP 123, Parakou — Bénin",
+            'venue' => "Université de Parakou - Campus universitaire\nBP 123, Parakou - Bénin",
             'languages' => "Français\nAnglais\nCommunications orales ou posters",
             'accommodation' => "Hôtels partenaires à tarifs préférentiels\nListe communiquée après inscription\nPossibilité de résidence universitaire (places limitées)",
             'hybrid' => 'Sessions plénières retransmises en direct. Lien de connexion envoyé aux participants distants 48 h avant.',
@@ -200,7 +200,7 @@ class ColloqueShowcaseSeeder extends Seeder
             'contacts' => "colloque@univkara.tg\n(+228) 26 68 52 28",
         ];
 
-        // Plan du campus (OpenStreetMap) — Université de Parakou (≈ 9.34 N, 2.61 E).
+        // Plan du campus (OpenStreetMap) - Université de Parakou (≈ 9.34 N, 2.61 E).
         $s['map'] = [
             'embed' => 'https://www.openstreetmap.org/export/embed.html?bbox=2.58%2C9.32%2C2.65%2C9.37&layer=mapnik&marker=9.345%2C2.612',
             'link' => 'https://www.openstreetmap.org/?mlat=9.345&mlon=2.612#map=15/9.345/2.612',
@@ -210,7 +210,7 @@ class ColloqueShowcaseSeeder extends Seeder
         $s['contact'] = array_merge([
             'email' => 'colloque@univkara.tg',
             'phone' => '(+228) 26 68 52 28',
-            'address' => 'Université de Parakou — Campus universitaire, Parakou, Bénin',
+            'address' => 'Université de Parakou - Campus universitaire, Parakou, Bénin',
         ], is_array($s['contact'] ?? null) ? $s['contact'] : []);
 
         $s['documents'] = [
@@ -247,8 +247,8 @@ class ColloqueShowcaseSeeder extends Seeder
 
         $s['programme'] = [
             ['day' => 'Jour 1', 'time' => '09:00–10:30', 'type' => 'Conférence', 'title' => 'Conférence inaugurale', 'speaker' => 'Invité d’honneur', 'room' => 'Amphi A'],
-            ['day' => 'Jour 1', 'time' => '11:00–12:30', 'type' => 'Session', 'title' => 'Session Atelier 1 — Sciences médicales', 'speaker' => 'Modérateur : Pr. Mensah', 'room' => 'Salle B'],
-            ['day' => 'Jour 2', 'time' => '09:00–10:30', 'type' => 'Session', 'title' => 'Session Atelier 2 — Agronomie', 'speaker' => '', 'room' => 'Salle C'],
+            ['day' => 'Jour 1', 'time' => '11:00–12:30', 'type' => 'Session', 'title' => 'Session Atelier 1 - Sciences médicales', 'speaker' => 'Modérateur : Pr. Mensah', 'room' => 'Salle B'],
+            ['day' => 'Jour 2', 'time' => '09:00–10:30', 'type' => 'Session', 'title' => 'Session Atelier 2 - Agronomie', 'speaker' => '', 'room' => 'Salle C'],
             ['day' => 'Jour 4', 'time' => '16:00–17:00', 'type' => 'Clôture', 'title' => 'Cérémonie de clôture & recommandations', 'speaker' => 'Comité d’organisation', 'room' => 'Amphi A'],
         ];
 
@@ -259,7 +259,7 @@ class ColloqueShowcaseSeeder extends Seeder
         ];
 
         $s['info_cards'] = [
-            ['title' => 'Lieu', 'text' => 'Université de Parakou — Campus universitaire, Parakou, Bénin'],
+            ['title' => 'Lieu', 'text' => 'Université de Parakou - Campus universitaire, Parakou, Bénin'],
             ['title' => 'Format', 'text' => 'Présentiel & hybride · Sessions en français'],
             ['title' => 'Contact', 'text' => 'colloque@univkara.tg · (+228) 26 68 52 28'],
         ];
@@ -325,12 +325,12 @@ class ColloqueShowcaseSeeder extends Seeder
 
     private function seedProgramme(Edition $edition): void
     {
-        // Espaces + salles d'atelier (onglet « Espaces » de la page Créneaux) —
+        // Espaces + salles d'atelier (onglet « Espaces » de la page Créneaux) -
         // 5 espaces nommés fidèles au mockup admin-creneaux.
         $spaces = [
             ['name' => 'Amphithéâtre principal', 'capacity' => 250, 'building' => 'Bâtiment A', 'note' => 'Plénières, ouverture, clôture, keynotes'],
-            ['name' => 'Salle A', 'capacity' => 80, 'building' => 'Bâtiment B — RDC', 'note' => 'Vidéoprojecteur, sonorisation'],
-            ['name' => 'Salle B', 'capacity' => 60, 'building' => 'Bâtiment B — 1er étage', 'note' => ''],
+            ['name' => 'Salle A', 'capacity' => 80, 'building' => 'Bâtiment B - RDC', 'note' => 'Vidéoprojecteur, sonorisation'],
+            ['name' => 'Salle B', 'capacity' => 60, 'building' => 'Bâtiment B - 1er étage', 'note' => ''],
             ['name' => 'Salle C', 'capacity' => 50, 'building' => 'Bâtiment C', 'note' => ''],
             ['name' => 'Hall d’exposition / posters', 'capacity' => null, 'building' => '', 'note' => 'Sessions posters · Accueil · Restauration · Accès libre'],
         ];
@@ -377,7 +377,7 @@ class ColloqueShowcaseSeeder extends Seeder
                 $session = $edition->sessions()->create([
                     'type' => 'atelier',
                     'atelier_id' => $atelier->id,
-                    'label' => 'Session '.($j + 1).' — '.implode(' / ', $a['tracks']),
+                    'label' => 'Session '.($j + 1).' - '.implode(' / ', $a['tracks']),
                     'session_day' => $a['day']->toDateString(),
                     'starts_at' => $a['day']->copy()->setTimeFromTimeString($start),
                     'ends_at' => $a['day']->copy()->setTimeFromTimeString($end),
@@ -448,9 +448,9 @@ class ColloqueShowcaseSeeder extends Seeder
 
         // Trois éditions précédentes comme le mockup.
         $past = [
-            [2025, 'VIIe Colloque conjoint UP–UK', 'Édition 2025 — affiche et programme'],
-            [2023, 'VIe Colloque conjoint UP–UK', 'Édition 2023 — affiche et programme'],
-            [2021, 'Ve Colloque conjoint UP–UK', 'Édition 2021 — affiche et programme'],
+            [2025, 'VIIe Colloque conjoint UP–UK', 'Édition 2025 - affiche et programme'],
+            [2023, 'VIe Colloque conjoint UP–UK', 'Édition 2023 - affiche et programme'],
+            [2021, 'Ve Colloque conjoint UP–UK', 'Édition 2021 - affiche et programme'],
         ];
 
         foreach ($past as [$year, $title, $subtitle]) {

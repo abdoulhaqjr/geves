@@ -1,8 +1,8 @@
 # GEVES
 
-**Plateforme de Gestion des ÉVénements Scientifiques — Université de Kara**
+**Plateforme de Gestion des ÉVénements Scientifiques - Université de Kara**
 
-GEVES est l'application web de la **Direction de la Recherche et de l'Innovation (DRI)** de l'Université de Kara pour piloter tout le cycle de vie des manifestations scientifiques — **colloques, séminaires et journées scientifiques** : appel à communications, soumission et évaluation des résumés, programme et déroulement en direct, inscriptions et paiements, documents officiels (attestations, badges, livret des résumés) et archives.
+GEVES est l'application web de la **Direction de la Recherche et de l'Innovation (DRI)** de l'Université de Kara pour piloter tout le cycle de vie des manifestations scientifiques - **colloques, séminaires et journées scientifiques** : appel à communications, soumission et évaluation des résumés, programme et déroulement en direct, inscriptions et paiements, documents officiels (attestations, badges, livret des résumés) et archives.
 
 Un espace unique pour les **organisateurs**, les **comités**, le **secrétariat** et la **communauté universitaire**.
 
@@ -10,15 +10,15 @@ Un espace unique pour les **organisateurs**, les **comités**, le **secrétariat
 
 ## ✨ Fonctionnalités principales
 
-- **Multi-événements par édition** — chaque manifestation (colloque, séminaire, journée) est une *édition* avec ses propres réglages, axes, échéances et équipe.
-- **Espace participant** — profil, sélection du colloque courant (et des appels ouverts), soumission de résumés (wizard guidé, quota par édition), suivi des communications, paiements, documents, espaces de fonction (modérateur / rapporteur / relecteur).
-- **Soumission & évaluation** — dépôt de résumés multi-étapes, assignation de relecteurs, grilles d'évaluation, décisions du comité scientifique.
-- **Programme & déroulement** — ateliers, sessions, créneaux, salles, visioconférence, annonces en direct, rapports de séance.
-- **Back-office avec RBAC par édition** — rôles fins (administrateur, gestionnaire, secrétariat, comité scientifique/supervision, comptabilité, appui…) avec capacités cadrées par édition.
-- **Paiements** — suivi des frais d'inscription, relances, passerelles en ligne.
-- **Documents** — attestations, badges, livret des résumés, fiches de séance et PV configurables par édition.
-- **Assistants IA** — assistante publique (participants) et **copilote d'administration** capable, après **autorisation explicite**, d'exécuter certaines actions (relances, envois programmés…), avec résilience multi-fournisseurs (relance transparente, routage de modèle, bascule de fournisseur).
-- **Réclamations & incidents** — enregistrement via le chatbot et traitement assisté par IA côté back-office.
+- **Multi-événements par édition** - chaque manifestation (colloque, séminaire, journée) est une *édition* avec ses propres réglages, axes, échéances et équipe.
+- **Espace participant** - profil, sélection du colloque courant (et des appels ouverts), soumission de résumés (wizard guidé, quota par édition), suivi des communications, paiements, documents, espaces de fonction (modérateur / rapporteur / relecteur).
+- **Soumission & évaluation** - dépôt de résumés multi-étapes, assignation de relecteurs, grilles d'évaluation, décisions du comité scientifique.
+- **Programme & déroulement** - ateliers, sessions, créneaux, salles, visioconférence, annonces en direct, rapports de séance.
+- **Back-office avec RBAC par édition** - rôles fins (administrateur, gestionnaire, secrétariat, comité scientifique/supervision, comptabilité, appui…) avec capacités cadrées par édition.
+- **Paiements** - suivi des frais d'inscription, relances, passerelles en ligne.
+- **Documents** - attestations, badges, livret des résumés, fiches de séance et PV configurables par édition.
+- **Assistants IA** - assistante publique (participants) et **copilote d'administration** capable, après **autorisation explicite**, d'exécuter certaines actions (relances, envois programmés…), avec résilience multi-fournisseurs (relance transparente, routage de modèle, bascule de fournisseur).
+- **Réclamations & incidents** - enregistrement via le chatbot et traitement assisté par IA côté back-office.
 
 ## 🧱 Stack technique
 

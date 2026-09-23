@@ -117,7 +117,7 @@ class EventSession extends Model
 
     /**
      * Identifiants (account_id) des communicants dont la communication est
-     * programmée dans cette session (via les créneaux) — les présentateurs.
+     * programmée dans cette session (via les créneaux) - les présentateurs.
      *
      * @return array<int, int>
      */

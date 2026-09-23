@@ -37,7 +37,7 @@ class SessionEngagementController extends Controller
         ]);
     }
 
-    /** Liste des questions (JSON) — triées par votes puis ancienneté. */
+    /** Liste des questions (JSON) - triées par votes puis ancienneté. */
     public function questions(EventSession $session): JsonResponse
     {
         [$account, $isStaff, $role] = $this->viewer($session);

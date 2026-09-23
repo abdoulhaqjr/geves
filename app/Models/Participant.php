@@ -84,7 +84,7 @@ class Participant extends Model
     }
 
     /**
-     * Utilisateur rattaché à cette inscription (identité unifiée — option B).
+     * Utilisateur rattaché à cette inscription (identité unifiée - option B).
      *
      * @return BelongsTo<User, $this>
      */

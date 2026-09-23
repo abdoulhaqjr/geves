@@ -14,7 +14,7 @@ use Firebase\JWT\Key;
  * Chaque attestation est scellée par une **signature EdDSA (Ed25519)** de
  * l'émetteur, sous la forme d'un **Verifiable Credential** W3C sécurisé en JWS
  * compact (« VC secured using JOSE », alias VC-JWT). On s'appuie sur
- * firebase/php-jwt (crypto vérifiée, libsodium) — jamais de crypto maison.
+ * firebase/php-jwt (crypto vérifiée, libsodium) - jamais de crypto maison.
  *
  * La clé PRIVÉE de l'émetteur est une graine Ed25519 hors dépôt
  * (config `attestations.signing_key`, via l'environnement). La clé PUBLIQUE est

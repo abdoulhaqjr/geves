@@ -6,8 +6,8 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Attestations de communication = par communication ET par personne : on ajoute
- * la référence à la communication (nullable, car les autres types — participation,
- * modération… — restent liés au seul participant/édition).
+ * la référence à la communication (nullable, car les autres types - participation,
+ * modération… - restent liés au seul participant/édition).
  */
 return new class extends Migration
 {

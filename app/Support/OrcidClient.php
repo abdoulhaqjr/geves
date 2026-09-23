@@ -5,7 +5,7 @@ namespace App\Support;
 use Illuminate\Support\Facades\Http;
 
 /**
- * Client OAuth ORCID (3-legged, scope « /authenticate ») — API publique
+ * Client OAuth ORCID (3-legged, scope « /authenticate ») - API publique
  * gratuite. Sert à prouver l'appartenance d'un identifiant ORCID : l'auteur se
  * connecte chez ORCID, qui nous renvoie son iD authentifié. Environnement
  * sandbox ou production, identifiants dans les réglages (jamais en dur).

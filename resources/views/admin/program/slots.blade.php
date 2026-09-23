@@ -40,7 +40,7 @@
         {{-- Filtres (GET) : sélecteur d'édition --}}
         <form method="GET" class="filter-bar">
             <select name="edition_id" onchange="this.form.submit()">
-                <option value="">— Édition —</option>
+                <option value="">- Édition -</option>
                 @foreach ($editions as $ed)
                     <option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>
                 @endforeach
@@ -57,7 +57,7 @@
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="clock" :size="20" /></div><div class="lbl">Créneaux</div><div class="val">{{ $stats['slots'] }}</div></div>
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="calendar-check" :size="20" /></div><div class="lbl">Planifiées</div><div class="val green">{{ $stats['planned'] }}</div><div class="hint">orales</div></div>
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="calendar" :size="20" /></div><div class="lbl">À planifier</div><div class="val warn">{{ $stats['toPlan'] }}</div></div>
-                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="refresh" :size="20" /></div><div class="lbl">Affect. auto</div><div class="val" style="font-size:1.05rem;">{{ $stats['autoAssign'] ? 'Activée' : '—' }}</div><div class="hint">{{ $stats['autoAssign'] ? 'après paiement' : 'désactivée' }}</div></div>
+                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="refresh" :size="20" /></div><div class="lbl">Affect. auto</div><div class="val" style="font-size:1.05rem;">{{ $stats['autoAssign'] ? 'Activée' : '-' }}</div><div class="hint">{{ $stats['autoAssign'] ? 'après paiement' : 'désactivée' }}</div></div>
             </div>
 
             <div class="hierarchy-note">
@@ -116,7 +116,7 @@
                                                 <div>
                                                     <h3>{{ $atelier->title }}</h3>
                                                     <div class="meta">
-                                                        Axes : {{ implode(', ', $atelier->tracks ?: ['—']) }}<br>
+                                                        Axes : {{ implode(', ', $atelier->tracks ?: ['-']) }}<br>
                                                         {{ $atelier->sessions->count() }} session(s)
                                                     </div>
                                                 </div>
@@ -179,7 +179,7 @@
                                 @else<span class="ukc-pill ukc-pill--warn">Salle à définir</span>@endif
                             </h3>
                             <div class="meta">
-                                Axes : {{ implode(', ', $atelier->tracks ?: ['—']) }}<br>
+                                Axes : {{ implode(', ', $atelier->tracks ?: ['-']) }}<br>
                                 {{ $atelier->sessions->count() }} session(s) · {{ $creneaux->whereIn('session_id', $atelier->sessions->pluck('id'))->count() }} créneau(x)
                             </div>
                             <div class="chip-list">
@@ -244,10 +244,10 @@
                                         $sDay = optional($session->session_day ?? $session->starts_at);
                                     @endphp
                                     <tr>
-                                        <td>{{ $sDay?->format('d/m') ?: '—' }}</td>
-                                        <td>{{ $session->atelier?->title ?: '— (plénière)' }}</td>
+                                        <td>{{ $sDay?->format('d/m') ?: '-' }}</td>
+                                        <td>{{ $session->atelier?->title ?: '- (plénière)' }}</td>
                                         <td><strong>{{ $session->label }}</strong></td>
-                                        <td>{{ $session->starts_at?->format('H:i') ?: '—' }}@if ($session->ends_at) – {{ $session->ends_at->format('H:i') }}@endif</td>
+                                        <td>{{ $session->starts_at?->format('H:i') ?: '-' }}@if ($session->ends_at) – {{ $session->ends_at->format('H:i') }}@endif</td>
                                         <td>@if ($session->moderator_name)<span class="ukc-pill ukc-pill--mod">{{ $session->moderator_name }}</span>@else<span class="ukc-pill ukc-pill--muted">À désigner</span>@endif</td>
                                         <td>@if ($session->rapporteur_name)<span class="ukc-pill ukc-pill--rap">{{ $session->rapporteur_name }}</span>@else<span class="ukc-pill ukc-pill--muted">À désigner</span>@endif</td>
                                         <td>{{ $sessionSlots->count() }}</td>
@@ -288,15 +288,15 @@
                             <tbody>
                                 @forelse ($creneaux as $slot)
                                     <tr>
-                                        <td>{{ $slot->starts_at?->format('d/m') ?: '—' }}</td>
-                                        <td>{{ $slot->starts_at?->format('H:i') ?: '—' }}</td>
-                                        <td>{{ $slot->session?->atelier?->title ? $slot->session->atelier->title.' · ' : '' }}{{ $slot->session_label ?: '—' }}</td>
+                                        <td>{{ $slot->starts_at?->format('d/m') ?: '-' }}</td>
+                                        <td>{{ $slot->starts_at?->format('H:i') ?: '-' }}</td>
+                                        <td>{{ $slot->session?->atelier?->title ? $slot->session->atelier->title.' · ' : '' }}{{ $slot->session_label ?: '-' }}</td>
                                         <td>@if ($slot->submission){{ Str::limit($slot->submission->title, 45) }}@else<em style="color:var(--ukc-light);">Créneau libre</em>@endif</td>
                                         <td>
                                             @if ($slot->submission)<span class="ukc-pill ukc-pill--{{ $slot->submission->type === 'poster' ? 'poster' : 'oral' }}">{{ $slot->submission->type === 'poster' ? 'Poster' : 'Orale' }}</span>
                                             @else<span class="ukc-pill ukc-pill--muted">Libre</span>@endif
                                         </td>
-                                        <td>{{ $slot->submission?->ref_code ?: '—' }}</td>
+                                        <td>{{ $slot->submission?->ref_code ?: '-' }}</td>
                                         <td style="text-align:right;">
                                             <div class="ukc-actions">
                                                 <button type="button" class="ukc-btn--icon" title="Modifier"
@@ -341,7 +341,7 @@
                                     $space['building'] ?? null,
                                     $space['note'] ?? null,
                                 ]))
-                                {{ implode(' · ', $bits) ?: '—' }}
+                                {{ implode(' · ', $bits) ?: '-' }}
                             </div>
                             <div class="row-actions">
                                 <form method="POST" action="{{ route('admin.program.spaces.destroy', $i) }}?edition_id={{ $edition_id }}" data-ajax data-ajax-target="prog-spaces" data-ajax-msg="Espace supprimé." data-confirm="Supprimer cet espace ?">
@@ -380,8 +380,8 @@
                                     <tr>
                                         <td>{{ $sub->ref_code }}</td>
                                         <td>{{ Str::limit($sub->title, 50) }}</td>
-                                        <td>{{ $sub->participant?->full_name ?: '—' }}</td>
-                                        <td>{{ $sub->track ?: '—' }}</td>
+                                        <td>{{ $sub->participant?->full_name ?: '-' }}</td>
+                                        <td>{{ $sub->track ?: '-' }}</td>
                                         <td>@if ($isPaid($sub))<span class="ukc-pill ukc-pill--ok">Payé</span>@else<span class="ukc-pill ukc-pill--warn">En attente</span>@endif</td>
                                         <td style="text-align:right;">
                                             <button type="button" class="ukc-btn ukc-btn--sm" @click="openSlot({ id:'', session_id:'', day:'', start:'', room:'', submission_id:'{{ $sub->id }}', title:'' })">Assigner</button>

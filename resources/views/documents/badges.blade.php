@@ -1,4 +1,4 @@
-<x-layouts.app :title="'Badges — ' . $edition->title">
+<x-layouts.app :title="'Badges - ' . $edition->title">
     @php
         $roleColors = [
             'author' => '#223ea4', 'coauthor' => '#3b5bc9', 'reviewer' => '#7c3aed',

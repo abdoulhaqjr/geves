@@ -17,7 +17,7 @@
         {{-- Filtres (GET) --}}
         <form method="GET" class="filter-bar">
             <select name="edition_id" onchange="this.form.submit()">
-                <option value="">— Édition —</option>
+                <option value="">- Édition -</option>
                 @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
             </select>
             <input type="search" name="search" value="{{ $search }}" placeholder="Nom ou e-mail…" style="min-width:180px;"

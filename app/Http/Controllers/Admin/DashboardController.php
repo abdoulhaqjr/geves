@@ -16,7 +16,7 @@ use Illuminate\View\View;
  * Tableau de bord du back-office (Blade, fidèle au mockup admin-dashboard.html) :
  * bannière de l'édition active, indicateurs, pipeline des soumissions, graphiques
  * (Chart.js), dernières soumissions, actions prioritaires et activité récente.
- * Données agrégées en temps réel — vue en lecture seule, sans état (donc Blade).
+ * Données agrégées en temps réel - vue en lecture seule, sans état (donc Blade).
  */
 class DashboardController extends Controller
 {
@@ -105,7 +105,7 @@ class DashboardController extends Controller
         ])->merge(
             $pay()->where('status', 'paid')->with('participant')->latest('created_at')->limit(3)->get()
                 ->map(fn (Payment $p) => [
-                    'dot' => 'green', 'txt' => 'Paiement validé — '.(optional($p->participant)->full_name ?? 'participant'),
+                    'dot' => 'green', 'txt' => 'Paiement validé - '.(optional($p->participant)->full_name ?? 'participant'),
                     'when' => $p->created_at?->diffForHumans(),
                 ])
         )->sortByDesc(fn ($a) => $a['when'])->take(7)->values();

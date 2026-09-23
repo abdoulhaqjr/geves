@@ -2,7 +2,7 @@
 @php($navEdition = \App\Models\Edition::where('status', 'open')->latest('id')->first() ?? \App\Models\Edition::latest('id')->first())
 @php($paletteItems = \App\Support\AdminPalette::items($staff))
 @props(['title' => 'Back-office', 'subtitle' => null])
-<x-layouts.app :title="($title ?? 'Back-office') . ' — '.config('app.name')">
+<x-layouts.app :title="($title ?? 'Back-office') . ' - '.config('app.name')">
     <div class="wp-bar">
         <strong>{{ config('app.name') }}</strong>
         <span>Back-office</span>
@@ -14,7 +14,7 @@
          :class="{ 'ukc-compact': compact }">
         <aside class="ukc-sidebar" :class="{ 'open': open }">
             <div class="ukc-sidebar-brand">
-                <a href="{{ route('admin.dashboard') }}" class="logo-img" aria-label="Université de Kara — back-office">
+                <a href="{{ route('admin.dashboard') }}" class="logo-img" aria-label="Université de Kara - back-office">
                     <img src="{{ asset('img/logo-uk.png') }}" alt="Université de Kara">
                 </a>
                 <div class="logo-sub">Back-office · Colloques</div>

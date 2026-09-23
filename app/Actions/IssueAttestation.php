@@ -10,7 +10,7 @@ use App\Support\Notifier;
 
 /**
  * Émet une attestation vérifiable pour un participant et un type donnés.
- * Idempotent : une seule attestation par (édition, participant, type) — et, pour
+ * Idempotent : une seule attestation par (édition, participant, type) - et, pour
  * une attestation de communication, par (édition, participant, type, communication)
  * puisqu'une personne a une attestation par communication associée.
  *

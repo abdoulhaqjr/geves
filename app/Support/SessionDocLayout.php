@@ -7,8 +7,8 @@ use App\Models\EventSession;
 use App\Models\Slot;
 
 /**
- * Mise en page (entêtes + colonnes) des documents de séance — fiches de session
- * et PV (procès-verbal / rapport de séance) — configurable PAR ÉDITION via
+ * Mise en page (entêtes + colonnes) des documents de séance - fiches de session
+ * et PV (procès-verbal / rapport de séance) - configurable PAR ÉDITION via
  * {@see EditionSettings}. Catalogue de champs/colonnes disponibles + résolution
  * de la sélection (avec libellés personnalisables et repli sur les valeurs par
  * défaut). Éditable par l'admin ou le secrétariat.
@@ -122,7 +122,7 @@ class SessionDocLayout
         $sub = $slot->submission;
 
         return match ($key) {
-            'horaire' => $slot->starts_at?->format('H:i') ?? '—',
+            'horaire' => $slot->starts_at?->format('H:i') ?? '-',
             'titre' => (string) $sub->title,
             'auteurs' => collect($sub->authors ?? [])->pluck('name')->filter()->join(', '),
             'reference' => (string) $sub->ref_code,
@@ -139,14 +139,14 @@ class SessionDocLayout
     public static function headerValue(string $key, EventSession $session): string
     {
         return match ($key) {
-            'date' => $session->session_day?->translatedFormat('l d F Y') ?? '—',
+            'date' => $session->session_day?->translatedFormat('l d F Y') ?? '-',
             'horaire' => $session->starts_at
                 ? $session->starts_at->format('H:i').($session->ends_at ? '–'.$session->ends_at->format('H:i') : '')
-                : '—',
-            'salle' => $session->room ?: '—',
-            'atelier' => optional($session->atelier)->title ?? '—',
-            'moderator' => $session->moderator_name ?: '—',
-            'rapporteur' => $session->rapporteur_name ?: '—',
+                : '-',
+            'salle' => $session->room ?: '-',
+            'atelier' => optional($session->atelier)->title ?? '-',
+            'moderator' => $session->moderator_name ?: '-',
+            'rapporteur' => $session->rapporteur_name ?: '-',
             default => '',
         };
     }

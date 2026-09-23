@@ -27,7 +27,7 @@ class CoauthorPaymentInvitationMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: __('Communication acceptée — réglez vos frais de co-auteur'));
+        return new Envelope(subject: __('Communication acceptée - réglez vos frais de co-auteur'));
     }
 
     public function content(): Content

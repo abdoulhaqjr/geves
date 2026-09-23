@@ -4,7 +4,7 @@
             <div class="ukc-field" style="max-width:320px;margin:0;">
                 <label>Édition</label>
                 <select onchange="window.location='{{ route('admin.program.sessions') }}?edition_id='+this.value">
-                    <option value="">— Choisir —</option>
+                    <option value="">- Choisir -</option>
                     @foreach ($editions as $ed)
                         <option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>
                     @endforeach
@@ -156,7 +156,7 @@
                         <div class="ukc-field" x-show="type === 'atelier'">
                             <label for="sAtelierId">Atelier</label>
                             <select id="sAtelierId" name="sAtelierId">
-                                <option value="">— Choisir —</option>
+                                <option value="">- Choisir -</option>
                                 @foreach ($ateliers as $a)<option value="{{ $a->id }}">{{ $a->title }}</option>@endforeach
                             </select>
                         </div>
@@ -184,7 +184,7 @@
             <div x-show="tab==='agenda'" x-cloak>
                 <div class="ukc-card">
                     @if ($calendarEvents->isEmpty())
-                        <p class="ukc-hint" style="margin-bottom:12px;">Aucune session horodatée pour l’instant — ajoutez des horaires aux sessions (jour, début, fin) pour les voir apparaître dans l’agenda.</p>
+                        <p class="ukc-hint" style="margin-bottom:12px;">Aucune session horodatée pour l’instant - ajoutez des horaires aux sessions (jour, début, fin) pour les voir apparaître dans l’agenda.</p>
                     @endif
                     <script type="application/json" id="programEvents">{!! $calendarEvents->toJson() !!}</script>
                     <div id="programCalendar"></div>

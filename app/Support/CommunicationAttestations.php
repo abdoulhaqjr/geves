@@ -14,7 +14,7 @@ use Illuminate\Support\Collection;
  * co-auteur ont droit à une attestation à leur nom. Deux plafonds :
  *  - par communication : au plus `coauthors_max` co-auteurs reçoivent une attestation ;
  *  - par personne sur l'événement : au plus `attestation_max` attestations de
- *    communication — quand une personne dépasse ce plafond, on privilégie d'abord
+ *    communication - quand une personne dépasse ce plafond, on privilégie d'abord
  *    les communications où elle est auteur correspondant, puis les autres dans
  *    l'ordre chronologique.
  *

@@ -124,7 +124,7 @@ class TestimonialController extends Controller
         }
 
         return back()->with('ukc_status', sprintf(
-            'IA : %d témoignage(s) noté(s), %d proposé(s) à la une — ajustez si besoin.',
+            'IA : %d témoignage(s) noté(s), %d proposé(s) à la une - ajustez si besoin.',
             $report['scored'],
             $report['featured'],
         ));

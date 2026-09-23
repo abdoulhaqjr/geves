@@ -59,14 +59,14 @@
                             @foreach ($payments as $p)
                                 <tr>
                                     <td style="font-family:var(--ukc-mono);">
-                                        {{ $p->reference ?: '—' }}
+                                        {{ $p->reference ?: '-' }}
                                         @if ($p->receipt_no)<div style="font-size:11px;color:var(--ukc-muted);">Reçu {{ $p->receipt_no }}</div>@endif
                                     </td>
                                     <td>
-                                        <div class="title">{{ $p->participant?->full_name ?: '—' }}</div>
+                                        <div class="title">{{ $p->participant?->full_name ?: '-' }}</div>
                                         <div class="meta">{{ $p->participant?->email }}</div>
                                     </td>
-                                    <td>{{ $p->participant?->title ?: '—' }}</td>
+                                    <td>{{ $p->participant?->title ?: '-' }}</td>
                                     <td style="font-weight:700;">{{ number_format((float) $p->amount, 0, ',', ' ') }} {{ $p->currency }}</td>
                                     <td>{{ $p->methodLabel() }}</td>
                                     <td style="white-space:nowrap;">{{ $p->created_at?->format('d/m/Y') }}</td>
@@ -130,12 +130,12 @@
                                         <div style="font-size:12px;color:var(--ukc-muted);">{{ $p->email }}</div>
                                     </td>
                                     <td>{{ $p->edition?->title ?: $p->edition?->year }}</td>
-                                    <td>{{ $row['amount'] ? number_format($row['amount'], 0, ',', ' ').' '.$currency : '—' }}</td>
+                                    <td>{{ $row['amount'] ? number_format($row['amount'], 0, ',', ' ').' '.$currency : '-' }}</td>
                                     <td>
                                         @if ($row['remindedAt'])
                                             <span class="ukc-pill ukc-pill--muted">{{ \Illuminate\Support\Carbon::parse($row['remindedAt'])->translatedFormat('d/m H:i') }}</span>
                                         @else
-                                            <span style="color:var(--ukc-muted);">—</span>
+                                            <span style="color:var(--ukc-muted);">-</span>
                                         @endif
                                     </td>
                                     <td style="text-align:right;">
@@ -152,7 +152,7 @@
                     </table>
                 </div>
             @else
-                <div class="ukc-empty" style="border:none;"><p style="margin:12px 0 18px;">Aucune inscription à relancer — tout est réglé. 🎉</p></div>
+                <div class="ukc-empty" style="border:none;"><p style="margin:12px 0 18px;">Aucune inscription à relancer - tout est réglé. 🎉</p></div>
             @endif
         </div>
     </div>

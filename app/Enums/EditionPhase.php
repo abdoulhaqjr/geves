@@ -10,7 +10,7 @@ use App\Models\Edition;
  * (publication, dates de l'événement, ouverture/clôture des soumissions).
  *
  * ⚠️ Piège métier : un simple appel à communications ouvert n'est PAS « en cours »
- * — l'édition n'est « en cours » que lorsque le déroulement a commencé (dates de
+ * - l'édition n'est « en cours » que lorsque le déroulement a commencé (dates de
  * l'événement atteintes). {@see Edition::phase()}.
  *
  * Correspondance avec les 3 vues publiques ({@see publicView()}) :

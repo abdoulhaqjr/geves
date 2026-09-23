@@ -36,12 +36,12 @@ use Illuminate\Support\Str;
 class ColloqueAvenirSeeder extends Seeder
 {
     private const ATELIERS = [
-        'Atelier 1 — Sciences médicales, sanitaires, sportives et innovations médicinales',
-        'Atelier 2 — Sciences naturelles, agronomiques et biologiques',
-        'Atelier 3 — Langues, lettres, sciences sociales et humaines',
-        'Atelier 4 — Sciences juridiques, politiques, administratives et innovations',
-        'Atelier 5 — Sciences économiques, de gestion et entreprenariat',
-        'Atelier 6 — Mathématiques, physique, chimie et innovations technologiques',
+        'Atelier 1 - Sciences médicales, sanitaires, sportives et innovations médicinales',
+        'Atelier 2 - Sciences naturelles, agronomiques et biologiques',
+        'Atelier 3 - Langues, lettres, sciences sociales et humaines',
+        'Atelier 4 - Sciences juridiques, politiques, administratives et innovations',
+        'Atelier 5 - Sciences économiques, de gestion et entreprenariat',
+        'Atelier 6 - Mathématiques, physique, chimie et innovations technologiques',
     ];
 
     public function run(): void
@@ -58,7 +58,7 @@ class ColloqueAvenirSeeder extends Seeder
         $edition = $colloque->editions()->updateOrCreate(
             ['slug' => 'avenir-durable-2025'],
             [
-                'title' => 'VIIIe Colloque — Innover pour un avenir durable',
+                'title' => 'VIIIe Colloque - Innover pour un avenir durable',
                 'edition_label' => 'VIIIe édition',
                 'subtitle' => 'Enjeux, défis et rôles des universités africaines',
                 'theme' => 'Innover pour un avenir durable : enjeux, défis et rôles des universités africaines',
@@ -154,7 +154,7 @@ class ColloqueAvenirSeeder extends Seeder
             }
 
             $session = EventSession::updateOrCreate(
-                ['edition_id' => $edition->id, 'label' => 'Session — '.$title],
+                ['edition_id' => $edition->id, 'label' => 'Session - '.$title],
                 [
                     'atelier_id' => $atelier->id,
                     'type' => 'atelier',
@@ -179,7 +179,7 @@ class ColloqueAvenirSeeder extends Seeder
                 [
                     'participant_id' => $participant->id,
                     'access_token' => Str::random(40),
-                    'title' => 'Communication test '.($i + 1).' — '.Str::before(Str::after($title, '— '), ','),
+                    'title' => 'Communication test '.($i + 1).' - '.Str::before(Str::after($title, '- '), ','),
                     'authors' => [['name' => $comm->name, 'email' => $comm->email, 'corresponding' => true]],
                     'abstract' => 'Résumé de démonstration pour tester le déroulement du colloque, la modération et le rapportage.',
                     'keywords' => 'innovation, durabilité, universités',
@@ -203,7 +203,7 @@ class ColloqueAvenirSeeder extends Seeder
                 ]
             );
 
-            // Paiement réglé (inscription confirmée) — sauf le dernier communicant,
+            // Paiement réglé (inscription confirmée) - sauf le dernier communicant,
             // laissé NON réglé pour tester les relances de paiement (page Paiements).
             if ($i === count(self::ATELIERS) - 1) {
                 continue;
@@ -376,12 +376,12 @@ class ColloqueAvenirSeeder extends Seeder
         $this->command?->info('Colloque de test « Avenir durable 2025 » créé (édition open, 6 ateliers).');
         $this->command?->info('Modérateurs : moderateur1@test.tg · moderateur2@test.tg');
         $this->command?->info('Rapporteurs : rapporteur1@test.tg · rapporteur2@test.tg');
-        $this->command?->info('Secrétariat (back-office) : secretaire@test.tg — mot de passe : password');
-        $this->command?->info('Comptabilité (back-office) : comptable@test.tg — mot de passe : password');
-        $this->command?->info('Communicants : comm1@test.tg … comm6@test.tg — mot de passe : password');
+        $this->command?->info('Secrétariat (back-office) : secretaire@test.tg - mot de passe : password');
+        $this->command?->info('Comptabilité (back-office) : comptable@test.tg - mot de passe : password');
+        $this->command?->info('Communicants : comm1@test.tg … comm6@test.tg - mot de passe : password');
         $this->command?->info('Auteurs en évaluation : auteur1@test.tg (soumise) · auteur2@test.tg (réponse ouverte) · auteur3@test.tg (correction demandée)');
         foreach ($reviewers as $r) {
-            $this->command?->info('Relecteur : '.$r->email.' — mot de passe : password (relectures dans « Mes relectures »)');
+            $this->command?->info('Relecteur : '.$r->email.' - mot de passe : password (relectures dans « Mes relectures »)');
         }
     }
 

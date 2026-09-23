@@ -1,4 +1,4 @@
-<x-layouts.admin title="Attribution automatique" subtitle="Relecteurs — matching par axe, conflits d’intérêts &amp; charge">
+<x-layouts.admin title="Attribution automatique" subtitle="Relecteurs - matching par axe, conflits d’intérêts &amp; charge">
     <div class="admin-page">
         <div class="ukc-nav-docs">
             <a href="{{ route('admin.submissions.index', ['edition_id' => $edition_id]) }}">Soumissions</a>
@@ -41,7 +41,7 @@
                 {{-- Plan proposé --}}
                 <div class="ukc-card" style="padding:0;">
                     <div style="padding:14px 18px;border-bottom:1px solid var(--ukc-border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-                        <div><strong>Plan proposé</strong> <span style="color:var(--ukc-muted);font-size:13px;">— décochez ce que vous ne voulez pas ; conflits d’intérêts élevés déjà exclus.</span></div>
+                        <div><strong>Plan proposé</strong> <span style="color:var(--ukc-muted);font-size:13px;">- décochez ce que vous ne voulez pas ; conflits d’intérêts élevés déjà exclus.</span></div>
                     </div>
 
                     @if (empty($preview['proposals']))
@@ -69,7 +69,7 @@
                                                     @change="n += $event.target.checked ? 1 : -1"></td>
                                                 <td><code>{{ $p['submission_ref'] }}</code></td>
                                                 <td class="title-cell"><strong>{{ \Illuminate\Support\Str::limit($p['submission_title'], 56) }}</strong></td>
-                                                <td>@if ($p['track'])<span class="axis-tag">{{ \Illuminate\Support\Str::limit($p['track'], 22) }}</span>@else — @endif</td>
+                                                <td>@if ($p['track'])<span class="axis-tag">{{ \Illuminate\Support\Str::limit($p['track'], 22) }}</span>@else - @endif</td>
                                                 <td>{{ $p['reviewer_name'] }}</td>
                                                 <td style="font-size:13px;color:var(--ukc-muted);">{{ $p['reason'] }}</td>
                                                 <td>
@@ -78,7 +78,7 @@
                                                     @elseif ($p['coi'] === \App\Support\ConflictOfInterest::LOW)
                                                         <span class="ukc-pill ukc-pill--muted">COI faible</span>
                                                     @else
-                                                        <span style="color:var(--ukc-light);">—</span>
+                                                        <span style="color:var(--ukc-light);">-</span>
                                                     @endif
                                                 </td>
                                             </tr>
@@ -95,10 +95,10 @@
                     @endif
                 </div>
 
-                {{-- Charge des relecteurs (lecture seule) — l'expertise se règle dans l'édition --}}
+                {{-- Charge des relecteurs (lecture seule) - l'expertise se règle dans l'édition --}}
                 <div class="ukc-card" style="padding:0;">
                     <div style="padding:14px 18px;border-bottom:1px solid var(--ukc-border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-                        <div><strong>Charge des relecteurs</strong> <span style="color:var(--ukc-muted);font-size:13px;">— l’expertise (axes) se règle dans l’onglet <em>Relecteurs</em> de l’édition.</span></div>
+                        <div><strong>Charge des relecteurs</strong> <span style="color:var(--ukc-muted);font-size:13px;">- l’expertise (axes) se règle dans l’onglet <em>Relecteurs</em> de l’édition.</span></div>
                         <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.editions.edit', ['edition' => $edition->id, 'tab' => 'reviewers']) }}">Gérer l’expertise</a>
                     </div>
                     <div class="ukc-table-wrap">
@@ -114,7 +114,7 @@
                                             @endforelse
                                         </td>
                                         <td style="text-align:center;">{{ $rev['current'] }}</td>
-                                        <td style="text-align:center;">@if ($rev['proposed'])<span class="ukc-pill ukc-pill--info">+{{ $rev['proposed'] }}</span>@else — @endif</td>
+                                        <td style="text-align:center;">@if ($rev['proposed'])<span class="ukc-pill ukc-pill--info">+{{ $rev['proposed'] }}</span>@else - @endif</td>
                                     </tr>
                                 @empty
                                     <tr><td colspan="4" style="color:var(--ukc-muted);">Aucun relecteur.</td></tr>

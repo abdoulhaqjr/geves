@@ -27,7 +27,7 @@ use Spatie\Permission\Traits\HasRoles;
  * permissions sont gérés par spatie/laravel-permission ; la capacité clé est
  * `manage_colloques`. Peut impersonifier un compte participant (guard account).
  * Vérifiable par e-mail (le renvoi du lien est déclenché depuis la page
- * Utilisateurs) — non bloquant à la connexion.
+ * Utilisateurs) - non bloquant à la connexion.
  *
  * @property array<string, array{inapp: bool, email: bool}>|null $notification_preferences
  * @property array<string, mixed>|null $meta
@@ -122,7 +122,7 @@ class User extends Authenticatable implements MustVerifyEmail
             || $this->getAllPermissions()->contains('name', 'manage_colloques');
     }
 
-    /** Administrateur de colloque (crée + gère/co-gère des colloques) — ou super-admin. */
+    /** Administrateur de colloque (crée + gère/co-gère des colloques) - ou super-admin. */
     public function isColloqueAdmin(): bool
     {
         return $this->isColloqueSuperAdmin() || $this->access_level === self::ACCESS_COLLOQUE_ADMIN;
@@ -182,7 +182,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /**
      * Identifiants des éditions accessibles à l'utilisateur (toutes s'il est
-     * super-admin ; sinon celles où il est affecté — filtrées par capacité si
+     * super-admin ; sinon celles où il est affecté - filtrées par capacité si
      * fournie).
      *
      * @return list<int>
@@ -285,7 +285,7 @@ class User extends Authenticatable implements MustVerifyEmail
         $this->notify(new VerifyEmail);
     }
 
-    /** Lien de vérification staff (route admin signée) — création back-office. */
+    /** Lien de vérification staff (route admin signée) - création back-office. */
     public function sendStaffEmailVerificationNotification(): void
     {
         $this->notify(new StaffVerifyEmail);
@@ -304,7 +304,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'is_active' => 'boolean',
             'password' => 'hashed',
             'notification_preferences' => 'array',
-            // Identité unifiée (Phase 1 — profil repris d'`accounts`).
+            // Identité unifiée (Phase 1 - profil repris d'`accounts`).
             'meta' => 'array',
             'orcid_verified_at' => 'datetime',
             'two_factor_secret' => 'encrypted',

@@ -8,13 +8,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
 /**
- * FedaPay — mobile money (MTN, Moov, Togocom…) et cartes via page hébergée.
+ * FedaPay - mobile money (MTN, Moov, Togocom…) et cartes via page hébergée.
  *
  * Flux : POST /transactions → POST /transactions/{id}/token (URL hébergée) →
  * GET /transactions/{id} (status « approved ») ; webhook signé HMAC-SHA256
  * (X-FEDAPAY-Signature « t=…,s=… » sur « {t}.{payload} » avec le secret de webhook).
  *
- * ⚠️ Implémentation d'après l'API publique FedaPay — à valider avec le sandbox
+ * ⚠️ Implémentation d'après l'API publique FedaPay - à valider avec le sandbox
  * marchand (enveloppe de réponse et format d'événement peuvent évoluer).
  */
 class FedaPayGateway implements OnlineGateway
@@ -57,7 +57,7 @@ class FedaPayGateway implements OnlineGateway
         $participant = $payment->participant;
 
         $create = $this->http()->post($this->baseUrl().'/transactions', [
-            'description' => 'Frais d\'inscription — '.($payment->edition?->title ?? 'Colloque'),
+            'description' => 'Frais d\'inscription - '.($payment->edition?->title ?? 'Colloque'),
             'amount' => (int) round((float) $payment->amount),
             'currency' => ['iso' => 'XOF'],
             'callback_url' => route('payment.return', ['gateway' => 'fedapay', 'payment' => $payment->id]),

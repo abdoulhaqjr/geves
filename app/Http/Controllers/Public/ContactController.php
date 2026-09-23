@@ -57,7 +57,7 @@ class ContactController extends Controller
             'participant_id' => null,
             'template' => 'contact',
             'recipient' => (string) $recipient,
-            'subject' => 'Contact — '.($edition->title ?: 'Colloque'),
+            'subject' => 'Contact - '.($edition->title ?: 'Colloque'),
             'body' => $data['message'],
             'sent_at' => now(),
             'status' => 'sent',

@@ -44,9 +44,9 @@
                                         {{ \Illuminate\Support\Str::limit($c->subject, 60) }}
                                         <div style="font-size:12px;color:var(--ukc-muted);">{{ $c->edition?->title ?: ($c->edition?->year ?: 'Général') }}@if ($c->category) · {{ $c->category }}@endif</div>
                                     </td>
-                                    <td>{{ $c->name ?: '—' }}<div style="font-size:12px;color:var(--ukc-muted);">{{ $c->email }}</div></td>
+                                    <td>{{ $c->name ?: '-' }}<div style="font-size:12px;color:var(--ukc-muted);">{{ $c->email }}</div></td>
                                     <td><span class="ukc-pill ukc-pill--{{ $c->statusPill() }}">{{ $c->statusLabel() }}</span></td>
-                                    <td>{{ $c->assignee?->name ?: '—' }}</td>
+                                    <td>{{ $c->assignee?->name ?: '-' }}</td>
                                     <td>{{ $c->created_at?->translatedFormat('d/m/Y') }}</td>
                                 </tr>
                             @endforeach

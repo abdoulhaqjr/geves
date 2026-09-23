@@ -36,7 +36,7 @@
                     <div class="meta">
                         <span>{{ $s->type === 'poster' ? __('Poster') : __('Orale') }}</span><span>·</span>
                         <span>{{ $s->track ?: __('Axe non précisé') }}</span><span>·</span>
-                        <span>{{ __('Déposée le') }} {{ $s->created_at?->format('d/m/Y') ?? '—' }}</span>
+                        <span>{{ __('Déposée le') }} {{ $s->created_at?->format('d/m/Y') ?? '-' }}</span>
                     </div>
                 </div>
             </div>
@@ -84,7 +84,7 @@
                             <div style="display:flex;flex-direction:column;gap:6px;">
                                 @foreach ($authors as $a)
                                     <div style="font-size:13.5px;">
-                                        <strong>{{ $a['name'] ?? '—' }}</strong>
+                                        <strong>{{ $a['name'] ?? '-' }}</strong>
                                         @if (!empty($a['corresponding']))<span class="ukc-pill ukc-pill--info" style="margin-left:6px;">{{ __('Correspondant') }}</span>@endif
                                         @if (!empty($a['affiliation']))<span style="color:var(--ukc-muted);"> · {{ $a['affiliation'] }}@if (!empty($a['grade'])) · {{ $a['grade'] }}@endif</span>@endif
                                     </div>
@@ -128,7 +128,7 @@
             </div>
         @endif
 
-        {{-- Version définitive (camera-ready) — après acceptation (déposant seulement) --}}
+        {{-- Version définitive (camera-ready) - après acceptation (déposant seulement) --}}
         @if ($isOwner && $s->status === 'accepted')
             @php($cr = $s->cameraReady())
             <div class="ukc-card" style="margin-bottom:18px;" id="camera-ready">
@@ -150,8 +150,8 @@
                 <form method="POST" action="{{ route('account.submissions.camera-ready', $s) }}" enctype="multipart/form-data">
                     @csrf
                     <div class="ukc-field" style="max-width:520px;">
-                        <label for="cr_file">{{ __('Fichier de la version définitive') }} <span class="hint">{{ __('(PDF, DOC ou DOCX — 8 Mo max)') }}</span></label>
-                        <x-ukc.filedrop name="file" id="cr_file" accept=".pdf,.doc,.docx" :required="true" :hint="__('PDF, DOC ou DOCX — 8 Mo max')" />
+                        <label for="cr_file">{{ __('Fichier de la version définitive') }} <span class="hint">{{ __('(PDF, DOC ou DOCX - 8 Mo max)') }}</span></label>
+                        <x-ukc.filedrop name="file" id="cr_file" accept=".pdf,.doc,.docx" :required="true" :hint="__('PDF, DOC ou DOCX - 8 Mo max')" />
                         @error('file') <span class="error">{{ $message }}</span> @enderror
                     </div>
 
@@ -178,10 +178,10 @@
                     <dl class="kv">
                         <dt>{{ __('Référence') }}</dt><dd><strong>{{ $s->ref_code }}</strong></dd>
                         <dt>{{ __('Type') }}</dt><dd>{{ $s->type === 'poster' ? __('Poster') : __('Communication orale') }}</dd>
-                        <dt>{{ __('Atelier / axe') }}</dt><dd>{{ $s->track ?: '—' }}</dd>
+                        <dt>{{ __('Atelier / axe') }}</dt><dd>{{ $s->track ?: '-' }}</dd>
                         <dt>{{ __('Langue') }}</dt><dd>{{ $s->meta['language'] ?? 'Français' }}</dd>
                         <dt>{{ __('Mots (résumé)') }}</dt><dd>{{ $words }} / {{ $abstractMax }}</dd>
-                        <dt>{{ __('Auteur principal') }}</dt><dd>{{ $mainAuthor ? $fmtAuthor($mainAuthor) : ($s->correspondingAuthorName() ?: '—') }}</dd>
+                        <dt>{{ __('Auteur principal') }}</dt><dd>{{ $mainAuthor ? $fmtAuthor($mainAuthor) : ($s->correspondingAuthorName() ?: '-') }}</dd>
                         @if ($coauthors->isNotEmpty())
                             <dt>{{ __('Co-auteurs') }}</dt><dd>{{ $coauthors->map($fmtAuthor)->filter()->implode(', ') }}</dd>
                         @endif
@@ -248,7 +248,7 @@
                     <p class="hint">{{ __('Les avis détaillés des relecteurs restent confidentiels. Seule la décision finale et d’éventuels commentaires destinés aux auteurs vous sont communiqués.') }}</p>
                 </div>
 
-                {{-- Phase de réponse aux relecteurs (rebuttal) — déposant seulement --}}
+                {{-- Phase de réponse aux relecteurs (rebuttal) - déposant seulement --}}
                 @if ($isOwner && $s->rebuttalOpen())
                     @php($reb = $s->rebuttal())
                     <div class="ukc-card" style="margin-top:18px;border-color:#c7d2fe;background:#f5f7ff;" id="rebuttal">
@@ -371,7 +371,7 @@
             </div>
         </div>
 
-        {{-- Formulaire de resoumission (correction) — déposant seulement --}}
+        {{-- Formulaire de resoumission (correction) - déposant seulement --}}
         @if ($isOwner && $s->canBeRevised())
             <div class="ukc-card" id="resubmit" style="margin-top:18px;">
                 <h2>{{ __('Corriger & renvoyer') }}</h2>
@@ -415,7 +415,7 @@
                     <div class="box-body">
                         @if ($slot)
                             <p style="font-size:.88rem;color:var(--ukc-muted);margin:0 0 12px;">
-                                {{ __('Créneau actuel :') }} <strong>{{ $slot->session_label ?: __('Présentation') }}@if ($slot->starts_at) — {{ $slot->starts_at->translatedFormat('d F, H:i') }}@endif</strong>. {{ __('Sélectionnez-en un autre ci-dessous.') }}
+                                {{ __('Créneau actuel :') }} <strong>{{ $slot->session_label ?: __('Présentation') }}@if ($slot->starts_at) - {{ $slot->starts_at->translatedFormat('d F, H:i') }}@endif</strong>. {{ __('Sélectionnez-en un autre ci-dessous.') }}
                             </p>
                         @endif
                         <div style="max-height:56vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-right:2px;">
@@ -426,7 +426,7 @@
                                     <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm" style="justify-content:space-between;width:100%;text-align:left;">
                                         <span>
                                             <strong>{{ $av->session_label ?: __('Créneau') }}</strong>
-                                            @if ($av->starts_at)<span style="color:var(--ukc-muted);"> — {{ $av->starts_at->translatedFormat('d F, H:i') }}</span>@endif
+                                            @if ($av->starts_at)<span style="color:var(--ukc-muted);"> - {{ $av->starts_at->translatedFormat('d F, H:i') }}</span>@endif
                                             @if ($av->room)<span style="color:var(--ukc-muted);"> · {{ __('Salle') }} {{ $av->room }}</span>@endif
                                         </span>
                                         <x-ukc.icon name="chevron" :size="16" />

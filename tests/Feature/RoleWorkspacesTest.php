@@ -32,14 +32,14 @@ it('liste au modérateur ses séances à animer', function () {
     $edition = openEdition();
     $mod = eventActor('mod@example.tg');
     $edition->sessions()->create([
-        'label' => 'Session — Atelier 1', 'type' => 'atelier', 'room' => 'Salle 1',
+        'label' => 'Session - Atelier 1', 'type' => 'atelier', 'room' => 'Salle 1',
         'moderator_email' => 'mod@example.tg', 'moderator_name' => 'Test Acteur',
     ]);
 
     $this->actingAs($mod, 'account')
         ->get(route('account.moderation'))
         ->assertOk()
-        ->assertSee('Session — Atelier 1')
+        ->assertSee('Session - Atelier 1')
         ->assertSee('Espace d’échange');
 });
 
@@ -47,7 +47,7 @@ it('propose au modérateur un accès à son espace depuis le tableau de bord', f
     $edition = openEdition();
     $mod = eventActor('moddash@example.tg');
     $edition->sessions()->create([
-        'label' => 'Session — Atelier 9', 'type' => 'atelier',
+        'label' => 'Session - Atelier 9', 'type' => 'atelier',
         'moderator_email' => 'moddash@example.tg', 'moderator_name' => 'Test Acteur',
     ]);
 
@@ -71,7 +71,7 @@ it('permet au rapporteur de rédiger et soumettre un rapport de séance commenc�
     $edition = openEdition();
     $rap = eventActor('rap@example.tg');
     $session = $edition->sessions()->create([
-        'label' => 'Session — Atelier 2', 'type' => 'atelier',
+        'label' => 'Session - Atelier 2', 'type' => 'atelier',
         'starts_at' => now()->subHour(), // séance déjà commencée
         'rapporteur_email' => 'rap@example.tg', 'rapporteur_name' => 'Test Acteur',
     ]);
@@ -79,7 +79,7 @@ it('permet au rapporteur de rédiger et soumettre un rapport de séance commenc�
     $this->actingAs($rap, 'account')
         ->get(route('account.reports'))
         ->assertOk()
-        ->assertSee('Session — Atelier 2')
+        ->assertSee('Session - Atelier 2')
         ->assertSee('À rédiger');
 
     $this->actingAs($rap, 'account')
@@ -276,7 +276,7 @@ it('refuse le rapport d’une séance à un non-rapporteur', function () {
     $edition = openEdition();
     $intrus = eventActor('intrus@example.tg');
     $session = $edition->sessions()->create([
-        'label' => 'Session — Atelier 3', 'type' => 'atelier',
+        'label' => 'Session - Atelier 3', 'type' => 'atelier',
         'rapporteur_email' => 'quelquun-dautre@example.tg',
     ]);
 
@@ -292,7 +292,7 @@ it('refuse le rapport d’une séance à un non-rapporteur', function () {
 it('affiche au comité les rapports de séance soumis (vue admin)', function () {
     $edition = openEdition();
     $session = $edition->sessions()->create([
-        'label' => 'Session — Atelier 4', 'type' => 'atelier',
+        'label' => 'Session - Atelier 4', 'type' => 'atelier',
         'rapporteur_email' => 'rap@example.tg', 'rapporteur_name' => 'Rita Rapporteuse',
     ]);
     SessionReport::create([
@@ -305,7 +305,7 @@ it('affiche au comité les rapports de séance soumis (vue admin)', function () 
     $this->actingAs(adminStaff(), 'web')
         ->get(route('admin.program.reports', ['edition_id' => $edition->id]))
         ->assertOk()
-        ->assertSee('Session — Atelier 4')
+        ->assertSee('Session - Atelier 4')
         ->assertSee('Rita Rapporteuse')
         ->assertSee('Synthèse détaillée de la séance.')
         ->assertSee('Publier les actes.')

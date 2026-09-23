@@ -28,7 +28,7 @@
         <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
             <div class="ukc-field" style="min-width:220px;margin:0;">
                 <select onchange="window.location='{{ route('admin.reports.index') }}?edition_id='+this.value">
-                    <option value="">— Édition —</option>
+                    <option value="">- Édition -</option>
                     @foreach ($editions as $ed)
                         <option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>
                     @endforeach
@@ -377,7 +377,7 @@
                     <h2><span><x-ukc.icon name="sparkles" :size="18" /> Export personnalisé assisté par l’IA</span></h2>
                     <p class="desc">
                         Décrivez le rapport souhaité <strong>ou</strong> joignez un modèle existant (PDF, Word, Excel).
-                        L’IA rédige un <strong>brouillon</strong> à partir des données réelles de l’édition —
+                        L’IA rédige un <strong>brouillon</strong> à partir des données réelles de l’édition -
                         la décision et la diffusion restent à votre main.
                     </p>
 
@@ -478,7 +478,7 @@
                         <div class="ai-result">
                             <h3>Rapport généré</h3>
                             <p style="font-size:13px;color:#166534;margin-bottom:10px;">
-                                Brouillon produit selon vos instructions et les données réelles de l’édition —
+                                Brouillon produit selon vos instructions et les données réelles de l’édition -
                                 à relire avant diffusion. Format : <strong>{{ strtoupper($aiReport['format'] ?? 'xlsx') }}</strong>.
                             </p>
                             <div class="actions" style="display:flex;gap:8px;flex-wrap:wrap;">

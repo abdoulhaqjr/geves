@@ -1,9 +1,9 @@
-<x-layouts.admin :title="'Aperçu — '.$participant->full_name" subtitle="Sa page (lecture seule)">
+<x-layouts.admin :title="'Aperçu - '.$participant->full_name" subtitle="Sa page (lecture seule)">
     {{-- Bandeau lecture seule --}}
     <div class="ukc-alert ukc-alert--info" style="align-items:center;">
         <span class="ico"><x-ukc.icon name="eye" :size="18" /></span>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;width:100%;">
-            <div>Aperçu de l’espace de <strong>{{ $participant->full_name }}</strong> — lecture seule.</div>
+            <div>Aperçu de l’espace de <strong>{{ $participant->full_name }}</strong> - lecture seule.</div>
             <div style="display:flex;gap:8px;">
                 @if ($participant->user)
                     <form method="POST" action="{{ route('admin.participants.impersonate', $participant) }}">
@@ -41,7 +41,7 @@
                 @endif
                 <div style="font-size:.88rem;color:var(--ukc-muted);">
                     {{ $participant->email }}
-                    @if ($participant->title) — {{ $participant->title }} @endif
+                    @if ($participant->title) - {{ $participant->title }} @endif
                     @if ($participant->institution) · {{ $participant->institution }} @endif
                 </div>
                 @if ($participant->user?->orcidUrl())
@@ -81,7 +81,7 @@
                 <div style="padding:10px 0;border-top:1px solid var(--ukc-border);display:flex;justify-content:space-between;gap:10px;align-items:center;">
                     <div>
                         <div style="font-weight:700;">{{ number_format((float) $p->amount, 0, ',', ' ') }} {{ $p->currency }}</div>
-                        <div style="font-size:.82rem;color:var(--ukc-muted);">{{ $p->methodLabel() }} · {{ $p->paid_at?->format('d/m/Y') ?? '—' }}</div>
+                        <div style="font-size:.82rem;color:var(--ukc-muted);">{{ $p->methodLabel() }} · {{ $p->paid_at?->format('d/m/Y') ?? '-' }}</div>
                     </div>
                     <div style="display:flex;gap:8px;align-items:center;">
                         <span class="ukc-pill ukc-pill--{{ $p->statusPill() }}">{{ $p->statusLabel() }}</span>
@@ -115,6 +115,6 @@
 
     {{-- Rappel lecture seule --}}
     <p style="text-align:center;color:var(--ukc-light);font-size:.82rem;margin-top:18px;">
-        <x-ukc.icon name="lock" :size="14" /> Vue en lecture seule — aucune action n’est possible depuis cet aperçu.
+        <x-ukc.icon name="lock" :size="14" /> Vue en lecture seule - aucune action n’est possible depuis cet aperçu.
     </p>
 </x-layouts.admin>

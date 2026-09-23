@@ -2,7 +2,7 @@
 
 /*
 |--------------------------------------------------------------------------
-| Couche de design « Tailwise » — back-offices uniquement
+| Couche de design « Tailwise » - back-offices uniquement
 |--------------------------------------------------------------------------
 |
 | Adapte le kit Tailwind « Tailwise » (ThemeForest) à la charte UK, dans le
@@ -80,7 +80,7 @@
 .ukc-shell .ukc-sidebar-nav a svg { opacity: .85; }
 .ukc-shell .ukc-sidebar-nav a.active svg { opacity: 1; }
 
-/* Sous-liens (— Liste, — Attribution auto…) */
+/* Sous-liens (- Liste, - Attribution auto…) */
 .ukc-shell .ukc-sidebar-nav a.sub,
 .ukc-shell--admin .ukc-sidebar-nav a.sub {
     padding: 8px 14px 8px 34px; font-size: 12.5px; color: #64748b; font-weight: 500;
@@ -491,7 +491,7 @@
 }
 
 /* ============================================================
-   Gestion de projet (édition = projet) — kanban, progression, jalons.
+   Gestion de projet (édition = projet) - kanban, progression, jalons.
    Briques Tailwise réutilisées : cards, pills, stat cards, slideover.
    ============================================================ */
 .admin-project .ukc-progress { height: 10px; border-radius: 999px; background: #eef2f7; overflow: hidden; }
@@ -535,7 +535,7 @@
 .ukc-cal-dot { display: inline-block; width: 9px; height: 9px; border-radius: 999px; margin-right: 4px; vertical-align: middle; }
 .admin-project #projectCalendar { font-size: 13px; }
 
-/* Projet — checklist & commentaires (panneau tâche) + badge checklist des cartes. */
+/* Projet - checklist & commentaires (panneau tâche) + badge checklist des cartes. */
 .ukc-kanban__card-badges { display: inline-flex; align-items: center; gap: 8px; }
 .ukc-kanban__card-badges .chk { display: inline-flex; align-items: center; gap: 3px; color: var(--ukc-muted); }
 .ukc-kanban__card-badges .chk--full { color: var(--ukc-green); font-weight: 700; }

@@ -73,7 +73,7 @@
                                             @forelse ($u->roles as $r)
                                                 <span class="ukc-pill ukc-pill--{{ \App\Support\StaffRoles::pill($r->name) }}">{{ \App\Support\StaffRoles::label($r->name) }}</span>
                                             @empty
-                                                <span class="ukc-pill ukc-pill--muted">—</span>
+                                                <span class="ukc-pill ukc-pill--muted">-</span>
                                             @endforelse
                                         </div>
                                     </td>
@@ -85,7 +85,7 @@
                                         @endif
                                     </td>
                                     <td style="white-space:nowrap;">{{ $u->last_login_at?->translatedFormat('d/m/Y · H:i') ?? 'Jamais' }}</td>
-                                    <td><span class="ip-cell">{{ $u->last_login_ip ?: '—' }}</span></td>
+                                    <td><span class="ip-cell">{{ $u->last_login_ip ?: '-' }}</span></td>
                                     <td>
                                         @if ($u->is_active)<span class="ukc-pill ukc-pill--ok">Actif</span>
                                         @else<span class="ukc-pill ukc-pill--muted">Inactif</span>@endif
@@ -162,13 +162,13 @@
                                                value="{{ $permKey }}"
                                                @checked(in_array($permKey, $rolePermissions[$roleName] ?? [], true))
                                                @disabled($roleName === 'administrator')
-                                               aria-label="{{ $permLabel }} — {{ $meta['label'] }}">
+                                               aria-label="{{ $permLabel }} - {{ $meta['label'] }}">
                                     </div>
                                 @endforeach
                             @endforeach
                         </div>
                     </div>
-                    <p class="ukc-hint" style="margin-top:12px;font-size:12px;color:var(--ukc-light);">La porte d’entrée du back-office reste la capacité <code>manage_colloques</code> (rôles « Système ») — préservée automatiquement.</p>
+                    <p class="ukc-hint" style="margin-top:12px;font-size:12px;color:var(--ukc-light);">La porte d’entrée du back-office reste la capacité <code>manage_colloques</code> (rôles « Système ») - préservée automatiquement.</p>
                     <div class="ukc-form-actions" style="margin-top:14px;">
                         <button type="submit" class="ukc-btn ukc-btn--blue">
                             <x-ukc.icon name="check" :size="16" /> Enregistrer la matrice

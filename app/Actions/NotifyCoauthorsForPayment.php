@@ -53,7 +53,7 @@ class NotifyCoauthorsForPayment
                 'participant_id' => null,
                 'template' => 'coauthor_payment',
                 'recipient' => $email,
-                'subject' => 'Communication acceptée — réglez vos frais de co-auteur',
+                'subject' => 'Communication acceptée - réglez vos frais de co-auteur',
                 'body' => 'Communication '.$submission->ref_code.' acceptée.',
                 'sent_at' => now(),
                 'status' => 'sent',

@@ -118,7 +118,7 @@ class SubmissionController extends Controller
 
     /**
      * Affiliations/institutions déjà connues localement (comptes + participants),
-     * filtrées par `$q` — repli hors-ligne de l'autocomplétion ROR.
+     * filtrées par `$q` - repli hors-ligne de l'autocomplétion ROR.
      *
      * @return list<string>
      */

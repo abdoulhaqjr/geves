@@ -24,7 +24,7 @@
                 <form method="POST" action="{{ route('author.decline.confirm', ['token' => $link->token]) }}" style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;">
                     @csrf
                     <button type="submit" class="ukc-btn ukc-btn--danger">
-                        <x-ukc.icon name="close" :size="16" /> {{ __('Ce n’est pas moi — retirer l’association') }}
+                        <x-ukc.icon name="close" :size="16" /> {{ __('Ce n’est pas moi - retirer l’association') }}
                     </button>
                     <a href="{{ route('home') }}" class="ukc-btn ukc-btn--ghost">{{ __('C’est bien moi') }}</a>
                 </form>

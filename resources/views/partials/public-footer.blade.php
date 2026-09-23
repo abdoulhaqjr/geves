@@ -4,7 +4,7 @@
         <div class="footer-grid">
             <div>
                 <img src="{{ asset('img/logo-uk-white.png') }}" alt="Université de Kara" class="footer-logo">
-                {{ __('Service de l’Université de Kara — Direction de la Recherche et de l’Innovation (DRI). Plateforme non commerciale.') }}
+                {{ __('Service de l’Université de Kara - Direction de la Recherche et de l’Innovation (DRI). Plateforme non commerciale.') }}
             </div>
             <div>
                 <h4>{{ __('Navigation') }}</h4>

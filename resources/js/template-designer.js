@@ -1,4 +1,4 @@
-/* UKC editor v2 — syntax verified */
+/* UKC editor v2 - syntax verified */
 (function () {
   var page = document.getElementById('page');
   var layersList = document.getElementById('layersList');
@@ -839,7 +839,7 @@
       row.classList.add('drag-over');
       // Live visual swap: move DOM node as we hover past
       var fromId = e.dataTransfer.getData('text/plain') || row.dataset._from;
-      // dataTransfer.getData may be empty in dragover in some browsers — use global
+      // dataTransfer.getData may be empty in dragover in some browsers - use global
       fromId = window.__lyDragId || fromId;
       var fromEl = fromId && document.getElementById(fromId);
       if (!fromEl || fromEl === el) return;
@@ -953,7 +953,7 @@
     if (lock) stopTextEdit();
     refreshLayers();
     selectEl(el);
-    toast(lock ? 'Calque verrouille — non deplacable ni editable' : 'Calque deverrouille');
+    toast(lock ? 'Calque verrouille - non deplacable ni editable' : 'Calque deverrouille');
   }
 
   function moveLayer(dir) {
@@ -1021,7 +1021,7 @@
     window.__ukcGroupOrder.unshift(gid);
     refreshLayers();
     pushHistory();
-    toast('Groupe cree — glissez d autres calques dessus');
+    toast('Groupe cree - glissez d autres calques dessus');
   }
 
   function deleteSelected() {
@@ -1061,7 +1061,7 @@
     toast('Mode de fusion : ' + this.value);
   });
 
-  // Charge le modele Participation par defaut (apres definition de loadTemplate — appele plus bas si besoin)
+  // Charge le modele Participation par defaut (apres definition de loadTemplate - appele plus bas si besoin)
   DEFAULT_ELEMENTS.forEach(createEl);
   var bgEl0 = document.getElementById('pageBg');
   if (bgEl0) {
@@ -1434,7 +1434,7 @@
     groups = {};
     selected = null;
     refreshLayers();
-    toast('Design vierge — A4 paysage');
+    toast('Design vierge - A4 paysage');
   });
   function clearCanvas() {
     page.querySelectorAll('.ed-el').forEach(function (e) { e.remove(); });

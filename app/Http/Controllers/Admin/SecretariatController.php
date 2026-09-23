@@ -136,7 +136,7 @@ class SecretariatController extends Controller
 
         // Contexte du programme réel (salles, horaires, modérateurs/rapporteurs) pour
         // ancrer les documents logistiques (affiches, ordre du jour, chevalets).
-        $brief = $prompt."\n\nContexte — programme réel de l’édition :\n".$this->programContext($edition);
+        $brief = $prompt."\n\nContexte - programme réel de l’édition :\n".$this->programContext($edition);
 
         try {
             $doc = $action->handle($edition, $brief, $files, $data['aiProvider'] ?? null, 'document');

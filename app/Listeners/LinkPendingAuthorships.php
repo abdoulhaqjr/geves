@@ -74,7 +74,7 @@ class LinkPendingAuthorships
                 $user,
                 'authorship',
                 __('Une communication vous a été rattachée'),
-                '« '.$row->submission->title.' » — '.$edition->title,
+                '« '.$row->submission->title.' » - '.$edition->title,
                 route('account.submissions.show', $row->submission),
                 'inbox',
             );

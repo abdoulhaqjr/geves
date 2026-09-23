@@ -1,5 +1,5 @@
 {{--
-    Éditeur WYSIWYG du résumé — CKEditor 5 (initialisé par app.js : initAbstractEditors).
+    Éditeur WYSIWYG du résumé - CKEditor 5 (initialisé par app.js : initAbstractEditors).
     Variables : $name (nom du champ), $initial (HTML de départ), $min (MOTS, 0 = pas
     de minimum), $max (MOTS), $help (facultatif).
 --}}

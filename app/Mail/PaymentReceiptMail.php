@@ -26,7 +26,7 @@ class PaymentReceiptMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: __('Paiement reçu — reçu :ref', ['ref' => $this->payment->receipt_no]));
+        return new Envelope(subject: __('Paiement reçu - reçu :ref', ['ref' => $this->payment->receipt_no]));
     }
 
     public function content(): Content

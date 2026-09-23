@@ -10,7 +10,7 @@ use Spatie\Permission\Models\Permission;
 /**
  * Point d'entrée unique pour émettre des notifications in-app (canal base de
  * données). Découple les appelants (Actions, listeners) de la mécanique
- * Notification de Laravel. Les e-mails transactionnels restent gérés à part —
+ * Notification de Laravel. Les e-mails transactionnels restent gérés à part -
  * l'in-app est additif.
  */
 class Notifier

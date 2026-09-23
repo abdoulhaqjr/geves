@@ -5,7 +5,7 @@ use App\Models\User;
 use App\Support\StaffRoles;
 
 /**
- * Phase 3 — niveaux d'accès globaux : super admin · admin de colloque · utilisateur.
+ * Phase 3 - niveaux d'accès globaux : super admin · admin de colloque · utilisateur.
  * L'admin de colloque peut créer un colloque (et en devient gérant) ; l'utilisateur
  * simple non.
  */

@@ -84,7 +84,7 @@ class AiManager
      * Exécute une extraction avec **bascule automatique entre fournisseurs**. On
      * tente le fournisseur préféré/par défaut puis, s'il ne peut pas honorer la
      * tâche (surcharge persistante, quota/jetons épuisés, capacité manquante,
-     * erreur), on passe au fournisseur capable suivant — d'un même ou d'un autre
+     * erreur), on passe au fournisseur capable suivant - d'un même ou d'un autre
      * fournisseur configuré. « needsPdf » (déduit des fichiers) restreint aux
      * fournisseurs sachant lire un PDF, ce qui règle le cas des IA qui ne lisent
      * pas les PDF.

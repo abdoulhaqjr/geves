@@ -107,7 +107,7 @@ class LinkSubmissionAuthors
             $user,
             'authorship',
             __('Vous êtes associé(e) à une communication'),
-            '« '.$submission->title.' » — '.($edition->title ?? ''),
+            '« '.$submission->title.' » - '.($edition->title ?? ''),
             $url,
             'inbox',
         );

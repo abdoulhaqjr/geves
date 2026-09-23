@@ -30,7 +30,7 @@ class StaffVerifyEmail extends VerifyEmail
     protected function buildMailMessage($url): MailMessage
     {
         return (new MailMessage)
-            ->subject('Vérifiez votre adresse — Back-office '.config('app.name'))
+            ->subject('Vérifiez votre adresse - Back-office '.config('app.name'))
             ->greeting('Bonjour,')
             ->line('Confirmez votre adresse e-mail pour activer votre accès au back-office '.config('app.name').'.')
             ->action('Vérifier mon adresse', $url)

@@ -51,7 +51,7 @@
             </div>
 
             <p style="margin-top:24px;font-size:.8rem;color:var(--ukc-light);text-align:center;">
-                Reçu généré le {{ now()->format('d/m/Y') }} — {{ $payment->edition?->colloque?->name }}.
+                Reçu généré le {{ now()->format('d/m/Y') }} - {{ $payment->edition?->colloque?->name }}.
             </p>
         </div>
     </div>

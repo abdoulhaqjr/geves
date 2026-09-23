@@ -58,7 +58,7 @@
         @endphp
         <div class="slot-row {{ $slot->submission ? '' : 'empty' }}">
             <div class="slot-time">
-                {{ $slot->starts_at?->format('H:i') ?: '—' }}@if ($end) – {{ $end->format('H:i') }}@endif
+                {{ $slot->starts_at?->format('H:i') ?: '-' }}@if ($end) – {{ $end->format('H:i') }}@endif
                 <span class="dur">{{ $dur }} min</span>
             </div>
             <div class="slot-body">
@@ -87,7 +87,7 @@
             </div>
         </div>
     @empty
-        <div class="slot-row empty"><div class="slot-time">—</div><div class="slot-body"><div class="meta">Aucun créneau dans cette session.</div></div><div></div></div>
+        <div class="slot-row empty"><div class="slot-time">-</div><div class="slot-body"><div class="meta">Aucun créneau dans cette session.</div></div><div></div></div>
     @endforelse
 </div>
 

@@ -1,4 +1,4 @@
-<x-layouts.participant :title="__('Mon témoignage')" :subtitle="__('Partagez votre expérience — les meilleurs témoignages figurent sur la page d’accueil')">
+<x-layouts.participant :title="__('Mon témoignage')" :subtitle="__('Partagez votre expérience - les meilleurs témoignages figurent sur la page d’accueil')">
     <div class="account-testimonials" style="max-width:720px;">
 
         {{-- Mes témoignages déjà déposés --}}
@@ -51,7 +51,7 @@
                         <div class="ukc-field">
                             <label for="edition_id">{{ __('À propos de quel événement ? (optionnel)') }}</label>
                             <select id="edition_id" name="edition_id">
-                                <option value="">— {{ __('Non précisé') }} —</option>
+                                <option value="">- {{ __('Non précisé') }} -</option>
                                 @foreach ($editions as $ed)
                                     <option value="{{ $ed->id }}" @selected((string) old('edition_id') === (string) $ed->id)>{{ $ed->title ?: $ed->year }}</option>
                                 @endforeach
@@ -61,7 +61,7 @@
                     <div class="ukc-field">
                         <label for="rating">{{ __('Note (optionnelle)') }}</label>
                         <select id="rating" name="rating">
-                            <option value="">— {{ __('Sans note') }} —</option>
+                            <option value="">- {{ __('Sans note') }} -</option>
                             @for ($i = 5; $i >= 1; $i--)
                                 <option value="{{ $i }}" @selected((string) old('rating') === (string) $i)>{{ $i }}/5</option>
                             @endfor

@@ -207,7 +207,7 @@ class SettingController extends Controller
 
         try {
             Mail::raw('Ceci est un e-mail de test envoyé depuis '.config('app.name').'.', function ($m) use ($to) {
-                $m->to($to)->subject('Test SMTP — '.config('app.name'));
+                $m->to($to)->subject('Test SMTP - '.config('app.name'));
             });
 
             return back()->with('ukc_status', 'E-mail de test envoyé à '.$to.'.')->with('settings_tab', 'email');

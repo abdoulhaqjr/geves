@@ -17,7 +17,7 @@
                     <h3 style="margin:0 0 4px;">{{ $claim->subject }}</h3>
                     <div style="font-size:13px;color:var(--ukc-muted);margin-bottom:12px;">
                         {{ $claim->name ?: 'Déclarant inconnu' }} · {{ $claim->email }}
-                        @if ($claim->edition) · {{ $claim->edition->colloque?->name ? $claim->edition->colloque->name.' — ' : '' }}{{ $claim->edition->title ?: $claim->edition->year }}@endif
+                        @if ($claim->edition) · {{ $claim->edition->colloque?->name ? $claim->edition->colloque->name.' - ' : '' }}{{ $claim->edition->title ?: $claim->edition->year }}@endif
                         · reçue le {{ $claim->created_at?->translatedFormat('d/m/Y à H:i') }}
                     </div>
                     <div class="ukc-rte" style="white-space:pre-line;line-height:1.6;">{{ $claim->message }}</div>
@@ -49,7 +49,7 @@
                             @csrf
                             <div class="ukc-field"><label>Assigné à</label>
                                 <select name="assigned_to" onchange="this.form.submit()">
-                                    <option value="">— Personne —</option>
+                                    <option value="">- Personne -</option>
                                     @foreach ($assignees as $u)<option value="{{ $u->id }}" @selected($claim->assigned_to === $u->id)>{{ $u->name }}</option>@endforeach
                                 </select>
                             </div>
@@ -62,7 +62,7 @@
             {{-- ===== Analyse IA ===== --}}
             <div class="ukc-card">
                 <h3><x-ukc.icon name="sparkles" :size="18" /> Analyse de traitement (IA)</h3>
-                <p style="font-size:13px;color:var(--ukc-muted);margin:4px 0 12px;">L'IA analyse le souci et propose : une résolution directe, la procédure à suivre, ou explique pourquoi c'est irrésolvable. Elle <strong>propose</strong> — vous décidez.</p>
+                <p style="font-size:13px;color:var(--ukc-muted);margin:4px 0 12px;">L'IA analyse le souci et propose : une résolution directe, la procédure à suivre, ou explique pourquoi c'est irrésolvable. Elle <strong>propose</strong> - vous décidez.</p>
                 <form method="POST" action="{{ route('admin.claims.analyze', $claim) }}">
                     @csrf
                     <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="sparkles" :size="15" /> {{ $claim->analyses() ? 'Relancer l’analyse' : 'Analyser' }}</button>

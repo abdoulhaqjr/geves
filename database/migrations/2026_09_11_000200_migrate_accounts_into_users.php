@@ -6,7 +6,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Refonte comptes & rôles — Phase 1 (identité unifiée), migration de DONNÉES.
+ * Refonte comptes & rôles - Phase 1 (identité unifiée), migration de DONNÉES.
  *
  * Fusionne chaque `account` (participant) dans `users` :
  *  - e-mail déjà présent dans `users` (même personne staff + participant) →

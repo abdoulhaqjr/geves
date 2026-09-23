@@ -90,7 +90,7 @@
                 @endunless
             </div>
             <p style="text-align:center;font-size:.8rem;color:var(--ukc-muted);margin-top:14px;">
-                {{ config('app.name') }} — Université de Kara
+                {{ config('app.name') }} - Université de Kara
             </p>
         </div>
     </div>

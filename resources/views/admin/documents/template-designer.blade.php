@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Éditeur de templates — {{ config('app.name') }}</title>
+  <title>Éditeur de templates - {{ config('app.name') }}</title>
   <meta name="csrf-token" content="{{ csrf_token() }}">
   @php($ukcEditorCfg = ['editionId' => (string) $edition_id, 'kind' => $kind, 'type' => $type, 'typeLabel' => $typeLabel ?? 'Participation', 'backUrl' => route('admin.documents.attestations'), 'saveUrl' => route('admin.documents.templates.save'), 'csrf' => csrf_token(), 'editorState' => $editorState ?? null])
   <script>window.UKC_EDITOR = @json($ukcEditorCfg);</script>

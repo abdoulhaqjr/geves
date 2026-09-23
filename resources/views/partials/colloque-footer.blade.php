@@ -71,7 +71,7 @@
                     </div>
                 @endif
             </div>
-            <div>© {{ now()->year }} {{ $e->colloque?->name ?? 'Université de Kara' }} — {{ $e->title }}</div>
+            <div>© {{ now()->year }} {{ $e->colloque?->name ?? 'Université de Kara' }} - {{ $e->title }}</div>
         </div>
     </div>
 </div>

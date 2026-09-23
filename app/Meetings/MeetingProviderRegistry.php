@@ -58,7 +58,7 @@ class MeetingProviderRegistry
     /**
      * Fournisseur d'une session (son `meeting_provider`, sinon le défaut). Si le
      * fournisseur choisi n'est pas configuré (ex. LiveKit sans identifiants), on
-     * retombe sur le défaut disponible — pas de salle cassée.
+     * retombe sur le défaut disponible - pas de salle cassée.
      */
     public function for(EventSession $session): MeetingProvider
     {

@@ -26,20 +26,20 @@
                     <tbody>
                         <template x-for="r in reviews" :key="r.id">
                             <tr>
-                                <td style="font-family:var(--ukc-mono);font-weight:700;" x-text="r.ref || '—'"></td>
+                                <td style="font-family:var(--ukc-mono);font-weight:700;" x-text="r.ref || '-'"></td>
                                 <td class="title">
                                     <span x-text="r.title"></span>
                                     <div style="font-size:12px;color:var(--ukc-muted);" x-text="r.edition"></div>
                                 </td>
-                                <td x-text="r.track || '—'"></td>
+                                <td x-text="r.track || '-'"></td>
                                 <td>
                                     <template x-if="r.completed">
                                         <span style="font-size:13px;">
-                                            <span x-text="recoLabel(r.recommendation) || '—'"></span>
+                                            <span x-text="recoLabel(r.recommendation) || '-'"></span>
                                             <template x-if="r.score !== null"><strong style="color:var(--ukc-blue);" x-text="' · ' + r.score + '/20'"></strong></template>
                                         </span>
                                     </template>
-                                    <template x-if="!r.completed"><span style="color:var(--ukc-muted);">—</span></template>
+                                    <template x-if="!r.completed"><span style="color:var(--ukc-muted);">-</span></template>
                                 </td>
                                 <td>
                                     <span class="ukc-pill ukc-pill--ok" x-show="r.completed">{{ __('Évaluée') }}</span>
@@ -133,7 +133,7 @@
             <div class="ukc-form-row">
                 <label style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;">
                     <span>{{ __('Grille d’évaluation') }}</span>
-                    <span style="font-weight:500;font-size:12.5px;">{{ __('Note globale') }} : <strong x-text="overall() === null ? '—' : overall() + '/20'"></strong></span>
+                    <span style="font-weight:500;font-size:12.5px;">{{ __('Note globale') }} : <strong x-text="overall() === null ? '-' : overall() + '/20'"></strong></span>
                 </label>
                 <div>
                     <template x-for="c in (cur.criteria || [])" :key="c.key">
@@ -155,7 +155,7 @@
             <div class="ukc-form-row">
                 <label>{{ __('Recommandation') }} <span class="req">*</span></label>
                 <select x-model="cur.recommendation" required>
-                    <option value="">{{ __('— Choisir —') }}</option>
+                    <option value="">{{ __('- Choisir -') }}</option>
                     <template x-for="(label, key) in recommendations" :key="key">
                         <option :value="key" x-text="label"></option>
                     </template>

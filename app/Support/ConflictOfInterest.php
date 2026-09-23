@@ -48,7 +48,7 @@ class ConflictOfInterest
             }
             if ($revInst !== '' && $authorAff !== '' && $revInst === $authorAff) {
                 $conflicts[] = ['level' => self::HIGH, 'label' => 'Même institution',
-                    'detail' => trim(($authorName ?: 'Un auteur').' — '.(string) ($a['affiliation'] ?? '')).'.'];
+                    'detail' => trim(($authorName ?: 'Un auteur').' - '.(string) ($a['affiliation'] ?? '')).'.'];
             }
             if ($revLast !== '' && self::lastName($authorName) === $revLast) {
                 $conflicts[] = ['level' => self::LOW, 'label' => 'Homonymie de nom',

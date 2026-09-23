@@ -1,10 +1,10 @@
-<x-layouts.admin title="Annonces" subtitle="Annonces du déroulement — publiées en direct sur la page « Déroulement »">
+<x-layouts.admin title="Annonces" subtitle="Annonces du déroulement - publiées en direct sur la page « Déroulement »">
     <div class="admin-page admin-announcements">
         <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
             <div class="ukc-field" style="max-width:340px;margin:0;">
                 <label>Édition</label>
                 <select onchange="window.location='{{ route('admin.announcements') }}?edition_id='+this.value">
-                    <option value="">— Choisir —</option>
+                    <option value="">- Choisir -</option>
                     @foreach ($editions as $ed)
                         <option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>
                     @endforeach
@@ -28,7 +28,7 @@
                         <div class="ukc-field">
                             <label for="title">Titre <span class="req">*</span></label>
                             <input type="text" id="title" name="title" value="{{ old('title') }}" maxlength="160" required
-                                   placeholder="Ex. Changement de salle — Atelier 2">
+                                   placeholder="Ex. Changement de salle - Atelier 2">
                             @error('title') <span class="error">{{ $message }}</span> @enderror
                         </div>
                         <div class="ukc-field">

@@ -1,8 +1,8 @@
 @use('App\Support\SessionDocLayout')
-<x-layouts.app :title="'Procès-verbaux — ' . $edition->title">
+<x-layouts.app :title="'Procès-verbaux - ' . $edition->title">
     <div style="max-width:820px;margin:0 auto;padding:24px 16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;" class="no-print">
-            <h1 style="font-size:1.2rem;font-weight:800;">Procès-verbaux (PV) — {{ $edition->title }}</h1>
+            <h1 style="font-size:1.2rem;font-weight:800;">Procès-verbaux (PV) - {{ $edition->title }}</h1>
             <button onclick="window.print()" class="ukc-btn ukc-btn--blue ukc-btn--sm">
                 <x-ukc.icon name="download" :size="16" /> Imprimer / PDF
             </button>

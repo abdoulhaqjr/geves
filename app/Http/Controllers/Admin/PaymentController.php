@@ -41,7 +41,7 @@ class PaymentController extends Controller
         $editions = $this->accessibleEditions($request, 'payments');
 
         // Par défaut (aucun filtre explicite), on se cale sur le colloque courant
-        // (ouvert le plus récent, sinon le plus récent) — pas « toutes les éditions ».
+        // (ouvert le plus récent, sinon le plus récent) - pas « toutes les éditions ».
         if ($request->has('edition_id')) {
             $editionId = (string) $request->query('edition_id', '');
         } else {
@@ -299,7 +299,7 @@ class PaymentController extends Controller
         try {
             $confirm->handle($payment);
 
-            return back()->with('ukc_status', 'Paiement marqué réglé — reçu envoyé au participant.');
+            return back()->with('ukc_status', 'Paiement marqué réglé - reçu envoyé au participant.');
         } catch (\DomainException $e) {
             return back()->with('ukc_error', $e->getMessage());
         }

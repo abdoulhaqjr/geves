@@ -16,7 +16,7 @@
                         @endif
                     </div>
                     <div>
-                        <h1>{{ $agentName }} — {{ __('votre assistante colloque') }}</h1>
+                        <h1>{{ $agentName }} - {{ __('votre assistante colloque') }}</h1>
                         <p>{{ __('Questions sur les soumissions, l’inscription, les tarifs, le programme et les documents.') }}</p>
                     </div>
                     <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" style="margin-left:auto;align-self:center;flex-shrink:0;"

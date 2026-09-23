@@ -28,7 +28,7 @@ use Symfony\Component\HttpFoundation\Response;
 class DocumentController extends Controller
 {
     /**
-     * « Mes documents » (Blade, fidèle au mockup) : espace consolidé — attestations
+     * « Mes documents » (Blade, fidèle au mockup) : espace consolidé - attestations
      * vérifiables, reçus de paiement, et documents des éditions du participant
      * (ressources + livret des résumés). Lecture seule → Blade.
      */

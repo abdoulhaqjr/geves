@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 
 /**
  * Vérification discrète, pendant la saisie d'un auteur/co-auteur, de l'existence
- * d'un compte correspondant — POUR GUIDER le déposant sans révéler l'identité
+ * d'un compte correspondant - POUR GUIDER le déposant sans révéler l'identité
  * d'autrui :
  * - e-mail / téléphone (fournis par le déposant) → on confirme s'ils
  *   correspondent à un membre (il sera associé & notifié) ou non (il sera invité) ;

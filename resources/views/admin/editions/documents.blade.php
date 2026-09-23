@@ -1,4 +1,4 @@
-<x-layouts.admin :title="'Documents — '.($edition->title ?: $edition->year)" subtitle="Ressources & documents de l’édition">
+<x-layouts.admin :title="'Documents - '.($edition->title ?: $edition->year)" subtitle="Ressources & documents de l’édition">
     <div style="max-width:820px;">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
             <a href="{{ route('admin.editions.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">← Éditions</a>

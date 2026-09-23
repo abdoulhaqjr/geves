@@ -25,7 +25,7 @@ trait HasNotificationPreferences
     /**
      * Canaux Laravel activés pour un type (database / mail). L'e-mail générique
      * n'est ajouté que si aucun Mailable dédié ne couvre déjà ce type pour ce
-     * destinataire — sinon c'est le Mailable dédié (gaté par la préférence) qui
+     * destinataire - sinon c'est le Mailable dédié (gaté par la préférence) qui
      * porte l'e-mail, pour éviter le doublon.
      *
      * @return array<int, string>

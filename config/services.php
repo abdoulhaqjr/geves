@@ -37,7 +37,7 @@ return [
 
     // Passerelles de paiement (identifiants marchands ; vides = passerelle inactive).
 
-    // CashPay (SEMOA) — OAuth 2.0 + facture hébergée (bill_url) + callback JWT HS256.
+    // CashPay (SEMOA) - OAuth 2.0 + facture hébergée (bill_url) + callback JWT HS256.
     'cashpay' => [
         'base_url' => env('CASHPAY_BASE_URL', 'https://api.semoa-payments.ovh/sandbox-v3'),
         'username' => env('CASHPAY_USERNAME'),
@@ -88,7 +88,7 @@ return [
         'public_daily_limit' => (int) env('AI_PUBLIC_DAILY_LIMIT', 30),
     ],
 
-    // HAL / AuréHAL — autocomplétion des affiliations (référentiel des structures).
+    // HAL / AuréHAL - autocomplétion des affiliations (référentiel des structures).
     // Désactivé par défaut ; activable dans les réglages (hal.enabled).
     'hal' => [
         'enabled' => (bool) env('HAL_ENABLED', false),

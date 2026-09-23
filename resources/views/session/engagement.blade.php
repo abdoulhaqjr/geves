@@ -1,4 +1,4 @@
-<x-layouts.app :title="'Échanges — ' . $session->label">
+<x-layouts.app :title="'Échanges - ' . $session->label">
     <div style="max-width:760px;margin:0 auto;padding:clamp(20px,4vw,40px) clamp(14px,4vw,22px);"
          x-data="sessionEngagement({
             urls: {

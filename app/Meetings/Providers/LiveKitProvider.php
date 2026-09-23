@@ -9,9 +9,9 @@ use Firebase\JWT\JWT;
 use Illuminate\Support\Str;
 
 /**
- * LiveKit — SFU WebRTC (Cloud ou self-host). L'accès à une salle se fait avec un
+ * LiveKit - SFU WebRTC (Cloud ou self-host). L'accès à une salle se fait avec un
  * **token d'accès** (JWT signé avec le secret d'API) encodant l'identité, la
- * salle et les droits (publier / s'abonner / admin) — ce qui matérialise
+ * salle et les droits (publier / s'abonner / admin) - ce qui matérialise
  * modérateur / présentateur / participant côté serveur.
  *
  * L'affichage passe par l'app LiveKit Meet (paramètres `liveKitUrl` + `token`).

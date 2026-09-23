@@ -1,4 +1,4 @@
-<x-layouts.app :title="'Livret — ' . $edition->title">
+<x-layouts.app :title="'Livret - ' . $edition->title">
     <div style="max-width:820px;margin:0 auto;padding:24px 16px;">
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px;" class="no-print">
             <a href="{{ request()->fullUrlWithQuery(['format' => 'docx']) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">

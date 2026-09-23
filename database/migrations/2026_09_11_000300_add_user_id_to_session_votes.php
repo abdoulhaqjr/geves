@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Refonte comptes & rôles — Phase 2b : Q&A / sondages de session.
+ * Refonte comptes & rôles - Phase 2b : Q&A / sondages de session.
  *
  * Les votes (questions & sondages) référençaient le compte participant
  * (`account_id`, NOT NULL + FK vers `accounts` + unicité par votant). L'identité

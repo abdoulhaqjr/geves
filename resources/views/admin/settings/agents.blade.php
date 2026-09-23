@@ -84,19 +84,19 @@
                         </div>
                     </div>
 
-                    <h3 style="font-size:14px;font-weight:800;margin:16px 0 8px;">Persona — instruction système</h3>
+                    <h3 style="font-size:14px;font-weight:800;margin:16px 0 8px;">Persona - instruction système</h3>
                     <div class="ukc-field" style="margin:0;">
                         <textarea rows="6" :name="'agents['+i+'][persona]'" x-model="agent.persona"
                                   placeholder="Qui est l’agent, son ton, son périmètre…"></textarea>
                     </div>
 
-                    <h3 style="font-size:14px;font-weight:800;margin:16px 0 8px;color:#166534;">Instructions POSITIVES — à toujours faire</h3>
+                    <h3 style="font-size:14px;font-weight:800;margin:16px 0 8px;color:#166534;">Instructions POSITIVES - à toujours faire</h3>
                     <div class="ukc-field" style="margin:0;">
                         <textarea rows="5" :name="'agents['+i+'][positive]'" x-model="agent.positive"
                                   placeholder="- Orienter vers l’espace participant…"></textarea>
                     </div>
 
-                    <h3 style="font-size:14px;font-weight:800;margin:16px 0 8px;color:#991b1b;">Instructions NÉGATIVES — à ne jamais faire</h3>
+                    <h3 style="font-size:14px;font-weight:800;margin:16px 0 8px;color:#991b1b;">Instructions NÉGATIVES - à ne jamais faire</h3>
                     <div class="ukc-field" style="margin:0;">
                         <textarea rows="5" :name="'agents['+i+'][negative]'" x-model="agent.negative"
                                   placeholder="- Ne jamais inventer de tarifs ni de décisions…"></textarea>

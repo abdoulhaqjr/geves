@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Http;
  * Fournisseur SMS générique par API HTTP (POST JSON). Convient à de nombreuses
  * passerelles (dont locales) : on configure l'URL, le jeton Bearer et l'ID
  * expéditeur ; le corps envoyé est { to, message, sender }. Les identifiants
- * proviennent de la config (réglages back-office / .env) — jamais du dépôt.
+ * proviennent de la config (réglages back-office / .env) - jamais du dépôt.
  */
 class HttpSmsProvider implements SmsProvider
 {

@@ -1,4 +1,4 @@
-<x-layouts.app :title="'Badges — ' . $edition->title">
+<x-layouts.app :title="'Badges - ' . $edition->title">
     <div style="max-width:900px;margin:0 auto;padding:24px 16px;">
         <div style="display:flex;justify-content:flex-end;margin-bottom:12px;" class="no-print">
             <button onclick="window.print()" class="ukc-btn ukc-btn--blue ukc-btn--sm">

@@ -1,4 +1,4 @@
-<x-layouts.app :title="__(':app — Université de Kara', ['app' => config('app.name')])">
+<x-layouts.app :title="__(':app - Université de Kara', ['app' => config('app.name')])">
     @php
         // Style de bannière d'une édition : image si disponible, sinon dégradé UK.
         $bannerStyle = function ($edition) {
@@ -38,13 +38,13 @@
                         </h3>
                         <div class="event-title">{{ $featured->tr('title') ?: $featured->colloque?->name }}</div>
                         <div class="meta">
-                            @if ($featured->theme)<div><strong>{{ __('Thème') }}</strong> — {{ $featured->tr('theme') }}</div>@endif
-                            <div><strong>{{ __('Dates') }}</strong> —
+                            @if ($featured->theme)<div><strong>{{ __('Thème') }}</strong> - {{ $featured->tr('theme') }}</div>@endif
+                            <div><strong>{{ __('Dates') }}</strong> -
                                 {{ $featured->date_start?->translatedFormat('F Y') ?? __('à préciser') }}
                                 @if ($featured->location) · {{ $featured->tr('location') }}@endif
                             </div>
                             @if ($featured->submission_deadline)
-                                <div><strong>{{ __('Soumissions') }}</strong> — {{ __('jusqu’au') }} {{ $featured->submission_deadline->translatedFormat('d F Y') }}</div>
+                                <div><strong>{{ __('Soumissions') }}</strong> - {{ __('jusqu’au') }} {{ $featured->submission_deadline->translatedFormat('d F Y') }}</div>
                             @endif
                         </div>
                         <div style="display:flex;flex-wrap:wrap;gap:8px;">
@@ -126,7 +126,7 @@
             <div class="ukc-container">
                 <div class="block-head">
                     <h2>{{ __('Colloques à venir') }}</h2>
-                    <p>{!! __('Éditions dont l’<strong>appel est lancé</strong> (soumission, évaluation, inscription…) — la date du colloque n’est pas encore atteinte.') !!}</p>
+                    <p>{!! __('Éditions dont l’<strong>appel est lancé</strong> (soumission, évaluation, inscription…) - la date du colloque n’est pas encore atteinte.') !!}</p>
                 </div>
                 <div class="colloque-grid">
                     @foreach ($upcoming as $e)
@@ -165,7 +165,7 @@
             <div class="ukc-container">
                 <div class="block-head">
                     <h2>{{ __('Colloques passés') }}</h2>
-                    <p>{{ __('Mémoire des éditions précédentes — programmes, galeries et documents publics.') }}</p>
+                    <p>{{ __('Mémoire des éditions précédentes - programmes, galeries et documents publics.') }}</p>
                 </div>
                 <div class="colloque-grid">
                     @foreach ($past as $e)
@@ -235,7 +235,7 @@
                 <div class="about-pillar">
                     <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg></div>
                     <h3>{{ __('Non commercial') }}</h3>
-                    <p>{{ __('Outil public de service, sans logique marchande — au service de la recherche et de l’innovation.') }}</p>
+                    <p>{{ __('Outil public de service, sans logique marchande - au service de la recherche et de l’innovation.') }}</p>
                 </div>
             </div>
         </div>
@@ -283,13 +283,13 @@
         </div>
     </section>
 
-    {{-- ===================== Galerie — dernier colloque ===================== --}}
+    {{-- ===================== Galerie - dernier colloque ===================== --}}
     @if (! empty($gallery))
         <section class="ukc-section ukc-section--alt" id="galerie">
             <div class="ukc-container">
                 <div class="block-head">
-                    <h2>{{ __('Galerie — dernier colloque') }}</h2>
-                    <p>{{ __('Photos et vidéos') }}{{ $galleryEdition ? ' — '.$galleryEdition->title : '' }}. {{ __('Cliquez pour agrandir ou visionner.') }}</p>
+                    <h2>{{ __('Galerie - dernier colloque') }}</h2>
+                    <p>{{ __('Photos et vidéos') }}{{ $galleryEdition ? ' - '.$galleryEdition->title : '' }}. {{ __('Cliquez pour agrandir ou visionner.') }}</p>
                 </div>
                 @include('partials.gallery', ['media' => $gallery])
                 @if ($galleryEdition)

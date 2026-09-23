@@ -43,7 +43,7 @@
                     @if ($account->hasVerifiedEmail())
                         {{ __('Adresse vérifiée. La modification de l’e-mail de connexion se fait auprès de l’organisation.') }}
                     @else
-                        {{ __('Adresse non vérifiée —') }}
+                        {{ __('Adresse non vérifiée -') }}
                         <a href="{{ route('account.verification.notice') }}" style="color:var(--ukc-blue);font-weight:700;">{{ __('renvoyer le lien de confirmation') }}</a>.
                     @endif
                 </span>
@@ -68,7 +68,7 @@
                                 @if ($s['current'])<br><span style="color:var(--ukc-muted);font-size:12px;">{{ __('Session actuelle') }}</span>@endif
                             </td>
                             <td>{{ $s['ip'] }}</td>
-                            <td>{{ $s['last'] ?: '—' }}</td>
+                            <td>{{ $s['last'] ?: '-' }}</td>
                             <td style="text-align:right;white-space:nowrap;">
                                 @if ($s['current'])
                                     <span class="ukc-pill ukc-pill--ok">{{ __('Active') }}</span>

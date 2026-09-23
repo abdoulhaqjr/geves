@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Refonte comptes & rôles — Phase 3 : niveau d'accès global (3 niveaux).
+ * Refonte comptes & rôles - Phase 3 : niveau d'accès global (3 niveaux).
  *
  *  - super_admin     : toute la plateforme, tous les colloques ;
  *  - colloque_admin  : peut créer des colloques et gérer/co-gérer les siens ;

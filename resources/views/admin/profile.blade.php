@@ -2,7 +2,7 @@
     @php($initialTab = ($pendingSecret !== '' || session('recovery_codes') || $errors->has('code') || $errors->has('current_password')) ? 'securite' : 'identite')
     <div class="admin-page admin-profile" x-data="{ tab: '{{ $initialTab }}' }">
 
-        {{-- En-tête + onglets « Mon compte » — même présentation que l'espace participant. --}}
+        {{-- En-tête + onglets « Mon compte » - même présentation que l'espace participant. --}}
         <div class="account-head" style="display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:4px;">
             @if ($twoFactorEnabled)
                 <span class="ukc-pill ukc-pill--ok account-badge">2FA activée · TOTP</span>
@@ -55,7 +55,7 @@
                         <div class="ukc-field">
                             <label for="civility">Civilité</label>
                             <select id="civility" name="civility">
-                                <option value="">—</option>
+                                <option value="">-</option>
                                 @foreach ($civilities as $c)
                                     <option value="{{ $c }}" @selected(old('civility', $staff->civility) === $c)>{{ $c }}</option>
                                 @endforeach
@@ -82,7 +82,7 @@
                         <div class="ukc-field">
                             <label for="email">E-mail</label>
                             <input type="email" id="email" value="{{ $staff->email }}" readonly aria-readonly="true" style="background:var(--ukc-bg);cursor:not-allowed;">
-                            <span class="hint">Identifiant de connexion — géré dans <strong>Utilisateurs</strong>.</span>
+                            <span class="hint">Identifiant de connexion - géré dans <strong>Utilisateurs</strong>.</span>
                         </div>
 
                         <div class="ukc-field">
@@ -166,7 +166,7 @@
 
                 @if (session('recovery_codes'))
                     <div class="ukc-note" style="background:#fef9c3;border:1px solid #fde68a;border-radius:10px;padding:12px 14px;margin-bottom:14px;">
-                        <strong>Codes de secours — notez-les maintenant</strong> (ils ne seront plus affichés).
+                        <strong>Codes de secours - notez-les maintenant</strong> (ils ne seront plus affichés).
                         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px 16px;font-family:var(--ukc-mono);margin-top:8px;">
                             @foreach (session('recovery_codes') as $code)<span>{{ $code }}</span>@endforeach
                         </div>

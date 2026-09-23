@@ -1,5 +1,5 @@
 /**
- * Contenu du back-office (tableaux de bord, listes…) — porté du mockup.
+ * Contenu du back-office (tableaux de bord, listes…) - porté du mockup.
  * Styles partagés sous .admin-page ; spécifiques sous .admin-dash / .admin-editions.
  * Réutilise le shell admin ukc (sidebar/topbar) de ukc.css.
  */
@@ -137,7 +137,7 @@
 .admin-reports .progress-bar { height: 8px; background: #e2e8f0; border-radius: 50px; overflow: hidden; margin-top: 6px; }
 .admin-reports .progress-bar > span { display: block; height: 100%; border-radius: 50px; background: var(--ukc-blue); }
 
-/* Exports prêts — grille de cartes (fidèle au mockup admin-reports) */
+/* Exports prêts - grille de cartes (fidèle au mockup admin-reports) */
 .admin-reports .report-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
 .admin-reports .report-item { border: 1px solid var(--ukc-border); border-radius: 12px; padding: 16px; background: #fafbfd; display: flex; flex-direction: column; gap: 8px; }
 .admin-reports .report-item h3 { font-size: 14px; font-weight: 800; }
@@ -273,7 +273,7 @@
 .admin-users .role-card .meta { font-size: 12px; color: var(--ukc-light); }
 
 /* Colonnes pilotées en inline par le nombre de rôles (voir la vue) ; les filets
-   sont dessinés par le `gap` sur fond bordure — robuste quel que soit le nombre
+   sont dessinés par le `gap` sur fond bordure - robuste quel que soit le nombre
    de rôles (fini le décalage quand on ajoute un rôle). */
 .admin-users .perm-grid { display: grid; font-size: 11.5px; border: 1px solid var(--ukc-border); border-radius: 10px; overflow: hidden; background: var(--ukc-border); gap: 1px; }
 .admin-users .perm-grid .cell { padding: 9px 8px; background: #fff; display: flex; align-items: center; justify-content: center; text-align: center; }
@@ -314,7 +314,7 @@
 .admin-editions .ed-card.active-ed { border-color: var(--ukc-blue); box-shadow: 0 0 0 3px rgba(34, 62, 164, .1); }
 
 /* =========================================================================
-   Créneaux / Planning (admin) — refonte fidèle au mockup admin-creneaux.html
+   Créneaux / Planning (admin) - refonte fidèle au mockup admin-creneaux.html
    ========================================================================= */
 .admin-program .day-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
 .admin-program .day-tabs button { background: #fff; border: 1px solid var(--ukc-border); border-radius: 10px; padding: 10px 14px; font-weight: 700; font-size: 13px; color: var(--ukc-muted); cursor: pointer; text-align: left; }
@@ -383,7 +383,7 @@
 .admin-program .ukc-nav-docs button:hover { border-color: var(--ukc-blue); color: var(--ukc-blue); }
 .admin-program .ukc-nav-docs button.active { background: var(--ukc-blue); border-color: var(--ukc-blue); color: #fff; }
 
-/* Documents · Livre des résumés (Modèles & Apparence) — mockup admin-documents.html */
+/* Documents · Livre des résumés (Modèles & Apparence) - mockup admin-documents.html */
 .admin-documents .ukc-drop { display: block; width: 100%; border: 2px dashed var(--ukc-border); border-radius: 10px; padding: 20px; text-align: center; font-size: 13px; color: var(--ukc-muted); cursor: pointer; background: #fafbfd; line-height: 1.5; }
 .admin-documents .ukc-drop:hover { border-color: var(--ukc-blue); color: var(--ukc-blue); background: #eef2ff; }
 .admin-documents .ukc-tpl-item { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--ukc-border); border-radius: 10px; margin-bottom: 8px; background: #fff; }
@@ -638,7 +638,7 @@
 .admin-submission-forms .field-item .meta span { font-size: 12px; color: var(--ukc-muted); }
 .admin-submission-forms .field-edit { padding: 12px; border: 1px solid var(--ukc-border); border-top: none; border-radius: 0 0 10px 10px; margin: -8px 0 8px; background: #fff; }
 
-/* E-mails — modales (fidèle au mockup admin-emails) */
+/* E-mails - modales (fidèle au mockup admin-emails) */
 .admin-emails .ukc-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 700px) { .admin-emails .ukc-form-grid { grid-template-columns: 1fr; } }
 .admin-emails .ukc-check { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 8px; cursor: pointer; }
@@ -665,7 +665,7 @@
 .admin-emails .log-wrap { max-height: 340px; overflow: auto; border: 1px solid var(--ukc-border); border-radius: 10px; }
 
 /* ============================================================
-   Assistant IA — copilote d'administration (mockup admin-ai-assistant)
+   Assistant IA - copilote d'administration (mockup admin-ai-assistant)
    ============================================================ */
 .admin-ai .layout { display: grid; grid-template-columns: 280px 1fr 300px; gap: 16px; align-items: start; }
 @media (max-width: 1100px) { .admin-ai .layout { grid-template-columns: 1fr; } }

@@ -7,11 +7,11 @@ use Illuminate\Support\Facades\Http;
 
 /**
  * Autocomplétion des affiliations via **ROR** (Research Organization Registry,
- * https://ror.org) — API publique, gratuite, ouverte, sans clé. Couvre les
+ * https://ror.org) - API publique, gratuite, ouverte, sans clé. Couvre les
  * universités, laboratoires et instituts de recherche du monde entier.
  *
  * Résilient : cache 1 jour, timeout court, **fail-closed** (liste vide en cas
- * d'erreur/timeout) — la saisie libre reste toujours possible.
+ * d'erreur/timeout) - la saisie libre reste toujours possible.
  */
 class RorClient
 {

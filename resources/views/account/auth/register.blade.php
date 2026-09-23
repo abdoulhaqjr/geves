@@ -30,7 +30,7 @@
         <div class="ukc-field">
             <label for="civility">{{ __('Civilité') }}</label>
             <select id="civility" name="civility">
-                <option value="">—</option>
+                <option value="">-</option>
                 @foreach ($civilities as $c)
                     <option value="{{ $c }}" @selected(old('civility') === $c)>{{ $c }}</option>
                 @endforeach
@@ -41,7 +41,7 @@
         <div class="ukc-field">
             <label for="grade">{{ __('Titre') }} <span class="hint">({{ __('profil principal') }})</span></label>
             <select id="grade" name="grade">
-                <option value="">— {{ __('Choisir') }}</option>
+                <option value="">- {{ __('Choisir') }}</option>
                 @foreach ($titles as $t)
                     <option value="{{ $t }}" @selected(old('grade') === $t)>{{ $t }}</option>
                 @endforeach

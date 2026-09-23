@@ -67,7 +67,7 @@ class ConfirmPayment
         Notifier::staff(
             kind: 'payment',
             title: 'Nouveau paiement réglé',
-            body: trim(($participant?->full_name ?: 'Un participant').' — '.$amount),
+            body: trim(($participant?->full_name ?: 'Un participant').' - '.$amount),
             url: route('admin.payments.index'),
             icon: 'receipt',
         );

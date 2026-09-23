@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Diffusion en direct (live streaming) des sessions du colloque. Fondations de
- * données uniquement — l'UI (formulaire back-office, page « regarder ») viendra
+ * données uniquement - l'UI (formulaire back-office, page « regarder ») viendra
  * avec le mockup. Champs additifs et nullables : aucune session existante n'est
  * affectée.
  *

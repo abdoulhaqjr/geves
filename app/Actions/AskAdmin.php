@@ -20,7 +20,7 @@ use Illuminate\Support\Str;
  * brouillons, vérifications) à partir de l'agent « admin » (cf. {@see AiAgents})
  * et des chiffres réels de l'édition active. Il peut aussi PROPOSER une action
  * concrète (parmi {@see CopilotActions}) que l'utilisateur autorise explicitement
- * avant qu'elle ne soit exécutée côté serveur — jamais d'exécution d'office.
+ * avant qu'elle ne soit exécutée côté serveur - jamais d'exécution d'office.
  *
  * @phpstan-type ChatTurn array{role: string, text: string}
  */
@@ -171,7 +171,7 @@ class AskAdmin
                 'Édition : '.($edition->title ?: 'Édition').' ('.$edition->year.') · statut '.$edition->status
                     .($edition->submission_deadline ? ' · clôture soumissions le '.$edition->submission_deadline->translatedFormat('d/m/Y') : ''),
                 'Participants : '.$s['participants'],
-                'Communications : '.$s['submissions'].' (acceptées : '.$s['accepted'].')'.($byStatus ? ' — '.$byStatus : ''),
+                'Communications : '.$s['submissions'].' (acceptées : '.$s['accepted'].')'.($byStatus ? ' - '.$byStatus : ''),
                 $axes ? 'Axes principaux : '.$axes : null,
                 'Paiements : '.$pay['ok'].' réglés, '.$pay['pending'].' en attente, '.$pay['failed'].' échoués/annulés',
                 'Recettes : '.number_format($s['collected'], 0, ',', ' ').' '.$s['currency'].' encaissés · '
@@ -206,7 +206,7 @@ class AskAdmin
                 .'ci-dessus (le ciblage réel de l’action), et NON sur les seules statistiques du tableau de bord, qui '
                 .'peuvent couvrir un périmètre différent. Ne propose une "action" que si l’utilisateur exprime cette '
                 .'intention et qu’elle est pertinente au vu de cet état réel ; n’invente JAMAIS une "key" hors de la '
-                .'liste ; propose au plus UNE action. Elle n’est JAMAIS exécutée d’office — l’utilisateur devra '
+                .'liste ; propose au plus UNE action. Elle n’est JAMAIS exécutée d’office - l’utilisateur devra '
                 .'l’autoriser explicitement (il cliquera pour l’exécuter). Dans "answer", dis en une phrase ce que tu '
                 .'vas faire et demande l’autorisation. Sinon mets "action" à null.';
 
@@ -258,10 +258,10 @@ class AskAdmin
         Nouvelle demande de l'administrateur : {$question}
 
         Tu assistes l'utilisateur (synthèses, brouillons, points de vigilance) ET tu peux DÉCLENCHER
-        certaines actions concrètes — mais uniquement via la liste ci-dessous et après son autorisation
+        certaines actions concrètes - mais uniquement via la liste ci-dessous et après son autorisation
         explicite. Structure ta réponse pour la rendre lisible : phrases courtes, un saut de ligne entre
         les idées, une liste à puces (« - ») pour énumérer, **gras** pour les points clés. N'utilise ni
-        titres « # » ni tableaux. Reste synthétique et va droit au but — n'invite pas l'utilisateur à
+        titres « # » ni tableaux. Reste synthétique et va droit au but - n'invite pas l'utilisateur à
         faire lui-même ce que tu peux exécuter via une action disponible.
 
         {$actionsBlock}

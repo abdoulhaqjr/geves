@@ -93,7 +93,7 @@
                         <span style="font-weight:500;color:var(--ukc-muted);">· {{ $account->grade }}</span>
                     </div>
                     <div style="font-size:.85rem;color:var(--ukc-muted);">
-                        {{ $account->email }} — {{ $account->affiliation ?: __('affiliation manquante') }}
+                        {{ $account->email }} - {{ $account->affiliation ?: __('affiliation manquante') }}
                     </div>
                 </div>
                 <a href="{{ route('account.profile') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
@@ -229,7 +229,7 @@
                             <div class="ukc-field">
                                 <label for="corr-grade">{{ __('Grade') }} <span class="hint">{{ __('(pour ce colloque)') }}</span></label>
                                 <select id="corr-grade" name="corresponding[grade]" x-model="corr.grade">
-                                    <option value="">— {{ __('Choisir') }} —</option>
+                                    <option value="">- {{ __('Choisir') }} -</option>
                                     @foreach ($gradeChoices as $g)
                                         <option value="{{ $g }}">{{ $g }}</option>
                                     @endforeach
@@ -289,7 +289,6 @@
                         <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="addCoauthor()" style="margin-top:10px;">
                             <x-ukc.icon name="user-plus" :size="16" /> {{ __('Ajouter un co-auteur') }}
                         </button>
-                        <p class="hint" style="margin-top:8px;">{{ __('Pour chaque co-auteur : nom, e-mail et affiliation sont obligatoires.') }}</p>
                         @error('coauthors') <span class="error" style="display:block;margin-top:6px;">{{ $message }}</span> @enderror
                         @error('coauthors.*.email') <span class="error" style="display:block;margin-top:6px;">{{ __('Un e-mail de co-auteur est invalide.') }}</span> @enderror
 
@@ -338,7 +337,7 @@
                                                 <textarea rows="4" name="customAnswers[{{ $field['key'] }}]" {{ $reqAttr }}>{{ old('customAnswers.'.$field['key']) }}</textarea>
                                             @elseif ($field['type'] === 'select')
                                                 <select name="customAnswers[{{ $field['key'] }}]" {{ $reqAttr }}>
-                                                    <option value="">— {{ __('Choisir') }} —</option>
+                                                    <option value="">- {{ __('Choisir') }} -</option>
                                                     @foreach ($field['options'] as $opt)
                                                         <option value="{{ $opt }}" @selected(old('customAnswers.'.$field['key']) === $opt)>{{ $opt }}</option>
                                                     @endforeach
@@ -436,7 +435,7 @@
                                 @if ($config->enabled('keywords'))
                                     <div class="recap-field">
                                         <div class="recap-field__label"><x-ukc.icon name="tag" :size="15" /> {{ $config->label('keywords') }}</div>
-                                        <p class="recap-empty" x-show="keywordList().length === 0">—</p>
+                                        <p class="recap-empty" x-show="keywordList().length === 0">-</p>
                                         <div class="recap-tags" x-show="keywordList().length" x-cloak>
                                             <template x-for="(k, i) in keywordList()" :key="i"><span class="recap-tag" x-text="k"></span></template>
                                         </div>

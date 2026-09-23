@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
- * CashPay (SEMOA) — OAuth 2.0, facture hébergée (bill_url) et callback JWT.
+ * CashPay (SEMOA) - OAuth 2.0, facture hébergée (bill_url) et callback JWT.
  *
  * Doc : POST /auth → access_token ; POST /orders → { order_reference, bill_url } ;
  * GET /orders/{ref} → { state } ; callback = corps JWT signé HS256 avec l'API key.
@@ -71,7 +71,7 @@ class CashpayGateway implements OnlineGateway
                 'amount' => (int) round((float) $payment->amount),
                 'currency' => 'XOF',
                 'merchant_reference' => 'GESCO-'.$payment->id,
-                'description' => 'Frais d\'inscription — '.($payment->edition?->title ?? 'Colloque'),
+                'description' => 'Frais d\'inscription - '.($payment->edition?->title ?? 'Colloque'),
                 'callback_url' => route('payment.webhook', ['gateway' => 'cashpay']),
                 'redirect_url' => route('payment.return', ['gateway' => 'cashpay', 'payment' => $payment->id]),
                 'client' => [

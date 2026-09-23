@@ -4,7 +4,7 @@ namespace App\Support;
 
 /**
  * Identifiant ORCID : normalisation, validation (format + chiffre de contrôle
- * ISO 7064 MOD 11-2) et lien vérifiable. Aucune dépendance externe — la
+ * ISO 7064 MOD 11-2) et lien vérifiable. Aucune dépendance externe - la
  * vérification d'appartenance (OAuth « connexion ORCID ») viendra en surcouche.
  */
 class Orcid

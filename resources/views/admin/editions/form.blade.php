@@ -22,7 +22,7 @@
                 <div style="font-size:12px;margin-bottom:4px;color:var(--ukc-light);">
                     <a href="{{ route('admin.editions.index') }}" style="color:var(--ukc-blue);font-weight:600;">Éditions</a>
                     <span> / </span><span style="color:var(--ukc-muted);">{{ $edition ? 'Modifier' : 'Nouvelle' }}</span>
-                    <span> · </span><code x-text="f.year || '—'"></code>
+                    <span> · </span><code x-text="f.year || '-'"></code>
                 </div>
                 <h1 style="font-size:1.2rem;font-weight:800;" x-text="f.title || '{{ $edition ? 'Édition' : 'Nouvelle édition' }}'"></h1>
                 <div class="sub" style="font-size:13px;color:var(--ukc-muted);margin-top:4px;">
@@ -81,7 +81,7 @@
                                 <div class="ukc-form-row">
                                     <label for="colloque_id">Colloque existant</label>
                                     <select id="colloque_id" name="colloque_id">
-                                        <option value="">— Choisir —</option>
+                                        <option value="">- Choisir -</option>
                                         @foreach ($colloques as $c)
                                             <option value="{{ $c->id }}" @selected((int) $v('colloque_id') === $c->id)>{{ $c->name }}</option>
                                         @endforeach
@@ -101,7 +101,7 @@
                             <div class="ukc-form-grid">
                                 <div class="ukc-form-row">
                                     <label for="title">Nom de l’édition <span class="req">*</span></label>
-                                    <input type="text" id="title" name="title" x-model="f.title" placeholder="Colloque international de l’Université de Kara — 2026">
+                                    <input type="text" id="title" name="title" x-model="f.title" placeholder="Colloque international de l’Université de Kara - 2026">
                                     @error('title') <span class="error">{{ $message }}</span> @enderror
                                 </div>
                                 <div class="ukc-form-row">
@@ -135,7 +135,7 @@
                             <div class="ukc-form-grid">
                                 <div class="ukc-form-row">
                                     <label for="location">Lieu</label>
-                                    <input type="text" id="location" name="location" x-model="f.location" placeholder="Université de Kara — Campus Sud, Kara, Togo">
+                                    <input type="text" id="location" name="location" x-model="f.location" placeholder="Université de Kara - Campus Sud, Kara, Togo">
                                 </div>
                                 <div class="ukc-form-row">
                                     <label for="format">Format</label>
@@ -316,7 +316,7 @@
                                 <label for="contact_address">Adresse</label>
                                 <input type="text" id="contact_address" name="contact_address" value="{{ $v('contact_address') }}" placeholder="Université de Kara, BP …">
                             </div>
-                            <div class="desc" style="margin:6px 0 4px;">Réseaux sociaux — laissez vide pour utiliser ceux du site.</div>
+                            <div class="desc" style="margin:6px 0 4px;">Réseaux sociaux - laissez vide pour utiliser ceux du site.</div>
                             <div class="ukc-form-grid">
                                 <div class="ukc-form-row"><label for="social_facebook">Facebook</label><input type="url" id="social_facebook" name="social_facebook" value="{{ $v('social_facebook') }}" placeholder="https://facebook.com/…"></div>
                                 <div class="ukc-form-row"><label for="social_x">X (Twitter)</label><input type="url" id="social_x" name="social_x" value="{{ $v('social_x') }}" placeholder="https://x.com/…"></div>
@@ -362,7 +362,7 @@
                             <div x-show="refMode==='axis'" style="display:none;">
                                 <template x-for="(a, i) in axes" :key="i">
                                     <div class="ukc-form-row">
-                                        <label x-text="'Axe ' + (i+1) + ' — ' + (a.label || '')"></label>
+                                        <label x-text="'Axe ' + (i+1) + ' - ' + (a.label || '')"></label>
                                         <input type="text" :name="'ref_axes['+i+']'" :value="(refAxes[i] || '')" @input="refAxes[i] = $event.target.value" placeholder="UKC-A1-">
                                     </div>
                                 </template>
@@ -405,7 +405,7 @@
 
                     {{-- ===== COMITÉS (une carte par comité, fidèle au mockup) ===== --}}
                     <div class="ukc-panel" :class="{ active: tab==='committees' }">
-                        @foreach (['comOrg' => ['Comité d’organisation', 'committees_org', null], 'comSci' => ['Comité scientifique', 'committees_sci', null], 'comSup' => ['Comité de supervision', 'committees_sup', 'Optionnel — autorités / supervision institutionnelle.']] as $group => [$heading, $inputName, $note])
+                        @foreach (['comOrg' => ['Comité d’organisation', 'committees_org', null], 'comSci' => ['Comité scientifique', 'committees_sci', null], 'comSup' => ['Comité de supervision', 'committees_sup', 'Optionnel - autorités / supervision institutionnelle.']] as $group => [$heading, $inputName, $note])
                             <div class="ukc-card">
                                 <h2>{{ $heading }}</h2>
                                 @if ($note)<div class="desc">{{ $note }}</div>@endif
@@ -602,7 +602,7 @@
                                                 <input type="hidden" name="reviewer_ids[]" value="{{ $rev['id'] }}">
                                                 <div class="reviewer-id">
                                                     <strong>{{ $rev['name'] }}</strong>
-                                                    <span>{{ $rev['institution'] ?: '—' }}</span>
+                                                    <span>{{ $rev['institution'] ?: '-' }}</span>
                                                     <span class="load">Charge : {{ $rev['load'] }}</span>
                                                 </div>
                                                 <div class="reviewer-axes">
@@ -663,20 +663,20 @@
                             <h2>Équipe du colloque</h2>
                             <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 12px;">
                                 Attribuez à chaque personne un ou plusieurs <strong>rôles dans ce colloque</strong>
-                                (gestionnaire, comité d’organisation, secrétariat, comptabilité, accueil…) — les rôles se cumulent.
+                                (gestionnaire, comité d’organisation, secrétariat, comptabilité, accueil…) - les rôles se cumulent.
                                 Chaque colloque a sa propre équipe. La relecture scientifique se gère dans l’onglet <strong>Relecteurs</strong>.
                             </p>
 
                             <form method="POST" action="{{ route('admin.editions.team.attach', $edition) }}" class="team-add">
                                 @csrf
                                 <select name="user_id" required data-tom data-placeholder="Rechercher un membre du staff…">
-                                    <option value="">— Choisir un membre du staff —</option>
+                                    <option value="">- Choisir un membre du staff -</option>
                                     @foreach ($assignableUsers as $u)
                                         <option value="{{ $u->id }}">{{ $u->name }} · {{ $u->email }}</option>
                                     @endforeach
                                 </select>
                                 <select name="role" required>
-                                    <option value="">— Rôle dans ce colloque —</option>
+                                    <option value="">- Rôle dans ce colloque -</option>
                                     @foreach ($teamRoles as $key => $label)
                                         <option value="{{ $key }}">{{ $label }}</option>
                                     @endforeach
@@ -738,7 +738,7 @@
                                     @foreach ($fieldLabels as $field => $flabel)
                                         <div class="ukc-form-row">
                                             <label>{{ $flabel }}
-                                                <span class="ukc-hint" style="display:inline;">— FR : {{ \Illuminate\Support\Str::limit((string) ($edition->{$field} ?? '—'), 60) }}</span>
+                                                <span class="ukc-hint" style="display:inline;">- FR : {{ \Illuminate\Support\Str::limit((string) ($edition->{$field} ?? '-'), 60) }}</span>
                                             </label>
                                             <input type="text" name="tr[{{ $field }}]" maxlength="500"
                                                    value="{{ $edition->translations($code)[$field] ?? '' }}"
@@ -787,13 +787,13 @@
                     <h2 style="font-size:14px;">Résumé</h2>
                     <div class="side-summary">
                         <div><span class="k">Statut</span><br><span class="ukc-pill" :class="statusLive() ? 'ukc-pill--live' : 'ukc-pill--muted'" x-text="statusLabel()"></span></div>
-                        <div><span class="k">Édition</span><br><strong x-text="f.title || '—'"></strong></div>
-                        <div><span class="k">Thème</span><br><span x-text="f.theme || '—'"></span></div>
+                        <div><span class="k">Édition</span><br><strong x-text="f.title || '-'"></strong></div>
+                        <div><span class="k">Thème</span><br><span x-text="f.theme || '-'"></span></div>
                         <div><span class="k">Dates</span><br><strong x-text="datesLabel()"></strong></div>
-                        <div><span class="k">Lieu</span><br><span x-text="(f.location || '—').split('\n')[0]"></span></div>
-                        <div><span class="k">Format</span><br><span x-text="f.format || '—'"></span></div>
+                        <div><span class="k">Lieu</span><br><span x-text="(f.location || '-').split('\n')[0]"></span></div>
+                        <div><span class="k">Format</span><br><span x-text="f.format || '-'"></span></div>
                         <div><span class="k">Soumissions</span><br><span x-text="f.submission_open ? ('Ouvertes' + (f.submission_deadline ? ' · limite ' + f.submission_deadline.slice(0,10) : '')) : 'Fermées'"></span></div>
-                        <div><span class="k">Langues</span><br><span x-text="(f.languages && f.languages.length) ? f.languages.join(', ') : '—'"></span></div>
+                        <div><span class="k">Langues</span><br><span x-text="(f.languages && f.languages.length) ? f.languages.join(', ') : '-'"></span></div>
                         <div style="margin-bottom:0;"><span class="k">Chiffres</span><br><span x-text="statsLabel()"></span></div>
                     </div>
                 </div>
@@ -817,15 +817,15 @@
                 addCom(g) { this[g].push({ person_name: '', person_title: '', institution: '' }); },
                 removeCom(g, i) { this[g].splice(i, 1); },
                 ...window.__editionArrays(cfg.arrays),
-                statusLabel() { return { draft:'Brouillon', open:'Soumissions ouvertes', closed:'Clôturée', archived:'Archivée' }[this.f.status] || '—'; },
+                statusLabel() { return { draft:'Brouillon', open:'Soumissions ouvertes', closed:'Clôturée', archived:'Archivée' }[this.f.status] || '-'; },
                 statusLive() { return this.f.status === 'open'; },
                 datesLabel() {
                     if (this.f.date_start && this.f.date_end) return this.f.date_start + ' → ' + this.f.date_end;
-                    return this.f.date_start || this.f.date_end || '—';
+                    return this.f.date_start || this.f.date_end || '-';
                 },
                 statsLabel() {
                     const s = (this.stats || []).filter(x => x.label || x.value);
-                    return s.length ? s.map(x => (x.value + ' ' + x.label).trim()).join(' · ') : '—';
+                    return s.length ? s.map(x => (x.value + ' ' + x.label).trim()).join(' · ') : '-';
                 },
                 fileLabel() { return this.aiFiles.length ? (this.aiFiles.length + ' fichier(s) sélectionné(s)') : 'Déposer un document (PDF, image)'; },
                 onFiles(e) { this.aiFiles = Array.from(e.target.files || []); },

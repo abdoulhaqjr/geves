@@ -4,7 +4,7 @@
             <div style="font-size:.8rem;font-weight:700;color:var(--ukc-muted);text-transform:uppercase;letter-spacing:.04em;">
                 {{ $edition->title ?: $edition->year }}
             </div>
-            <h1 style="font-size:1.4rem;margin:6px 0 4px;color:var(--ukc-blue);">{{ __('Paiement des frais — co-auteur') }}</h1>
+            <h1 style="font-size:1.4rem;margin:6px 0 4px;color:var(--ukc-blue);">{{ __('Paiement des frais - co-auteur') }}</h1>
             <p style="color:var(--ukc-muted);font-size:.92rem;margin:0;">
                 {{ __('Retrouvez vos communications acceptées et réglez vos frais au tarif de votre grade.') }}
             </p>
@@ -68,9 +68,9 @@
                         <label>{{ __('Votre grade') }} <span class="ukc-muted">{{ __('(détermine le montant)') }}</span></label>
                         @if (count($feeGrid))
                             <select name="grade" x-model="grade">
-                                <option value="">— {{ __('Choisir') }} —</option>
+                                <option value="">- {{ __('Choisir') }} -</option>
                                 @foreach ($feeGrid as $fee)
-                                    <option value="{{ $fee['label'] }}">{{ $fee['label'] }} — {{ number_format($fee['amount'], 0, ',', ' ') }} FCFA</option>
+                                    <option value="{{ $fee['label'] }}">{{ $fee['label'] }} - {{ number_format($fee['amount'], 0, ',', ' ') }} FCFA</option>
                                 @endforeach
                             </select>
                         @else
@@ -83,7 +83,7 @@
                                 padding:14px 16px;border-radius:12px;background:var(--ukc-bg);border:1px solid var(--ukc-border);margin:16px 0 18px;">
                         <span style="font-weight:600;">{{ __('Montant à régler') }}</span>
                         <span style="font-size:1.35rem;font-weight:900;color:var(--ukc-blue);"
-                              x-text="amount ? (new Intl.NumberFormat('fr-FR').format(Math.round(amount)) + ' FCFA') : '—'"></span>
+                              x-text="amount ? (new Intl.NumberFormat('fr-FR').format(Math.round(amount)) + ' FCFA') : '-'"></span>
                     </div>
 
                     @error('pay') <div class="ukc-alert ukc-alert--err"><span class="ico"><x-ukc.icon name="info" :size="18" /></span><div>{{ $message }}</div></div> @enderror
@@ -107,7 +107,7 @@
                             @endforeach
                         </div>
                         <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ukc-muted);margin-top:14px;">
-                            <x-ukc.icon name="lock" :size="14" /> {{ __('Paiement sécurisé — un reçu vous sera envoyé par e-mail.') }}
+                            <x-ukc.icon name="lock" :size="14" /> {{ __('Paiement sécurisé - un reçu vous sera envoyé par e-mail.') }}
                         </div>
                     @endif
                 </form>

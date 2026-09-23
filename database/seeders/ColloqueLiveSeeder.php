@@ -40,14 +40,14 @@ class ColloqueLiveSeeder extends Seeder
 
         $colloque = Colloque::updateOrCreate(
             ['slug' => 'colloque-live-uk'],
-            ['name' => 'Colloque scientifique de l’Université de Kara — Session en direct'],
+            ['name' => 'Colloque scientifique de l’Université de Kara - Session en direct'],
         );
 
         $edition = Edition::updateOrCreate(
             ['slug' => 'colloque-live-2026'],
             [
                 'colloque_id' => $colloque->id,
-                'title' => 'Colloque UK — Édition en direct',
+                'title' => 'Colloque UK - Édition en direct',
                 'subtitle' => 'Retransmission des séances plénières',
                 'theme' => 'Sciences, innovation et développement durable',
                 'location' => 'Amphithéâtre principal · Université de Kara',
@@ -65,18 +65,18 @@ class ColloqueLiveSeeder extends Seeder
                     'visio' => 'LiveKit Cloud (défaut) · Jitsi self-host (option)',
                     // Modale « Annonces & indications » (temps réel).
                     'announcements' => [
-                        ['when' => '09:28', 'urgent' => true, 'title' => 'Changement de salle — Atelier 2', 'text' => 'La session Gouvernance se tient en Salle C (et non Salle B).'],
+                        ['when' => '09:28', 'urgent' => true, 'title' => 'Changement de salle - Atelier 2', 'text' => 'La session Gouvernance se tient en Salle C (et non Salle B).'],
                         ['when' => '09:15', 'urgent' => false, 'title' => 'Visio Atelier 3 ouverte', 'text' => 'Les auditeurs et communicateurs peuvent rejoindre la salle LiveKit.'],
                         ['when' => '08:50', 'urgent' => false, 'title' => 'Accueil badges', 'text' => 'Remise des badges au hall principal jusqu’à 10 h.'],
                         ['when' => '08:20', 'urgent' => false, 'title' => 'Rappel communicateurs', 'text' => 'Présentez-vous 10 minutes avant votre créneau auprès du modérateur.'],
                     ],
-                    // Modale « Indications — salles & lieux » (plan de repérage du campus).
+                    // Modale « Indications - salles & lieux » (plan de repérage du campus).
                     'venue_guide' => [
                         ['type' => 'Plénière', 'sessions' => 'Cérémonie d’ouverture · Conférences inaugurales · Clôture', 'room' => 'Amphi principal', 'landmark' => 'Bâtiment central · entrée hall A'],
                         ['type' => 'Table ronde', 'sessions' => 'Partenariats universitaires', 'room' => 'Amphi principal', 'landmark' => 'Même lieu que les plénières'],
-                        ['type' => 'Atelier', 'sessions' => 'Atelier 1 — Environnement / Économie verte', 'room' => 'Salle A', 'landmark' => 'Aile est · 1er niveau'],
-                        ['type' => 'Atelier', 'sessions' => 'Atelier 2 — Santé & société / Gouvernance', 'room' => 'Salle C', 'landmark' => 'Aile ouest · RDC (changement annoncé le cas échéant)'],
-                        ['type' => 'Atelier', 'sessions' => 'Atelier 3 — Innovations pédagogiques', 'room' => 'Salle B', 'landmark' => 'Aile est · 2e niveau'],
+                        ['type' => 'Atelier', 'sessions' => 'Atelier 1 - Environnement / Économie verte', 'room' => 'Salle A', 'landmark' => 'Aile est · 1er niveau'],
+                        ['type' => 'Atelier', 'sessions' => 'Atelier 2 - Santé & société / Gouvernance', 'room' => 'Salle C', 'landmark' => 'Aile ouest · RDC (changement annoncé le cas échéant)'],
+                        ['type' => 'Atelier', 'sessions' => 'Atelier 3 - Innovations pédagogiques', 'room' => 'Salle B', 'landmark' => 'Aile est · 2e niveau'],
                         ['type' => 'Posters', 'sessions' => 'Session posters · pauses café', 'room' => 'Hall posters', 'landmark' => 'Hall d’accueil · rez-de-chaussée'],
                         ['type' => 'Accueil', 'sessions' => 'Remise des badges & orientation', 'room' => 'Hall principal', 'landmark' => 'Entrée campus · stands UK Colloques'],
                         ['type' => 'Secrétariat', 'sessions' => 'Point information · assistance', 'room' => 'Bureau DRI / secrétariat', 'landmark' => 'À côté du hall principal'],
@@ -96,7 +96,7 @@ class ColloqueLiveSeeder extends Seeder
             $sessionsByDay[$day->toDateString()] = EventSession::create([
                 'edition_id' => $edition->id,
                 'type' => 'plenary',
-                'label' => 'Séance plénière — Jour '.$i.' ('.$day->translatedFormat('d/m').')',
+                'label' => 'Séance plénière - Jour '.$i.' ('.$day->translatedFormat('d/m').')',
                 'room' => 'Amphithéâtre principal',
                 'session_day' => $day->copy()->startOfDay(),
                 'starts_at' => $day->copy()->setTime(8, 0),
@@ -130,7 +130,7 @@ class ColloqueLiveSeeder extends Seeder
 
     /**
      * Trois communications du compte démo programmées les 4, 5 et 6/09/2026
-     * (créneau relié à la séance plénière du jour), chacune sur un axe distinct —
+     * (créneau relié à la séance plénière du jour), chacune sur un axe distinct -
      * pour tester le filtrage « sessions du jour liées à mes communications / mon axe ».
      *
      * @param  array<string, EventSession>  $sessionsByDay

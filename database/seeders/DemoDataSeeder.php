@@ -20,7 +20,7 @@ class DemoDataSeeder extends Seeder
     {
         $edition = Edition::where('status', 'open')->latest('id')->first() ?? Edition::latest('id')->first();
         if (! $edition) {
-            $this->command?->warn('Aucune édition — créez-en une d’abord.');
+            $this->command?->warn('Aucune édition - créez-en une d’abord.');
 
             return;
         }
@@ -63,7 +63,7 @@ class DemoDataSeeder extends Seeder
                     [
                         'participant_id' => $participant->id,
                         'access_token' => Str::random(64),
-                        'title' => 'Communication '.($i + 1).($k > 0 ? ' (bis)' : '').' — '.$tracks[($i + $k) % count($tracks)],
+                        'title' => 'Communication '.($i + 1).($k > 0 ? ' (bis)' : '').' - '.$tracks[($i + $k) % count($tracks)],
                         'authors' => [['name' => $first.' '.$last, 'email' => $email, 'corresponding' => true]],
                         'keywords' => 'recherche, '.Str::lower($tracks[($i + $k) % count($tracks)]),
                         'track' => $tracks[($i + $k) % count($tracks)],

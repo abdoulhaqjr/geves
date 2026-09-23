@@ -24,7 +24,7 @@
         {{-- Indicateurs --}}
         <div class="ukc-stats">
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="calendar" :size="20" /></div><div class="lbl">Éditions</div><div class="val blue">{{ $stats['total'] }}</div></div>
-            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="calendar-check" :size="20" /></div><div class="lbl">Édition active</div><div class="val green">{{ $stats['activeYear'] ?? '—' }}</div></div>
+            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="calendar-check" :size="20" /></div><div class="lbl">Édition active</div><div class="val green">{{ $stats['activeYear'] ?? '-' }}</div></div>
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="inbox" :size="20" /></div><div class="lbl">Soumissions (active)</div><div class="val">{{ $stats['activeSubmissions'] }}</div></div>
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="card" :size="20" /></div><div class="lbl">Participants payés</div><div class="val">{{ $stats['paidParticipants'] }}</div></div>
         </div>

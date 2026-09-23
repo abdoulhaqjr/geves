@@ -30,7 +30,7 @@
                     <div style="font-size:12px;font-weight:600;color:var(--ukc-muted);margin-bottom:6px;">{{ __('Communications programmées') }}</div>
                     <ol style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:13.5px;">
                         @foreach ($comms as $c)
-                            <li><strong>{{ $c['title'] }}</strong> — {{ $c['name'] }}</li>
+                            <li><strong>{{ $c['title'] }}</strong> - {{ $c['name'] }}</li>
                         @endforeach
                     </ol>
                 </div>

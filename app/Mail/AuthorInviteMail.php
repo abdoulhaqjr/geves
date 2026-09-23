@@ -29,7 +29,7 @@ class AuthorInviteMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: __('On vous a associé(e) à une communication — créez votre compte'));
+        return new Envelope(subject: __('On vous a associé(e) à une communication - créez votre compte'));
     }
 
     public function content(): Content

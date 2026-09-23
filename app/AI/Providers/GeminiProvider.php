@@ -9,7 +9,7 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 
 /**
- * Gemini (Google) — generateContent, multimodal (PDF + images via inline_data).
+ * Gemini (Google) - generateContent, multimodal (PDF + images via inline_data).
  */
 class GeminiProvider implements AiProvider
 {

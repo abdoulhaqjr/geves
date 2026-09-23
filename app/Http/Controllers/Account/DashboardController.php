@@ -19,7 +19,7 @@ use Illuminate\View\View;
 
 /**
  * Tableau de bord du participant (Blade, fidèle au mockup espace-participant.html) :
- * parcours (stepper), prochaine étape, et blocs personnels — communications,
+ * parcours (stepper), prochaine étape, et blocs personnels - communications,
  * paiements & reçus, attestations, documents, sessions en direct, rôles dérivés.
  * Lecture seule → Blade.
  */
@@ -45,7 +45,7 @@ class DashboardController extends Controller
             : Participant::where('user_id', $account->id)->pluck('edition_id')->unique()->filter();
 
         // Sessions en direct : uniquement les séances EN COURS aujourd'hui qui le
-        // concernent — soit il y présente une communication, soit elles portent sur
+        // concernent - soit il y présente une communication, soit elles portent sur
         // l'un de ses axes thématiques.
         $mySubmissionIds = Submission::whereIn('participant_id', $participantIds)
             ->where('revision_of', 0)->pluck('id');

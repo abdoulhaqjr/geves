@@ -1,5 +1,5 @@
 @php($editing = $user->exists)
-<x-layouts.admin :title="$editing ? 'Modifier — '.$user->name : 'Associer un utilisateur'"
+<x-layouts.admin :title="$editing ? 'Modifier - '.$user->name : 'Associer un utilisateur'"
                  :subtitle="'Compte staff · rôles '.config('app.name').' & permissions'">
     <x-slot:actions>
         <a href="{{ route('admin.users.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">← Utilisateurs</a>
@@ -29,7 +29,7 @@
                         <input type="email" id="email" name="email" value="{{ old('email', $user->email) }}" required>
                     </div>
                     <div class="ukc-field">
-                        <label for="password">{{ $editing ? 'Nouveau mot de passe' : 'Mot de passe' }} <span class="hint">({{ $editing ? 'laisser vide pour ne pas changer' : 'optionnel — sinon généré' }})</span></label>
+                        <label for="password">{{ $editing ? 'Nouveau mot de passe' : 'Mot de passe' }} <span class="hint">({{ $editing ? 'laisser vide pour ne pas changer' : 'optionnel - sinon généré' }})</span></label>
                         <input type="password" id="password" name="password" autocomplete="new-password">
                     </div>
                     <div class="ukc-field">

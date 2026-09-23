@@ -77,7 +77,7 @@ Route::get('/colloques-passes/{slug}', [ArchiveController::class, 'show'])->name
 Route::get('/colloque/{slug}', ColloqueController::class)->name('public.colloque');
 Route::post('/colloque/{edition}/contact', [ContactController::class, 'send'])->name('public.contact');
 
-// Notifications (participant ou staff — l'un ou l'autre guard).
+// Notifications (participant ou staff - l'un ou l'autre guard).
 Route::middleware('auth:account,web')->group(function () {
     Route::post('/notifications/{id}/ouvrir', [NotificationController::class, 'open'])->name('notifications.open');
     Route::post('/notifications/tout-lire', [NotificationController::class, 'readAll'])->name('notifications.read-all');
@@ -90,11 +90,11 @@ Route::post('/colloque/{slug}/co-auteur', [CoauthorController::class, 'pay'])->n
 
 // Visio interactive d'une session (accès géré dans le contrôleur selon le rôle).
 Route::get('/session/{session}/visio', [MeetingController::class, 'join'])->name('session.meeting');
-// Enregistrement (LiveKit Egress) — réservé au modérateur (contrôle dans le contrôleur).
+// Enregistrement (LiveKit Egress) - réservé au modérateur (contrôle dans le contrôleur).
 Route::post('/session/{session}/egress/start', [EgressController::class, 'start'])->name('session.egress.start');
 Route::post('/session/{session}/egress/stop', [EgressController::class, 'stop'])->name('session.egress.stop');
 
-// Engagement live d'une séance (Q&A + sondages) — accès géré dans le contrôleur.
+// Engagement live d'une séance (Q&A + sondages) - accès géré dans le contrôleur.
 Route::get('/session/{session}/echanges', [SessionEngagementController::class, 'page'])->name('session.engagement');
 Route::get('/session/{session}/echanges/questions', [SessionEngagementController::class, 'questions'])->name('session.engagement.questions');
 Route::post('/session/{session}/echanges/questions', [SessionEngagementController::class, 'ask'])->name('session.engagement.ask');
@@ -105,7 +105,7 @@ Route::post('/session/{session}/echanges/sondages', [SessionEngagementController
 Route::post('/session/{session}/echanges/sondages/{poll}/vote', [SessionEngagementController::class, 'votePoll'])->name('session.engagement.polls.vote');
 Route::post('/session/{session}/echanges/sondages/{poll}/etat', [SessionEngagementController::class, 'togglePoll'])->name('session.engagement.polls.toggle');
 
-// Changement de langue (i18n) — mémorisé en session (+ préférence si connecté).
+// Changement de langue (i18n) - mémorisé en session (+ préférence si connecté).
 Route::get('/langue/{locale}', [LocaleController::class, 'switch'])->name('locale.switch');
 
 // Association auteur ↔ communication : déclinaison publique par jeton.
@@ -363,7 +363,7 @@ Route::prefix('admin')->group(function () {
             Route::get('/rapports/{edition}/ia/{id}/telecharger', [ReportController::class, 'aiDownload'])->name('admin.reports.ai-download');
         });
 
-        // Gestion de projet de l'édition (l'édition pilotée comme un projet) —
+        // Gestion de projet de l'édition (l'édition pilotée comme un projet) -
         // capacité dédiée « project ».
         Route::middleware('edition.cap:project')->group(function () {
             Route::get('/projet', [ProjectController::class, 'index'])->name('admin.project.index');
@@ -445,7 +445,7 @@ Route::prefix('admin')->group(function () {
         });
 
         // Réglages (dont agents IA).
-        // Témoignages (niveau plateforme) — modération, mise en avant, sélection IA.
+        // Témoignages (niveau plateforme) - modération, mise en avant, sélection IA.
         Route::middleware('can:testimonials')->group(function () {
             Route::get('/temoignages', [AdminTestimonialController::class, 'index'])->name('admin.testimonials.index');
             Route::post('/temoignages', [AdminTestimonialController::class, 'store'])->name('admin.testimonials.store');

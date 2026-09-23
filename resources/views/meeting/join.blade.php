@@ -1,4 +1,4 @@
-<x-layouts.app :title="'Visio — ' . $session->label">
+<x-layouts.app :title="'Visio - ' . $session->label">
 @if ($liveKit)
     {{-- ============ Salle LiveKit intégrée (lecteur maison, SDK bundlé) ============ --}}
     <style>
@@ -183,11 +183,11 @@
                         <div class="tile main is-presenter" id="tileMain">
                             <div class="avatar" id="mainAvatar">?</div>
                             <div class="info-block" id="mainInfo" style="display:none;">
-                                <div class="info-name" id="mainInfoName">—</div>
-                                <div class="info-meta" id="mainInfoMeta">—</div>
+                                <div class="info-name" id="mainInfoName">-</div>
+                                <div class="info-meta" id="mainInfoMeta">-</div>
                             </div>
                             <div class="name" id="mainName">Présentateur</div>
-                            <div class="badges"><span id="mainRole">—</span></div>
+                            <div class="badges"><span id="mainRole">-</span></div>
                             <div class="rec-badge" id="recBadge"><span class="dot"></span> REC</div>
                             <div class="pip-dropzone" id="pipDropzone">↑ Glisser vers le haut pour fermer</div>
                         </div>
@@ -200,7 +200,7 @@
                     <div class="filmstrip" id="filmstrip">
                         <div class="tile" id="tileLocal">
                             <div class="avatar" id="localAvatar">?</div>
-                            <div class="name" id="localName">—</div>
+                            <div class="name" id="localName">-</div>
                             <div class="badges"><span id="localRole">Vous</span></div>
                         </div>
                     </div>

@@ -44,7 +44,7 @@ class EmailController extends Controller
             $recipientCounts[$key] = $edition ? EmailAudience::count($edition, $key) : 0;
         }
 
-        // Journal détaillé (par destinataire) — conservé pour le filtrage/log.
+        // Journal détaillé (par destinataire) - conservé pour le filtrage/log.
         $journal = Email::query()
             ->with('participant')
             ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId))
@@ -91,12 +91,12 @@ class EmailController extends Controller
                     'log' => $group->take(60)->map(fn (Email $e) => [
                         'to' => (string) $e->recipient,
                         'status' => (string) $e->status,
-                        'at' => optional($e->sent_at ?: $e->scheduled_at)?->format('d/m/Y H:i') ?? '—',
+                        'at' => optional($e->sent_at ?: $e->scheduled_at)?->format('d/m/Y H:i') ?? '-',
                     ])->values()->all(),
                 ];
             });
 
-        // Tri par en-tête de colonne (campagnes) — collection agrégée triée en mémoire.
+        // Tri par en-tête de colonne (campagnes) - collection agrégée triée en mémoire.
         $sort = ListSort::resolve(
             $request,
             ['label', 'audience', 'scheduled_at', 'total', 'status'],

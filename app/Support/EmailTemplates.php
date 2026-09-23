@@ -23,31 +23,31 @@ class EmailTemplates
      */
     public const TEMPLATES = [
         'submission_submitted' => [
-            'label' => 'Soumission — accusé de réception',
+            'label' => 'Soumission - accusé de réception',
             'subject' => 'Accusé de réception de votre communication',
             'heading' => 'Communication bien reçue',
             'intro' => 'Nous accusons réception de votre communication. Elle sera examinée par le comité scientifique.',
         ],
         'submission_under_review' => [
-            'label' => 'Soumission — mise en relecture',
+            'label' => 'Soumission - mise en relecture',
             'subject' => 'Votre communication est en relecture',
             'heading' => 'Communication en relecture',
             'intro' => 'Votre communication a été transmise à la relecture. Vous serez informé(e) de la décision.',
         ],
         'submission_revision' => [
-            'label' => 'Soumission — correction demandée',
+            'label' => 'Soumission - correction demandée',
             'subject' => 'Correction demandée pour votre communication',
             'heading' => 'Correction demandée',
             'intro' => 'Le comité vous demande d’apporter des corrections à votre communication avant décision.',
         ],
         'submission_accepted' => [
-            'label' => 'Soumission — acceptée',
+            'label' => 'Soumission - acceptée',
             'subject' => 'Votre communication est acceptée',
             'heading' => 'Communication acceptée',
             'intro' => 'Nous avons le plaisir de vous informer que votre communication est acceptée.',
         ],
         'submission_rejected' => [
-            'label' => 'Soumission — refusée',
+            'label' => 'Soumission - refusée',
             'subject' => 'Décision concernant votre communication',
             'heading' => 'Communication non retenue',
             'intro' => 'Après examen, votre communication n’a pas été retenue pour cette édition.',

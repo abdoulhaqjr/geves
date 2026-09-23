@@ -153,7 +153,7 @@ class SecurityController extends Controller
         $account->save();
 
         try {
-            $sms->send((string) $account->phone, config('app.name').' — code de vérification : '.$code.'.');
+            $sms->send((string) $account->phone, config('app.name').' - code de vérification : '.$code.'.');
         } catch (\Throwable $e) {
             report($e);
         }
@@ -292,7 +292,7 @@ class SecurityController extends Controller
                 'id' => (string) $s->id,
                 'current' => (string) $s->id === $currentId,
                 'device' => UserAgent::describe($s->user_agent),
-                'ip' => (string) ($s->ip_address ?: '—'),
+                'ip' => (string) ($s->ip_address ?: '-'),
                 'last' => $s->last_activity ? Carbon::createFromTimestamp($s->last_activity)->diffForHumans() : null,
             ])
             ->all();

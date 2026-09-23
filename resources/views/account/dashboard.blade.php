@@ -68,7 +68,7 @@
         </div>
         <div class="ukc-stat-card tw-stat">
             <div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="clock" :size="20" /></div>
-            <div class="num">{{ $kpi['daysRemaining'] ?? '—' }}</div>
+            <div class="num">{{ $kpi['daysRemaining'] ?? '-' }}</div>
             <div class="lbl">{{ __('Jours restants') }}</div>
         </div>
     </div>
@@ -132,7 +132,7 @@
                                     <div class="title"><a href="{{ route('account.submissions.show', $s) }}" style="color:var(--ukc-blue);font-weight:600;">{{ \Illuminate\Support\Str::limit($s->title, 46) }}</a></div>
                                     <div class="meta" style="font-size:12px;color:var(--ukc-muted);">{{ $s->type === 'poster' ? __('Poster') : __('Orale') }} · {{ $s->ref_code }}@if ($s->created_at) · {{ __('Déposée le') }} {{ $s->created_at->translatedFormat('j M Y') }}@endif</div>
                                 </td>
-                                <td>{{ $s->track ?: '—' }}</td>
+                                <td>{{ $s->track ?: '-' }}</td>
                                 <td><span class="ukc-pill ukc-pill--{{ $s->statusPill() }}">{{ $s->statusLabel() }}</span></td>
                             </tr>
                         @empty
@@ -183,14 +183,14 @@
                     @foreach ($moderatedSessions as $s)
                         <div style="padding:6px 0;font-size:.9rem;border-top:1px solid var(--ukc-border);">
                             <span class="ukc-pill ukc-pill--muted">{{ __('Modérateur') }}</span>
-                            {{ $s->label ?: __('Session') }} <span class="ukc-muted">— {{ $s->edition?->title }}</span>
+                            {{ $s->label ?: __('Session') }} <span class="ukc-muted">- {{ $s->edition?->title }}</span>
                         </div>
                     @endforeach
                     @foreach ($reportedSessions as $s)
                         @php($rep = $s->report)
                         <div style="padding:6px 0;font-size:.9rem;border-top:1px solid var(--ukc-border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                             <span class="ukc-pill ukc-pill--muted">{{ __('Rapporteur') }}</span>
-                            {{ $s->label ?: __('Session') }} <span class="ukc-muted">— {{ $s->edition?->title }}</span>
+                            {{ $s->label ?: __('Session') }} <span class="ukc-muted">- {{ $s->edition?->title }}</span>
                             @if ($rep && $rep->isSubmitted())
                                 <span class="ukc-pill ukc-pill--ok">{{ __('Rapport soumis') }}</span>
                             @elseif ($rep)
@@ -221,7 +221,7 @@
                     @foreach ($committees as $c)
                         <div style="padding:6px 0;font-size:.9rem;border-top:1px solid var(--ukc-border);">
                             <span class="ukc-pill ukc-pill--muted">{{ __('Comité') }}</span>
-                            {{ $c->person_title ?: __('Membre') }} <span class="ukc-muted">— {{ $c->edition?->title }}</span>
+                            {{ $c->person_title ?: __('Membre') }} <span class="ukc-muted">- {{ $c->edition?->title }}</span>
                         </div>
                     @endforeach
                 </div>

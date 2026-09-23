@@ -116,7 +116,7 @@ class CreateSubmission
         Notifier::staff(
             kind: 'submission_new',
             title: 'Nouvelle communication',
-            body: '« '.$submission->title.' » — '.$account->full_name,
+            body: '« '.$submission->title.' » - '.$account->full_name,
             url: route('admin.submissions.show', $submission),
             icon: 'inbox',
         );

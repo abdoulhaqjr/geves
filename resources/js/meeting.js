@@ -54,7 +54,7 @@ export async function startFromConfig() {
     async function ensureMedia(needCam, needMic) {
         if ((!needCam || mediaPerm.cam) && (!needMic || mediaPerm.mic)) return true;
         // Contexte sécurisé requis : hors HTTPS (et hors localhost) les navigateurs
-        // désactivent l'accès caméra/micro — le cadenas « Autoriser » n'y change rien.
+        // désactivent l'accès caméra/micro - le cadenas « Autoriser » n'y change rien.
         if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             showPerm('La visioconférence nécessite une connexion sécurisée (HTTPS). Ouvrez le site en https:// (ex. « herd secure »), ou via localhost, puis réessayez.');
             return false;
@@ -172,7 +172,7 @@ export async function startFromConfig() {
         $('mainAvatar').style.display = ''; $('mainAvatar').textContent = initials(name);
         $('mainName').textContent = name || 'Présentateur'; $('mainRole').textContent = 'Présentateur';
         const info = $('mainInfo');
-        if (info) { if (meta) { info.style.display = 'block'; $('mainInfoName').textContent = name || '—'; $('mainInfoMeta').textContent = meta; } else info.style.display = 'none'; }
+        if (info) { if (meta) { info.style.display = 'block'; $('mainInfoName').textContent = name || '-'; $('mainInfoMeta').textContent = meta; } else info.style.display = 'none'; }
         main.classList.add('is-presenter'); destroyPip(false);
     }
     function showScreenOnPresenter(track, label) {
@@ -385,7 +385,7 @@ export async function startFromConfig() {
                     blurState.mode = 'image'; toast('Arrière-plan : image');
                 } else if (mod.BackgroundBlur) {
                     await pub.track.setProcessor(mod.BackgroundBlur(8));
-                    toast('Image non supportée par ce navigateur — flou appliqué');
+                    toast('Image non supportée par ce navigateur - flou appliqué');
                 } else {
                     toast('Arrière-plan image non disponible'); mode = 'none'; if (btn) btn.classList.remove('active');
                 }
@@ -531,7 +531,7 @@ export async function startFromConfig() {
     // ============ Bindings ============
     $('btnMic').addEventListener('click', async () => {
         const me = people.find((x) => x.id === 'local');
-        if (state.role === 'audience' && !(me && me.micGranted)) { toast('Levez la main — le modérateur doit autoriser votre micro'); return; }
+        if (state.role === 'audience' && !(me && me.micGranted)) { toast('Levez la main - le modérateur doit autoriser votre micro'); return; }
         if (!state.mic) { if (!await ensureMedia(false, true)) return; }
         state.mic = !state.mic;
         if (room) { try { await room.localParticipant.setMicrophoneEnabled(state.mic); } catch (e) { state.mic = !state.mic; toast('Micro indisponible'); } }

@@ -6,7 +6,7 @@ use App\Models\Edition;
 use App\Models\User;
 
 /**
- * Action concrète que le copilote peut exécuter SUR le système — mais jamais de
+ * Action concrète que le copilote peut exécuter SUR le système - mais jamais de
  * lui-même : le copilote la propose, l'utilisateur l'autorise explicitement, et
  * c'est seulement alors que le serveur l'exécute, sous l'autorité (et la
  * capacité RBAC) de cet utilisateur. Chaque action est cadrée par une capacité
@@ -20,7 +20,7 @@ interface CopilotAction
     /** Libellé lisible (bouton d'autorisation). */
     public function label(): string;
 
-    /** Capacité RBAC requise (cf. StaffRoles::PERMISSIONS) — vérifiée par édition. */
+    /** Capacité RBAC requise (cf. StaffRoles::PERMISSIONS) - vérifiée par édition. */
     public function capability(): string;
 
     /** Description destinée à l'IA (quand et pourquoi proposer cette action). */

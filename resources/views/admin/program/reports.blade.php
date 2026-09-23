@@ -4,7 +4,7 @@
             <div class="ukc-field" style="max-width:320px;margin:0;">
                 <label>Édition</label>
                 <select onchange="window.location='{{ route('admin.program.reports') }}?edition_id='+this.value">
-                    <option value="">— Choisir —</option>
+                    <option value="">- Choisir -</option>
                     @foreach ($editions as $ed)
                         <option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>
                     @endforeach

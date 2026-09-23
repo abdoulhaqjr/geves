@@ -190,7 +190,7 @@
                 </section>
             @endif
 
-            {{-- Dates clés (fidèle au mockup : cartes avec statut) — placées avant la présentation --}}
+            {{-- Dates clés (fidèle au mockup : cartes avec statut) - placées avant la présentation --}}
             @php
                 $keyDates = [];
                 if ($e->submission_deadline) {
@@ -313,7 +313,7 @@
                         <div class="ukc-tabs-scroll" role="tablist">
                             @php $dayNo = 0; @endphp
                             @foreach ($progDays as $d)
-                                <button type="button" class="ukc-tab" :class="{ active: progDay==='{{ $d }}' }" @click="progDay='{{ $d }}'" role="tab">@if ($d === ''){{ __('À programmer') }}@else{{ __('Jour :n — :date', ['n' => ++$dayNo, 'date' => \Illuminate\Support\Carbon::parse($d)->translatedFormat('d M')]) }}@endif</button>
+                                <button type="button" class="ukc-tab" :class="{ active: progDay==='{{ $d }}' }" @click="progDay='{{ $d }}'" role="tab">@if ($d === ''){{ __('À programmer') }}@else{{ __('Jour :n - :date', ['n' => ++$dayNo, 'date' => \Illuminate\Support\Carbon::parse($d)->translatedFormat('d M')]) }}@endif</button>
                             @endforeach
                         </div>
 
@@ -329,7 +329,7 @@
                                         $atelierTitle = $s->atelier_id ? ($atelierNames[$s->atelier_id] ?? null) : null;
                                     @endphp
                                     <div class="ukc-session">
-                                        <div class="ukc-session-time">{{ $s->starts_at?->format('H:i') ?: '—' }}</div>
+                                        <div class="ukc-session-time">{{ $s->starts_at?->format('H:i') ?: '-' }}</div>
                                         <div class="ukc-session-body">
                                             <span class="type {{ $isPlenary ? 'type--plenary' : 'type--workshop' }}">{{ $isPlenary ? __('Plénière') : __('Atelier') }}</span>
                                             @if ($atelierTitle)<span class="type type--poster">{{ $atelierTitle }}</span>@endif
@@ -476,7 +476,7 @@
                                     <a href="{{ $map['link'] }}" target="_blank" rel="noopener noreferrer">{{ __('Ouvrir dans OpenStreetMap →') }}</a>
                                 @endif
                             </div>
-                            <iframe src="{{ $map['embed'] }}" title="Plan du campus — {{ $e->location }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+                            <iframe src="{{ $map['embed'] }}" title="Plan du campus - {{ $e->location }}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
                         </div>
                     @endif
                 </section>

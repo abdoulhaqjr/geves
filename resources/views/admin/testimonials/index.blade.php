@@ -1,4 +1,4 @@
-<x-layouts.admin title="Témoignages" subtitle="Recueillis auprès des participants — un sous-ensemble « à la une » s’affiche sur la page d’accueil">
+<x-layouts.admin title="Témoignages" subtitle="Recueillis auprès des participants - un sous-ensemble « à la une » s’affiche sur la page d’accueil">
     <div class="admin-page admin-testimonials">
 
         {{-- Barre d'action : proposition IA --}}
@@ -137,7 +137,7 @@
                 <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">
                     @foreach ($rejected as $t)
                         <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;border:1px solid var(--ukc-border);border-radius:8px;padding:8px 12px;">
-                            <span style="font-size:13px;color:var(--ukc-muted);flex:1;">« {{ Str::limit($t->quote, 120) }} » — <strong>{{ $t->author_name }}</strong></span>
+                            <span style="font-size:13px;color:var(--ukc-muted);flex:1;">« {{ Str::limit($t->quote, 120) }} » - <strong>{{ $t->author_name }}</strong></span>
                             <form method="POST" action="{{ route('admin.testimonials.approve', $t) }}">@csrf
                                 <button class="ukc-btn ukc-btn--outline ukc-btn--sm">Réhabiliter</button>
                             </form>

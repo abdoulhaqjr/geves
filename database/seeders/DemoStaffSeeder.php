@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
 /**
  * Comptes de démonstration reproductibles : équipe du back-office (staff avec
  * rôles UKC réels, pour illustrer la page Utilisateurs et le RBAC) et un compte
- * participant connectable. Idempotent. Données fictives — pas pour la production.
+ * participant connectable. Idempotent. Données fictives - pas pour la production.
  */
 class DemoStaffSeeder extends Seeder
 {

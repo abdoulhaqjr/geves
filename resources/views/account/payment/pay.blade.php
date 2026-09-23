@@ -6,7 +6,7 @@
 
     {{-- Statut d'inscription --}}
     <div class="ukc-card" style="margin-bottom:20px;">
-        <h3>Statut d’inscription — {{ $edition->title ?: $edition->year }}</h3>
+        <h3>Statut d’inscription - {{ $edition->title ?: $edition->year }}</h3>
         <div class="ukc-steps">
             <div class="ukc-step done">Profil</div>
             <div @class(['ukc-step', 'done' => $step > 2, 'active' => $step === 2])>Choix du tarif</div>
@@ -56,7 +56,7 @@
             </div>
             <h3 style="justify-content:center;">Frais déjà réglés</h3>
             <p style="color:var(--ukc-muted);">Merci, votre inscription est à jour.</p>
-            @if ($paidReceipt)<p style="margin-top:8px;font-size:.9rem;">Reçu n° <strong style="font-family:var(--ukc-mono);">{{ $paidReceipt->receipt_no }}</strong> — disponible dans <a href="{{ route('account.documents') }}" style="color:var(--ukc-blue);font-weight:700;">Documents</a>.</p>@endif
+            @if ($paidReceipt)<p style="margin-top:8px;font-size:.9rem;">Reçu n° <strong style="font-family:var(--ukc-mono);">{{ $paidReceipt->receipt_no }}</strong> - disponible dans <a href="{{ route('account.documents') }}" style="color:var(--ukc-blue);font-weight:700;">Documents</a>.</p>@endif
         </div>
     @elseif (! $eligible)
         <div class="ukc-alert ukc-alert--warn"><span class="ico"><x-ukc.icon name="lock" :size="18" /></span><div>Le paiement s’ouvrira dès qu’au moins une de vos communications sera <strong>acceptée</strong>.</div></div>

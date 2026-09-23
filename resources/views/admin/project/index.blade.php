@@ -39,7 +39,7 @@
             <div class="ukc-field" style="margin:0;">
                 <label>Édition</label>
                 <select onchange="window.location='{{ route('admin.project.index') }}?edition_id='+this.value">
-                    <option value="">— Choisir —</option>
+                    <option value="">- Choisir -</option>
                     @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
                 </select>
             </div>
@@ -52,7 +52,7 @@
             <div class="ukc-empty" style="text-align:center;padding:40px 24px;" x-show="isEmpty()" x-cloak>
                 <x-ukc.icon name="layers" :size="34" />
                 <h3 style="margin-top:10px;">Ce projet est vierge</h3>
-                <p>Démarrez avec le cycle de vie type d’un colloque (jalons + tâches modèles), pré-rempli d’après les dates clés de l’édition — vous ajusterez ensuite.</p>
+                <p>Démarrez avec le cycle de vie type d’un colloque (jalons + tâches modèles), pré-rempli d’après les dates clés de l’édition - vous ajusterez ensuite.</p>
                 <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px;">
                     <button type="button" class="ukc-btn ukc-btn--blue" :disabled="saving" @click="seed()"><x-ukc.icon name="sparkles" :size="16" /> Initialiser le projet</button>
                     <button type="button" class="ukc-btn ukc-btn--ghost" @click="openNewTask()"><x-ukc.icon name="plus" :size="16" /> Créer une tâche vide</button>
@@ -78,7 +78,7 @@
                     </div>
                     <div class="ukc-progress"><div class="ukc-progress__bar" :style="'width:'+st.progress+'%'"></div></div>
                     <div style="margin-top:10px;font-size:12.5px;color:var(--ukc-muted);" x-show="st.next">
-                        <x-ukc.icon name="flag" :size="13" /> Prochain jalon : <strong x-text="st.next?.title"></strong><template x-if="st.next?.dueLabel"><span> — <span x-text="st.next.dueLabel"></span></span></template>
+                        <x-ukc.icon name="flag" :size="13" /> Prochain jalon : <strong x-text="st.next?.title"></strong><template x-if="st.next?.dueLabel"><span> - <span x-text="st.next.dueLabel"></span></span></template>
                     </div>
                 </div>
 
@@ -158,10 +158,10 @@
                                 <template x-for="t in filtered()" :key="t.id">
                                     <tr :class="{ 'is-overdue-row': t.overdue }">
                                         <td><strong x-text="t.title"></strong></td>
-                                        <td><span class="ukc-pill ukc-pill--muted" x-show="t.phase" x-text="t.phase"></span><span x-show="!t.phase">—</span></td>
-                                        <td x-text="t.assignee || '—'"></td>
+                                        <td><span class="ukc-pill ukc-pill--muted" x-show="t.phase" x-text="t.phase"></span><span x-show="!t.phase">-</span></td>
+                                        <td x-text="t.assignee || '-'"></td>
                                         <td><span class="ukc-pill" :class="{{ $prioClass }}" x-text="t.priorityLabel"></span></td>
-                                        <td style="white-space:nowrap;"><span x-show="t.dueLabel" :class="{ 'due-late': t.overdue }" x-text="t.dueLabel"></span><span x-show="!t.dueLabel">—</span></td>
+                                        <td style="white-space:nowrap;"><span x-show="t.dueLabel" :class="{ 'due-late': t.overdue }" x-text="t.dueLabel"></span><span x-show="!t.dueLabel">-</span></td>
                                         <td x-text="statuses[t.status]"></td>
                                         <td>
                                             <div class="ukc-actions" style="justify-content:flex-end;">
@@ -303,7 +303,7 @@
                     </div>
                     <div class="ukc-form-row"><label>Responsable</label>
                         <select x-model="task.assignee_id">
-                            <option value="">— Aucun —</option>
+                            <option value="">- Aucun -</option>
                             @foreach ($team as $u)<option value="{{ $u->id }}">{{ $u->name }}</option>@endforeach
                         </select>
                     </div>
@@ -318,7 +318,7 @@
                         </div>
                         <div class="ukc-form-row"><label>Lien contextuel</label>
                             <select x-model="task.link_key">
-                                <option value="">— Aucun —</option>
+                                <option value="">- Aucun -</option>
                                 @foreach ($linkTargets as $k => $l)<option value="{{ $k }}">{{ $l }}</option>@endforeach
                             </select>
                         </div>

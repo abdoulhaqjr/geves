@@ -45,7 +45,7 @@ class AttestationController extends Controller
                 'date' => $attestation->issued_at?->format('d/m/Y') ?? '',
                 'ref' => $attestation->uuid,
                 'verify_url' => $verifyUrl,
-                // Communication concernée (attestation de communication) — vide pour les autres types.
+                // Communication concernée (attestation de communication) - vide pour les autres types.
                 'communication' => (string) (($attestation->meta ?? [])['communication_title'] ?? ''),
                 'communication_ref' => (string) (($attestation->meta ?? [])['communication_ref'] ?? ''),
             ]);
@@ -91,7 +91,7 @@ class AttestationController extends Controller
                 'date' => $attestation->issued_at?->format('d/m/Y') ?? '',
                 'ref' => $attestation->uuid,
                 'verify_url' => $verifyUrl,
-                // Communication concernée (attestation de communication) — vide pour les autres types.
+                // Communication concernée (attestation de communication) - vide pour les autres types.
                 'communication' => (string) (($attestation->meta ?? [])['communication_title'] ?? ''),
                 'communication_ref' => (string) (($attestation->meta ?? [])['communication_ref'] ?? ''),
             ]);

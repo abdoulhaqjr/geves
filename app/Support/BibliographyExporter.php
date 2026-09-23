@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 
 /**
  * Export bibliographique des communications d'une édition aux formats citables
- * BibTeX (.bib) et RIS (.ris) — gratuit, sans dépendance. Chaque communication
+ * BibTeX (.bib) et RIS (.ris) - gratuit, sans dépendance. Chaque communication
  * devient une entrée « conference paper », prête à importer dans Zotero,
  * Mendeley, EndNote, un gestionnaire LaTeX, etc.
  */

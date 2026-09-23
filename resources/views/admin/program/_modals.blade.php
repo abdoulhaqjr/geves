@@ -65,13 +65,13 @@
                 <div class="ukc-form-row" x-show="form.type==='atelier'">
                     <label>Atelier</label>
                     <select name="sAtelierId" x-model="form.atelier_id">
-                        <option value="">— Choisir —</option>
+                        <option value="">- Choisir -</option>
                         @foreach ($ateliers as $a)<option value="{{ $a->id }}">{{ $a->title }}</option>@endforeach
                     </select>
                 </div>
                 <div class="ukc-form-row">
                     <label>Intitulé de la session</label>
-                    <input type="text" name="sLabel" x-model="form.label" required placeholder="Ex. Session 1 — Matin">
+                    <input type="text" name="sLabel" x-model="form.label" required placeholder="Ex. Session 1 - Matin">
                 </div>
                 <div class="ukc-form-grid">
                     <div class="ukc-form-row"><label>Jour</label><input type="date" name="sDay" x-model="form.day"></div>
@@ -109,7 +109,7 @@
                 <div class="ukc-form-row">
                     <label>Session</label>
                     <select name="slSessionId" x-model="form.session_id">
-                        <option value="">— Aucune —</option>
+                        <option value="">- Aucune -</option>
                         @foreach ($sessions as $s)
                             <option value="{{ $s->id }}">{{ $s->atelier?->title ? $s->atelier->title.' · ' : '' }}{{ $s->label }}</option>
                         @endforeach
@@ -123,9 +123,9 @@
                 <div class="ukc-form-row">
                     <label>Communication (optionnel)</label>
                     <select name="submission_id" x-model="form.submission_id">
-                        <option value="">— Créneau libre —</option>
+                        <option value="">- Créneau libre -</option>
                         @foreach ($accepted as $sub)
-                            <option value="{{ $sub->id }}">{{ $sub->ref_code }} — {{ \Illuminate\Support\Str::limit($sub->title, 45) }}</option>
+                            <option value="{{ $sub->id }}">{{ $sub->ref_code }} - {{ \Illuminate\Support\Str::limit($sub->title, 45) }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -143,7 +143,7 @@
 <div class="ukc-modal" x-show="modal==='room'" x-cloak @click.self="modal=null" style="display:none;">
     <div class="box">
         <div class="box-head">
-            <span x-text="'Salle — ' + (form.title || 'atelier')"></span>
+            <span x-text="'Salle - ' + (form.title || 'atelier')"></span>
             <button type="button" @click="modal=null" style="font-size:22px;color:var(--ukc-muted);background:none;border:none;cursor:pointer;">×</button>
         </div>
         <div class="box-body">
@@ -153,7 +153,7 @@
                 <div class="ukc-form-row">
                     <label>Salle associée</label>
                     <select name="atelierRoom" x-model="form.room">
-                        <option value="">— Aucune (salle à définir) —</option>
+                        <option value="">- Aucune (salle à définir) -</option>
                         @foreach ($spaces as $space)
                             <option value="{{ $space['name'] }}">{{ $space['name'] }}@if (! empty($space['capacity'])) · cap. {{ $space['capacity'] }}@endif</option>
                         @endforeach

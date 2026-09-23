@@ -9,7 +9,7 @@ window.Alpine = Alpine;
 
 // Champs téléphone internationaux (intl-tel-input) : drapeau + indicatif pays,
 // saisie nationale, et normalisation en E.164 (« +228… ») à la soumission du
-// formulaire — le champ reste nommé `phone`/`contact_phone`, validation serveur
+// formulaire - le champ reste nommé `phone`/`contact_phone`, validation serveur
 // inchangée. Togo en tête, voisins CEDEAO/CEMAC ensuite.
 function initPhoneInputs(root = document) {
     root.querySelectorAll('input[data-ukc-tel]').forEach((input) => {
@@ -125,8 +125,8 @@ document.addEventListener('DOMContentLoaded', () => { initTomSelects(); initPhon
 window.initTomSelects = initTomSelects;
 
 // Barres de filtres (GET) : on retire les champs vides de l'URL. En surchargeant
-// form.submit(), on couvre tous les déclencheurs — selects natifs, Tom Select et
-// touche Entrée — sans modifier chaque vue. Le rechargement repart d'une page
+// form.submit(), on couvre tous les déclencheurs - selects natifs, Tom Select et
+// touche Entrée - sans modifier chaque vue. Le rechargement repart d'une page
 // neuve : l'état « disabled » posé juste avant l'envoi n'a aucun effet visible.
 function initFilterForms(root = document) {
     root.querySelectorAll('form.filter-bar').forEach((form) => {
@@ -152,7 +152,7 @@ window.initFilterForms = initFilterForms;
 import './public.js';
 
 // Visio : charge le lecteur LiveKit (SDK livekit-client) uniquement sur la page
-// « Rejoindre » — l'import dynamique code-splitte le SDK dans son propre chunk.
+// « Rejoindre » - l'import dynamique code-splitte le SDK dans son propre chunk.
 if (document.getElementById('lk-config')) {
     import('./meeting.js').then((m) => m.startFromConfig()).catch(() => {});
 }
@@ -177,7 +177,7 @@ if (document.getElementById('dashboardData')) {
 // ---------------------------------------------------------------------------
 // Toast unifié (même rendu que <x-ukc.toast> : carte en bas à droite, icône +
 // fermeture). Réutilise le conteneur `.ukc-toasts` s'il existe (flash serveur),
-// sinon en crée un — un seul empilement, cohérent dans tout le projet.
+// sinon en crée un - un seul empilement, cohérent dans tout le projet.
 function ukcToast(msg, type = 'ok') {
     let host = document.querySelector('.ukc-toasts');
     if (!host) {
@@ -328,7 +328,7 @@ document.addEventListener('alpine:init', () => {
     }));
     // Gestion de projet d'une édition (kanban + liste + jalons), 100 % AJAX : un
     // seul composant porte l'état (tasks[]/milestones[]) ; tout le CRUD passe par
-    // fetch et met à jour l'état en direct — aucun rechargement de page.
+    // fetch et met à jour l'état en direct - aucun rechargement de page.
     window.Alpine.data('ukcProject', (config = {}) => ({
         tasks: config.tasks || [],
         milestones: config.milestones || [],
@@ -749,7 +749,7 @@ document.addEventListener('alpine:init', () => {
     }));
     // Assistante Gesco (widget flottant + page dédiée) : conversation côté client,
     // chaque tour appelle l'endpoint JSON /gesco/demander. Aucune action serveur
-    // n'est déclenchée par l'IA — elle informe seulement.
+    // n'est déclenchée par l'IA - elle informe seulement.
     window.Alpine.data('gescoChat', (seed = '', endpoint = '/gesco/demander', name = 'Gesco', scope = 'guest') => ({
         messages: [],
         input: '',
@@ -880,7 +880,7 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
-    // Copilote d'administration (page Assistant IA — mockup admin-ai-assistant).
+    // Copilote d'administration (page Assistant IA - mockup admin-ai-assistant).
     // Chat réel (AskAdmin) + propositions à décider + journal des décisions persisté.
     window.Alpine.data('adminCopilot', (seed = '', askUrl = '', decideUrl = '', executeUrl = '', log = [], name = 'Copilote', editionId = '', scope = '0') => ({
         messages: [],
@@ -1544,7 +1544,7 @@ document.addEventListener('alpine:init', () => {
     }));
 
     // Listes répétables du formulaire d'édition (admin) : tarifs, comités,
-    // partenaires, FAQ — ajout/suppression côté client.
+    // partenaires, FAQ - ajout/suppression côté client.
     const editionArraysFactory = (init = {}) => ({
         fees: Array.isArray(init.fees) ? init.fees : [],
         committees: Array.isArray(init.committees) ? init.committees : [],
@@ -1601,7 +1601,7 @@ document.addEventListener('alpine:init', () => {
         fmt(b) { return b > 1048576 ? (b / 1048576).toFixed(1) + ' Mo' : Math.max(1, Math.round(b / 1024)) + ' Ko'; },
     }));
 
-    // Palette de commandes « Recherche rapide » (⌘K / Ctrl+K) — style Tailwise.
+    // Palette de commandes « Recherche rapide » (⌘K / Ctrl+K) - style Tailwise.
     // Les items sont rendus côté serveur (avec leurs icônes) ; on filtre en
     // masquant les lignes qui ne correspondent pas, sans backend.
     window.Alpine.data('ukcPalette', () => ({
@@ -1707,7 +1707,7 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
-    // Champ de mots-clés « tags » (style Select2, multi) — sans dépendance.
+    // Champ de mots-clés « tags » (style Select2, multi) - sans dépendance.
     // La liste est synchronisée vers un input caché « a, b, c » côté vue.
     window.Alpine.data('ukcTags', (initial = '') => ({
         tags: String(initial || '').split(',').map((t) => t.trim()).filter(Boolean),
@@ -1725,7 +1725,7 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
-    // Éditeur de texte enrichi minimal (WYSIWYG) — gras/italique/souligné/listes.
+    // Éditeur de texte enrichi minimal (WYSIWYG) - gras/italique/souligné/listes.
     // Sync le HTML vers un input caché (soumission de formulaire classique).
     window.Alpine.data('ukcEditor', (initial = '') => ({
         count: 0,

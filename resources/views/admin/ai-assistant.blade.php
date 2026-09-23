@@ -2,9 +2,9 @@
     $seed = 'Bonjour. Je suis '.$agentName.', votre assistant d’administration pour '.config('app.name').'. '
         ."Je peux analyser les soumissions, repérer les anomalies de paiement, préparer des e-mails, "
         ."suggérer des créneaux ou des rapports.\n\n"
-        .'Dites-moi ce que vous souhaitez examiner — je proposerai, vous déciderez.';
+        .'Dites-moi ce que vous souhaitez examiner - je proposerai, vous déciderez.';
 @endphp
-<x-layouts.admin title="Administration assistée" subtitle="Copilote IA · propositions uniquement — vous validez chaque action">
+<x-layouts.admin title="Administration assistée" subtitle="Copilote IA · propositions uniquement - vous validez chaque action">
     <x-slot:actions>
         <span class="ukc-pill ukc-pill--info">Agent : {{ $agentName }}</span>
         <a href="{{ route('admin.settings.agents') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">Configurer l’agent</a>
@@ -17,7 +17,7 @@
                 <div class="ukc-field" style="min-width:220px;margin:0;">
                     <select x-model="editionId">
                         @foreach ($editions as $ed)
-                            <option value="{{ $ed->id }}">{{ $ed->colloque?->name ? $ed->colloque->name.' — ' : '' }}{{ $ed->title ?: $ed->year }}</option>
+                            <option value="{{ $ed->id }}">{{ $ed->colloque?->name ? $ed->colloque->name.' - ' : '' }}{{ $ed->title ?: $ed->year }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -69,7 +69,7 @@
                 <div class="avatar-role">Copilote d’administration</div>
                 <div class="avatar-status" :class="{ busy: sending }">
                     <span class="dot"></span>
-                    <span x-text="sending ? 'Analyse en cours…' : 'En ligne — à votre écoute'"></span>
+                    <span x-text="sending ? 'Analyse en cours…' : 'En ligne - à votre écoute'"></span>
                 </div>
                 <div class="disclaimer">
                     <strong>Principe de contrôle humain</strong><br>
@@ -120,13 +120,13 @@
                                     <div class="proposal copilot-action">
                                         <strong x-text="m.action.label"></strong>
                                         <p x-text="m.action.summary"></p>
-                                        <div class="impact">Nécessite votre autorisation — l’action sera exécutée par l’assistant en votre nom.</div>
+                                        <div class="impact">Nécessite votre autorisation - l’action sera exécutée par l’assistant en votre nom.</div>
                                         <div class="actions">
                                             <template x-if="!m.actionState || m.actionState === 'error'">
                                                 <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
                                                     <button type="button" class="ukc-btn ukc-btn--sm ukc-btn--green" @click="runAction(i)"><x-ukc.icon name="check" :size="15" /> Autoriser et exécuter</button>
                                                     <button type="button" class="ukc-btn ukc-btn--sm ukc-btn--outline" @click="dismissAction(i)">Ignorer</button>
-                                                    <span class="error" x-show="m.actionState === 'error'" style="font-size:12px;">Échec — vous pouvez réessayer.</span>
+                                                    <span class="error" x-show="m.actionState === 'error'" style="font-size:12px;">Échec - vous pouvez réessayer.</span>
                                                 </div>
                                             </template>
                                             <template x-if="m.actionState === 'running'"><span class="ukc-pill ukc-pill--info">Exécution en cours…</span></template>

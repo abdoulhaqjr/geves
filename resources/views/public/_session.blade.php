@@ -38,7 +38,7 @@
                     <span>
                         <span style="font-weight:600;">{{ $sub?->title }}</span>
                         @if ($sub && filled($sub->authors))
-                            <span style="color:var(--ukc-muted);"> — {{ collect($sub->authors)->pluck('name')->filter()->join(', ') }}</span>
+                            <span style="color:var(--ukc-muted);"> - {{ collect($sub->authors)->pluck('name')->filter()->join(', ') }}</span>
                         @endif
                     </span>
                 </li>

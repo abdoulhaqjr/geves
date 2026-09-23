@@ -28,7 +28,7 @@
                 <div style="font-size:12px;font-weight:600;color:var(--ukc-muted);margin-bottom:6px;">{{ __('Communications de la séance') }}</div>
                 <ol style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:13.5px;">
                     @foreach ($communications as $c)
-                        <li><strong>{{ $c['title'] }}</strong> — {{ $c['name'] }}</li>
+                        <li><strong>{{ $c['title'] }}</strong> - {{ $c['name'] }}</li>
                     @endforeach
                 </ol>
             </div>
@@ -42,7 +42,7 @@
             <h3 style="justify-content:center;">{{ __('Rédaction pas encore ouverte') }}</h3>
             <p style="color:var(--ukc-muted);margin-top:6px;">
                 {{ __('Vous pourrez rédiger le rapport dès le début de la séance') }}
-                @if ($session->starts_at) — {{ $session->starts_at->translatedFormat('l j F Y à H:i') }}@endif.
+                @if ($session->starts_at) - {{ $session->starts_at->translatedFormat('l j F Y à H:i') }}@endif.
             </p>
         </div>
     @elseif ($locked)
@@ -53,7 +53,7 @@
             </p>
             <div class="ukc-field">
                 <label>{{ __('Synthèse de la séance') }}</label>
-                <div class="ukc-rte" style="white-space:pre-line;font-size:14px;line-height:1.55;">{{ $report->summary ?: '—' }}</div>
+                <div class="ukc-rte" style="white-space:pre-line;font-size:14px;line-height:1.55;">{{ $report->summary ?: '-' }}</div>
             </div>
             @if (filled($report->highlights))
                 <div class="ukc-field" style="margin-top:12px;">

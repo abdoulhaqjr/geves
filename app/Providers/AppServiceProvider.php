@@ -68,7 +68,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // En-tête public : alimente les liens « Édition en cours » et
-        // « Déroulement » (mockup index.html) avec l'édition à la une —
+        // « Déroulement » (mockup index.html) avec l'édition à la une -
         // celle en cours, sinon la prochaine, sinon la dernière publiée.
         View::composer('partials.public-header', function ($view) {
             $edition = null;
@@ -214,7 +214,7 @@ class AppServiceProvider extends ServiceProvider
 
     /**
      * Retire un préfixe « NOM= » collé par erreur devant une valeur (ex. quand on
-     * copie une ligne d'.env entière — « LIVEKIT_API_KEY=abc » — dans le champ).
+     * copie une ligne d'.env entière - « LIVEKIT_API_KEY=abc » - dans le champ).
      * Un nom d'variable est en MAJUSCULES/chiffres/underscore ; les vraies clés,
      * secrets et URL n'ont pas ce motif en tête.
      */

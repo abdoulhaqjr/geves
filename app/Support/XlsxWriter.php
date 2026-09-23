@@ -6,7 +6,7 @@ use Symfony\Component\HttpFoundation\Response;
 use ZipArchive;
 
 /**
- * Générateur de classeur Excel (.xlsx) en PHP pur — aucune dépendance runtime.
+ * Générateur de classeur Excel (.xlsx) en PHP pur - aucune dépendance runtime.
  * Produit un fichier OOXML SpreadsheetML minimal mais valide : plusieurs
  * feuilles, ligne d'en-tête en gras, cellules texte (chaînes en ligne) ou
  * numériques (détection automatique des int/float).

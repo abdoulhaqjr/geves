@@ -5,7 +5,7 @@ namespace App\Support;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 /**
- * Moteur TOTP autonome (RFC 6238) — sans dépendance Composer, dans l'esprit
+ * Moteur TOTP autonome (RFC 6238) - sans dépendance Composer, dans l'esprit
  * « PHP pur » du projet (cf. XlsxWriter). Compatible Google Authenticator,
  * Authy, Microsoft Authenticator, 1Password… Paramètres standards : SHA1,
  * 6 chiffres, période 30 s. Porté depuis le pattern bizzcart.

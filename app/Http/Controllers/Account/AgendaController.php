@@ -22,7 +22,7 @@ class AgendaController extends Controller
     public function ics(CalendarExport $calendar): StreamedResponse
     {
         $events = $this->events();
-        $ics = $calendar->ics($events, 'Mon agenda — '.config('app.name'));
+        $ics = $calendar->ics($events, 'Mon agenda - '.config('app.name'));
 
         return response()->streamDownload(function () use ($ics) {
             echo $ics;
@@ -69,7 +69,7 @@ class AgendaController extends Controller
 
         return [
             'uid' => 'slot-'.$slot->id.'@ukcolloques',
-            'summary' => 'Présentation — '.Str::limit((string) $title, 80),
+            'summary' => 'Présentation - '.Str::limit((string) $title, 80),
             'start' => $slot->starts_at,
             'end' => $slot->ends_at,
             'location' => (string) ($slot->room ?: $slot->session?->room ?: ''),

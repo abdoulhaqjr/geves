@@ -125,7 +125,7 @@
                         <div class="ukc-field">
                             <label for="mail_mailer">Transport</label>
                             <select id="mail_mailer" name="mail_mailer">
-                                <option value="log" @selected($v('mail_mailer') === 'log')>Journal (log — n’envoie rien)</option>
+                                <option value="log" @selected($v('mail_mailer') === 'log')>Journal (log - n’envoie rien)</option>
                                 <option value="smtp" @selected($v('mail_mailer') === 'smtp')>SMTP (envoi réel)</option>
                             </select>
                             @error('mail_mailer') <span class="error">{{ $message }}</span> @enderror
@@ -282,7 +282,7 @@
                             <input type="password" id="livekit_egress_s3_secret" name="livekit_egress_s3_secret" value="{{ $v('livekit_egress_s3_secret') }}" autocomplete="new-password" placeholder="Secret">
                         </div>
                         <div class="ukc-field full">
-                            <label for="livekit_egress_s3_endpoint">Endpoint <span class="hint">(optionnel — S3-compatible : MinIO…)</span></label>
+                            <label for="livekit_egress_s3_endpoint">Endpoint <span class="hint">(optionnel - S3-compatible : MinIO…)</span></label>
                             <input type="url" id="livekit_egress_s3_endpoint" name="livekit_egress_s3_endpoint" value="{{ $v('livekit_egress_s3_endpoint') }}" placeholder="https://s3.exemple.com">
                             @error('livekit_egress_s3_endpoint') <span class="error">{{ $message }}</span> @enderror
                         </div>

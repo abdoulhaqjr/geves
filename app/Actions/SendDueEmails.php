@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Mail;
 /**
  * Envoie les e-mails programmés arrivés à échéance : les lignes `emails` au
  * statut « queued » dont `scheduled_at` est passé. Chaque envoi est marqué
- * « sent » (ou « failed » avec l'erreur), garantissant l'idempotence — un
+ * « sent » (ou « failed » avec l'erreur), garantissant l'idempotence - un
  * e-mail déjà envoyé n'est jamais renvoyé par un passage ultérieur.
  *
  * @phpstan-type SendReport array{sent:int,failed:int,total:int}

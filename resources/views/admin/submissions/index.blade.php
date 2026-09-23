@@ -86,25 +86,25 @@
                                     @php $words = str_word_count(strip_tags((string) $s->abstract)); @endphp
                                     <div class="meta">{{ count($s->authors ?? []) ?: 1 }} auteur(s)@if ($words) · {{ $words }} mots @endif</div>
                                 </td>
-                                <td>{{ $s->participant?->full_name ?? ($s->authors[0]['name'] ?? '—') }}
+                                <td>{{ $s->participant?->full_name ?? ($s->authors[0]['name'] ?? '-') }}
                                     @if (($s->unlinked_authors_count ?? 0) > 0)
                                         <span class="ukc-pill ukc-pill--warn" style="margin-left:6px;" title="Co-auteur(s) non rattaché(s) à un compte">{{ $s->unlinked_authors_count }} non rattaché·s</span>
                                     @endif
                                 </td>
                                 <td>{{ $s->type === 'poster' ? 'Poster' : 'Orale' }}</td>
-                                <td>@if ($s->track)<span class="axis-tag">{{ \Illuminate\Support\Str::limit($s->track, 22) }}</span>@else — @endif</td>
+                                <td>@if ($s->track)<span class="axis-tag">{{ \Illuminate\Support\Str::limit($s->track, 22) }}</span>@else - @endif</td>
                                 <td style="white-space:nowrap;">{{ $s->created_at?->format('d/m/Y') }}</td>
                                 <td><span class="ukc-pill ukc-pill--{{ $statusPills[$s->status] ?? 'muted' }}">{{ $statuses[$s->status] ?? $s->status }}</span></td>
                                 <td>
                                     @php
                                         $pvData = [
                                             'ref' => $s->ref_code,
-                                            'author' => $s->participant?->full_name ?? ($s->authors[0]['name'] ?? '—'),
+                                            'author' => $s->participant?->full_name ?? ($s->authors[0]['name'] ?? '-'),
                                             'type' => $s->type === 'poster' ? 'Poster' : 'Orale',
-                                            'axis' => $s->track ?: '—',
+                                            'axis' => $s->track ?: '-',
                                             'status' => $statuses[$s->status] ?? $s->status,
                                             'statusPill' => $statusPills[$s->status] ?? 'muted',
-                                            'date' => $s->created_at?->format('d/m/Y') ?? '—',
+                                            'date' => $s->created_at?->format('d/m/Y') ?? '-',
                                             'title' => $s->title,
                                             'coauthors' => collect($s->authors ?? [])->filter(fn ($a) => empty($a['corresponding']))
                                                 ->map(fn ($a) => trim((string) ($a['name'] ?? '')))->filter()->values()->all(),
@@ -156,7 +156,7 @@
             </div>
             <div class="ukc-form-row">
                 <label>Résumé</label>
-                <div class="abstract-box abstract-box--full" x-text="pv?.abstract || '—'"></div>
+                <div class="abstract-box abstract-box--full" x-text="pv?.abstract || '-'"></div>
             </div>
             <x-slot:footer>
                 <a class="ukc-btn ukc-btn--ghost" :href="pv?.url">Ouvrir la fiche</a>

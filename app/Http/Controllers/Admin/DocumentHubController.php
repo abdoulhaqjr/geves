@@ -21,7 +21,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Hub Documents d'une édition (contrôleur + Blade, fidèle au mockup
- * admin-documents) : trois volets — Attestations (émission par type + options),
+ * admin-documents) : trois volets - Attestations (émission par type + options),
  * Badges (génération + options) et Livre des résumés (avant-propos, apparence).
  * Options persistées dans les réglages. Volets/onglets pilotés par Alpine.
  */
@@ -88,7 +88,7 @@ class DocumentHubController extends Controller
                 'attRequirePresence' => (bool) EditionSettings::get($edition, 'attestations.require_presence', false),
                 'attIncludeQr' => (bool) EditionSettings::get($edition, 'attestations.include_qr', true),
                 'attAllowBeforeValidation' => (bool) EditionSettings::get($edition, 'attestations.allow_before_validation', false),
-                // Identité vérifiable (DIDs) — signature EdDSA / VC-JWT effective.
+                // Identité vérifiable (DIDs) - signature EdDSA / VC-JWT effective.
                 'attDidIssuer' => (string) EditionSettings::get($edition, 'attestations.did_issuer', 'did:web:univkara.tg:colloques'),
                 'attDidMethod' => (string) EditionSettings::get($edition, 'attestations.did_method', 'did:web:univkara.tg:colloques#key-ed25519-1'),
                 'attCryptoSuite' => (string) EditionSettings::get($edition, 'attestations.crypto_suite', 'EdDSA (VC-JWT)'),
@@ -105,7 +105,7 @@ class DocumentHubController extends Controller
                 'livretShowTheme' => (bool) EditionSettings::get($edition, 'livret.show_theme', true),
                 'livretShowDates' => (bool) EditionSettings::get($edition, 'livret.show_dates', true),
                 'livretNumber' => (bool) EditionSettings::get($edition, 'livret.number_abstracts', false),
-                // Apparence du livre (modèle par défaut) — mockup admin-documents.
+                // Apparence du livre (modèle par défaut) - mockup admin-documents.
                 'livretFontBody' => (string) EditionSettings::get($edition, 'livret.font_body', 'Times New Roman'),
                 'livretFontHead' => (string) EditionSettings::get($edition, 'livret.font_head', 'Jost'),
                 'livretSizeBody' => (int) EditionSettings::get($edition, 'livret.size_body', 11),
@@ -151,7 +151,7 @@ class DocumentHubController extends Controller
         $count = 0;
         if ($type === 'communication') {
             // Par communication : auteur correspondant + co-auteurs payés, dans la
-            // limite des plafonds (coauthors_max, attestation_max — priorité auteur
+            // limite des plafonds (coauthors_max, attestation_max - priorité auteur
             // correspondant). Une attestation à leur nom par communication associée.
             foreach (CommunicationAttestations::entitlements($edition) as $ent) {
                 $action->handle($ent['participant'], 'communication', $ent['submission']);
@@ -298,7 +298,7 @@ class DocumentHubController extends Controller
             'livret.foreword_title' => trim((string) EditionSettings::get($edition, 'livret.foreword_title', 'Avant-propos')) ?: 'Avant-propos',
         ]);
 
-        return back()->with('ukc_status', 'Avant-propos généré par IA — vérifiez puis enregistrez.');
+        return back()->with('ukc_status', 'Avant-propos généré par IA - vérifiez puis enregistrez.');
     }
 
     /** Apparence du livre (typographie, couleurs, page de garde) → modèle par défaut. */
@@ -433,7 +433,7 @@ class DocumentHubController extends Controller
     {
         $body = <<<'HTML'
         <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
-        <head><meta charset="utf-8"><title>Modèle de base — Livre des résumés</title>
+        <head><meta charset="utf-8"><title>Modèle de base - Livre des résumés</title>
         <style>body{font-family:'Times New Roman',serif;font-size:11pt;line-height:1.4;}
         h1{font-family:Jost,Arial,sans-serif;font-size:24pt;color:#223ea4;text-align:center;}
         h2{font-family:Jost,Arial,sans-serif;font-size:16pt;color:#223ea4;}
@@ -481,8 +481,8 @@ class DocumentHubController extends Controller
     }
 
     /**
-     * Participants éligibles à l'attestation de participation : réglés, et — si
-     * l'option « présence requise » est active — effectivement présents (pointés
+     * Participants éligibles à l'attestation de participation : réglés, et - si
+     * l'option « présence requise » est active - effectivement présents (pointés
      * à l'accueil ou à au moins une séance).
      */
     private function participationTargets(Edition $edition): Collection

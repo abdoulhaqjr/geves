@@ -9,7 +9,7 @@ it('publie une annonce depuis l’admin (super-admin)', function () {
 
     $this->actingAs(adminStaff(), 'web')
         ->post(route('admin.announcements.store', $edition), [
-            'title' => 'Changement de salle — Atelier 2',
+            'title' => 'Changement de salle - Atelier 2',
             'text' => 'La session se tient en Salle C.',
             'urgent' => '1',
         ])
@@ -17,7 +17,7 @@ it('publie une annonce depuis l’admin (super-admin)', function () {
 
     $list = $edition->fresh()->settings['announcements'] ?? [];
     expect($list)->toHaveCount(1);
-    expect($list[0]['title'])->toBe('Changement de salle — Atelier 2');
+    expect($list[0]['title'])->toBe('Changement de salle - Atelier 2');
     expect($list[0]['urgent'])->toBeTrue();
     expect($list[0]['id'])->not->toBeEmpty();
 });

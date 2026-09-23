@@ -245,7 +245,7 @@ class ReportController extends Controller
             ['Communications', $summary['submissions']],
         ];
         foreach (Submission::statuses() as $key => $label) {
-            $synthese[] = ['— '.$label, $summary['submissionsByStatus'][$key] ?? 0];
+            $synthese[] = ['- '.$label, $summary['submissionsByStatus'][$key] ?? 0];
         }
         $synthese[] = ['Paiements réglés', $summary['paidCount']];
         $synthese[] = ['Encaissé ('.$summary['currency'].')', $summary['collected']];
@@ -279,7 +279,7 @@ class ReportController extends Controller
 
     /**
      * Données des 4 graphiques (statuts, soumissions/mois, paiements cumulés,
-     * axes) pour l'édition donnée — mêmes clés/canvas que le tableau de bord.
+     * axes) pour l'édition donnée - mêmes clés/canvas que le tableau de bord.
      *
      * @return array<string, mixed>
      */

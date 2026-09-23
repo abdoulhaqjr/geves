@@ -44,7 +44,7 @@ class Claim extends Model
         return ['open' => 'err', 'in_progress' => 'warn', 'resolved' => 'ok', 'closed' => 'muted'];
     }
 
-    /** Catégories proposées (indicatives — l'IA/l'agent peut en choisir une autre). */
+    /** Catégories proposées (indicatives - l'IA/l'agent peut en choisir une autre). */
     public const CATEGORIES = ['paiement', 'soumission', 'inscription', 'badge', 'attestation', 'programme', 'technique', 'autre'];
 
     protected static function booted(): void

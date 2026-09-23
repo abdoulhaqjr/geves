@@ -55,7 +55,7 @@
         <div x-show="tab==='scheduled'">
             <div class="filter-bar">
                 <select onchange="window.location='{{ route('admin.emails.index') }}?edition_id='+this.value+'&status={{ $status }}'">
-                    <option value="">— Édition —</option>
+                    <option value="">- Édition -</option>
                     @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
                 </select>
                 <select onchange="window.location='{{ route('admin.emails.index') }}?edition_id={{ $edition_id }}&status='+this.value">
@@ -82,14 +82,14 @@
                         </thead>
                         <tbody>
                             @forelse ($campaigns as $c)
-                                @php([$sLabel, $sPill] = $campStatus[$c['status']] ?? ['—', 'muted'])
+                                @php([$sLabel, $sPill] = $campStatus[$c['status']] ?? ['-', 'muted'])
                                 <tr>
                                     <td>
                                         <strong>{{ \Illuminate\Support\Str::limit($c['label'], 60) }}</strong>
                                         <div style="font-size:12px;color:var(--ukc-muted);">{{ $c['is_campaign'] ? 'Campagne ciblée' : 'Auto · '.\App\Support\EmailTemplates::label($c['template']) }}</div>
                                     </td>
                                     <td>{{ $c['audience'] }}</td>
-                                    <td style="white-space:nowrap;">{{ $c['scheduled_at']?->format('d/m/Y H:i') ?? '—' }}</td>
+                                    <td style="white-space:nowrap;">{{ $c['scheduled_at']?->format('d/m/Y H:i') ?? '-' }}</td>
                                     <td><span class="ukc-stat" style="font-weight:700;">{{ $c['sent'] ?: $c['total'] }}</span>@if ($c['sent'] && $c['sent'] < $c['total']) / {{ $c['total'] }}@endif</td>
                                     <td><span class="ukc-pill ukc-pill--{{ $sPill }}">{{ $sLabel }}</span></td>
                                     <td>
@@ -97,7 +97,7 @@
                                             <button type="button" class="ukc-btn--icon" title="Aperçu"
                                                     @click="pv = {{ \Illuminate\Support\Js::from([
                                                         'label' => $c['label'], 'audience' => $c['audience'],
-                                                        'scheduled' => $c['scheduled_at']?->format('d/m/Y H:i') ?? '—',
+                                                        'scheduled' => $c['scheduled_at']?->format('d/m/Y H:i') ?? '-',
                                                         'total' => $c['total'], 'sent' => $c['sent'], 'status' => $sLabel,
                                                         'auto' => ! $c['is_campaign'],
                                                     ]) }}"><x-ukc.icon name="eye" :size="16" /></button>
@@ -412,7 +412,7 @@
                 </div>
                 <div class="box-body">
                     <p style="font-size:13px;color:var(--ukc-muted);margin-bottom:12px;">
-                        <strong x-text="log?.label"></strong> — <span x-text="log?.total"></span> destinataire(s)
+                        <strong x-text="log?.label"></strong> - <span x-text="log?.total"></span> destinataire(s)
                         <template x-if="log && log.total > log.rows.length"><span> · <span x-text="log.rows.length"></span> premiers affichés</span></template>
                     </p>
                     <div class="log-wrap">

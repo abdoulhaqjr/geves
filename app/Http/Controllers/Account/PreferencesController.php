@@ -45,7 +45,7 @@ class PreferencesController extends Controller
         $account = Auth::guard('account')->user();
         $prefs = array_merge(self::DEFAULTS, (array) ($account->meta['prefs'] ?? []));
 
-        // Préférences de notification (par type / canal) — désormais dans cet onglet.
+        // Préférences de notification (par type / canal) - désormais dans cet onglet.
         $notifPrefs = [];
         if ($account instanceof User) {
             foreach ($account->resolvedNotificationPreferences('account') as $kind => $p) {

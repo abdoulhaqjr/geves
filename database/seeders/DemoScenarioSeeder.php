@@ -20,12 +20,12 @@ use Illuminate\Support\Str;
 
 /**
  * Scénario de démonstration complet pour deux colloques traversant tout le cycle
- * de vie — de l'appel à communications jusqu'à la clôture : comités, soumissions,
+ * de vie - de l'appel à communications jusqu'à la clôture : comités, soumissions,
  * relecture en aveugle (avis notés + recommandations), décisions, paiements,
  * programme (ateliers / sessions / créneaux affectés, modérateurs & rapporteurs),
  * attestations (participation / communication / modération / rapporteur), galerie
  * et documents. Idempotent (réinitialise les données de chaque édition à la
- * relance). Données fictives — à ne pas exécuter en production.
+ * relance). Données fictives - à ne pas exécuter en production.
  */
 class DemoScenarioSeeder extends Seeder
 {
@@ -61,7 +61,7 @@ class DemoScenarioSeeder extends Seeder
             'colloque' => 'Colloque international pluridisciplinaire de l’Université de Kara',
             'colloque_slug' => 'colloque-pluridisciplinaire-uk',
             'edition_slug' => 'cip-uk-2023',
-            'title' => 'Colloque international pluridisciplinaire — 2023',
+            'title' => 'Colloque international pluridisciplinaire - 2023',
             'edition_label' => 'VIe édition',
             'year' => 2023,
             'start' => '2023-11-08', 'end' => '2023-11-11',
@@ -78,7 +78,7 @@ class DemoScenarioSeeder extends Seeder
             'colloque' => 'Journées scientifiques de la DRI',
             'colloque_slug' => 'journees-scientifiques-dri',
             'edition_slug' => 'jsd-2024',
-            'title' => 'Journées scientifiques de la DRI — 2024',
+            'title' => 'Journées scientifiques de la DRI - 2024',
             'edition_label' => 'IIIe édition',
             'year' => 2024,
             'start' => '2024-06-18', 'end' => '2024-06-20',
@@ -109,7 +109,7 @@ class DemoScenarioSeeder extends Seeder
         $now = Carbon::now();
         $edition = Edition::updateOrCreate(['slug' => 'seminaire-en-cours'], [
             'colloque_id' => $colloque->id,
-            'title' => 'Séminaire doctoral UK — édition en cours',
+            'title' => 'Séminaire doctoral UK - édition en cours',
             'edition_label' => 'Session '.$now->year,
             'theme' => 'Méthodes de recherche et valorisation scientifique',
             'subtitle' => 'Sessions en présentiel et hybride',
@@ -155,7 +155,7 @@ class DemoScenarioSeeder extends Seeder
             $participants[] = $p;
         }
 
-        $atelier = $edition->ateliers()->create(['title' => 'Atelier — Méthodes de recherche', 'tracks' => ['Méthodologie'], 'ordre' => 0]);
+        $atelier = $edition->ateliers()->create(['title' => 'Atelier - Méthodes de recherche', 'tracks' => ['Méthodologie'], 'ordre' => 0]);
 
         // Session EN DIRECT (encadre l'instant présent) + une session à venir.
         $edition->sessions()->create([
@@ -430,14 +430,14 @@ class DemoScenarioSeeder extends Seeder
 
         foreach (array_slice($tracks, 0, 3) as $i => $track) {
             $atelier = Atelier::create([
-                'edition_id' => $edition->id, 'title' => 'Atelier — '.$track,
+                'edition_id' => $edition->id, 'title' => 'Atelier - '.$track,
                 'tracks' => [$track], 'ordre' => $i,
             ]);
 
             $day = $start->copy()->addDays($i % 3);
             $session = EventSession::create([
                 'edition_id' => $edition->id, 'atelier_id' => $atelier->id, 'type' => 'atelier',
-                'label' => 'Session '.($i + 1).' — '.$track, 'room' => 'Salle '.chr(66 + $i),
+                'label' => 'Session '.($i + 1).' - '.$track, 'room' => 'Salle '.chr(66 + $i),
                 'session_day' => $day->toDateString(),
                 'starts_at' => $day->copy()->setTime(11, 0), 'ends_at' => $day->copy()->setTime(13, 0),
                 'moderator_name' => $moderators[$i % count($moderators)]->full_name,

@@ -25,7 +25,7 @@ class DemoColloqueSeeder extends Seeder
         $colloque->editions()->updateOrCreate(
             ['slug' => 'edition-2026'],
             [
-                'title' => 'Colloque international de l’Université de Kara — 2026',
+                'title' => 'Colloque international de l’Université de Kara - 2026',
                 'edition_label' => '3e édition',
                 'subtitle' => 'Sciences, sociétés et développement durable en Afrique de l’Ouest',
                 'theme' => 'Recherche et innovation au service du développement durable',

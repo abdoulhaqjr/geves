@@ -50,7 +50,7 @@
                             <li>
                                 <div class="av">{{ $initials($author['name'] ?? '?') }}</div>
                                 <div>
-                                    <div class="name">{{ $author['name'] ?? '—' }}
+                                    <div class="name">{{ $author['name'] ?? '-' }}
                                         @if (!empty($author['corresponding']))
                                             <span class="ukc-pill ukc-pill--info" style="margin-left:6px;">Correspondant</span>
                                         @endif
@@ -76,7 +76,7 @@
                                             @endif
                                         </div>
                                     @elseif ($link && $link->status === 'invited')
-                                        <div class="aff" style="color:var(--ukc-muted);">Invitation envoyée le {{ $link->invited_at?->format('d/m/Y') }} — en attente d’inscription</div>
+                                        <div class="aff" style="color:var(--ukc-muted);">Invitation envoyée le {{ $link->invited_at?->format('d/m/Y') }} - en attente d’inscription</div>
                                     @endif
 
                                     {{-- Rattachement manuel à un compte (correction d'un rapprochement) --}}
@@ -106,7 +106,7 @@
                     </ul>
 
                     <h3>Résumé</h3>
-                    <div class="abstract-box ukc-rte">{!! $s->abstract ? \App\Support\Html::render($s->abstract) : '—' !!}</div>
+                    <div class="abstract-box ukc-rte">{!! $s->abstract ? \App\Support\Html::render($s->abstract) : '-' !!}</div>
                     @if ($s->keywords)
                         <div class="keywords">
                             @foreach (preg_split('/[,;]+/', $s->keywords, -1, PREG_SPLIT_NO_EMPTY) as $kw)
@@ -123,7 +123,7 @@
                         <h2><span><x-ukc.icon name="shield" :size="18" /> Similarité interne</span></h2>
                         <p style="color:var(--ukc-muted);font-size:13px;margin:-4px 0 12px;">
                             Comparé aux autres résumés de la plateforme (éditions accessibles). Un score élevé peut signaler un doublon,
-                            un résumé recyclé ou un auto-plagiat — <strong>cliquez pour comparer côte à côte</strong>.
+                            un résumé recyclé ou un auto-plagiat - <strong>cliquez pour comparer côte à côte</strong>.
                         </p>
                         <div style="display:flex;flex-direction:column;gap:8px;">
                             @foreach ($similar as $m)
@@ -200,7 +200,7 @@
                             <div style="font-size:11.5px;color:var(--ukc-light);margin-top:10px;">Dernière vérification : {{ \Illuminate\Support\Carbon::parse($webPlag['checked_at'])->format('d/m/Y H:i') }}</div>
                         @else
                             <p style="color:var(--ukc-muted);font-size:13px;margin:-4px 0 0;">
-                                Vérifie le résumé contre le web via <strong>{{ $webPlagProvider->label() }}</strong> — à la demande (consomme votre quota).
+                                Vérifie le résumé contre le web via <strong>{{ $webPlagProvider->label() }}</strong> - à la demande (consomme votre quota).
                             </p>
                         @endif
                         @if ($webPlagProvider)
@@ -314,7 +314,7 @@
                                 <div class="coi-item risk">
                                     <span class="coi-tag {{ $coiTag($co['level'])[1] }}">{{ $coiTag($co['level'])[0] }}</span>
                                     <div>
-                                        <strong>{{ $co['label'] }}</strong> — {{ $review->reviewer?->full_name }}<br>
+                                        <strong>{{ $co['label'] }}</strong> - {{ $review->reviewer?->full_name }}<br>
                                         <span style="color:var(--ukc-muted);font-size:12px;">{{ $co['detail'] }}</span>
                                     </div>
                                 </div>
@@ -322,7 +322,7 @@
                         @else
                             <div class="coi-item">
                                 <span class="coi-tag clear">OK</span>
-                                <div><strong>{{ $review->reviewer?->full_name }}</strong> — aucun conflit détecté.</div>
+                                <div><strong>{{ $review->reviewer?->full_name }}</strong> - aucun conflit détecté.</div>
                             </div>
                         @endif
                     @empty
@@ -357,7 +357,7 @@
                         <div class="reviewer-item">
                             <div class="av">{{ $initials($review->reviewer?->full_name) }}</div>
                             <div class="info">
-                                <strong>{{ $review->reviewer?->full_name ?: '—' }}</strong>
+                                <strong>{{ $review->reviewer?->full_name ?: '-' }}</strong>
                                 <span class="sub">{{ $review->reviewer?->email }}</span>
                                 @if ($review->isCompleted())
                                     <div class="rev-detail">
@@ -406,7 +406,7 @@
                             <div class="ukc-field" style="margin-bottom:8px;">
                                 <label for="existingReviewerId">Relecteur existant</label>
                                 <select id="existingReviewerId" name="existingReviewerId" data-tom data-placeholder="Rechercher un relecteur…">
-                                    <option value="">— Nouveau relecteur —</option>
+                                    <option value="">- Nouveau relecteur -</option>
                                     @foreach ($existingReviewers as $rev)
                                         @php($worst = $coiByReviewer[$rev->id] ?? null)
                                         <option value="{{ $rev->id }}">{{ $worst === 'high' ? '⛔ ' : ($worst ? '⚠ ' : '') }}{{ $rev->full_name }} ({{ $rev->email }})</option>
@@ -467,7 +467,7 @@
                     <h2>Informations</h2>
                     <div class="info-list">
                         <div><span class="k">Référence</span><br><code>{{ $s->ref_code }}</code></div>
-                        <div><span class="k">Édition</span><br>{{ $s->edition?->title ?? '—' }}</div>
+                        <div><span class="k">Édition</span><br>{{ $s->edition?->title ?? '-' }}</div>
                         <div>
                             <span class="k">Statut paiement auteur</span><br>
                             @if ($authorPaid)

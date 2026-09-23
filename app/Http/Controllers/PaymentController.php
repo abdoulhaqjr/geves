@@ -64,7 +64,7 @@ class PaymentController extends Controller
             }
         }
 
-        // Toujours accuser réception (2xx) — traitement idempotent au-dessus.
+        // Toujours accuser réception (2xx) - traitement idempotent au-dessus.
         return response('OK', 200);
     }
 

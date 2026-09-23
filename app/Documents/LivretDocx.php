@@ -21,7 +21,7 @@ use Symfony\Component\HttpFoundation\Response;
  * Livret des résumés au format Word éditable (.docx), portant la logique du
  * projet source uk-colloques (booklet) : page de garde « LIVRE DES RÉSUMÉS »,
  * avant-propos, comités, sommaire (TOC Word), programme, puis résumés regroupés
- * par axe — chaque résumé avec sa référence, ses auteurs et affiliations
+ * par axe - chaque résumé avec sa référence, ses auteurs et affiliations
  * numérotées (exposants), l'auteur correspondant, le libellé « RÉSUMÉ : » et les
  * mots-clés. Rendu déterministe ; l'apparence est pilotée par les réglages
  * `livret.*` et le texte échappé (Word refuse un XML invalide).
@@ -203,7 +203,7 @@ class LivretDocx
         $section->addPageBreak();
     }
 
-    /** Comités (organisation / scientifique / supervision) : « Nom — Titre — Institution ». */
+    /** Comités (organisation / scientifique / supervision) : « Nom - Titre - Institution ». */
     private function addCommittees(Section $section): void
     {
         $members = $this->edition->committeeMembers()->orderBy('ordre')->get();
@@ -226,7 +226,7 @@ class LivretDocx
                     trim((string) $m->person_title),
                     trim((string) $m->institution),
                 ]);
-                $section->addText(implode(' — ', $bits), ['size' => 11], ['spaceAfter' => 40]);
+                $section->addText(implode(' - ', $bits), ['size' => 11], ['spaceAfter' => 40]);
             }
         }
 
@@ -269,7 +269,7 @@ class LivretDocx
                     ->addText($head, ['bold' => true, 'size' => 10, 'color' => self::BLUE]);
             }
             foreach ($daySessions as $s) {
-                $h = $s->starts_at?->format('H:i') ?? '—';
+                $h = $s->starts_at?->format('H:i') ?? '-';
                 if ($s->ends_at) {
                     $h .= '–'.$s->ends_at->format('H:i');
                 }
@@ -378,7 +378,7 @@ class LivretDocx
             }
         }
 
-        // Corps du résumé (préserve gras/italique de base) — libellé masqué si vide.
+        // Corps du résumé (préserve gras/italique de base) - libellé masqué si vide.
         $paragraphs = $this->paragraphs((string) $s->abstract);
         if ($paragraphs !== []) {
             $section->addText('RÉSUMÉ :', ['bold' => true, 'size' => 10, 'color' => self::BLUE], ['spaceBefore' => 40, 'spaceAfter' => 20]);

@@ -45,7 +45,7 @@ class ScoreTestimonials
     {
         $items = $testimonials->map(fn (Testimonial $t) => [
             'id' => $t->id,
-            'auteur' => trim($t->author_name.' — '.(string) $t->author_role),
+            'auteur' => trim($t->author_name.' - '.(string) $t->author_role),
             'affiliation' => (string) $t->author_affiliation,
             'temoignage' => $t->quote,
         ])->values()->all();

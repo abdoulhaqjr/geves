@@ -45,7 +45,7 @@ class ProjectController extends Controller
     {
         $edition = $this->currentEdition($request);
 
-        // État initial pour le client (Alpine) — tout le CRUD et le calendrier
+        // État initial pour le client (Alpine) - tout le CRUD et le calendrier
         // sont ensuite pilotés en direct depuis cet état (AJAX, sans rechargement).
         $payload = $edition ? $this->editionPayload($edition) : ['tasks' => [], 'milestones' => []];
 
@@ -272,7 +272,7 @@ class ProjectController extends Controller
             || ProjectMilestone::where('edition_id', $edition->id)->exists()) {
             return $request->expectsJson()
                 ? response()->json(['error' => 'Le projet contient déjà des éléments.'], 422)
-                : back()->with('ukc_error', 'Le projet contient déjà des éléments — amorçage ignoré.');
+                : back()->with('ukc_error', 'Le projet contient déjà des éléments - amorçage ignoré.');
         }
 
         foreach ($this->templateMilestones($edition) as $i => $m) {
@@ -310,14 +310,14 @@ class ProjectController extends Controller
 
         $taskRows = $tasks->map(fn (ProjectTask $t) => [
             $t->title,
-            $t->phase ?: '—',
+            $t->phase ?: '-',
             $t->statusLabel(),
             $t->priorityLabel(),
-            optional($t->assignee)->name ?: '—',
-            $t->start_date?->format('d/m/Y') ?: '—',
-            $t->due_date?->format('d/m/Y') ?: '—',
+            optional($t->assignee)->name ?: '-',
+            $t->start_date?->format('d/m/Y') ?: '-',
+            $t->due_date?->format('d/m/Y') ?: '-',
             implode('/', $t->checklistProgress()),
-            $t->link_key ? (self::LINK_TARGETS[$t->link_key] ?? $t->link_key) : '—',
+            $t->link_key ? (self::LINK_TARGETS[$t->link_key] ?? $t->link_key) : '-',
         ])->all();
 
         $milestones = ProjectMilestone::where('edition_id', $edition->id)
@@ -325,7 +325,7 @@ class ProjectController extends Controller
 
         $msRows = $milestones->map(fn (ProjectMilestone $m) => [
             $m->title,
-            $m->due_date?->format('d/m/Y') ?: '—',
+            $m->due_date?->format('d/m/Y') ?: '-',
             $m->isDone() ? 'Atteint' : 'À venir',
             (string) $m->description,
         ])->all();
@@ -536,7 +536,7 @@ class ProjectController extends Controller
     }
 
     /**
-     * Charge utile d'une tâche pour l'état client (Alpine) — même forme partout.
+     * Charge utile d'une tâche pour l'état client (Alpine) - même forme partout.
      *
      * @return array<string, mixed>
      */
@@ -627,7 +627,7 @@ class ProjectController extends Controller
             $assignee,
             kind: 'task_assigned',
             title: 'Une tâche vous a été assignée',
-            body: '« '.$task->title.' » — '.($edition?->title ?: 'colloque')
+            body: '« '.$task->title.' » - '.($edition?->title ?: 'colloque')
                 .($task->due_date ? ' · échéance '.$task->due_date->format('d/m/Y') : ''),
             url: $edition ? route('admin.project.index', ['edition_id' => $edition->id]) : null,
             icon: 'layers',

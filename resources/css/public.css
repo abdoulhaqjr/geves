@@ -1,5 +1,5 @@
 /**
- * Composants du site public (accueil, archives, déroulement…) — portés du
+ * Composants du site public (accueil, archives, déroulement…) - portés du
  * mockup gesco-mockup. Réutilise les tokens de ukc.css (charte UK). Header,
  * hero, cartes colloque, à-propos, fonctionnalités, galerie + lightbox,
  * témoignages, contact, CTA, footer.
@@ -381,7 +381,7 @@
 .step-panel.active { display: block; }
 .wizard-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 22px; }
 
-/* Interrupteur (toggle) — ex. « Je suis l'auteur correspondant ». */
+/* Interrupteur (toggle) - ex. « Je suis l'auteur correspondant ». */
 .ukc-switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 14px; }
 .ukc-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
 .ukc-switch__track { width: 40px; height: 22px; border-radius: 999px; background: var(--ukc-border); position: relative; transition: background .15s; flex: none; }
@@ -621,7 +621,7 @@
 .footer-bottom { border-top: 1px solid rgba(255, 255, 255, .1); padding-top: 18px; display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; font-size: 13px; }
 
 /* =========================================================================
-   Page colloque « édition en cours » — refonte fidèle au mockup
+   Page colloque « édition en cours » - refonte fidèle au mockup
    page-colloque-amelioree.html (hero + barre scrollspy sticky + countdown).
    ========================================================================= */
 .ukc-hero {
@@ -904,7 +904,7 @@
 @media (max-width: 600px) { .ukc-campus-map iframe { height: 280px; } }
 
 /* ============================================================
-   FOOTER PROPRE AU COLLOQUE (barre d'info) — distinct du footer plateforme
+   FOOTER PROPRE AU COLLOQUE (barre d'info) - distinct du footer plateforme
    ============================================================ */
 .ukc-info-bar { background: var(--ukc-bg); border-top: 1px solid var(--ukc-border); padding: 28px 0 20px; }
 .ukc-info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; font-size: 14px; color: var(--ukc-muted); }

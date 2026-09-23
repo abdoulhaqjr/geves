@@ -62,7 +62,7 @@ class EditionController extends Controller
 
     /**
      * Exporte UNE édition (paramètres + données de configuration) en un fichier
-     * JSON téléchargeable — sauvegarde / transfert / clonage. Réimportable sur une
+     * JSON téléchargeable - sauvegarde / transfert / clonage. Réimportable sur une
      * autre édition via {@see import()}.
      */
     public function export(Edition $edition): StreamedResponse

@@ -1,4 +1,4 @@
-<x-layouts.app :title="'Attestation — ' . $attestation->recipient_name">
+<x-layouts.app :title="'Attestation - ' . $attestation->recipient_name">
     <div style="max-width:900px;margin:0 auto;padding:24px 16px;">
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px;" class="no-print">
             <a href="{{ route('attestation.pdf', $attestation->uuid) }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">

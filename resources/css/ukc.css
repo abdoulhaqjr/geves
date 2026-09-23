@@ -1,5 +1,5 @@
 /**
- * Design system « UK · Colloques » — porté des mockups (gesco-mockup).
+ * Design system « UK · Colloques » - porté des mockups (gesco-mockup).
  * Charte Université de Kara : bleu #223ea4, or #ffd700, vert #009933, police Jost.
  * Regle : icones = SVG (composant <x-ukc.icon>), jamais d'emoji dans l'UI.
  */
@@ -38,7 +38,7 @@
   line-height: 1.55;
   min-height: 100vh;
 }
-/* Reset des liens de contenu — exclut les liens-boutons (.ukc-btn) dont la
+/* Reset des liens de contenu - exclut les liens-boutons (.ukc-btn) dont la
    couleur de texte vient de leur variante, sinon `.ukc-scope a` (0,1,1) écrase
    `.ukc-btn--blue` (0,1,0) → texte foncé sur bouton bleu. */
 .ukc-scope a:not(.ukc-btn) { color: inherit; text-decoration: none; }
@@ -218,7 +218,7 @@
 .ukc-user-chip .logout { color: #8b97b8; padding: 6px; border-radius: 8px; background: none; border: none; cursor: pointer; }
 .ukc-user-chip .logout:hover { background: rgba(255, 255, 255, .08); color: #fff; }
 
-/* Back-office : shell style WordPress (mockup admin) — barre noire en tête,
+/* Back-office : shell style WordPress (mockup admin) - barre noire en tête,
    sidebar sombre plate (liens texte), en-tête blanc par page. */
 .wp-bar {
   position: fixed; top: 0; left: 0; right: 0; height: 32px; z-index: 60;
@@ -238,7 +238,7 @@
 }
 .ukc-shell--admin .ukc-sidebar-nav a:hover { background: #2c3338; color: #fff; }
 .ukc-shell--admin .ukc-sidebar-nav a.active { background: #2c3338; color: #fff; border-left-color: var(--ukc-blue); font-weight: 600; }
-/* Sous-menus (mockup : items « — Label » indentés, bord vert à l'actif) */
+/* Sous-menus (mockup : items « - Label » indentés, bord vert à l'actif) */
 .ukc-shell--admin .ukc-sidebar-nav a.sub { padding: 7px 16px 7px 30px; font-size: 12px; color: #8c8f94; font-weight: 500; }
 .ukc-shell--admin .ukc-sidebar-nav a.sub:hover { background: #2c3338; color: #fff; }
 .ukc-shell--admin .ukc-sidebar-nav a.sub.active { background: #2c3338; color: #fff; border-left-color: var(--ukc-green); font-weight: 600; }
@@ -272,7 +272,7 @@
 /* Espace participant : occuper toute la largeur disponible (pas de max-width). */
 .ukc-shell:not(.ukc-shell--admin) .ukc-content { max-width: none; }
 
-/* Pagination (charte UKC / Tailwise) — vue par défaut de Laravel. */
+/* Pagination (charte UKC / Tailwise) - vue par défaut de Laravel. */
 .ukc-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .ukc-pagination__info { font-size: 12.5px; color: var(--ukc-muted); }
 .ukc-pagination__info span { opacity: .7; }
@@ -358,7 +358,7 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .ukc-form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 @media (max-width: 640px) { .ukc-form-grid, .ukc-form-grid-3 { grid-template-columns: 1fr; } }
 
-/* Primitives « form-row » et « check » (globales) — utilisées par les fiches
+/* Primitives « form-row » et « check » (globales) - utilisées par les fiches
    d'édition et les modales de la page Créneaux (fidèles au mockup). */
 .ukc-form-row { margin-bottom: 12px; }
 .ukc-form-row > label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 5px; color: var(--ukc-text); }
@@ -375,7 +375,7 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .ukc-check { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 8px; cursor: pointer; }
 .ukc-check input { width: auto; margin-top: 3px; }
 
-/* Sous-navigation en onglets « pilules » (globale) — Utilisateurs, Documents,
+/* Sous-navigation en onglets « pilules » (globale) - Utilisateurs, Documents,
    Soumissions, Rapports, E-mails, Créneaux… (fidèle au mockup, boutons ET liens). */
 .ukc-nav-docs { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
 .ukc-nav-docs button, .ukc-nav-docs a {
@@ -397,7 +397,7 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .ukc-avatar-actions .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .ukc-avatar-actions input[type="file"] { position: absolute; width: .1px; height: .1px; opacity: 0; overflow: hidden; z-index: -1; }
 
-/* Interrupteurs (Mon compte · Préférences / Notifications — mockup compte.html) */
+/* Interrupteurs (Mon compte · Préférences / Notifications - mockup compte.html) */
 .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--ukc-border); }
 .switch-row:last-of-type { border-bottom: none; }
 .switch-row .meta { flex: 1; min-width: 0; }
@@ -410,7 +410,7 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .switch input:checked + .slider { background: var(--ukc-blue); }
 .switch input:checked + .slider::before { transform: translateX(20px); }
 
-/* Double authentification — cartes de méthode & config (mockup compte.html) */
+/* Double authentification - cartes de méthode & config (mockup compte.html) */
 .method-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0 16px; }
 @media (max-width: 560px) { .method-cards { grid-template-columns: 1fr; } }
 .method-card { border: 1.5px solid var(--ukc-border); border-radius: 12px; padding: 14px 16px; background: #fff; transition: .2s; display: block; text-align: left; width: 100%; cursor: pointer; }
@@ -424,7 +424,7 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .secret-code { font-family: var(--ukc-mono); font-size: 13px; font-weight: 700; letter-spacing: .06em; background: #fff; border: 1px solid var(--ukc-border); border-radius: 8px; padding: 8px 12px; display: inline-block; margin: 6px 0; }
 .account-badge { display: inline-flex; align-items: center; gap: 6px; }
 
-/* En-tête + onglets « Mon compte » — partagés espace participant ET back-office admin. */
+/* En-tête + onglets « Mon compte » - partagés espace participant ET back-office admin. */
 .account-head h1 { font-size: 1.55rem; font-weight: 800; color: var(--ukc-text); }
 .account-head p { font-size: .9rem; color: var(--ukc-muted); margin-top: 4px; }
 .account-nav { display: flex; gap: 6px; margin: 16px 0 20px; flex-wrap: wrap; }
@@ -435,13 +435,13 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .account-nav a.active,
 .account-nav button.active { background: var(--ukc-blue); border-color: var(--ukc-blue); color: #fff; }
 
-/* Table des sessions actives (Mon compte · Sécurité — mockup compte.html) */
+/* Table des sessions actives (Mon compte · Sécurité - mockup compte.html) */
 .sessions-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; min-width: 520px; }
 .sessions-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ukc-light); padding: 8px 10px; border-bottom: 1px solid var(--ukc-border); }
 .sessions-table td { padding: 12px 10px; border-bottom: 1px solid var(--ukc-border); vertical-align: middle; }
 .sessions-table tr:last-child td { border-bottom: none; }
 
-/* Centre de notifications (Mon compte · Notifications — mockup compte.html) */
+/* Centre de notifications (Mon compte · Notifications - mockup compte.html) */
 .notif-item { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--ukc-border); }
 .notif-item:last-child { border-bottom: none; }
 .notif-item.unread { background: rgba(34, 62, 164, .03); margin: 0 -12px; padding: 12px; border-radius: 10px; border-bottom: none; }
@@ -452,7 +452,7 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .notif-item .body p { font-size: 13px; color: var(--ukc-muted); margin-top: 2px; }
 .notif-item .when { font-size: 11.5px; color: var(--ukc-light); font-weight: 600; white-space: nowrap; }
 
-/* Documents participant — badge + listes (mockup espace-participant #documents) */
+/* Documents participant - badge + listes (mockup espace-participant #documents) */
 .ukc-doc-list { list-style: none; margin: 0; padding: 0; }
 .ukc-doc-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--ukc-border); font-size: 14px; }
 .ukc-doc-list li:last-child { border-bottom: none; }
@@ -506,7 +506,7 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .ukc-qr-details .payload { font-family: var(--ukc-mono); font-size: 11.5px; background: #fff; border: 1px solid var(--ukc-border); border-radius: 8px; padding: 10px 12px; margin-top: 4px; color: var(--ukc-text); line-height: 1.45; }
 .ukc-qr-details .note { margin-top: 12px; font-size: 12.5px; color: var(--ukc-light); line-height: 1.45; }
 
-/* Inscription — tarifs + Mobile Money (mockup espace-participant #inscription) */
+/* Inscription - tarifs + Mobile Money (mockup espace-participant #inscription) */
 .ukc-tariff-card { cursor: default; transition: border-color .2s, box-shadow .2s; }
 .ukc-tariff-card.selected { border-color: var(--ukc-blue) !important; box-shadow: var(--ukc-shadow); }
 .ukc-pay-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-radius: 12px; background: var(--ukc-bg); border: 1px solid var(--ukc-border); margin-bottom: 18px; font-size: 14px; }
@@ -726,7 +726,7 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .ukc-countdown-card .lead { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; opacity: .85; margin-bottom: 14px; }
 .ukc-countdown-card .foot { font-size: .82rem; opacity: .9; margin-top: 14px; }
 
-/* Modale générique (fidèle au mockup) — visibilité pilotée par Alpine (x-show).
+/* Modale générique (fidèle au mockup) - visibilité pilotée par Alpine (x-show).
    Les pages qui la scopent déjà (.admin-program, .admin-edition-detail) gardent
    la priorité via leur spécificité. */
 .ukc-modal { position: fixed; inset: 0; z-index: 100; background: rgba(15, 26, 51, .55); display: flex; align-items: center; justify-content: center; padding: 20px; }

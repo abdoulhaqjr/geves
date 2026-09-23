@@ -39,7 +39,7 @@
                 <div class="ukc-field">
                     <label for="civility">{{ __('Civilité') }} <span class="req">*</span></label>
                     <select id="civility" name="civility">
-                        <option value="">—</option>
+                        <option value="">-</option>
                         @foreach ($civilities as $c)
                             <option value="{{ $c }}" @selected(old('civility', $account->civility) === $c)>{{ $c }}</option>
                         @endforeach
@@ -76,7 +76,7 @@
                 <div class="ukc-field">
                     <label for="email">{{ __('E-mail') }} <span class="req">*</span></label>
                     <input type="email" id="email" value="{{ $account->email }}" readonly aria-readonly="true" style="background:var(--ukc-bg);cursor:not-allowed;">
-                    <span class="hint">{{ __('Adresse de connexion — modifiable depuis l’onglet Sécurité.') }}</span>
+                    <span class="hint">{{ __('Adresse de connexion - modifiable depuis l’onglet Sécurité.') }}</span>
                 </div>
 
                 <div class="ukc-field">
@@ -90,7 +90,7 @@
                     <label for="affiliation">{{ __('Affiliation / Institution') }} <span class="req">*</span> <span class="hint">{{ __('(requise pour soumettre)') }}</span></label>
                     <input type="text" id="affiliation" name="affiliation" autocomplete="off" x-ref="input"
                            value="{{ old('affiliation', $account->affiliation) }}" @input="onInput()"
-                           placeholder="{{ __('Laboratoire / Département — Université de Kara') }}">
+                           placeholder="{{ __('Laboratoire / Département - Université de Kara') }}">
                     @if ($halEnabled)
                         <ul x-show="open" x-cloak
                             style="position:absolute;z-index:20;left:0;right:0;top:100%;margin:4px 0 0;padding:6px;list-style:none;
@@ -128,7 +128,7 @@
                                 <a href="{{ $account->orcidUrl() }}" target="_blank" rel="noopener" style="color:var(--ukc-blue);font-weight:600;">{{ $account->orcid }}</a>
                             </span>
                         @else
-                            <span class="hint">{{ __('Votre identifiant chercheur (orcid.org) — apparaîtra sur vos communications et attestations.') }}</span>
+                            <span class="hint">{{ __('Votre identifiant chercheur (orcid.org) - apparaîtra sur vos communications et attestations.') }}</span>
                         @endif
                     @enderror
 

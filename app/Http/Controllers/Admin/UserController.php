@@ -53,7 +53,7 @@ class UserController extends Controller
         $countsByRole = collect(array_keys(StaffRoles::ROLES))
             ->mapWithKeys(fn ($r) => [$r => User::whereHas('roles', fn ($q) => $q->where('name', $r))->count()]);
 
-        // Permissions RÉELLES par rôle (spatie) — source de la matrice d'accès éditable.
+        // Permissions RÉELLES par rôle (spatie) - source de la matrice d'accès éditable.
         $rolePermissions = Role::query()->where('guard_name', 'web')
             ->whereIn('name', array_keys(StaffRoles::ROLES))
             ->with('permissions')

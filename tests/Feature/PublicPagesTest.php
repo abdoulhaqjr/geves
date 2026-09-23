@@ -16,7 +16,7 @@ it('affiche la galerie du dernier colloque sur l’accueil', function () {
 
     $this->get(route('home'))
         ->assertOk()
-        ->assertSee('Galerie — dernier colloque', false)
+        ->assertSee('Galerie - dernier colloque', false)
         ->assertSee('galleryData', false)
         ->assertSee('https://example.test/g1.jpg');
 });
@@ -26,7 +26,7 @@ it('n’affiche pas la galerie sur l’accueil sans média passé', function () 
 
     $this->get(route('home'))
         ->assertOk()
-        ->assertDontSee('Galerie — dernier colloque', false);
+        ->assertDontSee('Galerie - dernier colloque', false);
 });
 
 it('affiche la liste des archives', function () {

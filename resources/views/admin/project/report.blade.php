@@ -1,4 +1,4 @@
-<x-layouts.app :title="'Rapport projet — ' . ($edition->title ?: $edition->year)">
+<x-layouts.app :title="'Rapport projet - ' . ($edition->title ?: $edition->year)">
     <div style="max-width:1000px;margin:0 auto;padding:28px 20px;">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;" class="no-print">
             <a href="{{ route('admin.project.index', ['edition_id' => $edition->id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">← Projet</a>
@@ -18,7 +18,7 @@
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
                 <div>
                     <div style="font-weight:900;color:var(--ukc-blue);font-size:1.2rem;">{{ $edition->title ?: $edition->year }}</div>
-                    <div style="font-size:.85rem;color:var(--ukc-muted);">Université de Kara — Rapport de projet</div>
+                    <div style="font-size:.85rem;color:var(--ukc-muted);">Université de Kara - Rapport de projet</div>
                 </div>
                 <div style="text-align:right;font-size:.8rem;color:var(--ukc-muted);">Généré le {{ now()->format('d/m/Y H:i') }}</div>
             </div>
@@ -69,7 +69,7 @@
                     <thead><tr><th>Tâche</th><th>Responsable</th><th>Échéance</th></tr></thead>
                     <tbody>
                         @foreach ($overdue as $t)
-                            <tr><td>{{ $t->title }}</td><td>{{ $t->assignee?->name ?: '—' }}</td><td>{{ $t->due_date?->format('d/m/Y') }}</td></tr>
+                            <tr><td>{{ $t->title }}</td><td>{{ $t->assignee?->name ?: '-' }}</td><td>{{ $t->due_date?->format('d/m/Y') }}</td></tr>
                         @endforeach
                     </tbody>
                 </table>
@@ -83,7 +83,7 @@
                     @forelse ($milestones as $m)
                         <tr>
                             <td>{{ $m->title }}</td>
-                            <td>{{ $m->due_date?->format('d/m/Y') ?: '—' }}</td>
+                            <td>{{ $m->due_date?->format('d/m/Y') ?: '-' }}</td>
                             <td style="text-align:right;">{{ $m->isDone() ? 'Atteint' : ($m->isOverdue() ? 'En retard' : 'À venir') }}</td>
                         </tr>
                     @empty
