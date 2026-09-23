@@ -204,7 +204,11 @@ class DemoScenarioSeeder extends Seeder
                 'intro' => $cfg['intro'],
                 'highlights' => ['+120 communications', '4 conférences plénières', '10 ateliers thématiques', '8 pays représentés'],
                 'tracks' => $cfg['tracks'],
-                'fees' => $this->grades,
+                // Grille tarifaire au format canonique (liste de {label, amount}),
+                // et non le tableau associatif grade => montant de $this->grades.
+                'fees' => collect($this->grades)
+                    ->map(fn ($amount, $label) => ['label' => $label, 'amount' => $amount])
+                    ->values()->all(),
             ],
         ]);
 

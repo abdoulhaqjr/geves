@@ -40,8 +40,8 @@ class SaveEdition
         }
 
         $fees = collect($data['fees'] ?? [])
-            ->filter(fn ($f) => trim((string) ($f['label'] ?? '')) !== '')
-            ->map(fn ($f) => ['label' => $f['label'], 'amount' => (float) ($f['amount'] ?? 0)])->values()->all();
+            ->filter(fn ($f) => is_array($f) && trim((string) ($f['label'] ?? '')) !== '')
+            ->map(fn ($f) => ['label' => (string) $f['label'], 'amount' => (float) ($f['amount'] ?? 0)])->values()->all();
 
         $partners = collect($data['partners'] ?? [])
             ->filter(fn ($p) => trim((string) ($p['name'] ?? '')) !== '')

@@ -13,7 +13,28 @@ class Fees
     /** Grille tarifaire : liste de ['label' => string, 'amount' => float]. */
     public static function grid(Edition $edition): array
     {
-        return $edition->settings['fees'] ?? [];
+        return self::normalize($edition->settings['fees'] ?? null);
+    }
+
+    /**
+     * Normalise une valeur brute settings.fees en une liste bien formée. Seules
+     * les entrées qui sont des tableaux avec un libellé non vide sont conservées
+     * (forme garantie ['label' => string, 'amount' => float]) ; toute entrée
+     * malformée (valeur scalaire, libellé vide, format legacy « label => montant »)
+     * est ignorée. Ainsi, une donnée fees corrompue ne casse plus le rendu.
+     *
+     * @return list<array{label: string, amount: float}>
+     */
+    public static function normalize(mixed $raw): array
+    {
+        return collect(is_array($raw) ? $raw : [])
+            ->filter(fn ($fee) => is_array($fee) && trim((string) ($fee['label'] ?? '')) !== '')
+            ->map(fn ($fee) => [
+                'label' => (string) $fee['label'],
+                'amount' => (float) ($fee['amount'] ?? 0),
+            ])
+            ->values()
+            ->all();
     }
 
     /**

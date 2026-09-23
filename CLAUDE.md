@@ -251,5 +251,9 @@ Voir la liste complète en [§8 de PASSATION.md](PASSATION.md). Les plus courant
   d'URL de retour.
 - **`@php(...)`/`@json([...])` multi-ligne** dans une vue peut casser le compilateur
   Blade - préparer la donnée dans le contrôleur/composant.
+- **`settings.fees`** = **liste de `['label' => string, 'amount' => float]`** (jamais un
+  tableau associatif `grade => montant`). Toujours lire via **`App\Support\Fees::grid()`**
+  / **`Fees::normalize()`** (qui ignorent les entrées malformées) - jamais l'accès brut,
+  sinon `$fee['label']` sur une valeur scalaire fait planter la page publique en 500.
 - **Pint** applique un style projet-wide (concat sans espaces `'a'.$b`) - lancer `pint`
   avant de commiter.

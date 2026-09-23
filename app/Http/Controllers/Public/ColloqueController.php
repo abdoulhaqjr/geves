@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Edition;
 use App\Models\Formation;
 use App\Support\EditionSettings;
+use App\Support\Fees;
 use Illuminate\Contracts\View\View;
 
 /**
@@ -38,7 +39,8 @@ class ColloqueController extends Controller
             'edition' => $edition,
             'intro' => $settings['intro'] ?? null,
             'tracks' => $settings['tracks'] ?? [],
-            'fees' => $settings['fees'] ?? [],
+            // Grille normalisée (les entrées fees malformées sont ignorées).
+            'fees' => Fees::grid($edition),
             'feesNote' => $settings['fees_note'] ?? null,
             'stats' => $settings['stats'] ?? [],
             'workshops' => $settings['workshops'] ?? [],
