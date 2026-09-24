@@ -18,6 +18,21 @@ it('affiche la liste des soumissions au staff habilité', function () {
         ->assertSee('26-001');
 });
 
+it('accepte directement une soumission déposée, sans relecture préalable', function () {
+    Mail::fake();
+    $staff = adminStaff();
+    $submission = seededSubmission('submitted'); // aucune relecture lancée
+
+    expect($submission->reviews()->count())->toBe(0);
+
+    $this->actingAs($staff, 'web')->post(route('admin.submissions.status', $submission), [
+        'status' => 'accepted',
+    ])->assertSessionHasNoErrors();
+
+    expect($submission->fresh()->status)->toBe('accepted');
+    Mail::assertQueued(SubmissionStatusMail::class, fn ($mail) => $mail->statusKey === 'accepted');
+});
+
 it('accepte une soumission, notifie l’auteur et journalise l’e-mail', function () {
     Mail::fake();
     $staff = adminStaff();

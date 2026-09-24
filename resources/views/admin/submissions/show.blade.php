@@ -265,6 +265,13 @@
                     <h2><span><x-ukc.icon name="check-circle" :size="18" /> Décision du comité</span></h2>
                     <p class="desc">Le message ci-dessous est inclus dans l’e-mail envoyé automatiquement à l’auteur correspondant.</p>
 
+                    @if (in_array($s->status, ['submitted', 'under_review'], true) && $reviews->isEmpty())
+                        <div class="ukc-alert ukc-alert--info" style="margin-bottom:12px;">
+                            <span class="ico"><x-ukc.icon name="info" :size="16" /></span>
+                            <div>Aucune relecture n’a été lancée : vous pouvez <strong>décider directement</strong> (accepter, refuser, demander une correction) sans passer par les relecteurs.</div>
+                        </div>
+                    @endif
+
                     <form method="POST" action="{{ route('admin.submissions.status', $s) }}" data-ajax data-ajax-msg="Décision appliquée.">
                         @csrf
                         <div class="ukc-field">
