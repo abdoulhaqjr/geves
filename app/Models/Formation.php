@@ -7,6 +7,7 @@ use App\Enums\MeetingStatus;
 use App\Enums\MeetingVisibility;
 use App\Meetings\Contracts\Meetable;
 use App\Meetings\MeetingProviderRegistry;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -38,6 +39,26 @@ class Formation extends Model implements Meetable
             'public' => 'boolean',
             'meta' => 'array',
         ];
+    }
+
+    /**
+     * Formations visibles par un participant : publiées, d'une édition ouverte ou
+     * d'une édition à laquelle le compte participe. Sert de base à la liste « Mes
+     * formations » ET au lien du menu latéral (masqué si aucune formation visible :
+     * module non activé ou aucune formation ajoutée => aucune formation publiée).
+     *
+     * @param  Builder<Formation>  $query
+     * @return Builder<Formation>
+     */
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        $editionIds = Participant::where('user_id', $user->id)->pluck('edition_id')->all();
+
+        return $query->where('published', true)
+            ->where(function ($q) use ($editionIds) {
+                $q->whereHas('edition', fn ($e) => $e->where('status', 'open'))
+                    ->orWhereIn('edition_id', $editionIds);
+            });
     }
 
     /** Formation gratuite (aucun frais) : inscription sans paiement. */

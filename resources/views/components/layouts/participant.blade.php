@@ -25,6 +25,12 @@
             ->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted'))
             ->whereDoesntHave('payments', fn ($q) => $q->where('status', 'paid'))
             ->latest('id')->value('edition_id');
+
+    // Lien « Formations » masqué si aucune formation n'est visible pour le compte
+    // (module non activé ou aucune formation ajoutée => aucune formation publiée).
+    $hasFormations = $account
+        ? \App\Models\Formation::visibleTo($account)->exists()
+        : false;
 @endphp
 <x-layouts.app :title="$title ?? 'Mon espace'">
     <div class="ukc-shell"
@@ -105,10 +111,12 @@
                    @class(['active' => request()->routeIs('account.payment')])>
                     <x-ukc.icon name="card" :size="18" /> <span class="txt">{{ __('Inscription & paiement') }}</span>
                 </a>
-                <a href="{{ route('account.formations') }}" title="{{ __('Formations') }}"
-                   @class(['active' => request()->routeIs('account.formations')])>
-                    <x-ukc.icon name="book" :size="18" /> <span class="txt">{{ __('Formations') }}</span>
-                </a>
+                @if ($hasFormations)
+                    <a href="{{ route('account.formations') }}" title="{{ __('Formations') }}"
+                       @class(['active' => request()->routeIs('account.formations')])>
+                        <x-ukc.icon name="book" :size="18" /> <span class="txt">{{ __('Formations') }}</span>
+                    </a>
+                @endif
                 <a href="{{ route('account.documents') }}" title="{{ __('Documents') }}"
                    @class(['active' => request()->routeIs('account.documents')])>
                     <x-ukc.icon name="folder" :size="18" /> <span class="txt">{{ __('Documents') }}</span>

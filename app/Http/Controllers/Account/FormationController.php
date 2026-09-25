@@ -7,7 +7,6 @@ use App\Http\Controllers\Controller;
 use App\Mail\FormationEnrollmentMail;
 use App\Models\Formation;
 use App\Models\FormationEnrollment;
-use App\Models\Participant;
 use App\Models\Payment;
 use App\Payments\GatewayRegistry;
 use App\Support\EditionPaymentConfig;
@@ -27,14 +26,9 @@ class FormationController extends Controller
     public function index(Request $request, GatewayRegistry $registry): View
     {
         $user = $request->user();
-        $editionIds = Participant::where('user_id', $user->id)->pluck('edition_id')->all();
 
         $formations = Formation::with('edition.colloque', 'trainers')
-            ->where('published', true)
-            ->where(function ($q) use ($editionIds) {
-                $q->whereHas('edition', fn ($e) => $e->where('status', 'open'))
-                    ->orWhereIn('edition_id', $editionIds);
-            })
+            ->visibleTo($user)
             ->orderByRaw('starts_at is null, starts_at')
             ->get();
 
