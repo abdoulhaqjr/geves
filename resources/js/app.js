@@ -226,14 +226,42 @@ function ukcToast(msg, type = 'ok') {
 }
 window.ukcToast = ukcToast;
 
-async function ukcAjaxSubmit(form) {
+// Popup de confirmation (style Tailwise) — remplace window.confirm(). Renvoie une
+// Promise<boolean>. Fermeture au clic sur le fond, Échap (annule) ou Entrée (confirme).
+window.ukcConfirm = function (message, opts = {}) {
+    const { title = 'Confirmer', confirmLabel = 'Confirmer', cancelLabel = 'Annuler', danger = false } = opts;
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'ukc-confirm-overlay';
+        const box = document.createElement('div');
+        box.className = 'ukc-confirm-box';
+        const h = document.createElement('div'); h.className = 'ukc-confirm-box__head'; h.textContent = title;
+        const body = document.createElement('div'); body.className = 'ukc-confirm-box__body'; body.textContent = message;
+        const foot = document.createElement('div'); foot.className = 'ukc-confirm-box__foot';
+        const cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'ukc-btn ukc-btn--ghost'; cancel.textContent = cancelLabel;
+        const ok = document.createElement('button'); ok.type = 'button'; ok.className = 'ukc-btn ' + (danger ? 'ukc-btn--danger' : 'ukc-btn--blue'); ok.textContent = confirmLabel;
+        foot.append(cancel, ok); box.append(h, body, foot); overlay.append(box); document.body.append(overlay);
+
+        const close = (val) => { overlay.remove(); document.removeEventListener('keydown', onKey); resolve(val); };
+        const onKey = (e) => { if (e.key === 'Escape') close(false); else if (e.key === 'Enter') close(true); };
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) close(false); });
+        cancel.addEventListener('click', () => close(false));
+        ok.addEventListener('click', () => close(true));
+        document.addEventListener('keydown', onKey);
+        ok.focus();
+    });
+};
+
+async function ukcAjaxSubmit(form, submitter) {
     const key = form.dataset.ajaxTarget || form.closest('[data-ajax-root]')?.getAttribute('data-ajax-root');
     const btns = form.querySelectorAll('button, [type=submit]');
     btns.forEach((b) => { b.disabled = true; });
     try {
+        // FormData(form, submitter) inclut le bouton cliqué (name/value) — sans quoi
+        // les formulaires dont l'action dépend du bouton (ex. status) partent vides.
         const res = await fetch(form.action, {
             method: 'POST',
-            body: new FormData(form),
+            body: new FormData(form, submitter),
             headers: { 'X-Requested-With': 'fetch', Accept: 'text/html' },
         });
         if (!res.ok) throw new Error('http');
@@ -252,12 +280,38 @@ async function ukcAjaxSubmit(form) {
     }
 }
 
+// Confirmation (popup) + soumission. `data-confirm` peut être sur le formulaire OU
+// sur le bouton cliqué (messages différents par bouton). Vaut pour les formulaires
+// data-ajax ET les formulaires classiques (soumission native après confirmation).
 document.addEventListener('submit', (e) => {
     const form = e.target;
-    if (!form.matches || !form.matches('form[data-ajax]')) return;
-    if (form.dataset.confirm && !window.confirm(form.dataset.confirm)) { e.preventDefault(); return; }
+    if (! (form instanceof HTMLFormElement)) return;
+    const submitter = e.submitter;
+    const isAjax = form.hasAttribute('data-ajax');
+    const confirmText = submitter?.dataset.confirm || form.dataset.confirm || '';
+    if (! isAjax && ! confirmText) return; // formulaire classique sans confirmation : soumission native
+
+    if (form.__ukcConfirmed) { form.__ukcConfirmed = false; return; } // déjà confirmé (soumission native)
+
     e.preventDefault();
-    ukcAjaxSubmit(form);
+    const run = async () => {
+        if (confirmText && ! (await window.ukcConfirm(confirmText, { danger: submitter?.classList.contains('ukc-btn--danger') }))) return;
+        if (isAjax) { ukcAjaxSubmit(form, submitter); return; }
+        // Formulaire classique : re-soumission native en préservant le bouton cliqué
+        // (name/value) et son éventuel `formaction`/`formmethod`.
+        if (submitter) {
+            if (submitter.name) {
+                const hidden = document.createElement('input');
+                hidden.type = 'hidden'; hidden.name = submitter.name; hidden.value = submitter.value;
+                form.appendChild(hidden);
+            }
+            if (submitter.getAttribute('formaction')) form.action = submitter.formAction;
+            if (submitter.getAttribute('formmethod')) form.method = submitter.formMethod;
+        }
+        form.__ukcConfirmed = true;
+        form.submit();
+    };
+    run();
 });
 
 // Formateur « markdown léger » SÛR pour les réponses des agents IA : on échappe

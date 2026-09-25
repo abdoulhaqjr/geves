@@ -139,6 +139,7 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   invite via `AuthorInviteMail`), listener `LinkPendingAuthorships` (auto-liaison à
   l'inscription). Une communication liée apparaît dans « Mes communications » de chaque
   auteur ; seul le déposant (`$isOwner`) peut la modifier.
+- **Confirmations** : `window.ukcConfirm(msg, opts)` (popup Tailwise, Promise<boolean>) via l'attribut **`data-confirm`** sur le bouton (ou le formulaire) - **jamais** `onclick="return confirm()"`. Le handler `data-ajax` transmet `e.submitter` à `FormData` (sinon la valeur du bouton cliqué, ex. `status`, est perdue → 400).
 - **Config runtime** : mail/paiements/IA/visio/SMS/nom sont surchargés **depuis la base**
   (`AppServiceProvider::applySettingsToConfig()`), pas le `.env`.
 

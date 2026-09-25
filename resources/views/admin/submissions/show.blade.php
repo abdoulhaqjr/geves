@@ -283,7 +283,7 @@
                         <div class="decision-bar">
                             @foreach ($actions as $key => $meta)
                                 <button type="submit" name="status" value="{{ $key }}" class="ukc-btn ukc-btn--{{ $meta[1] }}"
-                                        onclick="return confirm('Confirmer : « {{ $meta[0] }} » ? Un e-mail sera envoyé à l’auteur.')"
+                                        data-confirm="Confirmer : « {{ $meta[0] }} » ? Un e-mail sera envoyé à l’auteur."
                                         @disabled($s->status === $key)>
                                     {{ $meta[0] }}
                                     @if ($s->status === $key) <span style="font-size:.8rem;opacity:.7;">(actuel)</span> @endif

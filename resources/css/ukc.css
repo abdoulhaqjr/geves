@@ -579,6 +579,14 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 }
 .iti__tel-input:focus { border-color: var(--ukc-blue); box-shadow: 0 0 0 3px rgba(34, 62, 164, .12); }
 .iti--separate-dial-code .iti__selected-dial-code { font-weight: 400; font-size: 14px; }
+
+/* Popup de confirmation (style Tailwise) - remplace window.confirm(). */
+.ukc-confirm-overlay { position: fixed; inset: 0; z-index: 90; background: rgba(15, 23, 42, .55); display: flex; align-items: center; justify-content: center; padding: 20px; animation: ukcFade .12s ease-out; }
+.ukc-confirm-box { background: #fff; border-radius: 14px; width: 100%; max-width: 440px; box-shadow: 0 24px 60px rgba(0, 0, 0, .3); overflow: hidden; }
+.ukc-confirm-box__head { padding: 16px 20px 4px; font-weight: 800; font-size: 1.05rem; color: var(--ukc-text); }
+.ukc-confirm-box__body { padding: 4px 20px 18px; color: var(--ukc-muted); line-height: 1.55; font-size: 14px; }
+.ukc-confirm-box__foot { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--ukc-border); background: #fafbfc; }
+@keyframes ukcFade { from { opacity: 0; } to { opacity: 1; } }
 .iti__dropdown-content { border-radius: 10px; box-shadow: 0 16px 40px rgba(10, 20, 50, .22); }
 .iti__search-input { padding: 9px 12px; font-size: 13.5px; }
 .ukc-field input, .ukc-field select, .ukc-field textarea {

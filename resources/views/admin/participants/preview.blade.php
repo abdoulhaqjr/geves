@@ -6,10 +6,10 @@
             <div>Aperçu de l’espace de <strong>{{ $participant->full_name }}</strong> - lecture seule.</div>
             <div style="display:flex;gap:8px;">
                 @if ($participant->user)
-                    <form method="POST" action="{{ route('admin.participants.impersonate', $participant) }}">
+                    <form method="POST" action="{{ route('admin.participants.impersonate', $participant) }}"
+                          data-confirm="Se connecter en tant que {{ $participant->full_name }} ? Vous verrez et agirez dans son espace jusqu’à ce que vous quittiez l’impersonation.">
                         @csrf
-                        <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"
-                                onclick="return confirm('Se connecter en tant que {{ $participant->full_name }} ? Vous verrez et agirez dans son espace jusqu’à ce que vous quittiez l’impersonation.')">
+                        <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm">
                             <x-ukc.icon name="login" :size="14" /> Se connecter en tant que
                         </button>
                     </form>

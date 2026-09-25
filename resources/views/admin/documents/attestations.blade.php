@@ -283,7 +283,7 @@
                             @if ($aiAvailable)
                                 <button type="submit" formaction="{{ route('admin.documents.livret.foreword-ai', ['edition_id' => $edition->id]) }}"
                                         class="ukc-btn ukc-btn--green ukc-btn--sm"
-                                        onclick="return confirm('Générer l’avant-propos par IA à partir des métadonnées de l’édition ? Le texte actuel sera remplacé.')">
+                                        data-confirm="Générer l’avant-propos par IA à partir des métadonnées de l’édition ? Le texte actuel sera remplacé.">
                                     <x-ukc.icon name="sparkles" :size="16" /> Générer par IA
                                 </button>
                             @endif
