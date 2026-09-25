@@ -6,6 +6,7 @@ use App\Actions\ConfirmPayment;
 use App\Models\Payment;
 use App\Payments\Contracts\OnlineGateway;
 use App\Payments\GatewayRegistry;
+use App\Support\EditionPaymentConfig;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -31,6 +32,10 @@ class PaymentController extends Controller
         if (! $gw instanceof OnlineGateway || ! $payment) {
             return redirect()->route('account.dashboard');
         }
+
+        // Vérifier avec les identifiants de l'édition (repli global) - mêmes que
+        // ceux utilisés à l'initiation du paiement.
+        EditionPaymentConfig::apply($payment->edition);
 
         $this->settle($payment, $gw->verify($payment));
 

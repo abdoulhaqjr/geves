@@ -10,6 +10,7 @@ use App\Models\FormationEnrollment;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Payments\GatewayRegistry;
+use App\Support\EditionPaymentConfig;
 use App\Support\Notifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -67,6 +68,7 @@ class FormationController extends Controller
     public function enroll(Request $request, Formation $formation, UpsertParticipantForAccount $upsert, GatewayRegistry $registry): RedirectResponse
     {
         abort_unless($formation->published, 404);
+        EditionPaymentConfig::apply($formation->edition); // passerelle propre à l'édition
         $user = $request->user();
         $back = redirect()->route('account.formations');
 

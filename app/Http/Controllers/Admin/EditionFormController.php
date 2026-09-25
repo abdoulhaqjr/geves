@@ -12,6 +12,7 @@ use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\Review;
 use App\Models\User;
+use App\Support\EditionPaymentConfig;
 use App\Support\Locales;
 use App\Support\ReviewGrid;
 use App\Support\StaffRoles;
@@ -382,6 +383,49 @@ class EditionFormController extends Controller
         return redirect()->route('admin.editions.edit', $edition)
             ->with('ukc_status', 'Grille d’évaluation mise à jour.')
             ->with('edition_tab', 'reviewers');
+    }
+
+    /**
+     * Passerelle de paiement PROPRE à l'édition (identifiants FedaPay / CashPay).
+     * Les champs laissés vides retombent sur la configuration globale de la
+     * plateforme (cf. {@see EditionPaymentConfig}).
+     */
+    public function savePayment(Request $request, Edition $edition): RedirectResponse
+    {
+        $data = $request->validate([
+            'gateway' => ['nullable', 'in:manual,cashpay,fedapay'],
+            'fedapay' => ['array'],
+            'fedapay.secret' => ['nullable', 'string', 'max:255'],
+            'fedapay.mode' => ['nullable', 'in:test,live'],
+            'fedapay.webhook_secret' => ['nullable', 'string', 'max:255'],
+            'cashpay' => ['array'],
+            'cashpay.base_url' => ['nullable', 'string', 'max:255'],
+            'cashpay.username' => ['nullable', 'string', 'max:255'],
+            'cashpay.password' => ['nullable', 'string', 'max:255'],
+            'cashpay.client_id' => ['nullable', 'string', 'max:255'],
+            'cashpay.client_secret' => ['nullable', 'string', 'max:255'],
+            'cashpay.api_key' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        // On ne conserve que les valeurs renseignées (les vides = repli global).
+        $clean = fn (array $a) => array_filter($a, fn ($v) => filled($v));
+        $payment = array_filter([
+            'gateway' => $data['gateway'] ?? null,
+            'fedapay' => $clean($data['fedapay'] ?? []),
+            'cashpay' => $clean($data['cashpay'] ?? []),
+        ], fn ($v) => filled($v));
+
+        $settings = $edition->settings ?? [];
+        if ($payment === []) {
+            unset($settings['payment']);
+        } else {
+            $settings['payment'] = $payment;
+        }
+        $edition->update(['settings' => $settings]);
+
+        return redirect()->route('admin.editions.edit', $edition)
+            ->with('ukc_status', 'Passerelle de paiement de l’édition mise à jour.')
+            ->with('edition_tab', 'payment');
     }
 
     /**

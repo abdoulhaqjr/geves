@@ -254,14 +254,16 @@ window.ukcConfirm = function (message, opts = {}) {
 
 async function ukcAjaxSubmit(form, submitter) {
     const key = form.dataset.ajaxTarget || form.closest('[data-ajax-root]')?.getAttribute('data-ajax-root');
+    // IMPORTANT : construire le corps AVANT de désactiver les boutons — un bouton
+    // désactivé est exclu de FormData, ce qui perdrait la valeur du bouton cliqué
+    // (ex. name="status"). On passe `submitter` pour inclure ce bouton.
+    const body = new FormData(form, submitter);
     const btns = form.querySelectorAll('button, [type=submit]');
     btns.forEach((b) => { b.disabled = true; });
     try {
-        // FormData(form, submitter) inclut le bouton cliqué (name/value) — sans quoi
-        // les formulaires dont l'action dépend du bouton (ex. status) partent vides.
         const res = await fetch(form.action, {
             method: 'POST',
-            body: new FormData(form, submitter),
+            body,
             headers: { 'X-Requested-With': 'fetch', Accept: 'text/html' },
         });
         if (!res.ok) throw new Error('http');

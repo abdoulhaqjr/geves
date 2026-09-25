@@ -7,6 +7,7 @@ use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Payments\GatewayRegistry;
+use App\Support\EditionPaymentConfig;
 use App\Support\Fees;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,6 +23,7 @@ class PaymentController extends Controller
 {
     public function show(Edition $edition): View
     {
+        EditionPaymentConfig::apply($edition); // passerelle propre à l'édition (repli global)
         $account = Auth::guard('account')->user();
         $participant = Participant::where('edition_id', $edition->id)
             ->where('user_id', $account->id)
@@ -54,6 +56,7 @@ class PaymentController extends Controller
 
     public function pay(Request $request, Edition $edition, GatewayRegistry $registry): RedirectResponse
     {
+        EditionPaymentConfig::apply($edition); // passerelle propre à l'édition (repli global)
         $account = Auth::guard('account')->user();
         $participant = Participant::where('edition_id', $edition->id)
             ->where('user_id', $account->id)

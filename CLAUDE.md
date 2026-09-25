@@ -142,6 +142,16 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
 - **Confirmations** : `window.ukcConfirm(msg, opts)` (popup Tailwise, Promise<boolean>) via l'attribut **`data-confirm`** sur le bouton (ou le formulaire) - **jamais** `onclick="return confirm()"`. Le handler `data-ajax` transmet `e.submitter` à `FormData` (sinon la valeur du bouton cliqué, ex. `status`, est perdue → 400).
 - **Config runtime** : mail/paiements/IA/visio/SMS/nom sont surchargés **depuis la base**
   (`AppServiceProvider::applySettingsToConfig()`), pas le `.env`.
+- **Passerelle de paiement par édition** : le gestionnaire/co-gestionnaire peut renseigner
+  les identifiants de passerelle (FedaPay/CashPay + passerelle par défaut) pour **son
+  édition** via l'onglet **Paiement** du formulaire d'édition (`admin.editions.payment`,
+  cap `editions_write`). Stockés dans `edition.settings['payment']` (seules les valeurs
+  **remplies** sont conservées). `App\Support\EditionPaymentConfig::apply($edition)`
+  surcharge `payments.default` + `services.fedapay/cashpay.*` au runtime, **repli sur la
+  config globale** quand un champ est vide. Appelé en tête de chaque parcours de paiement
+  (Account/Public/Formation `show`+`pay`, `PaymentController::return` avec
+  `$payment->edition`). ⚠️ **Le webhook reste sur la config globale** : `parseWebhook`
+  vérifie la signature avant de connaître l'édition.
 
 ### Comptes = `User` unifié (option B) — ⚠️ pas `Account`
 

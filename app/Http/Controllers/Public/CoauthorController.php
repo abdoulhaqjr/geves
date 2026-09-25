@@ -9,6 +9,7 @@ use App\Models\Participant;
 use App\Models\Payment;
 use App\Models\Submission;
 use App\Payments\GatewayRegistry;
+use App\Support\EditionPaymentConfig;
 use App\Support\Fees;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,6 +27,7 @@ class CoauthorController extends Controller
     public function show(Request $request, string $slug): View
     {
         $edition = $this->edition($slug);
+        EditionPaymentConfig::apply($edition); // passerelle propre à l'édition
         $email = trim((string) $request->query('email', ''));
         $ctx = $email !== '' ? $this->resolve($edition, $email) : null;
 
@@ -53,6 +55,7 @@ class CoauthorController extends Controller
     public function pay(Request $request, string $slug, UpsertCoauthorParticipant $upsert, GatewayRegistry $registry): RedirectResponse
     {
         $edition = $this->edition($slug);
+        EditionPaymentConfig::apply($edition); // passerelle propre à l'édition
 
         $email = mb_strtolower(trim((string) $request->input('email')));
         $grade = trim((string) $request->input('grade'));

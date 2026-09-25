@@ -61,6 +61,7 @@
                     <button type="button" @click="tab='submissions'" :class="{ active: tab==='submissions' }">Soumissions &amp; tarifs</button>
                     <button type="button" @click="tab='committees'" :class="{ active: tab==='committees' }">Comités</button>
                     @if ($edition)<button type="button" @click="tab='reviewers'" :class="{ active: tab==='reviewers' }">Relecteurs</button>@endif
+                    @if ($edition)<button type="button" @click="tab='payment'" :class="{ active: tab==='payment' }">Paiement</button>@endif
                     @if ($edition)<button type="button" @click="tab='team'" :class="{ active: tab==='team' }">Équipe</button>@endif
                     <button type="button" @click="tab='partners'" :class="{ active: tab==='partners' }">Partenaires</button>
                     <button type="button" @click="tab='appearance'" :class="{ active: tab==='appearance' }">Apparence</button>
@@ -567,11 +568,85 @@
                          à sauvegarde dédiée (Relecteurs, Équipe, Traductions) qui ont leurs
                          propres boutons. --}}
                     <div class="ukc-form-actions" style="margin-top:4px;border-top:none;padding-top:0;"
-                         x-show="!['reviewers','team','translations'].includes(tab)">
+                         x-show="!['reviewers','payment','team','translations'].includes(tab)">
                         <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer</button>
                         <a href="{{ route('admin.editions.index') }}" class="ukc-btn ukc-btn--ghost">Annuler</a>
                     </div>
                 </form>
+
+                {{-- ===== PAIEMENT (propre à l'édition : sauvegarde dédiée) ===== --}}
+                @if ($edition)
+                    @php($pay = $edition->settings['payment'] ?? [])
+                    <div class="ukc-panel" :class="{ active: tab==='payment' }">
+                        <div class="ukc-card">
+                            <h2>Passerelle de paiement de cette édition</h2>
+                            <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 12px;">
+                                Renseignez ici les identifiants propres à cette édition. <strong>Tout champ laissé vide utilise la configuration
+                                par défaut de la plateforme</strong> (réglages globaux). Utile pour encaisser sur un compte marchand dédié à l’édition.
+                            </p>
+                            <form method="POST" action="{{ route('admin.editions.payment', $edition) }}" class="ukc-form-grid">
+                                @csrf
+                                <div class="ukc-field full">
+                                    <label for="pay-gateway">Passerelle par défaut de l’édition</label>
+                                    <select id="pay-gateway" name="gateway">
+                                        <option value="">- Utiliser la passerelle par défaut de la plateforme -</option>
+                                        <option value="manual" @selected(($pay['gateway'] ?? '') === 'manual')>Paiement manuel (hors ligne)</option>
+                                        <option value="fedapay" @selected(($pay['gateway'] ?? '') === 'fedapay')>FedaPay</option>
+                                        <option value="cashpay" @selected(($pay['gateway'] ?? '') === 'cashpay')>CashPay (SEMOA)</option>
+                                    </select>
+                                </div>
+
+                                <div class="ukc-field full"><h3 style="font-size:14px;font-weight:800;margin:6px 0 0;">FedaPay</h3></div>
+                                <div class="ukc-field">
+                                    <label for="fp-secret">Clé secrète</label>
+                                    <input type="text" id="fp-secret" name="fedapay[secret]" value="{{ $pay['fedapay']['secret'] ?? '' }}" autocomplete="off" placeholder="sk_live_… (laisser vide = défaut)">
+                                </div>
+                                <div class="ukc-field">
+                                    <label for="fp-mode">Mode</label>
+                                    <select id="fp-mode" name="fedapay[mode]">
+                                        <option value="">- Défaut -</option>
+                                        <option value="test" @selected(($pay['fedapay']['mode'] ?? '') === 'test')>Test (sandbox)</option>
+                                        <option value="live" @selected(($pay['fedapay']['mode'] ?? '') === 'live')>Live</option>
+                                    </select>
+                                </div>
+                                <div class="ukc-field full">
+                                    <label for="fp-wh">Secret de webhook</label>
+                                    <input type="text" id="fp-wh" name="fedapay[webhook_secret]" value="{{ $pay['fedapay']['webhook_secret'] ?? '' }}" autocomplete="off" placeholder="wh_… (laisser vide = défaut)">
+                                </div>
+
+                                <div class="ukc-field full"><h3 style="font-size:14px;font-weight:800;margin:6px 0 0;">CashPay (SEMOA)</h3></div>
+                                <div class="ukc-field">
+                                    <label for="cp-base">Base URL</label>
+                                    <input type="text" id="cp-base" name="cashpay[base_url]" value="{{ $pay['cashpay']['base_url'] ?? '' }}" autocomplete="off" placeholder="https://… (laisser vide = défaut)">
+                                </div>
+                                <div class="ukc-field">
+                                    <label for="cp-user">Utilisateur</label>
+                                    <input type="text" id="cp-user" name="cashpay[username]" value="{{ $pay['cashpay']['username'] ?? '' }}" autocomplete="off">
+                                </div>
+                                <div class="ukc-field">
+                                    <label for="cp-pass">Mot de passe</label>
+                                    <input type="text" id="cp-pass" name="cashpay[password]" value="{{ $pay['cashpay']['password'] ?? '' }}" autocomplete="off">
+                                </div>
+                                <div class="ukc-field">
+                                    <label for="cp-cid">Client ID</label>
+                                    <input type="text" id="cp-cid" name="cashpay[client_id]" value="{{ $pay['cashpay']['client_id'] ?? '' }}" autocomplete="off">
+                                </div>
+                                <div class="ukc-field">
+                                    <label for="cp-csecret">Client secret</label>
+                                    <input type="text" id="cp-csecret" name="cashpay[client_secret]" value="{{ $pay['cashpay']['client_secret'] ?? '' }}" autocomplete="off">
+                                </div>
+                                <div class="ukc-field">
+                                    <label for="cp-api">Clé API (callback)</label>
+                                    <input type="text" id="cp-api" name="cashpay[api_key]" value="{{ $pay['cashpay']['api_key'] ?? '' }}" autocomplete="off">
+                                </div>
+
+                                <div class="ukc-form-actions full">
+                                    <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer la passerelle</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                @endif
 
                 {{-- ===== RELECTEURS (hors du formulaire d'édition : sauvegarde dédiée) ===== --}}
                 @if ($edition)

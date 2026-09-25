@@ -201,6 +201,18 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 10. **Documents** (Modules 6, 8, 16, 19) - **attestations vérifiables par QR** (`IssueAttestation` UUID idempotent, émission par type/audience, révocation ; document imprimable avec QR → page publique `/verifier/{uuid}`), **livret** des résumés (par axe) et **badges** (A4, couleur par rôle) imprimables. Lib `simplesoftwareio/simple-qrcode` (SVG). *(commit `1f9d6c0`)*
 11. **Paiement en ligne** (Modules 16, 18, 19) - contrat `OnlineGateway` (verify + parseWebhook **fail-closed**) ; `PaymentController` retour (`/paiement/retour/{gateway}`) + webhook (`/webhooks/paiement/{gateway}`, hors CSRF) avec confirmation via `ConfirmPayment` (le statut vient **toujours** d'une vérification serveur). **CashPay (SEMOA)** : OAuth token caché, `POST /orders` (bill_url), `GET /orders/{ref}`, callback **JWT HS256** vérifié (`firebase/php-jwt`). **FedaPay** : `POST /transactions` + `/token`, `GET /transactions/{id}` (approved), webhook **HMAC-SHA256** (`X-FEDAPAY-Signature`). Registre = CashPay + FedaPay + Manuel. *(commit `dbc1435`)*
 
+11bis. **Passerelle de paiement par édition** - le gestionnaire/co-gestionnaire renseigne
+    les identifiants de passerelle (FedaPay/CashPay + passerelle par défaut) pour **son
+    édition** via l'onglet **Paiement** du formulaire d'édition (`admin.editions.payment`,
+    cap `editions_write`). Persistés dans `edition.settings['payment']` (seules les valeurs
+    **remplies** sont stockées). `App\Support\EditionPaymentConfig::apply($edition)`
+    surcharge `payments.default` + `services.fedapay/cashpay.*` au runtime, avec **repli
+    global** champ par champ. Appelé en tête de chaque parcours (`Account\PaymentController`,
+    `Public\CoauthorController`, `Account\FormationController` — `show`/`pay`/`enroll`) et
+    dans `PaymentController::return` via `$payment->edition`. ⚠️ Le **webhook** reste sur la
+    config globale (`parseWebhook` vérifie la signature avant de connaître l'édition).
+    Tests : `EditionPaymentConfigTest`.
+
 12. **Programme public & fiches de session** (Modules 7, 26) - section « Programme » sur la page publique (plénières + ateliers + communications programmées via les créneaux, partiel `_session.blade.php`) ; **fiches de session imprimables** (`DocumentController@sessionSheets`, `/admin/editions/{edition}/fiches-session`). *(commit `502a78f`)*
 
 13. **Réglages back-office** - table `settings` (clé/valeur JSON) + `App\Support\Settings` (caché) ; `AppServiceProvider::applySettingsToConfig()` applique au boot (mail SMTP, `services.cashpay/fedapay`, `services.openai/anthropic/gemini` + `services.ai.default`, `payments.default`) en repli sur `.env`. `Admin\Settings\Index` (Général, SMTP + e-mail de test, Paiement + identifiants, **IA** : fournisseur par défaut + clés OpenAI/Claude/Gemini). *(commits `6a249c6`, `f41b1a7`)*
