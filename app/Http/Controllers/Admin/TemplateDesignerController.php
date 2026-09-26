@@ -10,6 +10,7 @@ use App\Models\Attestation;
 use App\Models\DocumentTemplate;
 use App\Models\Edition;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -73,6 +74,64 @@ class TemplateDesignerController extends Controller
             'attestationTypes' => self::ATTESTATION_TYPES,
             'aiAvailable' => app(AiManager::class)->available() !== [],
             'variables' => self::VARIABLES,
+        ]);
+    }
+
+    /**
+     * Portée d'un modèle d'attestation : déduite du type (elle pilote l'émission,
+     * elle ne se choisit donc pas librement). Affichée à la création pour que
+     * l'admin sache ce qu'il crée.
+     */
+    public const SCOPES = [
+        'soumission' => 'Par communication',
+        'acceptation' => 'Par communication',
+        'communication' => 'Par communication',
+        'participation' => 'Participant',
+        'moderation' => 'Par session',
+        'rapporteur' => 'Par session',
+        'formation' => 'Par formation',
+        'formation_animation' => 'Par formation',
+    ];
+
+    /** Formats de badge proposés à la création. */
+    public const BADGE_FORMATS = [
+        'a6' => 'A6 (105 × 148 mm)',
+        'a7' => 'A7 (74 × 105 mm)',
+        'cr80' => 'CR80 (85,6 × 54 mm)',
+    ];
+
+    /**
+     * Création d'un modèle : on renseigne d'abord le libellé, le type et (pour un
+     * badge) le format, PUIS on ouvre le concepteur. Sans cette étape, le modèle
+     * était créé implicitement au premier enregistrement, sans identité.
+     */
+    public function create(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'edition_id' => ['required', 'exists:editions,id'],
+            'kind' => ['required', 'in:badge,attestation'],
+            'type' => ['required', 'string', 'max:30'],
+            'title' => ['nullable', 'string', 'max:150'],
+            'format' => ['nullable', 'string', 'max:20'],
+        ]);
+
+        [$kind, $type] = $this->kindType($data['kind'], $data['type']);
+
+        $defaultTitle = $kind === 'badge'
+            ? 'Badge'
+            : (self::ATTESTATION_TYPES[$type] ?? ucfirst($type));
+
+        $format = $kind === 'badge' && array_key_exists((string) ($data['format'] ?? ''), self::BADGE_FORMATS)
+            ? (string) $data['format']
+            : null;
+
+        DocumentTemplate::updateOrCreate(
+            ['edition_id' => $data['edition_id'], 'kind' => $kind, 'type' => $type],
+            ['title' => trim((string) ($data['title'] ?? '')) ?: $defaultTitle, 'format' => $format],
+        );
+
+        return redirect()->route('admin.documents.templates', [
+            'edition_id' => $data['edition_id'], 'kind' => $kind, 'type' => $type,
         ]);
     }
 

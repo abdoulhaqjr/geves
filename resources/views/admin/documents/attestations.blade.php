@@ -1,5 +1,5 @@
 <x-layouts.admin title="Documents" :subtitle="$edition ? 'Édition active · '.($edition->title ?: $edition->year) : 'Attestations, badges & livre des résumés'">
-    <div class="admin-page admin-documents" x-data="{ page: new URLSearchParams(window.location.search).get('tab') || 'attestations', badge: 'list', livre: 'main' }">
+    <div class="admin-page admin-documents" x-data="{ page: new URLSearchParams(window.location.search).get('tab') || 'attestations', badge: 'list', livre: 'main', newAtt: false, newBadge: false }">
         {{-- Sélecteur d'édition partagé + vérification publique --}}
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
             <div class="ukc-field" style="max-width:340px;margin:0;">
@@ -42,9 +42,9 @@
 
                 @if ($stab === 'modeles')
                     <div class="ukc-toolbar">
-                        <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="{{ route('admin.documents.templates', ['edition_id' => $edition->id, 'kind' => 'attestation']) }}">
-                            <x-ukc.icon name="plus" :size="16" /> Nouveau template
-                        </a>
+                        <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" @click="newAtt = true">
+                            <x-ukc.icon name="plus" :size="16" /> Nouveau modèle
+                        </button>
                         <span class="sep"></span>
                         <span style="font-size:13px;color:var(--ukc-muted);">Templates liés à l’édition · génération PDF + QR de vérification. Émission idempotente.</span>
                     </div>
@@ -117,32 +117,39 @@
                                 avec <code>php artisan attestations:sign</code>.
                             </div>
                         @endif
-                        <div class="ukc-field" style="margin-bottom:12px;">
-                            <label>DID émetteur</label>
-                            <input type="text" name="attDidIssuer" value="{{ $opts['attDidIssuer'] }}">
+                        {{-- Deux colonnes : identité vérifiable à gauche, comportement à droite. --}}
+                        <div class="ukc-opts-grid">
+                            <div>
+                                <div class="ukc-field" style="margin-bottom:12px;">
+                                    <label>DID émetteur</label>
+                                    <input type="text" name="attDidIssuer" value="{{ $opts['attDidIssuer'] }}">
+                                </div>
+                                <div class="ukc-field" style="margin-bottom:12px;">
+                                    <label>Méthode de vérification</label>
+                                    <input type="text" name="attDidMethod" value="{{ $opts['attDidMethod'] }}">
+                                </div>
+                                <div class="ukc-field" style="margin-bottom:12px;">
+                                    <label>Suite cryptographique</label>
+                                    <select name="attCryptoSuite">
+                                        @foreach (['EdDSA (VC-JWT)', 'JsonWebSignature2020'] as $suite)
+                                            <option @selected($opts['attCryptoSuite'] === $suite)>{{ $suite }}</option>
+                                        @endforeach
+                                    </select>
+                                    <div class="desc">Signature Ed25519 d’un Verifiable Credential W3C porté par un JWS (VC-JWT).</div>
+                                </div>
+                                <div class="ukc-field">
+                                    <label>Préfixe des références</label>
+                                    <input type="text" name="attPrefix" value="{{ $opts['attPrefix'] }}">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="ukc-check"><input type="checkbox" name="attAuto" value="1" @checked($opts['attAuto'])> Générer automatiquement après paiement / fin de colloque</label>
+                                <label class="ukc-check"><input type="checkbox" name="attNotify" value="1" @checked($opts['attNotify'])> Notifier le participant par e-mail</label>
+                                <label class="ukc-check"><input type="checkbox" name="attAllowBeforeValidation" value="1" @checked($opts['attAllowBeforeValidation'])> Autoriser le téléchargement avant validation admin</label>
+                                <label class="ukc-check"><input type="checkbox" name="attIncludeQr" value="1" @checked($opts['attIncludeQr'])> Inclure le QR de vérification par défaut</label>
+                                <label class="ukc-check"><input type="checkbox" name="attRequirePresence" value="1" @checked($opts['attRequirePresence'])> Attestation de participation réservée aux présents (pointés à l’accueil ou à une séance)</label>
+                            </div>
                         </div>
-                        <div class="ukc-field" style="margin-bottom:12px;">
-                            <label>Méthode de vérification</label>
-                            <input type="text" name="attDidMethod" value="{{ $opts['attDidMethod'] }}">
-                        </div>
-                        <div class="ukc-field" style="margin-bottom:12px;">
-                            <label>Suite cryptographique</label>
-                            <select name="attCryptoSuite">
-                                @foreach (['EdDSA (VC-JWT)', 'JsonWebSignature2020'] as $suite)
-                                    <option @selected($opts['attCryptoSuite'] === $suite)>{{ $suite }}</option>
-                                @endforeach
-                            </select>
-                            <div class="desc">Signature Ed25519 d’un Verifiable Credential W3C porté par un JWS (VC-JWT).</div>
-                        </div>
-                        <div class="ukc-field" style="margin-bottom:12px;">
-                            <label>Préfixe des références</label>
-                            <input type="text" name="attPrefix" value="{{ $opts['attPrefix'] }}">
-                        </div>
-                        <label class="ukc-check"><input type="checkbox" name="attAuto" value="1" @checked($opts['attAuto'])> Générer automatiquement après paiement / fin de colloque</label>
-                        <label class="ukc-check"><input type="checkbox" name="attNotify" value="1" @checked($opts['attNotify'])> Notifier le participant par e-mail</label>
-                        <label class="ukc-check"><input type="checkbox" name="attAllowBeforeValidation" value="1" @checked($opts['attAllowBeforeValidation'])> Autoriser le téléchargement avant validation admin</label>
-                        <label class="ukc-check"><input type="checkbox" name="attIncludeQr" value="1" @checked($opts['attIncludeQr'])> Inclure le QR de vérification par défaut</label>
-                        <label class="ukc-check"><input type="checkbox" name="attRequirePresence" value="1" @checked($opts['attRequirePresence'])> Attestation de participation réservée aux présents (pointés à l’accueil ou à une séance)</label>
                         <div style="margin-top:16px;">
                             <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="check" :size="16" /> Enregistrer les options</button>
                         </div>
@@ -159,7 +166,7 @@
 
                 <div x-show="badge==='list'">
                     <div class="ukc-toolbar">
-                        <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="{{ route('admin.documents.templates', ['edition_id' => $edition->id, 'kind' => 'badge']) }}"><x-ukc.icon name="plus" :size="16" /> Nouveau template badge</a>
+                        <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" @click="newBadge = true"><x-ukc.icon name="plus" :size="16" /> Nouveau modèle de badge</button>
                         <span class="sep"></span>
                         <span style="font-size:13px;color:var(--ukc-muted);">Formats A6 / A7 / CR80 · QR d’identification</span>
                     </div>
@@ -197,28 +204,34 @@
                         <h3>Options générales · Badges</h3>
                         <x-ukc.scope-edition :edition="$edition" />
                         <div class="desc">Génération, formats d’impression et contrôle d’accès.</div>
-                        <div class="ukc-field" style="margin-bottom:12px;">
-                            <label>Préfixe des références badge</label>
-                            <input type="text" name="badgePrefix" value="{{ $opts['badgePrefix'] }}">
+                        <div class="ukc-opts-grid">
+                            <div>
+                                <div class="ukc-field" style="margin-bottom:12px;">
+                                    <label>Préfixe des références badge</label>
+                                    <input type="text" name="badgePrefix" value="{{ $opts['badgePrefix'] }}">
+                                </div>
+                                <div class="ukc-field">
+                                    <label>Format d’impression par défaut</label>
+                                    <select name="badgeFormat">
+                                        @foreach ([
+                                            'A6 Portrait' => 'A6 Portrait (105 × 148 mm)',
+                                            'A6 Paysage' => 'A6 Paysage (148 × 105 mm)',
+                                            'A7 Portrait' => 'A7 Portrait (74 × 105 mm)',
+                                            'Carte 90 × 55 mm' => 'Carte 90 × 55 mm',
+                                            'CR80' => 'CR80 (85,6 × 54 mm)',
+                                        ] as $val => $fmtLabel)
+                                            <option value="{{ $val }}" @selected($opts['badgeFormat'] === $val)>{{ $fmtLabel }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="ukc-check"><input type="checkbox" name="badgeGenerateAfterPayment" value="1" @checked($opts['badgeGenerateAfterPayment'])> Générer après confirmation de paiement</label>
+                                <label class="ukc-check"><input type="checkbox" name="badgePhotoRequired" value="1" @checked($opts['badgePhotoRequired'])> Photo participant obligatoire sur le badge</label>
+                                <label class="ukc-check"><input type="checkbox" name="badgeQrAccess" value="1" @checked($opts['badgeQrAccess'])> QR d’identification sur le badge</label>
+                                <label class="ukc-check"><input type="checkbox" name="badgeBatchPrint" value="1" @checked($opts['badgeBatchPrint'])> Impression batch automatique (PDF planche)</label>
+                            </div>
                         </div>
-                        <div class="ukc-field" style="margin-bottom:12px;">
-                            <label>Format d’impression par défaut</label>
-                            <select name="badgeFormat">
-                                @foreach ([
-                                    'A6 Portrait' => 'A6 Portrait (105 × 148 mm)',
-                                    'A6 Paysage' => 'A6 Paysage (148 × 105 mm)',
-                                    'A7 Portrait' => 'A7 Portrait (74 × 105 mm)',
-                                    'Carte 90 × 55 mm' => 'Carte 90 × 55 mm',
-                                    'CR80' => 'CR80 (85,6 × 54 mm)',
-                                ] as $val => $fmtLabel)
-                                    <option value="{{ $val }}" @selected($opts['badgeFormat'] === $val)>{{ $fmtLabel }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <label class="ukc-check"><input type="checkbox" name="badgeGenerateAfterPayment" value="1" @checked($opts['badgeGenerateAfterPayment'])> Générer après confirmation de paiement</label>
-                        <label class="ukc-check"><input type="checkbox" name="badgePhotoRequired" value="1" @checked($opts['badgePhotoRequired'])> Photo participant obligatoire sur le badge</label>
-                        <label class="ukc-check"><input type="checkbox" name="badgeQrAccess" value="1" @checked($opts['badgeQrAccess'])> QR d’identification sur le badge</label>
-                        <label class="ukc-check"><input type="checkbox" name="badgeBatchPrint" value="1" @checked($opts['badgeBatchPrint'])> Impression batch automatique (PDF planche)</label>
                         <div style="margin-top:16px;">
                             <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="check" :size="16" /> Enregistrer les options</button>
                         </div>
@@ -473,6 +486,73 @@
                     </form>
                 </div>
             </div>
+            {{-- Création d'un modèle : on identifie le modèle AVANT d'ouvrir le
+                 concepteur (libellé, type, portée déduite, format pour un badge). --}}
+            <x-ukc.slideover open="newAtt" onClose="newAtt = false" width="480px">
+                <x-slot:header>Nouveau modèle d’attestation</x-slot:header>
+                <form method="POST" action="{{ route('admin.documents.templates.create') }}" id="newAttForm"
+                      x-data="{ t: 'participation', scopes: @js(\App\Http\Controllers\Admin\TemplateDesignerController::SCOPES), labels: @js($types) }">
+                    @csrf
+                    <input type="hidden" name="edition_id" value="{{ $edition->id }}">
+                    <input type="hidden" name="kind" value="attestation">
+                    <div class="ukc-form-row">
+                        <label for="att-type">Type <span class="req">*</span></label>
+                        <select id="att-type" name="type" x-model="t" required>
+                            @foreach ($types as $key => $label)
+                                <option value="{{ $key }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="ukc-form-row">
+                        <label for="att-title">Libellé</label>
+                        <input type="text" id="att-title" name="title" maxlength="150"
+                               :placeholder="'Attestation de ' + (labels[t] || '').toLowerCase()">
+                        <span class="hint">Laissez vide pour reprendre le libellé du type.</span>
+                    </div>
+                    <div class="ukc-form-row">
+                        <label>Portée</label>
+                        <input type="text" :value="scopes[t] || 'Participant'" readonly
+                               style="background:var(--ukc-bg);cursor:not-allowed;">
+                        <span class="hint">Déduite du type : c’est elle qui détermine les destinataires.</span>
+                    </div>
+                </form>
+                <x-slot:footer>
+                    <span style="flex:1;"></span>
+                    <button type="button" class="ukc-btn ukc-btn--ghost" @click="newAtt = false">Annuler</button>
+                    <button type="submit" form="newAttForm" class="ukc-btn ukc-btn--blue">Créer &amp; concevoir</button>
+                </x-slot:footer>
+            </x-ukc.slideover>
+
+            <x-ukc.slideover open="newBadge" onClose="newBadge = false" width="480px">
+                <x-slot:header>Nouveau modèle de badge</x-slot:header>
+                <form method="POST" action="{{ route('admin.documents.templates.create') }}" id="newBadgeForm">
+                    @csrf
+                    <input type="hidden" name="edition_id" value="{{ $edition->id }}">
+                    <input type="hidden" name="kind" value="badge">
+                    <input type="hidden" name="type" value="default">
+                    <div class="ukc-form-row">
+                        <label for="badge-title">Libellé</label>
+                        <input type="text" id="badge-title" name="title" maxlength="150" placeholder="Badge participant">
+                    </div>
+                    <div class="ukc-form-row">
+                        <label for="badge-format">Format <span class="req">*</span></label>
+                        <select id="badge-format" name="format" required>
+                            @foreach (\App\Http\Controllers\Admin\TemplateDesignerController::BADGE_FORMATS as $key => $label)
+                                <option value="{{ $key }}" @selected($key === 'a6')>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="ukc-form-row">
+                        <label>Portée</label>
+                        <input type="text" value="Participant" readonly style="background:var(--ukc-bg);cursor:not-allowed;">
+                    </div>
+                </form>
+                <x-slot:footer>
+                    <span style="flex:1;"></span>
+                    <button type="button" class="ukc-btn ukc-btn--ghost" @click="newBadge = false">Annuler</button>
+                    <button type="submit" form="newBadgeForm" class="ukc-btn ukc-btn--blue">Créer &amp; concevoir</button>
+                </x-slot:footer>
+            </x-ukc.slideover>
         @endif
     </div>
 </x-layouts.admin>

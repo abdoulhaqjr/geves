@@ -7,6 +7,7 @@ use App\AI\AiManager;
 use App\Documents\AttestationCertifier;
 use App\Http\Controllers\Controller;
 use App\Models\Attestation;
+use App\Models\DocumentTemplate;
 use App\Models\Edition;
 use App\Models\Formation;
 use App\Models\Participant;
@@ -55,6 +56,10 @@ class DocumentHubController extends Controller
         $rows = [];
         if ($edition) {
             $formationCounts = $this->formationTargetCounts($edition);
+            // Libellés personnalisés saisis à la création du modèle.
+            $customTitles = DocumentTemplate::where('edition_id', $edition->id)
+                ->where('kind', 'attestation')
+                ->pluck('title', 'type');
 
             foreach ($typeMeta as $key => $meta) {
                 $eligible = match ($key) {
@@ -64,7 +69,7 @@ class DocumentHubController extends Controller
                 };
                 $rows[$key] = [
                     'label' => Attestation::TYPES[$key],
-                    'title' => $meta['title'],
+                    'title' => filled($customTitles[$key] ?? null) ? (string) $customTitles[$key] : $meta['title'],
                     'sub' => $meta['sub'],
                     'scope' => $meta['scope'],
                     'eligible' => $eligible,

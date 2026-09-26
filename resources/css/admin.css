@@ -31,6 +31,10 @@
   font-size: 11.5px; font-weight: 700; line-height: 1;
 }
 .admin-page .ukc-tabs .active .nav-count { background: var(--ukc-blue); color: #fff; }
+/* Formulaire d'options sur deux colonnes (Documents · options générales). */
+.admin-page .ukc-opts-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 28px; align-items: start; }
+@media (max-width: 900px) { .admin-page .ukc-opts-grid { grid-template-columns: minmax(0, 1fr); } }
+
 .admin-page .ukc-panel { display: none; }
 .admin-page .ukc-panel.active { display: block; }
 /* Règle projet : les boutons d'action d'une ligne restent sur UNE ligne (horizontaux). */

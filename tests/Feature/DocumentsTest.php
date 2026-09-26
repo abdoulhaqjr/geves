@@ -470,3 +470,37 @@ it('importe un modèle .docx et fixe le modèle actif', function () {
     $this->actingAs($staff, 'web')->post(route('admin.documents.livret.template'), ['edition_id' => $edition->id, 'livretTemplate' => 'base']);
     expect(EditionSettings::get($edition->fresh(), 'livret.template'))->toBe('base');
 });
+
+it('crée un modèle avec son libellé avant d’ouvrir le concepteur', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+
+    $this->actingAs($staff, 'web')->post(route('admin.documents.templates.create'), [
+        'edition_id' => $edition->id, 'kind' => 'attestation',
+        'type' => 'participation', 'title' => 'Attestation de présence',
+    ])->assertRedirect(route('admin.documents.templates', [
+        'edition_id' => $edition->id, 'kind' => 'attestation', 'type' => 'participation',
+    ]));
+
+    $tpl = DocumentTemplate::where('edition_id', $edition->id)->where('type', 'participation')->first();
+    expect($tpl)->not->toBeNull();
+    expect($tpl->title)->toBe('Attestation de présence');
+
+    // Le libellé saisi remplace celui du type dans la liste des modèles.
+    $this->actingAs($staff, 'web')
+        ->get(route('admin.documents.attestations', ['edition_id' => $edition->id, 'tab' => 'attestations', 'stab' => 'modeles']))
+        ->assertOk()->assertSee('Attestation de présence');
+});
+
+it('retient le format choisi pour un modèle de badge', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+
+    $this->actingAs($staff, 'web')->post(route('admin.documents.templates.create'), [
+        'edition_id' => $edition->id, 'kind' => 'badge', 'type' => 'default', 'format' => 'cr80',
+    ])->assertRedirect();
+
+    $tpl = DocumentTemplate::where('edition_id', $edition->id)->where('kind', 'badge')->first();
+    expect($tpl->format)->toBe('cr80');
+    expect($tpl->title)->toBe('Badge');
+});
