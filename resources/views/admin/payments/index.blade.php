@@ -117,6 +117,17 @@
                                                     <button type="submit" class="ukc-btn ukc-btn--danger ukc-btn--sm">Rembourser</button>
                                                 </form>
                                             @endif
+                                            @if (in_array($p->status, ['pending', 'failed'], true))
+                                                {{-- Un paiement réglé ne se supprime pas : il porte un reçu
+                                                     et ouvre des droits, il se rembourse. --}}
+                                                <form method="POST" action="{{ route('admin.payments.destroy', $p) }}"
+                                                      data-confirm="Supprimer définitivement ce paiement ({{ $p->reference }}) ? Cette tentative disparaîtra de l'historique.">
+                                                    @csrf @method('DELETE')
+                                                    <button type="submit" class="ukc-btn--icon" title="Supprimer ce paiement" aria-label="Supprimer ce paiement">
+                                                        <x-ukc.icon name="trash" :size="16" />
+                                                    </button>
+                                                </form>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>
@@ -136,49 +147,5 @@
             @endif
         </div>
 
-        {{-- ===== Relances de paiement ===== --}}
-        <div class="ukc-card" style="padding:0;margin-top:18px;">
-            <div style="padding:16px 18px 0;">
-                <h3 style="margin:0;">Relances de paiement</h3>
-                <p style="font-size:13px;color:var(--ukc-muted);margin:4px 0 0;">Communications acceptées dont les frais d'inscription ne sont pas encore réglés (périmètre du filtre ci-dessus).</p>
-            </div>
-            @if ($toRemind->isNotEmpty())
-                <div class="ukc-table-wrap" style="margin-top:12px;">
-                    <table class="ukc-table">
-                        <thead><tr><th>Participant</th><th>Édition</th><th>Montant dû</th><th>Dernière relance</th><th style="text-align:right;">Action</th></tr></thead>
-                        <tbody>
-                            @foreach ($toRemind as $row)
-                                @php($p = $row['participant'])
-                                <tr>
-                                    <td class="title">
-                                        {{ $p->full_name }}
-                                        <div style="font-size:12px;color:var(--ukc-muted);">{{ $p->email }}</div>
-                                    </td>
-                                    <td>{{ $p->edition?->title ?: $p->edition?->year }}</td>
-                                    <td>{{ $row['amount'] ? number_format($row['amount'], 0, ',', ' ').' '.$currency : '-' }}</td>
-                                    <td>
-                                        @if ($row['remindedAt'])
-                                            <span class="ukc-pill ukc-pill--muted">{{ \Illuminate\Support\Carbon::parse($row['remindedAt'])->translatedFormat('d/m H:i') }}</span>
-                                        @else
-                                            <span style="color:var(--ukc-muted);">-</span>
-                                        @endif
-                                    </td>
-                                    <td style="text-align:right;">
-                                        <form method="POST" action="{{ route('admin.payments.remind', $p) }}">
-                                            @csrf
-                                            <button type="submit" class="ukc-btn {{ $row['remindedAt'] ? 'ukc-btn--ghost' : 'ukc-btn--blue' }} ukc-btn--sm">
-                                                <x-ukc.icon name="mail" :size="15" /> {{ $row['remindedAt'] ? 'Relancer à nouveau' : 'Relancer' }}
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @else
-                <div class="ukc-empty" style="border:none;"><p style="margin:12px 0 18px;">Aucune inscription à relancer - tout est réglé. 🎉</p></div>
-            @endif
-        </div>
     </div>
 </x-layouts.admin>

@@ -120,8 +120,10 @@ class DashboardController extends Controller
         // communications, profil, paiement, jours restants avant l'échéance.
         $commsCount = Submission::whereIn('participant_id', $participantIds)
             ->where('revision_of', 0)->count();
+        // ⚠️ Seule la PARTICIPATION compte : une formation réglée est rattachée au
+        // même participant mais ne vaut pas inscription à l'événement.
         $hasPaid = Payment::whereIn('participant_id', $participantIds)
-            ->where('status', 'paid')->exists();
+            ->forParticipation()->where('status', 'paid')->exists();
         $deadlineEdition = $payable?->edition ?? $openEdition;
         $deadline = $deadlineEdition?->submission_deadline;
         $daysRemaining = $deadline && $deadline->isFuture()
@@ -152,7 +154,7 @@ class DashboardController extends Controller
             'submissions' => Submission::whereIn('participant_id', $participantIds)
                 ->where('revision_of', 0)->with('edition')->latest('id')->limit(5)->get(),
             'payments' => Payment::whereIn('participant_id', $participantIds)
-                ->where('status', 'paid')->with('edition')->latest('id')->get(),
+                ->forParticipation()->where('status', 'paid')->with('edition')->latest('id')->get(),
             'attestations' => Attestation::whereIn('participant_id', $participantIds)
                 ->where('revoked', false)->with('edition')->latest('id')->get(),
             'editionDocuments' => $editionDocuments,

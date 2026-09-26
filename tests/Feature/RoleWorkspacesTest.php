@@ -1,6 +1,6 @@
 <?php
 
-use App\Mail\PaymentReminderMail;
+use App\Models\Payment;
 use App\Models\Review;
 use App\Models\SessionReport;
 use App\Models\User;
@@ -193,34 +193,24 @@ it('limite les onglets des Rapports à la fonction (comptable → Paiements)', f
     expect($html)->not->toContain("tab='submissions'");
 });
 
-it('relance un participant qui n’a pas réglé ses frais (page Paiements)', function () {
-    Mail::fake();
-    $edition = openEdition(['fees' => [['label' => 'Doctorants', 'amount' => 15000]]]);
-    $account = User::create(['first_name' => 'Non', 'last_name' => 'Payé', 'email' => 'nonpaye@example.tg', 'password' => 'pass12345']);
-    $participant = $edition->participants()->create([
-        'user_id' => $account->id, 'first_name' => 'Non', 'last_name' => 'Payé',
-        'email' => 'nonpaye@example.tg', 'title' => 'Doctorants', 'role' => 'author',
-    ]);
-    $edition->submissions()->create([
-        'participant_id' => $participant->id, 'ref_code' => '26-900', 'title' => 'Sans paiement',
-        'abstract' => 'x', 'track' => 'Sciences', 'type' => 'oral', 'status' => 'accepted', 'authors' => [],
-    ]);
+it('supprime un paiement en attente ou échoué, jamais un paiement réglé', function () {
+    $edition = openEdition();
+    $pending = Payment::create(['edition_id' => $edition->id, 'amount' => 1000, 'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'pending']);
+    $paid = Payment::create(['edition_id' => $edition->id, 'amount' => 2000, 'method' => 'cash', 'gateway' => 'manual', 'status' => 'paid']);
 
-    // Page Paiements : le participant apparaît dans les relances.
+    $this->actingAs(adminStaff(), 'web')->delete(route('admin.payments.destroy', $pending))->assertRedirect();
+    expect(Payment::find($pending->id))->toBeNull();
+
+    // Un paiement réglé porte un reçu et ouvre des droits : il se rembourse.
+    $this->actingAs(adminStaff(), 'web')->delete(route('admin.payments.destroy', $paid))->assertRedirect();
+    expect(Payment::find($paid->id))->not->toBeNull();
+});
+
+it('n’affiche plus les relances de paiement sur la page Paiements', function () {
     $this->actingAs(adminStaff(), 'web')
         ->get(route('admin.payments.index'))
         ->assertOk()
-        ->assertSee('Relances de paiement')
-        ->assertSee('nonpaye@example.tg');
-
-    // Relance : e-mail + notification + horodatage.
-    $this->actingAs(adminStaff(), 'web')
-        ->post(route('admin.payments.remind', $participant))
-        ->assertRedirect();
-
-    Mail::assertQueued(PaymentReminderMail::class);
-    expect($participant->fresh()->meta['payment_reminded_at'] ?? null)->not->toBeNull();
-    expect($account->notifications()->count())->toBe(1);
+        ->assertDontSee('Relances de paiement');
 });
 
 it('valide un rapport en un clic sans écraser son contenu', function () {

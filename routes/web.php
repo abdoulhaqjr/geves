@@ -321,7 +321,7 @@ Route::prefix('admin')->group(function () {
         Route::middleware('edition.cap:payments')->group(function () {
             Route::get('/paiements', [App\Http\Controllers\Admin\PaymentController::class, 'index'])->name('admin.payments.index');
             Route::get('/paiements/export/csv', [App\Http\Controllers\Admin\PaymentController::class, 'export'])->name('admin.payments.export');
-            Route::post('/paiements/relance/{participant}', [App\Http\Controllers\Admin\PaymentController::class, 'remindPayment'])->name('admin.payments.remind');
+            Route::delete('/paiements/{payment}', [App\Http\Controllers\Admin\PaymentController::class, 'destroy'])->name('admin.payments.destroy');
             Route::post('/paiements/{payment}/regler', [App\Http\Controllers\Admin\PaymentController::class, 'markPaid'])->name('admin.payments.mark-paid');
             Route::post('/paiements/{payment}/reverifier', [App\Http\Controllers\Admin\PaymentController::class, 'recheck'])->name('admin.payments.recheck');
             Route::post('/paiements/{payment}/rembourser', [App\Http\Controllers\Admin\PaymentController::class, 'refund'])->name('admin.payments.refund');
