@@ -57,6 +57,21 @@ class FormationController extends Controller
         $user = $request->user();
         $back = redirect()->route('account.formations');
 
+        // Un formateur anime la formation : il n'a ni à s'inscrire ni à payer
+        // (il rejoint la visio en modérateur).
+        if ($formation->isTrainer($user)) {
+            return $back->with('ukc_status', 'Vous animez cette formation : aucune inscription n’est requise.');
+        }
+
+        // Formation payante : le profil doit être complet (identité, téléphone,
+        // affiliation) - le téléphone pré-remplit la page de la passerelle.
+        if (! $formation->isFree() && ! $user->profileComplete()) {
+            return redirect()->route('account.profile')->with(
+                'ukc_error',
+                'Complétez votre profil avant de régler une formation ('.implode(', ', $user->missingProfileFields()).').',
+            );
+        }
+
         // Participant de l'édition (compte unifié ; ne rétrograde pas un rôle fort).
         $participant = $upsert->handle($formation->edition, $user, role: 'trainee');
 

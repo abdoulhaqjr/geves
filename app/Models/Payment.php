@@ -147,4 +147,27 @@ class Payment extends Model
     {
         return $this->status === 'paid';
     }
+
+    /**
+     * Coordonnées du payeur transmises à la passerelle pour **pré-remplir sa page**
+     * (mobile money / carte). On lit le participant de l'édition, avec repli sur le
+     * **compte unifié** lié : le participant peut avoir été créé sans téléphone
+     * alors que le compte le porte (profil).
+     *
+     * @return array{firstname: ?string, lastname: ?string, email: ?string, phone: ?string}
+     */
+    public function payerContact(): array
+    {
+        $p = $this->participant;
+        $u = $p?->user;
+
+        $pick = fn (?string $a, ?string $b) => filled($a) ? $a : (filled($b) ? $b : null);
+
+        return [
+            'firstname' => $pick($p?->first_name, $u?->first_name),
+            'lastname' => $pick($p?->last_name, $u?->last_name),
+            'email' => $pick($p?->email, $u?->email),
+            'phone' => $pick($p?->phone, $u?->phone),
+        ];
+    }
 }

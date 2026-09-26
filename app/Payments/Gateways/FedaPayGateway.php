@@ -54,18 +54,29 @@ class FedaPayGateway implements OnlineGateway
 
     public function initiate(Payment $payment): array
     {
-        $participant = $payment->participant;
+        $payer = $payment->payerContact();
+
+        // Le téléphone pré-remplit la page FedaPay (mobile money). Il est stocké en
+        // E.164 (`<x-ukc.phone>`) : on en déduit le pays attendu par l'API.
+        $customer = array_filter([
+            'firstname' => $payer['firstname'],
+            'lastname' => $payer['lastname'],
+            'email' => $payer['email'],
+        ], fn ($v) => filled($v));
+
+        if (filled($payer['phone'])) {
+            $customer['phone_number'] = array_filter([
+                'number' => $payer['phone'],
+                'country' => self::countryFromE164((string) $payer['phone']),
+            ], fn ($v) => filled($v));
+        }
 
         $create = $this->http()->post($this->baseUrl().'/transactions', [
             'description' => 'Frais d\'inscription - '.($payment->edition?->title ?? 'Colloque'),
             'amount' => (int) round((float) $payment->amount),
             'currency' => ['iso' => 'XOF'],
             'callback_url' => route('payment.return', ['gateway' => 'fedapay', 'payment' => $payment->id]),
-            'customer' => [
-                'firstname' => $participant?->first_name,
-                'lastname' => $participant?->last_name,
-                'email' => $participant?->email,
-            ],
+            'customer' => $customer,
         ])->throw()->json();
 
         $id = $this->unwrap($create)['id'] ?? null;
@@ -74,6 +85,32 @@ class FedaPayGateway implements OnlineGateway
         $token = $this->http()->post($this->baseUrl()."/transactions/{$id}/token")->throw()->json();
 
         return ['type' => 'redirect', 'url' => (string) ($token['url'] ?? '')];
+    }
+
+    /**
+     * Pays ISO-2 (attendu par FedaPay) déduit d'un numéro E.164. Couvre la zone
+     * XOF et les voisins ; null si l'indicatif est inconnu (FedaPay déduit alors
+     * lui-même le pays à partir du numéro).
+     */
+    private static function countryFromE164(string $phone): ?string
+    {
+        $digits = preg_replace('/\D+/', '', $phone) ?? '';
+
+        // Paires [indicatif, ISO-2] : un tableau associatif transformerait les
+        // clés numériques en int (str_starts_with attend une string).
+        $byPrefix = [
+            ['228', 'tg'], ['229', 'bj'], ['225', 'ci'], ['226', 'bf'], ['223', 'ml'],
+            ['221', 'sn'], ['227', 'ne'], ['245', 'gw'], ['234', 'ng'], ['233', 'gh'],
+            ['237', 'cm'], ['241', 'ga'], ['242', 'cg'], ['235', 'td'], ['236', 'cf'],
+        ];
+
+        foreach ($byPrefix as [$prefix, $iso]) {
+            if (str_starts_with($digits, $prefix)) {
+                return $iso;
+            }
+        }
+
+        return null;
     }
 
     public function verify(Payment $payment): string

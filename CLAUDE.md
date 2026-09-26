@@ -275,6 +275,12 @@ Voir la liste complète en [§8 de PASSATION.md](PASSATION.md). Les plus courant
 - **Paiement en ligne** : le statut « payé » vient **toujours** d'une vérification
   serveur ou d'un webhook à signature vérifiée (fail-closed), jamais d'un paramètre
   d'URL de retour.
+- **Avant d'engager un paiement** : le **profil doit être complet** -
+  **`User::profileComplete()`** (prénom, nom, **téléphone**, affiliation + e-mail
+  vérifié ; `missingProfileFields()` donne les libellés manquants). Les coordonnées
+  envoyées à la passerelle passent par **`Payment::payerContact()`** (participant,
+  **repli sur le compte unifié**) pour **pré-remplir** sa page - le téléphone est
+  indispensable au mobile money.
 - **`@php(...)`/`@json([...])` multi-ligne** dans une vue peut casser le compilateur
   Blade - préparer la donnée dans le contrôleur/composant.
 - **Directive Blade collée à un mot** : `texte@if ($x)` **n'est pas compilé** (Blade

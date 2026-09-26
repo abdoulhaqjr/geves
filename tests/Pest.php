@@ -90,6 +90,8 @@ function verifiedAccount(): User
         'first_name' => 'Awa', 'last_name' => 'Kodjo',
         'email' => 'awa@example.tg', 'password' => 'pass12345',
         'grade' => 'Doctorante', 'affiliation' => 'Université de Kara',
+        // Profil complet (cf. User::profileComplete) : requis pour payer.
+        'phone' => '+22890000000',
     ]);
     $user->markEmailAsVerified();
 

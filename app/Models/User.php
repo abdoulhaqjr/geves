@@ -314,4 +314,38 @@ class User extends Authenticatable implements MustVerifyEmail
             'must_reset_password' => 'boolean',
         ];
     }
+
+    /**
+     * Champs de profil manquants pour pouvoir payer (identité + téléphone +
+     * affiliation, e-mail vérifié). Le **téléphone** est requis parce qu'il
+     * pré-remplit la page de la passerelle (mobile money). Retourne les libellés
+     * des champs à compléter, dans l'ordre du formulaire de profil.
+     *
+     * @return list<string>
+     */
+    public function missingProfileFields(): array
+    {
+        $missing = [];
+        foreach ([
+            'first_name' => 'Prénom',
+            'last_name' => 'Nom',
+            'phone' => 'Téléphone',
+            'affiliation' => 'Affiliation',
+        ] as $field => $label) {
+            if (blank($this->{$field})) {
+                $missing[] = $label;
+            }
+        }
+        if (! $this->hasVerifiedEmail()) {
+            $missing[] = 'E-mail vérifié';
+        }
+
+        return $missing;
+    }
+
+    /** Profil suffisamment complet pour engager un paiement. */
+    public function profileComplete(): bool
+    {
+        return $this->missingProfileFields() === [];
+    }
 }

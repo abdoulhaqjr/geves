@@ -127,9 +127,28 @@ class Formation extends Model implements Meetable
     }
 
     /**
+     * Ce compte anime-t-il la formation ? (formateur lié par compte ou par e-mail).
+     * Un formateur n'a ni à s'inscrire ni à payer : il rejoint en modérateur.
+     */
+    public function isTrainer(?User $account): bool
+    {
+        if ($account === null) {
+            return false;
+        }
+
+        return $this->trainers()
+            ->where(fn ($q) => $q->where('user_id', $account->id)
+                ->when(filled($account->email), fn ($q2) => $q2->orWhereRaw('LOWER(email) = ?', [mb_strtolower((string) $account->email)])))
+            ->exists();
+    }
+
+    /**
      * Rôle visio : staff & formateurs = modérateur ; inscrit éligible (réglé, ou
      * inscrit si gratuite) = participant ; sinon aucun. Pas d'accès public : la
      * visio est réservée aux inscrits et aux formateurs.
+     *
+     * ⚠️ Un inscrit d'une formation **payante** qui n'a pas réglé n'a **aucun**
+     * accès à la visio (règle métier explicite).
      */
     public function meetingRoleFor(?User $account, bool $isStaff = false): MeetingRole
     {
@@ -140,11 +159,7 @@ class Formation extends Model implements Meetable
             return MeetingRole::None;
         }
 
-        $isTrainer = $this->trainers()
-            ->where(fn ($q) => $q->where('user_id', $account->id)
-                ->orWhereRaw('LOWER(email) = ?', [mb_strtolower((string) $account->email)]))
-            ->exists();
-        if ($isTrainer) {
+        if ($this->isTrainer($account)) {
             return MeetingRole::Moderator;
         }
 

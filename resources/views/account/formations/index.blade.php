@@ -1,14 +1,30 @@
 <x-layouts.participant :title="__('Formations')">
     @php
+        $me = auth('account')->user();
         $currency = config('payments.currency', 'XOF');
-        $cardStyle = 'background:#fff;border:1px solid var(--ukc-border,#e5e7eb);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 2px rgba(16,24,40,.04);';
-        $metaStyle = 'display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--ukc-muted);';
+        $profileMissing = $me?->missingProfileFields() ?? [];
+        $metaStyle = 'display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ukc-muted);';
     @endphp
 
+    <style>
+        /* Cartes larges : visuel à gauche, contenu à droite ; empilées sur mobile. */
+        .fcard { display:grid; grid-template-columns:minmax(0,320px) minmax(0,1fr); background:#fff;
+                 border:1px solid var(--ukc-border,#e5e7eb); border-radius:16px; overflow:hidden;
+                 box-shadow:0 1px 2px rgba(16,24,40,.04); margin-bottom:20px; }
+        .fcard__media { position:relative; min-height:200px; background:linear-gradient(135deg,var(--ukc-blue,#223ea4),var(--ukc-green,#009933)); }
+        .fcard__body { padding:22px 24px; display:flex; flex-direction:column; gap:14px; min-width:0; }
+        .fcard__foot { border-top:1px solid var(--ukc-border,#eef0f4); margin:0 -24px -22px; padding:14px 24px;
+                       background:#fcfcfd; display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; }
+        @media (max-width: 860px) {
+            .fcard { grid-template-columns:minmax(0,1fr); }
+            .fcard__media { min-height:0; aspect-ratio:16/6; }
+        }
+    </style>
+
     <div class="admin-page account-formations">
-        <div class="ukc-page-head" style="margin-bottom:18px;">
+        <div class="ukc-page-head" style="margin-bottom:20px;">
             <h1 style="margin:0;">{{ __('Formations') }}</h1>
-            <p style="color:var(--ukc-muted);margin:4px 0 0;font-size:13.5px;">
+            <p style="color:var(--ukc-muted);margin:4px 0 0;font-size:14px;">
                 {{ __('Formations proposées par') }}
                 <strong>{{ $edition->colloque?->name ?: $edition->title }}</strong>@if ($edition->year) · {{ $edition->year }}@endif.
             </p>
@@ -19,134 +35,150 @@
         @if (session('pay_instructions'))<div class="ukc-alert ukc-alert--info" style="margin-bottom:14px;">{{ session('pay_instructions') }}</div>@endif
         @error('pay')<div class="ukc-alert ukc-alert--err" style="margin-bottom:14px;">{{ $message }}</div>@enderror
 
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));gap:18px;align-items:start;">
-            @forelse ($formations as $f)
-                @php
-                    $enr = $enrollments->get($f->id);
-                    $isPaid = $enr && $enr->status === 'paid';
-                    $isEnrolled = $enr && ($isPaid || $f->isFree());
-                @endphp
-                <article style="{{ $cardStyle }}">
-                    {{-- Visuel : bannière (ratio stable) ou bandeau de repli à la charte --}}
-                    <div style="position:relative;aspect-ratio:16/6;background:linear-gradient(135deg,var(--ukc-blue,#223ea4),var(--ukc-green,#009933));">
-                        @if ($f->flyerUrl())
-                            <img src="{{ $f->flyerUrl() }}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;">
-                        @else
-                            <span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.85);">
-                                <x-ukc.icon name="book" :size="34" />
+        @if ($profileMissing && $formations->contains(fn ($f) => ! $f->isFree()))
+            <div class="ukc-alert ukc-alert--warn" style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;">
+                <span>
+                    {{ __('Complétez votre profil pour pouvoir régler une formation') }}
+                    ({{ implode(', ', $profileMissing) }}).
+                </span>
+                <a href="{{ route('account.profile') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+                    <x-ukc.icon name="user" :size="14" /> {{ __('Compléter mon profil') }}
+                </a>
+            </div>
+        @endif
+
+        @forelse ($formations as $f)
+            @php
+                $enr = $enrollments->get($f->id);
+                $isTrainer = $f->isTrainer($me);
+                $isPaid = $enr && $enr->status === 'paid';
+                $isEnrolled = $enr && ($isPaid || $f->isFree());
+                $canJoin = $f->isLive() && $f->canJoin($me);
+                $needsProfile = ! $f->isFree() && $profileMissing !== [];
+            @endphp
+            <article class="fcard">
+                {{-- Visuel --}}
+                <div class="fcard__media">
+                    @if ($f->flyerUrl())
+                        <img src="{{ $f->flyerUrl() }}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;">
+                    @else
+                        <span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.85);">
+                            <x-ukc.icon name="book" :size="40" />
+                        </span>
+                    @endif
+                    <div style="position:absolute;top:12px;left:12px;display:flex;gap:8px;flex-wrap:wrap;">
+                        <span style="background:rgba(255,255,255,.96);border-radius:999px;padding:5px 12px;font-size:12.5px;font-weight:700;color:{{ $f->isFree() ? 'var(--ukc-green,#009933)' : 'var(--ukc-blue,#223ea4)' }};box-shadow:0 1px 3px rgba(0,0,0,.18);">
+                            {{ $f->isFree() ? __('Gratuite') : number_format((float) $f->fee, 0, ',', ' ').' '.$currency }}
+                        </span>
+                        @if ($f->isLive())
+                            <span style="background:#e11d48;color:#fff;border-radius:999px;padding:5px 12px;font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px;box-shadow:0 1px 3px rgba(0,0,0,.18);">
+                                <span style="width:7px;height:7px;border-radius:50%;background:currentColor;"></span> {{ __('EN DIRECT') }}
                             </span>
                         @endif
-                        {{-- Pastilles superposées : tarif + direct --}}
-                        <div style="position:absolute;top:10px;left:10px;display:flex;gap:6px;flex-wrap:wrap;">
-                            <span style="background:rgba(255,255,255,.95);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;color:{{ $f->isFree() ? 'var(--ukc-green,#009933)' : 'var(--ukc-blue,#223ea4)' }};box-shadow:0 1px 3px rgba(0,0,0,.18);">
-                                {{ $f->isFree() ? __('Gratuite') : number_format((float) $f->fee, 0, ',', ' ').' '.$currency }}
-                            </span>
-                            @if ($f->isLive())
-                                <span style="background:#e11d48;color:#fff;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:5px;box-shadow:0 1px 3px rgba(0,0,0,.18);">
-                                    <span style="width:7px;height:7px;border-radius:50%;background:currentColor;"></span> {{ __('EN DIRECT') }}
+                    </div>
+                </div>
+
+                {{-- Contenu --}}
+                <div class="fcard__body">
+                    <div>
+                        <h2 style="margin:0;font-size:18px;line-height:1.35;">{{ $f->title }}</h2>
+                        @if ($f->theme)
+                            <div style="font-size:13.5px;color:var(--ukc-muted);margin-top:3px;">{{ $f->theme }}</div>
+                        @endif
+                    </div>
+
+                    @if ($f->starts_at || $f->location || $f->room)
+                        <div style="display:flex;flex-wrap:wrap;gap:8px 20px;">
+                            @if ($f->starts_at)
+                                <span style="{{ $metaStyle }}">
+                                    <x-ukc.icon name="calendar" :size="15" />
+                                    {{ $f->starts_at->translatedFormat('d M Y, H:i') }}@if ($f->ends_at) - {{ $f->ends_at->translatedFormat('H:i') }}@endif
                                 </span>
                             @endif
-                        </div>
-                        @if ($isEnrolled)
-                            <span style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,.95);color:var(--ukc-green,#009933);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:4px;box-shadow:0 1px 3px rgba(0,0,0,.18);">
-                                <x-ukc.icon name="check" :size="12" /> {{ __('Inscrit·e') }}
-                            </span>
-                        @endif
-                    </div>
-
-                    {{-- Corps --}}
-                    <div style="padding:16px 16px 12px;flex:1;display:flex;flex-direction:column;gap:10px;">
-                        <div>
-                            <h2 style="margin:0;font-size:16px;line-height:1.35;">{{ $f->title }}</h2>
-                            @if ($f->theme)
-                                <div style="font-size:13px;color:var(--ukc-muted);margin-top:2px;">{{ $f->theme }}</div>
+                            @if ($f->location)
+                                <span style="{{ $metaStyle }}"><x-ukc.icon name="pin" :size="15" /> {{ $f->location }}</span>
+                            @endif
+                            @if ($f->room)
+                                <span style="{{ $metaStyle }}"><x-ukc.icon name="grid" :size="15" /> {{ $f->room }}</span>
                             @endif
                         </div>
+                    @endif
 
-                        @if ($f->starts_at || $f->location || $f->room)
-                            <div style="display:flex;flex-wrap:wrap;gap:6px 14px;">
-                                @if ($f->starts_at)
-                                    <span style="{{ $metaStyle }}">
-                                        <x-ukc.icon name="calendar" :size="14" />
-                                        {{ $f->starts_at->translatedFormat('d M Y, H:i') }}@if ($f->ends_at) - {{ $f->ends_at->translatedFormat('H:i') }}@endif
-                                    </span>
-                                @endif
-                                @if ($f->location)
-                                    <span style="{{ $metaStyle }}"><x-ukc.icon name="pin" :size="14" /> {{ $f->location }}</span>
-                                @endif
-                                @if ($f->room)
-                                    <span style="{{ $metaStyle }}"><x-ukc.icon name="grid" :size="14" /> {{ $f->room }}</span>
-                                @endif
-                            </div>
-                        @endif
+                    @if ($f->objective)
+                        <p style="font-size:14px;line-height:1.6;margin:0;max-width:75ch;">{{ $f->objective }}</p>
+                    @endif
 
-                        @if ($f->objective)
-                            <p style="font-size:13.5px;line-height:1.55;margin:0;color:var(--ukc-text,#1f2937);">{{ $f->objective }}</p>
-                        @endif
-
-                        @if ($f->trainers->isNotEmpty())
-                            <div style="margin-top:auto;padding-top:6px;">
-                                <div style="font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;color:var(--ukc-light);margin-bottom:6px;">{{ __('Formateur(s)') }}</div>
-                                <div style="display:flex;flex-wrap:wrap;gap:10px;">
-                                    @foreach ($f->trainers as $t)
-                                        <span style="display:inline-flex;align-items:center;gap:7px;background:var(--ukc-bg,#f6f7fb);border-radius:999px;padding:3px 12px 3px 3px;">
-                                            <span style="width:26px;height:26px;border-radius:50%;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--ukc-blue,#223ea4),var(--ukc-green,#009933));color:#fff;font-size:11px;font-weight:700;flex-shrink:0;">
-                                                @if ($t->photoUrl())
-                                                    <img src="{{ $t->photoUrl() }}" alt="" style="width:100%;height:100%;object-fit:cover;">
-                                                @else
-                                                    {{ $t->initials() }}
-                                                @endif
-                                            </span>
-                                            <span style="font-size:12.5px;">{{ trim(($t->title ? $t->title.' ' : '').$t->name) }}</span>
+                    @if ($f->trainers->isNotEmpty())
+                        <div>
+                            <div style="font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--ukc-light);margin-bottom:8px;">{{ __('Formateur(s)') }}</div>
+                            <div style="display:flex;flex-wrap:wrap;gap:10px;">
+                                @foreach ($f->trainers as $t)
+                                    <span style="display:inline-flex;align-items:center;gap:8px;background:var(--ukc-bg,#f6f7fb);border-radius:999px;padding:4px 14px 4px 4px;">
+                                        <span style="width:28px;height:28px;border-radius:50%;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--ukc-blue,#223ea4),var(--ukc-green,#009933));color:#fff;font-size:11.5px;font-weight:700;flex-shrink:0;">
+                                            @if ($t->photoUrl())
+                                                <img src="{{ $t->photoUrl() }}" alt="" style="width:100%;height:100%;object-fit:cover;">
+                                            @else
+                                                {{ $t->initials() }}
+                                            @endif
                                         </span>
-                                    @endforeach
-                                </div>
+                                        <span style="font-size:13px;">{{ trim(($t->title ? $t->title.' ' : '').$t->name) }}</span>
+                                    </span>
+                                @endforeach
                             </div>
-                        @endif
-                    </div>
+                        </div>
+                    @endif
 
-                    {{-- Pied : action principale --}}
-                    <div style="border-top:1px solid var(--ukc-border,#eef0f4);padding:12px 16px;background:#fcfcfd;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;">
-                        <span style="font-size:12.5px;color:var(--ukc-muted);">
-                            @if ($isPaid)
-                                <x-ukc.icon name="check-circle" :size="14" /> {{ __('Inscription réglée') }}
+                    {{-- Pied : statut + action --}}
+                    <div class="fcard__foot" style="margin-top:auto;">
+                        <span style="font-size:13px;color:var(--ukc-muted);display:inline-flex;align-items:center;gap:6px;">
+                            @if ($isTrainer)
+                                <span class="ukc-pill ukc-pill--info">{{ __('Vous animez cette formation') }}</span>
+                            @elseif ($isPaid)
+                                <x-ukc.icon name="check-circle" :size="15" /> {{ __('Inscription réglée') }}
                             @elseif ($isEnrolled)
-                                <x-ukc.icon name="check-circle" :size="14" /> {{ __('Inscription confirmée') }}
+                                <x-ukc.icon name="check-circle" :size="15" /> {{ __('Inscription confirmée') }}
                             @elseif ($enr)
                                 <span style="color:#b45309;font-weight:600;">{{ __('Frais à régler') }}</span>
+                                @if ($f->isLive())
+                                    <span style="color:var(--ukc-light);">· {{ __('la visio est réservée aux inscrits ayant réglé') }}</span>
+                                @endif
                             @else
                                 {{ $f->isFree() ? __('Inscription libre') : __('Inscription avec frais') }}
                             @endif
                         </span>
 
-                        <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                            @if ($f->isLive() && $f->canJoin(auth('account')->user()))
-                                <a href="{{ route('account.formations.visio', $f) }}" class="ukc-btn ukc-btn--green ukc-btn--sm">
-                                    <x-ukc.icon name="video" :size="14" /> {{ __('Rejoindre la visio') }}
+                        <span style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                            @if ($canJoin)
+                                <a href="{{ route('account.formations.visio', $f) }}" class="ukc-btn ukc-btn--green">
+                                    <x-ukc.icon name="video" :size="15" /> {{ __('Rejoindre la visio') }}
                                 </a>
                             @endif
 
-                            @if ($isEnrolled)
-                                {{-- rien de plus : l'inscription est acquise --}}
+                            @if ($isTrainer || $isEnrolled)
+                                {{-- Formateur ou inscription acquise : aucune action de paiement --}}
+                            @elseif ($needsProfile)
+                                <a href="{{ route('account.profile') }}" class="ukc-btn ukc-btn--outline">
+                                    <x-ukc.icon name="user" :size="15" /> {{ __('Compléter mon profil') }}
+                                </a>
                             @elseif ($enr)
                                 @include('account.formations._pay', ['f' => $f, 'label' => __('Régler'), 'gateways' => $gateways])
                             @elseif ($f->isFree())
                                 <form method="POST" action="{{ route('account.formations.enroll', $f) }}" style="margin:0;">
                                     @csrf
-                                    <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="check" :size="14" /> {{ __('S’inscrire') }}</button>
+                                    <button type="submit" class="ukc-btn ukc-btn--blue"><x-ukc.icon name="check" :size="15" /> {{ __('S’inscrire') }}</button>
                                 </form>
                             @else
                                 @include('account.formations._pay', ['f' => $f, 'label' => __('S’inscrire'), 'gateways' => $gateways])
                             @endif
                         </span>
                     </div>
-                </article>
-            @empty
-                <div class="ukc-empty" style="grid-column:1/-1;">
-                    <h3>{{ __('Aucune formation disponible') }}</h3>
-                    <p>{{ __('Aucune formation n’est ouverte à l’inscription pour cet événement.') }}</p>
                 </div>
-            @endforelse
-        </div>
+            </article>
+        @empty
+            <div class="ukc-empty">
+                <h3>{{ __('Aucune formation disponible') }}</h3>
+                <p>{{ __('Aucune formation n’est ouverte à l’inscription pour cet événement.') }}</p>
+            </div>
+        @endforelse
     </div>
 </x-layouts.participant>

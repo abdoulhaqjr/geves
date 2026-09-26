@@ -142,7 +142,9 @@ class DashboardController extends Controller
             'contextEdition' => $contextEdition,
             'kpi' => [
                 'communications' => $commsCount,
-                'profileComplete' => $account->hasVerifiedEmail() && filled($account->affiliation),
+                // Règle unique (identité + téléphone + affiliation + e-mail vérifié) :
+                // c'est aussi ce qui conditionne le paiement d'une formation.
+                'profileComplete' => $account->profileComplete(),
                 'hasPaid' => $hasPaid,
                 'daysRemaining' => $daysRemaining,
                 'deadline' => $deadline,

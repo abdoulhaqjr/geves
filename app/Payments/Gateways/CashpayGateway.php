@@ -63,7 +63,7 @@ class CashpayGateway implements OnlineGateway
 
     public function initiate(Payment $payment): array
     {
-        $participant = $payment->participant;
+        $payer = $payment->payerContact();
 
         $res = Http::acceptJson()
             ->withToken($this->token())
@@ -74,11 +74,13 @@ class CashpayGateway implements OnlineGateway
                 'description' => 'Frais d\'inscription - '.($payment->edition?->title ?? 'Colloque'),
                 'callback_url' => route('payment.webhook', ['gateway' => 'cashpay']),
                 'redirect_url' => route('payment.return', ['gateway' => 'cashpay', 'payment' => $payment->id]),
-                'client' => [
-                    'firstname' => $participant?->first_name,
-                    'lastname' => $participant?->last_name,
-                    'phone' => $participant?->phone,
-                ],
+                // Pré-remplit la page CashPay (repli sur le compte lié si le
+                // participant ne porte pas la donnée).
+                'client' => array_filter([
+                    'firstname' => $payer['firstname'],
+                    'lastname' => $payer['lastname'],
+                    'phone' => $payer['phone'],
+                ], fn ($v) => filled($v)),
                 'type_notif' => ['MAIL'],
             ])->throw()->json();
 
