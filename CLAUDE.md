@@ -337,6 +337,9 @@ Voir la liste complète en [§8 de PASSATION.md](PASSATION.md). Les plus courant
   **`Payment::forParticipation()`**), qui exclut `meta.flow = 'formation'` et
   **inclut le co-auteur** (il règle bien pour participer). Les totaux **financiers**
   (recette encaissée) gardent au contraire tous les paiements.
+  **`PaymentRightsGuardTest` scanne `app/` et `resources/views/`** et échoue sur tout
+  contrôle « payé » non filtré (il donne fichier:ligne). Un total financier légitime
+  s'ajoute à la liste `$allowed` de ce test, avec sa justification.
 - **Avant d'engager un paiement** : le **profil doit être complet** -
   **`User::profileComplete()`** (prénom, nom, **téléphone**, affiliation + e-mail
   vérifié ; `missingProfileFields()` donne les libellés manquants). Les coordonnées

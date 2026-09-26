@@ -3,7 +3,7 @@
     use Illuminate\Support\Str;
 
     // Communication payée ? (colonne Paiement de « Non planifiées »)
-    $isPaid = fn ($sub) => (bool) optional($sub->participant?->payments)->firstWhere('status', 'paid');
+    $isPaid = fn ($sub) => (bool) optional($sub->participant?->participationPayments)->firstWhere('status', 'paid');
     // Durée d'un créneau selon le type de communication (réglages).
     $slotDuration = fn ($sub) => (int) (($sub && $sub->type === 'poster') ? $config['params']['poster_min'] : $config['params']['oral_min']);
     $atelierRoomName = fn ($atelier) => $atelierRooms[(string) $atelier->id] ?? ($atelier->sessions->firstWhere('room', '!=', null)?->room);

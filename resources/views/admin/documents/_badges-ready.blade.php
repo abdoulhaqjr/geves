@@ -44,7 +44,7 @@
                         <td>{{ $p->roleLabel() }}</td>
                         <td class="meta">{{ $p->institution ?: '-' }}</td>
                         <td>
-                            @if ($p->payments()->where('status', 'paid')->exists())
+                            @if ($p->participationPayments()->where('status', 'paid')->exists())
                                 <span class="ukc-pill ukc-pill--ok">Réglé</span>
                             @else
                                 <span class="ukc-pill ukc-pill--warn">En attente</span>

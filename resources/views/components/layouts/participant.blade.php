@@ -19,12 +19,12 @@
         && \App\Models\Participant::where('user_id', $account?->id)
             ->where('edition_id', $colloqueEdition->id)
             ->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted'))
-            ->whereDoesntHave('payments', fn ($q) => $q->where('status', 'paid'))
+            ->whereDoesntHave('participationPayments', fn ($q) => $q->where('status', 'paid'))
             ->exists())
         ? $colloqueEdition->id
         : \App\Models\Participant::where('user_id', $account?->id)
             ->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted'))
-            ->whereDoesntHave('payments', fn ($q) => $q->where('status', 'paid'))
+            ->whereDoesntHave('participationPayments', fn ($q) => $q->where('status', 'paid'))
             ->latest('id')->value('edition_id');
 
     // Lien « Formations » : uniquement si l'ÉDITION SÉLECTIONNÉE propose des
