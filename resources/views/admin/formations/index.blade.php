@@ -60,7 +60,7 @@
                             @php($avatar = 'width:42px;height:42px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;')
                             @php($tin = 'border:1.5px solid var(--ukc-border,#cbd5e1);border-radius:10px;padding:9px 12px;font-size:13.5px;background:#fff;min-width:0;width:100%;')
                             @forelse ($f->trainers as $t)
-                                <div x-data="formationTrainer({ photo: @js($t->photoUrl()), uploadUrl: '{{ route('admin.formations.trainers.photo', [$f, $t]) }}' })" style="padding:6px 0;">
+                                <div x-data="formationTrainer({ photo: @js($t->photoUrl()), uploadUrl: '{{ route('admin.formations.trainers.photo', [$f, $t]) }}', updateUrl: '{{ route('admin.formations.trainers.update', [$f, $t]) }}', displayName: @js(trim(($t->title ? $t->title.' ' : '').$t->name)), sub: @js(collect([$t->specialty, $t->email])->filter()->join(' · ')), moderator: {{ $t->is_moderator ? 'true' : 'false' }} })" style="padding:6px 0;">
                                     <div style="display:flex;align-items:center;gap:10px;">
                                         {{-- Avatar cliquable : change la photo (AJAX + barre de progression) --}}
                                         <label title="Cliquer pour changer la photo" style="{{ $avatar }}cursor:pointer;background:linear-gradient(135deg,var(--ukc-blue,#223ea4),var(--ukc-green,#009933));color:#fff;font-weight:700;">
@@ -77,8 +77,8 @@
                                             </div>
                                         </label>
                                         <div style="flex:1;min-width:0;">
-                                            <div style="font-size:13px;">{{ trim(($t->title ? $t->title.' ' : '').$t->name) }} @if ($t->is_moderator)<span class="ukc-pill ukc-pill--info" style="margin-left:2px;">modérateur</span>@endif</div>
-                                            <div style="font-size:12px;color:var(--ukc-light);">{{ collect([$t->specialty, $t->email])->filter()->join(' · ') }}</div>
+                                            <div style="font-size:13px;"><span x-text="displayName"></span> <span class="ukc-pill ukc-pill--info" style="margin-left:2px;" x-show="moderator" x-cloak>modérateur</span></div>
+                                            <div style="font-size:12px;color:var(--ukc-light);" x-text="sub"></div>
                                             <div x-show="error" x-cloak x-text="error" style="font-size:11.5px;color:var(--ukc-danger,#dc2626);margin-top:2px;"></div>
                                         </div>
                                         <button type="button" class="ukc-btn--icon" title="Modifier" aria-label="Modifier le formateur" @click="editing = !editing"><x-ukc.icon name="pen" :size="15" /></button>
@@ -89,7 +89,7 @@
                                     </div>
                                     {{-- Édition en ligne (une seule ligne, comme l'ajout) - x-show sur wrapper pour garder le grid --}}
                                     <div x-show="editing" x-cloak style="margin-top:8px;">
-                                        <form method="POST" action="{{ route('admin.formations.trainers.update', [$f, $t]) }}"
+                                        <form method="POST" action="{{ route('admin.formations.trainers.update', [$f, $t]) }}" @submit.prevent="saveInfo($event)"
                                               style="display:grid;grid-template-columns:110px minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.3fr) auto auto;gap:8px;align-items:center;">
                                             @csrf @method('PUT')
                                             <input type="text" name="title" value="{{ $t->title }}" placeholder="Grade" list="trainerTitles{{ $f->id }}" maxlength="40" style="{{ $tin }}">
@@ -100,7 +100,7 @@
                                                 <input type="hidden" name="is_moderator" value="0">
                                                 <input type="checkbox" name="is_moderator" value="1" @checked($t->is_moderator)> Modér.
                                             </label>
-                                            <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm" style="white-space:nowrap;">Enregistrer</button>
+                                            <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm" style="white-space:nowrap;" :disabled="saving" x-text="saving ? 'Enregistrement…' : 'Enregistrer'">Enregistrer</button>
                                         </form>
                                     </div>
                                 </div>

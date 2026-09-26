@@ -71,6 +71,24 @@ it('modifie les informations d’un formateur', function () {
     expect($t->is_moderator)->toBeTrue();
 });
 
+it('modifie un formateur en AJAX et renvoie l’affichage en JSON', function () {
+    $edition = openEdition();
+    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'F', 'fee' => 0, 'published' => true]);
+    $t = $formation->trainers()->create(['name' => 'Ancien']);
+
+    $res = $this->actingAs(adminStaff(), 'web')
+        ->putJson(route('admin.formations.trainers.update', [$formation, $t]), [
+            'title' => 'Pr.', 'name' => 'Ama Doe', 'specialty' => 'Chimie', 'email' => 'ama@example.tg', 'is_moderator' => '1',
+        ]);
+
+    $res->assertOk()->assertJson([
+        'ok' => true,
+        'is_moderator' => true,
+        'display_name' => 'Pr. Ama Doe',
+        'sub' => 'Chimie · ama@example.tg',
+    ]);
+});
+
 it('relie le formateur au compte quand l’e-mail modifié correspond', function () {
     $edition = openEdition();
     $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'F', 'fee' => 0, 'published' => true]);

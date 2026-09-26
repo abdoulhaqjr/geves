@@ -142,7 +142,7 @@ class FormationController extends Controller
     }
 
     /** Met à jour les informations d'un formateur (grade, nom, spécialité, e-mail). */
-    public function updateTrainer(Request $request, Formation $formation, FormationTrainer $trainer): RedirectResponse
+    public function updateTrainer(Request $request, Formation $formation, FormationTrainer $trainer): JsonResponse|RedirectResponse
     {
         abort_unless($trainer->formation_id === $formation->id, 404);
         $data = $request->validate([
@@ -161,6 +161,17 @@ class FormationController extends Controller
             'is_moderator' => $request->boolean('is_moderator'),
             'user_id' => $this->userIdForEmail($data['email'] ?? null),
         ]);
+
+        if ($request->expectsJson()) {
+            $trainer->refresh();
+
+            return response()->json([
+                'ok' => true,
+                'is_moderator' => $trainer->is_moderator,
+                'display_name' => trim(($trainer->title ? $trainer->title.' ' : '').$trainer->name),
+                'sub' => collect([$trainer->specialty, $trainer->email])->filter()->join(' · '),
+            ]);
+        }
 
         return back()->with('ukc_status', 'Formateur mis à jour.');
     }

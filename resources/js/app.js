@@ -1693,10 +1693,43 @@ document.addEventListener('alpine:init', () => {
     window.Alpine.data('formationTrainer', (cfg = {}) => ({
         photo: cfg.photo || '',
         uploadUrl: cfg.uploadUrl || '',
+        updateUrl: cfg.updateUrl || '',
+        displayName: cfg.displayName || '',
+        sub: cfg.sub || '',
+        moderator: !!cfg.moderator,
         editing: false,
         uploading: false,
+        saving: false,
         progress: 0,
         error: '',
+        saveInfo(e) {
+            const form = e.target;
+            if (!form.reportValidity()) return;
+            this.error = '';
+            this.saving = true;
+            const token = document.querySelector('meta[name="csrf-token"]')?.content
+                || form.querySelector('input[name="_token"]')?.value || '';
+            fetch(this.updateUrl, {
+                method: 'POST', // _method=PUT dans le FormData (spoofing Laravel)
+                headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
+                body: new FormData(form),
+            }).then((r) => r.json().then((d) => ({ status: r.status, d })))
+                .then(({ status, d }) => {
+                    this.saving = false;
+                    if (status >= 200 && status < 300 && d.ok) {
+                        this.displayName = d.display_name;
+                        this.sub = d.sub;
+                        this.moderator = !!d.is_moderator;
+                        this.editing = false;
+                        if (window.ukcToast) window.ukcToast('Formateur mis à jour.', 'ok');
+                    } else if (status === 422) {
+                        const errs = d.errors || {};
+                        this.error = (Object.values(errs)[0] || ['Champs invalides.'])[0];
+                    } else {
+                        this.error = 'Échec de l’enregistrement.';
+                    }
+                }).catch(() => { this.saving = false; this.error = 'Erreur réseau.'; });
+        },
         uploadPhoto(e) {
             const file = e.target.files && e.target.files[0];
             if (!file) return;
