@@ -102,6 +102,65 @@ it('relie le formateur au compte quand l’e-mail modifié correspond', function
     expect($t->fresh()->user_id)->toBe($user->id);
 });
 
+it('rapproche un formateur d’un compte par e-mail et force l’identité du compte', function () {
+    $edition = openEdition();
+    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'F', 'fee' => 0, 'published' => true]);
+    $user = verifiedAccount(); // Awa Kodjo / awa@example.tg / +22890000000
+
+    // Nom volontairement faux : le serveur doit imposer l'identité du compte.
+    $this->actingAs(adminStaff(), 'web')->post(route('admin.formations.trainers.store', $formation), [
+        'name' => 'Usurpateur', 'email' => $user->email,
+    ]);
+
+    $t = FormationTrainer::where('formation_id', $formation->id)->first();
+    expect($t->user_id)->toBe($user->id);
+    expect($t->name)->toBe('Awa Kodjo');
+    expect($t->phone)->toBe('+22890000000');
+});
+
+it('rapproche un formateur d’un compte par téléphone', function () {
+    $edition = openEdition();
+    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'F', 'fee' => 0, 'published' => true]);
+    $user = verifiedAccount();
+
+    $this->actingAs(adminStaff(), 'web')->post(route('admin.formations.trainers.store', $formation), [
+        'name' => 'Inconnu', 'phone' => '+22890000000',
+    ]);
+
+    $t = FormationTrainer::where('formation_id', $formation->id)->first();
+    expect($t->user_id)->toBe($user->id);
+    expect($t->name)->toBe('Awa Kodjo');
+    expect($t->email)->toBe($user->email);
+});
+
+it('laisse la saisie libre quand aucun compte ne correspond', function () {
+    $edition = openEdition();
+    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'F', 'fee' => 0, 'published' => true]);
+
+    $this->actingAs(adminStaff(), 'web')->post(route('admin.formations.trainers.store', $formation), [
+        'name' => 'Invité Externe', 'email' => 'externe@example.tg', 'phone' => '+22899999999',
+    ]);
+
+    $t = FormationTrainer::where('formation_id', $formation->id)->first();
+    expect($t->user_id)->toBeNull();
+    expect($t->name)->toBe('Invité Externe');
+    expect($t->phone)->toBe('+22899999999');
+});
+
+it('l’endpoint de rapprochement renvoie le profil du compte trouvé', function () {
+    $user = verifiedAccount();
+
+    $this->actingAs(adminStaff(), 'web')
+        ->postJson(route('admin.formations.trainers.lookup'), ['email' => $user->email])
+        ->assertOk()
+        ->assertJson(['found' => true, 'name' => 'Awa Kodjo', 'phone' => '+22890000000']);
+
+    $this->actingAs(adminStaff(), 'web')
+        ->postJson(route('admin.formations.trainers.lookup'), ['email' => 'personne@example.tg'])
+        ->assertOk()
+        ->assertJson(['found' => false]);
+});
+
 it('utilise la photo du compte lié à défaut de photo propre', function () {
     $edition = openEdition();
     $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'F', 'fee' => 0, 'published' => true]);

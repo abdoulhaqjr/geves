@@ -8,10 +8,10 @@
 
     <style>
         /* Cartes larges : visuel à gauche, contenu à droite ; empilées sur mobile. */
-        .fcard { display:grid; grid-template-columns:minmax(0,320px) minmax(0,1fr); background:#fff;
+        .fcard { display:grid; grid-template-columns:minmax(0,clamp(340px,34%,520px)) minmax(0,1fr); background:#fff;
                  border:1px solid var(--ukc-border,#e5e7eb); border-radius:16px; overflow:hidden;
                  box-shadow:0 1px 2px rgba(16,24,40,.04); margin-bottom:20px; }
-        .fcard__media { position:relative; min-height:200px; background:linear-gradient(135deg,var(--ukc-blue,#223ea4),var(--ukc-green,#009933)); }
+        .fcard__media { position:relative; min-height:240px; background:linear-gradient(135deg,var(--ukc-blue,#223ea4),var(--ukc-green,#009933)); }
         .fcard__body { padding:22px 24px; display:flex; flex-direction:column; gap:14px; min-width:0; }
         .fcard__foot { border-top:1px solid var(--ukc-border,#eef0f4); margin:0 -24px -22px; padding:14px 24px;
                        background:#fcfcfd; display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; }

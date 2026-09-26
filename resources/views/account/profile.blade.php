@@ -80,8 +80,8 @@
                 </div>
 
                 <div class="ukc-field">
-                    <label for="phone">{{ __('Téléphone') }}</label>
-                    <x-ukc.phone name="phone" :value="old('phone', $account->phone)" />
+                    <label for="phone">{{ __('Téléphone') }} <span class="req">*</span></label>
+                    <x-ukc.phone name="phone" :value="old('phone', $account->phone)" required />
                     @error('phone') <span class="error">{{ $message }}</span> @enderror
                 </div>
 

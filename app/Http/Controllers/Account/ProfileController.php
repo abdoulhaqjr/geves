@@ -40,7 +40,9 @@ class ProfileController extends Controller
             'first_name' => ['required', 'string', 'max:150'],
             'last_name' => ['required', 'string', 'max:150'],
             'grade' => ['nullable', 'string', 'max:100'],
-            'phone' => ['nullable', 'string', 'max:50'],
+            // Obligatoire : identifie la personne (rapprochement auteurs/formateurs)
+            // et pré-remplit la page de la passerelle de paiement (mobile money).
+            'phone' => ['required', 'string', 'max:50'],
             'affiliation' => ['nullable', 'string', 'max:255'],
             'country' => ['nullable', 'string', 'max:100'],
             'city' => ['nullable', 'string', 'max:120'],

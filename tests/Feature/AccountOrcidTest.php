@@ -7,7 +7,7 @@ it('enregistre un ORCID valide (normalisé) sur le profil', function () {
 
     $this->actingAs($account, 'account')
         ->put(route('account.profile.update'), [
-            'first_name' => 'Awa', 'last_name' => 'Kodjo',
+            'first_name' => 'Awa', 'last_name' => 'Kodjo', 'phone' => '+22890000000',
             'affiliation' => 'Université de Kara',
             'orcid' => 'https://orcid.org/0000-0002-1825-0097',
         ])
@@ -28,7 +28,7 @@ it('rejette un ORCID invalide', function () {
 
     $this->actingAs($account, 'account')
         ->put(route('account.profile.update'), [
-            'first_name' => 'Awa', 'last_name' => 'Kodjo',
+            'first_name' => 'Awa', 'last_name' => 'Kodjo', 'phone' => '+22890000000',
             'orcid' => '0000-0002-1825-0098', // checksum faux
         ])
         ->assertSessionHasErrors('orcid');
@@ -41,7 +41,7 @@ it('accepte un profil sans ORCID', function () {
 
     $this->actingAs($account, 'account')
         ->put(route('account.profile.update'), [
-            'first_name' => 'Awa', 'last_name' => 'Kodjo', 'orcid' => '',
+            'first_name' => 'Awa', 'last_name' => 'Kodjo', 'phone' => '+22890000000', 'orcid' => '',
         ])
         ->assertSessionHasNoErrors();
 

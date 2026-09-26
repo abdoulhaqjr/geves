@@ -65,7 +65,7 @@ it('rend canSubmit vrai une fois le profil complété et l’e-mail vérifié', 
 
     $this->actingAs($account, 'account')->put(route('account.profile.update'), [
         'first_name' => $account->first_name,
-        'last_name' => $account->last_name,
+        'last_name' => $account->last_name, 'phone' => '+22890000000',
         'affiliation' => 'Université de Kara',
     ])->assertSessionHasNoErrors();
 

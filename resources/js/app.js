@@ -1688,6 +1688,60 @@ document.addEventListener('alpine:init', () => {
         fmt(b) { return b > 1048576 ? (b / 1048576).toFixed(1) + ' Mo' : Math.max(1, Math.round(b / 1024)) + ' Ko'; },
     }));
 
+    // Ligne « formateur » (ajout ou édition) : rapprochement à la saisie d'un
+    // identifiant fort (e-mail / téléphone) avec un compte existant, comme pour les
+    // co-auteurs. Quand un compte correspond, on pré-remplit les autres champs et on
+    // verrouille le nom (l'identité vient du compte ; le serveur la force de toute
+    // façon), ce qui évite les fautes de nom et l'usage de l'e-mail d'un tiers.
+    window.Alpine.data('trainerLookup', (cfg = {}) => ({
+        lookupUrl: cfg.lookupUrl || '',
+        linked: !!cfg.linked,
+        hint: cfg.linked ? 'Compte associé.' : '',
+        hintType: cfg.linked ? 'ok' : '',
+        busy: false,
+        async lookup() {
+            // Le composant peut être monté sur le <form> lui-même ou sur un wrapper.
+            const form = this.$root.closest('form') || this.$root.querySelector('form') || this.$root;
+            const email = (form.querySelector('[name="email"]')?.value || '').trim();
+            const phone = (form.querySelector('[name="phone"]')?.value || '').trim();
+            if (!email && !phone) { this.linked = false; this.hint = ''; this.hintType = ''; return; }
+            this.busy = true;
+            try {
+                const token = document.querySelector('meta[name="csrf-token"]')?.content
+                    || form.querySelector('input[name="_token"]')?.value || '';
+                const r = await fetch(this.lookupUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
+                    body: JSON.stringify({ email, phone }),
+                });
+                const d = await r.json();
+                if (d.found) {
+                    this.linked = true;
+                    this.hintType = 'ok';
+                    this.hint = 'Compte trouvé : ' + d.name + '.';
+                    const set = (n, v) => { const el = form.querySelector('[name="' + n + '"]'); if (el && v) el.value = v; };
+                    set('name', d.name);
+                    set('email', d.email);
+                    set('phone', d.phone);
+                    // Grade et spécialité : seulement s'ils sont encore vides
+                    // (ils appartiennent à la formation, pas au profil).
+                    const fill = (n, v) => { const el = form.querySelector('[name="' + n + '"]'); if (el && v && !el.value.trim()) el.value = v; };
+                    fill('title', d.title);
+                    fill('specialty', d.specialty);
+                } else {
+                    this.linked = false;
+                    this.hintType = 'info';
+                    this.hint = 'Aucun compte : le formateur sera saisi librement.';
+                }
+            } catch (e) {
+                this.linked = false;
+                this.hintType = '';
+                this.hint = '';
+            }
+            this.busy = false;
+        },
+    }));
+
     // Formateur d'une formation : upload de photo en AJAX (barre de progression sur
     // l'avatar) + bascule d'édition en ligne des informations.
     window.Alpine.data('formationTrainer', (cfg = {}) => ({

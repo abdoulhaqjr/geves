@@ -15,6 +15,7 @@ use App\Models\Formation;
 use App\Models\FormationTrainer;
 use App\Models\Participant;
 use App\Models\User;
+use App\Support\AuthorMatcher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -103,16 +104,14 @@ class FormationController extends Controller
             'name' => ['required', 'string', 'max:200'],
             'specialty' => ['nullable', 'string', 'max:200'],
             'email' => ['nullable', 'email', 'max:200'],
+            'phone' => ['nullable', 'string', 'max:50'],
             'is_moderator' => ['nullable', 'boolean'],
             'photo' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:4096'],
         ]);
 
-        $trainer = $formation->trainers()->create([
-            'user_id' => $this->userIdForEmail($data['email'] ?? null),
-            'title' => $data['title'] ?? null,
-            'name' => $data['name'],
-            'specialty' => $data['specialty'] ?? null,
-            'email' => $data['email'] ?? null,
+        $account = $this->trainerAccount($data['email'] ?? null, $data['phone'] ?? null);
+
+        $trainer = $formation->trainers()->create($this->trainerAttributes($data, $account) + [
             'is_moderator' => (bool) ($data['is_moderator'] ?? true),
         ]);
 
@@ -150,16 +149,14 @@ class FormationController extends Controller
             'name' => ['required', 'string', 'max:200'],
             'specialty' => ['nullable', 'string', 'max:200'],
             'email' => ['nullable', 'email', 'max:200'],
+            'phone' => ['nullable', 'string', 'max:50'],
             'is_moderator' => ['nullable', 'boolean'],
         ]);
 
-        $trainer->update([
-            'title' => $data['title'] ?? null,
-            'name' => $data['name'],
-            'specialty' => $data['specialty'] ?? null,
-            'email' => $data['email'] ?? null,
+        $account = $this->trainerAccount($data['email'] ?? null, $data['phone'] ?? null);
+
+        $trainer->update($this->trainerAttributes($data, $account) + [
             'is_moderator' => $request->boolean('is_moderator'),
-            'user_id' => $this->userIdForEmail($data['email'] ?? null),
         ]);
 
         if ($request->expectsJson()) {
@@ -360,14 +357,79 @@ class FormationController extends Controller
     }
 
     /** Rattache le formateur au compte unifié (users) si l'e-mail correspond. */
-    private function userIdForEmail(?string $email): ?int
+    /**
+     * Compte correspondant à un **identifiant fort** saisi pour un formateur
+     * (e-mail OU téléphone), sur le modèle des co-auteurs. Jamais par nom : on ne
+     * rattache pas un homonyme.
+     */
+    private function trainerAccount(?string $email, ?string $phone): ?User
     {
-        $email = mb_strtolower(trim((string) $email));
-        if ($email === '') {
+        $email = AuthorMatcher::normEmail($email);
+        $phone = AuthorMatcher::normPhone($phone);
+        if ($email === '' && $phone === '') {
             return null;
         }
 
-        return User::whereRaw('LOWER(email) = ?', [$email])->value('id');
+        $match = app(AuthorMatcher::class)->match(['email' => $email, 'phone' => $phone]);
+
+        return $match['type'] === 'name' ? null : $match['user'];
+    }
+
+    /** Nom d'affichage d'un compte (identité du profil, repli sur `users.name`). */
+    private function accountName(User $account): string
+    {
+        return trim(trim((string) $account->first_name).' '.trim((string) $account->last_name))
+            ?: (string) $account->name;
+    }
+
+    /**
+     * Attributs d'un formateur. ⚠️ Si un identifiant fort correspond à un compte,
+     * **l'identité vient du compte** (nom, e-mail, téléphone) et non de la saisie :
+     * cela évite les fautes de nom et empêche d'inscrire un formateur sous
+     * l'e-mail d'un autre utilisateur existant. Grade et spécialité restent
+     * propres à la formation (pré-remplis côté client, modifiables).
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function trainerAttributes(array $data, ?User $account): array
+    {
+        return [
+            'user_id' => $account?->id,
+            'title' => $data['title'] ?? null,
+            'name' => $account ? $this->accountName($account) : (string) $data['name'],
+            'specialty' => $data['specialty'] ?? null,
+            'email' => $account ? (string) $account->email : ($data['email'] ?? null),
+            'phone' => $account && filled($account->phone) ? (string) $account->phone : ($data['phone'] ?? null),
+        ];
+    }
+
+    /**
+     * Rapprochement à la saisie (e-mail/téléphone → compte) pour pré-remplir la
+     * ligne « formateur », comme pour les co-auteurs.
+     */
+    public function lookupTrainer(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => ['nullable', 'string', 'max:200'],
+            'phone' => ['nullable', 'string', 'max:50'],
+        ]);
+
+        $account = $this->trainerAccount($data['email'] ?? null, $data['phone'] ?? null);
+
+        if (! $account) {
+            return response()->json(['found' => false]);
+        }
+
+        return response()->json([
+            'found' => true,
+            'name' => $this->accountName($account),
+            'email' => (string) $account->email,
+            'phone' => (string) ($account->phone ?? ''),
+            'title' => (string) ($account->civility ?? ''),
+            'specialty' => (string) ($account->grade ?: $account->affiliation ?: ''),
+            'photo' => filled($account->photo_path) ? Storage::url((string) $account->photo_path) : null,
+        ]);
     }
 
     private function currentEdition(Request $request): ?Edition

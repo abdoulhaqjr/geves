@@ -73,7 +73,8 @@ it('ajoute un formateur et le rattache au compte unifié si l’e-mail correspon
 
     $trainer = FormationTrainer::where('formation_id', $formation->id)->first();
     expect($trainer)->not->toBeNull();
-    expect($trainer->name)->toBe('Dr Awa Kodjo');
+    // L'e-mail correspond à un compte : l'identité vient du compte, pas de la saisie.
+    expect($trainer->name)->toBe('Awa Kodjo');
     expect($trainer->user_id)->toBe($account->id);
     expect($trainer->is_moderator)->toBeTrue();
 

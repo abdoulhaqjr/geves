@@ -1,4 +1,21 @@
 <x-layouts.admin title="Formations" subtitle="Formations d'une édition - formateurs, frais, lieu, dates, inscriptions, e-mails, attestations et visio.">
+    <style>
+        /* Ligne « formateur » : tout sur une ligne, repliée en 2 puis 1 colonne. */
+        .trainer-grid { display:grid; gap:8px; align-items:center;
+            grid-template-columns:auto 100px minmax(0,1fr) minmax(0,1fr) minmax(0,1.1fr) minmax(0,.9fr) auto; }
+        .trainer-grid--edit { grid-template-columns:100px minmax(0,1fr) minmax(0,1fr) minmax(0,1.1fr) minmax(0,.9fr) auto auto; }
+        @media (max-width: 1400px) {
+            .trainer-grid, .trainer-grid--edit { grid-template-columns:repeat(2, minmax(0,1fr)); }
+            .trainer-grid > .tg-avatar { grid-column:1/-1; }
+        }
+        @media (max-width: 720px) {
+            .trainer-grid, .trainer-grid--edit { grid-template-columns:minmax(0,1fr); }
+        }
+        .trainer-hint { grid-column:1/-1; font-size:12px; margin:0; }
+        .trainer-hint.ok { color:var(--ukc-green,#009933); }
+        .trainer-hint.info { color:var(--ukc-muted); }
+    </style>
+
     <div class="admin-page admin-formations" x-data="{ formOpen: false }">
         <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
             <div class="ukc-field" style="max-width:460px;width:100%;margin:0;">
@@ -88,19 +105,22 @@
                                         </form>
                                     </div>
                                     {{-- Édition en ligne (une seule ligne, comme l'ajout) - x-show sur wrapper pour garder le grid --}}
-                                    <div x-show="editing" x-cloak style="margin-top:8px;">
+                                    <div x-show="editing" x-cloak style="margin-top:8px;"
+                                         x-data="trainerLookup({ lookupUrl: '{{ route('admin.formations.trainers.lookup') }}', linked: {{ $t->user_id ? 'true' : 'false' }} })">
                                         <form method="POST" action="{{ route('admin.formations.trainers.update', [$f, $t]) }}" @submit.prevent="saveInfo($event)"
-                                              style="display:grid;grid-template-columns:110px minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.3fr) auto auto;gap:8px;align-items:center;">
+                                              class="trainer-grid trainer-grid--edit">
                                             @csrf @method('PUT')
                                             <input type="text" name="title" value="{{ $t->title }}" placeholder="Grade" list="trainerTitles{{ $f->id }}" maxlength="40" style="{{ $tin }}">
-                                            <input type="text" name="name" value="{{ $t->name }}" placeholder="Nom *" required maxlength="200" style="{{ $tin }}">
+                                            <input type="text" name="name" value="{{ $t->name }}" placeholder="Nom *" required maxlength="200" style="{{ $tin }}" :readonly="linked" :style="linked ? '{{ $tin }}background:var(--ukc-bg,#f6f7fb);' : '{{ $tin }}'">
                                             <input type="text" name="specialty" value="{{ $t->specialty }}" placeholder="Spécialité / fonction" maxlength="200" style="{{ $tin }}">
-                                            <input type="email" name="email" value="{{ $t->email }}" placeholder="E-mail (facultatif)" maxlength="200" style="{{ $tin }}">
+                                            <input type="email" name="email" value="{{ $t->email }}" placeholder="E-mail" maxlength="200" style="{{ $tin }}" @change="lookup()">
+                                            <x-ukc.phone name="phone" :value="$t->phone" placeholder="Téléphone" style="{{ $tin }}" @change="lookup()" />
                                             <label title="Modérateur (visio)" style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ukc-muted);white-space:nowrap;">
                                                 <input type="hidden" name="is_moderator" value="0">
                                                 <input type="checkbox" name="is_moderator" value="1" @checked($t->is_moderator)> Modér.
                                             </label>
                                             <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm" style="white-space:nowrap;" :disabled="saving" x-text="saving ? 'Enregistrement…' : 'Enregistrer'">Enregistrer</button>
+                                            <p class="trainer-hint" :class="hintType" x-show="hint" x-cloak x-text="hint"></p>
                                         </form>
                                     </div>
                                 </div>
@@ -109,22 +129,27 @@
                             @endforelse
 
                             {{-- Ajouter un formateur : tout sur une ligne (façon co-auteur du formulaire de soumission) --}}
+                            <div x-data="trainerLookup({ lookupUrl: '{{ route('admin.formations.trainers.lookup') }}' })"
+                                 style="margin-top:12px;border-top:1px solid var(--ukc-border,#f1f1f1);padding-top:12px;">
                             <form method="POST" action="{{ route('admin.formations.trainers.store', $f) }}" enctype="multipart/form-data"
-                                  style="margin-top:12px;border-top:1px solid var(--ukc-border,#f1f1f1);padding-top:12px;display:grid;grid-template-columns:auto 110px minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.3fr) auto;gap:8px;align-items:center;"
+                                  class="trainer-grid"
                                   x-data="{ ph: '', pick(e) { const fl = e.target.files[0]; this.ph = fl ? URL.createObjectURL(fl) : ''; } }">
                                 @csrf
-                                <label title="Photo du formateur" style="{{ $avatar }}cursor:pointer;background:var(--ukc-bg,#eef2ff);border:1px dashed var(--ukc-border,#cbd5e1);color:var(--ukc-muted);">
+                                <label class="tg-avatar" title="Photo du formateur" style="{{ $avatar }}cursor:pointer;background:var(--ukc-bg,#eef2ff);border:1px dashed var(--ukc-border,#cbd5e1);color:var(--ukc-muted);">
                                     <template x-if="ph"><img :src="ph" alt="" style="width:100%;height:100%;object-fit:cover;"></template>
                                     <template x-if="!ph"><x-ukc.icon name="user" :size="20" /></template>
                                     <input type="file" name="photo" accept="image/png,image/jpeg" @change="pick($event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
                                 </label>
                                 <input type="text" name="title" placeholder="Grade" list="trainerTitles{{ $f->id }}" maxlength="40" style="{{ $tin }}">
-                                <input type="text" name="name" placeholder="Nom *" required maxlength="200" style="{{ $tin }}">
+                                <input type="text" name="name" placeholder="Nom *" required maxlength="200" :readonly="linked" :style="linked ? '{{ $tin }}background:var(--ukc-bg,#f6f7fb);' : '{{ $tin }}'" style="{{ $tin }}">
                                 <input type="text" name="specialty" placeholder="Spécialité / fonction" maxlength="200" style="{{ $tin }}">
-                                <input type="email" name="email" placeholder="E-mail (facultatif)" maxlength="200" style="{{ $tin }}">
+                                <input type="email" name="email" placeholder="E-mail" maxlength="200" style="{{ $tin }}" @change="lookup()">
+                                <x-ukc.phone name="phone" placeholder="Téléphone" style="{{ $tin }}" @change="lookup()" />
                                 <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm" style="white-space:nowrap;"><x-ukc.icon name="plus" :size="14" /> Ajouter</button>
+                                <p class="trainer-hint" :class="hintType" x-show="hint" x-cloak x-text="hint"></p>
                                 <datalist id="trainerTitles{{ $f->id }}"><option value="M."></option><option value="Mme"></option><option value="Pr."></option><option value="Dr."></option><option value="Professeur"></option><option value="Docteur"></option></datalist>
                             </form>
+                            </div>
                         </div>
 
                         {{-- Inscrits + message (convocation / rappel) --}}

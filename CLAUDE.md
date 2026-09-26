@@ -275,6 +275,14 @@ Voir la liste complète en [§8 de PASSATION.md](PASSATION.md). Les plus courant
 - **Paiement en ligne** : le statut « payé » vient **toujours** d'une vérification
   serveur ou d'un webhook à signature vérifiée (fail-closed), jamais d'un paramètre
   d'URL de retour.
+- **Téléphone obligatoire au profil** (`account.profile.update`) : il sert
+  d'identifiant fort pour le rapprochement (auteurs, formateurs) et pré-remplit la
+  passerelle. Les tests qui postent le profil doivent l'inclure.
+- **Identité venant d'un compte = jamais la saisie libre** : dès qu'un identifiant
+  fort (e-mail **ou** téléphone) correspond à un `User`, le serveur **impose** le
+  nom/e-mail/téléphone du compte (co-auteurs via `AuthorMatcher`, formateurs via
+  `Admin\FormationController::trainerAttributes()`). Cela évite les fautes de nom et
+  l'usage de l'e-mail d'un tiers. Le pré-remplissage côté client n'est qu'un confort.
 - **Avant d'engager un paiement** : le **profil doit être complet** -
   **`User::profileComplete()`** (prénom, nom, **téléphone**, affiliation + e-mail
   vérifié ; `missingProfileFields()` donne les libellés manquants). Les coordonnées
