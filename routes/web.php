@@ -443,6 +443,7 @@ Route::prefix('admin')->group(function () {
             Route::post('/formations/{formation}/formateurs', [FormationController::class, 'storeTrainer'])->name('admin.formations.trainers.store');
             Route::put('/formations/{formation}/formateurs/{trainer}', [FormationController::class, 'updateTrainer'])->name('admin.formations.trainers.update');
             Route::post('/formations/{formation}/formateurs/{trainer}/photo', [FormationController::class, 'updateTrainerPhoto'])->name('admin.formations.trainers.photo');
+            Route::post('/formations/{formation}/formateurs/{trainer}/signature', [FormationController::class, 'updateTrainerSignature'])->name('admin.formations.trainers.signature');
             Route::delete('/formations/{formation}/formateurs/{trainer}', [FormationController::class, 'destroyTrainer'])->name('admin.formations.trainers.destroy');
             Route::post('/formations/{formation}/message', [FormationController::class, 'message'])->name('admin.formations.message');
             Route::post('/formations/{formation}/attestations', [FormationController::class, 'issueAttestations'])->name('admin.formations.attestations');

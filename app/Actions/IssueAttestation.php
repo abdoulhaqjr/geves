@@ -43,6 +43,15 @@ class IssueAttestation
         }
         if ($formation) {
             $meta['formation_title'] = (string) $formation->title;
+            $meta['formation_theme'] = (string) ($formation->theme ?? '');
+            // Formateurs + signatures figés à l'émission : l'attestation ne doit pas
+            // changer si l'équipe de formateurs évolue ensuite.
+            $trainers = $formation->trainers()->orderBy('id')->get();
+            $meta['formation_trainers'] = $trainers->map(fn ($t) => $t->displayName())->all();
+            $meta['formation_signatures'] = $trainers
+                ->filter(fn ($t) => $t->signatureUrl() !== null)
+                ->map(fn ($t) => ['name' => $t->displayName(), 'src' => $t->signatureUrl()])
+                ->values()->all();
         }
 
         // uuid généré par AttestationObserver.

@@ -94,7 +94,7 @@
             <h2>Formateurs <span class="ukc-badge-count">{{ $f->trainers->count() }}</span></h2>
 
             @forelse ($f->trainers as $t)
-                <div x-data="formationTrainer({ photo: @js($t->photoUrl()), uploadUrl: '{{ route('admin.formations.trainers.photo', [$f, $t]) }}', updateUrl: '{{ route('admin.formations.trainers.update', [$f, $t]) }}', displayName: @js(trim(($t->title ? $t->title.' ' : '').$t->name)), sub: @js(collect([$t->specialty, $t->email])->filter()->join(' · ')), moderator: {{ $t->is_moderator ? 'true' : 'false' }} })"
+                <div x-data="formationTrainer({ photo: @js($t->photoUrl()), uploadUrl: '{{ route('admin.formations.trainers.photo', [$f, $t]) }}', updateUrl: '{{ route('admin.formations.trainers.update', [$f, $t]) }}', signatureUrl: '{{ route('admin.formations.trainers.signature', [$f, $t]) }}', displayName: @js(trim(($t->title ? $t->title.' ' : '').$t->name)), sub: @js(collect([$t->specialty, $t->email])->filter()->join(' · ')), moderator: {{ $t->is_moderator ? 'true' : 'false' }} })"
                      style="padding:8px 0;border-bottom:1px solid var(--ukc-border,#f1f1f1);">
                     <div style="display:flex;align-items:center;gap:10px;">
                         <label title="Cliquer pour changer la photo" style="{{ $avatar }}cursor:pointer;background:linear-gradient(135deg,var(--ukc-blue,#223ea4),var(--ukc-green,#009933));color:#fff;font-weight:700;">
@@ -114,6 +114,17 @@
                             <div style="font-size:12px;color:var(--ukc-light);" x-text="sub"></div>
                             <div x-show="error" x-cloak x-text="error" style="font-size:11.5px;color:var(--ukc-danger,#dc2626);margin-top:2px;"></div>
                         </div>
+                        {{-- Signature apposée sur les attestations de formation --}}
+                        <label title="{{ $t->signatureUrl() ? 'Changer la signature' : 'Ajouter une signature (image détourée)' }}"
+                               style="position:relative;cursor:pointer;display:inline-flex;align-items:center;gap:6px;border:1px dashed var(--ukc-border,#cbd5e1);border-radius:8px;padding:4px 8px;font-size:11.5px;color:var(--ukc-muted);white-space:nowrap;">
+                            @if ($t->signatureUrl())
+                                <img src="{{ $t->signatureUrl() }}" alt="" style="height:22px;max-width:70px;object-fit:contain;">
+                            @else
+                                <x-ukc.icon name="pen" :size="13" /> Signature
+                            @endif
+                            <input type="file" accept="image/png,image/jpeg" @change="uploadSignature($event)" :disabled="signing"
+                                   style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+                        </label>
                         <button type="button" class="ukc-btn--icon" title="Modifier" aria-label="Modifier le formateur" @click="editing = !editing"><x-ukc.icon name="pen" :size="15" /></button>
                         <form method="POST" action="{{ route('admin.formations.trainers.destroy', [$f, $t]) }}" data-confirm="Retirer ce formateur ?" style="margin:0;">
                             @csrf @method('DELETE')

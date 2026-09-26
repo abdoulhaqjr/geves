@@ -45,6 +45,7 @@ class DocumentHubController extends Controller
             'communication' => ['title' => 'Attestation de communication', 'sub' => 'Orale / poster', 'scope' => 'Par communication'],
             'participation' => ['title' => 'Attestation de participation', 'sub' => 'Une par participant', 'scope' => 'Participant'],
             'moderation' => ['title' => 'Attestation de modération', 'sub' => 'Sessions', 'scope' => 'Par session'],
+            'rapporteur' => ['title' => 'Attestation de rapporteur', 'sub' => 'Sessions', 'scope' => 'Par session'],
             // Module Formation : les modèles se conçoivent ici, mais l'émission se
             // fait formation par formation (cf. Admin\FormationController).
             'formation' => ['title' => 'Attestation de formation', 'sub' => 'Inscrits aux formations', 'scope' => 'Par formation'],

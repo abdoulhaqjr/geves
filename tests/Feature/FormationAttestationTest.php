@@ -1,10 +1,13 @@
 <?php
 
+use App\Actions\IssueAttestation;
 use App\Models\Attestation;
 use App\Models\Formation;
 use App\Models\FormationEnrollment;
 use App\Models\Participant;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 // openEdition()/verifiedAccount()/adminStaff() -> tests/Pest.php + AdminSubmissionWorkflowTest
 
@@ -67,4 +70,43 @@ it('émet l’attestation à un inscrit d’une formation gratuite', function ()
 
 it('expose le type d’attestation d’animation de formation', function () {
     expect(Attestation::TYPES)->toHaveKey('formation_animation');
+});
+
+it('téléverse la signature d’un formateur', function () {
+    Storage::fake('public');
+    $edition = openEdition(['formation_enabled' => true]);
+    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'Atelier', 'fee' => 0, 'published' => true]);
+    $trainer = $formation->trainers()->create(['name' => 'Awa Kodjo', 'title' => 'Pr.']);
+
+    $res = $this->actingAs(adminStaff(), 'web')
+        ->postJson(route('admin.formations.trainers.signature', [$formation, $trainer]), [
+            'signature' => UploadedFile::fake()->image('sign.png'),
+        ]);
+
+    $res->assertOk()->assertJson(['ok' => true]);
+    expect($trainer->fresh()->signature_path)->not->toBeNull();
+    expect($trainer->fresh()->signatureUrl())->toContain('/storage/');
+    expect($trainer->fresh()->displayName())->toBe('Pr. Awa Kodjo');
+});
+
+it('fige le thème et les signatures des formateurs sur l’attestation de formation', function () {
+    Storage::fake('public');
+    $edition = openEdition(['formation_enabled' => true]);
+    $formation = Formation::create([
+        'edition_id' => $edition->id, 'title' => 'Rédaction scientifique',
+        'theme' => 'Publier dans une revue indexée', 'fee' => 0, 'published' => true,
+    ]);
+    $trainer = $formation->trainers()->create(['name' => 'Awa Kodjo', 'title' => 'Pr.']);
+    $trainer->update(['signature_path' => 'formation-signatures/sign.png']);
+
+    $user = verifiedAccount();
+    $participant = enrolledFormation($formation, $user, 'registered');
+
+    $attestation = app(IssueAttestation::class)->handle($participant, 'formation', null, $formation);
+
+    expect($attestation->meta['formation_title'])->toBe('Rédaction scientifique');
+    expect($attestation->meta['formation_theme'])->toBe('Publier dans une revue indexée');
+    expect($attestation->meta['formation_trainers'])->toBe(['Pr. Awa Kodjo']);
+    expect($attestation->meta['formation_signatures'][0]['name'])->toBe('Pr. Awa Kodjo');
+    expect($attestation->meta['formation_signatures'][0]['src'])->toContain('sign.png');
 });

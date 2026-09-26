@@ -42,6 +42,20 @@ class FormationTrainer extends Model
         return null;
     }
 
+    /** URL de la signature téléversée (apposée sur les attestations), ou null. */
+    public function signatureUrl(): ?string
+    {
+        return filled($this->signature_path)
+            ? Storage::disk('public')->url((string) $this->signature_path)
+            : null;
+    }
+
+    /** Nom complet affiché sous la signature (grade + nom). */
+    public function displayName(): string
+    {
+        return trim(($this->title ? $this->title.' ' : '').trim((string) $this->name));
+    }
+
     /** Initiale pour l'avatar par défaut. */
     public function initials(): string
     {

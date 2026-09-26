@@ -50,6 +50,10 @@ class AttestationController extends Controller
                 'communication_ref' => (string) (($attestation->meta ?? [])['communication_ref'] ?? ''),
                 // Formation concernée (attestation de formation / animation) - vide sinon.
                 'formation' => (string) (($attestation->meta ?? [])['formation_title'] ?? ''),
+                'formation_theme' => (string) (($attestation->meta ?? [])['formation_theme'] ?? ''),
+                'formateurs' => implode(', ', (array) (($attestation->meta ?? [])['formation_trainers'] ?? [])),
+                // Signatures figées à l'émission (élément « signatures » du concepteur).
+                'signatures' => (array) (($attestation->meta ?? [])['formation_signatures'] ?? []),
             ]);
 
             return view('attestations.document-template', [
@@ -98,6 +102,10 @@ class AttestationController extends Controller
                 'communication_ref' => (string) (($attestation->meta ?? [])['communication_ref'] ?? ''),
                 // Formation concernée (attestation de formation / animation) - vide sinon.
                 'formation' => (string) (($attestation->meta ?? [])['formation_title'] ?? ''),
+                'formation_theme' => (string) (($attestation->meta ?? [])['formation_theme'] ?? ''),
+                'formateurs' => implode(', ', (array) (($attestation->meta ?? [])['formation_trainers'] ?? [])),
+                // Signatures figées à l'émission (élément « signatures » du concepteur).
+                'signatures' => (array) (($attestation->meta ?? [])['formation_signatures'] ?? []),
             ]);
 
             // Page à la taille exacte de la mise en page (px → points à 96 dpi).

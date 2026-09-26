@@ -251,6 +251,7 @@ it('sert chaque sous-onglet des attestations par son URL (?stab=)', function () 
     $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['stab' => 'modeles']))
         ->assertOk()
         ->assertSee('Attestation de participation')
+        ->assertSee('Attestation de rapporteur')
         ->assertSee('Émission idempotente');
 
     // Délivrées : la liste filtrable, sur la MÊME url (le panneau Modèles n'est

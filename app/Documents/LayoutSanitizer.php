@@ -12,7 +12,8 @@ class LayoutSanitizer
 {
     public const KINDS = ['badge', 'attestation'];
 
-    public const ELEMENT_TYPES = ['text', 'image', 'qr', 'rect'];
+    /** `signatures` = bloc des signatures des formateurs (attestations de formation). */
+    public const ELEMENT_TYPES = ['text', 'image', 'qr', 'rect', 'signatures'];
 
     /** @return array<string, mixed> */
     public static function sanitize(array $raw, string $kind, string $type = 'default'): array
@@ -56,6 +57,9 @@ class LayoutSanitizer
                 $e['color'] = self::color($el['color'] ?? null, $accent);
             } elseif ($t === 'image') {
                 $e['src'] = filter_var($el['src'] ?? '', FILTER_VALIDATE_URL) ?: '';
+            } elseif ($t === 'signatures') {
+                $e['size'] = self::clampInt($el['size'] ?? 11, 6, 40, 11);
+                $e['names'] = (bool) ($el['names'] ?? true);
             }
 
             $elements[] = $e;

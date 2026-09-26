@@ -11,7 +11,11 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
  */
 class LayoutRenderer
 {
-    /** @param array<string, string> $vars */
+    /**
+     * @param  array<string, string|list<array{name?: string, src?: string}>>  $vars
+     *                                                                                Valeurs des jetons {…}. `signatures` est la seule valeur
+     *                                                                                structurée : elle alimente l'élément « signatures ».
+     */
     public static function render(array $layout, array $vars = []): string
     {
         $w = (int) $layout['width'];
@@ -40,6 +44,7 @@ class LayoutRenderer
                     e($el['src']), $x, $y, (int) ($el['w'] ?? 100), (int) ($el['h'] ?? 30)
                 ) : '',
                 'photo' => self::renderPhoto($el, $x, $y, $vars),
+                'signatures' => self::renderSignatures($el, $x, $y, $vars),
                 'qr' => self::renderQr($el, $x, $y, $vars),
                 default => '',
             };
@@ -81,10 +86,66 @@ class LayoutRenderer
         );
     }
 
+    /**
+     * Bloc de signatures (attestations de formation) : les signatures des
+     * formateurs côte à côte, chacune au-dessus de son nom. Les signatures sont
+     * figées à l'émission (`$vars['signatures']`), donc l'attestation ne change
+     * pas si l'équipe évolue ensuite.
+     *
+     * @param  array<string, mixed>  $el
+     * @param  array<string, mixed>  $vars
+     */
+    protected static function renderSignatures(array $el, int $x, int $y, array $vars): string
+    {
+        /** @var list<array{name?: string, src?: string}> $signatures */
+        $signatures = array_values(array_filter(
+            (array) ($vars['signatures'] ?? []),
+            fn ($s) => is_array($s) && filled($s['src'] ?? null),
+        ));
+
+        if ($signatures === []) {
+            return '';
+        }
+
+        $w = (int) ($el['w'] ?? 420);
+        $h = (int) ($el['h'] ?? 80);
+        $showNames = (bool) ($el['names'] ?? true);
+        $cell = (int) floor($w / max(1, count($signatures)));
+
+        $cells = '';
+        foreach ($signatures as $s) {
+            $cells .= sprintf(
+                '<div style="display:inline-block;width:%dpx;vertical-align:top;text-align:center;">'
+                .'<img src="%s" alt="" style="max-width:%dpx;max-height:%dpx;object-fit:contain;">'
+                .'%s</div>',
+                $cell,
+                e((string) $s['src']),
+                max(20, $cell - 16),
+                $showNames ? max(20, $h - 22) : $h,
+                $showNames ? sprintf(
+                    '<div style="border-top:1px solid #1a2332;margin:2px 10px 0;padding-top:3px;font-size:%dpx;color:#1a2332;">%s</div>',
+                    (int) ($el['size'] ?? 11),
+                    e((string) ($s['name'] ?? ''))
+                ) : ''
+            );
+        }
+
+        return sprintf(
+            '<div style="position:absolute;left:%dpx;top:%dpx;width:%dpx;height:%dpx;white-space:nowrap;">%s</div>',
+            $x, $y, $w, $h, $cells
+        );
+    }
+
+    /** @param array<string, mixed> $vars */
     protected static function substitute(string $text, array $vars): string
     {
-        // Jetons {key} (schéma attestation).
-        $text = preg_replace_callback('/\{(\w+)\}/', fn ($m) => (string) ($vars[$m[1]] ?? ''), $text);
+        // Jetons {key} (schéma attestation). Une valeur non scalaire (ex. le bloc
+        // de signatures) n'a pas de rendu textuel : le jeton est vidé.
+        $text = preg_replace_callback('/\{(\w+)\}/', function ($m) use ($vars) {
+            $v = $vars[$m[1]] ?? '';
+
+            return is_scalar($v) ? (string) $v : '';
+        }, $text);
 
         // Jetons [namespace.key] (schéma de l'éditeur de badges), insensibles à la
         // casse ; si le jeton est en MAJUSCULES, la valeur l'est aussi (ex. rôle).

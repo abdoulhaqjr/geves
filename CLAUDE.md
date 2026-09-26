@@ -228,8 +228,14 @@ Reste optionnel : lecteur visio inline. Détails en [§11 de PASSATION.md](PASSA
   JSON éditable + aperçu ; `DocumentTemplate` par édition/kind/type, rendu
   `App\Documents\LayoutRenderer` avec variables `{…}`), sinon un **défaut** fixe à la charte
   UK. Placeholders dispo dans `TemplateDesignerController::VARIABLES` - dont
-  **`{communication}` / `{communication_ref}`** pour nommer la communication sur une
-  attestation de communication personnalisée.
+  **`{communication}` / `{communication_ref}`** pour nommer la communication, et
+  **`{formation}` / `{formation_theme}` / `{formateurs}`** pour une attestation de
+  formation. **Signatures des formateurs** : élément de mise en page **`signatures`**
+  (`LayoutSanitizer::ELEMENT_TYPES`) rendu par `LayoutRenderer::renderSignatures()` à
+  partir de `$vars['signatures']` - seule valeur **structurée** des variables (les
+  autres sont des chaînes). La signature de chaque formateur se téléverse sur la page
+  de la formation (`formation_trainers.signature_path`) et est **figée dans
+  `attestations.meta` à l'émission** : l'attestation ne change pas si l'équipe évolue.
 - **Certification cryptographique des attestations** (identité vérifiable) : chaque
   attestation est scellée à l'émission par une **signature EdDSA (Ed25519)** de
   l'émetteur, sous forme de **Verifiable Credential W3C sécurisé en JWS compact**

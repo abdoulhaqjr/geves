@@ -40,6 +40,8 @@ class TemplateDesignerController extends Controller
         '{communication}' => 'Titre de la communication',
         '{communication_ref}' => 'Réf. communication',
         '{formation}' => 'Titre de la formation',
+        '{formation_theme}' => 'Thème de la formation',
+        '{formateurs}' => 'Formateur(s) de la formation',
     ];
 
     public function index(Request $request): View
@@ -139,7 +141,7 @@ class TemplateDesignerController extends Controller
         return [$kind, isset(self::ATTESTATION_TYPES[$type]) ? $type : 'participation'];
     }
 
-    /** @return array<string, string> */
+    /** @return array<string, string|list<array{name?: string, src?: string}>> */
     private function sampleVars(string $editionId, string $type): array
     {
         $edition = $editionId !== '' ? Edition::with('colloque')->find($editionId) : null;
@@ -159,6 +161,13 @@ class TemplateDesignerController extends Controller
             'communication' => 'L’apport du numérique dans l’enseignement supérieur',
             'communication_ref' => 'CI-001',
             'formation' => 'Rédaction scientifique et publication',
+            'formation_theme' => 'Publier dans une revue indexée',
+            'formateurs' => 'Pr. Awa Kodjo, Dr. Kofi Mensah',
+            // Aperçu du bloc de signatures (sans image : seuls les noms soulignés).
+            'signatures' => [
+                ['name' => 'Pr. Awa Kodjo', 'src' => ''],
+                ['name' => 'Dr. Kofi Mensah', 'src' => ''],
+            ],
         ];
     }
 }

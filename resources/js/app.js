@@ -1751,11 +1751,41 @@ document.addEventListener('alpine:init', () => {
         displayName: cfg.displayName || '',
         sub: cfg.sub || '',
         moderator: !!cfg.moderator,
+        signatureUrl: cfg.signatureUrl || '',
         editing: false,
         uploading: false,
         saving: false,
+        signing: false,
         progress: 0,
         error: '',
+        // Signature du formateur (apposée sur les attestations de formation).
+        uploadSignature(e) {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            this.error = '';
+            if (!/^image\/(png|jpe?g)$/.test(file.type)) { this.error = 'Signature : image PNG ou JPG uniquement.'; e.target.value = ''; return; }
+            if (file.size > 4 * 1024 * 1024) { this.error = 'Signature trop lourde (max 4 Mo).'; e.target.value = ''; return; }
+            const token = document.querySelector('meta[name="csrf-token"]')?.content || '';
+            const fd = new FormData();
+            fd.append('signature', file);
+            fd.append('_token', token);
+            this.signing = true;
+            fetch(this.signatureUrl, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
+                body: fd,
+            }).then((r) => r.json().then((d) => ({ status: r.status, d })))
+                .then(({ status, d }) => {
+                    this.signing = false;
+                    e.target.value = '';
+                    if (status >= 200 && status < 300 && d.ok) {
+                        // Rechargement : la vignette est rendue côté serveur.
+                        window.location.reload();
+                    } else {
+                        this.error = status === 422 ? 'Signature refusée (image PNG/JPG, max 4 Mo).' : 'Échec du téléversement.';
+                    }
+                }).catch(() => { this.signing = false; e.target.value = ''; this.error = 'Erreur réseau.'; });
+        },
         saveInfo(e) {
             const form = e.target;
             if (!form.reportValidity()) return;

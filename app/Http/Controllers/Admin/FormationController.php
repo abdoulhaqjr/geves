@@ -171,6 +171,27 @@ class FormationController extends Controller
         return back()->with('ukc_status', 'Photo du formateur mise à jour.');
     }
 
+    /**
+     * Signature du formateur, apposée sur les attestations de formation et
+     * d'animation (élément « signatures » du concepteur de modèles).
+     */
+    public function updateTrainerSignature(Request $request, Formation $formation, FormationTrainer $trainer): JsonResponse|RedirectResponse
+    {
+        abort_unless($trainer->formation_id === $formation->id, 404);
+        $request->validate(['signature' => ['required', 'image', 'mimes:png,jpg,jpeg', 'max:4096']]);
+
+        if (filled($trainer->signature_path)) {
+            Storage::disk('public')->delete((string) $trainer->signature_path);
+        }
+        $trainer->update(['signature_path' => $request->file('signature')->store('formation-signatures', 'public')]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true, 'url' => $trainer->fresh()?->signatureUrl()]);
+        }
+
+        return back()->with('ukc_status', 'Signature du formateur enregistrée.');
+    }
+
     /** Met à jour les informations d'un formateur (grade, nom, spécialité, e-mail). */
     public function updateTrainer(Request $request, Formation $formation, FormationTrainer $trainer): JsonResponse|RedirectResponse
     {
