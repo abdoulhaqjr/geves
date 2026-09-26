@@ -66,11 +66,6 @@
                                         <td>Oui</td>
                                         <td>
                                             @if ($row['status'] === 'Actif')<span class="ukc-pill ukc-pill--ok">Actif</span>@else<span class="ukc-pill ukc-pill--muted">Brouillon</span>@endif
-                                            {{-- Explique la présence (ou non) de la corbeille : seul un modèle
-                                                 enregistré peut être supprimé ; sinon c'est le défaut à la charte. --}}
-                                            <div class="meta" style="margin-top:3px;">
-                                                {{ $row['template'] ? 'Mise en page personnalisée' : 'Mise en page par défaut' }}
-                                            </div>
                                         </td>
                                         <td>
                                             <div class="ukc-actions" style="justify-content:flex-end;">
@@ -525,8 +520,8 @@
                             <div style="font-size:13px;">
                                 <strong>Ce que cela fait :</strong>
                                 <ul style="margin:6px 0 0;padding-left:18px;">
-                                    <li>la mise en page personnalisée est <strong>définitivement perdue</strong> ;</li>
-                                    <li>les prochaines émissions utiliseront le <strong>modèle par défaut</strong> à la charte ;</li>
+                                    <li>votre mise en page est <strong>définitivement perdue</strong> ;</li>
+                                    <li>le modèle est <strong>réinitialisé</strong> à la mise en page standard, à reconcevoir ensuite ;</li>
                                     <li>les attestations <strong>déjà délivrées ne sont pas modifiées</strong> et restent vérifiables.</li>
                                 </ul>
                             </div>

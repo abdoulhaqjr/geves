@@ -566,3 +566,36 @@ it('sert chaque onglet principal de Documents par son URL (?tab=)', function () 
     $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', ['edition_id' => $edition->id, 'tab' => 'livre']))
         ->assertOk()->assertSee('Livre des résumés');
 });
+
+it('rend toujours une attestation depuis un modèle enregistré (plus de repli)', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+    $attestation = Attestation::create([
+        'edition_id' => $edition->id, 'type' => 'participation', 'uuid' => 'uuid-rendu',
+        'recipient_name' => 'Awa Kodjo', 'revoked' => false, 'issued_at' => now(),
+    ]);
+
+    expect(DocumentTemplate::where('edition_id', $edition->id)->where('type', 'participation')->exists())->toBeFalse();
+
+    $this->actingAs($staff, 'web')->get(route('attestation.document', $attestation->uuid))->assertOk();
+
+    // Le rendu a créé le modèle : il est désormais visible et modifiable.
+    $tpl = DocumentTemplate::where('edition_id', $edition->id)->where('kind', 'attestation')->where('type', 'participation')->first();
+    expect($tpl)->not->toBeNull();
+    expect($tpl->layout)->not->toBeEmpty();
+});
+
+it('provisionne un modèle enregistré pour chaque type sur l’onglet Modèles', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+
+    $this->actingAs($staff, 'web')
+        ->get(route('admin.documents.attestations', ['edition_id' => $edition->id, 'tab' => 'attestations', 'stab' => 'modeles']))
+        ->assertOk();
+
+    // Tous les types listés ont un modèle : la suppression est proposée partout.
+    foreach (['soumission', 'acceptation', 'communication', 'participation', 'moderation', 'rapporteur', 'formation', 'formation_animation'] as $type) {
+        expect(DocumentTemplate::where('edition_id', $edition->id)->where('kind', 'attestation')->where('type', $type)->exists())
+            ->toBeTrue("modèle manquant pour {$type}");
+    }
+});

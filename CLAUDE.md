@@ -226,8 +226,12 @@ Reste optionnel : lecteur visio inline. Détails en [§11 de PASSATION.md](PASSA
 - **Documents = modèles éditables** : badges/attestations utilisent le **modèle conçu par
   l'admin** (concepteur `admin/modeles`, `TemplateDesignerController` : génération IA +
   JSON éditable + aperçu ; `DocumentTemplate` par édition/kind/type, rendu
-  `App\Documents\LayoutRenderer` avec variables `{…}`), sinon un **défaut** fixe à la charte
-  UK. Placeholders dispo dans `TemplateDesignerController::VARIABLES` - dont
+  `App\Documents\LayoutRenderer` avec variables `{…}`). ⚠️ **Plus aucun repli implicite** :
+  tout document vient d'un modèle **enregistré**, créé au besoin par
+  **`DocumentTemplate::ensureFor()`** à partir de `LayoutSanitizer::default()`. Les anciennes
+  vues de repli (`attestations.document`, `documents.badges`, `pdf.attestation`) ont été
+  **supprimées** - ne pas les réintroduire : un document que l'admin ne peut ni voir ni
+  modifier dans le back-office est un piège. Supprimer un modèle le **réinitialise**. Placeholders dispo dans `TemplateDesignerController::VARIABLES` - dont
   **`{communication}` / `{communication_ref}`** pour nommer la communication, et
   **`{formation}` / `{formation_theme}` / `{formateurs}`** pour une attestation de
   formation. **Signatures des formateurs** : élément de mise en page **`signatures`**

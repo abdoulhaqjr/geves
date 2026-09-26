@@ -56,7 +56,13 @@ class DocumentHubController extends Controller
         $rows = [];
         if ($edition) {
             $formationCounts = $this->formationTargetCounts($edition);
-            // Modèles enregistrés (libellé personnalisé + suppression possible).
+            // Chaque type a un modèle ENREGISTRÉ (créé ici au besoin à partir de la
+            // mise en page standard) : il n'y a plus de repli implicite, donc tous
+            // sont visibles, modifiables et supprimables de la même façon.
+            foreach (array_keys($typeMeta) as $key) {
+                DocumentTemplate::ensureFor((int) $edition->id, 'attestation', $key, $typeMeta[$key]['title']);
+            }
+
             $templates = DocumentTemplate::where('edition_id', $edition->id)
                 ->where('kind', 'attestation')
                 ->get()->keyBy('type');

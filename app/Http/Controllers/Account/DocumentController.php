@@ -112,10 +112,11 @@ class DocumentController extends Controller
      */
     private function renderBadge(Edition $edition, $account, Participant $participant, string $badgeRef, string $badgeRole): array
     {
-        $template = DocumentTemplate::where('edition_id', $edition->id)
-            ->where('kind', 'badge')->where('type', 'default')->first();
+        // Modèle enregistré (créé au besoin) : le badge du participant et la planche
+        // admin rendent ainsi strictement la même mise en page.
+        $template = DocumentTemplate::ensureFor((int) $edition->id, 'badge');
 
-        $layout = LayoutSanitizer::sanitize($template?->layout ?? [], 'badge', 'default');
+        $layout = LayoutSanitizer::sanitize((array) $template->layout, 'badge', 'default');
 
         $photoSrc = $account->photo_path ? Storage::url($account->photo_path) : '';
         $verifyUrl = url('/verifier?ref='.urlencode($badgeRef).'&pid='.$participant->id.'&ed='.$edition->id);

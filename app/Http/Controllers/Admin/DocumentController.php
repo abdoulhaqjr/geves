@@ -160,32 +160,25 @@ class DocumentController extends Controller
 
         $participants = $query->orderBy('last_name')->get();
 
-        // Modèle de badge personnalisé de l'édition ?
-        $template = DocumentTemplate::where('edition_id', $edition->id)
-            ->where('kind', 'badge')->where('type', 'default')->first();
+        // Toujours un modèle enregistré (créé au besoin) : plus de planche de repli
+        // que l'admin ne pouvait ni voir ni modifier.
+        $template = DocumentTemplate::ensureFor((int) $edition->id, 'badge');
 
-        if ($template && $template->layout) {
-            $layout = LayoutSanitizer::sanitize($template->layout, 'badge');
-            $badges = $participants->map(fn ($p) => LayoutRenderer::render($layout, [
-                'org' => $edition->colloque?->name ?? '',
-                'event' => $edition->title ?? '',
-                'year' => (string) ($edition->year ?: ''),
-                'name' => $p->full_name,
-                'role' => $p->roleLabel(),
-                'institution' => (string) $p->institution,
-                'ref' => $edition->id.'-'.$p->id,
-            ]));
+        $layout = LayoutSanitizer::sanitize((array) $template->layout, 'badge');
+        $badges = $participants->map(fn ($p) => LayoutRenderer::render($layout, [
+            'org' => $edition->colloque?->name ?? '',
+            'event' => $edition->title ?? '',
+            'year' => (string) ($edition->year ?: ''),
+            'name' => $p->full_name,
+            'role' => $p->roleLabel(),
+            'institution' => (string) $p->institution,
+            'ref' => $edition->id.'-'.$p->id,
+        ]));
 
-            return view('documents.badges-template', [
-                'edition' => $edition,
-                'badges' => $badges,
-                'width' => $layout['width'],
-            ]);
-        }
-
-        return view('documents.badges', [
+        return view('documents.badges-template', [
             'edition' => $edition,
-            'participants' => $participants,
+            'badges' => $badges,
+            'width' => $layout['width'],
         ]);
     }
 }

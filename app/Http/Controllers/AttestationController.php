@@ -12,7 +12,6 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -29,46 +28,36 @@ class AttestationController extends Controller
 
         $verifyUrl = route('attestation.verify', $attestation->uuid);
 
-        // Modèle personnalisé de l'édition pour ce type ? On rend la mise en page.
-        $template = DocumentTemplate::where('edition_id', $attestation->edition_id)
-            ->where('kind', 'attestation')->where('type', $attestation->type)->first();
+        // Tout document vient d'un modèle ENREGISTRÉ (créé au besoin) : plus de
+        // repli implicite à la charte, que l'admin ne pouvait ni voir ni modifier.
+        $template = DocumentTemplate::ensureFor((int) $attestation->edition_id, 'attestation', (string) $attestation->type);
 
-        if ($template && $template->layout) {
-            $layout = LayoutSanitizer::sanitize($template->layout, 'attestation', $attestation->type);
-            $canvas = LayoutRenderer::render($layout, [
-                'org' => $attestation->edition?->colloque?->name ?? '',
-                'event' => $attestation->edition?->title ?? '',
-                'year' => (string) ($attestation->edition?->year ?: ''),
-                'location' => $attestation->edition?->location ?? '',
-                'name' => (string) $attestation->recipient_name,
-                'type' => mb_strtolower($attestation->typeLabel()),
-                'date' => $attestation->issued_at?->format('d/m/Y') ?? '',
-                'ref' => $attestation->uuid,
-                'verify_url' => $verifyUrl,
-                // Communication concernée (attestation de communication) - vide pour les autres types.
-                'communication' => (string) (($attestation->meta ?? [])['communication_title'] ?? ''),
-                'communication_ref' => (string) (($attestation->meta ?? [])['communication_ref'] ?? ''),
-                // Formation concernée (attestation de formation / animation) - vide sinon.
-                'formation' => (string) (($attestation->meta ?? [])['formation_title'] ?? ''),
-                'formation_theme' => (string) (($attestation->meta ?? [])['formation_theme'] ?? ''),
-                'formateurs' => implode(', ', (array) (($attestation->meta ?? [])['formation_trainers'] ?? [])),
-                // Signatures figées à l'émission (élément « signatures » du concepteur).
-                'signatures' => (array) (($attestation->meta ?? [])['formation_signatures'] ?? []),
-            ]);
+        $layout = LayoutSanitizer::sanitize((array) $template->layout, 'attestation', $attestation->type);
+        $canvas = LayoutRenderer::render($layout, [
+            'org' => $attestation->edition?->colloque?->name ?? '',
+            'event' => $attestation->edition?->title ?? '',
+            'year' => (string) ($attestation->edition?->year ?: ''),
+            'location' => $attestation->edition?->location ?? '',
+            'name' => (string) $attestation->recipient_name,
+            'type' => mb_strtolower($attestation->typeLabel()),
+            'date' => $attestation->issued_at?->format('d/m/Y') ?? '',
+            'ref' => $attestation->uuid,
+            'verify_url' => $verifyUrl,
+            // Communication concernée (attestation de communication) - vide pour les autres types.
+            'communication' => (string) (($attestation->meta ?? [])['communication_title'] ?? ''),
+            'communication_ref' => (string) (($attestation->meta ?? [])['communication_ref'] ?? ''),
+            // Formation concernée (attestation de formation / animation) - vide sinon.
+            'formation' => (string) (($attestation->meta ?? [])['formation_title'] ?? ''),
+            'formation_theme' => (string) (($attestation->meta ?? [])['formation_theme'] ?? ''),
+            'formateurs' => implode(', ', (array) (($attestation->meta ?? [])['formation_trainers'] ?? [])),
+            // Signatures figées à l'émission (élément « signatures » du concepteur).
+            'signatures' => (array) (($attestation->meta ?? [])['formation_signatures'] ?? []),
+        ]);
 
-            return view('attestations.document-template', [
-                'attestation' => $attestation,
-                'canvas' => $canvas,
-                'width' => $layout['width'],
-                'verifyUrl' => $verifyUrl,
-            ]);
-        }
-
-        $qr = QrCode::format('svg')->size(150)->margin(0)->generate($verifyUrl);
-
-        return view('attestations.document', [
+        return view('attestations.document-template', [
             'attestation' => $attestation,
-            'qr' => $qr,
+            'canvas' => $canvas,
+            'width' => $layout['width'],
             'verifyUrl' => $verifyUrl,
         ]);
     }
@@ -81,52 +70,39 @@ class AttestationController extends Controller
 
         $verifyUrl = route('attestation.verify', $attestation->uuid);
 
-        // Modèle personnalisé enregistré pour ce type ? Le PDF rend cette mise en page.
-        $template = DocumentTemplate::where('edition_id', $attestation->edition_id)
-            ->where('kind', 'attestation')->where('type', $attestation->type)->first();
+        // Même règle que l'aperçu : le PDF rend toujours un modèle enregistré.
+        $template = DocumentTemplate::ensureFor((int) $attestation->edition_id, 'attestation', (string) $attestation->type);
 
-        if ($template && $template->layout) {
-            $layout = LayoutSanitizer::sanitize($template->layout, 'attestation', $attestation->type);
-            $canvas = LayoutRenderer::render($layout, [
-                'org' => $attestation->edition?->colloque?->name ?? '',
-                'event' => $attestation->edition?->title ?? '',
-                'year' => (string) ($attestation->edition?->year ?: ''),
-                'location' => $attestation->edition?->location ?? '',
-                'name' => (string) $attestation->recipient_name,
-                'type' => mb_strtolower($attestation->typeLabel()),
-                'date' => $attestation->issued_at?->format('d/m/Y') ?? '',
-                'ref' => $attestation->uuid,
-                'verify_url' => $verifyUrl,
-                // Communication concernée (attestation de communication) - vide pour les autres types.
-                'communication' => (string) (($attestation->meta ?? [])['communication_title'] ?? ''),
-                'communication_ref' => (string) (($attestation->meta ?? [])['communication_ref'] ?? ''),
-                // Formation concernée (attestation de formation / animation) - vide sinon.
-                'formation' => (string) (($attestation->meta ?? [])['formation_title'] ?? ''),
-                'formation_theme' => (string) (($attestation->meta ?? [])['formation_theme'] ?? ''),
-                'formateurs' => implode(', ', (array) (($attestation->meta ?? [])['formation_trainers'] ?? [])),
-                // Signatures figées à l'émission (élément « signatures » du concepteur).
-                'signatures' => (array) (($attestation->meta ?? [])['formation_signatures'] ?? []),
-            ]);
+        $layout = LayoutSanitizer::sanitize((array) $template->layout, 'attestation', $attestation->type);
+        $canvas = LayoutRenderer::render($layout, [
+            'org' => $attestation->edition?->colloque?->name ?? '',
+            'event' => $attestation->edition?->title ?? '',
+            'year' => (string) ($attestation->edition?->year ?: ''),
+            'location' => $attestation->edition?->location ?? '',
+            'name' => (string) $attestation->recipient_name,
+            'type' => mb_strtolower($attestation->typeLabel()),
+            'date' => $attestation->issued_at?->format('d/m/Y') ?? '',
+            'ref' => $attestation->uuid,
+            'verify_url' => $verifyUrl,
+            // Communication concernée (attestation de communication) - vide pour les autres types.
+            'communication' => (string) (($attestation->meta ?? [])['communication_title'] ?? ''),
+            'communication_ref' => (string) (($attestation->meta ?? [])['communication_ref'] ?? ''),
+            // Formation concernée (attestation de formation / animation) - vide sinon.
+            'formation' => (string) (($attestation->meta ?? [])['formation_title'] ?? ''),
+            'formation_theme' => (string) (($attestation->meta ?? [])['formation_theme'] ?? ''),
+            'formateurs' => implode(', ', (array) (($attestation->meta ?? [])['formation_trainers'] ?? [])),
+            // Signatures figées à l'émission (élément « signatures » du concepteur).
+            'signatures' => (array) (($attestation->meta ?? [])['formation_signatures'] ?? []),
+        ]);
 
-            // Page à la taille exacte de la mise en page (px → points à 96 dpi).
-            $w = (int) $layout['width'];
-            $h = (int) $layout['height'];
+        // Page à la taille exacte de la mise en page (px → points à 96 dpi).
+        $w = (int) $layout['width'];
+        $h = (int) $layout['height'];
 
-            return Pdf::loadView('pdf.attestation-template', [
-                'attestation' => $attestation,
-                'canvas' => $canvas,
-            ])->setPaper([0, 0, $w * 0.75, $h * 0.75])
-                ->download('attestation-'.$attestation->uuid.'.pdf');
-        }
-
-        // Repli : mise en page par défaut (A4 paysage).
-        $qr = QrCode::format('svg')->size(150)->margin(0)->generate($verifyUrl);
-
-        return Pdf::loadView('pdf.attestation', [
+        return Pdf::loadView('pdf.attestation-template', [
             'attestation' => $attestation,
-            'qr' => $qr,
-            'verifyUrl' => $verifyUrl,
-        ])->setPaper('a4', 'landscape')
+            'canvas' => $canvas,
+        ])->setPaper([0, 0, $w * 0.75, $h * 0.75])
             ->download('attestation-'.$attestation->uuid.'.pdf');
     }
 
