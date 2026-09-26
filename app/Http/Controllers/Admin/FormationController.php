@@ -81,7 +81,7 @@ class FormationController extends Controller
         }
 
         if ($request->hasFile('flyer')) {
-            $request->validate(['flyer' => ['file', 'mimes:pdf,png,jpg,jpeg,webp', 'max:8192']]);
+            $request->validate(['flyer' => ['image', 'mimes:png,jpg,jpeg', 'max:8192']]);
             if (filled($formation->flyer_path)) {
                 Storage::disk('public')->delete((string) $formation->flyer_path);
             }

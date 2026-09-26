@@ -1667,6 +1667,7 @@ document.addEventListener('alpine:init', () => {
         over: false,
         file: null,
         size: '',
+        previewUrl: '',
         pick(e) { this.set(e.target.files && e.target.files[0]); },
         drop(e) {
             this.over = false;
@@ -1676,8 +1677,14 @@ document.addEventListener('alpine:init', () => {
                 this.set(dt.files[0]);
             }
         },
-        set(f) { this.file = f || null; this.size = f ? this.fmt(f.size) : ''; },
-        clear() { this.file = null; this.size = ''; this.$refs.input.value = ''; },
+        set(f) {
+            this.revoke();
+            this.file = f || null;
+            this.size = f ? this.fmt(f.size) : '';
+            this.previewUrl = (f && f.type && f.type.indexOf('image/') === 0) ? URL.createObjectURL(f) : '';
+        },
+        clear() { this.revoke(); this.file = null; this.size = ''; this.previewUrl = ''; this.$refs.input.value = ''; },
+        revoke() { if (this.previewUrl && this.previewUrl.indexOf('blob:') === 0) URL.revokeObjectURL(this.previewUrl); },
         fmt(b) { return b > 1048576 ? (b / 1048576).toFixed(1) + ' Mo' : Math.max(1, Math.round(b / 1024)) + ' Ko'; },
     }));
 

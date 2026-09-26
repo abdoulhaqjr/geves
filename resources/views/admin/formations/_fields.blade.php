@@ -3,66 +3,51 @@
     $dt = fn ($k) => $f && $f->$k ? $f->$k->format('Y-m-d\TH:i') : old($k);
 @endphp
 
-<div class="ukc-field">
+<div class="ukc-form-row">
     <label>Titre / thème de la formation <span class="req">*</span></label>
     <input type="text" name="title" value="{{ $val('title') }}" maxlength="200" required placeholder="Ex. Rédaction scientifique et publication">
     @error('title') <span class="error">{{ $message }}</span> @enderror
 </div>
-<div class="ukc-field">
+<div class="ukc-form-row">
     <label>Sous-thème (facultatif)</label>
     <input type="text" name="theme" value="{{ $val('theme') }}" maxlength="255">
 </div>
-<div class="ukc-field">
+<div class="ukc-form-row">
     <label>Objectif</label>
     <textarea name="objective" rows="3" maxlength="5000" placeholder="Objectifs pédagogiques de la formation…">{{ $val('objective') }}</textarea>
 </div>
-<div style="display:flex;gap:10px;flex-wrap:wrap;">
-    <div class="ukc-field" style="flex:1;min-width:150px;">
-        <label>Lieu</label>
-        <input type="text" name="location" value="{{ $val('location') }}" maxlength="200">
-    </div>
-    <div class="ukc-field" style="flex:1;min-width:120px;">
-        <label>Salle</label>
-        <input type="text" name="room" value="{{ $val('room') }}" maxlength="120">
-    </div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+    <div class="ukc-form-row"><label>Lieu</label><input type="text" name="location" value="{{ $val('location') }}" maxlength="200"></div>
+    <div class="ukc-form-row"><label>Salle</label><input type="text" name="room" value="{{ $val('room') }}" maxlength="120"></div>
 </div>
-<div class="ukc-field">
-    <label>Flyer / bannière (image ou PDF)</label>
-    @if ($f && $f->flyerUrl())
-        <div style="font-size:12.5px;margin-bottom:6px;">
-            <a href="{{ $f->flyerUrl() }}" target="_blank" rel="noopener" style="color:var(--ukc-blue);font-weight:600;">Voir le flyer actuel</a>
-            <label class="ukc-check" style="display:inline-flex;gap:6px;margin-left:12px;"><input type="checkbox" name="flyer_remove" value="1"> Retirer</label>
-        </div>
-    @endif
-    <x-ukc.filedrop name="flyer" accept="image/*,application/pdf" :hint="__('Image ou PDF, max 8 Mo')" />
-</div>
-<div style="display:flex;gap:10px;flex-wrap:wrap;">
-    <div class="ukc-field" style="flex:1;min-width:120px;">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+    <div class="ukc-form-row">
         <label>Frais (0 = gratuite)</label>
         <input type="number" name="fee" value="{{ $f ? (float) $f->fee : old('fee', 0) }}" min="0" step="0.01">
         @error('fee') <span class="error">{{ $message }}</span> @enderror
     </div>
-    <div class="ukc-field" style="flex:1;min-width:100px;">
-        <label>Places (facultatif)</label>
-        <input type="number" name="capacity" value="{{ $val('capacity') }}" min="1">
-    </div>
+    <div class="ukc-form-row"><label>Places (facultatif)</label><input type="number" name="capacity" value="{{ $val('capacity') }}" min="1"></div>
 </div>
-<div style="display:flex;gap:10px;flex-wrap:wrap;">
-    <div class="ukc-field" style="flex:1;min-width:150px;">
-        <label>Début</label>
-        <input type="datetime-local" name="starts_at" value="{{ $dt('starts_at') }}">
-    </div>
-    <div class="ukc-field" style="flex:1;min-width:150px;">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+    <div class="ukc-form-row"><label>Début</label><input type="datetime-local" name="starts_at" value="{{ $dt('starts_at') }}"></div>
+    <div class="ukc-form-row">
         <label>Fin</label>
         <input type="datetime-local" name="ends_at" value="{{ $dt('ends_at') }}">
         @error('ends_at') <span class="error">{{ $message }}</span> @enderror
     </div>
 </div>
-<label class="ukc-check" style="display:flex;align-items:center;gap:8px;margin:4px 0;cursor:pointer;">
-    <input type="checkbox" name="published" value="1" @checked($f ? $f->published : old('published'))>
-    <span>Formation <strong>active</strong> (sinon brouillon)</span>
-</label>
-<label class="ukc-check" style="display:flex;align-items:center;gap:8px;margin:4px 0 14px;cursor:pointer;">
-    <input type="checkbox" name="public" value="1" @checked($f ? $f->public : old('public'))>
-    <span>Afficher sur la <strong>page publique</strong> de l’événement</span>
-</label>
+
+{{-- Bannière (image) : image enregistrée affichée + aperçu du nouveau fichier (composant filedrop) --}}
+<div class="ukc-form-row">
+    <label>Bannière (image PNG ou JPG)</label>
+    @if ($f && $f->flyerUrl())
+        <img src="{{ $f->flyerUrl() }}" alt="Bannière" style="max-height:130px;width:100%;object-fit:cover;border-radius:8px;border:1px solid var(--ukc-border,#e5e7eb);margin-bottom:8px;">
+        <label class="ukc-check" style="display:inline-flex;align-items:center;gap:6px;margin-bottom:8px;font-size:12.5px;cursor:pointer;"><input type="checkbox" name="flyer_remove" value="1"> Retirer la bannière</label>
+    @endif
+    <x-ukc.filedrop name="flyer" accept="image/png,image/jpeg" :hint="__('PNG ou JPG, max 8 Mo')" />
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:2px;">
+    <label class="ukc-check" style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" name="published" value="1" @checked($f ? $f->published : old('published'))> <span>Formation <strong>active</strong></span></label>
+    <label class="ukc-check" style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" name="public" value="1" @checked($f ? $f->public : old('public'))> <span>Sur la <strong>page publique</strong></span></label>
+</div>

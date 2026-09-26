@@ -1,7 +1,7 @@
 <x-layouts.admin title="Formations" subtitle="Formations d'une édition - formateurs, frais, lieu, dates, inscriptions, e-mails, attestations et visio.">
     <div class="admin-page admin-formations" x-data="{ formOpen: false }">
         <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
-            <div class="ukc-field" style="max-width:340px;margin:0;">
+            <div class="ukc-field" style="max-width:460px;width:100%;margin:0;">
                 <label>Édition</label>
                 <select onchange="window.location='{{ route('admin.formations') }}?edition_id='+this.value">
                     <option value="">- Choisir -</option>
@@ -151,11 +151,15 @@
                         {{-- Slideover : modifier la formation --}}
                         <x-ukc.slideover open="editOpen" onClose="editOpen = false" width="520px">
                             <x-slot:header>Modifier la formation</x-slot:header>
-                            <form method="POST" action="{{ route('admin.formations.update', $f) }}" enctype="multipart/form-data">
+                            <form method="POST" action="{{ route('admin.formations.update', $f) }}" enctype="multipart/form-data" id="formEdit{{ $f->id }}">
                                 @csrf @method('PUT')
                                 @include('admin.formations._fields', ['f' => $f])
-                                <button type="submit" class="ukc-btn ukc-btn--blue" style="width:100%;"><x-ukc.icon name="check" :size="16" /> Enregistrer</button>
                             </form>
+                            <x-slot:footer>
+                                <span style="flex:1;"></span>
+                                <button type="button" class="ukc-btn ukc-btn--ghost" @click="editOpen = false">Annuler</button>
+                                <button type="submit" form="formEdit{{ $f->id }}" class="ukc-btn ukc-btn--blue">Enregistrer</button>
+                            </x-slot:footer>
                         </x-ukc.slideover>
                     </div>
                 @empty
@@ -166,7 +170,7 @@
             {{-- Slideover : nouvelle formation (+ paramétrage assisté IA) --}}
             <x-ukc.slideover open="formOpen" onClose="formOpen = false" width="520px">
                 <x-slot:header>Nouvelle formation</x-slot:header>
-                <form method="POST" action="{{ route('admin.formations.store', $edition) }}" enctype="multipart/form-data">
+                <form method="POST" action="{{ route('admin.formations.store', $edition) }}" enctype="multipart/form-data" id="formationCreate">
                     @csrf
                     @if ($aiAvailable)
                         <div x-data="{ prompt: '', busy: false, msg: '', async run() { const form = $root.closest('form'); const fd = new FormData(); const files = $refs.aiFiles.files; for (const f of files) fd.append('aiFiles[]', f); if (this.prompt.trim()) fd.append('aiPrompt', this.prompt); if (!files.length && !this.prompt.trim()) { this.msg = 'Ajoutez un document ou une consigne.'; return; } this.busy = true; this.msg = ''; try { const t = form.querySelector('input[name=_token]')?.value; const r = await fetch('{{ route('admin.formations.ai') }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': t, 'Accept': 'application/json' }, body: fd }); const d = await r.json(); if (d.ok) { for (const [k, v] of Object.entries(d.fields || {})) { const el = form.querySelector('[name=\'' + k + '\']'); if (el) el.value = v; } this.msg = d.message || 'Appliqué.'; } else { this.msg = d.message || 'Échec.'; } } catch (e) { this.msg = 'Erreur réseau.'; } this.busy = false; } }"
@@ -182,8 +186,12 @@
                         </div>
                     @endif
                     @include('admin.formations._fields', ['f' => null])
-                    <button type="submit" class="ukc-btn ukc-btn--blue" style="width:100%;"><x-ukc.icon name="book" :size="16" /> Créer la formation</button>
                 </form>
+                <x-slot:footer>
+                    <span style="flex:1;"></span>
+                    <button type="button" class="ukc-btn ukc-btn--ghost" @click="formOpen = false">Annuler</button>
+                    <button type="submit" form="formationCreate" class="ukc-btn ukc-btn--blue"><x-ukc.icon name="book" :size="15" /> Créer</button>
+                </x-slot:footer>
             </x-ukc.slideover>
         @endif
     </div>
