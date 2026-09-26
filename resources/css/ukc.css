@@ -6,6 +6,12 @@
 
 [x-cloak] { display: none !important; }
 
+/* Sélection de texte : paire de couleurs IMPOSÉE. Sans cela, la sélection
+   hérite de la couleur du texte - un libellé blanc (barre latérale, en-têtes
+   sombres) devenait illisible une fois sélectionné. */
+::selection { background: #223ea4; color: #fff; }
+::-moz-selection { background: #223ea4; color: #fff; }
+
 :root {
   /* Pas de police monospace dans le projet (décision) : les « codes »/références
      utilisent la police normale. Ce token pointe donc sur la police courante. */
