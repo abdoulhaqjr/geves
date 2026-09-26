@@ -60,16 +60,20 @@
                             @php($avatar = 'width:42px;height:42px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;')
                             @php($tin = 'border:1.5px solid var(--ukc-border,#cbd5e1);border-radius:10px;padding:9px 12px;font-size:13.5px;background:#fff;min-width:0;width:100%;')
                             @forelse ($f->trainers as $t)
-                                <div x-data="formationTrainer({ photo: @js($t->photoUrl()), uploadUrl: '{{ route('admin.formations.trainers.photo', [$f, $t]) }}' })" style="padding:5px 0;">
+                                <div x-data="formationTrainer({ photo: @js($t->photoUrl()), uploadUrl: '{{ route('admin.formations.trainers.photo', [$f, $t]) }}' })" style="padding:6px 0;">
                                     <div style="display:flex;align-items:center;gap:10px;">
                                         {{-- Avatar cliquable : change la photo (AJAX + barre de progression) --}}
                                         <label title="Cliquer pour changer la photo" style="{{ $avatar }}cursor:pointer;background:linear-gradient(135deg,var(--ukc-blue,#223ea4),var(--ukc-green,#009933));color:#fff;font-weight:700;">
                                             <template x-if="photo"><img :src="photo" alt="" style="width:100%;height:100%;object-fit:cover;"></template>
                                             <template x-if="!photo"><span style="font-size:15px;">{{ $t->initials() }}</span></template>
                                             <input type="file" accept="image/png,image/jpeg" @change="uploadPhoto($event)" :disabled="uploading" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
-                                            {{-- Overlay de progression --}}
-                                            <div x-show="uploading" x-cloak style="position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;">
-                                                <div :style="'height:4px;background:var(--ukc-gold,#ffd700);width:'+progress+'%;transition:width .15s;'"></div>
+                                            {{-- Overlay de progression (vert institution, centré) - x-show sur wrapper --}}
+                                            <div x-show="uploading" x-cloak style="position:absolute;inset:0;">
+                                                <div style="position:absolute;inset:0;background:rgba(255,255,255,.72);display:flex;align-items:center;justify-content:center;">
+                                                    <div style="width:72%;height:5px;border-radius:3px;background:rgba(0,0,0,.18);overflow:hidden;">
+                                                        <div :style="'height:100%;background:var(--ukc-green,#009933);width:'+progress+'%;transition:width .15s;'"></div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </label>
                                         <div style="flex:1;min-width:0;">
@@ -83,20 +87,22 @@
                                             <button type="submit" class="ukc-btn--icon" title="Retirer" aria-label="Retirer le formateur"><x-ukc.icon name="close" :size="14" /></button>
                                         </form>
                                     </div>
-                                    {{-- Édition en ligne des informations du formateur --}}
-                                    <form x-show="editing" x-cloak method="POST" action="{{ route('admin.formations.trainers.update', [$f, $t]) }}"
-                                          style="margin-top:8px;display:grid;grid-template-columns:110px minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.3fr) auto;gap:8px;align-items:center;">
-                                        @csrf @method('PUT')
-                                        <input type="text" name="title" value="{{ $t->title }}" placeholder="Grade" list="trainerTitles{{ $f->id }}" maxlength="40" style="{{ $tin }}">
-                                        <input type="text" name="name" value="{{ $t->name }}" placeholder="Nom *" required maxlength="200" style="{{ $tin }}">
-                                        <input type="text" name="specialty" value="{{ $t->specialty }}" placeholder="Spécialité / fonction" maxlength="200" style="{{ $tin }}">
-                                        <input type="email" name="email" value="{{ $t->email }}" placeholder="E-mail (facultatif)" maxlength="200" style="{{ $tin }}">
-                                        <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm" style="white-space:nowrap;">Enregistrer</button>
-                                        <label style="grid-column:1/-1;display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ukc-muted);">
-                                            <input type="hidden" name="is_moderator" value="0">
-                                            <input type="checkbox" name="is_moderator" value="1" @checked($t->is_moderator)> Modérateur (visio)
-                                        </label>
-                                    </form>
+                                    {{-- Édition en ligne (une seule ligne, comme l'ajout) - x-show sur wrapper pour garder le grid --}}
+                                    <div x-show="editing" x-cloak style="margin-top:8px;">
+                                        <form method="POST" action="{{ route('admin.formations.trainers.update', [$f, $t]) }}"
+                                              style="display:grid;grid-template-columns:110px minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.3fr) auto auto;gap:8px;align-items:center;">
+                                            @csrf @method('PUT')
+                                            <input type="text" name="title" value="{{ $t->title }}" placeholder="Grade" list="trainerTitles{{ $f->id }}" maxlength="40" style="{{ $tin }}">
+                                            <input type="text" name="name" value="{{ $t->name }}" placeholder="Nom *" required maxlength="200" style="{{ $tin }}">
+                                            <input type="text" name="specialty" value="{{ $t->specialty }}" placeholder="Spécialité / fonction" maxlength="200" style="{{ $tin }}">
+                                            <input type="email" name="email" value="{{ $t->email }}" placeholder="E-mail (facultatif)" maxlength="200" style="{{ $tin }}">
+                                            <label title="Modérateur (visio)" style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ukc-muted);white-space:nowrap;">
+                                                <input type="hidden" name="is_moderator" value="0">
+                                                <input type="checkbox" name="is_moderator" value="1" @checked($t->is_moderator)> Modér.
+                                            </label>
+                                            <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm" style="white-space:nowrap;">Enregistrer</button>
+                                        </form>
+                                    </div>
                                 </div>
                             @empty
                                 <p style="font-size:12.5px;color:var(--ukc-light);margin:0;">Aucun formateur.</p>
