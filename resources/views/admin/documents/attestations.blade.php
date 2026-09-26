@@ -1,5 +1,5 @@
 <x-layouts.admin title="Documents" :subtitle="$edition ? 'Édition active · '.($edition->title ?: $edition->year) : 'Attestations, badges & livre des résumés'">
-    <div class="admin-page admin-documents" x-data="{ page: new URLSearchParams(window.location.search).get('tab') || 'attestations', att: new URLSearchParams(window.location.search).get('att') || 'list', badge: 'list', livre: 'main' }">
+    <div class="admin-page admin-documents" x-data="{ page: new URLSearchParams(window.location.search).get('tab') || 'attestations', badge: 'list', livre: 'main' }">
         {{-- Sélecteur d'édition partagé + vérification publique --}}
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
             <div class="ukc-field" style="max-width:340px;margin:0;">
@@ -25,17 +25,22 @@
 
             {{-- ======================= ATTESTATIONS ======================= --}}
             <div x-show="page==='attestations'">
+                {{-- Sous-onglets portés par l'URL (?tab=attestations&stab=…) : chaque
+                     onglet a son lien, et « délivrées » garde filtres/tri/pagination. --}}
+                @php($stabBase = ['edition_id' => $edition->id, 'tab' => 'attestations'])
                 <div class="ukc-tabs">
-                    <button type="button" @click="att='list'" :class="{ active: att==='list' }">Liste des attestations</button>
-                    {{-- Sous-onglet servi par sa propre route : il garde ses filtres,
-                         son tri et sa pagination. --}}
-                    <a href="{{ route('admin.attestations.index', ['edition_id' => $edition->id]) }}">
+                    <a href="{{ route('admin.documents.attestations', $stabBase + ['stab' => 'modeles']) }}" @class(['active' => $stab === 'modeles'])>Modèles</a>
+                    <a href="{{ route('admin.documents.attestations', $stabBase + ['stab' => 'delivrees']) }}" @class(['active' => $stab === 'delivrees'])>
                         Attestations délivrées <span class="nav-count">{{ $counts['issued'] }}</span>
                     </a>
-                    <button type="button" @click="att='options'" :class="{ active: att==='options' }">Options générales</button>
+                    <a href="{{ route('admin.documents.attestations', $stabBase + ['stab' => 'options']) }}" @class(['active' => $stab === 'options'])>Options générales</a>
                 </div>
 
-                <div x-show="att==='list'">
+                @if ($stab === 'delivrees')
+                    @include('admin.documents._issued')
+                @endif
+
+                @if ($stab === 'modeles')
                     <div class="ukc-toolbar">
                         <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="{{ route('admin.documents.templates', ['edition_id' => $edition->id, 'kind' => 'attestation']) }}">
                             <x-ukc.icon name="plus" :size="16" /> Nouveau template
@@ -81,10 +86,10 @@
                             </tbody>
                         </table>
                     </div>
-                </div>
+                @endif
 
                 {{-- Options générales attestations --}}
-                <div x-show="att==='options'" x-cloak>
+                <div @if ($stab !== 'options') style="display:none;" @endif>
                     <form method="POST" action="{{ route('admin.documents.attestations.options') }}" data-ajax data-ajax-msg="Options des attestations enregistrées." class="ukc-card" style="max-width:640px;">
                         <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                         @csrf

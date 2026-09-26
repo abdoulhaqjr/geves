@@ -72,6 +72,11 @@ class DocumentHubController extends Controller
             'axes' => count($edition->settings['tracks'] ?? []),
         ] : ['participants' => 0, 'accepted' => 0, 'issued' => 0, 'sessions' => 0, 'axes' => 0];
 
+        // Sous-onglet de l'onglet Attestations, porté par l'URL (?stab=) pour que
+        // chaque onglet ait son lien : modeles | delivrees | options.
+        $stab = (string) $request->query('stab', 'modeles');
+        $stab = in_array($stab, ['modeles', 'delivrees', 'options'], true) ? $stab : 'modeles';
+
         return view('admin.documents.attestations', [
             'editions' => $this->accessibleEditions($request, 'documents'),
             'edition' => $edition,
@@ -80,6 +85,8 @@ class DocumentHubController extends Controller
             'attestations' => $attestations,
             'rows' => $rows,
             'counts' => $counts,
+            'stab' => $stab,
+            ...($stab === 'delivrees' ? $this->issuedList($request, $edition) : []),
             'opts' => [
                 'attPrefix' => (string) EditionSettings::get($edition, 'attestations.prefix', 'UKC-ATT-2026-'),
                 'attAuto' => (bool) EditionSettings::get($edition, 'attestations.auto', true),
@@ -375,10 +382,27 @@ class DocumentHubController extends Controller
      * l'édition (bénéficiaire, type, date, état) avec révocation / rétablissement.
      * L'émission et les templates restent gérés dans le hub Documents.
      */
-    public function issued(Request $request): View
+    /**
+     * Ancienne route dédiée : redirige vers le sous-onglet canonique
+     * `/admin/documents?tab=attestations&stab=delivrees` (une seule URL par
+     * onglet), en conservant les filtres éventuels.
+     */
+    public function issued(Request $request): RedirectResponse
     {
-        $edition = $this->currentEdition($request);
+        return redirect()->route('admin.documents.attestations', array_merge(
+            $request->only('edition_id', 'type', 'state', 'sort', 'dir', 'page'),
+            ['tab' => 'attestations', 'stab' => 'delivrees'],
+        ));
+    }
 
+    /**
+     * Données du sous-onglet « Attestations délivrées » (liste filtrable, triable
+     * et paginée). Servi par la page Documents pour que l'onglet ait une URL.
+     *
+     * @return array<string, mixed>
+     */
+    private function issuedList(Request $request, ?Edition $edition): array
+    {
         $query = $edition ? Attestation::where('edition_id', $edition->id) : Attestation::query()->whereRaw('1 = 0');
 
         if (($type = (string) $request->query('type', '')) !== '' && array_key_exists($type, Attestation::TYPES)) {
@@ -397,7 +421,7 @@ class DocumentHubController extends Controller
             'desc'
         );
 
-        $attestations = $query->with('participant')
+        $issued = $query->with('participant')
             ->orderBy($sort['sort'], $sort['dir'])
             ->orderBy('id', 'desc')
             ->paginate(20)->withQueryString();
@@ -410,18 +434,14 @@ class DocumentHubController extends Controller
                 ->selectRaw('type, count(*) as c')->groupBy('type')->pluck('c', 'type'),
         ] : ['total' => 0, 'valid' => 0, 'revoked' => 0, 'byType' => collect()];
 
-        return view('admin.attestations.index', [
-            'editions' => $this->accessibleEditions($request, 'documents'),
-            'edition' => $edition,
-            'edition_id' => $edition ? (string) $edition->id : '',
-            'types' => Attestation::TYPES,
+        return [
+            'issued' => $issued,
+            'issuedStats' => $stats,
             'type' => $type,
             'state' => $state,
             'sort' => $sort['sort'],
             'dir' => $sort['dir'],
-            'attestations' => $attestations,
-            'stats' => $stats,
-        ]);
+        ];
     }
 
     /**

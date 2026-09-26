@@ -215,11 +215,46 @@ it('affiche le hub Documents fidèle au mockup (volets + table par type)', funct
     $this->actingAs($staff, 'web')
         ->get(route('admin.documents.attestations', ['edition_id' => $edition->id]))
         ->assertOk()
-        ->assertSee('Liste des attestations')
+        ->assertSee('Modèles')
+        ->assertSee('Attestations délivrées')
         ->assertSee('Options générales')
         ->assertSee('Livre des résumés')
         ->assertSee('Attestation de participation')
         ->assertSee('Destinataires', false);
+});
+
+it('sert chaque sous-onglet des attestations par son URL (?stab=)', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+    $base = ['edition_id' => $edition->id, 'tab' => 'attestations'];
+
+    // Modèles (défaut) : la table des types d'attestation.
+    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['stab' => 'modeles']))
+        ->assertOk()
+        ->assertSee('Attestation de participation')
+        ->assertSee('Émission idempotente');
+
+    // Délivrées : la liste filtrable, sur la MÊME url (le panneau Modèles n'est
+    // alors pas rendu du tout).
+    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['stab' => 'delivrees']))
+        ->assertOk()
+        ->assertSee('Bénéficiaire')
+        ->assertDontSee('Émission idempotente');
+
+    // Options.
+    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['stab' => 'options']))
+        ->assertOk()->assertSee('Options générales · Attestations');
+});
+
+it('redirige l’ancienne page des attestations délivrées vers le sous-onglet', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+
+    $this->actingAs($staff, 'web')
+        ->get(route('admin.attestations.index', ['edition_id' => $edition->id]))
+        ->assertRedirect(route('admin.documents.attestations', [
+            'edition_id' => $edition->id, 'tab' => 'attestations', 'stab' => 'delivrees',
+        ]));
 });
 
 it('persiste l’avant-propos du livre dans les réglages et l’injecte au .docx', function () {
