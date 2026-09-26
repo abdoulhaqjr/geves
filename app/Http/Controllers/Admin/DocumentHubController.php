@@ -8,6 +8,7 @@ use App\Documents\AttestationCertifier;
 use App\Http\Controllers\Controller;
 use App\Models\Attestation;
 use App\Models\Edition;
+use App\Models\Formation;
 use App\Models\Participant;
 use App\Models\Submission;
 use App\Support\CommunicationAttestations;
@@ -44,14 +45,22 @@ class DocumentHubController extends Controller
             'communication' => ['title' => 'Attestation de communication', 'sub' => 'Orale / poster', 'scope' => 'Par communication'],
             'participation' => ['title' => 'Attestation de participation', 'sub' => 'Une par participant', 'scope' => 'Participant'],
             'moderation' => ['title' => 'Attestation de modération', 'sub' => 'Sessions', 'scope' => 'Par session'],
+            // Module Formation : les modèles se conçoivent ici, mais l'émission se
+            // fait formation par formation (cf. Admin\FormationController).
+            'formation' => ['title' => 'Attestation de formation', 'sub' => 'Inscrits aux formations', 'scope' => 'Par formation'],
+            'formation_animation' => ['title' => 'Attestation d’animation', 'sub' => 'Formateurs', 'scope' => 'Par formation'],
         ];
 
         $rows = [];
         if ($edition) {
+            $formationCounts = $this->formationTargetCounts($edition);
+
             foreach ($typeMeta as $key => $meta) {
-                $eligible = $key === 'communication'
-                    ? CommunicationAttestations::count($edition)
-                    : $this->targetsFor($edition, $key)->count();
+                $eligible = match ($key) {
+                    'communication' => CommunicationAttestations::count($edition),
+                    'formation', 'formation_animation' => $formationCounts[$key],
+                    default => $this->targetsFor($edition, $key)->count(),
+                };
                 $rows[$key] = [
                     'label' => Attestation::TYPES[$key],
                     'title' => $meta['title'],
@@ -60,6 +69,11 @@ class DocumentHubController extends Controller
                     'eligible' => $eligible,
                     'issued' => $attestations->where('type', $key)->where('revoked', false)->count(),
                     'status' => $eligible > 0 ? 'Actif' : 'Brouillon',
+                    // Émission déportée : ces attestations s'émettent depuis la page
+                    // de chaque formation, pas globalement pour l'édition.
+                    'issueFrom' => in_array($key, ['formation', 'formation_animation'], true)
+                        ? route('admin.formations', ['edition_id' => $edition->id])
+                        : null,
                 ];
             }
         }
@@ -383,19 +397,6 @@ class DocumentHubController extends Controller
      * L'émission et les templates restent gérés dans le hub Documents.
      */
     /**
-     * Ancienne route dédiée : redirige vers le sous-onglet canonique
-     * `/admin/documents?tab=attestations&stab=delivrees` (une seule URL par
-     * onglet), en conservant les filtres éventuels.
-     */
-    public function issued(Request $request): RedirectResponse
-    {
-        return redirect()->route('admin.documents.attestations', array_merge(
-            $request->only('edition_id', 'type', 'state', 'sort', 'dir', 'page'),
-            ['tab' => 'attestations', 'stab' => 'delivrees'],
-        ));
-    }
-
-    /**
      * Données du sous-onglet « Attestations délivrées » (liste filtrable, triable
      * et paginée). Servi par la page Documents pour que l'onglet ait une URL.
      *
@@ -481,8 +482,34 @@ class DocumentHubController extends Controller
         ]);
     }
 
-    /** Participants éligibles pour un type d'attestation donné. */
-    /** @return Collection<int, Participant> */
+    /**
+     * Destinataires potentiels des attestations du module Formation, toutes
+     * formations de l'édition confondues : inscrits éligibles (réglés, ou
+     * inscrits si la formation est gratuite) et formateurs.
+     *
+     * @return array{formation: int, formation_animation: int}
+     */
+    private function formationTargetCounts(Edition $edition): array
+    {
+        $trainees = 0;
+        $trainers = 0;
+
+        foreach (Formation::where('edition_id', $edition->id)->get() as $formation) {
+            $trainees += $formation->enrollments()
+                ->where(fn ($q) => $q->where('status', 'paid')
+                    ->when($formation->isFree(), fn ($q2) => $q2->orWhere('status', 'registered')))
+                ->count();
+            $trainers += $formation->trainers()->count();
+        }
+
+        return ['formation' => $trainees, 'formation_animation' => $trainers];
+    }
+
+    /**
+     * Participants éligibles pour un type d'attestation donné.
+     *
+     * @return Collection<int, Participant>
+     */
     private function targetsFor(Edition $edition, string $type): Collection
     {
         $base = fn () => Participant::where('edition_id', $edition->id);

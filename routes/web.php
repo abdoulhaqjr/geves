@@ -452,7 +452,6 @@ Route::prefix('admin')->group(function () {
         // Documents (attestations, badges, livret, fiches).
         Route::middleware('edition.cap:documents')->group(function () {
             Route::get('/documents', [DocumentHubController::class, 'index'])->name('admin.documents.attestations');
-            Route::get('/attestations', [DocumentHubController::class, 'issued'])->name('admin.attestations.index');
             Route::post('/attestations/emettre', [DocumentHubController::class, 'issueType'])->name('admin.documents.attestations.issue');
             Route::post('/attestations/{attestation}/revoquer', [DocumentHubController::class, 'revoke'])->name('admin.documents.attestations.revoke');
             Route::post('/attestations/{attestation}/retablir', [DocumentHubController::class, 'restore'])->name('admin.documents.attestations.restore');

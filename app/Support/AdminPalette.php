@@ -30,7 +30,7 @@ class AdminPalette
         $push((bool) $staff?->canAnyEdition('editions_read'), 'Créneaux', 'Scientifique', 'clock', route('admin.program.slots'));
         $push((bool) $staff?->canAnyEdition('payments'), 'Paiements', 'Gestion', 'card', route('admin.payments.index'));
         $push((bool) $staff?->canAnyEdition('documents'), 'Documents', 'Gestion', 'folder', route('admin.documents.attestations'));
-        $push((bool) $staff?->canAnyEdition('documents'), 'Attestations délivrées', 'Gestion', 'diploma', route('admin.attestations.index'));
+        $push((bool) $staff?->canAnyEdition('documents'), 'Attestations délivrées', 'Gestion', 'diploma', route('admin.documents.attestations', ['tab' => 'attestations', 'stab' => 'delivrees']));
         $push((bool) $staff?->canAnyEdition('emails'), 'E-mails', 'Gestion', 'mail', route('admin.emails.index'));
         $push((bool) $staff?->canAnyEdition('view_dashboard'), 'Rapports', 'Pilotage', 'chart', route('admin.reports.index'));
         $push((bool) $staff?->canAnyEdition('view_dashboard'), 'Assistant IA', 'Pilotage', 'sparkles', route('admin.ai'));

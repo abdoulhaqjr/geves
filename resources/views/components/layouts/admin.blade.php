@@ -95,8 +95,8 @@
                        @class(['active' => request()->routeIs('admin.documents.*')])>
                         <x-ukc.icon name="folder" :size="18" /> <span class="txt">Documents</span>
                     </a>
-                    <a href="{{ route('admin.attestations.index') }}" title="Attestations délivrées"
-                       @class(['active' => request()->routeIs('admin.attestations.*')])>
+                    <a href="{{ route('admin.documents.attestations', ['tab' => 'attestations', 'stab' => 'delivrees']) }}" title="Attestations délivrées"
+                       @class(['active' => request()->routeIs('admin.documents.attestations') && request()->query('stab') === 'delivrees'])>
                         <x-ukc.icon name="diploma" :size="18" /> <span class="txt">Attestations délivrées</span>
                     </a>
                 @endif
