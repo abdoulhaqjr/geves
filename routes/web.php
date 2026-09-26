@@ -465,6 +465,7 @@ Route::prefix('admin')->group(function () {
             Route::get('/livret/modele-base', [DocumentHubController::class, 'baseTemplate'])->name('admin.documents.livret.base-template');
             Route::get('/modeles', [TemplateDesignerController::class, 'index'])->name('admin.documents.templates');
             Route::post('/modeles/creer', [TemplateDesignerController::class, 'create'])->name('admin.documents.templates.create');
+            Route::delete('/modeles/{template}', [TemplateDesignerController::class, 'destroy'])->name('admin.documents.templates.destroy');
             Route::post('/modeles/generer', [TemplateDesignerController::class, 'generate'])->name('admin.documents.templates.generate');
             Route::post('/modeles/enregistrer', [TemplateDesignerController::class, 'save'])->name('admin.documents.templates.save');
             Route::get('/editions/{edition}/livret', [DocumentController::class, 'livret'])->name('admin.documents.livret');

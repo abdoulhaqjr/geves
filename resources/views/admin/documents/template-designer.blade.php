@@ -16,8 +16,9 @@
 
   <header class="ed-top">
     <button type="button" class="back" onclick="location.href=(window.UKC_EDITOR&&window.UKC_EDITOR.backUrl)||'/admin/attestations'">← Documents</button>
-    <div class="crumb">Attestation de Formation CSIUK25</div>
-    <input class="name-input" id="tplName" value="Attestation de Formation CSIUK25">
+    {{-- Identité du modèle renseignée à sa création (libellé + portée). --}}
+    <div class="crumb">{{ $typeLabel }} · {{ $scope ?? 'Participant' }}</div>
+    <input class="name-input" id="tplName" value="{{ $typeLabel }}">
     <button type="button" class="btn-save" id="btnSave">Save</button>
   </header>
 

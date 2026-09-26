@@ -1,5 +1,5 @@
 <x-layouts.admin title="Documents" :subtitle="$edition ? 'Édition active · '.($edition->title ?: $edition->year) : 'Attestations, badges & livre des résumés'">
-    <div class="admin-page admin-documents" x-data="{ page: new URLSearchParams(window.location.search).get('tab') || 'attestations', badge: 'list', livre: 'main', newAtt: false, newBadge: false }">
+    <div class="admin-page admin-documents" x-data="{ page: new URLSearchParams(window.location.search).get('tab') || 'attestations', badge: 'list', livre: 'main', newAtt: false, newBadge: false, del: null, typed: '' }">
         {{-- Sélecteur d'édition partagé + vérification publique --}}
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
             <div class="ukc-field" style="max-width:340px;margin:0;">
@@ -86,6 +86,12 @@
                                                 @endif
                                                 <a class="ukc-btn--icon" title="Éditer le template" href="{{ route('admin.documents.templates', ['edition_id' => $edition->id, 'kind' => 'attestation', 'type' => $key]) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a>
                                                 <a class="ukc-btn--icon" title="Aperçu" href="{{ route('admin.documents.templates', ['edition_id' => $edition->id, 'kind' => 'attestation', 'type' => $key]) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></a>
+                                                @if ($row['template'])
+                                                    <button type="button" class="ukc-btn--icon" title="Supprimer le modèle"
+                                                            @click="del = { id: {{ $row['template']->id }}, title: @js($row['title']), code: @js(\App\Http\Controllers\Admin\TemplateDesignerController::deleteCode($row['template'])) }; typed = ''">
+                                                        <x-ukc.icon name="trash" :size="16" />
+                                                    </button>
+                                                @endif
                                             </div>
                                         </td>
                                     </tr>
@@ -159,12 +165,21 @@
 
             {{-- ======================= BADGES ======================= --}}
             <div x-show="page==='badges'" x-cloak>
+                {{-- Mêmes URL que les attestations : ?tab=badges&stab=… --}}
+                @php($bBase = ['edition_id' => $edition->id, 'tab' => 'badges'])
                 <div class="ukc-tabs">
-                    <button type="button" @click="badge='list'" :class="{ active: badge==='list' }">Liste des badges</button>
-                    <button type="button" @click="badge='options'" :class="{ active: badge==='options' }">Options générales</button>
+                    <a href="{{ route('admin.documents.attestations', $bBase + ['stab' => 'modeles']) }}" @class(['active' => $tab === 'badges' && $stab === 'modeles'])>Modèles</a>
+                    <a href="{{ route('admin.documents.attestations', $bBase + ['stab' => 'prets']) }}" @class(['active' => $tab === 'badges' && $stab === 'prets'])>
+                        Badges prêts @isset($badgeReady)<span class="nav-count">{{ $badgeReady->total() }}</span>@endisset
+                    </a>
+                    <a href="{{ route('admin.documents.attestations', $bBase + ['stab' => 'options']) }}" @class(['active' => $tab === 'badges' && $stab === 'options'])>Options générales</a>
                 </div>
 
-                <div x-show="badge==='list'">
+                @if ($tab === 'badges' && $stab === 'prets')
+                    @include('admin.documents._badges-ready')
+                @endif
+
+                <div @if ($tab !== 'badges' || $stab !== 'modeles') style="display:none;" @endif>
                     <div class="ukc-toolbar">
                         <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" @click="newBadge = true"><x-ukc.icon name="plus" :size="16" /> Nouveau modèle de badge</button>
                         <span class="sep"></span>
@@ -197,7 +212,7 @@
                     </div>
                 </div>
 
-                <div x-show="badge==='options'" x-cloak>
+                <div @if ($tab !== 'badges' || $stab !== 'options') style="display:none;" @endif>
                     <form method="POST" action="{{ route('admin.documents.badges.options') }}" data-ajax data-ajax-msg="Options des badges enregistrées." class="ukc-card">
                         <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                         @csrf
@@ -486,6 +501,47 @@
                     </form>
                 </div>
             </div>
+            {{-- Suppression d'un modèle : conséquences annoncées + code à retaper.
+                 Le code est aussi revérifié côté serveur (le JS ne protège rien). --}}
+            <x-ukc.slideover open="del" onClose="del = null" width="470px">
+                <x-slot:header>Supprimer un modèle</x-slot:header>
+                <template x-if="del">
+                    <form method="POST" :action="'{{ url('admin/documents/modeles') }}/' + del.id" id="delTplForm">
+                        @csrf @method('DELETE')
+                        <p style="font-size:14px;margin:0 0 12px;">
+                            Vous êtes sur le point de supprimer le modèle <strong x-text="del.title"></strong>.
+                        </p>
+                        <div class="ukc-alert ukc-alert--warn" style="margin-bottom:14px;">
+                            <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
+                            <div style="font-size:13px;">
+                                <strong>Ce que cela fait :</strong>
+                                <ul style="margin:6px 0 0;padding-left:18px;">
+                                    <li>la mise en page personnalisée est <strong>définitivement perdue</strong> ;</li>
+                                    <li>les prochaines émissions utiliseront le <strong>modèle par défaut</strong> à la charte ;</li>
+                                    <li>les attestations <strong>déjà délivrées ne sont pas modifiées</strong> et restent vérifiables.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="ukc-form-row">
+                            <label for="delConfirm">
+                                Pour confirmer, tapez <code x-text="del.code" style="user-select:all;"></code>
+                            </label>
+                            <input type="text" id="delConfirm" name="confirm" x-model="typed" autocomplete="off"
+                                   placeholder="Code de confirmation" required>
+                            @error('confirm') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                    </form>
+                </template>
+                <x-slot:footer>
+                    <span style="flex:1;"></span>
+                    <button type="button" class="ukc-btn ukc-btn--ghost" @click="del = null">Annuler</button>
+                    <button type="submit" form="delTplForm" class="ukc-btn ukc-btn--danger"
+                            :disabled="!del || typed.trim().toUpperCase() !== del.code">
+                        Supprimer définitivement
+                    </button>
+                </x-slot:footer>
+            </x-ukc.slideover>
+
             {{-- Création d'un modèle : on identifie le modèle AVANT d'ouvrir le
                  concepteur (libellé, type, portée déduite, format pour un badge). --}}
             <x-ukc.slideover open="newAtt" onClose="newAtt = false" width="480px">

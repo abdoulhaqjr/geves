@@ -67,7 +67,13 @@ class TemplateDesignerController extends Controller
             'edition_id' => $editionId,
             'kind' => $kind,
             'type' => $type,
-            'typeLabel' => $kind === 'badge' ? 'Badge' : (self::ATTESTATION_TYPES[$type] ?? ucfirst($type)),
+            // Libellé saisi à la création, sinon celui du type.
+            'typeLabel' => filled($existing?->title)
+                ? (string) $existing->title
+                : ($kind === 'badge' ? 'Badge' : (self::ATTESTATION_TYPES[$type] ?? ucfirst($type))),
+            'template' => $existing,
+            'scope' => $kind === 'badge' ? 'Participant' : (self::SCOPES[$type] ?? 'Participant'),
+            'deleteCode' => $existing ? self::deleteCode($existing) : null,
             'layout' => $layout,
             'editorState' => $existing?->editor_state,
             'vars' => $this->sampleVars($editionId, $type),
@@ -133,6 +139,42 @@ class TemplateDesignerController extends Controller
         return redirect()->route('admin.documents.templates', [
             'edition_id' => $data['edition_id'], 'kind' => $kind, 'type' => $type,
         ]);
+    }
+
+    /**
+     * Code à retaper pour confirmer la suppression d'un modèle. Volontairement
+     * dérivé du type (et non aléatoire) : il reste vérifiable côté serveur sans
+     * état de session, et oblige à lire ce qu'on supprime.
+     */
+    public static function deleteCode(DocumentTemplate $template): string
+    {
+        return mb_strtoupper('SUPPRIMER-'.$template->type);
+    }
+
+    /**
+     * Supprime un modèle après confirmation explicite (code retapé). La
+     * suppression ne retire que la **mise en page** : les documents déjà émis ne
+     * sont pas touchés, et le modèle par défaut à la charte reprend la main.
+     */
+    public function destroy(Request $request, DocumentTemplate $template): RedirectResponse
+    {
+        $request->validate(['confirm' => ['required', 'string']]);
+
+        if (mb_strtoupper(trim((string) $request->input('confirm'))) !== self::deleteCode($template)) {
+            return back()->withErrors([
+                'confirm' => 'Code de confirmation incorrect : le modèle n’a pas été supprimé.',
+            ]);
+        }
+
+        $editionId = $template->edition_id;
+        $kind = $template->kind;
+        $template->delete();
+
+        return redirect()->route('admin.documents.attestations', [
+            'edition_id' => $editionId,
+            'tab' => $kind === 'badge' ? 'badges' : 'attestations',
+            'stab' => 'modeles',
+        ])->with('ukc_status', 'Modèle supprimé : la mise en page par défaut s’applique de nouveau.');
     }
 
     /** Génère une mise en page via IA (consigne + image d'inspiration). */

@@ -504,3 +504,46 @@ it('retient le format choisi pour un modèle de badge', function () {
     expect($tpl->format)->toBe('cr80');
     expect($tpl->title)->toBe('Badge');
 });
+
+it('ne supprime un modèle que si le code de confirmation est exact', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+    $tpl = DocumentTemplate::create([
+        'edition_id' => $edition->id, 'kind' => 'attestation', 'type' => 'participation',
+        'title' => 'Attestation de présence', 'layout' => ['width' => 900, 'height' => 640, 'elements' => []],
+    ]);
+
+    // Mauvais code : rien n'est supprimé.
+    $this->actingAs($staff, 'web')
+        ->delete(route('admin.documents.templates.destroy', $tpl), ['confirm' => 'oui'])
+        ->assertSessionHasErrors('confirm');
+    expect(DocumentTemplate::find($tpl->id))->not->toBeNull();
+
+    // Code exact (insensible à la casse).
+    $this->actingAs($staff, 'web')
+        ->delete(route('admin.documents.templates.destroy', $tpl), ['confirm' => 'supprimer-participation'])
+        ->assertRedirect(route('admin.documents.attestations', [
+            'edition_id' => $edition->id, 'tab' => 'attestations', 'stab' => 'modeles',
+        ]));
+    expect(DocumentTemplate::find($tpl->id))->toBeNull();
+});
+
+it('sert les sous-onglets des badges par leur URL, dont « badges prêts »', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+    $edition->participants()->create([
+        'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author',
+    ]);
+    $base = ['edition_id' => $edition->id, 'tab' => 'badges'];
+
+    // Prêts : par défaut seules les inscriptions réglées (aucune ici).
+    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['stab' => 'prets']))
+        ->assertOk()->assertSee('Badges prêts')->assertDontSee('Awa Kodjo');
+
+    // Tous les participants.
+    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['stab' => 'prets', 'paid' => '0']))
+        ->assertOk()->assertSee('Awa Kodjo');
+
+    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['stab' => 'options']))
+        ->assertOk()->assertSee('Options générales · Badges');
+});

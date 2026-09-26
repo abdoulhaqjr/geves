@@ -56,10 +56,11 @@ class DocumentHubController extends Controller
         $rows = [];
         if ($edition) {
             $formationCounts = $this->formationTargetCounts($edition);
-            // Libellés personnalisés saisis à la création du modèle.
-            $customTitles = DocumentTemplate::where('edition_id', $edition->id)
+            // Modèles enregistrés (libellé personnalisé + suppression possible).
+            $templates = DocumentTemplate::where('edition_id', $edition->id)
                 ->where('kind', 'attestation')
-                ->pluck('title', 'type');
+                ->get()->keyBy('type');
+            $customTitles = $templates->map(fn (DocumentTemplate $t) => $t->title);
 
             foreach ($typeMeta as $key => $meta) {
                 $eligible = match ($key) {
@@ -80,6 +81,9 @@ class DocumentHubController extends Controller
                     'issueFrom' => in_array($key, ['formation', 'formation_animation'], true)
                         ? route('admin.formations', ['edition_id' => $edition->id])
                         : null,
+                    // Modèle réellement enregistré (sinon c'est le défaut à la charte,
+                    // qui n'a rien à supprimer).
+                    'template' => $templates[$key] ?? null,
                 ];
             }
         }
@@ -92,10 +96,18 @@ class DocumentHubController extends Controller
             'axes' => count($edition->settings['tracks'] ?? []),
         ] : ['participants' => 0, 'accepted' => 0, 'issued' => 0, 'sessions' => 0, 'axes' => 0];
 
-        // Sous-onglet de l'onglet Attestations, porté par l'URL (?stab=) pour que
-        // chaque onglet ait son lien : modeles | delivrees | options.
+        // Onglet et sous-onglet portés par l'URL (?tab=&stab=) pour que chaque
+        // onglet ait son lien. Le jeu de sous-onglets dépend de l'onglet.
+        $tab = (string) $request->query('tab', 'attestations');
+        $tab = in_array($tab, ['attestations', 'badges', 'livre'], true) ? $tab : 'attestations';
+
+        $allowed = match ($tab) {
+            'badges' => ['modeles', 'prets', 'options'],
+            'attestations' => ['modeles', 'delivrees', 'options'],
+            default => ['modeles'],
+        };
         $stab = (string) $request->query('stab', 'modeles');
-        $stab = in_array($stab, ['modeles', 'delivrees', 'options'], true) ? $stab : 'modeles';
+        $stab = in_array($stab, $allowed, true) ? $stab : 'modeles';
 
         return view('admin.documents.attestations', [
             'editions' => $this->accessibleEditions($request, 'documents'),
@@ -105,8 +117,10 @@ class DocumentHubController extends Controller
             'attestations' => $attestations,
             'rows' => $rows,
             'counts' => $counts,
+            'tab' => $tab,
             'stab' => $stab,
-            ...($stab === 'delivrees' ? $this->issuedList($request, $edition) : []),
+            ...($tab === 'attestations' && $stab === 'delivrees' ? $this->issuedList($request, $edition) : []),
+            ...($tab === 'badges' && $stab === 'prets' ? $this->badgeReadyList($request, $edition) : []),
             'opts' => [
                 'attPrefix' => (string) EditionSettings::get($edition, 'attestations.prefix', 'UKC-ATT-2026-'),
                 'attAuto' => (bool) EditionSettings::get($edition, 'attestations.auto', true),
@@ -513,6 +527,45 @@ class DocumentHubController extends Controller
             'Content-Type' => 'application/msword; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="ukc-livre-base.doc"',
         ]);
+    }
+
+    /**
+     * Sous-onglet « Badges prêts » : les participants de l'édition dont le badge
+     * peut être imprimé. Un badge n'est pas stocké (il est rendu à la demande à
+     * partir du modèle) : « prêt » signifie donc « participant éligible ».
+     *
+     * @return array<string, mixed>
+     */
+    private function badgeReadyList(Request $request, ?Edition $edition): array
+    {
+        $query = $edition
+            ? Participant::where('edition_id', $edition->id)
+            : Participant::query()->whereRaw('1 = 0');
+
+        // Par défaut on ne montre que les inscriptions réglées : ce sont elles dont
+        // le badge est réellement à imprimer.
+        $paidOnly = $request->query('paid', '1') !== '0';
+        if ($paidOnly) {
+            $query->whereHas('payments', fn ($q) => $q->where('status', 'paid'));
+        }
+
+        $badgeSearch = trim((string) $request->query('bsearch', ''));
+        if ($badgeSearch !== '') {
+            $term = '%'.$badgeSearch.'%';
+            $query->where(fn ($q) => $q->where('first_name', 'like', $term)
+                ->orWhere('last_name', 'like', $term)
+                ->orWhere('email', 'like', $term));
+        }
+
+        return [
+            'badgeReady' => $query->orderBy('last_name')->orderBy('first_name')
+                ->paginate(20)->withQueryString(),
+            'badgePaidOnly' => $paidOnly,
+            'badgeSearch' => $badgeSearch,
+            'badgeTemplate' => $edition
+                ? DocumentTemplate::where('edition_id', $edition->id)->where('kind', 'badge')->first()
+                : null,
+        ];
     }
 
     /**
