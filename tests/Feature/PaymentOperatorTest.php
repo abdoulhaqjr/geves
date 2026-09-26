@@ -118,3 +118,18 @@ it('enregistre l’opérateur choisi lors de l’inscription payante à une form
 
     expect(Payment::first()->meta['operator'])->toBe('moov_tg');
 });
+
+it('garde l’édition sélectionnée quand on change un filtre sur la page Paiements', function () {
+    $edition = openEdition();
+    $other = openEdition();
+    Payment::create(['edition_id' => $edition->id, 'amount' => 111, 'method' => 'cash', 'gateway' => 'manual', 'status' => 'pending']);
+    Payment::create(['edition_id' => $other->id, 'amount' => 222, 'method' => 'cash', 'gateway' => 'manual', 'status' => 'pending']);
+
+    // Le sélecteur d'édition est en tête, et le formulaire de filtres le reporte
+    // (champ caché) : filtrer par statut ne doit pas élargir le périmètre.
+    $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.payments.index', ['edition_id' => $edition->id, 'status' => 'pending']))
+        ->assertOk()
+        ->assertSee('111')
+        ->assertDontSee('222');
+});

@@ -16,8 +16,20 @@
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="chart" :size="20" /></div><div class="lbl">Taux de conversion</div><div class="val blue">{{ $stats['rate'] }} %</div><div class="hint">inscriptions → payées</div></div>
         </div>
 
-        {{-- Filtres (GET) --}}
-        <form method="GET" class="filter-bar">
+        {{-- Sélecteur d'édition en tête, comme la page Projet. --}}
+        <div style="max-width:340px;margin-bottom:16px;">
+            <div class="ukc-field" style="margin:0;">
+                <label>Édition</label>
+                <select onchange="window.location='{{ route('admin.payments.index') }}?edition_id='+this.value">
+                    <option value="">Toutes les éditions</option>
+                    @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
+                </select>
+            </div>
+        </div>
+
+        {{-- Filtres (GET) - une seule ligne, qui défile plutôt que de se replier. --}}
+        <form method="GET" class="filter-bar filter-bar--inline">
+            <input type="hidden" name="edition_id" value="{{ $edition_id }}">
             <select name="status" onchange="this.form.submit()">
                 <option value="">Tous les statuts</option>
                 @foreach ($statuses as $key => $label)<option value="{{ $key }}" @selected($status === $key)>{{ $label }}</option>@endforeach
@@ -34,17 +46,12 @@
                     </optgroup>
                 @endforeach
             </select>
-            <select name="edition_id" onchange="this.form.submit()">
-                <option value="">Toutes les éditions</option>
-                @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
-            </select>
-            <input type="search" name="search" value="{{ $search }}" placeholder="Nom, e-mail, référence…" style="min-width:200px;"
+            <input type="search" name="search" value="{{ $search }}" placeholder="Nom, e-mail, référence…" style="min-width:200px;flex:1;"
                    onkeydown="if(event.key==='Enter'){this.form.submit();}">
-            <span class="sep" style="width:1px;height:24px;background:var(--ukc-border);align-self:center;"></span>
-            <input type="date" name="from" value="{{ $from }}" title="Du" onchange="this.form.submit()">
-            <input type="date" name="to" value="{{ $to }}" title="Au" onchange="this.form.submit()">
-            @if ($search !== '' || $status !== '' || $edition_id !== '' || $method !== '' || $flow !== '' || $from !== '' || $to !== '')
-                <a href="{{ route('admin.payments.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
+            <input type="date" name="from" value="{{ $from }}" title="Émis à partir du" onchange="this.form.submit()">
+            <input type="date" name="to" value="{{ $to }}" title="Émis jusqu’au" onchange="this.form.submit()">
+            @if ($search !== '' || $status !== '' || $method !== '' || $flow !== '' || $from !== '' || $to !== '')
+                <a href="{{ route('admin.payments.index', ['edition_id' => $edition_id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
             @endif
         </form>
 
@@ -135,7 +142,12 @@
                         </tbody>
                     </table>
                 </div>
-                <div style="padding:14px 18px;">{{ $payments->links() }}</div>
+                <div style="padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                    <span style="font-size:12.5px;color:var(--ukc-muted);">
+                        {{ $payments->firstItem() }}–{{ $payments->lastItem() }} sur {{ $payments->total() }} paiement(s)
+                    </span>
+                    @if ($payments->hasPages())<div>{{ $payments->links() }}</div>@endif
+                </div>
             @else
                 <div class="ukc-empty">
                     <h3>Aucun paiement</h3>
