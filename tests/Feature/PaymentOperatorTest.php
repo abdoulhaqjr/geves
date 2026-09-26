@@ -41,6 +41,45 @@ it('mémorise l’opérateur choisi sur le paiement et l’oublie si vidé', fun
     expect($payment->fresh()->meta)->not->toHaveKey('operator');
 });
 
+it('distingue la nature des paiements et nomme la formation concernée', function () {
+    $edition = openEdition(['formation_enabled' => true]);
+    $formation = publishedFormation($edition, 10000);
+
+    $participation = Payment::create(['edition_id' => $edition->id, 'amount' => 1, 'method' => 'cash', 'gateway' => 'manual']);
+    $forma = Payment::create([
+        'edition_id' => $edition->id, 'amount' => 2, 'method' => 'fedapay', 'gateway' => 'fedapay',
+        'meta' => ['flow' => 'formation', 'formation_id' => $formation->id],
+    ]);
+    $co = Payment::create([
+        'edition_id' => $edition->id, 'amount' => 3, 'method' => 'fedapay', 'gateway' => 'fedapay',
+        'meta' => ['flow' => 'coauthor'],
+    ]);
+
+    expect($participation->flowLabel())->toBe('Participation');
+    expect($participation->flowDetail())->toBeNull();
+    expect($forma->flowLabel())->toBe('Formation');
+    expect($forma->flowDetail())->toBe($formation->title);
+    expect($co->flowLabel())->toBe('Co-auteur');
+});
+
+it('filtre les paiements par nature sur la page admin', function () {
+    $edition = openEdition(['formation_enabled' => true]);
+    $formation = publishedFormation($edition, 10000);
+    Payment::create(['edition_id' => $edition->id, 'amount' => 111, 'method' => 'cash', 'gateway' => 'manual']);
+    Payment::create([
+        'edition_id' => $edition->id, 'amount' => 222, 'method' => 'fedapay', 'gateway' => 'fedapay',
+        'meta' => ['flow' => 'formation', 'formation_id' => $formation->id],
+    ]);
+
+    $admin = adminStaff();
+
+    $this->actingAs($admin, 'web')->get(route('admin.payments.index', ['edition_id' => $edition->id, 'flow' => 'formation']))
+        ->assertOk()->assertSee('222')->assertDontSee('111');
+
+    $this->actingAs($admin, 'web')->get(route('admin.payments.index', ['edition_id' => $edition->id, 'flow' => 'participation']))
+        ->assertOk()->assertSee('111')->assertDontSee('222');
+});
+
 it('enregistre l’opérateur choisi lors de l’inscription payante à une formation', function () {
     $edition = openEdition(['formation_enabled' => true]);
     $user = verifiedAccount();

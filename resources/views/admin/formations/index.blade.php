@@ -1,21 +1,4 @@
-<x-layouts.admin title="Formations" subtitle="Formations d'une édition - formateurs, frais, lieu, dates, inscriptions, e-mails, attestations et visio.">
-    <style>
-        /* Ligne « formateur » : tout sur une ligne, repliée en 2 puis 1 colonne. */
-        .trainer-grid { display:grid; gap:8px; align-items:center;
-            grid-template-columns:auto 100px minmax(0,1fr) minmax(0,1fr) minmax(0,1.1fr) minmax(0,.9fr) auto; }
-        .trainer-grid--edit { grid-template-columns:100px minmax(0,1fr) minmax(0,1fr) minmax(0,1.1fr) minmax(0,.9fr) auto auto; }
-        @media (max-width: 1400px) {
-            .trainer-grid, .trainer-grid--edit { grid-template-columns:repeat(2, minmax(0,1fr)); }
-            .trainer-grid > .tg-avatar { grid-column:1/-1; }
-        }
-        @media (max-width: 720px) {
-            .trainer-grid, .trainer-grid--edit { grid-template-columns:minmax(0,1fr); }
-        }
-        .trainer-hint { grid-column:1/-1; font-size:12px; margin:0; }
-        .trainer-hint.ok { color:var(--ukc-green,#009933); }
-        .trainer-hint.info { color:var(--ukc-muted); }
-    </style>
-
+<x-layouts.admin title="Formations" subtitle="Formations de l'édition - ouvrez une formation pour ses formateurs, ses inscrits et sa visio.">
     <div class="admin-page admin-formations" x-data="{ formOpen: false }">
         <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
             <div class="ukc-field" style="max-width:460px;width:100%;margin:0;">
@@ -40,210 +23,85 @@
                 <p>Activez-le dans les <a href="{{ route('admin.editions.edit', $edition) }}" style="color:var(--ukc-blue);font-weight:600;">paramètres de l’édition</a> (onglet « Options ») pour proposer des formations.</p>
             </div>
         @else
-            <div class="ukc-card">
-                <h2>Formations <span class="ukc-badge-count">{{ $formations->count() }}</span></h2>
-                @forelse ($formations as $f)
-                    <div class="ukc-subcard" x-data="{ editOpen: false }" style="border:1px solid var(--ukc-border,#e5e7eb);border-radius:10px;padding:14px;margin-bottom:14px;">
-                        @if ($f->flyerUrl())
-                            <img src="{{ $f->flyerUrl() }}" alt="Bannière" style="width:100%;height:130px;object-fit:cover;border-radius:8px;margin-bottom:12px;">
-                        @endif
-                        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
-                            <div>
-                                <strong style="font-size:15px;">{{ $f->title }}</strong>
-                                @if ($f->theme)<div style="font-size:13px;color:var(--ukc-muted);">{{ $f->theme }}</div>@endif
-                                <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
-                                    <span class="ukc-pill {{ $f->published ? 'ukc-pill--ok' : 'ukc-pill--muted' }}">{{ $f->published ? 'Active' : 'Brouillon' }}</span>
-                                    @if ($f->public)<span class="ukc-pill ukc-pill--info">Publique</span>@endif
-                                    <span class="ukc-pill {{ $f->isFree() ? 'ukc-pill--ok' : 'ukc-pill--muted' }}">{{ $f->isFree() ? 'Gratuite' : number_format((float) $f->fee, 0, ',', ' ').' F' }}</span>
-                                    @if ($f->isLive())<span class="ukc-pill ukc-pill--err">EN DIRECT</span>@endif
-                                </div>
-                                <div style="font-size:12.5px;color:var(--ukc-light);margin-top:6px;">
-                                    @if ($f->starts_at){{ $f->starts_at->format('d/m/Y H:i') }}@if ($f->ends_at) - {{ $f->ends_at->format('d/m/Y H:i') }}@endif @endif
-                                    @if ($f->location) · {{ $f->location }}@endif @if ($f->room) · {{ $f->room }}@endif
-                                </div>
-                            </div>
-                            <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
-                                <button type="button" class="ukc-btn ukc-btn--outline ukc-btn--sm" @click="editOpen = true">Modifier</button>
-                                <form method="POST" action="{{ route('admin.formations.destroy', $f) }}" onsubmit="return confirm('Supprimer cette formation ?')">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="ukc-btn--icon" title="Supprimer" aria-label="Supprimer la formation"><x-ukc.icon name="trash" :size="16" /></button>
-                                </form>
-                            </div>
-                        </div>
-
-                        {{-- Formateurs --}}
-                        <div style="margin-top:12px;">
-                            <div style="font-size:12.5px;font-weight:600;color:var(--ukc-muted);margin-bottom:6px;">Formateurs</div>
-                            @php($avatar = 'width:42px;height:42px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;')
-                            @php($tin = 'border:1.5px solid var(--ukc-border,#cbd5e1);border-radius:10px;padding:9px 12px;font-size:13.5px;background:#fff;min-width:0;width:100%;')
-                            @forelse ($f->trainers as $t)
-                                <div x-data="formationTrainer({ photo: @js($t->photoUrl()), uploadUrl: '{{ route('admin.formations.trainers.photo', [$f, $t]) }}', updateUrl: '{{ route('admin.formations.trainers.update', [$f, $t]) }}', displayName: @js(trim(($t->title ? $t->title.' ' : '').$t->name)), sub: @js(collect([$t->specialty, $t->email])->filter()->join(' · ')), moderator: {{ $t->is_moderator ? 'true' : 'false' }} })" style="padding:6px 0;">
-                                    <div style="display:flex;align-items:center;gap:10px;">
-                                        {{-- Avatar cliquable : change la photo (AJAX + barre de progression) --}}
-                                        <label title="Cliquer pour changer la photo" style="{{ $avatar }}cursor:pointer;background:linear-gradient(135deg,var(--ukc-blue,#223ea4),var(--ukc-green,#009933));color:#fff;font-weight:700;">
-                                            <template x-if="photo"><img :src="photo" alt="" style="width:100%;height:100%;object-fit:cover;"></template>
-                                            <template x-if="!photo"><span style="font-size:15px;">{{ $t->initials() }}</span></template>
-                                            <input type="file" accept="image/png,image/jpeg" @change="uploadPhoto($event)" :disabled="uploading" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
-                                            {{-- Overlay de progression (vert institution, centré) - x-show sur wrapper --}}
-                                            <div x-show="uploading" x-cloak style="position:absolute;inset:0;">
-                                                <div style="position:absolute;inset:0;background:rgba(255,255,255,.72);display:flex;align-items:center;justify-content:center;">
-                                                    <div style="width:72%;height:5px;border-radius:3px;background:rgba(0,0,0,.18);overflow:hidden;">
-                                                        <div :style="'height:100%;background:var(--ukc-green,#009933);width:'+progress+'%;transition:width .15s;'"></div>
-                                                    </div>
+            <div class="ukc-card" style="padding:0;">
+                @if ($formations->count())
+                    <div class="ukc-table-wrap">
+                        <table class="ukc-table">
+                            <thead>
+                                <tr>
+                                    <th>Formation</th>
+                                    <th>Dates</th>
+                                    <th>Lieu</th>
+                                    <th style="text-align:right;">Tarif</th>
+                                    <th style="text-align:center;">Formateurs</th>
+                                    <th style="text-align:center;">Inscrits</th>
+                                    <th>État</th>
+                                    <th style="text-align:right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($formations as $f)
+                                    <tr>
+                                        <td>
+                                            <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+                                                <span style="width:56px;height:38px;border-radius:7px;overflow:hidden;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--ukc-blue,#223ea4),var(--ukc-green,#009933));color:#fff;">
+                                                    @if ($f->flyerUrl())
+                                                        <img src="{{ $f->flyerUrl() }}" alt="" style="width:100%;height:100%;object-fit:cover;">
+                                                    @else
+                                                        <x-ukc.icon name="book" :size="16" />
+                                                    @endif
+                                                </span>
+                                                <div style="min-width:0;">
+                                                    <div class="title"><a href="{{ route('admin.formations.show', $f) }}">{{ $f->title }}</a></div>
+                                                    @if ($f->theme)<div class="meta">{{ $f->theme }}</div>@endif
                                                 </div>
                                             </div>
-                                        </label>
-                                        <div style="flex:1;min-width:0;">
-                                            <div style="font-size:13px;"><span x-text="displayName"></span> <span class="ukc-pill ukc-pill--info" style="margin-left:2px;" x-show="moderator" x-cloak>modérateur</span></div>
-                                            <div style="font-size:12px;color:var(--ukc-light);" x-text="sub"></div>
-                                            <div x-show="error" x-cloak x-text="error" style="font-size:11.5px;color:var(--ukc-danger,#dc2626);margin-top:2px;"></div>
-                                        </div>
-                                        <button type="button" class="ukc-btn--icon" title="Modifier" aria-label="Modifier le formateur" @click="editing = !editing"><x-ukc.icon name="pen" :size="15" /></button>
-                                        <form method="POST" action="{{ route('admin.formations.trainers.destroy', [$f, $t]) }}" onsubmit="return confirm('Retirer ce formateur ?')" style="margin:0;">
-                                            @csrf @method('DELETE')
-                                            <button type="submit" class="ukc-btn--icon" title="Retirer" aria-label="Retirer le formateur"><x-ukc.icon name="close" :size="14" /></button>
-                                        </form>
-                                    </div>
-                                    {{-- Édition en ligne (une seule ligne, comme l'ajout) - x-show sur wrapper pour garder le grid --}}
-                                    <div x-show="editing" x-cloak style="margin-top:8px;"
-                                         x-data="trainerLookup({ lookupUrl: '{{ route('admin.formations.trainers.lookup') }}', linked: {{ $t->user_id ? 'true' : 'false' }} })">
-                                        <form method="POST" action="{{ route('admin.formations.trainers.update', [$f, $t]) }}" @submit.prevent="saveInfo($event)"
-                                              class="trainer-grid trainer-grid--edit">
-                                            @csrf @method('PUT')
-                                            <input type="text" name="title" value="{{ $t->title }}" placeholder="Grade" list="trainerTitles{{ $f->id }}" maxlength="40" style="{{ $tin }}">
-                                            <input type="text" name="name" value="{{ $t->name }}" placeholder="Nom *" required maxlength="200" style="{{ $tin }}" :readonly="linked" :style="linked ? '{{ $tin }}background:var(--ukc-bg,#f6f7fb);' : '{{ $tin }}'">
-                                            <input type="text" name="specialty" value="{{ $t->specialty }}" placeholder="Spécialité / fonction" maxlength="200" style="{{ $tin }}">
-                                            <input type="email" name="email" value="{{ $t->email }}" placeholder="E-mail" maxlength="200" style="{{ $tin }}" @change="lookup()">
-                                            <x-ukc.phone name="phone" :value="$t->phone" placeholder="Téléphone" style="{{ $tin }}" @change="lookup()" />
-                                            <label title="Modérateur (visio)" style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ukc-muted);white-space:nowrap;">
-                                                <input type="hidden" name="is_moderator" value="0">
-                                                <input type="checkbox" name="is_moderator" value="1" @checked($t->is_moderator)> Modér.
-                                            </label>
-                                            <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm" style="white-space:nowrap;" :disabled="saving" x-text="saving ? 'Enregistrement…' : 'Enregistrer'">Enregistrer</button>
-                                            <p class="trainer-hint" :class="hintType" x-show="hint" x-cloak x-text="hint"></p>
-                                        </form>
-                                    </div>
-                                </div>
-                            @empty
-                                <p style="font-size:12.5px;color:var(--ukc-light);margin:0;">Aucun formateur.</p>
-                            @endforelse
-
-                            {{-- Ajouter un formateur : tout sur une ligne (façon co-auteur du formulaire de soumission) --}}
-                            <div x-data="trainerLookup({ lookupUrl: '{{ route('admin.formations.trainers.lookup') }}' })"
-                                 style="margin-top:12px;border-top:1px solid var(--ukc-border,#f1f1f1);padding-top:12px;">
-                            <form method="POST" action="{{ route('admin.formations.trainers.store', $f) }}" enctype="multipart/form-data"
-                                  class="trainer-grid"
-                                  x-data="{ ph: '', pick(e) { const fl = e.target.files[0]; this.ph = fl ? URL.createObjectURL(fl) : ''; } }">
-                                @csrf
-                                <label class="tg-avatar" title="Photo du formateur" style="{{ $avatar }}cursor:pointer;background:var(--ukc-bg,#eef2ff);border:1px dashed var(--ukc-border,#cbd5e1);color:var(--ukc-muted);">
-                                    <template x-if="ph"><img :src="ph" alt="" style="width:100%;height:100%;object-fit:cover;"></template>
-                                    <template x-if="!ph"><x-ukc.icon name="user" :size="20" /></template>
-                                    <input type="file" name="photo" accept="image/png,image/jpeg" @change="pick($event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
-                                </label>
-                                <input type="text" name="title" placeholder="Grade" list="trainerTitles{{ $f->id }}" maxlength="40" style="{{ $tin }}">
-                                <input type="text" name="name" placeholder="Nom *" required maxlength="200" :readonly="linked" :style="linked ? '{{ $tin }}background:var(--ukc-bg,#f6f7fb);' : '{{ $tin }}'" style="{{ $tin }}">
-                                <input type="text" name="specialty" placeholder="Spécialité / fonction" maxlength="200" style="{{ $tin }}">
-                                <input type="email" name="email" placeholder="E-mail" maxlength="200" style="{{ $tin }}" @change="lookup()">
-                                <x-ukc.phone name="phone" placeholder="Téléphone" style="{{ $tin }}" @change="lookup()" />
-                                <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm" style="white-space:nowrap;"><x-ukc.icon name="plus" :size="14" /> Ajouter</button>
-                                <p class="trainer-hint" :class="hintType" x-show="hint" x-cloak x-text="hint"></p>
-                                <datalist id="trainerTitles{{ $f->id }}"><option value="M."></option><option value="Mme"></option><option value="Pr."></option><option value="Dr."></option><option value="Professeur"></option><option value="Docteur"></option></datalist>
-                            </form>
-                            </div>
-                        </div>
-
-                        {{-- Inscrits + message (convocation / rappel) --}}
-                        <div style="margin-top:12px;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;">
-                                <span style="font-size:12.5px;font-weight:600;color:var(--ukc-muted);">
-                                    Inscrits : {{ $f->enrollments_count }}@if (! $f->isFree()) · {{ $f->paid_count }} réglé(s)@endif
-                                </span>
-                                <form method="POST" action="{{ route('admin.formations.attestations', $f) }}"
-                                      onsubmit="return confirm('Émettre les attestations (participation aux inscrits + animation aux formateurs) ?')">
-                                    @csrf
-                                    <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm" title="Émettre & envoyer les attestations">
-                                        <x-ukc.icon name="award" :size="14" /> Attestations
-                                    </button>
-                                </form>
-                            </div>
-                            @if ($f->enrollments_count > 0)
-                                <details style="margin-bottom:6px;">
-                                    <summary style="cursor:pointer;font-size:13px;color:var(--ukc-blue,#223ea4);">Liste des inscrits ({{ $f->enrollments_count }})</summary>
-                                    <div style="margin-top:6px;">
-                                        @foreach ($f->enrollments as $e)
-                                            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12.5px;padding:3px 0;border-bottom:1px solid var(--ukc-border,#f1f1f1);">
-                                                <span>{{ $e->user?->name ?: '—' }}@if ($e->user?->email) <span style="color:var(--ukc-light);">· {{ $e->user->email }}</span>@endif</span>
-                                                <span class="ukc-pill {{ $e->status === 'paid' ? 'ukc-pill--ok' : 'ukc-pill--muted' }}">{{ $e->status === 'paid' ? 'Réglé' : 'Inscrit' }}</span>
+                                        </td>
+                                        <td style="white-space:nowrap;font-size:12.5px;">
+                                            @if ($f->starts_at)
+                                                {{ $f->starts_at->format('d/m/Y H:i') }}
+                                                @if ($f->ends_at)<div class="meta">→ {{ $f->ends_at->format('d/m/Y H:i') }}</div>@endif
+                                            @else
+                                                <span class="meta">-</span>
+                                            @endif
+                                        </td>
+                                        <td style="font-size:12.5px;">
+                                            {{ $f->location ?: '-' }}
+                                            @if ($f->room)<div class="meta">{{ $f->room }}</div>@endif
+                                        </td>
+                                        <td style="text-align:right;font-weight:700;white-space:nowrap;">
+                                            {{ $f->isFree() ? 'Gratuite' : number_format((float) $f->fee, 0, ',', ' ').' F' }}
+                                        </td>
+                                        <td style="text-align:center;">{{ $f->trainers_count }}</td>
+                                        <td style="text-align:center;white-space:nowrap;">
+                                            {{ $f->enrollments_count }}
+                                            @unless ($f->isFree())<div class="meta">{{ $f->paid_count }} réglé(s)</div>@endunless
+                                        </td>
+                                        <td style="white-space:nowrap;">
+                                            <span class="ukc-pill {{ $f->published ? 'ukc-pill--ok' : 'ukc-pill--muted' }}">{{ $f->published ? 'Active' : 'Brouillon' }}</span>
+                                            @if ($f->public)<span class="ukc-pill ukc-pill--info">Publique</span>@endif
+                                            @if ($f->isLive())<span class="ukc-pill ukc-pill--err">EN DIRECT</span>@endif
+                                        </td>
+                                        <td style="text-align:right;white-space:nowrap;">
+                                            <div class="ukc-actions">
+                                                <a href="{{ route('admin.formations.show', $f) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">Ouvrir</a>
+                                                <form method="POST" action="{{ route('admin.formations.destroy', $f) }}" data-confirm="Supprimer cette formation ?" style="margin:0;">
+                                                    @csrf @method('DELETE')
+                                                    <button type="submit" class="ukc-btn--icon" title="Supprimer" aria-label="Supprimer la formation"><x-ukc.icon name="trash" :size="16" /></button>
+                                                </form>
                                             </div>
-                                        @endforeach
-                                    </div>
-                                </details>
-                                <details>
-                                    <summary style="cursor:pointer;font-size:13px;color:var(--ukc-blue,#223ea4);">Contacter les inscrits</summary>
-                                    <form method="POST" action="{{ route('admin.formations.message', $f) }}" style="margin-top:8px;">
-                                        @csrf
-                                        <input type="text" name="subject" placeholder="Objet" required maxlength="200" style="width:100%;margin-bottom:6px;padding:6px 8px;border:1px solid var(--ukc-border,#e5e7eb);border-radius:8px;">
-                                        <textarea name="body" rows="3" placeholder="Message (convocation, rappel, lien visio…)" required maxlength="5000" style="width:100%;margin-bottom:6px;padding:6px 8px;border:1px solid var(--ukc-border,#e5e7eb);border-radius:8px;"></textarea>
-                                        <div style="display:flex;gap:8px;align-items:center;">
-                                            <select name="audience" style="padding:6px 8px;border:1px solid var(--ukc-border,#e5e7eb);border-radius:8px;">
-                                                <option value="all">Tous les inscrits</option>
-                                                <option value="paid">Inscrits ayant réglé</option>
-                                            </select>
-                                            <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="mail" :size="14" /> Envoyer</button>
-                                        </div>
-                                    </form>
-                                </details>
-                            @endif
-                        </div>
-
-                        {{-- Visio de la formation --}}
-                        @php($inp = 'padding:6px 8px;border:1px solid var(--ukc-border,#e5e7eb);border-radius:8px;')
-                        <details style="margin-top:8px;">
-                            <summary style="cursor:pointer;font-size:13px;color:var(--ukc-blue,#223ea4);">Visio</summary>
-                            <form method="POST" action="{{ route('admin.formations.meeting', $f) }}" style="margin-top:8px;display:flex;flex-direction:column;gap:6px;max-width:520px;">
-                                @csrf
-                                <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                                    <select name="meeting_provider" style="{{ $inp }}flex:1;min-width:130px;">
-                                        <option value="">Fournisseur par défaut</option>
-                                        <option value="livekit" @selected($f->meeting_provider === 'livekit')>LiveKit</option>
-                                        <option value="jitsi" @selected($f->meeting_provider === 'jitsi')>Jitsi</option>
-                                        <option value="custom" @selected($f->meeting_provider === 'custom')>Lien externe</option>
-                                    </select>
-                                    <select name="meeting_status" style="{{ $inp }}flex:1;min-width:130px;">
-                                        @foreach (['none' => 'Aucune', 'scheduled' => 'Programmée', 'live' => 'En direct', 'ended' => 'Terminée'] as $sv => $sl)
-                                            <option value="{{ $sv }}" @selected(($f->meeting_status ?: 'none') === $sv)>{{ $sl }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <input type="text" name="meeting_room" value="{{ $f->meeting_room }}" placeholder="Nom de salle (auto si vide)" style="{{ $inp }}">
-                                <input type="url" name="meeting_url" value="{{ $f->meeting_url }}" placeholder="Lien externe (si fournisseur « Lien externe »)" style="{{ $inp }}">
-                                <div style="display:flex;gap:8px;align-items:center;">
-                                    <select name="meeting_visibility" style="{{ $inp }}">
-                                        <option value="participants" @selected(($f->meeting_visibility ?: 'participants') === 'participants')>Réservée aux inscrits</option>
-                                        <option value="public" @selected($f->meeting_visibility === 'public')>Publique</option>
-                                    </select>
-                                    <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="video" :size="14" /> Enregistrer</button>
-                                </div>
-                            </form>
-                        </details>
-
-                        {{-- Slideover : modifier la formation --}}
-                        <x-ukc.slideover open="editOpen" onClose="editOpen = false" width="520px">
-                            <x-slot:header>Modifier la formation</x-slot:header>
-                            <form method="POST" action="{{ route('admin.formations.update', $f) }}" enctype="multipart/form-data" id="formEdit{{ $f->id }}">
-                                @csrf @method('PUT')
-                                @include('admin.formations._fields', ['f' => $f])
-                            </form>
-                            <x-slot:footer>
-                                <span style="flex:1;"></span>
-                                <button type="button" class="ukc-btn ukc-btn--ghost" @click="editOpen = false">Annuler</button>
-                                <button type="submit" form="formEdit{{ $f->id }}" class="ukc-btn ukc-btn--blue">Enregistrer</button>
-                            </x-slot:footer>
-                        </x-ukc.slideover>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
-                @empty
-                    <p style="font-size:13.5px;color:var(--ukc-light);">Aucune formation pour l’instant. Cliquez sur « Nouvelle formation » pour en créer une.</p>
-                @endforelse
+                @else
+                    <div class="ukc-empty" style="margin:0;">
+                        <h3>Aucune formation</h3>
+                        <p>Cliquez sur « Nouvelle formation » pour en créer une.</p>
+                    </div>
+                @endif
             </div>
 
             {{-- Slideover : nouvelle formation (+ paramétrage assisté IA) --}}

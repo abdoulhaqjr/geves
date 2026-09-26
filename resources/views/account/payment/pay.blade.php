@@ -101,11 +101,10 @@
                             </label>
                         @endforeach
                     </div>
-                    <div class="ukc-field" style="max-width:340px;margin-top:14px;">
-                        <label for="operator">Opérateur mobile money</label>
-                        <x-ukc.pay-operator :gateways="$gateways" id="operator" />
-                        <span class="hint">Facultatif : pré-sélectionne votre opérateur à l’étape suivante.</span>
-                    </div>
+                    {{-- N'apparaît que si le moyen choisi sait cibler un opérateur. --}}
+                    <x-ukc.pay-operator :gateways="$gateways" gateway-expr="gw" id="operator"
+                                        class="ukc-field" wrapper-style="max-width:340px;margin-top:14px;"
+                                        style="width:100%;" />
                     <div class="ukc-form-actions">
                         <button type="submit" class="ukc-btn ukc-btn--green">
                             <x-ukc.icon name="card" :size="16" /> Payer {{ number_format((float) $amount, 0, ',', ' ') }} FCFA

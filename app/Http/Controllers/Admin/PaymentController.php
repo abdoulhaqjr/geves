@@ -36,6 +36,7 @@ class PaymentController extends Controller
         $search = trim((string) $request->query('search', ''));
         $status = (string) $request->query('status', '');
         $method = (string) $request->query('method', '');
+        $flow = (string) $request->query('flow', '');
         $from = (string) $request->query('from', '');
         $to = (string) $request->query('to', '');
         $scoped = $this->scopedEditionIds($request, 'payments');
@@ -56,7 +57,7 @@ class PaymentController extends Controller
             ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId));
 
         $sort = ListSort::resolve($request, ['reference', 'receipt_no', 'amount', 'created_at', 'status', 'method'], 'created_at', 'desc');
-        $payments = $this->applyFilters(clone $base, $status, $method, $search, $from, $to)
+        $payments = $this->applyFilters(clone $base, $status, $method, $search, $from, $to, $flow)
             ->with(['participant', 'edition'])
             ->orderBy($sort['sort'], $sort['dir'])
             ->orderBy('id', 'desc')
@@ -101,6 +102,9 @@ class PaymentController extends Controller
             'toRemind' => $toRemind,
             'statuses' => Payment::statuses(),
             'methods' => Payment::methodLabels(),
+            'methodGroups' => Payment::methodGroups(),
+            'flows' => Payment::FLOWS,
+            'flow' => $flow,
             'search' => $search,
             'status' => $status,
             'edition_id' => $editionId,
@@ -156,11 +160,20 @@ class PaymentController extends Controller
      * @param  Builder<Payment>  $q
      * @return Builder<Payment>
      */
-    private function applyFilters(Builder $q, string $status, string $method, string $search, string $from, string $to): Builder
+    private function applyFilters(Builder $q, string $status, string $method, string $search, string $from, string $to, string $flow = ''): Builder
     {
         return $q
             ->when($status !== '', fn ($q) => $q->where('status', $status))
             ->when($method !== '', fn ($q) => $q->where('method', $method))
+            // Nature du paiement : stockée dans meta.flow (« participation » quand
+            // la clé est absente, d'où le OR sur meta null / sans clé).
+            ->when($flow !== '', function ($q) use ($flow) {
+                $flow === 'participation'
+                    ? $q->where(fn ($p) => $p->whereNull('meta')
+                        ->orWhere('meta', 'not like', '%"flow"%')
+                        ->orWhere('meta', 'like', '%"flow":"participation"%'))
+                    : $q->where('meta', 'like', '%"flow":"'.$flow.'"%');
+            })
             ->when($from !== '', fn ($q) => $q->whereDate('created_at', '>=', $from))
             ->when($to !== '', fn ($q) => $q->whereDate('created_at', '<=', $to))
             ->when($search !== '', function ($q) use ($search) {
@@ -190,18 +203,21 @@ class PaymentController extends Controller
             trim((string) $request->query('search', '')),
             (string) $request->query('from', ''),
             (string) $request->query('to', ''),
+            (string) $request->query('flow', ''),
         )->with(['participant', 'edition'])->latest('id')->get();
 
         return response()->streamDownload(function () use ($rows) {
             $out = fopen('php://output', 'w');
             fprintf($out, "\xEF\xBB\xBF");
-            fputcsv($out, ['Référence', 'Reçu', 'Participant', 'E-mail', 'Catégorie', 'Montant', 'Devise', 'Moyen', 'Statut', 'Date', 'Édition']);
+            fputcsv($out, ['Référence', 'Reçu', 'Participant', 'E-mail', 'Nature', 'Objet', 'Catégorie', 'Montant', 'Devise', 'Moyen', 'Statut', 'Date', 'Édition']);
             foreach ($rows as $p) {
                 fputcsv($out, [
                     $p->reference,
                     $p->receipt_no,
                     $p->participant?->full_name,
                     $p->participant?->email,
+                    $p->flowLabel(),
+                    $p->flowDetail(),
                     $p->participant?->title,
                     number_format((float) $p->amount, 0, '.', ''),
                     $p->currency,

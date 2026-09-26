@@ -66,25 +66,31 @@
                             <x-ukc.icon name="book" :size="40" />
                         </span>
                     @endif
-                    <div style="position:absolute;top:12px;left:12px;display:flex;gap:8px;flex-wrap:wrap;">
-                        <span style="background:rgba(255,255,255,.96);border-radius:999px;padding:5px 12px;font-size:12.5px;font-weight:700;color:{{ $f->isFree() ? 'var(--ukc-green,#009933)' : 'var(--ukc-blue,#223ea4)' }};box-shadow:0 1px 3px rgba(0,0,0,.18);">
-                            {{ $f->isFree() ? __('Gratuite') : number_format((float) $f->fee, 0, ',', ' ').' '.$currency }}
-                        </span>
-                        @if ($f->isLive())
-                            <span style="background:#e11d48;color:#fff;border-radius:999px;padding:5px 12px;font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px;box-shadow:0 1px 3px rgba(0,0,0,.18);">
-                                <span style="width:7px;height:7px;border-radius:50%;background:currentColor;"></span> {{ __('EN DIRECT') }}
-                            </span>
-                        @endif
-                    </div>
                 </div>
 
                 {{-- Contenu --}}
                 <div class="fcard__body">
-                    <div>
-                        <h2 style="margin:0;font-size:18px;line-height:1.35;">{{ $f->title }}</h2>
-                        @if ($f->theme)
-                            <div style="font-size:13.5px;color:var(--ukc-muted);margin-top:3px;">{{ $f->theme }}</div>
-                        @endif
+                    <div style="display:flex;gap:16px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;">
+                        <div style="min-width:0;flex:1;">
+                            <h2 style="margin:0;font-size:18px;line-height:1.35;">{{ $f->title }}</h2>
+                            @if ($f->theme)
+                                <div style="font-size:13.5px;color:var(--ukc-muted);margin-top:3px;">{{ $f->theme }}</div>
+                            @endif
+                        </div>
+                        {{-- Tarif et état, à droite du titre (plus sur la bannière) --}}
+                        <div style="text-align:right;flex-shrink:0;">
+                            <div style="font-size:20px;font-weight:700;line-height:1.2;color:{{ $f->isFree() ? 'var(--ukc-green,#009933)' : 'var(--ukc-blue,#223ea4)' }};">
+                                {{ $f->isFree() ? __('Gratuite') : number_format((float) $f->fee, 0, ',', ' ') }}
+                            </div>
+                            @unless ($f->isFree())
+                                <div style="font-size:11.5px;color:var(--ukc-light);letter-spacing:.04em;">{{ $currency }}</div>
+                            @endunless
+                            @if ($f->isLive())
+                                <span class="ukc-pill ukc-pill--err" style="margin-top:6px;display:inline-flex;align-items:center;gap:5px;">
+                                    <span style="width:7px;height:7px;border-radius:50%;background:currentColor;"></span> {{ __('EN DIRECT') }}
+                                </span>
+                            @endif
+                        </div>
                     </div>
 
                     @if ($f->starts_at || $f->location || $f->room)

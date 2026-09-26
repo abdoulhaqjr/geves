@@ -44,12 +44,43 @@ class FormationController extends Controller
             'edition_id' => $edition ? (string) $edition->id : '',
             'moduleEnabled' => $edition ? $edition->formationEnabled() : false,
             'aiAvailable' => app(AiManager::class)->resolve() !== null,
+            // Liste compacte : pas de détail ici (formateurs/inscrits/visio sont sur
+            // la page de la formation, qu'une carte ne pouvait pas contenir).
             'formations' => $edition
-                ? Formation::with(['trainers.user', 'enrollments' => fn ($q) => $q->with('user')->latest('id')])
-                    ->withCount(['enrollments', 'enrollments as paid_count' => fn ($q) => $q->where('status', 'paid')])
+                ? Formation::withCount([
+                    'enrollments',
+                    'enrollments as paid_count' => fn ($q) => $q->where('status', 'paid'),
+                    'trainers',
+                ])
                     ->where('edition_id', $edition->id)
                     ->orderByRaw('starts_at is null, starts_at')->orderBy('id')->get()
                 : collect(),
+        ]);
+    }
+
+    /**
+     * Page d'une formation : tout ce qui ne tient pas dans une ligne de liste
+     * (formateurs, inscrits nominatifs, visio, attestations, édition).
+     */
+    public function show(Formation $formation): View
+    {
+        $formation->load([
+            'trainers.user',
+            'enrollments' => fn ($q) => $q->with(['user', 'payment'])->latest('id'),
+            'edition',
+        ]);
+
+        $paid = $formation->enrollments->where('status', 'paid');
+
+        return view('admin.formations.show', [
+            'f' => $formation,
+            'edition' => $formation->edition,
+            'stats' => [
+                'enrolled' => $formation->enrollments->count(),
+                'paid' => $paid->count(),
+                'revenue' => (float) $paid->sum('amount'),
+                'trainers' => $formation->trainers->count(),
+            ],
         ]);
     }
 
@@ -60,7 +91,9 @@ class FormationController extends Controller
         $formation = Formation::create($data);
         $this->handleFlyer($request, $formation);
 
-        return back()->with('ukc_status', 'Formation créée.');
+        // On ouvre directement la formation : c'est là que se règlent formateurs,
+        // inscrits et visio.
+        return redirect()->route('admin.formations.show', $formation)->with('ukc_status', 'Formation créée.');
     }
 
     public function update(Request $request, Formation $formation): RedirectResponse
@@ -92,9 +125,12 @@ class FormationController extends Controller
 
     public function destroy(Formation $formation): RedirectResponse
     {
+        $editionId = $formation->edition_id;
         $formation->delete();
 
-        return back()->with('ukc_status', 'Formation supprimée.');
+        // `back()` renverrait sur la page de la formation supprimée.
+        return redirect()->route('admin.formations', ['edition_id' => $editionId])
+            ->with('ukc_status', 'Formation supprimée.');
     }
 
     public function storeTrainer(Request $request, Formation $formation): RedirectResponse

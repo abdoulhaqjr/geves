@@ -1,6 +1,6 @@
-<x-layouts.admin title="Paiements" subtitle="Encaissements · FedaPay / Mobile Money">
+<x-layouts.admin title="Paiements" subtitle="Encaissements - participation, formations et co-auteurs">
     <x-slot:actions>
-        <a href="{{ route('admin.payments.export', array_merge(request()->only('status', 'method', 'search', 'from', 'to'), ['edition_id' => $edition_id])) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
+        <a href="{{ route('admin.payments.export', array_merge(request()->only('status', 'method', 'flow', 'search', 'from', 'to'), ['edition_id' => $edition_id])) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
             <x-ukc.icon name="download" :size="16" /> Exporter CSV
         </a>
         <a href="{{ route('admin.payments.create') }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">
@@ -22,9 +22,17 @@
                 <option value="">Tous les statuts</option>
                 @foreach ($statuses as $key => $label)<option value="{{ $key }}" @selected($status === $key)>{{ $label }}</option>@endforeach
             </select>
+            <select name="flow" onchange="this.form.submit()" title="Nature du paiement">
+                <option value="">Toutes les natures</option>
+                @foreach ($flows as $key => $label)<option value="{{ $key }}" @selected($flow === $key)>{{ $label }}</option>@endforeach
+            </select>
             <select name="method" onchange="this.form.submit()">
                 <option value="">Tous les moyens</option>
-                @foreach ($methods as $key => $label)<option value="{{ $key }}" @selected($method === $key)>{{ $label }}</option>@endforeach
+                @foreach ($methodGroups as $group => $items)
+                    <optgroup label="{{ $group }}">
+                        @foreach ($items as $key => $label)<option value="{{ $key }}" @selected($method === $key)>{{ $label }}</option>@endforeach
+                    </optgroup>
+                @endforeach
             </select>
             <select name="edition_id" onchange="this.form.submit()">
                 <option value="">Toutes les éditions</option>
@@ -35,7 +43,7 @@
             <span class="sep" style="width:1px;height:24px;background:var(--ukc-border);align-self:center;"></span>
             <input type="date" name="from" value="{{ $from }}" title="Du" onchange="this.form.submit()">
             <input type="date" name="to" value="{{ $to }}" title="Au" onchange="this.form.submit()">
-            @if ($search !== '' || $status !== '' || $edition_id !== '' || $method !== '' || $from !== '' || $to !== '')
+            @if ($search !== '' || $status !== '' || $edition_id !== '' || $method !== '' || $flow !== '' || $from !== '' || $to !== '')
                 <a href="{{ route('admin.payments.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
             @endif
         </form>
@@ -47,7 +55,7 @@
                         <thead>
                             <tr>
                                 <x-ukc.th sort="reference" :current="$sort" :dir="$dir">Référence</x-ukc.th>
-                                <th>Participant</th><th>Catégorie</th>
+                                <th>Participant</th><th>Objet</th>
                                 <x-ukc.th sort="amount" :current="$sort" :dir="$dir">Montant</x-ukc.th>
                                 <x-ukc.th sort="method" :current="$sort" :dir="$dir">Moyen</x-ukc.th>
                                 <x-ukc.th sort="created_at" :current="$sort" :dir="$dir">Date</x-ukc.th>
@@ -66,7 +74,15 @@
                                         <div class="title">{{ $p->participant?->full_name ?: '-' }}</div>
                                         <div class="meta">{{ $p->participant?->email }}</div>
                                     </td>
-                                    <td>{{ $p->participant?->title ?: '-' }}</td>
+                                    <td>
+                                        @php($fl = $p->flow())
+                                        <span class="ukc-pill ukc-pill--{{ $fl === 'formation' ? 'info' : ($fl === 'coauthor' ? 'warn' : 'muted') }}">{{ $p->flowLabel() }}</span>
+                                        @if ($detail = $p->flowDetail())
+                                            <div class="meta" style="margin-top:3px;">{{ $detail }}</div>
+                                        @elseif ($p->participant?->title)
+                                            <div class="meta" style="margin-top:3px;">{{ $p->participant->title }}</div>
+                                        @endif
+                                    </td>
                                     <td style="font-weight:700;">{{ number_format((float) $p->amount, 0, ',', ' ') }} {{ $p->currency }}</td>
                                     <td>{{ $p->methodLabel() }}</td>
                                     <td style="white-space:nowrap;">{{ $p->created_at?->format('d/m/Y') }}</td>

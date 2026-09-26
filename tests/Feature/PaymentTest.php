@@ -148,8 +148,8 @@ it('attribue une référence unique à chaque paiement dès la création (avant 
     // La référence existe avant même la confirmation / le numéro de reçu.
     expect($p1->receipt_no)->toBeNull();
 
-    // Le libellé de moyen reconnaît l'agrégateur en ligne.
-    expect($p2->methodLabel())->toContain('FedaPay');
+    // Le libellé de moyen reste générique (jamais le nom de l'agrégateur).
+    expect($p2->methodLabel())->toBe('En ligne · Mobile money / carte');
 });
 
 it('la page paiements se cale par défaut sur le colloque courant (pas toutes les éditions)', function () {

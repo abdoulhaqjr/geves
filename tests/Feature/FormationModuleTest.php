@@ -94,9 +94,21 @@ it('affiche la liste nominative des inscrits pour l’admin', function () {
     $p = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'trainee', 'user_id' => $user->id]);
     FormationEnrollment::create(['formation_id' => $formation->id, 'edition_id' => $edition->id, 'user_id' => $user->id, 'participant_id' => $p->id, 'status' => 'registered', 'amount' => 0]);
 
-    $this->actingAs(adminStaff(), 'web')
+    $admin = adminStaff();
+
+    // La liste compacte annonce le nombre d'inscrits et renvoie vers la formation.
+    $this->actingAs($admin, 'web')
         ->get(route('admin.formations').'?edition_id='.$edition->id)
         ->assertOk()
+        ->assertSee('Atelier')
+        ->assertSee(route('admin.formations.show', $formation), false);
+
+    // Le détail nominatif est sur la page de la formation (une carte ne pouvait
+    // pas porter la table des inscrits).
+    $this->actingAs($admin, 'web')
+        ->get(route('admin.formations.show', $formation))
+        ->assertOk()
+        ->assertSee('Inscrits')
         ->assertSee('Awa Kodjo')
-        ->assertSee('Liste des inscrits');
+        ->assertSee($user->email);
 });

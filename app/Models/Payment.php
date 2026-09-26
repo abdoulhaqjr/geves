@@ -35,13 +35,22 @@ class Payment extends Model
     ];
 
     /**
-     * Moyens EN LIGNE (passerelles). FedaPay est un agrégateur : mobile money
-     * (MTN, Moov, Togocom…) et cartes bancaires via une page hébergée.
+     * Moyens issus d'un parcours de paiement choisi par le payeur (clés des
+     * passerelles). ⚠️ On ne nomme jamais l'agrégateur : `fedapay`/`cashpay` sont
+     * des clés techniques, leur libellé reste générique. `manual` = la passerelle
+     * « sur place / virement » (le payeur choisit, l'admin valide ensuite).
      */
     public const ONLINE_METHODS = [
-        'fedapay' => 'En ligne · Mobile Money / Carte (FedaPay)',
-        'cashpay' => 'En ligne · CashPay',
-        'manual' => 'Manuel',
+        'fedapay' => 'En ligne · Mobile money / carte',
+        'cashpay' => 'En ligne · Mobile money',
+        'manual' => 'Sur place / virement (à valider)',
+    ];
+
+    /** Nature du paiement → libellé affiché (admin). */
+    public const FLOWS = [
+        'participation' => 'Participation',
+        'formation' => 'Formation',
+        'coauthor' => 'Co-auteur',
     ];
 
     /**
@@ -129,6 +138,41 @@ class Payment extends Model
         return self::MANUAL_METHODS[$this->method]
             ?? self::ONLINE_METHODS[$this->method]
             ?? ucfirst((string) $this->method);
+    }
+
+    /** Libellé de la nature du paiement (participation / formation / co-auteur). */
+    public function flowLabel(): string
+    {
+        return self::FLOWS[$this->flow()] ?? ucfirst($this->flow());
+    }
+
+    /**
+     * Objet précis du paiement : la nature, complétée du titre de la formation
+     * pour un paiement de formation (l'admin doit pouvoir distinguer lequel).
+     */
+    public function flowDetail(): ?string
+    {
+        if ($this->flow() !== 'formation') {
+            return null;
+        }
+
+        $id = (int) ($this->meta['formation_id'] ?? 0);
+
+        return $id > 0 ? Formation::whereKey($id)->value('title') : null;
+    }
+
+    /**
+     * Moyens de paiement groupés pour les filtres admin (évite une liste à plat
+     * où « Manuel » et « Mobile money » se confondent).
+     *
+     * @return array<string, array<string, string>>
+     */
+    public static function methodGroups(): array
+    {
+        return [
+            'Encaissement saisi par l’organisation' => self::MANUAL_METHODS,
+            'Choisi par le payeur' => self::ONLINE_METHODS,
+        ];
     }
 
     /** @return BelongsTo<Edition, $this> */
