@@ -1,8 +1,6 @@
 <x-layouts.admin title="Attestations délivrées" :subtitle="$edition ? 'Édition · '.($edition->title ?: $edition->year) : 'Attestations émises et vérifiables'">
     <x-slot:actions>
-        <a class="ukc-btn ukc-btn--outline ukc-btn--sm" href="{{ route('admin.documents.attestations', ['edition_id' => $edition_id]) }}">
-            <x-ukc.icon name="settings" :size="16" /> Émission &amp; templates
-        </a>
+        {{-- « Émission & templates » est désormais le sous-onglet « Liste des attestations ». --}}
         <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('attestation.verify.landing') }}" target="_blank">
             <x-ukc.icon name="check-circle" :size="16" /> Vérification publique
         </a>
@@ -23,6 +21,16 @@
         @if (! $edition)
             <div class="ukc-empty"><h3>Choisissez une édition</h3><p>Sélectionnez une édition pour consulter les attestations délivrées.</p></div>
         @else
+            {{-- Même barre d'onglets que la page Documents · Attestations : ce sont
+                 trois sous-onglets d'un même écran, servis par deux routes. --}}
+            <div class="ukc-tabs">
+                <a href="{{ route('admin.documents.attestations', ['edition_id' => $edition->id, 'tab' => 'attestations']) }}">Liste des attestations</a>
+                <a href="{{ route('admin.attestations.index', ['edition_id' => $edition->id]) }}" class="active">
+                    Attestations délivrées <span class="nav-count">{{ $stats['valid'] }}</span>
+                </a>
+                <a href="{{ route('admin.documents.attestations', ['edition_id' => $edition->id, 'tab' => 'attestations', 'att' => 'options']) }}">Options générales</a>
+            </div>
+
             {{-- KPI --}}
             <div class="ukc-stats">
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="diploma" :size="20" /></div><div class="lbl">Délivrées</div><div class="val blue">{{ $stats['total'] }}</div></div>

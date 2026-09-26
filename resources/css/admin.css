@@ -20,8 +20,17 @@
 .admin-page .ukc-card .desc { font-size: 13px; color: var(--ukc-muted); margin-bottom: 14px; line-height: 1.45; }
 
 .admin-page .ukc-tabs { display: flex; gap: 4px; margin-bottom: 18px; border-bottom: 2px solid var(--ukc-border); flex-wrap: wrap; }
-.admin-page .ukc-tabs button { background: none; border: none; cursor: pointer; font-weight: 700; font-size: 13.5px; color: var(--ukc-muted); padding: 10px 16px; margin-bottom: -2px; border-bottom: 2px solid transparent; }
-.admin-page .ukc-tabs button.active { color: var(--ukc-blue); border-bottom-color: var(--ukc-blue); }
+/* `a` accepté au même titre que `button` : un onglet peut mener à une autre
+   route (ex. « Attestations délivrées », qui garde ses filtres et sa pagination). */
+.admin-page .ukc-tabs button, .admin-page .ukc-tabs a { background: none; border: none; cursor: pointer; font-weight: 700; font-size: 13.5px; color: var(--ukc-muted); padding: 10px 16px; margin-bottom: -2px; border-bottom: 2px solid transparent; text-decoration: none; display: inline-flex; align-items: center; }
+.admin-page .ukc-tabs button.active, .admin-page .ukc-tabs a.active { color: var(--ukc-blue); border-bottom-color: var(--ukc-blue); }
+.admin-page .ukc-tabs .nav-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 6px; margin-left: 8px;
+  border-radius: 999px; background: var(--ukc-bg, #eef1f8); color: var(--ukc-muted);
+  font-size: 11.5px; font-weight: 700; line-height: 1;
+}
+.admin-page .ukc-tabs .active .nav-count { background: var(--ukc-blue); color: #fff; }
 .admin-page .ukc-panel { display: none; }
 .admin-page .ukc-panel.active { display: block; }
 /* Règle projet : les boutons d'action d'une ligne restent sur UNE ligne (horizontaux). */

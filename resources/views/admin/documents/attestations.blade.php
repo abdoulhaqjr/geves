@@ -1,5 +1,5 @@
 <x-layouts.admin title="Documents" :subtitle="$edition ? 'Édition active · '.($edition->title ?: $edition->year) : 'Attestations, badges & livre des résumés'">
-    <div class="admin-page admin-documents" x-data="{ page: new URLSearchParams(window.location.search).get('tab') || 'attestations', att: 'list', badge: 'list', livre: 'main' }">
+    <div class="admin-page admin-documents" x-data="{ page: new URLSearchParams(window.location.search).get('tab') || 'attestations', att: new URLSearchParams(window.location.search).get('att') || 'list', badge: 'list', livre: 'main' }">
         {{-- Sélecteur d'édition partagé + vérification publique --}}
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
             <div class="ukc-field" style="max-width:340px;margin:0;">
@@ -27,6 +27,11 @@
             <div x-show="page==='attestations'">
                 <div class="ukc-tabs">
                     <button type="button" @click="att='list'" :class="{ active: att==='list' }">Liste des attestations</button>
+                    {{-- Sous-onglet servi par sa propre route : il garde ses filtres,
+                         son tri et sa pagination. --}}
+                    <a href="{{ route('admin.attestations.index', ['edition_id' => $edition->id]) }}">
+                        Attestations délivrées <span class="nav-count">{{ $counts['issued'] }}</span>
+                    </a>
                     <button type="button" @click="att='options'" :class="{ active: att==='options' }">Options générales</button>
                 </div>
 
@@ -75,21 +80,6 @@
                                 @endforeach
                             </tbody>
                         </table>
-                    </div>
-                    <p class="ukc-hint" style="margin-top:12px;">
-                        Les templates « par communication » sont générés <strong>autant de fois</strong> que le participant a de communications éligibles.
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13" style="vertical-align:-2px;"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg> = génère les PDF (QR/DID) ·
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13" style="vertical-align:-2px;"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg> = notifie les destinataires par e-mail.
-                    </p>
-
-                    <div class="ukc-card" style="margin-top:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-                        <div>
-                            <h3 style="margin:0 0 2px;">Attestations délivrées</h3>
-                            <div style="font-size:13px;color:var(--ukc-muted);">{{ $counts['issued'] }} attestation(s) valide(s) pour cette édition - consultez, vérifiez ou révoquez sur la page dédiée.</div>
-                        </div>
-                        <a href="{{ route('admin.attestations.index', ['edition_id' => $edition->id]) }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">
-                            <x-ukc.icon name="diploma" :size="16" /> Voir les attestations délivrées
-                        </a>
                     </div>
                 </div>
 
