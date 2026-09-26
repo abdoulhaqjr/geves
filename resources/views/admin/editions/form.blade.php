@@ -612,7 +612,10 @@
                                 <div class="ukc-field full">
                                     <label for="fp-wh">Secret de webhook</label>
                                     <input type="text" id="fp-wh" name="fedapay[webhook_secret]" value="{{ $pay['fedapay']['webhook_secret'] ?? '' }}" autocomplete="off" placeholder="wh_… (laisser vide = défaut)">
+                                    <p class="ukc-hint">Copié depuis le tableau de bord FedaPay (section Webhooks). <strong>Indispensable</strong> : sans lui, une notification de paiement ne peut pas être authentifiée et le règlement resterait « en attente ».</p>
                                 </div>
+                                <x-ukc.webhook-url :url="route('payment.webhook.edition', ['gateway' => 'fedapay', 'edition' => $edition])"
+                                                   label="URL du webhook FedaPay à déclarer" />
 
                                 <div class="ukc-field full"><h3 style="font-size:14px;font-weight:800;margin:6px 0 0;">CashPay (SEMOA)</h3></div>
                                 <div class="ukc-field">
@@ -639,6 +642,8 @@
                                     <label for="cp-api">Clé API (callback)</label>
                                     <input type="text" id="cp-api" name="cashpay[api_key]" value="{{ $pay['cashpay']['api_key'] ?? '' }}" autocomplete="off">
                                 </div>
+                                <x-ukc.webhook-url :url="route('payment.webhook.edition', ['gateway' => 'cashpay', 'edition' => $edition])"
+                                                   label="URL du callback CashPay à déclarer" />
 
                                 <div class="ukc-form-actions full">
                                     <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer la passerelle</button>

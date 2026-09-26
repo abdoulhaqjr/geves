@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Actions\ConfirmPayment;
+use App\Actions\ReconcilePayments;
 use App\Http\Controllers\Controller;
 use App\Mail\PaymentReminderMail;
 use App\Models\Participant;
@@ -303,6 +304,29 @@ class PaymentController extends Controller
         } catch (\DomainException $e) {
             return back()->with('ukc_error', $e->getMessage());
         }
+    }
+
+    /**
+     * Revérifie un paiement en ligne auprès de la passerelle (cas « le participant
+     * dit avoir payé ») : interroge le serveur du marchand avec les identifiants de
+     * l'édition et confirme si le paiement est réellement abouti.
+     */
+    public function recheck(Payment $payment, ReconcilePayments $reconciler): RedirectResponse
+    {
+        $report = $reconciler->handle(paymentId: $payment->id);
+
+        if ($report['errors'] > 0) {
+            return back()->with('ukc_error', 'Passerelle injoignable : impossible de vérifier ce paiement pour le moment.');
+        }
+        if ($report['checked'] === 0) {
+            return back()->with('ukc_error', 'Ce paiement ne peut pas être vérifié automatiquement (pas de référence passerelle).');
+        }
+
+        return match ($payment->fresh()?->status) {
+            'paid' => back()->with('ukc_status', 'Paiement confirmé par la passerelle - reçu envoyé au participant.'),
+            'failed' => back()->with('ukc_error', 'La passerelle indique un paiement échoué ou annulé.'),
+            default => back()->with('ukc_status', 'La passerelle indique un paiement toujours en attente.'),
+        };
     }
 
     public function refund(Payment $payment): RedirectResponse

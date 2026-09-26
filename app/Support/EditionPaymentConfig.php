@@ -19,9 +19,56 @@ class EditionPaymentConfig
 
     public const CASHPAY_KEYS = ['base_url', 'username', 'password', 'client_id', 'client_secret', 'api_key'];
 
+    /** Réglages de paiement propres à une édition, ou null. @return array<string, mixed>|null */
+    public static function settings(?Edition $edition): ?array
+    {
+        $p = $edition?->settings['payment'] ?? null;
+
+        return is_array($p) ? $p : null;
+    }
+
+    /** L'édition définit-elle au moins un identifiant pour cette passerelle ? */
+    public static function configures(Edition $edition, string $gateway): bool
+    {
+        $creds = self::settings($edition)[$gateway] ?? null;
+        if (! is_array($creds)) {
+            return false;
+        }
+
+        foreach ($creds as $value) {
+            if (filled($value)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Configurations à essayer pour authentifier un webhook entrant : la config
+     * globale (null) d'abord, puis chaque édition ayant ses propres identifiants
+     * pour cette passerelle. Nécessaire car la signature doit être vérifiée AVANT
+     * de savoir à quelle édition le paiement se rattache (un marchand par édition
+     * signe avec SON secret).
+     *
+     * @return list<Edition|null>
+     */
+    public static function candidates(string $gateway): array
+    {
+        $editions = Edition::query()
+            ->where('settings', 'like', '%"payment"%')
+            ->latest('id')
+            ->get()
+            ->filter(fn (Edition $e) => self::configures($e, $gateway))
+            ->values()
+            ->all();
+
+        return array_merge([null], $editions);
+    }
+
     public static function apply(?Edition $edition): void
     {
-        $p = is_array($edition?->settings['payment'] ?? null) ? $edition->settings['payment'] : null;
+        $p = self::settings($edition);
         if (! $p) {
             return; // aucune config propre : on garde la config globale
         }
@@ -39,6 +86,34 @@ class EditionPaymentConfig
             if (filled($p['cashpay'][$k] ?? null)) {
                 Config::set("services.cashpay.$k", $p['cashpay'][$k]);
             }
+        }
+    }
+
+    /**
+     * Exécute $fn avec la configuration de l'édition appliquée, puis RESTAURE la
+     * configuration précédente. Indispensable quand on essaie plusieurs éditions
+     * à la suite (webhook) : sans restauration, les identifiants d'un candidat
+     * resteraient actifs pour le suivant (`apply` n'écrase que les champs remplis).
+     *
+     * @template T
+     *
+     * @param  callable(): T  $fn
+     * @return T
+     */
+    public static function using(?Edition $edition, callable $fn): mixed
+    {
+        $snapshot = [
+            'payments.default' => config('payments.default'),
+            'services.fedapay' => config('services.fedapay'),
+            'services.cashpay' => config('services.cashpay'),
+        ];
+
+        try {
+            self::apply($edition);
+
+            return $fn();
+        } finally {
+            Config::set($snapshot);
         }
     }
 }

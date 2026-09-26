@@ -492,6 +492,11 @@
 .admin-edition-detail .ukc-check input { width: auto; margin-top: 3px; }
 .admin-edition-detail .ukc-hint { font-size: 12px; color: var(--ukc-light); margin-top: 6px; line-height: 1.4; }
 
+/* URL de webhook à déclarer chez le marchand : champ lecture seule + copie. */
+.ukc-webhook-url .row { display: flex; align-items: center; gap: 8px; }
+.ukc-webhook-url .row input { flex: 1; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; background: var(--ukc-soft, #f4f6fb); }
+.ukc-webhook-url .row .ukc-btn { flex: 0 0 auto; white-space: nowrap; }
+
 .admin-edition-detail .ukc-btn--icon {
   width: 32px; height: 32px; padding: 0; border-radius: 8px; flex-shrink: 0;
   background: #fff; border: 1px solid var(--ukc-border); color: var(--ukc-muted);

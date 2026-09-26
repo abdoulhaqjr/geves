@@ -130,6 +130,9 @@ Route::get('/.well-known/jwks.json', [AttestationController::class, 'jwks'])->na
 // Paiement en ligne : retour navigateur + webhook serveur-à-serveur.
 Route::get('/paiement/retour/{gateway}', [PaymentController::class, 'return'])->name('payment.return');
 Route::post('/webhooks/paiement/{gateway}', [PaymentController::class, 'webhook'])->name('payment.webhook');
+// Variante dédiée à une édition : à déclarer chez le marchand quand l'édition
+// utilise son PROPRE compte passerelle (évite d'essayer toutes les signatures).
+Route::post('/webhooks/paiement/{gateway}/{edition}', [PaymentController::class, 'webhook'])->name('payment.webhook.edition');
 
 /*
 |--------------------------------------------------------------------------
@@ -320,6 +323,7 @@ Route::prefix('admin')->group(function () {
             Route::get('/paiements/export/csv', [App\Http\Controllers\Admin\PaymentController::class, 'export'])->name('admin.payments.export');
             Route::post('/paiements/relance/{participant}', [App\Http\Controllers\Admin\PaymentController::class, 'remindPayment'])->name('admin.payments.remind');
             Route::post('/paiements/{payment}/regler', [App\Http\Controllers\Admin\PaymentController::class, 'markPaid'])->name('admin.payments.mark-paid');
+            Route::post('/paiements/{payment}/reverifier', [App\Http\Controllers\Admin\PaymentController::class, 'recheck'])->name('admin.payments.recheck');
             Route::post('/paiements/{payment}/rembourser', [App\Http\Controllers\Admin\PaymentController::class, 'refund'])->name('admin.payments.refund');
             Route::get('/paiements/creer', [App\Http\Controllers\Admin\PaymentController::class, 'create'])->name('admin.payments.create');
             Route::post('/paiements/creer', [App\Http\Controllers\Admin\PaymentController::class, 'store'])->name('admin.payments.store');

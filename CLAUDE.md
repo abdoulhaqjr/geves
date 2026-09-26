@@ -150,8 +150,25 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   surcharge `payments.default` + `services.fedapay/cashpay.*` au runtime, **repli sur la
   config globale** quand un champ est vide. Appelé en tête de chaque parcours de paiement
   (Account/Public/Formation `show`+`pay`, `PaymentController::return` avec
-  `$payment->edition`). ⚠️ **Le webhook reste sur la config globale** : `parseWebhook`
-  vérifie la signature avant de connaître l'édition.
+  `$payment->edition`). Pour essayer plusieurs configurations d'affilée, utiliser
+  **`EditionPaymentConfig::using($edition, fn () => …)`** qui **restaure** la config
+  ensuite (sinon les identifiants d'un candidat fuient sur le suivant).
+- **Webhooks de paiement (à ne pas casser)** : la signature doit être vérifiée **avant** de
+  savoir à quelle édition le paiement se rattache. `PaymentController::webhook` essaie donc
+  la config globale **puis chaque édition** ayant ses propres identifiants
+  (`EditionPaymentConfig::candidates()`), chaque essai isolé par `using()`. Garde
+  d'étanchéité : **le marchand d'une édition ne peut confirmer que SES paiements**. URL
+  générique `/webhooks/paiement/{gateway}` **ou** dédiée
+  `/webhooks/paiement/{gateway}/{edition}` (affichée + copiable dans l'onglet Paiement).
+  Toujours **fail-closed**, et tous les rejets sont journalisés dans le canal de log
+  **`payments`** (`storage/logs/payments.log`, 90 j) - c'est la pièce à consulter pour un
+  « j'ai payé mais le système dit non ».
+- **Filet de sécurité paiements** : `App\Actions\ReconcilePayments` + `php artisan
+  payments:reconcile` (planifié **toutes les 10 min**) revérifient auprès de la passerelle
+  les paiements `pending` ayant une `gateway_ref`, et les confirment si réglés - couvre le
+  cas « le webhook n'est jamais arrivé ». `ReconcilePayments::settle()` est la **source
+  unique** d'application d'un statut vérifié (retour navigateur, webhook, réconciliation).
+  Bouton **« Revérifier »** sur un paiement en ligne en attente (`admin.payments.recheck`).
 
 ### Comptes = `User` unifié (option B) — ⚠️ pas `Account`
 

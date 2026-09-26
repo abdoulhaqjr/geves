@@ -209,9 +209,33 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
     surcharge `payments.default` + `services.fedapay/cashpay.*` au runtime, avec **repli
     global** champ par champ. Appelé en tête de chaque parcours (`Account\PaymentController`,
     `Public\CoauthorController`, `Account\FormationController` — `show`/`pay`/`enroll`) et
-    dans `PaymentController::return` via `$payment->edition`. ⚠️ Le **webhook** reste sur la
-    config globale (`parseWebhook` vérifie la signature avant de connaître l'édition).
-    Tests : `EditionPaymentConfigTest`.
+    dans `PaymentController::return` via `$payment->edition`. Pour enchaîner plusieurs
+    configurations, `EditionPaymentConfig::using()` applique **puis restaure** (sinon fuite
+    d'identifiants d'un candidat à l'autre). Tests : `EditionPaymentConfigTest`.
+
+11ter. **Webhooks fiables + réconciliation** (corrige « j'ai payé mais le système dit non »)
+    - **Webhook multi-édition** : la signature devant être vérifiée avant de connaître
+      l'édition, `PaymentController::webhook` essaie la config **globale** puis **chaque
+      édition** ayant ses propres identifiants (`EditionPaymentConfig::candidates()`),
+      chaque essai isolé par `using()`. **Garde d'étanchéité** : le marchand d'une édition
+      ne peut confirmer que les paiements de SON édition. Toujours **fail-closed**.
+    - **URL dédiée par édition** : `payment.webhook.edition`
+      (`/webhooks/paiement/{gateway}/{edition}`), **affichée et copiable** dans l'onglet
+      Paiement de l'édition (composant `<x-ukc.webhook-url>`) - à déclarer chez le marchand.
+      L'URL générique continue de fonctionner.
+    - **Journalisation** : canal de log **`payments`** (`storage/logs/payments.log`, 90 j) -
+      webhook traité, signature non vérifiée, référence inconnue, édition signataire ≠
+      édition du paiement. Première chose à consulter en cas de litige.
+    - **Réconciliation (filet de sécurité)** : `App\Actions\ReconcilePayments` +
+      `php artisan payments:reconcile [--days=7] [--payment=id]`, **planifié toutes les
+      10 min**. Revérifie via `OnlineGateway::verify()` (avec les identifiants de l'édition)
+      les paiements `pending` ayant une `gateway_ref` → confirme ceux réellement réglés,
+      même si aucun webhook n'est jamais arrivé. `ReconcilePayments::settle()` devient la
+      **source unique** d'application d'un statut vérifié (retour, webhook, réconciliation).
+    - **Back-office** : bouton **« Revérifier »** sur un paiement en ligne en attente
+      (`admin.payments.recheck`) → interroge la passerelle à la demande.
+    - Tests : 7 cas dans `PaymentGatewayTest` (secret propre à l'édition, URL dédiée,
+      étanchéité inter-éditions, réconciliation + identifiants d'édition, « Revérifier »).
 
 12. **Programme public & fiches de session** (Modules 7, 26) - section « Programme » sur la page publique (plénières + ateliers + communications programmées via les créneaux, partiel `_session.blade.php`) ; **fiches de session imprimables** (`DocumentController@sessionSheets`, `/admin/editions/{edition}/fiches-session`). *(commit `502a78f`)*
 
@@ -251,7 +275,7 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 ## 7. Ce qui reste à faire
 
 ### Priorité haute
-1. **Validation des paiements en ligne au sandbox** - CashPay (SEMOA) et FedaPay sont **implémentés** (voir §6 module 11). Reste à : renseigner les identifiants (`.env` : `CASHPAY_*`, `FEDAPAY_*`, `PAYMENT_GATEWAY`), **tester un vrai paiement** en sandbox, confirmer l'enveloppe de réponse FedaPay (`v1/transaction`) et le format exact du corps du callback CashPay (JWT brut vs champ `token`). Puis exposer les webhooks publiquement (URL `/webhooks/paiement/{gateway}`) et les déclarer côté marchand.
+1. **Validation des paiements en ligne au sandbox** - CashPay (SEMOA) et FedaPay sont **implémentés** (voir §6 module 11). Reste à : renseigner les identifiants (`.env` : `CASHPAY_*`, `FEDAPAY_*`, `PAYMENT_GATEWAY`), **tester un vrai paiement** en sandbox, confirmer l'enveloppe de réponse FedaPay (`v1/transaction`) et le format exact du corps du callback CashPay (JWT brut vs champ `token`). Puis exposer les webhooks publiquement et **déclarer l'URL côté marchand** - de préférence l'URL **dédiée à l'édition** affichée dans l'onglet Paiement (`/webhooks/paiement/{gateway}/{edition}`). ⚠️ En dev local, aucun webhook ne peut arriver : c'est la **réconciliation** (`payments:reconcile`, module 11ter) qui confirmera le paiement - vérifier que le scheduler tourne (`php artisan schedule:work`).
 2. ~~**Livret .docx « vrai »** via `phpoffice/phpword`~~ **fait** - `App\Documents\LivretDocx` (page de garde charte + résumés acceptés groupés par axe : titre/auteurs/résumé) ; téléchargement via `?format=docx` sur les routes livret **admin** (`admin.documents.livret`) et **participant** (`account.documents.livret`, contrôle de propriété conservé), bouton « Word (.docx) » dans la vue `documents.livret`. ⚠️ phpword veut des **twips entiers** (`(int) Converter::cmToTwip(...)`). Tests : le `.docx` est dézippé (`word/document.xml`) pour vérifier titre/axe/communication.
 
 ### Ensuite

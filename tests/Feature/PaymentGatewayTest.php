@@ -1,6 +1,8 @@
 <?php
 
+use App\Actions\ReconcilePayments;
 use App\Models\Colloque;
+use App\Models\Edition;
 use App\Models\Payment;
 use App\Models\User;
 use App\Payments\Gateways\CashpayGateway;
@@ -9,6 +11,7 @@ use Firebase\JWT\JWT;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Testing\TestResponse;
 
 function onlineSetup(): array
 {
@@ -179,4 +182,121 @@ it('FedaPay : webhook sans signature valide ne confirme rien', function () {
         ['HTTP_X_FEDAPAY_SIGNATURE' => 't=1,s=deadbeef', 'CONTENT_TYPE' => 'application/json'], $body)->assertOk();
 
     expect($payment->fresh()->status)->toBe('pending');
+});
+
+/* ------------------- Webhook & passerelle propre à l'édition ---------------- */
+
+/** Configure l'édition avec SON propre compte FedaPay (secrets différents du global). */
+function fedapayForEdition(Edition $edition, string $secret = 'sk_edition', string $webhook = 'wh_edition'): void
+{
+    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+        'payment' => ['gateway' => 'fedapay', 'fedapay' => ['secret' => $secret, 'mode' => 'test', 'webhook_secret' => $webhook]],
+    ])]);
+}
+
+/** Forge une requête de webhook FedaPay signée avec le secret donné. */
+function fedapayWebhook(string $url, int $reference, string $secret, string $status = 'approved'): TestResponse
+{
+    $body = json_encode(['name' => 'transaction.approved', 'entity' => ['id' => $reference, 'status' => $status]]);
+    $ts = (string) time();
+    $sig = hash_hmac('sha256', $ts.'.'.$body, $secret);
+
+    return test()->call('POST', $url, [], [], [],
+        ['HTTP_X_FEDAPAY_SIGNATURE' => "t={$ts},s={$sig}", 'CONTENT_TYPE' => 'application/json'], $body);
+}
+
+it('FedaPay : un webhook signé avec le secret PROPRE à l’édition confirme le paiement', function () {
+    Mail::fake();
+    configureFedapay(); // global : « whsec »
+    [$edition, $account, $participant] = onlineSetup();
+    fedapayForEdition($edition); // l'édition signe avec « wh_edition »
+    $payment = $edition->payments()->create(['participant_id' => $participant->id, 'amount' => 15000, 'gateway' => 'fedapay', 'gateway_ref' => '777', 'status' => 'pending']);
+
+    fedapayWebhook(route('payment.webhook', ['gateway' => 'fedapay']), 777, 'wh_edition')->assertOk();
+
+    expect($payment->fresh()->status)->toBe('paid');
+});
+
+it('FedaPay : l’URL de webhook dédiée à l’édition confirme aussi le paiement', function () {
+    Mail::fake();
+    configureFedapay();
+    [$edition, $account, $participant] = onlineSetup();
+    fedapayForEdition($edition);
+    $payment = $edition->payments()->create(['participant_id' => $participant->id, 'amount' => 15000, 'gateway' => 'fedapay', 'gateway_ref' => '778', 'status' => 'pending']);
+
+    fedapayWebhook(route('payment.webhook.edition', ['gateway' => 'fedapay', 'edition' => $edition]), 778, 'wh_edition')->assertOk();
+
+    expect($payment->fresh()->status)->toBe('paid');
+});
+
+it('FedaPay : le marchand d’une édition ne peut pas confirmer le paiement d’une AUTRE édition', function () {
+    configureFedapay();
+    [$edition, $account, $participant] = onlineSetup();
+    fedapayForEdition($edition); // édition A : « wh_edition »
+
+    // Paiement rattaché à une AUTRE édition (compte global).
+    $autre = $edition->colloque->editions()->create(['title' => 'UK 2027', 'year' => 2027, 'status' => 'open', 'slug' => 'uk-2027']);
+    $payment = $autre->payments()->create(['participant_id' => $participant->id, 'amount' => 15000, 'gateway' => 'fedapay', 'gateway_ref' => '999', 'status' => 'pending']);
+
+    fedapayWebhook(route('payment.webhook', ['gateway' => 'fedapay']), 999, 'wh_edition')->assertOk();
+
+    expect($payment->fresh()->status)->toBe('pending'); // ignoré
+});
+
+it('Réconciliation : confirme un paiement réglé dont le webhook n’est jamais arrivé', function () {
+    Mail::fake();
+    configureFedapay();
+    [$edition, $account, $participant] = onlineSetup();
+    $payment = $edition->payments()->create(['participant_id' => $participant->id, 'amount' => 15000, 'gateway' => 'fedapay', 'gateway_ref' => '4242', 'status' => 'pending']);
+
+    Http::fake(['*/transactions/4242' => Http::response(['v1/transaction' => ['status' => 'approved']])]);
+
+    $report = app(ReconcilePayments::class)->handle();
+
+    expect($report['paid'])->toBe(1);
+    expect($payment->fresh()->status)->toBe('paid');
+    expect($payment->fresh()->receipt_no)->not->toBeEmpty();
+});
+
+it('Réconciliation : interroge la passerelle avec les identifiants de l’ÉDITION', function () {
+    Mail::fake();
+    configureFedapay(); // global : « sk_test »
+    [$edition, $account, $participant] = onlineSetup();
+    fedapayForEdition($edition); // édition : « sk_edition »
+    $payment = $edition->payments()->create(['participant_id' => $participant->id, 'amount' => 15000, 'gateway' => 'fedapay', 'gateway_ref' => '4243', 'status' => 'pending']);
+
+    Http::fake(['*/transactions/4243' => Http::response(['v1/transaction' => ['status' => 'approved']])]);
+
+    app(ReconcilePayments::class)->handle();
+
+    Http::assertSent(fn ($request) => $request->hasHeader('Authorization', 'Bearer sk_edition'));
+    expect($payment->fresh()->status)->toBe('paid');
+});
+
+it('Réconciliation : laisse « en attente » un paiement non abouti', function () {
+    configureFedapay();
+    [$edition, $account, $participant] = onlineSetup();
+    $payment = $edition->payments()->create(['participant_id' => $participant->id, 'amount' => 15000, 'gateway' => 'fedapay', 'gateway_ref' => '4244', 'status' => 'pending']);
+
+    Http::fake(['*/transactions/4244' => Http::response(['v1/transaction' => ['status' => 'pending']])]);
+
+    $report = app(ReconcilePayments::class)->handle();
+
+    expect($report['paid'])->toBe(0);
+    expect($payment->fresh()->status)->toBe('pending');
+});
+
+it('Back-office : « Revérifier » confirme un paiement réellement réglé', function () {
+    Mail::fake();
+    configureFedapay();
+    [$edition, $account, $participant] = onlineSetup();
+    $payment = $edition->payments()->create(['participant_id' => $participant->id, 'amount' => 15000, 'gateway' => 'fedapay', 'gateway_ref' => '5555', 'status' => 'pending']);
+
+    Http::fake(['*/transactions/5555' => Http::response(['v1/transaction' => ['status' => 'approved']])]);
+
+    $this->actingAs(adminStaff())
+        ->post(route('admin.payments.recheck', $payment))
+        ->assertRedirect();
+
+    expect($payment->fresh()->status)->toBe('paid');
 });

@@ -73,6 +73,16 @@
                                     <td><span class="ukc-pill ukc-pill--{{ $p->statusPill() }}">{{ $p->statusLabel() }}</span></td>
                                     <td style="text-align:right;white-space:nowrap;">
                                         <div class="ukc-actions">
+                                            @if ($p->status === 'pending' && filled($p->gateway_ref) && $p->gateway !== 'manual')
+                                                {{-- Le participant affirme avoir payé : revérifier auprès de la passerelle. --}}
+                                                <form method="POST" action="{{ route('admin.payments.recheck', $p) }}"
+                                                      data-ajax data-ajax-msg="Vérification effectuée.">
+                                                    @csrf
+                                                    <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm" title="Interroger la passerelle pour connaître le statut réel">
+                                                        <x-ukc.icon name="refresh" :size="14" /> Revérifier
+                                                    </button>
+                                                </form>
+                                            @endif
                                             @if ($p->status === 'pending')
                                                 <form method="POST" action="{{ route('admin.payments.mark-paid', $p) }}"
                                                       data-ajax data-ajax-msg="Paiement marqué réglé."

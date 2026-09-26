@@ -73,6 +73,19 @@ return [
             'replace_placeholders' => true,
         ],
 
+        /*
+         * Journal dédié aux paiements en ligne (webhooks reçus/rejetés,
+         * réconciliations). Conservé longtemps : c'est la pièce à consulter quand
+         * un participant affirme avoir payé alors que le système dit le contraire.
+         */
+        'payments' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/payments.log'),
+            'level' => 'info',
+            'days' => env('LOG_PAYMENTS_DAYS', 90),
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),
