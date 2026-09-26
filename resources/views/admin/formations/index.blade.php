@@ -58,27 +58,44 @@
                         <div style="margin-top:12px;">
                             <div style="font-size:12.5px;font-weight:600;color:var(--ukc-muted);margin-bottom:6px;">Formateurs</div>
                             @php($avatar = 'width:42px;height:42px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;')
+                            @php($tin = 'border:1.5px solid var(--ukc-border,#cbd5e1);border-radius:10px;padding:9px 12px;font-size:13.5px;background:#fff;min-width:0;width:100%;')
                             @forelse ($f->trainers as $t)
-                                <div style="display:flex;align-items:center;gap:10px;padding:5px 0;">
-                                    {{-- Avatar cliquable : change la photo du formateur --}}
-                                    <form method="POST" action="{{ route('admin.formations.trainers.photo', [$f, $t]) }}" enctype="multipart/form-data" style="flex-shrink:0;margin:0;">
-                                        @csrf
+                                <div x-data="formationTrainer({ photo: @js($t->photoUrl()), uploadUrl: '{{ route('admin.formations.trainers.photo', [$f, $t]) }}' })" style="padding:5px 0;">
+                                    <div style="display:flex;align-items:center;gap:10px;">
+                                        {{-- Avatar cliquable : change la photo (AJAX + barre de progression) --}}
                                         <label title="Cliquer pour changer la photo" style="{{ $avatar }}cursor:pointer;background:linear-gradient(135deg,var(--ukc-blue,#223ea4),var(--ukc-green,#009933));color:#fff;font-weight:700;">
-                                            @if ($t->photoUrl())
-                                                <img src="{{ $t->photoUrl() }}" alt="" style="width:100%;height:100%;object-fit:cover;">
-                                            @else
-                                                <span style="font-size:15px;">{{ $t->initials() }}</span>
-                                            @endif
-                                            <input type="file" name="photo" accept="image/png,image/jpeg" onchange="this.form.submit()" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+                                            <template x-if="photo"><img :src="photo" alt="" style="width:100%;height:100%;object-fit:cover;"></template>
+                                            <template x-if="!photo"><span style="font-size:15px;">{{ $t->initials() }}</span></template>
+                                            <input type="file" accept="image/png,image/jpeg" @change="uploadPhoto($event)" :disabled="uploading" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+                                            {{-- Overlay de progression --}}
+                                            <div x-show="uploading" x-cloak style="position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;">
+                                                <div :style="'height:4px;background:var(--ukc-gold,#ffd700);width:'+progress+'%;transition:width .15s;'"></div>
+                                            </div>
                                         </label>
-                                    </form>
-                                    <div style="flex:1;min-width:0;">
-                                        <div style="font-size:13px;">{{ trim(($t->title ? $t->title.' ' : '').$t->name) }} @if ($t->is_moderator)<span class="ukc-pill ukc-pill--info" style="margin-left:2px;">modérateur</span>@endif</div>
-                                        <div style="font-size:12px;color:var(--ukc-light);">{{ collect([$t->specialty, $t->email])->filter()->join(' · ') }}</div>
+                                        <div style="flex:1;min-width:0;">
+                                            <div style="font-size:13px;">{{ trim(($t->title ? $t->title.' ' : '').$t->name) }} @if ($t->is_moderator)<span class="ukc-pill ukc-pill--info" style="margin-left:2px;">modérateur</span>@endif</div>
+                                            <div style="font-size:12px;color:var(--ukc-light);">{{ collect([$t->specialty, $t->email])->filter()->join(' · ') }}</div>
+                                            <div x-show="error" x-cloak x-text="error" style="font-size:11.5px;color:var(--ukc-danger,#dc2626);margin-top:2px;"></div>
+                                        </div>
+                                        <button type="button" class="ukc-btn--icon" title="Modifier" aria-label="Modifier le formateur" @click="editing = !editing"><x-ukc.icon name="pen" :size="15" /></button>
+                                        <form method="POST" action="{{ route('admin.formations.trainers.destroy', [$f, $t]) }}" onsubmit="return confirm('Retirer ce formateur ?')" style="margin:0;">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="ukc-btn--icon" title="Retirer" aria-label="Retirer le formateur"><x-ukc.icon name="close" :size="14" /></button>
+                                        </form>
                                     </div>
-                                    <form method="POST" action="{{ route('admin.formations.trainers.destroy', [$f, $t]) }}" onsubmit="return confirm('Retirer ce formateur ?')" style="margin:0;">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="ukc-btn--icon" title="Retirer" aria-label="Retirer le formateur"><x-ukc.icon name="close" :size="14" /></button>
+                                    {{-- Édition en ligne des informations du formateur --}}
+                                    <form x-show="editing" x-cloak method="POST" action="{{ route('admin.formations.trainers.update', [$f, $t]) }}"
+                                          style="margin-top:8px;display:grid;grid-template-columns:110px minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.3fr) auto;gap:8px;align-items:center;">
+                                        @csrf @method('PUT')
+                                        <input type="text" name="title" value="{{ $t->title }}" placeholder="Grade" list="trainerTitles{{ $f->id }}" maxlength="40" style="{{ $tin }}">
+                                        <input type="text" name="name" value="{{ $t->name }}" placeholder="Nom *" required maxlength="200" style="{{ $tin }}">
+                                        <input type="text" name="specialty" value="{{ $t->specialty }}" placeholder="Spécialité / fonction" maxlength="200" style="{{ $tin }}">
+                                        <input type="email" name="email" value="{{ $t->email }}" placeholder="E-mail (facultatif)" maxlength="200" style="{{ $tin }}">
+                                        <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm" style="white-space:nowrap;">Enregistrer</button>
+                                        <label style="grid-column:1/-1;display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ukc-muted);">
+                                            <input type="hidden" name="is_moderator" value="0">
+                                            <input type="checkbox" name="is_moderator" value="1" @checked($t->is_moderator)> Modérateur (visio)
+                                        </label>
                                     </form>
                                 </div>
                             @empty
@@ -86,7 +103,6 @@
                             @endforelse
 
                             {{-- Ajouter un formateur : tout sur une ligne (façon co-auteur du formulaire de soumission) --}}
-                            @php($tin = 'border:1.5px solid var(--ukc-border,#cbd5e1);border-radius:10px;padding:9px 12px;font-size:13.5px;background:#fff;min-width:0;width:100%;')
                             <form method="POST" action="{{ route('admin.formations.trainers.store', $f) }}" enctype="multipart/form-data"
                                   style="margin-top:12px;border-top:1px solid var(--ukc-border,#f1f1f1);padding-top:12px;display:grid;grid-template-columns:auto 110px minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.3fr) auto;gap:8px;align-items:center;"
                                   x-data="{ ph: '', pick(e) { const fl = e.target.files[0]; this.ph = fl ? URL.createObjectURL(fl) : ''; } }">

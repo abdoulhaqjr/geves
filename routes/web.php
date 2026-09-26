@@ -433,6 +433,7 @@ Route::prefix('admin')->group(function () {
             Route::put('/formations/{formation}', [FormationController::class, 'update'])->name('admin.formations.update');
             Route::delete('/formations/{formation}', [FormationController::class, 'destroy'])->name('admin.formations.destroy');
             Route::post('/formations/{formation}/formateurs', [FormationController::class, 'storeTrainer'])->name('admin.formations.trainers.store');
+            Route::put('/formations/{formation}/formateurs/{trainer}', [FormationController::class, 'updateTrainer'])->name('admin.formations.trainers.update');
             Route::post('/formations/{formation}/formateurs/{trainer}/photo', [FormationController::class, 'updateTrainerPhoto'])->name('admin.formations.trainers.photo');
             Route::delete('/formations/{formation}/formateurs/{trainer}', [FormationController::class, 'destroyTrainer'])->name('admin.formations.trainers.destroy');
             Route::post('/formations/{formation}/message', [FormationController::class, 'message'])->name('admin.formations.message');

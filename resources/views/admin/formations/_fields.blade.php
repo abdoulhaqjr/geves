@@ -21,7 +21,7 @@
                 <span style="font-size:12.5px;">Cliquez ou glissez une image (PNG/JPG)</span>
             </div>
         </template>
-        <div x-show="preview" style="position:absolute;top:8px;right:8px;display:flex;gap:6px;">
+        <div x-show="preview" style="position:absolute;top:8px;right:8px;display:flex;gap:10px;">
             <button type="button" title="Changer l'image" @click.stop="$refs.bin.click()" style="background:rgba(255,255,255,.92);border:none;border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ukc-blue,#223ea4);box-shadow:0 1px 3px rgba(0,0,0,.2);"><x-ukc.icon name="pen" :size="15" /></button>
             <button type="button" title="Retirer" @click.stop="remove()" style="background:rgba(255,255,255,.92);border:none;border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#dc2626;box-shadow:0 1px 3px rgba(0,0,0,.2);"><x-ukc.icon name="trash" :size="15" /></button>
         </div>

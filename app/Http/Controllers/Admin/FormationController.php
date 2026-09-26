@@ -124,7 +124,7 @@ class FormationController extends Controller
     }
 
     /** Change la photo d'un formateur (clic sur l'avatar). */
-    public function updateTrainerPhoto(Request $request, Formation $formation, FormationTrainer $trainer): RedirectResponse
+    public function updateTrainerPhoto(Request $request, Formation $formation, FormationTrainer $trainer): JsonResponse|RedirectResponse
     {
         abort_unless($trainer->formation_id === $formation->id, 404);
         $request->validate(['photo' => ['required', 'image', 'mimes:png,jpg,jpeg', 'max:4096']]);
@@ -134,7 +134,35 @@ class FormationController extends Controller
         }
         $trainer->update(['photo_path' => $request->file('photo')->store('formation-trainers', 'public')]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true, 'url' => $trainer->photoUrl()]);
+        }
+
         return back()->with('ukc_status', 'Photo du formateur mise à jour.');
+    }
+
+    /** Met à jour les informations d'un formateur (grade, nom, spécialité, e-mail). */
+    public function updateTrainer(Request $request, Formation $formation, FormationTrainer $trainer): RedirectResponse
+    {
+        abort_unless($trainer->formation_id === $formation->id, 404);
+        $data = $request->validate([
+            'title' => ['nullable', 'string', 'max:40'],
+            'name' => ['required', 'string', 'max:200'],
+            'specialty' => ['nullable', 'string', 'max:200'],
+            'email' => ['nullable', 'email', 'max:200'],
+            'is_moderator' => ['nullable', 'boolean'],
+        ]);
+
+        $trainer->update([
+            'title' => $data['title'] ?? null,
+            'name' => $data['name'],
+            'specialty' => $data['specialty'] ?? null,
+            'email' => $data['email'] ?? null,
+            'is_moderator' => $request->boolean('is_moderator'),
+            'user_id' => $this->userIdForEmail($data['email'] ?? null),
+        ]);
+
+        return back()->with('ukc_status', 'Formateur mis à jour.');
     }
 
     public function destroyTrainer(Formation $formation, FormationTrainer $trainer): RedirectResponse

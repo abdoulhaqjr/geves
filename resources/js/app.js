@@ -1688,6 +1688,65 @@ document.addEventListener('alpine:init', () => {
         fmt(b) { return b > 1048576 ? (b / 1048576).toFixed(1) + ' Mo' : Math.max(1, Math.round(b / 1024)) + ' Ko'; },
     }));
 
+    // Formateur d'une formation : upload de photo en AJAX (barre de progression sur
+    // l'avatar) + bascule d'édition en ligne des informations.
+    window.Alpine.data('formationTrainer', (cfg = {}) => ({
+        photo: cfg.photo || '',
+        uploadUrl: cfg.uploadUrl || '',
+        editing: false,
+        uploading: false,
+        progress: 0,
+        error: '',
+        uploadPhoto(e) {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            this.error = '';
+            // Contrôle d'anomalie côté client (type + taille) avant l'envoi.
+            if (!/^image\/(png|jpe?g)$/.test(file.type)) {
+                this.error = 'Image PNG ou JPG uniquement.';
+                e.target.value = '';
+                return;
+            }
+            if (file.size > 4 * 1024 * 1024) {
+                this.error = 'Image trop lourde (max 4 Mo).';
+                e.target.value = '';
+                return;
+            }
+            const input = e.target;
+            const token = document.querySelector('meta[name="csrf-token"]')?.content
+                || document.querySelector('input[name="_token"]')?.value || '';
+            const fd = new FormData();
+            fd.append('photo', file);
+            fd.append('_token', token);
+            this.uploading = true;
+            this.progress = 0;
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', this.uploadUrl);
+            xhr.setRequestHeader('X-CSRF-TOKEN', token);
+            xhr.setRequestHeader('Accept', 'application/json');
+            xhr.upload.addEventListener('progress', (ev) => {
+                if (ev.lengthComputable) this.progress = Math.round((ev.loaded / ev.total) * 100);
+            });
+            xhr.addEventListener('load', () => {
+                this.uploading = false;
+                input.value = '';
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const d = JSON.parse(xhr.responseText);
+                        if (d.ok && d.url) { this.photo = d.url + (d.url.indexOf('?') === -1 ? '?' : '&') + 't=' + Date.now(); return; }
+                    } catch (err) { /* ignore */ }
+                    this.error = 'Réponse inattendue du serveur.';
+                } else if (xhr.status === 422) {
+                    this.error = 'Fichier refusé (image PNG/JPG, max 4 Mo).';
+                } else {
+                    this.error = 'Échec du téléversement (' + xhr.status + ').';
+                }
+            });
+            xhr.addEventListener('error', () => { this.uploading = false; input.value = ''; this.error = 'Erreur réseau.'; });
+            xhr.send(fd);
+        },
+    }));
+
     // Palette de commandes « Recherche rapide » (⌘K / Ctrl+K) - style Tailwise.
     // Les items sont rendus côté serveur (avec leurs icônes) ; on filtre en
     // masquant les lignes qui ne correspondent pas, sans backend.
