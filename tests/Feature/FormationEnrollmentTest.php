@@ -17,6 +17,20 @@ function publishedFormation($edition, float $fee): Formation
     ]);
 }
 
+it('affiche la page des formations du participant (formation payante) sans erreur', function () {
+    $edition = openEdition();
+    $user = verifiedAccount();
+    $edition->participants()->create([
+        'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'author', 'user_id' => $user->id,
+    ]);
+    $formation = publishedFormation($edition, 10000);
+    $formation->update(['public' => true]);
+
+    $this->actingAs($user, 'account')->get(route('account.formations'))
+        ->assertOk()
+        ->assertSee($formation->title);
+});
+
 it('inscrit directement à une formation gratuite (sans paiement)', function () {
     $edition = openEdition();
     $user = verifiedAccount();

@@ -168,7 +168,7 @@ capacité RBAC **`formation`**. Tables `formations` (plusieurs par édition ; `f
 colonnes `meeting_*` pour la visio) + `formation_trainers` (`user_id` + repli libre) +
 `formation_enrollments` (inscription `user_id`, `status` registered→paid). Admin :
 `Admin\FormationController` (`admin.formations*`). Participant : `Account\FormationController`
-(`account.formations` = `/mes-formations`, inscription gratuite/payante). **Paiement de nature
+(`account.formations` = `/formations`, inscription gratuite/payante). **Paiement de nature
 `formation`** : `Payment.meta.flow='formation'` (helper `Payment::flow()`) ; ⚠️ **`ConfirmPayment`
 est flow-aware** — la garde anti-double ne vaut que pour la **participation**, donc participation +
 formation(s) + co-auteur coexistent. Page publique : section `#formations` (formations `public`)

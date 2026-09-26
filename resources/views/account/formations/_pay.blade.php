@@ -1,4 +1,4 @@
-@if ($gateways->isEmpty())
+@if (count($gateways) === 0)
     <p style="font-size:12px;color:var(--ukc-light);margin:0;">{{ __('Paiement momentanément indisponible.') }}</p>
 @else
     <form method="POST" action="{{ route('account.formations.enroll', $f) }}" style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
