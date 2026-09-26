@@ -140,7 +140,7 @@
                             @elseif ($enr)
                                 <span style="color:#b45309;font-weight:600;">{{ __('Frais à régler') }}</span>
                                 @if ($f->isLive())
-                                    <span style="color:var(--ukc-light);">· {{ __('la visio est réservée aux inscrits ayant réglé') }}</span>
+                                    <span style="color:var(--ukc-light);">· {{ __('la formation est réservée aux inscrits ayant réglé') }}</span>
                                 @endif
                             @else
                                 {{ $f->isFree() ? __('Inscription libre') : __('Inscription avec frais') }}

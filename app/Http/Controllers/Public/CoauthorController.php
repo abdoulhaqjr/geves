@@ -103,6 +103,9 @@ class CoauthorController extends Controller
             ],
         );
 
+        // Opérateur choisi chez nous (pré-sélection sur la page du prestataire).
+        $payment->setOperator($request->input('operator'));
+
         try {
             $result = $gateway->initiate($payment);
         } catch (\Throwable $e) {

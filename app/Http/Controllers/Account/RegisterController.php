@@ -44,6 +44,9 @@ class RegisterController extends Controller
             'grade' => ['nullable', 'string', 'max:100'],
             'affiliation' => ['nullable', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:190', 'unique:users,email'],
+            // Identifiant fort (rapprochement auteurs/formateurs) + pré-remplissage
+            // de la passerelle de paiement : obligatoire dès l'inscription.
+            'phone' => ['required', 'string', 'max:50'],
             'password' => ['required', 'string', 'confirmed', Password::defaults()],
             'terms' => ['accepted'],
         ]);

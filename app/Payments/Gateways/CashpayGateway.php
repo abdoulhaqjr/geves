@@ -27,7 +27,19 @@ class CashpayGateway implements OnlineGateway
 
     public function label(): string
     {
-        return 'Mobile money / carte (CashPay)';
+        // ⚠️ Convention projet : on n'expose jamais le nom de l'agrégateur au payeur.
+        return 'Mobile money';
+    }
+
+    /**
+     * Le prestataire ne permet pas de cibler l'opérateur en amont : il est choisi
+     * sur sa propre page.
+     *
+     * @return array<string, string>
+     */
+    public function mobileOperators(): array
+    {
+        return [];
     }
 
     public function isAvailable(): bool

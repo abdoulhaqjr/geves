@@ -13,6 +13,8 @@
         @else
             <input type="hidden" name="gateway" value="{{ $gateways[0]->key() }}">
         @endif
+        <x-ukc.pay-operator :gateways="$gateways"
+                            style="padding:7px 10px;border:1px solid var(--ukc-border,#e5e7eb);border-radius:9px;font-size:12.5px;background:#fff;max-width:220px;" />
         <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm" style="white-space:nowrap;">
             <x-ukc.icon name="card" :size="14" /> {{ $label }}
         </button>

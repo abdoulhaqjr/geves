@@ -95,6 +95,8 @@
                         </div>
                     @else
                         <p style="font-size:.9rem;color:var(--ukc-muted);margin-bottom:12px;">{{ __('Choisissez un moyen de paiement :') }}</p>
+                        <x-ukc.pay-operator :gateways="$gateways"
+                                            style="width:100%;padding:9px 12px;border:1px solid var(--ukc-border,#e5e7eb);border-radius:9px;margin-bottom:12px;" />
                         <div style="display:flex;flex-direction:column;gap:10px;">
                             @foreach ($gateways as $gateway)
                                 <button type="submit" name="gateway" value="{{ $gateway->key() }}" class="ukc-btn ukc-btn--outline"

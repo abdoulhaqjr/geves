@@ -6,6 +6,15 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
 
+it('exige le téléphone à l’inscription', function () {
+    $this->post(route('account.register.store'), [
+        'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg',
+        'password' => 'MotDePasse123!', 'password_confirmation' => 'MotDePasse123!', 'terms' => '1',
+    ])->assertSessionHasErrors('phone');
+
+    expect(User::where('email', 'awa@example.tg')->exists())->toBeFalse();
+});
+
 it('inscrit un participant, le connecte et envoie l’e-mail de vérification', function () {
     Notification::fake();
 
@@ -15,6 +24,7 @@ it('inscrit un participant, le connecte et envoie l’e-mail de vérification', 
         'first_name' => 'Awa',
         'last_name' => 'Kodjo',
         'email' => 'awa@example.tg',
+        'phone' => '+22890000000',
         'affiliation' => 'Université de Kara',
         'password' => 'MotDePasse123!',
         'password_confirmation' => 'MotDePasse123!',
@@ -23,6 +33,7 @@ it('inscrit un participant, le connecte et envoie l’e-mail de vérification', 
 
     $account = User::firstWhere('email', 'awa@example.tg');
     expect($account)->not->toBeNull();
+    expect($account->phone)->toBe('+22890000000');
     expect($account->affiliation)->toBe('Université de Kara');
     expect($account->grade)->toBe('Enseignant-chercheur');
     expect(auth('account')->check())->toBeTrue();

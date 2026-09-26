@@ -66,7 +66,7 @@
         <div class="ukc-card" x-data="{ gw: '{{ optional($gateways[0] ?? null)->key() }}' }">
             <h3>Paiement Mobile Money</h3>
             <p style="font-size:14px;color:var(--ukc-muted);margin-bottom:16px;">
-                Paiement sécurisé via <strong>FedaPay</strong> (Mobile Money Togo / carte bancaire).
+                Paiement sécurisé par <strong>Mobile Money</strong> ou <strong>carte bancaire</strong>.
                 Le reçu PDF sera disponible dans <strong>Documents</strong> après confirmation.
             </p>
 
@@ -93,11 +93,18 @@
                             @php($k = $gateway->key())
                             <label class="ukc-mm-method" :class="{ selected: gw === '{{ $k }}' }" @click="gw = '{{ $k }}'">
                                 <input type="radio" name="mm" value="{{ $k }}" @checked($loop->first)>
-                                <div class="mm-logo {{ $k === 'manual' ? 'manual' : 'card' }}">{{ strtoupper(substr($k, 0, 4)) }}</div>
+                                <div class="mm-logo {{ $k === 'manual' ? 'manual' : 'card' }}">
+                                    <x-ukc.icon :name="$k === 'manual' ? 'receipt' : 'card'" :size="18" />
+                                </div>
                                 <span class="mm-name">{{ $gateway->label() }}</span>
                                 <span class="mm-sub">{{ $k === 'manual' ? 'Validation admin' : 'Paiement en ligne' }}</span>
                             </label>
                         @endforeach
+                    </div>
+                    <div class="ukc-field" style="max-width:340px;margin-top:14px;">
+                        <label for="operator">Opérateur mobile money</label>
+                        <x-ukc.pay-operator :gateways="$gateways" id="operator" />
+                        <span class="hint">Facultatif : pré-sélectionne votre opérateur à l’étape suivante.</span>
                     </div>
                     <div class="ukc-form-actions">
                         <button type="submit" class="ukc-btn ukc-btn--green">
@@ -107,7 +114,7 @@
                 </form>
 
                 <div class="ukc-pay-secure">
-                    <x-ukc.icon name="shield" :size="16" /> Paiement chiffré · FedaPay · Reçu automatique après confirmation
+                    <x-ukc.icon name="shield" :size="16" /> Paiement chiffré · Reçu automatique après confirmation
                 </div>
             @endif
         </div>

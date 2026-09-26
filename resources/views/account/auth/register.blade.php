@@ -70,6 +70,12 @@
         </div>
 
         <div class="ukc-field">
+            <label for="phone">{{ __('Téléphone') }} <span class="req">*</span></label>
+            <x-ukc.phone name="phone" :value="old('phone')" required />
+            @error('phone') <span class="error">{{ $message }}</span> @enderror
+        </div>
+
+        <div class="ukc-field">
             <label for="affiliation">{{ __('Institution / affiliation') }}</label>
             <input type="text" id="affiliation" name="affiliation" value="{{ old('affiliation') }}" autocomplete="organization" placeholder="{{ __('Ex. Université de Kara') }}">
             @error('affiliation') <span class="error">{{ $message }}</span> @enderror

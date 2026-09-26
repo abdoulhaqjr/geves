@@ -26,7 +26,31 @@ class FedaPayGateway implements OnlineGateway
 
     public function label(): string
     {
-        return 'Mobile money / carte (FedaPay)';
+        // ⚠️ Convention projet : on n'expose jamais le nom de l'agrégateur au payeur.
+        return 'Mobile money / carte bancaire';
+    }
+
+    /**
+     * Opérateurs mobile money ciblables (codes `mode` du prestataire). Sélectionner
+     * l'opérateur ici évite au payeur de le rechercher sur la page suivante.
+     *
+     * @return array<string, string>
+     */
+    public function mobileOperators(): array
+    {
+        return [
+            'togocel' => 'Togocel T-Money (Togo)',
+            'moov_tg' => 'Moov (Togo)',
+            'mtn_open' => 'MTN (Bénin)',
+            'moov' => 'Moov (Bénin)',
+            'sbin' => 'Celtiis Cash (Bénin)',
+            'bmo' => 'BESTCASH Money (Bénin)',
+            'coris_money' => 'Coris Money',
+            'mtn_open_ci' => 'MTN (Côte d’Ivoire)',
+            'wave_direct_ci' => 'Wave (Côte d’Ivoire)',
+            'free_sn' => 'Free (Sénégal)',
+            'airtel_ne' => 'Airtel (Niger)',
+        ];
     }
 
     public function isAvailable(): bool
@@ -71,13 +95,21 @@ class FedaPayGateway implements OnlineGateway
             ], fn ($v) => filled($v));
         }
 
-        $create = $this->http()->post($this->baseUrl().'/transactions', [
+        $body = [
             'description' => 'Frais d\'inscription - '.($payment->edition?->title ?? 'Colloque'),
             'amount' => (int) round((float) $payment->amount),
             'currency' => ['iso' => 'XOF'],
             'callback_url' => route('payment.return', ['gateway' => 'fedapay', 'payment' => $payment->id]),
             'customer' => $customer,
-        ])->throw()->json();
+        ];
+
+        // Opérateur choisi chez nous : la page du prestataire arrive pré-sélectionnée.
+        $operator = (string) ($payment->meta['operator'] ?? '');
+        if ($operator !== '' && array_key_exists($operator, $this->mobileOperators())) {
+            $body['mode'] = $operator;
+        }
+
+        $create = $this->http()->post($this->baseUrl().'/transactions', $body)->throw()->json();
 
         $id = $this->unwrap($create)['id'] ?? null;
         $payment->update(['gateway_ref' => $id]);

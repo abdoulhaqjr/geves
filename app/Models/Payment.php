@@ -149,6 +149,25 @@ class Payment extends Model
     }
 
     /**
+     * Mémorise l'opérateur mobile money choisi pour **cette tentative** (un
+     * paiement en attente peut être repris avec un autre opérateur). Vide = laisser
+     * le payeur choisir sur la page du prestataire.
+     */
+    public function setOperator(?string $operator): void
+    {
+        $operator = trim((string) $operator);
+        $meta = $this->meta ?? [];
+
+        if ($operator === '') {
+            unset($meta['operator']);
+        } else {
+            $meta['operator'] = $operator;
+        }
+
+        $this->update(['meta' => $meta]);
+    }
+
+    /**
      * Coordonnées du payeur transmises à la passerelle pour **pré-remplir sa page**
      * (mobile money / carte). On lit le participant de l'édition, avec repli sur le
      * **compte unifié** lié : le participant peut avoir été créé sans téléphone

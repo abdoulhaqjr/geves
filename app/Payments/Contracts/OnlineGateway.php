@@ -12,6 +12,16 @@ use Illuminate\Http\Request;
 interface OnlineGateway extends PaymentGateway
 {
     /**
+     * Opérateurs mobile money proposables au payeur AVANT la redirection, pour que
+     * la page du prestataire arrive pré-sélectionnée. Clé = code attendu par le
+     * prestataire, valeur = libellé affiché (⚠️ jamais le nom de l'agrégateur).
+     * Tableau vide si la passerelle ne sait pas cibler un opérateur.
+     *
+     * @return array<string, string>
+     */
+    public function mobileOperators(): array;
+
+    /**
      * Interroge le prestataire et renvoie un statut normalisé.
      *
      * @return 'paid'|'pending'|'failed'

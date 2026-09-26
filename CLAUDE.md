@@ -275,7 +275,18 @@ Voir la liste complète en [§8 de PASSATION.md](PASSATION.md). Les plus courant
 - **Paiement en ligne** : le statut « payé » vient **toujours** d'une vérification
   serveur ou d'un webhook à signature vérifiée (fail-closed), jamais d'un paramètre
   d'URL de retour.
-- **Téléphone obligatoire au profil** (`account.profile.update`) : il sert
+- **Ne jamais nommer l'agrégateur de paiement côté payeur** (FedaPay, CashPay,
+  SEMOA…) : les libellés de `PaymentGateway::label()` et les textes des pages de
+  paiement restent génériques (« Mobile money / carte bancaire »). Le nom de
+  l'agrégateur n'apparaît que dans la **configuration admin** de l'édition. Un test
+  (`PaymentOperatorTest`) garde cette règle.
+- **Opérateur mobile money** : choisi **chez nous** avant la redirection
+  (`<x-ukc.pay-operator :gateways="…" />` → `Payment::setOperator()` →
+  `meta['operator']` → `mode` chez le prestataire), pour que sa page arrive
+  pré-sélectionnée. `OnlineGateway::mobileOperators()` liste les codes ciblables
+  (vide si la passerelle ne sait pas le faire).
+- **Téléphone obligatoire à l'inscription ET au profil** (`account.register.store`,
+  `account.profile.update`) : il sert
   d'identifiant fort pour le rapprochement (auteurs, formateurs) et pré-remplit la
   passerelle. Les tests qui postent le profil doivent l'inclure.
 - **Identité venant d'un compte = jamais la saisie libre** : dès qu'un identifiant

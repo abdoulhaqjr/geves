@@ -125,6 +125,8 @@ class FormationController extends Controller
             'meta' => ['flow' => 'formation', 'formation_id' => $formation->id, 'enrollment_id' => $enrollment->id],
         ]);
         $enrollment->update(['payment_id' => $payment->id]);
+        // Opérateur choisi chez nous (pré-sélection sur la page du prestataire).
+        $payment->setOperator($request->input('operator'));
 
         try {
             $result = $gateway->initiate($payment);
