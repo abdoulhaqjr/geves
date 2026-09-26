@@ -168,7 +168,11 @@ capacité RBAC **`formation`**. Tables `formations` (plusieurs par édition ; `f
 colonnes `meeting_*` pour la visio) + `formation_trainers` (`user_id` + repli libre) +
 `formation_enrollments` (inscription `user_id`, `status` registered→paid). Admin :
 `Admin\FormationController` (`admin.formations*`). Participant : `Account\FormationController`
-(`account.formations` = `/formations`, inscription gratuite/payante). **Paiement de nature
+(`account.formations` = `/formations`, inscription gratuite/payante). ⚠️ **Une formation
+appartient à une édition (= l'événement)** : l'espace participant se scope sur **l'édition
+sélectionnée** (`CurrentColloque::current()`). Si cette édition ne propose pas de formation
+(module désactivé **ou** aucune formation publiée → `Formation::offeredIn($edition)` faux),
+le **lien du menu est masqué ET la page renvoie 404**. **Paiement de nature
 `formation`** : `Payment.meta.flow='formation'` (helper `Payment::flow()`) ; ⚠️ **`ConfirmPayment`
 est flow-aware** — la garde anti-double ne vaut que pour la **participation**, donc participation +
 formation(s) + co-auteur coexistent. Page publique : section `#formations` (formations `public`)
@@ -176,10 +180,14 @@ via `Public\ColloqueController`. E-mails : confirmation d'inscription (`Formatio
 kind notif `formation`) + message admin aux inscrits (`admin.formations.message`, réutilise
 `CampaignMail`). Attestations : type `formation` (inscrits) + nouveau `formation_animation`
 (formateurs), émises depuis la page Formations (`admin.formations.attestations`) ; colonne
-`attestations.formation_id`, variable `{formation}`. **Visio** : interface `App\Meetings\Contracts\Meetable`
-(implémentée par `EventSession` **et** `Formation`) ; config admin (`admin.formations.meeting`), le
-participant rejoint via `account.formations.visio` (redirection vers la salle si live + autorisé :
-formateurs = modérateur, inscrits éligibles = participant). **Module complet (phases 1-6)** + raffinements admin :
+`attestations.formation_id`, variable `{formation}`. **Visio = le module visio, pas une reimplémentation** : contrat
+`App\Meetings\Contracts\Meetable` + trait **`App\Meetings\Concerns\JoinsMeetings`** (URL de
+connexion, embarquement Jitsi, lecteur LiveKit) partagés par `EventSession` **et** `Formation` ;
+seul **`meetingRoleFor()`** est propre à chaque modèle. La page « Rejoindre » est **la même**
+(`MeetingController`, vue `meeting.join`) : `session.meeting` pour une session,
+`account.formations.visio` pour une formation. Tout nouveau modèle portant une visio
+**implémente `Meetable` + `use JoinsMeetings`** et passe par `MeetingController`, jamais par
+une redirection maison. **Module complet (phases 1-6)** + raffinements admin :
 **activation via le formulaire d'édition** (onglet Options, `settings.formation_enabled`, `Edition::formationEnabled()`),
 **ajout via slideover** (bouton « Nouvelle formation »), **flyer** (`formations.flyer_path`, `<x-ukc.filedrop>`),
 **paramétrage assisté IA** (`ExtractFormationFromDocuments`, `admin.formations.ai`). Suivi admin nominatif des inscrits fait.
@@ -269,6 +277,11 @@ Voir la liste complète en [§8 de PASSATION.md](PASSATION.md). Les plus courant
   d'URL de retour.
 - **`@php(...)`/`@json([...])` multi-ligne** dans une vue peut casser le compilateur
   Blade - préparer la donnée dans le contrôleur/composant.
+- **Directive Blade collée à un mot** : `texte@if ($x)` **n'est pas compilé** (Blade
+  exige un caractère non-alphanumérique avant `@`), mais le `@endif` l'est → `endif`
+  orphelin et **fatal `unexpected token "elseif"`** plus loin dans la vue. Mettre une
+  espace avant la directive, ou (mieux) sortir la condition dans une expression
+  `{{ $x ? ... : ... }}`.
 - **`settings.fees`** = **liste de `['label' => string, 'amount' => float]`** (jamais un
   tableau associatif `grade => montant`). Toujours lire via **`App\Support\Fees::grid()`**
   / **`Fees::normalize()`** (qui ignorent les entrées malformées) - jamais l'accès brut,

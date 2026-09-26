@@ -46,30 +46,37 @@ it('un inscrit non réglé d’une formation payante ne peut pas rejoindre', fun
     expect($formation->canJoin($user, false))->toBeFalse();
 });
 
-it('redirige vers la salle quand la visio est en cours et l’accès autorisé', function () {
+it('ouvre la salle du module visio quand la visio est en cours et l’accès autorisé', function () {
     $edition = openEdition();
     $formation = liveFormation($edition);
     $user = verifiedAccount();
     $p = $edition->participants()->create(['first_name' => 'A', 'last_name' => 'K', 'email' => $user->email, 'role' => 'trainee', 'user_id' => $user->id]);
     FormationEnrollment::create(['formation_id' => $formation->id, 'edition_id' => $edition->id, 'user_id' => $user->id, 'participant_id' => $p->id, 'status' => 'paid', 'amount' => 10000]);
 
-    $resp = $this->actingAs($user, 'account')->get(route('account.formations.visio', $formation));
-    $resp->assertRedirect();
-    expect($resp->headers->get('Location'))->toContain('meet.jit.si');
+    // Même page que les sessions du programme : embarquement Jitsi inline.
+    $this->actingAs($user, 'account')->get(route('account.formations.visio', $formation))
+        ->assertOk()
+        ->assertSee('jitsi-container', false)
+        ->assertSee($formation->title);
 });
 
-it('bloque la visio si non en cours ou accès refusé', function () {
+it('la salle visio d’une formation indique l’état sans donner l’accès', function () {
     $edition = openEdition();
-    // Non en cours
+
+    // Non en cours : la page s'affiche mais annonce que la visio n'est pas en cours.
     $off = Formation::create(['edition_id' => $edition->id, 'title' => 'Off', 'fee' => 0, 'published' => true, 'meeting_status' => 'none']);
     $this->actingAs(verifiedAccount(), 'account')->get(route('account.formations.visio', $off))
-        ->assertRedirect(route('account.formations'));
+        ->assertOk()
+        ->assertSee('n’est pas en cours', false)
+        ->assertDontSee('jitsi-container', false);
 
-    // En cours mais non inscrit
+    // En cours mais non inscrit : accès réservé, aucune salle embarquée.
     $live = liveFormation($edition);
     $stranger = User::create(['name' => 'Etranger', 'first_name' => 'E', 'last_name' => 'T', 'email' => 'stranger@example.tg', 'password' => 'pass12345']);
     $this->actingAs($stranger, 'account')->get(route('account.formations.visio', $live))
-        ->assertRedirect(route('account.formations'));
+        ->assertOk()
+        ->assertSee('Accès réservé', false)
+        ->assertDontSee('jitsi-container', false);
 });
 
 it('permet à l’admin de configurer la visio', function () {

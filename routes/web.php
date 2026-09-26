@@ -208,7 +208,9 @@ Route::middleware(['auth:account', StampAccountSession::class])->group(function 
     Route::post('/compte/paiement/{edition}', [AccountPaymentController::class, 'pay'])->name('account.payment.pay');
     Route::get('/formations', [AccountFormationController::class, 'index'])->name('account.formations');
     Route::post('/formations/{formation}/inscription', [AccountFormationController::class, 'enroll'])->name('account.formations.enroll');
-    Route::get('/formations/{formation}/visio', [AccountFormationController::class, 'visio'])->name('account.formations.visio');
+    // Visio d'une formation : page du module visio (MeetingController), la même
+    // que pour les sessions du programme (lecteur inline, rôles, arrière-plans).
+    Route::get('/formations/{formation}/visio', [MeetingController::class, 'joinFormation'])->name('account.formations.visio');
     Route::get('/compte/recu/{payment}', App\Http\Controllers\Account\ReceiptController::class)->name('account.receipt');
     Route::get('/compte/edition/{edition}/livret', [App\Http\Controllers\Account\DocumentController::class, 'livret'])->name('account.documents.livret');
 

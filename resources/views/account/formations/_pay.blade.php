@@ -1,13 +1,20 @@
 @if (count($gateways) === 0)
-    <p style="font-size:12px;color:var(--ukc-light);margin:0;">{{ __('Paiement momentanément indisponible.') }}</p>
+    <span style="font-size:12px;color:var(--ukc-light);">{{ __('Paiement momentanément indisponible.') }}</span>
 @else
-    <form method="POST" action="{{ route('account.formations.enroll', $f) }}" style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+    <form method="POST" action="{{ route('account.formations.enroll', $f) }}" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0;">
         @csrf
-        <select name="gateway" style="min-width:160px;padding:6px 8px;border:1px solid var(--ukc-border,#e5e7eb);border-radius:8px;">
-            @foreach ($gateways as $g)
-                <option value="{{ $g->key() }}">{{ $g->label() }}</option>
-            @endforeach
-        </select>
-        <button type="submit" class="ukc-btn ukc-btn--blue"><x-ukc.icon name="card" :size="14" /> {{ $label }}</button>
+        @if (count($gateways) > 1)
+            <select name="gateway" aria-label="{{ __('Moyen de paiement') }}"
+                    style="padding:7px 10px;border:1px solid var(--ukc-border,#e5e7eb);border-radius:9px;font-size:12.5px;background:#fff;max-width:200px;">
+                @foreach ($gateways as $g)
+                    <option value="{{ $g->key() }}">{{ $g->label() }}</option>
+                @endforeach
+            </select>
+        @else
+            <input type="hidden" name="gateway" value="{{ $gateways[0]->key() }}">
+        @endif
+        <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm" style="white-space:nowrap;">
+            <x-ukc.icon name="card" :size="14" /> {{ $label }}
+        </button>
     </form>
 @endif

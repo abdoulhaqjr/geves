@@ -1,4 +1,4 @@
-<x-layouts.app :title="'Visio - ' . $session->label">
+<x-layouts.app :title="'Visio - ' . $label">
 @if ($liveKit)
     {{-- ============ Salle LiveKit intégrée (lecteur maison, SDK bundlé) ============ --}}
     <style>
@@ -171,7 +171,9 @@
                 <span class="pill lk">LiveKit</span>
                 <span class="pill warn" id="connPill">Connexion…</span>
                 <button type="button" class="v-btn ghost sm" id="btnToggleSide">Panneau</button>
-                <a href="{{ route('session.engagement', $session) }}" class="v-btn ghost sm">Questions &amp; sondages</a>
+                @if ($engagementUrl)
+                    <a href="{{ $engagementUrl }}" class="v-btn ghost sm">Questions &amp; sondages</a>
+                @endif
                 <a href="{{ $liveKit['backUrl'] }}" class="v-btn danger sm" id="btnLeaveTop">Quitter</a>
             </div>
         </header>
@@ -300,33 +302,32 @@
     <script type="application/json" id="lk-config">@json($liveKit)</script>
 @else
     {{-- ============ Jitsi / lien externe / messages ============ --}}
-    @php($st = $session->meetingStatusEnum())
     <div style="display:flex;flex-direction:column;height:100vh;">
         <header style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
                        padding:10px clamp(12px,3vw,24px);background:#fff;border-bottom:1px solid var(--ukc-border);">
             <div style="min-width:0;">
                 <div style="display:flex;align-items:center;gap:8px;">
-                    @if ($session->isLive())
+                    @if ($isLive)
                         <span class="ukc-pill ukc-pill--err" style="display:inline-flex;align-items:center;gap:5px;">
                             <span style="width:8px;height:8px;border-radius:50%;background:currentColor;"></span> EN DIRECT
                         </span>
                     @endif
-                    <strong style="font-size:1rem;">{{ $session->label }}</strong>
+                    <strong style="font-size:1rem;">{{ $label }}</strong>
                 </div>
                 <div style="font-size:.8rem;color:var(--ukc-muted);">
-                    {{ $session->edition?->title }}
+                    {{ $editionTitle }}
                     @if ($role->canJoin()) · Vous rejoignez en tant que
                         <strong>{{ ['moderator' => 'modérateur', 'presenter' => 'présentateur', 'attendee' => 'participant'][$role->value] ?? '' }}</strong>
                     @endif
                 </div>
             </div>
             <div style="display:flex;gap:8px;">
-                @if ($role->canJoin())
-                    <a href="{{ route('session.engagement', $session) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+                @if ($engagementUrl)
+                    <a href="{{ $engagementUrl }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">
                         <x-ukc.icon name="inbox" :size="16" /> Questions &amp; sondages
                     </a>
                 @endif
-                <a href="{{ url()->previous() }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
+                <a href="{{ $backUrl }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
                     <x-ukc.icon name="close" :size="16" /> Quitter
                 </a>
             </div>
@@ -347,7 +348,7 @@
                             userInfo: { displayName: @js($embed['userName']) },
                             configOverwrite: { prejoinPageEnabled: true },
                         });
-                        api.addListener('readyToClose', function () { window.location = @js(url()->previous() ?: route('home')); });
+                        api.addListener('readyToClose', function () { window.location = @js($backUrl); });
                     })();
                 </script>
             @elseif ($externalUrl)
@@ -361,7 +362,7 @@
                         </a>
                     </div>
                 </div>
-            @elseif ($session->isLive() && $role->canJoin())
+            @elseif ($isLive && $role->canJoin())
                 <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:24px;">
                     <div class="ukc-card" style="max-width:460px;text-align:center;">
                         <h3 style="margin-bottom:6px;">Salle non configurée</h3>
@@ -372,11 +373,16 @@
                 <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:24px;">
                     <div class="ukc-card" style="max-width:460px;text-align:center;">
                         <span class="ico" style="display:inline-flex;color:var(--ukc-blue);margin-bottom:8px;"><x-ukc.icon name="video" :size="34" /></span>
-                        @if (! $session->isLive())
+                        @if (! $isLive)
                             <h3 style="margin-bottom:6px;">La visio n’est pas en cours</h3>
-                            <p style="color:var(--ukc-muted);">{{ $st->label() }}. Revenez à l’heure de la session{{ '' }}@if ($session->starts_at) ({{ $session->starts_at->translatedFormat('d F, H:i') }})@endif.</p>
-                            @if ($session->hasRecording())
-                                <a href="{{ $session->recording_url }}" target="_blank" class="ukc-btn ukc-btn--blue" style="margin-top:14px;"><x-ukc.icon name="video" :size="16" /> Voir le replay</a>
+                            <p style="color:var(--ukc-muted);">
+                                {{ $statusLabel }}.
+                                {{ $startsAt
+                                    ? __('Revenez à l’heure prévue (:date).', ['date' => $startsAt->translatedFormat('d F, H:i')])
+                                    : __('Revenez à l’heure prévue.') }}
+                            </p>
+                            @if ($recordingUrl)
+                                <a href="{{ $recordingUrl }}" target="_blank" class="ukc-btn ukc-btn--blue" style="margin-top:14px;"><x-ukc.icon name="video" :size="16" /> Voir le replay</a>
                             @endif
                         @elseif ($isGuest)
                             <h3 style="margin-bottom:6px;">Connexion requise</h3>

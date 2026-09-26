@@ -7,8 +7,15 @@ use App\Models\Payment;
 
 // openEdition()/verifiedAccount() -> tests/Pest.php
 
+/**
+ * Formation publiée + module Formations activé sur son édition : c'est
+ * l'invariant réel (une formation n'est proposée que si le module est activé
+ * pour l'édition, cf. Formation::offeredIn).
+ */
 function publishedFormation($edition, float $fee): Formation
 {
+    $edition->update(['settings' => array_merge($edition->settings ?? [], ['formation_enabled' => true])]);
+
     return Formation::create([
         'edition_id' => $edition->id,
         'title' => $fee > 0 ? 'Formation payante' : 'Formation gratuite',
@@ -17,18 +24,56 @@ function publishedFormation($edition, float $fee): Formation
     ]);
 }
 
-it('affiche la page des formations du participant (formation payante) sans erreur', function () {
-    $edition = openEdition();
+it('affiche les formations de l’édition sélectionnée (formation payante) sans erreur', function () {
+    $edition = openEdition(['formation_enabled' => true]);
     $user = verifiedAccount();
     $edition->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'author', 'user_id' => $user->id,
     ]);
     $formation = publishedFormation($edition, 10000);
-    $formation->update(['public' => true]);
 
     $this->actingAs($user, 'account')->get(route('account.formations'))
         ->assertOk()
         ->assertSee($formation->title);
+});
+
+it('n’expose pas la page Formations si le module est désactivé pour l’édition', function () {
+    $edition = openEdition();
+    $user = verifiedAccount();
+    $edition->participants()->create([
+        'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'author', 'user_id' => $user->id,
+    ]);
+    publishedFormation($edition, 0);
+    $edition->update(['settings' => array_merge($edition->settings ?? [], ['formation_enabled' => false])]);
+
+    $this->actingAs($user, 'account')->get(route('account.formations'))->assertNotFound();
+});
+
+it('n’expose pas la page Formations si l’édition n’a aucune formation publiée', function () {
+    $edition = openEdition(['formation_enabled' => true]);
+    $user = verifiedAccount();
+    $edition->participants()->create([
+        'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'author', 'user_id' => $user->id,
+    ]);
+    publishedFormation($edition, 0)->update(['published' => false]);
+
+    $this->actingAs($user, 'account')->get(route('account.formations'))->assertNotFound();
+});
+
+it('ne liste pas les formations d’une autre édition que celle sélectionnée', function () {
+    $edition = openEdition(['formation_enabled' => true]);
+    $other = openEdition(['formation_enabled' => true]);
+    $user = verifiedAccount();
+    $edition->participants()->create([
+        'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'author', 'user_id' => $user->id,
+    ]);
+    $mine = publishedFormation($edition, 0);
+    $foreign = Formation::create(['edition_id' => $other->id, 'title' => 'Formation d’ailleurs', 'fee' => 0, 'published' => true]);
+
+    $this->actingAs($user, 'account')->get(route('account.formations'))
+        ->assertOk()
+        ->assertSee($mine->title)
+        ->assertDontSee($foreign->title);
 });
 
 it('inscrit directement à une formation gratuite (sans paiement)', function () {
@@ -102,11 +147,4 @@ it('conserve la garde anti-double sur les frais de participation', function () {
     ]);
 
     expect(fn () => app(ConfirmPayment::class)->handle($second))->toThrow(DomainException::class);
-});
-
-it('affiche l’espace Formations du participant', function () {
-    $this->actingAs(verifiedAccount(), 'account')
-        ->get(route('account.formations'))
-        ->assertOk()
-        ->assertSee('Formations');
 });

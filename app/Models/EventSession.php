@@ -5,10 +5,8 @@ namespace App\Models;
 use App\Enums\MeetingRole;
 use App\Enums\MeetingStatus;
 use App\Enums\MeetingVisibility;
+use App\Meetings\Concerns\JoinsMeetings;
 use App\Meetings\Contracts\Meetable;
-use App\Meetings\MeetingProviderRegistry;
-use App\Meetings\Providers\JitsiProvider;
-use App\Meetings\Providers\LiveKitProvider;
 use App\Support\StreamEmbed;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -34,6 +32,8 @@ use Illuminate\Support\Str;
  */
 class EventSession extends Model implements Meetable
 {
+    use JoinsMeetings;
+
     protected $table = 'event_sessions';
 
     protected $guarded = ['id'];
@@ -184,94 +184,6 @@ class EventSession extends Model implements Meetable
         }
 
         return MeetingRole::None;
-    }
-
-    /** Cet utilisateur peut-il rejoindre la visio ? */
-    public function canJoin(?User $account, bool $isStaff = false): bool
-    {
-        return $this->meetingRoleFor($account, $isStaff)->canJoin();
-    }
-
-    /** URL de connexion à la salle pour cet utilisateur (ou null si refusé/absente). */
-    public function joinUrl(?User $account, bool $isStaff = false, ?string $displayName = null): ?string
-    {
-        $role = $this->meetingRoleFor($account, $isStaff);
-
-        if (! $role->canJoin()) {
-            return null;
-        }
-
-        $name = $displayName ?: ($isStaff ? 'Organisation' : $account?->full_name);
-
-        return app(MeetingProviderRegistry::class)->for($this)->joinUrl($this, $role, $name) ?: null;
-    }
-
-    /** La salle du fournisseur de cette session peut-elle être embarquée en iframe ? */
-    public function meetingEmbeddable(): bool
-    {
-        return app(MeetingProviderRegistry::class)->for($this)->embeddable();
-    }
-
-    /**
-     * Config pour l'IFrame API Jitsi (JitsiMeetExternalAPI), ou null si le
-     * fournisseur n'est pas Jitsi / accès refusé.
-     *
-     * @return array{domain: string, roomName: string, jwt: ?string, userName: string}|null
-     */
-    public function meetingEmbedConfig(?User $account, bool $isStaff = false, ?string $displayName = null): ?array
-    {
-        $role = $this->meetingRoleFor($account, $isStaff);
-
-        if (! $role->canJoin()) {
-            return null;
-        }
-
-        $provider = app(MeetingProviderRegistry::class)->for($this);
-
-        if (! $provider instanceof JitsiProvider) {
-            return null;
-        }
-
-        $name = $displayName ?: ($isStaff ? 'Organisation' : $account?->full_name);
-
-        return $provider->embedConfig($this, $role, $name);
-    }
-
-    /**
-     * Config pour le lecteur LiveKit inline (SDK livekit-client), ou null si le
-     * fournisseur n'est pas LiveKit / accès refusé. Le token porte les droits
-     * (publier/s'abonner/admin) dérivés du rôle.
-     *
-     * @return array{url: string, token: string, userName: string, canPublish: bool}|null
-     */
-    public function liveKitEmbedConfig(?User $account, bool $isStaff = false, ?string $displayName = null): ?array
-    {
-        $role = $this->meetingRoleFor($account, $isStaff);
-
-        if (! $role->canJoin()) {
-            return null;
-        }
-
-        $provider = app(MeetingProviderRegistry::class)->for($this);
-
-        if (! $provider instanceof LiveKitProvider) {
-            return null;
-        }
-
-        $name = $displayName ?: ($isStaff ? 'Organisation' : $account?->full_name);
-
-        return [
-            'url' => (string) config('meetings.livekit.url'),
-            'token' => $provider->token($this, $role, $name),
-            'userName' => $name ?: 'Invité',
-            'canPublish' => in_array($role, [MeetingRole::Moderator, MeetingRole::Presenter], true),
-            'role' => match ($role) {
-                MeetingRole::Moderator => 'moderator',
-                MeetingRole::Presenter => 'presenter',
-                default => 'audience',
-            },
-            'roomName' => $this->meetingRoom(),
-        ];
     }
 
     /**

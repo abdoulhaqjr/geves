@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Mail;
 
 it('envoie une confirmation d’inscription et notifie à l’inscription', function () {
     Mail::fake();
-    $edition = openEdition();
+    $edition = openEdition(['formation_enabled' => true]);
     $user = verifiedAccount();
     $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'Atelier data', 'fee' => 0, 'published' => true]);
 
@@ -24,7 +24,7 @@ it('envoie une confirmation d’inscription et notifie à l’inscription', func
 
 it('ne renvoie pas la confirmation si déjà inscrit', function () {
     Mail::fake();
-    $edition = openEdition();
+    $edition = openEdition(['formation_enabled' => true]);
     $user = verifiedAccount();
     $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'Atelier data', 'fee' => 0, 'published' => true]);
 
@@ -35,7 +35,7 @@ it('ne renvoie pas la confirmation si déjà inscrit', function () {
 });
 
 it('envoie un message admin aux inscrits et le journalise', function () {
-    $edition = openEdition();
+    $edition = openEdition(['formation_enabled' => true]);
     $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'Rédaction', 'fee' => 0, 'published' => true]);
 
     $u1 = verifiedAccount();
@@ -55,7 +55,7 @@ it('envoie un message admin aux inscrits et le journalise', function () {
 });
 
 it('cible uniquement les inscrits ayant réglé', function () {
-    $edition = openEdition();
+    $edition = openEdition(['formation_enabled' => true]);
     $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'Payante', 'fee' => 10000, 'published' => true]);
 
     $paid = verifiedAccount();

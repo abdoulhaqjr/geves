@@ -9,6 +9,7 @@ use App\Models\Formation;
 use App\Models\FormationEnrollment;
 use App\Models\Payment;
 use App\Payments\GatewayRegistry;
+use App\Support\CurrentColloque;
 use App\Support\EditionPaymentConfig;
 use App\Support\Notifier;
 use Illuminate\Http\RedirectResponse;
@@ -17,51 +18,41 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 /**
- * Espace participant : formations proposées (publiées) des éditions ouvertes ou
- * auxquelles le compte participe, avec inscription. Gratuite → inscription
- * directe ; payante → paiement via la couche Payment (`meta.flow = 'formation'`).
+ * Espace participant : formations de l'**édition sélectionnée** (une formation
+ * appartient toujours à une édition = l'événement), avec inscription. Gratuite →
+ * inscription directe ; payante → paiement via la couche Payment
+ * (`meta.flow = 'formation'`). Si l'édition courante ne propose pas de formation
+ * (module désactivé ou aucune formation publiée), la page n'existe pas (404) et
+ * le lien du menu est masqué.
  */
 class FormationController extends Controller
 {
     public function index(Request $request, GatewayRegistry $registry): View
     {
         $user = $request->user();
+        $edition = CurrentColloque::current($user);
+        abort_unless(Formation::offeredIn($edition), 404);
 
-        $formations = Formation::with('edition.colloque', 'trainers')
-            ->visibleTo($user)
+        $formations = Formation::with('trainers')
+            ->publishedIn($edition)
             ->orderByRaw('starts_at is null, starts_at')
             ->get();
 
         $enrollments = FormationEnrollment::where('user_id', $user->id)
+            ->whereIn('formation_id', $formations->pluck('id'))
             ->get()->keyBy('formation_id');
 
         return view('account.formations.index', [
+            'edition' => $edition,
             'formations' => $formations,
             'enrollments' => $enrollments,
             'gateways' => $registry->available(),
         ]);
     }
 
-    /** Rejoindre la visio de la formation (redirige vers la salle si en cours + autorisé). */
-    public function visio(Request $request, Formation $formation): RedirectResponse
-    {
-        $back = redirect()->route('account.formations');
-
-        if (! $formation->isLive()) {
-            return $back->with('ukc_error', 'La visio de cette formation n’est pas en cours.');
-        }
-
-        $url = $formation->joinUrl($request->user(), false);
-        if (! $url) {
-            return $back->with('ukc_error', 'Accès à la visio réservé aux inscrits et aux formateurs.');
-        }
-
-        return redirect()->away($url);
-    }
-
     public function enroll(Request $request, Formation $formation, UpsertParticipantForAccount $upsert, GatewayRegistry $registry): RedirectResponse
     {
-        abort_unless($formation->published, 404);
+        abort_unless($formation->published && (bool) $formation->edition?->formationEnabled(), 404);
         EditionPaymentConfig::apply($formation->edition); // passerelle propre à l'édition
         $user = $request->user();
         $back = redirect()->route('account.formations');

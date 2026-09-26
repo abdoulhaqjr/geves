@@ -20,7 +20,7 @@
 
     {{-- Widget flottant Gesco - public + espace participant ; pas dans le
          back-office, la salle visio, ni la page chat dédiée. --}}
-    @unless (request()->routeIs('admin.*') || request()->routeIs('session.meeting') || request()->routeIs('public.gesco'))
+    @unless (request()->routeIs('admin.*') || request()->routeIs('session.meeting') || request()->routeIs('account.formations.visio') || request()->routeIs('public.gesco'))
         <x-ukc.gesco-widget />
     @endunless
 

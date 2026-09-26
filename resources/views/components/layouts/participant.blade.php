@@ -7,10 +7,11 @@
     // Appels à communications ouverts (colloques en cours / à venir) auxquels le
     // compte ne participe pas encore : sélectionnables pour soumettre.
     $openCalls = $account ? \App\Support\CurrentColloque::openCalls($account) : collect();
-    $colloqueEdition = $account ? \App\Support\CurrentColloque::current($account) : null;
+    // Édition réellement sélectionnée (null si le compte n'a rien de sélectionnable).
+    $currentEdition = $account ? \App\Support\CurrentColloque::current($account) : null;
 
     // Repli pour les liens publics si le compte ne participe encore à rien.
-    $colloqueEdition = $colloqueEdition
+    $colloqueEdition = $currentEdition
         ?? \App\Models\Edition::where('status', 'open')->latest('id')->first();
 
     // Paiement : l'édition courante si elle est à régler, sinon la première à régler.
@@ -26,11 +27,10 @@
             ->whereDoesntHave('payments', fn ($q) => $q->where('status', 'paid'))
             ->latest('id')->value('edition_id');
 
-    // Lien « Formations » masqué si aucune formation n'est visible pour le compte
-    // (module non activé ou aucune formation ajoutée => aucune formation publiée).
-    $hasFormations = $account
-        ? \App\Models\Formation::visibleTo($account)->exists()
-        : false;
+    // Lien « Formations » : uniquement si l'ÉDITION SÉLECTIONNÉE propose des
+    // formations (module activé pour elle + au moins une formation publiée).
+    // Même règle que la garde de la page (404 sinon).
+    $hasFormations = \App\Models\Formation::offeredIn($currentEdition);
 @endphp
 <x-layouts.app :title="$title ?? 'Mon espace'">
     <div class="ukc-shell"
