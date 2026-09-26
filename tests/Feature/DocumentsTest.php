@@ -242,6 +242,35 @@ it('liste les modèles d’attestation du module Formation avec émission par fo
         ->assertSee(route('admin.formations', ['edition_id' => $edition->id]), false);
 });
 
+it('filtre les attestations délivrées par nom, e-mail et date d’émission', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+    $base = ['edition_id' => $edition->id, 'tab' => 'attestations', 'stab' => 'delivrees'];
+
+    Attestation::create([
+        'edition_id' => $edition->id, 'type' => 'participation', 'uuid' => 'uuid-awa',
+        'recipient_name' => 'Awa Kodjo', 'recipient_email' => 'awa@example.tg',
+        'revoked' => false, 'issued_at' => now()->subDays(10),
+    ]);
+    Attestation::create([
+        'edition_id' => $edition->id, 'type' => 'participation', 'uuid' => 'uuid-kofi',
+        'recipient_name' => 'Kofi Mensah', 'recipient_email' => 'kofi@example.tg',
+        'revoked' => false, 'issued_at' => now(),
+    ]);
+
+    // Par nom.
+    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['search' => 'Awa']))
+        ->assertOk()->assertSee('Awa Kodjo')->assertDontSee('Kofi Mensah');
+
+    // Par e-mail.
+    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['search' => 'kofi@example.tg']))
+        ->assertOk()->assertSee('Kofi Mensah')->assertDontSee('Awa Kodjo');
+
+    // Par date d'émission (les 3 derniers jours).
+    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['from' => now()->subDays(3)->toDateString()]))
+        ->assertOk()->assertSee('Kofi Mensah')->assertDontSee('Awa Kodjo');
+});
+
 it('sert chaque sous-onglet des attestations par son URL (?stab=)', function () {
     $staff = adminStaff();
     $edition = openEdition();

@@ -97,7 +97,7 @@
 
                 {{-- Options générales attestations --}}
                 <div @if ($stab !== 'options') style="display:none;" @endif>
-                    <form method="POST" action="{{ route('admin.documents.attestations.options') }}" data-ajax data-ajax-msg="Options des attestations enregistrées." class="ukc-card" style="max-width:640px;">
+                    <form method="POST" action="{{ route('admin.documents.attestations.options') }}" data-ajax data-ajax-msg="Options des attestations enregistrées." class="ukc-card">
                         <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                         @csrf
                         <h3>Options générales · Attestations</h3>
@@ -191,7 +191,7 @@
                 </div>
 
                 <div x-show="badge==='options'" x-cloak>
-                    <form method="POST" action="{{ route('admin.documents.badges.options') }}" data-ajax data-ajax-msg="Options des badges enregistrées." class="ukc-card" style="max-width:640px;">
+                    <form method="POST" action="{{ route('admin.documents.badges.options') }}" data-ajax data-ajax-msg="Options des badges enregistrées." class="ukc-card">
                         <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                         @csrf
                         <h3>Options générales · Badges</h3>

@@ -95,10 +95,7 @@
                        @class(['active' => request()->routeIs('admin.documents.*')])>
                         <x-ukc.icon name="folder" :size="18" /> <span class="txt">Documents</span>
                     </a>
-                    <a href="{{ route('admin.documents.attestations', ['tab' => 'attestations', 'stab' => 'delivrees']) }}" title="Attestations délivrées"
-                       @class(['active' => request()->routeIs('admin.documents.attestations') && request()->query('stab') === 'delivrees'])>
-                        <x-ukc.icon name="diploma" :size="18" /> <span class="txt">Attestations délivrées</span>
-                    </a>
+                    {{-- « Attestations délivrées » est un sous-onglet de Documents. --}}
                 @endif
                 @if ($staff?->canAnyEdition('emails'))
                     <a href="{{ route('admin.emails.index') }}" title="E-mails"

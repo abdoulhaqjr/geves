@@ -416,6 +416,30 @@ class DocumentHubController extends Controller
             $query->where('revoked', true);
         }
 
+        // Recherche nom / e-mail : sur l'attestation (figés à l'émission) ET sur le
+        // participant lié, car une attestation peut viser quelqu'un sans compte.
+        $search = trim((string) $request->query('search', ''));
+        if ($search !== '') {
+            $term = '%'.$search.'%';
+            $query->where(fn ($q) => $q
+                ->where('recipient_name', 'like', $term)
+                ->orWhere('recipient_email', 'like', $term)
+                ->orWhereHas('participant', fn ($p) => $p
+                    ->where('first_name', 'like', $term)
+                    ->orWhere('last_name', 'like', $term)
+                    ->orWhere('email', 'like', $term)));
+        }
+
+        // Période d'émission.
+        $from = (string) $request->query('from', '');
+        $to = (string) $request->query('to', '');
+        if ($from !== '') {
+            $query->whereDate('issued_at', '>=', $from);
+        }
+        if ($to !== '') {
+            $query->whereDate('issued_at', '<=', $to);
+        }
+
         $sort = ListSort::resolve(
             $request,
             ['recipient_name', 'type', 'uuid', 'issued_at', 'revoked'],
@@ -441,6 +465,9 @@ class DocumentHubController extends Controller
             'issuedStats' => $stats,
             'type' => $type,
             'state' => $state,
+            'search' => $search,
+            'from' => $from,
+            'to' => $to,
             'sort' => $sort['sort'],
             'dir' => $sort['dir'],
         ];

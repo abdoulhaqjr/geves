@@ -22,7 +22,12 @@
         <option value="valid" @selected($state === 'valid')>Valides</option>
         <option value="revoked" @selected($state === 'revoked')>Révoquées</option>
     </select>
-    @if ($type !== '' || $state !== '')
+    <input type="search" name="search" value="{{ $search }}" placeholder="Nom ou e-mail du bénéficiaire…" style="min-width:230px;"
+           onkeydown="if(event.key==='Enter'){this.form.submit();}">
+    <span class="sep" style="width:1px;height:24px;background:var(--ukc-border);align-self:center;"></span>
+    <input type="date" name="from" value="{{ $from }}" title="Émise à partir du" onchange="this.form.submit()">
+    <input type="date" name="to" value="{{ $to }}" title="Émise jusqu’au" onchange="this.form.submit()">
+    @if ($type !== '' || $state !== '' || $search !== '' || $from !== '' || $to !== '')
         <a href="{{ route('admin.documents.attestations', $base) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
     @endif
 </form>
@@ -77,6 +82,16 @@
     </div>
 </div>
 
-@if ($issued->hasPages())
-    <div style="margin-top:16px;">{{ $issued->links() }}</div>
-@endif
+{{-- Compteur + pagination (les liens conservent les filtres via withQueryString). --}}
+<div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <span style="font-size:12.5px;color:var(--ukc-muted);">
+        @if ($issued->total() > 0)
+            {{ $issued->firstItem() }}–{{ $issued->lastItem() }} sur {{ $issued->total() }} attestation(s)
+        @else
+            Aucune attestation pour ce filtre.
+        @endif
+    </span>
+    @if ($issued->hasPages())
+        <div>{{ $issued->links() }}</div>
+    @endif
+</div>
