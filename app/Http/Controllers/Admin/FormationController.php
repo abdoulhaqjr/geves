@@ -44,7 +44,7 @@ class FormationController extends Controller
             'moduleEnabled' => $edition ? $edition->formationEnabled() : false,
             'aiAvailable' => app(AiManager::class)->resolve() !== null,
             'formations' => $edition
-                ? Formation::with(['trainers', 'enrollments' => fn ($q) => $q->with('user')->latest('id')])
+                ? Formation::with(['trainers.user', 'enrollments' => fn ($q) => $q->with('user')->latest('id')])
                     ->withCount(['enrollments', 'enrollments as paid_count' => fn ($q) => $q->where('status', 'paid')])
                     ->where('edition_id', $edition->id)
                     ->orderByRaw('starts_at is null, starts_at')->orderBy('id')->get()
@@ -99,21 +99,42 @@ class FormationController extends Controller
     public function storeTrainer(Request $request, Formation $formation): RedirectResponse
     {
         $data = $request->validate([
+            'title' => ['nullable', 'string', 'max:40'],
             'name' => ['required', 'string', 'max:200'],
+            'specialty' => ['nullable', 'string', 'max:200'],
             'email' => ['nullable', 'email', 'max:200'],
-            'affiliation' => ['nullable', 'string', 'max:200'],
             'is_moderator' => ['nullable', 'boolean'],
+            'photo' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:4096'],
         ]);
 
-        $formation->trainers()->create([
+        $trainer = $formation->trainers()->create([
             'user_id' => $this->userIdForEmail($data['email'] ?? null),
+            'title' => $data['title'] ?? null,
             'name' => $data['name'],
+            'specialty' => $data['specialty'] ?? null,
             'email' => $data['email'] ?? null,
-            'affiliation' => $data['affiliation'] ?? null,
             'is_moderator' => (bool) ($data['is_moderator'] ?? true),
         ]);
 
+        if ($request->hasFile('photo')) {
+            $trainer->update(['photo_path' => $request->file('photo')->store('formation-trainers', 'public')]);
+        }
+
         return back()->with('ukc_status', 'Formateur ajouté.');
+    }
+
+    /** Change la photo d'un formateur (clic sur l'avatar). */
+    public function updateTrainerPhoto(Request $request, Formation $formation, FormationTrainer $trainer): RedirectResponse
+    {
+        abort_unless($trainer->formation_id === $formation->id, 404);
+        $request->validate(['photo' => ['required', 'image', 'mimes:png,jpg,jpeg', 'max:4096']]);
+
+        if (filled($trainer->photo_path)) {
+            Storage::disk('public')->delete((string) $trainer->photo_path);
+        }
+        $trainer->update(['photo_path' => $request->file('photo')->store('formation-trainers', 'public')]);
+
+        return back()->with('ukc_status', 'Photo du formateur mise à jour.');
     }
 
     public function destroyTrainer(Formation $formation, FormationTrainer $trainer): RedirectResponse

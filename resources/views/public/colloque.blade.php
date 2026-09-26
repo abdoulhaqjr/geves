@@ -441,6 +441,9 @@
                     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
                         @foreach ($formations as $f)
                             <div class="ukc-card">
+                                @if ($f->flyerUrl())
+                                    <img src="{{ $f->flyerUrl() }}" alt="{{ $f->title }}" style="width:100%;height:130px;object-fit:cover;border-radius:8px;margin-bottom:10px;">
+                                @endif
                                 <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
                                     <strong style="font-size:1.05rem;">{{ $f->title }}</strong>
                                     <span class="ukc-pill {{ $f->isFree() ? 'ukc-pill--ok' : 'ukc-pill--muted' }}">{{ $f->isFree() ? __('Gratuite') : number_format((float) $f->fee, 0, ',', ' ').' '.config('payments.currency', 'XOF') }}</span>
@@ -453,9 +456,6 @@
                                 @if ($f->objective)<p style="font-size:.9rem;margin:10px 0 0;">{{ \Illuminate\Support\Str::limit($f->objective, 160) }}</p>@endif
                                 @if ($f->trainers->isNotEmpty())
                                     <div style="font-size:.82rem;color:var(--ukc-muted);margin-top:8px;">{{ __('Formateur(s)') }} : {{ $f->trainers->pluck('name')->join(', ') }}</div>
-                                @endif
-                                @if ($f->flyerUrl())
-                                    <a href="{{ $f->flyerUrl() }}" target="_blank" rel="noopener" style="font-size:.82rem;color:var(--ukc-blue);display:inline-flex;align-items:center;gap:4px;margin-top:8px;"><x-ukc.icon name="file" :size="14" /> {{ __('Flyer') }}</a>
                                 @endif
                                 <a href="{{ route('account.formations') }}" class="ukc-btn ukc-btn--blue" style="margin-top:12px;">
                                     <x-ukc.icon name="book" :size="15" /> {{ __('S’inscrire') }}

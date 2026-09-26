@@ -13,6 +13,9 @@
         @forelse ($formations as $f)
             @php($enr = $enrollments->get($f->id))
             <div class="ukc-card" style="margin-bottom:14px;">
+                @if ($f->flyerUrl())
+                    <img src="{{ $f->flyerUrl() }}" alt="{{ $f->title }}" style="width:100%;height:140px;object-fit:cover;border-radius:8px;margin-bottom:12px;">
+                @endif
                 <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start;">
                     <div style="flex:1;min-width:220px;">
                         <strong style="font-size:16px;">{{ $f->title }}</strong>
@@ -27,9 +30,6 @@
                             <div style="font-size:12.5px;color:var(--ukc-muted);margin-top:8px;">
                                 {{ __('Formateur(s)') }} : {{ $f->trainers->pluck('name')->join(', ') }}
                             </div>
-                        @endif
-                        @if ($f->flyerUrl())
-                            <a href="{{ $f->flyerUrl() }}" target="_blank" rel="noopener" style="font-size:12.5px;color:var(--ukc-blue);display:inline-flex;align-items:center;gap:4px;margin-top:8px;"><x-ukc.icon name="file" :size="14" /> {{ __('Flyer') }}</a>
                         @endif
                     </div>
                     <div style="text-align:right;min-width:150px;">

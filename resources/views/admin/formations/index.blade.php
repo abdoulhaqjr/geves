@@ -27,6 +27,9 @@
                 <h2>Formations <span class="ukc-badge-count">{{ $formations->count() }}</span></h2>
                 @forelse ($formations as $f)
                     <div class="ukc-subcard" x-data="{ editOpen: false }" style="border:1px solid var(--ukc-border,#e5e7eb);border-radius:10px;padding:14px;margin-bottom:14px;">
+                        @if ($f->flyerUrl())
+                            <img src="{{ $f->flyerUrl() }}" alt="Bannière" style="width:100%;height:130px;object-fit:cover;border-radius:8px;margin-bottom:12px;">
+                        @endif
                         <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
                             <div>
                                 <strong style="font-size:15px;">{{ $f->title }}</strong>
@@ -54,10 +57,26 @@
                         {{-- Formateurs --}}
                         <div style="margin-top:12px;">
                             <div style="font-size:12.5px;font-weight:600;color:var(--ukc-muted);margin-bottom:6px;">Formateurs</div>
+                            @php($avatar = 'width:42px;height:42px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;')
                             @forelse ($f->trainers as $t)
-                                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;padding:3px 0;">
-                                    <span>{{ $t->name }}@if ($t->email) <span style="color:var(--ukc-light);">· {{ $t->email }}</span>@endif @if ($t->is_moderator)<span class="ukc-pill ukc-pill--info" style="margin-left:4px;">modérateur</span>@endif</span>
-                                    <form method="POST" action="{{ route('admin.formations.trainers.destroy', [$f, $t]) }}" onsubmit="return confirm('Retirer ce formateur ?')">
+                                <div style="display:flex;align-items:center;gap:10px;padding:5px 0;">
+                                    {{-- Avatar cliquable : change la photo du formateur --}}
+                                    <form method="POST" action="{{ route('admin.formations.trainers.photo', [$f, $t]) }}" enctype="multipart/form-data" style="flex-shrink:0;margin:0;">
+                                        @csrf
+                                        <label title="Cliquer pour changer la photo" style="{{ $avatar }}cursor:pointer;background:linear-gradient(135deg,var(--ukc-blue,#223ea4),var(--ukc-green,#009933));color:#fff;font-weight:700;">
+                                            @if ($t->photoUrl())
+                                                <img src="{{ $t->photoUrl() }}" alt="" style="width:100%;height:100%;object-fit:cover;">
+                                            @else
+                                                <span style="font-size:15px;">{{ $t->initials() }}</span>
+                                            @endif
+                                            <input type="file" name="photo" accept="image/png,image/jpeg" onchange="this.form.submit()" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+                                        </label>
+                                    </form>
+                                    <div style="flex:1;min-width:0;">
+                                        <div style="font-size:13px;">{{ trim(($t->title ? $t->title.' ' : '').$t->name) }} @if ($t->is_moderator)<span class="ukc-pill ukc-pill--info" style="margin-left:2px;">modérateur</span>@endif</div>
+                                        <div style="font-size:12px;color:var(--ukc-light);">{{ collect([$t->specialty, $t->email])->filter()->join(' · ') }}</div>
+                                    </div>
+                                    <form method="POST" action="{{ route('admin.formations.trainers.destroy', [$f, $t]) }}" onsubmit="return confirm('Retirer ce formateur ?')" style="margin:0;">
                                         @csrf @method('DELETE')
                                         <button type="submit" class="ukc-btn--icon" title="Retirer" aria-label="Retirer le formateur"><x-ukc.icon name="close" :size="14" /></button>
                                     </form>
@@ -65,11 +84,27 @@
                             @empty
                                 <p style="font-size:12.5px;color:var(--ukc-light);margin:0;">Aucun formateur.</p>
                             @endforelse
-                            <form method="POST" action="{{ route('admin.formations.trainers.store', $f) }}" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+
+                            {{-- Ajouter un formateur (grade, nom, spécialité, e-mail, photo) --}}
+                            <form method="POST" action="{{ route('admin.formations.trainers.store', $f) }}" enctype="multipart/form-data"
+                                  style="margin-top:10px;border-top:1px solid var(--ukc-border,#f1f1f1);padding-top:10px;"
+                                  x-data="{ ph: '', pick(e) { const fl = e.target.files[0]; this.ph = fl ? URL.createObjectURL(fl) : ''; } }">
                                 @csrf
-                                <input type="text" name="name" placeholder="Nom du formateur" required maxlength="200" style="flex:1;min-width:140px;">
-                                <input type="email" name="email" placeholder="E-mail (facultatif)" maxlength="200" style="flex:1;min-width:140px;">
-                                <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="plus" :size="14" /> Ajouter</button>
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <label title="Photo du formateur" style="{{ $avatar }}cursor:pointer;background:var(--ukc-bg,#eef2ff);border:1px dashed var(--ukc-border,#cbd5e1);color:var(--ukc-muted);">
+                                        <template x-if="ph"><img :src="ph" alt="" style="width:100%;height:100%;object-fit:cover;"></template>
+                                        <template x-if="!ph"><x-ukc.icon name="user" :size="20" /></template>
+                                        <input type="file" name="photo" accept="image/png,image/jpeg" @change="pick($event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+                                    </label>
+                                    <input type="text" name="title" placeholder="Grade" list="trainerTitles{{ $f->id }}" maxlength="40" style="width:100px;">
+                                    <input type="text" name="name" placeholder="Nom du formateur" required maxlength="200" style="flex:1;min-width:120px;">
+                                </div>
+                                <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
+                                    <input type="text" name="specialty" placeholder="Spécialité / fonction" maxlength="200" style="flex:1;min-width:150px;">
+                                    <input type="email" name="email" placeholder="E-mail (facultatif)" maxlength="200" style="flex:1;min-width:150px;">
+                                    <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="plus" :size="14" /> Ajouter</button>
+                                </div>
+                                <datalist id="trainerTitles{{ $f->id }}"><option value="M."></option><option value="Mme"></option><option value="Pr."></option><option value="Dr."></option><option value="Professeur"></option><option value="Docteur"></option></datalist>
                             </form>
                         </div>
 
