@@ -54,6 +54,10 @@
 }
 .ukc-shell .ukc-sidebar-brand .logo-sub { color: #94a3b8; }
 .ukc-shell .ukc-sidebar-brand .sub { color: #94a3b8; }
+/* La barre latérale est CLAIRE ici : le libellé du colloque courant, resté en
+   blanc depuis la version sombre (ukc.css), était invisible - on ne le voyait
+   qu'une fois sélectionné. */
+.ukc-shell .ukc-colloque-switch .switch-btn .cur { color: #0f172a; }
 
 .ukc-shell .ukc-sidebar-nav { padding: 12px 12px; gap: 2px; }
 .ukc-shell .ukc-sidebar-nav a,
