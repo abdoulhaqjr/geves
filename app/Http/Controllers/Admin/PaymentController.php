@@ -318,6 +318,15 @@ class PaymentController extends Controller
     {
         $payment->update(['status' => 'refunded']);
 
+        // Rembourser doit RETIRER les droits acquis, sinon le participant garde une
+        // « inscription réglée » et l'accès à la visio après remboursement.
+        // Miroir exact de ce que ConfirmPayment applique à la confirmation.
+        if ($payment->flow() === 'formation' && ($enrollmentId = $payment->meta['enrollment_id'] ?? null)) {
+            FormationEnrollment::whereKey($enrollmentId)
+                ->where('status', 'paid')
+                ->update(['status' => 'registered']);
+        }
+
         return back()->with('ukc_status', 'Paiement remboursé.');
     }
 }

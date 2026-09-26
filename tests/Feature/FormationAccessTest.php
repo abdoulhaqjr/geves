@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\ConfirmPayment;
 use App\Models\Formation;
 use App\Models\FormationEnrollment;
 use App\Models\Payment;
@@ -198,4 +199,37 @@ it('la page Participants ne marque pas « payé » sur un simple paiement de for
         ->assertSee('Awa Kodjo')
         // Colonne Paiement : « Non » et non « Réglé ».
         ->assertDontSee('ukc-pill--ok">Réglé', false);
+});
+
+it('rembourser une formation retire l’inscription réglée et l’accès visio', function () {
+    $edition = openEdition(['formation_enabled' => true]);
+    $user = verifiedAccount();
+    $participant = $edition->participants()->create([
+        'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'trainee', 'user_id' => $user->id,
+    ]);
+    $formation = livePaidFormation($edition);
+
+    $payment = Payment::create([
+        'edition_id' => $edition->id, 'participant_id' => $participant->id,
+        'amount' => 10000, 'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'pending',
+    ]);
+    $enrollment = FormationEnrollment::create([
+        'formation_id' => $formation->id, 'edition_id' => $edition->id, 'user_id' => $user->id,
+        'participant_id' => $participant->id, 'status' => 'registered', 'amount' => 10000, 'payment_id' => $payment->id,
+    ]);
+    $payment->update(['meta' => ['flow' => 'formation', 'formation_id' => $formation->id, 'enrollment_id' => $enrollment->id]]);
+
+    app(ConfirmPayment::class)->handle($payment);
+    expect($enrollment->fresh()->status)->toBe('paid');
+    expect($formation->canJoin($user->fresh()))->toBeTrue();
+
+    // Remboursement : les droits acquis doivent être retirés.
+    $this->actingAs(adminStaff(), 'web')->post(route('admin.payments.refund', $payment))->assertRedirect();
+
+    expect($enrollment->fresh()->status)->toBe('registered');
+    expect($formation->fresh()->canJoin($user->fresh()))->toBeFalse();
+
+    $this->actingAs($user, 'account')->get(route('account.formations'))
+        ->assertOk()
+        ->assertDontSee('Inscription réglée');
 });
