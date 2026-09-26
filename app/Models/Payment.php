@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Actions\ConfirmPayment;
 use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -46,11 +47,16 @@ class Payment extends Model
         'manual' => 'Sur place / virement (à valider)',
     ];
 
-    /** Nature du paiement → libellé affiché (admin). */
+    /**
+     * Natures **affichées** en back-office. ⚠️ Un paiement de co-auteur est un
+     * paiement de participation (le co-auteur règle pour participer) : il est donc
+     * présenté et filtré comme tel, la nuance n'apparaissant qu'en détail. La
+     * valeur technique `meta.flow = 'coauthor'` reste distincte en base : elle
+     * pilote la garde anti-double de {@see ConfirmPayment}.
+     */
     public const FLOWS = [
         'participation' => 'Participation',
         'formation' => 'Formation',
-        'coauthor' => 'Co-auteur',
     ];
 
     /**
@@ -140,18 +146,28 @@ class Payment extends Model
             ?? ucfirst((string) $this->method);
     }
 
-    /** Libellé de la nature du paiement (participation / formation / co-auteur). */
+    /** Nature affichée : « formation », sinon « participation » (co-auteur inclus). */
+    public function displayFlow(): string
+    {
+        return $this->flow() === 'formation' ? 'formation' : 'participation';
+    }
+
+    /** Libellé de la nature affichée (Participation / Formation). */
     public function flowLabel(): string
     {
-        return self::FLOWS[$this->flow()] ?? ucfirst($this->flow());
+        return self::FLOWS[$this->displayFlow()];
     }
 
     /**
-     * Objet précis du paiement : la nature, complétée du titre de la formation
-     * pour un paiement de formation (l'admin doit pouvoir distinguer lequel).
+     * Précision sur l'objet : le titre de la formation réglée, ou la mention
+     * « Co-auteur » qui distingue ce cas particulier de participation.
      */
     public function flowDetail(): ?string
     {
+        if ($this->flow() === 'coauthor') {
+            return 'Co-auteur';
+        }
+
         if ($this->flow() !== 'formation') {
             return null;
         }

@@ -30,7 +30,15 @@
     @php($tin = 'border:1.5px solid var(--ukc-border,#cbd5e1);border-radius:10px;padding:9px 12px;font-size:13.5px;background:#fff;min-width:0;width:100%;')
     @php($inp = 'padding:7px 10px;border:1px solid var(--ukc-border,#e5e7eb);border-radius:8px;')
 
-    <div class="admin-page admin-formations" x-data="{ editOpen: false }">
+    {{-- Onglets : l'ancre pilote l'onglet, et il est mémorisé pour la session -
+         les actions (ajout de formateur, envoi d'e-mail…) repassent par `back()`,
+         qui perd l'ancre, et doivent revenir sur l'onglet d'où elles partent. --}}
+    <div class="admin-page admin-formations"
+         x-data="{
+            editOpen: false,
+            tab: (location.hash || '').substring(1) || (() => { try { return sessionStorage.getItem('fTab{{ $f->id }}'); } catch (e) { return null; } })() || 'inscrits',
+            go(t) { this.tab = t; history.replaceState(null, '', '#' + t); try { sessionStorage.setItem('fTab{{ $f->id }}', t); } catch (e) {} },
+         }">
         {{-- Bandeau --}}
         <div class="f-hero">
             @if ($f->flyerUrl())
@@ -73,8 +81,15 @@
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="mic" :size="20" /></div><div class="lbl">Formateurs</div><div class="val">{{ $stats['trainers'] }}</div><div class="hint">{{ $f->trainers->where('is_moderator', true)->count() }} modérateur(s)</div></div>
         </div>
 
+        <div class="ukc-tabs">
+            <button type="button" @click="go('inscrits')" :class="{ active: tab==='inscrits' }">Inscrits <span class="ukc-badge-count">{{ $stats['enrolled'] }}</span></button>
+            <button type="button" @click="go('formateurs')" :class="{ active: tab==='formateurs' }">Formateurs <span class="ukc-badge-count">{{ $stats['trainers'] }}</span></button>
+            <button type="button" @click="go('communication')" :class="{ active: tab==='communication' }">Communication</button>
+            <button type="button" @click="go('visio')" :class="{ active: tab==='visio' }">Visio</button>
+        </div>
+
         {{-- Formateurs --}}
-        <div class="ukc-card">
+        <div class="ukc-card" x-show="tab==='formateurs'" x-cloak>
             <h2>Formateurs <span class="ukc-badge-count">{{ $f->trainers->count() }}</span></h2>
 
             @forelse ($f->trainers as $t)
@@ -150,7 +165,7 @@
         </div>
 
         {{-- Inscrits : la vraie table, impossible à loger dans une carte --}}
-        <div class="ukc-card" style="padding:0;">
+        <div class="ukc-card" style="padding:0;" x-show="tab==='inscrits'" x-cloak>
             <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 18px 0;">
                 <h2 style="margin:0;">Inscrits <span class="ukc-badge-count">{{ $stats['enrolled'] }}</span></h2>
                 <form method="POST" action="{{ route('admin.formations.attestations', $f) }}" style="margin:0;"
@@ -186,9 +201,9 @@
             @endif
         </div>
 
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:16px;">
+        <div>
             {{-- Contacter les inscrits --}}
-            <div class="ukc-card">
+            <div class="ukc-card" x-show="tab==='communication'" x-cloak>
                 <h2>Contacter les inscrits</h2>
                 <form method="POST" action="{{ route('admin.formations.message', $f) }}">
                     @csrf
@@ -213,7 +228,7 @@
             </div>
 
             {{-- Visio --}}
-            <div class="ukc-card">
+            <div class="ukc-card" x-show="tab==='visio'" x-cloak>
                 <h2>Visio</h2>
                 <p style="font-size:12.5px;color:var(--ukc-muted);margin:0 0 12px;">
                     Les formateurs rejoignent en modérateur ; les inscrits ayant réglé en participant.

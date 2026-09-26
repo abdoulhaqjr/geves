@@ -165,14 +165,15 @@ class PaymentController extends Controller
         return $q
             ->when($status !== '', fn ($q) => $q->where('status', $status))
             ->when($method !== '', fn ($q) => $q->where('method', $method))
-            // Nature du paiement : stockée dans meta.flow (« participation » quand
-            // la clé est absente, d'où le OR sur meta null / sans clé).
+            // Nature affichée : « formation » d'un côté, « participation » de
+            // l'autre - qui englobe le co-auteur (il règle pour participer) ET les
+            // paiements sans meta.flow (participation par défaut).
             ->when($flow !== '', function ($q) use ($flow) {
-                $flow === 'participation'
-                    ? $q->where(fn ($p) => $p->whereNull('meta')
-                        ->orWhere('meta', 'not like', '%"flow"%')
-                        ->orWhere('meta', 'like', '%"flow":"participation"%'))
-                    : $q->where('meta', 'like', '%"flow":"'.$flow.'"%');
+                $flow === 'formation'
+                    ? $q->where('meta', 'like', '%"flow":"formation"%')
+                    // Groupé : sinon le OU s'échapperait et annulerait les autres filtres.
+                    : $q->where(fn ($p) => $p->where('meta', 'not like', '%"flow":"formation"%')
+                        ->orWhereNull('meta'));
             })
             ->when($from !== '', fn ($q) => $q->whereDate('created_at', '>=', $from))
             ->when($to !== '', fn ($q) => $q->whereDate('created_at', '<=', $to))

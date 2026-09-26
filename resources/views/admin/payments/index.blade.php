@@ -75,8 +75,7 @@
                                         <div class="meta">{{ $p->participant?->email }}</div>
                                     </td>
                                     <td>
-                                        @php($fl = $p->flow())
-                                        <span class="ukc-pill ukc-pill--{{ $fl === 'formation' ? 'info' : ($fl === 'coauthor' ? 'warn' : 'muted') }}">{{ $p->flowLabel() }}</span>
+                                        <span class="ukc-pill ukc-pill--{{ $p->displayFlow() === 'formation' ? 'info' : 'muted' }}">{{ $p->flowLabel() }}</span>
                                         @if ($detail = $p->flowDetail())
                                             <div class="meta" style="margin-top:3px;">{{ $detail }}</div>
                                         @elseif ($p->participant?->title)

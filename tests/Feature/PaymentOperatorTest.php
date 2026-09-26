@@ -59,7 +59,31 @@ it('distingue la nature des paiements et nomme la formation concernée', functio
     expect($participation->flowDetail())->toBeNull();
     expect($forma->flowLabel())->toBe('Formation');
     expect($forma->flowDetail())->toBe($formation->title);
-    expect($co->flowLabel())->toBe('Co-auteur');
+
+    // Un co-auteur règle pour PARTICIPER : même nature affichée, la nuance
+    // n'apparaît qu'en détail. La valeur technique reste distincte en base
+    // (elle pilote la garde anti-double de ConfirmPayment).
+    expect($co->flowLabel())->toBe('Participation');
+    expect($co->displayFlow())->toBe('participation');
+    expect($co->flowDetail())->toBe('Co-auteur');
+    expect($co->flow())->toBe('coauthor');
+});
+
+it('range les paiements de co-auteur avec la participation dans le filtre admin', function () {
+    $edition = openEdition(['formation_enabled' => true]);
+    $formation = publishedFormation($edition, 10000);
+    Payment::create([
+        'edition_id' => $edition->id, 'amount' => 333, 'method' => 'fedapay', 'gateway' => 'fedapay',
+        'meta' => ['flow' => 'coauthor'],
+    ]);
+    Payment::create([
+        'edition_id' => $edition->id, 'amount' => 444, 'method' => 'fedapay', 'gateway' => 'fedapay',
+        'meta' => ['flow' => 'formation', 'formation_id' => $formation->id],
+    ]);
+
+    $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.payments.index', ['edition_id' => $edition->id, 'flow' => 'participation']))
+        ->assertOk()->assertSee('333')->assertDontSee('444');
 });
 
 it('filtre les paiements par nature sur la page admin', function () {

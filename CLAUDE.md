@@ -297,9 +297,13 @@ Voir la liste complète en [§8 de PASSATION.md](PASSATION.md). Les plus courant
   paiement restent génériques (« Mobile money / carte bancaire »). Le nom de
   l'agrégateur n'apparaît que dans la **configuration admin** de l'édition. Un test
   (`PaymentOperatorTest`) garde cette règle.
-- **Nature d'un paiement** : `Payment::flow()` (`participation` par défaut, `formation`,
-  `coauthor`) + `flowLabel()`/`flowDetail()` (titre de la formation). La page
-  `admin/paiements` affiche une colonne **Objet** et un **filtre par nature** ;
+- **Nature d'un paiement** : `Payment::flow()` reste la valeur **technique**
+  (`participation` par défaut, `formation`, `coauthor`) qui pilote la garde
+  anti-double de `ConfirmPayment` - **ne pas la changer**. Côté affichage il n'y a
+  que **deux natures** (`Payment::FLOWS`) : **`displayFlow()`** range le co-auteur
+  avec la **participation** (il règle pour participer), la nuance n'apparaissant
+  que dans `flowDetail()`. La page `admin/paiements` affiche une colonne **Objet**
+  et un **filtre par nature** (Participation englobe les co-auteurs) ;
   les moyens sont regroupés (`Payment::methodGroups()`) pour ne plus mélanger
   encaissement manuel et parcours en ligne.
 - **Opérateur mobile money** : choisi **chez nous** avant la redirection
