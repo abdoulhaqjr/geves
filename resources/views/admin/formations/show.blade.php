@@ -36,7 +36,7 @@
     <div class="admin-page admin-formations"
          x-data="{
             editOpen: false,
-            tab: (location.hash || '').substring(1) || (() => { try { return sessionStorage.getItem('fTab{{ $f->id }}'); } catch (e) { return null; } })() || 'inscrits',
+            tab: (location.hash || '').substring(1) || (() => { try { return sessionStorage.getItem('fTab{{ $f->id }}'); } catch (e) { return null; } })() || 'formateurs',
             go(t) { this.tab = t; history.replaceState(null, '', '#' + t); try { sessionStorage.setItem('fTab{{ $f->id }}', t); } catch (e) {} },
          }">
         {{-- Bandeau --}}
@@ -81,9 +81,10 @@
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="mic" :size="20" /></div><div class="lbl">Formateurs</div><div class="val">{{ $stats['trainers'] }}</div><div class="hint">{{ $f->trainers->where('is_moderator', true)->count() }} modérateur(s)</div></div>
         </div>
 
-        <div class="ukc-tabs">
-            <button type="button" @click="go('inscrits')" :class="{ active: tab==='inscrits' }">Inscrits <span class="ukc-badge-count">{{ $stats['enrolled'] }}</span></button>
-            <button type="button" @click="go('formateurs')" :class="{ active: tab==='formateurs' }">Formateurs <span class="ukc-badge-count">{{ $stats['trainers'] }}</span></button>
+        {{-- Onglets « pilules », même design que admin/projet (.ukc-nav-docs global). --}}
+        <div class="ukc-nav-docs">
+            <button type="button" @click="go('formateurs')" :class="{ active: tab==='formateurs' }">Formateurs <span class="nav-count">{{ $stats['trainers'] }}</span></button>
+            <button type="button" @click="go('inscrits')" :class="{ active: tab==='inscrits' }">Inscrits <span class="nav-count">{{ $stats['enrolled'] }}</span></button>
             <button type="button" @click="go('communication')" :class="{ active: tab==='communication' }">Communication</button>
             <button type="button" @click="go('visio')" :class="{ active: tab==='visio' }">Visio</button>
         </div>
