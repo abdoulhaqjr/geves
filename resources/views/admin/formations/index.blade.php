@@ -85,25 +85,22 @@
                                 <p style="font-size:12.5px;color:var(--ukc-light);margin:0;">Aucun formateur.</p>
                             @endforelse
 
-                            {{-- Ajouter un formateur (grade, nom, spécialité, e-mail, photo) --}}
+                            {{-- Ajouter un formateur : tout sur une ligne (façon co-auteur du formulaire de soumission) --}}
+                            @php($tin = 'border:1.5px solid var(--ukc-border,#cbd5e1);border-radius:10px;padding:9px 12px;font-size:13.5px;background:#fff;min-width:0;width:100%;')
                             <form method="POST" action="{{ route('admin.formations.trainers.store', $f) }}" enctype="multipart/form-data"
-                                  style="margin-top:10px;border-top:1px solid var(--ukc-border,#f1f1f1);padding-top:10px;"
+                                  style="margin-top:12px;border-top:1px solid var(--ukc-border,#f1f1f1);padding-top:12px;display:grid;grid-template-columns:auto 110px minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.3fr) auto;gap:8px;align-items:center;"
                                   x-data="{ ph: '', pick(e) { const fl = e.target.files[0]; this.ph = fl ? URL.createObjectURL(fl) : ''; } }">
                                 @csrf
-                                <div style="display:flex;align-items:center;gap:8px;">
-                                    <label title="Photo du formateur" style="{{ $avatar }}cursor:pointer;background:var(--ukc-bg,#eef2ff);border:1px dashed var(--ukc-border,#cbd5e1);color:var(--ukc-muted);">
-                                        <template x-if="ph"><img :src="ph" alt="" style="width:100%;height:100%;object-fit:cover;"></template>
-                                        <template x-if="!ph"><x-ukc.icon name="user" :size="20" /></template>
-                                        <input type="file" name="photo" accept="image/png,image/jpeg" @change="pick($event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
-                                    </label>
-                                    <input type="text" name="title" placeholder="Grade" list="trainerTitles{{ $f->id }}" maxlength="40" style="width:100px;">
-                                    <input type="text" name="name" placeholder="Nom du formateur" required maxlength="200" style="flex:1;min-width:120px;">
-                                </div>
-                                <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
-                                    <input type="text" name="specialty" placeholder="Spécialité / fonction" maxlength="200" style="flex:1;min-width:150px;">
-                                    <input type="email" name="email" placeholder="E-mail (facultatif)" maxlength="200" style="flex:1;min-width:150px;">
-                                    <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="plus" :size="14" /> Ajouter</button>
-                                </div>
+                                <label title="Photo du formateur" style="{{ $avatar }}cursor:pointer;background:var(--ukc-bg,#eef2ff);border:1px dashed var(--ukc-border,#cbd5e1);color:var(--ukc-muted);">
+                                    <template x-if="ph"><img :src="ph" alt="" style="width:100%;height:100%;object-fit:cover;"></template>
+                                    <template x-if="!ph"><x-ukc.icon name="user" :size="20" /></template>
+                                    <input type="file" name="photo" accept="image/png,image/jpeg" @change="pick($event)" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+                                </label>
+                                <input type="text" name="title" placeholder="Grade" list="trainerTitles{{ $f->id }}" maxlength="40" style="{{ $tin }}">
+                                <input type="text" name="name" placeholder="Nom *" required maxlength="200" style="{{ $tin }}">
+                                <input type="text" name="specialty" placeholder="Spécialité / fonction" maxlength="200" style="{{ $tin }}">
+                                <input type="email" name="email" placeholder="E-mail (facultatif)" maxlength="200" style="{{ $tin }}">
+                                <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm" style="white-space:nowrap;"><x-ukc.icon name="plus" :size="14" /> Ajouter</button>
                                 <datalist id="trainerTitles{{ $f->id }}"><option value="M."></option><option value="Mme"></option><option value="Pr."></option><option value="Dr."></option><option value="Professeur"></option><option value="Docteur"></option></datalist>
                             </form>
                         </div>
