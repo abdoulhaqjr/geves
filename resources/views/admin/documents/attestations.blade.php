@@ -1,5 +1,5 @@
 <x-layouts.admin title="Documents" :subtitle="$edition ? 'Édition active · '.($edition->title ?: $edition->year) : 'Attestations, badges & livre des résumés'">
-    <div class="admin-page admin-documents" x-data="{ page: new URLSearchParams(window.location.search).get('tab') || 'attestations', badge: 'list', livre: 'main', newAtt: false, newBadge: false, del: null, typed: '' }">
+    <div class="admin-page admin-documents" x-data="{ livre: 'main', newAtt: false, newBadge: false, del: null, typed: '' }">
         {{-- Sélecteur d'édition partagé + vérification publique --}}
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
             <div class="ukc-field" style="max-width:340px;margin:0;">
@@ -17,14 +17,16 @@
         @if (! $edition)
             <div class="ukc-empty"><h3>Choisissez une édition</h3><p>Sélectionnez une édition pour gérer ses documents.</p></div>
         @else
+            {{-- Onglets principaux : des liens, comme les sous-onglets. Les panneaux
+                 sont rendus côté serveur d'après ?tab=, l'URL doit donc changer. --}}
             <div class="ukc-nav-docs">
-                <button type="button" @click="page='attestations'" :class="{ active: page==='attestations' }">Attestations</button>
-                <button type="button" @click="page='badges'" :class="{ active: page==='badges' }">Badges</button>
-                <button type="button" @click="page='livre'" :class="{ active: page==='livre' }">Livre des résumés</button>
+                <a href="{{ route('admin.documents.attestations', ['edition_id' => $edition->id, 'tab' => 'attestations', 'stab' => 'modeles']) }}" @class(['active' => $tab === 'attestations'])>Attestations</a>
+                <a href="{{ route('admin.documents.attestations', ['edition_id' => $edition->id, 'tab' => 'badges', 'stab' => 'modeles']) }}" @class(['active' => $tab === 'badges'])>Badges</a>
+                <a href="{{ route('admin.documents.attestations', ['edition_id' => $edition->id, 'tab' => 'livre']) }}" @class(['active' => $tab === 'livre'])>Livre des résumés</a>
             </div>
 
             {{-- ======================= ATTESTATIONS ======================= --}}
-            <div x-show="page==='attestations'">
+            <div @if ($tab !== 'attestations') style="display:none;" @endif>
                 {{-- Sous-onglets portés par l'URL (?tab=attestations&stab=…) : chaque
                      onglet a son lien, et « délivrées » garde filtres/tri/pagination. --}}
                 @php($stabBase = ['edition_id' => $edition->id, 'tab' => 'attestations'])
@@ -62,7 +64,14 @@
                                         <td>{{ $row['scope'] }}</td>
                                         <td><span class="ukc-stat">{{ $row['eligible'] }}</span></td>
                                         <td>Oui</td>
-                                        <td>@if ($row['status'] === 'Actif')<span class="ukc-pill ukc-pill--ok">Actif</span>@else<span class="ukc-pill ukc-pill--muted">Brouillon</span>@endif</td>
+                                        <td>
+                                            @if ($row['status'] === 'Actif')<span class="ukc-pill ukc-pill--ok">Actif</span>@else<span class="ukc-pill ukc-pill--muted">Brouillon</span>@endif
+                                            {{-- Explique la présence (ou non) de la corbeille : seul un modèle
+                                                 enregistré peut être supprimé ; sinon c'est le défaut à la charte. --}}
+                                            <div class="meta" style="margin-top:3px;">
+                                                {{ $row['template'] ? 'Mise en page personnalisée' : 'Mise en page par défaut' }}
+                                            </div>
+                                        </td>
                                         <td>
                                             <div class="ukc-actions" style="justify-content:flex-end;">
                                                 @if ($row['issueFrom'])
@@ -164,7 +173,7 @@
             </div>
 
             {{-- ======================= BADGES ======================= --}}
-            <div x-show="page==='badges'" x-cloak>
+            <div @if ($tab !== 'badges') style="display:none;" @endif>
                 {{-- Mêmes URL que les attestations : ?tab=badges&stab=… --}}
                 @php($bBase = ['edition_id' => $edition->id, 'tab' => 'badges'])
                 <div class="ukc-tabs">
@@ -255,7 +264,7 @@
             </div>
 
             {{-- ======================= LIVRE DES RÉSUMÉS ======================= --}}
-            <div x-show="page==='livre'" x-cloak>
+            <div @if ($tab !== 'livre') style="display:none;" @endif>
                 <div class="ukc-tabs">
                     <button type="button" @click="livre='main'" :class="{ active: livre==='main' }">Livre des résumés</button>
                     <button type="button" @click="livre='modeles'" :class="{ active: livre==='modeles' }">Modèles de document</button>

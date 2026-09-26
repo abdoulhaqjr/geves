@@ -547,3 +547,22 @@ it('sert les sous-onglets des badges par leur URL, dont « badges prêts »', fu
     $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['stab' => 'options']))
         ->assertOk()->assertSee('Options générales · Badges');
 });
+
+it('sert chaque onglet principal de Documents par son URL (?tab=)', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+
+    // Chaque onglet doit pointer vers une URL : les panneaux sont rendus côté
+    // serveur, un simple état JavaScript afficherait une page vide.
+    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', ['edition_id' => $edition->id]))
+        ->assertOk()
+        // (les & des URL sont échappés en &amp; dans le HTML : on vise les fragments)
+        ->assertSee('tab=badges', false)
+        ->assertSee('tab=livre', false);
+
+    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', ['edition_id' => $edition->id, 'tab' => 'badges', 'stab' => 'modeles']))
+        ->assertOk()->assertSee('Nouveau modèle de badge');
+
+    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', ['edition_id' => $edition->id, 'tab' => 'livre']))
+        ->assertOk()->assertSee('Livre des résumés');
+});
