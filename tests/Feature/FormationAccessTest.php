@@ -178,3 +178,24 @@ it('un paiement de co-auteur ouvre les droits (il règle pour participer)', func
 
     expect($participant->fresh()->hasPaid())->toBeTrue();
 });
+
+it('la page Participants ne marque pas « payé » sur un simple paiement de formation', function () {
+    $edition = openEdition(['formation_enabled' => true]);
+    $user = verifiedAccount();
+    $participant = $edition->participants()->create([
+        'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'trainee', 'user_id' => $user->id,
+    ]);
+    $formation = publishedFormation($edition, 10000);
+    Payment::create([
+        'edition_id' => $edition->id, 'participant_id' => $participant->id,
+        'amount' => 10000, 'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'paid',
+        'meta' => ['flow' => 'formation', 'formation_id' => $formation->id],
+    ]);
+
+    $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.participants.index', ['edition_id' => $edition->id]))
+        ->assertOk()
+        ->assertSee('Awa Kodjo')
+        // Colonne Paiement : « Non » et non « Réglé ».
+        ->assertDontSee('ukc-pill--ok">Réglé', false);
+});

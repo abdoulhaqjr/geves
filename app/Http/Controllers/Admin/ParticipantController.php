@@ -41,7 +41,7 @@ class ParticipantController extends Controller
         $sort = ListSort::resolve($request, ['last_name', 'role', 'created_at'], 'last_name', 'asc');
 
         $participants = (clone $base)
-            ->with('payments')
+            ->with('participationPayments')
             ->when($role !== '', fn ($q) => $q->where('role', $role))
             ->when($search !== '', function ($q) use ($search) {
                 $term = "%{$search}%";
