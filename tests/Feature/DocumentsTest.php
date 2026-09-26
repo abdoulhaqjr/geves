@@ -4,6 +4,7 @@ use App\Actions\IssueAttestation;
 use App\Documents\LivretDocx;
 use App\Models\Attestation;
 use App\Models\DocumentTemplate;
+use App\Models\Formation;
 use App\Models\User;
 use App\Support\EditionSettings;
 use App\Support\Settings;
@@ -226,7 +227,7 @@ it('affiche le hub Documents fidèle au mockup (volets + table par type)', funct
 it('liste les modèles d’attestation du module Formation avec émission par formation', function () {
     $staff = adminStaff();
     $edition = openEdition(['formation_enabled' => true]);
-    $formation = \App\Models\Formation::create([
+    $formation = Formation::create([
         'edition_id' => $edition->id, 'title' => 'Atelier', 'fee' => 0, 'published' => true,
     ]);
     $formation->trainers()->create(['name' => 'Pr. Awa Kodjo']);
