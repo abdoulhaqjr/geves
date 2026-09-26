@@ -44,15 +44,10 @@ class FormationController extends Controller
             'edition_id' => $edition ? (string) $edition->id : '',
             'moduleEnabled' => $edition ? $edition->formationEnabled() : false,
             'aiAvailable' => app(AiManager::class)->resolve() !== null,
-            // Liste compacte : pas de détail ici (formateurs/inscrits/visio sont sur
-            // la page de la formation, qu'une carte ne pouvait pas contenir).
+            // Liste compacte : identité, dates, lieu et état seulement. Le détail
+            // (tarif, formateurs, inscrits, visio) est sur la page de la formation.
             'formations' => $edition
-                ? Formation::withCount([
-                    'enrollments',
-                    'enrollments as paid_count' => fn ($q) => $q->where('status', 'paid'),
-                    'trainers',
-                ])
-                    ->where('edition_id', $edition->id)
+                ? Formation::where('edition_id', $edition->id)
                     ->orderByRaw('starts_at is null, starts_at')->orderBy('id')->get()
                 : collect(),
         ]);

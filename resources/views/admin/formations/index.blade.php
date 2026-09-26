@@ -32,9 +32,6 @@
                                     <th>Formation</th>
                                     <th>Dates</th>
                                     <th>Lieu</th>
-                                    <th style="text-align:right;">Tarif</th>
-                                    <th style="text-align:center;">Formateurs</th>
-                                    <th style="text-align:center;">Inscrits</th>
                                     <th>État</th>
                                     <th style="text-align:right;">Actions</th>
                                 </tr>
@@ -68,14 +65,6 @@
                                         <td style="font-size:12.5px;">
                                             {{ $f->location ?: '-' }}
                                             @if ($f->room)<div class="meta">{{ $f->room }}</div>@endif
-                                        </td>
-                                        <td style="text-align:right;font-weight:700;white-space:nowrap;">
-                                            {{ $f->isFree() ? 'Gratuite' : number_format((float) $f->fee, 0, ',', ' ').' F' }}
-                                        </td>
-                                        <td style="text-align:center;">{{ $f->trainers_count }}</td>
-                                        <td style="text-align:center;white-space:nowrap;">
-                                            {{ $f->enrollments_count }}
-                                            @unless ($f->isFree())<div class="meta">{{ $f->paid_count }} réglé(s)</div>@endunless
                                         </td>
                                         <td style="white-space:nowrap;">
                                             <span class="ukc-pill {{ $f->published ? 'ukc-pill--ok' : 'ukc-pill--muted' }}">{{ $f->published ? 'Active' : 'Brouillon' }}</span>
