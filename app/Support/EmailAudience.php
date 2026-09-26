@@ -45,8 +45,8 @@ class EmailAudience
             ->with('edition');
 
         match ($audience) {
-            'paid' => $query->whereHas('payments', fn ($q) => $q->where('status', 'paid')),
-            'unpaid' => $query->whereDoesntHave('payments', fn ($q) => $q->where('status', 'paid')),
+            'paid' => $query->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid')),
+            'unpaid' => $query->whereDoesntHave('participationPayments', fn ($q) => $q->where('status', 'paid')),
             'accepted' => $query->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted')),
             'reviewers' => $query->where('role', 'reviewer'),
             default => null, // 'all' + audiences filtrées en mémoire ci-dessous

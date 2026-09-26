@@ -176,7 +176,7 @@ class GescoController extends Controller
             .($s->track ? ' · axe '.$s->track : '').($s->ref_code ? ' · réf '.$s->ref_code : ''))->implode("\n");
 
         $accepted = $subs->where('status', 'accepted')->count();
-        $paidCount = Payment::whereIn('participant_id', $participantIds)->where('status', 'paid')->count();
+        $paidCount = Payment::whereIn('participant_id', $participantIds)->forParticipation()->where('status', 'paid')->count();
         $pending = Payment::whereIn('participant_id', $participantIds)->where('status', 'pending')->count();
         $att = Attestation::whereIn('participant_id', $participantIds)->where('revoked', false)->get();
 

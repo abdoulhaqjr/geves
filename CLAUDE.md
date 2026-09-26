@@ -330,6 +330,13 @@ Voir la liste complète en [§8 de PASSATION.md](PASSATION.md). Les plus courant
   nom/e-mail/téléphone du compte (co-auteurs via `AuthorMatcher`, formateurs via
   `Admin\FormationController::trainerAttributes()`). Cela évite les fautes de nom et
   l'usage de l'e-mail d'un tiers. Le pré-remplissage côté client n'est qu'un confort.
+- ⚠️ **« A payé » = paiement de PARTICIPATION** : un paiement de formation est
+  rattaché au **même `Participant`**, donc un `payments()->where('status','paid')`
+  brut le compte et débloque à tort badge, attestations et accès. Toujours passer
+  par **`Participant::participationPayments()`** (ou le scope
+  **`Payment::forParticipation()`**), qui exclut `meta.flow = 'formation'` et
+  **inclut le co-auteur** (il règle bien pour participer). Les totaux **financiers**
+  (recette encaissée) gardent au contraire tous les paiements.
 - **Avant d'engager un paiement** : le **profil doit être complet** -
   **`User::profileComplete()`** (prénom, nom, **téléphone**, affiliation + e-mail
   vérifié ; `missingProfileFields()` donne les libellés manquants). Les coordonnées

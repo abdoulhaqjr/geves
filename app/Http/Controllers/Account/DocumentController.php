@@ -52,10 +52,13 @@ class DocumentController extends Controller
 
         $edParticipantIds = $participants->where('edition_id', $edition->id)->pluck('id');
 
+        // ⚠️ Seuls les paiements de PARTICIPATION ouvrent le badge et les documents :
+        // une formation réglée est rattachée au même participant mais ne donne
+        // aucun droit sur l'événement.
         $paid = Payment::whereIn('participant_id', $edParticipantIds)
-            ->where('status', 'paid')->exists();
+            ->forParticipation()->where('status', 'paid')->exists();
         $payment = Payment::whereIn('participant_id', $edParticipantIds)
-            ->where('status', 'paid')->latest('id')->first();
+            ->forParticipation()->where('status', 'paid')->latest('id')->first();
 
         $submissions = Submission::where('edition_id', $edition->id)
             ->whereIn('participant_id', $edParticipantIds)

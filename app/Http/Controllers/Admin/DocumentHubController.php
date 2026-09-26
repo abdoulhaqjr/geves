@@ -552,7 +552,7 @@ class DocumentHubController extends Controller
         // le badge est réellement à imprimer.
         $paidOnly = $request->query('paid', '1') !== '0';
         if ($paidOnly) {
-            $query->whereHas('payments', fn ($q) => $q->where('status', 'paid'));
+            $query->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid'));
         }
 
         $badgeSearch = trim((string) $request->query('bsearch', ''));
@@ -615,7 +615,7 @@ class DocumentHubController extends Controller
             // 'formation' et 'formation_animation' sont gérées par formation
             // (émission depuis la page Formations, cf. Admin\FormationController).
             'participation' => $this->participationTargets($edition),
-            default => $base()->whereHas('payments', fn ($q) => $q->where('status', 'paid'))->get(),
+            default => $base()->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid'))->get(),
         };
     }
 
@@ -627,7 +627,7 @@ class DocumentHubController extends Controller
     private function participationTargets(Edition $edition): Collection
     {
         $paid = Participant::where('edition_id', $edition->id)
-            ->whereHas('payments', fn ($q) => $q->where('status', 'paid'))
+            ->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid'))
             ->get();
 
         if (! (bool) EditionSettings::get($edition, 'attestations.require_presence', false)) {

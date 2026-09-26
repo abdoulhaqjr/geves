@@ -121,3 +121,60 @@ it('transmet le téléphone du payeur à la passerelle, avec repli sur le compte
     expect($payment->payerContact()['phone'])->toBe('+22890000000');
     expect($payment->payerContact()['email'])->toBe($user->email);
 });
+
+it('un paiement de formation n’ouvre aucun droit de participation', function () {
+    $edition = openEdition(['formation_enabled' => true]);
+    $user = verifiedAccount();
+    $participant = $edition->participants()->create([
+        'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'trainee', 'user_id' => $user->id,
+    ]);
+    $formation = publishedFormation($edition, 10000);
+
+    // Formation réglée, rattachée au MÊME participant.
+    Payment::create([
+        'edition_id' => $edition->id, 'participant_id' => $participant->id,
+        'amount' => 10000, 'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'paid',
+        'meta' => ['flow' => 'formation', 'formation_id' => $formation->id],
+    ]);
+
+    // Les frais de participation restent dus : pas de badge, pas de droits.
+    expect($participant->fresh()->hasPaid())->toBeFalse();
+    expect($participant->fresh()->participationPayments()->where('status', 'paid')->exists())->toBeFalse();
+    // Le paiement existe bien, mais hors participation.
+    expect($participant->fresh()->payments()->where('status', 'paid')->exists())->toBeTrue();
+
+    $this->actingAs($user, 'account')->get(route('account.documents'))
+        ->assertOk()
+        ->assertDontSee('Paiement confirmé');
+});
+
+it('un paiement de participation ouvre bien les droits', function () {
+    $edition = openEdition();
+    $user = verifiedAccount();
+    $participant = $edition->participants()->create([
+        'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'author', 'user_id' => $user->id,
+    ]);
+
+    Payment::create([
+        'edition_id' => $edition->id, 'participant_id' => $participant->id,
+        'amount' => 25000, 'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'paid',
+    ]);
+
+    expect($participant->fresh()->hasPaid())->toBeTrue();
+});
+
+it('un paiement de co-auteur ouvre les droits (il règle pour participer)', function () {
+    $edition = openEdition();
+    $user = verifiedAccount();
+    $participant = $edition->participants()->create([
+        'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'author', 'user_id' => $user->id,
+    ]);
+
+    Payment::create([
+        'edition_id' => $edition->id, 'participant_id' => $participant->id,
+        'amount' => 15000, 'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'paid',
+        'meta' => ['flow' => 'coauthor'],
+    ]);
+
+    expect($participant->fresh()->hasPaid())->toBeTrue();
+});

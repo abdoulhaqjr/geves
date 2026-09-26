@@ -44,7 +44,7 @@ class EditionController extends Controller
 
         $active = Edition::where('status', 'open')->latest('id')->first();
         $paid = $active
-            ? Payment::where('edition_id', $active->id)->where('status', 'paid')->distinct('participant_id')->count('participant_id')
+            ? Payment::where('edition_id', $active->id)->forParticipation()->where('status', 'paid')->distinct('participant_id')->count('participant_id')
             : 0;
 
         return view('admin.editions.index', [

@@ -49,7 +49,7 @@ class PaymentController extends Controller
             'applicableLabel' => $applicableLabel,
             'eligible' => $participant && $participant->hasAcceptedSubmission(),
             'paid' => $participant && $participant->hasPaid(),
-            'paidReceipt' => $participant?->payments()->where('status', 'paid')->latest('id')->first(),
+            'paidReceipt' => $participant?->participationPayments()->where('status', 'paid')->latest('id')->first(),
             'gateways' => app(GatewayRegistry::class)->available(),
         ]);
     }

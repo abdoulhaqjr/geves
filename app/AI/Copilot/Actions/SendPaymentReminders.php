@@ -100,7 +100,7 @@ class SendPaymentReminders implements CopilotAction
     {
         return Participant::where('edition_id', $edition->id)
             ->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted'))
-            ->whereDoesntHave('payments', fn ($q) => $q->where('status', 'paid'))
+            ->whereDoesntHave('participationPayments', fn ($q) => $q->where('status', 'paid'))
             ->with('user')
             ->get();
     }

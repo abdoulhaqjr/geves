@@ -101,7 +101,7 @@ class DashboardController extends Controller
         // Édition où une communication est acceptée et les frais non encore réglés.
         $payable = Participant::whereIn('id', $participantIds)
             ->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted'))
-            ->whereDoesntHave('payments', fn ($q) => $q->where('status', 'paid'))
+            ->whereDoesntHave('participationPayments', fn ($q) => $q->where('status', 'paid'))
             ->with('edition')
             ->first();
 

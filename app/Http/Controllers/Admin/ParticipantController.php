@@ -54,7 +54,7 @@ class ParticipantController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $paidCount = (clone $base)->whereHas('payments', fn ($q) => $q->where('status', 'paid'))->count();
+        $paidCount = (clone $base)->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid'))->count();
 
         // Rôles d'organisation cumulés par personne sur CE colloque (edition_user),
         // pour montrer qu'un participant peut aussi porter une fonction d'équipe.
@@ -126,7 +126,7 @@ class ParticipantController extends Controller
         }
 
         $participants = Participant::where('edition_id', $editionId)
-            ->whereHas('payments', fn ($q) => $q->where('status', 'paid'))
+            ->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid'))
             ->get()
             ->filter(fn ($p) => ! $p->isInvited() && filled($p->email));
 

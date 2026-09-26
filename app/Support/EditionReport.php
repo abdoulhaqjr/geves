@@ -71,11 +71,11 @@ class EditionReport
     public function participantRows(): array
     {
         return Participant::where('edition_id', $this->edition->id)
-            ->with('payments')
+            ->with('participationPayments')
             ->orderBy('last_name')
             ->get()
             ->map(function (Participant $p) {
-                $paid = $p->payments->firstWhere('status', 'paid');
+                $paid = $p->participationPayments->firstWhere('status', 'paid');
 
                 return [
                     $p->last_name,
@@ -313,13 +313,13 @@ class EditionReport
     public function participantsByRole(): array
     {
         return Participant::where('edition_id', $this->edition->id)
-            ->with('payments')
+            ->with('participationPayments')
             ->get()
             ->groupBy('role')
             ->map(fn ($group, $role) => [
                 'role' => Participant::ROLES[$role] ?? ucfirst((string) $role),
                 'count' => $group->count(),
-                'paid' => $group->filter(fn (Participant $p) => $p->payments->firstWhere('status', 'paid') !== null)->count(),
+                'paid' => $group->filter(fn (Participant $p) => $p->participationPayments->firstWhere('status', 'paid') !== null)->count(),
             ])
             ->sortByDesc('count')
             ->values()

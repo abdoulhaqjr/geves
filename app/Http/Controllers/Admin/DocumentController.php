@@ -155,7 +155,7 @@ class DocumentController extends Controller
         $query = $edition->participants();
 
         if ($request->boolean('paid')) {
-            $query->whereHas('payments', fn ($q) => $q->where('status', 'paid'));
+            $query->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid'));
         }
 
         $participants = $query->orderBy('last_name')->get();

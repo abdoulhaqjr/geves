@@ -105,6 +105,19 @@ class Participant extends Model
         return $this->hasMany(Payment::class);
     }
 
+    /**
+     * Paiements qui ouvrent les **droits de participation** (badge, attestations,
+     * accès) : tout sauf les formations, qui sont réglées à part et rattachées au
+     * même participant. C'est cette relation qu'il faut interroger pour savoir si
+     * quelqu'un « a payé », jamais `payments()`.
+     *
+     * @return HasMany<Payment, $this>
+     */
+    public function participationPayments(): HasMany
+    {
+        return $this->hasMany(Payment::class)->forParticipation();
+    }
+
     public function getFullNameAttribute(): string
     {
         return trim($this->first_name.' '.$this->last_name);
@@ -122,6 +135,6 @@ class Participant extends Model
     /** Le participant a déjà un paiement réglé (garde anti-double-paiement). */
     public function hasPaid(): bool
     {
-        return $this->payments()->where('status', 'paid')->exists();
+        return $this->participationPayments()->where('status', 'paid')->exists();
     }
 }

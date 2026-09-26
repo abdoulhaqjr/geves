@@ -77,7 +77,7 @@ class PaymentController extends Controller
         $toRemind = $remindEditionIds === [] ? collect()
             : Participant::whereIn('edition_id', $remindEditionIds)
                 ->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted'))
-                ->whereDoesntHave('payments', fn ($q) => $q->where('status', 'paid'))
+                ->whereDoesntHave('participationPayments', fn ($q) => $q->where('status', 'paid'))
                 ->with('edition')
                 ->orderBy('edition_id')->orderBy('last_name')
                 ->get()

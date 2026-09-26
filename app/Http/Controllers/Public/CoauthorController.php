@@ -44,7 +44,7 @@ class CoauthorController extends Controller
             'grade' => $ctx['grade'] ?? '',
             'participant' => $ctx['participant'] ?? null,
             'hasPaid' => ($ctx['participant'] ?? null)?->hasPaid() ?? false,
-            'paidReceipt' => ($ctx['participant'] ?? null)?->payments()->where('status', 'paid')->latest('id')->first(),
+            'paidReceipt' => ($ctx['participant'] ?? null)?->participationPayments()->where('status', 'paid')->latest('id')->first(),
             'feeGrid' => $grid,
             'feeMap' => collect($grid)->mapWithKeys(fn ($f) => [$f['label'] => $f['amount']])->all(),
             'highestAmount' => Fees::highestAmount($edition),

@@ -40,7 +40,7 @@ class CommunicationAttestations
 
         // Participants payés de l'édition, indexés par e-mail (pour matcher les co-auteurs).
         $paidByEmail = Participant::where('edition_id', $edition->id)
-            ->whereHas('payments', fn ($q) => $q->where('status', 'paid'))
+            ->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid'))
             ->get()
             ->keyBy(fn (Participant $p) => mb_strtolower(trim((string) $p->email)));
 

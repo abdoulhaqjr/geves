@@ -569,6 +569,6 @@ class SubmissionController extends Controller
     /** L'auteur correspondant (participant lié) a-t-il un paiement réglé sur l'édition ? */
     private function authorHasPaid(Submission $submission): bool
     {
-        return $submission->participant?->payments()->where('status', 'paid')->exists() ?? false;
+        return $submission->participant?->participationPayments()->where('status', 'paid')->exists() ?? false;
     }
 }

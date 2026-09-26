@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Actions\ConfirmPayment;
 use App\Enums\PaymentStatus;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -144,6 +145,24 @@ class Payment extends Model
         return self::MANUAL_METHODS[$this->method]
             ?? self::ONLINE_METHODS[$this->method]
             ?? ucfirst((string) $this->method);
+    }
+
+    /**
+     * Restreint aux paiements qui ouvrent les **droits de participation** à
+     * l'événement (badge, attestations, accès) : tout sauf les formations.
+     *
+     * ⚠️ Un paiement de formation est rattaché au même `Participant` : sans ce
+     * filtre, régler une formation débloquerait à tort la participation.
+     * Le co-auteur est inclus : il règle bien pour participer.
+     *
+     * @param  Builder<Payment>  $query
+     * @return Builder<Payment>
+     */
+    public function scopeForParticipation(Builder $query): Builder
+    {
+        return $query->where(fn ($q) => $q
+            ->where('meta', 'not like', '%"flow":"formation"%')
+            ->orWhereNull('meta'));
     }
 
     /** Nature affichée : « formation », sinon « participation » (co-auteur inclus). */
