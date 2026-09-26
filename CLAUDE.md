@@ -350,7 +350,14 @@ Voir la liste complète en [§8 de PASSATION.md](PASSATION.md). Les plus courant
   orphelin et **fatal `unexpected token "elseif"`** plus loin dans la vue. Mettre une
   espace avant la directive, ou (mieux) sortir la condition dans une expression
   `{{ $x ? ... : ... }}`.
-- **`settings.fees`** = **liste de `['label' => string, 'amount' => float]`** (jamais un
+- **`settings.fees`** = **liste de `['label', 'amount', 'grades', 'default']`** : ⚠️ le
+  **`label` est un intitulé libre** (« Doctorants et assimilés »), il ne sert PAS au
+  rapprochement. C'est **`grades`** (liste de `ParticipantTypes::all()`) qui rattache
+  la catégorie aux participants, et **`default`** qui désigne le tarif de repli.
+  `Fees::resolveAmount()` cherche dans cet ordre : grades rattachés → libellé
+  exactement égal au grade (grilles anciennes) → catégorie par défaut. Une catégorie
+  sans grade ni défaut n'est jamais appliquée (l'écran d'édition le signale).
+  Ancienne forme `['label' => string, 'amount' => float]` (jamais un
   tableau associatif `grade => montant`). Toujours lire via **`App\Support\Fees::grid()`**
   / **`Fees::normalize()`** (qui ignorent les entrées malformées) - jamais l'accès brut,
   sinon `$fee['label']` sur une valeur scalaire fait planter la page publique en 500.

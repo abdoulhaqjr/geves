@@ -23,7 +23,13 @@ class Fees
      * malformée (valeur scalaire, libellé vide, format legacy « label => montant »)
      * est ignorée. Ainsi, une donnée fees corrompue ne casse plus le rendu.
      *
-     * @return list<array{label: string, amount: float}>
+     * Chaque entrée porte en plus les **grades couverts** (`grades`) et un
+     * éventuel drapeau **catégorie par défaut** (`default`) : c'est ce
+     * rattachement explicite qui permet de retrouver le tarif d'un participant,
+     * le libellé étant rédigé librement (« Doctorants et assimilés » ne
+     * correspond à aucun grade).
+     *
+     * @return list<array{label: string, amount: float, grades: list<string>, default: bool}>
      */
     public static function normalize(mixed $raw): array
     {
@@ -32,26 +38,48 @@ class Fees
             ->map(fn ($fee) => [
                 'label' => (string) $fee['label'],
                 'amount' => (float) ($fee['amount'] ?? 0),
+                'grades' => collect(is_array($fee['grades'] ?? null) ? $fee['grades'] : [])
+                    ->map(fn ($g) => trim((string) $g))->filter()->unique()->values()->all(),
+                'default' => (bool) ($fee['default'] ?? false),
             ])
             ->values()
             ->all();
     }
 
     /**
-     * Montant correspondant à un grade/profil (rapprochement insensible à la
-     * casse). Retourne null si aucun tarif ne correspond (l'admin fixe alors le
-     * montant manuellement).
+     * Montant correspondant à un grade/profil de participant, dans l'ordre :
+     *   1. la catégorie qui **déclare couvrir ce grade** (rattachement explicite) ;
+     *   2. à défaut, une catégorie dont le **libellé est exactement le grade**
+     *      (compatibilité avec les grilles saisies avant le rattachement) ;
+     *   3. à défaut, la catégorie marquée **par défaut** (« Autres participants »).
+     *
+     * Retourne null si rien ne correspond : l'appelant décide alors quoi faire
+     * (montant à préciser par l'organisation).
      */
     public static function resolveAmount(Edition $edition, ?string $grade): ?float
     {
         $grade = trim(mb_strtolower((string) $grade));
-        if ($grade === '') {
-            return null;
+        $grid = self::grid($edition);
+
+        if ($grade !== '') {
+            foreach ($grid as $fee) {
+                foreach ($fee['grades'] as $covered) {
+                    if (mb_strtolower($covered) === $grade) {
+                        return $fee['amount'];
+                    }
+                }
+            }
+
+            foreach ($grid as $fee) {
+                if (trim(mb_strtolower($fee['label'])) === $grade) {
+                    return $fee['amount'];
+                }
+            }
         }
 
-        foreach (self::grid($edition) as $fee) {
-            if (trim(mb_strtolower($fee['label'] ?? '')) === $grade) {
-                return (float) ($fee['amount'] ?? 0);
+        foreach ($grid as $fee) {
+            if ($fee['default']) {
+                return $fee['amount'];
             }
         }
 

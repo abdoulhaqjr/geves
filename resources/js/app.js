@@ -1637,8 +1637,19 @@ document.addEventListener('alpine:init', () => {
         infoCards: Array.isArray(init.infoCards) ? init.infoCards : [],
         stats: Array.isArray(init.stats) ? init.stats : [],
         refAxes: Array.isArray(init.refAxes) ? init.refAxes : [],
-        addFee() { this.fees.push({ label: '', amount: '' }); },
+        addFee() { this.fees.push({ label: '', amount: '', grades: [], default: false }); },
         removeFee(i) { this.fees.splice(i, 1); },
+        // Grades couverts par une catégorie tarifaire : c'est ce rattachement
+        // explicite qui permet de retrouver le tarif d'un participant, l'intitulé
+        // de la catégorie étant rédigé librement.
+        toggleFeeGrade(i, grade, on) {
+            const fee = this.fees[i];
+            if (!fee) return;
+            if (!Array.isArray(fee.grades)) fee.grades = [];
+            const at = fee.grades.indexOf(grade);
+            if (on && at === -1) fee.grades.push(grade);
+            if (!on && at !== -1) fee.grades.splice(at, 1);
+        },
         addCommittee() { this.committees.push({ role: 'organisation', person_name: '', person_title: '', institution: '', photo_url: '' }); },
         removeCommittee(i) { this.committees.splice(i, 1); },
         addPartner() { this.partners.push({ name: '', url: '', logo_url: '', level: '' }); },

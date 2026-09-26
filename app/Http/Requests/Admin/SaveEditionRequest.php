@@ -91,6 +91,9 @@ class SaveEditionRequest extends FormRequest
             'fees' => ['array'],
             'fees.*.label' => ['nullable', 'string', 'max:150'],
             'fees.*.amount' => ['nullable', 'numeric', 'min:0'],
+            'fees.*.grades' => ['nullable', 'array'],
+            'fees.*.grades.*' => ['nullable', 'string', 'max:100'],
+            'fees.*.default' => ['nullable', 'boolean'],
             'committees' => ['array'], // rétro-compat (ancien format plat)
             'committees.*.role' => ['nullable', 'in:organisation,scientifique,supervision'],
             'committees.*.person_name' => ['nullable', 'string', 'max:200'],

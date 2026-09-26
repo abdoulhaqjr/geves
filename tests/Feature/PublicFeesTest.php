@@ -45,12 +45,38 @@ it('normalise la grille tarifaire en ignorant les entrées invalides', function 
         ['amount' => 9000],                      // pas de libellé -> ignoré
         ['label' => 'Enseignant', 'amount' => '35000'], // montant en chaîne -> float
     ]))->toBe([
-        ['label' => 'Doctorant', 'amount' => 15000.0],
-        ['label' => 'Enseignant', 'amount' => 35000.0],
+        ['label' => 'Doctorant', 'amount' => 15000.0, 'grades' => [], 'default' => false],
+        ['label' => 'Enseignant', 'amount' => 35000.0, 'grades' => [], 'default' => false],
     ]);
 
     expect(Fees::normalize(null))->toBe([]);
     expect(Fees::normalize('cassé'))->toBe([]);
     // Format legacy associatif : entièrement ignoré (valeurs scalaires).
     expect(Fees::normalize(['Doctorant' => 15000]))->toBe([]);
+});
+
+it('retrouve le tarif par le grade rattaché, pas par l’intitulé', function () {
+    // Cas réel : l'intitulé est rédigé librement et ne correspond à aucun grade.
+    $edition = openEdition(['fees' => [
+        ['label' => 'Enseignants et chercheurs', 'amount' => 35000, 'grades' => ['Enseignant / Chercheur']],
+        ['label' => 'Doctorants et assimilés', 'amount' => 15000, 'grades' => ['Doctorant']],
+        ['label' => 'Autres participants', 'amount' => 50000, 'grades' => [], 'default' => true],
+    ]]);
+
+    expect(Fees::resolveAmount($edition, 'Doctorant'))->toBe(15000.0);
+    expect(Fees::resolveAmount($edition, 'Enseignant / Chercheur'))->toBe(35000.0);
+    // Grade non couvert → catégorie par défaut.
+    expect(Fees::resolveAmount($edition, 'Autre participant'))->toBe(50000.0);
+    expect(Fees::resolveAmount($edition, null))->toBe(50000.0);
+});
+
+it('reste compatible avec une grille sans rattachement (intitulé = grade)', function () {
+    $edition = openEdition(['fees' => [
+        ['label' => 'Doctorant', 'amount' => 15000],
+        ['label' => 'Enseignant / Chercheur', 'amount' => 35000],
+    ]]);
+
+    expect(Fees::resolveAmount($edition, 'doctorant'))->toBe(15000.0);
+    // Sans catégorie par défaut, un grade inconnu ne donne aucun montant.
+    expect(Fees::resolveAmount($edition, 'Autre participant'))->toBeNull();
 });

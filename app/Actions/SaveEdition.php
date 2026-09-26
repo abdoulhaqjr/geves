@@ -41,7 +41,15 @@ class SaveEdition
 
         $fees = collect($data['fees'] ?? [])
             ->filter(fn ($f) => is_array($f) && trim((string) ($f['label'] ?? '')) !== '')
-            ->map(fn ($f) => ['label' => (string) $f['label'], 'amount' => (float) ($f['amount'] ?? 0)])->values()->all();
+            ->map(fn ($f) => [
+                'label' => (string) $f['label'],
+                'amount' => (float) ($f['amount'] ?? 0),
+                // Grades couverts : c'est ce rattachement qui permet de retrouver
+                // le tarif d'un participant (le libellé est rédigé librement).
+                'grades' => collect(is_array($f['grades'] ?? null) ? $f['grades'] : [])
+                    ->map(fn ($g) => trim((string) $g))->filter()->unique()->values()->all(),
+                'default' => (bool) ($f['default'] ?? false),
+            ])->values()->all();
 
         $partners = collect($data['partners'] ?? [])
             ->filter(fn ($p) => trim((string) ($p['name'] ?? '')) !== '')

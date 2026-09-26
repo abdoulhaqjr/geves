@@ -377,10 +377,35 @@
                                 <span>Catégorie</span><span>Montant</span><span></span>
                             </div>
                             <template x-for="(fee, i) in fees" :key="i">
-                                <div class="tarif-row">
-                                    <input type="text" :name="'fees['+i+'][label]'" x-model="fee.label" placeholder="Profil (ex. Doctorant)">
-                                    <input type="number" :name="'fees['+i+'][amount]'" x-model="fee.amount" placeholder="Montant" min="0">
-                                    <button type="button" class="ukc-btn--icon" @click="removeFee(i)" aria-label="Retirer">&times;</button>
+                                <div style="border-bottom:1px solid var(--ukc-border,#f1f1f1);padding-bottom:10px;margin-bottom:10px;">
+                                    <div class="tarif-row">
+                                        <input type="text" :name="'fees['+i+'][label]'" x-model="fee.label" placeholder="Intitulé (ex. Doctorants et assimilés)">
+                                        <input type="number" :name="'fees['+i+'][amount]'" x-model="fee.amount" placeholder="Montant" min="0">
+                                        <button type="button" class="ukc-btn--icon" @click="removeFee(i)" aria-label="Retirer">&times;</button>
+                                    </div>
+                                    {{-- ⚠️ L'intitulé est libre : c'est ce rattachement qui permet de
+                                         retrouver le tarif d'un participant à partir de son grade. --}}
+                                    <div style="display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;margin-top:8px;padding-left:2px;">
+                                        <span style="font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;color:var(--ukc-light);">Grades concernés</span>
+                                        @foreach (\App\Support\ParticipantTypes::all() as $gradeOption)
+                                            <label style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;">
+                                                <input type="checkbox" :name="'fees['+i+'][grades][]'" value="{{ $gradeOption }}"
+                                                       :checked="(fee.grades || []).includes(@js($gradeOption))"
+                                                       @change="toggleFeeGrade(i, @js($gradeOption), $event.target.checked)">
+                                                {{ $gradeOption }}
+                                            </label>
+                                        @endforeach
+                                        <label style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--ukc-muted);"
+                                               title="Tarif appliqué quand aucun grade ne correspond">
+                                            <input type="hidden" :name="'fees['+i+'][default]'" value="0">
+                                            <input type="checkbox" :name="'fees['+i+'][default]'" value="1" x-model="fee.default">
+                                            Tarif par défaut
+                                        </label>
+                                    </div>
+                                    <p x-show="fee.label && !(fee.grades || []).length && !fee.default" x-cloak
+                                       style="font-size:12px;color:#b45309;margin:6px 0 0;">
+                                        Cette catégorie ne couvre aucun grade : elle ne sera jamais appliquée automatiquement.
+                                    </p>
                                 </div>
                             </template>
                             <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="addFee()" style="margin-top:8px;">+ Catégorie</button>
@@ -938,7 +963,7 @@
                     const s = this.aiSuggestions || {};
                     ['title','edition_label','subtitle','theme','year','date_start','date_end','submission_deadline','location','intro'].forEach(k => { if (s[k] !== undefined && s[k] !== '') this.f[k] = s[k]; });
                     if (Array.isArray(s.tracks)) this.axes = s.tracks.map(t => ({ label: t }));
-                    if (Array.isArray(s.fees)) this.fees = s.fees.map(x => ({ label:x.label||'', amount:x.amount||'' }));
+                    if (Array.isArray(s.fees)) this.fees = s.fees.map(x => ({ label:x.label||'', amount:x.amount||'', grades:Array.isArray(x.grades)?x.grades:[], default:!!x.default }));
                     if (Array.isArray(s.committees)) {
                         this.comOrg = s.committees.filter(c => (c.role || 'organisation') === 'organisation');
                         this.comSci = s.committees.filter(c => c.role === 'scientifique');
