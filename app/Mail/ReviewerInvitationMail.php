@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Participant;
+use App\Models\Review;
 use App\Support\Locales;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -13,9 +14,10 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Password;
 
 /**
- * Invitation d'un relecteur : lien vers son espace « Mes relectures ». Pour un
- * compte fraîchement provisionné (mot de passe à définir), le lien mène à la
- * création du mot de passe (jeton). Mise en file (ShouldQueue).
+ * Invitation d'un relecteur : lien vers son espace « Mes relectures », échéance
+ * de remise et rappel qu'il peut accepter ou refuser. Pour un compte fraîchement
+ * provisionné (mot de passe à définir), le lien mène à la création du mot de
+ * passe (jeton). Mise en file (ShouldQueue).
  */
 class ReviewerInvitationMail extends Mailable implements ShouldQueue
 {
@@ -24,6 +26,7 @@ class ReviewerInvitationMail extends Mailable implements ShouldQueue
     public function __construct(
         public Participant $reviewer,
         public int $assignedCount = 1,
+        public ?Review $review = null,
     ) {
         $this->locale(Locales::resolve($reviewer->user?->locale));
     }
@@ -48,6 +51,8 @@ class ReviewerInvitationMail extends Mailable implements ShouldQueue
         return new Content(markdown: 'emails.reviewer-invitation', with: [
             'portalUrl' => $url,
             'needsPassword' => $needsPassword,
+            // Échéance de remise : le relecteur doit la connaître AVANT d'accepter.
+            'due' => $this->review?->due_at?->translatedFormat('j F Y'),
         ]);
     }
 }

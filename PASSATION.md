@@ -542,4 +542,48 @@ défaut) plutôt que par soumission, et **un refus libère la place sans
 remplacement automatique** - cohérent avec la philosophie du module, où le
 moteur propose et l'humain valide.
 
+### Relecture - cohérence d'ensemble, design et réglages (2026-09-27)
+
+Revue de **toutes** les surfaces qui embarquent de la relecture, après la mise en
+place du cycle de vie. Les écarts trouvés et corrigés :
+
+- **Statut hors vocabulaire en base** : les jeux de démonstration créaient des
+  relectures en `pending`, absent de `Review::STATUSES`. Avant le cycle de vie
+  « tout ce qui n'est pas rendu » était traité pareil, donc la valeur passait
+  inaperçue ; ensuite elle sortait de tous les compteurs. Migration
+  `2026_09_27_000300_normalize_review_statuses` (statut inconnu → `invited`,
+  échéance manquante = assignation + durée standard) + seeder aligné.
+- **Liste des soumissions** : nouvelle colonne **Relectures** (`1/2`, plus une
+  pastille rouge « +N j » si retard) via `Review::progressOf()` - le comité ne
+  devait plus ouvrir chaque fiche pour savoir où en est une relecture.
+- **E-mail d'invitation** : il annonçait la relecture sans dire l'échéance ni
+  qu'on peut refuser ; il porte maintenant les deux (`ReviewerInvitationMail`
+  reçoit la `Review`).
+- **Espace relecteur** : sous-navigation `?tab=relectures|candidatures` (l'appel
+  à candidatures n'était plus visible sous la table filtrée), barre de filtres
+  (état, événement, **axe** en Tom Select, recherche) identique aux listes admin,
+  et **KPI disjoints** - « à évaluer » comptait aussi les invitations, donc les
+  nombres ne s'additionnaient pas ; chaque carte porte désormais son propre
+  retard. Les filtres portent sur la liste, jamais sur les compteurs.
+- **Conflit « même institution » désactivable** par édition (onglet Options).
+- **Design** : la pastille d'état ne vire plus au rouge quand la relecture est en
+  retard (le retard a son propre marqueur) ; sur la fiche d'une soumission,
+  l'état se lit **sous le nom** du relecteur et l'action « retirer » est un
+  bouton fantôme qui ne rougit qu'au survol (avant : trois niveaux à droite et un
+  « × » orphelin) ; l'échéance disparaît dès que la relecture n'est plus due.
+- **Kit Tailwise partagé** : KPI, barre de filtres et boutons `--sm` passent de
+  `.admin-page` à `.ukc-shell`, donc l'espace participant a enfin le même rendu
+  que l'admin (il retombait sur la carte centrée d'origine et sur la grille
+  4 colonnes du site public).
+- **Bulle du chatbot** : masquée pendant une surface modale, effacée quand elle
+  recouvre une action, `z-index` ramené de 9999 à 55. Elle recouvrait le bouton
+  « Confirmer » des slideovers et la dernière ligne des tableaux.
+
+⚠️ **Piège Blade rencontré** : un `@php(...)` **en ligne placé avant** un bloc
+`@php … @endphp` dans la même vue produit `<?php(` non terminé - tout ce qui suit
+devient du PHP brut et la page tombe sur un « Undefined variable » très loin de
+la cause. Forme bloc partout dans une vue qui en contient déjà une.
+
+**755 tests verts** (`ReviewLifecycleTest` : 20 cas), PHPStan niveau 5 OK, Pint OK.
+
 > **Mémoire projet** : le contexte fin (décisions, conventions, TODO différés - DOI/DataCite, connecteur Google anti-plagiat, amélioration `admin/reclamations`) est aussi consigné dans la **mémoire locale de Claude Code** (`~/.claude/…/memory/`, non versionnée). Comme cette mémoire ne se partage pas entre contributeurs, **le contexte partageable doit vivre dans `CLAUDE.md` + ce fichier** (versionnés) : les tenir à jour à chaque tâche notable.

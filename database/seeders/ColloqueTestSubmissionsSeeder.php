@@ -167,18 +167,28 @@ class ColloqueTestSubmissionsSeeder extends Seeder
             'accepted' => [['accept', 'minor'], [14, 18], 'completed'],
             'rejected' => [['reject', 'major'], [6, 10], 'completed'],
             'revision' => [['minor', 'major'], [11, 13], 'completed'],
-            default => [['minor', 'accept'], [12, 16], 'pending'], // under_review : avis en cours
+            // under_review : relecture confiée, pas encore rendue. ⚠️ Le statut
+            // doit appartenir à Review::STATUSES - un statut inventé sort des
+            // compteurs du comité (ni actif, ni en attente, ni en retard).
+            default => [['minor', 'accept'], [12, 16], 'invited'],
         };
+        $done = $reviewStatus === 'completed';
 
-        foreach (collect($reviewers)->shuffle()->take(2) as $reviewer) {
+        // Une relecture en cours porte une échéance : de quoi voir à la fois un
+        // avis dans les temps et un avis en retard dans le jeu de démonstration.
+        $offsets = [10, -4];
+
+        foreach (collect($reviewers)->shuffle()->take(2)->values() as $i => $reviewer) {
             Review::create([
                 'submission_id' => $submission->id,
                 'reviewer_id' => $reviewer->id,
-                'recommendation' => $reviewStatus === 'pending' ? '' : $recos[array_rand($recos)],
-                'score' => $reviewStatus === 'pending' ? null : random_int($range[0], $range[1]),
-                'comments' => $reviewStatus === 'pending' ? '' : 'Communication '.($status === 'accepted' ? 'solide et pertinente' : ($status === 'rejected' ? 'insuffisamment aboutie' : 'à retravailler')).'.',
+                'recommendation' => $done ? $recos[array_rand($recos)] : '',
+                'score' => $done ? random_int($range[0], $range[1]) : null,
+                'comments' => $done ? 'Communication '.($status === 'accepted' ? 'solide et pertinente' : ($status === 'rejected' ? 'insuffisamment aboutie' : 'à retravailler')).'.' : '',
                 'comments_private' => 'Avis confidentiel pour le comité.',
                 'status' => $reviewStatus,
+                'assigned_at' => now()->subDays(14),
+                'due_at' => $done ? null : now()->addDays($offsets[$i] ?? 10),
             ]);
         }
     }

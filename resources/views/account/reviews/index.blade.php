@@ -1,15 +1,82 @@
 <x-layouts.participant :title="__('Mes relectures')" :subtitle="__('Espace relecteur · évaluations confiées')">
 <div class="account-reviews" x-data="ukcReviews(@js($reviewsData), @js($recommendations), {{ $scale }})">
 
+    {{-- Sous-navigation : elle n'a de sens que s'il y a réellement deux tâches. --}}
+    @if ($biddable->isNotEmpty() || $tab === 'candidatures')
+    <div class="ukc-nav-docs">
+        <a href="{{ route('account.reviews') }}" @class(['active' => $tab === 'relectures'])>
+            {{ __('Mes relectures') }}
+            @if ($reviews->count())<span class="nav-count">{{ $reviews->count() }}</span>@endif
+        </a>
+        <a href="{{ route('account.reviews', ['tab' => 'candidatures']) }}" @class(['active' => $tab === 'candidatures'])>
+            {{ __('Appel à candidatures') }}
+            @if ($biddable->isNotEmpty())<span class="nav-count">{{ $biddable->count() }}</span>@endif
+        </a>
+    </div>
+    @endif
+
+    @if ($tab === 'relectures')
     {{-- Indicateurs --}}
     <div class="ukc-stats" style="margin-bottom:16px;">
         <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="inbox" :size="20" /></div><div class="lbl">{{ __('Relectures') }}</div><div class="val">{{ $reviews->count() }}</div></div>
-        <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="mail" :size="20" /></div><div class="lbl">{{ __('Invitations à confirmer') }}</div><div class="val">{{ $invitedCount }}</div></div>
-        <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="pen" :size="20" /></div><div class="lbl">{{ __('À évaluer') }}</div><div class="val">{{ $pendingCount }}</div></div>
+        <div class="ukc-stat-card tw-stat">
+            <div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="mail" :size="20" /></div>
+            <div class="lbl">{{ __('À confirmer') }}</div>
+            <div class="val">{{ $invitedCount }}</div>
+            @if ($lateInvited > 0)
+                <div class="hint" style="color:#b4231c;font-weight:600;">{{ $lateInvited }} {{ __('en retard') }}</div>
+            @endif
+        </div>
+        <div class="ukc-stat-card tw-stat">
+            <div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="pen" :size="20" /></div>
+            <div class="lbl">{{ __('À évaluer') }}</div>
+            <div class="val">{{ $acceptedCount }}</div>
+            <div class="hint" style="{{ $lateAccepted > 0 ? 'color:#b4231c;font-weight:600;' : '' }}">
+                {{ $lateAccepted > 0 ? $lateAccepted.' '.__('en retard') : __('dans les délais') }}
+            </div>
+        </div>
         <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="check-circle" :size="20" /></div><div class="lbl">{{ __('Évaluées') }}</div><div class="val green">{{ $doneCount }}</div></div>
-        <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--red"><x-ukc.icon name="flag" :size="20" /></div><div class="lbl">{{ __('En retard') }}</div><div class="val" style="{{ $lateCount > 0 ? 'color:#b4231c;' : '' }}">{{ $lateCount }}</div></div>
+        <div class="ukc-stat-card tw-stat">
+            <div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="close" :size="20" /></div>
+            <div class="lbl">{{ __('Refusées') }}</div>
+            <div class="val">{{ $declinedCount }}</div>
+            @if ($cancelledCount > 0)
+                <div class="hint">{{ $cancelledCount }} {{ __('retirée(s) par le comité') }}</div>
+            @endif
+        </div>
     </div>
 
+    {{-- Filtres (même grammaire que les listes du back-office : on filtre la
+         liste, jamais les compteurs ci-dessus). --}}
+    @if (count($reviewsData) || $status !== '' || $search !== '' || $edition_id !== '' || $track !== '')
+        <form method="GET" class="filter-bar filter-bar--inline">
+            <select name="status" onchange="this.form.submit()" title="{{ __('État de la relecture') }}">
+                <option value="">{{ __('Tous les états') }}</option>
+                @foreach ($statuses as $key => $label)
+                    <option value="{{ $key }}" @selected($status === $key)>{{ $label }}</option>
+                @endforeach
+            </select>
+            @if ($editions->count() > 1)
+                <select name="edition_id" onchange="this.form.submit()" title="{{ __('Événement') }}">
+                    <option value="">{{ __('Tous les événements') }}</option>
+                    @foreach ($editions as $ed)
+                        <option value="{{ $ed->id }}" @selected($edition_id === (string) $ed->id)>{{ $ed->title ?: $ed->year }}</option>
+                    @endforeach
+                </select>
+            @endif
+            @if ($tracks->isNotEmpty())
+                <select name="track" onchange="this.form.submit()" data-tom title="{{ __('Axe thématique') }}">
+                    <option value="">{{ __('Tous les axes') }}</option>
+                    @foreach ($tracks as $t)<option value="{{ $t }}" @selected($track === $t)>{{ $t }}</option>@endforeach
+                </select>
+            @endif
+            <input type="search" name="search" value="{{ $search }}" placeholder="{{ __('Référence ou titre…') }}"
+                   style="width:230px;" onkeydown="if(event.key==='Enter'){this.form.submit();}">
+            @if ($status !== '' || $search !== '' || $edition_id !== '' || $track !== '')
+                <a href="{{ route('account.reviews') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">{{ __('Réinitialiser') }}</a>
+            @endif
+        </form>
+    @endif
     {{-- Liste des relectures (table Tailwise) --}}
     <div class="ukc-card" style="padding:0;">
         @if (count($reviewsData))
@@ -30,10 +97,7 @@
                         <template x-for="r in reviews" :key="r.id">
                             <tr>
                                 <td style="font-family:var(--ukc-mono);font-weight:700;" x-text="r.ref || '-'"></td>
-                                <td class="title">
-                                    <span x-text="r.title"></span>
-                                    <div style="font-size:12px;color:var(--ukc-muted);" x-text="r.edition"></div>
-                                </td>
+                                <td class="title" x-text="r.title"></td>
                                 <td x-text="r.track || '-'"></td>
                                 <td>
                                     <template x-if="r.completed">
@@ -93,6 +157,12 @@
                     </tbody>
                 </table>
             </div>
+        @elseif ($status !== '' || $search !== '' || $edition_id !== '' || $track !== '')
+            <div class="ukc-empty" style="border:none;">
+                <span class="ico"><x-ukc.icon name="search" :size="28" /></span>
+                <h3>{{ __('Aucune relecture pour ce filtre') }}</h3>
+                <p>{{ __('Élargissez la recherche ou réinitialisez les filtres.') }}</p>
+            </div>
         @else
             <div class="ukc-empty" style="border:none;">
                 <span class="ico"><x-ukc.icon name="inbox" :size="28" /></span>
@@ -102,11 +172,20 @@
         @endif
     </div>
 
+    @endif
+
     {{-- ===== Appel à candidatures (préférences + conflits) ===== --}}
-    @if ($biddable->isNotEmpty())
-        <div style="margin-top:26px;">
-            <h3 style="font-size:1.05rem;font-weight:800;">{{ __('Appel à candidatures') }}</h3>
-            <p style="color:var(--ukc-muted);font-size:13.5px;margin:4px 0 14px;">
+    @if ($tab === 'candidatures' && $biddable->isEmpty())
+        <div class="ukc-card">
+            <div class="ukc-empty" style="border:none;">
+                <span class="ico"><x-ukc.icon name="inbox" :size="28" /></span>
+                <h3>{{ __('Aucune communication à candidater') }}</h3>
+                <p>{{ __('Les communications ouvertes à l’évaluation et qui ne vous sont pas déjà confiées apparaîtront ici.') }}</p>
+            </div>
+        </div>
+    @elseif ($tab === 'candidatures')
+        <div>
+            <p style="color:var(--ukc-muted);font-size:13.5px;margin:0 0 14px;">
                 {{ __('Indiquez les communications que vous souhaitez évaluer et signalez tout conflit d’intérêt. Vos préférences aident le comité à répartir les relectures.') }}
             </p>
             <form method="POST" action="{{ route('account.reviews.bids') }}">

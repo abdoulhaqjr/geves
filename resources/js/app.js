@@ -2240,3 +2240,114 @@ document.addEventListener('alpine:init', () => {
 
 // Démarre Alpine une fois tous les composants enregistrés.
 Alpine.start();
+
+// ---------------------------------------------------------------------------
+// Bulle du chatbot : s'efface pendant une surface modale, revient en douceur.
+// Elle est fixée en bas à droite - exactement là où les slideovers, les modales
+// et les popups de confirmation posent leurs boutons d'action. Plutôt que de
+// jouer au plus fort avec les z-index (elle finissait par recouvrir un bouton
+// « Confirmer »), on la retire de l'écran tant qu'une surface modale est
+// ouverte, et on la ramène en fondu dès sa fermeture.
+// ---------------------------------------------------------------------------
+const UKC_OVERLAYS = '.ukc-slideover, .ukc-confirm-overlay, .ukc-modal, .modal-overlay, .lb-overlay';
+
+function ukcOverlayVisible() {
+    return [...document.querySelectorAll(UKC_OVERLAYS)].some((el) => {
+        const cs = getComputedStyle(el);
+
+        return cs.display !== 'none' && cs.visibility !== 'hidden' && cs.opacity !== '0';
+    });
+}
+
+function initChatbotOverlayGuard() {
+    // Rien à surveiller si la bulle n'est pas sur la page.
+    if (!document.querySelector('.ukc-cb-root')) {
+        return;
+    }
+
+    let queued = false;
+    const sync = () => {
+        queued = false;
+        document.body.classList.toggle('ukc-overlay-open', ukcOverlayVisible());
+    };
+    const schedule = () => {
+        if (queued) {
+            return;
+        }
+        queued = true;
+        requestAnimationFrame(sync);
+    };
+
+    // Les surfaces sont pilotées par Alpine (`x-show` → style inline), par une
+    // classe, ou créées à la volée (confirmation) : on écoute les trois.
+    new MutationObserver(schedule).observe(document.body, {
+        attributes: true, attributeFilter: ['style', 'class'], childList: true, subtree: true,
+    });
+    sync();
+}
+
+document.addEventListener('DOMContentLoaded', initChatbotOverlayGuard);
+
+// Bulle « polie » : elle s'efface quand elle recouvre une action (bouton, lien,
+// champ) et revient dès que le pointeur s'en approche. Le lanceur est fixé en
+// bas à droite, pile où les tableaux du back-office posent leur colonne
+// « Action » : sans cela, le bouton de la dernière ligne visible est
+// inatteignable. Le panneau ouvert n'est jamais masqué.
+function initChatbotPoliteness() {
+    const root = document.querySelector('.ukc-cb-root');
+    const fab = root?.querySelector('.ukc-cb-fab');
+    if (!root || !fab) {
+        return;
+    }
+
+    const ACTIONS = 'button, a[href], input, select, textarea, [role="button"]';
+    let pointerNear = false;
+
+    const coversAction = () => {
+        // Panneau ouvert ou pointeur à proximité : la bulle reste pleinement là.
+        if (pointerNear || root.querySelector('.ukc-cb-panel.open')) {
+            return false;
+        }
+        const r = fab.getBoundingClientRect();
+        if (!r.width) {
+            return false;
+        }
+
+        return [
+            [r.left + r.width / 2, r.top + r.height / 2],
+            [r.left + 8, r.top + 8],
+            [r.right - 8, r.bottom - 8],
+        ].some(([x, y]) => document.elementsFromPoint(x, y)
+            .filter((el) => !root.contains(el))
+            .some((el) => el.closest(ACTIONS)));
+    };
+
+    let queued = false;
+    const sync = () => {
+        queued = false;
+        root.classList.toggle('is-shy', coversAction());
+    };
+    const schedule = () => {
+        if (queued) {
+            return;
+        }
+        queued = true;
+        requestAnimationFrame(sync);
+    };
+
+    document.addEventListener('mousemove', (e) => {
+        const r = fab.getBoundingClientRect();
+        // Zone de rattrapage autour de la bulle : on la ramène avant de l'atteindre.
+        const near = e.clientX > r.left - 120 && e.clientY > r.top - 120;
+        if (near !== pointerNear) {
+            pointerNear = near;
+            schedule();
+        }
+    }, { passive: true });
+
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule, { passive: true });
+    schedule();
+}
+
+document.addEventListener('DOMContentLoaded', initChatbotPoliteness);

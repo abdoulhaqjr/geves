@@ -578,7 +578,11 @@ input[data-uppercase] { text-transform: uppercase; }
 .gesco-chat .chat-input button.send svg { width: 18px; height: 18px; }
 
 /* ---- Widget flottant Gesco ---- */
-.ukc-cb-root { position: fixed; bottom: 20px; right: 20px; z-index: 9999; font-family: var(--ukc-font); }
+/* ⚠️ Le lanceur du chatbot flotte au-dessus du contenu (et de l'en-tête public,
+   z-index 50) mais DOIT passer sous les surfaces modales : slideover (60),
+   confirmation (90), modales (100+), visionneuse (200). À 9999 il recouvrait le
+   pied des slideovers - le bouton « Confirmer » se retrouvait sous la bulle. */
+.ukc-cb-root { position: fixed; bottom: 20px; right: 20px; z-index: 55; font-family: var(--ukc-font); }
 .ukc-cb-fab { width: 64px; height: 64px; border-radius: 50%; border: 3px solid #fff; background: linear-gradient(145deg, #e0e7ff, #c7d2fe); box-shadow: 0 10px 28px rgba(34, 62, 164, .35); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; overflow: hidden; transition: transform .2s, box-shadow .2s; position: relative; }
 .ukc-cb-fab:hover { transform: scale(1.06); box-shadow: 0 14px 32px rgba(34, 62, 164, .4); }
 .ukc-cb-fab .mascot { width: 52px; height: 52px; display: block; }
@@ -942,3 +946,9 @@ input[data-uppercase] { text-transform: uppercase; }
 .ukc-prose li { margin-bottom: 6px; }
 .ukc-practical-card ul { list-style: disc; margin: 8px 0 0 18px; padding-left: 2px; font-size: 14px; color: var(--ukc-muted); line-height: 1.55; }
 .ukc-practical-card li { margin-bottom: 4px; }
+
+/* La bulle s'efface pendant une surface modale (cf. initChatbotOverlayGuard)
+   et revient en fondu : elle ne doit jamais masquer un bouton d'action. */
+.ukc-cb-root { transition: opacity .18s ease, transform .18s ease; }
+body.ukc-overlay-open .ukc-cb-root { opacity: 0; transform: translateY(10px) scale(.92); pointer-events: none; }
+.ukc-cb-root.is-shy { opacity: .2; pointer-events: none; }

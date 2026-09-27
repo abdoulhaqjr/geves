@@ -61,6 +61,27 @@ class Review extends Model
     }
 
     /**
+     * Avancement compact d'un lot de relectures, pour une liste :
+     * `['done' => 1, 'total' => 2, 'late' => 1, 'lateDays' => 3]`. Même règle
+     * que summarize() - seules les relectures actives comptent.
+     *
+     * @param  iterable<int, self>  $reviews
+     * @return array{done:int, total:int, late:int, lateDays:int}
+     */
+    public static function progressOf(iterable $reviews): array
+    {
+        $active = collect($reviews)->filter(fn (self $r) => $r->isActive());
+        $late = $active->filter(fn (self $r) => $r->isLate());
+
+        return [
+            'done' => $active->where('status', 'completed')->count(),
+            'total' => $active->count(),
+            'late' => $late->count(),
+            'lateDays' => $late->isEmpty() ? 0 : (int) $late->max(fn (self $r) => $r->daysLate()),
+        ];
+    }
+
+    /**
      * Phrase d'état d'un lot de relectures, telle que le comité la lit :
      * « 2 relectures demandées - 1 rendue, 1 en retard de 3 j ». Les relectures
      * annulées ne comptent pas ; les refus sont mentionnés à part (ils ont bien
@@ -114,12 +135,14 @@ class Review extends Model
     }
 
     /** Pastille de la charte associée au statut. */
+    /**
+     * Teinte de la pastille d'ÉTAT. ⚠️ Le retard n'est pas un état : il a son
+     * propre marqueur rouge à côté (échéance / « N j de retard »). Teinter la
+     * pastille en rouge en plus rendait les deux signaux redondants et faisait
+     * lire « Invitée » en rouge, ce qui n'a pas de sens.
+     */
     public function statusPill(): string
     {
-        if ($this->isLate()) {
-            return 'err';
-        }
-
         return match ($this->status) {
             'completed' => 'ok',
             'accepted' => 'info',

@@ -275,6 +275,37 @@ Une relecture n'est plus un simple « assignée / rendue » : `Review::STATUSES`
 - Notification staff dédiée : kind **`review_response`** (acceptation / refus).
 - Tests : `tests/Feature/ReviewLifecycleTest.php`.
 
+- **Cohérence des pages de relecture** (2026-09-27) : le vocabulaire et la
+  grammaire sont les mêmes partout. Liste des soumissions → colonne
+  **Relectures** (`rendues/demandées` + retard, via `Review::progressOf()`) ;
+  fiche d'une soumission → `Review::summarize()` + état/échéance par relecture ;
+  **Attribution auto** → couverture calculée sur les seules relectures actives ;
+  **Rapports** → `pending`/`late`/`declined` distincts ; **espace relecteur**
+  (`/relectures`) → sous-navigation `?tab=relectures|candidatures`, KPI
+  **disjoints** (à confirmer + à évaluer + évaluées + refusées = total) et barre
+  de filtres identique aux listes admin. L'**e-mail d'invitation** annonce
+  l'échéance et la possibilité de refuser.
+- **Conflit d'intérêts « même institution » désactivable** : case dans l'onglet
+  **Options** de la fiche d'édition (`settings['options']['coi_ignore_same_institution']`,
+  lue par `ConflictOfInterest::ignoresSameInstitution()`). Utile quand
+  l'événement est porté par une seule université - sinon la règle signale
+  presque toutes les paires. Les autres règles restent actives.
+- **Kit Tailwise = les DEUX back-offices** : les cartes KPI (`.ukc-stats`,
+  `.ukc-stat-card`, `.lbl`/`.val`/`.hint`), la barre de filtres (`.filter-bar`)
+  et la taille compacte `.ukc-btn--sm` étaient scopées à `.admin-page` ; elles le
+  sont désormais à **`.ukc-shell`**, donc l'espace participant en hérite. ⚠️ Ne
+  pas re-scoper ces règles à `.admin-page` : l'espace participant retomberait sur
+  la carte centrée d'origine et sur la grille 4 colonnes du **site public**
+  (`public.css` définit `.ukc-stats` sans scope).
+- **Bulle du chatbot** : elle est fixée en bas à droite, là où les tableaux
+  posent leur colonne « Action » et les slideovers leurs boutons. Deux garde-fous
+  dans `resources/js/app.js` : `initChatbotOverlayGuard()` la masque tant qu'une
+  surface modale est ouverte (`body.ukc-overlay-open`), et
+  `initChatbotPoliteness()` l'efface (`.is-shy`) quand elle recouvre une action,
+  la ramenant dès que le pointeur s'approche. Son `z-index` est **55** (au-dessus
+  du contenu, sous slideover 60 / confirmation 90 / modales 100) - ne pas le
+  remonter.
+
 ### Règles métier - limites communications & attestations
 
 - **Limite de communications** (`settings.max_communications`) : compte **seulement** les
@@ -423,6 +454,13 @@ Voir la liste complète en [§8 de PASSATION.md](PASSATION.md). Les plus courant
   indispensable au mobile money.
 - **`@php(...)`/`@json([...])` multi-ligne** dans une vue peut casser le compilateur
   Blade - préparer la donnée dans le contrôleur/composant.
+- ⚠️ **`@php(...)` en ligne AVANT un bloc `@php … @endphp`** dans la même vue :
+  Blade traite les blocs bruts en premier et avale le `@php(` en ligne comme
+  ouverture du bloc → il compile `<?php(` **non terminé**, tout ce qui suit
+  devient du PHP brut (les `@if` ne sont plus compilés) et la page tombe sur un
+  « Undefined variable » à des dizaines de lignes de là. Dans une vue qui
+  contient déjà un bloc `@php … @endphp`, **utiliser la forme bloc partout**
+  (`@php $x = …; @endphp`). L'inverse (en ligne *après* le bloc) fonctionne.
 - **Directive Blade collée à un mot** : `texte@if ($x)` **n'est pas compilé** (Blade
   exige un caractère non-alphanumérique avant `@`), mais le `@endif` l'est → `endif`
   orphelin et **fatal `unexpected token "elseif"`** plus loin dans la vue. Mettre une

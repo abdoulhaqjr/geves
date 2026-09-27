@@ -29,10 +29,16 @@ it('affiche l’appel à candidatures et enregistre une préférence', function 
     $submission = seededSubmission('submitted');
     $reviewer = reviewerOn($submission->edition, 'kofi@rev.tg');
 
+    // L'appel à candidatures est un onglet à part (?tab=candidatures) : depuis
+    // « Mes relectures », on voit le lien ; la liste, elle, est sur l'onglet.
     $this->actingAs($reviewer->user, 'account')
         ->get(route('account.reviews'))
         ->assertOk()
-        ->assertSee('Appel à candidatures')
+        ->assertSee('Appel à candidatures');
+
+    $this->actingAs($reviewer->user, 'account')
+        ->get(route('account.reviews', ['tab' => 'candidatures']))
+        ->assertOk()
         ->assertSee($submission->ref_code);
 
     $this->actingAs($reviewer->user, 'account')

@@ -570,7 +570,8 @@
                                 <label class="ukc-check"><input type="checkbox" name="opt_hybrid" value="1" @checked($v('opt_hybrid'))> Sessions hybrides</label>
                                 <label class="ukc-check"><input type="checkbox" name="opt_livret" value="1" @checked($v('opt_livret'))> Livre des résumés activé</label>
                                 <label class="ukc-check"><input type="checkbox" name="opt_badges" value="1" @checked($v('opt_badges'))> Badges participants activés</label>
-                                <label class="ukc-check"><input type="checkbox" name="opt_formation" value="1" @checked($v('opt_formation'))> Module Formations activé (gestion des formations de l’événement)</label>
+                                <label class="ukc-check"><input type="checkbox" name="opt_formation" value="1" @checked($v('opt_formation'))> Activer le Module Formations</label>
+                                <label class="ukc-check"><input type="checkbox" name="opt_coi_ignore_institution" value="1" @checked($v('opt_coi_ignore_institution'))> Ignorer le conflit d’intérêts entre relecteur et auteur de la même institution</label>
 
                                 <h3>Liens rapides</h3>
                                 <div class="quick-links">

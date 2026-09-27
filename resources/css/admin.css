@@ -5,15 +5,15 @@
  */
 
 /* ---- Partagé (indicateurs, cartes, onglets) ---- */
-.admin-page .ukc-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
-.admin-page .ukc-stat-card { background: #fff; border: 1px solid var(--ukc-border); border-radius: var(--ukc-radius); padding: 16px 18px; text-align: left; }
-.admin-page .ukc-stat-card .lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--ukc-light); margin-bottom: 6px; }
-.admin-page .ukc-stat-card .val { font-size: 1.55rem; font-weight: 800; line-height: 1.1; color: var(--ukc-text); }
-.admin-page .ukc-stat-card .val.blue { color: var(--ukc-blue); }
-.admin-page .ukc-stat-card .val.green { color: var(--ukc-green); }
-.admin-page .ukc-stat-card .val.warn { color: #d97706; }
-.admin-page .ukc-stat-card .hint { font-size: 12px; color: var(--ukc-muted); margin-top: 6px; }
-.admin-page .ukc-stat-card .hint.up { color: var(--ukc-green); }
+.ukc-shell .ukc-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.ukc-shell .ukc-stat-card { background: #fff; border: 1px solid var(--ukc-border); border-radius: var(--ukc-radius); padding: 16px 18px; text-align: left; }
+.ukc-shell .ukc-stat-card .lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--ukc-light); margin-bottom: 6px; }
+.ukc-shell .ukc-stat-card .val { font-size: 1.55rem; font-weight: 800; line-height: 1.1; color: var(--ukc-text); }
+.ukc-shell .ukc-stat-card .val.blue { color: var(--ukc-blue); }
+.ukc-shell .ukc-stat-card .val.green { color: var(--ukc-green); }
+.ukc-shell .ukc-stat-card .val.warn { color: #d97706; }
+.ukc-shell .ukc-stat-card .hint { font-size: 12px; color: var(--ukc-muted); margin-top: 6px; }
+.ukc-shell .ukc-stat-card .hint.up { color: var(--ukc-green); }
 .admin-page .ukc-card h2 { font-size: 15px; font-weight: 800; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 /* Icône + titre groupés dans un <span> : garder l'icône alignée au texte (évite le SVG block qui passe à la ligne). */
 .admin-page .ukc-card h2 > span { display: inline-flex; align-items: center; gap: 8px; }
@@ -39,22 +39,22 @@
 .admin-page .ukc-panel.active { display: block; }
 /* Règle projet : les boutons d'action d'une ligne restent sur UNE ligne (horizontaux). */
 .admin-page .ukc-actions { display: flex; gap: 6px; align-items: center; justify-content: flex-end; flex-wrap: nowrap; }
-.admin-page .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
-.admin-page .filter-bar select, .admin-page .filter-bar input { border: 1.5px solid var(--ukc-border); border-radius: 8px; padding: 8px 10px; font-size: 13px; background: #fff; color: var(--ukc-text); }
-.admin-page .filter-bar select:focus, .admin-page .filter-bar input:focus { outline: none; border-color: var(--ukc-blue); }
+.ukc-shell .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+.ukc-shell .filter-bar select, .ukc-shell .filter-bar input { border: 1.5px solid var(--ukc-border); border-radius: 8px; padding: 8px 10px; font-size: 13px; background: #fff; color: var(--ukc-text); }
+.ukc-shell .filter-bar select:focus, .ukc-shell .filter-bar input:focus { outline: none; border-color: var(--ukc-blue); }
 /* Variante « une seule ligne » : les filtres ne se replient pas, la barre défile
    horizontalement sur petit écran (page Paiements). */
-.admin-page .filter-bar--inline { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
-.admin-page .filter-bar--inline > * { flex-shrink: 0; }
-.admin-page .filter-bar--inline input[type="search"] { min-width: 180px; }
+.ukc-shell .filter-bar--inline { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+.ukc-shell .filter-bar--inline > * { flex-shrink: 0; }
+.ukc-shell .filter-bar--inline input[type="search"] { min-width: 180px; }
 /* Tom Select dans une barre de filtres : un libellé long (axe thématique) ne
    doit pas passer à la ligne, sinon le contrôle grandit et désaligne toute la
    barre. On tronque proprement à la place. */
 /* Largeur FIXE : sans elle, la largeur du contrôle suit le libellé sélectionné
    et décale les filtres voisins à chaque choix. */
-.admin-page .filter-bar .ts-wrapper { flex: 0 0 280px; width: 280px; max-width: 280px; min-width: 280px; }
-.admin-page .filter-bar .ts-control { flex-wrap: nowrap; overflow: hidden; }
-.admin-page .filter-bar .ts-control > .item {
+.ukc-shell .filter-bar .ts-wrapper { flex: 0 0 280px; width: 280px; max-width: 280px; min-width: 280px; }
+.ukc-shell .filter-bar .ts-control { flex-wrap: nowrap; overflow: hidden; }
+.ukc-shell .filter-bar .ts-control > .item {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
 }
 .admin-page .title-cell strong { display: block; font-weight: 700; color: var(--ukc-text); }
@@ -424,8 +424,8 @@
 .admin-documents .color-row { display: flex; gap: 10px; align-items: center; }
 .admin-documents .color-row input[type="color"] { width: 42px; height: 36px; border: 1px solid var(--ukc-border); border-radius: 8px; padding: 2px; background: #fff; }
 /* KPI compacts façon mockup (tout le back-office) */
-.admin-page .ukc-stat-card .val { font-size: 1.25rem; }
-.admin-page .ukc-stat-card .hint { font-size: 11.5px; }
+.ukc-shell .ukc-stat-card .val { font-size: 1.25rem; }
+.ukc-shell .ukc-stat-card .hint { font-size: 11.5px; }
 
 /* =========================================================================
    Esthétique admin du mockup (boutons/cartes/pills 8px, bleu par défaut)
@@ -445,7 +445,10 @@
 .ukc-shell--admin .ukc-btn--green:hover { filter: brightness(.95); background: var(--ukc-green); transform: none; }
 .ukc-shell--admin .ukc-btn--outline { background: #fff; color: var(--ukc-blue); border: 1px solid var(--ukc-border); }
 .ukc-shell--admin .ukc-btn--danger { background: #fee2e2; color: #991b1b; }
-.ukc-shell--admin .ukc-btn--sm { padding: .4rem .85rem; font-size: .8rem; }
+/* Taille compacte des boutons secondaires : commune aux DEUX back-offices
+   (admin et espace participant). La règle ne visait que `.ukc-shell--admin`, si
+   bien que les mêmes boutons paraissaient surdimensionnés côté participant. */
+.ukc-shell .ukc-btn--sm { padding: .4rem .85rem; font-size: .8rem; }
 .ukc-shell--admin .ukc-btn--icon {
   width: 32px; height: 32px; padding: 0; border-radius: 8px;
   background: #fff; border: 1px solid var(--ukc-border); color: var(--ukc-muted);
@@ -463,7 +466,7 @@
 
 .admin-page .ukc-pill { display: inline-flex; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 50px; white-space: nowrap; }
 
-.admin-page .ukc-stat-card { border-radius: 12px; padding: 14px 16px; }
+.ukc-shell .ukc-stat-card { border-radius: 12px; padding: 14px 16px; }
 .admin-page .ukc-table th { background: #f8fafc; padding: 12px 14px; }
 .admin-page .ukc-table td { padding: 11px 14px; }
 
@@ -828,3 +831,12 @@
 .admin-announcements .ann-row__head strong { font-size: 14px; color: var(--ukc-text); }
 .admin-announcements .ann-row__text { font-size: 13px; color: var(--ukc-muted); margin: 4px 0 0; line-height: 1.5; }
 .admin-announcements .ann-row.is-urgent { border-left: 3px solid #f59e0b; padding-left: 10px; background: #fffbeb; border-radius: 8px; }
+
+/* Relecture : l'état se lit sous le nom du relecteur, l'action reste à droite.
+   ⚠️ L'action « retirer » ne doit pas crier plus fort que l'information : bouton
+   fantôme qui ne devient rouge qu'au survol (la confirmation reste la garde). */
+.admin-submission-detail .reviewer-item .rev-state { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
+.admin-submission-detail .reviewer-item .rev-state .ukc-pill { font-size: 11px; }
+.admin-submission-detail .reviewer-item .rev-state .due { font-size: 11.5px; color: var(--ukc-muted); }
+.admin-submission-detail .reviewer-item .rev-remove { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; padding: 0; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--ukc-light); cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
+.admin-submission-detail .reviewer-item .rev-remove:hover { background: #fee2e2; border-color: #fecaca; color: #b4231c; }

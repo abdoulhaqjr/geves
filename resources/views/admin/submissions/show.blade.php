@@ -335,7 +335,11 @@
                     @empty
                         <p style="font-size:.88rem;color:var(--ukc-muted);">Assignez des relecteurs pour vérifier les conflits potentiels.</p>
                     @endforelse
-                    <p class="hint" style="margin-top:10px;font-size:12px;color:var(--ukc-light);">Règles : même institution · co-auteur &lt; 5 ans · homonymie (lien familial possible) → vérification manuelle.</p>
+                    @php($coiIgnoresInstitution = \App\Support\ConflictOfInterest::ignoresSameInstitution($s))
+                    <p class="hint" style="margin-top:10px;font-size:12px;color:var(--ukc-light);">
+                        Règles : {{ $coiIgnoresInstitution ? '' : 'même institution · ' }}co-auteur &lt; 5 ans · homonymie (lien familial possible) → vérification manuelle.
+                        {{ $coiIgnoresInstitution ? 'La règle « même institution » est ignorée pour cette édition (onglet Options).' : '' }}
+                    </p>
                 </div>
 
                 {{-- Relecteurs --}}
@@ -367,6 +371,14 @@
                             <div class="info">
                                 <strong>{{ $review->reviewer?->full_name ?: '-' }}</strong>
                                 <span class="sub">{{ $review->reviewer?->email }}</span>
+                                <div class="rev-state">
+                                    <span class="ukc-pill ukc-pill--{{ $review->statusPill() }}">{{ $review->statusLabel() }}</span>
+                                    @if ($review->isLate())
+                                        <span class="ukc-pill ukc-pill--err">{{ $review->daysLate() }} j de retard</span>
+                                    @elseif ($review->due_at && $review->isPending())
+                                        <span class="due">échéance {{ $review->due_at->format('d/m/Y') }}</span>
+                                    @endif
+                                </div>
                                 @if ($review->status === 'declined' && $review->decline_reason)
                                     <span class="sub" style="color:#b4231c;">Motif du refus : {{ $review->decline_reason }}</span>
                                 @elseif ($review->assign_reason)
@@ -390,24 +402,16 @@
                                     </div>
                                 @endif
                             </div>
-                            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;white-space:nowrap;">
-                                <span class="ukc-pill ukc-pill--{{ $review->statusPill() }}">{{ $review->statusLabel() }}</span>
-                                @if ($review->due_at && $review->isPending())
-                                    <span style="font-size:11.5px;color:{{ $review->isLate() ? '#b4231c' : 'var(--ukc-muted)' }};">
-                                        {{ $review->isLate() ? 'en retard de '.$review->daysLate().' j' : 'échéance '.$review->due_at->format('d/m/Y') }}
-                                    </span>
-                                @endif
-                                @if ($review->status !== 'cancelled')
-                                    <form method="POST" action="{{ route('admin.submissions.review.remove', [$s, $review]) }}"
-                                          data-ajax data-ajax-msg="Assignation annulée." data-confirm="Retirer cette assignation ? La relecture passe « annulée » : elle reste dans l’historique mais ne compte plus.">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="ukc-btn ukc-btn--danger ukc-btn--sm">
-                                            <x-ukc.icon name="close" :size="14" />
-                                        </button>
-                                    </form>
-                                @endif
-                            </div>
+                            @if ($review->status !== 'cancelled')
+                                <form method="POST" action="{{ route('admin.submissions.review.remove', [$s, $review]) }}"
+                                      data-ajax data-ajax-msg="Assignation annulée." data-confirm="Retirer cette assignation ? La relecture passe « annulée » : elle reste dans l’historique mais ne compte plus.">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="rev-remove" title="Retirer l’assignation">
+                                        <x-ukc.icon name="close" :size="14" />
+                                    </button>
+                                </form>
+                            @endif
                         </div>
                     @empty
                         <p style="font-size:.9rem;color:var(--ukc-muted);">Aucun relecteur assigné.</p>

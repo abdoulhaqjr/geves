@@ -77,7 +77,8 @@ class SubmissionController extends Controller
         $sortByAuthor = $sort['sort'] === 'author';
 
         $submissions = Submission::query()
-            ->with(['edition', 'participant'])
+            // `reviews` : colonne d'avancement de la relecture (Review::progressOf).
+            ->with(['edition', 'participant', 'reviews'])
             ->withCount(['authorLinks as unlinked_authors_count' => $unlinkedScope])
             // ⚠️ Colonnes qualifiées : le tri par auteur joint `participants`, qui
             // porte aussi `edition_id` - sans préfixe, la requête est ambiguë.
@@ -477,7 +478,7 @@ class SubmissionController extends Controller
 
         // Invitation par e-mail, soumise à la préférence du relecteur.
         if (Notifier::emailAllowed($review->reviewer->user, 'review_assigned')) {
-            Mail::to($email)->send(new ReviewerInvitationMail($review->reviewer));
+            Mail::to($email)->send(new ReviewerInvitationMail($review->reviewer, review: $review));
         }
 
         return back()->with('ukc_status', 'Relecteur assigné et invité par e-mail.');

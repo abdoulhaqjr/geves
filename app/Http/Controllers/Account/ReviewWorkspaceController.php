@@ -27,9 +27,8 @@ use Illuminate\View\View;
  */
 class ReviewWorkspaceController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $user = Auth::guard('account')->user();
         $reviewerParticipants = $this->reviewerParticipants();
         $editionIds = $reviewerParticipants->pluck('edition_id')->unique()->values();
 
@@ -38,8 +37,39 @@ class ReviewWorkspaceController extends Controller
             ->latest('id')
             ->get();
 
+        // Filtres (même grammaire que les listes du back-office : sélecteurs qui
+        // se soumettent au changement + recherche). ⚠️ Ils portent sur la LISTE ;
+        // les compteurs, eux, décrivent toujours l'ensemble de mes relectures -
+        // sinon « 2 en retard » deviendrait faux dès qu'on filtre.
+        $tab = $request->query('tab') === 'candidatures' ? 'candidatures' : 'relectures';
+        $status = (string) $request->query('status', '');
+        $editionFilter = (string) $request->query('edition_id', '');
+        $track = (string) $request->query('track', '');
+        $search = trim((string) $request->query('search', ''));
+
+        $editions = $reviewerParticipants->pluck('edition')->filter()->unique('id')->values();
+        // Axes réellement présents dans MES relectures : un filtre ne doit pas
+        // proposer une valeur qui ne renverrait jamais rien.
+        $tracks = $reviews->map(fn (Review $r) => (string) $r->submission?->track)
+            ->filter()->unique()->sort()->values();
+
+        $shown = $reviews
+            ->when($status !== '', fn ($c) => $c->where('status', $status))
+            ->when($editionFilter !== '', fn ($c) => $c->filter(
+                fn (Review $r) => (string) $r->submission?->edition_id === $editionFilter
+            ))
+            ->when($track !== '', fn ($c) => $c->filter(
+                fn (Review $r) => (string) $r->submission?->track === $track
+            ))
+            ->when($search !== '', fn ($c) => $c->filter(function (Review $r) use ($search) {
+                $hay = mb_strtolower(trim((string) $r->submission?->ref_code.' '.(string) $r->submission?->title));
+
+                return str_contains($hay, mb_strtolower($search));
+            }))
+            ->values();
+
         // Données JSON pour l'évaluation en place (grille par édition incluse).
-        $reviewsData = $reviews->map(function (Review $r) {
+        $reviewsData = $shown->map(function (Review $r) {
             $sub = $r->submission;
             $criteria = ReviewGrid::criteria($sub?->edition);
 
@@ -57,7 +87,9 @@ class ReviewWorkspaceController extends Controller
                 'status' => $r->status,
                 'statusLabel' => $r->statusLabel(),
                 'statusPill' => $r->statusPill(),
-                'due' => $r->due_at?->translatedFormat('d/m/Y'),
+                // L'échéance ne concerne que ce qui reste à rendre : sur une
+                // relecture refusée, annulée ou déjà rendue, elle n'a plus de sens.
+                'due' => $r->isPending() ? $r->due_at?->translatedFormat('d/m/Y') : null,
                 'late' => $r->isLate(),
                 'daysLate' => $r->daysLate(),
                 'declineReason' => $r->decline_reason,
@@ -89,10 +121,25 @@ class ReviewWorkspaceController extends Controller
             'reviewsData' => $reviewsData,
             'recommendations' => Review::RECOMMENDATIONS,
             'scale' => ReviewGrid::SCALE,
-            'pendingCount' => $reviews->filter(fn (Review $r) => $r->isPending())->count(),
-            'doneCount' => $reviews->where('status', 'completed')->count(),
+            // ⚠️ Compteurs DISJOINTS : « à évaluer » ne compte que les relectures
+            // acceptées, sinon il englobait les invitations et le total ne
+            // tombait plus juste. Chaque carte porte son propre retard.
             'invitedCount' => $reviews->where('status', 'invited')->count(),
-            'lateCount' => $reviews->filter(fn (Review $r) => $r->isLate())->count(),
+            'acceptedCount' => $reviews->where('status', 'accepted')->count(),
+            'doneCount' => $reviews->where('status', 'completed')->count(),
+            'declinedCount' => $reviews->where('status', 'declined')->count(),
+            'cancelledCount' => $reviews->where('status', 'cancelled')->count(),
+            'lateInvited' => $reviews->where('status', 'invited')->filter(fn (Review $r) => $r->isLate())->count(),
+            'lateAccepted' => $reviews->where('status', 'accepted')->filter(fn (Review $r) => $r->isLate())->count(),
+            'tab' => $tab,
+            'statuses' => Review::STATUSES,
+            'editions' => $editions,
+            'status' => $status,
+            'edition_id' => $editionFilter,
+            'tracks' => $tracks,
+            'track' => $track,
+            'search' => $search,
+            'shownCount' => $shown->count(),
             'biddable' => $biddable,
             'bids' => $bids,
             'interests' => ReviewerBid::INTERESTS,
@@ -234,7 +281,8 @@ class ReviewWorkspaceController extends Controller
             );
         }
 
-        return back()->with('ukc_status', 'Vos préférences ont été enregistrées. Merci !');
+        return redirect()->route('account.reviews', ['tab' => 'candidatures'])
+            ->with('ukc_status', 'Vos préférences ont été enregistrées. Merci !');
     }
 
     /**

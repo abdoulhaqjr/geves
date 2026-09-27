@@ -154,6 +154,7 @@ class SaveEdition
                     'hybrid' => $request->boolean('opt_hybrid'),
                     'livret' => $request->boolean('opt_livret'),
                     'badges' => $request->boolean('opt_badges'),
+                    'coi_ignore_same_institution' => $request->boolean('opt_coi_ignore_institution'),
                 ],
                 'banner_enabled' => $request->boolean('banner_enabled'),
                 'formation_enabled' => $request->boolean('opt_formation'),

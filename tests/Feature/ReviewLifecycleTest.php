@@ -5,6 +5,7 @@ use App\Models\Participant;
 use App\Models\Review;
 use App\Models\Submission;
 use App\Models\User;
+use App\Support\ConflictOfInterest;
 use App\Support\EditionReport;
 use App\Support\ReviewGrid;
 
@@ -232,7 +233,7 @@ it('propose accepter / refuser sur la page « Mes relectures »', function () {
         ->assertOk()
         ->assertSee('Accepter')
         ->assertSee('Refuser')
-        ->assertSee('Invitations à confirmer')
+        ->assertSee('À confirmer')
         // L'URL de réponse est transportée dans le JSON Alpine : @js() échappe
         // deux fois (JSON puis attribut HTML), on cherche donc le segment de route.
         ->assertSee('respondUrl', false)
@@ -263,4 +264,93 @@ it('enregistre le délai d’évaluation depuis la fiche d’édition', function
         ->post(route('admin.editions.reviewers.criteria', $edition), ['review_due_days' => '']);
 
     expect(ReviewGrid::dueDays($edition->fresh()))->toBe(Review::DEFAULT_DUE_DAYS);
+});
+
+it('signale le conflit « même institution » par défaut', function () {
+    $submission = seededSubmission();
+    $submission->update(['authors' => [
+        ['name' => 'Awa Kodjo', 'email' => 'awa@example.tg', 'affiliation' => 'Université de Kara', 'corresponding' => true],
+    ]]);
+
+    $conflicts = ConflictOfInterest::check(
+        $submission->fresh(), 'Kossi Adjo', 'kossi@example.tg', 'Université de Kara'
+    );
+
+    expect(collect($conflicts)->pluck('label'))->toContain('Même institution');
+});
+
+it('ignore le conflit « même institution » quand l’édition le demande', function () {
+    $submission = seededSubmission();
+    $submission->update(['authors' => [
+        ['name' => 'Awa Kodjo', 'email' => 'awa@example.tg', 'affiliation' => 'Université de Kara', 'corresponding' => true],
+    ]]);
+    $edition = $submission->edition;
+    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+        'options' => ['coi_ignore_same_institution' => true],
+    ])]);
+
+    $conflicts = ConflictOfInterest::check(
+        $submission->fresh(), 'Kossi Adjo', 'kossi@example.tg', 'Université de Kara'
+    );
+
+    expect(collect($conflicts)->pluck('label'))->not->toContain('Même institution');
+
+    // Les autres règles restent actives : le relecteur qui est aussi auteur.
+    $asAuthor = ConflictOfInterest::check(
+        $submission->fresh(), 'Awa Kodjo', 'awa@example.tg', 'Université de Kara'
+    );
+    expect(collect($asAuthor)->pluck('label'))->toContain('Auteur de la communication');
+});
+
+it('enregistre l’option depuis l’onglet Options de l’édition', function () {
+    $edition = openEdition();
+    $admin = adminStaff();
+
+    $this->actingAs($admin, 'web')
+        ->get(route('admin.editions.edit', $edition))
+        ->assertOk()
+        ->assertSee('opt_coi_ignore_institution', false);
+
+    $this->actingAs($admin, 'web')->put(route('admin.editions.update', $edition), [
+        'colloque_id' => $edition->colloque_id,
+        'title' => $edition->title,
+        'status' => $edition->status,
+        'max_communications' => 3,
+        'opt_coi_ignore_institution' => '1',
+    ])->assertRedirect();
+
+    expect($edition->fresh()->settings['options']['coi_ignore_same_institution'])->toBeTrue();
+});
+
+it('filtre la liste des relectures sans fausser les compteurs', function () {
+    $submission = seededSubmission();
+    $other = $submission->edition->submissions()->create([
+        'participant_id' => $submission->participant_id,
+        'ref_code' => '26-002',
+        'title' => 'Seconde communication',
+        'abstract' => str_repeat('Contexte. ', 10),
+        'track' => 'Santé',
+        'type' => 'oral',
+        'status' => 'submitted',
+    ]);
+    $reviewer = reviewerFor($submission);
+
+    Review::create(['submission_id' => $submission->id, 'reviewer_id' => $reviewer->id, 'status' => 'invited', 'due_at' => now()->subDays(2)]);
+    Review::create(['submission_id' => $other->id, 'reviewer_id' => $reviewer->id, 'status' => 'declined']);
+
+    // Sans filtre : les deux lignes.
+    $this->actingAs($reviewer->user, 'account')
+        ->get(route('account.reviews'))
+        ->assertOk()
+        ->assertSee($submission->ref_code)
+        ->assertSee($other->ref_code);
+
+    // Filtré sur « refusée » : une seule ligne, mais le compteur « en retard »
+    // décrit toujours l'ensemble (1), pas la sélection.
+    $this->actingAs($reviewer->user, 'account')
+        ->get(route('account.reviews', ['status' => 'declined']))
+        ->assertOk()
+        ->assertSee($other->ref_code)
+        ->assertDontSee($submission->ref_code)
+        ->assertSee('1 en retard');
 });

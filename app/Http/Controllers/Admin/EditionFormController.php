@@ -509,6 +509,7 @@ class EditionFormController extends Controller
             'opt_hybrid' => (bool) ($s['options']['hybrid'] ?? true),
             'opt_livret' => (bool) ($s['options']['livret'] ?? true),
             'opt_badges' => (bool) ($s['options']['badges'] ?? true),
+            'opt_coi_ignore_institution' => (bool) ($s['options']['coi_ignore_same_institution'] ?? false),
         ];
 
         $committees = $edition

@@ -33,6 +33,11 @@ class ConflictOfInterest
         $revInst = self::normalize((string) $institution);
         $revLast = self::lastName($reviewerName);
         $isAuthor = false;
+        // Une université qui organise son propre colloque a la plupart de ses
+        // relecteurs ET de ses auteurs en interne : la règle « même institution »
+        // y signale tout le monde et devient du bruit. L'édition peut donc
+        // l'ignorer (onglet Options de la fiche d'édition).
+        $sameInstitutionCounts = ! self::ignoresSameInstitution($submission);
 
         foreach (self::authorsOf($submission) as $a) {
             $authorName = (string) ($a['name'] ?? '');
@@ -46,7 +51,7 @@ class ConflictOfInterest
 
                 continue;
             }
-            if ($revInst !== '' && $authorAff !== '' && $revInst === $authorAff) {
+            if ($sameInstitutionCounts && $revInst !== '' && $authorAff !== '' && $revInst === $authorAff) {
                 $conflicts[] = ['level' => self::HIGH, 'label' => 'Même institution',
                     'detail' => trim(($authorName ?: 'Un auteur').' - '.(string) ($a['affiliation'] ?? '')).'.'];
             }
@@ -66,6 +71,16 @@ class ConflictOfInterest
         }
 
         return $conflicts;
+    }
+
+    /**
+     * L'édition de cette soumission ignore-t-elle le conflit « même institution » ?
+     * Réglage `edition.settings['options']['coi_ignore_same_institution']`, coché
+     * dans l'onglet Options de la fiche d'édition.
+     */
+    public static function ignoresSameInstitution(Submission $submission): bool
+    {
+        return (bool) ($submission->edition?->settings['options']['coi_ignore_same_institution'] ?? false);
     }
 
     /**

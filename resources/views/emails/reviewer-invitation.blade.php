@@ -21,6 +21,12 @@
 </x-mail::button>
 @endif
 
+@if (! empty($due))
+{{ __('Échéance de remise :') }} **{{ $due }}**
+@endif
+
+{{ __('Depuis « Mes relectures », vous pouvez accepter cette relecture ou la refuser (un motif, même bref, aide le comité à la confier à quelqu’un d’autre).') }}
+
 {{ __('Merci pour votre contribution scientifique.') }}
 
 {{ __('Le comité scientifique') }}

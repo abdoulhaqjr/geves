@@ -23,7 +23,7 @@ it('n’affiche les formations que si le module est activé dans les paramètres
     $this->actingAs(adminStaff(), 'web')->get(route('admin.formations').'?edition_id='.$edition->id)
         ->assertOk()->assertDontSee('Atelier module')->assertSee('désactivé');
 
-    // Activé via le réglage d'édition (case « Module Formations activé » du formulaire).
+    // Activé via le réglage d'édition (case « Activer le Module Formations » du formulaire).
     $edition->update(['settings' => array_merge($edition->settings ?? [], ['formation_enabled' => true])]);
     expect($edition->fresh()->formationEnabled())->toBeTrue();
     $this->actingAs(adminStaff(), 'web')->get(route('admin.formations').'?edition_id='.$edition->id)

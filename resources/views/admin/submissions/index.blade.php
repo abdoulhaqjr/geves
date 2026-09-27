@@ -86,6 +86,7 @@
                             <x-ukc.th sort="track" :current="$sort" :dir="$dir">Axe</x-ukc.th>
                             <x-ukc.th sort="created_at" :current="$sort" :dir="$dir">Déposée</x-ukc.th>
                             <x-ukc.th sort="status" :current="$sort" :dir="$dir">Statut</x-ukc.th>
+                            <th>Relectures</th>
                             <th style="text-align:right;">Actions</th>
                         </tr>
                     </thead>
@@ -107,6 +108,20 @@
                                 <td>@if ($s->track)<span class="axis-tag">{{ \Illuminate\Support\Str::limit($s->track, 22) }}</span>@else - @endif</td>
                                 <td style="white-space:nowrap;">{{ $s->created_at?->format('d/m/Y') }}</td>
                                 <td><span class="ukc-pill ukc-pill--{{ $statusPills[$s->status] ?? 'muted' }}">{{ $statuses[$s->status] ?? $s->status }}</span></td>
+                                {{-- Avancement de la relecture : rendues / demandées, et le retard
+                                     éventuel. Sans cela, le comité devait ouvrir chaque fiche. --}}
+                                @php $rev = \App\Models\Review::progressOf($s->reviews); @endphp
+                                <td style="white-space:nowrap;">
+                                    @if ($rev['total'] === 0)
+                                        <span style="color:var(--ukc-light);">-</span>
+                                    @else
+                                        <span style="font-weight:700;">{{ $rev['done'] }}/{{ $rev['total'] }}</span>
+                                        @if ($rev['late'] > 0)
+                                            <span class="ukc-pill ukc-pill--err" style="margin-left:6px;"
+                                                  title="{{ $rev['late'] }} relecture(s) en retard">+{{ $rev['lateDays'] }} j</span>
+                                        @endif
+                                    @endif
+                                </td>
                                 <td>
                                     @php
                                         $pvData = [
@@ -132,7 +147,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="8" style="padding:24px;color:var(--ukc-muted);text-align:center;">Aucune soumission ne correspond aux filtres.</td></tr>
+                            <tr><td colspan="9" style="padding:24px;color:var(--ukc-muted);text-align:center;">Aucune soumission ne correspond aux filtres.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
