@@ -116,6 +116,12 @@ class SecurityController extends Controller
 
         $account = Auth::guard('account')->user();
         $account->two_factor_secret = $secret;
+        // Méthode EXCLUSIVE : sans cela, un compte qui bascule du SMS vers
+        // l'application resterait en méthode « sms » (prioritaire) et le code de
+        // l'authenticator serait refusé à la connexion.
+        $account->two_factor_method = 'totp';
+        $account->two_factor_otp = null;
+        $account->two_factor_otp_expires_at = null;
         $account->two_factor_confirmed_at = now();
         $codes = $account->generateRecoveryCodes();
         $account->save();

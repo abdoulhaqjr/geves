@@ -208,7 +208,9 @@
                 <h3 style="font-size:14px;">{{ __('Configuration TOTP') }}</h3>
                 <p style="color:var(--ukc-muted);font-size:.9rem;margin:0 0 8px;">{{ __('Scannez le QR code avec votre application, ou saisissez la clé secrète manuellement.') }}</p>
                 <div class="qr-box">
-                    <div style="background:#fff;border:1px solid var(--ukc-border);border-radius:8px;padding:8px;width:156px;height:156px;">
+                    {{-- Le SVG généré porte sa propre taille (200px) : on le contraint
+                         au cadre, sinon il déborde sur la clé secrète et le texte. --}}
+                    <div class="qr-frame">
                         {!! $setupQr !!}
                     </div>
                     <div style="flex:1;min-width:220px;">

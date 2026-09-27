@@ -155,19 +155,24 @@ Route::middleware('guest:account')->group(function () {
     Route::post('/reinitialiser', [PasswordResetController::class, 'update'])->name('account.password.update');
 });
 
+// Anciennes URL de l'espace participant (désormais sous /compte) : des liens de
+// notifications déjà enregistrés en base pointent encore ici.
+Route::permanentRedirect('/profil', '/compte/profil');
+Route::permanentRedirect('/notifications', '/compte/notifications');
+
 Route::middleware(['auth:account', StampAccountSession::class])->group(function () {
     Route::get('/compte', DashboardController::class)->name('account.dashboard');
     Route::get('/compte/agenda.ics', [AgendaController::class, 'ics'])->name('account.agenda.ics');
     Route::post('/compte/colloque', [ColloqueContextController::class, 'switch'])->name('account.colloque.switch');
-    Route::get('/profil', [ProfileController::class, 'edit'])->name('account.profile');
-    Route::put('/profil', [ProfileController::class, 'update'])->name('account.profile.update');
-    Route::get('/profil/affiliations', [ProfileController::class, 'affiliations'])->name('account.profile.affiliations');
+    Route::get('/compte/profil', [ProfileController::class, 'edit'])->name('account.profile');
+    Route::put('/compte/profil', [ProfileController::class, 'update'])->name('account.profile.update');
+    Route::get('/compte/profil/affiliations', [ProfileController::class, 'affiliations'])->name('account.profile.affiliations');
     Route::get('/compte/orcid/connexion', [OrcidController::class, 'connect'])->name('account.orcid.connect');
     Route::get('/compte/orcid/callback', [OrcidController::class, 'callback'])->name('account.orcid.callback');
     Route::get('/documents', [App\Http\Controllers\Account\DocumentController::class, 'index'])->name('account.documents');
     Route::get('/mes-temoignages', [AccountTestimonialController::class, 'index'])->name('account.testimonials');
     Route::post('/mes-temoignages', [AccountTestimonialController::class, 'store'])->name('account.testimonials.store');
-    Route::get('/notifications', [NotificationController::class, 'index'])->name('account.notifications');
+    Route::get('/compte/notifications', [NotificationController::class, 'index'])->name('account.notifications');
     Route::get('/compte/preferences', [PreferencesController::class, 'edit'])->name('account.preferences');
     Route::put('/compte/preferences', [PreferencesController::class, 'update'])->name('account.preferences.update');
     Route::get('/compte/securite', [SecurityController::class, 'index'])->name('account.security');

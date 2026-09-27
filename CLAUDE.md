@@ -177,6 +177,25 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   unique** d'application d'un statut vérifié (retour navigateur, webhook, réconciliation).
   Bouton **« Revérifier »** sur un paiement en ligne en attente (`admin.payments.recheck`).
 
+### URLs de l'espace participant = sous `/compte`
+
+Les pages personnelles du compte vivent sous **`/compte/...`** (`/compte`, `/compte/profil`,
+`/compte/notifications`, `/compte/preferences`, `/compte/securite`, `/compte/paiement/...`).
+Toute nouvelle page « Mon compte » suit cette règle. Quand une URL change, **laisser une
+`Route::permanentRedirect`** depuis l'ancienne : les notifications stockent une **URL
+absolue** figée à la création (`Notifier::account(url: route(...))`), donc d'anciennes
+lignes en base pointent encore vers l'ancien chemin.
+
+### 2FA : la méthode est EXCLUSIVE (`totp` **ou** `sms`)
+
+`hasSmsEnabled()` est **prioritaire** sur `hasTotpEnabled()` dans `twoFactorMethod()`.
+Toute activation doit donc **poser `two_factor_method`** et nettoyer l'autre méthode -
+sinon un compte qui bascule du SMS vers l'application reste en méthode `sms`, reçoit un
+SMS à la connexion et voit son code d'authenticator refusé. Vaut pour
+`Account\SecurityController::confirmTwoFactor` **et** `Admin\ProfileController` (même
+correctif des deux côtés). ⚠️ En dev, `sms.default` = **`log`** : les codes SMS ne partent
+pas, ils atterrissent dans `storage/logs/laravel.log`.
+
 ### Comptes = `User` unifié (option B) — ⚠️ pas `Account`
 
 Les **participants sont des `App\Models\User`** : depuis la refonte « compte unifié »,

@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use App\Sms\SmsManager;
+use App\Support\Totp;
 use Illuminate\Support\Facades\Auth;
 
 /** Faux fournisseur SMS : capture les messages au lieu de les envoyer. */
@@ -119,4 +120,35 @@ it('active SMS désactive le TOTP (méthode exclusive)', function () {
     $account->refresh();
     expect($account->hasTotpEnabled())->toBeFalse();
     expect($account->hasSmsEnabled())->toBeTrue();
+});
+
+it('bascule SMS -> TOTP : la méthode devient « totp » et le code de l’application est accepté', function () {
+    $fake = fakeSms();
+    $account = verifiedAccountForSms();
+
+    // 1) Activation SMS.
+    $this->actingAs($account, 'account')->post(route('account.security.sms.send'), ['phone' => '+22890000000']);
+    $this->actingAs($account, 'account')
+        ->post(route('account.security.sms.confirm'), ['code' => otpFrom($fake)])
+        ->assertSessionHasNoErrors();
+    expect($account->fresh()->twoFactorMethod())->toBe('sms');
+
+    // 2) Le compte bascule ensuite vers l'application d'authentification.
+    $this->actingAs($account, 'account')->post(route('account.security.totp.start'));
+    $secret = session('account.2fa.pending_secret');
+    $this->actingAs($account, 'account')
+        ->post(route('account.security.totp.confirm'), ['code' => Totp::codeAt($secret, intdiv(time(), 30))])
+        ->assertSessionHasNoErrors();
+
+    // La méthode active doit être TOTP (sinon la connexion attend un SMS).
+    expect($account->fresh()->twoFactorMethod())->toBe('totp');
+
+    // 3) Connexion : le code de l'application doit être accepté.
+    Auth::guard('account')->logout();
+    session()->flush();
+    $this->post(route('account.login.store'), ['email' => $account->email, 'password' => 'MotDePasse123!']);
+    $this->post(route('account.login.confirm'), ['code' => Totp::codeAt($account->fresh()->two_factor_secret, intdiv(time(), 30))])
+        ->assertSessionHasNoErrors();
+
+    expect(Auth::guard('account')->check())->toBeTrue();
 });

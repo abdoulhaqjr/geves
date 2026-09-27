@@ -73,6 +73,12 @@ class ProfileController extends Controller
         /** @var User $staff */
         $staff = Auth::guard('web')->user();
         $staff->two_factor_secret = $secret;
+        // Méthode EXCLUSIVE (cf. Account\SecurityController) : une bascule depuis
+        // le SMS doit basculer la méthode, sinon le code de l'application est
+        // refusé à la connexion.
+        $staff->two_factor_method = 'totp';
+        $staff->two_factor_otp = null;
+        $staff->two_factor_otp_expires_at = null;
         $staff->two_factor_confirmed_at = now();
         $codes = $staff->generateRecoveryCodes();
         $staff->save();
