@@ -34,11 +34,21 @@
         </div>
 
         {{-- Filtres (GET, auto-submit) --}}
-        <form method="GET" class="filter-bar">
-            <select name="edition_id" onchange="this.form.submit()">
-                <option value="">Toutes les éditions</option>
-                @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
-            </select>
+        {{-- Sélecteur d'édition en tête, comme les pages Paiements et Participants. --}}
+        <div style="max-width:340px;margin-bottom:16px;">
+            <div class="ukc-field" style="margin:0;">
+                <label>Édition</label>
+                <select onchange="window.location='{{ route('admin.submissions.index') }}?edition_id='+this.value">
+                    <option value="">Toutes les éditions</option>
+                    @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
+                </select>
+            </div>
+        </div>
+
+        {{-- Filtres sur une seule ligne ; l'édition est reportée en champ caché pour
+             qu'un filtre ne réélargisse pas le périmètre. --}}
+        <form method="GET" class="filter-bar filter-bar--inline">
+            <input type="hidden" name="edition_id" value="{{ $edition_id }}">
             <select name="status" onchange="this.form.submit()">
                 <option value="">Tous les statuts</option>
                 @foreach ($statuses as $key => $label)<option value="{{ $key }}" @selected($status === $key)>{{ $label }}</option>@endforeach
@@ -48,7 +58,7 @@
                 <option value="oral" @selected($type === 'oral')>Orale</option>
                 <option value="poster" @selected($type === 'poster')>Poster</option>
             </select>
-            <select name="track" onchange="this.form.submit()" data-tom data-placeholder="Axe…">
+            <select name="track" onchange="this.form.submit()" title="Axe thématique" style="max-width:260px;">
                 <option value="">Tous les axes</option>
                 @foreach ($tracks as $t)<option value="{{ $t }}" @selected($track === $t)>{{ $t }}</option>@endforeach
             </select>
@@ -57,8 +67,8 @@
             <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;cursor:pointer;">
                 <input type="checkbox" name="unlinked" value="1" @checked($unlinked) onchange="this.form.submit()"> Co-auteurs non rattachés
             </label>
-            @if ($search !== '' || $status !== '' || $edition_id !== '' || $type !== '' || $track !== '' || $unlinked)
-                <a href="{{ route('admin.submissions.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
+            @if ($search !== '' || $status !== '' || $type !== '' || $track !== '' || $unlinked)
+                <a href="{{ route('admin.submissions.index', ['edition_id' => $edition_id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
             @endif
         </form>
 
@@ -69,7 +79,7 @@
                         <tr>
                             <x-ukc.th sort="ref_code" :current="$sort" :dir="$dir">Réf.</x-ukc.th>
                             <x-ukc.th sort="title" :current="$sort" :dir="$dir">Communication</x-ukc.th>
-                            <th>Auteur(s)</th>
+                            <x-ukc.th sort="author" :current="$sort" :dir="$dir">Auteur(s)</x-ukc.th>
                             <x-ukc.th sort="type" :current="$sort" :dir="$dir">Type</x-ukc.th>
                             <x-ukc.th sort="track" :current="$sort" :dir="$dir">Axe</x-ukc.th>
                             <x-ukc.th sort="created_at" :current="$sort" :dir="$dir">Déposée</x-ukc.th>

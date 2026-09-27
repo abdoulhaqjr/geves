@@ -71,30 +71,40 @@ class SubmissionController extends Controller
             ? (string) $request->query('edition_id', '')
             : $this->currentEditionId($accessible);
 
-        $sort = ListSort::resolve($request, ['ref_code', 'title', 'type', 'track', 'created_at', 'status'], 'created_at', 'desc');
+        // « author » est une colonne VIRTUELLE : le nom vient du participant lié,
+        // pas de la table submissions - le tri passe donc par une jointure.
+        $sort = ListSort::resolve($request, ['ref_code', 'title', 'author', 'type', 'track', 'created_at', 'status'], 'created_at', 'desc');
+        $sortByAuthor = $sort['sort'] === 'author';
 
         $submissions = Submission::query()
             ->with(['edition', 'participant'])
             ->withCount(['authorLinks as unlinked_authors_count' => $unlinkedScope])
-            ->where('revision_of', 0)
-            ->when($scoped !== null, fn ($q) => $q->whereIn('edition_id', $scoped))
-            ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId))
-            ->when($status !== '', fn ($q) => $q->where('status', $status))
-            ->when($type !== '', fn ($q) => $q->where('type', $type))
-            ->when($track !== '', fn ($q) => $q->where('track', $track))
+            // ⚠️ Colonnes qualifiées : le tri par auteur joint `participants`, qui
+            // porte aussi `edition_id` - sans préfixe, la requête est ambiguë.
+            ->where('submissions.revision_of', 0)
+            ->when($scoped !== null, fn ($q) => $q->whereIn('submissions.edition_id', $scoped))
+            ->when($editionId !== '', fn ($q) => $q->where('submissions.edition_id', $editionId))
+            ->when($status !== '', fn ($q) => $q->where('submissions.status', $status))
+            ->when($type !== '', fn ($q) => $q->where('submissions.type', $type))
+            ->when($track !== '', fn ($q) => $q->where('submissions.track', $track))
             ->when($unlinked, fn ($q) => $q->whereHas('authorLinks', $unlinkedScope))
             ->when($search !== '', function ($q) use ($search) {
                 $term = "%{$search}%";
                 $q->where(fn ($sub) => $sub
-                    ->where('title', 'like', $term)
-                    ->orWhere('ref_code', 'like', $term)
+                    ->where('submissions.title', 'like', $term)
+                    ->orWhere('submissions.ref_code', 'like', $term)
                     ->orWhereHas('participant', fn ($p) => $p
                         ->where('first_name', 'like', $term)
                         ->orWhere('last_name', 'like', $term)
                         ->orWhere('email', 'like', $term)));
             })
-            ->orderBy($sort['sort'], $sort['dir'])
-            ->orderBy('id', 'desc')
+            ->when($sortByAuthor, fn ($q) => $q
+                ->leftJoin('participants', 'participants.id', '=', 'submissions.participant_id')
+                ->orderBy('participants.last_name', $sort['dir'])
+                ->orderBy('participants.first_name', $sort['dir'])
+                ->select('submissions.*'))
+            ->when(! $sortByAuthor, fn ($q) => $q->orderBy('submissions.'.$sort['sort'], $sort['dir']))
+            ->orderBy('submissions.id', 'desc')
             ->paginate(15)
             ->withQueryString();
 
@@ -171,17 +181,19 @@ class SubmissionController extends Controller
 
         $rows = Submission::query()
             ->with(['edition', 'participant'])
-            ->where('revision_of', 0)
-            ->when($scoped !== null, fn ($q) => $q->whereIn('edition_id', $scoped))
-            ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId))
-            ->when($status !== '', fn ($q) => $q->where('status', $status))
-            ->when($type !== '', fn ($q) => $q->where('type', $type))
-            ->when($track !== '', fn ($q) => $q->where('track', $track))
+            // ⚠️ Colonnes qualifiées : le tri par auteur joint `participants`, qui
+            // porte aussi `edition_id` - sans préfixe, la requête est ambiguë.
+            ->where('submissions.revision_of', 0)
+            ->when($scoped !== null, fn ($q) => $q->whereIn('submissions.edition_id', $scoped))
+            ->when($editionId !== '', fn ($q) => $q->where('submissions.edition_id', $editionId))
+            ->when($status !== '', fn ($q) => $q->where('submissions.status', $status))
+            ->when($type !== '', fn ($q) => $q->where('submissions.type', $type))
+            ->when($track !== '', fn ($q) => $q->where('submissions.track', $track))
             ->when($search !== '', function ($q) use ($search) {
                 $term = "%{$search}%";
                 $q->where(fn ($sub) => $sub
-                    ->where('title', 'like', $term)
-                    ->orWhere('ref_code', 'like', $term)
+                    ->where('submissions.title', 'like', $term)
+                    ->orWhere('submissions.ref_code', 'like', $term)
                     ->orWhereHas('participant', fn ($p) => $p
                         ->where('first_name', 'like', $term)
                         ->orWhere('last_name', 'like', $term)

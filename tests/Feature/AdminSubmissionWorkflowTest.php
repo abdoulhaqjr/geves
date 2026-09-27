@@ -95,3 +95,51 @@ it('envoie un accusé de réception à la création d’une soumission', functio
 
     Mail::assertQueued(SubmissionStatusMail::class, fn ($mail) => $mail->statusKey === 'submitted');
 });
+
+it('trie les soumissions par nom d’auteur dans les deux sens', function () {
+    $edition = openEdition();
+    foreach ([['Zoe', 'Zannou'], ['Ama', 'Adjo'], ['Kofi', 'Mensah']] as [$first, $last]) {
+        $p = $edition->participants()->create([
+            'first_name' => $first, 'last_name' => $last,
+            'email' => strtolower($first).'@test.tg', 'role' => 'author',
+        ]);
+        $edition->submissions()->create([
+            'participant_id' => $p->id, 'ref_code' => '26-'.substr($last, 0, 3),
+            'title' => 'Comm '.$last, 'abstract' => 'x', 'track' => 'Sciences',
+            'type' => 'oral', 'status' => 'submitted', 'authors' => [],
+        ]);
+    }
+
+    $order = function (array $query) use ($edition) {
+        $html = $this->actingAs(adminStaff(), 'web')
+            ->get(route('admin.submissions.index', $query + ['edition_id' => $edition->id]))
+            ->assertOk()->getContent();
+
+        return collect(['Adjo', 'Mensah', 'Zannou'])
+            ->sortBy(fn ($n) => strpos($html, 'Comm '.$n))->values()->all();
+    };
+
+    expect($order(['sort' => 'author', 'dir' => 'asc']))->toBe(['Adjo', 'Mensah', 'Zannou']);
+    expect($order(['sort' => 'author', 'dir' => 'desc']))->toBe(['Zannou', 'Mensah', 'Adjo']);
+});
+
+it('garde une pagination correcte quand on trie par auteur (jointure)', function () {
+    $edition = openEdition();
+    foreach (range(1, 20) as $i) {
+        $p = $edition->participants()->create([
+            'first_name' => 'A'.$i, 'last_name' => 'Nom'.str_pad((string) $i, 2, '0', STR_PAD_LEFT),
+            'email' => "a{$i}@test.tg", 'role' => 'author',
+        ]);
+        $edition->submissions()->create([
+            'participant_id' => $p->id, 'ref_code' => '26-'.$i, 'title' => 'Comm '.$i,
+            'abstract' => 'x', 'track' => 'Sciences', 'type' => 'oral', 'status' => 'submitted', 'authors' => [],
+        ]);
+    }
+
+    // La jointure ne doit ni dupliquer les lignes ni fausser le total.
+    $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.submissions.index', ['edition_id' => $edition->id, 'sort' => 'author', 'dir' => 'asc']))
+        ->assertOk()
+        ->assertSee('Nom01')
+        ->assertDontSee('Nom20'); // 20 lignes, 15 par page
+});
