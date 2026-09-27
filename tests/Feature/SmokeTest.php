@@ -45,7 +45,7 @@ it('les pages du back-office répondent sans erreur (staff)', function () {
         route('admin.reports.index'),
         route('admin.users.index'),
         route('admin.users.create'),
-        route('admin.program.slots'),
+        route('admin.program.index'),
         route('admin.settings'),
         route('admin.ai'),
         route('admin.participants.index'),

@@ -27,7 +27,9 @@ class AdminPalette
         $push((bool) $staff?->canAnyEdition('submissions_list'), 'Soumissions', 'Scientifique', 'inbox', route('admin.submissions.index'));
         $push((bool) $staff?->canAnyEdition('submissions_list'), 'Attribution auto', 'Scientifique', 'refresh', route('admin.submissions.auto-assign'));
         $push((bool) $staff?->canAnyEdition('participants'), 'Participants', 'Scientifique', 'users', route('admin.participants.index'));
-        $push((bool) $staff?->canAnyEdition('editions_read'), 'Créneaux', 'Scientifique', 'clock', route('admin.program.slots'));
+        $push((bool) $staff?->canAnyEdition('editions_read'), 'Programme', 'Scientifique', 'calendar', route('admin.program.index'));
+        $push((bool) $staff?->canAnyEdition('editions_read'), 'Créneaux', 'Scientifique', 'clock', route('admin.program.index', ['tab' => 'creneaux']));
+        $push((bool) $staff?->canAnyEdition('editions_read'), 'Rapports de séance', 'Scientifique', 'sheet', route('admin.program.index', ['tab' => 'rapports']));
         $push((bool) $staff?->canAnyEdition('payments'), 'Paiements', 'Gestion', 'card', route('admin.payments.index'));
         $push((bool) $staff?->canAnyEdition('documents'), 'Documents', 'Gestion', 'folder', route('admin.documents.attestations'));
         $push((bool) $staff?->canAnyEdition('documents'), 'Attestations délivrées', 'Gestion', 'diploma', route('admin.documents.attestations', ['tab' => 'attestations', 'stab' => 'delivrees']));

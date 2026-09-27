@@ -16,6 +16,7 @@ use App\Support\Notifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 /**
@@ -30,62 +31,56 @@ class ProgramController extends Controller
 
     // --- Ateliers & sessions --------------------------------------------------
 
-    public function sessions(Request $request): View
+    /**
+     * ⚠️ Anciennes entrées du module, conservées en REDIRECTION : le programme
+     * vivait sur deux pages (`/programme` et `/programme/creneaux`) qui géraient
+     * les mêmes ateliers et les mêmes sessions, avec deux interfaces. Tout est
+     * regroupé dans `index()`, mais les liens et signets existants doivent
+     * continuer de tomber juste.
+     */
+    public function sessions(Request $request): RedirectResponse
     {
-        $edition = $this->currentEdition($request);
+        return redirect()->route('admin.program.index', array_filter([
+            'edition_id' => $request->query('edition_id'),
+            'tab' => 'sessions',
+        ]));
+    }
 
-        // Événements agenda (FullCalendar) : toutes les sessions horodatées.
-        $calendarEvents = ($edition ? $edition->sessions()->with('atelier')->whereNotNull('starts_at')->get() : collect())
-            ->map(fn ($s) => [
-                'title' => trim(($s->label ?: 'Session').($s->room ? ' · '.$s->room : '')),
-                'start' => optional($s->starts_at)->toIso8601String(),
-                'end' => optional($s->ends_at)->toIso8601String(),
-                'color' => $s->type === 'plenary' ? '#223ea4' : '#009933',
-            ])
-            ->filter(fn ($e) => $e['start'])
-            ->values();
-
-        return view('admin.program.sessions', [
-            'editions' => $this->accessibleEditions($request, 'editions_read'),
-            'edition_id' => $edition ? (string) $edition->id : '',
-            'tracks' => $edition->settings['tracks'] ?? [],
-            'calendarEvents' => $calendarEvents,
-            'ateliers' => $edition ? $edition->ateliers()->with('sessions')->orderBy('ordre')->get() : collect(),
-            'plenaries' => $edition ? $edition->sessions()->where('type', 'plenary')->orderBy('ordre')->get() : collect(),
-            'stats' => [
-                'ateliers' => $edition ? $edition->ateliers()->count() : 0,
-                'sessions' => $edition ? $edition->sessions()->count() : 0,
-                'slots' => $edition ? $edition->slots()->count() : 0,
-                'comms' => $edition ? $edition->slots()->where('submission_id', '>', 0)->count() : 0,
-            ],
-        ]);
+    public function slots(Request $request): RedirectResponse
+    {
+        return redirect()->route('admin.program.index', array_filter([
+            'edition_id' => $request->query('edition_id'),
+            'tab' => $request->query('tab', 'planning'),
+        ]));
     }
 
     /**
      * Rapports de séance : consultation par le comité des synthèses rédigées par
      * les rapporteurs (état à rédiger / brouillon / soumis).
      */
-    public function reports(Request $request): View
+    public function reports(Request $request): RedirectResponse
     {
-        $edition = $this->currentEdition($request);
+        return redirect()->route('admin.program.index', array_filter([
+            'edition_id' => $request->query('edition_id'),
+            'tab' => 'rapports',
+        ]));
+    }
 
-        $sessions = $edition
+    /**
+     * Séances et leur rapport, pour l'onglet Rapports.
+     *
+     * ⚠️ Lecture seulement : la VALIDATION d'un rapport reste au Secrétariat
+     * (c'est son métier, et elle verrouille le rapport côté rapporteur). Les
+     * deux écrans se renvoient l'un à l'autre.
+     *
+     * @return Collection<int, EventSession>
+     */
+    private function reportSessions(?Edition $edition): Collection
+    {
+        return $edition
             ? $edition->sessions()->with(['atelier', 'report'])
                 ->orderBy('starts_at')->orderBy('id')->get()
             : collect();
-
-        $submitted = $sessions->filter(fn (EventSession $s) => $s->report && $s->report->isSubmitted())->count();
-
-        return view('admin.program.reports', [
-            'editions' => $this->accessibleEditions($request, 'editions_read'),
-            'edition_id' => $edition ? (string) $edition->id : '',
-            'sessions' => $sessions,
-            'stats' => [
-                'sessions' => $sessions->count(),
-                'with_rapporteur' => $sessions->filter(fn (EventSession $s) => filled($s->rapporteur_email))->count(),
-                'submitted' => $submitted,
-            ],
-        ]);
     }
 
     /**
@@ -289,7 +284,11 @@ class ProgramController extends Controller
 
     // --- Créneaux -------------------------------------------------------------
 
-    public function slots(Request $request): View
+    /**
+     * Module Programme : planning, ateliers, sessions, créneaux, espaces,
+     * affectation auto, rapports et options - un onglet par `?tab=`.
+     */
+    public function index(Request $request): View
     {
         $edition = $this->currentEdition($request);
 
@@ -316,7 +315,24 @@ class ProgramController extends Controller
         $usedRooms = $sessions->pluck('room')->merge($slots->pluck('room'))
             ->filter()->unique()->sort()->values();
 
-        return view('admin.program.slots', [
+        // Agenda (FullCalendar) : fusionné dans l'onglet Planning, il vivait sur
+        // l'autre page - donc invisible pour qui passait par le menu.
+        $calendarEvents = $sessions->whereNotNull('starts_at')
+            ->map(fn (EventSession $s) => [
+                'title' => trim(($s->label ?: 'Session').($s->room ? ' · '.$s->room : '')),
+                'start' => optional($s->starts_at)->toIso8601String(),
+                'end' => optional($s->ends_at)->toIso8601String(),
+                'color' => $s->type === 'plenary' ? '#223ea4' : '#009933',
+            ])->values();
+
+        $tabs = ['planning', 'ateliers', 'sessions', 'creneaux', 'espaces', 'auto', 'rapports', 'options'];
+        $tab = in_array($request->query('tab'), $tabs, true) ? (string) $request->query('tab') : 'planning';
+
+        return view('admin.program.index', [
+            'tab' => $tab,
+            'calendarEvents' => $calendarEvents,
+            'plenaries' => $sessions->where('type', 'plenary')->values(),
+            'reportSessions' => $tab === 'rapports' ? $this->reportSessions($edition) : collect(),
             'editions' => $this->accessibleEditions($request, 'editions_read'),
             'edition' => $edition,
             'edition_id' => $edition ? (string) $edition->id : '',

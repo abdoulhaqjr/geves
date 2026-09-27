@@ -410,7 +410,10 @@ Route::prefix('admin')->group(function () {
 
         // Programme / créneaux (structure de l'édition).
         Route::middleware('edition.cap:editions_read')->group(function () {
-            Route::get('/programme', [ProgramController::class, 'sessions'])->name('admin.program.sessions');
+            // Module Programme : une page, un onglet par `?tab=`.
+            Route::get('/programme', [ProgramController::class, 'index'])->name('admin.program.index');
+            // ⚠️ Anciennes entrées conservées en redirection (liens et signets).
+            Route::get('/programme/sessions', [ProgramController::class, 'sessions'])->name('admin.program.sessions');
             Route::post('/programme/ateliers', [ProgramController::class, 'storeAtelier'])->name('admin.program.ateliers.store');
             Route::put('/programme/ateliers/{atelier}', [ProgramController::class, 'updateAtelier'])->name('admin.program.ateliers.update');
             Route::post('/programme/ateliers/{atelier}/salle', [ProgramController::class, 'assignAtelierRoom'])->name('admin.program.ateliers.room');

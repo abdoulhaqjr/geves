@@ -411,6 +411,27 @@ paiement (`pay`), inscription à une formation.
   doublon rattachait donc une communication au mauvais compte, en silence.
   Diagnostic : **`php artisan users:phones`** (rapport, `--fix` pour normaliser).
   Tests : `tests/Feature/UserPhoneUniquenessTest.php`.
+- **Module Programme = un seul écran, huit onglets** (2026-09-27) : *Planning ·
+  Ateliers · Sessions · Créneaux · Espaces · Affectation auto · Rapports ·
+  Options*, pilotés par l'URL (`?tab=`) et définis **une seule fois** dans
+  `resources/views/admin/program/_nav.blade.php`. Route canonique
+  **`admin.program.index`** (`/admin/programme`).
+  - ⚠️ Le programme vivait sur **deux pages** (`/programme` et
+    `/programme/creneaux`) qui géraient les **mêmes ateliers et les mêmes
+    sessions** avec deux interfaces, et la première n'était atteignable **ni par
+    le menu ni par la palette** - alors qu'elle portait seule la **visio**.
+    `admin.program.sessions|slots|reports` sont conservées en **redirection**
+    (liens du secrétariat, des documents, signets) : ne pas les supprimer sans
+    vérifier les appelants.
+  - La **visio** d'une séance se déplie depuis l'onglet Sessions. ⚠️ Son panneau
+    est une ligne **sœur** de la ligne de séance : l'état Alpine se pose sur un
+    **`<tbody>` par séance** (un `x-data` sur la ligne ne couvre pas sa sœur).
+  - « Non planifiées » est devenu la suite de **Créneaux**, « Paramètres
+    créneaux » l'onglet **Options**, et l'**Agenda** (FullCalendar) se déplie
+    dans **Planning**.
+  - **Rapports** : onglet de **lecture** ; la **validation** reste au
+    **Secrétariat** (elle verrouille le rapport côté rapporteur). Les deux
+    écrans se renvoient l'un à l'autre.
 ### Règles métier - limites communications & attestations
 
 - **Limite de communications** (`settings.max_communications`) : compte **seulement** les

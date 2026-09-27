@@ -54,9 +54,9 @@
                     </a>
                 @endif
                 @if ($staff?->canAnyEdition('editions_read'))
-                    <a href="{{ route('admin.program.slots') }}" title="Créneaux"
+                    <a href="{{ route('admin.program.index') }}" title="Programme"
                        @class(['active' => request()->routeIs('admin.program.*')])>
-                        <x-ukc.icon name="clock" :size="18" /> <span class="txt">Créneaux</span>
+                        <x-ukc.icon name="calendar" :size="18" /> <span class="txt">Programme</span>
                     </a>
                     <a href="{{ route('admin.secretariat') }}" title="Secrétariat"
                        @class(['active' => request()->routeIs('admin.secretariat')])>

@@ -1,34 +1,28 @@
-<x-layouts.admin title="Rapports de séance" subtitle="Synthèses rédigées par les rapporteurs">
-    <div class="admin-page admin-program">
-        <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
-            <div class="ukc-field" style="max-width:320px;margin:0;">
-                <label>Édition</label>
-                <select onchange="window.location='{{ route('admin.program.reports') }}?edition_id='+this.value">
-                    <option value="">- Choisir -</option>
-                    @foreach ($editions as $ed)
-                        <option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>
-                    @endforeach
-                </select>
-            </div>
-            @if ($edition_id !== '')
-                <div style="display:flex;gap:8px;">
-                    <a href="{{ route('admin.program.sessions') }}?edition_id={{ $edition_id }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
-                        <x-ukc.icon name="list" :size="16" /> Programme
-                    </a>
-                </div>
-            @endif
-        </div>
+{{-- Onglet Rapports : LECTURE des synthèses rédigées par les rapporteurs.
+     ⚠️ La VALIDATION reste au Secrétariat (c'est son métier, et elle verrouille
+     le rapport côté rapporteur) : les deux écrans se renvoient l'un à l'autre. --}}
+@php
+    $reportStats = [
+        'sessions' => $reportSessions->count(),
+        'with_rapporteur' => $reportSessions->filter(fn ($s) => filled($s->rapporteur_email))->count(),
+        'submitted' => $reportSessions->filter(fn ($s) => $s->report && $s->report->isSubmitted())->count(),
+    ];
+@endphp
 
-        @if ($edition_id === '')
-            <div class="ukc-empty"><h3>Choisissez une édition</h3><p>Sélectionnez une édition pour consulter les rapports de séance.</p></div>
-        @else
-            <div class="ukc-stats">
-                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="layers" :size="20" /></div><div class="lbl">Sessions</div><div class="val">{{ $stats['sessions'] }}</div></div>
-                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="user" :size="20" /></div><div class="lbl">Avec rapporteur</div><div class="val blue">{{ $stats['with_rapporteur'] }}</div></div>
-                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="check-circle" :size="20" /></div><div class="lbl">Rapports soumis</div><div class="val green">{{ $stats['submitted'] }}</div></div>
-            </div>
+<div class="ukc-stats">
+    <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="layers" :size="20" /></div><div class="lbl">Séances</div><div class="val">{{ $reportStats['sessions'] }}</div></div>
+    <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="user" :size="20" /></div><div class="lbl">Avec rapporteur</div><div class="val blue">{{ $reportStats['with_rapporteur'] }}</div></div>
+    <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="check-circle" :size="20" /></div><div class="lbl">Rapports soumis</div><div class="val green">{{ $reportStats['submitted'] }}</div></div>
+</div>
 
-            @forelse ($sessions as $session)
+<div class="ukc-alert ukc-alert--info" style="margin-bottom:16px;">
+    <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
+    <div>
+        Lecture des rapports. La <strong>validation</strong> (qui verrouille le rapport côté rapporteur)
+        se fait au <a href="{{ route('admin.secretariat') }}" style="color:var(--ukc-blue);font-weight:600;">Secrétariat</a>.
+    </div>
+</div>
+@forelse ($reportSessions as $session)
                 @php($report = $session->report)
                 <div class="ukc-card" style="margin-bottom:14px;" x-data="{ edit: false }">
                     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
@@ -111,6 +105,3 @@
             @empty
                 <div class="ukc-empty"><h3>Aucune séance</h3><p>Cette édition n'a pas encore de séance programmée.</p></div>
             @endforelse
-        @endif
-    </div>
-</x-layouts.admin>

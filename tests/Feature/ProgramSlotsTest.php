@@ -198,3 +198,52 @@ it('associe une salle à un atelier et la propage à ses sessions', function () 
     expect($edition->fresh()->settings['program']['atelier_rooms'][(string) $atelier->id])->toBe('Salle B');
     expect($session->fresh()->room)->toBe('Salle B');
 });
+
+it('regroupe le programme en un seul module à onglets', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+
+    // Les huit onglets répondent sur la même page, pilotés par l'URL.
+    foreach (['planning', 'ateliers', 'sessions', 'creneaux', 'espaces', 'auto', 'rapports', 'options'] as $tab) {
+        $this->actingAs($staff, 'web')
+            ->get(route('admin.program.index', ['edition_id' => $edition->id, 'tab' => $tab]))
+            ->assertOk();
+    }
+
+    // Un onglet inconnu retombe sur le planning plutôt que d'échouer.
+    $this->actingAs($staff, 'web')
+        ->get(route('admin.program.index', ['edition_id' => $edition->id, 'tab' => 'inexistant']))
+        ->assertOk();
+});
+
+it('redirige les anciennes adresses du programme vers le bon onglet', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+
+    // ⚠️ Liens et signets existants (secrétariat, documents) : ils doivent
+    // continuer de tomber juste après le regroupement des deux pages.
+    $this->actingAs($staff, 'web')
+        ->get(route('admin.program.sessions', ['edition_id' => $edition->id]))
+        ->assertRedirect(route('admin.program.index', ['edition_id' => $edition->id, 'tab' => 'sessions']));
+
+    $this->actingAs($staff, 'web')
+        ->get(route('admin.program.reports', ['edition_id' => $edition->id]))
+        ->assertRedirect(route('admin.program.index', ['edition_id' => $edition->id, 'tab' => 'rapports']));
+
+    $this->actingAs($staff, 'web')
+        ->get(route('admin.program.slots', ['edition_id' => $edition->id]))
+        ->assertRedirect(route('admin.program.index', ['edition_id' => $edition->id, 'tab' => 'planning']));
+});
+
+it('porte la visioconférence sur l’onglet Sessions', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+    $session = sessionFor($edition);
+
+    // Elle n'existait que sur l'ancienne page, inaccessible depuis le menu.
+    $this->actingAs($staff, 'web')
+        ->get(route('admin.program.index', ['edition_id' => $edition->id, 'tab' => 'sessions']))
+        ->assertOk()
+        ->assertSee($session->label)
+        ->assertSee('Visioconférence');
+});

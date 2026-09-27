@@ -9,7 +9,7 @@
     $atelierRoomName = fn ($atelier) => $atelierRooms[(string) $atelier->id] ?? ($atelier->sessions->firstWhere('room', '!=', null)?->room);
 @endphp
 
-<x-layouts.admin title="Créneaux de passage" subtitle="Ateliers · Sessions · Planning">
+<x-layouts.admin title="Programme" subtitle="Ateliers, sessions, créneaux et salles de l’édition">
     @if ($edition)
         <x-slot:actions>
             <a href="{{ route('public.colloque', $edition->slug) }}#programme" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
@@ -24,7 +24,6 @@
 
     <div class="admin-page admin-program"
          x-data="{
-            tab: 'planning',
             day: '{{ $days->first() }}',
             modal: null,
             form: {},
@@ -68,20 +67,28 @@
                 </p>
             </div>
 
-            {{-- Onglets --}}
-            <div class="ukc-nav-docs">
-                <button type="button" @click="tab='planning'" :class="{ active: tab==='planning' }">Planning</button>
-                <button type="button" @click="tab='ateliers'" :class="{ active: tab==='ateliers' }">Ateliers</button>
-                <button type="button" @click="tab='sessions'" :class="{ active: tab==='sessions' }">Sessions</button>
-                <button type="button" @click="tab='list'" :class="{ active: tab==='list' }">Créneaux</button>
-                <button type="button" @click="tab='spaces'" :class="{ active: tab==='spaces' }">Espaces</button>
-                <button type="button" @click="tab='unscheduled'" :class="{ active: tab==='unscheduled' }">Non planifiées ({{ $stats['toPlan'] }})</button>
-                <button type="button" @click="tab='auto'" :class="{ active: tab==='auto' }">Affectation auto</button>
-                <button type="button" @click="tab='params'" :class="{ active: tab==='params' }">Paramètres créneaux</button>
-            </div>
+            @include('admin.program._nav', ['current' => $tab])
 
             {{-- ============================ PLANNING ============================ --}}
-            <div x-show="tab==='planning'" x-cloak>
+            {{-- Agenda : le calendrier et la vue par jour décrivent la même chose,
+                 ils sont donc côte à côte (dépliable) plutôt que sur deux pages. --}}
+            <div x-data="{ agenda: false }" @if ($tab !== 'planning') style="display:none;" @endif>
+                <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+                    <button type="button" class="ukc-btn ukc-btn--outline ukc-btn--sm" @click="agenda = ! agenda; $nextTick(() => window.__programCal && window.__programCal.updateSize())">
+                        <x-ukc.icon name="calendar" :size="15" />
+                        <span x-text="agenda ? 'Masquer l’agenda' : 'Voir l’agenda'"></span>
+                    </button>
+                </div>
+                <div class="ukc-card" x-show="agenda" x-cloak style="margin-bottom:18px;">
+                    @if ($calendarEvents->isEmpty())
+                        <p class="ukc-hint" style="margin-bottom:12px;">Aucune session horodatée pour l’instant - ajoutez des horaires aux sessions (jour, début, fin) pour les voir apparaître dans l’agenda.</p>
+                    @endif
+                    <script type="application/json" id="programEvents">{!! $calendarEvents->toJson() !!}</script>
+                    <div id="programCalendar"></div>
+                </div>
+            </div>
+            {{-- ============================ PLANNING ============================ --}}
+            <div @if ($tab !== 'planning') style="display:none;" @endif>
                 @if ($days->isEmpty())
                     <div class="ukc-empty"><h3>Aucun jour planifié</h3><p>Ajoutez des sessions datées et des créneaux pour bâtir le planning.</p></div>
                 @else
@@ -162,7 +169,7 @@
             </div>
 
             {{-- ============================ ATELIERS ============================ --}}
-            <div x-show="tab==='ateliers'" x-cloak data-ajax-root="prog-ateliers">
+            <div @if ($tab !== 'ateliers') style="display:none;" @endif data-ajax-root="prog-ateliers">
                 <div class="ukc-card">
                     <h2 style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:1rem;font-weight:800;margin-bottom:8px;">
                         Ateliers
@@ -224,7 +231,7 @@
             </div>
 
             {{-- ============================ SESSIONS ============================ --}}
-            <div x-show="tab==='sessions'" x-cloak data-ajax-root="prog-sessions">
+            <div @if ($tab !== 'sessions') style="display:none;" @endif data-ajax-root="prog-sessions">
                 <div class="ukc-card">
                     <h2 style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:1rem;font-weight:800;margin-bottom:8px;">
                         Sessions
@@ -237,12 +244,14 @@
                             <thead>
                                 <tr><th>Jour</th><th>Atelier</th><th>Session</th><th>Horaire</th><th>Modérateur</th><th>Rapporteur</th><th>Créneaux</th><th>Com.</th><th style="text-align:right;">Actions</th></tr>
                             </thead>
-                            <tbody>
-                                @forelse ($sessions as $session)
-                                    @php
-                                        $sessionSlots = $creneaux->where('session_id', $session->id);
-                                        $sDay = optional($session->session_day ?? $session->starts_at);
-                                    @endphp
+                            @forelse ($sessions as $session)
+                                @php
+                                    $sessionSlots = $creneaux->where('session_id', $session->id);
+                                    $sDay = optional($session->session_day ?? $session->starts_at);
+                                @endphp
+                                {{-- Un <tbody> par séance : il porte l'état d'ouverture de la
+                                     visio, qui s'affiche sur une ligne à part. --}}
+                                <tbody x-data="{ visio: false }">
                                     <tr>
                                         <td>{{ $sDay?->format('d/m') ?: '-' }}</td>
                                         <td>{{ $session->atelier?->title ?: '- (plénière)' }}</td>
@@ -255,6 +264,8 @@
                                         <td style="text-align:right;">
                                             <div class="ukc-actions">
                                                 <a href="{{ route('admin.documents.sessions', $edition) }}" class="ukc-btn--icon" title="Fiches (modération / rapport)"><x-ukc.icon name="file" :size="15" /></a>
+                                                <button type="button" class="ukc-btn--icon" title="Visioconférence"
+                                                        @click="visio = ! visio" :class="{ 'active': visio }"><x-ukc.icon name="video" :size="15" /></button>
                                                 <button type="button" class="ukc-btn--icon" title="Modifier"
                                                         @click="openSession({ id:{{ $session->id }}, type:@js($session->atelier_id ? 'atelier' : 'plenary'), atelier_id:@js((string) $session->atelier_id), label:@js($session->label), day:@js($sDay?->format('Y-m-d') ?? ''), start:@js($session->starts_at?->format('H:i') ?? ''), end:@js($session->ends_at?->format('H:i') ?? ''), room:@js($session->room ?? ''), moderator:@js($session->moderator_name ?? ''), rapporteur:@js($session->rapporteur_name ?? '') })"><x-ukc.icon name="pen" :size="15" /></button>
                                                 <form method="POST" action="{{ route('admin.program.sessions.destroy', $session) }}" data-ajax data-ajax-target="prog-sessions" data-ajax-msg="Session supprimée." data-confirm="Supprimer cette session ?">
@@ -264,17 +275,25 @@
                                             </div>
                                         </td>
                                     </tr>
-                                @empty
+                                    {{-- Réglages de visioconférence de la séance (lien, état, accès). --}}
+                                    <tr x-show="visio" x-cloak>
+                                        <td colspan="9" style="background:#f8fafc;">
+                                            @include('admin.program._meeting', ['s' => $session])
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            @empty
+                                <tbody>
                                     <tr><td colspan="9" style="text-align:center;color:var(--ukc-muted);padding:20px;">Aucune session.</td></tr>
-                                @endforelse
-                            </tbody>
+                                </tbody>
+                            @endforelse
                         </table>
                     </div>
                 </div>
             </div>
 
             {{-- ============================ CRÉNEAUX (liste) ============================ --}}
-            <div x-show="tab==='list'" x-cloak data-ajax-root="prog-slots">
+            <div @if ($tab !== 'creneaux') style="display:none;" @endif data-ajax-root="prog-slots">
                 <div class="ukc-card">
                     <h2 style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:1rem;font-weight:800;margin-bottom:14px;">
                         Créneaux
@@ -318,7 +337,7 @@
             </div>
 
             {{-- ============================ ESPACES ============================ --}}
-            <div x-show="tab==='spaces'" x-cloak data-ajax-root="prog-spaces">
+            <div @if ($tab !== 'espaces') style="display:none;" @endif data-ajax-root="prog-spaces">
                 <div class="ukc-card">
                     <h2 style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:1rem;font-weight:800;margin-bottom:8px;">
                         Gestion des espaces
@@ -365,8 +384,9 @@
                 </div>
             </div>
 
-            {{-- ============================ NON PLANIFIÉES ============================ --}}
-            <div x-show="tab==='unscheduled'" x-cloak>
+            {{-- Communications acceptées restant à placer : la suite naturelle de
+                 l'onglet Créneaux, plutôt qu'un onglet séparé. --}}
+            <div style="margin-top:18px;{{ $tab !== 'creneaux' ? 'display:none;' : '' }}">
                 <div class="ukc-card">
                     <h2 style="font-size:1rem;font-weight:800;margin-bottom:6px;">Communications acceptées non planifiées</h2>
                     <div class="desc" style="font-size:13px;color:var(--ukc-muted);margin-bottom:14px;">Priorité à l'affectation auto pour les communications <strong>payées</strong> dont l'axe correspond à un atelier avec créneau libre.</div>
@@ -397,7 +417,7 @@
             </div>
 
             {{-- ============================ AFFECTATION AUTO ============================ --}}
-            <div x-show="tab==='auto'" x-cloak>
+            <div @if ($tab !== 'auto') style="display:none;" @endif>
                 <div class="ukc-card" style="max-width:720px;">
                     <h2 style="font-size:1rem;font-weight:800;margin-bottom:6px;">Affectation automatique des créneaux</h2>
                     <div class="desc" style="font-size:13px;color:var(--ukc-muted);margin-bottom:14px;">
@@ -469,8 +489,13 @@
                 </div>
             </div>
 
+            {{-- ============================ RAPPORTS ============================ --}}
+            @if ($tab === 'rapports')
+                @include('admin.program._reports')
+            @endif
+
             {{-- ============================ PARAMÈTRES ============================ --}}
-            <div x-show="tab==='params'" x-cloak>
+            <div @if ($tab !== 'options') style="display:none;" @endif>
                 <form method="POST" action="{{ route('admin.program.config') }}?edition_id={{ $edition_id }}" class="ukc-card" style="max-width:720px;">
                     @csrf
                     {{-- On renvoie aussi les règles auto pour ne pas les écraser --}}
