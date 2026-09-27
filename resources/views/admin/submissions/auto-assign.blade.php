@@ -81,7 +81,11 @@
                                                 <td class="title-cell"><strong>{{ \Illuminate\Support\Str::limit($p['submission_title'], 56) }}</strong></td>
                                                 <td>@if ($p['track'])<span class="axis-tag">{{ \Illuminate\Support\Str::limit($p['track'], 22) }}</span>@else - @endif</td>
                                                 <td>{{ $p['reviewer_name'] }}</td>
-                                                <td style="font-size:13px;color:var(--ukc-muted);">{{ $p['reason'] }}</td>
+                                                <td style="font-size:13px;color:var(--ukc-muted);">
+                                                    {{ $p['reason'] }}
+                                                    {{-- La justification suit la paire : elle est archivée sur la relecture (review.assign_reason). --}}
+                                                    <input type="hidden" name="reasons[{{ $p['submission_id'] }}:{{ $p['reviewer_id'] }}]" value="{{ $p['reason'] }}">
+                                                </td>
                                                 <td>
                                                     @if ($p['coi'] === \App\Support\ConflictOfInterest::MEDIUM)
                                                         <span class="ukc-pill ukc-pill--warn">COI moyen</span>

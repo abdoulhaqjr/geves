@@ -489,4 +489,54 @@ Nouveau module **Formation** (activable par édition), construit **par phases**.
 
 **Reste optionnel** : un **lecteur visio inline** pour la formation (au lieu de la redirection).
 
+### Cycle de vie de la relecture - « le moteur propose, l'humain valide » (2026-09-27)
+
+**Constat de l'audit** : l'attribution était bonne (planner déterministe, COI,
+candidatures, charge) mais la relecture vivait dans deux états seulement
+(`assigned`, `completed`). Conséquences : un relecteur ne pouvait **ni accepter
+ni refuser**, une relecture confiée la veille était comptée « en retard » à
+égalité avec une oubliée depuis deux mois, retirer une assignation **effaçait**
+la trace, et un refus ne libérait pas la place.
+
+**Mise en œuvre** (migration `2026_09_27_000200_add_lifecycle_to_reviews.php` :
+`assigned_at`, `assigned_by_id`, `assign_reason`, `due_at`, `responded_at`,
+`decline_reason`, index `(status, due_at)`, bascule `assigned` → `invited`) :
+
+- **États** : `Review::STATUSES` invited → accepted/declined → completed, plus
+  cancelled ; `ACTIVE_STATUSES` = ce qui occupe une place ; helpers
+  `statusLabel()`, `statusPill()`, `isPending()`, `isActive()`, `isLate()`,
+  `daysLate()`, et **`Review::summarize()`** (phrase d'état du comité).
+- **Échéance** : `ReviewGrid::dueDays($edition)` (réglage `review_due_days`,
+  1-180 j, champ dans l'onglet Relecteurs de la fiche d'édition, enregistré avec
+  la grille par `EditionFormController::saveReviewGrid`) ; `AssignReviewer` pose
+  `due_at` à l'assignation et **rouvre** la même ligne (plutôt que d'en créer une
+  seconde) quand le comité ré-attribue après un refus/une annulation.
+- **Attribution auto** : `AutoAssignReviewers` ne compte que les relectures
+  actives pour la couverture **et** la charge - un refus libère réellement la
+  place - tout en continuant d'exclure du plan un relecteur déjà sollicité. La
+  **justification du moteur suit la paire** (champ caché `reasons[sub:rev]` dans
+  l'aperçu → `assign_reason` sur la relecture) : on sait *pourquoi* untel a été
+  sollicité.
+- **Espace relecteur** (`/relectures`) : colonnes **Échéance** et **État**,
+  boutons **Accepter / Refuser** (motif facultatif dans un slideover, route
+  `account.reviews.respond`), KPI « Invitations à confirmer » et « En retard ».
+  `submit()` refuse (422) une relecture `declined`/`cancelled` et pose
+  `responded_at` (rendre vaut accepter).
+- **Fiche admin d'une soumission** : phrase `Review::summarize()`, pastille
+  d'état par relecture, échéance ou retard en jours, motif du refus ou
+  justification d'attribution. Le bouton « retirer » **annule** (statut
+  `cancelled` + notification au relecteur) au lieu de supprimer.
+- **Rapports** : `EditionReport::reviewStats()` renvoie `pending`/`late`/
+  `declined` (le « late » d'avant était l'inachèvement) ; `reviewsByReviewer()`
+  ne fait plus peser un refus sur la complétion et affiche « N refus ».
+- Notification staff `review_response` (registre `NotificationKinds`).
+- Tests : **`ReviewLifecycleTest`** (16 cas). **748 tests verts, PHPStan niveau 5
+  OK, Pint OK.**
+
+**Choix assumés** (les deux questions ouvertes de l'audit, tranchées faute de
+réponse) : **échéance par édition** (durée standard paramétrable, 21 j par
+défaut) plutôt que par soumission, et **un refus libère la place sans
+remplacement automatique** - cohérent avec la philosophie du module, où le
+moteur propose et l'humain valide.
+
 > **Mémoire projet** : le contexte fin (décisions, conventions, TODO différés - DOI/DataCite, connecteur Google anti-plagiat, amélioration `admin/reclamations`) est aussi consigné dans la **mémoire locale de Claude Code** (`~/.claude/…/memory/`, non versionnée). Comme cette mémoire ne se partage pas entre contributeurs, **le contexte partageable doit vivre dans `CLAUDE.md` + ce fichier** (versionnés) : les tenir à jour à chaque tâche notable.

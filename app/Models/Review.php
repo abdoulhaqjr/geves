@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -9,6 +10,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Relecture en aveugle d'une soumission par un relecteur (participant).
  *
  * @property array<string, int>|null $scores notes par critère de la grille
+ * @property Carbon|null $assigned_at
+ * @property Carbon|null $due_at échéance de rendu (cf. ReviewGrid::dueDays)
+ * @property Carbon|null $responded_at
  */
 class Review extends Model
 {
@@ -22,9 +26,133 @@ class Review extends Model
         'reject' => 'Rejeter',
     ];
 
+    /**
+     * Cycle de vie d'une relecture. `invited` : confiée, le relecteur n'a pas
+     * encore répondu. `accepted` : il s'est engagé. `declined` : il a refusé (la
+     * place est libérée, la soumission redevient à couvrir). `completed` : rendue.
+     * `cancelled` : retirée par l'organisation.
+     */
+    public const STATUSES = [
+        'invited' => 'Invitée',
+        'accepted' => 'Acceptée',
+        'declined' => 'Refusée',
+        'completed' => 'Rendue',
+        'cancelled' => 'Annulée',
+    ];
+
+    /**
+     * Statuts qui « occupent une place » sur la soumission. Un refus ou une
+     * annulation ne comptent pas : la soumission est de nouveau à couvrir.
+     */
+    public const ACTIVE_STATUSES = ['invited', 'accepted', 'completed'];
+
+    /** Durée d'évaluation par défaut, à défaut de réglage de l'édition (jours). */
+    public const DEFAULT_DUE_DAYS = 21;
+
     protected function casts(): array
     {
-        return ['score' => 'decimal:2', 'scores' => 'array'];
+        return [
+            'score' => 'decimal:2',
+            'scores' => 'array',
+            'assigned_at' => 'datetime',
+            'due_at' => 'datetime',
+            'responded_at' => 'datetime',
+        ];
+    }
+
+    /**
+     * Phrase d'état d'un lot de relectures, telle que le comité la lit :
+     * « 2 relectures demandées - 1 rendue, 1 en retard de 3 j ». Les relectures
+     * annulées ne comptent pas ; les refus sont mentionnés à part (ils ont bien
+     * eu lieu, mais la place est libre).
+     *
+     * @param  iterable<int, self>  $reviews
+     */
+    public static function summarize(iterable $reviews): string
+    {
+        $all = collect($reviews);
+        $active = $all->filter(fn (self $r) => $r->isActive());
+        $declined = $all->where('status', 'declined')->count();
+
+        if ($active->isEmpty()) {
+            return $declined > 0
+                ? 'Aucune relecture en cours - '.$declined.' refus.'
+                : 'Aucun relecteur assigné.';
+        }
+
+        $late = $active->filter(fn (self $r) => $r->isLate());
+        $done = $active->where('status', 'completed')->count();
+        $waiting = $active->filter(fn (self $r) => $r->isPending())->count() - $late->count();
+
+        $parts = [];
+        if ($done > 0) {
+            $parts[] = $done.' rendue'.($done > 1 ? 's' : '');
+        }
+        if ($waiting > 0) {
+            $parts[] = $waiting.' en attente';
+        }
+        if ($late->isNotEmpty()) {
+            $worst = (int) $late->max(fn (self $r) => $r->daysLate());
+            $parts[] = $late->count().' en retard'.($worst > 0 ? ' de '.$worst.' j' : '');
+        }
+
+        $count = $active->count();
+        $text = $count.' relecture'.($count > 1 ? 's' : '').' demandée'.($count > 1 ? 's' : '');
+        if ($parts !== []) {
+            $text .= ' - '.implode(', ', $parts);
+        }
+        if ($declined > 0) {
+            $text .= ' ('.$declined.' refus)';
+        }
+
+        return $text;
+    }
+
+    public function statusLabel(): string
+    {
+        return self::STATUSES[$this->status] ?? ucfirst((string) $this->status);
+    }
+
+    /** Pastille de la charte associée au statut. */
+    public function statusPill(): string
+    {
+        if ($this->isLate()) {
+            return 'err';
+        }
+
+        return match ($this->status) {
+            'completed' => 'ok',
+            'accepted' => 'info',
+            'declined', 'cancelled' => 'muted',
+            default => 'warn',
+        };
+    }
+
+    /** Relecture attendue : confiée ou acceptée, pas encore rendue. */
+    public function isPending(): bool
+    {
+        return in_array($this->status, ['invited', 'accepted'], true);
+    }
+
+    /** Occupe une place sur la soumission (compte dans la couverture). */
+    public function isActive(): bool
+    {
+        return in_array($this->status, self::ACTIVE_STATUSES, true);
+    }
+
+    /**
+     * En retard : attendue ET échéance dépassée. ⚠️ Ne pas confondre avec
+     * « non rendue » - sans échéance, une relecture n'est jamais en retard.
+     */
+    public function isLate(): bool
+    {
+        return $this->isPending() && $this->due_at !== null && $this->due_at->isPast();
+    }
+
+    /** Nombre de jours de retard (0 si dans les temps). */
+    public function daysLate(): int
+    {
+        return $this->isLate() ? (int) $this->due_at->diffInDays(now()) : 0;
     }
 
     public function recommendationLabel(): ?string

@@ -7,6 +7,8 @@ use App\Models\Review;
 use App\Models\Submission;
 use App\Models\User;
 use App\Support\Notifier;
+use App\Support\ReviewGrid;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 /**
@@ -17,7 +19,10 @@ use Illuminate\Support\Str;
  */
 class AssignReviewer
 {
-    public function handle(Submission $submission, string $name, string $email): Review
+    /**
+     * @param  string|null  $reason  justification du moteur d'attribution automatique
+     */
+    public function handle(Submission $submission, string $name, string $email, ?string $reason = null): Review
     {
         $reviewer = Participant::firstOrNew([
             'edition_id' => $submission->edition_id,
@@ -52,17 +57,44 @@ class AssignReviewer
 
         $reviewer->save();
 
+        // Échéance : durée d'évaluation de l'édition, sinon la valeur par défaut.
+        $dueDays = ReviewGrid::dueDays($submission->edition);
+
         $review = Review::firstOrCreate(
             ['submission_id' => $submission->id, 'reviewer_id' => $reviewer->id],
-            ['status' => 'assigned']
+            [
+                'status' => 'invited',
+                'assigned_at' => now(),
+                'assigned_by_id' => Auth::guard('web')->id(),
+                'assign_reason' => $reason,
+                'due_at' => now()->addDays($dueDays),
+            ],
         );
+
+        // Ré-attribution après un refus ou une annulation : on rouvre la même
+        // ligne plutôt que d'en créer une seconde (l'unicité soumission/relecteur
+        // reste vraie) et l'échéance repart de zéro.
+        $reopened = ! $review->wasRecentlyCreated && in_array($review->status, ['declined', 'cancelled'], true);
+        if ($reopened) {
+            $review->update([
+                'status' => 'invited',
+                'assigned_at' => now(),
+                'assigned_by_id' => Auth::guard('web')->id(),
+                'assign_reason' => $reason,
+                'due_at' => now()->addDays($dueDays),
+                'responded_at' => null,
+                'decline_reason' => null,
+            ]);
+        }
 
         if ($submission->status === 'submitted') {
             $submission->update(['status' => 'under_review']);
         }
 
         // Notification in-app au relecteur, s'il dispose d'un compte lié.
-        if ($review->wasRecentlyCreated) {
+        // Notifie aussi une RÉ-attribution après refus/annulation : sans cela, le
+        // relecteur ne saurait pas que la communication lui revient.
+        if ($review->wasRecentlyCreated || $reopened) {
             Notifier::account(
                 $reviewer->user,
                 kind: 'review_assigned',

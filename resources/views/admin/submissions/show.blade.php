@@ -341,6 +341,7 @@
                 {{-- Relecteurs --}}
                 <div class="ukc-card">
                     <h2><span><x-ukc.icon name="mic" :size="18" /> Relecteurs</span></h2>
+                    <p class="desc">{{ \App\Models\Review::summarize($reviews) }}</p>
 
                     @if ($completedCount)
                         @if ($averageScore !== null)
@@ -366,6 +367,11 @@
                             <div class="info">
                                 <strong>{{ $review->reviewer?->full_name ?: '-' }}</strong>
                                 <span class="sub">{{ $review->reviewer?->email }}</span>
+                                @if ($review->status === 'declined' && $review->decline_reason)
+                                    <span class="sub" style="color:#b4231c;">Motif du refus : {{ $review->decline_reason }}</span>
+                                @elseif ($review->assign_reason)
+                                    <span class="sub">{{ $review->assign_reason }}</span>
+                                @endif
                                 @if ($review->isCompleted())
                                     <div class="rev-detail">
                                         <em>{{ $review->recommendationLabel() }}</em>@if ($review->score !== null) · {{ number_format((float) $review->score, 1, ',', ' ') }}/20 @endif
@@ -385,19 +391,22 @@
                                 @endif
                             </div>
                             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;white-space:nowrap;">
-                                @if ($review->isCompleted())
-                                    <span class="ukc-pill ukc-pill--ok">Fait</span>
-                                @else
-                                    <span class="ukc-pill ukc-pill--warn">En cours</span>
+                                <span class="ukc-pill ukc-pill--{{ $review->statusPill() }}">{{ $review->statusLabel() }}</span>
+                                @if ($review->due_at && $review->isPending())
+                                    <span style="font-size:11.5px;color:{{ $review->isLate() ? '#b4231c' : 'var(--ukc-muted)' }};">
+                                        {{ $review->isLate() ? 'en retard de '.$review->daysLate().' j' : 'échéance '.$review->due_at->format('d/m/Y') }}
+                                    </span>
                                 @endif
-                                <form method="POST" action="{{ route('admin.submissions.review.remove', [$s, $review]) }}"
-                                      data-ajax data-ajax-msg="Assignation retirée." data-confirm="Retirer cette assignation ?">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="ukc-btn ukc-btn--danger ukc-btn--sm">
-                                        <x-ukc.icon name="close" :size="14" />
-                                    </button>
-                                </form>
+                                @if ($review->status !== 'cancelled')
+                                    <form method="POST" action="{{ route('admin.submissions.review.remove', [$s, $review]) }}"
+                                          data-ajax data-ajax-msg="Assignation annulée." data-confirm="Retirer cette assignation ? La relecture passe « annulée » : elle reste dans l’historique mais ne compte plus.">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="ukc-btn ukc-btn--danger ukc-btn--sm">
+                                            <x-ukc.icon name="close" :size="14" />
+                                        </button>
+                                    </form>
+                                @endif
                             </div>
                         </div>
                     @empty

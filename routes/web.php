@@ -204,6 +204,7 @@ Route::middleware(['auth:account', StampAccountSession::class])->group(function 
     Route::post('/rapports/{session}', [SessionReportController::class, 'update'])->name('account.reports.update');
     Route::get('/relectures', [ReviewWorkspaceController::class, 'index'])->name('account.reviews');
     Route::post('/relectures/candidatures', [ReviewWorkspaceController::class, 'saveBids'])->name('account.reviews.bids');
+    Route::post('/relectures/{review}/reponse', [ReviewWorkspaceController::class, 'respond'])->name('account.reviews.respond');
     Route::post('/relectures/{review}', [ReviewWorkspaceController::class, 'submit'])->name('account.reviews.submit');
 
     // Paiement des frais

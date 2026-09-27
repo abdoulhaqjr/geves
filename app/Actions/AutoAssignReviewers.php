@@ -53,6 +53,7 @@ class AutoAssignReviewers
         // Charge courante par relecteur (relectures actives sur l'édition).
         $load = Review::query()
             ->whereIn('reviewer_id', $reviewers->pluck('id'))
+            ->whereIn('status', Review::ACTIVE_STATUSES)
             ->whereHas('submission', fn ($q) => $q->where('edition_id', $edition->id))
             ->selectRaw('reviewer_id, count(*) as c')->groupBy('reviewer_id')->pluck('c', 'reviewer_id');
 
@@ -66,8 +67,13 @@ class AutoAssignReviewers
         $coi = [];
         $subDto = [];
         foreach ($submissions as $sub) {
+            // ⚠️ `exclude` reprend TOUS les relecteurs déjà sollicités (y compris
+            // ceux qui ont refusé : on ne les represse pas), alors que la
+            // couverture ne compte que les relectures ACTIVES - un refus ou une
+            // annulation libère la place.
             $assigned = $sub->reviews->pluck('reviewer_id')->filter()->values()->all();
-            $needed = max(0, $target - $sub->reviews->count());
+            $active = $sub->reviews->filter(fn (Review $r) => $r->isActive())->count();
+            $needed = max(0, $target - $active);
             $subDto[] = ['id' => $sub->id, 'track' => (string) $sub->track, 'needed' => $needed, 'exclude' => $assigned];
 
             foreach ($reviewers as $r) {
@@ -136,7 +142,7 @@ class AutoAssignReviewers
      * Applique un plan validé (paires soumission→relecteur), en re-vérifiant
      * l'appartenance à l'édition et l'absence de conflit d'intérêt élevé.
      *
-     * @param  list<array{submission_id:int, reviewer_id:int}>  $pairs
+     * @param  list<array{submission_id:int, reviewer_id:int, reason?:string|null}>  $pairs
      * @return int nombre de relectures effectivement créées
      */
     public function apply(Edition $edition, array $pairs): int
@@ -160,7 +166,12 @@ class AutoAssignReviewers
                 continue;
             }
 
-            $review = $this->assign->handle($submission, $reviewer->full_name, (string) $reviewer->email);
+            $review = $this->assign->handle(
+                $submission,
+                $reviewer->full_name,
+                (string) $reviewer->email,
+                ($pair['reason'] ?? null) !== null ? (string) $pair['reason'] : null,
+            );
 
             if ($review->wasRecentlyCreated) {
                 $created++;

@@ -354,7 +354,7 @@ it('liste au relecteur ses relectures confiées', function () {
         'abstract' => 'Résumé.', 'track' => 'Sciences', 'type' => 'oral', 'status' => 'under_review',
         'authors' => [['name' => 'Auteur X', 'corresponding' => true]],
     ]);
-    Review::create(['submission_id' => $submission->id, 'reviewer_id' => $reviewer->id, 'status' => 'assigned']);
+    Review::create(['submission_id' => $submission->id, 'reviewer_id' => $reviewer->id, 'status' => 'invited']);
 
     $this->actingAs($rev, 'account')
         ->get(route('account.reviews'))
@@ -379,7 +379,7 @@ it('enregistre une évaluation de relecteur en place (AJAX)', function () {
         'abstract' => 'Résumé.', 'track' => 'Sciences', 'type' => 'oral', 'status' => 'under_review',
         'authors' => [],
     ]);
-    $review = Review::create(['submission_id' => $submission->id, 'reviewer_id' => $reviewer->id, 'status' => 'assigned']);
+    $review = Review::create(['submission_id' => $submission->id, 'reviewer_id' => $reviewer->id, 'status' => 'invited']);
 
     $this->actingAs($rev, 'account')
         ->postJson(route('account.reviews.submit', $review), [
@@ -408,7 +408,7 @@ it('refuse une évaluation sur une relecture qui n’est pas la sienne', functio
         'participant_id' => $participant->id, 'ref_code' => '26-779', 'title' => 'X',
         'abstract' => 'x', 'track' => 'Sciences', 'type' => 'oral', 'status' => 'under_review', 'authors' => [],
     ]);
-    $review = Review::create(['submission_id' => $submission->id, 'reviewer_id' => $reviewer->id, 'status' => 'assigned']);
+    $review = Review::create(['submission_id' => $submission->id, 'reviewer_id' => $reviewer->id, 'status' => 'invited']);
 
     $this->actingAs($intrus, 'account')
         ->postJson(route('account.reviews.submit', $review), ['recommendation' => 'accept'])

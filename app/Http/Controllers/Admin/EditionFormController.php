@@ -184,6 +184,7 @@ class EditionFormController extends Controller
             'reviewerAxes' => $this->reviewerAxes($edition),
             'reviewCriteria' => ReviewGrid::criteria($edition),
             'reviewScale' => ReviewGrid::SCALE,
+            'reviewDueDays' => ReviewGrid::dueDays($edition),
             'team' => $this->teamFor($edition),
             'assignableUsers' => $edition ? User::orderBy('name')->get(['id', 'name', 'email']) : collect(),
             'teamRoles' => StaffRoles::teamRoles(),
@@ -369,6 +370,7 @@ class EditionFormController extends Controller
         $data = $request->validate([
             'criteria' => ['array'],
             'criteria.*' => ['nullable', 'string', 'max:200'],
+            'review_due_days' => ['nullable', 'integer', 'min:1', 'max:180'],
         ]);
 
         $criteria = ReviewGrid::normalize(
@@ -378,10 +380,17 @@ class EditionFormController extends Controller
         // On persiste tel quel ; la valeur par défaut n'est pas stockée (repli automatique).
         $settings = $edition->settings ?? [];
         $settings['review_criteria'] = $criteria;
+        // Délai d'évaluation : sert d'échéance à l'assignation (cf. AssignReviewer).
+        // Vide = on retire la clé pour retomber sur Review::DEFAULT_DUE_DAYS.
+        if (($data['review_due_days'] ?? null) !== null) {
+            $settings['review_due_days'] = (int) $data['review_due_days'];
+        } else {
+            unset($settings['review_due_days']);
+        }
         $edition->update(['settings' => $settings]);
 
         return redirect()->route('admin.editions.edit', $edition)
-            ->with('ukc_status', 'Grille d’évaluation mise à jour.')
+            ->with('ukc_status', 'Grille d’évaluation et délai mis à jour.')
             ->with('edition_tab', 'reviewers');
     }
 

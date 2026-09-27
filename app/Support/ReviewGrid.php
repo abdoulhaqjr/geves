@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Edition;
+use App\Models\Review;
 
 /**
  * Grille d'évaluation structurée des relectures : liste de critères notés (0–5),
@@ -24,6 +25,22 @@ class ReviewGrid
         ['key' => 'relevance', 'label' => 'Pertinence par rapport à la thématique'],
         ['key' => 'contribution', 'label' => 'Contribution et portée'],
     ];
+
+    /**
+     * Délai d'évaluation de l'édition, en jours (borné 1-180). Sert d'échéance à
+     * l'assignation (cf. App\Actions\AssignReviewer) ; à défaut, la durée
+     * standard Review::DEFAULT_DUE_DAYS.
+     *
+     * ⚠️ Comme `review_criteria`, ce réglage vit à la RACINE de
+     * `edition.settings` - pas dans le sac « doc » d'EditionSettings, réservé
+     * aux documents (attestations, badges, livret).
+     */
+    public static function dueDays(?Edition $edition): int
+    {
+        $days = (int) ($edition?->settings['review_due_days'] ?? 0);
+
+        return $days >= 1 && $days <= 180 ? $days : Review::DEFAULT_DUE_DAYS;
+    }
 
     /**
      * Grille effective d'une édition (réglage propre à l'édition sinon défaut).

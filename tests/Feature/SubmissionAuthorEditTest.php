@@ -115,7 +115,7 @@ it('permet à l’auteur de corriger son résumé tant qu’aucun relecteur n’
 it('bloque la correction du résumé dès qu’une relecture existe', function () {
     $account = verifiedAccount();
     $sub = ownedSubmission($account, 'submitted');
-    $sub->reviews()->create(['status' => 'assigned']); // un relecteur a été affecté
+    $sub->reviews()->create(['status' => 'invited']); // un relecteur a été affecté
 
     expect($sub->fresh()->isAuthorEditable())->toBeFalse();
 

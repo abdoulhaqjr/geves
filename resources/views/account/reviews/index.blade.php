@@ -4,8 +4,10 @@
     {{-- Indicateurs --}}
     <div class="ukc-stats" style="margin-bottom:16px;">
         <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="inbox" :size="20" /></div><div class="lbl">{{ __('Relectures') }}</div><div class="val">{{ $reviews->count() }}</div></div>
+        <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="mail" :size="20" /></div><div class="lbl">{{ __('Invitations à confirmer') }}</div><div class="val">{{ $invitedCount }}</div></div>
         <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="pen" :size="20" /></div><div class="lbl">{{ __('À évaluer') }}</div><div class="val">{{ $pendingCount }}</div></div>
         <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="check-circle" :size="20" /></div><div class="lbl">{{ __('Évaluées') }}</div><div class="val green">{{ $doneCount }}</div></div>
+        <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--red"><x-ukc.icon name="flag" :size="20" /></div><div class="lbl">{{ __('En retard') }}</div><div class="val" style="{{ $lateCount > 0 ? 'color:#b4231c;' : '' }}">{{ $lateCount }}</div></div>
     </div>
 
     {{-- Liste des relectures (table Tailwise) --}}
@@ -19,6 +21,7 @@
                             <th>{{ __('Titre') }}</th>
                             <th>{{ __('Axe') }}</th>
                             <th>{{ __('Recommandation') }}</th>
+                            <th>{{ __('Échéance') }}</th>
                             <th>{{ __('État') }}</th>
                             <th style="text-align:right;">{{ __('Action') }}</th>
                         </tr>
@@ -42,13 +45,48 @@
                                     <template x-if="!r.completed"><span style="color:var(--ukc-muted);">-</span></template>
                                 </td>
                                 <td>
-                                    <span class="ukc-pill ukc-pill--ok" x-show="r.completed">{{ __('Évaluée') }}</span>
-                                    <span class="ukc-pill ukc-pill--warn" x-show="!r.completed">{{ __('À évaluer') }}</span>
+                                    <template x-if="r.due">
+                                        <span style="font-size:13px;">
+                                            <span x-text="r.due"></span>
+                                            <template x-if="r.late">
+                                                <em style="display:block;font-size:12px;color:#b4231c;font-style:normal;"
+                                                    x-text="'{{ __('en retard de') }} ' + r.daysLate + ' {{ __('j') }}'"></em>
+                                            </template>
+                                        </span>
+                                    </template>
+                                    <template x-if="!r.due"><span style="color:var(--ukc-muted);">-</span></template>
                                 </td>
-                                <td style="text-align:right;">
-                                    <button type="button" :class="r.completed ? 'ukc-btn ukc-btn--outline ukc-btn--sm' : 'ukc-btn ukc-btn--blue ukc-btn--sm'" @click="edit(r)">
-                                        <x-ukc.icon name="pen" :size="15" /> <span x-text="r.completed ? '{{ __('Revoir') }}' : '{{ __('Évaluer') }}'"></span>
-                                    </button>
+                                <td>
+                                    <span class="ukc-pill" :class="'ukc-pill--' + r.statusPill" x-text="r.statusLabel"></span>
+                                    <template x-if="r.declineReason">
+                                        <em style="display:block;font-size:12px;color:var(--ukc-muted);font-style:normal;margin-top:3px;" x-text="r.declineReason"></em>
+                                    </template>
+                                </td>
+                                <td style="text-align:right;white-space:nowrap;">
+                                    {{-- Invitation : on répond d'abord (accepter / refuser). --}}
+                                    <template x-if="r.status === 'invited'">
+                                        <span style="display:inline-flex;gap:8px;justify-content:flex-end;">
+                                            <form method="POST" :action="r.respondUrl" style="display:inline;">
+                                                @csrf
+                                                <input type="hidden" name="answer" value="accept">
+                                                <button type="submit" class="ukc-btn ukc-btn--green ukc-btn--sm">
+                                                    <x-ukc.icon name="check" :size="15" /> {{ __('Accepter') }}
+                                                </button>
+                                            </form>
+                                            <button type="button" class="ukc-btn ukc-btn--outline ukc-btn--sm" @click="askDecline(r)">
+                                                <x-ukc.icon name="close" :size="15" /> {{ __('Refuser') }}
+                                            </button>
+                                        </span>
+                                    </template>
+                                    {{-- Acceptée ou rendue : on évalue / on revoit. --}}
+                                    <template x-if="r.status === 'accepted' || r.completed">
+                                        <button type="button" :class="r.completed ? 'ukc-btn ukc-btn--outline ukc-btn--sm' : 'ukc-btn ukc-btn--blue ukc-btn--sm'" @click="edit(r)">
+                                            <x-ukc.icon name="pen" :size="15" /> <span x-text="r.completed ? '{{ __('Revoir') }}' : '{{ __('Évaluer') }}'"></span>
+                                        </button>
+                                    </template>
+                                    <template x-if="r.status === 'declined' || r.status === 'cancelled'">
+                                        <span style="color:var(--ukc-muted);font-size:13px;">-</span>
+                                    </template>
                                 </td>
                             </tr>
                         </template>
@@ -105,6 +143,34 @@
             </form>
         </div>
     @endif
+
+    {{-- ===== Refuser une relecture (motif communiqué au comité) ===== --}}
+    <x-ukc.slideover open="declineOpen" onClose="declineOpen = false" width="460px">
+        <x-slot:header>{{ __('Refuser cette relecture') }}</x-slot:header>
+        <p style="color:var(--ukc-muted);font-size:13.5px;line-height:1.55;">
+            {{ __('Votre refus libère la place : le comité pourra solliciter un autre relecteur. Un motif, même bref, l’aide à mieux répartir les relectures suivantes.') }}
+        </p>
+        <div class="ukc-card" style="padding:12px 14px;margin:12px 0;">
+            <div style="font-family:var(--ukc-mono);font-weight:700;font-size:12.5px;color:var(--ukc-muted);" x-text="declining.ref"></div>
+            <div style="font-weight:700;line-height:1.35;" x-text="declining.title"></div>
+        </div>
+        <form method="POST" :action="declining.respondUrl" id="declineForm">
+            @csrf
+            <input type="hidden" name="answer" value="decline">
+            <div class="ukc-form-row">
+                <label>{{ __('Motif') }} <span class="hint">({{ __('facultatif') }})</span></label>
+                <textarea name="decline_reason" rows="3" maxlength="500"
+                          placeholder="{{ __('Hors de mon domaine, indisponibilité, conflit d’intérêt…') }}"></textarea>
+            </div>
+        </form>
+        <x-slot:footer>
+            <span style="flex:1;"></span>
+            <button type="button" class="ukc-btn ukc-btn--ghost" @click="declineOpen = false">{{ __('Annuler') }}</button>
+            <button type="submit" form="declineForm" class="ukc-btn ukc-btn--danger">
+                <x-ukc.icon name="close" :size="16" /> {{ __('Confirmer le refus') }}
+            </button>
+        </x-slot:footer>
+    </x-ukc.slideover>
 
     {{-- ===== Panneau d'évaluation (en place, sans changer de page) ===== --}}
     <x-ukc.slideover open="open" onClose="open = false" width="560px">
@@ -191,6 +257,8 @@ function ukcReviews(reviews, recommendations, scale) {
         recommendations: recommendations,
         scale: scale,
         open: false,
+        declineOpen: false,
+        declining: {},
         saving: false,
         cur: { scores: {}, criteria: [] },
 
@@ -206,6 +274,11 @@ function ukcReviews(reviews, recommendations, scale) {
                 .filter(n => !Number.isNaN(n));
             if (!vals.length) return null;
             return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) / this.scale * 20 * 100) / 100;
+        },
+
+        askDecline(r) {
+            this.declining = r;
+            this.declineOpen = true;
         },
 
         edit(r) {

@@ -483,13 +483,35 @@ class SubmissionController extends Controller
         return back()->with('ukc_status', 'Relecteur assigné et invité par e-mail.');
     }
 
+    /**
+     * Retire une assignation. ⚠️ On n'efface pas la ligne : une relecture est une
+     * pièce du dossier (qui a été sollicité, quand, et ce qu'il a éventuellement
+     * rendu). Elle passe « annulée » - hors des compteurs et de la couverture
+     * (cf. Review::ACTIVE_STATUSES) mais toujours lisible dans l'historique.
+     */
     public function removeReview(Submission $submission, Review $review): RedirectResponse
     {
-        if ($review->submission_id === $submission->id) {
-            $review->delete();
+        if ($review->submission_id !== $submission->id || $review->status === 'cancelled') {
+            return back()->with('ukc_status', 'Assignation retirée.');
         }
 
-        return back()->with('ukc_status', 'Assignation retirée.');
+        $wasCompleted = $review->isCompleted();
+        $review->update(['status' => 'cancelled']);
+
+        // Le relecteur doit savoir qu'il n'a plus cette relecture à rendre.
+        $review->loadMissing('reviewer.user');
+        Notifier::account(
+            $review->reviewer?->user,
+            kind: 'review_assigned',
+            title: 'Relecture annulée',
+            body: 'Une relecture qui vous avait été confiée a été retirée par le comité.',
+            url: route('account.reviews'),
+            icon: 'inbox',
+        );
+
+        return back()->with('ukc_status', $wasCompleted
+            ? 'Assignation annulée : l’évaluation reste consultable dans l’historique mais ne compte plus.'
+            : 'Assignation annulée : la place est libérée pour un autre relecteur.');
     }
 
     /**
@@ -528,6 +550,9 @@ class SubmissionController extends Controller
             'edition_id' => ['required', 'exists:editions,id'],
             'pairs' => ['required', 'array', 'min:1'],
             'pairs.*' => ['string'],
+            // Justification proposée par le moteur, archivée sur la relecture.
+            'reasons' => ['array'],
+            'reasons.*' => ['nullable', 'string', 'max:200'],
         ]);
 
         $edition = Edition::findOrFail($data['edition_id']);
@@ -536,7 +561,12 @@ class SubmissionController extends Controller
         foreach ($data['pairs'] as $token) {
             [$subId, $revId] = array_pad(explode(':', (string) $token, 2), 2, null);
             if (ctype_digit((string) $subId) && ctype_digit((string) $revId)) {
-                $pairs[] = ['submission_id' => (int) $subId, 'reviewer_id' => (int) $revId];
+                $reason = $data['reasons'][$token] ?? null;
+                $pairs[] = [
+                    'submission_id' => (int) $subId,
+                    'reviewer_id' => (int) $revId,
+                    'reason' => $reason !== null ? (string) $reason : null,
+                ];
             }
         }
 

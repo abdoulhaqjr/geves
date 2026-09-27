@@ -733,13 +733,22 @@
                         {{-- Grille d'évaluation (critères notés 0–N) --}}
                         <div class="ukc-card" style="margin-top:18px;"
                              x-data="{ criteria: {{ Illuminate\Support\Js::from(collect($reviewCriteria)->pluck('label')->values()) }} }">
-                            <h2>Grille d’évaluation</h2>
+                            <h2>Grille d’évaluation &amp; délai</h2>
                             <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 10px;">
                                 Critères notés de 0 à {{ $reviewScale }} par les relecteurs ; la note globale /20 en est
                                 dérivée (moyenne). Laissez la grille par défaut ou personnalisez-la pour cette édition.
                             </p>
                             <form method="POST" action="{{ route('admin.editions.reviewers.criteria', $edition) }}">
                                 @csrf
+                                <div class="ukc-field" style="max-width:320px;margin-bottom:16px;">
+                                    <label for="review_due_days">Délai d’évaluation (jours)</label>
+                                    <input type="number" id="review_due_days" name="review_due_days" min="1" max="180"
+                                           value="{{ $reviewDueDays }}">
+                                    <span class="hint">
+                                        Échéance calculée à l’assignation ({{ $reviewDueDays }} j par défaut). Passé ce
+                                        délai, la relecture est signalée « en retard » au comité et au relecteur.
+                                    </span>
+                                </div>
                                 <template x-for="(label, i) in criteria" :key="i">
                                     <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
                                         <span style="color:var(--ukc-muted);font-size:.85rem;width:20px;" x-text="(i+1)+'.'"></span>

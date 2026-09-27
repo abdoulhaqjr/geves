@@ -394,7 +394,12 @@ class EditionReport
      * Statistiques de relecture : relecteurs actifs, avis rendus, en retard,
      * délai moyen (jours entre assignation et complétion).
      *
-     * @return array{reviewers:int, done:int, late:int, avgDays:float}
+     * ⚠️ « En retard » = échéance dépassée sur une relecture encore due
+     * (Review::isLate()), et non « pas encore rendue » : une relecture confiée
+     * hier n'est pas en retard, et une relecture refusée ou annulée ne l'est
+     * jamais - la place a été libérée.
+     *
+     * @return array{reviewers:int, done:int, late:int, pending:int, declined:int, avgDays:float}
      */
     public function reviewStats(): array
     {
@@ -408,15 +413,20 @@ class EditionReport
         return [
             'reviewers' => (int) $reviews->pluck('reviewer_id')->filter()->unique()->count(),
             'done' => $completed->count(),
-            'late' => $reviews->where('status', '!=', 'completed')->count(),
+            'late' => $reviews->filter(fn (Review $r) => $r->isLate())->count(),
+            'pending' => $reviews->filter(fn (Review $r) => $r->isPending())->count(),
+            'declined' => $reviews->where('status', 'declined')->count(),
             'avgDays' => (float) $avgDays,
         ];
     }
 
     /**
      * Charge par relecteur : assignées, rendues, en retard, complétion (%).
+     * Seules les relectures actives comptent dans la charge (un refus ou une
+     * annulation ne pèse pas sur la complétion du relecteur), et « en retard »
+     * suit l'échéance (Review::isLate()).
      *
-     * @return array<int, array{name:string, assigned:int, done:int, late:int, completion:int}>
+     * @return array<int, array{name:string, assigned:int, done:int, pending:int, late:int, declined:int, completion:int}>
      */
     public function reviewsByReviewer(): array
     {
@@ -425,14 +435,17 @@ class EditionReport
             ->get()
             ->groupBy('reviewer_id')
             ->map(function ($group) {
-                $assigned = $group->count();
-                $done = $group->where('status', 'completed')->count();
+                $active = $group->filter(fn (Review $r) => $r->isActive());
+                $assigned = $active->count();
+                $done = $active->where('status', 'completed')->count();
 
                 return [
                     'name' => $group->first()->reviewer?->full_name ?: 'Relecteur inconnu',
                     'assigned' => $assigned,
                     'done' => $done,
-                    'late' => $assigned - $done,
+                    'pending' => $active->filter(fn (Review $r) => $r->isPending())->count(),
+                    'late' => $active->filter(fn (Review $r) => $r->isLate())->count(),
+                    'declined' => $group->where('status', 'declined')->count(),
                     'completion' => $assigned > 0 ? (int) round($done / $assigned * 100) : 0,
                 ];
             })

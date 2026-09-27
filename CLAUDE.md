@@ -217,6 +217,45 @@ une redirection maison. **Module complet (phases 1-6)** + raffinements admin :
 **paramétrage assisté IA** (`ExtractFormationFromDocuments`, `admin.formations.ai`). Suivi admin nominatif des inscrits fait.
 Reste optionnel : lecteur visio inline. Détails en [§11 de PASSATION.md](PASSATION.md).
 
+### Cycle de vie d'une relecture (2026-09-27)
+
+Une relecture n'est plus un simple « assignée / rendue » : `Review::STATUSES` =
+**`invited`** (confiée, sans réponse) → **`accepted`** / **`declined`** →
+**`completed`**, plus **`cancelled`** (retirée par le comité).
+
+- **Une place n'est occupée que par un statut actif** (`Review::ACTIVE_STATUSES`
+  = invited/accepted/completed) : un refus ou une annulation libère la place et
+  la soumission redevient à couvrir dans l'**attribution auto**. ⚠️ Le relecteur
+  qui a refusé reste néanmoins **exclu** du plan (on ne le re-sollicite pas tout
+  seul) - c'est le comité qui décide, le moteur ne fait que proposer.
+- **Échéance réelle** : `due_at` est posée à l'assignation depuis
+  **`ReviewGrid::dueDays($edition)`** (réglage `edition.settings['review_due_days']`,
+  champ dans l'onglet **Relecteurs** de la fiche d'édition ; repli
+  `Review::DEFAULT_DUE_DAYS` = 21 j). ⚠️ Ce réglage vit à la **racine** de
+  `settings` comme `review_criteria`, **pas** dans le sac `doc` d'`EditionSettings`
+  (réservé aux documents).
+- **« En retard » ≠ « pas encore rendue »** : `Review::isLate()` = encore due
+  **et** échéance dépassée. `EditionReport::reviewStats()` distingue donc
+  `pending` / `late` / `declined` (avant, tout ce qui n'était pas `completed`
+  était compté « en retard »).
+- **Traçabilité** : `assigned_at`, `assigned_by_id`, `assign_reason` (la
+  justification du moteur d'attribution auto **suit la paire** jusqu'à la
+  relecture), `responded_at`, `decline_reason`.
+- **Côté relecteur** (`/relectures`) : boutons **Accepter / Refuser** (motif
+  facultatif, slideover) sur une invitation ; l'évaluation n'est proposée
+  qu'ensuite. Rendre une évaluation **vaut acceptation** (`responded_at` posé) et
+  une relecture `declined`/`cancelled` **n'est plus évaluable** (422).
+- ⚠️ **Retirer une assignation n'efface rien** :
+  `Admin\SubmissionController::removeReview` passe la relecture en `cancelled`
+  (elle reste dans l'historique, hors compteurs) et **notifie le relecteur**. Ne
+  pas revenir à `$review->delete()` : qui a été sollicité, et quand, fait partie
+  du dossier.
+- Phrase d'état partagée : **`Review::summarize($reviews)`** → « 2 relectures
+  demandées - 1 rendue, 1 en retard de 3 j (1 refus) », affichée sur la fiche
+  admin de la soumission.
+- Notification staff dédiée : kind **`review_response`** (acceptation / refus).
+- Tests : `tests/Feature/ReviewLifecycleTest.php`.
+
 ### Règles métier - limites communications & attestations
 
 - **Limite de communications** (`settings.max_communications`) : compte **seulement** les

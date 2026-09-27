@@ -8,6 +8,7 @@ use App\Models\Review;
 use App\Models\ReviewerBid;
 use App\Models\Submission;
 use App\Support\Html;
+use App\Support\Notifier;
 use App\Support\ReviewGrid;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -53,6 +54,14 @@ class ReviewWorkspaceController extends Controller
                 'fileUrl' => $sub?->file_url,
                 'edition' => $sub?->edition?->title ?: (string) $sub?->edition?->year,
                 'completed' => $r->isCompleted(),
+                'status' => $r->status,
+                'statusLabel' => $r->statusLabel(),
+                'statusPill' => $r->statusPill(),
+                'due' => $r->due_at?->translatedFormat('d/m/Y'),
+                'late' => $r->isLate(),
+                'daysLate' => $r->daysLate(),
+                'declineReason' => $r->decline_reason,
+                'respondUrl' => route('account.reviews.respond', $r),
                 'recommendation' => $r->recommendation,
                 'comments' => $r->comments,
                 'comments_private' => $r->comments_private,
@@ -80,18 +89,69 @@ class ReviewWorkspaceController extends Controller
             'reviewsData' => $reviewsData,
             'recommendations' => Review::RECOMMENDATIONS,
             'scale' => ReviewGrid::SCALE,
-            'pendingCount' => $reviews->where('status', '!=', 'completed')->count(),
+            'pendingCount' => $reviews->filter(fn (Review $r) => $r->isPending())->count(),
             'doneCount' => $reviews->where('status', 'completed')->count(),
+            'invitedCount' => $reviews->where('status', 'invited')->count(),
+            'lateCount' => $reviews->filter(fn (Review $r) => $r->isLate())->count(),
             'biddable' => $biddable,
             'bids' => $bids,
             'interests' => ReviewerBid::INTERESTS,
         ]);
     }
 
+    /**
+     * Réponse du relecteur à une invitation : accepter ou refuser (avec motif).
+     * Un refus libère la place - la soumission réapparaît dans l'aperçu
+     * d'attribution côté admin, sans remplacement automatique : c'est le
+     * comité qui décide qui solliciter ensuite.
+     */
+    public function respond(Request $request, Review $review): RedirectResponse
+    {
+        $this->authorizeReview($review);
+
+        $data = $request->validate([
+            'answer' => ['required', 'in:accept,decline'],
+            'decline_reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        // Une relecture déjà rendue ne se renégocie pas.
+        abort_if($review->isCompleted(), 422);
+
+        if ($data['answer'] === 'accept') {
+            $review->update(['status' => 'accepted', 'responded_at' => now(), 'decline_reason' => null]);
+            $message = 'Merci, vous avez accepté cette relecture.';
+        } else {
+            $review->update([
+                'status' => 'declined',
+                'responded_at' => now(),
+                'decline_reason' => ($data['decline_reason'] ?? null) ?: null,
+            ]);
+            $message = 'Votre refus est enregistré : le comité en est informé.';
+        }
+
+        $review->loadMissing('submission', 'reviewer');
+        Notifier::staff(
+            kind: 'review_response',
+            title: $data['answer'] === 'accept' ? 'Relecture acceptée' : 'Relecture refusée',
+            body: trim(sprintf(
+                '%s a %s la relecture de « %s »%s',
+                $review->reviewer?->full_name ?: 'Un relecteur',
+                $data['answer'] === 'accept' ? 'accepté' : 'refusé',
+                $review->submission?->ref_code ?: ($review->submission?->title ?: 'une communication'),
+                $review->decline_reason ? ' - motif : '.$review->decline_reason : '.'
+            )),
+            url: $review->submission ? route('admin.submissions.show', $review->submission) : null,
+            icon: 'sheet',
+        );
+
+        return back()->with('ukc_status', $message);
+    }
+
     /** Enregistre l'évaluation en place (AJAX ou repli formulaire classique). */
     public function submit(Request $request, Review $review): JsonResponse|RedirectResponse
     {
         $this->authorizeReview($review);
+        abort_if(in_array($review->status, ['declined', 'cancelled'], true), 422);
         $review->load('submission.edition');
         $criteria = ReviewGrid::criteria($review->submission?->edition);
 
@@ -115,6 +175,9 @@ class ReviewWorkspaceController extends Controller
             'comments' => ($data['comments'] ?? null) ?: null,
             'comments_private' => ($data['comments_private'] ?? null) ?: null,
             'status' => 'completed',
+            // Évaluer vaut acceptation : une invitation rendue directement
+            // ne doit pas rester « à confirmer » côté comité.
+            'responded_at' => $review->responded_at ?? now(),
         ]);
 
         if ($request->wantsJson()) {
