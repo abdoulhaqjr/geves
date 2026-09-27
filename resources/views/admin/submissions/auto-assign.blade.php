@@ -1,5 +1,17 @@
 <x-layouts.admin title="Attribution automatique" subtitle="Relecteurs - matching par axe, conflits d’intérêts &amp; charge">
     <div class="admin-page">
+        {{-- Sélecteur d'édition en tête, AVANT les onglets (convention des pages
+             Documents, Participants, Paiements et Soumissions). --}}
+        <div style="max-width:340px;margin-bottom:16px;">
+            <div class="ukc-field" style="margin:0;">
+                <label>Édition</label>
+                <select onchange="window.location='{{ route('admin.submissions.auto-assign') }}?edition_id='+this.value">
+                    <option value="">- Choisir -</option>
+                    @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
+                </select>
+            </div>
+        </div>
+
         <div class="ukc-nav-docs">
             <a href="{{ route('admin.submissions.index', ['edition_id' => $edition_id]) }}">Soumissions</a>
             <a href="{{ $edition_id !== '' ? route('admin.editions.form', $edition_id) : route('admin.editions.index') }}">Formulaires de soumissions</a>
@@ -7,10 +19,8 @@
         </div>
 
         {{-- Réglages : édition, nombre de relecteurs visé, plafond par relecteur --}}
-        <form method="GET" class="filter-bar">
-            <select name="edition_id" onchange="this.form.submit()">
-                @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
-            </select>
+        <form method="GET" class="filter-bar filter-bar--inline">
+            <input type="hidden" name="edition_id" value="{{ $edition_id }}">
             <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ukc-muted);">
                 Relecteurs / soumission
                 <input type="number" name="target" min="1" max="5" value="{{ $target }}" style="width:64px;" onchange="this.form.submit()">
