@@ -50,7 +50,9 @@
 /* Tom Select dans une barre de filtres : un libellé long (axe thématique) ne
    doit pas passer à la ligne, sinon le contrôle grandit et désaligne toute la
    barre. On tronque proprement à la place. */
-.admin-page .filter-bar .ts-wrapper { max-width: 280px; min-width: 180px; }
+/* Largeur FIXE : sans elle, la largeur du contrôle suit le libellé sélectionné
+   et décale les filtres voisins à chaque choix. */
+.admin-page .filter-bar .ts-wrapper { flex: 0 0 280px; width: 280px; max-width: 280px; min-width: 280px; }
 .admin-page .filter-bar .ts-control { flex-wrap: nowrap; overflow: hidden; }
 .admin-page .filter-bar .ts-control > .item {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;

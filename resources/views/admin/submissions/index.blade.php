@@ -60,7 +60,7 @@
             </select>
             {{-- Liste recherchable (Tom Select) : le libellé de l’option vide sert
                  de placeholder, ne pas ajouter data-placeholder. --}}
-            <select name="track" onchange="this.form.submit()" data-tom title="Axe thématique" style="max-width:280px;">
+            <select name="track" onchange="this.form.submit()" data-tom title="Axe thématique">
                 <option value="">Tous les axes</option>
                 @foreach ($tracks as $t)<option value="{{ $t }}" @selected($track === $t)>{{ $t }}</option>@endforeach
             </select>
