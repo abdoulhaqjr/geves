@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\ParticipantTypes;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,8 +31,11 @@ class RegisterController extends Controller
         return view('account.auth.register', [
             // Civilités par défaut (surchargeable plus tard par la config d'édition).
             'civilities' => ['M.', 'Mme', 'Dr', 'Pr'],
-            // Titres (profil principal), alignés sur le mockup d'inscription.
-            'titles' => ['Enseignant-chercheur', 'Doctorant / étudiant', 'Professionnel', 'Autre'],
+            // ⚠️ Source UNIQUE des grades (cf. ParticipantTypes) : une liste propre
+            // à ce formulaire produisait des valeurs (« Doctorant / étudiant »…) que
+            // la grille tarifaire ne pouvait plus rapprocher - le montant restait
+            // « à préciser » au moment de payer.
+            'titles' => ParticipantTypes::all(),
         ]);
     }
 

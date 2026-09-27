@@ -3,6 +3,7 @@
 // openEdition() -> tests/Pest.php
 
 use App\Support\Fees;
+use App\Support\ParticipantTypes;
 
 it('rend la page publique sans planter quand une entrée fees est malformée', function () {
     // Grille mêlant des tarifs valides et une entrée scalaire (non-tableau) :
@@ -79,4 +80,23 @@ it('reste compatible avec une grille sans rattachement (intitulé = grade)', fun
     expect(Fees::resolveAmount($edition, 'doctorant'))->toBe(15000.0);
     // Sans catégorie par défaut, un grade inconnu ne donne aucun montant.
     expect(Fees::resolveAmount($edition, 'Autre participant'))->toBeNull();
+});
+
+it('le grade choisi à l’inscription permet de résoudre le tarif', function () {
+    $edition = openEdition(['fees' => [
+        ['label' => 'Enseignants et chercheurs', 'amount' => 35000, 'grades' => ['Enseignant / Chercheur']],
+        ['label' => 'Doctorants et assimilés', 'amount' => 15000, 'grades' => ['Doctorant']],
+        ['label' => 'Autres participants', 'amount' => 50000, 'grades' => ['Autre participant'], 'default' => true],
+    ]]);
+
+    // Le formulaire d'inscription ne propose que les grades de référence.
+    $this->get(route('account.register'))->assertOk()
+        ->assertSee('Doctorant')
+        ->assertDontSee('Doctorant / étudiant');
+
+    // Chaque grade proposé a bien un tarif : c'est la garantie recherchée.
+    foreach (ParticipantTypes::all() as $grade) {
+        expect(Fees::resolveAmount($edition, $grade))
+            ->not->toBeNull("aucun tarif pour le grade « {$grade} »");
+    }
 });

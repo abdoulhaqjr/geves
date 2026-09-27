@@ -79,3 +79,44 @@ it('n’interroge jamais les paiements « payés » sans filtrer la participatio
             'S’il s’agit d’un total financier, ajoutez-le à la liste $allowed de ce test.'],
     )));
 });
+
+/**
+ * Test de garde : une seule liste de grades de participant.
+ *
+ * Le formulaire d'inscription avait sa propre liste (« Doctorant / étudiant »…)
+ * divergente de ParticipantTypes. Les grades ainsi enregistrés ne
+ * correspondaient à aucune catégorie tarifaire : le montant restait « à
+ * préciser » au moment de payer. Toute liste de grades en dur doit venir de
+ * ParticipantTypes.
+ */
+it('n’expose aucune liste de grades en dur hors de ParticipantTypes', function () {
+    // Valeurs qui ont existé dans des listes parallèles.
+    $legacy = ['Doctorant / étudiant', 'Enseignant-chercheur', 'Professionnel'];
+
+    $offenders = [];
+    foreach (paymentGuardFiles() as $path) {
+        $relative = str_replace(DIRECTORY_SEPARATOR, '/', str_replace(base_path().DIRECTORY_SEPARATOR, '', $path));
+        if (str_ends_with($relative, 'ParticipantTypes.php')) {
+            continue;
+        }
+        foreach (file($path) as $no => $line) {
+            // Les commentaires peuvent citer ces valeurs pour expliquer le piège.
+            $t = ltrim($line);
+            if (str_starts_with($t, '//') || str_starts_with($t, '*') || str_starts_with($t, '#') || str_starts_with($t, '{{--')) {
+                continue;
+            }
+            foreach ($legacy as $value) {
+                if (str_contains($line, $value)) {
+                    $offenders[] = $relative.':'.($no + 1).'  '.trim($line);
+                    break;
+                }
+            }
+        }
+    }
+
+    expect($offenders)->toBe([], implode("\n", array_merge(
+        ['Liste de grades parallèle (le tarif ne pourra pas être rapproché) :'],
+        $offenders,
+        ['', 'Utilisez App\Support\ParticipantTypes::all() comme source unique.'],
+    )));
+});
