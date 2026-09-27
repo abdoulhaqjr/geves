@@ -68,24 +68,36 @@ function initTomSelects(root = document) {
         if (autoSubmit) el.removeAttribute('onchange');
         let ready = false;
 
+        // Filtre à choix unique doté d'une option « tout » (« Tous les axes ») :
+        // cette option est un PLACEHOLDER, pas une valeur. Si on la laisse devenir
+        // un élément (allowEmptyOption), elle occupe l'unique emplacement, Tom
+        // Select se croit plein (isFull) et refuse d'ouvrir la liste - plus aucun
+        // axe n'était sélectionnable. Un bouton « effacer » permet d'y revenir.
+        const isSingleFilter = ! isInput && ! isMulti && emptyLabel !== '';
+
+        const plugins = [];
+        if (isMulti || isInput) plugins.push('remove_button');
+        if (isSingleFilter) plugins.push('clear_button');
+
         const ts = new TomSelect(el, {
             create: tags,
             delimiter: isInput ? ',' : undefined,
             createOnBlur: isInput,
             persist: false,
-            allowEmptyOption: !isInput,
+            allowEmptyOption: ! isInput && ! isSingleFilter,
             // Un <select> simple doit rester à UN choix : sans maxItems, Tom Select
             // bascule en mode multi et laisse accumuler des valeurs que le filtre
             // ne sait pas envoyer (une seule est soumise).
             maxItems: (isInput || isMulti) ? (Number.isFinite(max) && max > 0 ? max : null) : 1,
-            plugins: (isMulti || isInput) ? ['remove_button'] : [],
-            // ⚠️ Un <select> dont l'option vide porte déjà un libellé (« Tous les
-            // axes ») n'a PAS besoin de placeholder : Tom Select afficherait les
-            // deux l'un sur l'autre. Le libellé de l'option vide fait office de
-            // placeholder.
-            placeholder: emptyLabel ? undefined : (el.getAttribute('data-placeholder') || undefined),
-            // Masque le placeholder dès qu'un élément est sélectionné.
+            plugins,
+            // Le libellé de l'option « tout » sert de placeholder : en poser un
+            // second afficherait les deux l'un sur l'autre.
+            placeholder: emptyLabel || el.getAttribute('data-placeholder') || undefined,
             hidePlaceholder: true,
+            // ⚠️ La liste est rendue dans <body>, pas dans le conteneur : une barre
+            // de filtres qui défile (overflow) découpait le menu déroulant, qui
+            // s'ouvrait sans être visible.
+            dropdownParent: 'body',
             onChange() {
                 if (autoSubmit && ready && el.form) {
                     el.form.submit();
