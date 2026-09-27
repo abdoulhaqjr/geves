@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Actions\ConfirmPayment;
 use App\Actions\ReconcilePayments;
+use App\Actions\RevokeAttestationsOnRefund;
 use App\Http\Controllers\Controller;
 use App\Models\FormationEnrollment;
 use App\Models\Participant;
@@ -314,7 +315,7 @@ class PaymentController extends Controller
         };
     }
 
-    public function refund(Payment $payment): RedirectResponse
+    public function refund(Payment $payment, RevokeAttestationsOnRefund $revoke): RedirectResponse
     {
         $payment->update(['status' => 'refunded']);
 
@@ -327,6 +328,12 @@ class PaymentController extends Controller
                 ->update(['status' => 'registered']);
         }
 
-        return back()->with('ukc_status', 'Paiement remboursé.');
+        // Les attestations que ce paiement justifiait tombent avec lui, sauf si un
+        // autre paiement réglé couvre encore le même droit.
+        $revoked = $revoke->handle($payment);
+
+        return back()->with('ukc_status', $revoked > 0
+            ? 'Paiement remboursé - '.$revoked.' attestation(s) révoquée(s).'
+            : 'Paiement remboursé.');
     }
 }

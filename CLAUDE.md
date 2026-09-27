@@ -240,6 +240,16 @@ Reste optionnel : lecteur visio inline. Détails en [§11 de PASSATION.md](PASSA
   autres sont des chaînes). La signature de chaque formateur se téléverse sur la page
   de la formation (`formation_trainers.signature_path`) et est **figée dans
   `attestations.meta` à l'émission** : l'attestation ne change pas si l'équipe évolue.
+- **Remboursement → révocation des attestations** : une attestation atteste d'un droit
+  acquis par un paiement. `App\Actions\RevokeAttestationsOnRefund` (appelée par
+  `admin.payments.refund`) **révoque** (jamais ne supprime - l'attestation reste
+  vérifiable publiquement, signalée révoquée) : *participation* + *communication* si
+  le remboursement porte sur les frais de participation, *formation* si c'est une
+  formation. ⚠️ **Seulement s'il ne reste aucun paiement réglé couvrant le même
+  droit** (double règlement, ou autre formation encore payée : la vérification est
+  faite `formation_id` par `formation_id`). L'attestation *formation_animation* n'est
+  jamais concernée : un formateur ne paie pas. Le remboursement remet aussi
+  l'inscription à la formation en « registered ».
 - **Certification cryptographique des attestations** (identité vérifiable) : chaque
   attestation est scellée à l'émission par une **signature EdDSA (Ed25519)** de
   l'émetteur, sous forme de **Verifiable Credential W3C sécurisé en JWS compact**
