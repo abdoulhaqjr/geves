@@ -15,9 +15,7 @@
         @include('partials.public-footer')
     @else
         @php
-            $dates = $edition->date_start && $edition->date_end
-                ? $edition->date_start->translatedFormat('d').' – '.$edition->date_end->translatedFormat('d F Y')
-                : ($edition->date_start?->translatedFormat('d F Y') ?? (string) $edition->year);
+            $dates = $edition->dateRangeLabel() ?? (string) $edition->year;
             $dayNo = $edition->date_start ? (int) floor($edition->date_start->diffInDays($now)) + 1 : null;
             $iconPin = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>';
             $iconCal = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z"/></svg>';

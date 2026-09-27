@@ -169,6 +169,34 @@ class Edition extends Model
      * publication, les dates de l'événement et l'ouverture des soumissions.
      * Source unique pour les libellés/pastilles et les 3 vues publiques.
      */
+    /**
+     * Libellé lisible de la période de l'événement, robuste aux plages qui
+     * chevauchent deux mois ou deux années (ex. « 27 septembre - 4 octobre 2026 »
+     * et non « 27 - 4 octobre 2026 » qui masque le mois de début). Tiret simple
+     * conformément à la charte (jamais de tiret typographique). Source unique
+     * réutilisée par les vues publiques.
+     */
+    public function dateRangeLabel(): ?string
+    {
+        $start = $this->date_start;
+        if (! $start) {
+            return null;
+        }
+        $end = $this->date_end;
+
+        if (! $end || $end->isSameDay($start)) {
+            return $start->translatedFormat('j F Y');
+        }
+        if ($start->isSameMonth($end)) { // même mois ET même année
+            return $start->translatedFormat('j').' - '.$end->translatedFormat('j F Y');
+        }
+        if ($start->year === $end->year) { // même année, mois différents
+            return $start->translatedFormat('j F').' - '.$end->translatedFormat('j F Y');
+        }
+
+        return $start->translatedFormat('j F Y').' - '.$end->translatedFormat('j F Y');
+    }
+
     public function phase(): EditionPhase
     {
         if ($this->status === 'draft') {

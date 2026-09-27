@@ -69,10 +69,10 @@
                         @if ($edition->theme)<div class="row"><span>Thème</span><strong>{{ $edition->theme }}</strong></div>@endif
                         @if ($edition->location)<div class="row"><span>Lieu</span><strong>{{ $edition->location }}</strong></div>@endif
                         <div class="row"><span>Dates</span><strong>
-                            @if ($edition->date_start && $edition->date_end)
-                                {{ $edition->date_start->translatedFormat('d') }} – {{ $edition->date_end->translatedFormat('d F Y') }}
+                            @if ($edition->date_start)
+                                {{ $edition->dateRangeLabel() }}
                             @else
-                                {{ $edition->date_start?->translatedFormat('d F Y') ?? $edition->year }}
+                                {{ $edition->year }}
                             @endif
                         </strong></div>
                         <div class="row"><span>Type</span><strong>{{ $edition->colloque?->name ?: 'Colloque' }}</strong></div>

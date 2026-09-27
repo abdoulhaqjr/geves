@@ -88,7 +88,9 @@ class ColloqueShowcaseSeeder extends Seeder
             'location' => 'Campus universitaire de Parakou · Bénin',
             'date_start' => $dates['event_start'],
             'date_end' => $dates['event_end'],
-            'submission_open' => true,
+            // Ouvertes seulement tant que la clôture n'est pas passée : évite une
+            // incohérence « soumissions ouvertes » alors que l'événement se tient.
+            'submission_open' => $dates['deadline']->isFuture(),
             'submission_deadline' => $dates['deadline'],
             'year' => $dates['event_start']->year,
         ]);
@@ -103,15 +105,21 @@ class ColloqueShowcaseSeeder extends Seeder
      */
     private static function timeline(): array
     {
-        $now = Carbon::now();
+        // Dates FIXES de l'événement : le colloque se tient du 27 septembre au
+        // 4 octobre 2026. Les jalons de soumission sont ancrés EN AMONT de
+        // l'ouverture (offsets négatifs) pour garder une chronologie cohérente et
+        // ordonnée quelle que soit la date de seed : appel -> clôture des
+        // soumissions -> notifications -> fin des inscriptions -> événement.
+        $eventStart = Carbon::create(2026, 9, 27)->startOfDay();
+        $eventEnd = Carbon::create(2026, 10, 4)->startOfDay();
 
         return [
-            'call' => $now->copy()->subWeeks(4)->setTime(9, 0),        // appel lancé il y a 1 mois
-            'deadline' => $now->copy()->addWeeks(3)->setTime(23, 59),   // clôture des soumissions
-            'notification' => $now->copy()->addWeeks(6)->startOfDay(),  // notifications aux auteurs
-            'registration_end' => $now->copy()->addWeeks(9)->setTime(23, 59),
-            'event_start' => $now->copy()->addWeeks(11)->startOfDay(),
-            'event_end' => $now->copy()->addWeeks(11)->addDays(3)->startOfDay(),
+            'call' => $eventStart->copy()->subWeeks(22)->setTime(9, 0),         // appel lancé ~5 mois avant
+            'deadline' => $eventStart->copy()->subWeeks(9)->setTime(23, 59),    // clôture des soumissions
+            'notification' => $eventStart->copy()->subWeeks(6)->startOfDay(),   // notifications aux auteurs
+            'registration_end' => $eventStart->copy()->subWeeks(1)->setTime(23, 59),
+            'event_start' => $eventStart,
+            'event_end' => $eventEnd,
         ];
     }
 
@@ -124,6 +132,8 @@ class ColloqueShowcaseSeeder extends Seeder
         // de dates ci-dessous en dérivent, pour rester cohérentes entre elles.
         $d = self::timeline();
         $deadlineFr = $d['deadline']->translatedFormat('j F Y');
+        $eventDays = $d['event_start']->diffInDays($d['event_end']) + 1; // 27 sept -> 4 oct = 8 jours
+        $eventRangeFr = $d['event_start']->translatedFormat('j F').' au '.$d['event_end']->translatedFormat('j F Y');
         $abstractMax = (new SubmissionFormConfig($edition))->abstractMax();
 
         $s['languages'] = ['Français', 'Anglais'];
@@ -150,7 +160,7 @@ class ColloqueShowcaseSeeder extends Seeder
             ['num' => 'VIIIe', 'label' => 'Édition'],
             ['num' => '6', 'label' => 'Ateliers disciplinaires'],
             ['num' => '2', 'label' => 'Universités organisatrices'],
-            ['num' => '4', 'label' => 'Jours de colloque'],
+            ['num' => (string) $eventDays, 'label' => 'Jours de colloque'],
         ];
 
         // Ateliers disciplinaires (titre + description), rendus dans la section « Axes ».
@@ -249,7 +259,7 @@ class ColloqueShowcaseSeeder extends Seeder
             ['day' => 'Jour 1', 'time' => '09:00-10:30', 'type' => 'Conférence', 'title' => 'Conférence inaugurale', 'speaker' => 'Invité d’honneur', 'room' => 'Amphi A'],
             ['day' => 'Jour 1', 'time' => '11:00-12:30', 'type' => 'Session', 'title' => 'Session Atelier 1 - Sciences médicales', 'speaker' => 'Modérateur : Pr. Mensah', 'room' => 'Salle B'],
             ['day' => 'Jour 2', 'time' => '09:00-10:30', 'type' => 'Session', 'title' => 'Session Atelier 2 - Agronomie', 'speaker' => '', 'room' => 'Salle C'],
-            ['day' => 'Jour 4', 'time' => '16:00-17:00', 'type' => 'Clôture', 'title' => 'Cérémonie de clôture & recommandations', 'speaker' => 'Comité d’organisation', 'room' => 'Amphi A'],
+            ['day' => 'Jour '.$eventDays, 'time' => '16:00-17:00', 'type' => 'Clôture', 'title' => 'Cérémonie de clôture & recommandations', 'speaker' => 'Comité d’organisation', 'room' => 'Amphi A'],
         ];
 
         $s['why'] = [
@@ -279,7 +289,9 @@ class ColloqueShowcaseSeeder extends Seeder
             'hero_video_enabled' => false,
             'hero_video_muted' => true,
             'news_enabled' => true,
-            'news_text' => 'Soumissions ouvertes jusqu’au '.$deadlineFr,
+            'news_text' => $d['deadline']->isFuture()
+                ? 'Soumissions ouvertes jusqu’au '.$deadlineFr
+                : 'Le colloque se tient du '.$eventRangeFr,
             'news_url' => '',
             'stats_enabled' => true,
             'stats' => [
@@ -341,9 +353,12 @@ class ColloqueShowcaseSeeder extends Seeder
             return;
         }
 
-        $day1 = Carbon::create(2026, 9, 15);
-        $day2 = Carbon::create(2026, 9, 16);
-        $day3 = Carbon::create(2026, 9, 17);
+        // Jours du programme dérivés de la fenêtre de l'événement : ouverture le
+        // premier jour, clôture le DERNIER jour (cohérent avec les dates réelles).
+        $t = self::timeline();
+        $day1 = $t['event_start']->copy();          // ouverture
+        $day2 = $t['event_start']->copy()->addDay(); // 2e jour
+        $day3 = $t['event_end']->copy();            // clôture (dernier jour)
 
         // Sessions plénières (amphithéâtre principal).
         $this->session($edition, 'plenary', 'Enregistrement des participants & café de bienvenue', $day1, 8, 30, 'Hall d’accueil', 0);

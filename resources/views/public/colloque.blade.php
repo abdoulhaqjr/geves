@@ -6,13 +6,7 @@
     </style>
     @php
         $e = $edition;
-        $dateLabel = null;
-        if ($e->date_start) {
-            $dateLabel = $e->date_start->translatedFormat('d F Y');
-            if ($e->date_end && $e->date_end->ne($e->date_start)) {
-                $dateLabel = $e->date_start->translatedFormat('d') . '–' . $e->date_end->translatedFormat('d F Y');
-            }
-        }
+        $dateLabel = $e->dateRangeLabel();
     @endphp
 
     {{-- Bannière promo --}}

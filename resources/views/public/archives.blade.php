@@ -51,10 +51,10 @@
                                     <div class="meta-row">
                                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z"/></svg>
                                         <span>
-                                            @if ($e->date_start && $e->date_end)
-                                                {{ $e->date_start->translatedFormat('d') }} – {{ $e->date_end->translatedFormat('d F Y') }}
+                                            @if ($e->date_start)
+                                                {{ $e->dateRangeLabel() }}
                                             @else
-                                                {{ $e->date_start?->translatedFormat('d F Y') ?? $e->year }}
+                                                {{ $e->year }}
                                             @endif
                                         </span>
                                     </div>
