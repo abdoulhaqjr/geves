@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\ScopesEditionAccess;
 use App\Http\Controllers\Controller;
 use App\Models\Edition;
 use App\Support\SubmissionFormConfig;
@@ -18,7 +19,9 @@ use Illuminate\View\View;
  */
 class SubmissionFormController extends Controller
 {
-    public function edit(Edition $edition): View
+    use ScopesEditionAccess;
+
+    public function edit(Request $request, Edition $edition): View
     {
         $config = new SubmissionFormConfig($edition);
 
@@ -48,6 +51,9 @@ class SubmissionFormController extends Controller
 
         return view('admin.editions.submission-form-editor', [
             'edition' => $edition,
+            // Sélecteur + sous-navigation communs au module Soumissions.
+            'editions' => $this->accessibleEditions($request, 'submissions_list'),
+            'edition_id' => (string) $edition->id,
             'fields' => $fields,
             'custom' => $custom,
             'customTypes' => SubmissionFormConfig::CUSTOM_TYPES,
@@ -103,7 +109,48 @@ class SubmissionFormController extends Controller
             ];
         }
 
-        $rules = [
+        $settings = $edition->settings ?? [];
+        $settings['submission_form'] = [
+            'fields' => $fields,
+            'custom' => $custom,
+            // Les règles ne sont pas éditées ici : on conserve celles en place.
+            'rules' => (new SubmissionFormConfig($edition))->rules(),
+        ];
+        $edition->update(['settings' => $settings]);
+
+        return back()->with('ukc_status', 'Formulaire de soumission enregistré.');
+    }
+
+    /**
+     * Règles & limites du dépôt, éditées depuis l'onglet **Options** du module
+     * Soumissions. ⚠️ Endpoint séparé : `update()` reconstruit les champs et les
+     * champs personnalisés à partir de la requête, donc y poster les seules
+     * règles les effacerait.
+     */
+    public function updateRules(Request $request, Edition $edition): RedirectResponse
+    {
+        $config = new SubmissionFormConfig($edition);
+
+        $settings = $edition->settings ?? [];
+        $settings['submission_form'] = [
+            'fields' => $settings['submission_form']['fields'] ?? [],
+            'custom' => $settings['submission_form']['custom'] ?? [],
+            'rules' => $this->rulesFrom($request),
+        ];
+        $edition->update(['settings' => $settings]);
+
+        return redirect()->route('admin.submissions.options', ['edition_id' => $edition->id])
+            ->with('ukc_status', 'Règles du formulaire enregistrées.');
+    }
+
+    /**
+     * Règles & limites normalisées depuis la requête.
+     *
+     * @return array<string, mixed>
+     */
+    private function rulesFrom(Request $request): array
+    {
+        return [
             'title_min' => max(0, (int) $request->input('rules.title_min', 0)),
             'title_max' => max(1, (int) $request->input('rules.title_max', 256)),
             'word_min' => max(0, (int) $request->input('rules.word_min', 50)),
@@ -118,11 +165,5 @@ class SubmissionFormController extends Controller
             'live_counter' => $request->boolean('rules.live_counter'),
             'captcha' => $request->boolean('rules.captcha'),
         ];
-
-        $settings = $edition->settings ?? [];
-        $settings['submission_form'] = ['fields' => $fields, 'custom' => $custom, 'rules' => $rules];
-        $edition->update(['settings' => $settings]);
-
-        return back()->with('ukc_status', 'Formulaire de soumission enregistré.');
     }
 }

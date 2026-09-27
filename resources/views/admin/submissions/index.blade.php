@@ -28,12 +28,7 @@
             </div>
         </div>
 
-        {{-- Sous-navigation (fidèle au mockup admin-submissions) --}}
-        <div class="ukc-nav-docs">
-            <button type="button" class="active">Soumissions</button>
-            <a href="{{ $edition_id !== '' ? route('admin.editions.form', $edition_id) : route('admin.editions.index') }}">Formulaires de soumissions</a>
-            <a href="{{ route('admin.submissions.auto-assign', ['edition_id' => $edition_id]) }}">Attribution auto</a>
-        </div>
+        @include('admin.submissions._nav', ['current' => 'liste'])
 
         {{-- Indicateurs --}}
         <div class="ukc-stats">

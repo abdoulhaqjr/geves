@@ -33,8 +33,11 @@
                     <span class="nav-label">Scientifique</span>
                 @endif
                 @if ($staff?->canAnyEdition('editions_read'))
+                    {{-- ⚠️ L'éditeur de formulaire est un onglet du module Soumissions
+                         bien que sa route vive sous `admin.editions.*` : sans cette
+                         exclusion, les deux entrées du menu s'allument ensemble. --}}
                     <a href="{{ route('admin.editions.index') }}" title="Éditions"
-                       @class(['active' => request()->routeIs('admin.editions.*')])>
+                       @class(['active' => request()->routeIs('admin.editions.*') && ! request()->routeIs('admin.editions.form*')])>
                         <x-ukc.icon name="calendar" :size="18" /> <span class="txt">Éditions</span>
                     </a>
                 @endif

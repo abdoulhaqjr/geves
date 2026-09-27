@@ -21,14 +21,17 @@ use App\Support\ConflictOfInterest;
 use App\Support\ListSort;
 use App\Support\Notifier;
 use App\Support\Plagiarism\PlagiarismRegistry;
+use App\Support\ReviewerExpertise;
 use App\Support\ReviewGrid;
 use App\Support\SimilarityChecker;
+use App\Support\SubmissionFormConfig;
 use App\Support\Trend;
 use Carbon\Carbon;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -529,8 +532,11 @@ class SubmissionController extends Controller
             : $this->currentEditionId($editions);
         $edition = $editionId !== '' ? $editions->firstWhere('id', (int) $editionId) : null;
 
-        $target = max(1, min(5, (int) $request->query('target', 2)));
-        $maxLoad = max(0, min(50, (int) $request->query('max_load', 0)));
+        // ⚠️ Les paramètres du moteur sont des RÈGLES de l'édition (onglet
+        // Évaluation), plus des paramètres d'URL : le plan proposé ne dépend donc
+        // pas de la façon dont on est arrivé sur la page.
+        $target = ReviewGrid::target($edition);
+        $maxLoad = ReviewGrid::maxLoad($edition);
 
         $preview = $edition ? $engine->preview($edition, $target, $maxLoad) : null;
 
@@ -542,6 +548,73 @@ class SubmissionController extends Controller
             'maxLoad' => $maxLoad,
             'preview' => $preview,
         ]);
+    }
+
+    /**
+     * Onglet « Relecteurs & expertise » : la matrice des axes que chaque
+     * relecteur peut évaluer, et sa charge. Elle vivait dans la fiche d'édition,
+     * loin du moteur qui la consomme et de la page où l'on constate qu'un axe
+     * n'est couvert par personne.
+     */
+    public function reviewers(Request $request): View
+    {
+        $editions = $this->accessibleEditions($request, 'submissions_list');
+        $editionId = $request->has('edition_id')
+            ? (string) $request->query('edition_id', '')
+            : $this->currentEditionId($editions);
+        $edition = $editionId !== '' ? $editions->firstWhere('id', (int) $editionId) : null;
+
+        return view('admin.submissions.reviewers', [
+            'editions' => $editions,
+            'edition' => $edition,
+            'edition_id' => $editionId,
+            'reviewers' => ReviewerExpertise::forEdition($edition),
+            'reviewerAxes' => ReviewerExpertise::axes($edition),
+            'canWrite' => $this->canWriteEdition($edition),
+        ]);
+    }
+
+    /**
+     * Onglet « Options » : toutes les RÈGLES du module Soumissions pour cette
+     * édition - dépôt (limites du formulaire), attribution (relecteurs visés,
+     * plafond de charge) et évaluation (grille, délai). Elles étaient éclatées
+     * entre la page d'attribution (en paramètres d'URL), la fiche d'édition et
+     * l'éditeur de formulaire.
+     */
+    public function options(Request $request): View
+    {
+        $editions = $this->accessibleEditions($request, 'submissions_list');
+        $editionId = $request->has('edition_id')
+            ? (string) $request->query('edition_id', '')
+            : $this->currentEditionId($editions);
+        $edition = $editionId !== '' ? $editions->firstWhere('id', (int) $editionId) : null;
+
+        return view('admin.submissions.options', [
+            'editions' => $editions,
+            'edition' => $edition,
+            'edition_id' => $editionId,
+            'reviewCriteria' => ReviewGrid::criteria($edition),
+            'reviewScale' => ReviewGrid::SCALE,
+            'reviewDueDays' => ReviewGrid::dueDays($edition),
+            'target' => ReviewGrid::target($edition),
+            'maxLoad' => ReviewGrid::maxLoad($edition),
+            'formRules' => (new SubmissionFormConfig($edition ?? new Edition))->rules(),
+            'canWrite' => $this->canWriteEdition($edition),
+        ]);
+    }
+
+    /**
+     * Ces deux onglets vivent dans le module Soumissions (capacité
+     * `submissions_list`) mais écrivent dans les réglages de l'ÉDITION : sans ce
+     * contrôle, on afficherait des formulaires qui finiraient en 403.
+     */
+    private function canWriteEdition(?Edition $edition): bool
+    {
+        return $edition !== null && in_array(
+            $edition->id,
+            Auth::guard('web')->user()?->accessibleEditionIds('editions_write') ?? [],
+            true,
+        );
     }
 
     /** Applique le plan validé (paires soumission→relecteur cochées). */

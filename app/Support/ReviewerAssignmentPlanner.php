@@ -89,7 +89,9 @@ class ReviewerAssignmentPlanner
                 }
                 $volunteer = $interest === self::BID_INTERESTED;
 
-                $axisMatch = $sub['track'] !== '' && in_array($sub['track'], $tracksById[$rid], true);
+                // Comparaison par clé : un libellé d'axe recopié avec un tiret
+                // cadratin ne doit pas désactiver silencieusement l'appariement.
+                $axisMatch = $sub['track'] !== '' && ReviewerExpertise::covers($tracksById[$rid], $sub['track']);
                 $score = 0;
                 if ($axisMatch) {
                     $score += self::SCORE_AXIS_MATCH;

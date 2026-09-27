@@ -12,25 +12,18 @@
             </div>
         </div>
 
-        <div class="ukc-nav-docs">
-            <a href="{{ route('admin.submissions.index', ['edition_id' => $edition_id]) }}">Soumissions</a>
-            <a href="{{ $edition_id !== '' ? route('admin.editions.form', $edition_id) : route('admin.editions.index') }}">Formulaires de soumissions</a>
-            <button type="button" class="active">Attribution auto</button>
-        </div>
+        @include('admin.submissions._nav', ['current' => 'attribution'])
 
-        {{-- Réglages : édition, nombre de relecteurs visé, plafond par relecteur --}}
-        <form method="GET" class="filter-bar filter-bar--inline">
-            <input type="hidden" name="edition_id" value="{{ $edition_id }}">
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ukc-muted);">
-                Relecteurs / soumission
-                <input type="number" name="target" min="1" max="5" value="{{ $target }}" style="width:64px;" onchange="this.form.submit()">
-            </label>
-            <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ukc-muted);">
-                Charge max / relecteur
-                <input type="number" name="max_load" min="0" max="50" value="{{ $maxLoad }}" style="width:64px;" onchange="this.form.submit()" title="0 = illimitée">
-            </label>
-        </form>
-
+        {{-- Règles appliquées (elles se changent dans l'onglet Évaluation : ce sont
+             des réglages de l'édition, pas des paramètres de cette page). --}}
+        @if ($edition)
+            <p style="margin:-4px 0 16px;font-size:13px;color:var(--ukc-muted);">
+                Règles appliquées : <strong>{{ $target }}</strong> relecteur(s) par soumission ·
+                charge max <strong>{{ $maxLoad > 0 ? $maxLoad : 'illimitée' }}</strong> ·
+                <a href="{{ route('admin.submissions.options', ['edition_id' => $edition_id]) }}"
+                   style="color:var(--ukc-blue);font-weight:600;">modifier</a>
+            </p>
+        @endif
         @if (! $edition)
             <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);">Sélectionnez une édition pour lancer l’attribution.</p></div>
         @elseif (empty($preview['reviewers']))
@@ -109,11 +102,12 @@
                     @endif
                 </div>
 
-                {{-- Charge des relecteurs (lecture seule) - l'expertise se règle dans l'édition --}}
+                {{-- Charge des relecteurs : ce qui éclaire le plan (dont « Proposé »).
+                     L'expertise elle-même se règle dans l'onglet dédié. --}}
                 <div class="ukc-card" style="padding:0;">
                     <div style="padding:14px 18px;border-bottom:1px solid var(--ukc-border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-                        <div><strong>Charge des relecteurs</strong> <span style="color:var(--ukc-muted);font-size:13px;">- l’expertise (axes) se règle dans l’onglet <em>Relecteurs</em> de l’édition.</span></div>
-                        <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.editions.edit', ['edition' => $edition->id, 'tab' => 'reviewers']) }}">Gérer l’expertise</a>
+                        <div><strong>Charge des relecteurs</strong> <span style="color:var(--ukc-muted);font-size:13px;">- la charge ne compte que les relectures en cours ou rendues.</span></div>
+                        <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.submissions.reviewers', ['edition_id' => $edition_id]) }}">Gérer l’expertise</a>
                     </div>
                     <div class="ukc-table-wrap">
                         <table class="ukc-table">

@@ -599,4 +599,43 @@ de bord du participant comptait ses relectures refusées dans « à évaluer ».
 `Review::PENDING_STATUSES` et un **test de garde** qui scanne `app/` et
 `resources/views/`. **757 tests verts.**
 
+### Module Soumissions - réorganisation en onglets (2026-09-27)
+
+Les réglages liés aux soumissions et à la relecture étaient éclatés sur quatre
+écrans, et les mêmes relecteurs s'affichaient à trois endroits avec trois
+définitions. Tout est regroupé dans **un module à cinq onglets** :
+
+| Onglet | Route | Contenu |
+|---|---|---|
+| Soumissions | `admin.submissions.index` | la liste |
+| Formulaire de soumission | `admin.editions.form` | composition des champs |
+| Attribution auto | `admin.submissions.auto-assign` | plan proposé + charge |
+| Relecteurs & expertise | `admin.submissions.reviewers` | axes évaluables par relecteur |
+| Options | `admin.submissions.options` | règles : dépôt, attribution, évaluation |
+
+- La sous-navigation vit dans **un partiel unique** (`admin/submissions/_nav`)
+  au lieu d'être recopiée dans chaque vue.
+- **Supprimés** : l'onglet *Relecteurs/Évaluation* de la fiche d'édition et
+  l'onglet *Règles & limites* de l'éditeur de formulaire. Leur contenu est dans
+  **Options**, avec les paramètres du moteur d'attribution qui n'étaient que des
+  **paramètres d'URL** (donc non persistants) : nouveaux réglages
+  `review_target` / `review_max_load` (`ReviewGrid::target()` / `maxLoad()`).
+- ⚠️ `admin.editions.form.update` reconstruit champs et champs personnalisés
+  depuis la requête : les règles ont donc leur **endpoint dédié**
+  (`admin.editions.form.rules`), sinon enregistrer les champs les effacerait.
+  Test de garde : « ne perd pas les règles quand on enregistre les champs ».
+- Les onglets vivent sous `submissions_list` mais écrivent dans l'édition :
+  affichage en **lecture seule** sans `editions_write`.
+
+⚠️ **Bug de fond découvert au passage** : l'appariement par axe ne fonctionnait
+**jamais**. L'expertise stocke une copie du libellé de l'axe ; en base les
+relecteurs avaient « Atelier 1 — … » (tiret cadratin) et l'édition « Atelier 1 - … »
+(tiret simple), si bien que l'égalité stricte échouait en silence et que le moteur
+proposait toujours « hors axe (équilibrage) ». Correction : comparaison par clé
+normalisée (`ReviewerExpertise::axisKey()` / `covers()`, utilisée aussi par
+`ReviewerAssignmentPlanner`), et l'enregistrement recanonise l'axe sur le libellé
+de l'édition.
+
+**764 tests verts**, PHPStan niveau 5 OK, Pint OK.
+
 > **Mémoire projet** : le contexte fin (décisions, conventions, TODO différés - DOI/DataCite, connecteur Google anti-plagiat, amélioration `admin/reclamations`) est aussi consigné dans la **mémoire locale de Claude Code** (`~/.claude/…/memory/`, non versionnée). Comme cette mémoire ne se partage pas entre contributeurs, **le contexte partageable doit vivre dans `CLAUDE.md` + ce fichier** (versionnés) : les tenir à jour à chaque tâche notable.

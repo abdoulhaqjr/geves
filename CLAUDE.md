@@ -323,6 +323,38 @@ Une relecture n'est plus un simple « assignée / rendue » : `Review::STATUSES`
   motif a déjà été écrit à trois endroits : un **test de garde**
   (`ReviewLifecycleTest`, « ne déduit jamais l'attente de son inachèvement »)
   scanne `app/` et `resources/views/` et échoue s'il revient.
+- **Module Soumissions = cinq onglets** (2026-09-27) : *Soumissions · Formulaire
+  de soumission · Attribution auto · Relecteurs & expertise · Options*, définis
+  **une seule fois** dans `resources/views/admin/submissions/_nav.blade.php`
+  (⚠️ ajouter un onglet = un seul fichier à éditer ; chaque page passe sa clé via
+  `['current' => '…']`). Chaque page porte le **sélecteur d'édition** puis la
+  sous-navigation, comme partout ailleurs.
+  - **Relecteurs & expertise** (`admin.submissions.reviewers`) : matrice des axes
+    évaluables + charge (relectures actives seulement).
+  - **Options** (`admin.submissions.options`) : **toutes** les règles de l'édition
+    pour ce module - *dépôt* (limites du formulaire), *attribution* (relecteurs
+    visés, charge max), *évaluation* (grille, délai).
+  - ⚠️ La fiche d'édition **n'a plus** d'onglet Relecteurs/Évaluation, et
+    l'éditeur de formulaire **n'a plus** d'onglet « Règles & limites » : ces
+    réglages vivent au plus près de ce qu'ils pilotent. Les formulaires postent
+    toujours sur les routes `editions_*` (capacité **`editions_write`**) et
+    s'affichent en **lecture seule** pour qui ne l'a pas.
+  - Réglages à la racine de `edition.settings` : `review_target`,
+    `review_max_load`, `review_criteria`, `review_due_days` (`ReviewGrid`) ;
+    les limites de dépôt restent dans `settings['submission_form']['rules']`.
+  - ⚠️ **`admin.editions.form.update` reconstruit champs + champs personnalisés**
+    depuis la requête : ne jamais y poster les seules règles (elles seraient
+    perdues). Endpoint dédié **`admin.editions.form.rules`** ; un test de garde
+    (« ne perd pas les règles quand on enregistre les champs ») le protège.
+- ⚠️ **Un axe thématique se compare par CLÉ, jamais par chaîne brute** :
+  l'expertise d'un relecteur stocke une **copie** du libellé de l'axe, et ce
+  libellé est du texte libre. Un tiret cadratin recopié suffisait à faire échouer
+  l'égalité stricte **en silence** - en base, les axes des relecteurs étaient en
+  « Atelier 1 — … » et ceux de l'édition en « Atelier 1 - … », donc l'attribution
+  automatique proposait *systématiquement* « hors axe ». Passer par
+  **`ReviewerExpertise::covers()`** / **`axisKey()`** (tirets typographiques,
+  casse et espaces normalisés) ; l'enregistrement **recanonise** sur le libellé de
+  l'édition, donc un axe renommé ne casse plus l'expertise en silence.
 ### Règles métier - limites communications & attestations
 
 - **Limite de communications** (`settings.max_communications`) : compte **seulement** les

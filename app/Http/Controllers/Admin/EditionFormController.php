@@ -14,6 +14,7 @@ use App\Models\Review;
 use App\Models\User;
 use App\Support\EditionPaymentConfig;
 use App\Support\Locales;
+use App\Support\ReviewerExpertise;
 use App\Support\ReviewGrid;
 use App\Support\StaffRoles;
 use Illuminate\Http\JsonResponse;
@@ -180,8 +181,6 @@ class EditionFormController extends Controller
             'colloques' => Colloque::orderBy('name')->get(),
             'committeeRoles' => self::COMMITTEE_ROLES,
             'aiAvailable' => app(AiManager::class)->available() !== [],
-            'reviewers' => $this->reviewersFor($edition),
-            'reviewerAxes' => $this->reviewerAxes($edition),
             'reviewCriteria' => ReviewGrid::criteria($edition),
             'reviewScale' => ReviewGrid::SCALE,
             'reviewDueDays' => ReviewGrid::dueDays($edition),
@@ -260,48 +259,6 @@ class EditionFormController extends Controller
             ->with('edition_tab', 'team');
     }
 
-    /**
-     * Relecteurs de l'édition avec expertise déclarée et charge courante
-     * (pour l'onglet « Relecteurs » de la fiche).
-     *
-     * @return Collection<int, array{id:int, name:string, institution:string, tracks:array<int, string>, load:int}>
-     */
-    private function reviewersFor(?Edition $edition): Collection
-    {
-        if (! $edition) {
-            return collect();
-        }
-
-        $reviewers = Participant::where('edition_id', $edition->id)
-            ->where('role', 'reviewer')->orderBy('last_name')->get();
-
-        $load = Review::query()
-            ->whereIn('reviewer_id', $reviewers->pluck('id'))
-            ->whereHas('submission', fn ($q) => $q->where('edition_id', $edition->id))
-            ->selectRaw('reviewer_id, count(*) as c')->groupBy('reviewer_id')->pluck('c', 'reviewer_id');
-
-        return $reviewers->map(fn (Participant $r) => [
-            'id' => $r->id,
-            'name' => $r->full_name,
-            'institution' => (string) ($r->institution ?? ''),
-            'tracks' => collect($r->meta['review_tracks'] ?? [])
-                ->filter()->map(fn ($t): string => trim((string) $t))->values()->all(),
-            'load' => (int) ($load[$r->id] ?? 0),
-        ])->values();
-    }
-
-    /**
-     * Axes thématiques de l'édition (réglages), pour cocher l'expertise.
-     *
-     * @return list<string>
-     */
-    private function reviewerAxes(?Edition $edition): array
-    {
-        return collect($edition?->settings['tracks'] ?? [])
-            ->map(fn ($t): string => trim((string) $t))
-            ->filter()->unique()->values()->all();
-    }
-
     /** Enregistre l'expertise (axes) des relecteurs de l'édition (onglet Relecteurs). */
     public function saveReviewerExpertise(Request $request, Edition $edition): RedirectResponse
     {
@@ -321,17 +278,31 @@ class EditionFormController extends Controller
             if (! $reviewer) {
                 continue;
             }
-            $tracks = array_values(array_unique(array_filter(
-                array_map(fn ($t) => trim((string) $t), (array) ($data['expertise'][$id] ?? []))
-            )));
+            // On stocke le libellé CANONIQUE de l'édition : sans cela, l'expertise
+            // conserve une vieille orthographe de l'axe et cesse de correspondre
+            // dès que l'axe est renommé (cf. ReviewerExpertise::axisKey).
+            $axes = ReviewerExpertise::axes($edition);
+            $tracks = collect((array) ($data['expertise'][$id] ?? []))
+                ->map(function ($t) use ($axes) {
+                    $key = ReviewerExpertise::axisKey((string) $t);
+
+                    foreach ($axes as $axis) {
+                        if (ReviewerExpertise::axisKey($axis) === $key) {
+                            return $axis;
+                        }
+                    }
+
+                    return trim((string) $t);
+                })
+                ->filter()->unique()->values()->all();
             $meta = $reviewer->meta ?? [];
             $meta['review_tracks'] = $tracks;
             $reviewer->update(['meta' => $meta]);
         }
 
-        return redirect()->route('admin.editions.edit', $edition)
-            ->with('ukc_status', 'Expertise des relecteurs mise à jour.')
-            ->with('edition_tab', 'reviewers');
+        // L'expertise a son propre onglet dans le module Soumissions : on y revient.
+        return redirect()->route('admin.submissions.reviewers', ['edition_id' => $edition->id])
+            ->with('ukc_status', 'Expertise des relecteurs mise à jour.');
     }
 
     /** Enregistre les traductions de contenu (i18n) d'une locale non par défaut. */
@@ -371,6 +342,8 @@ class EditionFormController extends Controller
             'criteria' => ['array'],
             'criteria.*' => ['nullable', 'string', 'max:200'],
             'review_due_days' => ['nullable', 'integer', 'min:1', 'max:180'],
+            'review_target' => ['nullable', 'integer', 'min:1', 'max:5'],
+            'review_max_load' => ['nullable', 'integer', 'min:0', 'max:50'],
         ]);
 
         $criteria = ReviewGrid::normalize(
@@ -387,11 +360,18 @@ class EditionFormController extends Controller
         } else {
             unset($settings['review_due_days']);
         }
+        // Règles du moteur d'attribution (elles étaient des paramètres d'URL).
+        foreach (['review_target', 'review_max_load'] as $key) {
+            if (($data[$key] ?? null) !== null) {
+                $settings[$key] = (int) $data[$key];
+            } else {
+                unset($settings[$key]);
+            }
+        }
         $edition->update(['settings' => $settings]);
 
-        return redirect()->route('admin.editions.edit', $edition)
-            ->with('ukc_status', 'Grille d’évaluation et délai mis à jour.')
-            ->with('edition_tab', 'reviewers');
+        return redirect()->route('admin.submissions.options', ['edition_id' => $edition->id])
+            ->with('ukc_status', 'Règles d’évaluation mises à jour.');
     }
 
     /**

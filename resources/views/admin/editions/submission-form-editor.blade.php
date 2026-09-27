@@ -20,18 +20,24 @@
         ];
     @endphp
 
-    <div class="admin-page admin-submission-forms" x-data="{ tab: 'fields', ...formEditor(@js($custom)) }">
-        <div class="ukc-tabs">
-            <button type="button" @click="tab='fields'" :class="{ active: tab==='fields' }">Champs</button>
-            <button type="button" @click="tab='rules'" :class="{ active: tab==='rules' }">Règles &amp; limites</button>
+    <div class="admin-page admin-submission-forms" x-data="formEditor(@js($custom))">
+        <div class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px;">
+            <div class="ukc-field" style="min-width:320px;max-width:460px;margin:0;">
+                <label for="edition_id">Édition</label>
+                <select id="edition_id" name="edition_id" onchange="window.location = '{{ url('admin/editions') }}/' + this.value + '/formulaire'">
+                    @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
+                </select>
+            </div>
         </div>
+
+        @include('admin.submissions._nav', ['current' => 'formulaire'])
 
         <form id="formEditorForm" method="POST" action="{{ route('admin.editions.form.update', $edition) }}">
             @csrf
             @method('PUT')
 
             {{-- ===================== CHAMPS ===================== --}}
-            <div x-show="tab==='fields'">
+            <div>
                 <div class="layout-edit">
                     {{-- Colonne principale : liste ordonnée des champs --}}
                     <div class="ukc-card" style="margin-bottom:0;">
@@ -78,7 +84,7 @@
                                             <label class="ukc-check"><input type="checkbox" name="fields[{{ $key }}][required]" value="1" @checked($conf['required'])> Obligatoire</label>
                                         @endif
                                         @if ($key === 'abstract')
-                                            <span class="ukc-hint" style="font-size:12px;color:var(--ukc-light);">La limite de mots du résumé se règle dans l’onglet <strong>Règles &amp; limites</strong>.</span>
+                                            <span class="ukc-hint" style="font-size:12px;color:var(--ukc-light);">La limite de mots du résumé se règle dans l’onglet <strong>Options</strong>.</span>
                                         @endif
                                     </div>
                                 </div>
@@ -143,56 +149,6 @@
                             </button>
                         @endforeach
                     </div>
-                </div>
-            </div>
-
-            {{-- ===================== RÈGLES & LIMITES ===================== --}}
-            <div x-show="tab==='rules'" x-cloak>
-                <div class="ukc-card" style="max-width:640px;">
-                    <h3 style="font-size:14px;font-weight:800;margin-bottom:6px;">Règles &amp; limites</h3>
-                    <div class="desc" style="font-size:13px;color:var(--ukc-muted);margin-bottom:14px;">Appliquées au formulaire de dépôt de cette édition.</div>
-                    <div class="ukc-form-grid">
-                        <div class="ukc-form-row">
-                            <label>Titre - minimum de caractères <span style="color:var(--ukc-muted);font-weight:400;">(0 = aucun)</span></label>
-                            <input type="number" name="rules[title_min]" value="{{ old('rules.title_min', $rules['title_min'] ?? 0) }}" min="0" max="1000">
-                        </div>
-                        <div class="ukc-form-row">
-                            <label>Titre - maximum de caractères</label>
-                            <input type="number" name="rules[title_max]" value="{{ old('rules.title_max', $rules['title_max'] ?? 256) }}" min="1" max="1000">
-                        </div>
-                        <div class="ukc-form-row">
-                            <label>Résumé - minimum de mots</label>
-                            <input type="number" name="rules[word_min]" value="{{ old('rules.word_min', $rules['word_min']) }}" min="0" max="5000">
-                        </div>
-                        <div class="ukc-form-row">
-                            <label>Résumé - maximum de mots</label>
-                            <input type="number" name="rules[word_limit]" value="{{ old('rules.word_limit', $rules['word_limit']) }}" min="1" max="5000">
-                        </div>
-                        <div class="ukc-form-row">
-                            <label>Mots-clés - minimum</label>
-                            <input type="number" name="rules[keywords_min]" value="{{ old('rules.keywords_min', $rules['keywords_min']) }}" min="0" max="50">
-                        </div>
-                        <div class="ukc-form-row">
-                            <label>Mots-clés - maximum</label>
-                            <input type="number" name="rules[keywords_max]" value="{{ old('rules.keywords_max', $rules['keywords_max']) }}" min="1" max="50">
-                        </div>
-                        <div class="ukc-form-row">
-                            <label>Nombre max d’auteurs</label>
-                            <input type="number" name="rules[max_authors]" value="{{ old('rules.max_authors', $rules['max_authors']) }}" min="1" max="30">
-                        </div>
-                        <div class="ukc-form-row">
-                            <label>Taille max fichier (Mo)</label>
-                            <input type="number" name="rules[file_max_mb]" value="{{ old('rules.file_max_mb', $rules['file_max_mb']) }}" min="1" max="50">
-                        </div>
-                        <div class="ukc-form-row">
-                            <label>Formats acceptés</label>
-                            <input type="text" name="rules[file_formats]" value="{{ old('rules.file_formats', $rules['file_formats']) }}" placeholder="pdf, docx">
-                        </div>
-                    </div>
-                    <label class="ukc-check"><input type="checkbox" name="rules[require_account]" value="1" @checked($rules['require_account'])> Compte participant requis pour soumettre</label>
-                    <label class="ukc-check"><input type="checkbox" name="rules[no_duplicate]" value="1" @checked($rules['no_duplicate'])> Un seul dépôt par titre (anti-doublon)</label>
-                    <label class="ukc-check"><input type="checkbox" name="rules[live_counter]" value="1" @checked($rules['live_counter'])> Afficher le compteur de mots en direct</label>
-                    <label class="ukc-check"><input type="checkbox" name="rules[captcha]" value="1" @checked($rules['captcha'])> Captcha sur le formulaire public</label>
                 </div>
             </div>
 

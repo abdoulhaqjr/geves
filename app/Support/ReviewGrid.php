@@ -17,6 +17,9 @@ class ReviewGrid
     /** Note maximale par critère (échelle 0–SCALE). */
     public const SCALE = 5;
 
+    /** Relecteurs visés par soumission, à défaut de réglage d'édition. */
+    public const DEFAULT_TARGET = 2;
+
     /** Grille académique par défaut (originalité, rigueur, clarté, pertinence, contribution). */
     public const DEFAULTS = [
         ['key' => 'originality', 'label' => 'Originalité et intérêt'],
@@ -25,6 +28,30 @@ class ReviewGrid
         ['key' => 'relevance', 'label' => 'Pertinence par rapport à la thématique'],
         ['key' => 'contribution', 'label' => 'Contribution et portée'],
     ];
+
+    /**
+     * Nombre de relecteurs visé par soumission (1-5, défaut 2). Règle de
+     * l'édition, lue par l'attribution automatique.
+     *
+     * ⚠️ Comme `review_criteria` et `review_due_days`, ce réglage vit à la
+     * RACINE de `edition.settings` - pas dans le sac « doc » d'EditionSettings.
+     */
+    public static function target(?Edition $edition): int
+    {
+        $n = (int) ($edition?->settings['review_target'] ?? 0);
+
+        return $n >= 1 && $n <= 5 ? $n : self::DEFAULT_TARGET;
+    }
+
+    /**
+     * Plafond de relectures par relecteur (0 = illimité). Règle de l'édition.
+     */
+    public static function maxLoad(?Edition $edition): int
+    {
+        $n = (int) ($edition?->settings['review_max_load'] ?? 0);
+
+        return $n >= 0 && $n <= 50 ? $n : 0;
+    }
 
     /**
      * Délai d'évaluation de l'édition, en jours (borné 1-180). Sert d'échéance à

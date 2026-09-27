@@ -60,7 +60,6 @@ it('enregistre la configuration depuis l’éditeur admin', function () {
             'abstract' => ['label' => 'Résumé'],
             // keywords : case « Afficher » non cochée → désactivé.
         ],
-        'rules' => ['word_min' => 120, 'word_limit' => 400],
         'custom' => [
             ['key' => 'custom_x', 'label' => 'Numéro ORCID', 'type' => 'text', 'required' => '1'],
         ],
@@ -71,19 +70,16 @@ it('enregistre la configuration depuis l’éditeur admin', function () {
 
     expect($config->label('title'))->toBe('Intitulé de la communication');
     expect($config->enabled('keywords'))->toBeFalse();
-    expect($config->abstractMin())->toBe(120); // en mots
     expect($config->customFields()[0]['label'])->toBe('Numéro ORCID');
 });
 
-it('enregistre les règles & limites du formulaire', function () {
+it('enregistre les règles & limites depuis l’onglet Options', function () {
     $staff = adminStaff();
     $edition = openEdition();
 
-    $this->actingAs($staff, 'web')->put(route('admin.editions.form.update', $edition), [
-        'fields' => [
-            'title' => ['label' => 'Titre'],
-            'abstract' => ['label' => 'Résumé', 'min' => 50, 'max' => 8000],
-        ],
+    // ⚠️ Endpoint dédié : le PUT de l'éditeur reconstruit champs et champs
+    // personnalisés, il ne touche plus aux règles.
+    $this->actingAs($staff, 'web')->put(route('admin.editions.form.rules', $edition), [
         'rules' => [
             'word_limit' => '350', 'max_authors' => '10', 'file_max_mb' => '8', 'file_formats' => 'pdf, docx, odt',
             'no_duplicate' => '1', 'live_counter' => '1', // require_account & captcha non cochés
@@ -233,4 +229,23 @@ it('impose la limite minimale de mots du résumé configurée', function () {
             'abstract' => str_repeat('mot ', 10),
         ])
         ->assertSessionHasErrors('abstract');
+});
+
+it('ne perd pas les règles quand on enregistre les champs', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+
+    // Règles posées depuis l'onglet Options…
+    $this->actingAs($staff, 'web')->put(route('admin.editions.form.rules', $edition), [
+        'rules' => ['word_limit' => '333', 'max_authors' => '9'],
+    ])->assertRedirect();
+
+    // …puis enregistrement des CHAMPS depuis l'éditeur : les règles survivent.
+    $this->actingAs($staff, 'web')->put(route('admin.editions.form.update', $edition), [
+        'fields' => ['title' => ['label' => 'Titre'], 'abstract' => ['label' => 'Résumé']],
+    ])->assertSessionHasNoErrors();
+
+    $rules = (new SubmissionFormConfig($edition->refresh()))->rules();
+    expect($rules['word_limit'])->toBe(333);
+    expect($rules['max_authors'])->toBe(9);
 });

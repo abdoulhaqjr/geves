@@ -60,7 +60,6 @@
                     <button type="button" @click="tab='content'" :class="{ active: tab==='content' }">Appel &amp; contenu</button>
                     <button type="button" @click="tab='submissions'" :class="{ active: tab==='submissions' }">Soumissions &amp; tarifs</button>
                     <button type="button" @click="tab='committees'" :class="{ active: tab==='committees' }">Comités</button>
-                    @if ($edition)<button type="button" @click="tab='reviewers'" :class="{ active: tab==='reviewers' }">Relecteurs</button>@endif
                     @if ($edition)<button type="button" @click="tab='payment'" :class="{ active: tab==='payment' }">Paiement</button>@endif
                     @if ($edition)<button type="button" @click="tab='team'" :class="{ active: tab==='team' }">Équipe</button>@endif
                     <button type="button" @click="tab='partners'" :class="{ active: tab==='partners' }">Partenaires</button>
@@ -594,7 +593,7 @@
                          à sauvegarde dédiée (Relecteurs, Équipe, Traductions) qui ont leurs
                          propres boutons. --}}
                     <div class="ukc-form-actions" style="margin-top:4px;border-top:none;padding-top:0;"
-                         x-show="!['reviewers','payment','team','translations'].includes(tab)">
+                         x-show="!['payment','team','translations'].includes(tab)">
                         <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer</button>
                         <a href="{{ route('admin.editions.index') }}" class="ukc-btn ukc-btn--ghost">Annuler</a>
                     </div>
@@ -679,100 +678,7 @@
                     </div>
                 @endif
 
-                {{-- ===== RELECTEURS (hors du formulaire d'édition : sauvegarde dédiée) ===== --}}
                 @if ($edition)
-                    <div class="ukc-panel" :class="{ active: tab==='reviewers' }">
-                        <div class="ukc-card">
-                            <h2>Relecteurs &amp; expertise</h2>
-                            <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 4px;">
-                                Cochez les axes que chaque relecteur peut évaluer. Ces expertises alimentent l’attribution automatique
-                                (<a href="{{ route('admin.submissions.auto-assign', ['edition_id' => $edition->id]) }}" style="color:var(--ukc-blue);font-weight:600;">page dédiée</a>) :
-                                un relecteur dont l’expertise couvre l’axe d’une soumission est priorisé.
-                            </p>
-
-                            @if ($reviewers->isEmpty())
-                                <div class="ukc-empty" style="padding:24px 0;color:var(--ukc-muted);">
-                                    Aucun relecteur sur cette édition. Assignez un relecteur depuis une soumission
-                                    (ou depuis la page d’attribution), il apparaîtra ici.
-                                </div>
-                            @elseif (empty($reviewerAxes))
-                                <div class="ukc-empty" style="padding:24px 0;color:var(--ukc-muted);">
-                                    Aucun axe thématique défini pour cette édition. Renseignez les axes dans l’onglet
-                                    <strong>Appel &amp; contenu</strong>, puis revenez ici.
-                                </div>
-                            @else
-                                <form method="POST" action="{{ route('admin.editions.reviewers.expertise', $edition) }}">
-                                    @csrf
-                                    <div class="reviewer-expertise">
-                                        @foreach ($reviewers as $rev)
-                                            <div class="reviewer-row">
-                                                <input type="hidden" name="reviewer_ids[]" value="{{ $rev['id'] }}">
-                                                <div class="reviewer-id">
-                                                    <strong>{{ $rev['name'] }}</strong>
-                                                    <span>{{ $rev['institution'] ?: '-' }}</span>
-                                                    <span class="load">Charge : {{ $rev['load'] }}</span>
-                                                </div>
-                                                <div class="reviewer-axes">
-                                                    @foreach ($reviewerAxes as $axis)
-                                                        <label class="axis-check">
-                                                            <input type="checkbox" name="expertise[{{ $rev['id'] }}][]" value="{{ $axis }}"
-                                                                @checked(in_array($axis, $rev['tracks'], true))>
-                                                            <span>{{ $axis }}</span>
-                                                        </label>
-                                                    @endforeach
-                                                </div>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                    <div class="ukc-form-actions" style="margin-top:16px;">
-                                        <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer les expertises</button>
-                                    </div>
-                                </form>
-                            @endif
-                        </div>
-
-                        {{-- Grille d'évaluation (critères notés 0–N) --}}
-                        <div class="ukc-card" style="margin-top:18px;"
-                             x-data="{ criteria: {{ Illuminate\Support\Js::from(collect($reviewCriteria)->pluck('label')->values()) }} }">
-                            <h2>Grille d’évaluation &amp; délai</h2>
-                            <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 10px;">
-                                Critères notés de 0 à {{ $reviewScale }} par les relecteurs ; la note globale /20 en est
-                                dérivée (moyenne). Laissez la grille par défaut ou personnalisez-la pour cette édition.
-                            </p>
-                            <form method="POST" action="{{ route('admin.editions.reviewers.criteria', $edition) }}">
-                                @csrf
-                                <div class="ukc-field" style="max-width:320px;margin-bottom:16px;">
-                                    <label for="review_due_days">Délai d’évaluation (jours)</label>
-                                    <input type="number" id="review_due_days" name="review_due_days" min="1" max="180"
-                                           value="{{ $reviewDueDays }}">
-                                    <span class="hint">
-                                        Échéance calculée à l’assignation ({{ $reviewDueDays }} j par défaut). Passé ce
-                                        délai, la relecture est signalée « en retard » au comité et au relecteur.
-                                    </span>
-                                </div>
-                                <template x-for="(label, i) in criteria" :key="i">
-                                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-                                        <span style="color:var(--ukc-muted);font-size:.85rem;width:20px;" x-text="(i+1)+'.'"></span>
-                                        <input type="text" :name="'criteria['+i+']'" x-model="criteria[i]"
-                                               placeholder="Intitulé du critère" style="flex:1;">
-                                        <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm"
-                                                @click="criteria.splice(i,1)" title="Retirer">
-                                            <x-ukc.icon name="close" :size="14" />
-                                        </button>
-                                    </div>
-                                </template>
-                                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
-                                    <button type="button" class="ukc-btn ukc-btn--outline ukc-btn--sm" @click="criteria.push('')">
-                                        <x-ukc.icon name="plus" :size="14" /> Ajouter un critère
-                                    </button>
-                                </div>
-                                <div class="ukc-form-actions" style="margin-top:16px;">
-                                    <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer la grille</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-
                     {{-- ===== ÉQUIPE (staff affecté à CETTE édition) ===== --}}
                     <div class="ukc-panel" :class="{ active: tab==='team' }">
                         <div class="ukc-card">

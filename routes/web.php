@@ -299,6 +299,8 @@ Route::prefix('admin')->group(function () {
             Route::delete('/editions/{edition}/equipe', [EditionFormController::class, 'detachTeamMember'])->name('admin.editions.team.detach');
             Route::get('/editions/{edition}/formulaire', [SubmissionFormController::class, 'edit'])->name('admin.editions.form');
             Route::put('/editions/{edition}/formulaire', [SubmissionFormController::class, 'update'])->name('admin.editions.form.update');
+            // Règles & limites seules : elles vivent dans l'onglet Options du module Soumissions.
+            Route::put('/editions/{edition}/formulaire/regles', [SubmissionFormController::class, 'updateRules'])->name('admin.editions.form.rules');
             Route::get('/editions/{edition}/documents', [EditionMediaController::class, 'index'])->name('admin.editions.documents');
             Route::post('/editions/{edition}/documents', [EditionMediaController::class, 'store'])->name('admin.editions.documents.store');
             Route::delete('/editions/{edition}/documents/{medium}', [EditionMediaController::class, 'destroy'])->name('admin.editions.documents.destroy');
@@ -312,6 +314,10 @@ Route::prefix('admin')->group(function () {
             // Attribution automatique des relecteurs (route statique AVANT le joker {submission}).
             Route::get('/soumissions/attribution-auto', [App\Http\Controllers\Admin\SubmissionController::class, 'autoAssign'])->name('admin.submissions.auto-assign');
             Route::post('/soumissions/attribution-auto', [App\Http\Controllers\Admin\SubmissionController::class, 'autoAssignApply'])->name('admin.submissions.auto-assign.apply');
+            // Relecteurs & expertise + règles d'évaluation : onglets du module
+            // Soumissions (routes statiques AVANT le joker {submission}).
+            Route::get('/soumissions/relecteurs', [App\Http\Controllers\Admin\SubmissionController::class, 'reviewers'])->name('admin.submissions.reviewers');
+            Route::get('/soumissions/options', [App\Http\Controllers\Admin\SubmissionController::class, 'options'])->name('admin.submissions.options');
             Route::get('/soumissions/{submission}', [App\Http\Controllers\Admin\SubmissionController::class, 'show'])->name('admin.submissions.show');
             Route::post('/soumissions/{submission}/statut', [App\Http\Controllers\Admin\SubmissionController::class, 'applyStatus'])->name('admin.submissions.status');
             Route::post('/soumissions/{submission}/reponse-relecteurs', [App\Http\Controllers\Admin\SubmissionController::class, 'toggleRebuttal'])->name('admin.submissions.rebuttal.toggle');

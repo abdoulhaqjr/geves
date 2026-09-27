@@ -528,7 +528,7 @@ class ProjectController extends Controller
             'emails' => route('admin.emails.index', $q),
             'program' => route('admin.program.slots', $q),
             'reports' => route('admin.reports.index', $q),
-            'reviewers' => route('admin.editions.edit', ['edition' => $edition, 'tab' => 'reviewers']),
+            'reviewers' => route('admin.submissions.reviewers', $q),
             'committees' => route('admin.editions.edit', ['edition' => $edition, 'tab' => 'committees']),
             'edition' => route('admin.editions.edit', ['edition' => $edition]),
             default => null,

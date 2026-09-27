@@ -240,17 +240,17 @@ it('propose accepter / refuser sur la page « Mes relectures »', function () {
         ->assertSee('reponse', false);
 });
 
-it('expose le délai d’évaluation dans l’onglet Relecteurs de l’édition', function () {
+it('expose le délai d’évaluation dans l’onglet Évaluation', function () {
     $edition = openEdition(['review_due_days' => 14]);
 
     $this->actingAs(adminStaff(), 'web')
-        ->get(route('admin.editions.edit', $edition))
+        ->get(route('admin.submissions.options', ['edition_id' => $edition->id]))
         ->assertOk()
         ->assertSee('Délai d’évaluation (jours)', false)
         ->assertSee('value="14"', false);
 });
 
-it('enregistre le délai d’évaluation depuis la fiche d’édition', function () {
+it('enregistre le délai d’évaluation depuis l’onglet Évaluation', function () {
     $edition = openEdition();
 
     $this->actingAs(adminStaff(), 'web')
