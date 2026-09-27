@@ -9,6 +9,12 @@
 /* Sélection de texte : paire de couleurs IMPOSÉE. Sans cela, la sélection
    hérite de la couleur du texte - un libellé blanc (barre latérale, en-têtes
    sombres) devenait illisible une fois sélectionné. */
+/* Gouttière de défilement toujours réservée : sans elle, une page qui
+   raccourcit (filtre appliqué, moins de lignes) perd sa barre verticale, la
+   fenêtre gagne ~15px et TOUTE la mise en page s'élargit - KPI et tableaux
+   changeaient de dimensions au moindre filtrage. */
+html { scrollbar-gutter: stable; }
+
 ::selection { background: #223ea4; color: #fff; }
 ::-moz-selection { background: #223ea4; color: #fff; }
 
