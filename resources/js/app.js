@@ -57,6 +57,10 @@ function initTomSelects(root = document) {
         // l'initialisation, ce qui relancerait `form.submit()` en boucle (page
         // qui scintille). On retire le onchange natif et on ne soumet que sur un
         // vrai changement utilisateur, une fois l'initialisation terminée.
+        // Libellé de l'option vide (« Tous les axes »…), s'il existe.
+        const emptyOption = isInput ? null : el.querySelector('option[value=""]');
+        const emptyLabel = emptyOption ? (emptyOption.textContent || '').trim() : '';
+
         const autoSubmit = /\.form\.submit\(\)/.test(el.getAttribute('onchange') || '');
         if (autoSubmit) el.removeAttribute('onchange');
         let ready = false;
@@ -69,7 +73,13 @@ function initTomSelects(root = document) {
             allowEmptyOption: !isInput,
             maxItems: Number.isFinite(max) && max > 0 ? max : null,
             plugins: (el.multiple || isInput) ? ['remove_button'] : [],
-            placeholder: el.getAttribute('data-placeholder') || undefined,
+            // ⚠️ Un <select> dont l'option vide porte déjà un libellé (« Tous les
+            // axes ») n'a PAS besoin de placeholder : Tom Select afficherait les
+            // deux l'un sur l'autre. Le libellé de l'option vide fait office de
+            // placeholder.
+            placeholder: emptyLabel ? undefined : (el.getAttribute('data-placeholder') || undefined),
+            // Masque le placeholder dès qu'un élément est sélectionné.
+            hidePlaceholder: true,
             onChange() {
                 if (autoSubmit && ready && el.form) {
                     el.form.submit();

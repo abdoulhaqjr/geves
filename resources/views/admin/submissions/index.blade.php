@@ -17,6 +17,17 @@
     </x-slot:actions>
 
     <div class="admin-page admin-submissions" x-data="{ pv: null }" @keydown.escape.window="pv = null">
+        {{-- Sélecteur d'édition en tête, comme les pages Paiements et Participants. --}}
+        <div style="max-width:340px;margin-bottom:16px;">
+            <div class="ukc-field" style="margin:0;">
+                <label>Édition</label>
+                <select onchange="window.location='{{ route('admin.submissions.index') }}?edition_id='+this.value">
+                    <option value="">Toutes les éditions</option>
+                    @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
+                </select>
+            </div>
+        </div>
+
         {{-- Sous-navigation (fidèle au mockup admin-submissions) --}}
         <div class="ukc-nav-docs">
             <button type="button" class="active">Soumissions</button>
@@ -34,17 +45,6 @@
         </div>
 
         {{-- Filtres (GET, auto-submit) --}}
-        {{-- Sélecteur d'édition en tête, comme les pages Paiements et Participants. --}}
-        <div style="max-width:340px;margin-bottom:16px;">
-            <div class="ukc-field" style="margin:0;">
-                <label>Édition</label>
-                <select onchange="window.location='{{ route('admin.submissions.index') }}?edition_id='+this.value">
-                    <option value="">Toutes les éditions</option>
-                    @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
-                </select>
-            </div>
-        </div>
-
         {{-- Filtres sur une seule ligne ; l'édition est reportée en champ caché pour
              qu'un filtre ne réélargisse pas le périmètre. --}}
         <form method="GET" class="filter-bar filter-bar--inline">
@@ -58,7 +58,9 @@
                 <option value="oral" @selected($type === 'oral')>Orale</option>
                 <option value="poster" @selected($type === 'poster')>Poster</option>
             </select>
-            <select name="track" onchange="this.form.submit()" title="Axe thématique" style="max-width:260px;">
+            {{-- Liste recherchable (Tom Select) : le libellé de l’option vide sert
+                 de placeholder, ne pas ajouter data-placeholder. --}}
+            <select name="track" onchange="this.form.submit()" data-tom title="Axe thématique" style="max-width:280px;">
                 <option value="">Tous les axes</option>
                 @foreach ($tracks as $t)<option value="{{ $t }}" @selected($track === $t)>{{ $t }}</option>@endforeach
             </select>
