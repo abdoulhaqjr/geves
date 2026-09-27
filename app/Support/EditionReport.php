@@ -391,7 +391,7 @@ class EditionReport
     }
 
     /**
-     * Statistiques de relecture : relecteurs actifs, avis rendus, en retard,
+     * Statistiques de relecture : relecteurs actifs, relectures rendues, en retard,
      * délai moyen (jours entre assignation et complétion).
      *
      * ⚠️ « En retard » = échéance dépassée sur une relecture encore due

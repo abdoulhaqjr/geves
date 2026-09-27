@@ -354,3 +354,41 @@ it('filtre la liste des relectures sans fausser les compteurs', function () {
         ->assertDontSee($submission->ref_code)
         ->assertSee('1 en retard');
 });
+
+/**
+ * Test de garde : « relecture en attente » ≠ « pas encore rendue ».
+ *
+ * Depuis l'introduction du cycle de vie, un `status != 'completed'` compte aussi
+ * les relectures REFUSÉES et ANNULÉES - le relecteur garde alors un badge pour
+ * un travail qu'il n'a plus à faire, et le comité voit une charge fantôme. Le
+ * motif a déjà été écrit à trois endroits (rapports d'édition, tableau de bord
+ * participant, compteurs de l'espace relecteur), d'où ce garde-fou.
+ *
+ * La règle : passer par `Review::PENDING_STATUSES` / `isPending()` (encore dû),
+ * `ACTIVE_STATUSES` / `isActive()` (occupe une place) ou `isLate()` (en retard).
+ */
+it('ne déduit jamais l’attente d’une relecture de son inachèvement', function () {
+    $offenders = [];
+
+    foreach ([base_path('app'), base_path('resources/views')] as $root) {
+        $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS));
+        foreach ($it as $file) {
+            if (! $file->isFile() || $file->getExtension() !== 'php') {
+                continue;
+            }
+            $lines = file($file->getPathname());
+            foreach ($lines as $i => $line) {
+                // `->where('status', '!=', 'completed')` dans un contexte relecture.
+                if (preg_match("/'status',\s*'!=',\s*'completed'/", $line)) {
+                    $offenders[] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $file->getPathname()).':'.($i + 1);
+                }
+                // `where('status', '!=', 'completed')` sur une collection de relectures.
+                if (preg_match("/Review::[a-zA-Z]*\(?.*'status'\s*,\s*'!='/", $line)) {
+                    $offenders[] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $file->getPathname()).':'.($i + 1);
+                }
+            }
+        }
+    }
+
+    expect($offenders)->toBe([], 'Relecture « en attente » déduite de l’inachèvement dans : '.implode(', ', $offenders));
+});

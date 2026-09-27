@@ -18,7 +18,7 @@ class StaffRoles
         'editions_write' => 'Éditions (écriture)',
         'submissions_list' => 'Soumissions - liste',
         'assign_reviewers' => 'Assigner relecteurs',
-        'evaluate' => 'Évaluer (avis)',
+        'evaluate' => 'Évaluer (relectures)',
         'final_decision' => 'Décision finale',
         'participants' => 'Participants',
         'payments' => 'Paiements',
@@ -71,7 +71,7 @@ class StaffRoles
         'scientific' => [
             'label' => 'Comité scientifique',
             'category' => 'Système', 'pill' => 'review', 'abbr' => 'Comité sci.',
-            'description' => 'Synthèse des avis, décisions d’acceptation / refus / corrections, vue sur les relectures.',
+            'description' => 'Synthèse des relectures, décisions d’acceptation / refus / corrections.',
             'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'assign_reviewers', 'evaluate', 'final_decision'],
         ],
         'comite_supervision' => [

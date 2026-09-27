@@ -165,10 +165,14 @@ class DashboardController extends Controller
             'reportedSessions' => $activity->reportedSessions(),
             'committees' => $activity->committees(),
             'isReviewer' => $activity->isReviewer(),
+            // ⚠️ « À traiter » = invitée ou acceptée (Review::PENDING_STATUSES).
+            // Un `status != completed` comptait aussi les relectures refusées ou
+            // annulées : le relecteur gardait un badge pour un travail qu'il
+            // n'avait plus à faire.
             'pendingReviews' => $activity->isReviewer()
                 ? Review::whereIn('reviewer_id', Participant::where('user_id', $account->id)
                     ->where('role', 'reviewer')->pluck('id'))
-                    ->where('status', '!=', 'completed')->count()
+                    ->whereIn('status', Review::PENDING_STATUSES)->count()
                 : 0,
         ]);
     }

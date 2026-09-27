@@ -35,7 +35,7 @@
                 {{ $lateAccepted > 0 ? $lateAccepted.' '.__('en retard') : __('dans les délais') }}
             </div>
         </div>
-        <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="check-circle" :size="20" /></div><div class="lbl">{{ __('Évaluées') }}</div><div class="val green">{{ $doneCount }}</div></div>
+        <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="check-circle" :size="20" /></div><div class="lbl">{{ __('Rendues') }}</div><div class="val green">{{ $doneCount }}</div></div>
         <div class="ukc-stat-card tw-stat">
             <div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="close" :size="20" /></div>
             <div class="lbl">{{ __('Refusées') }}</div>

@@ -602,7 +602,7 @@ class SubmissionController extends Controller
             $events[] = ['when' => $review->created_at, 'what' => 'Assignée à '.$name, 'done' => false];
             if ($review->isCompleted()) {
                 $reco = $review->recommendationLabel();
-                $events[] = ['when' => $review->updated_at, 'what' => 'Avis de '.$name.' reçu'.($reco ? ' - '.$reco : ''), 'done' => true];
+                $events[] = ['when' => $review->updated_at, 'what' => 'Relecture de '.$name.' rendue'.($reco ? ' - '.$reco : ''), 'done' => true];
             }
         }
 

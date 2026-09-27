@@ -245,7 +245,7 @@
                             <p>{{ __('Votre soumission a bien été enregistrée et transmise aux relecteurs. Aucune action n’est requise de votre part pour le moment.') }}</p>
                         </div>
                     @endforelse
-                    <p class="hint">{{ __('Les avis détaillés des relecteurs restent confidentiels. Seule la décision finale et d’éventuels commentaires destinés aux auteurs vous sont communiqués.') }}</p>
+                    <p class="hint">{{ __('Les évaluations détaillées des relecteurs restent confidentielles. Seule la décision finale et d’éventuels commentaires destinés aux auteurs vous sont communiqués.') }}</p>
                 </div>
 
                 {{-- Phase de réponse aux relecteurs (rebuttal) - déposant seulement --}}
@@ -300,7 +300,7 @@
                         <li @class(['muted' => $s->status === 'submitted'])>
                             <div class="when">{{ $s->status === 'submitted' ? __('À venir') : __('En cours') }}</div>
                             <div class="what">{{ __('Évaluation scientifique') }}</div>
-                            <div class="detail">{{ $decided ? __('Avis rendus') : __('En attente des avis des relecteurs') }}</div>
+                            <div class="detail">{{ $decided ? __('Relectures rendues') : __('En attente des relectures') }}</div>
                         </li>
                         <li @class(['muted' => ! $decided && $s->status !== 'revision'])>
                             <div class="when">{{ $decided ? $s->updated_at?->format('d/m/Y') : __('À venir') }}</div>

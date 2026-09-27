@@ -586,4 +586,17 @@ la cause. Forme bloc partout dans une vue qui en contient déjà une.
 
 **755 tests verts** (`ReviewLifecycleTest` : 20 cas), PHPStan niveau 5 OK, Pint OK.
 
+**Vocabulaire harmonisé (2026-09-27)** - « avis » a disparu de l'UI et du code
+au profit de **relecture** (la tâche) et **évaluation** (son contenu) :
+tableau de bord admin (« en attente de relecture », « N soumission(s) en
+relecture à décider »), rapports (« Relectures rendues », « Rendues »),
+historique d'une soumission (« Relecture de X rendue »), espace auteur
+(« Relectures rendues », « Les évaluations détaillées restent confidentielles »),
+`StaffRoles` (« Évaluer (relectures) »), et le compteur de l'espace relecteur
+passe de « Évaluées » à **« Rendues »** (le même mot que la pastille d'état).
+En le faisant, un **troisième** `status != 'completed'` est apparu : le tableau
+de bord du participant comptait ses relectures refusées dans « à évaluer ». D'où
+`Review::PENDING_STATUSES` et un **test de garde** qui scanne `app/` et
+`resources/views/`. **757 tests verts.**
+
 > **Mémoire projet** : le contexte fin (décisions, conventions, TODO différés - DOI/DataCite, connecteur Google anti-plagiat, amélioration `admin/reclamations`) est aussi consigné dans la **mémoire locale de Claude Code** (`~/.claude/…/memory/`, non versionnée). Comme cette mémoire ne se partage pas entre contributeurs, **le contexte partageable doit vivre dans `CLAUDE.md` + ce fichier** (versionnés) : les tenir à jour à chaque tâche notable.

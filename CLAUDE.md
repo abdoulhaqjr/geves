@@ -306,6 +306,23 @@ Une relecture n'est plus un simple « assignée / rendue » : `Review::STATUSES`
   du contenu, sous slideover 60 / confirmation 90 / modales 100) - ne pas le
   remonter.
 
+- **Vocabulaire de la relecture (un seul mot par chose)** : la **tâche** est une
+  **« relecture »** (statuts `Review::STATUSES` : *Invitée / Acceptée / Refusée /
+  Rendue / Annulée*), son **contenu** une **« évaluation »** (grille,
+  recommandation, « Évaluer », « Grille d'évaluation », « Délai d'évaluation »).
+  ⚠️ **Ne pas réintroduire « avis »** : c'était un troisième mot pour les mêmes
+  objets, qui cohabitait avec les deux autres sur les mêmes écrans (« Avis
+  rendus » à côté de « Rendue »). Les compteurs disent **« Rendues »**, jamais
+  « Évaluées » ni « Avis rendus ».
+- ⚠️ **« Relecture en attente » ≠ « pas encore rendue »** : un
+  `where('status', '!=', 'completed')` compte aussi les relectures **refusées**
+  et **annulées** - le relecteur garde un badge pour un travail qu'il n'a plus à
+  faire et le comité voit une charge fantôme. Passer par
+  **`Review::PENDING_STATUSES`/`isPending()`** (encore dû),
+  **`ACTIVE_STATUSES`/`isActive()`** (occupe une place) ou **`isLate()`**. Le
+  motif a déjà été écrit à trois endroits : un **test de garde**
+  (`ReviewLifecycleTest`, « ne déduit jamais l'attente de son inachèvement »)
+  scanne `app/` et `resources/views/` et échoue s'il revient.
 ### Règles métier - limites communications & attestations
 
 - **Limite de communications** (`settings.max_communications`) : compte **seulement** les

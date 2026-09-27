@@ -46,6 +46,13 @@ class Review extends Model
      */
     public const ACTIVE_STATUSES = ['invited', 'accepted', 'completed'];
 
+    /**
+     * Statuts « encore dus » : le relecteur a quelque chose à faire (confirmer
+     * ou évaluer). ⚠️ C'est la bonne liste pour un compteur « à traiter » -
+     * un `status != completed` compterait aussi les refus et les annulations.
+     */
+    public const PENDING_STATUSES = ['invited', 'accepted'];
+
     /** Durée d'évaluation par défaut, à défaut de réglage de l'édition (jours). */
     public const DEFAULT_DUE_DAYS = 21;
 
@@ -154,7 +161,7 @@ class Review extends Model
     /** Relecture attendue : confiée ou acceptée, pas encore rendue. */
     public function isPending(): bool
     {
-        return in_array($this->status, ['invited', 'accepted'], true);
+        return in_array($this->status, self::PENDING_STATUSES, true);
     }
 
     /** Occupe une place sur la soumission (compte dans la couverture). */

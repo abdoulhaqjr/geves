@@ -426,7 +426,7 @@ class ProjectController extends Controller
             $t('Appel à communications', 'Mettre en ligne le site de l’édition', 'normal', 'edition'),
             $t('Soumissions & relecture', 'Configurer le formulaire de soumission', 'normal', 'submissions'),
             $t('Soumissions & relecture', 'Recruter et affecter les relecteurs', 'normal', 'reviewers'),
-            $t('Soumissions & relecture', 'Collecter les avis et arrêter les décisions', 'normal', 'submissions'),
+            $t('Soumissions & relecture', 'Collecter les relectures et arrêter les décisions', 'normal', 'submissions'),
             $t('Programme', 'Composer le programme (sessions, ateliers)', 'normal', 'program'),
             $t('Programme', 'Planifier les créneaux et les salles', 'normal', 'program'),
             $t('Logistique', 'Gérer les inscriptions et les paiements', 'normal', 'payments'),

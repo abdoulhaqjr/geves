@@ -54,7 +54,7 @@
             </div>
             <div class="ukc-stat-card tw-stat">
                 <div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="clock" :size="20" /></div>
-                <div class="lbl">En revue</div><div class="val warn">{{ $stats['underReview'] }}</div><div class="hint">avis en attente</div>
+                <div class="lbl">En revue</div><div class="val warn">{{ $stats['underReview'] }}</div><div class="hint">en attente de relecture</div>
             </div>
             <div class="ukc-stat-card tw-stat">
                 <div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="check-circle" :size="20" /></div>
