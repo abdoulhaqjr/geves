@@ -127,8 +127,20 @@
                                     </template>
                                 </td>
                                 <td style="text-align:right;white-space:nowrap;">
+                                    {{-- Édition archivée : plus d'action possible, mais le
+                                         relecteur garde l'accès à ce qu'il a rendu. --}}
+                                    <template x-if="r.frozen">
+                                        <span style="display:inline-flex;align-items:center;gap:8px;justify-content:flex-end;">
+                                            <span class="ukc-pill ukc-pill--muted" title="{{ __('Édition archivée : lecture seule.') }}">{{ __('Archivée') }}</span>
+                                            <template x-if="r.completed">
+                                                <button type="button" class="ukc-btn ukc-btn--outline ukc-btn--sm" @click="edit(r)">
+                                                    <x-ukc.icon name="eye" :size="15" /> {{ __('Consulter') }}
+                                                </button>
+                                            </template>
+                                        </span>
+                                    </template>
                                     {{-- Invitation : on répond d'abord (accepter / refuser). --}}
-                                    <template x-if="r.status === 'invited'">
+                                    <template x-if="! r.frozen && r.status === 'invited'">
                                         <span style="display:inline-flex;gap:8px;justify-content:flex-end;">
                                             <form method="POST" :action="r.respondUrl" style="display:inline;">
                                                 @csrf
@@ -143,12 +155,12 @@
                                         </span>
                                     </template>
                                     {{-- Acceptée ou rendue : on évalue / on revoit. --}}
-                                    <template x-if="r.status === 'accepted' || r.completed">
+                                    <template x-if="! r.frozen && (r.status === 'accepted' || r.completed)">
                                         <button type="button" :class="r.completed ? 'ukc-btn ukc-btn--outline ukc-btn--sm' : 'ukc-btn ukc-btn--blue ukc-btn--sm'" @click="edit(r)">
                                             <x-ukc.icon name="pen" :size="15" /> <span x-text="r.completed ? '{{ __('Revoir') }}' : '{{ __('Évaluer') }}'"></span>
                                         </button>
                                     </template>
-                                    <template x-if="r.status === 'declined' || r.status === 'cancelled'">
+                                    <template x-if="! r.frozen && (r.status === 'declined' || r.status === 'cancelled')">
                                         <span style="color:var(--ukc-muted);font-size:13px;">-</span>
                                     </template>
                                 </td>
@@ -253,7 +265,7 @@
 
     {{-- ===== Panneau d'évaluation (en place, sans changer de page) ===== --}}
     <x-ukc.slideover open="open" onClose="open = false" width="560px">
-        <x-slot:header><span x-text="cur.completed ? '{{ __('Revoir mon évaluation') }}' : '{{ __('Évaluer la communication') }}'"></span></x-slot:header>
+        <x-slot:header><span x-text="cur.frozen ? '{{ __('Évaluation rendue (édition archivée)') }}' : (cur.completed ? '{{ __('Revoir mon évaluation') }}' : '{{ __('Évaluer la communication') }}')"></span></x-slot:header>
 
         {{-- Communication (en aveugle : pas d'auteurs) --}}
         <div style="margin-bottom:16px;">
@@ -273,7 +285,7 @@
             </template>
         </div>
 
-        <form @submit.prevent="save()" id="reviewForm">
+        <form @submit.prevent="save()" id="reviewForm" :inert="cur.frozen">
             {{-- Grille de critères notés (0–scale). Note /20 dérivée. --}}
             <div class="ukc-form-row">
                 <label style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;">
@@ -321,7 +333,7 @@
         <x-slot:footer>
             <span style="flex:1;"></span>
             <button type="button" class="ukc-btn ukc-btn--ghost" @click="open = false">{{ __('Annuler') }}</button>
-            <button type="submit" form="reviewForm" class="ukc-btn ukc-btn--blue" :disabled="saving">
+            <button type="submit" form="reviewForm" class="ukc-btn ukc-btn--blue" :disabled="saving" x-show="! cur.frozen">
                 <x-ukc.icon name="check" :size="16" /> {{ __('Enregistrer mon évaluation') }}
             </button>
         </x-slot:footer>

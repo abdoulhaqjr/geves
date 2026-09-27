@@ -58,6 +58,13 @@
             <p style="color:var(--ukc-muted);">Merci, votre inscription est à jour.</p>
             @if ($paidReceipt)<p style="margin-top:8px;font-size:.9rem;">Reçu n° <strong style="font-family:var(--ukc-mono);">{{ $paidReceipt->receipt_no }}</strong> - disponible dans <a href="{{ route('account.documents') }}" style="color:var(--ukc-blue);font-weight:700;">Documents</a>.</p>@endif
         </div>
+    @elseif ($frozen)
+        {{-- Édition archivée : la page reste consultable (tarifs, reçu) mais le
+             parcours de règlement est clos. --}}
+        <div class="ukc-alert ukc-alert--info">
+            <span class="ico"><x-ukc.icon name="lock" :size="18" /></span>
+            <div>Cette édition est <strong>archivée</strong> : le règlement en ligne est clos. Rapprochez-vous du secrétariat si un paiement reste à régulariser.</div>
+        </div>
     @elseif (! $eligible)
         <div class="ukc-alert ukc-alert--warn"><span class="ico"><x-ukc.icon name="lock" :size="18" /></span><div>Le paiement s’ouvrira dès qu’au moins une de vos communications sera <strong>acceptée</strong>.</div></div>
     @elseif (session('pay_instructions'))

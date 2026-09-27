@@ -15,6 +15,7 @@ use App\Models\Submission;
 use App\Models\User;
 use App\Support\CalendarExport;
 use App\Support\CurrentColloque;
+use App\Support\EditionLock;
 use App\Support\Html;
 use App\Support\ParticipantTypes;
 use App\Support\RorClient;
@@ -142,6 +143,7 @@ class SubmissionController extends Controller
     public function store(StoreSubmissionRequest $request, CreateSubmission $action): RedirectResponse
     {
         $edition = $request->edition();
+        EditionLock::guard($edition);
         $account = Auth::guard('account')->user();
 
         $submission = $action->handle($edition, $account, $request->config(), $request->validated(), $request->file('file'));
@@ -355,9 +357,15 @@ class SubmissionController extends Controller
     // --- Helpers (suivi de communication) -------------------------------------
 
     /** La communication doit appartenir au compte connecté (version canonique). */
+    /**
+     * Propriété du dépôt + édition non archivée. ⚠️ Cette garde est le point
+     * de passage des CINQ actions d'écriture sur une communication : y placer
+     * le gel évite d'avoir à le répéter (et à l'oublier) dans chacune.
+     */
     private function authorizeOwnership(Submission $submission): void
     {
         $account = Auth::guard('account')->user();
+        EditionLock::guard($submission->edition);
 
         abort_unless(
             (int) $submission->revision_of === 0

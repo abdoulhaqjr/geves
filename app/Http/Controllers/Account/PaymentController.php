@@ -7,6 +7,7 @@ use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Payments\GatewayRegistry;
+use App\Support\EditionLock;
 use App\Support\EditionPaymentConfig;
 use App\Support\Fees;
 use Illuminate\Http\RedirectResponse;
@@ -23,6 +24,9 @@ class PaymentController extends Controller
 {
     public function show(Edition $edition): View
     {
+        // ⚠️ Pas de garde ici : la page reste CONSULTABLE (un participant doit
+        // pouvoir relire ce qu'il a payé). Seul `pay()` est bloqué, et la vue
+        // remplace le parcours de règlement par une explication.
         EditionPaymentConfig::apply($edition); // passerelle propre à l'édition (repli global)
         $account = Auth::guard('account')->user();
         $participant = Participant::where('edition_id', $edition->id)
@@ -43,6 +47,7 @@ class PaymentController extends Controller
 
         return view('account.payment.pay', [
             'edition' => $edition,
+            'frozen' => EditionLock::frozen($edition),
             'participant' => $participant,
             'amount' => $amount,
             'tiers' => Fees::grid($edition),
@@ -56,6 +61,7 @@ class PaymentController extends Controller
 
     public function pay(Request $request, Edition $edition, GatewayRegistry $registry): RedirectResponse
     {
+        EditionLock::guard($edition);
         EditionPaymentConfig::apply($edition); // passerelle propre à l'édition (repli global)
         $account = Auth::guard('account')->user();
         $participant = Participant::where('edition_id', $edition->id)

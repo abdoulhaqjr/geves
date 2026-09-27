@@ -49,7 +49,10 @@
         {{-- Verrouillé : validé/amélioré par le secrétariat, consultation seule. --}}
         <div class="ukc-card">
             <p style="color:var(--ukc-muted);font-size:13px;margin:0 0 12px;display:flex;align-items:center;gap:6px;">
-                <x-ukc.icon name="lock" :size="16" /> {{ __('Ce rapport a été validé par le secrétariat. Il n’est plus modifiable.') }}
+                <x-ukc.icon name="lock" :size="16" />
+                {{ $frozen
+                    ? __('Cette édition est archivée : votre rapport reste consultable mais n’est plus modifiable.')
+                    : __('Ce rapport a été validé par le secrétariat. Il n’est plus modifiable.') }}
             </p>
             <div class="ukc-field">
                 <label>{{ __('Synthèse de la séance') }}</label>

@@ -7,6 +7,7 @@ use App\Models\Participant;
 use App\Models\Review;
 use App\Models\ReviewerBid;
 use App\Models\Submission;
+use App\Support\EditionLock;
 use App\Support\Html;
 use App\Support\Notifier;
 use App\Support\ReviewGrid;
@@ -94,6 +95,8 @@ class ReviewWorkspaceController extends Controller
                 'daysLate' => $r->daysLate(),
                 'declineReason' => $r->decline_reason,
                 'respondUrl' => route('account.reviews.respond', $r),
+                // Édition archivée : lecture seule (cf. EditionLock).
+                'frozen' => EditionLock::frozen($sub?->edition),
                 'recommendation' => $r->recommendation,
                 'comments' => $r->comments,
                 'comments_private' => $r->comments_private,
@@ -108,6 +111,8 @@ class ReviewWorkspaceController extends Controller
         // encore ouvertes et non déjà confiées à ce relecteur.
         $reviewerIds = $reviewerParticipants->pluck('id');
         $biddable = Submission::whereIn('edition_id', $editionIds)
+            // Une édition archivée est close : plus de candidature possible.
+            ->whereHas('edition', fn ($q) => $q->where('status', '!=', 'archived'))
             ->where('revision_of', 0)
             ->whereIn('status', ['submitted', 'under_review'])
             ->whereDoesntHave('reviews', fn ($q) => $q->whereIn('reviewer_id', $reviewerIds))
@@ -155,6 +160,8 @@ class ReviewWorkspaceController extends Controller
     public function respond(Request $request, Review $review): RedirectResponse
     {
         $this->authorizeReview($review);
+        $review->loadMissing('submission.edition');
+        EditionLock::guard($review->submission?->edition);
 
         $data = $request->validate([
             'answer' => ['required', 'in:accept,decline'],
@@ -198,6 +205,7 @@ class ReviewWorkspaceController extends Controller
     public function submit(Request $request, Review $review): JsonResponse|RedirectResponse
     {
         $this->authorizeReview($review);
+        EditionLock::guard($review->submission?->edition);
         abort_if(in_array($review->status, ['declined', 'cancelled'], true), 422);
         $review->load('submission.edition');
         $criteria = ReviewGrid::criteria($review->submission?->edition);
@@ -260,6 +268,7 @@ class ReviewWorkspaceController extends Controller
         // Regroupe (soumission autorisée => inscription relecteur de la bonne édition).
         $editionByReviewer = $reviewerParticipants->pluck('edition_id', 'id');
         $allowed = Submission::whereIn('edition_id', $editionByReviewer->values()->unique())
+            ->whereHas('edition', fn ($q) => $q->where('status', '!=', 'archived'))
             ->where('revision_of', 0)
             ->pluck('edition_id', 'id');
 

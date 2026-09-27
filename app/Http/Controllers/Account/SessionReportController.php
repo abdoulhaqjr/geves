@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Account;
 use App\Http\Controllers\Controller;
 use App\Models\EventSession;
 use App\Models\SessionReport;
+use App\Support\EditionLock;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -43,8 +44,12 @@ class SessionReportController extends Controller
             'session' => $session,
             'report' => $report,
             'communications' => $session->scheduledCommunications(),
-            'canWrite' => $session->hasStarted() && ! $report->isValidated(),
-            'locked' => $report->isValidated(),
+            // ⚠️ Le rapporteur garde TOUJOURS accès à son rapport : une édition
+            // archivée le rend simplement non modifiable (branche « verrouillé »
+            // de la vue, qui en affiche le contenu).
+            'canWrite' => $session->hasStarted() && ! $report->isValidated() && ! EditionLock::frozen($session->edition),
+            'locked' => $report->isValidated() || EditionLock::frozen($session->edition),
+            'frozen' => EditionLock::frozen($session->edition),
             'notStarted' => ! $session->hasStarted(),
         ]);
     }
@@ -56,6 +61,7 @@ class SessionReportController extends Controller
         // Fenêtre de rédaction : seulement une fois la séance commencée, et tant
         // que le secrétariat n'a pas validé/verrouillé le rapport.
         $report = SessionReport::firstOrNew(['session_id' => $session->id]);
+        EditionLock::guard($session->edition);
         abort_unless($session->hasStarted(), 403, 'La rédaction du rapport ouvrira au début de la séance.');
         abort_if($report->isValidated(), 403, 'Le rapport a été validé par le secrétariat et n’est plus modifiable.');
 

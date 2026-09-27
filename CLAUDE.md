@@ -373,6 +373,29 @@ Une relecture n'est plus un simple « assignée / rendue » : `Review::STATUSES`
   `list-style: disc|decimal outside` - sinon il ne reste qu'un texte indenté,
   sans puce ni numéro. Même piège pour toute liste stylée à la main.
 
+### Édition archivée = lecture seule pour les participants
+
+**`App\Support\EditionLock`** : `frozen($edition)` (statut **`archived`**) et
+`guard($edition)` (403 explicite). Appelé dans les actions d'**écriture** de
+l'espace participant : dépôt et corrections d'une communication
+(`Account\SubmissionController::authorizeOwnership`, point de passage des cinq
+actions), relecture (`submit`, `respond`, candidatures), rapport de séance,
+paiement (`pay`), inscription à une formation.
+
+- ⚠️ **Le déclencheur est `archived`, pas `closed` ni la date de fin.** `closed`
+  signifie « dépôts clos » : c'est précisément la période où les relecteurs
+  travaillent. Une édition dont les dates sont passées mais non archivée peut
+  encore recevoir une relecture ou une version définitive. L'archivage est la
+  décision explicite qui fige le dossier.
+- ⚠️ **Le gel n'enlève jamais la LECTURE** : le relecteur consulte l'évaluation
+  qu'il a rendue (bouton « Consulter », panneau `inert`, pas d'enregistrement),
+  le rapporteur relit son rapport (branche « verrouillé » de la vue), le
+  participant garde la page de paiement et son reçu. On masque les actions et on
+  dit pourquoi - on ne renvoie pas un 403 sur un bouton resté cliquable.
+- Le **back-office n'est pas concerné** : l'admin et les gestionnaires gardent la
+  main (corriger une décision, émettre une attestation oubliée, rembourser). Leurs
+  droits restent portés par le RBAC par édition.
+- Tests : `tests/Feature/ArchivedEditionLockTest.php`.
 ### Règles métier - limites communications & attestations
 
 - **Limite de communications** (`settings.max_communications`) : compte **seulement** les
