@@ -46,6 +46,9 @@ function initTomSelects(root = document) {
         const isInput = el.tagName === 'INPUT';
         const tags = isInput || el.hasAttribute('data-tom-create');
         const max = parseInt(el.getAttribute('data-tom-max') || '', 10);
+        // ⚠️ À lire AVANT l'init : Tom Select force `multiple` sur l'élément
+        // d'origine quand il passe en mode multi.
+        const isMulti = el.multiple;
         // Mode tags sur un <input> : on relit la valeur (mots séparés par des
         // virgules) AVANT init pour ré-injecter les tags existants.
         const seed = isInput ? String(el.value || '').split(',').map((s) => s.trim()).filter(Boolean) : [];
@@ -71,8 +74,11 @@ function initTomSelects(root = document) {
             createOnBlur: isInput,
             persist: false,
             allowEmptyOption: !isInput,
-            maxItems: Number.isFinite(max) && max > 0 ? max : null,
-            plugins: (el.multiple || isInput) ? ['remove_button'] : [],
+            // Un <select> simple doit rester à UN choix : sans maxItems, Tom Select
+            // bascule en mode multi et laisse accumuler des valeurs que le filtre
+            // ne sait pas envoyer (une seule est soumise).
+            maxItems: (isInput || isMulti) ? (Number.isFinite(max) && max > 0 ? max : null) : 1,
+            plugins: (isMulti || isInput) ? ['remove_button'] : [],
             // ⚠️ Un <select> dont l'option vide porte déjà un libellé (« Tous les
             // axes ») n'a PAS besoin de placeholder : Tom Select afficherait les
             // deux l'un sur l'autre. Le libellé de l'option vide fait office de
