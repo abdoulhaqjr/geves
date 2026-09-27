@@ -147,9 +147,12 @@ class AuthorMatcher
     /** Ne garde que les chiffres (et un éventuel +), pour comparer des E.164. */
     public static function normPhone(?string $phone): string
     {
-        $phone = preg_replace('/[^\d+]/', '', (string) $phone) ?? '';
+        // Forme canonique partagée avec l'écriture (cf. App\Support\Phone et le
+        // mutateur `User::phone`) : comparer et stocker doivent suivre la MÊME
+        // règle, sinon le rapprochement rate des numéros pourtant identiques.
+        $clean = Phone::normalize($phone);
 
-        return strlen(preg_replace('/\D/', '', $phone) ?? '') >= 8 ? $phone : '';
+        return Phone::usable($clean) ? $clean : '';
     }
 
     /**

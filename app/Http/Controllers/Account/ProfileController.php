@@ -7,11 +7,13 @@ use App\Support\HalClient;
 use App\Support\Orcid;
 use App\Support\OrcidClient;
 use App\Support\ParticipantTypes;
+use App\Support\Phone;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
@@ -35,6 +37,9 @@ class ProfileController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
+        $account = Auth::guard('account')->user();
+        $request->merge(['phone' => Phone::normalize($request->input('phone'))]);
+
         $data = $request->validate([
             'civility' => ['nullable', 'string', 'max:20'],
             'first_name' => ['required', 'string', 'max:150'],
@@ -42,7 +47,8 @@ class ProfileController extends Controller
             'grade' => ['nullable', 'string', 'max:100'],
             // Obligatoire : identifie la personne (rapprochement auteurs/formateurs)
             // et pré-remplit la page de la passerelle de paiement (mobile money).
-            'phone' => ['required', 'string', 'max:50'],
+            // ⚠️ UNIQUE (hors soi-même) : un numéro ne désigne qu'un compte.
+            'phone' => ['required', 'string', 'max:50', Rule::unique('users', 'phone')->ignore($account->id)],
             'affiliation' => ['nullable', 'string', 'max:255'],
             'country' => ['nullable', 'string', 'max:100'],
             'city' => ['nullable', 'string', 'max:120'],
@@ -58,9 +64,7 @@ class ProfileController extends Controller
         // Normalise l'ORCID en forme canonique (ou null si vide).
         $data['orcid'] = filled($data['orcid'] ?? null) ? Orcid::normalize((string) $data['orcid']) : null;
 
-        $account = Auth::guard('account')->user();
-
-        // Une modification manuelle de l'ORCID annule la vérification OAuth.
+        // Une modification manuelle de l’ORCID annule la vérification OAuth.
         if (($data['orcid'] ?? null) !== $account->orcid) {
             $account->orcid_verified_at = null;
         }

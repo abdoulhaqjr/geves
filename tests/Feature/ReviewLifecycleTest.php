@@ -16,7 +16,9 @@ function reviewerFor(Submission $submission, string $email = 'relecteur@example.
 {
     $account = User::create([
         'name' => 'Kossi Adjo', 'first_name' => 'Kossi', 'last_name' => 'Adjo',
-        'email' => $email, 'password' => 'pass12345', 'phone' => '+22891111111',
+        'email' => $email, 'password' => 'pass12345',
+        // ⚠️ `users.phone` est unique : un numéro par relecteur, dérivé de l'e-mail.
+        'phone' => '+2289'.substr(md5($email), 0, 7),
         'affiliation' => 'Université de Kara',
     ]);
     $account->markEmailAsVerified();

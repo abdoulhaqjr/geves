@@ -396,6 +396,21 @@ paiement (`pay`), inscription à une formation.
   main (corriger une décision, émettre une attestation oubliée, rembourser). Leurs
   droits restent portés par le RBAC par édition.
 - Tests : `tests/Feature/ArchivedEditionLockTest.php`.
+- ⚠️ **Téléphone = identifiant UNIQUE** : `users.phone` porte un index unique, et
+  **`App\Support\Phone::normalize()`** en donne la forme canonique (séparateurs
+  retirés, `+` conservé ; **aucun indicatif deviné**). La normalisation est
+  appliquée par le **mutateur `User::phone`** et **avant** chaque contrôle
+  d'unicité - sinon « +228 90 01 52 84 » passerait la validation puis
+  entrerait en collision à l'écriture. Trois écrans écrivent ce champ et doivent
+  tous porter la règle : **inscription**, **profil** et **2FA par SMS**
+  (`SecurityController::sendSmsSetupCode`, sans quoi on s'appropriait le numéro
+  d'un tiers). `AuthorMatcher::normPhone()` délègue à la même classe : comparer
+  et stocker suivent la même règle.
+  Pourquoi : le téléphone est un **signal fort** de rapprochement (auteurs,
+  formateurs) et le serveur **impose** ensuite l'identité du compte trouvé - un
+  doublon rattachait donc une communication au mauvais compte, en silence.
+  Diagnostic : **`php artisan users:phones`** (rapport, `--fix` pour normaliser).
+  Tests : `tests/Feature/UserPhoneUniquenessTest.php`.
 ### Règles métier - limites communications & attestations
 
 - **Limite de communications** (`settings.max_communications`) : compte **seulement** les

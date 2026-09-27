@@ -50,7 +50,9 @@ it('active la 2FA par SMS : numéro → code → confirmation', function () {
         ->assertSessionHasNoErrors();
 
     expect($fake->sent)->toHaveCount(1);
-    expect($fake->sent[0]['to'])->toBe('+228 90 11 22 33');
+    // Le numéro est stocké sous forme canonique (cf. App\Support\Phone), donc le
+    // SMS part au numéro nettoyé.
+    expect($fake->sent[0]['to'])->toBe('+22890112233');
 
     $this->actingAs($account, 'account')
         ->post(route('account.security.sms.confirm'), ['code' => otpFrom($fake)])
@@ -59,7 +61,7 @@ it('active la 2FA par SMS : numéro → code → confirmation', function () {
     $account->refresh();
     expect($account->hasSmsEnabled())->toBeTrue();
     expect($account->twoFactorMethod())->toBe('sms');
-    expect($account->phone)->toBe('+228 90 11 22 33');
+    expect($account->phone)->toBe('+22890112233');
     expect($account->countRecoveryCodes())->toBe(8);
 });
 

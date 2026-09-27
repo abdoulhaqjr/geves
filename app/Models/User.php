@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\HasNotificationPreferences;
 use App\Models\Concerns\ParticipantIdentity;
 use App\Notifications\StaffVerifyEmail;
+use App\Support\Phone;
 use App\Support\StaffRoles;
 use Database\Factories\UserFactory;
 use Illuminate\Auth\Notifications\VerifyEmail;
@@ -12,6 +13,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -289,6 +291,19 @@ class User extends Authenticatable implements MustVerifyEmail
     public function sendStaffEmailVerificationNotification(): void
     {
         $this->notify(new StaffVerifyEmail);
+    }
+
+    /**
+     * Téléphone : forme canonique **à l'écriture**.
+     *
+     * ⚠️ C'est un identifiant fort (rapprochement auteurs/formateurs, 2FA SMS) et
+     * il est désormais unique. Sans normalisation au stockage, « +228 90 01 52 84 »
+     * et « +22890015284 » seraient deux valeurs distinctes : l'unicité serait
+     * contournable par la simple mise en forme et le rapprochement échouerait.
+     */
+    protected function phone(): Attribute
+    {
+        return Attribute::set(fn (?string $value) => Phone::normalize($value) ?: null);
     }
 
     /**

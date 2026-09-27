@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Account;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\ParticipantTypes;
+use App\Support\Phone;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -41,6 +42,8 @@ class RegisterController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $request->merge(['phone' => Phone::normalize($request->input('phone'))]);
+
         $data = $request->validate([
             'civility' => ['nullable', 'string', 'max:20'],
             'first_name' => ['required', 'string', 'max:150'],
@@ -50,7 +53,9 @@ class RegisterController extends Controller
             'email' => ['required', 'string', 'email', 'max:190', 'unique:users,email'],
             // Identifiant fort (rapprochement auteurs/formateurs) + pré-remplissage
             // de la passerelle de paiement : obligatoire dès l'inscription.
-            'phone' => ['required', 'string', 'max:50'],
+            // ⚠️ UNIQUE : le serveur impose l'identité du compte qu'un numéro
+            // désigne, deux comptes ne peuvent donc pas partager le même.
+            'phone' => ['required', 'string', 'max:50', 'unique:users,phone'],
             'password' => ['required', 'string', 'confirmed', Password::defaults()],
             'terms' => ['accepted'],
         ]);

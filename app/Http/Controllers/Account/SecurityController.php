@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
 use App\Sms\SmsManager;
+use App\Support\Phone;
 use App\Support\Totp;
 use App\Support\UserAgent;
 use Illuminate\Http\RedirectResponse;
@@ -12,6 +13,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password as PasswordRule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -149,11 +151,20 @@ class SecurityController extends Controller
     /** Envoie un code de vérification au numéro saisi. */
     public function sendSmsSetupCode(Request $request, SmsManager $sms): RedirectResponse
     {
+        $account = Auth::guard('account')->user();
+
+        // ⚠️ Ce parcours écrit `users.phone` comme le profil : il doit passer par
+        // la MÊME normalisation et le MÊME contrôle d'unicité. Sans cela, on
+        // s'appropriait le numéro d'un tiers par la 2FA (et, depuis l'index
+        // unique, on tombait sur une erreur base brute).
+        $request->merge(['phone' => Phone::normalize($request->input('phone'))]);
         $request->validate([
-            'phone' => ['required', 'string', 'regex:/^\+?[0-9 ().-]{8,20}$/'],
+            'phone' => [
+                'required', 'string', 'regex:/^\+?[0-9]{8,20}$/',
+                Rule::unique('users', 'phone')->ignore($account->id),
+            ],
         ], attributes: ['phone' => 'numéro de téléphone']);
 
-        $account = Auth::guard('account')->user();
         $code = $account->generateOtp();
         $account->phone = (string) $request->input('phone');
         $account->save();
