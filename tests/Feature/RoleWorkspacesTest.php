@@ -414,3 +414,49 @@ it('refuse une évaluation sur une relecture qui n’est pas la sienne', functio
         ->postJson(route('account.reviews.submit', $review), ['recommendation' => 'accept'])
         ->assertForbidden();
 });
+
+it('filtre les participants par paiement et par invitation', function () {
+    $edition = openEdition(['formation_enabled' => true]);
+
+    $payeur = $edition->participants()->create(['first_name' => 'Paul', 'last_name' => 'Payeur', 'email' => 'paul@test.tg', 'role' => 'author']);
+    Payment::create(['edition_id' => $edition->id, 'participant_id' => $payeur->id, 'amount' => 25000, 'method' => 'cash', 'gateway' => 'manual', 'status' => 'paid']);
+
+    // Ne règle QU'UNE formation : ne doit pas ressortir dans « Ont payé ».
+    $stagiaire = $edition->participants()->create(['first_name' => 'Sara', 'last_name' => 'Stagiaire', 'email' => 'sara@test.tg', 'role' => 'trainee']);
+    Payment::create([
+        'edition_id' => $edition->id, 'participant_id' => $stagiaire->id, 'amount' => 5000,
+        'method' => 'cash', 'gateway' => 'manual', 'status' => 'paid', 'meta' => ['flow' => 'formation', 'formation_id' => 1],
+    ]);
+
+    $invite = $edition->participants()->create([
+        'first_name' => 'Ines', 'last_name' => 'Invitee', 'email' => 'ines@test.tg', 'role' => 'author',
+        'meta' => ['invited_at' => now()->toDateTimeString()],
+    ]);
+
+    $admin = adminStaff();
+    $url = fn (array $q) => route('admin.participants.index', $q + ['edition_id' => $edition->id]);
+
+    $this->actingAs($admin, 'web')->get($url(['paid' => '1']))
+        ->assertOk()->assertSee('Paul Payeur')->assertDontSee('Sara Stagiaire');
+
+    $this->actingAs($admin, 'web')->get($url(['paid' => '0']))
+        ->assertOk()->assertSee('Sara Stagiaire')->assertDontSee('Paul Payeur');
+
+    $this->actingAs($admin, 'web')->get($url(['invited' => '1']))
+        ->assertOk()->assertSee('Ines Invitee')->assertDontSee('Paul Payeur');
+
+    $this->actingAs($admin, 'web')->get($url(['invited' => '0']))
+        ->assertOk()->assertSee('Paul Payeur')->assertDontSee('Ines Invitee');
+});
+
+it('n’expose plus « En tant que » dans la liste des participants', function () {
+    $edition = openEdition();
+    $edition->participants()->create(['first_name' => 'Paul', 'last_name' => 'Payeur', 'email' => 'paul@test.tg', 'role' => 'author']);
+
+    // L'impersonation reste accessible depuis « Sa page », pas depuis la liste.
+    $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.participants.index', ['edition_id' => $edition->id]))
+        ->assertOk()
+        ->assertSee('Sa page')
+        ->assertDontSee('En tant que');
+});

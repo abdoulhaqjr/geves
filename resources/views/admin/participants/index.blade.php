@@ -40,9 +40,19 @@
                 <option value="">Tous les rôles</option>
                 @foreach ($roles as $key => $label)<option value="{{ $key }}" @selected($role === $key)>{{ $label }}</option>@endforeach
             </select>
+            <select name="paid" onchange="this.form.submit()" title="Frais de participation">
+                <option value="">Paiement : tous</option>
+                <option value="1" @selected($paid === '1')>Ont payé</option>
+                <option value="0" @selected($paid === '0')>N’ont pas payé</option>
+            </select>
+            <select name="invited" onchange="this.form.submit()" title="Invitation envoyée">
+                <option value="">Invitation : tous</option>
+                <option value="1" @selected($invited === '1')>Invités</option>
+                <option value="0" @selected($invited === '0')>Non invités</option>
+            </select>
             <input type="search" name="search" value="{{ $search }}" placeholder="Nom ou e-mail…" style="min-width:200px;flex:1;"
                    onkeydown="if(event.key==='Enter'){this.form.submit();}">
-            @if ($search !== '' || $role !== '')
+            @if ($search !== '' || $role !== '' || $paid !== '' || $invited !== '')
                 <a href="{{ route('admin.participants.index', ['edition_id' => $edition_id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
             @endif
         </form>
@@ -88,18 +98,6 @@
                                                class="ukc-btn ukc-btn--ghost ukc-btn--sm" title="Aperçu du dossier, en lecture seule (vous restez admin)">
                                                 <x-ukc.icon name="eye" :size="14" /> Sa page
                                             </a>
-                                            @can('manage_colloques')
-                                                @if ($p->user)
-                                                    <form method="POST" action="{{ route('admin.participants.impersonate', $p) }}"
-                                                          onsubmit="return confirm('Se connecter en tant que {{ addslashes($p->full_name) }} ?\n\nVous agirez réellement dans son espace participant jusqu’à « Quitter l’impersonation ».');">
-                                                        @csrf
-                                                        <button type="submit" class="ukc-btn ukc-btn--ghost ukc-btn--sm"
-                                                                title="Se connecter en tant que ce participant (impersonation)">
-                                                            <x-ukc.icon name="login" :size="14" /> En tant que
-                                                        </button>
-                                                    </form>
-                                                @endif
-                                            @endcan
                                             <form method="POST" action="{{ route('admin.participants.invite', $p) }}"
                                                   data-ajax data-ajax-target="participants" data-ajax-msg="Invitation envoyée.">
                                                 @csrf

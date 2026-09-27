@@ -36,6 +36,8 @@ class ParticipantController extends Controller
         }
         $role = (string) $request->query('role', '');
         $search = trim((string) $request->query('search', ''));
+        $paid = (string) $request->query('paid', '');
+        $invited = (string) $request->query('invited', '');
 
         $base = Participant::query()->where('edition_id', $editionId);
         $sort = ListSort::resolve($request, ['last_name', 'role', 'created_at'], 'last_name', 'asc');
@@ -43,6 +45,12 @@ class ParticipantController extends Controller
         $participants = (clone $base)
             ->with('participationPayments')
             ->when($role !== '', fn ($q) => $q->where('role', $role))
+            // ⚠️ Paiement = frais de PARTICIPATION (une formation réglée ne compte pas).
+            ->when($paid === '1', fn ($q) => $q->whereHas('participationPayments', fn ($pa) => $pa->where('status', 'paid')))
+            ->when($paid === '0', fn ($q) => $q->whereDoesntHave('participationPayments', fn ($pa) => $pa->where('status', 'paid')))
+            // « Invité » est un horodatage dans meta (Participant::isInvited).
+            ->when($invited === '1', fn ($q) => $q->where('meta', 'like', '%"invited_at"%'))
+            ->when($invited === '0', fn ($q) => $q->where(fn ($w) => $w->whereNull('meta')->orWhere('meta', 'not like', '%"invited_at"%')))
             ->when($search !== '', function ($q) use ($search) {
                 $term = "%{$search}%";
                 $q->where(fn ($p) => $p->where('first_name', 'like', $term)
@@ -77,6 +85,8 @@ class ParticipantController extends Controller
             'sort' => $sort['sort'],
             'dir' => $sort['dir'],
             'editions' => $editions,
+            'paid' => $paid,
+            'invited' => $invited,
             'participants' => $participants,
             'roles' => Participant::ROLES,
             'edition_id' => $editionId,
