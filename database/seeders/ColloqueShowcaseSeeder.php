@@ -129,8 +129,8 @@ class ColloqueShowcaseSeeder extends Seeder
         $s['languages'] = ['Français', 'Anglais'];
         $s['main_language'] = 'Français';
         $s['format'] = 'Présentiel & hybride';
-        $s['short_name'] = 'UP–UK';
-        $s['short_desc'] = 'Le colloque conjoint UP–UK rassemble chercheurs, doctorants et praticiens autour de la formation, '
+        $s['short_name'] = 'UP-UK';
+        $s['short_desc'] = 'Le colloque conjoint UP-UK rassemble chercheurs, doctorants et praticiens autour de la formation, '
             .'la recherche et l’innovation face aux défis contemporains.';
 
         $s['intro'] = 'Organisé conjointement par l’Université de Parakou (Bénin) et l’Université de Kara (Togo), '
@@ -246,10 +246,10 @@ class ColloqueShowcaseSeeder extends Seeder
         ];
 
         $s['programme'] = [
-            ['day' => 'Jour 1', 'time' => '09:00–10:30', 'type' => 'Conférence', 'title' => 'Conférence inaugurale', 'speaker' => 'Invité d’honneur', 'room' => 'Amphi A'],
-            ['day' => 'Jour 1', 'time' => '11:00–12:30', 'type' => 'Session', 'title' => 'Session Atelier 1 - Sciences médicales', 'speaker' => 'Modérateur : Pr. Mensah', 'room' => 'Salle B'],
-            ['day' => 'Jour 2', 'time' => '09:00–10:30', 'type' => 'Session', 'title' => 'Session Atelier 2 - Agronomie', 'speaker' => '', 'room' => 'Salle C'],
-            ['day' => 'Jour 4', 'time' => '16:00–17:00', 'type' => 'Clôture', 'title' => 'Cérémonie de clôture & recommandations', 'speaker' => 'Comité d’organisation', 'room' => 'Amphi A'],
+            ['day' => 'Jour 1', 'time' => '09:00-10:30', 'type' => 'Conférence', 'title' => 'Conférence inaugurale', 'speaker' => 'Invité d’honneur', 'room' => 'Amphi A'],
+            ['day' => 'Jour 1', 'time' => '11:00-12:30', 'type' => 'Session', 'title' => 'Session Atelier 1 - Sciences médicales', 'speaker' => 'Modérateur : Pr. Mensah', 'room' => 'Salle B'],
+            ['day' => 'Jour 2', 'time' => '09:00-10:30', 'type' => 'Session', 'title' => 'Session Atelier 2 - Agronomie', 'speaker' => '', 'room' => 'Salle C'],
+            ['day' => 'Jour 4', 'time' => '16:00-17:00', 'type' => 'Clôture', 'title' => 'Cérémonie de clôture & recommandations', 'speaker' => 'Comité d’organisation', 'room' => 'Amphi A'],
         ];
 
         $s['why'] = [
@@ -448,9 +448,9 @@ class ColloqueShowcaseSeeder extends Seeder
 
         // Trois éditions précédentes comme le mockup.
         $past = [
-            [2025, 'VIIe Colloque conjoint UP–UK', 'Édition 2025 - affiche et programme'],
-            [2023, 'VIe Colloque conjoint UP–UK', 'Édition 2023 - affiche et programme'],
-            [2021, 'Ve Colloque conjoint UP–UK', 'Édition 2021 - affiche et programme'],
+            [2025, 'VIIe Colloque conjoint UP-UK', 'Édition 2025 - affiche et programme'],
+            [2023, 'VIe Colloque conjoint UP-UK', 'Édition 2023 - affiche et programme'],
+            [2021, 'Ve Colloque conjoint UP-UK', 'Édition 2021 - affiche et programme'],
         ];
 
         foreach ($past as [$year, $title, $subtitle]) {

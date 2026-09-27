@@ -125,7 +125,7 @@ class ColloqueLiveSeeder extends Seeder
             $this->seedDemoCommunications($edition, $participant, $sessionsByDay);
         }
 
-        $this->command?->info("Colloque en direct simulé : édition #{$edition->id} ({$edition->date_start->format('d/m')}–{$edition->date_end->format('d/m/Y')}), {$i} séances plénières 8 h–23 h.");
+        $this->command?->info("Colloque en direct simulé : édition #{$edition->id} ({$edition->date_start->format('d/m')}-{$edition->date_end->format('d/m/Y')}), {$i} séances plénières 8 h-23 h.");
     }
 
     /**

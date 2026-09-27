@@ -23,7 +23,7 @@ use Illuminate\Support\Str;
 
 /**
  * Colloque de test « Innover pour un avenir durable » (VIIIe colloque conjoint
- * Parakou–Kara). Dates calées AUTOUR D'AUJOURD'HUI (colloque « en cours » de
+ * Parakou-Kara). Dates calées AUTOUR D'AUJOURD'HUI (colloque « en cours » de
  * 4 jours, hier → +2 j) pour tester le déroulement en direct : la 1re session
  * est marquée « live ». Crée l'édition, ses 6 ateliers et sessions, des
  * modérateurs et rapporteurs de test, et des communicants avec des
@@ -52,7 +52,7 @@ class ColloqueAvenirSeeder extends Seeder
 
         $colloque = Colloque::updateOrCreate(
             ['slug' => 'parakou-kara'],
-            ['name' => 'Colloque scientifique international conjoint Parakou–Kara']
+            ['name' => 'Colloque scientifique international conjoint Parakou-Kara']
         );
 
         $edition = $colloque->editions()->updateOrCreate(
@@ -227,7 +227,7 @@ class ColloqueAvenirSeeder extends Seeder
                         'reported_by' => $rap->id,
                         'summary' => 'La séance a réuni trois communications de qualité autour de l’innovation '
                             ."durable. Les échanges avec la salle ont été nourris, en particulier sur le financement\n"
-                            .'de la recherche appliquée et les partenariats université–entreprise.',
+                            .'de la recherche appliquée et les partenariats université-entreprise.',
                         'highlights' => 'Recommander la publication des actes ; encourager une session de suivi '
                             .'sur les mécanismes de valorisation.',
                         'attendance' => 58,
