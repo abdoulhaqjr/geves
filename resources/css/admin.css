@@ -738,8 +738,10 @@
 .admin-ai .msg.bot .chat-md > :last-child { margin-bottom: 0; }
 .admin-ai .msg.bot .chat-md p { margin: 0 0 8px; }
 .admin-ai .msg.bot .chat-md .chat-md-h { font-weight: 800; margin: 10px 0 6px; }
-.admin-ai .msg.bot .chat-md ul,
-.admin-ai .msg.bot .chat-md ol { margin: 4px 0 10px; padding-left: 20px; }
+/* ⚠️ Preflight (Tailwind) met `list-style: none` sur ul/ol : sans ces deux
+   déclarations, les listes du chat perdent puces et numéros. */
+.admin-ai .msg.bot .chat-md ul { list-style: disc outside; margin: 4px 0 10px; padding-left: 20px; }
+.admin-ai .msg.bot .chat-md ol { list-style: decimal outside; margin: 4px 0 10px; padding-left: 22px; }
 .admin-ai .msg.bot .chat-md li { margin: 2px 0; }
 .admin-ai .msg.bot .chat-md code { background: rgba(34, 62, 164, .08); border-radius: 5px; padding: 1px 5px; font-size: .92em; }
 

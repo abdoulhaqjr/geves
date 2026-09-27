@@ -361,6 +361,13 @@ Une relecture n'est plus un simple « assignée / rendue » : `Review::STATUSES`
   faisait passer l'en-tête sur trois lignes. ⚠️ `subtitle` est une valeur PHP
   échappée à l'affichage : y écrire `&amp;` produit un `&amp;amp;` visible.
 
+- ⚠️ **Listes dans le chat** : `ukcMarkdownLite` produit de vrais `<ul>`/`<ol>`,
+  mais le **reset Preflight de Tailwind** met `list-style: none` sur toutes les
+  listes. Les trois surfaces de chat (`.admin-ai` copilote, `.gesco-chat` page
+  `/assistante`, `.ukc-cb-msg` bulle flottante) doivent donc **rétablir**
+  `list-style: disc|decimal outside` - sinon il ne reste qu'un texte indenté,
+  sans puce ni numéro. Même piège pour toute liste stylée à la main.
+
 ### Règles métier - limites communications & attestations
 
 - **Limite de communications** (`settings.max_communications`) : compte **seulement** les
