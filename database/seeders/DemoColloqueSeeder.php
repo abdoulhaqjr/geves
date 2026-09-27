@@ -49,8 +49,8 @@ class DemoColloqueSeeder extends Seeder
                         .'Communications orales et posters sont attendus dans les cinq axes thématiques.',
                     'fees' => [
                         ['label' => 'Doctorant', 'amount' => 15000],
-                        ['label' => 'Enseignant-chercheur', 'amount' => 25000],
-                        ['label' => 'Professionnel', 'amount' => 35000],
+                        ['label' => 'Enseignant / Chercheur', 'amount' => 25000],
+                        ['label' => 'Autre participant', 'amount' => 35000],
                     ],
                 ],
             ]

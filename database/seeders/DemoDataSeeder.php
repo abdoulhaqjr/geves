@@ -28,7 +28,7 @@ class DemoDataSeeder extends Seeder
         $tracks = $edition->settings['tracks'] ?? ['Sciences et technologies', 'Sciences humaines et sociales', 'Santé et environnement'];
         $institutions = ['Université de Kara', 'Université de Lomé', 'Université de Parakou', 'Université d’Abomey-Calavi', 'Université Ouaga I'];
         $countries = ['Togo', 'Bénin', 'Burkina Faso', 'Côte d’Ivoire'];
-        $titles = ['Enseignant-chercheur', 'Doctorant', 'Maître-assistant', 'Étudiant en master'];
+        $titles = ['Enseignant / Chercheur', 'Doctorant', 'Maître-assistant', 'Étudiant en master'];
         $people = [
             ['Awa', 'Kodjo'], ['Yao', 'Mensah'], ['Fatou', 'Diallo'], ['Kofi', 'Aganze'], ['Adjoa', 'Nkrumah'],
             ['Ibrahim', 'Traoré'], ['Mariam', 'Sawadogo'], ['Koffi', 'Adjovi'], ['Rita', 'Boni'], ['Serge', 'Kaboré'],

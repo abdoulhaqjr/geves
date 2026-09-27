@@ -114,10 +114,10 @@ class ColloqueAvenirSeeder extends Seeder
         // Inscriptions (participants) des modérateurs / rapporteurs sur l'édition,
         // avec leur fonction (rôle) réelle pour piloter leurs espaces dédiés.
         foreach ($moderators as $u) {
-            $this->participant($edition, $u, 'moderator', 'Enseignant-chercheur');
+            $this->participant($edition, $u, 'moderator', 'Enseignant / Chercheur');
         }
         foreach ($rapporteurs as $u) {
-            $this->participant($edition, $u, 'rapporteur', 'Enseignant-chercheur');
+            $this->participant($edition, $u, 'rapporteur', 'Enseignant / Chercheur');
         }
 
         // Membre du secrétariat (staff) rattaché à l'édition : accès back-office
@@ -439,7 +439,7 @@ class ColloqueAvenirSeeder extends Seeder
     private function reviewer(Edition $edition, string $email, string $first, string $last): Participant
     {
         $user = $this->user($email, $first, $last);
-        $participant = $this->participant($edition, $user, 'reviewer', 'Enseignant-chercheur');
+        $participant = $this->participant($edition, $user, 'reviewer', 'Enseignant / Chercheur');
 
         if (blank($participant->access_token)) {
             $participant->access_token = Str::random(64);

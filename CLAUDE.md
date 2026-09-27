@@ -122,7 +122,14 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   data-tom-max`). Affichage d'un résumé stocké : **`App\Support\Html::render()`** (HTML
   assaini, jamais `strip_tags` brut).
 - **Affiliations (autocomplétion)** : API libre **ROR** (`App\Support\RorClient`, api.ror.org, sans clé, cache + fail-closed) via l'endpoint `account.affiliations` (repli local) ; le wizard alimente un `<datalist>` en direct. Ne pas revenir à un datalist statique alimenté par la base.
-- **Grades de participant** : liste unique **`App\Support\ParticipantTypes::all()`**
+- **Grades de participant** : liste unique **`App\Support\ParticipantTypes::all()`**,
+  désormais **éditable dans Réglages** (clé `participant_types`, un grade par ligne ;
+  `ParticipantTypes::DEFAULTS` sert de point de départ et de repli - la liste n'est
+  jamais vide, sinon l'inscription serait bloquée). ⚠️ **Ne jamais redéclarer une
+  liste de grades ailleurs** : le formulaire d'inscription l'avait fait, et les grades
+  ainsi créés (« Doctorant / étudiant ») ne correspondaient à aucune catégorie
+  tarifaire - le montant restait « à préciser ». Un test de garde
+  (`PaymentRightsGuardTest`) échoue si une liste parallèle réapparaît.
   (profil + auteur correspondant). Le **grade est capturé par édition** sur le
   participant (`participant.title`) → une personne peut avoir des grades différents au
   fil des colloques ; ne pas le lire uniquement depuis le profil global.

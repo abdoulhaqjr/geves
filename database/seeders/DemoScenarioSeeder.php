@@ -49,7 +49,7 @@ class DemoScenarioSeeder extends Seeder
 
     /** @var array<string, int> */
     private array $grades = [
-        'Enseignant-chercheur' => 30000,
+        'Enseignant / Chercheur' => 30000,
         'Maître-assistant' => 25000,
         'Doctorant' => 15000,
         'Étudiant (M2)' => 10000,
@@ -279,7 +279,7 @@ class DemoScenarioSeeder extends Seeder
                 'first_name' => $first, 'last_name' => $last,
                 'email' => Str::lower($first.'.'.$last.'.rev').'@example.tg',
                 'institution' => $this->institutions[array_rand($this->institutions)],
-                'country' => 'Togo', 'title' => 'Enseignant-chercheur', 'role' => 'reviewer', 'access_token' => Str::random(64),
+                'country' => 'Togo', 'title' => 'Enseignant / Chercheur', 'role' => 'reviewer', 'access_token' => Str::random(64),
             ]);
         }
 

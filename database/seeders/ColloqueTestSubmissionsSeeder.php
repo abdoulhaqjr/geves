@@ -32,7 +32,7 @@ class ColloqueTestSubmissionsSeeder extends Seeder
     private array $institutions = ['Université de Kara', 'Université de Parakou', 'Université de Lomé', 'University of Ghana', 'Université d’Abomey-Calavi', 'UCAD Dakar', 'Université de Ouagadougou', 'CIRAD / IRD'];
 
     /** @var array<string, int> grade => tarif FCFA */
-    private array $grades = ['Doctorant' => 15000, 'Enseignant-chercheur' => 35000, 'Professeur' => 50000];
+    private array $grades = ['Doctorant' => 15000, 'Enseignant / Chercheur' => 35000, 'Professeur' => 50000];
 
     public function run(): void
     {
@@ -57,7 +57,7 @@ class ColloqueTestSubmissionsSeeder extends Seeder
             : ['Axe thématique'];
 
         // Quelques relecteurs pour les avis en aveugle.
-        $reviewers = collect(range(1, 4))->map(fn ($i) => $this->makeParticipant($edition, $i + 900, 'reviewer', 'Enseignant-chercheur'))->all();
+        $reviewers = collect(range(1, 4))->map(fn ($i) => $this->makeParticipant($edition, $i + 900, 'reviewer', 'Enseignant / Chercheur'))->all();
 
         // Éventail de statuts d'un colloque EN COURS (soumissions encore ouvertes).
         $statuses = array_merge(

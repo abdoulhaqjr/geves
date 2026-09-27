@@ -38,6 +38,16 @@
                             <input type="text" id="app_name" name="app_name" value="{{ $v('app_name') }}" maxlength="60" placeholder="GEVES">
                             <span class="hint" style="font-size:12px;color:var(--ukc-muted);">Marque affichée partout (en-têtes, titres, e-mails, code TOTP). Laisser vide pour utiliser APP_NAME du .env.</span>
                         </div>
+                        <div class="ukc-field full">
+                            <label for="participant_types">Types / grades de participant</label>
+                            <textarea id="participant_types" name="participant_types" rows="6"
+                                      placeholder="Un grade par ligne">{{ $v('participant_types') }}</textarea>
+                            <span class="hint" style="font-size:12px;color:var(--ukc-muted);">
+                                Un grade par ligne. C’est la <strong>liste unique</strong> proposée à l’inscription, au profil
+                                et pour les co-auteurs ; c’est aussi elle qu’on rattache aux catégories tarifaires d’une édition.
+                                Renommer un grade déjà utilisé ne met pas à jour les comptes existants : ajoutez plutôt une ligne.
+                            </span>
+                        </div>
                         <div class="ukc-field">
                             <label for="app_url">URL du site (APP_URL)</label>
                             <input type="url" id="app_url" name="app_url" value="{{ $v('app_url') }}" placeholder="https://gesco.test">

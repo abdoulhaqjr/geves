@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Providers\AppServiceProvider;
+use App\Support\ParticipantTypes;
 use App\Support\Settings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,6 +25,7 @@ class SettingController extends Controller
     /** Correspondance champ de formulaire → clé de réglage. */
     private const MAP = [
         'app_name' => 'app.name',
+        'participant_types' => 'participant_types',
         'from_name' => 'mail.from_name',
         'from_address' => 'mail.from_address',
         'currency' => 'payments.currency',
@@ -84,6 +86,9 @@ class SettingController extends Controller
 
         $values = [
             'app_name' => $g('app.name', (string) config('app.name')),
+            // Grades de participant : liste effective, un par ligne.
+            'participant_types' => implode('
+', ParticipantTypes::all()),
             'from_name' => $g('mail.from_name', (string) config('mail.from.name')),
             'from_address' => $g('mail.from_address', (string) config('mail.from.address')),
             'currency' => $g('payments.currency', (string) config('payments.currency', 'XOF')),
