@@ -77,7 +77,6 @@
                             <x-ukc.th sort="ref_code" :current="$sort" :dir="$dir">Réf.</x-ukc.th>
                             <x-ukc.th sort="title" :current="$sort" :dir="$dir">Communication</x-ukc.th>
                             <x-ukc.th sort="author" :current="$sort" :dir="$dir">Auteur(s)</x-ukc.th>
-                            <x-ukc.th sort="type" :current="$sort" :dir="$dir">Type</x-ukc.th>
                             <x-ukc.th sort="track" :current="$sort" :dir="$dir">Axe</x-ukc.th>
                             <x-ukc.th sort="created_at" :current="$sort" :dir="$dir">Déposée</x-ukc.th>
                             <x-ukc.th sort="status" :current="$sort" :dir="$dir">Statut</x-ukc.th>
@@ -92,14 +91,16 @@
                                 <td class="title-cell">
                                     <strong>{{ \Illuminate\Support\Str::limit($s->title, 64) }}</strong>
                                     @php $words = str_word_count(strip_tags((string) $s->abstract)); @endphp
-                                    <div class="meta">{{ count($s->authors ?? []) ?: 1 }} auteur(s)@if ($words) · {{ $words }} mots @endif</div>
+                                    <div class="meta">
+                                        {{ $s->type === 'poster' ? 'Poster' : 'Orale' }}
+                                        · {{ count($s->authors ?? []) ?: 1 }} auteur(s){{ $words ? ' · '.$words.' mots' : '' }}
+                                    </div>
                                 </td>
                                 <td>{{ $s->participant?->full_name ?? ($s->authors[0]['name'] ?? '-') }}
                                     @if (($s->unlinked_authors_count ?? 0) > 0)
                                         <span class="ukc-pill ukc-pill--warn" style="margin-left:6px;" title="Co-auteur(s) non rattaché(s) à un compte">{{ $s->unlinked_authors_count }} non rattaché·s</span>
                                     @endif
                                 </td>
-                                <td>{{ $s->type === 'poster' ? 'Poster' : 'Orale' }}</td>
                                 <td>@if ($s->track)<span class="axis-tag">{{ \Illuminate\Support\Str::limit($s->track, 22) }}</span>@else - @endif</td>
                                 <td style="white-space:nowrap;">{{ $s->created_at?->format('d/m/Y') }}</td>
                                 <td><span class="ukc-pill ukc-pill--{{ $statusPills[$s->status] ?? 'muted' }}">{{ $statuses[$s->status] ?? $s->status }}</span></td>
@@ -142,7 +143,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="9" style="padding:24px;color:var(--ukc-muted);text-align:center;">Aucune soumission ne correspond aux filtres.</td></tr>
+                            <tr><td colspan="8" style="padding:24px;color:var(--ukc-muted);text-align:center;">Aucune soumission ne correspond aux filtres.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

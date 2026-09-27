@@ -840,3 +840,16 @@
 .admin-submission-detail .reviewer-item .rev-state .due { font-size: 11.5px; color: var(--ukc-muted); }
 .admin-submission-detail .reviewer-item .rev-remove { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; padding: 0; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--ukc-light); cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
 .admin-submission-detail .reviewer-item .rev-remove:hover { background: #fee2e2; border-color: #fecaca; color: #b4231c; }
+
+/* Axes en pastilles compactes : avec 6 axes et plusieurs relecteurs, les grandes
+   cases faisaient des lignes de tableau hautes de six rangées. Le libellé complet
+   reste accessible au survol (title). */
+.reviewer-axes--chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.reviewer-axes--chips .axis-check { padding: 4px 10px; border-radius: 999px; font-size: 12px; gap: 6px; }
+.reviewer-axes--chips .axis-check input { width: 13px; height: 13px; }
+
+/* Liste des soumissions : huit colonnes (dont « Relectures », la plus utile au
+   comité) ne tenaient pas sous ~1250 px et la dernière sortait de l'écran.
+   Gouttières resserrées plutôt qu'une colonne sacrifiée. */
+.admin-submissions .ukc-table th,
+.admin-submissions .ukc-table td { padding-left: 10px; padding-right: 10px; }

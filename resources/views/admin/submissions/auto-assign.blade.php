@@ -1,4 +1,6 @@
-<x-layouts.admin title="Attribution automatique" subtitle="Relecteurs - matching par axe, conflits d’intérêts &amp; charge">
+{{-- ⚠️ `subtitle` est une valeur PHP, échappée à l'affichage : y écrire « &amp; »
+     produit un « &amp;amp; » visible. Mettre le caractère tel quel. --}}
+<x-layouts.admin title="Attribution automatique" subtitle="Relecteurs - matching par axe, conflits d’intérêts & charge">
     <div class="admin-page">
         {{-- Sélecteur d'édition en tête, AVANT les onglets (convention des pages
              Documents, Participants, Paiements et Soumissions). --}}

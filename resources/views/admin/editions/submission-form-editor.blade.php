@@ -1,6 +1,5 @@
-<x-layouts.admin title="Formulaire de soumission" :subtitle="'Champs, ordre & règles · '.($edition->title ?: $edition->year)">
+<x-layouts.admin title="Formulaire de soumission" subtitle="Champs et ordre d’affichage">
     <x-slot:actions>
-        <a href="{{ route('admin.editions.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">← Éditions</a>
         <a href="{{ route('account.submissions.create', $edition->slug) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
             <x-ukc.icon name="external" :size="15" /> Aperçu public
         </a>

@@ -152,7 +152,7 @@
 
                 @if ($canWrite)
                     <div class="ukc-form-actions" style="margin-top:16px;text-align:right;">
-                        <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer les règles</button>
+                        <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer les règles de relecture</button>
                     </div>
                 @else
                     <p class="hint" style="margin-top:10px;font-size:12.5px;color:var(--ukc-muted);">

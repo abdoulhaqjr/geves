@@ -564,12 +564,26 @@ class SubmissionController extends Controller
             : $this->currentEditionId($editions);
         $edition = $editionId !== '' ? $editions->firstWhere('id', (int) $editionId) : null;
 
+        $reviewers = ReviewerExpertise::forEdition($edition);
+        $axes = ReviewerExpertise::axes($edition);
+
+        // Couverture : un axe que personne ne peut évaluer est le vrai signal de
+        // cette page - sans lui, l'attribution retombera sur « hors axe ».
+        $uncovered = array_values(array_filter(
+            $axes,
+            fn (string $axis) => ! $reviewers->contains(
+                fn (array $r) => ReviewerExpertise::covers($r['tracks'], $axis)
+            )
+        ));
+
         return view('admin.submissions.reviewers', [
             'editions' => $editions,
             'edition' => $edition,
             'edition_id' => $editionId,
-            'reviewers' => ReviewerExpertise::forEdition($edition),
-            'reviewerAxes' => ReviewerExpertise::axes($edition),
+            'reviewers' => $reviewers,
+            'reviewerAxes' => $axes,
+            'uncoveredAxes' => $uncovered,
+            'avgLoad' => $reviewers->isEmpty() ? 0.0 : round($reviewers->avg('load'), 1),
             'canWrite' => $this->canWriteEdition($edition),
         ]);
     }

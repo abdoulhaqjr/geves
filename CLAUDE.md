@@ -355,6 +355,12 @@ Une relecture n'est plus un simple « assignée / rendue » : `Review::STATUSES`
   **`ReviewerExpertise::covers()`** / **`axisKey()`** (tirets typographiques,
   casse et espaces normalisés) ; l'enregistrement **recanonise** sur le libellé de
   l'édition, donc un axe renommé ne casse plus l'expertise en silence.
+- **En-tête d'une page admin** : `title` = le nom de l'onglet, `subtitle` = une
+  courte indication de ce qu'on y fait (« Communications & résumés »), **jamais**
+  le nom de l'édition - il est déjà dans le sélecteur juste en dessous, et il
+  faisait passer l'en-tête sur trois lignes. ⚠️ `subtitle` est une valeur PHP
+  échappée à l'affichage : y écrire `&amp;` produit un `&amp;amp;` visible.
+
 ### Règles métier - limites communications & attestations
 
 - **Limite de communications** (`settings.max_communications`) : compte **seulement** les
