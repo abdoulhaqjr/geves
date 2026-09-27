@@ -24,8 +24,17 @@ html { scrollbar-gutter: stable; }
   --ukc-mono: var(--ukc-font);
   --ukc-blue: #223ea4;
   --ukc-blue-dark: #1a3080;
+  --ukc-blue-bright: #2f52c8; /* bleu plus lumineux : coin clair des dégradés héros */
   --ukc-green: #009933;
   --ukc-gold: #ffd700;
+  /* Dégradé de héros CANONIQUE des pages publiques : bleu-foncé -> bleu -> bleu
+     lumineux. Une seule source pour tous les héros (accueil, pages internes,
+     colloque, live, auth) afin de les harmoniser et d'éviter la teinte quasi
+     noire (#0f1a33) qui traînait dans les anciens dégradés. Les reflets or/vert
+     restent apportés par les calques ::before de chaque héros. */
+  --ukc-hero: linear-gradient(135deg, var(--ukc-blue-dark) 0%, var(--ukc-blue) 58%, var(--ukc-blue-bright) 100%);
+  /* Navy profond (bleuté, pas noir) pour les fonds pleins / voiles sur image. */
+  --ukc-hero-navy: #14205a;
   --ukc-gold-dark: #e6c200;
   --ukc-text: #0f172a;
   --ukc-muted: #475569;
@@ -702,7 +711,7 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 @media (max-width: 900px) { .auth-shell { grid-template-columns: 1fr; } }
 
 .auth-brand {
-  background: linear-gradient(145deg, #0f1a33 0%, #1a3080 45%, #223ea4 75%, #0a7a2f 100%);
+  background: var(--ukc-hero);
   color: #fff; padding: clamp(32px, 6vw, 56px);
   display: flex; flex-direction: column; justify-content: space-between;
   position: relative; overflow: hidden;

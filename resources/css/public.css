@@ -52,7 +52,7 @@
 /* ---- Hero ---- */
 .hero {
   position: relative;
-  background: linear-gradient(135deg, #0f1a33 0%, #1a3080 48%, #223ea4 72%, #0a7a2f 100%);
+  background: var(--ukc-hero);
   color: #fff; overflow: hidden;
   padding: clamp(56px, 10vw, 96px) 0 clamp(64px, 10vw, 100px);
 }
@@ -172,7 +172,7 @@
 .about-copy p { color: var(--ukc-muted); font-size: 15px; margin-bottom: 12px; }
 .about-copy .actions { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 10px; }
 .about-side {
-  background: linear-gradient(145deg, #0f1a33, #1a3080 60%, #223ea4);
+  background: var(--ukc-hero);
   color: #fff; border-radius: var(--ukc-radius); padding: 24px 22px;
   display: flex; flex-direction: column; gap: 14px; box-shadow: 0 16px 40px rgba(15, 26, 51, .18);
 }
@@ -274,7 +274,7 @@
 .cta-band p { color: rgba(255, 255, 255, .88); font-size: 15px; max-width: 34em; }
 
 /* ---- Hero de page (archives, déroulement…) ---- */
-.page-hero { position: relative; overflow: hidden; background: linear-gradient(135deg, #0f1a33, #1a3080 55%, #223ea4); color: #fff; padding: clamp(40px, 6vw, 64px) 0; }
+.page-hero { position: relative; overflow: hidden; background: var(--ukc-hero); color: #fff; padding: clamp(40px, 6vw, 64px) 0; }
 .page-hero .ukc-container { position: relative; z-index: 1; }
 .page-hero .eyebrow { font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--ukc-gold); margin-bottom: 10px; }
 .page-hero h1 { font-size: clamp(1.7rem, 3.5vw, 2.35rem); font-weight: 900; margin-bottom: 12px; letter-spacing: -.02em; }
@@ -312,9 +312,9 @@
 .edition-card:hover .cta { text-decoration: underline; }
 
 /* ---- Détail d'une édition passée (scopé pour éviter les collisions) ---- */
-.detail-hero { position: relative; overflow: hidden; color: #fff; background: #0f1a33; }
+.detail-hero { position: relative; overflow: hidden; color: #fff; background: var(--ukc-hero-navy); }
 .detail-hero .bg { position: absolute; inset: 0; background-size: cover; background-position: center; }
-.detail-hero .bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(15, 26, 51, .35), rgba(15, 26, 51, .88)); }
+.detail-hero .bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20, 32, 90, .35), rgba(20, 32, 90, .9)); }
 .detail-hero .ukc-container { position: relative; z-index: 1; padding-top: 48px; padding-bottom: 36px; }
 .detail-hero h1 { font-size: clamp(1.45rem, 3vw, 2rem); font-weight: 900; line-height: 1.25; max-width: 18em; margin-bottom: 12px; }
 .detail-hero .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
@@ -344,7 +344,7 @@
 .gallery-hidden { display: none !important; }
 
 /* ---- Déroulement live (scopé) ---- */
-.live-hero { background: linear-gradient(135deg, #0f1a33, #1a3080 50%, #223ea4); color: #fff; padding: clamp(28px, 5vw, 48px) 0; position: relative; overflow: hidden; }
+.live-hero { background: var(--ukc-hero); color: #fff; padding: clamp(28px, 5vw, 48px) 0; position: relative; overflow: hidden; }
 .live-hero.has-bg::before { content: ""; position: absolute; inset: 0; background-size: cover; background-position: center; opacity: .2; }
 .live-hero .ukc-container { position: relative; z-index: 1; }
 .live-hero .top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
@@ -632,7 +632,7 @@ input[data-uppercase] { text-transform: uppercase; }
 .ukc-cb-msg.bot .chat-md code { background: rgba(34, 62, 164, .08); border-radius: 5px; padding: 1px 5px; font-size: .92em; }
 
 /* ---- Footer public ---- */
-.site-footer { background: #0f1a33; color: #a8b3c9; padding: 48px 0 24px; font-size: 14px; }
+.site-footer { background: var(--ukc-hero-navy); color: #a8b3c9; padding: 48px 0 24px; font-size: 14px; }
 .footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 28px; margin-bottom: 36px; }
 @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 480px) { .footer-grid { grid-template-columns: 1fr; } }
@@ -649,7 +649,7 @@ input[data-uppercase] { text-transform: uppercase; }
    ========================================================================= */
 .ukc-hero {
   position: relative;
-  background: linear-gradient(135deg, var(--ukc-blue) 0%, var(--ukc-blue-dark) 55%, #0f1f5c 100%);
+  background: var(--ukc-hero);
   color: #fff; padding: clamp(56px, 9vw, 100px) 0 clamp(48px, 7vw, 72px); overflow: hidden;
 }
 .ukc-hero::before {

@@ -91,6 +91,11 @@ le nom `Gesco` : `AskGesco`, `GescoController` - c'est du code, pas de l'afficha
 - **Ne jamais utiliser le tiret cadratin `—` (U+2014)** dans le projet (UI, code,
   seeds, docs) : utiliser un tiret simple `-`.
 - Charte UK : bleu `#223ea4`, or `#ffd700`, vert `#009933`, police **Jost**.
+- **Dégradé des héros publics = un seul token `--ukc-hero`** (`ukc.css`, bleu-foncé →
+  bleu → `--ukc-blue-bright`). Tous les héros publics (accueil, pages internes, colloque,
+  live, auth) l'utilisent : **ne jamais recopier un dégradé bleu en dur** dans un héros.
+  Proscrire le navy quasi-noir `#0f1a33`/`#0f1f5c` sur le public (fonds pleins / voiles →
+  `--ukc-hero-navy` `#14205a`). Les reflets or/vert viennent des calques `::before`.
 
 ### Kit Tailwise (back-office & espace participant)
 
