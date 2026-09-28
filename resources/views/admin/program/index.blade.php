@@ -37,19 +37,25 @@
          @ukc-new-slot.window="openSlot(null)">
 
         {{-- Filtres (GET) : sélecteur d'édition --}}
-        <form method="GET" class="filter-bar">
-            <select name="edition_id" onchange="this.form.submit()">
-                <option value="">- Édition -</option>
-                @foreach ($editions as $ed)
-                    <option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>
-                @endforeach
-            </select>
-        </form>
+        <div class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px;">
+            <div class="ukc-field" style="min-width:320px;max-width:460px;margin:0;">
+                <label for="edition_id">Édition</label>
+                <select id="edition_id" name="edition_id"
+                        onchange="window.location = '{{ route('admin.program.index') }}?edition_id=' + this.value + '&tab={{ $tab }}'">
+                    <option value="">- Choisir -</option>
+                    @foreach ($editions as $ed)
+                        <option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
 
         @if ($edition_id === '')
             <div class="ukc-empty"><h3>Choisissez une édition</h3></div>
         @else
-            {{-- KPI --}}
+            @include('admin.program._nav', ['current' => $tab])
+
+            {{-- Indicateurs --}}
             <div class="ukc-stats">
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="grid" :size="20" /></div><div class="lbl">Ateliers</div><div class="val blue">{{ $stats['ateliers'] }}</div></div>
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="layers" :size="20" /></div><div class="lbl">Sessions</div><div class="val">{{ $stats['sessions'] }}</div></div>
@@ -67,7 +73,7 @@
                 </p>
             </div>
 
-            @include('admin.program._nav', ['current' => $tab])
+
 
             {{-- ============================ PLANNING ============================ --}}
             {{-- Agenda : le calendrier et la vue par jour décrivent la même chose,
@@ -488,11 +494,6 @@
                     </div>
                 </div>
             </div>
-
-            {{-- ============================ RAPPORTS ============================ --}}
-            @if ($tab === 'rapports')
-                @include('admin.program._reports')
-            @endif
 
             {{-- ============================ PARAMÈTRES ============================ --}}
             <div @if ($tab !== 'options') style="display:none;" @endif>

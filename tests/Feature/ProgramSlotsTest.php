@@ -226,9 +226,11 @@ it('redirige les anciennes adresses du programme vers le bon onglet', function (
         ->get(route('admin.program.sessions', ['edition_id' => $edition->id]))
         ->assertRedirect(route('admin.program.index', ['edition_id' => $edition->id, 'tab' => 'sessions']));
 
+    // ⚠️ Les rapports de séance relèvent du Secrétariat, pas du Programme :
+    // l'ancienne adresse y renvoie plutôt que vers un onglet qui n'existe plus.
     $this->actingAs($staff, 'web')
         ->get(route('admin.program.reports', ['edition_id' => $edition->id]))
-        ->assertRedirect(route('admin.program.index', ['edition_id' => $edition->id, 'tab' => 'rapports']));
+        ->assertRedirect(route('admin.secretariat', ['edition_id' => $edition->id]));
 
     $this->actingAs($staff, 'web')
         ->get(route('admin.program.slots', ['edition_id' => $edition->id]))

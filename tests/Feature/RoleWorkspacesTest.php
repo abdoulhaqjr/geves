@@ -293,7 +293,7 @@ it('affiche au comité les rapports de séance soumis (vue admin)', function () 
     ]);
 
     $this->actingAs(adminStaff(), 'web')
-        ->get(route('admin.program.index', ['edition_id' => $edition->id, 'tab' => 'rapports']))
+        ->get(route('admin.secretariat.reports', ['edition_id' => $edition->id]))
         ->assertOk()
         ->assertSee('Session - Atelier 4')
         ->assertSee('Rita Rapporteuse')

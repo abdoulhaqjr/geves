@@ -11,7 +11,6 @@
         'creneaux' => 'Créneaux',
         'espaces' => 'Espaces',
         'auto' => 'Affectation auto',
-        'rapports' => 'Rapports',
         'options' => 'Options',
     ] as $key => $label)
         @if ($current === $key)

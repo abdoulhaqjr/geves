@@ -255,6 +255,8 @@ Route::prefix('admin')->group(function () {
         // (le contenu est ensuite restreint aux éditions accessibles).
         Route::get('/', App\Http\Controllers\Admin\DashboardController::class)->name('admin.dashboard');
         Route::get('/secretariat', [SecretariatController::class, 'index'])->name('admin.secretariat');
+        // Rapports de séance : lecture, amélioration et validation - métier du secrétariat.
+        Route::get('/secretariat/rapports', [SecretariatController::class, 'reports'])->name('admin.secretariat.reports');
         Route::get('/reclamations', [ClaimController::class, 'index'])->name('admin.claims.index');
         Route::get('/reclamations/{claim}', [ClaimController::class, 'show'])->name('admin.claims.show');
         Route::post('/reclamations/{claim}/statut', [ClaimController::class, 'updateStatus'])->name('admin.claims.status');

@@ -50,4 +50,19 @@ trait ScopesEditionAccess
             ? Edition::latest('id')->get()
             : $user->accessibleEditions($capability);
     }
+
+    /**
+     * Identifiant de l'édition proposée par défaut dans un sélecteur : l'édition
+     * ouverte, sinon la plus récente accessible. Vide si aucune n'est accessible.
+     *
+     * @param  Collection<int, Edition>  $editions
+     */
+    protected function currentEditionId(Collection $editions): string
+    {
+        if ($editions->isEmpty()) {
+            return '';
+        }
+
+        return (string) ($editions->firstWhere('status', 'open') ?? $editions->first())->id;
+    }
 }

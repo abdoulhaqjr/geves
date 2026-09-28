@@ -1,7 +1,7 @@
 <x-layouts.admin title="Secrétariat" subtitle="Rapports de séance à valider · suivi administratif">
     @php($me = auth('web')->user())
     <x-slot:actions>
-        <a href="{{ route('admin.program.reports') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="sheet" :size="15" /> Rapports</a>
+        <a href="{{ route('admin.secretariat.reports') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="sheet" :size="15" /> Rapports</a>
         @if ($me?->canAnyEdition('participants'))
             <a href="{{ route('admin.participants.index') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="users" :size="15" /> Participants</a>
         @endif
@@ -52,7 +52,7 @@
                                         <td>{{ $s->report?->submitted_at?->translatedFormat('d/m/Y H:i') ?: '-' }}</td>
                                         <td style="text-align:right;">
                                             <div style="display:inline-flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
-                                                <a href="{{ route('admin.program.reports') }}?edition_id={{ $s->edition_id }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="eye" :size="15" /> Lire / améliorer</a>
+                                                <a href="{{ route('admin.secretariat.reports') }}?edition_id={{ $s->edition_id }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="eye" :size="15" /> Lire / améliorer</a>
                                                 <form method="POST" action="{{ route('admin.program.reports.save', $s) }}" onsubmit="return confirm('Valider ce rapport ? Le rapporteur ne pourra plus le modifier.')">
                                                     @csrf
                                                     <button type="submit" class="ukc-btn ukc-btn--green ukc-btn--sm"><x-ukc.icon name="check" :size="15" /> Valider</button>

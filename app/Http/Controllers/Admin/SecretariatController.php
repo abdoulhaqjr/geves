@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Actions\GenerateReport;
+use App\Http\Controllers\Admin\Concerns\ScopesEditionAccess;
 use App\Http\Controllers\Controller;
 use App\Models\Edition;
 use App\Models\EventSession;
@@ -26,6 +27,8 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class SecretariatController extends Controller
 {
+    use ScopesEditionAccess;
+
     /**
      * Modèles de documents proposés au secrétariat. Chaque preset pré-remplit le
      * prompt, le format de sortie et le jeu de données joint.
@@ -101,6 +104,31 @@ class SecretariatController extends Controller
     }
 
     /** Génère un document du secrétariat via IA (prompt ou modèle joint). */
+    /**
+     * Rapports de séance d'une édition : lecture et amélioration par le
+     * secrétariat, avant validation.
+     *
+     * ⚠️ Les rapports relèvent du secrétariat et de lui seul - le module
+     * Programme n'en porte plus de copie : deux écrans pour le même objet, c'est
+     * deux endroits où chercher et un risque d'états divergents.
+     */
+    public function reports(Request $request): View
+    {
+        $editions = $this->accessibleEditions($request, 'editions_read');
+        $editionId = $request->has('edition_id')
+            ? (string) $request->query('edition_id', '')
+            : $this->currentEditionId($editions);
+        $edition = $editionId !== '' ? $editions->firstWhere('id', (int) $editionId) : null;
+
+        return view('admin.secretariat.reports', [
+            'editions' => $editions,
+            'edition_id' => $edition ? (string) $edition->id : '',
+            'sessions' => $edition
+                ? $edition->sessions()->with(['atelier', 'report'])->orderBy('starts_at')->orderBy('id')->get()
+                : collect(),
+        ]);
+    }
+
     public function generate(Request $request, GenerateReport $action): RedirectResponse
     {
         $data = $request->validate([

@@ -16,7 +16,6 @@ use App\Support\Notifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 /**
@@ -58,29 +57,17 @@ class ProgramController extends Controller
      * Rapports de séance : consultation par le comité des synthèses rédigées par
      * les rapporteurs (état à rédiger / brouillon / soumis).
      */
+    /**
+     * ⚠️ Les rapports de séance relèvent du **Secrétariat** : c'est lui qui les
+     * lit, les améliore et les VALIDE (la validation verrouille le rapport côté
+     * rapporteur). Le module Programme n'en porte plus de copie ; l'ancienne
+     * adresse redirige, pour les liens et signets existants.
+     */
     public function reports(Request $request): RedirectResponse
     {
-        return redirect()->route('admin.program.index', array_filter([
+        return redirect()->route('admin.secretariat', array_filter([
             'edition_id' => $request->query('edition_id'),
-            'tab' => 'rapports',
         ]));
-    }
-
-    /**
-     * Séances et leur rapport, pour l'onglet Rapports.
-     *
-     * ⚠️ Lecture seulement : la VALIDATION d'un rapport reste au Secrétariat
-     * (c'est son métier, et elle verrouille le rapport côté rapporteur). Les
-     * deux écrans se renvoient l'un à l'autre.
-     *
-     * @return Collection<int, EventSession>
-     */
-    private function reportSessions(?Edition $edition): Collection
-    {
-        return $edition
-            ? $edition->sessions()->with(['atelier', 'report'])
-                ->orderBy('starts_at')->orderBy('id')->get()
-            : collect();
     }
 
     /**
@@ -325,14 +312,13 @@ class ProgramController extends Controller
                 'color' => $s->type === 'plenary' ? '#223ea4' : '#009933',
             ])->values();
 
-        $tabs = ['planning', 'ateliers', 'sessions', 'creneaux', 'espaces', 'auto', 'rapports', 'options'];
+        $tabs = ['planning', 'ateliers', 'sessions', 'creneaux', 'espaces', 'auto', 'options'];
         $tab = in_array($request->query('tab'), $tabs, true) ? (string) $request->query('tab') : 'planning';
 
         return view('admin.program.index', [
             'tab' => $tab,
             'calendarEvents' => $calendarEvents,
             'plenaries' => $sessions->where('type', 'plenary')->values(),
-            'reportSessions' => $tab === 'rapports' ? $this->reportSessions($edition) : collect(),
             'editions' => $this->accessibleEditions($request, 'editions_read'),
             'edition' => $edition,
             'edition_id' => $edition ? (string) $edition->id : '',

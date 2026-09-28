@@ -56,7 +56,6 @@
             <div>
                 <div class="ukc-tabs">
                     <button type="button" @click="tab='general'" :class="{ active: tab==='general' }">Général</button>
-                    <button type="button" @click="tab='programme'" :class="{ active: tab==='programme' }">Programme</button>
                     <button type="button" @click="tab='content'" :class="{ active: tab==='content' }">Appel &amp; contenu</button>
                     <button type="button" @click="tab='submissions'" :class="{ active: tab==='submissions' }">Soumissions &amp; tarifs</button>
                     <button type="button" @click="tab='committees'" :class="{ active: tab==='committees' }">Comités</button>
@@ -189,10 +188,7 @@
                                 </select>
                             </div>
                         </div>
-                    </div>
 
-                    {{-- ===== PROGRAMME ===== --}}
-                    <div class="ukc-panel" :class="{ active: tab==='programme' }">
                         <div class="ukc-card">
                             <h2>Dates clés</h2>
                             <div class="desc">Chronologie affichée sur la page du colloque (appel, soumission, notification, inscriptions, tenue…).</div>
@@ -209,10 +205,13 @@
                             </template>
                             <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="addKeyDate()">+ Ajouter une date clé</button>
                         </div>
+                    </div>
 
+                    {{-- ===== APPEL & CONTENU ===== --}}
+                    <div class="ukc-panel" :class="{ active: tab==='content' }">
                         <div class="ukc-card">
                             <h2>Programme</h2>
-                            <div class="desc">Déroulé éditorial du colloque (jour, horaire, type, intitulé, intervenant, salle) affiché sur la page publique. La planification opérationnelle des créneaux se gère dans <a href="{{ $edition ? route('admin.program.slots').'?edition_id='.$edition->id : route('admin.program.slots') }}">Programme &amp; créneaux</a>.</div>
+                            <div class="desc">Déroulé éditorial du colloque (jour, horaire, type, intitulé, intervenant, salle) affiché sur la page publique. La planification opérationnelle des créneaux se gère dans <a href="{{ $edition ? route('admin.program.index').'?edition_id='.$edition->id : route('admin.program.index') }}">le module Programme</a>.</div>
                             <div class="prog-head">
                                 <span>Jour</span><span>Horaire</span><span>Type</span><span>Intitulé</span><span>Intervenant</span><span>Salle</span><span></span>
                             </div>
@@ -232,10 +231,7 @@
                             </template>
                             <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="addProg()" style="margin-top:10px;">+ Ajouter une ligne</button>
                         </div>
-                    </div>
 
-                    {{-- ===== APPEL & CONTENU ===== --}}
-                    <div class="ukc-panel" :class="{ active: tab==='content' }">
                         <div class="ukc-card">
                             <h2>Axes thématiques</h2>
                             <div class="desc">Axes du formulaire de soumission, du programme et du livre des résumés.</div>

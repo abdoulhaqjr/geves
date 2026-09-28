@@ -411,9 +411,9 @@ paiement (`pay`), inscription à une formation.
   doublon rattachait donc une communication au mauvais compte, en silence.
   Diagnostic : **`php artisan users:phones`** (rapport, `--fix` pour normaliser).
   Tests : `tests/Feature/UserPhoneUniquenessTest.php`.
-- **Module Programme = un seul écran, huit onglets** (2026-09-27) : *Planning ·
-  Ateliers · Sessions · Créneaux · Espaces · Affectation auto · Rapports ·
-  Options*, pilotés par l'URL (`?tab=`) et définis **une seule fois** dans
+- **Module Programme = un seul écran, sept onglets** (2026-09-28) : *Planning ·
+  Ateliers · Sessions · Créneaux · Espaces · Affectation auto · Options*,
+  pilotés par l'URL (`?tab=`) et définis **une seule fois** dans
   `resources/views/admin/program/_nav.blade.php`. Route canonique
   **`admin.program.index`** (`/admin/programme`).
   - ⚠️ Le programme vivait sur **deux pages** (`/programme` et
@@ -429,9 +429,19 @@ paiement (`pay`), inscription à une formation.
   - « Non planifiées » est devenu la suite de **Créneaux**, « Paramètres
     créneaux » l'onglet **Options**, et l'**Agenda** (FullCalendar) se déplie
     dans **Planning**.
-  - **Rapports** : onglet de **lecture** ; la **validation** reste au
-    **Secrétariat** (elle verrouille le rapport côté rapporteur). Les deux
-    écrans se renvoient l'un à l'autre.
+  - ⚠️ **Les rapports de séance appartiennent au SECRÉTARIAT**
+    (`admin.secretariat.reports`) : il les lit, les améliore et les **valide**
+    (la validation verrouille le rapport côté rapporteur). Le module Programme
+    n'en porte **aucune copie** - deux écrans pour le même objet, c'est deux
+    endroits où chercher. `admin.program.reports` redirige vers le Secrétariat.
+  - Chaque page de sélecteur d'édition utilise **`currentEditionId()`** du trait
+    `ScopesEditionAccess` (il était privé à un seul contrôleur).
+- **Fiche d'édition : plus d'onglet « Programme »** (2026-09-28). Ses deux cartes
+  ont rejoint l'onglet qui leur correspond : **Dates clés** → *Général* (ce sont
+  des dates de l'édition), **Programme** (déroulé éditorial de la page publique)
+  → *Appel & contenu*, avec les axes et l'argumentaire. ⚠️ Ne pas confondre ce
+  déroulé **éditorial** avec la planification **opérationnelle** du module
+  Programme (ateliers, sessions, créneaux) : deux objets différents.
 ### Règles métier - limites communications & attestations
 
 - **Limite de communications** (`settings.max_communications`) : compte **seulement** les

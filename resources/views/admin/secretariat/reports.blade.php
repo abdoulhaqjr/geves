@@ -1,28 +1,36 @@
-{{-- Onglet Rapports : LECTURE des synthèses rédigées par les rapporteurs.
-     ⚠️ La VALIDATION reste au Secrétariat (c'est son métier, et elle verrouille
-     le rapport côté rapporteur) : les deux écrans se renvoient l'un à l'autre. --}}
-@php
-    $reportStats = [
-        'sessions' => $reportSessions->count(),
-        'with_rapporteur' => $reportSessions->filter(fn ($s) => filled($s->rapporteur_email))->count(),
-        'submitted' => $reportSessions->filter(fn ($s) => $s->report && $s->report->isSubmitted())->count(),
-    ];
-@endphp
+<x-layouts.admin title="Rapports de séance" subtitle="Lecture, amélioration et validation des synthèses">
+    <x-slot:actions>
+        <a href="{{ route('admin.secretariat') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">← Secrétariat</a>
+    </x-slot:actions>
 
-<div class="ukc-stats">
-    <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="layers" :size="20" /></div><div class="lbl">Séances</div><div class="val">{{ $reportStats['sessions'] }}</div></div>
-    <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="user" :size="20" /></div><div class="lbl">Avec rapporteur</div><div class="val blue">{{ $reportStats['with_rapporteur'] }}</div></div>
-    <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="check-circle" :size="20" /></div><div class="lbl">Rapports soumis</div><div class="val green">{{ $reportStats['submitted'] }}</div></div>
-</div>
+    <div class="admin-page admin-program">
+        {{-- Sélecteur d'édition, comme partout ailleurs. --}}
+        <div class="ukc-field" style="min-width:320px;max-width:460px;margin:0 0 14px;">
+            <label for="edition_id">Édition</label>
+            <select id="edition_id" name="edition_id" onchange="window.location = '{{ route('admin.secretariat.reports') }}?edition_id=' + this.value">
+                <option value="">- Choisir -</option>
+                @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
+            </select>
+        </div>
 
-<div class="ukc-alert ukc-alert--info" style="margin-bottom:16px;">
-    <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
-    <div>
-        Lecture des rapports. La <strong>validation</strong> (qui verrouille le rapport côté rapporteur)
-        se fait au <a href="{{ route('admin.secretariat') }}" style="color:var(--ukc-blue);font-weight:600;">Secrétariat</a>.
-    </div>
-</div>
-@forelse ($reportSessions as $session)
+        @if ($edition_id === '')
+            <div class="ukc-empty"><h3>Choisissez une édition</h3><p>Sélectionnez une édition pour consulter les rapports de séance.</p></div>
+        @else
+            @php
+                $reportStats = [
+                    'sessions' => $sessions->count(),
+                    'with_rapporteur' => $sessions->filter(fn ($s) => filled($s->rapporteur_email))->count(),
+                    'submitted' => $sessions->filter(fn ($s) => $s->report && $s->report->isSubmitted())->count(),
+                ];
+            @endphp
+
+            <div class="ukc-stats">
+                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="layers" :size="20" /></div><div class="lbl">Séances</div><div class="val">{{ $reportStats['sessions'] }}</div></div>
+                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="user" :size="20" /></div><div class="lbl">Avec rapporteur</div><div class="val blue">{{ $reportStats['with_rapporteur'] }}</div></div>
+                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="check-circle" :size="20" /></div><div class="lbl">Rapports soumis</div><div class="val green">{{ $reportStats['submitted'] }}</div></div>
+            </div>
+
+            @forelse ($sessions as $session)
                 @php($report = $session->report)
                 <div class="ukc-card" style="margin-bottom:14px;" x-data="{ edit: false }">
                     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
@@ -105,3 +113,7 @@
             @empty
                 <div class="ukc-empty"><h3>Aucune séance</h3><p>Cette édition n'a pas encore de séance programmée.</p></div>
             @endforelse
+
+        @endif
+    </div>
+</x-layouts.admin>

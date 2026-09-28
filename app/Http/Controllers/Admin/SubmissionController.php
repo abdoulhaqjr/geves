@@ -7,6 +7,7 @@ use App\Actions\AutoAssignReviewers;
 use App\Actions\LinkSubmissionAuthors;
 use App\Actions\UpsertParticipantForAccount;
 use App\Events\SubmissionStatusChanged;
+use App\Http\Controllers\Admin\Concerns\ScopesEditionAccess;
 use App\Http\Controllers\Controller;
 use App\Mail\AuthorLinkedMail;
 use App\Mail\ReviewerInvitationMail;
@@ -30,7 +31,6 @@ use Carbon\Carbon;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
@@ -44,7 +44,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class SubmissionController extends Controller
 {
-    use Concerns\ScopesEditionAccess;
+    use ScopesEditionAccess;
+    use ScopesEditionAccess;
 
     /** Statuts que l'on peut appliquer depuis la fiche (le dépôt initial exclu). */
     public const ACTIONS = [
@@ -154,23 +155,6 @@ class SubmissionController extends Controller
                 'rejected' => $c('rejected'),
             ],
         ]);
-    }
-
-    /**
-     * Identifiant du colloque courant par défaut (édition ouverte, sinon la plus
-     * récente accessible). Vide si aucune édition accessible.
-     *
-     * @param  Collection<int, Edition>  $editions
-     */
-    private function currentEditionId($editions): string
-    {
-        if ($editions->isEmpty()) {
-            return '';
-        }
-
-        $current = $editions->firstWhere('status', 'open') ?? $editions->first();
-
-        return (string) $current->id;
     }
 
     /** Export CSV des soumissions filtrées (mêmes filtres que la liste). */
