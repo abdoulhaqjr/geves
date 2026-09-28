@@ -65,6 +65,7 @@
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="refresh" :size="20" /></div><div class="lbl">Affect. auto</div><div class="val" style="font-size:1.05rem;">{{ $stats['autoAssign'] ? 'Activée' : '-' }}</div><div class="hint">{{ $stats['autoAssign'] ? 'après paiement' : 'désactivée' }}</div></div>
             </div>
 
+            @if ($tab === 'planning')
             <div class="hierarchy-note">
                 <p>
                     Un <strong>atelier</strong> regroupe un ou plusieurs axes et contient des <strong>sessions</strong>
@@ -72,6 +73,7 @@
                     dans une session, à une salle et une heure. La salle peut être associée plus tard.
                 </p>
             </div>
+            @endif
 
 
 
@@ -177,11 +179,11 @@
             {{-- ============================ ATELIERS ============================ --}}
             <div @if ($tab !== 'ateliers') style="display:none;" @endif data-ajax-root="prog-ateliers">
                 <div class="ukc-card">
-                    <h2 style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:1rem;font-weight:800;margin-bottom:8px;">
-                        Ateliers
-                        <button type="button" class="ukc-btn ukc-btn--sm" @click="openAtelier(null)"><x-ukc.icon name="plus" :size="14" /> Nouvel atelier</button>
+                    <h2>
+                        <span><x-ukc.icon name="grid" :size="18" /> Ateliers</span>
+                        <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" @click="openAtelier(null)"><x-ukc.icon name="plus" :size="14" /> Nouvel atelier</button>
                     </h2>
-                    <div class="desc" style="font-size:13px;color:var(--ukc-muted);margin-bottom:14px;">Un atelier regroupe un ou plusieurs axes et contient des sessions. La salle peut être associée plus tard.</div>
+                    <div class="desc">Un atelier regroupe un ou plusieurs axes et contient des sessions. La salle peut être associée plus tard.</div>
 
                     @forelse ($ateliers as $atelier)
                         @php $room = $atelierRoomName($atelier); @endphp
@@ -192,20 +194,29 @@
                                 @else<span class="ukc-pill ukc-pill--warn">Salle à définir</span>@endif
                             </h3>
                             <div class="meta">
-                                Axes : {{ implode(', ', $atelier->tracks ?: ['-']) }}<br>
                                 {{ $atelier->sessions->count() }} session(s) · {{ $creneaux->whereIn('session_id', $atelier->sessions->pluck('id'))->count() }} créneau(x)
                             </div>
                             <div class="chip-list">
-                                @foreach ($atelier->tracks ?: [] as $t)<span class="ukc-pill ukc-pill--info">{{ $t }}</span>@endforeach
+                                @forelse ($atelier->tracks ?: [] as $t)
+                                    <span class="ukc-pill ukc-pill--info">{{ $t }}</span>
+                                @empty
+                                    <span class="ukc-pill ukc-pill--muted">Aucun axe rattaché</span>
+                                @endforelse
                             </div>
-                            <div class="row-actions">
-                                <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm"
-                                        @click="openAtelier({ id:{{ $atelier->id }}, title:@js($atelier->title), tracks:@js($atelier->tracks ?: []), room:@js($room ?: '') })">Modifier</button>
-                                <button type="button" class="{{ $room ? 'ukc-btn ukc-btn--ghost' : 'ukc-btn' }} ukc-btn--sm"
-                                        @click="openRoom({ id:{{ $atelier->id }}, title:@js($atelier->title), room:@js($room ?: '') })">{{ $room ? 'Changer la salle' : 'Associer une salle' }}</button>
+                            <div class="ukc-actions row-actions">
+                                <button type="button" class="ukc-btn--icon" title="Modifier l’atelier"
+                                        @click="openAtelier({ id:{{ $atelier->id }}, title:@js($atelier->title), tracks:@js($atelier->tracks ?: []), room:@js($room ?: '') })"><x-ukc.icon name="pen" :size="15" /></button>
+                                {{-- Associer une salle reste mis en avant tant qu'il n'y en a pas. --}}
+                                @if ($room)
+                                    <button type="button" class="ukc-btn--icon" title="Changer la salle"
+                                            @click="openRoom({ id:{{ $atelier->id }}, title:@js($atelier->title), room:@js($room) })"><x-ukc.icon name="pin" :size="15" /></button>
+                                @else
+                                    <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm"
+                                            @click="openRoom({ id:{{ $atelier->id }}, title:@js($atelier->title), room:'' })"><x-ukc.icon name="pin" :size="14" /> Associer une salle</button>
+                                @endif
                                 <form method="POST" action="{{ route('admin.program.ateliers.destroy', $atelier) }}" data-ajax data-ajax-target="prog-ateliers" data-ajax-msg="Atelier supprimé." data-confirm="Supprimer cet atelier ? Ses sessions deviendront plénières.">
                                     @csrf @method('DELETE')
-                                    <button type="submit" class="ukc-btn ukc-btn--danger ukc-btn--sm">Supprimer</button>
+                                    <button type="submit" class="ukc-btn--icon danger" title="Supprimer l’atelier"><x-ukc.icon name="trash" :size="15" /></button>
                                 </form>
                             </div>
                         </div>
@@ -217,8 +228,8 @@
                 {{-- Lien avec le programme de l'édition (fidèle au mockup). --}}
                 @if ($edition)
                     <div class="ukc-card">
-                        <h2 style="font-size:1rem;font-weight:800;margin-bottom:8px;">Lien avec le programme de l’édition</h2>
-                        <div class="desc" style="font-size:13px;color:var(--ukc-muted);margin-bottom:14px;">
+                        <h2>Lien avec le programme de l’édition</h2>
+                        <div class="desc">
                             Le planning et les sessions s’appuient sur le programme défini dans
                             <a href="{{ route('admin.editions.edit', $edition) }}?tab=programme" style="color:var(--ukc-blue);font-weight:600;">Édition → Programme</a>
                             (jours, horaires, type Session / Atelier, intitulés).
@@ -239,11 +250,11 @@
             {{-- ============================ SESSIONS ============================ --}}
             <div @if ($tab !== 'sessions') style="display:none;" @endif data-ajax-root="prog-sessions">
                 <div class="ukc-card">
-                    <h2 style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:1rem;font-weight:800;margin-bottom:8px;">
-                        Sessions
-                        <button type="button" class="ukc-btn ukc-btn--sm" @click="openSession(null)"><x-ukc.icon name="plus" :size="14" /> Nouvelle session</button>
+                    <h2>
+                        <span><x-ukc.icon name="layers" :size="18" /> Sessions</span>
+                        <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" @click="openSession(null)"><x-ukc.icon name="plus" :size="14" /> Nouvelle session</button>
                     </h2>
-                    <div class="desc" style="font-size:13px;color:var(--ukc-muted);margin-bottom:14px;">Chaque session a un modérateur et un rapporteur (fiches dédiées via Documents).</div>
+                    <div class="desc">Chaque session a un modérateur et un rapporteur (fiches dédiées via Documents).</div>
 
                     <div class="ukc-table-wrap">
                         <table class="ukc-table">
@@ -301,9 +312,9 @@
             {{-- ============================ CRÉNEAUX (liste) ============================ --}}
             <div @if ($tab !== 'creneaux') style="display:none;" @endif data-ajax-root="prog-slots">
                 <div class="ukc-card">
-                    <h2 style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:1rem;font-weight:800;margin-bottom:14px;">
-                        Créneaux
-                        <button type="button" class="ukc-btn ukc-btn--sm" @click="openSlot(null)"><x-ukc.icon name="plus" :size="14" /> Nouveau créneau</button>
+                    <h2>
+                        <span><x-ukc.icon name="clock" :size="18" /> Créneaux</span>
+                        <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" @click="openSlot(null)"><x-ukc.icon name="plus" :size="14" /> Nouveau créneau</button>
                     </h2>
                     <div class="ukc-table-wrap">
                         <table class="ukc-table">
@@ -349,7 +360,7 @@
                         Gestion des espaces
                         <button type="button" class="ukc-btn ukc-btn--sm" @click="openSpace()"><x-ukc.icon name="plus" :size="14" /> Ajouter un espace</button>
                     </h2>
-                    <div class="desc" style="font-size:13px;color:var(--ukc-muted);margin-bottom:14px;">Amphithéâtres, salles et hall posters. Un espace peut être associé à un atelier.</div>
+                    <div class="desc">Amphithéâtres, salles et hall posters. Un espace peut être associé à un atelier.</div>
 
                     @php($linkedRooms = collect($atelierRooms)->values()->all())
                     @forelse ($spaces as $i => $space)
@@ -368,10 +379,10 @@
                                 ]))
                                 {{ implode(' · ', $bits) ?: '-' }}
                             </div>
-                            <div class="row-actions">
+                            <div class="ukc-actions row-actions">
                                 <form method="POST" action="{{ route('admin.program.spaces.destroy', $i) }}?edition_id={{ $edition_id }}" data-ajax data-ajax-target="prog-spaces" data-ajax-msg="Espace supprimé." data-confirm="Supprimer cet espace ?">
                                     @csrf @method('DELETE')
-                                    <button type="submit" class="ukc-btn ukc-btn--danger ukc-btn--sm">Supprimer</button>
+                                    <button type="submit" class="ukc-btn--icon danger" title="Supprimer l’espace"><x-ukc.icon name="trash" :size="15" /></button>
                                 </form>
                             </div>
                         </div>
@@ -395,7 +406,7 @@
             <div style="margin-top:18px;{{ $tab !== 'creneaux' ? 'display:none;' : '' }}">
                 <div class="ukc-card">
                     <h2 style="font-size:1rem;font-weight:800;margin-bottom:6px;">Communications acceptées non planifiées</h2>
-                    <div class="desc" style="font-size:13px;color:var(--ukc-muted);margin-bottom:14px;">Priorité à l'affectation auto pour les communications <strong>payées</strong> dont l'axe correspond à un atelier avec créneau libre.</div>
+                    <div class="desc">Priorité à l'affectation auto pour les communications <strong>payées</strong> dont l'axe correspond à un atelier avec créneau libre.</div>
                     <div class="ukc-table-wrap">
                         <table class="ukc-table">
                             <thead>
@@ -426,7 +437,7 @@
             <div @if ($tab !== 'auto') style="display:none;" @endif>
                 <div class="ukc-card" style="max-width:720px;">
                     <h2 style="font-size:1rem;font-weight:800;margin-bottom:6px;">Affectation automatique des créneaux</h2>
-                    <div class="desc" style="font-size:13px;color:var(--ukc-muted);margin-bottom:14px;">
+                    <div class="desc">
                         Dès qu'une communication est <strong>acceptée</strong> et le <strong>paiement</strong> validé, le système peut la placer
                         sur un créneau libre de l'atelier correspondant à son axe.
                     </div>
@@ -509,7 +520,7 @@
                     <input type="hidden" name="auto_fallback" value="{{ $config['auto']['fallback'] }}">
 
                     <h2 style="font-size:1rem;font-weight:800;margin-bottom:6px;">Paramètres des créneaux</h2>
-                    <div class="desc" style="font-size:13px;color:var(--ukc-muted);margin-bottom:14px;">Durées, pauses et règles de planification et d'affichage public.</div>
+                    <div class="desc">Durées, pauses et règles de planification et d'affichage public.</div>
 
                     <div class="settings-box">
                         <h3>Durées par défaut</h3>

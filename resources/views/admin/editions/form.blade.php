@@ -205,10 +205,7 @@
                             </template>
                             <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="addKeyDate()">+ Ajouter une date clé</button>
                         </div>
-                    </div>
 
-                    {{-- ===== APPEL & CONTENU ===== --}}
-                    <div class="ukc-panel" :class="{ active: tab==='content' }">
                         <div class="ukc-card">
                             <h2>Programme</h2>
                             <div class="desc">Déroulé éditorial du colloque (jour, horaire, type, intitulé, intervenant, salle) affiché sur la page publique. La planification opérationnelle des créneaux se gère dans <a href="{{ $edition ? route('admin.program.index').'?edition_id='.$edition->id : route('admin.program.index') }}">le module Programme</a>.</div>
@@ -231,7 +228,10 @@
                             </template>
                             <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="addProg()" style="margin-top:10px;">+ Ajouter une ligne</button>
                         </div>
+                    </div>
 
+                    {{-- ===== APPEL & CONTENU ===== --}}
+                    <div class="ukc-panel" :class="{ active: tab==='content' }">
                         <div class="ukc-card">
                             <h2>Axes thématiques</h2>
                             <div class="desc">Axes du formulaire de soumission, du programme et du livre des résumés.</div>

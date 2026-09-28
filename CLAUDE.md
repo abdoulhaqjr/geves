@@ -437,11 +437,13 @@ paiement (`pay`), inscription à une formation.
   - Chaque page de sélecteur d'édition utilise **`currentEditionId()`** du trait
     `ScopesEditionAccess` (il était privé à un seul contrôleur).
 - **Fiche d'édition : plus d'onglet « Programme »** (2026-09-28). Ses deux cartes
-  ont rejoint l'onglet qui leur correspond : **Dates clés** → *Général* (ce sont
-  des dates de l'édition), **Programme** (déroulé éditorial de la page publique)
-  → *Appel & contenu*, avec les axes et l'argumentaire. ⚠️ Ne pas confondre ce
-  déroulé **éditorial** avec la planification **opérationnelle** du module
-  Programme (ateliers, sessions, créneaux) : deux objets différents.
+  sont dans l'onglet **Général**, à la suite des informations : **Dates clés**
+  puis **Programme** (déroulé éditorial affiché sur la page publique) - les deux
+  décrivent le calendrier de l'édition. ⚠️ Ne pas confondre ce déroulé
+  **éditorial** avec la planification **opérationnelle** du module Programme
+  (ateliers, sessions, créneaux) : deux objets différents, d'où le renvoi vers le
+  module dans la description de la carte.
+
 ### Règles métier - limites communications & attestations
 
 - **Limite de communications** (`settings.max_communications`) : compte **seulement** les
