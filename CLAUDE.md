@@ -446,18 +446,18 @@ paiement (`pay`), inscription à une formation.
   déroulé saisi à la main : il annonçait « affiché sur la page publique » alors
   qu'il n'apparaissait nulle part.
 
-- **Jeu de données « à l'échelle »** : `php artisan db:seed --class=ColloqueAvenirVolumeSeeder`
-  donne au dernier colloque (VIIIe conjoint Parakou-Kara, créé par
-  `ColloqueAvenirSeeder` - à lancer d'abord) le volume d'un vrai événement :
-  **200 communications** (réf. `AVD-###`, un auteur correspondant chacune),
-  statuts variés, créneaux pour les acceptées, relectures dans tous les états
-  (dont des retards), et **93 % de paiements de participation validés
-  manuellement** (passerelle `manual`, reçu numéroté, agent enregistreur - la
-  forme exacte de l'encaissement au secrétariat). Montants tirés de
-  `Fees::resolveAmount()` et grades de `ParticipantTypes::all()`, donc cohérents
-  avec la grille. Idempotent ; ⚠️ **hors `DatabaseSeeder`** (200 comptes à chaque
-  `db:seed` ralentirait tout le monde) - comme `ColloqueAvenirSeeder`, on
-  l'appelle à la demande. Un test de garde vérifie les 200 et les 93 %.
+- **Un seul colloque de démo, à l'échelle** : `migrate:fresh --seed` ne crée plus
+  qu'**un** colloque (le VIIIe conjoint Parakou-Kara, `avenir-durable-2025`), au
+  volume d'un vrai événement. `DatabaseSeeder` enchaîne `ColloqueAvenirSeeder`
+  (colloque + édition **27 sept - 4 oct 2026**, ateliers, staff, relecteurs,
+  direct) puis `ColloqueAvenirVolumeSeeder` (**200 communications** réf. `AVD-###`,
+  un auteur correspondant chacune ; statuts variés ; créneaux pour les acceptées ;
+  relectures dans tous les états ; **93 % de paiements de participation validés
+  manuellement**, passerelle `manual`, reçu numéroté). Montants via
+  `Fees::resolveAmount()`, grades via `ParticipantTypes::all()`. Seeders idempotents ;
+  le seed prend ~45 s (200 comptes). Un test de garde vérifie les 200 et les 93 %.
+  ⚠️ Les anciens seeders de colloques de démo (Showcase, Live, DemoColloque,
+  DemoScenario, DemoStaff) ont été **supprimés** : ce colloque est la référence unique.
 ### Règles métier - limites communications & attestations
 
 - **Limite de communications** (`settings.max_communications`) : compte **seulement** les

@@ -46,9 +46,12 @@ class ColloqueAvenirSeeder extends Seeder
 
     public function run(): void
     {
-        // Dates autour d'aujourd'hui pour tester le « déroulement » (sessions en direct).
-        $start = Carbon::now()->startOfDay()->subDay();   // hier
-        $end = Carbon::now()->startOfDay()->addDays(2);   // dans 2 jours (colloque de 4 jours)
+        // Dates FIXES de l'événement : le colloque se tient du 27 septembre au
+        // 4 octobre 2026. (Il reste « en cours » tant qu'on est dans cette fenêtre,
+        // ce qui alimente la page « déroulement » et les sessions en direct.)
+        $start = Carbon::create(2026, 9, 27)->startOfDay();
+        $end = Carbon::create(2026, 10, 4)->startOfDay();
+        $deadline = Carbon::now()->subMonths(3); // clôture des soumissions (passée)
 
         $colloque = Colloque::updateOrCreate(
             ['slug' => 'parakou-kara'],
@@ -67,8 +70,10 @@ class ColloqueAvenirSeeder extends Seeder
                 'date_end' => $end->toDateString(),
                 'location' => 'Campus universitaire de Parakou (Bénin)',
                 'status' => 'open',
-                'submission_open' => true,
-                'submission_deadline' => Carbon::now()->subMonths(3),
+                // Ouvertes seulement si la clôture n'est pas passée : évite une
+                // incohérence « soumissions ouvertes » pendant le déroulement.
+                'submission_open' => $deadline->isFuture(),
+                'submission_deadline' => $deadline,
                 'settings' => [
                     'intro' => 'Le colloque « Universités africaines et développement : innover pour un avenir durable » '
                         .'offre un cadre de réflexion, de partage d’expériences et de dialogue entre universitaires, chercheurs, '

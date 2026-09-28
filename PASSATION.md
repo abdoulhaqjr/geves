@@ -61,8 +61,8 @@ npm install && npm run build
 
 ### Comptes & données de démo (seeders)
 - **Back-office** : http://gesco.test/admin/connexion → `admin@univkara.tg` / `password` (à changer en prod).
-- **Page publique de démo** : http://gesco.test/colloque/edition-2026.
-- Seeders : `RolesAndAdminSeeder` (rôles `administrator`/`editor` + permission `manage_colloques` + admin), `DemoColloqueSeeder` (colloque + édition ouverte `edition-2026`).
+- **Page publique de démo** : http://gesco.test/colloque/avenir-durable-2025.
+- Seeders : `RolesAndAdminSeeder` (rôles `administrator`/`editor` + permission `manage_colloques` + admin), puis **un seul** colloque de démo à l'échelle réelle - `ColloqueAvenirSeeder` (colloque + édition ouverte `avenir-durable-2025`, **27 sept - 4 oct 2026**) + `ColloqueAvenirVolumeSeeder` (200 communications). Les anciens seeders de colloques de démo (Showcase, Live, DemoColloque, DemoScenario, DemoStaff) ont été **supprimés**.
 
 ### Lancer les tests & la qualité
 ```bash
@@ -150,7 +150,7 @@ resources/
 routes/web.php           # toutes les routes (front, admin, relecteur, public)
 config/payments.php      # passerelle par défaut
 database/migrations/     # 14 tables métier + permissions spatie
-database/seeders/        # RolesAndAdminSeeder, DemoColloqueSeeder
+database/seeders/        # RolesAndAdminSeeder + ColloqueAvenirSeeder/VolumeSeeder
 ```
 
 ### Modèle de données (14 tables)

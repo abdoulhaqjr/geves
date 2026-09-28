@@ -24,11 +24,13 @@ class DatabaseSeeder extends Seeder
             return;
         }
 
+        // Un SEUL colloque de démonstration, au volume d'un vrai événement :
+        // le VIIIe colloque conjoint Parakou-Kara. L'Avenir crée le colloque,
+        // l'édition, les ateliers, le staff, les relecteurs et le direct ; le
+        // Volume lui ajoute ses 200 communications et les paiements.
         $this->call([
-            DemoColloqueSeeder::class,
-            DemoScenarioSeeder::class,
-            ColloqueShowcaseSeeder::class,
-            ColloqueLiveSeeder::class,
+            ColloqueAvenirSeeder::class,
+            ColloqueAvenirVolumeSeeder::class,
         ]);
     }
 }
