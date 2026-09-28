@@ -248,13 +248,50 @@
             </div>
 
             {{-- ============================ SESSIONS ============================ --}}
+            @php
+                // Options de filtres (dérivées des sessions de l'édition).
+                $sessDays = $sessions->map(fn ($s) => optional($s->session_day ?? $s->starts_at)?->format('Y-m-d'))->filter()->unique()->sort()->values();
+                $sessAteliers = $sessions->map(fn ($s) => $s->atelier?->title)->filter()->unique()->sort()->values();
+                $sessRooms = $sessions->map(fn ($s) => $s->room)->filter()->unique()->sort()->values();
+            @endphp
             <div @if ($tab !== 'sessions') style="display:none;" @endif data-ajax-root="prog-sessions">
-                <div class="ukc-card">
+                <div class="ukc-card" x-data="tableFilters(['day', 'atelier', 'room', 'type', 'moderation'])">
                     <h2>
                         <span><x-ukc.icon name="layers" :size="18" /> Sessions</span>
                         <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" @click="openSession(null)"><x-ukc.icon name="plus" :size="14" /> Nouvelle session</button>
                     </h2>
                     <div class="desc">Chaque session a un modérateur et un rapporteur (fiches dédiées via Documents).</div>
+
+                    {{-- Filtres du tableau (client-side, instantanés). --}}
+                    <div class="filter-bar filter-bar--inline" style="margin:4px 0 14px;">
+                        <select x-model="f.day" aria-label="Filtrer par jour">
+                            <option value="">Tous les jours</option>
+                            @foreach ($sessDays as $d)<option value="{{ $d }}">{{ \Illuminate\Support\Carbon::parse($d)->translatedFormat('D d M') }}</option>@endforeach
+                        </select>
+                        <select x-model="f.type" aria-label="Filtrer par type">
+                            <option value="">Tous les types</option>
+                            <option value="plenary">Plénière</option>
+                            <option value="atelier">Atelier</option>
+                        </select>
+                        <select x-model="f.atelier" aria-label="Filtrer par atelier">
+                            <option value="">Tous les ateliers</option>
+                            @foreach ($sessAteliers as $a)<option value="{{ $a }}">{{ Str::limit($a, 40) }}</option>@endforeach
+                        </select>
+                        <select x-model="f.room" aria-label="Filtrer par salle">
+                            <option value="">Toutes les salles</option>
+                            @foreach ($sessRooms as $r)<option value="{{ $r }}">{{ $r }}</option>@endforeach
+                        </select>
+                        <select x-model="f.moderation" aria-label="Filtrer par modération">
+                            <option value="">Modération : toutes</option>
+                            <option value="assigned">Modérateur désigné</option>
+                            <option value="pending">À désigner</option>
+                        </select>
+                        <input type="search" x-model="f.q" placeholder="Session, modérateur, rapporteur…" style="min-width:190px;flex:1;">
+                        <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" x-show="active" x-cloak @click="reset()">Réinitialiser</button>
+                    </div>
+                    <div style="font-size:12.5px;color:var(--ukc-muted);margin-bottom:8px;">
+                        <span x-text="visibleIds.length"></span> session(s) affichée(s)<template x-if="active"> sur {{ $sessions->count() }}</template>.
+                    </div>
 
                     <div class="ukc-table-wrap">
                         <table class="ukc-table">
@@ -265,10 +302,16 @@
                                 @php
                                     $sessionSlots = $creneaux->where('session_id', $session->id);
                                     $sDay = optional($session->session_day ?? $session->starts_at);
+                                    $sessType = $session->atelier_id ? 'atelier' : 'plenary';
+                                    $sessSearch = Str::lower(collect([$session->label, $session->atelier?->title, $session->moderator_name, $session->rapporteur_name, $session->room])->filter()->implode(' '));
                                 @endphp
                                 {{-- Un <tbody> par séance : il porte l'état d'ouverture de la
                                      visio, qui s'affiche sur une ligne à part. --}}
-                                <tbody x-data="{ visio: false }">
+                                <tbody x-data="{ visio: false }" x-show="visibleIds.includes({{ $session->id }})" data-filter-row
+                                       data-id="{{ $session->id }}" data-day="{{ $sDay?->format('Y-m-d') }}"
+                                       data-atelier="{{ $session->atelier?->title }}" data-room="{{ $session->room }}"
+                                       data-type="{{ $sessType }}" data-moderation="{{ $session->moderator_name ? 'assigned' : 'pending' }}"
+                                       data-text="{{ $sessSearch }}">
                                     <tr>
                                         <td>{{ $sDay?->format('d/m') ?: '-' }}</td>
                                         <td>{{ $session->atelier?->title ?: '- (plénière)' }}</td>
@@ -304,6 +347,11 @@
                                     <tr><td colspan="9" style="text-align:center;color:var(--ukc-muted);padding:20px;">Aucune session.</td></tr>
                                 </tbody>
                             @endforelse
+                            @if ($sessions->isNotEmpty())
+                                <tbody x-show="visibleIds.length === 0">
+                                    <tr><td colspan="9" style="text-align:center;color:var(--ukc-muted);padding:20px;">Aucune session ne correspond aux filtres. <button type="button" class="ukc-link" @click="reset()">Réinitialiser</button></td></tr>
+                                </tbody>
+                            @endif
                         </table>
                     </div>
                 </div>
@@ -317,7 +365,7 @@
                 $slotRooms = $creneaux->map(fn ($s) => $s->room)->filter()->unique()->sort()->values();
             @endphp
             <div @if ($tab !== 'creneaux') style="display:none;" @endif data-ajax-root="prog-slots">
-                <div class="ukc-card" x-data="slotFilters()">
+                <div class="ukc-card" x-data="tableFilters(['day', 'atelier', 'room', 'status', 'type'])">
                     <h2>
                         <span><x-ukc.icon name="clock" :size="18" /> Créneaux</span>
                         <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" @click="openSlot(null)"><x-ukc.icon name="plus" :size="14" /> Nouveau créneau</button>
@@ -366,7 +414,7 @@
                                         $sStatus = $slot->submission ? 'assigned' : 'free';
                                         $sSearch = Str::lower(collect([$slot->session_label, $slot->session?->atelier?->title, $slot->submission?->title, $slot->submission?->ref_code, $slot->room])->filter()->implode(' '));
                                     @endphp
-                                    <tr x-show="visibleIds.includes({{ $slot->id }})"
+                                    <tr x-show="visibleIds.includes({{ $slot->id }})" data-filter-row
                                         data-id="{{ $slot->id }}"
                                         data-day="{{ $slot->starts_at?->format('Y-m-d') }}" data-atelier="{{ $slot->session?->atelier?->title }}"
                                         data-room="{{ $slot->room }}" data-status="{{ $sStatus }}" data-type="{{ $sType }}"
