@@ -310,22 +310,70 @@
             </div>
 
             {{-- ============================ CRÉNEAUX (liste) ============================ --}}
+            @php
+                // Options de filtres (dérivées des créneaux de l'édition).
+                $slotDays = $creneaux->map(fn ($s) => $s->starts_at?->format('Y-m-d'))->filter()->unique()->sort()->values();
+                $slotAteliers = $creneaux->map(fn ($s) => $s->session?->atelier?->title)->filter()->unique()->sort()->values();
+                $slotRooms = $creneaux->map(fn ($s) => $s->room)->filter()->unique()->sort()->values();
+            @endphp
             <div @if ($tab !== 'creneaux') style="display:none;" @endif data-ajax-root="prog-slots">
-                <div class="ukc-card">
+                <div class="ukc-card" x-data="slotFilters()">
                     <h2>
                         <span><x-ukc.icon name="clock" :size="18" /> Créneaux</span>
                         <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" @click="openSlot(null)"><x-ukc.icon name="plus" :size="14" /> Nouveau créneau</button>
                     </h2>
+
+                    {{-- Filtres du tableau (client-side, instantanés). --}}
+                    <div class="filter-bar filter-bar--inline" style="margin:4px 0 14px;">
+                        <select x-model="f.day" aria-label="Filtrer par jour">
+                            <option value="">Tous les jours</option>
+                            @foreach ($slotDays as $d)<option value="{{ $d }}">{{ \Illuminate\Support\Carbon::parse($d)->translatedFormat('D d M') }}</option>@endforeach
+                        </select>
+                        <select x-model="f.atelier" aria-label="Filtrer par atelier">
+                            <option value="">Tous les ateliers</option>
+                            @foreach ($slotAteliers as $a)<option value="{{ $a }}">{{ Str::limit($a, 40) }}</option>@endforeach
+                        </select>
+                        <select x-model="f.room" aria-label="Filtrer par salle">
+                            <option value="">Toutes les salles</option>
+                            @foreach ($slotRooms as $r)<option value="{{ $r }}">{{ $r }}</option>@endforeach
+                        </select>
+                        <select x-model="f.status" aria-label="Filtrer par statut">
+                            <option value="">Assignés & libres</option>
+                            <option value="assigned">Assignés</option>
+                            <option value="free">Libres</option>
+                        </select>
+                        <select x-model="f.type" aria-label="Filtrer par type">
+                            <option value="">Tous les types</option>
+                            <option value="oral">Orale</option>
+                            <option value="poster">Poster</option>
+                        </select>
+                        <input type="search" x-model="f.q" placeholder="Intitulé, titre, code…" style="min-width:190px;flex:1;">
+                        <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" x-show="active" x-cloak @click="reset()">Réinitialiser</button>
+                    </div>
+                    <div style="font-size:12.5px;color:var(--ukc-muted);margin-bottom:8px;">
+                        <span x-text="visibleIds.length"></span> créneau(x) affiché(s)<template x-if="active"> sur {{ $creneaux->count() }}</template>.
+                    </div>
+
                     <div class="ukc-table-wrap">
                         <table class="ukc-table">
                             <thead>
-                                <tr><th>Jour</th><th>Horaire</th><th>Atelier / Session</th><th>Intitulé</th><th>Type</th><th>Code</th><th style="text-align:right;">Actions</th></tr>
+                                <tr><th>Jour</th><th>Horaire</th><th>Salle</th><th>Atelier / Session</th><th>Intitulé</th><th>Type</th><th>Code</th><th style="text-align:right;">Actions</th></tr>
                             </thead>
                             <tbody>
                                 @forelse ($creneaux as $slot)
-                                    <tr>
+                                    @php
+                                        $sType = $slot->submission?->type === 'poster' ? 'poster' : ($slot->submission ? 'oral' : '');
+                                        $sStatus = $slot->submission ? 'assigned' : 'free';
+                                        $sSearch = Str::lower(collect([$slot->session_label, $slot->session?->atelier?->title, $slot->submission?->title, $slot->submission?->ref_code, $slot->room])->filter()->implode(' '));
+                                    @endphp
+                                    <tr x-show="visibleIds.includes({{ $slot->id }})"
+                                        data-id="{{ $slot->id }}"
+                                        data-day="{{ $slot->starts_at?->format('Y-m-d') }}" data-atelier="{{ $slot->session?->atelier?->title }}"
+                                        data-room="{{ $slot->room }}" data-status="{{ $sStatus }}" data-type="{{ $sType }}"
+                                        data-text="{{ $sSearch }}">
                                         <td>{{ $slot->starts_at?->format('d/m') ?: '-' }}</td>
                                         <td>{{ $slot->starts_at?->format('H:i') ?: '-' }}</td>
+                                        <td>{{ $slot->room ?: '-' }}</td>
                                         {{-- Atelier et session sur deux niveaux : concaténés, ils
                                              répétaient le nom de l'atelier (les libellés de session
                                              le contiennent souvent) et gonflaient la colonne. --}}
@@ -353,8 +401,11 @@
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="7" style="text-align:center;color:var(--ukc-muted);padding:20px;">Aucun créneau.</td></tr>
+                                    <tr><td colspan="8" style="text-align:center;color:var(--ukc-muted);padding:20px;">Aucun créneau.</td></tr>
                                 @endforelse
+                                @if ($creneaux->isNotEmpty())
+                                    <tr x-show="visibleIds.length === 0"><td colspan="8" style="text-align:center;color:var(--ukc-muted);padding:20px;">Aucun créneau ne correspond aux filtres. <button type="button" class="ukc-link" @click="reset()">Réinitialiser</button></td></tr>
+                                @endif
                             </tbody>
                         </table>
                     </div>

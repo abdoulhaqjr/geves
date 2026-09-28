@@ -390,6 +390,40 @@ document.addEventListener('alpine:init', () => {
     // Comparateur de similarité : ouvre une modale montrant la soumission courante
     // et une soumission proche côte à côte, avec surlignage des mots partagés
     // (≥ 5 lettres, accents/casse ignorés). `self` = résumé de la soumission courante.
+    // Filtres client-side du tableau des créneaux (onglet Programme > Créneaux).
+    // Lit les lignes depuis leurs attributs data-* et calcule les ids visibles.
+    window.Alpine.data('slotFilters', () => ({
+        f: { day: '', atelier: '', room: '', status: '', type: '', q: '' },
+        rows: [],
+        init() {
+            this.rows = Array.from(this.$el.querySelectorAll('tbody tr[data-text]')).map((tr) => ({
+                id: Number(tr.dataset.id) || 0,
+                day: tr.dataset.day || '',
+                atelier: tr.dataset.atelier || '',
+                room: tr.dataset.room || '',
+                status: tr.dataset.status || '',
+                type: tr.dataset.type || '',
+                text: tr.dataset.text || '',
+            }));
+        },
+        get active() {
+            return Object.values(this.f).some((v) => v !== '');
+        },
+        get visibleIds() {
+            const f = this.f;
+            const q = f.q.trim().toLowerCase();
+            return this.rows.filter((r) => (!f.day || r.day === f.day)
+                && (!f.atelier || r.atelier === f.atelier)
+                && (!f.room || r.room === f.room)
+                && (!f.status || r.status === f.status)
+                && (!f.type || r.type === f.type)
+                && (!q || r.text.includes(q))).map((r) => r.id);
+        },
+        reset() {
+            this.f = { day: '', atelier: '', room: '', status: '', type: '', q: '' };
+        },
+    }));
+
     window.Alpine.data('simCompare', (self = '') => ({
         self,
         sim: null,
