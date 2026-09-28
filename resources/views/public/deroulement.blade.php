@@ -81,7 +81,7 @@
                                                 <div class="session-title">{{ $s->label }}</div>
                                                 <div class="meta">
                                                     @if ($s->room)<span>{{ __('Salle :') }} {{ $s->room }}</span>@endif
-                                                    @if ($s->starts_at && $s->ends_at)<span>{{ $s->starts_at->format('H:i') }} – {{ $s->ends_at->format('H:i') }}</span>@endif
+                                                    @if ($s->starts_at && $s->ends_at)<span>{{ $s->starts_at->format('H:i') }} - {{ $s->ends_at->format('H:i') }}</span>@endif
                                                     @if ($s->moderator_name)<span>{{ __('Modération :') }} {{ $s->moderator_name }}</span>@endif
                                                 </div>
                                                 <div class="foot">
@@ -154,14 +154,21 @@
                                 @endforeach
                             </div>
                             @foreach ($byDay as $date => $daySessions)
+                                @php
+                                    // Ateliers simultanés : mêmes heures de début (affichés « en parallèle »).
+                                    $parallelStarts = $daySessions->filter(fn ($s) => $s->starts_at)
+                                        ->groupBy(fn ($s) => $s->starts_at->format('H:i'))
+                                        ->filter(fn ($grp) => $grp->count() > 1)->keys();
+                                @endphp
                                 <div x-show="day === {{ $loop->index }}">
                                     @foreach ($daySessions as $s)
                                         <div class="session {{ ($isNow)($s) ? 'now' : '' }}">
-                                            <span class="time">{{ $s->starts_at?->format('H:i') ?? '-' }}@if ($s->ends_at) – {{ $s->ends_at->format('H:i') }}@endif</span>
+                                            <span class="time">{{ $s->starts_at?->format('H:i') ?? '-' }}@if ($s->ends_at) - {{ $s->ends_at->format('H:i') }}@endif</span>
                                             <h3>{{ $s->label }}</h3>
                                             <div class="meta">
                                                 {{ $s->room ?: __('Lieu à préciser') }}
                                                 @if (($isNow)($s)) · {{ __('En cours') }} @elseif ($s->ends_at && $s->ends_at->lt($now)) · {{ __('Terminé') }} @else · {{ __('À venir') }} @endif
+                                                @if ($s->type !== 'plenary' && $s->starts_at && $parallelStarts->contains($s->starts_at->format('H:i'))) · {{ __('En parallèle') }} @endif
                                                 @if ($s->isLive()) · {{ __('Visio') }} @endif
                                             </div>
                                         </div>

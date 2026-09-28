@@ -153,9 +153,10 @@ it('refuse le choix de créneau si la communication n’est pas acceptée', func
 it('génère des créneaux libres à partir des sessions horodatées', function () {
     $staff = adminStaff();
     $edition = openEdition();
-    // Session de 90 min → 4 créneaux de 20 min (durée orale par défaut).
+    // Session d'atelier de 90 min → 4 créneaux de 20 min (durée orale par défaut).
+    // (Les plénières, exclusives, ne sont pas découpées en créneaux.)
     $edition->sessions()->create([
-        'type' => 'plenary', 'atelier_id' => 0, 'label' => 'Session A',
+        'type' => 'atelier', 'atelier_id' => 0, 'label' => 'Session A',
         'session_day' => '2026-11-18', 'starts_at' => '2026-11-18 14:00:00', 'ends_at' => '2026-11-18 15:30:00', 'ordre' => 0,
     ]);
 

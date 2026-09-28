@@ -822,6 +822,7 @@ input[data-uppercase] { text-transform: uppercase; }
 .type--plenary { background: #e0e7ff; color: #3730a3; }
 .type--workshop { background: #dcfce7; color: #166534; }
 .type--poster { background: #fef3c7; color: #b45309; }
+.type--parallel { background: #e0f2fe; color: #075985; }
 .ukc-session-comms { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .ukc-session-comms li { position: relative; padding-left: 16px; font-size: 13.5px; color: var(--ukc-text); }
 .ukc-session-comms li::before { content: ""; position: absolute; left: 2px; top: 8px; width: 5px; height: 5px; border-radius: 50%; background: var(--ukc-blue); }

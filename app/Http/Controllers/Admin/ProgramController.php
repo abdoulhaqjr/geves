@@ -13,6 +13,7 @@ use App\Models\Slot;
 use App\Models\Submission;
 use App\Models\User;
 use App\Support\Notifier;
+use App\Support\ProgramConflicts;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -200,14 +201,25 @@ class ProgramController extends Controller
             'sRapporteurEmail' => ['nullable', 'email', 'max:200'],
         ]);
 
+        $start = $this->composeDateTime($data['sDay'] ?? null, $data['sStart'] ?? null);
+        $end = $this->composeDateTime($data['sDay'] ?? null, $data['sEnd'] ?? null);
+
+        // Exclusivité des plénières : bloque une session en conflit horaire.
+        $edition = Edition::find($data['edition_id']);
+        if ($edition && ($conflict = ProgramConflicts::blockingSession(
+            $edition, $start ? Carbon::parse($start) : null, $end ? Carbon::parse($end) : null, $data['sType'] === 'plenary'
+        ))) {
+            return back()->withInput()->with('ukc_error', ProgramConflicts::message($conflict));
+        }
+
         $session = EventSession::create([
             'edition_id' => $data['edition_id'],
             'atelier_id' => $data['sType'] === 'atelier' && ! empty($data['sAtelierId']) ? (int) $data['sAtelierId'] : 0,
             'type' => $data['sType'],
             'label' => $data['sLabel'],
             'session_day' => $data['sDay'] ?: null,
-            'starts_at' => $this->composeDateTime($data['sDay'] ?? null, $data['sStart'] ?? null),
-            'ends_at' => $this->composeDateTime($data['sDay'] ?? null, $data['sEnd'] ?? null),
+            'starts_at' => $start,
+            'ends_at' => $end,
             'room' => ($data['sRoom'] ?? null) ?: null,
             'moderator_name' => ($data['sModerator'] ?? null) ?: null,
             'moderator_email' => ($data['sModeratorEmail'] ?? null) ?: null,
@@ -418,32 +430,76 @@ class ProgramController extends Controller
         $unplaced = $edition->submissions()->where('revision_of', 0)->where('status', 'accepted')
             ->get()->reject(fn (Submission $s) => $placedIds->contains($s->id))->values();
 
-        $assigned = 0;
+        $oralMin = $this->oralMinutes($edition);
+
+        // Ateliers simultanés autorisés, MAIS un même auteur ne peut pas être placé
+        // sur deux créneaux qui se chevauchent. On mémorise les créneaux déjà pris
+        // par participant (y compris ceux déjà planifiés) pour éviter le télescopage.
+        $busy = $edition->slots()->where('participant_id', '>', 0)->whereNotNull('starts_at')
+            ->get()->groupBy('participant_id')
+            ->map(fn ($slots) => $slots->map(fn (Slot $s) => [$s->starts_at, $s->ends_at ?? $s->starts_at?->copy()->addMinutes($oralMin)])->all())
+            ->all();
+
+        $overlaps = function (?Carbon $start, ?Carbon $end, int $participantId) use (&$busy): bool {
+            if (! $start) {
+                return false;
+            }
+            $end ??= $start->copy()->addMinutes(1);
+            foreach ($busy[$participantId] ?? [] as [$s, $e]) {
+                if ($s && $start->lt($e ?? $s) && ($s)->lt($end)) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
+        $assigned = $skippedConflict = 0;
         foreach ($unplaced as $sub) {
-            // Créneau préféré : même axe (atelier couvrant le track) si demandé.
+            $pid = (int) ($sub->participant_id ?? 0);
+
+            // Créneau préféré : même axe (atelier couvrant le track) si demandé, en
+            // évitant tout chevauchement avec un autre créneau du même auteur.
+            $free = $freeSlots->reject(fn (Slot $sl) => $pid > 0 && $overlaps(
+                $sl->starts_at, $sl->ends_at ?? $sl->starts_at?->copy()->addMinutes($oralMin), $pid
+            ))->values();
+
             $slot = null;
             if ($matchAxis && filled($sub->track)) {
-                $slot = $freeSlots->first(fn (Slot $sl) => in_array(
+                $slot = $free->first(fn (Slot $sl) => in_array(
                     $sub->track, $sl->session?->atelier?->tracks ?? [], true
                 ));
             }
-            $slot ??= $freeSlots->first();
+            $slot ??= $free->first();
             if (! $slot) {
-                break; // plus aucun créneau libre
+                if ($pid > 0 && $freeSlots->isNotEmpty()) {
+                    $skippedConflict++; // il restait des créneaux, mais tous en conflit horaire
+                }
+
+                continue; // pas de créneau compatible pour cet auteur
             }
 
             $slot->update([
                 'submission_id' => $sub->id,
-                'participant_id' => $sub->participant_id ?? 0,
+                'participant_id' => $pid,
                 'chosen_by_participant' => false,
             ]);
+            if ($pid > 0) {
+                $end = $slot->ends_at ?? $slot->starts_at?->copy()->addMinutes($oralMin);
+                $busy[$pid][] = [$slot->starts_at, $end];
+            }
             $freeSlots = $freeSlots->reject(fn (Slot $s) => $s->id === $slot->id)->values();
             $assigned++;
         }
 
-        return back()->with('ukc_status', $assigned > 0
+        $msg = $assigned > 0
             ? $assigned.' communication(s) affectée(s) automatiquement.'
-            : 'Aucune affectation : pas de créneau libre ou rien à planifier.');
+            : 'Aucune affectation : pas de créneau libre ou rien à planifier.';
+        if ($skippedConflict > 0) {
+            $msg .= ' '.$skippedConflict.' non affectée(s) faute de créneau compatible (auteur déjà occupé au même moment).';
+        }
+
+        return back()->with('ukc_status', $msg);
     }
 
     /**
@@ -460,10 +516,13 @@ class ProgramController extends Controller
             return back();
         }
 
-        $oralMin = max(5, (int) ($this->programConfig($edition)['params']['oral_min'] ?? 20));
+        $oralMin = $this->oralMinutes($edition);
         $created = 0;
 
-        $sessions = $edition->sessions()->whereNotNull('starts_at')->whereNotNull('ends_at')->get();
+        // Les sessions plénières sont EXCLUSIVES et ne reçoivent pas de communications
+        // orales : on ne génère de créneaux que pour les sessions d'atelier.
+        $sessions = $edition->sessions()->where('type', '!=', 'plenary')
+            ->whereNotNull('starts_at')->whereNotNull('ends_at')->get();
         foreach ($sessions as $session) {
             if ($edition->slots()->where('session_id', $session->id)->exists()) {
                 continue; // déjà pourvue
@@ -534,6 +593,15 @@ class ProgramController extends Controller
         ]);
 
         $session = ! empty($data['slSessionId']) ? EventSession::find($data['slSessionId']) : null;
+
+        // Exclusivité des plénières : un créneau ne peut pas tomber dans une plénière.
+        $edition = Edition::find($data['edition_id']);
+        $start = (! empty($data['slDay']) && ! empty($data['slStart'])) ? Carbon::parse($data['slDay'].' '.$data['slStart']) : null;
+        if ($edition && $start && ($conflict = ProgramConflicts::blockingSession(
+            $edition, $start, $start->copy()->addMinutes($this->oralMinutes($edition)), false
+        ))) {
+            return back()->withInput()->with('ukc_error', ProgramConflicts::message($conflict));
+        }
 
         // Communication optionnelle (place directement l'auteur sur le créneau créé).
         $submission = ! empty($data['submission_id']) ? Submission::find($data['submission_id']) : null;
@@ -638,13 +706,24 @@ class ProgramController extends Controller
         $beforeModerator = $session->moderator_email;
         $beforeRapporteur = $session->rapporteur_email;
 
+        $start = $this->composeDateTime($data['sDay'] ?? null, $data['sStart'] ?? null);
+        $end = $this->composeDateTime($data['sDay'] ?? null, $data['sEnd'] ?? null);
+
+        // Exclusivité des plénières : bloque un horaire en conflit (hors elle-même).
+        if ($session->edition && ($conflict = ProgramConflicts::blockingSession(
+            $session->edition, $start ? Carbon::parse($start) : null, $end ? Carbon::parse($end) : null,
+            $data['sType'] === 'plenary', $session->id
+        ))) {
+            return back()->withInput()->with('ukc_error', ProgramConflicts::message($conflict));
+        }
+
         $session->update([
             'atelier_id' => $data['sType'] === 'atelier' && ! empty($data['sAtelierId']) ? (int) $data['sAtelierId'] : 0,
             'type' => $data['sType'],
             'label' => $data['sLabel'],
             'session_day' => $data['sDay'] ?: null,
-            'starts_at' => $this->composeDateTime($data['sDay'] ?? null, $data['sStart'] ?? null),
-            'ends_at' => $this->composeDateTime($data['sDay'] ?? null, $data['sEnd'] ?? null),
+            'starts_at' => $start,
+            'ends_at' => $end,
             'room' => ($data['sRoom'] ?? null) ?: null,
             'moderator_name' => ($data['sModerator'] ?? null) ?: null,
             'moderator_email' => ($data['sModeratorEmail'] ?? null) ?: null,
@@ -671,6 +750,16 @@ class ProgramController extends Controller
         ]);
 
         $session = ! empty($data['slSessionId']) ? EventSession::find($data['slSessionId']) : null;
+
+        // Exclusivité des plénières : un créneau ne peut pas tomber dans une plénière.
+        $newStart = (! empty($data['slDay']) && ! empty($data['slStart']))
+            ? Carbon::parse($data['slDay'].' '.$data['slStart'])
+            : $slot->starts_at;
+        if ($slot->edition && $newStart && ($conflict = ProgramConflicts::blockingSession(
+            $slot->edition, $newStart, $newStart->copy()->addMinutes($this->oralMinutes($slot->edition)), false
+        ))) {
+            return back()->withInput()->with('ukc_error', ProgramConflicts::message($conflict));
+        }
 
         $submission = ! empty($data['submission_id']) ? Submission::find($data['submission_id']) : null;
         if ($submission && $submission->edition_id !== $slot->edition_id) {
@@ -797,5 +886,11 @@ class ProgramController extends Controller
     private function composeDateTime(?string $day, ?string $time): ?string
     {
         return ($day && $time) ? $day.' '.$time.':00' : null;
+    }
+
+    /** Durée d'une communication orale (= durée présumée d'un créneau), en minutes. */
+    private function oralMinutes(Edition $edition): int
+    {
+        return max(5, (int) ($this->programConfig($edition)['params']['oral_min'] ?? 20));
     }
 }

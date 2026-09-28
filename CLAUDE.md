@@ -526,6 +526,19 @@ paiement (`pay`), inscription à une formation.
   ([home.blade.php](resources/views/home.blade.php), `HomeController`) n'affiche que les
   `approved` + `featured` (triés `position`, `impact_score`) ; section masquée si vide.
 
+### Programme - exclusivité des plénières / ateliers parallèles
+
+Règle métier : une **session plénière est EXCLUSIVE** (aucune autre activité au même
+moment) ; les **ateliers peuvent se dérouler en parallèle** entre eux. Source unique :
+**`App\Support\ProgramConflicts::blockingSession()`** (chevauchement interdit dès qu'une
+plénière est impliquée ; deux ateliers peuvent se chevaucher). Appliqué **en blocage** à
+la sauvegarde des sessions et des créneaux (`ProgramController::storeSession`/`updateSession`/
+`storeSlot`/`updateSlot` → `back()->with('ukc_error', …)`). `generateSlots` ne découpe **pas**
+les plénières (exclusives, sans communication orale). L'affectation auto autorise les
+ateliers simultanés mais **jamais un même auteur sur deux créneaux qui se chevauchent**.
+Côté public (page colloque + Déroulement), les ateliers simultanés portent un badge
+**« En parallèle »**. Tests : `ProgramPlenaryExclusivityTest`.
+
 ### Architecture & sécurité
 
 - **RBAC à deux niveaux** : staff `User` global (spatie/permission) vs `Participant`
