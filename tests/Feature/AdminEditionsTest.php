@@ -155,7 +155,6 @@ it('enregistre tous les champs du mockup (programme, langues, apparence, options
         'main_language' => 'Français',
         'axes' => [['label' => 'Sciences'], ['label' => 'Santé'], ['label' => '']],
         'keyDates' => [['date' => '2026-07-15', 'label' => 'Limite de soumission']],
-        'programme' => [['day' => 'Jour 1', 'time' => '09:00', 'type' => 'Conférence', 'title' => 'Ouverture', 'speaker' => 'X', 'room' => 'Amphi A']],
         'why' => [['title' => 'Visibilité', 'text' => 'Devant un large public.']],
         'infoCards' => [['title' => 'Lieu', 'text' => 'Kara, Togo']],
         'ref_prefix_mode' => 'global',
@@ -175,7 +174,9 @@ it('enregistre tous les champs du mockup (programme, langues, apparence, options
     expect($s['languages'])->toBe(['Français', 'Anglais']);
     expect($s['tracks'])->toBe(['Sciences', 'Santé']); // axes vides ignorés
     expect($s['key_dates'][0]['label'])->toBe('Limite de soumission');
-    expect($s['programme'][0]['title'])->toBe('Ouverture');
+    // ⚠️ Pas de `programme` en réglage : le déroulé public est construit à partir
+    // des sessions et des créneaux (module Programme), pas d'un tableau saisi.
+    expect($s)->not->toHaveKey('programme');
     expect($s['why'][0]['title'])->toBe('Visibilité');
     expect($s['info_cards'][0]['title'])->toBe('Lieu');
     expect($s['ref_prefix'])->toBe('UKC-S-');

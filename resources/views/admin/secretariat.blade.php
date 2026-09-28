@@ -65,7 +65,7 @@
                         </table>
                     </div>
                 @else
-                    <div class="ukc-empty" style="border:none;"><p style="margin:12px 0 18px;">Aucun rapport en attente de validation. 🎉</p></div>
+                    <div class="ukc-empty" style="border:none;"><p style="margin:12px 0 18px;display:flex;align-items:center;justify-content:center;gap:6px;"><x-ukc.icon name="check-circle" :size="16" /> Aucun rapport en attente de validation.</p></div>
                 @endif
             </div>
 

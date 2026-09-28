@@ -1,5 +1,5 @@
 @php($v = fn ($k) => old($k, $init[$k]))
-<x-layouts.admin :title="$edition ? 'Modifier l’édition' : 'Nouvelle édition'" subtitle="Paramètres, programme, contenu, tarifs, apparence & documents">
+<x-layouts.admin :title="$edition ? 'Modifier l’édition' : 'Nouvelle édition'" subtitle="Paramètres, contenu, tarifs, apparence & documents">
     <div class="admin-page admin-edition-detail"
          x-data="editionForm({
             tab: '{{ session('edition_tab', request('tab', 'general')) }}',
@@ -13,7 +13,7 @@
                 format: @js($v('format')), main_language: @js($v('main_language')), languages: @js(old('languages', $languages)),
                 submission_open: @js((bool) $v('submission_open')),
             },
-            arrays: @js(['fees' => $fees, 'partners' => $partners, 'faq' => $faq, 'comOrg' => $comOrg, 'comSci' => $comSci, 'comSup' => $comSup, 'keyDates' => $keyDates, 'programme' => $programme, 'axes' => $axes, 'why' => $why, 'infoCards' => $infoCards, 'stats' => $stats])
+            arrays: @js(['fees' => $fees, 'partners' => $partners, 'faq' => $faq, 'comOrg' => $comOrg, 'comSci' => $comSci, 'comSup' => $comSup, 'keyDates' => $keyDates, 'axes' => $axes, 'why' => $why, 'infoCards' => $infoCards, 'stats' => $stats])
          })">
 
         {{-- ===== En-tête ===== --}}
@@ -206,28 +206,6 @@
                             <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="addKeyDate()">+ Ajouter une date clé</button>
                         </div>
 
-                        <div class="ukc-card">
-                            <h2>Programme</h2>
-                            <div class="desc">Déroulé éditorial du colloque (jour, horaire, type, intitulé, intervenant, salle) affiché sur la page publique. La planification opérationnelle des créneaux se gère dans <a href="{{ $edition ? route('admin.program.index').'?edition_id='.$edition->id : route('admin.program.index') }}">le module Programme</a>.</div>
-                            <div class="prog-head">
-                                <span>Jour</span><span>Horaire</span><span>Type</span><span>Intitulé</span><span>Intervenant</span><span>Salle</span><span></span>
-                            </div>
-                            <template x-for="(p, i) in programme" :key="i">
-                                <div class="prog-row">
-                                    <input type="text" :name="'programme['+i+'][day]'" x-model="p.day" placeholder="Jour 1">
-                                    <input type="text" :name="'programme['+i+'][time]'" x-model="p.time" placeholder="09:00–10:30">
-                                    <select :name="'programme['+i+'][type]'" x-model="p.type">
-                                        <option>Ouverture</option><option>Conférence</option><option>Session</option>
-                                        <option>Pause</option><option>Atelier</option><option>Clôture</option>
-                                    </select>
-                                    <input type="text" :name="'programme['+i+'][title]'" x-model="p.title" placeholder="Intitulé">
-                                    <input type="text" :name="'programme['+i+'][speaker]'" x-model="p.speaker" placeholder="Intervenant">
-                                    <input type="text" :name="'programme['+i+'][room]'" x-model="p.room" placeholder="Salle">
-                                    <button type="button" class="ukc-btn--icon" @click="removeProg(i)" aria-label="Retirer">&times;</button>
-                                </div>
-                            </template>
-                            <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="addProg()" style="margin-top:10px;">+ Ajouter une ligne</button>
-                        </div>
                     </div>
 
                     {{-- ===== APPEL & CONTENU ===== --}}

@@ -436,13 +436,15 @@ paiement (`pay`), inscription à une formation.
     endroits où chercher. `admin.program.reports` redirige vers le Secrétariat.
   - Chaque page de sélecteur d'édition utilise **`currentEditionId()`** du trait
     `ScopesEditionAccess` (il était privé à un seul contrôleur).
-- **Fiche d'édition : plus d'onglet « Programme »** (2026-09-28). Ses deux cartes
-  sont dans l'onglet **Général**, à la suite des informations : **Dates clés**
-  puis **Programme** (déroulé éditorial affiché sur la page publique) - les deux
-  décrivent le calendrier de l'édition. ⚠️ Ne pas confondre ce déroulé
-  **éditorial** avec la planification **opérationnelle** du module Programme
-  (ateliers, sessions, créneaux) : deux objets différents, d'où le renvoi vers le
-  module dans la description de la carte.
+- **Fiche d'édition : plus d'onglet « Programme »** (2026-09-28). **Dates clés**
+  est passé dans l'onglet **Général**. ⚠️ La carte « Programme » (déroulé
+  éditorial) a été **supprimée** avec son réglage `settings['programme']` :
+  personne ne le lisait. Le programme public (`#programme` de la page colloque)
+  est construit à partir des **sessions**, des **ateliers** et des **créneaux**
+  du module Programme (`colloque.blade.php` : `$plenaries` + `$ateliers->flatMap->sessions`,
+  groupés par jour, enrichis de `$commsBySession`). Ne pas réintroduire un
+  déroulé saisi à la main : il annonçait « affiché sur la page publique » alors
+  qu'il n'apparaissait nulle part.
 
 ### Règles métier - limites communications & attestations
 

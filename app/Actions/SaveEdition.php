@@ -63,13 +63,6 @@ class SaveEdition
             ->filter(fn ($d) => filled($d['date'] ?? null) || filled($d['label'] ?? null))
             ->map(fn ($d) => ['date' => (string) ($d['date'] ?? ''), 'label' => (string) ($d['label'] ?? '')])->values()->all();
 
-        $programme = collect($data['programme'] ?? [])
-            ->filter(fn ($p) => filled($p['title'] ?? null) || filled($p['time'] ?? null))
-            ->map(fn ($p) => [
-                'day' => (string) ($p['day'] ?? ''), 'time' => (string) ($p['time'] ?? ''), 'type' => (string) ($p['type'] ?? ''),
-                'title' => (string) ($p['title'] ?? ''), 'speaker' => (string) ($p['speaker'] ?? ''), 'room' => (string) ($p['room'] ?? ''),
-            ])->values()->all();
-
         $why = collect($data['why'] ?? [])
             ->filter(fn ($w) => filled($w['title'] ?? null))
             ->map(fn ($w) => ['title' => (string) $w['title'], 'text' => (string) ($w['text'] ?? '')])->values()->all();
@@ -110,7 +103,6 @@ class SaveEdition
                 'languages' => $languages,
                 'tracks' => $tracks,
                 'key_dates' => $keyDates,
-                'programme' => $programme,
                 'why' => $why,
                 'info_cards' => $infoCards,
                 'fees' => $fees,

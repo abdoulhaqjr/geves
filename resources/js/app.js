@@ -1686,8 +1686,6 @@ document.addEventListener('alpine:init', () => {
         removeFaq(i) { this.faq.splice(i, 1); },
         addKeyDate() { this.keyDates.push({ date: '', label: '' }); },
         removeKeyDate(i) { this.keyDates.splice(i, 1); },
-        addProg() { this.programme.push({ day: '', time: '', type: 'Session', title: '', speaker: '', room: '' }); },
-        removeProg(i) { this.programme.splice(i, 1); },
         addAxis() { this.axes.push({ label: '' }); },
         removeAxis(i) { this.axes.splice(i, 1); },
         addWhy() { this.why.push({ title: '', text: '' }); },

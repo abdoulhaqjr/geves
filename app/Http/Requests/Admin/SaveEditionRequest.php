@@ -50,13 +50,6 @@ class SaveEditionRequest extends FormRequest
             'keyDates' => ['array'],
             'keyDates.*.date' => ['nullable', 'string', 'max:40'],
             'keyDates.*.label' => ['nullable', 'string', 'max:200'],
-            'programme' => ['array'],
-            'programme.*.day' => ['nullable', 'string', 'max:60'],
-            'programme.*.time' => ['nullable', 'string', 'max:60'],
-            'programme.*.type' => ['nullable', 'string', 'max:60'],
-            'programme.*.title' => ['nullable', 'string', 'max:300'],
-            'programme.*.speaker' => ['nullable', 'string', 'max:200'],
-            'programme.*.room' => ['nullable', 'string', 'max:100'],
             'why' => ['array'],
             'why.*.title' => ['nullable', 'string', 'max:200'],
             'why.*.text' => ['nullable', 'string', 'max:1000'],
@@ -160,7 +153,7 @@ class SaveEditionRequest extends FormRequest
     private function tabForField(string $field): string
     {
         return match (true) {
-            str_starts_with($field, 'keyDates'), str_starts_with($field, 'programme') => 'programme',
+            str_starts_with($field, 'keyDates') => 'general',
             in_array($field, ['submission_open', 'submission_deadline', 'max_communications', 'ref_prefix', 'ref_prefix_mode', 'attestation_max', 'coauthors_max', 'gen_participation', 'gen_communication'], true),
             str_starts_with($field, 'fees'), str_starts_with($field, 'ref_axes') => 'submissions',
             str_starts_with($field, 'committees') => 'committees',

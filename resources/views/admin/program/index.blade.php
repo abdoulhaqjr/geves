@@ -153,7 +153,7 @@
                         {{-- Colonne « À planifier » --}}
                         <div>
                             <div class="ukc-card" style="position:sticky;top:12px;">
-                                <h2 style="font-size:1rem;font-weight:800;margin-bottom:6px;">À planifier</h2>
+                                <h2><span><x-ukc.icon name="inbox" :size="18" /> À planifier</span></h2>
                                 <div class="desc" style="font-size:12.5px;color:var(--ukc-muted);margin-bottom:12px;">Acceptées sans créneau.</div>
                                 <div class="pool-list">
                                     @forelse ($unplaced as $sub)
@@ -166,7 +166,7 @@
                                             </div>
                                         </div>
                                     @empty
-                                        <p style="font-size:12.5px;color:var(--ukc-green);">Tout est planifié. 🎉</p>
+                                        <p style="font-size:12.5px;color:var(--ukc-green);display:flex;align-items:center;gap:6px;"><x-ukc.icon name="check-circle" :size="15" /> Tout est planifié.</p>
                                     @endforelse
                                 </div>
                                 <p class="ukc-hint" style="margin-top:10px;font-size:12px;color:var(--ukc-light);">Cliquez une communication pour la placer sur un créneau.</p>
@@ -259,7 +259,7 @@
                     <div class="ukc-table-wrap">
                         <table class="ukc-table">
                             <thead>
-                                <tr><th>Jour</th><th>Atelier</th><th>Session</th><th>Horaire</th><th>Modérateur</th><th>Rapporteur</th><th>Créneaux</th><th>Com.</th><th style="text-align:right;">Actions</th></tr>
+                                <tr><th>Jour</th><th>Atelier</th><th>Session</th><th>Horaire</th><th>Modérateur</th><th>Rapporteur</th><th class="num">Créneaux</th><th class="num">Com.</th><th style="text-align:right;">Actions</th></tr>
                             </thead>
                             @forelse ($sessions as $session)
                                 @php
@@ -276,8 +276,8 @@
                                         <td>{{ $session->starts_at?->format('H:i') ?: '-' }}@if ($session->ends_at) – {{ $session->ends_at->format('H:i') }}@endif</td>
                                         <td>@if ($session->moderator_name)<span class="ukc-pill ukc-pill--mod">{{ $session->moderator_name }}</span>@else<span class="ukc-pill ukc-pill--muted">À désigner</span>@endif</td>
                                         <td>@if ($session->rapporteur_name)<span class="ukc-pill ukc-pill--rap">{{ $session->rapporteur_name }}</span>@else<span class="ukc-pill ukc-pill--muted">À désigner</span>@endif</td>
-                                        <td>{{ $sessionSlots->count() }}</td>
-                                        <td>{{ $sessionSlots->where('submission_id', '>', 0)->count() }}</td>
+                                        <td class="num">{{ $sessionSlots->count() }}</td>
+                                        <td class="num">{{ $sessionSlots->where('submission_id', '>', 0)->count() }}</td>
                                         <td style="text-align:right;">
                                             <div class="ukc-actions">
                                                 <a href="{{ route('admin.documents.sessions', $edition) }}" class="ukc-btn--icon" title="Fiches (modération / rapport)"><x-ukc.icon name="file" :size="15" /></a>
@@ -287,7 +287,7 @@
                                                         @click="openSession({ id:{{ $session->id }}, type:@js($session->atelier_id ? 'atelier' : 'plenary'), atelier_id:@js((string) $session->atelier_id), label:@js($session->label), day:@js($sDay?->format('Y-m-d') ?? ''), start:@js($session->starts_at?->format('H:i') ?? ''), end:@js($session->ends_at?->format('H:i') ?? ''), room:@js($session->room ?? ''), moderator:@js($session->moderator_name ?? ''), rapporteur:@js($session->rapporteur_name ?? '') })"><x-ukc.icon name="pen" :size="15" /></button>
                                                 <form method="POST" action="{{ route('admin.program.sessions.destroy', $session) }}" data-ajax data-ajax-target="prog-sessions" data-ajax-msg="Session supprimée." data-confirm="Supprimer cette session ?">
                                                     @csrf @method('DELETE')
-                                                    <button type="submit" class="ukc-btn--icon" title="Supprimer"><x-ukc.icon name="trash" :size="15" /></button>
+                                                    <button type="submit" class="ukc-btn--icon danger" title="Supprimer"><x-ukc.icon name="trash" :size="15" /></button>
                                                 </form>
                                             </div>
                                         </td>
@@ -326,8 +326,16 @@
                                     <tr>
                                         <td>{{ $slot->starts_at?->format('d/m') ?: '-' }}</td>
                                         <td>{{ $slot->starts_at?->format('H:i') ?: '-' }}</td>
-                                        <td>{{ $slot->session?->atelier?->title ? $slot->session->atelier->title.' · ' : '' }}{{ $slot->session_label ?: '-' }}</td>
-                                        <td>@if ($slot->submission){{ Str::limit($slot->submission->title, 45) }}@else<em style="color:var(--ukc-light);">Créneau libre</em>@endif</td>
+                                        {{-- Atelier et session sur deux niveaux : concaténés, ils
+                                             répétaient le nom de l'atelier (les libellés de session
+                                             le contiennent souvent) et gonflaient la colonne. --}}
+                                        <td style="min-width:200px;">
+                                            @if ($slot->session?->atelier?->title)
+                                                <span class="axis-tag">{{ Str::limit($slot->session->atelier->title, 26) }}</span>
+                                            @endif
+                                            <div style="font-size:12.5px;color:var(--ukc-muted);margin-top:3px;">{{ Str::limit($slot->session_label ?: '-', 38) }}</div>
+                                        </td>
+                                        <td>@if ($slot->submission)<strong style="font-weight:600;">{{ Str::limit($slot->submission->title, 45) }}</strong>@else<span style="color:var(--ukc-light);">-</span>@endif</td>
                                         <td>
                                             @if ($slot->submission)<span class="ukc-pill ukc-pill--{{ $slot->submission->type === 'poster' ? 'poster' : 'oral' }}">{{ $slot->submission->type === 'poster' ? 'Poster' : 'Orale' }}</span>
                                             @else<span class="ukc-pill ukc-pill--muted">Libre</span>@endif
@@ -339,7 +347,7 @@
                                                         @click="openSlot({ id:{{ $slot->id }}, session_id:@js((string) $slot->session_id), day:@js($slot->starts_at?->format('Y-m-d') ?? ''), start:@js($slot->starts_at?->format('H:i') ?? ''), room:@js($slot->room ?? ''), submission_id:@js((string) $slot->submission_id), title:@js($slot->session_label ?? '') })"><x-ukc.icon name="pen" :size="15" /></button>
                                                 <form method="POST" action="{{ route('admin.program.slots.destroy', $slot) }}" data-ajax data-ajax-target="prog-slots" data-ajax-msg="Créneau supprimé." data-confirm="Supprimer ce créneau ?">
                                                     @csrf @method('DELETE')
-                                                    <button type="submit" class="ukc-btn--icon" title="Supprimer"><x-ukc.icon name="trash" :size="15" /></button>
+                                                    <button type="submit" class="ukc-btn--icon danger" title="Supprimer"><x-ukc.icon name="trash" :size="15" /></button>
                                                 </form>
                                             </div>
                                         </td>
@@ -356,9 +364,9 @@
             {{-- ============================ ESPACES ============================ --}}
             <div @if ($tab !== 'espaces') style="display:none;" @endif data-ajax-root="prog-spaces">
                 <div class="ukc-card">
-                    <h2 style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:1rem;font-weight:800;margin-bottom:8px;">
-                        Gestion des espaces
-                        <button type="button" class="ukc-btn ukc-btn--sm" @click="openSpace()"><x-ukc.icon name="plus" :size="14" /> Ajouter un espace</button>
+                    <h2>
+                        <span><x-ukc.icon name="pin" :size="18" /> Gestion des espaces</span>
+                        <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" @click="openSpace()"><x-ukc.icon name="plus" :size="14" /> Ajouter un espace</button>
                     </h2>
                     <div class="desc">Amphithéâtres, salles et hall posters. Un espace peut être associé à un atelier.</div>
 
@@ -405,7 +413,7 @@
                  l'onglet Créneaux, plutôt qu'un onglet séparé. --}}
             <div style="margin-top:18px;{{ $tab !== 'creneaux' ? 'display:none;' : '' }}">
                 <div class="ukc-card">
-                    <h2 style="font-size:1rem;font-weight:800;margin-bottom:6px;">Communications acceptées non planifiées</h2>
+                    <h2><span><x-ukc.icon name="inbox" :size="18" /> Communications acceptées non planifiées</span></h2>
                     <div class="desc">Priorité à l'affectation auto pour les communications <strong>payées</strong> dont l'axe correspond à un atelier avec créneau libre.</div>
                     <div class="ukc-table-wrap">
                         <table class="ukc-table">
@@ -421,11 +429,11 @@
                                         <td>{{ $sub->track ?: '-' }}</td>
                                         <td>@if ($isPaid($sub))<span class="ukc-pill ukc-pill--ok">Payé</span>@else<span class="ukc-pill ukc-pill--warn">En attente</span>@endif</td>
                                         <td style="text-align:right;">
-                                            <button type="button" class="ukc-btn ukc-btn--sm" @click="openSlot({ id:'', session_id:'', day:'', start:'', room:'', submission_id:'{{ $sub->id }}', title:'' })">Assigner</button>
+                                            <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" @click="openSlot({ id:'', session_id:'', day:'', start:'', room:'', submission_id:'{{ $sub->id }}', title:'' })"><x-ukc.icon name="calendar-check" :size="14" /> Assigner</button>
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="6" style="text-align:center;color:var(--ukc-green);padding:20px;">Toutes les communications acceptées sont planifiées. 🎉</td></tr>
+                                    <tr><td colspan="6" style="text-align:center;color:var(--ukc-green);padding:20px;"><span style="display:inline-flex;align-items:center;gap:6px;"><x-ukc.icon name="check-circle" :size="16" /> Toutes les communications acceptées sont planifiées.</span></td></tr>
                                 @endforelse
                             </tbody>
                         </table>
@@ -436,7 +444,7 @@
             {{-- ============================ AFFECTATION AUTO ============================ --}}
             <div @if ($tab !== 'auto') style="display:none;" @endif>
                 <div class="ukc-card" style="max-width:720px;">
-                    <h2 style="font-size:1rem;font-weight:800;margin-bottom:6px;">Affectation automatique des créneaux</h2>
+                    <h2><span><x-ukc.icon name="refresh" :size="18" /> Affectation automatique des créneaux</span></h2>
                     <div class="desc">
                         Dès qu'une communication est <strong>acceptée</strong> et le <strong>paiement</strong> validé, le système peut la placer
                         sur un créneau libre de l'atelier correspondant à son axe.
@@ -519,7 +527,7 @@
                     <input type="hidden" name="auto_order" value="{{ $config['auto']['order'] }}">
                     <input type="hidden" name="auto_fallback" value="{{ $config['auto']['fallback'] }}">
 
-                    <h2 style="font-size:1rem;font-weight:800;margin-bottom:6px;">Paramètres des créneaux</h2>
+                    <h2><span><x-ukc.icon name="settings" :size="18" /> Paramètres des créneaux</span></h2>
                     <div class="desc">Durées, pauses et règles de planification et d'affichage public.</div>
 
                     <div class="settings-box">
