@@ -21,7 +21,7 @@ function scheduledEdition(): array
     return [$edition, $submission];
 }
 
-it('affiche le programme public (sessions plénières, ateliers, communications)', function () {
+it('affiche le programme public (plénières et ateliers, sans le détail des communications)', function () {
     [$edition, $submission] = scheduledEdition();
 
     $this->get(route('public.colloque', $edition->slug))
@@ -30,7 +30,9 @@ it('affiche le programme public (sessions plénières, ateliers, communications)
         ->assertSee('Cérémonie d’ouverture', false)
         ->assertSee('Atelier Santé')
         ->assertSee('Session parallèle 1')
-        ->assertSee('Innovation durable');
+        ->assertSee('Amphi A')
+        // Le détail des sessions (titres des communications) n'est pas exposé au public.
+        ->assertDontSee('Innovation durable');
 });
 
 it('n’affiche pas de programme quand il n’y a aucune session', function () {

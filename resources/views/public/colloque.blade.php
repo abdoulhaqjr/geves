@@ -327,10 +327,6 @@
                                     @php
                                         $isPlenary = $s->type === 'plenary';
                                         $isParallel = ! $isPlenary && $s->starts_at && $parallelStarts->contains($s->starts_at->format('H:i'));
-                                        $roles = collect([
-                                            $s->moderator_name ? 'Mod. '.$s->moderator_name : null,
-                                            $s->rapporteur_name ? 'Rapp. '.$s->rapporteur_name : null,
-                                        ])->filter()->implode(' · ');
                                         $atelierTitle = $s->atelier_id ? ($atelierNames[$s->atelier_id] ?? null) : null;
                                     @endphp
                                     <div class="ukc-session">
@@ -340,16 +336,8 @@
                                             @if ($atelierTitle)<span class="type type--poster">{{ $atelierTitle }}</span>@endif
                                             @if ($isParallel)<span class="type type--parallel" title="{{ __('Se déroule en même temps que d’autres ateliers') }}">{{ __('En parallèle') }}</span>@endif
                                             <h4>{{ $s->label }}</h4>
-                                            @if ($s->room || $roles)
-                                                <div class="meta">{{ $s->room }}@if ($s->room && $roles) · @endif{{ $roles }}</div>
-                                            @endif
-                                            @php $comms = ($commsBySession[$s->id] ?? collect())->pluck('submission')->filter(); @endphp
-                                            @if ($comms->isNotEmpty())
-                                                <ul class="ukc-session-comms">
-                                                    @foreach ($comms as $comm)
-                                                        <li>{{ $comm->title }}</li>
-                                                    @endforeach
-                                                </ul>
+                                            @if ($s->room)
+                                                <div class="meta">{{ $s->room }}</div>
                                             @endif
                                         </div>
                                     </div>

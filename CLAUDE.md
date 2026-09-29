@@ -351,6 +351,16 @@ Une relecture n'est plus un simple « assignée / rendue » : `Review::STATUSES`
     depuis la requête : ne jamais y poster les seules règles (elles seraient
     perdues). Endpoint dédié **`admin.editions.form.rules`** ; un test de garde
     (« ne perd pas les règles quand on enregistre les champs ») le protège.
+  - **Éditeur du formulaire = enregistrement AUTOMATIQUE, sans bouton** (Alpine
+    `formEditor`, `submission-form-editor.blade.php`) : l'état vit entièrement
+    côté client ; **toute** action (réordonner un champ, ajouter, éditer,
+    supprimer) **poste en AJAX** sur `admin.editions.form.update` (qui répond en
+    **JSON** quand `wantsJson()`) et affiche un toast. Il n'y a **plus** de bouton
+    « Enregistrer » (ni en haut ni en bas). L'**édition d'un champ** se fait dans
+    un **slideover** (`<x-ukc.slideover>`, même schéma que « Nouvelle tâche » du
+    Projet) : ouvrir → modifier → *Enregistrer* commit + persiste ; *Supprimer*
+    (champ personnalisé) dans le pied du panneau. Ne pas réintroduire un `<form>`
+    global avec bouton submit.
 - ⚠️ **Un axe thématique se compare par CLÉ, jamais par chaîne brute** :
   l'expertise d'un relecteur stocke une **copie** du libellé de l'axe, et ce
   libellé est du texte libre. Un tiret cadratin recopié suffisait à faire échouer
@@ -442,9 +452,15 @@ paiement (`pay`), inscription à une formation.
   personne ne le lisait. Le programme public (`#programme` de la page colloque)
   est construit à partir des **sessions**, des **ateliers** et des **créneaux**
   du module Programme (`colloque.blade.php` : `$plenaries` + `$ateliers->flatMap->sessions`,
-  groupés par jour, enrichis de `$commsBySession`). Ne pas réintroduire un
+  groupés par jour). Ne pas réintroduire un
   déroulé saisi à la main : il annonçait « affiché sur la page publique » alors
   qu'il n'apparaissait nulle part.
+  - ⚠️ **Le public ne montre PAS le détail des sessions** : chaque séance
+    affiche heure + type (Plénière/Atelier) + nom de l'atelier + « En parallèle »
+    + libellé + salle, **mais pas** la liste des communications ni les
+    modérateurs/rapporteurs (c'est du back-office). Ne pas réafficher
+    `$commsBySession` ni les rôles dans `#programme`. Test :
+    `ProgramPublicTest` (`assertDontSee` le titre d'une communication).
 
 - **Un seul colloque de démo, à l'échelle** : `migrate:fresh --seed` ne crée plus
   qu'**un** colloque (le VIIIe conjoint Parakou-Kara, `avenir-durable-2025`), au

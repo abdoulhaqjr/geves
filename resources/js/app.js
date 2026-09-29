@@ -2056,21 +2056,113 @@ document.addEventListener('alpine:init', () => {
 
     // Éditeur de champs personnalisés du formulaire de soumission (admin), sans
     // Livewire : ajout / suppression / réordonnancement côté client.
-    window.Alpine.data('formEditor', (custom = []) => ({
-        custom: Array.isArray(custom) ? custom : [],
-        add(type = 'text') {
-            this.custom.push({
-                key: 'custom_' + Math.random().toString(36).slice(2, 8),
-                label: '', type: type || 'text', required: false, help: '', options_text: '', open: true,
-            });
+    // Éditeur du formulaire de soumission : état 100 % Alpine, enregistrement
+    // AUTOMATIQUE (réordonnancement, ajout, édition, suppression d'un champ). Plus
+    // de bouton « Enregistrer » : chaque changement est persité en AJAX. L'édition
+    // d'un champ se fait dans un panneau latéral (comme « Nouvelle tâche » du projet).
+    window.Alpine.data('formEditor', (cfg = {}) => ({
+        standard: Array.isArray(cfg.standard) ? cfg.standard : [],
+        custom: Array.isArray(cfg.custom) ? cfg.custom : [],
+        saveUrl: cfg.saveUrl || '',
+        csrf: cfg.csrf || '',
+        saving: false,
+        // Panneau d'édition
+        editOpen: false,
+        editKind: 'custom', // 'standard' | 'custom'
+        editIndex: null,
+        creating: false,
+        draft: {},
+
+        openEditStandard(i) {
+            this.editKind = 'standard';
+            this.editIndex = i;
+            this.creating = false;
+            this.draft = { ...this.standard[i] };
+            this.editOpen = true;
         },
-        remove(i) {
-            this.custom.splice(i, 1);
+        openEditCustom(i) {
+            this.editKind = 'custom';
+            this.editIndex = i;
+            this.creating = false;
+            this.draft = { ...this.custom[i] };
+            this.editOpen = true;
+        },
+        add(type = 'text') {
+            this.editKind = 'custom';
+            this.editIndex = null;
+            this.creating = true;
+            this.draft = {
+                key: 'custom_' + Math.random().toString(36).slice(2, 8),
+                label: '', type: type || 'text', required: false, help: '', options_text: '',
+            };
+            this.editOpen = true;
+        },
+        saveEdit() {
+            if (!this.draft.label || !this.draft.label.trim()) {
+                window.ukcToast && window.ukcToast('Le libellé est obligatoire.', 'err');
+                return;
+            }
+            if (this.editKind === 'standard') {
+                Object.assign(this.standard[this.editIndex], this.draft);
+            } else if (this.creating) {
+                this.custom.push({ ...this.draft });
+            } else {
+                Object.assign(this.custom[this.editIndex], this.draft);
+            }
+            this.editOpen = false;
+            this.persist();
+        },
+        deleteField() {
+            if (this.editKind !== 'custom' || this.creating) return;
+            this.custom.splice(this.editIndex, 1);
+            this.editOpen = false;
+            this.persist();
         },
         move(i, dir) {
             const j = i + dir;
             if (j < 0 || j >= this.custom.length) return;
             [this.custom[i], this.custom[j]] = [this.custom[j], this.custom[i]];
+            this.persist();
+        },
+        metaFor(f) {
+            return (f.meta || '') + (f.canRequired ? ' · ' + (f.required ? 'obligatoire' : 'optionnel') : '')
+                + (f.canEnabled && !f.enabled ? ' · masqué' : '');
+        },
+        customMeta(co) {
+            const types = cfg.customTypes || {};
+            return (types[co.type] || co.type) + (co.required ? ' · obligatoire' : ' · optionnel');
+        },
+        async persist() {
+            this.saving = true;
+            const body = new FormData();
+            body.append('_token', this.csrf);
+            body.append('_method', 'PUT');
+            this.standard.forEach((f) => {
+                body.append('fields[' + f.key + '][label]', f.label || '');
+                body.append('fields[' + f.key + '][help]', f.help || '');
+                if (f.canEnabled && f.enabled) body.append('fields[' + f.key + '][enabled]', '1');
+                if (f.canRequired && f.required) body.append('fields[' + f.key + '][required]', '1');
+            });
+            this.custom.forEach((c, i) => {
+                body.append('custom[' + i + '][key]', c.key);
+                body.append('custom[' + i + '][label]', c.label || '');
+                body.append('custom[' + i + '][type]', c.type || 'text');
+                if (c.required) body.append('custom[' + i + '][required]', '1');
+                body.append('custom[' + i + '][help]', c.help || '');
+                body.append('custom[' + i + '][options_text]', c.options_text || '');
+            });
+            try {
+                const res = await fetch(this.saveUrl, {
+                    method: 'POST',
+                    body,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' },
+                });
+                if (!res.ok) throw new Error('http ' + res.status);
+                window.ukcToast && window.ukcToast('Formulaire enregistré.', 'ok');
+            } catch (e) {
+                window.ukcToast && window.ukcToast('Échec de l’enregistrement.', 'err');
+            }
+            this.saving = false;
         },
     }));
 

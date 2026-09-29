@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\Concerns\ScopesEditionAccess;
 use App\Http\Controllers\Controller;
 use App\Models\Edition;
 use App\Support\SubmissionFormConfig;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -61,7 +62,7 @@ class SubmissionFormController extends Controller
         ]);
     }
 
-    public function update(Request $request, Edition $edition): RedirectResponse
+    public function update(Request $request, Edition $edition): RedirectResponse|JsonResponse
     {
         $request->validate([
             'fields.title.label' => ['required', 'string', 'max:120'],
@@ -117,6 +118,12 @@ class SubmissionFormController extends Controller
             'rules' => (new SubmissionFormConfig($edition))->rules(),
         ];
         $edition->update(['settings' => $settings]);
+
+        // Enregistrement automatique (réordonnancement / ajout / édition d'un champ
+        // via l'éditeur Alpine) : réponse JSON, pas de rechargement de page.
+        if ($request->wantsJson()) {
+            return response()->json(['status' => 'ok', 'custom' => $custom]);
+        }
 
         return back()->with('ukc_status', 'Formulaire de soumission enregistré.');
     }
