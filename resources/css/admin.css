@@ -425,7 +425,9 @@
 .admin-program .plan-ev--plenary .badge { align-self: flex-start; background: rgba(255,255,255,.18); border: 1px solid rgba(255,215,0,.6); color: var(--ukc-gold); font-weight: 800; font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; padding: 1px 7px; border-radius: 99px; margin-bottom: 3px; }
 .admin-program .plan-ev--plenary .t { font-weight: 800; font-size: 12.5px; line-height: 1.2; }
 .admin-program .plan-ev--plenary .m { font-size: 10.5px; opacity: .85; margin-top: 1px; font-variant-numeric: tabular-nums; }
-.admin-program .plan-ev--atelier { background: #fff; border: 1px solid #c7d3f5; padding: 4px; gap: 3px; z-index: 3; }
+.admin-program .plan-ev--atelier { background: #fff; border: 1px solid #c7d3f5; padding: 4px; gap: 3px; z-index: 3; overflow-y: auto; }
+.admin-program .plan-ev--atelier::-webkit-scrollbar { width: 6px; }
+.admin-program .plan-ev--atelier::-webkit-scrollbar-thumb { background: var(--ukc-border); border-radius: 99px; }
 .admin-program .plan-ev--atelier .ahead { display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; padding: 2px 3px 3px; border-bottom: 1px dashed var(--ukc-border); }
 .admin-program .plan-ev--atelier .ahead .t { font-weight: 800; font-size: 11.5px; line-height: 1.2; }
 .admin-program .plan-ev--atelier .ahead .time { display: block; font-size: 10px; color: var(--ukc-muted); font-variant-numeric: tabular-nums; margin-top: 1px; }

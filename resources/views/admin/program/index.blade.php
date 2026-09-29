@@ -131,6 +131,28 @@
                                         // Colonnes = salles distinctes des ateliers du jour.
                                         $columns = $ateliersT->map($roomOf)->unique()->sort(SORT_NATURAL)->values();
                                         if ($columns->isEmpty()) { $columns = collect(['À définir']); }
+                                        // Sous-colonnes (lanes) : dans une même salle, des sessions qui se
+                                        // chevauchent sont placées CÔTE À CÔTE (et non l'une sur l'autre).
+                                        $sessionLane = [];
+                                        $roomLanes = [];
+                                        foreach ($columns as $room) {
+                                            $laneEnds = [];
+                                            foreach ($ateliersT->filter(fn ($s) => $roomOf($s) === $room)->sortBy(fn ($s) => $mins($s->starts_at)) as $s) {
+                                                $st = $mins($s->starts_at);
+                                                $lane = null;
+                                                foreach ($laneEnds as $li => $le) {
+                                                    if ($st >= $le) { $lane = $li; break; }
+                                                }
+                                                if ($lane === null) { $lane = count($laneEnds); }
+                                                $laneEnds[$lane] = $mins($s->ends_at);
+                                                $sessionLane[$s->id] = $lane;
+                                            }
+                                            $roomLanes[$room] = max(1, count($laneEnds));
+                                        }
+                                        $roomColStart = [];
+                                        $cStart = 2;
+                                        foreach ($columns as $room) { $roomColStart[$room] = $cStart; $cStart += $roomLanes[$room]; }
+                                        $totalLanes = max(1, array_sum($roomLanes));
                                         // Axe temporel : bornes arrondies à l'heure.
                                         $dayStart = $timed->isNotEmpty() ? (int) (floor($timed->map(fn ($s) => $mins($s->starts_at))->min() / 60) * 60) : 480;
                                         $dayEnd = $timed->isNotEmpty() ? (int) (ceil($timed->map(fn ($s) => $mins($s->ends_at))->max() / 60) * 60) : 1080;
@@ -175,22 +197,22 @@
                                         <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);font-size:13.5px;">Aucune session horodatée ce jour. Ajoutez un début et une fin à une session pour la voir ici.</p></div>
                                     @else
                                         <div class="plan-scroll">
-                                            <div class="plan-board" style="grid-template-columns:60px repeat({{ $columns->count() }}, minmax(140px,1fr));grid-template-rows:36px repeat({{ $rowCount }}, 34px);">
+                                            <div class="plan-board" style="grid-template-columns:60px repeat({{ $totalLanes }}, minmax(130px,1fr));grid-template-rows:36px repeat({{ $rowCount }}, 34px);">
                                                 <div class="plan-head plan-head--time">Heure</div>
-                                                @foreach ($columns as $ci => $room)
-                                                    <div class="plan-head" style="grid-column:{{ $ci + 2 }};grid-row:1;">{{ $room }}</div>
+                                                @foreach ($columns as $room)
+                                                    <div class="plan-head" style="grid-column:{{ $roomColStart[$room] }} / span {{ $roomLanes[$room] }};grid-row:1;">{{ $room }}</div>
                                                 @endforeach
 
                                                 @for ($m = $dayStart; $m < $dayEnd; $m += 60)
                                                     <div class="plan-timelabel" style="grid-column:1;grid-row:{{ $rowLine($m) }} / {{ $rowLine($m + 60) }};">{{ sprintf('%02d:00', intdiv($m, 60)) }}</div>
                                                 @endfor
-                                                @foreach ($columns as $ci => $room)
-                                                    <div class="plan-lane" style="grid-column:{{ $ci + 2 }};grid-row:2 / {{ $rowCount + 2 }};"></div>
+                                                @foreach ($columns as $room)
+                                                    <div class="plan-lane" style="grid-column:{{ $roomColStart[$room] }} / span {{ $roomLanes[$room] }};grid-row:2 / {{ $rowCount + 2 }};"></div>
                                                 @endforeach
 
                                                 {{-- Plénières : bandeaux pleine largeur (exclusives) --}}
                                                 @foreach ($plenT as $s)
-                                                    <div class="plan-ev plan-ev--plenary" style="grid-column:2 / {{ $columns->count() + 2 }};grid-row:{{ $rowLine($mins($s->starts_at)) }} / {{ $rowLine($mins($s->ends_at)) }};"
+                                                    <div class="plan-ev plan-ev--plenary" style="grid-column:2 / {{ 2 + $totalLanes }};grid-row:{{ $rowLine($mins($s->starts_at)) }} / {{ $rowLine($mins($s->ends_at)) }};"
                                                          @click='openSession(@json($sessJs($s)))' title="Éditer la session">
                                                         <span class="badge">Plénière</span>
                                                         <span class="t">{{ Str::limit($s->label, 70) }}</span>
@@ -200,7 +222,7 @@
 
                                                 {{-- Ateliers : colonnes parallèles --}}
                                                 @foreach ($ateliersT as $s)
-                                                    @php $col = $columns->search($roomOf($s)) + 2; $sslots = $creneaux->where('session_id', $s->id)->sortBy('starts_at'); @endphp
+                                                    @php $col = ($roomColStart[$roomOf($s)] ?? 2) + ($sessionLane[$s->id] ?? 0); $sslots = $creneaux->where('session_id', $s->id)->sortBy('starts_at'); @endphp
                                                     <div class="plan-ev plan-ev--atelier" style="grid-column:{{ $col }};grid-row:{{ $rowLine($mins($s->starts_at)) }} / {{ $rowLine($mins($s->ends_at)) }};">
                                                         <div class="ahead">
                                                             <div>
