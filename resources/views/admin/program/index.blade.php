@@ -22,10 +22,6 @@
             <a href="{{ route('public.colloque', $edition->slug) }}#programme" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
                 <x-ukc.icon name="external" :size="15" /> Aperçu public
             </a>
-            <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm"
-                    onclick="window.dispatchEvent(new CustomEvent('ukc-new-slot'))">
-                <x-ukc.icon name="plus" :size="15" /> Nouveau créneau
-            </button>
         </x-slot:actions>
     @endif
 
@@ -42,8 +38,7 @@
             openSpace() { this.form = { name:'', capacity:'', building:'', note:'' }; this.modal='space'; },
             openRoom(a) { this.form = { ...a }; this.modal='room'; },
          }"
-         @keydown.escape.window="modal=null"
-         @ukc-new-slot.window="openSlot(null)">
+         @keydown.escape.window="modal=null">
 
         {{-- Filtres (GET) : sélecteur d'édition --}}
         <div class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px;">
@@ -243,7 +238,7 @@
                                                          @click='openSession(@json($sessJs($s)))' title="{{ $roomClash ? 'Conflit de salle : « '.$roomConflicts[$s->id].' » est occupée par une autre séance au même moment.' : 'Éditer la session' }}">
                                                         <span class="badge">Plénière</span>
                                                         <span class="t">{{ Str::limit($s->label, 70) }}</span>
-                                                        <span class="m">{{ $s->starts_at->format('H:i') }}–{{ $s->ends_at->format('H:i') }}@if ($s->moderator_name) · {{ $s->moderator_name }}@endif</span>
+                                                        <span class="m">{{ $s->starts_at->format('H:i') }}–{{ $s->ends_at->format('H:i') }}@if ($s->room) · <x-ukc.icon name="pin" :size="11" /> {{ $s->room }}@endif @if ($s->moderator_name)· {{ $s->moderator_name }}@endif</span>
                                                     </div>
                                                 @endforeach
 
@@ -260,6 +255,7 @@
                                                             <div>
                                                                 <span class="t" title="{{ $roomClash ? $atelierTitle.' - conflit de salle : « '.$roomConflicts[$s->id].' » occupée par une autre séance au même moment.' : $atelierTitle }}">@if ($roomClash)<span class="rflag"><x-ukc.icon name="alert-triangle" :size="11" /></span>@endif{{ $atelierTitle }}</span>
                                                                 <span class="time">{{ $s->starts_at->format('H:i') }}–{{ $s->ends_at->format('H:i') }}</span>
+                                                                <span class="room"><x-ukc.icon name="pin" :size="10" /> {{ $roomOf($s) }}</span>
                                                             </div>
                                                             <button type="button" @click='openSession(@json($sessJs($s)))' title="Éditer la session"><x-ukc.icon name="pen" :size="13" /></button>
                                                         </div>
@@ -434,13 +430,14 @@
                                                                     $placed = $ss->where('submission_id', '>', 0)->count();
                                                                     $tot = $ss->count();
                                                                     $roomClash = isset($wkConf[$s->id]);
+                                                                    $atelierShort = $s->atelier ? Str::before($s->atelier->title, ' -') : $s->label;
                                                                 @endphp
                                                                 <button type="button" class="wk-chip{{ $roomClash ? ' conflict' : '' }}"
                                                                         @click='openSession(@json($sessJsFor($s, $dd)))'
-                                                                        title="{{ ($s->atelier?->title ?: $s->label).' - '.$wkRoomOf($s).($roomClash ? ' (conflit : salle occupée par une autre séance au même moment)' : '') }}">
+                                                                        title="{{ ($s->atelier?->title ?: $s->label).' · '.$wkRoomOf($s).' · '.$placed.'/'.$tot.' communication(s) placée(s)'.($roomClash ? ' (conflit : salle occupée par une autre séance au même moment)' : '') }}">
                                                                     @if ($roomClash)<span class="cflag"><x-ukc.icon name="alert-triangle" :size="10" /></span>@endif
-                                                                    <span class="r">{{ $wkRoomOf($s) }}</span>
-                                                                    <span class="c">{{ $placed }}/{{ $tot }}</span>
+                                                                    <span class="a">{{ $atelierShort }}</span>
+                                                                    <span class="r"><x-ukc.icon name="pin" :size="10" /> {{ $wkRoomOf($s) }}</span>
                                                                 </button>
                                                             @endforeach
                                                         </div>
@@ -453,7 +450,7 @@
                                     @endforeach
                                 </div>
                             </div>
-                            <p class="ukc-hint" style="margin-top:10px;font-size:12px;color:var(--ukc-light);">Vue d’ensemble de la semaine · chaque colonne = un jour, les blocs sont classés par heure. Cliquez une plénière ou un atelier pour l’éditer. Le détail par salle et le placement des communications se font en vue « Jour ». La pastille d’une salle indique <strong>communications placées / créneaux</strong>.</p>
+                            <p class="ukc-hint" style="margin-top:10px;font-size:12px;color:var(--ukc-light);">Vue d’ensemble de la semaine · chaque colonne = un jour, les blocs sont classés par heure. Chaque pastille indique un <strong>atelier</strong> et sa <strong>salle</strong> ; survolez-la pour voir le nombre de communications placées. Cliquez une plénière ou un atelier pour l’éditer ; le placement des communications se fait en vue « Jour ».</p>
                         @endif
                     </div>
                 @endif

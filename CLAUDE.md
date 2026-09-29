@@ -572,13 +572,28 @@ classes `.wk-*`), **PAS** une grille time-alignée. ⚠️ L'ancienne vue Semain
 bandes qui se chevauchent l'une SUR l'autre** (ex. 08:30-11:30 et 09:00-11:00) : elles se
 cachaient et les chips débordaient. Désormais chaque colonne-jour empile ses **blocs dans
 l'ordre chronologique** (aucun chevauchement possible) : plénières = blocs bleus (badge or),
-ateliers = blocs blancs regroupés par tranche horaire, avec une chip par salle (salle +
-**placés/total**). Les **conflits de salle** du jour (même salle réelle, horaires qui se
+ateliers = blocs blancs regroupés par tranche horaire, avec **une chip par atelier** libellée
+**« Atelier N · 📍 Salle X »** (`.wk-chip .a` = nom court de l'atelier via `Str::before(title, ' -')`,
+`.wk-chip .r` = salle avec pictogramme). ⚠️ Ne PAS remettre le compteur brut `placés/total`
+sur la chip : il était incompris (« 1/1 », « 2/2 ») - il vit désormais dans l'**infobulle**
+(survol). Les **conflits de salle** du jour (même salle réelle, horaires qui se
 chevauchent) sont recalculés côté Semaine et **bordés d'orange** (chip `.wk-chip.conflict`,
 bloc `.wk-block--band.room-conflict`), comme en vue Jour. C'est une vue d'ensemble en
-lecture/édition-session (le détail par salle + le placement des communications restent en Jour).
-Les créneaux « libres » et le pool ouvrent la modale (`openSlot`/`openSession`). L'ancien
-agenda FullCalendar de cet onglet (+ `program-calendar.js`, `_session-block`,
+lecture/édition-session (le placement des communications reste en Jour).
+- **Salle visible partout (vue Jour)** : la **plénière** (bandeau) affiche sa salle dans sa
+  ligne meta (`📍 room`) ; chaque **carte d'atelier** affiche sa salle sur sa propre ligne
+  (`.plan-ev--atelier .ahead .room`, pictogramme `pin`), en plus de l'en-tête de colonne
+  (salle) resté collant.
+- **Édition d'une session = panneau latéral (slideover)**, pas une modale : `openSession()`
+  pose `modal='session'` et `_modals.blade.php` rend un `<x-ukc.slideover open="modal==='session'">`
+  (form `id="sessionForm"`, bouton *Enregistrer* dans le pied via `form=`), au même schéma que
+  « Nouvelle tâche » (Projet) et l'éditeur de formulaire. Les autres formulaires (atelier,
+  créneau, salle, espace) restent des `.ukc-modal`.
+- ⚠️ **Plus de bouton « Nouveau créneau »** dans la barre d'actions de `admin/programme` (et
+  l'évènement `ukc-new-slot` a été retiré) : on crée/place les créneaux depuis le board
+  (clic sur un créneau libre, glisser-déposer) et l'onglet Créneaux.
+Les créneaux « libres » et le pool ouvrent la modale/le slideover (`openSlot`/`openSession`).
+L'ancien agenda FullCalendar de cet onglet (+ `program-calendar.js`, `_session-block`,
 `$calendarEvents`) a été **supprimé** (redondant).
 - **Glisser-déposer** (app.js, listeners délégués globaux) : on tire une communication
   (item du pool `[data-sub-id]` OU créneau placé) vers un créneau **libre**

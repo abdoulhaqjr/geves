@@ -43,56 +43,52 @@
     </div>
 </div>
 
-{{-- ===== Modale Session ===== --}}
-<div class="ukc-modal" x-show="modal==='session'" x-cloak @click.self="modal=null" style="display:none;">
-    <div class="box">
-        <div class="box-head">
-            <span x-text="form.id ? 'Modifier la session' : 'Nouvelle session'"></span>
-            <button type="button" @click="modal=null" style="font-size:22px;color:var(--ukc-muted);background:none;border:none;cursor:pointer;">×</button>
+{{-- ===== Panneau latéral Session (slideover) ===== --}}
+<x-ukc.slideover open="modal==='session'" onClose="modal=null" width="460px">
+    <x-slot:header><span x-text="form.id ? 'Modifier la session' : 'Nouvelle session'"></span></x-slot:header>
+
+    <form method="POST" id="sessionForm" :action="form.id ? '{{ url('admin/programme/sessions') }}/'+form.id : '{{ route('admin.program.sessions.store') }}'">
+        @csrf
+        <template x-if="form.id"><input type="hidden" name="_method" value="PUT"></template>
+        <input type="hidden" name="edition_id" value="{{ $edition_id }}">
+        <div class="ukc-form-row">
+            <label>Type</label>
+            <select name="sType" x-model="form.type">
+                <option value="atelier">Session d’atelier</option>
+                <option value="plenary">Plénière</option>
+            </select>
         </div>
-        <div class="box-body">
-            <form method="POST" :action="form.id ? '{{ url('admin/programme/sessions') }}/'+form.id : '{{ route('admin.program.sessions.store') }}'">
-                @csrf
-                <template x-if="form.id"><input type="hidden" name="_method" value="PUT"></template>
-                <input type="hidden" name="edition_id" value="{{ $edition_id }}">
-                <div class="ukc-form-row">
-                    <label>Type</label>
-                    <select name="sType" x-model="form.type">
-                        <option value="atelier">Session d’atelier</option>
-                        <option value="plenary">Plénière</option>
-                    </select>
-                </div>
-                <div class="ukc-form-row" x-show="form.type==='atelier'">
-                    <label>Atelier</label>
-                    <select name="sAtelierId" x-model="form.atelier_id">
-                        <option value="">- Choisir -</option>
-                        @foreach ($ateliers as $a)<option value="{{ $a->id }}">{{ $a->title }}</option>@endforeach
-                    </select>
-                </div>
-                <div class="ukc-form-row">
-                    <label>Intitulé de la session</label>
-                    <input type="text" name="sLabel" x-model="form.label" required placeholder="Ex. Session 1 - Matin">
-                </div>
-                <div class="ukc-form-grid">
-                    <div class="ukc-form-row"><label>Jour</label><input type="date" name="sDay" x-model="form.day"></div>
-                    <div class="ukc-form-row"><label>Salle</label><input type="text" name="sRoom" x-model="form.room" list="roomsList"></div>
-                </div>
-                <div class="ukc-form-grid">
-                    <div class="ukc-form-row"><label>Début</label><input type="time" name="sStart" x-model="form.start"></div>
-                    <div class="ukc-form-row"><label>Fin</label><input type="time" name="sEnd" x-model="form.end"></div>
-                </div>
-                <div class="ukc-form-grid">
-                    <div class="ukc-form-row"><label>Modérateur</label><input type="text" name="sModerator" x-model="form.moderator"></div>
-                    <div class="ukc-form-row"><label>Rapporteur</label><input type="text" name="sRapporteur" x-model="form.rapporteur"></div>
-                </div>
-                <div class="box-foot">
-                    <button type="button" class="ukc-btn ukc-btn--ghost" @click="modal=null">Annuler</button>
-                    <button type="submit" class="ukc-btn">Enregistrer</button>
-                </div>
-            </form>
+        <div class="ukc-form-row" x-show="form.type==='atelier'" x-cloak>
+            <label>Atelier</label>
+            <select name="sAtelierId" x-model="form.atelier_id">
+                <option value="">- Choisir -</option>
+                @foreach ($ateliers as $a)<option value="{{ $a->id }}">{{ $a->title }}</option>@endforeach
+            </select>
         </div>
-    </div>
-</div>
+        <div class="ukc-form-row">
+            <label>Intitulé de la session</label>
+            <input type="text" name="sLabel" x-model="form.label" required placeholder="Ex. Session 1 - Matin">
+        </div>
+        <div class="ukc-form-grid">
+            <div class="ukc-form-row"><label>Jour</label><input type="date" name="sDay" x-model="form.day"></div>
+            <div class="ukc-form-row"><label>Salle</label><input type="text" name="sRoom" x-model="form.room" list="roomsList" placeholder="Ex. Salle 1"></div>
+        </div>
+        <div class="ukc-form-grid">
+            <div class="ukc-form-row"><label>Début</label><input type="time" name="sStart" x-model="form.start"></div>
+            <div class="ukc-form-row"><label>Fin</label><input type="time" name="sEnd" x-model="form.end"></div>
+        </div>
+        <div class="ukc-form-grid">
+            <div class="ukc-form-row"><label>Modérateur</label><input type="text" name="sModerator" x-model="form.moderator"></div>
+            <div class="ukc-form-row"><label>Rapporteur</label><input type="text" name="sRapporteur" x-model="form.rapporteur"></div>
+        </div>
+    </form>
+
+    <x-slot:footer>
+        <span style="flex:1;"></span>
+        <button type="button" class="ukc-btn ukc-btn--ghost" @click="modal=null">Annuler</button>
+        <button type="submit" form="sessionForm" class="ukc-btn ukc-btn--blue">Enregistrer</button>
+    </x-slot:footer>
+</x-ukc.slideover>
 
 {{-- ===== Modale Créneau ===== --}}
 <div class="ukc-modal" x-show="modal==='slot'" x-cloak @click.self="modal=null" style="display:none;">

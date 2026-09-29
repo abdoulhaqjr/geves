@@ -425,12 +425,14 @@
 .admin-program .wk-bhead .wk-time { color: var(--ukc-blue-dark); }
 .admin-program .wk-count { font-size: 10px; font-weight: 700; color: var(--ukc-muted); text-transform: uppercase; letter-spacing: .03em; }
 .admin-program .wk-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
-.admin-program .wk-chip { border: 1px solid #dbe4ff; border-radius: 7px; background: #eef2ff; color: var(--ukc-blue-dark); font-size: 11px; font-weight: 700; padding: 3px 8px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.admin-program .wk-chip { border: 1px solid #dbe4ff; border-radius: 7px; background: #eef2ff; color: var(--ukc-blue-dark); font-size: 11px; font-weight: 700; padding: 3px 8px; cursor: pointer; display: inline-flex; gap: 5px; align-items: center; }
 .admin-program .wk-chip:hover { background: #dbe4ff; }
-.admin-program .wk-chip .c { font-variant-numeric: tabular-nums; opacity: .72; font-weight: 800; }
+.admin-program .wk-chip .a { font-weight: 800; }
+.admin-program .wk-chip .r { display: inline-flex; align-items: center; gap: 2px; font-weight: 600; opacity: .82; }
+.admin-program .wk-chip .r svg { opacity: .7; }
 .admin-program .wk-chip.conflict { background: #fffbeb; border-color: #f59e0b; color: #92400e; }
 .admin-program .wk-chip.conflict .cflag { color: #d97706; display: inline-flex; vertical-align: -1px; }
-.admin-program .wk-chip.conflict .c { opacity: .85; }
+.admin-program .wk-chip.conflict .r { opacity: .9; }
 
 .admin-program .plan-scroll { overflow-x: auto; border: 1px solid var(--ukc-border); border-radius: 12px; background: #fff; }
 .admin-program .plan-board { display: grid; min-width: 640px; }
@@ -455,6 +457,8 @@
 .admin-program .plan-ev--atelier.room-conflict .ahead { border-bottom-color: #fcd34d; }
 .admin-program .plan-ev--plenary.room-conflict { box-shadow: 0 4px 14px -6px rgba(26,48,128,.6), inset 0 0 0 2px #f59e0b; }
 .admin-program .plan-ev--atelier .ahead .time { display: block; font-size: 10px; color: var(--ukc-muted); font-variant-numeric: tabular-nums; margin-top: 1px; }
+.admin-program .plan-ev--atelier .ahead .room { display: flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 700; color: var(--ukc-blue-dark); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.admin-program .plan-ev--atelier .ahead .room svg { opacity: .7; flex: none; }
 .admin-program .plan-ev--atelier .ahead button { background: none; border: none; color: var(--ukc-blue); cursor: pointer; padding: 2px; flex: none; }
 .admin-program .plan-slot { border-radius: 7px; padding: 4px 7px; font-size: 10.5px; line-height: 1.25; }
 .admin-program .plan-slot.placed { background: #eaf0ff; color: var(--ukc-blue-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
