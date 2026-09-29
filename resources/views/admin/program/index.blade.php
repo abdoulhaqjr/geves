@@ -7,6 +7,13 @@
     // Durée d'un créneau selon le type de communication (réglages).
     $slotDuration = fn ($sub) => (int) (($sub && $sub->type === 'poster') ? $config['params']['poster_min'] : $config['params']['oral_min']);
     $atelierRoomName = fn ($atelier) => $atelierRooms[(string) $atelier->id] ?? ($atelier->sessions->firstWhere('room', '!=', null)?->room);
+    // Charge utile d'édition d'une session (modale), pour un jour donné.
+    $sessJsFor = fn ($s, $day) => [
+        'id' => $s->id, 'type' => $s->atelier_id ? 'atelier' : 'plenary',
+        'atelier_id' => (string) $s->atelier_id, 'label' => $s->label, 'day' => $day,
+        'start' => $s->starts_at?->format('H:i') ?? '', 'end' => $s->ends_at?->format('H:i') ?? '',
+        'room' => $s->room ?? '', 'moderator' => $s->moderator_name ?? '', 'rapporteur' => $s->rapporteur_name ?? '',
+    ];
 @endphp
 
 <x-layouts.admin title="Programme" subtitle="Ateliers, sessions, créneaux et salles de l’édition">
@@ -25,6 +32,8 @@
     <div class="admin-page admin-program"
          x-data="{
             day: '{{ $days->first() }}',
+            pview: 'day',
+            setPview(v) { this.pview = v; try { localStorage.setItem('ukcPlanView', v); } catch (e) {} },
             modal: null,
             form: {},
             openAtelier(a) { this.form = a ? {...a} : { id:'', title:'', tracks:[], room:'' }; this.modal='atelier'; },
@@ -82,6 +91,21 @@
                 @if ($days->isEmpty())
                     <div class="ukc-empty"><h3>Aucun jour planifié</h3><p>Ajoutez des sessions datées et des créneaux pour bâtir le planning.</p></div>
                 @else
+                    <div class="plan-topbar" x-init="try { pview = localStorage.getItem('ukcPlanView') || pview } catch (e) {}">
+                        <div class="plan-viewtoggle" role="tablist">
+                            <button type="button" role="tab" :class="{ active: pview==='day' }" @click="setPview('day')">Jour</button>
+                            <button type="button" role="tab" :class="{ active: pview==='week' }" @click="setPview('week')">Semaine</button>
+                        </div>
+                        <div class="plan-legend">
+                            <span><i class="sw sw--plen"></i> Plénière (exclusive)</span>
+                            <span><i class="sw sw--atel"></i> Atelier (parallèle)</span>
+                            <span><i class="sw sw--free"></i> Créneau libre</span>
+                            <span><i class="sw sw--conf"></i> Conflit d’auteur</span>
+                        </div>
+                    </div>
+
+                    {{-- ---------------------------- Vue JOUR ---------------------------- --}}
+                    <div x-show="pview==='day'">
                     <div class="day-tabs">
                         @foreach ($days as $i => $d)
                             @php $cd = Carbon::parse($d); @endphp
@@ -89,13 +113,6 @@
                                 Jour {{ $i + 1 }}<span class="d-sub">{{ $cd->translatedFormat('d M · D') }}</span>
                             </button>
                         @endforeach
-                    </div>
-
-                    <div class="plan-legend" style="margin:-4px 0 12px;">
-                        <span><i class="sw sw--plen"></i> Plénière (exclusive)</span>
-                        <span><i class="sw sw--atel"></i> Atelier (parallèle)</span>
-                        <span><i class="sw sw--free"></i> Créneau libre</span>
-                        <span><i class="sw sw--conf"></i> Conflit d’auteur</span>
                     </div>
 
                     <div class="layout-plan">
@@ -278,6 +295,69 @@
                                 <p class="ukc-hint" style="margin-top:10px;font-size:12px;color:var(--ukc-light);">Cliquez une communication pour la placer sur un créneau, ou un créneau « libre » du board pour l’y assigner.</p>
                             </div>
                         </div>
+                    </div>
+                    </div>{{-- fin vue JOUR --}}
+
+                    {{-- --------------------------- Vue SEMAINE -------------------------- --}}
+                    <div x-show="pview==='week'" x-cloak>
+                        @php
+                            $wk = $sessions->filter(fn ($s) => $s->starts_at && $s->ends_at);
+                            $wkMin = fn ($c) => (int) $c->format('H') * 60 + (int) $c->format('i');
+                            $wkStart = $wk->isNotEmpty() ? (int) (floor($wk->map(fn ($s) => $wkMin($s->starts_at))->min() / 60) * 60) : 480;
+                            $wkEnd = $wk->isNotEmpty() ? (int) (ceil($wk->map(fn ($s) => $wkMin($s->ends_at))->max() / 60) * 60) : 1080;
+                            if ($wkEnd <= $wkStart) { $wkEnd = $wkStart + 60; }
+                            $wkRows = (int) (($wkEnd - $wkStart) / 30);
+                            $wkRow = fn ($m) => 2 + (int) round(($m - $wkStart) / 30);
+                            $wkRoomOf = fn ($s) => $s->room ?: ($s->atelier ? $atelierRoomName($s->atelier) : null) ?: 'À définir';
+                        @endphp
+                        @if ($wk->isEmpty())
+                            <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);font-size:13.5px;">Aucune session horodatée. Ajoutez des horaires aux sessions pour les voir sur la semaine.</p></div>
+                        @else
+                            <div class="plan-scroll">
+                                <div class="plan-week" style="grid-template-columns:56px repeat({{ count($days) }}, minmax(150px,1fr));grid-template-rows:34px repeat({{ $wkRows }}, 26px);">
+                                    <div class="plan-head plan-head--time">Heure</div>
+                                    @foreach ($days as $di => $dd)
+                                        <div class="plan-head" style="grid-column:{{ $di + 2 }};grid-row:1;">{{ \Illuminate\Support\Carbon::parse($dd)->translatedFormat('D d M') }}</div>
+                                    @endforeach
+
+                                    @for ($m = $wkStart; $m < $wkEnd; $m += 60)
+                                        <div class="plan-timelabel" style="grid-column:1;grid-row:{{ $wkRow($m) }} / {{ $wkRow($m + 60) }};">{{ sprintf('%02d:00', intdiv($m, 60)) }}</div>
+                                    @endfor
+
+                                    @foreach ($days as $di => $dd)
+                                        <div class="plan-lane" style="grid-column:{{ $di + 2 }};grid-row:2 / {{ $wkRows + 2 }};"></div>
+                                        @php
+                                            $dt = $wk->filter(fn ($s) => optional($s->session_day ?? $s->starts_at)?->format('Y-m-d') === $dd);
+                                            $dplen = $dt->filter(fn ($s) => ! $s->atelier_id);
+                                            $dgroups = $dt->filter(fn ($s) => $s->atelier_id)->groupBy(fn ($s) => $wkMin($s->starts_at).'-'.$wkMin($s->ends_at));
+                                        @endphp
+                                        @foreach ($dplen as $s)
+                                            <div class="week-ev week-ev--plenary" style="grid-column:{{ $di + 2 }};grid-row:{{ $wkRow($wkMin($s->starts_at)) }} / {{ $wkRow($wkMin($s->ends_at)) }};"
+                                                 @click='openSession(@json($sessJsFor($s, $dd)))' title="{{ $s->label }} ({{ $s->starts_at->format('H:i') }}–{{ $s->ends_at->format('H:i') }})">
+                                                <span class="wt">{{ Str::limit($s->label, 30) }}</span>
+                                                <span class="wm">{{ $s->starts_at->format('H:i') }}</span>
+                                            </div>
+                                        @endforeach
+                                        @foreach ($dgroups as $grp)
+                                            @php $g0 = $grp->first(); @endphp
+                                            <div class="week-band" style="grid-column:{{ $di + 2 }};grid-row:{{ $wkRow($wkMin($g0->starts_at)) }} / {{ $wkRow($wkMin($g0->ends_at)) }};">
+                                                <div class="week-band-time">{{ $g0->starts_at->format('H:i') }}–{{ $g0->ends_at->format('H:i') }} · {{ $grp->count() }} atelier(s)</div>
+                                                <div class="week-chips">
+                                                    @foreach ($grp as $s)
+                                                        @php $ss = $creneaux->where('session_id', $s->id); @endphp
+                                                        <button type="button" class="week-chip" @click='openSession(@json($sessJsFor($s, $dd)))' title="{{ $s->atelier?->title ?: $s->label }} - {{ $wkRoomOf($s) }}">
+                                                            <span class="r">{{ $wkRoomOf($s) }}</span>
+                                                            <span class="c">{{ $ss->where('submission_id', '>', 0)->count() }}/{{ $ss->count() }}</span>
+                                                        </button>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    @endforeach
+                                </div>
+                            </div>
+                            <p class="ukc-hint" style="margin-top:10px;font-size:12px;color:var(--ukc-light);">Vue d’ensemble de la semaine · cliquez une plénière ou un atelier pour l’éditer. Le détail par salle et le placement des communications se font en vue « Jour ».</p>
+                        @endif
                     </div>
                 @endif
             </div>

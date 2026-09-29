@@ -536,6 +536,10 @@ badge or) traversant toutes les colonnes → l'exclusivité est visible à l'œi
 `admin.css` (thème clair admin, Public Sans/Jost via `.ukc-shell`). Placement calculé en
 Blade (`$rowLine`, colonnes = salles distinctes triées). Sessions sans horaire listées à
 part (« Sessions sans horaire »). Pool **« À planifier »** filtrable (via `tableFilters`).
+Bascule **Jour / Semaine** (Alpine `pview`, mémorisé en `localStorage['ukcPlanView']`) :
+la **vue Semaine** est un grille time-alignée **colonnes = jours** ; plénières en blocs,
+ateliers **groupés par tranche horaire** en chips (salle + placés/total) ; c'est une vue
+d'ensemble en lecture/édition-session (le détail par salle + le placement restent en Jour).
 Les créneaux « libres » et le pool ouvrent la modale (`openSlot`/`openSession`). L'ancien
 agenda FullCalendar de cet onglet (+ `program-calendar.js`, `_session-block`,
 `$calendarEvents`) a été **supprimé** (redondant).
