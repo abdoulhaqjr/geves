@@ -177,17 +177,50 @@
             </div>
 
             {{-- ============================ ATELIERS ============================ --}}
+            @php
+                // Options de filtres (dérivées des ateliers de l'édition).
+                $atelierRoomOpts = $ateliers->map(fn ($a) => $atelierRoomName($a))->filter()->unique()->sort()->values();
+                $atelierTrackOpts = $ateliers->flatMap(fn ($a) => $a->tracks ?: [])->filter()->unique()->sort()->values();
+            @endphp
             <div @if ($tab !== 'ateliers') style="display:none;" @endif data-ajax-root="prog-ateliers">
-                <div class="ukc-card">
+                <div class="ukc-card" x-data="tableFilters(['room', 'roomstate', 'axe'])">
                     <h2>
                         <span><x-ukc.icon name="grid" :size="18" /> Ateliers</span>
                         <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" @click="openAtelier(null)"><x-ukc.icon name="plus" :size="14" /> Nouvel atelier</button>
                     </h2>
                     <div class="desc">Un atelier regroupe un ou plusieurs axes et contient des sessions. La salle peut être associée plus tard.</div>
 
+                    {{-- Filtres (client-side, instantanés). --}}
+                    <div class="filter-bar filter-bar--inline" style="margin:4px 0 14px;">
+                        <select x-model="f.room" aria-label="Filtrer par salle">
+                            <option value="">Toutes les salles</option>
+                            @foreach ($atelierRoomOpts as $r)<option value="{{ $r }}">{{ $r }}</option>@endforeach
+                        </select>
+                        <select x-model="f.axe" aria-label="Filtrer par axe">
+                            <option value="">Tous les axes</option>
+                            @foreach ($atelierTrackOpts as $t)<option value="{{ $t }}">{{ Str::limit($t, 40) }}</option>@endforeach
+                        </select>
+                        <select x-model="f.roomstate" aria-label="Filtrer par état de salle">
+                            <option value="">Salle : toutes</option>
+                            <option value="assigned">Salle définie</option>
+                            <option value="pending">Salle à définir</option>
+                        </select>
+                        <input type="search" x-model="f.q" placeholder="Atelier, axe, salle…" style="min-width:190px;flex:1;">
+                        <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" x-show="active" x-cloak @click="reset()">Réinitialiser</button>
+                    </div>
+                    <div style="font-size:12.5px;color:var(--ukc-muted);margin-bottom:8px;">
+                        <span x-text="visibleIds.length"></span> atelier(s) affiché(s)<template x-if="active"> sur {{ $ateliers->count() }}</template>.
+                    </div>
+
                     @forelse ($ateliers as $atelier)
-                        @php $room = $atelierRoomName($atelier); @endphp
-                        <div class="entity-card">
+                        @php
+                            $room = $atelierRoomName($atelier);
+                            $atelierSearch = Str::lower(collect([$atelier->title, $room])->merge($atelier->tracks ?: [])->filter()->implode(' '));
+                        @endphp
+                        <div class="entity-card" x-show="visibleIds.includes({{ $atelier->id }})" data-filter-row
+                             data-id="{{ $atelier->id }}" data-room="{{ $room }}"
+                             data-roomstate="{{ $room ? 'assigned' : 'pending' }}"
+                             data-axe="{{ implode("\n", $atelier->tracks ?: []) }}" data-text="{{ $atelierSearch }}">
                             <h3>
                                 {{ $atelier->title }}
                                 @if ($room)<span class="ukc-pill ukc-pill--ok">{{ $room }}</span>
@@ -223,6 +256,11 @@
                     @empty
                         <div class="ukc-empty"><h3>Aucun atelier</h3><p>Créez un premier atelier pour organiser les sessions.</p></div>
                     @endforelse
+                    @if ($ateliers->isNotEmpty())
+                        <div class="ukc-empty" x-show="visibleIds.length === 0" x-cloak>
+                            <p>Aucun atelier ne correspond aux filtres. <button type="button" class="ukc-link" @click="reset()">Réinitialiser</button></p>
+                        </div>
+                    @endif
                 </div>
 
                 {{-- Lien avec le programme de l'édition (fidèle au mockup). --}}

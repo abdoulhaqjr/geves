@@ -409,7 +409,10 @@ document.addEventListener('alpine:init', () => {
         get visibleIds() {
             const f = this.f;
             const q = (f.q || '').trim().toLowerCase();
-            return this.rows.filter((r) => keys.every((k) => !f[k] || r[k] === f[k])
+            // Un data-<clé> peut porter PLUSIEURS valeurs séparées par « \n » (ex.
+            // les axes d'un atelier) : on teste l'appartenance. Pour une valeur
+            // simple, la liste n'a qu'un élément (rétrocompatible).
+            return this.rows.filter((r) => keys.every((k) => !f[k] || String(r[k]).split('\n').includes(f[k]))
                 && (!q || r.text.includes(q))).map((r) => r.id);
         },
         reset() {
