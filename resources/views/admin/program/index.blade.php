@@ -78,7 +78,7 @@
 
 
             {{-- ============================ PLANNING ============================ --}}
-            <div @if ($tab !== 'planning') style="display:none;" @endif>
+            <div @if ($tab !== 'planning') style="display:none;" @endif data-ajax-root="prog-planning">
                 @if ($days->isEmpty())
                     <div class="ukc-empty"><h3>Aucun jour planifié</h3><p>Ajoutez des sessions datées et des créneaux pour bâtir le planning.</p></div>
                 @else
@@ -167,9 +167,10 @@
                                                         </div>
                                                         @foreach ($sslots as $slot)
                                                             @if ($slot->submission)
-                                                                <div class="plan-slot placed" title="{{ $slot->submission->title }}"><span class="ref">{{ $slot->submission->ref_code }}</span> {{ Str::limit($slot->submission->title, 42) }}</div>
+                                                                <div class="plan-slot placed" draggable="true" data-sub-id="{{ $slot->submission_id }}" title="{{ $slot->submission->title }} — glisser vers un autre créneau libre pour déplacer"><span class="ref">{{ $slot->submission->ref_code }}</span> {{ Str::limit($slot->submission->title, 42) }}</div>
                                                             @else
-                                                                <div class="plan-slot free" @click="openSlot({ id:{{ $slot->id }}, session_id:@js((string) $slot->session_id), day:'{{ $d }}', start:@js($slot->starts_at?->format('H:i') ?? ''), room:@js($roomOf($s)), submission_id:'', title:@js($slot->session_label ?? '') })" title="Assigner une communication">+ libre</div>
+                                                                <div class="plan-slot free" data-slot-id="{{ $slot->id }}" data-assign-url="{{ route('admin.program.slots.assign', $slot) }}"
+                                                                     @click="openSlot({ id:{{ $slot->id }}, session_id:@js((string) $slot->session_id), day:'{{ $d }}', start:@js($slot->starts_at?->format('H:i') ?? ''), room:@js($roomOf($s)), submission_id:'', title:@js($slot->session_label ?? '') })" title="Déposer une communication ici, ou cliquer pour l’assigner">+ libre</div>
                                                             @endif
                                                         @endforeach
                                                     </div>
@@ -224,9 +225,10 @@
                                 <div class="pool-list">
                                     @forelse ($unplaced as $sub)
                                         <div class="pool-item" x-show="visibleIds.includes({{ $sub->id }})" data-filter-row
+                                             draggable="true" data-sub-id="{{ $sub->id }}"
                                              data-id="{{ $sub->id }}" data-axe="{{ $sub->track }}" data-paid="{{ $isPaid($sub) ? 'paid' : 'due' }}"
                                              data-text="{{ Str::lower($sub->title.' '.($sub->participant?->full_name ?? '')) }}"
-                                             @click="openSlot({ id:'', session_id:'', day:'', start:'', room:'', submission_id:'{{ $sub->id }}', title:'' })" title="Créer un créneau pour cette communication">
+                                             @click="openSlot({ id:'', session_id:'', day:'', start:'', room:'', submission_id:'{{ $sub->id }}', title:'' })" title="Glisser sur un créneau libre du board, ou cliquer pour créer un créneau">
                                             <div class="t">{{ Str::limit($sub->title, 60) }}</div>
                                             <div class="m">
                                                 <span>{{ $sub->participant?->full_name ?: 'Auteur' }}</span>

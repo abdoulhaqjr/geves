@@ -538,7 +538,14 @@ Blade (`$rowLine`, colonnes = salles distinctes triées). Sessions sans horaire 
 part (« Sessions sans horaire »). Pool **« À planifier »** filtrable (via `tableFilters`).
 Les créneaux « libres » et le pool ouvrent la modale (`openSlot`/`openSession`). L'ancien
 agenda FullCalendar de cet onglet (+ `program-calendar.js`, `_session-block`,
-`$calendarEvents`) a été **supprimé** (redondant). Glisser-déposer = évolution future.
+`$calendarEvents`) a été **supprimé** (redondant).
+- **Glisser-déposer** (app.js, listeners délégués globaux) : on tire une communication
+  (item du pool `[data-sub-id]` OU créneau placé) vers un créneau **libre**
+  (`.plan-slot.free[data-assign-url]`). Le drop crée un formulaire **`data-ajax`
+  éphémère** (POST `slots.assign`, CSRF depuis `<meta name="csrf-token">`) ciblant
+  `data-ajax-root="prog-planning"` → board + pool rafraîchis d'un bloc. HTML5 DnD =
+  **desktop** ; le **clic** (modale) reste le repli tactile. La règle plénière est déjà
+  garantie (un créneau libre n'existe que dans un atelier).
 
 ### Programme - exclusivité des plénières / ateliers parallèles
 

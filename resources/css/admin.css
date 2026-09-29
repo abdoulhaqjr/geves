@@ -418,6 +418,10 @@
 .admin-program .plan-untimed .u { border: 1px dashed var(--ukc-border); border-radius: 9px; padding: 8px 11px; font-size: 12.5px; cursor: pointer; background: #fafbfd; }
 .admin-program .plan-untimed .u:hover { border-color: var(--ukc-blue); }
 .admin-program .plan-untimed .u strong { font-weight: 700; }
+/* Glisser-déposer : communications (pool + créneaux placés) vers un créneau libre. */
+.admin-program .pool-item[draggable="true"], .admin-program .plan-slot.placed[draggable="true"] { cursor: grab; }
+.admin-program .pool-item.dragging, .admin-program .plan-slot.placed.dragging { opacity: .45; }
+.admin-program .plan-slot.free.hot { outline: 2px solid var(--ukc-green); outline-offset: 1px; }
 
 .admin-program .entity-card { border: 1px solid var(--ukc-border); border-radius: 12px; padding: 16px; margin-bottom: 12px; background: #fafbfd; }
 .admin-program .entity-card h3 { font-size: 14px; font-weight: 800; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
