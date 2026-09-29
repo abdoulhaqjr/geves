@@ -483,10 +483,11 @@ paiement (`pay`), inscription à une formation.
     inauguration **dim. 27/09 09:00-10:30**, table ronde **mer. 30/09 08:00-10:00**,
     formation **jeu. 01/10 14:00-17:00**, clôture **ven. 02/10 11:00-12:30** (le programme
     s'étend donc jusqu'au vendredi). Les **séances de démo** de la base (`Session - {atelier}`,
-    rapports/Q&A) sont dans le **créneau médian 12:00-14:00** (laissé libre par le volume),
-    et la **séance en direct** est dans un « Auditorium » dédié : aucune ne collisionne en
-    salle avec le volume. ⚠️ En touchant à ces horaires, garder ces fenêtres disjointes -
-    sinon la vue Planning affiche des conflits de salle / de plénière dès le seed.
+    rapports/Q&A) sont à **11:30-12:30** (juste avant la pause déjeuner 12:30-14:00, laissé
+    libre par le volume), et la **séance en direct** est dans un « Auditorium » dédié : aucune
+    ne collisionne en salle avec le volume ni ne tombe sur le déjeuner. ⚠️ En touchant à ces
+    horaires, garder ces fenêtres disjointes (ateliers, plénières ET pause déjeuner) - sinon
+    la vue Planning affiche des conflits dès le seed.
 ### Règles métier - limites communications & attestations
 
 - **Limite de communications** (`settings.max_communications`) : compte **seulement** les
@@ -580,19 +581,31 @@ sur la chip : il était incompris (« 1/1 », « 2/2 ») - il vit désormais dan
 chevauchent) sont recalculés côté Semaine et **bordés d'orange** (chip `.wk-chip.conflict`,
 bloc `.wk-block--band.room-conflict`), comme en vue Jour. C'est une vue d'ensemble en
 lecture/édition-session (le placement des communications reste en Jour).
-- **Salle visible partout (vue Jour)** : la **plénière** (bandeau) affiche sa salle dans sa
-  ligne meta (`📍 room`) ; chaque **carte d'atelier** affiche sa salle sur sa propre ligne
-  (`.plan-ev--atelier .ahead .room`, pictogramme `pin`), en plus de l'en-tête de colonne
-  (salle) resté collant.
-- **Édition d'une session = panneau latéral (slideover)**, pas une modale : `openSession()`
-  pose `modal='session'` et `_modals.blade.php` rend un `<x-ukc.slideover open="modal==='session'">`
-  (form `id="sessionForm"`, bouton *Enregistrer* dans le pied via `form=`), au même schéma que
-  « Nouvelle tâche » (Projet) et l'éditeur de formulaire. Les autres formulaires (atelier,
-  créneau, salle, espace) restent des `.ukc-modal`.
+- **Salle (vue Jour)** : la **plénière** (bandeau plein largeur, sans colonne de salle)
+  affiche sa salle dans sa ligne meta (`📍 room`). Les **cartes d'atelier** n'affichent
+  **pas** la salle (⚠️ ne pas la remettre) : la colonne du board porte déjà le nom de salle
+  (en-tête collant), donc c'est redondant.
+- **Tous les formulaires du Programme = panneau latéral (slideover)**, plus de `.ukc-modal` :
+  `openAtelier/openSession/openSlot/openSpace/openRoom` posent `modal='…'` et
+  `_modals.blade.php` rend un `<x-ukc.slideover open="modal==='…'">` par cas (atelier, session,
+  créneau, salle, espace), chacun avec un `<form id="…Form">` et le bouton *Enregistrer* dans
+  le pied via `form=`. Même schéma que « Nouvelle tâche » (Projet) / l'éditeur de formulaire.
 - ⚠️ **Plus de bouton « Nouveau créneau »** dans la barre d'actions de `admin/programme` (et
   l'évènement `ukc-new-slot` a été retiré) : on crée/place les créneaux depuis le board
   (clic sur un créneau libre, glisser-déposer) et l'onglet Créneaux.
-Les créneaux « libres » et le pool ouvrent la modale/le slideover (`openSlot`/`openSession`).
+- **Pause déjeuner = exclusive, comme une plénière** : dessinée en **bandeau plein largeur**
+  (`.plan-break`, vue Jour ; bloc `.wk-block--break` dans le fil de la vue Semaine) d'après
+  les paramètres de créneaux (`settings.program.params.lunch{,_start,_end}`), et **bloquée à
+  la sauvegarde** de toute session/créneau qui la chevauche via
+  **`ProgramConflicts::lunchClash()`** + `breakMessage()` (appelé après le contrôle plénière
+  dans `storeSession/updateSession/storeSlot/updateSlot`). Rien ne se tient en parallèle du
+  déjeuner.
+- **Les paramètres de créneaux (onglet Options) SONT appliqués** : `generateSlots()` lit
+  `settings.program.params` et respecte la durée orale (`oral_min`), la **transition**
+  (`gap_min`) entre créneaux, la **pause-café** après N créneaux (`auto_break`/`break_after`/
+  `break_min`) et **saute la pause déjeuner** (`lunch*`) - aucun créneau généré ne tombe sur
+  une pause. Tests : `ProgramSlotsTest` (pause déjeuner + pause-café).
+Les créneaux « libres » et le pool ouvrent le slideover (`openSlot`/`openSession`).
 L'ancien agenda FullCalendar de cet onglet (+ `program-calendar.js`, `_session-block`,
 `$calendarEvents`) a été **supprimé** (redondant).
 - **Glisser-déposer** (app.js, listeners délégués globaux) : on tire une communication

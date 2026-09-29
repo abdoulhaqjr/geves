@@ -211,6 +211,9 @@ class ProgramController extends Controller
         ))) {
             return back()->withInput()->with('ukc_error', ProgramConflicts::message($conflict));
         }
+        if ($edition && ($break = ProgramConflicts::lunchClash($edition, $start ? Carbon::parse($start) : null, $end ? Carbon::parse($end) : null))) {
+            return back()->withInput()->with('ukc_error', ProgramConflicts::breakMessage($break));
+        }
 
         $session = EventSession::create([
             'edition_id' => $data['edition_id'],
@@ -505,7 +508,17 @@ class ProgramController extends Controller
             return back();
         }
 
-        $oralMin = $this->oralMinutes($edition);
+        // Paramètres de créneaux (onglet Options) : durée orale, transition entre
+        // créneaux, pause-café après N créneaux, et fenêtre déjeuner. Ils sont
+        // désormais APPLIQUÉS à la génération (les créneaux ne tombent pas sur une pause).
+        $params = $this->programConfig($edition)['params'];
+        $oralMin = max(5, (int) ($params['oral_min'] ?? 20));
+        $gap = max(0, (int) ($params['gap_min'] ?? 0));
+        $breakAfter = ! empty($params['auto_break']) ? max(0, (int) ($params['break_after'] ?? 0)) : 0;
+        $breakMin = max(0, (int) ($params['break_min'] ?? 0));
+        $lunchOn = ! empty($params['lunch']);
+        $lunchStart = (string) ($params['lunch_start'] ?? '12:30');
+        $lunchEnd = (string) ($params['lunch_end'] ?? '14:00');
         $created = 0;
 
         // Les sessions plénières sont EXCLUSIVES et ne reçoivent pas de communications
@@ -519,9 +532,23 @@ class ProgramController extends Controller
 
             $cursor = Carbon::parse($session->starts_at);
             $end = Carbon::parse($session->ends_at);
+            // Fenêtre déjeuner calée sur le jour de la session.
+            $lunchFrom = $lunchOn ? $cursor->copy()->setTimeFromTimeString($lunchStart) : null;
+            $lunchTo = $lunchOn ? $cursor->copy()->setTimeFromTimeString($lunchEnd) : null;
+
+            $n = 0;
             $guard = 0;
-            while ($cursor->copy()->addMinutes($oralMin)->lessThanOrEqualTo($end) && $guard < 60) {
+            while ($guard++ < 120) {
                 $slotEnd = $cursor->copy()->addMinutes($oralMin);
+                if ($slotEnd->greaterThan($end)) {
+                    break;
+                }
+                // Le créneau empiète sur le déjeuner : on saute la pause et on reprend après.
+                if ($lunchFrom && $cursor->lessThan($lunchTo) && $slotEnd->greaterThan($lunchFrom)) {
+                    $cursor = $lunchTo->copy();
+
+                    continue;
+                }
                 $edition->slots()->create([
                     'session_id' => $session->id,
                     'session_label' => $session->label,
@@ -531,9 +558,13 @@ class ProgramController extends Controller
                     'submission_id' => 0,
                     'participant_id' => 0,
                 ]);
-                $cursor = $slotEnd;
                 $created++;
-                $guard++;
+                $n++;
+                // Transition entre créneaux, puis pause-café après N créneaux.
+                $cursor = $slotEnd->copy()->addMinutes($gap);
+                if ($breakAfter > 0 && $breakMin > 0 && $n % $breakAfter === 0) {
+                    $cursor->addMinutes($breakMin);
+                }
             }
         }
 
@@ -590,6 +621,9 @@ class ProgramController extends Controller
             $edition, $start, $start->copy()->addMinutes($this->oralMinutes($edition)), false
         ))) {
             return back()->withInput()->with('ukc_error', ProgramConflicts::message($conflict));
+        }
+        if ($edition && $start && ($break = ProgramConflicts::lunchClash($edition, $start, $start->copy()->addMinutes($this->oralMinutes($edition))))) {
+            return back()->withInput()->with('ukc_error', ProgramConflicts::breakMessage($break));
         }
 
         // Communication optionnelle (place directement l'auteur sur le créneau créé).
@@ -705,6 +739,9 @@ class ProgramController extends Controller
         ))) {
             return back()->withInput()->with('ukc_error', ProgramConflicts::message($conflict));
         }
+        if ($session->edition && ($break = ProgramConflicts::lunchClash($session->edition, $start ? Carbon::parse($start) : null, $end ? Carbon::parse($end) : null))) {
+            return back()->withInput()->with('ukc_error', ProgramConflicts::breakMessage($break));
+        }
 
         $session->update([
             'atelier_id' => $data['sType'] === 'atelier' && ! empty($data['sAtelierId']) ? (int) $data['sAtelierId'] : 0,
@@ -748,6 +785,9 @@ class ProgramController extends Controller
             $slot->edition, $newStart, $newStart->copy()->addMinutes($this->oralMinutes($slot->edition)), false
         ))) {
             return back()->withInput()->with('ukc_error', ProgramConflicts::message($conflict));
+        }
+        if ($slot->edition && $newStart && ($break = ProgramConflicts::lunchClash($slot->edition, $newStart, $newStart->copy()->addMinutes($this->oralMinutes($slot->edition))))) {
+            return back()->withInput()->with('ukc_error', ProgramConflicts::breakMessage($break));
         }
 
         $submission = ! empty($data['submission_id']) ? Submission::find($data['submission_id']) : null;

@@ -115,6 +115,48 @@ it('bloque un créneau qui tombe dans une plénière', function () {
     expect(Slot::count())->toBe(0);
 });
 
+it('bloque une session qui tombe sur la pause déjeuner (exclusive comme une plénière)', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+        'program' => ['params' => ['lunch' => true, 'lunch_start' => '12:30', 'lunch_end' => '14:00']],
+    ])]);
+
+    $this->from(route('admin.program.index'))
+        ->actingAs($staff, 'web')
+        ->post(route('admin.program.sessions.store'), [
+            'edition_id' => (string) $edition->id,
+            'sType' => 'atelier',
+            'sLabel' => 'Atelier pendant le déjeuner',
+            'sDay' => '2026-09-27',
+            'sStart' => '13:00',
+            'sEnd' => '14:30',
+        ])->assertSessionHas('ukc_error');
+
+    expect(EventSession::where('label', 'Atelier pendant le déjeuner')->exists())->toBeFalse();
+});
+
+it('autorise une session qui touche la pause déjeuner sans la chevaucher', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+        'program' => ['params' => ['lunch' => true, 'lunch_start' => '12:30', 'lunch_end' => '14:00']],
+    ])]);
+
+    $this->from(route('admin.program.index'))
+        ->actingAs($staff, 'web')
+        ->post(route('admin.program.sessions.store'), [
+            'edition_id' => (string) $edition->id,
+            'sType' => 'atelier',
+            'sLabel' => 'Atelier avant déjeuner',
+            'sDay' => '2026-09-27',
+            'sStart' => '11:00',
+            'sEnd' => '12:30',
+        ])->assertSessionMissing('ukc_error');
+
+    expect(EventSession::where('label', 'Atelier avant déjeuner')->exists())->toBeTrue();
+});
+
 it('permet de ré-enregistrer une plénière avec ses propres horaires (pas de conflit avec elle-même)', function () {
     $staff = adminStaff();
     $edition = openEdition();

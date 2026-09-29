@@ -242,6 +242,21 @@
                                                     </div>
                                                 @endforeach
 
+                                                {{-- Pause déjeuner : bandeau plein largeur (paramètres de créneaux) --}}
+                                                @php
+                                                    $pp = $config['params'];
+                                                    $hm = fn ($t) => (int) substr((string) $t, 0, 2) * 60 + (int) substr((string) $t, 3, 2);
+                                                    $lunchOn = ! empty($pp['lunch']);
+                                                    $ls = $lunchOn ? $hm($pp['lunch_start'] ?? '12:30') : 0;
+                                                    $le = $lunchOn ? $hm($pp['lunch_end'] ?? '14:00') : 0;
+                                                @endphp
+                                                @if ($lunchOn && $le > $ls && $le > $dayStart && $ls < $dayEnd)
+                                                    @php $bs = max($ls, $dayStart); $be = min($le, $dayEnd); @endphp
+                                                    <div class="plan-break" style="grid-column:2 / {{ 2 + $totalLanes }};grid-row:{{ $rowLine($bs) }} / {{ $rowLine($be) }};">
+                                                        <span>Pause déjeuner · {{ sprintf('%02d:%02d', intdiv($ls, 60), $ls % 60) }}–{{ sprintf('%02d:%02d', intdiv($le, 60), $le % 60) }}</span>
+                                                    </div>
+                                                @endif
+
                                                 {{-- Ateliers : colonnes parallèles --}}
                                                 @foreach ($ateliersT as $s)
                                                     @php
@@ -255,7 +270,6 @@
                                                             <div>
                                                                 <span class="t" title="{{ $roomClash ? $atelierTitle.' - conflit de salle : « '.$roomConflicts[$s->id].' » occupée par une autre séance au même moment.' : $atelierTitle }}">@if ($roomClash)<span class="rflag"><x-ukc.icon name="alert-triangle" :size="11" /></span>@endif{{ $atelierTitle }}</span>
                                                                 <span class="time">{{ $s->starts_at->format('H:i') }}–{{ $s->ends_at->format('H:i') }}</span>
-                                                                <span class="room"><x-ukc.icon name="pin" :size="10" /> {{ $roomOf($s) }}</span>
                                                             </div>
                                                             <button type="button" @click='openSession(@json($sessJs($s)))' title="Éditer la session"><x-ukc.icon name="pen" :size="13" /></button>
                                                         </div>
@@ -399,11 +413,25 @@
                                                 $g0 = $grp->first();
                                                 $entries->push(['k' => $wkMin($g0->starts_at), 'e' => $wkMin($g0->ends_at), 'type' => 'band', 'grp' => $grp, 'g0' => $g0]);
                                             }
+                                            // Pause déjeuner (paramètres de créneaux), insérée dans le fil du jour.
+                                            $pp = $config['params'];
+                                            if (! empty($pp['lunch']) && $dt->isNotEmpty()) {
+                                                $lhm = fn ($t) => (int) substr((string) $t, 0, 2) * 60 + (int) substr((string) $t, 3, 2);
+                                                $entries->push([
+                                                    'k' => $lhm($pp['lunch_start'] ?? '12:30'), 'e' => $lhm($pp['lunch_end'] ?? '14:00'),
+                                                    'type' => 'break', 'ls' => $pp['lunch_start'] ?? '12:30', 'le' => $pp['lunch_end'] ?? '14:00',
+                                                ]);
+                                            }
                                             $entries = $entries->sortBy([['k', 'asc'], ['e', 'asc']])->values();
                                         @endphp
                                         <div class="wk-col">
                                             @forelse ($entries as $en)
-                                                @if ($en['type'] === 'plen')
+                                                @if ($en['type'] === 'break')
+                                                    <div class="wk-block wk-block--break">
+                                                        <span class="wk-time">{{ $en['ls'] }}–{{ $en['le'] }}</span>
+                                                        <span class="wk-brk">Pause déjeuner</span>
+                                                    </div>
+                                                @elseif ($en['type'] === 'plen')
                                                     @php $s = $en['plen']; @endphp
                                                     <button type="button" class="wk-block wk-block--plenary"
                                                             @click='openSession(@json($sessJsFor($s, $dd)))'

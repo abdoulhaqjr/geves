@@ -420,6 +420,9 @@
 .admin-program .wk-block--plenary .wk-badge { align-self: flex-start; background: rgba(255,255,255,.18); border: 1px solid rgba(255,215,0,.6); color: var(--ukc-gold); font-weight: 800; font-size: 9px; letter-spacing: .08em; text-transform: uppercase; padding: 1px 7px; border-radius: 99px; }
 .admin-program .wk-block--plenary .wk-title { font-weight: 700; font-size: 12px; line-height: 1.25; }
 .admin-program .wk-block--band { background: #fff; border: 1px solid #c7d3f5; }
+.admin-program .wk-block--break { background: repeating-linear-gradient(45deg, rgba(148,163,184,.12), rgba(148,163,184,.12) 7px, rgba(148,163,184,.04) 7px, rgba(148,163,184,.04) 14px); border: 1px dashed var(--ukc-border); flex-direction: row; align-items: center; gap: 8px; padding: 6px 10px; }
+.admin-program .wk-block--break .wk-time { color: var(--ukc-muted); }
+.admin-program .wk-block--break .wk-brk { font-size: 11px; font-weight: 700; color: var(--ukc-muted); }
 .admin-program .wk-block--band.room-conflict { border-color: #f59e0b; box-shadow: inset 0 0 0 1.5px #f59e0b; }
 .admin-program .wk-bhead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .admin-program .wk-bhead .wk-time { color: var(--ukc-blue-dark); }
@@ -456,9 +459,10 @@
 .admin-program .plan-ev--atelier.room-conflict { border-color: #f59e0b; box-shadow: inset 0 0 0 1.5px #f59e0b; }
 .admin-program .plan-ev--atelier.room-conflict .ahead { border-bottom-color: #fcd34d; }
 .admin-program .plan-ev--plenary.room-conflict { box-shadow: 0 4px 14px -6px rgba(26,48,128,.6), inset 0 0 0 2px #f59e0b; }
+/* Pause déjeuner : bandeau plein largeur, derriere les evenements (clic traversant) */
+.admin-program .plan-break { z-index: 1; pointer-events: none; display: flex; align-items: center; justify-content: center; border-top: 1px dashed var(--ukc-border); border-bottom: 1px dashed var(--ukc-border); background: repeating-linear-gradient(45deg, rgba(148,163,184,.12), rgba(148,163,184,.12) 7px, rgba(148,163,184,.04) 7px, rgba(148,163,184,.04) 14px); }
+.admin-program .plan-break span { font-size: 11px; font-weight: 700; color: var(--ukc-muted); background: #fff; padding: 2px 12px; border-radius: 99px; border: 1px solid var(--ukc-border); letter-spacing: .01em; }
 .admin-program .plan-ev--atelier .ahead .time { display: block; font-size: 10px; color: var(--ukc-muted); font-variant-numeric: tabular-nums; margin-top: 1px; }
-.admin-program .plan-ev--atelier .ahead .room { display: flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 700; color: var(--ukc-blue-dark); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.admin-program .plan-ev--atelier .ahead .room svg { opacity: .7; flex: none; }
 .admin-program .plan-ev--atelier .ahead button { background: none; border: none; color: var(--ukc-blue); cursor: pointer; padding: 2px; flex: none; }
 .admin-program .plan-slot { border-radius: 7px; padding: 4px 7px; font-size: 10.5px; line-height: 1.25; }
 .admin-program .plan-slot.placed { background: #eaf0ff; color: var(--ukc-blue-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

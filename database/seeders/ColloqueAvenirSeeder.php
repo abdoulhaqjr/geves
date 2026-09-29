@@ -161,12 +161,13 @@ class ColloqueAvenirSeeder extends Seeder
                 $meetingStatus = 'live';
                 $room = 'Auditorium';
             } else {
-                // Créneau médian 12:00-14:00, laissé libre par les ateliers de volume
-                // (matin 08:30-11:30, après-midi 14:00-17:00) et hors des fenêtres des
-                // plénières : aucun conflit de salle ni de plénière.
+                // Créneau 11:30-12:30, laissé libre par les ateliers de volume (matin
+                // 08:30-11:30, après-midi 14:00-17:00), AVANT la pause déjeuner
+                // (12:30-14:00, exclusive) et hors des fenêtres des plénières :
+                // aucun conflit de salle, de plénière ni de pause.
                 $day = (clone $start)->addDays(intdiv($i, 2));
-                $sStart = (clone $day)->setTime(12, 0);
-                $sEnd = (clone $day)->setTime(14, 0);
+                $sStart = (clone $day)->setTime(11, 30);
+                $sEnd = (clone $day)->setTime(12, 30);
                 $meetingStatus = 'scheduled';
                 $room = 'Salle '.($i + 1);
             }

@@ -52,6 +52,49 @@ class ProgramConflicts
             ->first();
     }
 
+    /**
+     * La pause déjeuner est EXCLUSIVE (comme une plénière) : aucune activité ne
+     * peut se tenir en même temps. Renvoie la fenêtre `['start','end']` (HH:MM) si
+     * l'intervalle [$start, $end[ la chevauche, sinon null. La fenêtre est lue
+     * dans les paramètres de créneaux de l'édition (`settings.program.params`) et
+     * calée sur le jour du début.
+     *
+     * @return array{start: string, end: string}|null
+     */
+    public static function lunchClash(Edition $edition, ?Carbon $start, ?Carbon $end): ?array
+    {
+        if (! $start || ! $end || $end->lessThanOrEqualTo($start)) {
+            return null;
+        }
+
+        $params = $edition->settings['program']['params'] ?? [];
+        if (empty($params['lunch'])) {
+            return null;
+        }
+
+        $ls = (string) ($params['lunch_start'] ?? '12:30');
+        $le = (string) ($params['lunch_end'] ?? '14:00');
+        $from = $start->copy()->setTimeFromTimeString($ls);
+        $to = $start->copy()->setTimeFromTimeString($le);
+        if ($to->lessThanOrEqualTo($from)) {
+            return null;
+        }
+
+        // Chevauchement strict (se toucher aux bornes ne compte pas).
+        if ($start->lessThan($to) && $end->greaterThan($from)) {
+            return ['start' => $ls, 'end' => $le];
+        }
+
+        return null;
+    }
+
+    /** Message d'erreur prêt à l'emploi pour un conflit avec la pause déjeuner. */
+    public static function breakMessage(array $window): string
+    {
+        return 'En conflit avec la pause déjeuner ('.$window['start'].' - '.$window['end'].'). '
+            .'La pause est exclusive : aucune activité ne peut se tenir en même temps.';
+    }
+
     /** Message d'erreur prêt à l'emploi pour un conflit avec une plénière. */
     public static function message(EventSession $conflict): string
     {

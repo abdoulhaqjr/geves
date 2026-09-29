@@ -153,8 +153,11 @@ it('refuse le choix de créneau si la communication n’est pas acceptée', func
 it('génère des créneaux libres à partir des sessions horodatées', function () {
     $staff = adminStaff();
     $edition = openEdition();
-    // Session d'atelier de 90 min → 4 créneaux de 20 min (durée orale par défaut).
+    // Pauses désactivées pour tester le découpage pur : 90 min / 20 min = 4 créneaux.
     // (Les plénières, exclusives, ne sont pas découpées en créneaux.)
+    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+        'program' => ['params' => ['oral_min' => 20, 'auto_break' => false, 'lunch' => false]],
+    ])]);
     $edition->sessions()->create([
         'type' => 'atelier', 'atelier_id' => 0, 'label' => 'Session A',
         'session_day' => '2026-11-18', 'starts_at' => '2026-11-18 14:00:00', 'ends_at' => '2026-11-18 15:30:00', 'ordre' => 0,
@@ -170,6 +173,60 @@ it('génère des créneaux libres à partir des sessions horodatées', function 
     // Idempotent : la session déjà pourvue n'est pas redécoupée.
     $this->actingAs($staff, 'web')->post(route('admin.program.slots.generate').'?edition_id='.$edition->id);
     expect($edition->slots()->count())->toBe(4);
+});
+
+it('respecte la pause déjeuner lors de la génération des créneaux', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+    // Créneaux de 30 min, pause déjeuner 12:30-14:00 : aucun créneau ne doit
+    // tomber dans cette fenêtre.
+    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+        'program' => ['params' => [
+            'oral_min' => 30, 'auto_break' => false,
+            'lunch' => true, 'lunch_start' => '12:30', 'lunch_end' => '14:00',
+        ]],
+    ])]);
+    $edition->sessions()->create([
+        'type' => 'atelier', 'atelier_id' => 0, 'label' => 'Session A',
+        'session_day' => '2026-11-18', 'starts_at' => '2026-11-18 11:30:00', 'ends_at' => '2026-11-18 14:30:00', 'ordre' => 0,
+    ]);
+
+    $this->actingAs($staff, 'web')
+        ->post(route('admin.program.slots.generate').'?edition_id='.$edition->id)
+        ->assertSessionHasNoErrors();
+
+    // 11:30-12:00, 12:00-12:30, [déjeuner], 14:00-14:30 = 3 créneaux.
+    expect($edition->slots()->count())->toBe(3);
+    // Aucun créneau ne commence dans la fenêtre déjeuner.
+    $inLunch = $edition->slots()->get()->filter(function ($s) {
+        $m = (int) $s->starts_at->format('H') * 60 + (int) $s->starts_at->format('i');
+
+        return $m >= 750 && $m < 840; // 12:30 (750) .. 14:00 (840)
+    });
+    expect($inLunch)->toHaveCount(0);
+});
+
+it('insère une pause-café après N créneaux lors de la génération', function () {
+    $staff = adminStaff();
+    $edition = openEdition();
+    // 30 min/créneau, pause-café de 60 min après 2 créneaux : sur 14:00-15:30,
+    // 2 créneaux (14:00-14:30, 14:30-15:00) puis la pause épuise la session.
+    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+        'program' => ['params' => [
+            'oral_min' => 30, 'lunch' => false,
+            'auto_break' => true, 'break_after' => 2, 'break_min' => 60,
+        ]],
+    ])]);
+    $edition->sessions()->create([
+        'type' => 'atelier', 'atelier_id' => 0, 'label' => 'Session A',
+        'session_day' => '2026-11-18', 'starts_at' => '2026-11-18 14:00:00', 'ends_at' => '2026-11-18 15:30:00', 'ordre' => 0,
+    ]);
+
+    $this->actingAs($staff, 'web')
+        ->post(route('admin.program.slots.generate').'?edition_id='.$edition->id)
+        ->assertSessionHasNoErrors();
+
+    expect($edition->slots()->count())->toBe(2);
 });
 
 it('affecte automatiquement les communications acceptées aux créneaux libres', function () {
