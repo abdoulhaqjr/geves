@@ -314,22 +314,11 @@ class ProgramController extends Controller
         $usedRooms = $sessions->pluck('room')->merge($slots->pluck('room'))
             ->filter()->unique()->sort()->values();
 
-        // Agenda (FullCalendar) : fusionné dans l'onglet Planning, il vivait sur
-        // l'autre page - donc invisible pour qui passait par le menu.
-        $calendarEvents = $sessions->whereNotNull('starts_at')
-            ->map(fn (EventSession $s) => [
-                'title' => trim(($s->label ?: 'Session').($s->room ? ' · '.$s->room : '')),
-                'start' => optional($s->starts_at)->toIso8601String(),
-                'end' => optional($s->ends_at)->toIso8601String(),
-                'color' => $s->type === 'plenary' ? '#223ea4' : '#009933',
-            ])->values();
-
         $tabs = ['planning', 'ateliers', 'sessions', 'creneaux', 'espaces', 'auto', 'options'];
         $tab = in_array($request->query('tab'), $tabs, true) ? (string) $request->query('tab') : 'planning';
 
         return view('admin.program.index', [
             'tab' => $tab,
-            'calendarEvents' => $calendarEvents,
             'plenaries' => $sessions->where('type', 'plenary')->values(),
             'editions' => $this->accessibleEditions($request, 'editions_read'),
             'edition' => $edition,

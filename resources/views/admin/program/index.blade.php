@@ -78,24 +78,6 @@
 
 
             {{-- ============================ PLANNING ============================ --}}
-            {{-- Agenda : le calendrier et la vue par jour décrivent la même chose,
-                 ils sont donc côte à côte (dépliable) plutôt que sur deux pages. --}}
-            <div x-data="{ agenda: false }" @if ($tab !== 'planning') style="display:none;" @endif>
-                <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-                    <button type="button" class="ukc-btn ukc-btn--outline ukc-btn--sm" @click="agenda = ! agenda; $nextTick(() => window.__programCal && window.__programCal.updateSize())">
-                        <x-ukc.icon name="calendar" :size="15" />
-                        <span x-text="agenda ? 'Masquer l’agenda' : 'Voir l’agenda'"></span>
-                    </button>
-                </div>
-                <div class="ukc-card" x-show="agenda" x-cloak style="margin-bottom:18px;">
-                    @if ($calendarEvents->isEmpty())
-                        <p class="ukc-hint" style="margin-bottom:12px;">Aucune session horodatée pour l’instant - ajoutez des horaires aux sessions (jour, début, fin) pour les voir apparaître dans l’agenda.</p>
-                    @endif
-                    <script type="application/json" id="programEvents">{!! $calendarEvents->toJson() !!}</script>
-                    <div id="programCalendar"></div>
-                </div>
-            </div>
-            {{-- ============================ PLANNING ============================ --}}
             <div @if ($tab !== 'planning') style="display:none;" @endif>
                 @if ($days->isEmpty())
                     <div class="ukc-empty"><h3>Aucun jour planifié</h3><p>Ajoutez des sessions datées et des créneaux pour bâtir le planning.</p></div>
@@ -109,67 +91,157 @@
                         @endforeach
                     </div>
 
+                    <div class="plan-legend" style="margin:-4px 0 12px;">
+                        <span><i class="sw sw--plen"></i> Plénière (exclusive)</span>
+                        <span><i class="sw sw--atel"></i> Atelier (parallèle)</span>
+                        <span><i class="sw sw--free"></i> Créneau libre</span>
+                    </div>
+
                     <div class="layout-plan">
                         <div>
                             @foreach ($days as $d)
                                 <div x-show="day==='{{ $d }}'" x-cloak>
                                     @php
-                                        $dayAteliers = $ateliers->filter(fn ($a) => $a->sessions->contains(fn ($s) => optional($s->session_day ?? $s->starts_at)?->format('Y-m-d') === $d));
-                                        $plenaryDay = $sessions->filter(fn ($s) => ! $s->atelier_id && optional($s->session_day ?? $s->starts_at)?->format('Y-m-d') === $d);
+                                        // Sessions du jour, avec/sans horaires.
+                                        $dayS = $sessions->filter(fn ($s) => optional($s->session_day ?? $s->starts_at)?->format('Y-m-d') === $d);
+                                        $timed = $dayS->filter(fn ($s) => $s->starts_at && $s->ends_at)->values();
+                                        $untimed = $dayS->filter(fn ($s) => ! ($s->starts_at && $s->ends_at))->values();
+                                        $roomOf = fn ($s) => $s->room ?: ($s->atelier ? $atelierRoomName($s->atelier) : null) ?: 'À définir';
+                                        $mins = fn ($c) => $c ? ((int) $c->format('H') * 60 + (int) $c->format('i')) : 0;
+                                        $ateliersT = $timed->filter(fn ($s) => $s->atelier_id)->values();
+                                        $plenT = $timed->filter(fn ($s) => ! $s->atelier_id)->values();
+                                        // Colonnes = salles distinctes des ateliers du jour.
+                                        $columns = $ateliersT->map($roomOf)->unique()->sort(SORT_NATURAL)->values();
+                                        if ($columns->isEmpty()) { $columns = collect(['À définir']); }
+                                        // Axe temporel : bornes arrondies à l'heure.
+                                        $dayStart = $timed->isNotEmpty() ? (int) (floor($timed->map(fn ($s) => $mins($s->starts_at))->min() / 60) * 60) : 480;
+                                        $dayEnd = $timed->isNotEmpty() ? (int) (ceil($timed->map(fn ($s) => $mins($s->ends_at))->max() / 60) * 60) : 1080;
+                                        if ($dayEnd <= $dayStart) { $dayEnd = $dayStart + 60; }
+                                        $rowCount = (int) (($dayEnd - $dayStart) / 30);
+                                        $rowLine = fn ($m) => 2 + (int) round(($m - $dayStart) / 30);
+                                        $sessJs = fn ($s) => [
+                                            'id' => $s->id, 'type' => $s->atelier_id ? 'atelier' : 'plenary',
+                                            'atelier_id' => (string) $s->atelier_id, 'label' => $s->label, 'day' => $d,
+                                            'start' => $s->starts_at?->format('H:i') ?? '', 'end' => $s->ends_at?->format('H:i') ?? '',
+                                            'room' => $s->room ?? '', 'moderator' => $s->moderator_name ?? '', 'rapporteur' => $s->rapporteur_name ?? '',
+                                        ];
                                     @endphp
 
-                                    {{-- Sessions plénières du jour --}}
-                                    @foreach ($plenaryDay as $session)
-                                        @include('admin.program._session-block', ['session' => $session, 'atelierName' => 'Plénière', 'roomBadge' => $session->room])
-                                    @endforeach
+                                    @if ($timed->isEmpty())
+                                        <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);font-size:13.5px;">Aucune session horodatée ce jour. Ajoutez un début et une fin à une session pour la voir ici.</p></div>
+                                    @else
+                                        <div class="plan-scroll">
+                                            <div class="plan-board" style="grid-template-columns:60px repeat({{ $columns->count() }}, minmax(140px,1fr));grid-template-rows:36px repeat({{ $rowCount }}, 34px);">
+                                                <div class="plan-head plan-head--time">Heure</div>
+                                                @foreach ($columns as $ci => $room)
+                                                    <div class="plan-head" style="grid-column:{{ $ci + 2 }};grid-row:1;">{{ $room }}</div>
+                                                @endforeach
 
-                                    {{-- Ateliers du jour --}}
-                                    @forelse ($dayAteliers as $atelier)
-                                        @php $room = $atelierRoomName($atelier); @endphp
-                                        <div class="atelier-block">
-                                            <div class="atelier-head">
-                                                <div>
-                                                    <h3>{{ $atelier->title }}</h3>
-                                                    <div class="meta">
-                                                        Axes : {{ implode(', ', $atelier->tracks ?: ['-']) }}<br>
-                                                        {{ $atelier->sessions->count() }} session(s)
+                                                @for ($m = $dayStart; $m < $dayEnd; $m += 60)
+                                                    <div class="plan-timelabel" style="grid-column:1;grid-row:{{ $rowLine($m) }} / {{ $rowLine($m + 60) }};">{{ sprintf('%02d:00', intdiv($m, 60)) }}</div>
+                                                @endfor
+                                                @foreach ($columns as $ci => $room)
+                                                    <div class="plan-lane" style="grid-column:{{ $ci + 2 }};grid-row:2 / {{ $rowCount + 2 }};"></div>
+                                                @endforeach
+
+                                                {{-- Plénières : bandeaux pleine largeur (exclusives) --}}
+                                                @foreach ($plenT as $s)
+                                                    <div class="plan-ev plan-ev--plenary" style="grid-column:2 / {{ $columns->count() + 2 }};grid-row:{{ $rowLine($mins($s->starts_at)) }} / {{ $rowLine($mins($s->ends_at)) }};"
+                                                         @click='openSession(@json($sessJs($s)))' title="Éditer la session">
+                                                        <span class="badge">Plénière</span>
+                                                        <span class="t">{{ Str::limit($s->label, 70) }}</span>
+                                                        <span class="m">{{ $s->starts_at->format('H:i') }}–{{ $s->ends_at->format('H:i') }}@if ($s->moderator_name) · {{ $s->moderator_name }}@endif</span>
                                                     </div>
-                                                </div>
-                                                <div class="room-badge {{ $room ? '' : 'pending' }}">{{ $room ?: 'Salle non assignée' }}</div>
+                                                @endforeach
+
+                                                {{-- Ateliers : colonnes parallèles --}}
+                                                @foreach ($ateliersT as $s)
+                                                    @php $col = $columns->search($roomOf($s)) + 2; $sslots = $creneaux->where('session_id', $s->id)->sortBy('starts_at'); @endphp
+                                                    <div class="plan-ev plan-ev--atelier" style="grid-column:{{ $col }};grid-row:{{ $rowLine($mins($s->starts_at)) }} / {{ $rowLine($mins($s->ends_at)) }};">
+                                                        <div class="ahead">
+                                                            <div>
+                                                                <span class="t">{{ Str::limit($s->atelier?->title ?: $s->label, 26) }}</span>
+                                                                <span class="time">{{ $s->starts_at->format('H:i') }}–{{ $s->ends_at->format('H:i') }}</span>
+                                                            </div>
+                                                            <button type="button" @click='openSession(@json($sessJs($s)))' title="Éditer la session"><x-ukc.icon name="pen" :size="13" /></button>
+                                                        </div>
+                                                        @foreach ($sslots as $slot)
+                                                            @if ($slot->submission)
+                                                                <div class="plan-slot placed" title="{{ $slot->submission->title }}"><span class="ref">{{ $slot->submission->ref_code }}</span> {{ Str::limit($slot->submission->title, 42) }}</div>
+                                                            @else
+                                                                <div class="plan-slot free" @click="openSlot({ id:{{ $slot->id }}, session_id:@js((string) $slot->session_id), day:'{{ $d }}', start:@js($slot->starts_at?->format('H:i') ?? ''), room:@js($roomOf($s)), submission_id:'', title:@js($slot->session_label ?? '') })" title="Assigner une communication">+ libre</div>
+                                                            @endif
+                                                        @endforeach
+                                                    </div>
+                                                @endforeach
                                             </div>
-                                            @foreach ($atelier->sessions->filter(fn ($s) => optional($s->session_day ?? $s->starts_at)?->format('Y-m-d') === $d) as $session)
-                                                @include('admin.program._session-block', ['session' => $session, 'inAtelier' => true])
-                                            @endforeach
                                         </div>
-                                    @empty
-                                        @if ($plenaryDay->isEmpty())
-                                            <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);font-size:13.5px;">Aucune session ce jour.</p></div>
-                                        @endif
-                                    @endforelse
+                                    @endif
+
+                                    {{-- Sessions du jour sans horaire : à compléter pour les placer --}}
+                                    @if ($untimed->isNotEmpty())
+                                        <div class="ukc-card" style="margin-top:14px;">
+                                            <h3 style="font-size:13.5px;font-weight:800;margin-bottom:8px;">Sessions sans horaire ({{ $untimed->count() }})</h3>
+                                            <div class="plan-untimed">
+                                                @foreach ($untimed as $s)
+                                                    <div class="u" @click='openSession(@json($sessJs($s)))' title="Ajouter un horaire">
+                                                        <strong>{{ Str::limit($s->label, 40) }}</strong>
+                                                        <span style="color:var(--ukc-muted);"> · {{ $s->atelier?->title ? Str::limit($s->atelier->title, 22) : 'Plénière' }}</span>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endif
                                 </div>
                             @endforeach
                         </div>
 
-                        {{-- Colonne « À planifier » --}}
+                        {{-- Colonne « À planifier » (filtrable) --}}
                         <div>
-                            <div class="ukc-card" style="position:sticky;top:12px;">
+                            @php
+                                $poolAxes = $unplaced->map(fn ($s) => $s->track)->filter()->unique()->sort()->values();
+                            @endphp
+                            <div class="ukc-card" style="position:sticky;top:12px;" x-data="tableFilters(['axe', 'paid'])">
                                 <h2><span><x-ukc.icon name="inbox" :size="18" /> À planifier</span></h2>
-                                <div class="desc" style="font-size:12.5px;color:var(--ukc-muted);margin-bottom:12px;">Acceptées sans créneau.</div>
+                                <div class="desc" style="font-size:12.5px;color:var(--ukc-muted);margin-bottom:10px;">Communications acceptées sans créneau.</div>
+
+                                @if ($unplaced->isNotEmpty())
+                                    <div class="filter-bar" style="margin-bottom:10px;">
+                                        <select x-model="f.axe" aria-label="Filtrer par axe" style="flex:1;min-width:120px;">
+                                            <option value="">Tous les axes</option>
+                                            @foreach ($poolAxes as $a)<option value="{{ $a }}">{{ Str::limit($a, 34) }}</option>@endforeach
+                                        </select>
+                                        <select x-model="f.paid" aria-label="Filtrer par paiement">
+                                            <option value="">Paiement : tous</option>
+                                            <option value="paid">Payé</option>
+                                            <option value="due">En attente</option>
+                                        </select>
+                                        <input type="search" x-model="f.q" placeholder="Titre, auteur…" style="flex:1;min-width:120px;">
+                                    </div>
+                                    <div style="font-size:12px;color:var(--ukc-muted);margin-bottom:8px;"><span x-text="visibleIds.length"></span> sur {{ $unplaced->count() }}<button type="button" class="ukc-link" x-show="active" x-cloak @click="reset()" style="margin-left:8px;">Réinitialiser</button></div>
+                                @endif
+
                                 <div class="pool-list">
                                     @forelse ($unplaced as $sub)
-                                        <div class="pool-item" @click="openSlot({ id:'', session_id:'', day:'', start:'', room:'', submission_id:'{{ $sub->id }}', title:'' })" title="Créer un créneau pour cette communication">
+                                        <div class="pool-item" x-show="visibleIds.includes({{ $sub->id }})" data-filter-row
+                                             data-id="{{ $sub->id }}" data-axe="{{ $sub->track }}" data-paid="{{ $isPaid($sub) ? 'paid' : 'due' }}"
+                                             data-text="{{ Str::lower($sub->title.' '.($sub->participant?->full_name ?? '')) }}"
+                                             @click="openSlot({ id:'', session_id:'', day:'', start:'', room:'', submission_id:'{{ $sub->id }}', title:'' })" title="Créer un créneau pour cette communication">
                                             <div class="t">{{ Str::limit($sub->title, 60) }}</div>
                                             <div class="m">
-                                                {{ $sub->participant?->full_name ?: 'Auteur' }}
-                                                @if ($sub->track) · {{ $sub->track }} @endif
-                                                · {{ $isPaid($sub) ? 'Payé' : 'En attente' }}
+                                                <span>{{ $sub->participant?->full_name ?: 'Auteur' }}</span>
+                                                @if ($sub->track)<span class="ukc-pill ukc-pill--info">{{ Str::limit($sub->track, 24) }}</span>@endif
+                                                <span class="ukc-pill ukc-pill--{{ $isPaid($sub) ? 'ok' : 'warn' }}">{{ $isPaid($sub) ? 'Payé' : 'En attente' }}</span>
                                             </div>
                                         </div>
                                     @empty
                                         <p style="font-size:12.5px;color:var(--ukc-green);display:flex;align-items:center;gap:6px;"><x-ukc.icon name="check-circle" :size="15" /> Tout est planifié.</p>
                                     @endforelse
+                                    @if ($unplaced->isNotEmpty())
+                                        <p x-show="visibleIds.length === 0" x-cloak style="font-size:12.5px;color:var(--ukc-muted);text-align:center;padding:8px;">Aucune communication ne correspond.</p>
+                                    @endif
                                 </div>
-                                <p class="ukc-hint" style="margin-top:10px;font-size:12px;color:var(--ukc-light);">Cliquez une communication pour la placer sur un créneau.</p>
+                                <p class="ukc-hint" style="margin-top:10px;font-size:12px;color:var(--ukc-light);">Cliquez une communication pour la placer sur un créneau, ou un créneau « libre » du board pour l’y assigner.</p>
                             </div>
                         </div>
                     </div>

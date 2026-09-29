@@ -526,6 +526,20 @@ paiement (`pay`), inscription à une formation.
   ([home.blade.php](resources/views/home.blade.php), `HomeController`) n'affiche que les
   `approved` + `featured` (triés `position`, `impact_score`) ; section masquée si vide.
 
+### Programme - onglet Planning = board « salles × temps »
+
+L'onglet **Planning** (`admin/programme?tab=planning`) est un **board CSS grid** : colonnes =
+salles (une par atelier daté), lignes = tranches de 30 min (axe horaire à gauche). Les
+**plénières** sont des **bandeaux pleine largeur** (dégradé `--ukc-blue-dark→blue→bright`,
+badge or) traversant toutes les colonnes → l'exclusivité est visible à l'œil ; les
+**ateliers** occupent leur colonne de salle **en parallèle**. Classes `.plan-*` dans
+`admin.css` (thème clair admin, Public Sans/Jost via `.ukc-shell`). Placement calculé en
+Blade (`$rowLine`, colonnes = salles distinctes triées). Sessions sans horaire listées à
+part (« Sessions sans horaire »). Pool **« À planifier »** filtrable (via `tableFilters`).
+Les créneaux « libres » et le pool ouvrent la modale (`openSlot`/`openSession`). L'ancien
+agenda FullCalendar de cet onglet (+ `program-calendar.js`, `_session-block`,
+`$calendarEvents`) a été **supprimé** (redondant). Glisser-déposer = évolution future.
+
 ### Programme - exclusivité des plénières / ateliers parallèles
 
 Règle métier : une **session plénière est EXCLUSIVE** (aucune autre activité au même

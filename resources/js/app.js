@@ -208,11 +208,6 @@ if (document.getElementById('lk-config')) {
     import('./meeting.js').then((m) => m.startFromConfig()).catch(() => {});
 }
 
-// Programme : charge l'agenda FullCalendar uniquement sur la page Programme.
-if (document.getElementById('programCalendar')) {
-    import('./program-calendar.js').then((m) => m.startProgramCalendar()).catch(() => {});
-}
-
 
 // Tableau de bord admin & rapports : charge Chart.js quand des graphiques sont
 // présents (chaque page est un rendu serveur complet → init au chargement).
