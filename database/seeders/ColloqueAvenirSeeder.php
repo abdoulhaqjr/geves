@@ -134,6 +134,10 @@ class ColloqueAvenirSeeder extends Seeder
         $comptable = $this->user('comptable@test.tg', 'Carine', 'Comptable');
         $this->assignStaff($comptable, $edition, 'accounting');
 
+        // Sessions plénières (EXCLUSIVES) : inauguration, table ronde, formation,
+        // clôture. Calées hors des fenêtres des ateliers pour respecter l'exclusivité.
+        $this->buildPlenaries($edition, $moderators, $start);
+
         // --- Ateliers + sessions + communications acceptées et planifiées ---
         /** @var list<Submission> $submissions */
         $submissions = [];
@@ -147,15 +151,24 @@ class ColloqueAvenirSeeder extends Seeder
             $rap = $rapporteurs[$i % 2];
 
             // La 1re session est EN DIRECT maintenant (test visio / Q&A) ; les
-            // autres sont planifiées sur les 4 jours autour d'aujourd'hui.
+            // autres sont des séances de démonstration.
             if ($i === 0) {
+                // Séance en direct dans un amphi dédié : n'entre pas en conflit de
+                // salle avec les ateliers de volume (qui occupent « Salle 1 » à
+                // « Salle 6 »), quelle que soit l'heure courante.
                 $sStart = Carbon::now()->subMinutes(30);
                 $sEnd = Carbon::now()->addMinutes(90);
                 $meetingStatus = 'live';
+                $room = 'Auditorium';
             } else {
-                $sStart = (clone $start)->addDays(intdiv($i, 2))->addHours(9 + ($i % 2) * 3);
-                $sEnd = (clone $sStart)->addHours(2);
+                // Créneau médian 12:00-14:00, laissé libre par les ateliers de volume
+                // (matin 08:30-11:30, après-midi 14:00-17:00) et hors des fenêtres des
+                // plénières : aucun conflit de salle ni de plénière.
+                $day = (clone $start)->addDays(intdiv($i, 2));
+                $sStart = (clone $day)->setTime(12, 0);
+                $sEnd = (clone $day)->setTime(14, 0);
                 $meetingStatus = 'scheduled';
+                $room = 'Salle '.($i + 1);
             }
 
             $session = EventSession::updateOrCreate(
@@ -163,7 +176,7 @@ class ColloqueAvenirSeeder extends Seeder
                 [
                     'atelier_id' => $atelier->id,
                     'type' => 'atelier',
-                    'room' => 'Salle '.($i + 1),
+                    'room' => $room,
                     'session_day' => $sStart->toDateString(),
                     'starts_at' => $sStart,
                     'ends_at' => $sEnd,
@@ -387,6 +400,47 @@ class ColloqueAvenirSeeder extends Seeder
         $this->command?->info('Auteurs en évaluation : auteur1@test.tg (soumise) · auteur2@test.tg (réponse ouverte) · auteur3@test.tg (correction demandée)');
         foreach ($reviewers as $r) {
             $this->command?->info('Relecteur : '.$r->email.' - mot de passe : password (relectures dans « Mes relectures »)');
+        }
+    }
+
+    /**
+     * Sessions plénières (exclusives) de l'édition, dans le « Grand amphithéâtre ».
+     * Placées hors des fenêtres des ateliers (matin 08:30-11:30, après-midi
+     * 14:00-17:00) pour que l'exclusivité des plénières soit respectée :
+     *   - inauguration : dimanche 27/09 matin (avant les ateliers de l'après-midi) ;
+     *   - table ronde : mercredi 30/09 de 8h à 10h ;
+     *   - formation : jeudi 01/10 de 14h à 17h ;
+     *   - clôture : vendredi 02/10 en fin de matinée.
+     *
+     * @param  list<User>  $moderators
+     */
+    private function buildPlenaries(Edition $edition, array $moderators, Carbon $start): void
+    {
+        // [libellé, décalage en jours, h début, min début, h fin, min fin, animateur]
+        $plenaries = [
+            ['Séance inaugurale', 0, 9, 0, 10, 30, 'Comité d’organisation'],
+            ['Table ronde : universités africaines et développement durable', 3, 8, 0, 10, 0, $moderators[0]->name],
+            ['Formation : méthodologie de la recherche et valorisation scientifique', 4, 14, 0, 17, 0, 'Équipe de formation'],
+            ['Séance de clôture et recommandations', 5, 11, 0, 12, 30, 'Comité scientifique'],
+        ];
+
+        foreach ($plenaries as [$label, $day, $sh, $sm, $eh, $em, $animator]) {
+            $begin = (clone $start)->addDays($day)->setTime($sh, $sm);
+            $finish = (clone $start)->addDays($day)->setTime($eh, $em);
+
+            EventSession::updateOrCreate(
+                ['edition_id' => $edition->id, 'label' => $label],
+                [
+                    'atelier_id' => null,
+                    'type' => 'plenary',
+                    'room' => 'Grand amphithéâtre',
+                    'session_day' => $begin->toDateString(),
+                    'starts_at' => $begin,
+                    'ends_at' => $finish,
+                    'meeting_status' => 'scheduled',
+                    'moderator_name' => $animator,
+                ]
+            );
         }
     }
 

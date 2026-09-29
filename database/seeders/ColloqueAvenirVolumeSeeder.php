@@ -265,8 +265,14 @@ class ColloqueAvenirVolumeSeeder extends Seeder
     }
 
     /**
-     * Séances d'accueil : une par atelier et par jour du colloque, pour disposer
-     * d'assez de créneaux. Les six séances d'origine restent intactes.
+     * Séances d'accueil des communications : 6 ateliers (une salle chacun, en
+     * parallèle) sur une série de blocs matin/après-midi. Les blocs sont calés
+     * HORS des fenêtres des plénières (cf. {@see ColloqueAvenirSeeder::buildPlenaries()} :
+     * inauguration dim. matin, table ronde mer. matin, formation jeu. après-midi,
+     * clôture ven.), afin que l'exclusivité des plénières soit respectée et
+     * qu'aucun conflit de salle n'apparaisse. Sept blocs × 6 ateliers = 42 séances
+     * de 3 h : largement assez de créneaux de 30 min pour les communications
+     * acceptées.
      *
      * @param  Collection<int, Atelier>  $ateliers
      * @return Collection<int, EventSession>
@@ -276,23 +282,35 @@ class ColloqueAvenirVolumeSeeder extends Seeder
         $start = $edition->date_start ? Carbon::parse($edition->date_start) : Carbon::now()->startOfDay();
         $sessions = collect();
 
+        // [décalage en jours, h début, min début, h fin, min fin]
+        $blocks = [
+            [0, 14, 0, 17, 0],  // dim. 27/09 : après-midi (matin = inauguration)
+            [1, 8, 30, 11, 30], // lun. 28/09 : matin
+            [1, 14, 0, 17, 0],  // lun. 28/09 : après-midi
+            [2, 8, 30, 11, 30], // mar. 29/09 : matin
+            [2, 14, 0, 17, 0],  // mar. 29/09 : après-midi
+            [3, 14, 0, 17, 0],  // mer. 30/09 : après-midi (matin = table ronde)
+            [4, 8, 30, 11, 30], // jeu. 01/10 : matin (après-midi = formation)
+        ];
+
         foreach ($ateliers as $a => $atelier) {
-            foreach (range(0, 3) as $day) {
-                $begin = (clone $start)->addDays($day)->setTime(8 + ($a % 2) * 5, 30);
+            foreach ($blocks as $b => [$day, $sh, $sm, $eh, $em]) {
+                $begin = (clone $start)->addDays($day)->setTime($sh, $sm);
+                $finish = (clone $start)->addDays($day)->setTime($eh, $em);
 
                 $sessions->push(EventSession::updateOrCreate(
                     [
                         'edition_id' => $edition->id,
                         'atelier_id' => $atelier->id,
-                        'label' => sprintf('%s - séance %d', Str::before($atelier->title, ' -'), $day + 1),
+                        'label' => sprintf('%s - séance %d', Str::before($atelier->title, ' -'), $b + 1),
                     ],
                     [
                         'type' => 'atelier',
                         'session_day' => $begin->toDateString(),
                         'starts_at' => $begin,
-                        'ends_at' => (clone $begin)->addHours(3),
+                        'ends_at' => $finish,
                         'room' => 'Salle '.($a + 1),
-                        'ordre' => $a * 10 + $day,
+                        'ordre' => $a * 10 + $b,
                     ]
                 ));
             }

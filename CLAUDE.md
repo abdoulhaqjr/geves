@@ -458,6 +458,19 @@ paiement (`pay`), inscription à une formation.
   le seed prend ~45 s (200 comptes). Un test de garde vérifie les 200 et les 93 %.
   ⚠️ Les anciens seeders de colloques de démo (Showcase, Live, DemoColloque,
   DemoScenario, DemoStaff) ont été **supprimés** : ce colloque est la référence unique.
+  - **Programme du seed = ateliers + plénières SANS conflit** (l'exclusivité des
+    plénières est respectée dans les données de démo). Les **ateliers** de volume
+    occupent « Salle 1 » à « Salle 6 » (6 en parallèle) par blocs matin **08:30-11:30**
+    et après-midi **14:00-17:00** (`ColloqueAvenirVolumeSeeder::buildSessions()`, 7 blocs
+    dim.→jeu., 42 séances de 3 h). Les **4 sessions plénières** (`ColloqueAvenirSeeder::buildPlenaries()`,
+    salle « Grand amphithéâtre », `type=plenary`) sont calées **hors** de ces fenêtres :
+    inauguration **dim. 27/09 09:00-10:30**, table ronde **mer. 30/09 08:00-10:00**,
+    formation **jeu. 01/10 14:00-17:00**, clôture **ven. 02/10 11:00-12:30** (le programme
+    s'étend donc jusqu'au vendredi). Les **séances de démo** de la base (`Session - {atelier}`,
+    rapports/Q&A) sont dans le **créneau médian 12:00-14:00** (laissé libre par le volume),
+    et la **séance en direct** est dans un « Auditorium » dédié : aucune ne collisionne en
+    salle avec le volume. ⚠️ En touchant à ces horaires, garder ces fenêtres disjointes -
+    sinon la vue Planning affiche des conflits de salle / de plénière dès le seed.
 ### Règles métier - limites communications & attestations
 
 - **Limite de communications** (`settings.max_communications`) : compte **seulement** les
