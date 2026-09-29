@@ -226,7 +226,7 @@
                                                     <div class="plan-ev plan-ev--atelier" style="grid-column:{{ $col }};grid-row:{{ $rowLine($mins($s->starts_at)) }} / {{ $rowLine($mins($s->ends_at)) }};">
                                                         <div class="ahead">
                                                             <div>
-                                                                <span class="t">{{ Str::limit($s->atelier?->title ?: $s->label, 26) }}</span>
+                                                                <span class="t" title="{{ $s->atelier?->title ?: $s->label }}">{{ $s->atelier?->title ?: $s->label }}</span>
                                                                 <span class="time">{{ $s->starts_at->format('H:i') }}–{{ $s->ends_at->format('H:i') }}</span>
                                                             </div>
                                                             <button type="button" @click='openSession(@json($sessJs($s)))' title="Éditer la session"><x-ukc.icon name="pen" :size="13" /></button>
@@ -235,10 +235,11 @@
                                                             @if ($slot->submission)
                                                                 @php
                                                                     $isConflict = isset($conflictSlots[$slot->id]);
-                                                                    $slotTitle = $slot->submission->title.($isConflict ? ' - conflit : cet auteur est déjà en séance au même moment' : ' - glisser vers un autre créneau libre pour déplacer');
+                                                                    $slotTitle = $slot->submission->ref_code.' - '.$slot->submission->title.($isConflict ? ' (conflit : cet auteur est déjà en séance au même moment)' : '');
                                                                 @endphp
-                                                                <div class="plan-slot placed{{ $isConflict ? ' conflict' : '' }}" draggable="true" data-sub-id="{{ $slot->submission_id }}" title="{{ $slotTitle }}">
-                                                                    @if ($isConflict)<span class="flag"><x-ukc.icon name="flag" :size="11" /></span> @endif<span class="ref">{{ $slot->submission->ref_code }}</span> {{ Str::limit($slot->submission->title, 40) }}</div>
+                                                                <div class="plan-slot placed{{ $isConflict ? ' conflict' : '' }}" draggable="true"
+                                                                     data-sub-id="{{ $slot->submission_id }}" data-slot-id="{{ $slot->id }}" data-unassign-url="{{ route('admin.program.slots.assign', $slot) }}"
+                                                                     title="{{ $slotTitle }}">@if ($isConflict)<span class="flag"><x-ukc.icon name="flag" :size="11" /></span>@endif<span class="ref">{{ $slot->submission->ref_code }}</span> {{ $slot->submission->title }}</div>
                                                             @else
                                                                 <div class="plan-slot free" data-slot-id="{{ $slot->id }}" data-assign-url="{{ route('admin.program.slots.assign', $slot) }}"
                                                                      @click="openSlot({ id:{{ $slot->id }}, session_id:@js((string) $slot->session_id), day:'{{ $d }}', start:@js($slot->starts_at?->format('H:i') ?? ''), room:@js($roomOf($s)), submission_id:'', title:@js($slot->session_label ?? '') })" title="Déposer une communication ici, ou cliquer pour l’assigner">+ libre</div>
@@ -273,9 +274,9 @@
                             @php
                                 $poolAxes = $unplaced->map(fn ($s) => $s->track)->filter()->unique()->sort()->values();
                             @endphp
-                            <div class="ukc-card" style="position:sticky;top:12px;" x-data="tableFilters(['axe', 'paid'])">
+                            <div class="ukc-card plan-pool" style="position:sticky;top:12px;" x-data="tableFilters(['axe', 'paid'])" data-pool-drop>
                                 <h2><span><x-ukc.icon name="inbox" :size="18" /> À planifier</span></h2>
-                                <div class="desc" style="font-size:12.5px;color:var(--ukc-muted);margin-bottom:10px;">Communications acceptées sans créneau.</div>
+                                <div class="desc" style="font-size:12.5px;color:var(--ukc-muted);margin-bottom:10px;">Communications acceptées sans créneau. Glissez-y un créneau placé pour le déplanifier.</div>
 
                                 @if ($unplaced->isNotEmpty())
                                     <div class="filter-bar" style="margin-bottom:10px;">

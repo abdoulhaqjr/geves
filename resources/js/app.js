@@ -347,52 +347,67 @@ document.addEventListener('submit', (e) => {
 // le repli tactile). La règle plénière est déjà garantie : un créneau libre
 // n'existe que dans un atelier, qui ne peut chevaucher une plénière.
 (function () {
-    var draggingSub = null;
+    var drag = null; // { sub, slotId, unassignUrl } de l'élément tiré
+
+    function post(url, submissionId, msg) {
+        var token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = url;
+        form.setAttribute('data-ajax', '');
+        form.setAttribute('data-ajax-target', 'prog-planning');
+        form.setAttribute('data-ajax-msg', msg);
+        form.hidden = true;
+        form.innerHTML = '<input type="hidden" name="_token" value="' + token + '">'
+            + '<input type="hidden" name="submission_id" value="' + submissionId + '">';
+        document.body.appendChild(form);
+        if (form.requestSubmit) { form.requestSubmit(); } else { form.submit(); }
+        setTimeout(() => form.remove(), 0);
+    }
 
     document.addEventListener('dragstart', (e) => {
         var src = e.target.closest('[data-sub-id][draggable="true"]');
         if (! src) return;
-        draggingSub = src.dataset.subId;
-        try { e.dataTransfer.setData('text/plain', draggingSub); e.dataTransfer.effectAllowed = 'move'; } catch (_) {}
+        drag = { sub: src.dataset.subId, slotId: src.dataset.slotId || '', unassignUrl: src.dataset.unassignUrl || '' };
+        try { e.dataTransfer.setData('text/plain', drag.sub); e.dataTransfer.effectAllowed = 'move'; } catch (_) {}
         src.classList.add('dragging');
     });
     document.addEventListener('dragend', (e) => {
         var src = e.target.closest('[data-sub-id]');
         if (src) src.classList.remove('dragging');
-        document.querySelectorAll('.plan-slot.free.hot').forEach((s) => s.classList.remove('hot'));
-        draggingSub = null;
+        document.querySelectorAll('.plan-slot.free.hot, [data-pool-drop].hot').forEach((s) => s.classList.remove('hot'));
+        drag = null;
     });
     document.addEventListener('dragover', (e) => {
-        var t = e.target.closest('.plan-slot.free[data-assign-url]');
-        if (! t || ! draggingSub) return;
-        e.preventDefault();
-        try { e.dataTransfer.dropEffect = 'move'; } catch (_) {}
-        t.classList.add('hot');
+        if (! drag) return;
+        var free = e.target.closest('.plan-slot.free[data-assign-url]');
+        if (free) { e.preventDefault(); try { e.dataTransfer.dropEffect = 'move'; } catch (_) {} free.classList.add('hot'); return; }
+        // Déposer sur « À planifier » = déplanifier (seulement un créneau déjà placé).
+        var pool = drag.slotId ? e.target.closest('[data-pool-drop]') : null;
+        if (pool) { e.preventDefault(); try { e.dataTransfer.dropEffect = 'move'; } catch (_) {} pool.classList.add('hot'); }
     });
     document.addEventListener('dragleave', (e) => {
-        var t = e.target.closest('.plan-slot.free[data-assign-url]');
-        if (t && ! t.contains(e.relatedTarget)) t.classList.remove('hot');
+        var free = e.target.closest('.plan-slot.free[data-assign-url]');
+        if (free && ! free.contains(e.relatedTarget)) free.classList.remove('hot');
+        var pool = e.target.closest('[data-pool-drop]');
+        if (pool && ! pool.contains(e.relatedTarget)) pool.classList.remove('hot');
     });
     document.addEventListener('drop', (e) => {
-        var t = e.target.closest('.plan-slot.free[data-assign-url]');
-        if (! t) return;
-        e.preventDefault();
-        var sub = draggingSub || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
-        t.classList.remove('hot');
-        if (! sub) return;
-        var token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-        var form = document.createElement('form');
-        form.method = 'POST';
-        form.action = t.dataset.assignUrl;
-        form.setAttribute('data-ajax', '');
-        form.setAttribute('data-ajax-target', 'prog-planning');
-        form.setAttribute('data-ajax-msg', 'Communication placée.');
-        form.hidden = true;
-        form.innerHTML = '<input type="hidden" name="_token" value="' + token + '">'
-            + '<input type="hidden" name="submission_id" value="' + String(sub).replace(/[^0-9]/g, '') + '">';
-        document.body.appendChild(form);
-        if (form.requestSubmit) { form.requestSubmit(); } else { form.submit(); }
-        setTimeout(() => form.remove(), 0);
+        if (! drag) return;
+        var free = e.target.closest('.plan-slot.free[data-assign-url]');
+        if (free) {
+            e.preventDefault();
+            free.classList.remove('hot');
+            var sub = String(drag.sub || (e.dataTransfer && e.dataTransfer.getData('text/plain'))).replace(/[^0-9]/g, '');
+            if (sub) { post(free.dataset.assignUrl, sub, 'Communication placée.'); }
+            return;
+        }
+        var pool = drag.slotId ? e.target.closest('[data-pool-drop]') : null;
+        if (pool && drag.unassignUrl) {
+            e.preventDefault();
+            pool.classList.remove('hot');
+            post(drag.unassignUrl, '', 'Communication déplanifiée.'); // submission_id vide = libère le créneau
+        }
     });
 })();
 
