@@ -392,6 +392,9 @@
 .admin-program .plan-legend .sw--plen { background: linear-gradient(135deg, var(--ukc-blue-dark), var(--ukc-blue)); }
 .admin-program .plan-legend .sw--atel { background: #dbe4ff; border: 1px solid #b8c8ff; }
 .admin-program .plan-legend .sw--free { border: 1.5px dashed var(--ukc-light); background: repeating-linear-gradient(45deg, transparent, transparent 3px, var(--ukc-border) 3px, var(--ukc-border) 5px); }
+.admin-program .plan-legend .sw--conf { background: #fee2e2; border: 1.5px solid #dc2626; }
+.admin-program .plan-conflict-banner { display: flex; align-items: center; gap: 8px; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 10px; padding: 9px 13px; font-size: 12.5px; font-weight: 600; margin-bottom: 12px; }
+.admin-program .plan-conflict-banner svg { color: #dc2626; flex: none; }
 
 .admin-program .plan-scroll { overflow-x: auto; border: 1px solid var(--ukc-border); border-radius: 12px; background: #fff; }
 .admin-program .plan-board { display: grid; min-width: 640px; }
@@ -412,6 +415,8 @@
 .admin-program .plan-slot { border-radius: 7px; padding: 4px 7px; font-size: 10.5px; line-height: 1.25; }
 .admin-program .plan-slot.placed { background: #eaf0ff; color: var(--ukc-blue-dark); }
 .admin-program .plan-slot.placed .ref { font-weight: 800; font-size: 9.5px; opacity: .7; }
+.admin-program .plan-slot.placed.conflict { background: #fee2e2; color: #991b1b; box-shadow: inset 0 0 0 1.5px #dc2626; }
+.admin-program .plan-slot.placed.conflict .flag { color: #dc2626; display: inline-flex; vertical-align: -1px; }
 .admin-program .plan-slot.free { border: 1.5px dashed var(--ukc-light); color: var(--ukc-muted); text-align: center; font-weight: 700; cursor: pointer; background: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(148,163,184,.1) 4px, rgba(148,163,184,.1) 7px); }
 .admin-program .plan-slot.free:hover, .admin-program .plan-slot.free.hot { border-color: var(--ukc-green); color: var(--ukc-green); background: rgba(0,153,51,.08); }
 .admin-program .plan-untimed { display: flex; flex-wrap: wrap; gap: 8px; }

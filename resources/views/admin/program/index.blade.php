@@ -95,6 +95,7 @@
                         <span><i class="sw sw--plen"></i> Plénière (exclusive)</span>
                         <span><i class="sw sw--atel"></i> Atelier (parallèle)</span>
                         <span><i class="sw sw--free"></i> Créneau libre</span>
+                        <span><i class="sw sw--conf"></i> Conflit d’auteur</span>
                     </div>
 
                     <div class="layout-plan">
@@ -125,7 +126,33 @@
                                             'start' => $s->starts_at?->format('H:i') ?? '', 'end' => $s->ends_at?->format('H:i') ?? '',
                                             'room' => $s->room ?? '', 'moderator' => $s->moderator_name ?? '', 'rapporteur' => $s->rapporteur_name ?? '',
                                         ];
+
+                                        // Conflits d'auteur : un même auteur correspondant placé sur deux
+                                        // créneaux du jour qui se chevauchent (ateliers parallèles). On
+                                        // surligne les créneaux fautifs (télescopage physiquement impossible).
+                                        $slotEnd = fn ($sl) => $sl->ends_at ?: ($sl->starts_at ? $sl->starts_at->copy()->addMinutes($slotDuration($sl->submission)) : null);
+                                        $placedDay = $creneaux->filter(fn ($sl) => $sl->submission_id > 0 && $sl->participant_id > 0 && $sl->starts_at && $sl->starts_at->format('Y-m-d') === $d)->values();
+                                        $conflictSlots = [];
+                                        foreach ($placedDay->groupBy('participant_id') as $group) {
+                                            $g = $group->values();
+                                            for ($i = 0; $i < $g->count(); $i++) {
+                                                for ($j = $i + 1; $j < $g->count(); $j++) {
+                                                    $ae = $slotEnd($g[$i]);
+                                                    $be = $slotEnd($g[$j]);
+                                                    if ($ae && $be && $g[$i]->starts_at->lt($be) && $g[$j]->starts_at->lt($ae)) {
+                                                        $conflictSlots[$g[$i]->id] = $conflictSlots[$g[$j]->id] = true;
+                                                    }
+                                                }
+                                            }
+                                        }
                                     @endphp
+
+                                    @if ($conflictSlots !== [])
+                                        <div class="plan-conflict-banner">
+                                            <x-ukc.icon name="flag" :size="15" />
+                                            {{ count($conflictSlots) }} créneau(x) en conflit : un auteur est programmé sur deux séances au même moment (surlignés en rouge).
+                                        </div>
+                                    @endif
 
                                     @if ($timed->isEmpty())
                                         <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);font-size:13.5px;">Aucune session horodatée ce jour. Ajoutez un début et une fin à une session pour la voir ici.</p></div>
@@ -167,7 +194,12 @@
                                                         </div>
                                                         @foreach ($sslots as $slot)
                                                             @if ($slot->submission)
-                                                                <div class="plan-slot placed" draggable="true" data-sub-id="{{ $slot->submission_id }}" title="{{ $slot->submission->title }} — glisser vers un autre créneau libre pour déplacer"><span class="ref">{{ $slot->submission->ref_code }}</span> {{ Str::limit($slot->submission->title, 42) }}</div>
+                                                                @php
+                                                                    $isConflict = isset($conflictSlots[$slot->id]);
+                                                                    $slotTitle = $slot->submission->title.($isConflict ? ' - conflit : cet auteur est déjà en séance au même moment' : ' - glisser vers un autre créneau libre pour déplacer');
+                                                                @endphp
+                                                                <div class="plan-slot placed{{ $isConflict ? ' conflict' : '' }}" draggable="true" data-sub-id="{{ $slot->submission_id }}" title="{{ $slotTitle }}">
+                                                                    @if ($isConflict)<span class="flag"><x-ukc.icon name="flag" :size="11" /></span> @endif<span class="ref">{{ $slot->submission->ref_code }}</span> {{ Str::limit($slot->submission->title, 40) }}</div>
                                                             @else
                                                                 <div class="plan-slot free" data-slot-id="{{ $slot->id }}" data-assign-url="{{ route('admin.program.slots.assign', $slot) }}"
                                                                      @click="openSlot({ id:{{ $slot->id }}, session_id:@js((string) $slot->session_id), day:'{{ $d }}', start:@js($slot->starts_at?->format('H:i') ?? ''), room:@js($roomOf($s)), submission_id:'', title:@js($slot->session_label ?? '') })" title="Déposer une communication ici, ou cliquer pour l’assigner">+ libre</div>
