@@ -101,6 +101,7 @@
                             <span><i class="sw sw--atel"></i> Atelier (parallèle)</span>
                             <span><i class="sw sw--free"></i> Créneau libre</span>
                             <span><i class="sw sw--conf"></i> Conflit d’auteur</span>
+                            <span><i class="sw sw--room"></i> Salle en double</span>
                         </div>
                     </div>
 
@@ -353,64 +354,106 @@
                     </div>{{-- fin vue JOUR --}}
 
                     {{-- --------------------------- Vue SEMAINE -------------------------- --}}
+                    {{-- Agenda par jour : chaque jour = une colonne, blocs empilés dans
+                         l'ordre chronologique (aucun chevauchement / rognage possible). --}}
                     <div x-show="pview==='week'" x-cloak>
                         @php
                             $wk = $sessions->filter(fn ($s) => $s->starts_at && $s->ends_at);
                             $wkMin = fn ($c) => (int) $c->format('H') * 60 + (int) $c->format('i');
-                            $wkStart = $wk->isNotEmpty() ? (int) (floor($wk->map(fn ($s) => $wkMin($s->starts_at))->min() / 60) * 60) : 480;
-                            $wkEnd = $wk->isNotEmpty() ? (int) (ceil($wk->map(fn ($s) => $wkMin($s->ends_at))->max() / 60) * 60) : 1080;
-                            if ($wkEnd <= $wkStart) { $wkEnd = $wkStart + 60; }
-                            $wkRows = (int) (($wkEnd - $wkStart) / 30);
-                            $wkRow = fn ($m) => 2 + (int) round(($m - $wkStart) / 30);
-                            $wkRoomOf = fn ($s) => $s->room ?: ($s->atelier ? $atelierRoomName($s->atelier) : null) ?: 'À définir';
+                            $wkRealRoom = fn ($s) => $s->room ?: ($s->atelier ? $atelierRoomName($s->atelier) : null);
+                            $wkRoomOf = fn ($s) => $wkRealRoom($s) ?: 'À définir';
                         @endphp
                         @if ($wk->isEmpty())
                             <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);font-size:13.5px;">Aucune session horodatée. Ajoutez des horaires aux sessions pour les voir sur la semaine.</p></div>
                         @else
                             <div class="plan-scroll">
-                                <div class="plan-week" style="grid-template-columns:56px repeat({{ count($days) }}, minmax(150px,1fr));grid-template-rows:34px repeat({{ $wkRows }}, 26px);">
-                                    <div class="plan-head plan-head--time">Heure</div>
-                                    @foreach ($days as $di => $dd)
-                                        <div class="plan-head" style="grid-column:{{ $di + 2 }};grid-row:1;">{{ \Illuminate\Support\Carbon::parse($dd)->translatedFormat('D d M') }}</div>
+                                <div class="plan-weekgrid" style="grid-template-columns:repeat({{ count($days) }}, minmax(210px,1fr));">
+                                    @foreach ($days as $dd)
+                                        @php $cd = \Illuminate\Support\Carbon::parse($dd); @endphp
+                                        <div class="wk-dhead">
+                                            <span class="dow">{{ $cd->translatedFormat('D') }}</span>
+                                            <span class="dnum">{{ $cd->translatedFormat('d M') }}</span>
+                                        </div>
                                     @endforeach
 
-                                    @for ($m = $wkStart; $m < $wkEnd; $m += 60)
-                                        <div class="plan-timelabel" style="grid-column:1;grid-row:{{ $wkRow($m) }} / {{ $wkRow($m + 60) }};">{{ sprintf('%02d:00', intdiv($m, 60)) }}</div>
-                                    @endfor
-
-                                    @foreach ($days as $di => $dd)
-                                        <div class="plan-lane" style="grid-column:{{ $di + 2 }};grid-row:2 / {{ $wkRows + 2 }};"></div>
+                                    @foreach ($days as $dd)
                                         @php
-                                            $dt = $wk->filter(fn ($s) => optional($s->session_day ?? $s->starts_at)?->format('Y-m-d') === $dd);
-                                            $dplen = $dt->filter(fn ($s) => ! $s->atelier_id);
-                                            $dgroups = $dt->filter(fn ($s) => $s->atelier_id)->groupBy(fn ($s) => $wkMin($s->starts_at).'-'.$wkMin($s->ends_at));
+                                            $dt = $wk->filter(fn ($s) => optional($s->session_day ?? $s->starts_at)?->format('Y-m-d') === $dd)
+                                                     ->sortBy(fn ($s) => $wkMin($s->starts_at))->values();
+
+                                            // Conflits de salle du jour (même salle réelle, horaires qui se chevauchent).
+                                            $wkConf = [];
+                                            foreach ($dt->filter(fn ($s) => $wkRealRoom($s))->groupBy(fn ($s) => $wkRealRoom($s)) as $grp) {
+                                                $g = $grp->values();
+                                                for ($i = 0; $i < $g->count(); $i++) {
+                                                    for ($j = $i + 1; $j < $g->count(); $j++) {
+                                                        if ($wkMin($g[$i]->starts_at) < $wkMin($g[$j]->ends_at) && $wkMin($g[$j]->starts_at) < $wkMin($g[$i]->ends_at)) {
+                                                            $wkConf[$g[$i]->id] = $wkConf[$g[$j]->id] = true;
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            // Blocs chronologiques : plénières isolées + ateliers regroupés par tranche.
+                                            $entries = collect();
+                                            foreach ($dt->filter(fn ($s) => ! $s->atelier_id) as $s) {
+                                                $entries->push(['k' => $wkMin($s->starts_at), 'e' => $wkMin($s->ends_at), 'type' => 'plen', 'plen' => $s]);
+                                            }
+                                            foreach ($dt->filter(fn ($s) => $s->atelier_id)->groupBy(fn ($s) => $wkMin($s->starts_at).'-'.$wkMin($s->ends_at)) as $grp) {
+                                                $g0 = $grp->first();
+                                                $entries->push(['k' => $wkMin($g0->starts_at), 'e' => $wkMin($g0->ends_at), 'type' => 'band', 'grp' => $grp, 'g0' => $g0]);
+                                            }
+                                            $entries = $entries->sortBy([['k', 'asc'], ['e', 'asc']])->values();
                                         @endphp
-                                        @foreach ($dplen as $s)
-                                            <div class="week-ev week-ev--plenary" style="grid-column:{{ $di + 2 }};grid-row:{{ $wkRow($wkMin($s->starts_at)) }} / {{ $wkRow($wkMin($s->ends_at)) }};"
-                                                 @click='openSession(@json($sessJsFor($s, $dd)))' title="{{ $s->label }} ({{ $s->starts_at->format('H:i') }}–{{ $s->ends_at->format('H:i') }})">
-                                                <span class="wt">{{ Str::limit($s->label, 30) }}</span>
-                                                <span class="wm">{{ $s->starts_at->format('H:i') }}</span>
-                                            </div>
-                                        @endforeach
-                                        @foreach ($dgroups as $grp)
-                                            @php $g0 = $grp->first(); @endphp
-                                            <div class="week-band" style="grid-column:{{ $di + 2 }};grid-row:{{ $wkRow($wkMin($g0->starts_at)) }} / {{ $wkRow($wkMin($g0->ends_at)) }};">
-                                                <div class="week-band-time">{{ $g0->starts_at->format('H:i') }}–{{ $g0->ends_at->format('H:i') }} · {{ $grp->count() }} atelier(s)</div>
-                                                <div class="week-chips">
-                                                    @foreach ($grp as $s)
-                                                        @php $ss = $creneaux->where('session_id', $s->id); @endphp
-                                                        <button type="button" class="week-chip" @click='openSession(@json($sessJsFor($s, $dd)))' title="{{ $s->atelier?->title ?: $s->label }} - {{ $wkRoomOf($s) }}">
-                                                            <span class="r">{{ $wkRoomOf($s) }}</span>
-                                                            <span class="c">{{ $ss->where('submission_id', '>', 0)->count() }}/{{ $ss->count() }}</span>
-                                                        </button>
-                                                    @endforeach
-                                                </div>
-                                            </div>
-                                        @endforeach
+                                        <div class="wk-col">
+                                            @forelse ($entries as $en)
+                                                @if ($en['type'] === 'plen')
+                                                    @php $s = $en['plen']; @endphp
+                                                    <button type="button" class="wk-block wk-block--plenary"
+                                                            @click='openSession(@json($sessJsFor($s, $dd)))'
+                                                            title="Plénière : {{ $s->label }} ({{ $s->starts_at->format('H:i') }}–{{ $s->ends_at->format('H:i') }})">
+                                                        <span class="wk-time">{{ $s->starts_at->format('H:i') }}–{{ $s->ends_at->format('H:i') }}</span>
+                                                        <span class="wk-badge">Plénière</span>
+                                                        <span class="wk-title">{{ Str::limit($s->label, 48) }}</span>
+                                                    </button>
+                                                @else
+                                                    @php
+                                                        $grp = $en['grp'];
+                                                        $g0 = $en['g0'];
+                                                        $bandConf = $grp->contains(fn ($s) => isset($wkConf[$s->id]));
+                                                    @endphp
+                                                    <div class="wk-block wk-block--band{{ $bandConf ? ' room-conflict' : '' }}">
+                                                        <div class="wk-bhead">
+                                                            <span class="wk-time">{{ $g0->starts_at->format('H:i') }}–{{ $g0->ends_at->format('H:i') }}</span>
+                                                            <span class="wk-count">{{ $grp->count() }} atelier{{ $grp->count() > 1 ? 's en parallèle' : '' }}</span>
+                                                        </div>
+                                                        <div class="wk-chips">
+                                                            @foreach ($grp as $s)
+                                                                @php
+                                                                    $ss = $creneaux->where('session_id', $s->id);
+                                                                    $placed = $ss->where('submission_id', '>', 0)->count();
+                                                                    $tot = $ss->count();
+                                                                    $roomClash = isset($wkConf[$s->id]);
+                                                                @endphp
+                                                                <button type="button" class="wk-chip{{ $roomClash ? ' conflict' : '' }}"
+                                                                        @click='openSession(@json($sessJsFor($s, $dd)))'
+                                                                        title="{{ ($s->atelier?->title ?: $s->label).' - '.$wkRoomOf($s).($roomClash ? ' (conflit : salle occupée par une autre séance au même moment)' : '') }}">
+                                                                    @if ($roomClash)<span class="cflag"><x-ukc.icon name="alert-triangle" :size="10" /></span>@endif
+                                                                    <span class="r">{{ $wkRoomOf($s) }}</span>
+                                                                    <span class="c">{{ $placed }}/{{ $tot }}</span>
+                                                                </button>
+                                                            @endforeach
+                                                        </div>
+                                                    </div>
+                                                @endif
+                                            @empty
+                                                <div class="wk-empty">Aucune séance</div>
+                                            @endforelse
+                                        </div>
                                     @endforeach
                                 </div>
                             </div>
-                            <p class="ukc-hint" style="margin-top:10px;font-size:12px;color:var(--ukc-light);">Vue d’ensemble de la semaine · cliquez une plénière ou un atelier pour l’éditer. Le détail par salle et le placement des communications se font en vue « Jour ».</p>
+                            <p class="ukc-hint" style="margin-top:10px;font-size:12px;color:var(--ukc-light);">Vue d’ensemble de la semaine · chaque colonne = un jour, les blocs sont classés par heure. Cliquez une plénière ou un atelier pour l’éditer. Le détail par salle et le placement des communications se font en vue « Jour ». La pastille d’une salle indique <strong>communications placées / créneaux</strong>.</p>
                         @endif
                     </div>
                 @endif

@@ -537,9 +537,17 @@ badge or) traversant toutes les colonnes → l'exclusivité est visible à l'œi
 Blade (`$rowLine`, colonnes = salles distinctes triées). Sessions sans horaire listées à
 part (« Sessions sans horaire »). Pool **« À planifier »** filtrable (via `tableFilters`).
 Bascule **Jour / Semaine** (Alpine `pview`, mémorisé en `localStorage['ukcPlanView']`) :
-la **vue Semaine** est un grille time-alignée **colonnes = jours** ; plénières en blocs,
-ateliers **groupés par tranche horaire** en chips (salle + placés/total) ; c'est une vue
-d'ensemble en lecture/édition-session (le détail par salle + le placement restent en Jour).
+la **vue Semaine** est un **agenda par jour** (`.plan-weekgrid`, une **colonne par jour**,
+classes `.wk-*`), **PAS** une grille time-alignée. ⚠️ L'ancienne vue Semaine time-alignée
+(`.plan-week`/`.week-*`, chaque bloc positionné par `grid-row` selon l'heure) **empilait les
+bandes qui se chevauchent l'une SUR l'autre** (ex. 08:30-11:30 et 09:00-11:00) : elles se
+cachaient et les chips débordaient. Désormais chaque colonne-jour empile ses **blocs dans
+l'ordre chronologique** (aucun chevauchement possible) : plénières = blocs bleus (badge or),
+ateliers = blocs blancs regroupés par tranche horaire, avec une chip par salle (salle +
+**placés/total**). Les **conflits de salle** du jour (même salle réelle, horaires qui se
+chevauchent) sont recalculés côté Semaine et **bordés d'orange** (chip `.wk-chip.conflict`,
+bloc `.wk-block--band.room-conflict`), comme en vue Jour. C'est une vue d'ensemble en
+lecture/édition-session (le détail par salle + le placement des communications restent en Jour).
 Les créneaux « libres » et le pool ouvrent la modale (`openSlot`/`openSession`). L'ancien
 agenda FullCalendar de cet onglet (+ `program-calendar.js`, `_session-block`,
 `$calendarEvents`) a été **supprimé** (redondant).
