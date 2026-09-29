@@ -550,6 +550,21 @@ agenda FullCalendar de cet onglet (+ `program-calendar.js`, `_session-block`,
   `data-ajax-root="prog-planning"` → board + pool rafraîchis d'un bloc. HTML5 DnD =
   **desktop** ; le **clic** (modale) reste le repli tactile. La règle plénière est déjà
   garantie (un créneau libre n'existe que dans un atelier).
+- **Surlignages de conflit (vue Jour uniquement, calculés en Blade)** : deux repérages
+  visuels distincts, sans bloquer l'affichage. (1) **Conflit d'auteur** (`$conflictSlots`,
+  **rouge**) : un même auteur correspondant sur deux créneaux placés qui se chevauchent
+  (télescopage physique) → le créneau (`.plan-slot.placed.conflict`) est surligné + drapeau.
+  (2) **Salle en double** (`$roomConflicts`, **orange**) : deux **séances** horodatées qui
+  se chevauchent dans la **même salle réelle** (`$realRoom` = `room` ou salle de l'atelier ;
+  une salle « À définir » n'est **pas** comptée) → la carte de séance
+  (`.plan-ev--atelier.room-conflict` / `.plan-ev--plenary.room-conflict`) est bordée
+  d'orange + icône `alert-triangle`. Chacun a son bandeau récap en tête de jour
+  (`.plan-conflict-banner` rouge / `.plan-conflict-banner--room` orange). Rappel métier :
+  les ateliers **parallèles** ne sont légitimes que dans des salles **distinctes** ; deux
+  ateliers dans la même salle au même moment = double-booking. Ce cas **n'est pas bloqué à
+  la sauvegarde** (seule la règle plénière l'est) : la détection le rend visible. Le seed de
+  démo en contient (deux séances d'un même atelier partagent une salle sur un créneau qui se
+  chevauche).
 
 ### Programme - exclusivité des plénières / ateliers parallèles
 

@@ -184,12 +184,37 @@
                                                 }
                                             }
                                         }
+
+                                        // Salles en double : deux séances horodatées qui se chevauchent dans
+                                        // la MÊME salle (impossible physiquement). Les ateliers en parallèle
+                                        // ne sont légitimes que dans des salles distinctes ; une salle
+                                        // laissée « À définir » n'est pas comptée (pas encore attribuée).
+                                        $realRoom = fn ($s) => $s->room ?: ($s->atelier ? $atelierRoomName($s->atelier) : null);
+                                        $roomConflicts = [];
+                                        foreach ($timed->filter(fn ($s) => $realRoom($s))->groupBy(fn ($s) => $realRoom($s)) as $group) {
+                                            $g = $group->values();
+                                            for ($i = 0; $i < $g->count(); $i++) {
+                                                for ($j = $i + 1; $j < $g->count(); $j++) {
+                                                    if ($mins($g[$i]->starts_at) < $mins($g[$j]->ends_at) && $mins($g[$j]->starts_at) < $mins($g[$i]->ends_at)) {
+                                                        $roomConflicts[$g[$i]->id] = $realRoom($g[$i]);
+                                                        $roomConflicts[$g[$j]->id] = $realRoom($g[$j]);
+                                                    }
+                                                }
+                                            }
+                                        }
                                     @endphp
 
                                     @if ($conflictSlots !== [])
                                         <div class="plan-conflict-banner">
                                             <x-ukc.icon name="flag" :size="15" />
                                             {{ count($conflictSlots) }} créneau(x) en conflit : un auteur est programmé sur deux séances au même moment (surlignés en rouge).
+                                        </div>
+                                    @endif
+
+                                    @if ($roomConflicts !== [])
+                                        <div class="plan-conflict-banner plan-conflict-banner--room">
+                                            <x-ukc.icon name="alert-triangle" :size="15" />
+                                            {{ count($roomConflicts) }} séance(s) en conflit de salle : une même salle est occupée par deux séances au même moment (surlignées en orange). Déplacez l’une d’elles dans une autre salle ou à un autre horaire.
                                         </div>
                                     @endif
 
@@ -212,8 +237,9 @@
 
                                                 {{-- Plénières : bandeaux pleine largeur (exclusives) --}}
                                                 @foreach ($plenT as $s)
-                                                    <div class="plan-ev plan-ev--plenary" style="grid-column:2 / {{ 2 + $totalLanes }};grid-row:{{ $rowLine($mins($s->starts_at)) }} / {{ $rowLine($mins($s->ends_at)) }};"
-                                                         @click='openSession(@json($sessJs($s)))' title="Éditer la session">
+                                                    @php $roomClash = isset($roomConflicts[$s->id]); @endphp
+                                                    <div class="plan-ev plan-ev--plenary{{ $roomClash ? ' room-conflict' : '' }}" style="grid-column:2 / {{ 2 + $totalLanes }};grid-row:{{ $rowLine($mins($s->starts_at)) }} / {{ $rowLine($mins($s->ends_at)) }};"
+                                                         @click='openSession(@json($sessJs($s)))' title="{{ $roomClash ? 'Conflit de salle : « '.$roomConflicts[$s->id].' » est occupée par une autre séance au même moment.' : 'Éditer la session' }}">
                                                         <span class="badge">Plénière</span>
                                                         <span class="t">{{ Str::limit($s->label, 70) }}</span>
                                                         <span class="m">{{ $s->starts_at->format('H:i') }}–{{ $s->ends_at->format('H:i') }}@if ($s->moderator_name) · {{ $s->moderator_name }}@endif</span>
@@ -222,11 +248,16 @@
 
                                                 {{-- Ateliers : colonnes parallèles --}}
                                                 @foreach ($ateliersT as $s)
-                                                    @php $col = ($roomColStart[$roomOf($s)] ?? 2) + ($sessionLane[$s->id] ?? 0); $sslots = $creneaux->where('session_id', $s->id)->sortBy('starts_at'); @endphp
-                                                    <div class="plan-ev plan-ev--atelier" style="grid-column:{{ $col }};grid-row:{{ $rowLine($mins($s->starts_at)) }} / {{ $rowLine($mins($s->ends_at)) }};">
+                                                    @php
+                                                        $col = ($roomColStart[$roomOf($s)] ?? 2) + ($sessionLane[$s->id] ?? 0);
+                                                        $sslots = $creneaux->where('session_id', $s->id)->sortBy('starts_at');
+                                                        $roomClash = isset($roomConflicts[$s->id]);
+                                                        $atelierTitle = $s->atelier?->title ?: $s->label;
+                                                    @endphp
+                                                    <div class="plan-ev plan-ev--atelier{{ $roomClash ? ' room-conflict' : '' }}" style="grid-column:{{ $col }};grid-row:{{ $rowLine($mins($s->starts_at)) }} / {{ $rowLine($mins($s->ends_at)) }};">
                                                         <div class="ahead">
                                                             <div>
-                                                                <span class="t" title="{{ $s->atelier?->title ?: $s->label }}">{{ $s->atelier?->title ?: $s->label }}</span>
+                                                                <span class="t" title="{{ $roomClash ? $atelierTitle.' - conflit de salle : « '.$roomConflicts[$s->id].' » occupée par une autre séance au même moment.' : $atelierTitle }}">@if ($roomClash)<span class="rflag"><x-ukc.icon name="alert-triangle" :size="11" /></span>@endif{{ $atelierTitle }}</span>
                                                                 <span class="time">{{ $s->starts_at->format('H:i') }}–{{ $s->ends_at->format('H:i') }}</span>
                                                             </div>
                                                             <button type="button" @click='openSession(@json($sessJs($s)))' title="Éditer la session"><x-ukc.icon name="pen" :size="13" /></button>
