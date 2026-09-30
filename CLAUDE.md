@@ -152,18 +152,33 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   l'inscription). Une communication liée apparaît dans « Mes communications » de chaque
   auteur ; seul le déposant (`$isOwner`) peut la modifier.
 - **Confirmations** : `window.ukcConfirm(msg, opts)` (popup Tailwise, Promise<boolean>) via l'attribut **`data-confirm`** sur le bouton (ou le formulaire) - **jamais** `onclick="return confirm()"`. Le handler `data-ajax` transmet `e.submitter` à `FormData` (sinon la valeur du bouton cliqué, ex. `status`, est perdue → 400).
-- **Filtres + pagination de tableau côté client** : `tableFilters(keys, perPage = 0)` (Alpine,
-  `app.js`). Les lignes portent `data-filter-row` + `data-id` + `data-text` + `data-<clé>` ;
-  `visibleIds` = tout le filtré, et avec **`perPage > 0`** `pageIds` = la page courante
-  (`page`, `pageCount`, `prev()`/`next()`, retour page 1 à chaque changement de filtre). Les
-  lignes se gouvernent alors par **`x-show="pageIds.includes(ID)"`** et on pose
-  **`<x-ukc.pager />`** après le tableau (composant `components/ukc/pager.blade.php`, `.ukc-pager`).
-  ⚠️ La pagination est **purement visuelle** (les lignes hors page restent dans le DOM, juste
-  masquées) : parfait quand les lignes portent des champs de formulaire (ex. l'onglet
-  **Attribution auto** des Soumissions - toutes les cases cochées sont soumises, pas seulement
-  la page affichée). Pour un tableau sans `tableFilters` (formulaire), gérer `page`/`perPage`/
-  `pages` dans le `x-data` local et passer `<x-ukc.pager pages="pages" />`. `perPage = 0` =
-  pas de pagination (rétrocompatible). Utilisé : Programme > **Sessions** et **Créneaux** (20/page).
+- **Pagination + tri d'un tableau = CÔTÉ SERVEUR** (patron unique de tout le back-office,
+  cf. `admin/soumissions`) : le contrôleur `->paginate(N)->withQueryString()` (rendu par
+  `resources/views/vendor/pagination/ukc.blade.php`, `{{ $page->links() }}`) et **`ListSort`**
+  (liste blanche anti-injection) + en-têtes **`<x-ukc.th sort="…" :current :dir>`** pour le
+  tri. Les filtres = **formulaire GET** (auto-submit), pas de filtre client sur une liste
+  paginée (il ne verrait que la page affichée). Utilisé : Soumissions (liste, **Attribution
+  auto**), Programme > **Sessions** et **Créneaux** (20/page).
+  - ⚠️ **Deux tableaux triables/paginés sur une même page** (Programme > Sessions **et**
+    Créneaux vivent dans une seule vue, onglets en `?tab=`) : chacun a ses paramètres
+    préfixés (`s_sort`/`s_dir`/`s_page`, `c_sort`/`c_dir`/`c_page`) ; `<x-ukc.th>` et
+    `ListSort::resolve()` prennent des noms de paramètres personnalisés (`param`/`dirParam`/
+    `pageParam`). Le board Planning garde les collections **complètes** ; les onglets liste
+    filtrent/trient/paginent ces collections **en mémoire** via `ProgramController::sessionsTable()`
+    / `slotsTable()` + `paginateCollection()` (pas de requête dédiée). ⚠️ Larastan croit les
+    dates castées et relations **non-nulles** : dans un `sortBy` par clé, passer par
+    `optional()`/`data_get()` (elles sont bien nullables au runtime : séance sans horaire,
+    plénière sans atelier, créneau libre) - sinon `?->prop ?? …` déclenche `nullsafe.neverNull`.
+  - **`tableFilters(keys)`** (Alpine, `app.js`) = filtre **client instantané SANS pagination**
+    (lignes `data-filter-row` + `data-<clé>` + `data-text`, gouvernées par
+    `x-show="visibleIds.includes(ID)"`). Réservé aux listes **non paginées** (ex. Programme >
+    Ateliers, pool « À planifier »). ⚠️ Ne PAS y réintroduire de pagination client
+    (`perPage`/`pageIds`/`<x-ukc.pager>`) : c'était une divergence du reste du projet, retirée
+    au profit de la pagination serveur ci-dessus.
+- **Créneaux : heure de fin** figée à la création/modif (`Slot::ends_at`) d'après la durée
+  présumée (`slotMinutes()` : `poster_min` pour un poster, sinon `oral_min`) - `generateSlots`
+  la posait déjà ; `storeSlot`/`updateSlot` la posent désormais aussi. La liste des créneaux
+  affiche **« début – fin »** (repli sur `oral_min` pour d'anciens créneaux sans `ends_at`).
 - **Config runtime** : mail/paiements/IA/visio/SMS/nom sont surchargés **depuis la base**
   (`AppServiceProvider::applySettingsToConfig()`), pas le `.env`.
 - **Passerelle de paiement par édition** : le gestionnaire/co-gestionnaire peut renseigner

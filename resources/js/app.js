@@ -460,24 +460,19 @@ document.addEventListener('alpine:init', () => {
     // `keys`. La ligne (un <tr> ou un <tbody>) se montre via
     // `x-show="visibleIds.includes(ID)"`. Placer le x-data sur un élément recréé au
     // swap AJAX (la carte), pas sur le data-ajax-root, pour que init() se rejoue.
-    // Filtres de tableau côté client (+ pagination optionnelle). `perPage > 0`
-    // active la pagination : `pageIds` ne renvoie que les lignes de la page
-    // courante (les autres restent dans le DOM, juste masquées → utile quand les
-    // lignes portent des champs de formulaire). `perPage = 0` : pas de pagination
-    // (rétrocompatible, `pageIds === visibleIds`).
-    window.Alpine.data('tableFilters', (keys = [], perPage = 0) => ({
+    // Filtres de tableau côté client (instantanés) : les lignes portent
+    // `data-filter-row` + `data-<clé>` + `data-text`, et se gouvernent par
+    // `x-show="visibleIds.includes(ID)"`. Pour une liste qui doit aussi être
+    // paginée/triée, on passe côté serveur (paginate + <x-ukc.th>), pas ici.
+    window.Alpine.data('tableFilters', (keys = []) => ({
         f: Object.fromEntries([...keys, 'q'].map((k) => [k, ''])),
         rows: [],
-        page: 1,
-        perPage,
         init() {
             this.rows = Array.from(this.$el.querySelectorAll('[data-filter-row]')).map((el) => {
                 const r = { id: Number(el.dataset.id) || 0, text: el.dataset.text || '' };
                 keys.forEach((k) => { r[k] = el.dataset[k] || ''; });
                 return r;
             });
-            // Un changement de filtre ramène à la première page.
-            this.$watch('f', () => { this.page = 1; });
         },
         get active() {
             return Object.values(this.f).some((v) => v !== '');
@@ -491,21 +486,8 @@ document.addEventListener('alpine:init', () => {
             return this.rows.filter((r) => keys.every((k) => !f[k] || String(r[k]).split('\n').includes(f[k]))
                 && (!q || r.text.includes(q))).map((r) => r.id);
         },
-        get pageCount() {
-            if (this.perPage <= 0) return 1;
-            return Math.max(1, Math.ceil(this.visibleIds.length / this.perPage));
-        },
-        get pageIds() {
-            if (this.perPage <= 0) return this.visibleIds;
-            const p = Math.min(Math.max(1, this.page), this.pageCount);
-            const start = (p - 1) * this.perPage;
-            return this.visibleIds.slice(start, start + this.perPage);
-        },
-        prev() { if (this.page > 1) this.page--; },
-        next() { if (this.page < this.pageCount) this.page++; },
         reset() {
             Object.keys(this.f).forEach((k) => { this.f[k] = ''; });
-            this.page = 1;
         },
     }));
 

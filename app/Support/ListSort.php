@@ -12,16 +12,19 @@ class ListSort
 {
     /**
      * @param  array<int, string>  $allowed  Colonnes triables autorisées.
+     * @param  string  $sortParam  Nom du paramètre de tri (par défaut `sort`) ;
+     *                             personnalisable quand plusieurs tableaux triables
+     *                             cohabitent sur une même page (ex. `s_sort`).
      * @return array{sort: string, dir: string}
      */
-    public static function resolve(Request $request, array $allowed, string $default, string $defaultDir = 'asc'): array
+    public static function resolve(Request $request, array $allowed, string $default, string $defaultDir = 'asc', string $sortParam = 'sort', string $dirParam = 'dir'): array
     {
-        $sort = (string) $request->query('sort', $default);
+        $sort = (string) $request->query($sortParam, $default);
         if (! in_array($sort, $allowed, true)) {
             $sort = $default;
         }
 
-        $dir = strtolower((string) $request->query('dir', $defaultDir));
+        $dir = strtolower((string) $request->query($dirParam, $defaultDir));
         $dir = $dir === 'desc' ? 'desc' : 'asc';
 
         return ['sort' => $sort, 'dir' => $dir];

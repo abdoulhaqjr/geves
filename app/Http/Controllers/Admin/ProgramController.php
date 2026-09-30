@@ -12,11 +12,15 @@ use App\Models\SessionReport;
 use App\Models\Slot;
 use App\Models\Submission;
 use App\Models\User;
+use App\Support\ListSort;
 use App\Support\Notifier;
 use App\Support\ProgramConflicts;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 /**
@@ -320,6 +324,15 @@ class ProgramController extends Controller
         $tabs = ['planning', 'ateliers', 'sessions', 'creneaux', 'espaces', 'auto', 'options'];
         $tab = in_array($request->query('tab'), $tabs, true) ? (string) $request->query('tab') : 'planning';
 
+        // ── Onglets Sessions & Créneaux = tableaux paginés + triés CÔTÉ SERVEUR
+        //    (comme admin/soumissions). Les collections complètes ci-dessus
+        //    restent pour le board Planning ; ici on filtre/trie/pagine en mémoire.
+        //    Paramètres préfixés (s_*/c_*) pour que les deux tableaux soient
+        //    indépendants sur la même page.
+        $oralMin = $edition ? $this->oralMinutes($edition) : 20;
+        $sessionsView = $this->sessionsTable($request, $sessions);
+        $slotsView = $this->slotsTable($request, $slots, $oralMin);
+
         return view('admin.program.index', [
             'tab' => $tab,
             'plenaries' => $sessions->where('type', 'plenary')->values(),
@@ -329,6 +342,17 @@ class ProgramController extends Controller
             'ateliers' => $ateliers,
             'sessions' => $sessions,
             'creneaux' => $slots,
+            'oralMin' => $oralMin,
+            'sessionsPage' => $sessionsView['page'],
+            'sessSort' => $sessionsView['sort'],
+            'sessDir' => $sessionsView['dir'],
+            'sessFilters' => $sessionsView['filters'],
+            'sessActive' => $sessionsView['active'],
+            'slotsPage' => $slotsView['page'],
+            'slotSort' => $slotsView['sort'],
+            'slotDir' => $slotsView['dir'],
+            'slotFilters' => $slotsView['filters'],
+            'slotActive' => $slotsView['active'],
             'accepted' => $accepted,
             'unplaced' => $unplaced,
             'days' => $days,
@@ -346,6 +370,116 @@ class ProgramController extends Controller
                 'autoAssign' => (bool) ($config['auto']['enabled'] ?? false),
             ],
         ]);
+    }
+
+    /**
+     * Onglet Sessions : filtre (s_*), trie (s_sort/s_dir) et pagine (s_page) la
+     * collection des sessions déjà chargée.
+     *
+     * @param  Collection<int, EventSession>  $sessions
+     * @return array{page: LengthAwarePaginator<int, EventSession>, sort: string, dir: string, filters: array<string, string>, active: bool}
+     */
+    private function sessionsTable(Request $request, Collection $sessions): array
+    {
+        $f = [
+            'day' => (string) $request->query('s_day', ''),
+            'type' => (string) $request->query('s_type', ''),
+            'atelier' => (string) $request->query('s_atelier', ''),
+            'room' => (string) $request->query('s_room', ''),
+            'mod' => (string) $request->query('s_mod', ''),
+            'q' => trim((string) $request->query('s_q', '')),
+        ];
+        $q = mb_strtolower($f['q']);
+
+        $filtered = $sessions->filter(function (EventSession $s) use ($f, $q) {
+            $day = optional($s->session_day ?? $s->starts_at)?->format('Y-m-d');
+            $type = $s->atelier_id ? 'atelier' : 'plenary';
+            $mod = $s->moderator_name ? 'assigned' : 'pending';
+            $text = mb_strtolower(collect([$s->label, $s->atelier?->title, $s->moderator_name, $s->rapporteur_name, $s->room])->filter()->implode(' '));
+
+            return ($f['day'] === '' || $day === $f['day'])
+                && ($f['type'] === '' || $type === $f['type'])
+                && ($f['atelier'] === '' || $s->atelier?->title === $f['atelier'])
+                && ($f['room'] === '' || $s->room === $f['room'])
+                && ($f['mod'] === '' || $mod === $f['mod'])
+                && ($q === '' || str_contains($text, $q));
+        })->values();
+
+        $sort = ListSort::resolve($request, ['day', 'atelier', 'label', 'time', 'moderator', 'rapporteur'], 'time', 'asc', 's_sort', 's_dir');
+        $keys = [
+            'day' => fn (EventSession $s) => optional($s->session_day ?? $s->starts_at)?->format('Y-m-d H:i') ?? '',
+            // optional()/data_get : ces valeurs sont bien nullables au runtime
+            // (séance sans horaire, plénière sans atelier) ; on évite le nullsafe
+            // direct que Larastan croit à tort inutile.
+            'time' => fn (EventSession $s) => optional($s->starts_at)->timestamp ?? 0,
+            'atelier' => fn (EventSession $s) => mb_strtolower((string) data_get($s, 'atelier.title')),
+            'label' => fn (EventSession $s) => mb_strtolower($s->label ?? ''),
+            'moderator' => fn (EventSession $s) => mb_strtolower($s->moderator_name ?? ''),
+            'rapporteur' => fn (EventSession $s) => mb_strtolower($s->rapporteur_name ?? ''),
+        ];
+        $sorted = $filtered->sortBy($keys[$sort['sort']], SORT_REGULAR, $sort['dir'] === 'desc')->values();
+
+        return [
+            'page' => $this->paginateCollection($sorted, 20, 's_page'),
+            'sort' => $sort['sort'],
+            'dir' => $sort['dir'],
+            'filters' => $f,
+            'active' => collect($f)->contains(fn ($v) => $v !== ''),
+        ];
+    }
+
+    /**
+     * Onglet Créneaux : filtre (c_*), trie (c_sort/c_dir) et pagine (c_page) la
+     * collection des créneaux déjà chargée.
+     *
+     * @param  Collection<int, Slot>  $slots
+     * @return array{page: LengthAwarePaginator<int, Slot>, sort: string, dir: string, filters: array<string, string>, active: bool}
+     */
+    private function slotsTable(Request $request, Collection $slots, int $oralMin): array
+    {
+        $f = [
+            'day' => (string) $request->query('c_day', ''),
+            'atelier' => (string) $request->query('c_atelier', ''),
+            'room' => (string) $request->query('c_room', ''),
+            'status' => (string) $request->query('c_status', ''),
+            'type' => (string) $request->query('c_type', ''),
+            'q' => trim((string) $request->query('c_q', '')),
+        ];
+        $q = mb_strtolower($f['q']);
+
+        $filtered = $slots->filter(function (Slot $s) use ($f, $q) {
+            $day = $s->starts_at?->format('Y-m-d');
+            $type = $s->submission?->type === 'poster' ? 'poster' : ($s->submission ? 'oral' : '');
+            $status = $s->submission ? 'assigned' : 'free';
+            $text = mb_strtolower(collect([$s->session_label, $s->session?->atelier?->title, $s->submission?->title, $s->submission?->ref_code, $s->room])->filter()->implode(' '));
+
+            return ($f['day'] === '' || $day === $f['day'])
+                && ($f['atelier'] === '' || $s->session?->atelier?->title === $f['atelier'])
+                && ($f['room'] === '' || $s->room === $f['room'])
+                && ($f['status'] === '' || $status === $f['status'])
+                && ($f['type'] === '' || $type === $f['type'])
+                && ($q === '' || str_contains($text, $q));
+        })->values();
+
+        $sort = ListSort::resolve($request, ['day', 'time', 'room', 'atelier', 'title', 'type', 'code'], 'time', 'asc', 'c_sort', 'c_dir');
+        $keys = [
+            'day' => fn (Slot $s) => $s->starts_at?->format('Y-m-d H:i') ?? '',
+            'time' => fn (Slot $s) => optional($s->starts_at)->timestamp ?? 0,
+            'room' => fn (Slot $s) => mb_strtolower($s->room ?? ''),
+            'atelier' => fn (Slot $s) => mb_strtolower((string) data_get($s, 'session.atelier.title')),
+            'title' => fn (Slot $s) => mb_strtolower((string) data_get($s, 'submission.title')),
+            'type' => fn (Slot $s) => $s->submission?->type === 'poster' ? 'poster' : ($s->submission ? 'oral' : 'zzz'),
+            'code' => fn (Slot $s) => (string) data_get($s, 'submission.ref_code'),
+        ];
+        $sorted = $filtered->sortBy($keys[$sort['sort']], SORT_REGULAR, $sort['dir'] === 'desc')->values();
+
+        return [
+            'page' => $this->paginateCollection($sorted, 20, 'c_page'),
+            'sort' => $sort['sort'],
+            'dir' => $sort['dir'],
+            'filters' => $f,
+            'active' => collect($f)->contains(fn ($v) => $v !== ''),
+        ];
     }
 
     /** Valeurs par défaut de la config programme, fusionnées avec settings['program']. */
@@ -641,7 +775,10 @@ class ProgramController extends Controller
             'session_id' => $session?->id ?? 0,
             'session_label' => ($data['slTitle'] ?? null) ?: $session?->label,
             'room' => ($data['slRoom'] ?? null) ?: $session?->room,
-            'starts_at' => (! empty($data['slDay']) && ! empty($data['slStart'])) ? $data['slDay'].' '.$data['slStart'].':00' : null,
+            'starts_at' => $start?->toDateTimeString(),
+            // L'heure de fin découle de la durée présumée (orale/poster) : on la
+            // fige à la création pour que la liste des créneaux l'affiche.
+            'ends_at' => ($edition && $start) ? $start->copy()->addMinutes($this->slotMinutes($edition, $submission))->toDateTimeString() : null,
             'submission_id' => $submission?->id ?? 0,
             'participant_id' => $submission?->participant_id ?? 0,
         ]);
@@ -804,7 +941,9 @@ class ProgramController extends Controller
             'session_id' => $session?->id ?? 0,
             'session_label' => ($data['slTitle'] ?? null) ?: $session?->label,
             'room' => ($data['slRoom'] ?? null) ?: $session?->room,
-            'starts_at' => (! empty($data['slDay']) && ! empty($data['slStart'])) ? $data['slDay'].' '.$data['slStart'].':00' : $slot->starts_at,
+            'starts_at' => $newStart?->toDateTimeString(),
+            // Recalcul de l'heure de fin sur la nouvelle durée présumée.
+            'ends_at' => ($slot->edition && $newStart) ? $newStart->copy()->addMinutes($this->slotMinutes($slot->edition, $submission))->toDateTimeString() : $slot->ends_at,
             'submission_id' => $submission?->id ?? 0,
             'participant_id' => $submission?->participant_id ?? 0,
         ]);
@@ -921,5 +1060,46 @@ class ProgramController extends Controller
     private function oralMinutes(Edition $edition): int
     {
         return max(5, (int) ($this->programConfig($edition)['params']['oral_min'] ?? 20));
+    }
+
+    /**
+     * Durée présumée d'un créneau selon la nature de la communication placée :
+     * un poster occupe `poster_min`, une orale (ou un créneau libre) `oral_min`.
+     */
+    private function slotMinutes(Edition $edition, ?Submission $submission): int
+    {
+        $params = $this->programConfig($edition)['params'];
+        if ($submission && $submission->type === 'poster') {
+            return max(5, (int) ($params['poster_min'] ?? 90));
+        }
+
+        return max(5, (int) ($params['oral_min'] ?? 20));
+    }
+
+    /**
+     * Pagine une collection déjà filtrée/triée en mémoire (les sessions et
+     * créneaux sont chargés en entier pour le board Planning ; on n'ouvre pas de
+     * requête dédiée pour les onglets liste). Le paramètre de page est nommé
+     * (`s_page`/`c_page`) pour que les deux tableaux paginent indépendamment.
+     *
+     * @param  Collection<int, mixed>  $items
+     * @return LengthAwarePaginator<int, mixed>
+     */
+    private function paginateCollection(Collection $items, int $perPage, string $pageName): LengthAwarePaginator
+    {
+        $page = max(1, (int) Paginator::resolveCurrentPage($pageName));
+        $slice = $items->slice(($page - 1) * $perPage, $perPage)->values();
+
+        return new LengthAwarePaginator(
+            $slice,
+            $items->count(),
+            $perPage,
+            $page,
+            [
+                'path' => Paginator::resolveCurrentPath(),
+                'pageName' => $pageName,
+                'query' => request()->query(),
+            ],
+        );
     }
 }

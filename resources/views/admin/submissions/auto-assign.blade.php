@@ -46,7 +46,7 @@
                 {{-- Plan proposé --}}
                 <div class="ukc-card" style="padding:0;">
                     <div style="padding:14px 18px;border-bottom:1px solid var(--ukc-border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-                        <div><strong>Plan proposé</strong> <span style="color:var(--ukc-muted);font-size:13px;">- décochez ce que vous ne voulez pas ; conflits d’intérêts élevés déjà exclus.</span></div>
+                        <div><strong>Plan proposé</strong> <span style="color:var(--ukc-muted);font-size:13px;">- décochez ce que vous ne voulez pas ; conflits d’intérêts élevés déjà exclus. « Appliquer » traite la page affichée.</span></div>
                     </div>
 
                     @if (empty($preview['proposals']))
@@ -54,8 +54,10 @@
                             Rien à proposer : toutes les soumissions éligibles sont déjà couvertes, ou aucun relecteur disponible sans conflit d’intérêt élevé.
                         </div>
                     @else
+                        {{-- `n` = paires cochées sur la PAGE courante (la sélection ne
+                             traverse pas les pages : chaque page s'applique séparément). --}}
                         <form method="POST" action="{{ route('admin.submissions.auto-assign.apply') }}"
-                              x-data="{ n: {{ count($preview['proposals']) }}, page: 1, perPage: 20, total: {{ count($preview['proposals']) }}, get pages() { return Math.max(1, Math.ceil(this.total / this.perPage)); }, prev() { if (this.page > 1) this.page--; }, next() { if (this.page < this.pages) this.page++; } }">
+                              x-data="{ n: {{ $proposalsPage->count() }} }">
                             @csrf
                             <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                             <div class="ukc-table-wrap">
@@ -63,13 +65,18 @@
                                     <thead>
                                         <tr>
                                             <th style="width:34px;"><input type="checkbox" checked
-                                                @change="document.querySelectorAll('.pair-cb').forEach(c=>c.checked=$event.target.checked); n=$event.target.checked?{{ count($preview['proposals']) }}:0"></th>
-                                            <th>Réf.</th><th>Communication</th><th>Axe</th><th>Relecteur proposé</th><th>Motif</th><th>COI</th>
+                                                @change="document.querySelectorAll('.pair-cb').forEach(c=>c.checked=$event.target.checked); n=$event.target.checked?{{ $proposalsPage->count() }}:0"></th>
+                                            <x-ukc.th sort="ref" :current="$sort" :dir="$dir">Réf.</x-ukc.th>
+                                            <x-ukc.th sort="title" :current="$sort" :dir="$dir">Communication</x-ukc.th>
+                                            <x-ukc.th sort="track" :current="$sort" :dir="$dir">Axe</x-ukc.th>
+                                            <x-ukc.th sort="reviewer" :current="$sort" :dir="$dir">Relecteur proposé</x-ukc.th>
+                                            <th>Motif</th>
+                                            <x-ukc.th sort="coi" :current="$sort" :dir="$dir">COI</x-ukc.th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach ($preview['proposals'] as $p)
-                                            <tr x-show="{{ $loop->index }} >= (page - 1) * perPage && {{ $loop->index }} < page * perPage">
+                                        @foreach ($proposalsPage as $p)
+                                            <tr>
                                                 <td><input type="checkbox" class="pair-cb" name="pairs[]" value="{{ $p['submission_id'] }}:{{ $p['reviewer_id'] }}" checked
                                                     @change="n += $event.target.checked ? 1 : -1"></td>
                                                 <td><code>{{ $p['submission_ref'] }}</code></td>
@@ -95,7 +102,7 @@
                                     </tbody>
                                 </table>
                             </div>
-                            <div style="padding:0 18px;"><x-ukc.pager pages="pages" /></div>
+                            <div style="padding:12px 18px 0;">{{ $proposalsPage->links() }}</div>
                             <div style="padding:14px 18px;border-top:1px solid var(--ukc-border);display:flex;justify-content:flex-end;">
                                 <button type="submit" class="ukc-btn ukc-btn--primary" :disabled="n===0">
                                     <x-ukc.icon name="sparkles" :size="16" /> Appliquer <span x-text="n"></span> assignation(s)

@@ -601,63 +601,74 @@
                 $sessRooms = $sessions->map(fn ($s) => $s->room)->filter()->unique()->sort()->values();
             @endphp
             <div @if ($tab !== 'sessions') style="display:none;" @endif data-ajax-root="prog-sessions">
-                <div class="ukc-card" x-data="tableFilters(['day', 'atelier', 'room', 'type', 'moderation'], 20)">
+                <div class="ukc-card">
                     <h2>
                         <span><x-ukc.icon name="layers" :size="18" /> Sessions</span>
                         <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" @click="openSession(null)"><x-ukc.icon name="plus" :size="14" /> Nouvelle session</button>
                     </h2>
                     <div class="desc">Chaque session a un modérateur et un rapporteur (fiches dédiées via Documents).</div>
 
-                    {{-- Filtres du tableau (client-side, instantanés). --}}
-                    <div class="filter-bar filter-bar--inline" style="margin:4px 0 14px;">
-                        <select x-model="f.day" aria-label="Filtrer par jour">
+                    {{-- Filtres serveur (GET, auto-submit) - même patron que admin/soumissions.
+                         `tab` et le tri courant sont reportés pour rester sur l'onglet et
+                         garder le tri quand on change un filtre. --}}
+                    <form method="GET" action="{{ route('admin.program.index') }}" class="filter-bar filter-bar--inline" style="margin:4px 0 14px;">
+                        <input type="hidden" name="edition_id" value="{{ $edition_id }}">
+                        <input type="hidden" name="tab" value="sessions">
+                        <input type="hidden" name="s_sort" value="{{ $sessSort }}">
+                        <input type="hidden" name="s_dir" value="{{ $sessDir }}">
+                        <select name="s_day" onchange="this.form.submit()" aria-label="Filtrer par jour">
                             <option value="">Tous les jours</option>
-                            @foreach ($sessDays as $d)<option value="{{ $d }}">{{ \Illuminate\Support\Carbon::parse($d)->translatedFormat('D d M') }}</option>@endforeach
+                            @foreach ($sessDays as $d)<option value="{{ $d }}" @selected($sessFilters['day'] === $d)>{{ \Illuminate\Support\Carbon::parse($d)->translatedFormat('D d M') }}</option>@endforeach
                         </select>
-                        <select x-model="f.type" aria-label="Filtrer par type">
+                        <select name="s_type" onchange="this.form.submit()" aria-label="Filtrer par type">
                             <option value="">Tous les types</option>
-                            <option value="plenary">Plénière</option>
-                            <option value="atelier">Atelier</option>
+                            <option value="plenary" @selected($sessFilters['type'] === 'plenary')>Plénière</option>
+                            <option value="atelier" @selected($sessFilters['type'] === 'atelier')>Atelier</option>
                         </select>
-                        <select x-model="f.atelier" aria-label="Filtrer par atelier">
+                        <select name="s_atelier" onchange="this.form.submit()" aria-label="Filtrer par atelier">
                             <option value="">Tous les ateliers</option>
-                            @foreach ($sessAteliers as $a)<option value="{{ $a }}">{{ Str::limit($a, 40) }}</option>@endforeach
+                            @foreach ($sessAteliers as $a)<option value="{{ $a }}" @selected($sessFilters['atelier'] === $a)>{{ Str::limit($a, 40) }}</option>@endforeach
                         </select>
-                        <select x-model="f.room" aria-label="Filtrer par salle">
+                        <select name="s_room" onchange="this.form.submit()" aria-label="Filtrer par salle">
                             <option value="">Toutes les salles</option>
-                            @foreach ($sessRooms as $r)<option value="{{ $r }}">{{ $r }}</option>@endforeach
+                            @foreach ($sessRooms as $r)<option value="{{ $r }}" @selected($sessFilters['room'] === $r)>{{ $r }}</option>@endforeach
                         </select>
-                        <select x-model="f.moderation" aria-label="Filtrer par modération">
+                        <select name="s_mod" onchange="this.form.submit()" aria-label="Filtrer par modération">
                             <option value="">Modération : toutes</option>
-                            <option value="assigned">Modérateur désigné</option>
-                            <option value="pending">À désigner</option>
+                            <option value="assigned" @selected($sessFilters['mod'] === 'assigned')>Modérateur désigné</option>
+                            <option value="pending" @selected($sessFilters['mod'] === 'pending')>À désigner</option>
                         </select>
-                        <input type="search" x-model="f.q" placeholder="Session, modérateur, rapporteur…" style="min-width:190px;flex:1;">
-                        <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" x-show="active" x-cloak @click="reset()">Réinitialiser</button>
-                    </div>
+                        <input type="search" name="s_q" value="{{ $sessFilters['q'] }}" placeholder="Session, modérateur, rapporteur…" style="min-width:190px;flex:1;"
+                               onkeydown="if(event.key==='Enter'){this.form.submit();}">
+                        @if ($sessActive)
+                            <a href="{{ route('admin.program.index', ['edition_id' => $edition_id, 'tab' => 'sessions']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
+                        @endif
+                    </form>
                     <div style="font-size:12.5px;color:var(--ukc-muted);margin-bottom:8px;">
-                        <span x-text="visibleIds.length"></span> session(s) affichée(s)<template x-if="active"> sur {{ $sessions->count() }}</template>.
+                        {{ $sessionsPage->total() }} session(s)@if ($sessActive) filtrée(s) sur {{ $sessions->count() }}@endif.
                     </div>
 
                     <div class="ukc-table-wrap">
                         <table class="ukc-table">
                             <thead>
-                                <tr><th>Jour</th><th>Atelier</th><th>Session</th><th>Horaire</th><th>Modérateur</th><th>Rapporteur</th><th class="num">Créneaux</th><th class="num">Com.</th><th style="text-align:right;">Actions</th></tr>
+                                <tr>
+                                    <x-ukc.th sort="day" :current="$sessSort" :dir="$sessDir" param="s_sort" dirParam="s_dir" pageParam="s_page">Jour</x-ukc.th>
+                                    <x-ukc.th sort="atelier" :current="$sessSort" :dir="$sessDir" param="s_sort" dirParam="s_dir" pageParam="s_page">Atelier</x-ukc.th>
+                                    <x-ukc.th sort="label" :current="$sessSort" :dir="$sessDir" param="s_sort" dirParam="s_dir" pageParam="s_page">Session</x-ukc.th>
+                                    <x-ukc.th sort="time" :current="$sessSort" :dir="$sessDir" param="s_sort" dirParam="s_dir" pageParam="s_page">Horaire</x-ukc.th>
+                                    <x-ukc.th sort="moderator" :current="$sessSort" :dir="$sessDir" param="s_sort" dirParam="s_dir" pageParam="s_page">Modérateur</x-ukc.th>
+                                    <x-ukc.th sort="rapporteur" :current="$sessSort" :dir="$sessDir" param="s_sort" dirParam="s_dir" pageParam="s_page">Rapporteur</x-ukc.th>
+                                    <th class="num">Créneaux</th><th class="num">Com.</th><th style="text-align:right;">Actions</th>
+                                </tr>
                             </thead>
-                            @forelse ($sessions as $session)
+                            @forelse ($sessionsPage as $session)
                                 @php
                                     $sessionSlots = $creneaux->where('session_id', $session->id);
                                     $sDay = optional($session->session_day ?? $session->starts_at);
-                                    $sessType = $session->atelier_id ? 'atelier' : 'plenary';
-                                    $sessSearch = Str::lower(collect([$session->label, $session->atelier?->title, $session->moderator_name, $session->rapporteur_name, $session->room])->filter()->implode(' '));
                                 @endphp
                                 {{-- Un <tbody> par séance : il porte l'état d'ouverture de la
                                      visio, qui s'affiche sur une ligne à part. --}}
-                                <tbody x-data="{ visio: false }" x-show="pageIds.includes({{ $session->id }})" data-filter-row
-                                       data-id="{{ $session->id }}" data-day="{{ $sDay?->format('Y-m-d') }}"
-                                       data-atelier="{{ $session->atelier?->title }}" data-room="{{ $session->room }}"
-                                       data-type="{{ $sessType }}" data-moderation="{{ $session->moderator_name ? 'assigned' : 'pending' }}"
-                                       data-text="{{ $sessSearch }}">
+                                <tbody x-data="{ visio: false }">
                                     <tr>
                                         <td>{{ $sDay?->format('d/m') ?: '-' }}</td>
                                         <td>{{ $session->atelier?->title ?: '- (plénière)' }}</td>
@@ -690,18 +701,15 @@
                                 </tbody>
                             @empty
                                 <tbody>
-                                    <tr><td colspan="9" style="text-align:center;color:var(--ukc-muted);padding:20px;">Aucune session.</td></tr>
+                                    <tr><td colspan="9" style="text-align:center;color:var(--ukc-muted);padding:20px;">
+                                        @if ($sessActive)Aucune session ne correspond aux filtres. <a href="{{ route('admin.program.index', ['edition_id' => $edition_id, 'tab' => 'sessions']) }}" class="ukc-link">Réinitialiser</a>@else Aucune session.@endif
+                                    </td></tr>
                                 </tbody>
                             @endforelse
-                            @if ($sessions->isNotEmpty())
-                                <tbody x-show="visibleIds.length === 0">
-                                    <tr><td colspan="9" style="text-align:center;color:var(--ukc-muted);padding:20px;">Aucune session ne correspond aux filtres. <button type="button" class="ukc-link" @click="reset()">Réinitialiser</button></td></tr>
-                                </tbody>
-                            @endif
                         </table>
                     </div>
 
-                    <x-ukc.pager />
+                    <div style="margin-top:12px;">{{ $sessionsPage->links() }}</div>
                 </div>
             </div>
 
@@ -713,62 +721,74 @@
                 $slotRooms = $creneaux->map(fn ($s) => $s->room)->filter()->unique()->sort()->values();
             @endphp
             <div @if ($tab !== 'creneaux') style="display:none;" @endif data-ajax-root="prog-slots">
-                <div class="ukc-card" x-data="tableFilters(['day', 'atelier', 'room', 'status', 'type'], 20)">
+                <div class="ukc-card">
                     <h2>
                         <span><x-ukc.icon name="clock" :size="18" /> Créneaux</span>
                         <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" @click="openSlot(null)"><x-ukc.icon name="plus" :size="14" /> Nouveau créneau</button>
                     </h2>
 
-                    {{-- Filtres du tableau (client-side, instantanés). --}}
-                    <div class="filter-bar filter-bar--inline" style="margin:4px 0 14px;">
-                        <select x-model="f.day" aria-label="Filtrer par jour">
+                    {{-- Filtres serveur (GET, auto-submit) - même patron que admin/soumissions. --}}
+                    <form method="GET" action="{{ route('admin.program.index') }}" class="filter-bar filter-bar--inline" style="margin:4px 0 14px;">
+                        <input type="hidden" name="edition_id" value="{{ $edition_id }}">
+                        <input type="hidden" name="tab" value="creneaux">
+                        <input type="hidden" name="c_sort" value="{{ $slotSort }}">
+                        <input type="hidden" name="c_dir" value="{{ $slotDir }}">
+                        <select name="c_day" onchange="this.form.submit()" aria-label="Filtrer par jour">
                             <option value="">Tous les jours</option>
-                            @foreach ($slotDays as $d)<option value="{{ $d }}">{{ \Illuminate\Support\Carbon::parse($d)->translatedFormat('D d M') }}</option>@endforeach
+                            @foreach ($slotDays as $d)<option value="{{ $d }}" @selected($slotFilters['day'] === $d)>{{ \Illuminate\Support\Carbon::parse($d)->translatedFormat('D d M') }}</option>@endforeach
                         </select>
-                        <select x-model="f.atelier" aria-label="Filtrer par atelier">
+                        <select name="c_atelier" onchange="this.form.submit()" aria-label="Filtrer par atelier">
                             <option value="">Tous les ateliers</option>
-                            @foreach ($slotAteliers as $a)<option value="{{ $a }}">{{ Str::limit($a, 40) }}</option>@endforeach
+                            @foreach ($slotAteliers as $a)<option value="{{ $a }}" @selected($slotFilters['atelier'] === $a)>{{ Str::limit($a, 40) }}</option>@endforeach
                         </select>
-                        <select x-model="f.room" aria-label="Filtrer par salle">
+                        <select name="c_room" onchange="this.form.submit()" aria-label="Filtrer par salle">
                             <option value="">Toutes les salles</option>
-                            @foreach ($slotRooms as $r)<option value="{{ $r }}">{{ $r }}</option>@endforeach
+                            @foreach ($slotRooms as $r)<option value="{{ $r }}" @selected($slotFilters['room'] === $r)>{{ $r }}</option>@endforeach
                         </select>
-                        <select x-model="f.status" aria-label="Filtrer par statut">
+                        <select name="c_status" onchange="this.form.submit()" aria-label="Filtrer par statut">
                             <option value="">Assignés & libres</option>
-                            <option value="assigned">Assignés</option>
-                            <option value="free">Libres</option>
+                            <option value="assigned" @selected($slotFilters['status'] === 'assigned')>Assignés</option>
+                            <option value="free" @selected($slotFilters['status'] === 'free')>Libres</option>
                         </select>
-                        <select x-model="f.type" aria-label="Filtrer par type">
+                        <select name="c_type" onchange="this.form.submit()" aria-label="Filtrer par type">
                             <option value="">Tous les types</option>
-                            <option value="oral">Orale</option>
-                            <option value="poster">Poster</option>
+                            <option value="oral" @selected($slotFilters['type'] === 'oral')>Orale</option>
+                            <option value="poster" @selected($slotFilters['type'] === 'poster')>Poster</option>
                         </select>
-                        <input type="search" x-model="f.q" placeholder="Intitulé, titre, code…" style="min-width:190px;flex:1;">
-                        <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" x-show="active" x-cloak @click="reset()">Réinitialiser</button>
-                    </div>
+                        <input type="search" name="c_q" value="{{ $slotFilters['q'] }}" placeholder="Intitulé, titre, code…" style="min-width:190px;flex:1;"
+                               onkeydown="if(event.key==='Enter'){this.form.submit();}">
+                        @if ($slotActive)
+                            <a href="{{ route('admin.program.index', ['edition_id' => $edition_id, 'tab' => 'creneaux']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
+                        @endif
+                    </form>
                     <div style="font-size:12.5px;color:var(--ukc-muted);margin-bottom:8px;">
-                        <span x-text="visibleIds.length"></span> créneau(x) affiché(s)<template x-if="active"> sur {{ $creneaux->count() }}</template>.
+                        {{ $slotsPage->total() }} créneau(x)@if ($slotActive) filtré(s) sur {{ $creneaux->count() }}@endif.
                     </div>
 
                     <div class="ukc-table-wrap">
                         <table class="ukc-table">
                             <thead>
-                                <tr><th>Jour</th><th>Horaire</th><th>Salle</th><th>Atelier / Session</th><th>Intitulé</th><th>Type</th><th>Code</th><th style="text-align:right;">Actions</th></tr>
+                                <tr>
+                                    <x-ukc.th sort="day" :current="$slotSort" :dir="$slotDir" param="c_sort" dirParam="c_dir" pageParam="c_page">Jour</x-ukc.th>
+                                    <x-ukc.th sort="time" :current="$slotSort" :dir="$slotDir" param="c_sort" dirParam="c_dir" pageParam="c_page">Horaire</x-ukc.th>
+                                    <x-ukc.th sort="room" :current="$slotSort" :dir="$slotDir" param="c_sort" dirParam="c_dir" pageParam="c_page">Salle</x-ukc.th>
+                                    <x-ukc.th sort="atelier" :current="$slotSort" :dir="$slotDir" param="c_sort" dirParam="c_dir" pageParam="c_page">Atelier / Session</x-ukc.th>
+                                    <x-ukc.th sort="title" :current="$slotSort" :dir="$slotDir" param="c_sort" dirParam="c_dir" pageParam="c_page">Intitulé</x-ukc.th>
+                                    <x-ukc.th sort="type" :current="$slotSort" :dir="$slotDir" param="c_sort" dirParam="c_dir" pageParam="c_page">Type</x-ukc.th>
+                                    <x-ukc.th sort="code" :current="$slotSort" :dir="$slotDir" param="c_sort" dirParam="c_dir" pageParam="c_page">Code</x-ukc.th>
+                                    <th style="text-align:right;">Actions</th>
+                                </tr>
                             </thead>
                             <tbody>
-                                @forelse ($creneaux as $slot)
+                                @forelse ($slotsPage as $slot)
                                     @php
-                                        $sType = $slot->submission?->type === 'poster' ? 'poster' : ($slot->submission ? 'oral' : '');
-                                        $sStatus = $slot->submission ? 'assigned' : 'free';
-                                        $sSearch = Str::lower(collect([$slot->session_label, $slot->session?->atelier?->title, $slot->submission?->title, $slot->submission?->ref_code, $slot->room])->filter()->implode(' '));
+                                        // Heure de fin = heure de début + durée présumée (figée à la
+                                        // création/modif) ; repli sur la durée orale pour d'anciens créneaux.
+                                        $slotEnd = $slot->ends_at ?: ($slot->starts_at?->copy()->addMinutes($oralMin));
                                     @endphp
-                                    <tr x-show="pageIds.includes({{ $slot->id }})" data-filter-row
-                                        data-id="{{ $slot->id }}"
-                                        data-day="{{ $slot->starts_at?->format('Y-m-d') }}" data-atelier="{{ $slot->session?->atelier?->title }}"
-                                        data-room="{{ $slot->room }}" data-status="{{ $sStatus }}" data-type="{{ $sType }}"
-                                        data-text="{{ $sSearch }}">
+                                    <tr>
                                         <td>{{ $slot->starts_at?->format('d/m') ?: '-' }}</td>
-                                        <td>{{ $slot->starts_at?->format('H:i') ?: '-' }}</td>
+                                        <td style="white-space:nowrap;">{{ $slot->starts_at?->format('H:i') ?: '-' }}@if ($slot->starts_at && $slotEnd) – {{ $slotEnd->format('H:i') }}@endif</td>
                                         <td>{{ $slot->room ?: '-' }}</td>
                                         {{-- Atelier et session sur deux niveaux : concaténés, ils
                                              répétaient le nom de l'atelier (les libellés de session
@@ -797,16 +817,15 @@
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="8" style="text-align:center;color:var(--ukc-muted);padding:20px;">Aucun créneau.</td></tr>
+                                    <tr><td colspan="8" style="text-align:center;color:var(--ukc-muted);padding:20px;">
+                                        @if ($slotActive)Aucun créneau ne correspond aux filtres. <a href="{{ route('admin.program.index', ['edition_id' => $edition_id, 'tab' => 'creneaux']) }}" class="ukc-link">Réinitialiser</a>@else Aucun créneau.@endif
+                                    </td></tr>
                                 @endforelse
-                                @if ($creneaux->isNotEmpty())
-                                    <tr x-show="visibleIds.length === 0"><td colspan="8" style="text-align:center;color:var(--ukc-muted);padding:20px;">Aucun créneau ne correspond aux filtres. <button type="button" class="ukc-link" @click="reset()">Réinitialiser</button></td></tr>
-                                @endif
                             </tbody>
                         </table>
                     </div>
 
-                    <x-ukc.pager />
+                    <div style="margin-top:12px;">{{ $slotsPage->links() }}</div>
                 </div>
             </div>
 

@@ -33,6 +33,7 @@ it('les pages du back-office répondent sans erreur (staff)', function () {
     $routes = [
         route('admin.dashboard'),
         route('admin.submissions.index'),
+        route('admin.submissions.auto-assign'),
         route('admin.submissions.export'),
         route('admin.payments.index'),
         route('admin.payments.export'),

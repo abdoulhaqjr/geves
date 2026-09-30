@@ -31,6 +31,8 @@ use Carbon\Carbon;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
@@ -524,6 +526,32 @@ class SubmissionController extends Controller
 
         $preview = $edition ? $engine->preview($edition, $target, $maxLoad) : null;
 
+        // Plan proposé = tableau trié + paginé CÔTÉ SERVEUR (comme les autres
+        // listes du back-office). ⚠️ « Appliquer » ne soumet que la page affichée :
+        // on valide le plan page par page, la sélection ne traverse pas les pages.
+        $sort = ListSort::resolve($request, ['ref', 'title', 'track', 'reviewer', 'coi'], 'ref', 'asc');
+        $proposalsPage = null;
+        if ($preview && ! empty($preview['proposals'])) {
+            $keys = [
+                'ref' => fn (array $p) => $p['submission_ref'] ?? '',
+                'title' => fn (array $p) => mb_strtolower((string) ($p['submission_title'] ?? '')),
+                'track' => fn (array $p) => mb_strtolower((string) ($p['track'] ?? '')),
+                'reviewer' => fn (array $p) => mb_strtolower((string) ($p['reviewer_name'] ?? '')),
+                'coi' => fn (array $p) => (string) ($p['coi'] ?? ''),
+            ];
+            $sorted = collect($preview['proposals'])
+                ->sortBy($keys[$sort['sort']], SORT_REGULAR, $sort['dir'] === 'desc')
+                ->values();
+            $page = max(1, (int) Paginator::resolveCurrentPage());
+            $proposalsPage = new LengthAwarePaginator(
+                $sorted->slice(($page - 1) * 20, 20)->values(),
+                $sorted->count(),
+                20,
+                $page,
+                ['path' => Paginator::resolveCurrentPath(), 'query' => $request->query()],
+            );
+        }
+
         return view('admin.submissions.auto-assign', [
             'editions' => $editions,
             'edition' => $edition,
@@ -531,6 +559,9 @@ class SubmissionController extends Controller
             'target' => $target,
             'maxLoad' => $maxLoad,
             'preview' => $preview,
+            'proposalsPage' => $proposalsPage,
+            'sort' => $sort['sort'],
+            'dir' => $sort['dir'],
         ]);
     }
 
