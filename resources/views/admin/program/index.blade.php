@@ -84,11 +84,14 @@
             </div>
             @endif
 
-            {{-- ============================ PROGRAMME (aperçu public) ============================ --}}
-            {{-- Présentation synthétique du programme = CE QUI EST PUBLIÉ sur la page
-                 publique du colloque (même partial partials.program-synthesis). --}}
+            {{-- ============================ PROGRAMME (synthèse saisie) ============================ --}}
+            {{-- Éditeur du programme synthétique : titre + jours (intitulé libre) +
+                 lignes « horaire : libellé ». C'est CE contenu qui s'affiche dans la
+                 section « Programme » de la page publique (partials.program-synthesis). --}}
             <div @if ($tab !== 'apercu') style="display:none;" @endif>
-                <div class="ukc-card">
+                <form method="POST" action="{{ route('admin.program.synthesis') }}" class="ukc-card" x-data="programSynthesis(@js($programSynthesis))">
+                    @csrf
+                    <input type="hidden" name="edition_id" value="{{ $edition_id }}">
                     <h2>
                         <span><x-ukc.icon name="calendar" :size="18" /> Programme</span>
                         @if ($edition)
@@ -97,10 +100,63 @@
                             </a>
                         @endif
                     </h2>
-                    <div class="desc">Présentation synthétique du déroulé, jour par jour. C'est exactement ce qui s'affiche dans la section « Programme » de la page publique du colloque - construit à partir des plénières, ateliers et sessions ci-dessous.</div>
+                    <div class="desc">Présentation synthétique du déroulé (comme le document du colloque). C'est exactement ce contenu qui s'affiche dans la section « Programme » de la page publique du colloque.</div>
 
+                    <div class="ukc-field" style="max-width:640px;">
+                        <label>Titre du programme</label>
+                        <input type="text" name="title" x-model="title" placeholder="Ex. Programme synthétique du colloque d'octobre 2025" maxlength="200">
+                    </div>
+
+                    {{-- Jours / sections --}}
+                    <template x-for="(day, di) in days" :key="di">
+                        <div class="prog-syn-day">
+                            <div class="prog-syn-day__head">
+                                <input type="text" :name="'days['+di+'][heading]'" x-model="day.heading" placeholder="Intitulé (ex. Lundi 06/10 : Matin, ou Début des ateliers à 13h30)" class="prog-syn-day__title">
+                                <div class="prog-syn-moves">
+                                    <button type="button" class="ukc-btn--icon" @click="moveDay(di, -1)" :disabled="di===0" title="Monter"><x-ukc.icon name="arrow-up" :size="15" /></button>
+                                    <button type="button" class="ukc-btn--icon" @click="moveDay(di, 1)" :disabled="di===days.length-1" title="Descendre"><x-ukc.icon name="arrow-down" :size="15" /></button>
+                                    <button type="button" class="ukc-btn--icon danger" @click="removeDay(di)" title="Supprimer ce jour"><x-ukc.icon name="trash" :size="15" /></button>
+                                </div>
+                            </div>
+
+                            {{-- Lignes du jour --}}
+                            <template x-for="(row, j) in day.rows" :key="j">
+                                <div class="prog-syn-row">
+                                    <input type="text" :name="'days['+di+'][rows]['+j+'][time]'" x-model="row.time" placeholder="Horaire (ex. 08h30 - 10h15)" class="prog-syn-row__time">
+                                    <input type="text" :name="'days['+di+'][rows]['+j+'][label]'" x-model="row.label" placeholder="Libellé (ex. Cérémonie d'ouverture)" class="prog-syn-row__label">
+                                    <label class="prog-syn-row__hl" title="Mettre en évidence (gras)">
+                                        <input type="hidden" :name="'days['+di+'][rows]['+j+'][highlight]'" value="0">
+                                        <input type="checkbox" :name="'days['+di+'][rows]['+j+'][highlight]'" value="1" x-model="row.highlight"> Gras
+                                    </label>
+                                    <div class="prog-syn-moves">
+                                        <button type="button" class="ukc-btn--icon" @click="moveRow(di, j, -1)" :disabled="j===0" title="Monter"><x-ukc.icon name="arrow-up" :size="14" /></button>
+                                        <button type="button" class="ukc-btn--icon" @click="moveRow(di, j, 1)" :disabled="j===day.rows.length-1" title="Descendre"><x-ukc.icon name="arrow-down" :size="14" /></button>
+                                        <button type="button" class="ukc-btn--icon danger" @click="removeRow(di, j)" title="Supprimer la ligne"><x-ukc.icon name="close" :size="14" /></button>
+                                    </div>
+                                </div>
+                            </template>
+                            <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="addRow(di)"><x-ukc.icon name="plus" :size="13" /> Ajouter une ligne</button>
+                        </div>
+                    </template>
+
+                    <div style="margin-top:8px;">
+                        <button type="button" class="ukc-btn ukc-btn--outline ukc-btn--sm" @click="addDay()"><x-ukc.icon name="plus" :size="14" /> Ajouter un jour / une section</button>
+                    </div>
+
+                    <div style="margin-top:18px;display:flex;justify-content:flex-end;border-top:1px solid var(--ukc-border);padding-top:16px;">
+                        <button type="submit" class="ukc-btn ukc-btn--primary"><x-ukc.icon name="check" :size="16" /> Enregistrer le programme</button>
+                    </div>
+                </form>
+
+                {{-- Aperçu : rendu EXACT de la page publique (contenu enregistré). --}}
+                <div class="ukc-card">
+                    <h2><span><x-ukc.icon name="eye" :size="18" /> Aperçu public</span></h2>
+                    <div class="desc">Tel que la section « Programme » apparaît sur la page publique (dernier enregistrement).</div>
                     <div class="prog-public-preview">
-                        @include('partials.program-synthesis', ['plenaries' => $plenaries, 'ateliers' => $ateliers])
+                        @if (($programSynthesis['title'] ?? '') !== '')
+                            <h3 style="text-align:center;font-size:18px;font-weight:900;color:var(--ukc-blue);margin-bottom:18px;">{{ $programSynthesis['title'] }}</h3>
+                        @endif
+                        @include('partials.program-synthesis', ['synthesis' => $programSynthesis])
                     </div>
                 </div>
             </div>

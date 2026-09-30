@@ -335,6 +335,10 @@ class ProgramController extends Controller
 
         return view('admin.program.index', [
             'tab' => $tab,
+            // Programme synthétique (onglet « Programme ») : saisi ici, publié tel quel.
+            'programSynthesis' => $edition
+                ? array_merge(['title' => '', 'days' => []], $edition->settings['program_synthesis'] ?? [])
+                : ['title' => '', 'days' => []],
             'plenaries' => $sessions->where('type', 'plenary')->values(),
             'editions' => $this->accessibleEditions($request, 'editions_read'),
             'edition' => $edition,
@@ -993,6 +997,55 @@ class ProgramController extends Controller
         ]);
 
         return back()->with('ukc_status', 'Réglages enregistrés.');
+    }
+
+    /**
+     * Enregistre le PROGRAMME SYNTHÉTIQUE (onglet « Programme ») : un titre et
+     * une liste de jours (intitulé libre + lignes « horaire : libellé »). C'est
+     * ce contenu qui s'affiche dans la section #programme de la page publique.
+     */
+    public function saveSynthesis(Request $request): RedirectResponse
+    {
+        // L'édition vient du corps (le formulaire n'est pas en query string) et
+        // reste bornée aux éditions accessibles.
+        $edition = $this->accessibleEditions($request, 'editions_read')
+            ->firstWhere('id', (int) $request->input('edition_id'));
+        if (! $edition) {
+            return back();
+        }
+
+        $data = $request->validate([
+            'title' => ['nullable', 'string', 'max:200'],
+            'days' => ['array'],
+            'days.*.heading' => ['nullable', 'string', 'max:200'],
+            'days.*.rows' => ['array'],
+            'days.*.rows.*.time' => ['nullable', 'string', 'max:60'],
+            'days.*.rows.*.label' => ['nullable', 'string', 'max:300'],
+            'days.*.rows.*.highlight' => ['nullable'],
+        ]);
+
+        // Nettoyage : on écarte les lignes vides puis les jours vides.
+        $days = collect($data['days'] ?? [])
+            ->map(function (array $day) {
+                $rows = collect($day['rows'] ?? [])
+                    ->map(fn ($r) => [
+                        'time' => trim((string) ($r['time'] ?? '')),
+                        'label' => trim((string) ($r['label'] ?? '')),
+                        'highlight' => (bool) ($r['highlight'] ?? false),
+                    ])
+                    ->filter(fn ($r) => $r['time'] !== '' || $r['label'] !== '')
+                    ->values()->all();
+
+                return ['heading' => trim((string) ($day['heading'] ?? '')), 'rows' => $rows];
+            })
+            ->filter(fn ($d) => $d['heading'] !== '' || $d['rows'] !== [])
+            ->values()->all();
+
+        $settings = $edition->settings ?? [];
+        $settings['program_synthesis'] = ['title' => trim((string) ($data['title'] ?? '')), 'days' => $days];
+        $edition->update(['settings' => $settings]);
+
+        return back()->with('ukc_status', 'Programme synthétique enregistré.');
     }
 
     /** Ajoute un espace (salle/amphi/hall) à la config programme. */

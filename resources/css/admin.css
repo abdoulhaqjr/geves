@@ -459,10 +459,19 @@
 .admin-program .plan-ev--atelier.room-conflict { border-color: #f59e0b; box-shadow: inset 0 0 0 1.5px #f59e0b; }
 .admin-program .plan-ev--atelier.room-conflict .ahead { border-bottom-color: #fcd34d; }
 .admin-program .plan-ev--plenary.room-conflict { box-shadow: 0 4px 14px -6px rgba(26,48,128,.6), inset 0 0 0 2px #f59e0b; }
-/* Onglet Programme (apercu public) : agenda charte UK rendu dans une carte admin.
-   On borne la largeur pour garder l'agenda lisible (colonne heure + libelle). */
+/* Onglet Programme : apercu du rendu public (contenu enregistre). */
 .ukc-shell .prog-public-preview { max-width: 760px; margin-top: 6px; }
-.ukc-shell .prog-public-preview .ukc-tabs-scroll { margin-bottom: 18px; justify-content: flex-start; }
+
+/* Onglet Programme : editeur (jours + lignes horaire/libelle). */
+.ukc-shell .prog-syn-day { border: 1px solid var(--ukc-border); border-radius: 12px; padding: 14px; margin: 12px 0; background: #fbfcfe; }
+.ukc-shell .prog-syn-day__head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.ukc-shell .prog-syn-day__title { flex: 1; font-weight: 700; }
+.ukc-shell .prog-syn-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; flex-wrap: wrap; }
+.ukc-shell .prog-syn-row__time { width: 170px; flex: none; }
+.ukc-shell .prog-syn-row__label { flex: 1; min-width: 200px; }
+.ukc-shell .prog-syn-row__hl { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--ukc-muted); white-space: nowrap; cursor: pointer; }
+.ukc-shell .prog-syn-moves { display: inline-flex; gap: 2px; flex: none; }
+.ukc-shell .prog-syn-moves .ukc-btn--icon[disabled] { opacity: .35; cursor: not-allowed; }
 
 /* Pause déjeuner : bandeau plein largeur, derriere les evenements (clic traversant) */
 .admin-program .plan-break { z-index: 1; pointer-events: none; display: flex; align-items: center; justify-content: center; border-top: 1px dashed var(--ukc-border); border-bottom: 1px dashed var(--ukc-border); background: repeating-linear-gradient(45deg, rgba(148,163,184,.12), rgba(148,163,184,.12) 7px, rgba(148,163,184,.04) 7px, rgba(148,163,184,.04) 14px); }

@@ -491,6 +491,36 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
+    // Éditeur du « programme synthétique » (onglet Programme du module) : titre +
+    // jours (chacun un intitulé libre + des lignes « horaire : libellé »). État
+    // client pur ; le <form> poste les tableaux imbriqués (days[i][rows][j][…]).
+    window.Alpine.data('programSynthesis', (initial = {}) => ({
+        title: initial.title || '',
+        days: (Array.isArray(initial.days) ? initial.days : []).map((d) => ({
+            heading: d.heading || '',
+            rows: (Array.isArray(d.rows) ? d.rows : []).map((r) => ({
+                time: r.time || '', label: r.label || '', highlight: !!r.highlight,
+            })),
+        })),
+        addDay() { this.days.push({ heading: '', rows: [{ time: '', label: '', highlight: false }] }); },
+        removeDay(i) { this.days.splice(i, 1); },
+        moveDay(i, dir) {
+            const j = i + dir;
+            if (j < 0 || j >= this.days.length) return;
+            const [d] = this.days.splice(i, 1);
+            this.days.splice(j, 0, d);
+        },
+        addRow(di) { this.days[di].rows.push({ time: '', label: '', highlight: false }); },
+        removeRow(di, j) { this.days[di].rows.splice(j, 1); },
+        moveRow(di, j, dir) {
+            const rows = this.days[di].rows;
+            const k = j + dir;
+            if (k < 0 || k >= rows.length) return;
+            const [r] = rows.splice(j, 1);
+            rows.splice(k, 0, r);
+        },
+    }));
+
     // Comparateur de similarité : ouvre une modale montrant la soumission courante
     // et une soumission proche côte à côte, avec surlignage des mots partagés
     // (≥ 5 lettres, accents/casse ignorés). `self` = résumé de la soumission courante.

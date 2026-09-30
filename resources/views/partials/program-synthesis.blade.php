@@ -1,67 +1,44 @@
 {{--
-    Présentation SYNTHÉTIQUE du programme (onglets par jour + séances), partagée
-    par la page publique du colloque (#programme) ET l'onglet « Programme » du
-    module admin - afin que l'admin voie EXACTEMENT ce qui est publié.
+    Affichage du PROGRAMME SYNTHÉTIQUE saisi dans l'onglet « Programme » du module
+    (edition.settings['program_synthesis']). Partagé par la page publique du
+    colloque (#programme) ET l'aperçu de l'onglet admin - afin que l'admin voie
+    EXACTEMENT ce qui est publié.
 
-    Données attendues :
-      - $plenaries : collection des séances plénières (type = plenary)
-      - $ateliers  : collection des ateliers (chacun avec ->sessions)
+    Donnée attendue : $synthesis = ['title' => string, 'days' => [
+        ['heading' => string, 'rows' => [['time' => string, 'label' => string, 'highlight' => bool], …]],
+    ]]. Le TITRE est rendu par l'appelant (en-tête de section / champ) ; ici, le corps.
 
-    ⚠️ Charte UK (classes de public.css, non scopées → rendent aussi sous
-    .ukc-shell). Le public NE montre PAS le détail des séances (pas de
-    communications ni de modérateurs/rapporteurs) : heure + type + atelier +
-    « En parallèle » + libellé + salle. Ne pas réintroduire $commsBySession ni
-    les rôles ici (cf. CLAUDE.md / ProgramPublicTest).
+    Charte UK (classes de public.css, non scopées → rendent aussi sous .ukc-shell).
 --}}
 @php
-    $atelierNames = $ateliers->pluck('title', 'id');
-    $allSessions = $plenaries->concat($ateliers->flatMap->sessions)
-        ->sortBy(fn ($s) => optional($s->starts_at)?->timestamp ?? 0)
-        ->values();
-    // Regroupe par jour ; les séances non encore datées vont dans un bucket « » affiché en dernier.
-    $byDay = $allSessions->groupBy(fn ($s) => optional($s->session_day ?? $s->starts_at)?->format('Y-m-d') ?? '');
-    $progDays = $byDay->keys()->sortBy(fn ($d) => $d === '' ? '9999' : $d)->values();
-@endphp
-@if ($progDays->isNotEmpty())
-    <div x-data="{ progDay: '{{ $progDays->first() }}' }">
-        <div class="ukc-tabs-scroll" role="tablist">
-            @php $dayNo = 0; @endphp
-            @foreach ($progDays as $d)
-                <button type="button" class="ukc-tab" :class="{ active: progDay==='{{ $d }}' }" @click="progDay='{{ $d }}'" role="tab">@if ($d === ''){{ __('À programmer') }}@else{{ __('Jour :n - :date', ['n' => ++$dayNo, 'date' => \Illuminate\Support\Carbon::parse($d)->translatedFormat('d M')]) }}@endif</button>
-            @endforeach
-        </div>
+    $synDays = collect($synthesis['days'] ?? [])->map(function ($d) {
+        $rows = collect($d['rows'] ?? [])->filter(fn ($r) => trim((string) ($r['time'] ?? '')) !== '' || trim((string) ($r['label'] ?? '')) !== '')->values();
 
-        @foreach ($progDays as $d)
-            @php
-                // Ateliers simultanés : horaires de début partagés par plusieurs
-                // séances dans la journée (affichés « en parallèle »).
-                $parallelStarts = $byDay[$d]->filter(fn ($s) => $s->starts_at)
-                    ->groupBy(fn ($s) => $s->starts_at->format('H:i'))
-                    ->filter(fn ($grp) => $grp->count() > 1)->keys();
-            @endphp
-            <div class="ukc-program-day" :class="{ active: progDay==='{{ $d }}' }">
-                @foreach ($byDay[$d] as $s)
-                    @php
-                        $isPlenary = $s->type === 'plenary';
-                        $isParallel = ! $isPlenary && $s->starts_at && $parallelStarts->contains($s->starts_at->format('H:i'));
-                        $atelierTitle = $s->atelier_id ? ($atelierNames[$s->atelier_id] ?? null) : null;
-                    @endphp
-                    <div class="ukc-session">
-                        <div class="ukc-session-time">{{ $s->starts_at?->format('H:i') ?: '-' }}@if ($s->ends_at)<br><span style="font-weight:600;color:var(--ukc-light);font-size:12px;">{{ $s->ends_at->format('H:i') }}</span>@endif</div>
-                        <div class="ukc-session-body">
-                            <span class="type {{ $isPlenary ? 'type--plenary' : 'type--workshop' }}">{{ $isPlenary ? __('Plénière') : __('Atelier') }}</span>
-                            @if ($atelierTitle)<span class="type type--poster">{{ $atelierTitle }}</span>@endif
-                            @if ($isParallel)<span class="type type--parallel" title="{{ __('Se déroule en même temps que d’autres ateliers') }}">{{ __('En parallèle') }}</span>@endif
-                            <h4>{{ $s->label }}</h4>
-                            @if ($s->room)
-                                <div class="meta">{{ $s->room }}</div>
-                            @endif
-                        </div>
-                    </div>
-                @endforeach
+        return ['heading' => trim((string) ($d['heading'] ?? '')), 'rows' => $rows];
+    })->filter(fn ($d) => $d['heading'] !== '' || $d['rows']->isNotEmpty())->values();
+@endphp
+@if ($synDays->isNotEmpty())
+    <div class="ukc-prog-syn">
+        @foreach ($synDays as $day)
+            <div class="ukc-prog-syn__day">
+                @if ($day['heading'] !== '')
+                    <h3 class="ukc-prog-syn__title">{{ $day['heading'] }}</h3>
+                @endif
+                @if ($day['rows']->isNotEmpty())
+                    <ul class="ukc-prog-syn__rows">
+                        @foreach ($day['rows'] as $row)
+                            <li @class(['ukc-prog-syn__row', 'is-strong' => ! empty($row['highlight'])])>
+                                @if (trim((string) ($row['time'] ?? '')) !== '')
+                                    <span class="ukc-prog-syn__time">{{ $row['time'] }}</span>
+                                @endif
+                                <span class="ukc-prog-syn__label">{{ $row['label'] }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
             </div>
         @endforeach
     </div>
 @else
-    <p style="text-align:center;color:var(--ukc-muted);padding:24px 0;">{{ __('Aucune séance planifiée pour le moment.') }}</p>
+    <p style="text-align:center;color:var(--ukc-muted);padding:24px 0;">{{ __('Aucun programme renseigné pour le moment.') }}</p>
 @endif

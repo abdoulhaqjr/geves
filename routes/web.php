@@ -437,6 +437,7 @@ Route::prefix('admin')->group(function () {
             Route::post('/programme/creneaux/generer', [ProgramController::class, 'generateSlots'])->name('admin.program.slots.generate');
             Route::post('/programme/affectation-auto', [ProgramController::class, 'autoAssignSlots'])->name('admin.program.slots.auto');
             Route::post('/programme/config', [ProgramController::class, 'saveProgramConfig'])->name('admin.program.config');
+            Route::post('/programme/synthese', [ProgramController::class, 'saveSynthesis'])->name('admin.program.synthesis');
             Route::post('/programme/espaces', [ProgramController::class, 'storeSpace'])->name('admin.program.spaces.store');
             Route::delete('/programme/espaces/{index}', [ProgramController::class, 'deleteSpace'])->name('admin.program.spaces.destroy');
         });

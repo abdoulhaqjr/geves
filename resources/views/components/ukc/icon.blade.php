@@ -39,6 +39,8 @@
         'close'        => '<path d="M18 6 6 18M6 6l12 12"/>',
         'pen'          => '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
         'plus'         => '<path d="M12 5v14M5 12h14"/>',
+        'arrow-up'     => '<path d="M12 19V5M5 12l7-7 7 7"/>',
+        'arrow-down'   => '<path d="M12 5v14M19 12l-7 7-7-7"/>',
         'upload'       => '<path d="M12 13v8"/><path d="m8 17 4-4 4 4"/><path d="M20 16.6A5 5 0 0 0 18 7h-1.3A8 8 0 1 0 4 15.3"/>',
         'lock'         => '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
         'shield'       => '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/>',

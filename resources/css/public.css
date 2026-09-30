@@ -828,6 +828,17 @@ input[data-uppercase] { text-transform: uppercase; }
 .ukc-session-comms li::before { content: ""; position: absolute; left: 2px; top: 8px; width: 5px; height: 5px; border-radius: 50%; background: var(--ukc-blue); }
 .type--break { background: #f1f5f9; color: #64748b; }
 
+/* Programme synthétique (saisi dans l'onglet Programme, affiché ici et en admin). */
+.ukc-prog-syn__day { margin-bottom: 26px; }
+.ukc-prog-syn__day:last-child { margin-bottom: 0; }
+.ukc-prog-syn__title { font-size: 16px; font-weight: 800; color: var(--ukc-blue); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid var(--ukc-border); }
+.ukc-prog-syn__rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.ukc-prog-syn__row { display: grid; grid-template-columns: 130px 1fr; gap: 14px; padding: 7px 0; font-size: 14px; color: var(--ukc-text); border-bottom: 1px solid rgba(0,0,0,.04); }
+.ukc-prog-syn__row:last-child { border-bottom: none; }
+.ukc-prog-syn__time { font-weight: 700; color: var(--ukc-blue); font-variant-numeric: tabular-nums; }
+.ukc-prog-syn__row.is-strong .ukc-prog-syn__label { font-weight: 800; color: var(--ukc-blue-dark, var(--ukc-blue)); }
+@media (max-width: 560px) { .ukc-prog-syn__row { grid-template-columns: 1fr; gap: 2px; } }
+
 /* Partenaires & Sponsors : marquee de logos (exact mockup) */
 .ukc-partners { padding: clamp(40px, 6vw, 64px) 0; border-top: 1px solid var(--ukc-border); }
 .ukc-marquee { overflow: hidden; position: relative; margin-top: 28px; padding: 8px 0 12px; -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }

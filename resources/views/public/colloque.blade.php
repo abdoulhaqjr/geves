@@ -7,6 +7,11 @@
     @php
         $e = $edition;
         $dateLabel = $e->dateRangeLabel();
+        // Le programme synthétique (onglet Programme du module) a-t-il du contenu ?
+        $synHasContent = collect($programSynthesis['days'] ?? [])->contains(
+            fn ($d) => trim((string) ($d['heading'] ?? '')) !== ''
+                || collect($d['rows'] ?? [])->contains(fn ($r) => trim((string) ($r['time'] ?? '')) !== '' || trim((string) ($r['label'] ?? '')) !== '')
+        );
     @endphp
 
     {{-- Bannière promo --}}
@@ -119,7 +124,7 @@
                     @if ($e->theme || $intro)
                         <li><a href="#presentation" data-spy>{{ __('Présentation') }}</a></li>
                     @endif
-                    @if ($plenaries->count() || $ateliers->count())
+                    @if ($synHasContent)
                         <li><a href="#programme" data-spy>{{ __('Programme') }}</a></li>
                     @endif
                     @if (count($speakers))
@@ -286,18 +291,19 @@
                 </section>
             @endif
 
-            {{-- Programme (onglets jours + séances) : rendu partagé avec l'onglet
-                 « Programme » du back-office (partials.program-synthesis) pour que
-                 l'admin voie EXACTEMENT ce qui est publié ici. --}}
-            @if ($plenaries->count() || $ateliers->flatMap->sessions->isNotEmpty())
+            {{-- Programme synthétique : saisi dans l'onglet « Programme » du module
+                 (edition.settings['program_synthesis']) et rendu par le partial
+                 partagé partials.program-synthesis - l'admin voit donc EXACTEMENT
+                 ce qui est publié ici. --}}
+            @if ($synHasContent)
                 <section id="programme" style="scroll-margin-top:72px;">
                     <div class="ukc-block-head">
-                        <h2>{{ __('Programme') }}</h2>
+                        <h2>{{ ($programSynthesis['title'] ?? '') !== '' ? $programSynthesis['title'] : __('Programme') }}</h2>
                         <div class="ukc-accent"><i></i><i></i><i></i></div>
                         <p>{{ __('Aperçu du déroulement du colloque.') }}</p>
                     </div>
 
-                    @include('partials.program-synthesis', ['plenaries' => $plenaries, 'ateliers' => $ateliers])
+                    @include('partials.program-synthesis', ['synthesis' => $programSynthesis])
                 </section>
             @endif
 

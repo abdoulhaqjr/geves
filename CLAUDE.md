@@ -453,14 +453,19 @@ paiement (`pay`), inscription à une formation.
   pilotés par l'URL (`?tab=`) et définis **une seule fois** dans
   `resources/views/admin/program/_nav.blade.php`. Route canonique
   **`admin.program.index`** (`/admin/programme`). Onglet par défaut = **`apercu`**.
-  - **Onglet « Programme » (`?tab=apercu`)** = **présentation synthétique** du
-    déroulé (jour par jour), et c'est **exactement ce que voit le public** :
-    admin et page publique incluent le **même partial**
-    `resources/views/partials/program-synthesis.blade.php` (onglets jours + séances,
-    charte UK ; `public.css` est chargé aussi en admin donc le rendu est identique).
-    ⚠️ Ne pas dupliquer la logique de regroupement : le partial reçoit `$plenaries`
-    + `$ateliers` et calcule lui-même `byDay`/`progDays`/parallèles. Toute évolution
-    de l'affichage public du programme se fait **dans ce partial** (pas en double).
+  - **Onglet « Programme » (`?tab=apercu`, par défaut) = ÉDITEUR du programme
+    synthétique** (pas l'agenda auto des sessions) : un **titre** + des **jours**
+    (intitulé libre) contenant des **lignes** « horaire : libellé » (+ gras). Repeater
+    Alpine `programSynthesis` (`app.js`), `<form>` postant les tableaux imbriqués
+    `days[i][rows][j][…]` sur **`admin.program.synthesis`** (`ProgramController::saveSynthesis`).
+    Stocké dans **`edition.settings['program_synthesis']`** (`['title', 'days' => [['heading','rows' => [['time','label','highlight']]]]]`).
+    - ⚠️ **C'est CE contenu saisi qui s'affiche** dans la section `#programme` de la
+      page publique du colloque (rien n'est déduit des sessions) : admin (aperçu) et
+      public incluent le **même partial** `resources/views/partials/program-synthesis.blade.php`,
+      qui reçoit `$synthesis` (charte UK ; `public.css` est chargé aussi en admin donc
+      le rendu est identique). Le contrôleur public passe
+      `settings['program_synthesis']` en `$programSynthesis` ; la section publique est
+      masquée si aucun contenu n'est saisi. Le seed en pose un exemple.
   - ⚠️ Le programme vivait sur **deux pages** (`/programme` et
     `/programme/creneaux`) qui géraient les **mêmes ateliers et les mêmes
     sessions** avec deux interfaces, et la première n'était atteignable **ni par
@@ -482,19 +487,15 @@ paiement (`pay`), inscription à une formation.
   - Chaque page de sélecteur d'édition utilise **`currentEditionId()`** du trait
     `ScopesEditionAccess` (il était privé à un seul contrôleur).
 - **Fiche d'édition : plus d'onglet « Programme »** (2026-09-28). **Dates clés**
-  est passé dans l'onglet **Général**. ⚠️ La carte « Programme » (déroulé
-  éditorial) a été **supprimée** avec son réglage `settings['programme']` :
-  personne ne le lisait. Le programme public (`#programme` de la page colloque)
-  est construit à partir des **sessions**, des **ateliers** et des **créneaux**
-  du module Programme via le partial partagé **`partials.program-synthesis`**
-  (`colloque.blade.php` : `$plenaries` + `$ateliers`), le **même** que l'onglet
-  **Programme** du back-office. Ne pas réintroduire un déroulé saisi à la main :
-  il annonçait « affiché sur la page publique » alors qu'il n'apparaissait nulle part.
-  - ⚠️ **Le public ne montre PAS le détail des sessions** : chaque séance
-    affiche heure (début - fin) + type (Plénière/Atelier) + nom de l'atelier +
-    « En parallèle » + libellé + salle, **mais pas** la liste des communications ni
-    les modérateurs/rapporteurs (c'est du back-office). Ne pas réafficher
-    `$commsBySession` ni les rôles dans `partials.program-synthesis`. Test :
+  est passé dans l'onglet **Général**. ⚠️ L'ancien déroulé éditorial `settings['programme']`
+  a été supprimé (personne ne le lisait). Le programme public (`#programme` de la page
+  colloque) affiche désormais le **programme synthétique saisi** dans l'onglet
+  **Programme** du module (`settings['program_synthesis']`), via le partial partagé
+  **`partials.program-synthesis`** (`colloque.blade.php` passe `$programSynthesis`).
+  - ⚠️ **Le public ne montre PAS le détail des communications** : le programme
+    synthétique est un déroulé de haut niveau (cérémonies, pauses, « communications
+    en ateliers »…), **pas** la liste des communications ni les modérateurs/rapporteurs.
+    Ne pas réinjecter `$commsBySession` ni les rôles dans `#programme`. Test :
     `ProgramPublicTest` (`assertDontSee` le titre d'une communication).
 
 - **Un seul colloque de démo, à l'échelle** : `migrate:fresh --seed` ne crée plus

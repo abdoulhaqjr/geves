@@ -37,6 +37,8 @@ class ColloqueController extends Controller
         return view('public.colloque', [
             'edition' => $edition,
             'intro' => $settings['intro'] ?? null,
+            // Programme synthétique saisi dans l'onglet « Programme » du module.
+            'programSynthesis' => $settings['program_synthesis'] ?? ['title' => '', 'days' => []],
             'tracks' => $settings['tracks'] ?? [],
             // Grille normalisée (les entrées fees malformées sont ignorées).
             'fees' => Fees::grid($edition),

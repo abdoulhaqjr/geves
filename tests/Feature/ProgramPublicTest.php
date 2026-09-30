@@ -21,26 +21,74 @@ function scheduledEdition(): array
     return [$edition, $submission];
 }
 
-it('affiche le programme public (plénières et ateliers, sans le détail des communications)', function () {
+it('affiche le programme synthétique saisi (et pas le détail des communications)', function () {
     [$edition, $submission] = scheduledEdition();
+
+    // Le programme public vient du contenu SAISI dans l'onglet « Programme »
+    // (settings.program_synthesis), pas d'un agenda auto des sessions.
+    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+        'program_synthesis' => [
+            'title' => 'Programme synthétique du colloque',
+            'days' => [
+                ['heading' => 'Lundi - Matin', 'rows' => [
+                    ['time' => '08h30 - 10h15', 'label' => 'Cérémonie d’ouverture', 'highlight' => true],
+                    ['time' => '', 'label' => 'Photo de famille & Cocktail', 'highlight' => false],
+                ]],
+            ],
+        ],
+    ])]);
 
     $this->get(route('public.colloque', $edition->slug))
         ->assertOk()
-        ->assertSee('Programme')
+        ->assertSee('Programme synthétique du colloque')
+        ->assertSee('Lundi - Matin')
         ->assertSee('Cérémonie d’ouverture', false)
-        ->assertSee('Atelier Santé')
-        ->assertSee('Session parallèle 1')
-        ->assertSee('Amphi A')
-        // Le détail des sessions (titres des communications) n'est pas exposé au public.
+        ->assertSee('Photo de famille &amp; Cocktail', false)
+        // Le détail des communications n'est jamais exposé au public.
         ->assertDontSee('Innovation durable');
 });
 
-it('n’affiche pas de programme quand il n’y a aucune session', function () {
-    $submission = seededSubmission('accepted');
+it('n’affiche pas de programme quand aucun contenu n’est saisi', function () {
+    // Une édition avec des sessions mais SANS programme synthétique saisi : la
+    // section publique reste masquée (elle ne dépend plus des sessions).
+    [$edition] = scheduledEdition();
 
-    $this->get(route('public.colloque', $submission->edition->slug))
+    $this->get(route('public.colloque', $edition->slug))
         ->assertOk()
         ->assertDontSee('>Programme<', false);
+});
+
+it('enregistre le programme synthétique saisi et le publie', function () {
+    $staff = adminStaff();
+    $submission = seededSubmission('accepted');
+    $edition = $submission->edition;
+
+    $this->actingAs($staff, 'web')
+        ->post(route('admin.program.synthesis'), [
+            'edition_id' => $edition->id,
+            'title' => 'Programme du colloque',
+            'days' => [
+                ['heading' => 'Jour 1 : Matin', 'rows' => [
+                    ['time' => '09h00 - 10h30', 'label' => 'Ouverture solennelle', 'highlight' => '1'],
+                    ['time' => '', 'label' => '', 'highlight' => '0'], // ligne vide → ignorée
+                ]],
+                ['heading' => '', 'rows' => []], // jour vide → ignoré
+            ],
+        ])
+        ->assertRedirect();
+
+    $syn = $edition->fresh()->settings['program_synthesis'];
+    expect($syn['title'])->toBe('Programme du colloque');
+    expect($syn['days'])->toHaveCount(1);
+    expect($syn['days'][0]['rows'])->toHaveCount(1);
+    expect($syn['days'][0]['rows'][0]['highlight'])->toBeTrue();
+
+    // Publié tel quel sur la page du colloque.
+    $this->get(route('public.colloque', $edition->slug))
+        ->assertOk()
+        ->assertSee('Programme du colloque')
+        ->assertSee('Jour 1 : Matin')
+        ->assertSee('Ouverture solennelle');
 });
 
 it('génère les fiches de session imprimables', function () {
