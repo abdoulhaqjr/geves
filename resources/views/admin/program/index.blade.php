@@ -30,6 +30,11 @@
             day: '{{ $days->first() }}',
             pview: 'day',
             setPview(v) { this.pview = v; try { localStorage.setItem('ukcPlanView', v); } catch (e) {} },
+            // Restaure la vue Jour/Semaine mémorisée. ⚠️ Dans une MÉTHODE, pas
+            // en x-init inline : Alpine évalue x-init comme une expression (il la
+            // préfixe par `return`), donc un `try {…}` direct y est une erreur de
+            // syntaxe (« Unexpected token 'try' »).
+            restorePlanView() { try { this.pview = localStorage.getItem('ukcPlanView') || this.pview; } catch (e) {} },
             modal: null,
             form: {},
             openAtelier(a) { this.form = a ? {...a} : { id:'', title:'', tracks:[], room:'' }; this.modal='atelier'; },
@@ -86,7 +91,7 @@
                 @if ($days->isEmpty())
                     <div class="ukc-empty"><h3>Aucun jour planifié</h3><p>Ajoutez des sessions datées et des créneaux pour bâtir le planning.</p></div>
                 @else
-                    <div class="plan-topbar" x-init="try { pview = localStorage.getItem('ukcPlanView') || pview } catch (e) {}">
+                    <div class="plan-topbar" x-init="restorePlanView()">
                         <div class="plan-viewtoggle" role="tablist">
                             <button type="button" role="tab" :class="{ active: pview==='day' }" @click="setPview('day')">Jour</button>
                             <button type="button" role="tab" :class="{ active: pview==='week' }" @click="setPview('week')">Semaine</button>
