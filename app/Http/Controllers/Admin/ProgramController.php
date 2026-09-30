@@ -21,6 +21,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 /**
@@ -646,17 +647,8 @@ class ProgramController extends Controller
             return back();
         }
 
-        // Paramètres de créneaux (onglet Options) : durée orale, transition entre
-        // créneaux, pause-café après N créneaux, et fenêtre déjeuner. Ils sont
-        // désormais APPLIQUÉS à la génération (les créneaux ne tombent pas sur une pause).
+        // Paramètres de créneaux (onglet Options), appliqués par sliceSessionSlots().
         $params = $this->programConfig($edition)['params'];
-        $oralMin = max(5, (int) ($params['oral_min'] ?? 20));
-        $gap = max(0, (int) ($params['gap_min'] ?? 0));
-        $breakAfter = ! empty($params['auto_break']) ? max(0, (int) ($params['break_after'] ?? 0)) : 0;
-        $breakMin = max(0, (int) ($params['break_min'] ?? 0));
-        $lunchOn = ! empty($params['lunch']);
-        $lunchStart = (string) ($params['lunch_start'] ?? '12:30');
-        $lunchEnd = (string) ($params['lunch_end'] ?? '14:00');
         $created = 0;
 
         // Les sessions plénières sont EXCLUSIVES et ne reçoivent pas de communications
@@ -667,48 +659,71 @@ class ProgramController extends Controller
             if ($edition->slots()->where('session_id', $session->id)->exists()) {
                 continue; // déjà pourvue
             }
-
-            $cursor = Carbon::parse($session->starts_at);
-            $end = Carbon::parse($session->ends_at);
-            // Fenêtre déjeuner calée sur le jour de la session.
-            $lunchFrom = $lunchOn ? $cursor->copy()->setTimeFromTimeString($lunchStart) : null;
-            $lunchTo = $lunchOn ? $cursor->copy()->setTimeFromTimeString($lunchEnd) : null;
-
-            $n = 0;
-            $guard = 0;
-            while ($guard++ < 120) {
-                $slotEnd = $cursor->copy()->addMinutes($oralMin);
-                if ($slotEnd->greaterThan($end)) {
-                    break;
-                }
-                // Le créneau empiète sur le déjeuner : on saute la pause et on reprend après.
-                if ($lunchFrom && $cursor->lessThan($lunchTo) && $slotEnd->greaterThan($lunchFrom)) {
-                    $cursor = $lunchTo->copy();
-
-                    continue;
-                }
-                $edition->slots()->create([
-                    'session_id' => $session->id,
-                    'session_label' => $session->label,
-                    'room' => $session->room ?: '',
-                    'starts_at' => $cursor->toDateTimeString(),
-                    'ends_at' => $slotEnd->toDateTimeString(),
-                    'submission_id' => 0,
-                    'participant_id' => 0,
-                ]);
-                $created++;
-                $n++;
-                // Transition entre créneaux, puis pause-café après N créneaux.
-                $cursor = $slotEnd->copy()->addMinutes($gap);
-                if ($breakAfter > 0 && $breakMin > 0 && $n % $breakAfter === 0) {
-                    $cursor->addMinutes($breakMin);
-                }
-            }
+            $created += count($this->sliceSessionSlots($edition, $session, $params));
         }
 
         return back()->with('ukc_status', $created > 0
             ? $created.' créneau(x) généré(s) depuis les sessions. Vous pouvez lancer l’affectation automatique.'
             : 'Aucun créneau généré : sessions sans horaires, ou déjà pourvues en créneaux.');
+    }
+
+    /**
+     * Découpe une session horodatée en créneaux libres de la durée d'une orale,
+     * en respectant transition, pause-café après N créneaux et fenêtre déjeuner.
+     *
+     * @return array<int, int> ids des créneaux créés
+     */
+    private function sliceSessionSlots(Edition $edition, EventSession $session, array $params): array
+    {
+        if (! $session->starts_at || ! $session->ends_at) {
+            return [];
+        }
+
+        $oralMin = max(5, (int) ($params['oral_min'] ?? 20));
+        $gap = max(0, (int) ($params['gap_min'] ?? 0));
+        $breakAfter = ! empty($params['auto_break']) ? max(0, (int) ($params['break_after'] ?? 0)) : 0;
+        $breakMin = max(0, (int) ($params['break_min'] ?? 0));
+        $lunchOn = ! empty($params['lunch']);
+
+        $cursor = Carbon::parse($session->starts_at);
+        $end = Carbon::parse($session->ends_at);
+        // Fenêtre déjeuner calée sur le jour de la session.
+        $lunchFrom = $lunchOn ? $cursor->copy()->setTimeFromTimeString((string) ($params['lunch_start'] ?? '12:30')) : null;
+        $lunchTo = $lunchOn ? $cursor->copy()->setTimeFromTimeString((string) ($params['lunch_end'] ?? '14:00')) : null;
+
+        $ids = [];
+        $n = 0;
+        $guard = 0;
+        while ($guard++ < 120) {
+            $slotEnd = $cursor->copy()->addMinutes($oralMin);
+            if ($slotEnd->greaterThan($end)) {
+                break;
+            }
+            // Le créneau empiète sur le déjeuner : on saute la pause et on reprend après.
+            if ($lunchFrom && $cursor->lessThan($lunchTo) && $slotEnd->greaterThan($lunchFrom)) {
+                $cursor = $lunchTo->copy();
+
+                continue;
+            }
+            $slot = $edition->slots()->create([
+                'session_id' => $session->id,
+                'session_label' => $session->label,
+                'room' => $session->room ?: '',
+                'starts_at' => $cursor->toDateTimeString(),
+                'ends_at' => $slotEnd->toDateTimeString(),
+                'submission_id' => 0,
+                'participant_id' => 0,
+            ]);
+            $ids[] = $slot->id;
+            $n++;
+            // Transition entre créneaux, puis pause-café après N créneaux.
+            $cursor = $slotEnd->copy()->addMinutes($gap);
+            if ($breakAfter > 0 && $breakMin > 0 && $n % $breakAfter === 0) {
+                $cursor->addMinutes($breakMin);
+            }
+        }
+
+        return $ids;
     }
 
     /**
@@ -999,27 +1014,46 @@ class ProgramController extends Controller
         return back()->with('ukc_status', 'Réglages enregistrés.');
     }
 
+    /** Types de ligne du programme synthétique. */
+    private const SYNTHESIS_TYPES = ['plenary', 'atelier', 'break', 'other'];
+
     /**
      * Enregistre le PROGRAMME SYNTHÉTIQUE (onglet « Programme ») : un titre et
-     * une liste de jours (intitulé libre + lignes « horaire : libellé »). C'est
-     * ce contenu qui s'affiche dans la section #programme de la page publique.
+     * une liste de jours (date + intitulé + lignes typées « type / début / fin /
+     * libellé »). C'est ce contenu qui s'affiche en onglets sur la page publique,
+     * et la source de la génération automatique des sessions/créneaux.
      */
     public function saveSynthesis(Request $request): RedirectResponse
     {
-        // L'édition vient du corps (le formulaire n'est pas en query string) et
-        // reste bornée aux éditions accessibles.
-        $edition = $this->accessibleEditions($request, 'editions_read')
-            ->firstWhere('id', (int) $request->input('edition_id'));
+        $edition = $this->synthesisEdition($request);
         if (! $edition) {
             return back();
         }
 
+        $this->persistSynthesis($request, $edition);
+
+        return back()->with('ukc_status', 'Programme synthétique enregistré.');
+    }
+
+    /** Édition ciblée par le formulaire du programme synthétique (id dans le corps). */
+    private function synthesisEdition(Request $request): ?Edition
+    {
+        return $this->accessibleEditions($request, 'editions_read')
+            ->firstWhere('id', (int) $request->input('edition_id'));
+    }
+
+    /** Valide, nettoie et écrit le programme synthétique ; retourne la structure propre. */
+    private function persistSynthesis(Request $request, Edition $edition): array
+    {
         $data = $request->validate([
             'title' => ['nullable', 'string', 'max:200'],
             'days' => ['array'],
+            'days.*.date' => ['nullable', 'date'],
             'days.*.heading' => ['nullable', 'string', 'max:200'],
             'days.*.rows' => ['array'],
-            'days.*.rows.*.time' => ['nullable', 'string', 'max:60'],
+            'days.*.rows.*.type' => ['nullable', 'string'],
+            'days.*.rows.*.start' => ['nullable', 'date_format:H:i'],
+            'days.*.rows.*.end' => ['nullable', 'date_format:H:i'],
             'days.*.rows.*.label' => ['nullable', 'string', 'max:300'],
             'days.*.rows.*.highlight' => ['nullable'],
         ]);
@@ -1029,23 +1063,127 @@ class ProgramController extends Controller
             ->map(function (array $day) {
                 $rows = collect($day['rows'] ?? [])
                     ->map(fn ($r) => [
-                        'time' => trim((string) ($r['time'] ?? '')),
+                        'type' => in_array($r['type'] ?? '', self::SYNTHESIS_TYPES, true) ? $r['type'] : 'other',
+                        'start' => trim((string) ($r['start'] ?? '')),
+                        'end' => trim((string) ($r['end'] ?? '')),
                         'label' => trim((string) ($r['label'] ?? '')),
                         'highlight' => (bool) ($r['highlight'] ?? false),
                     ])
-                    ->filter(fn ($r) => $r['time'] !== '' || $r['label'] !== '')
+                    ->filter(fn ($r) => $r['label'] !== '' || $r['start'] !== '')
                     ->values()->all();
 
-                return ['heading' => trim((string) ($day['heading'] ?? '')), 'rows' => $rows];
+                return ['date' => trim((string) ($day['date'] ?? '')), 'heading' => trim((string) ($day['heading'] ?? '')), 'rows' => $rows];
             })
-            ->filter(fn ($d) => $d['heading'] !== '' || $d['rows'] !== [])
+            ->filter(fn ($d) => $d['heading'] !== '' || $d['date'] !== '' || $d['rows'] !== [])
             ->values()->all();
 
+        $synthesis = ['title' => trim((string) ($data['title'] ?? '')), 'days' => $days];
+
         $settings = $edition->settings ?? [];
-        $settings['program_synthesis'] = ['title' => trim((string) ($data['title'] ?? '')), 'days' => $days];
+        $settings['program_synthesis'] = $synthesis;
         $edition->update(['settings' => $settings]);
 
-        return back()->with('ukc_status', 'Programme synthétique enregistré.');
+        return $synthesis;
+    }
+
+    /**
+     * Enregistre le programme PUIS génère les sessions et créneaux à partir de lui.
+     * - une ligne « Plénière »/« Autre » horodatée → une session plénière ;
+     * - une ligne « Ateliers en parallèle » → une session par atelier de l'édition
+     *   (en parallèle, dans des salles distinctes), découpée en créneaux libres ;
+     * - les lignes « Pause » sont ignorées.
+     * ⚠️ Ne remplace QUE les sessions/créneaux déjà issus du programme (mémorisés) ;
+     * les sessions/créneaux saisis à la main sont conservés.
+     */
+    public function generateFromSynthesis(Request $request): RedirectResponse
+    {
+        $edition = $this->synthesisEdition($request);
+        if (! $edition) {
+            return back();
+        }
+
+        $synthesis = $this->persistSynthesis($request, $edition);
+        $params = $this->programConfig($edition)['params'];
+
+        // Salles d'atelier : mapping enregistré, repli « Salle N ».
+        $ateliers = $edition->ateliers()->orderBy('ordre')->get();
+        $atelierRooms = $this->programConfig($edition)['atelier_rooms'];
+        $roomFor = function (Atelier $a, int $i) use ($atelierRooms): string {
+            $room = $atelierRooms[(string) $a->id] ?? '';
+
+            return $room !== '' ? $room : 'Salle '.($i + 1);
+        };
+
+        return DB::transaction(function () use ($edition, $synthesis, $params, $ateliers, $roomFor) {
+            // 1) Purge de ce qui avait déjà été généré depuis le programme.
+            $prev = $edition->settings['program_synthesis_generated'] ?? ['sessions' => [], 'slots' => []];
+            if (! empty($prev['slots'])) {
+                $edition->slots()->whereIn('id', $prev['slots'])->delete();
+            }
+            if (! empty($prev['sessions'])) {
+                $edition->sessions()->whereIn('id', $prev['sessions'])->delete();
+            }
+
+            $sessionIds = [];
+            $slotIds = [];
+            $sessionCount = 0;
+
+            // 2) Création des sessions (et créneaux) depuis chaque ligne datée.
+            foreach ($synthesis['days'] as $day) {
+                if (($day['date'] ?? '') === '') {
+                    continue; // sans date, on ne peut pas horodater
+                }
+                foreach ($day['rows'] as $row) {
+                    $type = $row['type'] ?? 'other';
+                    $start = $row['start'] ?? '';
+                    if ($type === 'break' || $start === '') {
+                        continue;
+                    }
+                    $startsAt = Carbon::parse($day['date'].' '.$start);
+                    $endsAt = ($row['end'] ?? '') !== ''
+                        ? Carbon::parse($day['date'].' '.$row['end'])
+                        : $startsAt->copy()->addMinutes(max(30, (int) ($params['oral_min'] ?? 20)));
+                    $label = $row['label'] !== '' ? $row['label'] : ($type === 'atelier' ? 'Communications en ateliers' : 'Séance');
+
+                    if ($type === 'atelier') {
+                        // Une session par atelier, en parallèle, salles distinctes.
+                        foreach ($ateliers as $i => $atelier) {
+                            $session = $edition->sessions()->create([
+                                'type' => 'atelier',
+                                'atelier_id' => $atelier->id,
+                                'label' => $atelier->title,
+                                'session_day' => $startsAt->toDateString(),
+                                'starts_at' => $startsAt->toDateTimeString(),
+                                'ends_at' => $endsAt->toDateTimeString(),
+                                'room' => $roomFor($atelier, $i),
+                                'ordre' => $sessionCount++,
+                            ]);
+                            $sessionIds[] = $session->id;
+                            $slotIds = array_merge($slotIds, $this->sliceSessionSlots($edition, $session, $params));
+                        }
+                    } else {
+                        // Plénière / Autre : session exclusive, sans créneau oral.
+                        $session = $edition->sessions()->create([
+                            'type' => 'plenary',
+                            'label' => $label,
+                            'session_day' => $startsAt->toDateString(),
+                            'starts_at' => $startsAt->toDateTimeString(),
+                            'ends_at' => $endsAt->toDateTimeString(),
+                            'ordre' => $sessionCount++,
+                        ]);
+                        $sessionIds[] = $session->id;
+                    }
+                }
+            }
+
+            $settings = $edition->settings ?? [];
+            $settings['program_synthesis_generated'] = ['sessions' => $sessionIds, 'slots' => $slotIds];
+            $edition->update(['settings' => $settings]);
+
+            return back()->with('ukc_status', count($sessionIds) > 0
+                ? count($sessionIds).' session(s) et '.count($slotIds).' créneau(x) générés depuis le programme.'
+                : 'Rien à générer : ajoutez des dates aux jours et des heures aux lignes (hors pauses).');
+        });
     }
 
     /** Ajoute un espace (salle/amphi/hall) à la config programme. */

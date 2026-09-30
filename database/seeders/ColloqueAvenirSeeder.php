@@ -102,31 +102,32 @@ class ColloqueAvenirSeeder extends Seeder
                         'phone' => '(+229) 0197930087',
                         'address' => 'Campus universitaire de Parakou, Bénin',
                     ],
-                    // Programme synthétique (onglet « Programme ») publié tel quel sur la page du colloque.
+                    // Programme synthétique (onglet « Programme ») publié tel quel sur la
+                    // page du colloque (onglets jour par jour) et source de génération.
                     'program_synthesis' => [
                         'title' => 'Programme synthétique du colloque',
                         'days' => [
-                            ['heading' => 'Dimanche 27/09 : Matin', 'rows' => [
-                                ['time' => '08h00 - 09h00', 'label' => 'Arrivée, distribution des badges et installation des participants', 'highlight' => false],
-                                ['time' => '09h00 - 10h30', 'label' => 'Séance inaugurale (Grand amphithéâtre)', 'highlight' => true],
-                                ['time' => '10h30 - 11h00', 'label' => 'Pause-café', 'highlight' => false],
+                            ['date' => $start->toDateString(), 'heading' => 'Matin', 'rows' => [
+                                ['type' => 'other', 'start' => '08:00', 'end' => '09:00', 'label' => 'Arrivée, distribution des badges et installation des participants', 'highlight' => false],
+                                ['type' => 'plenary', 'start' => '09:00', 'end' => '10:30', 'label' => 'Séance inaugurale', 'highlight' => true],
+                                ['type' => 'break', 'start' => '10:30', 'end' => '11:00', 'label' => 'Pause-café', 'highlight' => false],
                             ]],
-                            ['heading' => 'Début des ateliers', 'rows' => [
-                                ['time' => '11h30 - 12h30', 'label' => 'Communications en ateliers', 'highlight' => false],
-                                ['time' => '12h30 - 14h00', 'label' => 'Pause déjeuner', 'highlight' => false],
-                                ['time' => '14h00 - 17h00', 'label' => 'Communications en ateliers', 'highlight' => false],
+                            ['date' => $start->toDateString(), 'heading' => 'Début des ateliers', 'rows' => [
+                                ['type' => 'atelier', 'start' => '11:30', 'end' => '12:30', 'label' => 'Communications en ateliers', 'highlight' => false],
+                                ['type' => 'break', 'start' => '12:30', 'end' => '14:00', 'label' => 'Pause déjeuner', 'highlight' => false],
+                                ['type' => 'atelier', 'start' => '14:00', 'end' => '17:00', 'label' => 'Communications en ateliers', 'highlight' => false],
                             ]],
-                            ['heading' => 'Mercredi 30/09 : Matin', 'rows' => [
-                                ['time' => '08h00 - 10h00', 'label' => 'Table ronde', 'highlight' => true],
-                                ['time' => '10h00 - 10h30', 'label' => 'Pause-café', 'highlight' => false],
-                                ['time' => '10h30 - 12h30', 'label' => 'Communications en ateliers', 'highlight' => false],
+                            ['date' => (clone $start)->addDays(3)->toDateString(), 'heading' => 'Matin', 'rows' => [
+                                ['type' => 'plenary', 'start' => '08:00', 'end' => '10:00', 'label' => 'Table ronde', 'highlight' => true],
+                                ['type' => 'break', 'start' => '10:00', 'end' => '10:30', 'label' => 'Pause-café', 'highlight' => false],
+                                ['type' => 'atelier', 'start' => '10:30', 'end' => '12:30', 'label' => 'Communications en ateliers', 'highlight' => false],
                             ]],
-                            ['heading' => 'Jeudi 01/10 : Après-midi', 'rows' => [
-                                ['time' => '14h00 - 17h00', 'label' => 'Formation', 'highlight' => true],
+                            ['date' => (clone $start)->addDays(4)->toDateString(), 'heading' => 'Après-midi', 'rows' => [
+                                ['type' => 'other', 'start' => '14:00', 'end' => '17:00', 'label' => 'Formation', 'highlight' => true],
                             ]],
-                            ['heading' => 'Vendredi 02/10', 'rows' => [
-                                ['time' => '08h30 - 10h30', 'label' => 'Communications en ateliers', 'highlight' => false],
-                                ['time' => '11h00 - 12h30', 'label' => 'Cérémonie de clôture', 'highlight' => true],
+                            ['date' => (clone $start)->addDays(5)->toDateString(), 'heading' => 'Clôture', 'rows' => [
+                                ['type' => 'atelier', 'start' => '08:30', 'end' => '10:30', 'label' => 'Communications en ateliers', 'highlight' => false],
+                                ['type' => 'plenary', 'start' => '11:00', 'end' => '12:30', 'label' => 'Cérémonie de clôture', 'highlight' => true],
                             ]],
                         ],
                     ],

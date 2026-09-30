@@ -30,9 +30,9 @@ it('affiche le programme synthétique saisi (et pas le détail des communication
         'program_synthesis' => [
             'title' => 'Programme synthétique du colloque',
             'days' => [
-                ['heading' => 'Lundi - Matin', 'rows' => [
-                    ['time' => '08h30 - 10h15', 'label' => 'Cérémonie d’ouverture', 'highlight' => true],
-                    ['time' => '', 'label' => 'Photo de famille & Cocktail', 'highlight' => false],
+                ['date' => '2026-09-27', 'heading' => 'Matin', 'rows' => [
+                    ['type' => 'plenary', 'start' => '08:30', 'end' => '10:15', 'label' => 'Cérémonie d’ouverture', 'highlight' => true],
+                    ['type' => 'break', 'start' => '10:15', 'end' => '10:45', 'label' => 'Photo de famille & Cocktail', 'highlight' => false],
                 ]],
             ],
         ],
@@ -41,7 +41,8 @@ it('affiche le programme synthétique saisi (et pas le détail des communication
     $this->get(route('public.colloque', $edition->slug))
         ->assertOk()
         ->assertSee('Programme synthétique du colloque')
-        ->assertSee('Lundi - Matin')
+        ->assertSee('Matin')
+        ->assertSee('08h30 - 10h15')
         ->assertSee('Cérémonie d’ouverture', false)
         ->assertSee('Photo de famille &amp; Cocktail', false)
         // Le détail des communications n'est jamais exposé au public.
@@ -68,11 +69,11 @@ it('enregistre le programme synthétique saisi et le publie', function () {
             'edition_id' => $edition->id,
             'title' => 'Programme du colloque',
             'days' => [
-                ['heading' => 'Jour 1 : Matin', 'rows' => [
-                    ['time' => '09h00 - 10h30', 'label' => 'Ouverture solennelle', 'highlight' => '1'],
-                    ['time' => '', 'label' => '', 'highlight' => '0'], // ligne vide → ignorée
+                ['date' => '2026-09-27', 'heading' => 'Jour 1 : Matin', 'rows' => [
+                    ['type' => 'plenary', 'start' => '09:00', 'end' => '10:30', 'label' => 'Ouverture solennelle', 'highlight' => '1'],
+                    ['type' => 'other', 'start' => '', 'end' => '', 'label' => '', 'highlight' => '0'], // ligne vide → ignorée
                 ]],
-                ['heading' => '', 'rows' => []], // jour vide → ignoré
+                ['date' => '', 'heading' => '', 'rows' => []], // jour vide → ignoré
             ],
         ])
         ->assertRedirect();
@@ -82,6 +83,7 @@ it('enregistre le programme synthétique saisi et le publie', function () {
     expect($syn['days'])->toHaveCount(1);
     expect($syn['days'][0]['rows'])->toHaveCount(1);
     expect($syn['days'][0]['rows'][0]['highlight'])->toBeTrue();
+    expect($syn['days'][0]['rows'][0]['start'])->toBe('09:00');
 
     // Publié tel quel sur la page du colloque.
     $this->get(route('public.colloque', $edition->slug))
@@ -89,6 +91,40 @@ it('enregistre le programme synthétique saisi et le publie', function () {
         ->assertSee('Programme du colloque')
         ->assertSee('Jour 1 : Matin')
         ->assertSee('Ouverture solennelle');
+});
+
+it('génère les sessions et créneaux depuis le programme (et régénère sans doublonner)', function () {
+    $staff = adminStaff();
+    $submission = seededSubmission('accepted');
+    $edition = $submission->edition;
+    $edition->ateliers()->create(['title' => 'Atelier Santé', 'tracks' => ['Santé'], 'ordre' => 0]);
+    $ateliersCount = $edition->ateliers()->count();
+
+    $payload = [
+        'edition_id' => $edition->id,
+        'title' => 'Programme',
+        'days' => [
+            ['date' => '2026-09-27', 'heading' => 'Matin', 'rows' => [
+                ['type' => 'plenary', 'start' => '09:00', 'end' => '10:30', 'label' => 'Ouverture', 'highlight' => '1'],
+                ['type' => 'break', 'start' => '10:30', 'end' => '11:00', 'label' => 'Pause', 'highlight' => '0'],
+                ['type' => 'atelier', 'start' => '11:00', 'end' => '12:00', 'label' => 'Communications en ateliers', 'highlight' => '0'],
+            ]],
+        ],
+    ];
+
+    $this->actingAs($staff, 'web')->post(route('admin.program.synthesis.generate'), $payload)->assertRedirect();
+
+    // 1 plénière + 1 session par atelier ; la pause ne crée rien.
+    expect($edition->sessions()->where('type', 'plenary')->count())->toBe(1);
+    expect($edition->sessions()->where('type', 'atelier')->count())->toBe($ateliersCount);
+    // La session d'atelier (11:00-12:00) est découpée en créneaux libres.
+    expect($edition->slots()->count())->toBeGreaterThan(0);
+
+    $sessionsAfterFirst = $edition->sessions()->count();
+
+    // Régénérer remplace (pas de doublon).
+    $this->actingAs($staff, 'web')->post(route('admin.program.synthesis.generate'), $payload)->assertRedirect();
+    expect($edition->sessions()->count())->toBe($sessionsAfterFirst);
 });
 
 it('génère les fiches de session imprimables', function () {

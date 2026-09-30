@@ -85,9 +85,10 @@
             @endif
 
             {{-- ============================ PROGRAMME (synthèse saisie) ============================ --}}
-            {{-- Éditeur du programme synthétique : titre + jours (intitulé libre) +
-                 lignes « horaire : libellé ». C'est CE contenu qui s'affiche dans la
-                 section « Programme » de la page publique (partials.program-synthesis). --}}
+            {{-- Éditeur du programme synthétique : titre + jours (date + intitulé) +
+                 lignes (type, heures, libellé). C'est CE contenu qui s'affiche sur la
+                 page publique (partials.program-synthesis) ET la SOURCE de génération
+                 automatique des sessions/créneaux (bouton dédié). --}}
             <div @if ($tab !== 'apercu') style="display:none;" @endif>
                 <form method="POST" action="{{ route('admin.program.synthesis') }}" class="ukc-card" x-data="programSynthesis(@js($programSynthesis))">
                     @csrf
@@ -100,7 +101,7 @@
                             </a>
                         @endif
                     </h2>
-                    <div class="desc">Présentation synthétique du déroulé (comme le document du colloque). C'est exactement ce contenu qui s'affiche dans la section « Programme » de la page publique du colloque.</div>
+                    <div class="desc">Déroulé synthétique du colloque. Il s'affiche sur la page publique (en onglets jour par jour) et sert à <strong>générer automatiquement</strong> les sessions et créneaux (bouton en bas).</div>
 
                     <div class="ukc-field" style="max-width:640px;">
                         <label>Titre du programme</label>
@@ -111,7 +112,8 @@
                     <template x-for="(day, di) in days" :key="di">
                         <div class="prog-syn-day">
                             <div class="prog-syn-day__head">
-                                <input type="text" :name="'days['+di+'][heading]'" x-model="day.heading" placeholder="Intitulé (ex. Lundi 06/10 : Matin, ou Début des ateliers à 13h30)" class="prog-syn-day__title">
+                                <input type="date" :name="'days['+di+'][date]'" x-model="day.date" class="prog-syn-day__date" title="Date (nécessaire pour la génération auto)">
+                                <input type="text" :name="'days['+di+'][heading]'" x-model="day.heading" placeholder="Intitulé (ex. Matin, Après-midi, Début des ateliers…)" class="prog-syn-day__title">
                                 <div class="prog-syn-moves">
                                     <button type="button" class="ukc-btn--icon" @click="moveDay(di, -1)" :disabled="di===0" title="Monter"><x-ukc.icon name="arrow-up" :size="15" /></button>
                                     <button type="button" class="ukc-btn--icon" @click="moveDay(di, 1)" :disabled="di===days.length-1" title="Descendre"><x-ukc.icon name="arrow-down" :size="15" /></button>
@@ -119,14 +121,26 @@
                                 </div>
                             </div>
 
+                            {{-- En-tête de colonnes des lignes --}}
+                            <div class="prog-syn-row prog-syn-row--head" x-show="day.rows.length">
+                                <span>Type</span><span>Début</span><span>Fin</span><span>Libellé</span><span>Gras</span><span></span>
+                            </div>
+
                             {{-- Lignes du jour --}}
                             <template x-for="(row, j) in day.rows" :key="j">
                                 <div class="prog-syn-row">
-                                    <input type="text" :name="'days['+di+'][rows]['+j+'][time]'" x-model="row.time" placeholder="Horaire (ex. 08h30 - 10h15)" class="prog-syn-row__time">
-                                    <input type="text" :name="'days['+di+'][rows]['+j+'][label]'" x-model="row.label" placeholder="Libellé (ex. Cérémonie d'ouverture)" class="prog-syn-row__label">
+                                    <select :name="'days['+di+'][rows]['+j+'][type]'" x-model="row.type" class="prog-syn-row__type">
+                                        <option value="plenary">Plénière</option>
+                                        <option value="atelier">Ateliers en parallèle</option>
+                                        <option value="break">Pause</option>
+                                        <option value="other">Autre</option>
+                                    </select>
+                                    <input type="time" :name="'days['+di+'][rows]['+j+'][start]'" x-model="row.start" class="prog-syn-row__time" title="Heure de début">
+                                    <input type="time" :name="'days['+di+'][rows]['+j+'][end]'" x-model="row.end" class="prog-syn-row__time" title="Heure de fin">
+                                    <input type="text" :name="'days['+di+'][rows]['+j+'][label]'" x-model="row.label" placeholder="Libellé (ex. Cérémonie d'ouverture, Communications en ateliers…)" class="prog-syn-row__label">
                                     <label class="prog-syn-row__hl" title="Mettre en évidence (gras)">
                                         <input type="hidden" :name="'days['+di+'][rows]['+j+'][highlight]'" value="0">
-                                        <input type="checkbox" :name="'days['+di+'][rows]['+j+'][highlight]'" value="1" x-model="row.highlight"> Gras
+                                        <input type="checkbox" :name="'days['+di+'][rows]['+j+'][highlight]'" value="1" x-model="row.highlight">
                                     </label>
                                     <div class="prog-syn-moves">
                                         <button type="button" class="ukc-btn--icon" @click="moveRow(di, j, -1)" :disabled="j===0" title="Monter"><x-ukc.icon name="arrow-up" :size="14" /></button>
@@ -143,7 +157,11 @@
                         <button type="button" class="ukc-btn ukc-btn--outline ukc-btn--sm" @click="addDay()"><x-ukc.icon name="plus" :size="14" /> Ajouter un jour / une section</button>
                     </div>
 
-                    <div style="margin-top:18px;display:flex;justify-content:flex-end;border-top:1px solid var(--ukc-border);padding-top:16px;">
+                    <div style="margin-top:18px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid var(--ukc-border);padding-top:16px;">
+                        <button type="submit" formaction="{{ route('admin.program.synthesis.generate') }}" class="ukc-btn ukc-btn--green"
+                                data-confirm="Enregistrer ce programme PUIS générer les sessions et créneaux ? Les sessions et créneaux déjà générés depuis le programme seront remplacés (les sessions/créneaux saisis à la main sont conservés).">
+                            <x-ukc.icon name="refresh" :size="16" /> Enregistrer & générer sessions/créneaux
+                        </button>
                         <button type="submit" class="ukc-btn ukc-btn--primary"><x-ukc.icon name="check" :size="16" /> Enregistrer le programme</button>
                     </div>
                 </form>

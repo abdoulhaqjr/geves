@@ -492,17 +492,22 @@ document.addEventListener('alpine:init', () => {
     }));
 
     // Éditeur du « programme synthétique » (onglet Programme du module) : titre +
-    // jours (chacun un intitulé libre + des lignes « horaire : libellé »). État
-    // client pur ; le <form> poste les tableaux imbriqués (days[i][rows][j][…]).
+    // jours (date + intitulé libre) contenant des lignes (type, heures début/fin,
+    // libellé, gras). État client pur ; le <form> poste les tableaux imbriqués
+    // (days[i][date], days[i][rows][j][…]). C'est aussi la SOURCE de génération
+    // automatique des sessions et créneaux (bouton dédié).
     window.Alpine.data('programSynthesis', (initial = {}) => ({
         title: initial.title || '',
         days: (Array.isArray(initial.days) ? initial.days : []).map((d) => ({
+            date: d.date || '',
             heading: d.heading || '',
             rows: (Array.isArray(d.rows) ? d.rows : []).map((r) => ({
-                time: r.time || '', label: r.label || '', highlight: !!r.highlight,
+                start: r.start || '', end: r.end || '',
+                type: r.type || 'other', label: r.label || '', highlight: !!r.highlight,
             })),
         })),
-        addDay() { this.days.push({ heading: '', rows: [{ time: '', label: '', highlight: false }] }); },
+        newRow() { return { start: '', end: '', type: 'other', label: '', highlight: false }; },
+        addDay() { this.days.push({ date: '', heading: '', rows: [this.newRow()] }); },
         removeDay(i) { this.days.splice(i, 1); },
         moveDay(i, dir) {
             const j = i + dir;
@@ -510,7 +515,7 @@ document.addEventListener('alpine:init', () => {
             const [d] = this.days.splice(i, 1);
             this.days.splice(j, 0, d);
         },
-        addRow(di) { this.days[di].rows.push({ time: '', label: '', highlight: false }); },
+        addRow(di) { this.days[di].rows.push(this.newRow()); },
         removeRow(di, j) { this.days[di].rows.splice(j, 1); },
         moveRow(di, j, dir) {
             const rows = this.days[di].rows;

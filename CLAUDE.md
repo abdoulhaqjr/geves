@@ -454,18 +454,27 @@ paiement (`pay`), inscription à une formation.
   `resources/views/admin/program/_nav.blade.php`. Route canonique
   **`admin.program.index`** (`/admin/programme`). Onglet par défaut = **`apercu`**.
   - **Onglet « Programme » (`?tab=apercu`, par défaut) = ÉDITEUR du programme
-    synthétique** (pas l'agenda auto des sessions) : un **titre** + des **jours**
-    (intitulé libre) contenant des **lignes** « horaire : libellé » (+ gras). Repeater
-    Alpine `programSynthesis` (`app.js`), `<form>` postant les tableaux imbriqués
-    `days[i][rows][j][…]` sur **`admin.program.synthesis`** (`ProgramController::saveSynthesis`).
-    Stocké dans **`edition.settings['program_synthesis']`** (`['title', 'days' => [['heading','rows' => [['time','label','highlight']]]]]`).
+    synthétique** : un **titre** + des **jours** (`date` + intitulé libre) contenant des
+    **lignes** typées (`type` = plénière/atelier/pause/autre, `start`, `end`, `label`,
+    `highlight`). Repeater Alpine `programSynthesis` (`app.js`), `<form>` postant les
+    tableaux imbriqués `days[i][date]` / `days[i][rows][j][…]`. Stocké dans
+    **`edition.settings['program_synthesis']`** (`['title', 'days' => [['date','heading','rows' => [['type','start','end','label','highlight']]]]]`).
     - ⚠️ **C'est CE contenu saisi qui s'affiche** dans la section `#programme` de la
-      page publique du colloque (rien n'est déduit des sessions) : admin (aperçu) et
-      public incluent le **même partial** `resources/views/partials/program-synthesis.blade.php`,
-      qui reçoit `$synthesis` (charte UK ; `public.css` est chargé aussi en admin donc
-      le rendu est identique). Le contrôleur public passe
-      `settings['program_synthesis']` en `$programSynthesis` ; la section publique est
-      masquée si aucun contenu n'est saisi. Le seed en pose un exemple.
+      page publique, **en onglets jour par jour** : admin (aperçu) et public incluent le
+      **même partial** `resources/views/partials/program-synthesis.blade.php` (reçoit
+      `$synthesis` ; charte UK `.ukc-tabs-scroll`/`.ukc-program-day`, `public.css` chargé
+      aussi en admin donc rendu identique). Le contrôleur public passe
+      `settings['program_synthesis']` en `$programSynthesis` ; section masquée si vide.
+    - **Génération auto (bouton « Enregistrer & générer sessions/créneaux »)** :
+      `saveSynthesis` (`admin.program.synthesis`) enregistre ; `generateFromSynthesis`
+      (`admin.program.synthesis.generate`) enregistre PUIS crée les sessions/créneaux -
+      une ligne *Plénière*/*Autre* datée → 1 session plénière ; une ligne *Ateliers en
+      parallèle* → 1 session par atelier (salles distinctes) découpée en créneaux libres
+      via `sliceSessionSlots()` (helper extrait de `generateSlots`, réutilisé) ; *Pause*
+      ignorée. ⚠️ **Ne remplace QUE ce qu'il avait généré** : les ids créés sont mémorisés
+      dans `settings['program_synthesis_generated']` et purgés au prochain « générer » ;
+      les sessions/créneaux saisis à la main sont conservés. Le seed pose un exemple (sans
+      lancer la génération : la base a déjà son planning détaillé).
   - ⚠️ Le programme vivait sur **deux pages** (`/programme` et
     `/programme/creneaux`) qui géraient les **mêmes ateliers et les mêmes
     sessions** avec deux interfaces, et la première n'était atteignable **ni par
