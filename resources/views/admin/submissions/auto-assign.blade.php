@@ -55,7 +55,7 @@
                         </div>
                     @else
                         <form method="POST" action="{{ route('admin.submissions.auto-assign.apply') }}"
-                              x-data="{ n: {{ count($preview['proposals']) }} }">
+                              x-data="{ n: {{ count($preview['proposals']) }}, page: 1, perPage: 20, total: {{ count($preview['proposals']) }}, get pages() { return Math.max(1, Math.ceil(this.total / this.perPage)); }, prev() { if (this.page > 1) this.page--; }, next() { if (this.page < this.pages) this.page++; } }">
                             @csrf
                             <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                             <div class="ukc-table-wrap">
@@ -69,7 +69,7 @@
                                     </thead>
                                     <tbody>
                                         @foreach ($preview['proposals'] as $p)
-                                            <tr>
+                                            <tr x-show="{{ $loop->index }} >= (page - 1) * perPage && {{ $loop->index }} < page * perPage">
                                                 <td><input type="checkbox" class="pair-cb" name="pairs[]" value="{{ $p['submission_id'] }}:{{ $p['reviewer_id'] }}" checked
                                                     @change="n += $event.target.checked ? 1 : -1"></td>
                                                 <td><code>{{ $p['submission_ref'] }}</code></td>
@@ -95,6 +95,7 @@
                                     </tbody>
                                 </table>
                             </div>
+                            <div style="padding:0 18px;"><x-ukc.pager pages="pages" /></div>
                             <div style="padding:14px 18px;border-top:1px solid var(--ukc-border);display:flex;justify-content:flex-end;">
                                 <button type="submit" class="ukc-btn ukc-btn--primary" :disabled="n===0">
                                     <x-ukc.icon name="sparkles" :size="16" /> Appliquer <span x-text="n"></span> assignation(s)

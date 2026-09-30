@@ -601,7 +601,7 @@
                 $sessRooms = $sessions->map(fn ($s) => $s->room)->filter()->unique()->sort()->values();
             @endphp
             <div @if ($tab !== 'sessions') style="display:none;" @endif data-ajax-root="prog-sessions">
-                <div class="ukc-card" x-data="tableFilters(['day', 'atelier', 'room', 'type', 'moderation'])">
+                <div class="ukc-card" x-data="tableFilters(['day', 'atelier', 'room', 'type', 'moderation'], 20)">
                     <h2>
                         <span><x-ukc.icon name="layers" :size="18" /> Sessions</span>
                         <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" @click="openSession(null)"><x-ukc.icon name="plus" :size="14" /> Nouvelle session</button>
@@ -653,7 +653,7 @@
                                 @endphp
                                 {{-- Un <tbody> par séance : il porte l'état d'ouverture de la
                                      visio, qui s'affiche sur une ligne à part. --}}
-                                <tbody x-data="{ visio: false }" x-show="visibleIds.includes({{ $session->id }})" data-filter-row
+                                <tbody x-data="{ visio: false }" x-show="pageIds.includes({{ $session->id }})" data-filter-row
                                        data-id="{{ $session->id }}" data-day="{{ $sDay?->format('Y-m-d') }}"
                                        data-atelier="{{ $session->atelier?->title }}" data-room="{{ $session->room }}"
                                        data-type="{{ $sessType }}" data-moderation="{{ $session->moderator_name ? 'assigned' : 'pending' }}"
@@ -700,6 +700,8 @@
                             @endif
                         </table>
                     </div>
+
+                    <x-ukc.pager />
                 </div>
             </div>
 
@@ -711,7 +713,7 @@
                 $slotRooms = $creneaux->map(fn ($s) => $s->room)->filter()->unique()->sort()->values();
             @endphp
             <div @if ($tab !== 'creneaux') style="display:none;" @endif data-ajax-root="prog-slots">
-                <div class="ukc-card" x-data="tableFilters(['day', 'atelier', 'room', 'status', 'type'])">
+                <div class="ukc-card" x-data="tableFilters(['day', 'atelier', 'room', 'status', 'type'], 20)">
                     <h2>
                         <span><x-ukc.icon name="clock" :size="18" /> Créneaux</span>
                         <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" @click="openSlot(null)"><x-ukc.icon name="plus" :size="14" /> Nouveau créneau</button>
@@ -760,7 +762,7 @@
                                         $sStatus = $slot->submission ? 'assigned' : 'free';
                                         $sSearch = Str::lower(collect([$slot->session_label, $slot->session?->atelier?->title, $slot->submission?->title, $slot->submission?->ref_code, $slot->room])->filter()->implode(' '));
                                     @endphp
-                                    <tr x-show="visibleIds.includes({{ $slot->id }})" data-filter-row
+                                    <tr x-show="pageIds.includes({{ $slot->id }})" data-filter-row
                                         data-id="{{ $slot->id }}"
                                         data-day="{{ $slot->starts_at?->format('Y-m-d') }}" data-atelier="{{ $slot->session?->atelier?->title }}"
                                         data-room="{{ $slot->room }}" data-status="{{ $sStatus }}" data-type="{{ $sType }}"
@@ -803,6 +805,8 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <x-ukc.pager />
                 </div>
             </div>
 

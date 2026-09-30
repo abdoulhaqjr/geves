@@ -152,6 +152,18 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   l'inscription). Une communication liée apparaît dans « Mes communications » de chaque
   auteur ; seul le déposant (`$isOwner`) peut la modifier.
 - **Confirmations** : `window.ukcConfirm(msg, opts)` (popup Tailwise, Promise<boolean>) via l'attribut **`data-confirm`** sur le bouton (ou le formulaire) - **jamais** `onclick="return confirm()"`. Le handler `data-ajax` transmet `e.submitter` à `FormData` (sinon la valeur du bouton cliqué, ex. `status`, est perdue → 400).
+- **Filtres + pagination de tableau côté client** : `tableFilters(keys, perPage = 0)` (Alpine,
+  `app.js`). Les lignes portent `data-filter-row` + `data-id` + `data-text` + `data-<clé>` ;
+  `visibleIds` = tout le filtré, et avec **`perPage > 0`** `pageIds` = la page courante
+  (`page`, `pageCount`, `prev()`/`next()`, retour page 1 à chaque changement de filtre). Les
+  lignes se gouvernent alors par **`x-show="pageIds.includes(ID)"`** et on pose
+  **`<x-ukc.pager />`** après le tableau (composant `components/ukc/pager.blade.php`, `.ukc-pager`).
+  ⚠️ La pagination est **purement visuelle** (les lignes hors page restent dans le DOM, juste
+  masquées) : parfait quand les lignes portent des champs de formulaire (ex. l'onglet
+  **Attribution auto** des Soumissions - toutes les cases cochées sont soumises, pas seulement
+  la page affichée). Pour un tableau sans `tableFilters` (formulaire), gérer `page`/`perPage`/
+  `pages` dans le `x-data` local et passer `<x-ukc.pager pages="pages" />`. `perPage = 0` =
+  pas de pagination (rétrocompatible). Utilisé : Programme > **Sessions** et **Créneaux** (20/page).
 - **Config runtime** : mail/paiements/IA/visio/SMS/nom sont surchargés **depuis la base**
   (`AppServiceProvider::applySettingsToConfig()`), pas le `.env`.
 - **Passerelle de paiement par édition** : le gestionnaire/co-gestionnaire peut renseigner
