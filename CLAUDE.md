@@ -448,11 +448,19 @@ paiement (`pay`), inscription à une formation.
   doublon rattachait donc une communication au mauvais compte, en silence.
   Diagnostic : **`php artisan users:phones`** (rapport, `--fix` pour normaliser).
   Tests : `tests/Feature/UserPhoneUniquenessTest.php`.
-- **Module Programme = un seul écran, sept onglets** (2026-09-28) : *Planning ·
+- **Module Programme = un seul écran, huit onglets** : *Programme · Planning ·
   Ateliers · Sessions · Créneaux · Espaces · Affectation auto · Options*,
   pilotés par l'URL (`?tab=`) et définis **une seule fois** dans
   `resources/views/admin/program/_nav.blade.php`. Route canonique
-  **`admin.program.index`** (`/admin/programme`).
+  **`admin.program.index`** (`/admin/programme`). Onglet par défaut = **`apercu`**.
+  - **Onglet « Programme » (`?tab=apercu`)** = **présentation synthétique** du
+    déroulé (jour par jour), et c'est **exactement ce que voit le public** :
+    admin et page publique incluent le **même partial**
+    `resources/views/partials/program-synthesis.blade.php` (onglets jours + séances,
+    charte UK ; `public.css` est chargé aussi en admin donc le rendu est identique).
+    ⚠️ Ne pas dupliquer la logique de regroupement : le partial reçoit `$plenaries`
+    + `$ateliers` et calcule lui-même `byDay`/`progDays`/parallèles. Toute évolution
+    de l'affichage public du programme se fait **dans ce partial** (pas en double).
   - ⚠️ Le programme vivait sur **deux pages** (`/programme` et
     `/programme/creneaux`) qui géraient les **mêmes ateliers et les mêmes
     sessions** avec deux interfaces, et la première n'était atteignable **ni par
@@ -478,15 +486,15 @@ paiement (`pay`), inscription à une formation.
   éditorial) a été **supprimée** avec son réglage `settings['programme']` :
   personne ne le lisait. Le programme public (`#programme` de la page colloque)
   est construit à partir des **sessions**, des **ateliers** et des **créneaux**
-  du module Programme (`colloque.blade.php` : `$plenaries` + `$ateliers->flatMap->sessions`,
-  groupés par jour). Ne pas réintroduire un
-  déroulé saisi à la main : il annonçait « affiché sur la page publique » alors
-  qu'il n'apparaissait nulle part.
+  du module Programme via le partial partagé **`partials.program-synthesis`**
+  (`colloque.blade.php` : `$plenaries` + `$ateliers`), le **même** que l'onglet
+  **Programme** du back-office. Ne pas réintroduire un déroulé saisi à la main :
+  il annonçait « affiché sur la page publique » alors qu'il n'apparaissait nulle part.
   - ⚠️ **Le public ne montre PAS le détail des sessions** : chaque séance
-    affiche heure + type (Plénière/Atelier) + nom de l'atelier + « En parallèle »
-    + libellé + salle, **mais pas** la liste des communications ni les
-    modérateurs/rapporteurs (c'est du back-office). Ne pas réafficher
-    `$commsBySession` ni les rôles dans `#programme`. Test :
+    affiche heure (début - fin) + type (Plénière/Atelier) + nom de l'atelier +
+    « En parallèle » + libellé + salle, **mais pas** la liste des communications ni
+    les modérateurs/rapporteurs (c'est du back-office). Ne pas réafficher
+    `$commsBySession` ni les rôles dans `partials.program-synthesis`. Test :
     `ProgramPublicTest` (`assertDontSee` le titre d'une communication).
 
 - **Un seul colloque de démo, à l'échelle** : `migrate:fresh --seed` ne crée plus

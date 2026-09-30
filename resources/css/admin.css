@@ -459,6 +459,11 @@
 .admin-program .plan-ev--atelier.room-conflict { border-color: #f59e0b; box-shadow: inset 0 0 0 1.5px #f59e0b; }
 .admin-program .plan-ev--atelier.room-conflict .ahead { border-bottom-color: #fcd34d; }
 .admin-program .plan-ev--plenary.room-conflict { box-shadow: 0 4px 14px -6px rgba(26,48,128,.6), inset 0 0 0 2px #f59e0b; }
+/* Onglet Programme (apercu public) : agenda charte UK rendu dans une carte admin.
+   On borne la largeur pour garder l'agenda lisible (colonne heure + libelle). */
+.ukc-shell .prog-public-preview { max-width: 760px; margin-top: 6px; }
+.ukc-shell .prog-public-preview .ukc-tabs-scroll { margin-bottom: 18px; justify-content: flex-start; }
+
 /* Pause déjeuner : bandeau plein largeur, derriere les evenements (clic traversant) */
 .admin-program .plan-break { z-index: 1; pointer-events: none; display: flex; align-items: center; justify-content: center; border-top: 1px dashed var(--ukc-border); border-bottom: 1px dashed var(--ukc-border); background: repeating-linear-gradient(45deg, rgba(148,163,184,.12), rgba(148,163,184,.12) 7px, rgba(148,163,184,.04) 7px, rgba(148,163,184,.04) 14px); }
 .admin-program .plan-break span { font-size: 11px; font-weight: 700; color: var(--ukc-muted); background: #fff; padding: 2px 12px; border-radius: 99px; border: 1px solid var(--ukc-border); letter-spacing: .01em; }

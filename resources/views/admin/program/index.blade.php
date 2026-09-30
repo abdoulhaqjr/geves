@@ -84,7 +84,26 @@
             </div>
             @endif
 
+            {{-- ============================ PROGRAMME (aperçu public) ============================ --}}
+            {{-- Présentation synthétique du programme = CE QUI EST PUBLIÉ sur la page
+                 publique du colloque (même partial partials.program-synthesis). --}}
+            <div @if ($tab !== 'apercu') style="display:none;" @endif>
+                <div class="ukc-card">
+                    <h2>
+                        <span><x-ukc.icon name="calendar" :size="18" /> Programme</span>
+                        @if ($edition)
+                            <a href="{{ route('public.colloque', $edition->slug) }}#programme" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+                                <x-ukc.icon name="external" :size="14" /> Voir sur la page publique
+                            </a>
+                        @endif
+                    </h2>
+                    <div class="desc">Présentation synthétique du déroulé, jour par jour. C'est exactement ce qui s'affiche dans la section « Programme » de la page publique du colloque - construit à partir des plénières, ateliers et sessions ci-dessous.</div>
 
+                    <div class="prog-public-preview">
+                        @include('partials.program-synthesis', ['plenaries' => $plenaries, 'ateliers' => $ateliers])
+                    </div>
+                </div>
+            </div>
 
             {{-- ============================ PLANNING ============================ --}}
             <div @if ($tab !== 'planning') style="display:none;" @endif data-ajax-root="prog-planning">

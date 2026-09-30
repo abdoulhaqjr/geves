@@ -5,6 +5,7 @@
 @php $navEd = $edition_id ?? ''; @endphp
 <div class="ukc-nav-docs">
     @foreach ([
+        'apercu' => 'Programme',
         'planning' => 'Planning',
         'ateliers' => 'Ateliers',
         'sessions' => 'Sessions',

@@ -321,8 +321,8 @@ class ProgramController extends Controller
         $usedRooms = $sessions->pluck('room')->merge($slots->pluck('room'))
             ->filter()->unique()->sort()->values();
 
-        $tabs = ['planning', 'ateliers', 'sessions', 'creneaux', 'espaces', 'auto', 'options'];
-        $tab = in_array($request->query('tab'), $tabs, true) ? (string) $request->query('tab') : 'planning';
+        $tabs = ['apercu', 'planning', 'ateliers', 'sessions', 'creneaux', 'espaces', 'auto', 'options'];
+        $tab = in_array($request->query('tab'), $tabs, true) ? (string) $request->query('tab') : 'apercu';
 
         // ── Onglets Sessions & Créneaux = tableaux paginés + triés CÔTÉ SERVEUR
         //    (comme admin/soumissions). Les collections complètes ci-dessus
