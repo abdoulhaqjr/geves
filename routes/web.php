@@ -341,6 +341,7 @@ Route::prefix('admin')->group(function () {
             Route::post('/paiements/{payment}/rembourser', [App\Http\Controllers\Admin\PaymentController::class, 'refund'])->name('admin.payments.refund');
             Route::get('/paiements/creer', [App\Http\Controllers\Admin\PaymentController::class, 'create'])->name('admin.payments.create');
             Route::post('/paiements/creer', [App\Http\Controllers\Admin\PaymentController::class, 'store'])->name('admin.payments.store');
+            Route::get('/paiements-recu-exemple', [ReceiptController::class, 'sample'])->name('admin.payments.receipt.sample');
             Route::get('/paiements/{payment}/recu', ReceiptController::class)->name('admin.payments.receipt');
         });
 
@@ -484,6 +485,7 @@ Route::prefix('admin')->group(function () {
             Route::post('/livret/modele/supprimer', [DocumentHubController::class, 'deleteLivretTemplate'])->name('admin.documents.livret.template.delete');
             Route::get('/livret/modele-base', [DocumentHubController::class, 'baseTemplate'])->name('admin.documents.livret.base-template');
             Route::get('/modeles', [TemplateDesignerController::class, 'index'])->name('admin.documents.templates');
+            Route::get('/modeles/apercu', [TemplateDesignerController::class, 'preview'])->name('admin.documents.templates.preview');
             Route::post('/modeles/creer', [TemplateDesignerController::class, 'create'])->name('admin.documents.templates.create');
             Route::delete('/modeles/{template}', [TemplateDesignerController::class, 'destroy'])->name('admin.documents.templates.destroy');
             Route::post('/modeles/generer', [TemplateDesignerController::class, 'generate'])->name('admin.documents.templates.generate');

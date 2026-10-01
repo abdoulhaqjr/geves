@@ -1,5 +1,8 @@
 <x-layouts.admin title="Paiements" subtitle="Encaissements - participation, formations et co-auteurs">
     <x-slot:actions>
+        <a href="{{ route('admin.payments.receipt.sample', ['edition_id' => $edition_id]) }}" target="_blank" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
+            <x-ukc.icon name="receipt" :size="16" /> Aperçu du reçu
+        </a>
         <a href="{{ route('admin.payments.export', array_merge(request()->only('status', 'method', 'flow', 'search', 'from', 'to'), ['edition_id' => $edition_id])) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
             <x-ukc.icon name="download" :size="16" /> Exporter CSV
         </a>

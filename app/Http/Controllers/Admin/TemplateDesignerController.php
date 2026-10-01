@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Actions\GenerateDocumentLayout;
 use App\AI\AiManager;
+use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
 use App\Http\Controllers\Controller;
 use App\Models\Attestation;
@@ -80,6 +81,47 @@ class TemplateDesignerController extends Controller
             'attestationTypes' => self::ATTESTATION_TYPES,
             'aiAvailable' => app(AiManager::class)->available() !== [],
             'variables' => self::VARIABLES,
+        ]);
+    }
+
+    /**
+     * Aperçu RÉEL d'un modèle (attestation / badge) : rend la mise en page avec des
+     * valeurs d'exemple (les balises sont substituées), pour voir l'état final sans
+     * dépendre d'un bénéficiaire. C'est ce que l'admin attend du bouton « Aperçu »
+     * (≠ ouvrir l'éditeur, où les balises restent visibles).
+     */
+    public function preview(Request $request): View
+    {
+        $editionId = (string) $request->query('edition_id', '');
+        if ($editionId === '') {
+            $editionId = (string) (Edition::where('status', 'open')->latest('id')->value('id')
+                ?? Edition::latest('id')->value('id') ?? '');
+        }
+        [$kind, $type] = $this->kindType($request->query('kind'), $request->query('type'));
+
+        $existing = $editionId !== ''
+            ? DocumentTemplate::where('edition_id', $editionId)->where('kind', $kind)->where('type', $type)->first()
+            : null;
+
+        $layout = $existing?->layout
+            ? LayoutSanitizer::sanitize($existing->layout, $kind, $type)
+            : LayoutSanitizer::default($kind, $type);
+
+        $vars = $this->sampleVars($editionId, $type);
+        // Les badges utilisent aussi des jetons [participant.x] : on les alimente
+        // avec les mêmes valeurs d'exemple pour que l'aperçu soit complet.
+        $vars += [
+            'participant.name' => $vars['name'], 'participant.role' => $vars['role'],
+            'participant.institution' => $vars['institution'], 'event.name' => $vars['event'],
+            'event.year' => $vars['year'], 'org.name' => $vars['org'],
+            'initials' => 'AK',
+        ];
+
+        return view('admin.documents.document-preview', [
+            'title' => filled($existing?->title)
+                ? (string) $existing->title
+                : ($kind === 'badge' ? 'Badge' : (self::ATTESTATION_TYPES[$type] ?? ucfirst($type))),
+            'html' => LayoutRenderer::render($layout, $vars),
         ]);
     }
 

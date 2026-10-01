@@ -52,8 +52,10 @@ class DocumentController extends Controller
         if ($request->query('format') === 'pdf') {
             $pdf = Pdf::loadView('documents.livret-pdf', $this->livretViewData($edition, $groups))
                 ->setPaper('a4');
+            $file = 'livret-'.($edition->slug ?: 'edition-'.$edition->id).'.pdf';
 
-            return $pdf->download('livret-'.($edition->slug ?: 'edition-'.$edition->id).'.pdf');
+            // `inline` → aperçu dans le navigateur (vrai rendu final) ; sinon téléchargement.
+            return $request->boolean('inline') ? $pdf->stream($file) : $pdf->download($file);
         }
 
         return view('documents.livret', [

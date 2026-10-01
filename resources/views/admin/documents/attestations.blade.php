@@ -89,7 +89,7 @@
                                                     </form>
                                                 @endif
                                                 <a class="ukc-btn--icon" title="Éditer le template" href="{{ route('admin.documents.templates', ['edition_id' => $edition->id, 'kind' => 'attestation', 'type' => $key]) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a>
-                                                <a class="ukc-btn--icon" title="Aperçu" href="{{ route('admin.documents.templates', ['edition_id' => $edition->id, 'kind' => 'attestation', 'type' => $key]) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></a>
+                                                <a class="ukc-btn--icon" title="Aperçu (valeurs d’exemple)" target="_blank" href="{{ route('admin.documents.templates.preview', ['edition_id' => $edition->id, 'kind' => 'attestation', 'type' => $key]) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></a>
                                                 @if ($row['template'])
                                                     <button type="button" class="ukc-btn--icon" title="Supprimer le modèle"
                                                             @click="del = { id: {{ $row['template']->id }}, title: @js($row['title']), code: @js(\App\Http\Controllers\Admin\TemplateDesignerController::deleteCode($row['template'])) }; typed = ''">
@@ -206,7 +206,7 @@
                                             <div class="ukc-actions" style="justify-content:flex-end;">
                                                 <a class="ukc-btn--icon" title="Télécharger la planche (PDF)" href="{{ route('admin.documents.badges', $edition) }}" target="_blank"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></a>
                                                 <a class="ukc-btn--icon" title="Éditer le template" href="{{ route('admin.documents.templates', ['edition_id' => $edition->id, 'kind' => 'badge']) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a>
-                                                <a class="ukc-btn--icon" title="Aperçu" href="{{ route('admin.documents.badges', $edition) }}" target="_blank"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></a>
+                                                <a class="ukc-btn--icon" title="Aperçu (valeurs d’exemple)" target="_blank" href="{{ route('admin.documents.templates.preview', ['edition_id' => $edition->id, 'kind' => 'badge']) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></a>
                                             </div>
                                         </td>
                                     </tr>
@@ -283,7 +283,7 @@
                         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;">
                             <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="{{ route('admin.documents.livret', $edition) }}?format=docx"><x-ukc.icon name="file" :size="16" /> Word (.docx)</a>
                             <a class="ukc-btn ukc-btn--outline ukc-btn--sm" href="{{ route('admin.documents.livret', $edition) }}?format=pdf"><x-ukc.icon name="download" :size="16" /> PDF</a>
-                            <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.documents.livret', $edition) }}" target="_blank"><x-ukc.icon name="eye" :size="16" /> Aperçu</a>
+                            <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.documents.livret', $edition) }}?format=pdf&inline=1" target="_blank"><x-ukc.icon name="eye" :size="16" /> Aperçu (rendu final)</a>
                             <a class="ukc-btn ukc-btn--green ukc-btn--sm" href="{{ route('admin.documents.livret', $edition) }}?format=docx&harmonize=1"><x-ukc.icon name="sparkles" :size="16" /> .docx + harmonisation IA</a>
                             <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.documents.sessions', $edition) }}" target="_blank"><x-ukc.icon name="layers" :size="16" /> Fiches de session</a>
                         </div>
@@ -608,7 +608,7 @@
 
                         <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
                             <button type="submit" class="ukc-btn"><x-ukc.icon name="check" :size="16" /> Enregistrer l’apparence</button>
-                            <a class="ukc-btn ukc-btn--ghost" href="{{ route('admin.documents.livret', $edition) }}" target="_blank"><x-ukc.icon name="eye" :size="16" /> Aperçu couverture</a>
+                            <a class="ukc-btn ukc-btn--ghost" href="{{ route('admin.documents.livret', $edition) }}?format=pdf&inline=1" target="_blank"><x-ukc.icon name="eye" :size="16" /> Aperçu (rendu final)</a>
                         </div>
                     </form>
                 </div>
