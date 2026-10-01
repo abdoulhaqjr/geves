@@ -287,7 +287,7 @@
                                 <strong>Dernière génération :</strong> {{ $livreState['lastGen'] ? \Illuminate\Support\Carbon::parse($livreState['lastGen'])->format('d/m/Y H:i') : '-' }}<br>
                                 <strong>Résumés inclus :</strong> {{ $counts['accepted'] }}<br>
                                 <strong>Axes :</strong> {{ $counts['axes'] }} · <strong>Sessions :</strong> {{ $counts['sessions'] }}<br>
-                                <strong>Modèle actif :</strong> {{ $opts['livretTemplate'] === 'default' ? 'Modèle par défaut (Apparence)' : $opts['livretTemplate'] }}<br>
+                                <strong>Modèle actif :</strong> {{ \App\Documents\LivretDocx::STYLES[$opts['livretTemplate']] ?? ($opts['livretTemplate'] === 'base' ? 'Modèle de base' : $opts['livretTemplate']) }}<br>
                                 <strong>Avant-propos :</strong> {{ trim($opts['forewordText']) !== '' ? 'défini' : 'non défini' }}
                                 @if ($livreState['file'])<br><strong>Fichier :</strong> <code>{{ $livreState['file'] }}</code>@endif
                             </p>
@@ -384,7 +384,8 @@
                         <div class="ukc-field" style="margin-bottom:14px;max-width:420px;">
                             <label>Modèle actif</label>
                             <select name="livretTemplate">
-                                <option value="default" @selected($opts['livretTemplate'] === 'default')>Modèle par défaut (Apparence du livre)</option>
+                                <option value="default" @selected($opts['livretTemplate'] === 'default')>Modèle par défaut (UK/UP) · Apparence du livre</option>
+                                <option value="fss" @selected($opts['livretTemplate'] === 'fss')>Modèle 2 - Journées scientifiques (FSS)</option>
                                 <option value="base" @selected($opts['livretTemplate'] === 'base')>Modèle de base {{ config('app.name') }}</option>
                                 @foreach ($templates as $tpl)
                                     <option value="{{ $tpl['name'] }}" @selected($opts['livretTemplate'] === $tpl['name'])>{{ $tpl['name'] }}</option>
@@ -415,8 +416,31 @@
                         <div style="margin-top:14px;">
                             <div class="ukc-tpl-item">
                                 <div class="ico">DOC</div>
-                                <div class="meta"><strong>Modèle par défaut</strong><span>Généré depuis l’onglet Apparence · non modifiable ici</span></div>
-                                <span class="ukc-pill ukc-pill--ok">Par défaut</span>
+                                <div class="meta"><strong>Modèle par défaut (UK/UP)</strong><span>Couverture tricolore · commissions numérotées · programme par jour</span></div>
+                                @if ($opts['livretTemplate'] === 'default')
+                                    <span class="ukc-pill ukc-pill--ok">Actif</span>
+                                @else
+                                    <form method="POST" action="{{ route('admin.documents.livret.template') }}" style="display:inline;">
+                                        @csrf
+                                        <input type="hidden" name="edition_id" value="{{ $edition->id }}">
+                                        <input type="hidden" name="livretTemplate" value="default">
+                                        <button type="submit" class="ukc-btn ukc-btn--sm">Utiliser</button>
+                                    </form>
+                                @endif
+                            </div>
+                            <div class="ukc-tpl-item">
+                                <div class="ico">DOC</div>
+                                <div class="meta"><strong>Modèle 2 - Journées scientifiques (FSS)</strong><span>Couverture sobre · comités simples · programme par salle</span></div>
+                                @if ($opts['livretTemplate'] === 'fss')
+                                    <span class="ukc-pill ukc-pill--ok">Actif</span>
+                                @else
+                                    <form method="POST" action="{{ route('admin.documents.livret.template') }}" style="display:inline;">
+                                        @csrf
+                                        <input type="hidden" name="edition_id" value="{{ $edition->id }}">
+                                        <input type="hidden" name="livretTemplate" value="fss">
+                                        <button type="submit" class="ukc-btn ukc-btn--sm">Utiliser</button>
+                                    </form>
+                                @endif
                             </div>
                             <div class="ukc-tpl-item">
                                 <div class="ico">DOC</div>

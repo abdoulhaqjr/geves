@@ -59,14 +59,28 @@ class LivretDocx
     /** @var array<string, list<string>> nom d'auteur affiché => références des résumés (index des auteurs). */
     private array $authorIndex = [];
 
+    /** Styles intégrés disponibles (modèle actif « default » ou « fss »). */
+    public const STYLES = [
+        'default' => 'Modèle par défaut (UK/UP)',
+        'fss' => 'Modèle 2 - Journées scientifiques (FSS)',
+    ];
+
     /**
      * @param  Collection<int|string, \Illuminate\Database\Eloquent\Collection<int, Submission>>  $groups  soumissions groupées par axe
+     * @param  string  $style  style intégré : 'default' (UK/UP) ou 'fss' (Journées scientifiques)
      */
     public function __construct(
         private readonly Edition $edition,
         private readonly Collection $groups,
         private readonly bool $harmonize = false,
+        private readonly string $style = 'default',
     ) {}
+
+    /** Le document est-il rendu dans le style « Journées scientifiques (FSS) » ? */
+    private function isFss(): bool
+    {
+        return $this->style === 'fss';
+    }
 
     /** Réponse HTTP de téléchargement du .docx. */
     public function download(string $filename): Response
@@ -334,10 +348,13 @@ class LivretDocx
         }
 
         // Bandeau tricolore (trois cellules colorées). Twips = entiers (1pt = 20tw, 1cm ≈ 567tw).
-        $banner = $section->addTable();
-        $banner->addRow((int) Converter::pointToTwip(6));
-        foreach ([self::BLUE, self::GOLD, self::GREEN] as $color) {
-            $banner->addCell((int) Converter::cmToTwip(4), ['bgColor' => $color])->addText('');
+        // Le style FSS a une couverture SOBRE (sans bandeau).
+        if (! $this->isFss()) {
+            $banner = $section->addTable();
+            $banner->addRow((int) Converter::pointToTwip(6));
+            foreach ([self::BLUE, self::GOLD, self::GREEN] as $color) {
+                $banner->addCell((int) Converter::cmToTwip(4), ['bgColor' => $color])->addText('');
+            }
         }
 
         $section->addTextBreak(2);
@@ -485,12 +502,16 @@ class LivretDocx
             return;
         }
 
-        $this->partTitle($section, 'Différentes commissions et programmes du colloque');
+        // Style FSS : titre « Comités » et rôles SANS numérotation. Style par défaut
+        // UK/UP : « Différentes commissions… » avec comités numérotés.
+        $fss = $this->isFss();
+        $this->partTitle($section, $fss ? 'Comités' : 'Différentes commissions et programmes du colloque');
 
         $num = 0;
         foreach ($committees as $role => $label) {
             $num++;
-            $section->addText($num.'. '.$label, ['bold' => true, 'size' => 13, 'color' => self::BLUE], ['spaceBefore' => 200, 'spaceAfter' => 70]);
+            $heading = $fss ? $label : $num.'. '.$label;
+            $section->addText($heading, ['bold' => true, 'size' => 13, 'color' => self::BLUE], ['spaceBefore' => 200, 'spaceAfter' => 70]);
             foreach ($byRole->get($role) ?? [] as $m) {
                 $lead = trim(trim((string) $m->person_title).' '.trim((string) $m->person_name));
                 $tail = trim((string) $m->institution);
@@ -500,7 +521,8 @@ class LivretDocx
 
         if ($synDays->isNotEmpty()) {
             $num++;
-            $section->addText($num.'. Programme synthétique du colloque', ['bold' => true, 'size' => 13, 'color' => self::BLUE], ['spaceBefore' => 240, 'spaceAfter' => 70]);
+            $synHeading = $fss ? 'Programme synthétique du colloque' : $num.'. Programme synthétique du colloque';
+            $section->addText($synHeading, ['bold' => true, 'size' => 13, 'color' => self::BLUE], ['spaceBefore' => 240, 'spaceAfter' => 70]);
             $this->addProgrammeSynthetique($section, $synDays->all());
         }
 
@@ -540,10 +562,63 @@ class LivretDocx
         }
 
         $this->partTitle($section, 'Programme');
-        foreach ($byDay as $day => $slots) {
-            $this->programmeDayTable($section, (string) $day, $slots);
+
+        if ($this->isFss()) {
+            // Style FSS : regroupement par SALLE (à la « Grande salle / Salle 1 »),
+            // chaque salle listant ses communications dans l'ordre chronologique.
+            $byRoom = $byDay->flatten(1)
+                ->groupBy(fn (Slot $sl) => trim((string) ($sl->room ?: $sl->session?->room)) ?: 'Salle à définir')
+                ->sortKeys();
+            foreach ($byRoom as $room => $roomSlots) {
+                $sorted = $roomSlots->sortBy(fn (Slot $sl) => optional($sl->starts_at)->timestamp ?? 0)->values();
+                $this->programmeRoomTable($section, (string) $room, $sorted);
+            }
+        } else {
+            foreach ($byDay as $day => $slots) {
+                $this->programmeDayTable($section, (string) $day, $slots);
+            }
         }
+
         $section->addPageBreak();
+    }
+
+    /**
+     * Tableau d'une salle (style FSS) : ses communications triées par date,
+     * colonnes « Jour & horaire | Communication (titre + auteurs) | Session ».
+     *
+     * @param  Collection<int, Slot>  $slots
+     */
+    private function programmeRoomTable(Section $section, string $room, Collection $slots): void
+    {
+        $section->addText($room, ['bold' => true, 'size' => 13, 'color' => self::BLUE], ['spaceBefore' => 160, 'spaceAfter' => 60]);
+
+        $table = $section->addTable(['bordercolor' => 'DDDDDD', 'borderSize' => 4, 'cellMargin' => 60]);
+        $table->addRow();
+        foreach (['Jour & horaire' => 3.4, 'Communication' => 8.6, 'Session' => 4] as $head => $cm) {
+            $table->addCell((int) Converter::cmToTwip($cm), ['bgColor' => 'F1F5F9'])
+                ->addText($head, ['bold' => true, 'size' => 10, 'color' => self::BLUE]);
+        }
+        foreach ($slots as $sl) {
+            $when = $sl->starts_at ? ucfirst(Carbon::parse($sl->starts_at)->translatedFormat('D j M')).' '.$sl->starts_at->format('H:i') : '-';
+            if ($sl->ends_at) {
+                $when .= '–'.$sl->ends_at->format('H:i');
+            }
+            $title = trim((string) ($sl->submission?->title ?: $sl->session_label));
+            $authors = $this->slotAuthors($sl);
+            $sessLabel = trim((string) ($sl->session?->label ?: $sl->session_label));
+
+            $table->addRow();
+            $table->addCell((int) Converter::cmToTwip(3.4))->addText($when, ['size' => 10]);
+            $cell = $table->addCell((int) Converter::cmToTwip(8.6));
+            $cell->addText($title !== '' ? $title : '-', ['size' => 10]);
+            if ($authors !== '') {
+                $cell->addText($authors, ['size' => 9, 'italic' => true, 'color' => self::MUTED]);
+            }
+            $cell3 = $table->addCell((int) Converter::cmToTwip(4));
+            if ($sessLabel !== '' && $sessLabel !== $title) {
+                $cell3->addText($sessLabel, ['size' => 9, 'color' => self::MUTED]);
+            }
+        }
     }
 
     /**

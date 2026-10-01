@@ -1,6 +1,7 @@
 <?php
 
 use App\Documents\LivretTemplate;
+use App\Models\CommitteeMember;
 use App\Models\User;
 use App\Support\EditionSettings;
 use Illuminate\Support\Facades\Storage;
@@ -72,6 +73,39 @@ it('insère les sections de tête génériques seulement si elles sont remplies'
         ->toContain('Monsieur le Président de l’Université')
         ->toContain('Mot de bienvenue du Doyen')
         ->toContain('C’est avec plaisir que nous vous accueillons');
+});
+
+it('applique le style intégré sélectionné (Journées scientifiques / FSS)', function () {
+    $staff = adminStaff();
+    $submission = seededSubmission('accepted');
+    $edition = $submission->edition;
+
+    // Un comité pour rendre visible la différence de titre entre les deux styles.
+    CommitteeMember::create([
+        'edition_id' => $edition->id,
+        'person_name' => 'Jean Test',
+        'role' => 'organisation',
+        'ordre' => 1,
+    ]);
+
+    // Style par défaut (UK/UP) : « Différentes commissions… », commissions numérotées.
+    $xmlDefault = livretDocumentXml(
+        $this->actingAs($staff, 'web')
+            ->get(route('admin.documents.livret', ['edition' => $edition, 'format' => 'docx']))
+            ->streamedContent()
+    );
+    expect($xmlDefault)->toContain('Différentes commissions et programmes du colloque');
+
+    // Style FSS sélectionné : titre « Comités », sans le libellé UK/UP.
+    EditionSettings::set($edition, 'livret.template', 'fss');
+    $xmlFss = livretDocumentXml(
+        $this->actingAs($staff, 'web')
+            ->get(route('admin.documents.livret', ['edition' => $edition, 'format' => 'docx']))
+            ->streamedContent()
+    );
+    expect($xmlFss)->toContain('Comités')
+        ->toContain('Innovation durable')   // les résumés sont toujours présents
+        ->not->toContain('Différentes commissions et programmes du colloque');
 });
 
 it('génère le livret en PDF', function () {

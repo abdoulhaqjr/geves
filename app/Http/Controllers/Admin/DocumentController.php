@@ -46,7 +46,7 @@ class DocumentController extends Controller
                     ->download($base);
             }
 
-            return (new LivretDocx($edition, $groups, $request->boolean('harmonize')))->download($base);
+            return (new LivretDocx($edition, $groups, $request->boolean('harmonize'), $this->livretStyle($edition)))->download($base);
         }
 
         if ($request->query('format') === 'pdf') {
@@ -71,7 +71,9 @@ class DocumentController extends Controller
     private function selectedLivretTemplate(Edition $edition): ?array
     {
         $selected = (string) EditionSettings::get($edition, 'livret.template', 'default');
-        if (in_array($selected, ['', 'default', 'base'], true)) {
+        // 'default'/'base'/'fss' = styles intégrés (générateur LivretDocx), pas un
+        // modèle .docx importé.
+        if (in_array($selected, ['', 'default', 'base', ...array_keys(LivretDocx::STYLES)], true)) {
             return null;
         }
 
@@ -85,6 +87,14 @@ class DocumentController extends Controller
         }
 
         return null;
+    }
+
+    /** Style intégré actif pour le .docx : 'fss' si sélectionné, sinon 'default'. */
+    private function livretStyle(Edition $edition): string
+    {
+        $selected = (string) EditionSettings::get($edition, 'livret.template', 'default');
+
+        return array_key_exists($selected, LivretDocx::STYLES) ? $selected : 'default';
     }
 
     /**

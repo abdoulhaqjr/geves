@@ -603,6 +603,15 @@ paiement (`pay`), inscription à une formation.
     volontairement minimal (il n'affiche déjà ni comités ni programme) : le .docx et le PDF sont les
     sorties fidèles. Les **modèles .docx personnalisés** ne reçoivent pas ces blocs (l'admin met ce
     contenu directement dans son propre .docx).
+  - **Deux styles intégrés SÉLECTIONNABLES** (réglage `livret.template`, `LivretDocx::STYLES`,
+    sélecteur « Modèle actif » de l'onglet **Modèles de document**) : **`default`** = modèle UK/UP
+    (couverture tricolore, commissions numérotées « Différentes commissions… », programme par jour) ;
+    **`fss`** = « Modèle 2 - Journées scientifiques (FSS) » (couverture **sobre** sans bandeau,
+    comités en titres simples « Comités », **programme par salle**). `LivretDocx` prend un paramètre
+    `$style` ; `DocumentController::livretStyle()` le résout, et `selectedLivretTemplate()` traite
+    `default`/`base`/`fss` comme des styles intégrés (≠ modèle .docx importé). ⚠️ Le style intégré
+    n'agit que sur le **.docx** (comme les modèles personnalisés) ; l'aperçu HTML et le PDF gardent la
+    mise en page par défaut. Les deux styles partagent les sections de tête génériques ci-dessus.
   - **Gabarits .docx personnalisés** (porté de `booklet-templates.php` `ukc_bt_render`) :
     l'admin télécharge le **modèle de base** à balises (`admin.documents.livret.base-template`
     → `LivretTemplate::downloadBase`, vrai .docx), le personnalise dans Word en gardant les
