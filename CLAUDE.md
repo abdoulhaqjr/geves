@@ -659,7 +659,16 @@ paiement (`pay`), inscription à une formation.
     du modèle), et les balises **en ligne** (`[[TITRE]]`, `[[EDITION]]`, `[[THEME]]`, `[[DATES]]`,
     `[[LIEU]]`, `[[ANNEE]]`, `[[NB_RESUMES]]`, via `LivretDocx::inlineValues()`). Repli sur
     `LivretDocx` quand aucun modèle n'est sélectionné/présent (`selectedLivretTemplate()`).
+    Un modèle importé se **supprime** (`deleteLivretTemplate`, route `admin.documents.livret.template.delete` ;
+    fichier effacé + repli sur `default` s'il était actif).
     Tests : `tests/Feature/LivretTest.php` (contenu réel du .docx/PDF, fusion des balises).
+  - **UI du volet (onglet Documents → Livre des résumés, 3 sous-onglets)** : *Livre des résumés*
+    (panneau de génération Word/PDF/aperçu/harmonisation + modèle actif en pastille, bandeau KPI,
+    « Contenu du livre » en cartes par section avec badge Affiché/Masqué), *Modèles de document*
+    (modèles intégrés vs personnalisés, actif mis en évidence, import/suppression), *Apparence du livre*.
+    ⚠️ La vue `admin/documents/attestations.blade.php` utilise des **`@php(...)` en ligne** : n'y
+    ajoutez **pas** de bloc `@php … @endphp` (mélange = compilation Blade cassée, cf. Pièges) - préparez
+    la donnée dans le contrôleur (`DocumentHubController::livretViewExtras()`).
 - **Remboursement → révocation des attestations** : une attestation atteste d'un droit
   acquis par un paiement. `App\Actions\RevokeAttestationsOnRefund` (appelée par
   `admin.payments.refund`) **révoque** (jamais ne supprime - l'attestation reste
