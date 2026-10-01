@@ -38,6 +38,18 @@ it('génère le livret .docx avec les résumés et l’index des auteurs', funct
         ->toContain('26-001');               // la référence (renvoi de l'index)
 });
 
+it('génère le livret en PDF', function () {
+    $staff = adminStaff();
+    $submission = seededSubmission('accepted');
+
+    $res = $this->actingAs($staff, 'web')
+        ->get(route('admin.documents.livret', ['edition' => $submission->edition, 'format' => 'pdf']));
+
+    $res->assertOk();
+    expect($res->headers->get('content-type'))->toContain('pdf');
+    expect(substr((string) $res->getContent(), 0, 5))->toBe('%PDF-');
+});
+
 it('protège la génération du livret sans permission', function () {
     $submission = seededSubmission('accepted');
     $user = User::factory()->create();

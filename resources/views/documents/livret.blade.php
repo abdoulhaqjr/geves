@@ -4,8 +4,11 @@
             <a href="{{ request()->fullUrlWithQuery(['format' => 'docx']) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">
                 <x-ukc.icon name="download" :size="16" /> Word (.docx)
             </a>
-            <button onclick="window.print()" class="ukc-btn ukc-btn--blue ukc-btn--sm">
-                <x-ukc.icon name="download" :size="16" /> Imprimer / PDF
+            <a href="{{ request()->fullUrlWithQuery(['format' => 'pdf']) }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">
+                <x-ukc.icon name="download" :size="16" /> PDF
+            </a>
+            <button onclick="window.print()" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
+                <x-ukc.icon name="download" :size="16" /> Imprimer
             </button>
         </div>
 

@@ -8,11 +8,15 @@ use App\Documents\LivretDocx;
 use App\Http\Controllers\Controller;
 use App\Models\DocumentTemplate;
 use App\Models\Edition;
+use App\Models\Submission;
 use App\Support\EditionSettings;
 use App\Support\SessionDocLayout;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -36,10 +40,83 @@ class DocumentController extends Controller
                 ->download('livret-'.($edition->slug ?: 'edition-'.$edition->id).'.docx');
         }
 
+        if ($request->query('format') === 'pdf') {
+            $pdf = Pdf::loadView('documents.livret-pdf', $this->livretViewData($edition, $groups))
+                ->setPaper('a4');
+
+            return $pdf->download('livret-'.($edition->slug ?: 'edition-'.$edition->id).'.pdf');
+        }
+
         return view('documents.livret', [
             'edition' => $edition,
             'groups' => $groups,
         ]);
+    }
+
+    /**
+     * Données partagées du livret (page de garde, avant-propos, comités, programme,
+     * index des auteurs, options) pour les rendus PDF (dompdf) et HTML.
+     *
+     * @param  Collection<int|string, \Illuminate\Database\Eloquent\Collection<int, Submission>>  $groups
+     * @return array<string, mixed>
+     */
+    private function livretViewData(Edition $edition, Collection $groups): array
+    {
+        $g = fn (string $key, mixed $default = null): mixed => EditionSettings::get($edition, $key, $default);
+
+        // Index des auteurs : nom => références des résumés (renvoi), même règle que le .docx.
+        $authorIndex = [];
+        $n = 0;
+        foreach ($groups as $submissions) {
+            foreach ($submissions as $s) {
+                $n++;
+                $ref = trim((string) $s->ref_code) ?: '#'.$n;
+                foreach (collect($s->authors ?? []) as $a) {
+                    $name = trim((string) ($a['name'] ?? ''));
+                    if ($name !== '') {
+                        $authorIndex[$name][] = $ref;
+                    }
+                }
+            }
+        }
+        ksort($authorIndex, SORT_NATURAL | SORT_FLAG_CASE);
+        $authorIndex = array_map(fn ($refs) => implode(', ', array_values(array_unique($refs))), $authorIndex);
+
+        // Programme : séances datées regroupées par jour.
+        $sessions = $edition->sessions()->get()
+            ->filter(fn ($s) => $s->starts_at || $s->session_day)
+            ->sortBy(fn ($s) => optional($s->starts_at)->timestamp ?? 0);
+        $programme = $sessions->groupBy(fn ($s) => optional($s->session_day ?? $s->starts_at)?->format('Y-m-d') ?? '')
+            ->sortKeys()
+            ->map(fn ($day) => $day->values());
+
+        $committeeRoles = [
+            'organisation' => 'Comité d’organisation',
+            'scientifique' => 'Comité scientifique',
+            'supervision' => 'Comité de supervision',
+        ];
+
+        return [
+            'edition' => $edition,
+            'groups' => $groups,
+            'authorIndex' => $authorIndex,
+            'programme' => $programme,
+            'committees' => $edition->committeeMembers()->orderBy('ordre')->get()->groupBy('role'),
+            'committeeRoles' => $committeeRoles,
+            'dayLabel' => fn (string $d) => $d !== '' ? ucfirst(Carbon::parse($d)->translatedFormat('l j F Y')) : 'À programmer',
+            'opts' => [
+                'foreword_title' => trim((string) $g('livret.foreword_title', 'Avant-propos')) ?: 'Avant-propos',
+                'foreword_text' => trim((string) $g('livret.foreword_text', '')),
+                'signature' => trim((string) $g('livret.signature', '')),
+                'cover_mention' => trim((string) $g('livret.cover_mention', '')) ?: 'LIVRE DES RÉSUMÉS',
+                'show_theme' => (bool) $g('livret.show_theme', true),
+                'show_dates' => (bool) $g('livret.show_dates', true),
+                'number' => (bool) $g('livret.number_abstracts', false),
+                'author_index' => (bool) $g('livret.author_index', true),
+                'color_primary' => trim((string) $g('livret.color_primary', '#223ea4')) ?: '#223ea4',
+                'align_body' => $g('livret.align_body', 'Justifié') === 'Gauche' ? 'left' : 'justify',
+            ],
+        ];
     }
 
     /** Fiches de session imprimables : chaque session avec ses communications. */
