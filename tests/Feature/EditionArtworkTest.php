@@ -136,6 +136,30 @@ it('garde l’habillage quand on enregistre un autre onglet', function () {
     Storage::disk('public')->assertExists(storagePath($banner));
 });
 
+it('active et désactive la bannière officielle', function () {
+    Storage::fake('public');
+    $edition = artworkEdition();
+    $staff = adminStaff();
+
+    $poser = fn (array $extra) => $this->actingAs($staff, 'web')
+        ->put(route('admin.editions.update', $edition), editionBase($edition) + $extra + [
+            'banner_image' => 'https://cdn.example.org/affiche.jpg',
+        ]);
+
+    $poser(['banner_enabled' => '1']);
+    expect($edition->refresh()->settings['banner_enabled'])->toBeTrue();
+
+    auth('web')->logout();
+    $this->get(route('public.colloque', $edition->slug))->assertOk()->assertSee('id="banniere"', false);
+
+    // Décochée, la case n'est pas postée du tout : c'est bien l'absence qui vaut « non ».
+    $poser([]);
+    expect($edition->refresh()->settings['banner_enabled'])->toBeFalse();
+
+    auth('web')->logout();
+    $this->get(route('public.colloque', $edition->slug))->assertOk()->assertDontSee('id="banniere"', false);
+});
+
 it('refuse un fichier qui n’est pas une image', function () {
     Storage::fake('public');
     $edition = artworkEdition();

@@ -595,6 +595,13 @@ paiement (`pay`), inscription à une formation.
     garde « garde l'habillage quand on enregistre un autre onglet »).
   - ⚠️ Le `<form id="editionForm">` est en **`enctype="multipart/form-data"`** :
     sans ça, les fichiers n'arrivent jamais et l'échec est silencieux.
+  - **Bannière activable** : case `banner_enabled` (settings), **dans le bloc de
+    l'image qu'elle gouverne** - elle vivait sous les couleurs, on la croyait
+    absente. Le bloc passe en gris quand elle est décochée (`.artwork-field.is-off`).
+    Section publique `#banniere` masquée en conséquence (défaut : affichée).
+  - La bannière publique a un **espacement interne** (`padding` sur
+    `.ukc-banner-frame`) : l'image est **montée dans le cadre**, le dégradé de la
+    charte faisant passe-partout, plutôt que collée aux bords.
   - ⚠️ **`aspect-ratio` + `max-height` RÉDUIT la largeur** : `.ukc-banner-frame`
     (21/9, plafond 420 px) se dessinait à 980 px (= 420 x 21/9) et calée à gauche
     de son conteneur. Il faut une **largeur définie** (`width: 100%`) pour que ce

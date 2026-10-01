@@ -735,6 +735,9 @@
 .admin-edition-detail .artwork-field .artwork-head .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .admin-edition-detail .artwork-field input[type="file"] { position: absolute; width: .1px; height: .1px; opacity: 0; overflow: hidden; z-index: -1; }
 .admin-edition-detail .artwork-field .ukc-hint { margin: 6px 0 2px; }
+/* Désactivée, l'image reste modifiable mais s'efface visuellement : on voit du
+   premier coup d'œil qu'elle ne sera pas publiée. */
+.admin-edition-detail .artwork-field.is-off .banner-preview { opacity: .45; filter: grayscale(1); }
 .admin-edition-detail .color-row { display: flex; gap: 10px; align-items: center; }
 .admin-edition-detail .color-row input[type="color"] {
   width: 42px; height: 36px; border: 1px solid var(--ukc-border); border-radius: 8px; padding: 2px; background: #fff;

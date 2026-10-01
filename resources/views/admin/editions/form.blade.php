@@ -482,11 +482,12 @@
                                  le fichier l'emporte, c'est l'action la plus explicite. --}}
                             @foreach ([
                                 ['key' => 'hero_image', 'titre' => 'Image du bandeau (hero)', 'aide' => 'Fond du bandeau en tête de la page publique. Paysage large, 1920 x 800 environ.', 'url' => $v('hero_image')],
-                                ['key' => 'banner_image', 'titre' => 'Bannière officielle', 'aide' => 'Visuel affiché sous le bandeau, pleine largeur. Format 21:9 conseillé (ex. 1680 x 720).', 'url' => $v('banner_image')],
+                                ['key' => 'banner_image', 'titre' => 'Bannière officielle', 'aide' => 'Visuel affiché sous le bandeau, pleine largeur. Format 21:9 conseillé (ex. 1680 x 720).', 'url' => $v('banner_image'), 'toggle' => 'banner_enabled'],
                             ] as $art)
-                                <div class="artwork-field" x-data="{
+                                <div class="artwork-field" :class="{ 'is-off': ! on }" x-data="{
                                         preview: '{{ e($art['url']) }}',
                                         removed: false,
+                                        on: {{ isset($art['toggle']) ? ($v($art['toggle']) ? 'true' : 'false') : 'true' }},
                                         pick(e) { const f = e.target.files[0]; if (! f) return; this.preview = URL.createObjectURL(f); this.removed = false; },
                                         clear() { this.preview = ''; this.removed = true; this.$refs.f.value = ''; this.$refs.u.value = ''; }
                                      }">
@@ -505,6 +506,14 @@
                                         </div>
                                     </div>
                                     <div class="ukc-hint">{{ $art['aide'] }}</div>
+                                    @isset($art['toggle'])
+                                        {{-- L'interrupteur vit AVEC l'image qu'il gouverne : il était
+                                             perdu sous les couleurs, on le croyait absent. --}}
+                                        <label class="ukc-check">
+                                            <input type="checkbox" name="{{ $art['toggle'] }}" value="1" x-model="on">
+                                            Afficher la bannière officielle sur la page du colloque
+                                        </label>
+                                    @endisset
                                     <div class="ukc-form-row">
                                         <label for="{{ $art['key'] }}">ou indiquer une URL</label>
                                         <input type="url" id="{{ $art['key'] }}" name="{{ $art['key'] }}" x-ref="u"
@@ -532,7 +541,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <label class="ukc-check"><input type="checkbox" name="banner_enabled" value="1" @checked($v('banner_enabled'))> Afficher la bannière officielle sur la page du colloque</label>
 
                             <h3>Vidéo de fond du hero</h3>
                             <div class="ukc-form-row">
