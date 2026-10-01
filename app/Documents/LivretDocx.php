@@ -122,8 +122,7 @@ class LivretDocx
 
         $this->addCover($section);
         $this->addForeword($section);
-        $this->addCommittees($section);
-        $this->addToc($section);
+        $this->addCommissionsProgramme($section);
         $this->addProgramme($section);
         $this->addBody($section);
 
@@ -390,45 +389,75 @@ class LivretDocx
         $section->addPageBreak();
     }
 
-    /** Comités (organisation / scientifique / supervision) : « Nom - Titre - Institution ». */
-    private function addCommittees(Section $section): void
+    /** @var array<string, string> comités dans l'ordre de référence (supervision → scientifique). */
+    private const COMMITTEE_ORDER = [
+        'supervision' => 'Comité de supervision',
+        'organisation' => 'Comité d’organisation',
+        'scientifique' => 'Comité scientifique',
+    ];
+
+    /**
+     * « Différentes commissions et programmes du colloque » : comités numérotés
+     * (1. Supervision, 2. Organisation, 3. Scientifique) puis « Programme
+     * synthétique du colloque » - structure du livret de référence UK/UP.
+     */
+    private function addCommissionsProgramme(Section $section): void
     {
-        $members = $this->edition->committeeMembers()->orderBy('ordre')->get();
-        if ($members->isEmpty()) {
+        $byRole = $this->edition->committeeMembers()->orderBy('ordre')->get()->groupBy('role');
+        $committees = collect(self::COMMITTEE_ORDER)
+            ->filter(fn ($label, $role) => ($byRole->get($role)?->isNotEmpty() ?? false));
+
+        $synthesis = $this->edition->settings['program_synthesis'] ?? null;
+        $synDays = is_array($synthesis) ? collect($synthesis['days'] ?? []) : collect();
+
+        if ($committees->isEmpty() && $synDays->isEmpty()) {
             return;
         }
 
-        $byRole = $members->groupBy('role');
-        $printed = false;
-        foreach (self::COMMITTEE_ROLES as $role => $label) {
-            $list = $byRole->get($role);
-            if (! $list || $list->isEmpty()) {
-                continue;
-            }
-            $section->addTitle($label, 1);
-            $printed = true;
-            foreach ($list as $m) {
-                $bits = array_filter([
-                    trim((string) $m->person_name),
-                    trim((string) $m->person_title),
-                    trim((string) $m->institution),
-                ]);
-                $section->addText(implode(' - ', $bits), ['size' => 11], ['spaceAfter' => 40]);
+        $section->addTitle('Différentes commissions et programmes du colloque', 1);
+
+        $num = 0;
+        foreach ($committees as $role => $label) {
+            $num++;
+            $section->addText($num.'. '.$label, ['bold' => true, 'size' => 13, 'color' => self::BLUE], ['spaceBefore' => 200, 'spaceAfter' => 70]);
+            foreach ($byRole->get($role) ?? [] as $m) {
+                $lead = trim(trim((string) $m->person_title).' '.trim((string) $m->person_name));
+                $tail = trim((string) $m->institution);
+                $section->addText($tail !== '' ? $lead.', '.$tail : $lead, ['size' => 11], ['spaceAfter' => 30]);
             }
         }
 
-        if ($printed) {
-            $section->addPageBreak();
+        if ($synDays->isNotEmpty()) {
+            $num++;
+            $section->addText($num.'. Programme synthétique du colloque', ['bold' => true, 'size' => 13, 'color' => self::BLUE], ['spaceBefore' => 240, 'spaceAfter' => 70]);
+            $this->addProgrammeSynthetique($section, $synDays->all());
         }
+
+        $section->addPageBreak();
     }
 
-    /** Sommaire : champ TOC Word (mis à jour à l'ouverture). */
-    private function addToc(Section $section): void
+    /** Programme synthétique saisi (jours + lignes « horaire : libellé »), rendu texte. */
+    private function addProgrammeSynthetique(Section $section, array $days): void
     {
-        // Titre simple (non indexé) : évite que « Sommaire » figure dans son propre sommaire.
-        $section->addText('Sommaire', ['bold' => true, 'size' => 18, 'color' => self::hex((string) EditionSettings::get($this->edition, 'livret.color_primary', '#223ea4'), self::BLUE), 'name' => (string) EditionSettings::get($this->edition, 'livret.font_head', 'Jost')], ['spaceBefore' => 240, 'spaceAfter' => 200]);
-        $section->addTOC(['size' => 11, 'name' => (string) EditionSettings::get($this->edition, 'livret.font_head', 'Jost')], ['spaceAfter' => 60], 1, 2);
-        $section->addPageBreak();
+        $hm = fn ($t) => trim((string) $t) === '' ? '' : str_replace(':', 'h', substr((string) $t, 0, 5));
+        foreach ($days as $day) {
+            $heading = trim((string) ($day['heading'] ?? ''));
+            $date = trim((string) ($day['date'] ?? ''));
+            $dayLabel = trim(($date !== '' ? ucfirst(Carbon::parse($date)->translatedFormat('l d/m/Y')) : '').($heading !== '' ? '  '.$heading : ''));
+            if ($dayLabel !== '') {
+                $section->addText($dayLabel, ['bold' => true, 'size' => 11, 'color' => self::BLUE], ['spaceBefore' => 120, 'spaceAfter' => 30]);
+            }
+            foreach ($day['rows'] ?? [] as $row) {
+                $s = $hm($row['start'] ?? '');
+                $e = $hm($row['end'] ?? '');
+                $time = $e !== '' ? $s.' – '.$e : $s;
+                $label = trim((string) ($row['label'] ?? ''));
+                $text = $time !== '' ? trim($time.' : '.$label) : $label;
+                if ($text !== '') {
+                    $section->addText($text, ['size' => 11], ['spaceAfter' => 20]);
+                }
+            }
+        }
     }
 
     /** Programme : sessions datées regroupées par jour (tableau Horaire / Session / Salle). */
@@ -520,18 +549,18 @@ class LivretDocx
         })->filter()->implode('; ');
     }
 
-    /** Coordonnées de l'auteur correspondant : « e-mail : … ; Tél : … » (parties présentes). */
+    /** Coordonnées de l'auteur correspondant : « Email : … Tél : … » (parties présentes). */
     private function contactLine(array $corr): string
     {
         $bits = [];
         if (($corr['email'] ?? '') !== '') {
-            $bits[] = 'e-mail : '.$corr['email'];
+            $bits[] = 'Email : '.$corr['email'];
         }
         if (($corr['phone'] ?? '') !== '') {
             $bits[] = 'Tél : '.$corr['phone'];
         }
 
-        return implode(' ; ', $bits);
+        return implode('   ', $bits);
     }
 
     /** Résumés des communications, regroupés par axe (titres en MAJUSCULES). */
@@ -657,7 +686,7 @@ class LivretDocx
             // Auteur correspondant : nom (e-mail : … ; Tél : …).
             $corr = $people->firstWhere('corr', true);
             if ($corr && ($contact = $this->contactLine($corr)) !== '') {
-                $section->addText('*Auteur correspondant : '.$corr['name'].' ('.$contact.')',
+                $section->addText('*Auteur correspondant : '.$corr['name'].'   '.$contact,
                     ['size' => 9, 'color' => self::MUTED], ['spaceBefore' => 20, 'spaceAfter' => 60]);
             }
         }

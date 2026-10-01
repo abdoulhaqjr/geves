@@ -123,17 +123,21 @@ class DocumentController extends Controller
             ->groupBy(fn ($sl) => $sl->starts_at?->format('Y-m-d') ?? '')
             ->sortKeys();
 
+        // Ordre de référence UK/UP : supervision, organisation, scientifique.
         $committeeRoles = [
+            'supervision' => 'Comité de supervision',
             'organisation' => 'Comité d’organisation',
             'scientifique' => 'Comité scientifique',
-            'supervision' => 'Comité de supervision',
         ];
+
+        $synthesis = $edition->settings['program_synthesis'] ?? null;
 
         return [
             'edition' => $edition,
             'groups' => $groups,
             'authorIndex' => $authorIndex,
             'programme' => $programme,
+            'programSynthesis' => is_array($synthesis) ? $synthesis : ['title' => '', 'days' => []],
             'committees' => $edition->committeeMembers()->orderBy('ordre')->get()->groupBy('role'),
             'committeeRoles' => $committeeRoles,
             'dayLabel' => fn (string $d) => $d !== '' ? ucfirst(Carbon::parse($d)->translatedFormat('l j F Y')) : 'À programmer',

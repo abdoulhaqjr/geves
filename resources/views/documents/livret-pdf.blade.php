@@ -79,19 +79,45 @@
     </div>
 @endif
 
-{{-- ===================== COMITÉS ===================== --}}
-@php $hasCommittee = collect($committeeRoles)->keys()->contains(fn ($r) => ($committees[$r] ?? collect())->isNotEmpty()); @endphp
-@if ($hasCommittee)
+{{-- ========== DIFFÉRENTES COMMISSIONS ET PROGRAMMES DU COLLOQUE ========== --}}
+@php
+    $committeeList = collect($committeeRoles)->filter(fn ($lbl, $r) => ($committees[$r] ?? collect())->isNotEmpty());
+    $synDays = collect($programSynthesis['days'] ?? [])->filter(fn ($d) => trim((string) ($d['heading'] ?? '')) !== '' || trim((string) ($d['date'] ?? '')) !== '' || collect($d['rows'] ?? [])->isNotEmpty());
+    $hmp = fn ($t) => trim((string) $t) === '' ? '' : str_replace(':', 'h', substr((string) $t, 0, 5));
+@endphp
+@if ($committeeList->isNotEmpty() || $synDays->isNotEmpty())
     <div class="page-break">
-        @foreach ($committeeRoles as $role => $roleLabel)
-            @php $list = $committees[$role] ?? collect(); @endphp
-            @if ($list->isNotEmpty())
-                <h1 class="part sans">{{ $roleLabel }}</h1>
-                @foreach ($list as $m)
-                    <p style="margin:0 0 3px;">{{ collect([$m->person_name, $m->person_title, $m->institution])->map(fn ($x) => trim((string) $x))->filter()->join(' - ') }}</p>
-                @endforeach
-            @endif
+        <h1 class="part sans">Différentes commissions et programmes du colloque</h1>
+        @php $num = 0; @endphp
+        @foreach ($committeeList as $role => $roleLabel)
+            @php $num++; $list = $committees[$role] ?? collect(); @endphp
+            <h3 class="sans" style="color:{{ $primary }};font-size:13pt;margin:16px 0 6px;">{{ $num }}. {{ $roleLabel }}</h3>
+            @foreach ($list as $m)
+                @php $lead = trim(trim((string) $m->person_title).' '.trim((string) $m->person_name)); $tail = trim((string) $m->institution); @endphp
+                <p style="margin:0 0 3px;">{{ $tail !== '' ? $lead.', '.$tail : $lead }}</p>
+            @endforeach
         @endforeach
+        @if ($synDays->isNotEmpty())
+            @php $num++; @endphp
+            <h3 class="sans" style="color:{{ $primary }};font-size:13pt;margin:18px 0 6px;">{{ $num }}. Programme synthétique du colloque</h3>
+            @foreach ($synDays as $day)
+                @php
+                    $dayHeading = trim((string) ($day['heading'] ?? ''));
+                    $dayDate = trim((string) ($day['date'] ?? ''));
+                    $dLabel = trim(($dayDate !== '' ? ucfirst(\Illuminate\Support\Carbon::parse($dayDate)->translatedFormat('l d/m/Y')) : '').($dayHeading !== '' ? '  '.$dayHeading : ''));
+                @endphp
+                @if ($dLabel !== '')<p style="font-weight:bold;color:{{ $primary }};margin:10px 0 2px;">{{ $dLabel }}</p>@endif
+                @foreach ($day['rows'] ?? [] as $row)
+                    @php
+                        $rs = $hmp($row['start'] ?? ''); $re = $hmp($row['end'] ?? '');
+                        $rtime = $re !== '' ? $rs.' – '.$re : $rs;
+                        $rlabel = trim((string) ($row['label'] ?? ''));
+                        $rtext = $rtime !== '' ? trim($rtime.' : '.$rlabel) : $rlabel;
+                    @endphp
+                    @if ($rtext !== '')<p style="margin:0 0 2px;">{{ $rtext }}</p>@endif
+                @endforeach
+            @endforeach
+        @endif
     </div>
 @endif
 
@@ -167,11 +193,11 @@
                     @endforeach
                     @php
                         $cbits = [];
-                        if ($corr && $corr['email'] !== '') { $cbits[] = 'e-mail : '.$corr['email']; }
+                        if ($corr && $corr['email'] !== '') { $cbits[] = 'Email : '.$corr['email']; }
                         if ($corr && $corr['phone'] !== '') { $cbits[] = 'Tél : '.$corr['phone']; }
                     @endphp
                     @if ($corr && $cbits !== [])
-                        <p class="corr">*Auteur correspondant : {{ $corr['name'] }} ({{ implode(' ; ', $cbits) }})</p>
+                        <p class="corr">*Auteur correspondant : {{ $corr['name'] }} &nbsp; {{ implode('  ', $cbits) }}</p>
                     @endif
                 @endif
                 @php $body = trim(\App\Support\Html::render($s->abstract)); @endphp

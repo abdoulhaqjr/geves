@@ -578,9 +578,15 @@ paiement (`pay`), inscription à une formation.
   depuis `admin.documents.livret` (`DocumentController::livret`) : **aperçu HTML**,
   **.docx** (`?format=docx`) et **PDF** (`?format=pdf`, dompdf, vue autonome
   `documents/livret-pdf.blade.php`). Le .docx est **`App\Documents\LivretDocx`** (porté de
-  uk-colloques `booklet.php`) : couverture tricolore, avant-propos (IA possible), comités,
-  sommaire (TOC Word), programme, résumés par axe (auteurs + affiliations en exposant,
-  correspondant), **index des auteurs** (renvoi vers la réf.), **pied de page paginé**.
+  uk-colloques `booklet.php`). ⚠️ **Structure par défaut calée sur le livret de référence
+  UK/UP** : couverture tricolore → avant-propos (optionnel, IA possible) → **« Différentes
+  commissions et programmes du colloque »** (comités **numérotés** dans l'ordre supervision/
+  organisation/scientifique, puis **« N. Programme synthétique du colloque »** rendu depuis
+  `settings['program_synthesis']`) → **Programme** détaillé (communications/créneaux par jour,
+  « Horaire | Communication + auteurs | Salle / Session ») → **Résumés** par axe (réf., titre,
+  auteurs + affiliations en exposant, **« Auteur correspondant : … Email : … Tél : … »**,
+  « RÉSUMÉ : », mots-clés) → **index des auteurs** (renvoi vers la réf.) → **pied de page
+  paginé**. Pas de sommaire TOC Word par défaut (l'ancien `addToc` a été retiré).
   Options `livret.*` dans l'onglet **Apparence du livre** (vue `admin/documents/attestations.blade.php`) :
   polices, tailles, couleurs, alignements, `number_abstracts`, `author_index`, `page_numbers`,
   thème/dates, logo de couverture. ⚠️ **PhpWord n'échappe pas** le texte : `Settings::setOutputEscapingEnabled(true)` est obligatoire (un « & » casse le .docx).
