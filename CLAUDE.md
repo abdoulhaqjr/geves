@@ -654,6 +654,13 @@ paiement (`pay`), inscription à une formation.
   autres sont des chaînes). La signature de chaque formateur se téléverse sur la page
   de la formation (`formation_trainers.signature_path`) et est **figée dans
   `attestations.meta` à l'émission** : l'attestation ne change pas si l'équipe évolue.
+  - **Aperçu = RENDU RÉEL avec valeurs d'exemple** : le bouton « Aperçu » d'une attestation
+    ou d'un badge ouvre `admin.documents.templates.preview` (`TemplateDesignerController::preview`)
+    qui rend le modèle via `LayoutRenderer` avec `sampleVars()` (balises **substituées**, page
+    `admin/documents/document-preview`) - PAS l'éditeur (où les `{…}` restent visibles). Le **reçu**
+    a son aperçu d'exemple `admin.payments.receipt.sample` (`ReceiptController::sample`, Payment
+    fabriqué non persisté), et le **livret** ouvre son **PDF en inline** (`?format=pdf&inline=1`,
+    `DocumentController` `stream()` vs `download()`). Tests : `DocumentPreviewTest`.
 - **Livre des résumés (livret)** : communications acceptées groupées par axe, trois sorties
   depuis `admin.documents.livret` (`DocumentController::livret`) : **aperçu HTML**,
   **.docx** (`?format=docx`) et **PDF** (`?format=pdf`, dompdf, vue autonome
