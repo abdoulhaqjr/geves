@@ -88,18 +88,12 @@ class LivretDocx
         Settings::setOutputEscapingEnabled(true);
 
         $doc = new PhpWord;
-        $doc->getSettings()->setUpdateFields(true);
-
-        $fontHead = (string) EditionSettings::get($this->edition, 'livret.font_head', 'Jost');
-        $primary = self::hex((string) EditionSettings::get($this->edition, 'livret.color_primary', '#223ea4'), self::BLUE);
-        $sizeAxis = (int) EditionSettings::get($this->edition, 'livret.size_axis', 16);
 
         $doc->setDefaultFontName((string) EditionSettings::get($this->edition, 'livret.font_body', 'Times New Roman'));
         $doc->setDefaultFontSize((int) EditionSettings::get($this->edition, 'livret.size_body', 11));
 
-        // Niveau 1 = sections (Avant-propos, Comités, Programme, Résumés) ; niveau 2 = axes.
-        $doc->addTitleStyle(1, ['size' => 18, 'bold' => true, 'color' => $primary, 'name' => $fontHead], ['spaceBefore' => 240, 'spaceAfter' => 200]);
-        $doc->addTitleStyle(2, ['size' => $sizeAxis, 'bold' => true, 'color' => $primary, 'name' => $fontHead], ['spaceBefore' => 320, 'spaceAfter' => 160]);
+        // Les titres sont des paragraphes en gras (addText), PAS des addTitle : Word
+        // ajoutait un numéro après chaque titre (style Titre indexé) et exigeait un TOC.
 
         $section = $doc->addSection([
             'marginTop' => Converter::cmToTwip(2.2),
@@ -373,7 +367,7 @@ class LivretDocx
         }
 
         $title = trim((string) EditionSettings::get($this->edition, 'livret.foreword_title', 'Avant-propos')) ?: 'Avant-propos';
-        $section->addTitle($title, 1);
+        $this->partTitle($section, $title);
 
         foreach (preg_split('/\R{2,}/', $text) ?: [$text] as $paragraph) {
             $paragraph = trim((string) $paragraph);
@@ -414,7 +408,7 @@ class LivretDocx
             return;
         }
 
-        $section->addTitle('Différentes commissions et programmes du colloque', 1);
+        $this->partTitle($section, 'Différentes commissions et programmes du colloque');
 
         $num = 0;
         foreach ($committees as $role => $label) {
@@ -468,7 +462,7 @@ class LivretDocx
             return;
         }
 
-        $section->addTitle('Programme', 1);
+        $this->partTitle($section, 'Programme');
         foreach ($byDay as $day => $slots) {
             $this->programmeDayTable($section, (string) $day, $slots);
         }
@@ -542,7 +536,7 @@ class LivretDocx
         }
 
         return collect($sl->submission->authors ?? [])->map(function ($a) {
-            $name = $this->mapName(trim((string) ($a['name'] ?? '')));
+            $name = $this->displayName($this->mapName(trim((string) ($a['name'] ?? ''))));
             $aff = $this->mapAff(trim((string) ($a['affiliation'] ?? '')));
 
             return $name === '' ? '' : ($aff !== '' ? $name.' ('.$aff.')' : $name);
@@ -566,7 +560,7 @@ class LivretDocx
     /** Résumés des communications, regroupés par axe (titres en MAJUSCULES). */
     private function addBody(Section $section): void
     {
-        $section->addTitle('Résumés des communications', 1);
+        $this->partTitle($section, 'Résumés des communications');
 
         if ($this->groups->isEmpty()) {
             $section->addText('Aucune communication acceptée pour le moment.', ['italic' => true, 'color' => self::MUTED]);
@@ -579,10 +573,16 @@ class LivretDocx
         $sizeBody = (int) EditionSettings::get($this->edition, 'livret.size_body', 11);
         $alignBody = EditionSettings::get($this->edition, 'livret.align_body', 'Justifié') === 'Gauche' ? 'left' : 'both';
         $number = (bool) EditionSettings::get($this->edition, 'livret.number_abstracts', false);
+        $sizeAxis = (int) EditionSettings::get($this->edition, 'livret.size_axis', 16);
+        $primary = self::hex((string) EditionSettings::get($this->edition, 'livret.color_primary', '#223ea4'), self::BLUE);
+        $fontHead = (string) EditionSettings::get($this->edition, 'livret.font_head', 'Jost');
+        $alignAxis = $this->align('livret.align_axis');
 
         $n = 0;
         foreach ($this->groups as $track => $submissions) {
-            $section->addTitle(mb_strtoupper((string) $track, 'UTF-8'), 2);
+            $section->addText(mb_strtoupper((string) $track, 'UTF-8'),
+                ['bold' => true, 'size' => $sizeAxis, 'color' => $primary, 'name' => $fontHead],
+                ['alignment' => $alignAxis, 'spaceBefore' => 320, 'spaceAfter' => 160]);
 
             foreach ($submissions as $s) {
                 $n++;
@@ -599,7 +599,7 @@ class LivretDocx
         }
 
         $section->addPageBreak();
-        $section->addTitle('Index des auteurs', 1);
+        $this->partTitle($section, 'Index des auteurs');
 
         $names = array_keys($this->authorIndex);
         usort($names, fn ($a, $b) => strnatcasecmp(
@@ -626,13 +626,14 @@ class LivretDocx
         }
         $indexRef = $refLabel !== '' ? $refLabel : '#'.$n;
 
-        // Titre (numéroté si l'option est active).
+        // Titre (numéroté si l'option est active), aligné selon `livret.align_titles`.
         $title = $number ? $n.'. '.$s->title : (string) $s->title;
-        $section->addText($title, ['bold' => true, 'size' => $sizeAbstract, 'color' => self::BLUE], ['spaceAfter' => 40]);
+        $section->addText($title, ['bold' => true, 'size' => $sizeAbstract, 'color' => self::BLUE], ['alignment' => $this->align('livret.align_titles'), 'spaceAfter' => 40]);
 
         // Auteurs + affiliations numérotées (exposants) + auteur correspondant (*).
+        // ⚠️ Nom affiché en MAJUSCULES (convention du livret).
         $people = collect($s->authors ?? [])->map(fn ($a) => [
-            'name' => $this->mapName((string) ($a['name'] ?? '')),
+            'name' => $this->displayName($this->mapName((string) ($a['name'] ?? ''))),
             'aff' => $this->mapAff(trim((string) ($a['affiliation'] ?? ''))),
             'email' => trim((string) ($a['email'] ?? '')),
             'phone' => trim((string) ($a['phone'] ?? '')),
@@ -659,8 +660,8 @@ class LivretDocx
                 }
             }
 
-            // Ligne des auteurs avec exposants.
-            $run = $section->addTextRun(['spaceAfter' => $affs === [] ? 80 : 20]);
+            // Ligne des auteurs avec exposants (alignée selon `livret.align_authors`).
+            $run = $section->addTextRun(['alignment' => $this->align('livret.align_authors'), 'spaceAfter' => $affs === [] ? 80 : 20]);
             $first = true;
             foreach ($people as $p) {
                 if (! $first) {
@@ -866,6 +867,32 @@ class LivretDocx
 
             return mb_convert_case($word, MB_CASE_TITLE, 'UTF-8');
         }, $name);
+    }
+
+    /** Alignement OOXML d'après un réglage d'apparence (Centré/Gauche/Droite/Justifié). */
+    private function align(string $key, string $default = 'Centré'): string
+    {
+        return match ((string) EditionSettings::get($this->edition, $key, $default)) {
+            'Gauche' => 'left',
+            'Droite' => 'right',
+            'Justifié' => 'both',
+            default => 'center',
+        };
+    }
+
+    /** Titre de section (paragraphe gras, aligné selon `livret.align_titles`). */
+    private function partTitle(Section $section, string $text): void
+    {
+        $primary = self::hex((string) EditionSettings::get($this->edition, 'livret.color_primary', '#223ea4'), self::BLUE);
+        $fontHead = (string) EditionSettings::get($this->edition, 'livret.font_head', 'Jost');
+        $section->addText($text, ['bold' => true, 'size' => 18, 'color' => $primary, 'name' => $fontHead],
+            ['alignment' => $this->align('livret.align_titles'), 'spaceBefore' => 240, 'spaceAfter' => 160]);
+    }
+
+    /** Nom d'auteur pour l'affichage : en MAJUSCULES (convention du livret). */
+    private function displayName(string $name): string
+    {
+        return mb_strtoupper(trim($name), 'UTF-8');
     }
 
     /** Normalise une couleur CSS (#rrggbb) en hex Word (RRGGBB), avec repli. */

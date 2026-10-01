@@ -133,7 +133,7 @@
                     @php
                         $title = trim((string) ($sl->submission?->title ?: $sl->session_label));
                         $auth = collect($sl->submission?->authors ?? [])->map(function ($a) {
-                            $name = trim((string) ($a['name'] ?? ''));
+                            $name = mb_strtoupper(trim((string) ($a['name'] ?? '')), 'UTF-8');
                             $aff = trim((string) ($a['affiliation'] ?? ''));
                             return $name === '' ? '' : ($aff !== '' ? $name.' ('.$aff.')' : $name);
                         })->filter()->implode('; ');
@@ -156,13 +156,13 @@
     <h1 class="part sans">Résumés des communications</h1>
     @php $n = 0; @endphp
     @forelse ($groups as $track => $submissions)
-        <h2 class="axis sans">{{ \Illuminate\Support\Str::upper((string) ($track ?: 'Autres')) }}</h2>
+        <h2 class="axis sans" style="text-align:{{ $opts['align_axis'] }};">{{ \Illuminate\Support\Str::upper((string) ($track ?: 'Autres')) }}</h2>
         @foreach ($submissions as $s)
             @php
                 $n++;
                 $ref = trim((string) $s->ref_code);
                 $people = collect($s->authors ?? [])->map(fn ($a) => [
-                    'name' => trim((string) ($a['name'] ?? '')),
+                    'name' => mb_strtoupper(trim((string) ($a['name'] ?? '')), 'UTF-8'),
                     'aff' => trim((string) ($a['affiliation'] ?? '')),
                     'email' => trim((string) ($a['email'] ?? '')),
                     'phone' => trim((string) ($a['phone'] ?? '')),
@@ -185,9 +185,9 @@
             @endphp
             <div style="margin-top:10px;">
                 @if ($ref !== '')<p class="ref">{{ $ref }}</p>@endif
-                <p class="abs-title sans">{{ $opts['number'] ? $n.'. ' : '' }}{{ $s->title }}</p>
+                <p class="abs-title sans" style="text-align:{{ $opts['align_titles'] }};">{{ $opts['number'] ? $n.'. ' : '' }}{{ $s->title }}</p>
                 @if ($people->isNotEmpty())
-                    <p class="authors">{!! $authorsHtml !!}</p>
+                    <p class="authors" style="text-align:{{ $opts['align_authors'] }};">{!! $authorsHtml !!}</p>
                     @foreach ($affs as $i => $aff)
                         <p class="aff"><sup>{{ $i + 1 }}</sup> {{ $aff }}</p>
                     @endforeach

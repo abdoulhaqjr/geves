@@ -97,6 +97,10 @@ class DocumentController extends Controller
     private function livretViewData(Edition $edition, Collection $groups): array
     {
         $g = fn (string $key, mixed $default = null): mixed => EditionSettings::get($edition, $key, $default);
+        // Alignement (réglage FR) -> valeur CSS text-align.
+        $css = fn (mixed $v): string => match ((string) $v) {
+            'Gauche' => 'left', 'Droite' => 'right', 'Justifié' => 'justify', default => 'center',
+        };
 
         // Index des auteurs : nom => références des résumés (renvoi), même règle que le .docx.
         $authorIndex = [];
@@ -106,7 +110,8 @@ class DocumentController extends Controller
                 $n++;
                 $ref = trim((string) $s->ref_code) ?: '#'.$n;
                 foreach (collect($s->authors ?? []) as $a) {
-                    $name = trim((string) ($a['name'] ?? ''));
+                    // Nom en MAJUSCULES (convention du livret).
+                    $name = mb_strtoupper(trim((string) ($a['name'] ?? '')), 'UTF-8');
                     if ($name !== '') {
                         $authorIndex[$name][] = $ref;
                     }
@@ -152,6 +157,9 @@ class DocumentController extends Controller
                 'author_index' => (bool) $g('livret.author_index', true),
                 'color_primary' => trim((string) $g('livret.color_primary', '#223ea4')) ?: '#223ea4',
                 'align_body' => $g('livret.align_body', 'Justifié') === 'Gauche' ? 'left' : 'justify',
+                'align_titles' => $css($g('livret.align_titles', 'Centré')),
+                'align_axis' => $css($g('livret.align_axis', 'Centré')),
+                'align_authors' => $css($g('livret.align_authors', 'Centré')),
             ],
         ];
     }

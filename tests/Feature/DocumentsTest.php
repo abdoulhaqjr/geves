@@ -406,10 +406,10 @@ it('audit livret : aperçu HTML, export .docx et harmonisation IA (normalise les
     $this->get(route('admin.documents.livret', $edition))->assertOk();                                        // aperçu HTML
     $this->get(route('admin.documents.livret', ['edition' => $edition, 'format' => 'docx']))->assertOk();     // export .docx
 
-    // Harmonisation : « jean   DUPONT » → « Jean Dupont » dans le .docx.
+    // Harmonisation : « jean   DUPONT » → « Jean Dupont », puis affiché en MAJUSCULES.
     $response = $this->get(route('admin.documents.livret', ['edition' => $edition, 'format' => 'docx', 'harmonize' => 1]));
     $response->assertOk();
-    expect(docxDocumentXml($response->streamedContent()))->toContain('Jean Dupont');
+    expect(docxDocumentXml($response->streamedContent()))->toContain('JEAN DUPONT');
 });
 
 it('avant-propos IA : endpoint sûr même sans fournisseur IA (redirige, aucun 500)', function () {

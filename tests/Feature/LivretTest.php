@@ -38,7 +38,7 @@ it('génère le livret .docx avec les résumés et l’index des auteurs', funct
     expect($xml)->toContain('Résumés des communications')
         ->toContain('Innovation durable')   // titre de la communication acceptée
         ->toContain('Index des auteurs')     // la nouvelle section
-        ->toContain('Awa Kodjo')             // l'auteur indexé
+        ->toContain('AWA KODJO')             // l'auteur indexé (nom en MAJUSCULES)
         ->toContain('26-001');               // la référence (renvoi de l'index)
 });
 

@@ -359,7 +359,7 @@
                             <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                             <label class="ukc-drop">
                                 Déposer un modèle .docx<br>
-                                <span style="font-size:11px;">Balises : @{{edition_name}}, @{{abstract_title}}, @{{authors}}, @{{axis}}…</span>
+                                <span style="font-size:11px;">Balises : [[TITRE]], [[RESUMES]], [[PROGRAMME]], [[COMITES]], [[AVANT_PROPOS]], [[SOMMAIRE]]…</span>
                                 <input type="file" name="templateFile" accept=".doc,.docx" style="display:none;" onchange="this.form.submit()">
                             </label>
                             @error('templateFile') <span class="error">{{ $message }}</span> @enderror
@@ -463,7 +463,19 @@
                             <div class="ukc-form-row">
                                 <label>Alignement titres</label>
                                 <select name="livretAlignTitles">
-                                    @foreach (['Centré', 'Gauche', 'Justifié'] as $al)<option @selected($opts['livretAlignTitles'] === $al)>{{ $al }}</option>@endforeach
+                                    @foreach (['Centré', 'Gauche', 'Droite', 'Justifié'] as $al)<option @selected($opts['livretAlignTitles'] === $al)>{{ $al }}</option>@endforeach
+                                </select>
+                            </div>
+                            <div class="ukc-form-row">
+                                <label>Alignement titres d’axe</label>
+                                <select name="livretAlignAxis">
+                                    @foreach (['Centré', 'Gauche', 'Droite'] as $al)<option @selected($opts['livretAlignAxis'] === $al)>{{ $al }}</option>@endforeach
+                                </select>
+                            </div>
+                            <div class="ukc-form-row">
+                                <label>Alignement auteurs</label>
+                                <select name="livretAlignAuthors">
+                                    @foreach (['Centré', 'Gauche', 'Droite'] as $al)<option @selected($opts['livretAlignAuthors'] === $al)>{{ $al }}</option>@endforeach
                                 </select>
                             </div>
                             <div class="ukc-form-row">
