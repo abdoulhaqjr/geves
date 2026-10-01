@@ -266,146 +266,196 @@
                     <button type="button" @click="livre='apparence'" :class="{ active: livre==='apparence' }">Apparence du livre</button>
                 </div>
 
-                {{-- ---------- Livre : génération + état + avant-propos ---------- --}}
+                {{-- ---------- Livre : génération + état + contenu ---------- --}}
+                @php($secBox = 'border:1px solid var(--ukc-border);border-radius:12px;padding:16px;margin-bottom:14px;')
                 <div x-show="livre==='main'">
-                    <div class="ukc-card-grid">
-                        <div class="ukc-card">
-                            <h3>Générer le livre</h3>
-                            <div class="desc">Compilation des résumés acceptés de l’édition, groupés par axe : aperçu HTML imprimable ou export Word (.docx) à la charte.</div>
-                            <div style="display:flex;flex-wrap:wrap;gap:8px;">
-                                <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="{{ route('admin.documents.livret', $edition) }}?format=docx"><x-ukc.icon name="file" :size="16" /> Générer le livre (.docx)</a>
-                                <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.documents.livret', $edition) }}" target="_blank"><x-ukc.icon name="book" :size="16" /> Aperçu</a>
-                                <a class="ukc-btn ukc-btn--green ukc-btn--sm" href="{{ route('admin.documents.livret', $edition) }}?format=docx&harmonize=1"><x-ukc.icon name="sparkles" :size="16" /> Télécharger avec harmonisation IA</a>
-                                <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.documents.sessions', $edition) }}" target="_blank"><x-ukc.icon name="layers" :size="16" /> Fiches de session</a>
+                    {{-- Panneau de génération : action principale + modèle actif --}}
+                    <div class="ukc-card">
+                        <div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px;">
+                            <div>
+                                <h3 style="margin:0 0 4px;">Générer le livre des résumés</h3>
+                                <div class="desc" style="margin:0;">Compilation des {{ $counts['accepted'] }} résumé(s) accepté(s), groupés par axe. Word (.docx) et PDF reprennent le modèle actif et les réglages d’apparence.</div>
                             </div>
-                            <p class="ukc-hint" style="margin-top:10px;">L’harmonisation IA normalise les noms d’auteurs, affiliations et accents avant export. Le .docx reprend le modèle actif et les réglages d’apparence.</p>
+                            <span class="ukc-pill ukc-pill--info" style="white-space:nowrap;">
+                                <x-ukc.icon name="book" :size="14" /> {{ $livretActiveLabel }}
+                            </span>
                         </div>
-                        <div class="ukc-card">
-                            <h3>État de compilation</h3>
-                            <div class="desc">Dernière génération et statistiques.</div>
-                            <p style="font-size:13.5px;line-height:1.7;">
-                                <strong>Dernière génération :</strong> {{ $livreState['lastGen'] ? \Illuminate\Support\Carbon::parse($livreState['lastGen'])->format('d/m/Y H:i') : '-' }}<br>
-                                <strong>Résumés inclus :</strong> {{ $counts['accepted'] }}<br>
-                                <strong>Axes :</strong> {{ $counts['axes'] }} · <strong>Sessions :</strong> {{ $counts['sessions'] }}<br>
-                                <strong>Modèle actif :</strong> {{ \App\Documents\LivretDocx::STYLES[$opts['livretTemplate']] ?? ($opts['livretTemplate'] === 'base' ? 'Modèle de base' : $opts['livretTemplate']) }}<br>
-                                <strong>Avant-propos :</strong> {{ trim($opts['forewordText']) !== '' ? 'défini' : 'non défini' }}
-                                @if ($livreState['file'])<br><strong>Fichier :</strong> <code>{{ $livreState['file'] }}</code>@endif
-                            </p>
+                        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;">
+                            <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="{{ route('admin.documents.livret', $edition) }}?format=docx"><x-ukc.icon name="file" :size="16" /> Word (.docx)</a>
+                            <a class="ukc-btn ukc-btn--outline ukc-btn--sm" href="{{ route('admin.documents.livret', $edition) }}?format=pdf"><x-ukc.icon name="download" :size="16" /> PDF</a>
+                            <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.documents.livret', $edition) }}" target="_blank"><x-ukc.icon name="eye" :size="16" /> Aperçu</a>
+                            <a class="ukc-btn ukc-btn--green ukc-btn--sm" href="{{ route('admin.documents.livret', $edition) }}?format=docx&harmonize=1"><x-ukc.icon name="sparkles" :size="16" /> .docx + harmonisation IA</a>
+                            <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.documents.sessions', $edition) }}" target="_blank"><x-ukc.icon name="layers" :size="16" /> Fiches de session</a>
                         </div>
+                        <p class="ukc-hint" style="margin-top:10px;">L’harmonisation IA normalise les noms d’auteurs, affiliations et accents avant export. Changez de modèle dans l’onglet <strong>Modèles de document</strong>, ajustez la typographie dans <strong>Apparence du livre</strong>.</p>
+                    </div>
+
+                    {{-- Récapitulatif chiffré --}}
+                    <div class="ukc-stats" style="margin-bottom:16px;">
+                        <div class="ukc-stat-card"><div class="lbl">Résumés inclus</div><div class="val">{{ $counts['accepted'] }}</div><div class="hint">communications acceptées</div></div>
+                        <div class="ukc-stat-card"><div class="lbl">Axes</div><div class="val">{{ $counts['axes'] }}</div><div class="hint">{{ $counts['sessions'] }} session(s)</div></div>
+                        <div class="ukc-stat-card"><div class="lbl">Sections de tête</div><div class="val">{{ $livretSectionsFilled }}/{{ $livretSectionCount }}</div><div class="hint">renseignées</div></div>
+                        <div class="ukc-stat-card"><div class="lbl">Dernière génération</div><div class="val" style="font-size:15px;">{{ $livreState['lastGen'] ? \Illuminate\Support\Carbon::parse($livreState['lastGen'])->format('d/m/Y') : '—' }}</div><div class="hint">{{ $livreState['lastGen'] ? \Illuminate\Support\Carbon::parse($livreState['lastGen'])->format('H:i') : 'jamais compilé' }}</div></div>
                     </div>
 
                     <form method="POST" action="{{ route('admin.documents.livret.options') }}" class="ukc-card">
                         <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                         @csrf
-                        <h3>Contenu du livre</h3>
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                            <h3 style="margin:0;">Contenu du livre</h3>
+                            <span class="ukc-pill ukc-pill--info">{{ $livretSectionsFilled }}/{{ $livretSectionCount }} section(s) renseignée(s)</span>
+                        </div>
                         <x-ukc.scope-edition :edition="$edition" />
-                        <div class="desc">Sections de tête du livret. <strong>Chaque section vide est automatiquement masquée</strong> dans le livre généré.</div>
+                        <div class="desc">Pages de tête du livret, dans l’ordre d’apparition. <strong>Une section laissée vide n’apparaît pas</strong> dans le livre généré.</div>
 
-                        <h4 style="margin:14px 0 6px;color:var(--ukc-blue);">Avant-propos</h4>
-                        <div class="ukc-field" style="margin-bottom:12px;">
-                            <label>Titre de la section</label>
-                            <input type="text" name="forewordTitle" value="{{ $opts['forewordTitle'] }}">
-                        </div>
-                        <div class="ukc-field" style="margin-bottom:12px;">
-                            <label>Texte de l’avant-propos</label>
-                            <textarea rows="6" name="forewordText" placeholder="Le comité d’organisation a le plaisir de présenter…">{{ $opts['forewordText'] }}</textarea>
-                        </div>
-                        <div class="ukc-field" style="margin-bottom:12px;">
-                            <label>Signature (nom + fonction)</label>
-                            <input type="text" name="forewordSignature" value="{{ $opts['forewordSignature'] }}" placeholder="Prof. … - Président du Comité d’Organisation">
-                        </div>
-
-                        <h4 style="margin:18px 0 6px;color:var(--ukc-blue);">Haut patronage <span style="font-weight:400;color:var(--ukc-muted);font-size:12px;">(facultatif)</span></h4>
-                        <div class="ukc-field" style="margin-bottom:12px;">
-                            <label>Haut patronage (une ligne par élément, centré)</label>
-                            <textarea rows="3" name="livretPatronage" placeholder="Sous le haut patronage du Ministre de l’Enseignement Supérieur et de la Recherche&#10;Prof …">{{ $opts['livretPatronage'] }}</textarea>
-                        </div>
-
-                        <h4 style="margin:18px 0 6px;color:var(--ukc-blue);">Remerciements <span style="font-weight:400;color:var(--ukc-muted);font-size:12px;">(facultatif)</span></h4>
-                        <div class="ukc-field" style="margin-bottom:12px;">
-                            <label>Titre de la section</label>
-                            <input type="text" name="livretAckTitle" value="{{ $opts['livretAckTitle'] }}" placeholder="Remerciements">
-                        </div>
-                        <div class="ukc-field" style="margin-bottom:12px;">
-                            <label>Remerciements (une ligne par destinataire → liste à puces)</label>
-                            <textarea rows="4" name="livretAcknowledgements" placeholder="Monsieur le Président de l’Université&#10;Monsieur le Préfet…">{{ $opts['livretAcknowledgements'] }}</textarea>
-                        </div>
-
-                        <h4 style="margin:18px 0 6px;color:var(--ukc-blue);">Mot de bienvenue <span style="font-weight:400;color:var(--ukc-muted);font-size:12px;">(facultatif)</span></h4>
-                        <div class="ukc-field" style="margin-bottom:12px;">
-                            <label>Titre de la section</label>
-                            <input type="text" name="livretWelcomeTitle" value="{{ $opts['livretWelcomeTitle'] }}" placeholder="Mot de bienvenue">
-                        </div>
-                        <div class="ukc-field" style="margin-bottom:12px;">
-                            <label>Texte</label>
-                            <textarea rows="5" name="livretWelcomeText" placeholder="Chères participantes, chers participants…">{{ $opts['livretWelcomeText'] }}</textarea>
-                        </div>
-                        <div class="ukc-field" style="margin-bottom:12px;">
-                            <label>Signature (nom + fonction)</label>
-                            <input type="text" name="livretWelcomeSignature" value="{{ $opts['livretWelcomeSignature'] }}" placeholder="Prof. … - Doyen de la Faculté">
-                        </div>
-
-                        <h4 style="margin:18px 0 6px;color:var(--ukc-blue);">Mot du président <span style="font-weight:400;color:var(--ukc-muted);font-size:12px;">(facultatif)</span></h4>
-                        <div class="ukc-field" style="margin-bottom:12px;">
-                            <label>Titre de la section</label>
-                            <input type="text" name="livretPresidentTitle" value="{{ $opts['livretPresidentTitle'] }}" placeholder="Mot du président">
-                        </div>
-                        <div class="ukc-field" style="margin-bottom:12px;">
-                            <label>Texte</label>
-                            <textarea rows="5" name="livretPresidentText" placeholder="C’est avec plaisir que nous vous accueillons…">{{ $opts['livretPresidentText'] }}</textarea>
-                        </div>
-                        <div class="ukc-field" style="margin-bottom:12px;">
-                            <label>Signature (nom + fonction)</label>
-                            <input type="text" name="livretPresidentSignature" value="{{ $opts['livretPresidentSignature'] }}" placeholder="… - Président du Comité d’Organisation">
-                        </div>
-
-                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                            <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="check" :size="16" /> Enregistrer le contenu</button>
+                        {{-- Avant-propos --}}
+                        <div style="{{ $secBox }}">
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
+                                <strong style="color:var(--ukc-blue);">Avant-propos</strong>
+                                @if (trim($opts['forewordText']) !== '')<span class="ukc-pill ukc-pill--ok">Affiché</span>@else<span class="ukc-pill ukc-pill--muted">Masqué (vide)</span>@endif
+                            </div>
+                            <div class="ukc-field" style="margin-bottom:12px;">
+                                <label>Titre de la section</label>
+                                <input type="text" name="forewordTitle" value="{{ $opts['forewordTitle'] }}">
+                            </div>
+                            <div class="ukc-field" style="margin-bottom:12px;">
+                                <label>Texte de l’avant-propos</label>
+                                <textarea rows="6" name="forewordText" placeholder="Le comité d’organisation a le plaisir de présenter…">{{ $opts['forewordText'] }}</textarea>
+                            </div>
+                            <div class="ukc-field" style="margin-bottom:12px;">
+                                <label>Signature (nom + fonction)</label>
+                                <input type="text" name="forewordSignature" value="{{ $opts['forewordSignature'] }}" placeholder="Prof. … - Président du Comité d’Organisation">
+                            </div>
                             @if ($aiAvailable)
                                 <button type="submit" formaction="{{ route('admin.documents.livret.foreword-ai', ['edition_id' => $edition->id]) }}"
                                         class="ukc-btn ukc-btn--green ukc-btn--sm"
                                         data-confirm="Générer l’avant-propos par IA à partir des métadonnées de l’édition ? Le texte actuel sera remplacé.">
-                                    <x-ukc.icon name="sparkles" :size="16" /> Générer par IA
+                                    <x-ukc.icon name="sparkles" :size="16" /> Rédiger par IA
                                 </button>
+                                <p class="ukc-hint" style="margin-top:8px;">L’IA rédige l’avant-propos à partir du colloque, du thème, des axes et du nombre de résumés retenus.</p>
                             @endif
                         </div>
-                        <p class="ukc-hint" style="margin-top:8px;">L’IA rédige un avant-propos à partir du colloque, du thème, des axes et du nombre de résumés retenus. Vérifiez, ajustez puis enregistrez.</p>
+
+                        {{-- Haut patronage --}}
+                        <div style="{{ $secBox }}">
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
+                                <strong style="color:var(--ukc-blue);">Haut patronage</strong>
+                                @if (trim($opts['livretPatronage']) !== '')<span class="ukc-pill ukc-pill--ok">Affiché</span>@else<span class="ukc-pill ukc-pill--muted">Masqué (vide)</span>@endif
+                            </div>
+                            <div class="ukc-field">
+                                <label>Une ligne par élément (centré sur la page)</label>
+                                <textarea rows="3" name="livretPatronage" placeholder="Sous le haut patronage du Ministre de l’Enseignement Supérieur et de la Recherche&#10;Prof …">{{ $opts['livretPatronage'] }}</textarea>
+                            </div>
+                        </div>
+
+                        {{-- Remerciements --}}
+                        <div style="{{ $secBox }}">
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
+                                <strong style="color:var(--ukc-blue);">Remerciements</strong>
+                                @if (trim($opts['livretAcknowledgements']) !== '')<span class="ukc-pill ukc-pill--ok">Affiché</span>@else<span class="ukc-pill ukc-pill--muted">Masqué (vide)</span>@endif
+                            </div>
+                            <div class="ukc-field" style="margin-bottom:12px;">
+                                <label>Titre de la section</label>
+                                <input type="text" name="livretAckTitle" value="{{ $opts['livretAckTitle'] }}" placeholder="Remerciements">
+                            </div>
+                            <div class="ukc-field">
+                                <label>Une ligne par destinataire (→ liste à puces)</label>
+                                <textarea rows="4" name="livretAcknowledgements" placeholder="Monsieur le Président de l’Université&#10;Monsieur le Préfet…">{{ $opts['livretAcknowledgements'] }}</textarea>
+                            </div>
+                        </div>
+
+                        {{-- Mot de bienvenue --}}
+                        <div style="{{ $secBox }}">
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
+                                <strong style="color:var(--ukc-blue);">Mot de bienvenue</strong>
+                                @if (trim($opts['livretWelcomeText']) !== '')<span class="ukc-pill ukc-pill--ok">Affiché</span>@else<span class="ukc-pill ukc-pill--muted">Masqué (vide)</span>@endif
+                            </div>
+                            <div class="ukc-field" style="margin-bottom:12px;">
+                                <label>Titre de la section</label>
+                                <input type="text" name="livretWelcomeTitle" value="{{ $opts['livretWelcomeTitle'] }}" placeholder="Mot de bienvenue">
+                            </div>
+                            <div class="ukc-field" style="margin-bottom:12px;">
+                                <label>Texte</label>
+                                <textarea rows="5" name="livretWelcomeText" placeholder="Chères participantes, chers participants…">{{ $opts['livretWelcomeText'] }}</textarea>
+                            </div>
+                            <div class="ukc-field">
+                                <label>Signature (nom + fonction)</label>
+                                <input type="text" name="livretWelcomeSignature" value="{{ $opts['livretWelcomeSignature'] }}" placeholder="Prof. … - Doyen de la Faculté">
+                            </div>
+                        </div>
+
+                        {{-- Mot du président --}}
+                        <div style="{{ $secBox }}">
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
+                                <strong style="color:var(--ukc-blue);">Mot du président</strong>
+                                @if (trim($opts['livretPresidentText']) !== '')<span class="ukc-pill ukc-pill--ok">Affiché</span>@else<span class="ukc-pill ukc-pill--muted">Masqué (vide)</span>@endif
+                            </div>
+                            <div class="ukc-field" style="margin-bottom:12px;">
+                                <label>Titre de la section</label>
+                                <input type="text" name="livretPresidentTitle" value="{{ $opts['livretPresidentTitle'] }}" placeholder="Mot du président">
+                            </div>
+                            <div class="ukc-field" style="margin-bottom:12px;">
+                                <label>Texte</label>
+                                <textarea rows="5" name="livretPresidentText" placeholder="C’est avec plaisir que nous vous accueillons…">{{ $opts['livretPresidentText'] }}</textarea>
+                            </div>
+                            <div class="ukc-field">
+                                <label>Signature (nom + fonction)</label>
+                                <input type="text" name="livretPresidentSignature" value="{{ $opts['livretPresidentSignature'] }}" placeholder="… - Président du Comité d’Organisation">
+                            </div>
+                        </div>
+
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <button type="submit" class="ukc-btn ukc-btn--blue"><x-ukc.icon name="check" :size="16" /> Enregistrer le contenu</button>
+                        </div>
                     </form>
                 </div>
 
                 {{-- ---------- Modèles de document ---------- --}}
                 <div x-show="livre==='modeles'" x-cloak>
-                    <form method="POST" action="{{ route('admin.documents.livret.template') }}" class="ukc-card">
-                        @csrf
-                        <input type="hidden" name="edition_id" value="{{ $edition->id }}">
-                        <h3>Modèle global pour cette édition</h3>
+                    <div class="ukc-card">
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                            <div>
+                                <h3 style="margin:0 0 4px;">Modèle utilisé pour cette édition</h3>
+                                <div class="desc" style="margin:0;">Choisissez le modèle qui sert à compiler le <strong>Word (.docx)</strong>. L’aperçu HTML et le PDF utilisent toujours la mise en page par défaut.</div>
+                            </div>
+                            <span class="ukc-pill ukc-pill--info" style="white-space:nowrap;"><x-ukc.icon name="check" :size="14" /> Actif : {{ $livretActiveLabel }}</span>
+                        </div>
                         <x-ukc.scope-edition :edition="$edition" />
-                        <div class="desc">Définir le modèle Word utilisé pour compiler le livre des résumés.</div>
-                        <div class="ukc-field" style="margin-bottom:14px;max-width:420px;">
-                            <label>Modèle actif</label>
-                            <select name="livretTemplate">
-                                <option value="default" @selected($opts['livretTemplate'] === 'default')>Modèle par défaut · Apparence du livre</option>
-                                <option value="fss" @selected($opts['livretTemplate'] === 'fss')>Modèle 2 - Journées scientifiques</option>
-                                <option value="base" @selected($opts['livretTemplate'] === 'base')>Modèle de base {{ config('app.name') }}</option>
-                                @foreach ($templates as $tpl)
-                                    <option value="{{ $tpl['name'] }}" @selected($opts['livretTemplate'] === $tpl['name'])>{{ $tpl['name'] }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div style="display:flex;flex-wrap:wrap;gap:8px;">
-                            <a href="{{ route('admin.documents.livret.base-template') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="download" :size="16" /> Télécharger un modèle de base</a>
-                            <button type="submit" class="ukc-btn ukc-btn--sm"><x-ukc.icon name="check" :size="16" /> Enregistrer le modèle actif</button>
-                        </div>
-                    </form>
+
+                        <h4 style="margin:16px 0 8px;color:var(--ukc-muted);text-transform:uppercase;letter-spacing:.04em;font-size:12px;">Modèles intégrés</h4>
+                        @foreach ($livretBuiltins as $m)
+                            @php($isActive = $opts['livretTemplate'] === $m['key'])
+                            <div class="ukc-tpl-item" @if ($isActive) style="border-color:var(--ukc-blue);box-shadow:0 0 0 1px var(--ukc-blue) inset;" @endif>
+                                <div class="ico">DOC</div>
+                                <div class="meta"><strong>{{ $m['name'] }}</strong><span>{{ $m['desc'] }}</span></div>
+                                <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                                    @if ($m['download'])
+                                        <a href="{{ $m['download'] }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="download" :size="15" /> Télécharger</a>
+                                    @endif
+                                    @if ($isActive)
+                                        <span class="ukc-pill ukc-pill--ok">Actif</span>
+                                    @else
+                                        <form method="POST" action="{{ route('admin.documents.livret.template') }}" style="display:inline;">
+                                            @csrf
+                                            <input type="hidden" name="edition_id" value="{{ $edition->id }}">
+                                            <input type="hidden" name="livretTemplate" value="{{ $m['key'] }}">
+                                            <button type="submit" class="ukc-btn ukc-btn--sm">Utiliser</button>
+                                        </form>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
 
                     <div class="ukc-card">
-                        <h3>Ajouter un modèle personnalisé</h3>
+                        <h3>Modèles personnalisés (.docx)</h3>
                         <x-ukc.scope-edition :edition="$edition" />
-                        <div class="desc">Déposez un fichier .docx contenant les balises de fusion (axes, résumés, auteurs…).</div>
+                        <div class="desc">Partez du <a href="{{ route('admin.documents.livret.base-template') }}">modèle de base</a>, personnalisez-le dans Word <strong>en conservant les balises</strong>, puis redéposez-le ici.</div>
                         <form method="POST" action="{{ route('admin.documents.livret.template') }}" enctype="multipart/form-data">
                             @csrf
                             <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                             <label class="ukc-drop">
+                                <x-ukc.icon name="upload" :size="20" /><br>
                                 Déposer un modèle .docx<br>
                                 <span style="font-size:11px;">Balises : [[TITRE]], [[RESUMES]], [[PROGRAMME]], [[COMITES]], [[AVANT_PROPOS]], [[SOMMAIRE]]…</span>
                                 <input type="file" name="templateFile" accept=".doc,.docx" style="display:none;" onchange="this.form.submit()">
@@ -414,63 +464,36 @@
                         </form>
 
                         <div style="margin-top:14px;">
-                            <div class="ukc-tpl-item">
-                                <div class="ico">DOC</div>
-                                <div class="meta"><strong>Modèle par défaut</strong><span>Couverture sobre · commissions numérotées · programme par jour</span></div>
-                                @if ($opts['livretTemplate'] === 'default')
-                                    <span class="ukc-pill ukc-pill--ok">Actif</span>
-                                @else
-                                    <form method="POST" action="{{ route('admin.documents.livret.template') }}" style="display:inline;">
-                                        @csrf
-                                        <input type="hidden" name="edition_id" value="{{ $edition->id }}">
-                                        <input type="hidden" name="livretTemplate" value="default">
-                                        <button type="submit" class="ukc-btn ukc-btn--sm">Utiliser</button>
-                                    </form>
-                                @endif
-                            </div>
-                            <div class="ukc-tpl-item">
-                                <div class="ico">DOC</div>
-                                <div class="meta"><strong>Modèle 2 - Journées scientifiques</strong><span>Couverture sobre · comités simples · programme par jour, salle et séance</span></div>
-                                @if ($opts['livretTemplate'] === 'fss')
-                                    <span class="ukc-pill ukc-pill--ok">Actif</span>
-                                @else
-                                    <form method="POST" action="{{ route('admin.documents.livret.template') }}" style="display:inline;">
-                                        @csrf
-                                        <input type="hidden" name="edition_id" value="{{ $edition->id }}">
-                                        <input type="hidden" name="livretTemplate" value="fss">
-                                        <button type="submit" class="ukc-btn ukc-btn--sm">Utiliser</button>
-                                    </form>
-                                @endif
-                            </div>
-                            <div class="ukc-tpl-item">
-                                <div class="ico">DOC</div>
-                                <div class="meta"><strong>Modèle de base {{ config('app.name') }}</strong><span>ukc-livre-base.doc · balises de fusion</span></div>
-                                <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                                    <a href="{{ route('admin.documents.livret.base-template') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Télécharger</a>
-                                    <form method="POST" action="{{ route('admin.documents.livret.template') }}" style="display:inline;">
-                                        @csrf
-                                        <input type="hidden" name="edition_id" value="{{ $edition->id }}">
-                                        <input type="hidden" name="livretTemplate" value="base">
-                                        <button type="submit" class="ukc-btn ukc-btn--sm">Utiliser</button>
-                                    </form>
-                                </div>
-                            </div>
                             @forelse ($templates as $tpl)
-                                <div class="ukc-tpl-item">
+                                @php($isActive = $opts['livretTemplate'] === $tpl['name'])
+                                <div class="ukc-tpl-item" @if ($isActive) style="border-color:var(--ukc-blue);box-shadow:0 0 0 1px var(--ukc-blue) inset;" @endif>
                                     <div class="ico">DOC</div>
                                     <div class="meta"><strong>{{ $tpl['name'] }}</strong><span>{{ number_format(($tpl['size'] ?? 0) / 1024, 0) }} Ko · importé le {{ $tpl['date'] ?? '-' }}</span></div>
-                                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                                        <a href="{{ \Illuminate\Support\Facades\Storage::url($tpl['path']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm" target="_blank">Télécharger</a>
-                                        @php($isActive = $opts['livretTemplate'] === $tpl['name'])
-                                        <form method="POST" action="{{ route('admin.documents.livret.template') }}" style="display:inline;">
+                                    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                                        <a href="{{ \Illuminate\Support\Facades\Storage::url($tpl['path']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm" target="_blank"><x-ukc.icon name="download" :size="15" /> Télécharger</a>
+                                        @if ($isActive)
+                                            <span class="ukc-pill ukc-pill--ok">Actif</span>
+                                        @else
+                                            <form method="POST" action="{{ route('admin.documents.livret.template') }}" style="display:inline;">
+                                                @csrf
+                                                <input type="hidden" name="edition_id" value="{{ $edition->id }}">
+                                                <input type="hidden" name="livretTemplate" value="{{ $tpl['name'] }}">
+                                                <button type="submit" class="ukc-btn ukc-btn--sm">Utiliser</button>
+                                            </form>
+                                        @endif
+                                        <form method="POST" action="{{ route('admin.documents.livret.template.delete') }}" style="display:inline;"
+                                              data-confirm="Supprimer le modèle « {{ $tpl['name'] }} » ? @if ($isActive)Le modèle par défaut redeviendra actif.@endif">
                                             @csrf
                                             <input type="hidden" name="edition_id" value="{{ $edition->id }}">
-                                            <input type="hidden" name="livretTemplate" value="{{ $tpl['name'] }}">
-                                            <button type="submit" class="ukc-btn ukc-btn--sm" @disabled($isActive)>{{ $isActive ? 'Actif' : 'Utiliser' }}</button>
+                                            <input type="hidden" name="name" value="{{ $tpl['name'] }}">
+                                            <button type="submit" class="ukc-btn ukc-btn--danger ukc-btn--sm" title="Supprimer"><x-ukc.icon name="trash" :size="15" /></button>
                                         </form>
                                     </div>
                                 </div>
                             @empty
+                                <div class="ukc-empty" style="padding:20px;text-align:center;color:var(--ukc-muted);">
+                                    Aucun modèle personnalisé pour l’instant. Déposez un .docx ci-dessus pour en ajouter un.
+                                </div>
                             @endforelse
                         </div>
                     </div>
@@ -481,9 +504,9 @@
                     <form method="POST" action="{{ route('admin.documents.livret.apparence') }}" data-ajax data-ajax-msg="Apparence du livre enregistrée." class="ukc-card" enctype="multipart/form-data">
                         <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                         @csrf
-                        <h3>Apparence du livre · modèle par défaut</h3>
+                        <h3>Apparence du livre · modèles intégrés</h3>
                         <x-ukc.scope-edition :edition="$edition" />
-                        <div class="desc">Ces paramètres construisent le « modèle par défaut » proposé dans l’onglet Modèles de document.</div>
+                        <div class="desc">Typographie, couleurs et page de garde appliquées aux <strong>deux modèles intégrés</strong> (par défaut et Journées scientifiques). Les modèles .docx importés gardent leur propre mise en forme.</div>
 
                         <div class="ukc-form-grid">
                             <div class="ukc-form-row">

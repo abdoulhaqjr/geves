@@ -481,6 +481,7 @@ Route::prefix('admin')->group(function () {
             Route::post('/livret/avant-propos-ia', [DocumentHubController::class, 'generateForewordAi'])->name('admin.documents.livret.foreword-ai');
             Route::post('/livret/apparence', [DocumentHubController::class, 'saveLivretApparence'])->name('admin.documents.livret.apparence');
             Route::post('/livret/modele', [DocumentHubController::class, 'saveLivretTemplate'])->name('admin.documents.livret.template');
+            Route::post('/livret/modele/supprimer', [DocumentHubController::class, 'deleteLivretTemplate'])->name('admin.documents.livret.template.delete');
             Route::get('/livret/modele-base', [DocumentHubController::class, 'baseTemplate'])->name('admin.documents.livret.base-template');
             Route::get('/modeles', [TemplateDesignerController::class, 'index'])->name('admin.documents.templates');
             Route::post('/modeles/creer', [TemplateDesignerController::class, 'create'])->name('admin.documents.templates.create');

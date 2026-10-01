@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Actions\IssueAttestation;
 use App\AI\AiManager;
 use App\Documents\AttestationCertifier;
+use App\Documents\LivretDocx;
 use App\Documents\LivretTemplate;
 use App\Http\Controllers\Controller;
 use App\Models\Attestation;
@@ -19,6 +20,7 @@ use App\Support\ListSort;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -184,6 +186,9 @@ class DocumentHubController extends Controller
                 'livretTemplate' => (string) EditionSettings::get($edition, 'livret.template', 'default'),
             ],
             'templates' => is_array(EditionSettings::get($edition, 'livret.templates')) ? EditionSettings::get($edition, 'livret.templates') : [],
+            // Données du livre préparées côté contrôleur (la vue mélange des @php
+            // en ligne : y ajouter un bloc @php casse la compilation Blade).
+            ...$this->livretViewExtras($edition),
             // Badges : 4 types fidèles au mockup, destinataires réels.
             'badgeRows' => $edition ? [
                 ['type' => 'Participant', 'title' => 'Badge participant', 'sub' => 'Bandeau bleu UK', 'format' => 'A6 Portrait', 'count' => $counts['participants'], 'status' => 'Actif'],
@@ -197,6 +202,39 @@ class DocumentHubController extends Controller
             ],
             'aiAvailable' => app(AiManager::class)->available() !== [],
         ]);
+    }
+
+    /**
+     * Données du volet « Livre des résumés » calculées côté contrôleur (modèle
+     * actif, état des sections de tête, catalogue des modèles intégrés). On évite
+     * un bloc @php dans la vue : elle contient déjà des @php en ligne, et le mélange
+     * casse la compilation Blade (undefined variable plus loin dans la page).
+     *
+     * @return array<string, mixed>
+     */
+    private function livretViewExtras(?Edition $edition): array
+    {
+        $active = (string) EditionSettings::get($edition, 'livret.template', 'default');
+        $activeLabel = LivretDocx::STYLES[$active] ?? ($active === 'base' ? 'Modèle de base' : $active);
+
+        $sections = [
+            'Avant-propos' => trim((string) EditionSettings::get($edition, 'livret.foreword_text', '')) !== '',
+            'Haut patronage' => trim((string) EditionSettings::get($edition, 'livret.patronage', '')) !== '',
+            'Remerciements' => trim((string) EditionSettings::get($edition, 'livret.acknowledgements', '')) !== '',
+            'Mot de bienvenue' => trim((string) EditionSettings::get($edition, 'livret.welcome_text', '')) !== '',
+            'Mot du président' => trim((string) EditionSettings::get($edition, 'livret.president_text', '')) !== '',
+        ];
+
+        return [
+            'livretActiveLabel' => $activeLabel,
+            'livretSectionCount' => count($sections),
+            'livretSectionsFilled' => count(array_filter($sections)),
+            'livretBuiltins' => [
+                ['key' => 'default', 'name' => 'Modèle par défaut', 'desc' => 'Couverture sobre · commissions numérotées · programme par jour', 'download' => null],
+                ['key' => 'fss', 'name' => 'Modèle 2 - Journées scientifiques', 'desc' => 'Couverture sobre · comités simples · programme par jour, salle et séance', 'download' => null],
+                ['key' => 'base', 'name' => 'Modèle de base '.config('app.name'), 'desc' => 'Document .docx à balises de fusion, à personnaliser dans Word', 'download' => route('admin.documents.livret.base-template')],
+            ],
+        ];
     }
 
     /** Émet les attestations d'un type pour son audience éligible (idempotent). */
@@ -444,6 +482,41 @@ class DocumentHubController extends Controller
         }
 
         return back()->with('ukc_status', 'Modèle du livre enregistré.');
+    }
+
+    /**
+     * Supprime un modèle .docx personnalisé : retire le fichier du disque et de la
+     * liste. Si c'était le modèle actif, on retombe sur le modèle par défaut.
+     */
+    public function deleteLivretTemplate(Request $request): RedirectResponse
+    {
+        $edition = $this->currentEdition($request);
+        if (! $edition) {
+            return back()->with('ukc_error', 'Sélectionnez une édition.');
+        }
+
+        $name = (string) $request->input('name');
+        $templates = is_array(EditionSettings::get($edition, 'livret.templates')) ? EditionSettings::get($edition, 'livret.templates') : [];
+
+        $kept = [];
+        foreach ($templates as $tpl) {
+            if (($tpl['name'] ?? null) === $name) {
+                if (! empty($tpl['path'])) {
+                    Storage::disk('public')->delete((string) $tpl['path']);
+                }
+
+                continue;
+            }
+            $kept[] = $tpl;
+        }
+        EditionSettings::set($edition, 'livret.templates', $kept);
+
+        // Le modèle supprimé était actif → repli sur le modèle par défaut.
+        if ((string) EditionSettings::get($edition, 'livret.template', 'default') === $name) {
+            EditionSettings::set($edition, 'livret.template', 'default');
+        }
+
+        return back()->with('ukc_status', 'Modèle personnalisé supprimé.');
     }
 
     /**
