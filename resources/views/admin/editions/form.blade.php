@@ -67,7 +67,9 @@
                     @if ($edition)<button type="button" @click="tab='options'" :class="{ active: tab==='options' }">Options</button>@endif
                 </div>
 
-                <form id="editionForm" method="POST" action="{{ $edition ? route('admin.editions.update', $edition) : route('admin.editions.store') }}">
+                {{-- multipart : l'onglet Apparence téléverse le bandeau et la bannière. --}}
+                <form id="editionForm" method="POST" enctype="multipart/form-data"
+                      action="{{ $edition ? route('admin.editions.update', $edition) : route('admin.editions.store') }}">
                     @csrf
                     @if ($edition) @method('PUT') @endif
                     <input type="hidden" name="active_tab" :value="tab">
@@ -457,7 +459,6 @@
                             <h2>Apparence du site public</h2>
 
                             <h3>Bandeau (hero)</h3>
-                            <div class="banner-preview" @if (trim($v('hero_image')) !== '') style="background-image:url('{{ e($v('hero_image')) }}')" @endif></div>
                             <div class="ukc-form-grid">
                                 <div class="ukc-form-row">
                                     <label for="hero_style">Style</label>
@@ -475,10 +476,46 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="ukc-form-row">
-                                <label for="hero_image">Image du hero <span class="ukc-hint" style="display:inline;">(URL)</span></label>
-                                <input type="url" id="hero_image" name="hero_image" value="{{ $v('hero_image') }}" placeholder="https://…/banniere.jpg">
-                            </div>
+                            {{-- Les deux images d'habillage : le bandeau en tête de page,
+                                 puis la bannière officielle juste sous le hero. Chacune se
+                                 téléverse OU s'indique par URL (affiche hébergée ailleurs) ;
+                                 le fichier l'emporte, c'est l'action la plus explicite. --}}
+                            @foreach ([
+                                ['key' => 'hero_image', 'titre' => 'Image du bandeau (hero)', 'aide' => 'Fond du bandeau en tête de la page publique. Paysage large, 1920 x 800 environ.', 'url' => $v('hero_image')],
+                                ['key' => 'banner_image', 'titre' => 'Bannière officielle', 'aide' => 'Visuel affiché sous le bandeau, pleine largeur. Format 21:9 conseillé (ex. 1680 x 720).', 'url' => $v('banner_image')],
+                            ] as $art)
+                                <div class="artwork-field" x-data="{
+                                        preview: '{{ e($art['url']) }}',
+                                        removed: false,
+                                        pick(e) { const f = e.target.files[0]; if (! f) return; this.preview = URL.createObjectURL(f); this.removed = false; },
+                                        clear() { this.preview = ''; this.removed = true; this.$refs.f.value = ''; this.$refs.u.value = ''; }
+                                     }">
+                                    <div class="banner-preview" :style="preview ? 'background-image:url(\'' + preview + '\')' : ''">
+                                        <span x-show="! preview">Aucune image</span>
+                                    </div>
+                                    <div class="artwork-head">
+                                        <strong>{{ $art['titre'] }}</strong>
+                                        <div class="row">
+                                            <input type="file" id="{{ $art['key'] }}_file" name="{{ $art['key'] }}_file" x-ref="f"
+                                                   accept="image/png,image/jpeg,image/webp" @change="pick($event)">
+                                            <label for="{{ $art['key'] }}_file" class="ukc-btn ukc-btn--sm" style="cursor:pointer;">
+                                                <x-ukc.icon name="upload" :size="16" /> <span x-text="preview ? 'Remplacer' : 'Téléverser'">Téléverser</span>
+                                            </label>
+                                            <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" x-show="preview" x-cloak @click="clear()">Supprimer</button>
+                                        </div>
+                                    </div>
+                                    <div class="ukc-hint">{{ $art['aide'] }}</div>
+                                    <div class="ukc-form-row">
+                                        <label for="{{ $art['key'] }}">ou indiquer une URL</label>
+                                        <input type="url" id="{{ $art['key'] }}" name="{{ $art['key'] }}" x-ref="u"
+                                               value="{{ $art['url'] }}" placeholder="https://…/visuel.jpg"
+                                               @input="preview = $event.target.value; removed = false;">
+                                    </div>
+                                    <input type="hidden" name="{{ $art['key'] }}_remove" :value="removed ? '1' : '0'">
+                                    @error($art['key'].'_file') <span class="error">{{ $message }}</span> @enderror
+                                    @error($art['key']) <span class="error">{{ $message }}</span> @enderror
+                                </div>
+                            @endforeach
                             <div class="ukc-form-grid">
                                 <div class="ukc-form-row">
                                     <label for="color_primary">Couleur principale</label>

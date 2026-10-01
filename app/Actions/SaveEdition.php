@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Http\Requests\Admin\SaveEditionRequest;
 use App\Models\Colloque;
 use App\Models\Edition;
+use App\Support\EditionArtwork;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -80,7 +81,25 @@ class SaveEdition
 
         $existingSettings = $edition ? ($edition->settings ?? []) : [];
 
+        // Habillage public : téléversement ou URL, pour le bandeau comme pour la
+        // bannière. Résolu AVANT le payload, car l'ancien fichier est supprimé au
+        // passage (cf. EditionArtwork).
+        $heroImage = EditionArtwork::resolve(
+            $request->file('hero_image_file'),
+            $data['hero_image'] ?? null,
+            $existingSettings['hero_image'] ?? null,
+            $request->boolean('hero_image_remove'),
+        );
+
+        $bannerUrl = EditionArtwork::resolve(
+            $request->file('banner_image_file'),
+            $data['banner_image'] ?? null,
+            $edition?->banner_url,
+            $request->boolean('banner_image_remove'),
+        );
+
         $payload = [
+            'banner_url' => $bannerUrl,
             'colloque_id' => $colloqueId,
             'title' => $data['title'],
             'edition_label' => $data['edition_label'] ?? '',
@@ -116,7 +135,7 @@ class SaveEdition
                 'gen_communication' => $request->boolean('gen_communication'),
                 'partners' => $partners,
                 'faq' => $faq,
-                'hero_image' => ($data['hero_image'] ?? null) ?: null,
+                'hero_image' => $heroImage,
                 'hero_video' => ($data['hero_video'] ?? null) ?: null,
                 'contact' => [
                     'email' => ($data['contact_email'] ?? null) ?: null,

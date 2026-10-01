@@ -444,6 +444,9 @@ class EditionFormController extends Controller
             'intro' => (string) ($s['intro'] ?? ''),
             'tracks' => implode("\n", $s['tracks'] ?? []),
             'hero_image' => (string) ($s['hero_image'] ?? ''),
+            // La bannière vit en colonne, pas dans `settings` : c'est une image de
+            // l'édition elle-même, reprise jusque dans la liste des éditions passées.
+            'banner_image' => (string) ($edition?->banner_url ?? ''),
             'hero_video' => (string) ($s['hero_video'] ?? ''),
             'contact_email' => (string) ($s['contact']['email'] ?? ''),
             'contact_phone' => (string) ($s['contact']['phone'] ?? ''),

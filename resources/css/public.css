@@ -888,10 +888,15 @@ input[data-uppercase] { text-transform: uppercase; }
 /* ============================================================
    BANNIÈRE COLLOQUE (fidèle mockup)
    ============================================================ */
+/* ⚠️ `width: 100%` est indispensable : avec `aspect-ratio` seul, la hauteur
+   plafonnée par `max-height` RÉDUISAIT la largeur (420 x 21/9 = 980 px), et la
+   bannière s'affichait étroite et calée à gauche de son conteneur. Largeur
+   définie, c'est la hauteur qui se recadre - l'image étant en `cover`. */
 .ukc-banner-frame {
   border-radius: var(--ukc-radius-lg); overflow: hidden; border: 1px solid var(--ukc-border);
   box-shadow: var(--ukc-shadow);
   background: linear-gradient(135deg, var(--ukc-blue) 0%, var(--ukc-blue-dark) 50%, var(--ukc-green) 100%);
+  width: 100%; margin-inline: auto;
   aspect-ratio: 21 / 9; max-height: 420px; position: relative;
 }
 .ukc-banner-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }

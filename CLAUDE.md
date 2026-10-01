@@ -577,6 +577,30 @@ paiement (`pay`), inscription à une formation.
     à jour. ⚠️ La **clé du réglage sert aussi de nom de champ** (`Branding::KEYS`,
     `Branding::FORMS` pour l'appariement clair → sombre) : une seule source.
   Tests : `tests/Feature/PlatformLogoTest.php`.
+- **Habillage d'une édition = bandeau (hero) + bannière officielle**, réglés dans
+  l'onglet **Apparence** de la fiche d'édition, l'un sous l'autre. Chacun accepte
+  un **téléversement OU une URL** (une partie des éditions pointe vers une affiche
+  hébergée ailleurs) ; **le fichier l'emporte**, c'est l'action la plus explicite.
+  Source unique : **`App\Support\EditionArtwork::resolve()`** (fichier, URL saisie,
+  valeur précédente, drapeau de suppression → valeur à stocker).
+  - **Où ça vit** : le bandeau dans `edition.settings['hero_image']`, la bannière
+    dans la **colonne `editions.banner_url`** (c'est une image de l'édition
+    elle-même, reprise dans la liste des éditions passées).
+  - ⚠️ **On ne supprime du disque que NOS fichiers** (`editions/` sur le disque
+    `public`) : une URL externe ne nous appartient pas. Et ré-enregistrer la fiche
+    sans toucher au champ ne doit rien supprimer - d'où la comparaison avec la
+    valeur précédente dans `resolve()`.
+  - ⚠️ La fiche d'édition poste **tous les onglets d'un coup** : un enregistrement
+    qui ne renvoie pas le champ image ne doit pas effacer l'habillage (test de
+    garde « garde l'habillage quand on enregistre un autre onglet »).
+  - ⚠️ Le `<form id="editionForm">` est en **`enctype="multipart/form-data"`** :
+    sans ça, les fichiers n'arrivent jamais et l'échec est silencieux.
+  - ⚠️ **`aspect-ratio` + `max-height` RÉDUIT la largeur** : `.ukc-banner-frame`
+    (21/9, plafond 420 px) se dessinait à 980 px (= 420 x 21/9) et calée à gauche
+    de son conteneur. Il faut une **largeur définie** (`width: 100%`) pour que ce
+    soit la hauteur qui se recadre, l'image étant en `object-fit: cover`. Le piège
+    vaut pour toute boîte à ratio dans un conteneur flex.
+  Tests : `tests/Feature/EditionArtworkTest.php`.
 ### Règles métier - limites communications & attestations
 
 - **Limite de communications** (`settings.max_communications`) : compte **seulement** les

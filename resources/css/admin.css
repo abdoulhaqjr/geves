@@ -719,7 +719,22 @@
 .admin-edition-detail .banner-preview {
   width: 100%; height: 120px; border-radius: 10px; background-size: cover; background-position: center;
   background-color: #e2e8f0; margin-bottom: 10px; border: 1px solid var(--ukc-border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ukc-muted); font-size: 12.5px; font-weight: 600;
 }
+/* Image d'habillage d'une édition (bandeau, bannière) : aperçu, actions, puis
+   l'URL en repli. Même grammaire que la photo de profil et les logos. */
+.admin-edition-detail .artwork-field {
+  padding: 14px; margin-bottom: 14px;
+  background: var(--ukc-bg); border: 1px solid var(--ukc-border); border-radius: 12px;
+}
+.admin-edition-detail .artwork-field .artwork-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  font-size: 14px; color: var(--ukc-text);
+}
+.admin-edition-detail .artwork-field .artwork-head .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.admin-edition-detail .artwork-field input[type="file"] { position: absolute; width: .1px; height: .1px; opacity: 0; overflow: hidden; z-index: -1; }
+.admin-edition-detail .artwork-field .ukc-hint { margin: 6px 0 2px; }
 .admin-edition-detail .color-row { display: flex; gap: 10px; align-items: center; }
 .admin-edition-detail .color-row input[type="color"] {
   width: 42px; height: 36px; border: 1px solid var(--ukc-border); border-radius: 8px; padding: 2px; background: #fff;
