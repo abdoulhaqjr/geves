@@ -607,6 +607,22 @@ paiement (`pay`), inscription à une formation.
     de son conteneur. Il faut une **largeur définie** (`width: 100%`) pour que ce
     soit la hauteur qui se recadre, l'image étant en `object-fit: cover`. Le piège
     vaut pour toute boîte à ratio dans un conteneur flex.
+  - **Vidéo de fond du bandeau** : même bloc d'habillage (téléversement ou URL),
+    MP4/WEBM. ⚠️ Trois branchements manquaient et la fonctionnalité ne marchait
+    pas : la case **« Activer la vidéo de fond » était ignorée** (toute URL
+    enregistrée se jouait), **`hero_video_muted` n'était jamais lu**, et le
+    `type` du `<source>` était **codé en dur en `video/mp4`** (un .webm ne se
+    lisait pas). Le contrôleur public ne passe `heroVideo` que si
+    `appearance.hero_video_enabled`, et l'image du bandeau sert de **`poster`**
+    pendant le chargement.
+  - ⚠️ **Le plafond de téléversement est celui de PHP**, pas une constante :
+    `EditionArtwork::maxUploadKb()` lit `upload_max_filesize`/`post_max_size` et
+    sert **à la fois** la règle `max:` et l'aide affichée. Une règle plus
+    généreuse serait un piège : PHP coupe la requête avant la validation et
+    l'admin reçoit une page vide au lieu d'un message. En dev (Herd) la limite
+    est de **2 Mo** - pour une vraie vidéo de fond, relever
+    `upload_max_filesize` et `post_max_size` dans le `php.ini` de Herd, ou
+    héberger la vidéo ailleurs et coller son URL.
   Tests : `tests/Feature/EditionArtworkTest.php`.
 ### Règles métier - limites communications & attestations
 

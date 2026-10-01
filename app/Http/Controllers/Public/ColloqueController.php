@@ -51,7 +51,13 @@ class ColloqueController extends Controller
             'faq' => $settings['faq'] ?? [],
             'contact' => $settings['contact'] ?? [],
             'heroImage' => $settings['hero_image'] ?? null,
-            'heroVideo' => $settings['hero_video'] ?? null,
+            // ⚠️ La vidéo n'est servie que si la case « Activer la vidéo de fond »
+            // l'est : sans ce test, l'interrupteur de l'onglet Apparence ne
+            // faisait rien et toute URL enregistrée se jouait.
+            'heroVideo' => ($settings['appearance']['hero_video_enabled'] ?? false)
+                ? ($settings['hero_video'] ?? null)
+                : null,
+            'heroVideoMuted' => (bool) ($settings['appearance']['hero_video_muted'] ?? true),
             'promo' => $settings['promo'] ?? [],
             'practical' => $settings['practical'] ?? [],
             // Formations publiques (si le module est activé pour l'édition).

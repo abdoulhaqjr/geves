@@ -39,8 +39,13 @@
     @endphp
     <header class="ukc-hero" id="top">
         @if ($heroVideo)
-            <video autoplay muted loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;">
-                <source src="{{ $heroVideo }}" type="video/mp4">
+            {{-- Le type suit l'extension : un .webm annoncé en video/mp4 ne se
+                 lit pas. L'image du hero sert d'affiche le temps du chargement. --}}
+            <video @if ($heroVideoMuted ?? true) autoplay muted loop @endif playsinline
+                   @if ($heroImage) poster="{{ $heroImage }}" @endif
+                   style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;">
+                <source src="{{ $heroVideo }}"
+                        type="{{ str_ends_with(strtolower(parse_url($heroVideo, PHP_URL_PATH) ?? ''), '.webm') ? 'video/webm' : 'video/mp4' }}">
             </video>
             <div style="position:absolute;inset:0;z-index:1;background:linear-gradient(135deg, rgba(15,26,51,.86), rgba(34,62,164,.78));"></div>
         @elseif ($heroImage)

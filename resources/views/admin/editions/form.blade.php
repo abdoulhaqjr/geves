@@ -476,13 +476,15 @@
                                     </select>
                                 </div>
                             </div>
-                            {{-- Les deux images d'habillage : le bandeau en tête de page,
+                            @php($maxUpload = round(\App\Support\EditionArtwork::maxUploadKb() / 1024, 1).' Mo')
+                            {{-- Les habillages du site public : image du bandeau,
                                  puis la bannière officielle juste sous le hero. Chacune se
                                  téléverse OU s'indique par URL (affiche hébergée ailleurs) ;
                                  le fichier l'emporte, c'est l'action la plus explicite. --}}
                             @foreach ([
                                 ['key' => 'hero_image', 'titre' => 'Image du bandeau (hero)', 'aide' => 'Fond du bandeau en tête de la page publique. Paysage large, 1920 x 800 environ.', 'url' => $v('hero_image')],
-                                ['key' => 'banner_image', 'titre' => 'Bannière officielle', 'aide' => 'Visuel affiché sous le bandeau, pleine largeur. Format 21:9 conseillé (ex. 1680 x 720).', 'url' => $v('banner_image'), 'toggle' => 'banner_enabled'],
+                                ['key' => 'banner_image', 'titre' => 'Bannière officielle', 'aide' => 'Visuel affiché sous le bandeau, pleine largeur. Format 21:9 conseillé (ex. 1680 x 720).', 'url' => $v('banner_image'), 'toggle' => 'banner_enabled', 'toggleLabel' => 'Afficher la bannière officielle sur la page du colloque'],
+                                ['key' => 'hero_video', 'type' => 'video', 'titre' => 'Vidéo de fond du bandeau', 'aide' => 'MP4 ou WEBM, '.$maxUpload.' maximum (limite du serveur). Elle remplace l’image du bandeau, qui lui sert alors d’affiche pendant le chargement.', 'url' => $v('hero_video'), 'toggle' => 'hero_video_enabled', 'toggleLabel' => 'Activer la vidéo de fond du bandeau', 'extra' => '<label class="ukc-check"><input type="checkbox" name="hero_video_muted" value="1" '.($v('hero_video_muted') ? 'checked' : '').'> Muet · boucle · lecture automatique</label>'],
                             ] as $art)
                                 <div class="artwork-field" :class="{ 'is-off': ! on }" x-data="{
                                         preview: '{{ e($art['url']) }}',
@@ -491,14 +493,21 @@
                                         pick(e) { const f = e.target.files[0]; if (! f) return; this.preview = URL.createObjectURL(f); this.removed = false; },
                                         clear() { this.preview = ''; this.removed = true; this.$refs.f.value = ''; this.$refs.u.value = ''; }
                                      }">
-                                    <div class="banner-preview" :style="preview ? 'background-image:url(\'' + preview + '\')' : ''">
-                                        <span x-show="! preview">Aucune image</span>
-                                    </div>
+                                    @if (($art['type'] ?? 'image') === 'video')
+                                        <div class="banner-preview banner-preview--video">
+                                            <video x-show="preview" x-cloak :src="preview" controls muted playsinline preload="metadata"></video>
+                                            <span x-show="! preview">Aucune vidéo</span>
+                                        </div>
+                                    @else
+                                        <div class="banner-preview" :style="preview ? 'background-image:url(\'' + preview + '\')' : ''">
+                                            <span x-show="! preview">Aucune image</span>
+                                        </div>
+                                    @endif
                                     <div class="artwork-head">
                                         <strong>{{ $art['titre'] }}</strong>
                                         <div class="row">
                                             <input type="file" id="{{ $art['key'] }}_file" name="{{ $art['key'] }}_file" x-ref="f"
-                                                   accept="image/png,image/jpeg,image/webp" @change="pick($event)">
+                                                   accept="{{ ($art['type'] ?? 'image') === 'video' ? 'video/mp4,video/webm' : 'image/png,image/jpeg,image/webp' }}" @change="pick($event)">
                                             <label for="{{ $art['key'] }}_file" class="ukc-btn ukc-btn--sm" style="cursor:pointer;">
                                                 <x-ukc.icon name="upload" :size="16" /> <span x-text="preview ? 'Remplacer' : 'Téléverser'">Téléverser</span>
                                             </label>
@@ -511,13 +520,16 @@
                                              perdu sous les couleurs, on le croyait absent. --}}
                                         <label class="ukc-check">
                                             <input type="checkbox" name="{{ $art['toggle'] }}" value="1" x-model="on">
-                                            Afficher la bannière officielle sur la page du colloque
+                                            {{ $art['toggleLabel'] }}
                                         </label>
+                                        @isset($art['extra'])
+                                            {!! $art['extra'] !!}
+                                        @endisset
                                     @endisset
                                     <div class="ukc-form-row">
                                         <label for="{{ $art['key'] }}">ou indiquer une URL</label>
                                         <input type="url" id="{{ $art['key'] }}" name="{{ $art['key'] }}" x-ref="u"
-                                               value="{{ $art['url'] }}" placeholder="https://…/visuel.jpg"
+                                               value="{{ $art['url'] }}" placeholder="{{ ($art['type'] ?? 'image') === 'video' ? 'https://…/hero.mp4' : 'https://…/visuel.jpg' }}"
                                                @input="preview = $event.target.value; removed = false;">
                                     </div>
                                     <input type="hidden" name="{{ $art['key'] }}_remove" :value="removed ? '1' : '0'">
@@ -542,13 +554,6 @@
                                 </div>
                             </div>
 
-                            <h3>Vidéo de fond du hero</h3>
-                            <div class="ukc-form-row">
-                                <label for="hero_video">URL vidéo (MP4)</label>
-                                <input type="url" id="hero_video" name="hero_video" value="{{ $v('hero_video') }}" placeholder="https://…/hero.mp4">
-                            </div>
-                            <label class="ukc-check"><input type="checkbox" name="hero_video_enabled" value="1" @checked($v('hero_video_enabled'))> Activer la vidéo de fond (remplace l’image si disponible)</label>
-                            <label class="ukc-check"><input type="checkbox" name="hero_video_muted" value="1" @checked($v('hero_video_muted'))> Muet · boucle · lecture auto</label>
 
                             <h3>Actualité (encart du hero)</h3>
                             <label class="ukc-check"><input type="checkbox" name="news_enabled" value="1" @checked($v('news_enabled'))> Afficher un encart d’actualité sur le hero</label>

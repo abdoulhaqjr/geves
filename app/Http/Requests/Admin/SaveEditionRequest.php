@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Support\EditionArtwork;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -116,8 +117,11 @@ class SaveEditionRequest extends FormRequest
             'hero_image' => ['nullable', 'string', 'max:500'],
             'banner_image' => ['nullable', 'string', 'max:500'],
             // Habillage téléversé : c'est le fichier qui l'emporte sur l'URL saisie.
-            'hero_image_file' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:3072'],
-            'banner_image_file' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:3072'],
+            'hero_image_file' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:'.min(3072, EditionArtwork::maxUploadKb())],
+            'banner_image_file' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:'.min(3072, EditionArtwork::maxUploadKb())],
+            // ⚠️ Plafond = celui du serveur : au-delà, PHP coupe la requête avant
+            // la validation et l'admin n'obtiendrait aucun message.
+            'hero_video_file' => ['nullable', 'file', 'mimetypes:video/mp4,video/webm', 'max:'.EditionArtwork::maxUploadKb()],
             'hero_video' => ['nullable', 'string', 'max:500'],
             'contact_email' => ['nullable', 'email', 'max:200'],
             'contact_phone' => ['nullable', 'string', 'max:60'],
@@ -162,7 +166,7 @@ class SaveEditionRequest extends FormRequest
             str_starts_with($field, 'fees'), str_starts_with($field, 'ref_axes') => 'submissions',
             str_starts_with($field, 'committees') => 'committees',
             str_starts_with($field, 'partners') => 'partners',
-            in_array($field, ['hero_style', 'hero_align', 'color_primary', 'color_secondary', 'hero_image', 'hero_image_file', 'banner_image', 'banner_image_file', 'hero_video', 'hero_video_enabled', 'hero_video_muted', 'news_enabled', 'news_text', 'news_url', 'stats_enabled', 'banner_enabled', 'promo_text', 'promo_url', 'promo_cta'], true),
+            in_array($field, ['hero_style', 'hero_align', 'color_primary', 'color_secondary', 'hero_image', 'hero_image_file', 'banner_image', 'banner_image_file', 'hero_video', 'hero_video_file', 'hero_video_enabled', 'hero_video_muted', 'news_enabled', 'news_text', 'news_url', 'stats_enabled', 'banner_enabled', 'promo_text', 'promo_url', 'promo_cta'], true),
             str_starts_with($field, 'stats') => 'appearance',
             str_starts_with($field, 'opt_') => 'options',
             in_array($field, ['intro', 'tracks'], true),

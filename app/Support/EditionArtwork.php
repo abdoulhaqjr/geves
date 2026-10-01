@@ -61,6 +61,43 @@ class EditionArtwork
         return $typed ?? $previous;
     }
 
+    /**
+     * Plafond de téléversement **réellement applicable**, en kilo-octets.
+     *
+     * ⚠️ Une règle `max:` plus généreuse que `upload_max_filesize` ne sert à
+     * rien : PHP coupe la requête avant la validation, et l'admin reçoit une
+     * page vide au lieu d'un message. On annonce donc la limite du serveur, et
+     * c'est elle qui est affichée dans le formulaire.
+     */
+    public static function maxUploadKb(): int
+    {
+        $limits = array_filter([
+            self::iniKb('upload_max_filesize'),
+            self::iniKb('post_max_size'),
+        ]);
+
+        return $limits === [] ? 10240 : (int) min($limits);
+    }
+
+    /** Valeur d'un réglage php.ini de taille, en kilo-octets (0 = illimité). */
+    private static function iniKb(string $key): int
+    {
+        $raw = trim((string) ini_get($key));
+        if ($raw === '' || $raw === '-1') {
+            return 0;
+        }
+
+        $unit = strtolower(substr($raw, -1));
+        $value = (float) $raw;
+
+        return (int) match ($unit) {
+            'g' => $value * 1024 * 1024,
+            'm' => $value * 1024,
+            'k' => $value,
+            default => $value / 1024,
+        };
+    }
+
     /** Supprime le fichier précédent, s'il était hébergé par nous. */
     private static function forget(?string $url): void
     {

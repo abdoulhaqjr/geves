@@ -91,6 +91,13 @@ class SaveEdition
             $request->boolean('hero_image_remove'),
         );
 
+        $heroVideo = EditionArtwork::resolve(
+            $request->file('hero_video_file'),
+            $data['hero_video'] ?? null,
+            $existingSettings['hero_video'] ?? null,
+            $request->boolean('hero_video_remove'),
+        );
+
         $bannerUrl = EditionArtwork::resolve(
             $request->file('banner_image_file'),
             $data['banner_image'] ?? null,
@@ -136,7 +143,7 @@ class SaveEdition
                 'partners' => $partners,
                 'faq' => $faq,
                 'hero_image' => $heroImage,
-                'hero_video' => ($data['hero_video'] ?? null) ?: null,
+                'hero_video' => $heroVideo,
                 'contact' => [
                     'email' => ($data['contact_email'] ?? null) ?: null,
                     'phone' => ($data['contact_phone'] ?? null) ?: null,

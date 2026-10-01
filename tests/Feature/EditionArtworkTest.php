@@ -160,6 +160,53 @@ it('active et désactive la bannière officielle', function () {
     $this->get(route('public.colloque', $edition->slug))->assertOk()->assertDontSee('id="banniere"', false);
 });
 
+it('téléverse la vidéo de fond et n’en sert le flux que si elle est activée', function () {
+    Storage::fake('public');
+    $edition = artworkEdition();
+    $staff = adminStaff();
+
+    // ⚠️ La règle est `mimetypes:` (type réel, pas l'extension) : le faux
+    // fichier doit donc annoncer son type, un .mp4 vide n'étant pas reconnu.
+    $mp4 = UploadedFile::fake()->create('fond.mp4', 300, 'video/mp4');
+
+    $this->actingAs($staff, 'web')->put(route('admin.editions.update', $edition), editionBase($edition) + [
+        'hero_video_file' => $mp4,
+        'hero_video_enabled' => '1',
+    ])->assertSessionHasNoErrors();
+
+    $edition->refresh();
+    $video = $edition->settings['hero_video'];
+    expect($video)->toContain('editions/');
+    Storage::disk('public')->assertExists(storagePath($video));
+
+    auth('web')->logout();
+    $this->get(route('public.colloque', $edition->slug))->assertOk()->assertSee('<video', false);
+
+    // ⚠️ Décochée, la case doit réellement couper la vidéo : le fichier reste
+    // enregistré, mais la page publique ne le sert plus.
+    $this->actingAs($staff, 'web')->put(route('admin.editions.update', $edition), editionBase($edition) + [
+        'hero_video' => $video,
+    ]);
+
+    expect($edition->refresh()->settings['hero_video'])->toBe($video);
+
+    auth('web')->logout();
+    $this->get(route('public.colloque', $edition->slug))->assertOk()->assertDontSee('<video', false);
+});
+
+it('refuse un fichier qui n’est pas une vidéo', function () {
+    Storage::fake('public');
+    $edition = artworkEdition();
+
+    $this->actingAs(adminStaff(), 'web')
+        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+            'hero_video_file' => UploadedFile::fake()->image('affiche.jpg'),
+        ])
+        ->assertSessionHasErrors('hero_video_file');
+
+    expect($edition->refresh()->settings['hero_video'] ?? null)->toBeNull();
+});
+
 it('refuse un fichier qui n’est pas une image', function () {
     Storage::fake('public');
     $edition = artworkEdition();
