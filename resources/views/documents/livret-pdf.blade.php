@@ -99,15 +99,25 @@
 @if ($programme->isNotEmpty())
     <div class="page-break">
         <h1 class="part sans">Programme</h1>
-        @foreach ($programme as $day => $daySessions)
+        @foreach ($programme as $day => $daySlots)
             <p class="sans" style="font-weight:bold;color:{{ $primary }};margin:12px 0 4px;">{{ $dayLabel($day) }}</p>
             <table class="prog">
-                <tr><th style="width:20%;">Horaire</th><th style="width:55%;">Session</th><th style="width:25%;">Salle</th></tr>
-                @foreach ($daySessions as $s)
+                <tr><th style="width:16%;">Horaire</th><th style="width:58%;">Communication</th><th style="width:26%;">Salle / Session</th></tr>
+                @foreach ($daySlots as $sl)
+                    @php
+                        $title = trim((string) ($sl->submission?->title ?: $sl->session_label));
+                        $auth = collect($sl->submission?->authors ?? [])->map(function ($a) {
+                            $name = trim((string) ($a['name'] ?? ''));
+                            $aff = trim((string) ($a['affiliation'] ?? ''));
+                            return $name === '' ? '' : ($aff !== '' ? $name.' ('.$aff.')' : $name);
+                        })->filter()->implode('; ');
+                        $room = trim((string) ($sl->room ?: $sl->session?->room));
+                        $sessLabel = trim((string) ($sl->session?->label ?: $sl->session_label));
+                    @endphp
                     <tr>
-                        <td>{{ $hm($s->starts_at) ?: '-' }}@if ($s->ends_at) - {{ $hm($s->ends_at) }}@endif</td>
-                        <td>{{ $s->label }}</td>
-                        <td>{{ $s->room }}</td>
+                        <td style="white-space:nowrap;">{{ $hm($sl->starts_at) ?: '-' }}@if ($sl->ends_at) - {{ $hm($sl->ends_at) }}@endif</td>
+                        <td>{{ $title ?: '-' }}@if ($auth !== '')<br><span class="muted" style="font-style:italic;font-size:8.5pt;">{{ $auth }}</span>@endif</td>
+                        <td>{{ $room }}@if ($sessLabel !== '' && $sessLabel !== $title)<br><span class="muted" style="font-size:8.5pt;">{{ $sessLabel }}</span>@endif</td>
                     </tr>
                 @endforeach
             </table>
@@ -129,6 +139,7 @@
                     'name' => trim((string) ($a['name'] ?? '')),
                     'aff' => trim((string) ($a['affiliation'] ?? '')),
                     'email' => trim((string) ($a['email'] ?? '')),
+                    'phone' => trim((string) ($a['phone'] ?? '')),
                     'corr' => (bool) ($a['corresponding'] ?? false),
                 ])->filter(fn ($p) => $p['name'] !== '')->values();
                 // Numérotation des affiliations distinctes de ce résumé.
@@ -154,8 +165,13 @@
                     @foreach ($affs as $i => $aff)
                         <p class="aff"><sup>{{ $i + 1 }}</sup> {{ $aff }}</p>
                     @endforeach
-                    @if ($corr && $corr['email'] !== '')
-                        <p class="corr">*Auteur correspondant : {{ $corr['name'] }} (e-mail : {{ $corr['email'] }})</p>
+                    @php
+                        $cbits = [];
+                        if ($corr && $corr['email'] !== '') { $cbits[] = 'e-mail : '.$corr['email']; }
+                        if ($corr && $corr['phone'] !== '') { $cbits[] = 'Tél : '.$corr['phone']; }
+                    @endphp
+                    @if ($corr && $cbits !== [])
+                        <p class="corr">*Auteur correspondant : {{ $corr['name'] }} ({{ implode(' ; ', $cbits) }})</p>
                     @endif
                 @endif
                 @php $body = trim(\App\Support\Html::render($s->abstract)); @endphp

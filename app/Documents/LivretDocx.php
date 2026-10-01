@@ -4,6 +4,7 @@ namespace App\Documents;
 
 use App\AI\AiManager;
 use App\Models\Edition;
+use App\Models\Slot;
 use App\Models\Submission;
 use App\Support\EditionSettings;
 use Illuminate\Support\Carbon;
@@ -270,35 +271,11 @@ class LivretDocx
         }
     }
 
-    /** Bloc Programme (séances datées par jour, tableaux). */
+    /** Bloc Programme (communications placées par jour) - sans titre (le modèle le fournit). */
     private function tplProgramme(Section $section): void
     {
-        $sessions = $this->edition->sessions()->get()
-            ->filter(fn ($s) => $s->starts_at || $s->session_day)
-            ->sortBy(fn ($s) => optional($s->starts_at)->timestamp ?? 0)
-            ->values();
-
-        $byDay = $sessions->groupBy(fn ($s) => optional($s->session_day ?? $s->starts_at)?->format('Y-m-d') ?? '');
-        foreach ($byDay->sortKeys() as $day => $daySessions) {
-            $dayLabel = $day !== '' ? ucfirst(Carbon::parse($day)->translatedFormat('l j F Y')) : 'À programmer';
-            $section->addText($dayLabel, ['bold' => true, 'size' => 13, 'color' => self::BLUE], ['spaceBefore' => 160, 'spaceAfter' => 60]);
-
-            $table = $section->addTable(['bordercolor' => 'DDDDDD', 'borderSize' => 4, 'cellMargin' => 60]);
-            $table->addRow();
-            foreach (['Horaire', 'Session', 'Salle'] as $i => $head) {
-                $table->addCell((int) Converter::cmToTwip([3, 9, 4][$i]), ['bgColor' => 'F1F5F9'])
-                    ->addText($head, ['bold' => true, 'size' => 10, 'color' => self::BLUE]);
-            }
-            foreach ($daySessions as $s) {
-                $h = $s->starts_at?->format('H:i') ?? '-';
-                if ($s->ends_at) {
-                    $h .= '-'.$s->ends_at->format('H:i');
-                }
-                $table->addRow();
-                $table->addCell((int) Converter::cmToTwip(3))->addText($h, ['size' => 10]);
-                $table->addCell((int) Converter::cmToTwip(9))->addText((string) $s->label, ['size' => 10]);
-                $table->addCell((int) Converter::cmToTwip(4))->addText((string) $s->room, ['size' => 10]);
-            }
+        foreach ($this->programmeByDay() as $day => $slots) {
+            $this->programmeDayTable($section, (string) $day, $slots);
         }
     }
 
@@ -457,40 +434,104 @@ class LivretDocx
     /** Programme : sessions datées regroupées par jour (tableau Horaire / Session / Salle). */
     private function addProgramme(Section $section): void
     {
-        $sessions = $this->edition->sessions()->get()
-            ->filter(fn ($s) => $s->starts_at || $s->session_day)
-            ->sortBy(fn ($s) => optional($s->starts_at)?->timestamp ?? 0)
-            ->values();
-        if ($sessions->isEmpty()) {
+        $byDay = $this->programmeByDay();
+        if ($byDay->isEmpty()) {
             return;
         }
 
         $section->addTitle('Programme', 1);
+        foreach ($byDay as $day => $slots) {
+            $this->programmeDayTable($section, (string) $day, $slots);
+        }
+        $section->addPageBreak();
+    }
 
-        $byDay = $sessions->groupBy(fn ($s) => optional($s->session_day ?? $s->starts_at)?->format('Y-m-d') ?? '');
-        foreach ($byDay->sortKeys() as $day => $daySessions) {
-            $dayLabel = $day !== '' ? ucfirst(Carbon::parse($day)->translatedFormat('l j F Y')) : 'À programmer';
-            $section->addText($dayLabel, ['bold' => true, 'size' => 13, 'color' => self::BLUE], ['spaceBefore' => 160, 'spaceAfter' => 60]);
+    /**
+     * Créneaux placés (communications), groupés et triés par jour. C'est le
+     * programme réel des communications, comme le livret uk-colloques.
+     *
+     * @return Collection<int|string, \Illuminate\Database\Eloquent\Collection<int, Slot>>
+     */
+    private function programmeByDay(): Collection
+    {
+        return $this->edition->slots()->with(['submission', 'session'])
+            ->whereNotNull('starts_at')->orderBy('starts_at')->get()
+            ->filter(fn (Slot $sl) => $sl->submission || trim((string) $sl->session_label) !== '')
+            ->groupBy(fn (Slot $sl) => $sl->starts_at?->format('Y-m-d') ?? '')
+            ->sortKeys();
+    }
 
-            $table = $section->addTable(['bordercolor' => 'DDDDDD', 'borderSize' => 4, 'cellMargin' => 60]);
-            $table->addRow();
-            foreach (['Horaire', 'Session', 'Salle'] as $i => $head) {
-                $table->addCell((int) Converter::cmToTwip([3, 9, 4][$i]), ['bgColor' => 'F1F5F9'])
-                    ->addText($head, ['bold' => true, 'size' => 10, 'color' => self::BLUE]);
+    /**
+     * Tableau d'un jour du programme : Horaire | Communication (titre + auteurs) |
+     * Salle / Session.
+     *
+     * @param  \Illuminate\Database\Eloquent\Collection<int, Slot>  $slots
+     */
+    private function programmeDayTable(Section $section, string $day, Collection $slots): void
+    {
+        $label = $day !== '' ? ucfirst(Carbon::parse($day)->translatedFormat('l j F Y')) : 'À programmer';
+        $section->addText($label, ['bold' => true, 'size' => 13, 'color' => self::BLUE], ['spaceBefore' => 160, 'spaceAfter' => 60]);
+
+        $table = $section->addTable(['bordercolor' => 'DDDDDD', 'borderSize' => 4, 'cellMargin' => 60]);
+        $table->addRow();
+        foreach (['Horaire' => 2.6, 'Communication' => 9.4, 'Salle / Session' => 4] as $head => $cm) {
+            $table->addCell((int) Converter::cmToTwip($cm), ['bgColor' => 'F1F5F9'])
+                ->addText($head, ['bold' => true, 'size' => 10, 'color' => self::BLUE]);
+        }
+        foreach ($slots as $sl) {
+            $h = $sl->starts_at?->format('H:i') ?? '-';
+            if ($sl->ends_at) {
+                $h .= '–'.$sl->ends_at->format('H:i');
             }
-            foreach ($daySessions as $s) {
-                $h = $s->starts_at?->format('H:i') ?? '-';
-                if ($s->ends_at) {
-                    $h .= '–'.$s->ends_at->format('H:i');
-                }
-                $table->addRow();
-                $table->addCell((int) Converter::cmToTwip(3))->addText($h, ['size' => 10]);
-                $table->addCell((int) Converter::cmToTwip(9))->addText((string) $s->label, ['size' => 10]);
-                $table->addCell((int) Converter::cmToTwip(4))->addText((string) $s->room, ['size' => 10]);
+            $title = trim((string) ($sl->submission?->title ?: $sl->session_label));
+            $authors = $this->slotAuthors($sl);
+            $room = trim((string) ($sl->room ?: $sl->session?->room));
+            $sessLabel = trim((string) ($sl->session?->label ?: $sl->session_label));
+
+            $table->addRow();
+            $table->addCell((int) Converter::cmToTwip(2.6))->addText($h, ['size' => 10]);
+            $cell = $table->addCell((int) Converter::cmToTwip(9.4));
+            $cell->addText($title !== '' ? $title : '-', ['size' => 10]);
+            if ($authors !== '') {
+                $cell->addText($authors, ['size' => 9, 'italic' => true, 'color' => self::MUTED]);
+            }
+            $cell3 = $table->addCell((int) Converter::cmToTwip(4));
+            if ($room !== '') {
+                $cell3->addText($room, ['size' => 10]);
+            }
+            if ($sessLabel !== '' && $sessLabel !== $title) {
+                $cell3->addText($sessLabel, ['size' => 9, 'color' => self::MUTED]);
             }
         }
+    }
 
-        $section->addPageBreak();
+    /** Auteurs d'un créneau : « Nom (Affiliation); … » (harmonisation appliquée). */
+    private function slotAuthors(Slot $sl): string
+    {
+        if (! $sl->submission) {
+            return '';
+        }
+
+        return collect($sl->submission->authors ?? [])->map(function ($a) {
+            $name = $this->mapName(trim((string) ($a['name'] ?? '')));
+            $aff = $this->mapAff(trim((string) ($a['affiliation'] ?? '')));
+
+            return $name === '' ? '' : ($aff !== '' ? $name.' ('.$aff.')' : $name);
+        })->filter()->implode('; ');
+    }
+
+    /** Coordonnées de l'auteur correspondant : « e-mail : … ; Tél : … » (parties présentes). */
+    private function contactLine(array $corr): string
+    {
+        $bits = [];
+        if (($corr['email'] ?? '') !== '') {
+            $bits[] = 'e-mail : '.$corr['email'];
+        }
+        if (($corr['phone'] ?? '') !== '') {
+            $bits[] = 'Tél : '.$corr['phone'];
+        }
+
+        return implode(' ; ', $bits);
     }
 
     /** Résumés des communications, regroupés par axe (titres en MAJUSCULES). */
@@ -565,6 +606,7 @@ class LivretDocx
             'name' => $this->mapName((string) ($a['name'] ?? '')),
             'aff' => $this->mapAff(trim((string) ($a['affiliation'] ?? ''))),
             'email' => trim((string) ($a['email'] ?? '')),
+            'phone' => trim((string) ($a['phone'] ?? '')),
             'corr' => (bool) ($a['corresponding'] ?? false),
         ])->filter(fn ($p) => $p['name'] !== '')->values();
 
@@ -612,10 +654,10 @@ class LivretDocx
                 $affRun->addText($aff, ['size' => 9, 'italic' => true, 'color' => self::MUTED]);
             }
 
-            // Auteur correspondant : nom (e-mail : …).
+            // Auteur correspondant : nom (e-mail : … ; Tél : …).
             $corr = $people->firstWhere('corr', true);
-            if ($corr && $corr['email'] !== '') {
-                $section->addText('*Auteur correspondant : '.$corr['name'].' (e-mail : '.$corr['email'].')',
+            if ($corr && ($contact = $this->contactLine($corr)) !== '') {
+                $section->addText('*Auteur correspondant : '.$corr['name'].' ('.$contact.')',
                     ['size' => 9, 'color' => self::MUTED], ['spaceBefore' => 20, 'spaceAfter' => 60]);
             }
         }

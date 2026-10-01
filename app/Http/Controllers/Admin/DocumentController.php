@@ -116,13 +116,12 @@ class DocumentController extends Controller
         ksort($authorIndex, SORT_NATURAL | SORT_FLAG_CASE);
         $authorIndex = array_map(fn ($refs) => implode(', ', array_values(array_unique($refs))), $authorIndex);
 
-        // Programme : séances datées regroupées par jour.
-        $sessions = $edition->sessions()->get()
-            ->filter(fn ($s) => $s->starts_at || $s->session_day)
-            ->sortBy(fn ($s) => optional($s->starts_at)->timestamp ?? 0);
-        $programme = $sessions->groupBy(fn ($s) => optional($s->session_day ?? $s->starts_at)?->format('Y-m-d') ?? '')
-            ->sortKeys()
-            ->map(fn ($day) => $day->values());
+        // Programme : communications placées (créneaux) regroupées par jour.
+        $programme = $edition->slots()->with(['submission', 'session'])
+            ->whereNotNull('starts_at')->orderBy('starts_at')->get()
+            ->filter(fn ($sl) => $sl->submission || trim((string) $sl->session_label) !== '')
+            ->groupBy(fn ($sl) => $sl->starts_at?->format('Y-m-d') ?? '')
+            ->sortKeys();
 
         $committeeRoles = [
             'organisation' => 'Comité d’organisation',
