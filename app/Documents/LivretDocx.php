@@ -115,7 +115,23 @@ class LivretDocx
         }
 
         $this->addCover($section);
+        // Sections de tête GÉNÉRIQUES, affichées seulement si le champ est rempli
+        // (haut patronage, remerciements, mots signés) - sinon rien ne s'insère.
+        $this->addPatronage($section);
+        $this->addAcknowledgements($section);
         $this->addForeword($section);
+        $this->addMessage(
+            $section,
+            trim((string) EditionSettings::get($this->edition, 'livret.welcome_title', 'Mot de bienvenue')) ?: 'Mot de bienvenue',
+            (string) EditionSettings::get($this->edition, 'livret.welcome_text', ''),
+            (string) EditionSettings::get($this->edition, 'livret.welcome_signature', ''),
+        );
+        $this->addMessage(
+            $section,
+            trim((string) EditionSettings::get($this->edition, 'livret.president_title', 'Mot du président')) ?: 'Mot du président',
+            (string) EditionSettings::get($this->edition, 'livret.president_text', ''),
+            (string) EditionSettings::get($this->edition, 'livret.president_signature', ''),
+        );
         $this->addCommissionsProgramme($section);
         $this->addProgramme($section);
         $this->addBody($section);
@@ -361,12 +377,26 @@ class LivretDocx
     /** Avant-propos signé (réglages `livret.*`). */
     private function addForeword(Section $section): void
     {
-        $text = trim((string) EditionSettings::get($this->edition, 'livret.foreword_text', ''));
+        $this->addMessage(
+            $section,
+            trim((string) EditionSettings::get($this->edition, 'livret.foreword_title', 'Avant-propos')) ?: 'Avant-propos',
+            (string) EditionSettings::get($this->edition, 'livret.foreword_text', ''),
+            (string) EditionSettings::get($this->edition, 'livret.signature', ''),
+        );
+    }
+
+    /**
+     * Bloc de message signé GÉNÉRIQUE (avant-propos, mot de bienvenue, mot du
+     * président…) : titre + paragraphes justifiés + signature. Ne rend RIEN si le
+     * texte est vide (section masquée). Sert tous les « mots » du livret.
+     */
+    private function addMessage(Section $section, string $title, string $text, string $signature): void
+    {
+        $text = trim($text);
         if ($text === '') {
             return;
         }
 
-        $title = trim((string) EditionSettings::get($this->edition, 'livret.foreword_title', 'Avant-propos')) ?: 'Avant-propos';
         $this->partTitle($section, $title);
 
         foreach (preg_split('/\R{2,}/', $text) ?: [$text] as $paragraph) {
@@ -376,8 +406,55 @@ class LivretDocx
             }
         }
 
-        if ($signature = trim((string) EditionSettings::get($this->edition, 'livret.signature', ''))) {
+        if (($signature = trim($signature)) !== '') {
             $section->addText($signature, ['italic' => true, 'size' => 11, 'color' => self::MUTED], ['alignment' => 'right', 'spaceBefore' => 160]);
+        }
+
+        $section->addPageBreak();
+    }
+
+    /**
+     * Haut patronage (réglage `livret.patronage`) : lignes centrées sur une page
+     * dédiée (ex. « Sous le haut patronage de… »). Masqué si vide.
+     */
+    private function addPatronage(Section $section): void
+    {
+        $text = trim((string) EditionSettings::get($this->edition, 'livret.patronage', ''));
+        if ($text === '') {
+            return;
+        }
+
+        foreach (preg_split('/\R+/', $text) ?: [$text] as $i => $line) {
+            $line = trim((string) $line);
+            if ($line !== '') {
+                // Première ligne en gras (intitulé du patronage), suivantes en dessous.
+                $section->addText($line, ['size' => 12, 'bold' => $i === 0, 'color' => '111827'],
+                    ['alignment' => 'center', 'spaceBefore' => $i === 0 ? 240 : 0, 'spaceAfter' => 60]);
+            }
+        }
+
+        $section->addPageBreak();
+    }
+
+    /**
+     * Remerciements (réglage `livret.acknowledgements`, une entrée par ligne) :
+     * titre + liste à puces. Masqué si vide.
+     */
+    private function addAcknowledgements(Section $section): void
+    {
+        $text = trim((string) EditionSettings::get($this->edition, 'livret.acknowledgements', ''));
+        if ($text === '') {
+            return;
+        }
+
+        $title = trim((string) EditionSettings::get($this->edition, 'livret.ack_title', 'Remerciements')) ?: 'Remerciements';
+        $this->partTitle($section, $title);
+
+        foreach (preg_split('/\R+/', $text) ?: [$text] as $line) {
+            $line = trim((string) $line);
+            if ($line !== '') {
+                $section->addListItem($line, 0, ['size' => 11], null, ['spaceAfter' => 40]);
+            }
         }
 
         $section->addPageBreak();

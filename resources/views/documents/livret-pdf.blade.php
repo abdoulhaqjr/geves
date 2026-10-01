@@ -68,6 +68,29 @@
     <p class="center sans" style="font-weight:bold;color:{{ $primary }};font-size:13pt;margin-top:60px;">{{ $opts['cover_mention'] }}</p>
 </div>
 
+{{-- ===================== HAUT PATRONAGE ===================== --}}
+@if ($opts['patronage'] !== '')
+    <div class="page-break" style="padding-top:60px;">
+        @foreach (preg_split('/\R+/', $opts['patronage']) ?: [] as $i => $line)
+            @if (trim($line) !== '')
+                <p class="center" style="font-size:12pt;margin:0 0 6px;@if ($i === 0)font-weight:bold;margin-top:60px;@endif">{{ trim($line) }}</p>
+            @endif
+        @endforeach
+    </div>
+@endif
+
+{{-- ===================== REMERCIEMENTS ===================== --}}
+@if ($opts['acknowledgements'] !== '')
+    <div class="page-break">
+        <h1 class="part sans">{{ $opts['ack_title'] }}</h1>
+        <ul style="margin:0;padding-left:18px;">
+            @foreach (preg_split('/\R+/', $opts['acknowledgements']) ?: [] as $line)
+                @if (trim($line) !== '')<li style="margin:0 0 4px;">{{ trim($line) }}</li>@endif
+            @endforeach
+        </ul>
+    </div>
+@endif
+
 {{-- ===================== AVANT-PROPOS ===================== --}}
 @if ($opts['foreword_text'] !== '')
     <div class="page-break">
@@ -78,6 +101,19 @@
         @if ($opts['signature'] !== '')<p class="muted" style="text-align:right;font-style:italic;margin-top:18px;">{{ $opts['signature'] }}</p>@endif
     </div>
 @endif
+
+{{-- ================= MOTS SIGNÉS (bienvenue, président) ================= --}}
+@foreach ([['welcome_title', 'welcome_text', 'welcome_signature'], ['president_title', 'president_text', 'president_signature']] as $msg)
+    @if ($opts[$msg[1]] !== '')
+        <div class="page-break">
+            <h1 class="part sans">{{ $opts[$msg[0]] }}</h1>
+            @foreach (preg_split('/\R{2,}/', $opts[$msg[1]]) ?: [] as $para)
+                @if (trim($para) !== '')<p style="text-align:justify;">{{ trim($para) }}</p>@endif
+            @endforeach
+            @if ($opts[$msg[2]] !== '')<p class="muted" style="text-align:right;font-style:italic;margin-top:18px;">{{ $opts[$msg[2]] }}</p>@endif
+        </div>
+    @endif
+@endforeach
 
 {{-- ========== DIFFÉRENTES COMMISSIONS ET PROGRAMMES DU COLLOQUE ========== --}}
 @php

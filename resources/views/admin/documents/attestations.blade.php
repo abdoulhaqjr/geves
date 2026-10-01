@@ -297,9 +297,11 @@
                     <form method="POST" action="{{ route('admin.documents.livret.options') }}" class="ukc-card">
                         <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                         @csrf
-                        <h3>Avant-propos du livre</h3>
+                        <h3>Contenu du livre</h3>
                         <x-ukc.scope-edition :edition="$edition" />
-                        <div class="desc">Texte introductif signé (Président du comité / autorités), inséré après la page de garde.</div>
+                        <div class="desc">Sections de tête du livret. <strong>Chaque section vide est automatiquement masquée</strong> dans le livre généré.</div>
+
+                        <h4 style="margin:14px 0 6px;color:var(--ukc-blue);">Avant-propos</h4>
                         <div class="ukc-field" style="margin-bottom:12px;">
                             <label>Titre de la section</label>
                             <input type="text" name="forewordTitle" value="{{ $opts['forewordTitle'] }}">
@@ -312,8 +314,53 @@
                             <label>Signature (nom + fonction)</label>
                             <input type="text" name="forewordSignature" value="{{ $opts['forewordSignature'] }}" placeholder="Prof. … - Président du Comité d’Organisation">
                         </div>
+
+                        <h4 style="margin:18px 0 6px;color:var(--ukc-blue);">Haut patronage <span style="font-weight:400;color:var(--ukc-muted);font-size:12px;">(facultatif)</span></h4>
+                        <div class="ukc-field" style="margin-bottom:12px;">
+                            <label>Haut patronage (une ligne par élément, centré)</label>
+                            <textarea rows="3" name="livretPatronage" placeholder="Sous le haut patronage du Ministre de l’Enseignement Supérieur et de la Recherche&#10;Prof …">{{ $opts['livretPatronage'] }}</textarea>
+                        </div>
+
+                        <h4 style="margin:18px 0 6px;color:var(--ukc-blue);">Remerciements <span style="font-weight:400;color:var(--ukc-muted);font-size:12px;">(facultatif)</span></h4>
+                        <div class="ukc-field" style="margin-bottom:12px;">
+                            <label>Titre de la section</label>
+                            <input type="text" name="livretAckTitle" value="{{ $opts['livretAckTitle'] }}" placeholder="Remerciements">
+                        </div>
+                        <div class="ukc-field" style="margin-bottom:12px;">
+                            <label>Remerciements (une ligne par destinataire → liste à puces)</label>
+                            <textarea rows="4" name="livretAcknowledgements" placeholder="Monsieur le Président de l’Université&#10;Monsieur le Préfet…">{{ $opts['livretAcknowledgements'] }}</textarea>
+                        </div>
+
+                        <h4 style="margin:18px 0 6px;color:var(--ukc-blue);">Mot de bienvenue <span style="font-weight:400;color:var(--ukc-muted);font-size:12px;">(facultatif)</span></h4>
+                        <div class="ukc-field" style="margin-bottom:12px;">
+                            <label>Titre de la section</label>
+                            <input type="text" name="livretWelcomeTitle" value="{{ $opts['livretWelcomeTitle'] }}" placeholder="Mot de bienvenue">
+                        </div>
+                        <div class="ukc-field" style="margin-bottom:12px;">
+                            <label>Texte</label>
+                            <textarea rows="5" name="livretWelcomeText" placeholder="Chères participantes, chers participants…">{{ $opts['livretWelcomeText'] }}</textarea>
+                        </div>
+                        <div class="ukc-field" style="margin-bottom:12px;">
+                            <label>Signature (nom + fonction)</label>
+                            <input type="text" name="livretWelcomeSignature" value="{{ $opts['livretWelcomeSignature'] }}" placeholder="Prof. … - Doyen de la Faculté">
+                        </div>
+
+                        <h4 style="margin:18px 0 6px;color:var(--ukc-blue);">Mot du président <span style="font-weight:400;color:var(--ukc-muted);font-size:12px;">(facultatif)</span></h4>
+                        <div class="ukc-field" style="margin-bottom:12px;">
+                            <label>Titre de la section</label>
+                            <input type="text" name="livretPresidentTitle" value="{{ $opts['livretPresidentTitle'] }}" placeholder="Mot du président">
+                        </div>
+                        <div class="ukc-field" style="margin-bottom:12px;">
+                            <label>Texte</label>
+                            <textarea rows="5" name="livretPresidentText" placeholder="C’est avec plaisir que nous vous accueillons…">{{ $opts['livretPresidentText'] }}</textarea>
+                        </div>
+                        <div class="ukc-field" style="margin-bottom:12px;">
+                            <label>Signature (nom + fonction)</label>
+                            <input type="text" name="livretPresidentSignature" value="{{ $opts['livretPresidentSignature'] }}" placeholder="… - Président du Comité d’Organisation">
+                        </div>
+
                         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                            <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="check" :size="16" /> Enregistrer l’avant-propos</button>
+                            <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="check" :size="16" /> Enregistrer le contenu</button>
                             @if ($aiAvailable)
                                 <button type="submit" formaction="{{ route('admin.documents.livret.foreword-ai', ['edition_id' => $edition->id]) }}"
                                         class="ukc-btn ukc-btn--green ukc-btn--sm"

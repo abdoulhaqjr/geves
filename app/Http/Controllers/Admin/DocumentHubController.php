@@ -149,6 +149,16 @@ class DocumentHubController extends Controller
                 'forewordTitle' => (string) EditionSettings::get($edition, 'livret.foreword_title', 'Avant-propos'),
                 'forewordText' => (string) EditionSettings::get($edition, 'livret.foreword_text', ''),
                 'forewordSignature' => (string) EditionSettings::get($edition, 'livret.signature', ''),
+                // Sections de tête génériques du livret (masquées si vides).
+                'livretPatronage' => (string) EditionSettings::get($edition, 'livret.patronage', ''),
+                'livretAckTitle' => (string) EditionSettings::get($edition, 'livret.ack_title', 'Remerciements'),
+                'livretAcknowledgements' => (string) EditionSettings::get($edition, 'livret.acknowledgements', ''),
+                'livretWelcomeTitle' => (string) EditionSettings::get($edition, 'livret.welcome_title', 'Mot de bienvenue'),
+                'livretWelcomeText' => (string) EditionSettings::get($edition, 'livret.welcome_text', ''),
+                'livretWelcomeSignature' => (string) EditionSettings::get($edition, 'livret.welcome_signature', ''),
+                'livretPresidentTitle' => (string) EditionSettings::get($edition, 'livret.president_title', 'Mot du président'),
+                'livretPresidentText' => (string) EditionSettings::get($edition, 'livret.president_text', ''),
+                'livretPresidentSignature' => (string) EditionSettings::get($edition, 'livret.president_signature', ''),
                 'livretShowTheme' => (bool) EditionSettings::get($edition, 'livret.show_theme', true),
                 'livretShowDates' => (bool) EditionSettings::get($edition, 'livret.show_dates', true),
                 'livretNumber' => (bool) EditionSettings::get($edition, 'livret.number_abstracts', false),
@@ -284,12 +294,22 @@ class DocumentHubController extends Controller
             'livret.foreword_title' => trim((string) $request->input('forewordTitle')),
             'livret.foreword_text' => trim((string) $request->input('forewordText')),
             'livret.signature' => trim((string) $request->input('forewordSignature')),
+            // Sections de tête génériques (masquées si vides).
+            'livret.patronage' => trim((string) $request->input('livretPatronage')),
+            'livret.ack_title' => trim((string) $request->input('livretAckTitle')),
+            'livret.acknowledgements' => trim((string) $request->input('livretAcknowledgements')),
+            'livret.welcome_title' => trim((string) $request->input('livretWelcomeTitle')),
+            'livret.welcome_text' => trim((string) $request->input('livretWelcomeText')),
+            'livret.welcome_signature' => trim((string) $request->input('livretWelcomeSignature')),
+            'livret.president_title' => trim((string) $request->input('livretPresidentTitle')),
+            'livret.president_text' => trim((string) $request->input('livretPresidentText')),
+            'livret.president_signature' => trim((string) $request->input('livretPresidentSignature')),
             'livret.show_theme' => $request->boolean('livretShowTheme'),
             'livret.show_dates' => $request->boolean('livretShowDates'),
             'livret.number_abstracts' => $request->boolean('livretNumber'),
         ]);
 
-        return back()->with('ukc_status', 'Avant-propos enregistré.');
+        return back()->with('ukc_status', 'Contenu du livre enregistré.');
     }
 
     /**

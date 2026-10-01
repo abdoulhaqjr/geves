@@ -590,6 +590,19 @@ paiement (`pay`), inscription à une formation.
   Options `livret.*` dans l'onglet **Apparence du livre** (vue `admin/documents/attestations.blade.php`) :
   polices, tailles, couleurs, alignements, `number_abstracts`, `author_index`, `page_numbers`,
   thème/dates, logo de couverture. ⚠️ **PhpWord n'échappe pas** le texte : `Settings::setOutputEscapingEnabled(true)` est obligatoire (un « & » casse le .docx).
+  - **Sections de tête GÉNÉRIQUES, masquées si vides** (onglet **Livre des résumés → Contenu du livre**,
+    `saveLivretOptions`) : en plus de l'avant-propos, le livret peut porter un **haut patronage**
+    (`livret.patronage`, lignes centrées), des **remerciements** (`livret.acknowledgements`, une ligne
+    par destinataire → liste à puces ; titre `livret.ack_title`), un **mot de bienvenue**
+    (`livret.welcome_title`/`welcome_text`/`welcome_signature`) et un **mot du président**
+    (`livret.president_title`/`president_text`/`president_signature`). ⚠️ **Chaque section ne s'affiche
+    que si son champ est rempli** (sinon rien ne s'insère) - c'est générique (tout colloque), pas
+    spécifique au modèle FSS qui a inspiré ces champs. Rendu dans **`LivretDocx`** (helper unique
+    `addMessage()` pour tous les « mots » signés ; `addPatronage()`/`addAcknowledgements()`) **et** dans
+    le **PDF** (`documents/livret-pdf.blade.php`). L'aperçu HTML (`documents/livret.blade.php`) reste
+    volontairement minimal (il n'affiche déjà ni comités ni programme) : le .docx et le PDF sont les
+    sorties fidèles. Les **modèles .docx personnalisés** ne reçoivent pas ces blocs (l'admin met ce
+    contenu directement dans son propre .docx).
   - **Gabarits .docx personnalisés** (porté de `booklet-templates.php` `ukc_bt_render`) :
     l'admin télécharge le **modèle de base** à balises (`admin.documents.livret.base-template`
     → `LivretTemplate::downloadBase`, vrai .docx), le personnalise dans Word en gardant les

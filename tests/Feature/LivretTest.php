@@ -42,6 +42,38 @@ it('génère le livret .docx avec les résumés et l’index des auteurs', funct
         ->toContain('26-001');               // la référence (renvoi de l'index)
 });
 
+it('insère les sections de tête génériques seulement si elles sont remplies', function () {
+    $staff = adminStaff();
+    $submission = seededSubmission('accepted');
+    $edition = $submission->edition;
+
+    // 1) Rien de rempli : aucune section de tête (hors avant-propos éventuel).
+    $xml = livretDocumentXml(
+        $this->actingAs($staff, 'web')
+            ->get(route('admin.documents.livret', ['edition' => $edition, 'format' => 'docx']))
+            ->streamedContent()
+    );
+    expect($xml)->not->toContain('Haut patronage de la ministre')
+        ->not->toContain('Monsieur le Président de l’Université');
+
+    // 2) Sections remplies : elles apparaissent dans le .docx.
+    EditionSettings::set($edition, 'livret.patronage', "Sous le haut patronage de la ministre\nProf Exemple");
+    EditionSettings::set($edition, 'livret.acknowledgements', "Monsieur le Président de l’Université\nMonsieur le Préfet");
+    EditionSettings::set($edition, 'livret.welcome_text', 'Chères participantes, chers participants, bienvenue.');
+    EditionSettings::set($edition, 'livret.welcome_title', 'Mot de bienvenue du Doyen');
+    EditionSettings::set($edition, 'livret.president_text', 'C’est avec plaisir que nous vous accueillons.');
+
+    $xml = livretDocumentXml(
+        $this->actingAs($staff, 'web')
+            ->get(route('admin.documents.livret', ['edition' => $edition, 'format' => 'docx']))
+            ->streamedContent()
+    );
+    expect($xml)->toContain('Sous le haut patronage de la ministre')
+        ->toContain('Monsieur le Président de l’Université')
+        ->toContain('Mot de bienvenue du Doyen')
+        ->toContain('C’est avec plaisir que nous vous accueillons');
+});
+
 it('génère le livret en PDF', function () {
     $staff = adminStaff();
     $submission = seededSubmission('accepted');
