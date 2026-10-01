@@ -9,6 +9,8 @@ use App\Support\EditionSettings;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use PhpOffice\PhpWord\Element\Footer;
 use PhpOffice\PhpWord\Element\Section;
 use PhpOffice\PhpWord\Element\TextRun;
 use PhpOffice\PhpWord\PhpWord;
@@ -49,6 +51,9 @@ class LivretDocx
 
     /** @var array<string, string> map IA original => affiliation harmonisée */
     private array $affMap = [];
+
+    /** @var array<string, list<string>> nom d'auteur affiché => références des résumés (index des auteurs). */
+    private array $authorIndex = [];
 
     /**
      * @param  Collection<int|string, \Illuminate\Database\Eloquent\Collection<int, Submission>>  $groups  soumissions groupées par axe
@@ -99,6 +104,13 @@ class LivretDocx
             'marginRight' => Converter::cmToTwip(2.2),
         ]);
 
+        // Pied de page paginé (vide sur la page de garde). Réglage `livret.page_numbers`.
+        if ((bool) EditionSettings::get($this->edition, 'livret.page_numbers', true)) {
+            $section->addFooter(Footer::FIRST); // couverture : sans numéro
+            $footer = $section->addFooter();
+            $footer->addPreserveText('{PAGE}', ['size' => 9, 'color' => self::MUTED], ['alignment' => 'center']);
+        }
+
         // Harmonisation IA (noms + affiliations) : maps appliquées au rendu des résumés.
         if ($this->harmonize) {
             $this->buildAiMaps();
@@ -110,6 +122,11 @@ class LivretDocx
         $this->addToc($section);
         $this->addProgramme($section);
         $this->addBody($section);
+
+        // Index des auteurs (renvoie au numéro de résumé). Réglage `livret.author_index`.
+        if ((bool) EditionSettings::get($this->edition, 'livret.author_index', true)) {
+            $this->addAuthorIndex($section);
+        }
 
         return $doc;
     }
@@ -311,13 +328,40 @@ class LivretDocx
         }
     }
 
+    /** Index des auteurs : noms triés alphabétiquement, suivis des références de leurs résumés. */
+    private function addAuthorIndex(Section $section): void
+    {
+        if ($this->authorIndex === []) {
+            return;
+        }
+
+        $section->addPageBreak();
+        $section->addTitle('Index des auteurs', 1);
+
+        $names = array_keys($this->authorIndex);
+        usort($names, fn ($a, $b) => strnatcasecmp(
+            Str::ascii($a),
+            Str::ascii($b),
+        ));
+
+        foreach ($names as $name) {
+            $refs = array_values(array_unique($this->authorIndex[$name]));
+            natcasesort($refs);
+            $run = $section->addTextRun(['spaceAfter' => 40]);
+            $run->addText($name.'  ', ['size' => 10, 'bold' => true]);
+            $run->addText(implode(', ', $refs), ['size' => 10, 'color' => self::MUTED]);
+        }
+    }
+
     /** Rendu d'un résumé : référence, titre, auteurs+affiliations, correspondant, corps, mots-clés. */
     private function addAbstract(Section $section, Submission $s, int $n, bool $number, int $sizeAbstract, int $sizeAuthors, int $sizeBody, string $alignBody): void
     {
-        // Référence (ex. UKC-S-0001), centrée.
-        if ($ref = trim((string) $s->ref_code)) {
-            $section->addText($ref, ['bold' => true, 'size' => 10, 'color' => self::MUTED], ['alignment' => 'center', 'spaceBefore' => 200]);
+        // Référence (ex. UKC-S-0001), centrée. Sert aussi de renvoi dans l'index des auteurs.
+        $refLabel = trim((string) $s->ref_code);
+        if ($refLabel !== '') {
+            $section->addText($refLabel, ['bold' => true, 'size' => 10, 'color' => self::MUTED], ['alignment' => 'center', 'spaceBefore' => 200]);
         }
+        $indexRef = $refLabel !== '' ? $refLabel : '#'.$n;
 
         // Titre (numéroté si l'option est active).
         $title = $number ? $n.'. '.$s->title : (string) $s->title;
@@ -330,6 +374,11 @@ class LivretDocx
             'email' => trim((string) ($a['email'] ?? '')),
             'corr' => (bool) ($a['corresponding'] ?? false),
         ])->filter(fn ($p) => $p['name'] !== '')->values();
+
+        // Index des auteurs : on mémorise la référence de ce résumé pour chaque auteur.
+        foreach ($people as $p) {
+            $this->authorIndex[$p['name']][] = $indexRef;
+        }
 
         if ($people->isNotEmpty()) {
             // Numérotation des affiliations distinctes de ce résumé.

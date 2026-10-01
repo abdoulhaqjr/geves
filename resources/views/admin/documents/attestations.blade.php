@@ -497,6 +497,8 @@
                         <label class="ukc-check"><input type="checkbox" name="livretShowTheme" value="1" @checked($opts['livretShowTheme'])> Afficher le thème de l’édition sur la couverture</label>
                         <label class="ukc-check"><input type="checkbox" name="livretShowDates" value="1" @checked($opts['livretShowDates'])> Afficher les dates et le lieu</label>
                         <label class="ukc-check"><input type="checkbox" name="livretNumber" value="1" @checked($opts['livretNumber'])> Numérotation des résumés</label>
+                        <label class="ukc-check"><input type="checkbox" name="livretAuthorIndex" value="1" @checked($opts['livretAuthorIndex'])> Index des auteurs (en fin de livret)</label>
+                        <label class="ukc-check"><input type="checkbox" name="livretPageNumbers" value="1" @checked($opts['livretPageNumbers'])> Numéros de page en pied de page</label>
 
                         <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
                             <button type="submit" class="ukc-btn"><x-ukc.icon name="check" :size="16" /> Enregistrer l’apparence</button>

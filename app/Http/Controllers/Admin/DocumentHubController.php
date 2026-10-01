@@ -151,6 +151,8 @@ class DocumentHubController extends Controller
                 'livretShowTheme' => (bool) EditionSettings::get($edition, 'livret.show_theme', true),
                 'livretShowDates' => (bool) EditionSettings::get($edition, 'livret.show_dates', true),
                 'livretNumber' => (bool) EditionSettings::get($edition, 'livret.number_abstracts', false),
+                'livretAuthorIndex' => (bool) EditionSettings::get($edition, 'livret.author_index', true),
+                'livretPageNumbers' => (bool) EditionSettings::get($edition, 'livret.page_numbers', true),
                 // Apparence du livre (modèle par défaut) - mockup admin-documents.
                 'livretFontBody' => (string) EditionSettings::get($edition, 'livret.font_body', 'Times New Roman'),
                 'livretFontHead' => (string) EditionSettings::get($edition, 'livret.font_head', 'Jost'),
@@ -372,6 +374,8 @@ class DocumentHubController extends Controller
             'livret.show_theme' => $request->boolean('livretShowTheme'),
             'livret.show_dates' => $request->boolean('livretShowDates'),
             'livret.number_abstracts' => $request->boolean('livretNumber'),
+            'livret.author_index' => $request->boolean('livretAuthorIndex'),
+            'livret.page_numbers' => $request->boolean('livretPageNumbers'),
         ]);
 
         // Logo(s) de la page de garde (optionnel).
