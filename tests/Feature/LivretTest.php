@@ -1,6 +1,10 @@
 <?php
 
+use App\Documents\LivretTemplate;
 use App\Models\User;
+use App\Support\EditionSettings;
+use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpWord\Writer\Word2007;
 
 // adminStaff() / seededSubmission() : fabriques partagées de tests/Pest.php.
 
@@ -51,7 +55,7 @@ it('génère le livret en PDF', function () {
 });
 
 it('génère le livret à partir d’un modèle .docx personnalisé (balises remplies)', function () {
-    \Illuminate\Support\Facades\Storage::fake('public');
+    Storage::fake('public');
 
     $staff = adminStaff();
     $submission = seededSubmission('accepted');
@@ -59,12 +63,12 @@ it('génère le livret à partir d’un modèle .docx personnalisé (balises rem
 
     // Un vrai modèle à balises = le modèle de base fourni à l'admin.
     $tmp = tempnam(sys_get_temp_dir(), 'tpl');
-    (new \PhpOffice\PhpWord\Writer\Word2007(\App\Documents\LivretTemplate::baseModel()))->save($tmp);
-    \Illuminate\Support\Facades\Storage::disk('public')->put('livret-templates/modele.docx', (string) file_get_contents($tmp));
+    (new Word2007(LivretTemplate::baseModel()))->save($tmp);
+    Storage::disk('public')->put('livret-templates/modele.docx', (string) file_get_contents($tmp));
     @unlink($tmp);
 
-    \App\Support\EditionSettings::set($edition, 'livret.templates', [['name' => 'modele.docx', 'path' => 'livret-templates/modele.docx']]);
-    \App\Support\EditionSettings::set($edition, 'livret.template', 'modele.docx');
+    EditionSettings::set($edition, 'livret.templates', [['name' => 'modele.docx', 'path' => 'livret-templates/modele.docx']]);
+    EditionSettings::set($edition, 'livret.template', 'modele.docx');
 
     $res = $this->actingAs($staff, 'web')
         ->get(route('admin.documents.livret', ['edition' => $edition, 'format' => 'docx']));
