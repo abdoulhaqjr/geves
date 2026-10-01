@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Storage;
 /**
  * Logos de la plateforme, remplaçables depuis Réglages › Général.
  *
- * **Deux** fichiers seulement : large et compact. Le rendu sur fond sombre est
- * calculé (blanchiment CSS), pas téléversé.
+ * Deux formes (large, compacte), chacune avec une version pour fonds sombres
+ * **facultative** : à défaut, le logo clair est blanchi en CSS.
  *
  * ⚠️ Repli systématique sur les fichiers livrés : une installation neuve, ou un
  * réglage pointant vers un fichier disparu, doit donner une image affichable -
@@ -40,8 +40,8 @@ it('sert les logos livrés tant qu’aucun n’est téléversé', function () {
 });
 
 it('ne blanchit pas les logos livrés', function () {
-    // logo-uk-white.png est déjà blanc, et blanchir le monogramme livré en
-    // ferait un carré plein : le filtre ne vaut que pour un fichier téléversé.
+    // logo-uk-white.png est déjà DESSINÉ en blanc (lettres détourées), et
+    // blanchir le monogramme livré en ferait un aplat.
     expect(Branding::whitensOnDark(Branding::WIDE))->toBeFalse();
     expect(Branding::whitensOnDark(Branding::MARK))->toBeFalse();
 });
@@ -58,13 +58,15 @@ it('retombe sur le logo livré si le fichier réglé a disparu', function () {
     expect(Branding::whitensOnDark(Branding::WIDE))->toBeFalse();
 });
 
-it('téléverse les deux logos depuis les réglages', function () {
+it('téléverse les quatre variantes depuis les réglages', function () {
     Storage::fake('public');
 
     $this->actingAs(adminStaff(), 'web')
         ->post(route('admin.settings.update'), logoBase() + [
             'app_logo' => UploadedFile::fake()->image('large.png', 320, 120),
+            'app_logo_white' => UploadedFile::fake()->image('large-blanc.png', 320, 120),
             'app_logo_mark' => UploadedFile::fake()->image('mono.png', 120, 120),
+            'app_logo_mark_white' => UploadedFile::fake()->image('mono-blanc.png', 120, 120),
         ])
         ->assertRedirect();
 
@@ -76,19 +78,24 @@ it('téléverse les deux logos depuis les réglages', function () {
     }
 
     expect(Branding::wide())->toContain(Settings::get(Branding::WIDE));
+    expect(Branding::wideWhite())->toContain(Settings::get(Branding::WIDE_WHITE));
     expect(Branding::mark())->toContain(Settings::get(Branding::MARK));
+    expect(Branding::markWhite())->toContain(Settings::get(Branding::MARK_WHITE));
     expect(Branding::isCustom())->toBeTrue();
+
+    // Une version claire existe : on respecte le dessin de l'admin.
+    expect(Branding::whitensOnDark(Branding::WIDE))->toBeFalse();
+    expect(Branding::whitensOnDark(Branding::MARK))->toBeFalse();
 });
 
-it('sert le MÊME fichier sur fond sombre, à blanchir en CSS', function () {
+it('blanchit le logo clair quand aucune version sombre n’est fournie', function () {
     Storage::fake('public');
 
-    // ⚠️ Le cœur de la fonctionnalité : on ne demande pas une version claire à
-    // l'admin, on signale qu'il faut inverser celle qu'il a donnée.
     $this->actingAs(adminStaff(), 'web')->post(route('admin.settings.update'), logoBase() + [
         'app_logo' => UploadedFile::fake()->image('large.png', 320, 120),
     ]);
 
+    // Même fichier des deux côtés : c'est la classe CSS qui fait la différence.
     expect(Branding::wideWhite())->toBe(Branding::wide());
     expect(Branding::whitensOnDark(Branding::WIDE))->toBeTrue();
 
@@ -106,6 +113,21 @@ it('pose la classe de blanchiment sur les surfaces sombres', function () {
 
     auth('web')->logout();
     $this->get(route('account.login'))->assertOk()->assertSee('logo-auto-white', false);
+});
+
+it('n’impose plus le filtre dès qu’une version sombre est téléversée', function () {
+    Storage::fake('public');
+    $staff = adminStaff();
+
+    $this->actingAs($staff, 'web')->post(route('admin.settings.update'), logoBase() + [
+        'app_logo' => UploadedFile::fake()->image('large.png', 320, 120),
+        'app_logo_white' => UploadedFile::fake()->image('large-blanc.png', 320, 120),
+    ]);
+
+    expect(Branding::wideWhite())->toContain(Settings::get(Branding::WIDE_WHITE));
+
+    auth('web')->logout();
+    $this->get(route('account.login'))->assertOk()->assertDontSee('logo-auto-white', false);
 });
 
 it('remplace le fichier précédent au lieu de l’empiler', function () {
@@ -128,7 +150,7 @@ it('remplace le fichier précédent au lieu de l’empiler', function () {
     Storage::disk('public')->assertExists($second);
 });
 
-it('revient au logo livré logo par logo', function () {
+it('revient au logo livré variante par variante', function () {
     Storage::fake('public');
     $staff = adminStaff();
 
@@ -139,7 +161,7 @@ it('revient au logo livré logo par logo', function () {
     $wide = Settings::get(Branding::WIDE);
     $mark = Settings::get(Branding::MARK);
 
-    // On ne remet à zéro que le logo large : le compact reste en place.
+    // On ne supprime que le logo large : le compact reste en place.
     $this->actingAs($staff, 'web')->post(route('admin.settings.update'), logoBase() + ['app_logo_remove' => '1']);
 
     Storage::disk('public')->assertMissing($wide);
@@ -165,20 +187,20 @@ it('affiche la bonne FORME à chaque emplacement', function () {
     $staff = adminStaff();
 
     $this->actingAs($staff, 'web')->post(route('admin.settings.update'), logoBase() + [
-        'app_logo' => UploadedFile::fake()->image('large.png', 320, 120),
+        'app_logo_white' => UploadedFile::fake()->image('large-blanc.png', 320, 120),
         'app_logo_mark' => UploadedFile::fake()->image('mono.png', 120, 120),
     ]);
 
-    $wide = Settings::get(Branding::WIDE);
+    $wideWhite = Settings::get(Branding::WIDE_WHITE);
     $mark = Settings::get(Branding::MARK);
 
     // Menu latéral : le monogramme, qui tient aussi quand la barre est réduite.
     $this->actingAs($staff, 'web')->get(route('admin.dashboard'))
-        ->assertOk()->assertSee($mark, false)->assertDontSee($wide, false);
+        ->assertOk()->assertSee($mark, false)->assertDontSee($wideWhite, false);
 
     // La page de connexion est réservée aux visiteurs : on se déconnecte d'abord.
     auth('web')->logout();
 
     // Fond sombre et place disponible : le logo large.
-    $this->get(route('account.login'))->assertOk()->assertSee($wide, false);
+    $this->get(route('account.login'))->assertOk()->assertSee($wideWhite, false);
 });

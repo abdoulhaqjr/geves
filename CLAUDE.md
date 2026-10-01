@@ -534,33 +534,32 @@ paiement (`pay`), inscription à une formation.
     horaires, garder ces fenêtres disjointes (ateliers, plénières ET pause déjeuner) - sinon
     la vue Planning affiche des conflits dès le seed.
 - **Logos de la plateforme** : réglables dans **Réglages › Général**, servis par
-  **`App\Support\Branding`**. **Deux fichiers à téléverser**, pas quatre :
-  - **`wide()`** - lockup complet (marque + nom), là où la largeur existe :
-    **pied de page public**, **connexion** et **création de compte**, **bandeau
-    (hero) des pages d'événement**.
-  - **`mark()`** - **monogramme carré**, là où le logo côtoie du texte ou se
-    réduit à une colonne d'icônes : **en-tête public** et les **deux menus
-    latéraux** (back-office, espace participant), y compris réduits. C'est aussi
-    l'`apple-touch-icon` (icône carrée ; les favicons 16/32 restent figés, ils
-    exigent ces tailles).
+  **`App\Support\Branding`**. **Deux formes**, chacune avec une version pour
+  fonds sombres **facultative** :
+  - **`wide()` / `wideWhite()`** - lockup complet (marque + nom), là où la largeur
+    existe : **pied de page public**, **connexion** et **création de compte**,
+    **bandeau (hero) des pages d'événement**.
+  - **`mark()` / `markWhite()`** - **monogramme carré**, là où le logo côtoie du
+    texte ou se réduit à une colonne d'icônes : **en-tête public** et les **deux
+    menus latéraux** (back-office, espace participant), y compris réduits. C'est
+    aussi l'`apple-touch-icon` (icône carrée ; les favicons 16/32 restent figés,
+    ils exigent ces tailles).
   - ⚠️ **Choisir la forme par la place disponible, pas par le fond** : un lockup
     large dans un menu réduit à 78 px est illisible, un monogramme seul dans un
     pied de page perd le nom de l'établissement.
-  - ⚠️ **La version « fond sombre » n'est PAS téléversée, elle est calculée** :
-    `wideWhite()`/`markWhite()` servent le **même fichier**, accompagné de la
-    classe **`.logo-auto-white`** (`brightness(0) invert(1)` : toute la matière
-    opaque passe en blanc, découpe et transparence conservées) quand
-    **`Branding::whitensOnDark($key)`** est vrai, c'est-à-dire **dès qu'un
-    fichier a été téléversé**. Faux pour les fichiers livrés : `logo-uk-white.png`
-    est déjà blanc, et blanchir le monogramme livré en ferait un aplat.
-    Il y avait avant quatre cases de téléversement ; en pratique l'admin
-    redéposait le même fichier sombre dans la case « fond sombre », illisible sur
-    le bleu. Migration `2026_10_01_000100_drop_dark_logo_settings` (oublie les
-    réglages `app_logo_white`/`app_logo_mark_white`, **sans** supprimer les
-    fichiers : un téléversement effacé ne se récupère pas).
+  - **Blanchiment automatique, en SECOURS seulement** : sans version claire
+    téléversée, la surface sombre sert le **même fichier** avec la classe
+    **`.logo-auto-white`** (`brightness(0) invert(1)`), posée quand
+    **`Branding::whitensOnDark($cléClaire)`** est vrai. ⚠️ **Ce filtre met TOUTE
+    la matière opaque en blanc** : les **évidements** (lettres détourées dans un
+    écusson) disparaissent, le logo devient une silhouette pleine. Une vraie
+    version claire est un **dessin** - aucun filtre ne la déduit du logo couleur,
+    d'où la case facultative. Faux dès qu'une version claire existe (on respecte
+    le dessin de l'admin) et faux sur les fichiers livrés : `logo-uk-white.png`
+    est déjà dessiné en blanc, et blanchir le monogramme livré en ferait un aplat.
   - **Composition « monogramme + filet + nom »** (en-tête public et menus latéraux
     déployés) : `<img class="brand-logo--mark">` + `<span class="brand-rule">` +
-    le texte. Le filet (2 px, 26 px de haut, centré) et le nom reprennent
+    le texte. Le filet (2 px de large, 26 px de haut, centré) et le nom reprennent
     **`var(--ukc-blue)`** (`#223ea4`), la couleur du logo - c'est ce qui aligne
     les deux. Menu **réduit** : le filet et le texte disparaissent avec
     `.logo-sub` (même règle de masquage), il ne reste que le monogramme, centré.
@@ -569,11 +568,14 @@ paiement (`pay`), inscription à une formation.
     le disque `public` (`branding/`) et le précédent est **supprimé** à chaque
     remplacement (un logo n'a pas d'historique, et l'ancien resterait servi
     publiquement). ⚠️ Ne plus écrire `asset('img/logo-uk.png')` en dur.
-  - **Écran de réglages = deux cartes** (`.ukc-logo-upload`, même grammaire que la
-    photo de profil) : chacune montre le logo **sur ses deux fonds**, le blanchiment
-    compris, puis *Remplacer* et *Supprimer* (= revenir au logo livré ; il n'y a
-    jamais « pas de logo »). La remise à zéro passe par un **champ caché**
-    `{clé}_remove` piloté par le bouton, qui met aussi les aperçus à jour.
+  - **Écran de réglages = une carte par forme** (`.ukc-logo-card`), chacune avec
+    ses deux dépôts (`.ukc-logo-upload`, même grammaire que la photo de profil) :
+    aperçu **sur le fond réel** - blanchiment compris, donc un mauvais rendu se
+    voit avant d'enregistrer -, puis *Remplacer* et *Supprimer* (= rendre la main
+    au logo livré ; il n'y a jamais « pas de logo »). La remise à zéro passe par
+    un **champ caché** `{clé}_remove` piloté par le bouton, qui met aussi l'aperçu
+    à jour. ⚠️ La **clé du réglage sert aussi de nom de champ** (`Branding::KEYS`,
+    `Branding::FORMS` pour l'appariement clair → sombre) : une seule source.
   Tests : `tests/Feature/PlatformLogoTest.php`.
 ### Règles métier - limites communications & attestations
 
