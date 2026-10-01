@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Providers\AppServiceProvider;
+use App\Support\Branding;
 use App\Support\ParticipantTypes;
 use App\Support\Settings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 
@@ -164,6 +166,9 @@ class SettingController extends Controller
             'sms_http_url' => ['nullable', 'url'],
             'plagiarism_provider' => ['nullable', 'in:none,prepostseo'],
             'orcid_environment' => ['nullable', 'in:sandbox,production'],
+            // Logo de la plateforme : image légère, les deux variantes de fond.
+            'app_logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:1024'],
+            'app_logo_white' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:1024'],
         ]);
 
         if ($validator->fails()) {
@@ -187,8 +192,45 @@ class SettingController extends Controller
         }
 
         Settings::setMany($payload);
+        $this->saveLogos($request);
 
         return back()->with('ukc_status', 'Réglages enregistrés.')->with('settings_tab', 'general');
+    }
+
+    /**
+     * Logo de la plateforme (deux variantes) et remise à zéro.
+     *
+     * ⚠️ On remplace le fichier précédent plutôt que d'empiler : un logo n'a pas
+     * d'historique, et les anciens resteraient servis publiquement.
+     */
+    private function saveLogos(Request $request): void
+    {
+        foreach ([Branding::KEY => 'app_logo', Branding::KEY_WHITE => 'app_logo_white'] as $key => $field) {
+            $previous = (string) (Settings::get($key) ?? '');
+
+            if ($request->boolean($field.'_remove')) {
+                $this->forget($previous);
+                Settings::set($key, '');
+
+                continue;
+            }
+
+            if (! $request->hasFile($field)) {
+                continue;
+            }
+
+            $path = $request->file($field)->store('branding', 'public');
+            $this->forget($previous);
+            Settings::set($key, $path);
+        }
+    }
+
+    /** Supprime un fichier de marque devenu inutile (ignore l'absence). */
+    private function forget(string $path): void
+    {
+        if ($path !== '' && Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->delete($path);
+        }
     }
 
     /** Envoie un e-mail de test avec les paramètres SMTP saisis. */

@@ -533,6 +533,17 @@ paiement (`pay`), inscription à une formation.
     ne collisionne en salle avec le volume ni ne tombe sur le déjeuner. ⚠️ En touchant à ces
     horaires, garder ces fenêtres disjointes (ateliers, plénières ET pause déjeuner) - sinon
     la vue Planning affiche des conflits dès le seed.
+- **Logo de la plateforme** : réglable dans **Réglages › Général**, servi par
+  **`App\Support\Branding`** - `logo()` (fonds clairs) et `logoWhite()` (fonds
+  sombres : connexion, pied public, bandeau de colloque). ⚠️ Ne plus écrire
+  `asset('img/logo-uk.png')` en dur : les six emplacements (back-office, espace
+  participant, en-tête et pied publics, page de connexion, bandeau) passent par
+  le support. **Repli systématique** sur les fichiers livrés dans `public/img`
+  si rien n'est téléversé ou si le fichier réglé a disparu - jamais d'image
+  cassée. Les fichiers vivent sur le disque `public` (`branding/`) et le
+  précédent est **supprimé** à chaque remplacement (un logo n'a pas
+  d'historique, et l'ancien resterait servi publiquement).
+  Tests : `tests/Feature/PlatformLogoTest.php`.
 ### Règles métier - limites communications & attestations
 
 - **Limite de communications** (`settings.max_communications`) : compte **seulement** les

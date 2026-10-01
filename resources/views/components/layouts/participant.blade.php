@@ -39,7 +39,7 @@
         <aside class="ukc-sidebar" :class="{ 'open': open }">
             <div class="ukc-sidebar-brand">
                 <a href="{{ route('account.dashboard') }}" class="logo-img" aria-label="Université de Kara - espace participant">
-                    <img src="{{ asset('img/logo-uk.png') }}" alt="Université de Kara">
+                    <img src="{{ \App\Support\Branding::logo() }}" alt="Université de Kara">
                 </a>
                 <div class="logo-sub" style="margin-top:8px;">Espace participant</div>
                 <button type="button" class="ukc-compact-toggle" @click="toggleCompact()"

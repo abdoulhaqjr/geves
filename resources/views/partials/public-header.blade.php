@@ -2,7 +2,7 @@
 <header class="site-header">
     <div class="ukc-container inner">
         <a href="{{ route('home') }}" class="brand">
-            <img src="{{ asset('img/logo-uk.png') }}" alt="Université de Kara" class="brand-logo">
+            <img src="{{ \App\Support\Branding::logo() }}" alt="Université de Kara" class="brand-logo">
             <div class="brand-tag">
                 {{ config('app.name') }}
                 <span>{{ __('Direction de la Recherche et de l’Innovation') }}</span>

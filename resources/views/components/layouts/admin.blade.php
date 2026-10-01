@@ -15,7 +15,7 @@
         <aside class="ukc-sidebar" :class="{ 'open': open }">
             <div class="ukc-sidebar-brand">
                 <a href="{{ route('admin.dashboard') }}" class="logo-img" aria-label="Université de Kara - back-office">
-                    <img src="{{ asset('img/logo-uk.png') }}" alt="Université de Kara">
+                    <img src="{{ \App\Support\Branding::logo() }}" alt="Université de Kara">
                 </a>
                 <div class="logo-sub">Back-office · Colloques</div>
                 <button type="button" class="ukc-compact-toggle" @click="toggleCompact()"

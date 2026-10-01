@@ -50,7 +50,7 @@
         <div class="ukc-container" style="position:relative;z-index:2;">
             <div class="ukc-hero-inner">
                 <div>
-                    <img src="{{ asset('img/logo-uk-white.png') }}" alt="Université de Kara" class="ukc-hero-logo">
+                    <img src="{{ \App\Support\Branding::logoWhite() }}" alt="Université de Kara" class="ukc-hero-logo">
                     <div class="ukc-hero-badge">
                         <span class="dot" aria-hidden="true"></span>
                         <span>{{ $e->phase()->label() }}</span>
