@@ -384,8 +384,8 @@
                         <div class="ukc-field" style="margin-bottom:14px;max-width:420px;">
                             <label>Modèle actif</label>
                             <select name="livretTemplate">
-                                <option value="default" @selected($opts['livretTemplate'] === 'default')>Modèle par défaut (UK/UP) · Apparence du livre</option>
-                                <option value="fss" @selected($opts['livretTemplate'] === 'fss')>Modèle 2 - Journées scientifiques (FSS)</option>
+                                <option value="default" @selected($opts['livretTemplate'] === 'default')>Modèle par défaut · Apparence du livre</option>
+                                <option value="fss" @selected($opts['livretTemplate'] === 'fss')>Modèle 2 - Journées scientifiques</option>
                                 <option value="base" @selected($opts['livretTemplate'] === 'base')>Modèle de base {{ config('app.name') }}</option>
                                 @foreach ($templates as $tpl)
                                     <option value="{{ $tpl['name'] }}" @selected($opts['livretTemplate'] === $tpl['name'])>{{ $tpl['name'] }}</option>
@@ -416,7 +416,7 @@
                         <div style="margin-top:14px;">
                             <div class="ukc-tpl-item">
                                 <div class="ico">DOC</div>
-                                <div class="meta"><strong>Modèle par défaut (UK/UP)</strong><span>Couverture tricolore · commissions numérotées · programme par jour</span></div>
+                                <div class="meta"><strong>Modèle par défaut</strong><span>Couverture sobre · commissions numérotées · programme par jour</span></div>
                                 @if ($opts['livretTemplate'] === 'default')
                                     <span class="ukc-pill ukc-pill--ok">Actif</span>
                                 @else
@@ -430,7 +430,7 @@
                             </div>
                             <div class="ukc-tpl-item">
                                 <div class="ico">DOC</div>
-                                <div class="meta"><strong>Modèle 2 - Journées scientifiques (FSS)</strong><span>Couverture sobre · comités simples · programme par salle</span></div>
+                                <div class="meta"><strong>Modèle 2 - Journées scientifiques</strong><span>Couverture sobre · comités simples · programme par jour, salle et séance</span></div>
                                 @if ($opts['livretTemplate'] === 'fss')
                                     <span class="ukc-pill ukc-pill--ok">Actif</span>
                                 @else

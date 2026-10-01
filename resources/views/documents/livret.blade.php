@@ -14,11 +14,6 @@
 
         {{-- Page de garde --}}
         <div style="text-align:center;padding:60px 20px;border-bottom:2px solid var(--ukc-border);margin-bottom:32px;">
-            <div style="height:5px;width:120px;margin:0 auto 24px;display:flex;border-radius:4px;overflow:hidden;">
-                <span style="flex:1;background:var(--ukc-blue);"></span>
-                <span style="flex:1;background:var(--ukc-gold);"></span>
-                <span style="flex:1;background:var(--ukc-green);"></span>
-            </div>
             <div style="font-weight:900;color:var(--ukc-blue);font-size:1.1rem;">{{ $edition->colloque?->name }}</div>
             <h1 style="font-size:1.9rem;font-weight:900;margin:14px 0 8px;">Livret des résumés</h1>
             <p style="color:var(--ukc-muted);">{{ $edition->title }}</p>

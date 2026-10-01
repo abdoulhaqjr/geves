@@ -47,11 +47,6 @@
     @if ($name = trim((string) $edition->colloque?->name))
         <p class="center sans" style="font-weight:bold;color:{{ $primary }};font-size:12pt;margin:0 0 6px;">{{ \Illuminate\Support\Str::upper($name) }}</p>
     @endif
-    <table class="banner"><tr>
-        <td style="background:{{ $primary }};"></td>
-        <td style="background:#ffd700;"></td>
-        <td style="background:#009933;"></td>
-    </tr></table>
     <h1 class="sans center" style="font-size:24pt;margin:30px 0 6px;color:#111827;">{{ $edition->title }}</h1>
     @if ($label = trim((string) $edition->edition_label))
         <p class="center muted" style="margin:0 0 6px;">{{ $label }}</p>
