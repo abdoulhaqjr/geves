@@ -166,9 +166,11 @@ class SettingController extends Controller
             'sms_http_url' => ['nullable', 'url'],
             'plagiarism_provider' => ['nullable', 'in:none,prepostseo'],
             'orcid_environment' => ['nullable', 'in:sandbox,production'],
-            // Logo de la plateforme : image légère, les deux variantes de fond.
+            // Logos : deux formes (large, compacte) x deux fonds (clair, sombre).
             'app_logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:1024'],
             'app_logo_white' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:1024'],
+            'app_logo_mark' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:1024'],
+            'app_logo_mark_white' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:1024'],
         ]);
 
         if ($validator->fails()) {
@@ -198,14 +200,16 @@ class SettingController extends Controller
     }
 
     /**
-     * Logo de la plateforme (deux variantes) et remise à zéro.
+     * Logos de la plateforme (quatre variantes) et remise à zéro.
      *
      * ⚠️ On remplace le fichier précédent plutôt que d'empiler : un logo n'a pas
      * d'historique, et les anciens resteraient servis publiquement.
      */
     private function saveLogos(Request $request): void
     {
-        foreach ([Branding::KEY => 'app_logo', Branding::KEY_WHITE => 'app_logo_white'] as $key => $field) {
+        // La clé du réglage sert aussi de nom de champ : une seule source.
+        foreach (Branding::KEYS as $key) {
+            $field = $key;
             $previous = (string) (Settings::get($key) ?? '');
 
             if ($request->boolean($field.'_remove')) {

@@ -33,40 +33,39 @@
                             <label for="currency">Devise</label>
                             <input type="text" id="currency" name="currency" value="{{ $v('currency') }}" maxlength="10">
                         </div>
-                        {{-- Logo : deux variantes, parce qu'il se pose sur deux fonds.
-                             À défaut, ceux livrés dans public/img sont servis. --}}
+                        {{-- Deux FORMES (large, compacte) x deux FONDS (clair, sombre).
+                             À défaut, les fichiers livrés dans public/img sont servis. --}}
                         <div class="ukc-field full">
-                            <label>Logo de la plateforme</label>
-                            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;">
-                                <div>
-                                    <div style="background:#fff;border:1px solid var(--ukc-border);border-radius:10px;padding:14px;display:flex;align-items:center;justify-content:center;min-height:84px;">
-                                        <img src="{{ \App\Support\Branding::logo() }}" alt="Logo" style="max-height:52px;max-width:100%;">
-                                    </div>
-                                    <div style="font-size:12px;color:var(--ukc-muted);margin:6px 0 6px;">Fonds clairs (en-têtes, menus).</div>
-                                    <input type="file" name="app_logo" accept="image/png,image/jpeg,image/webp,image/svg+xml">
-                                    @error('app_logo') <span class="error">{{ $message }}</span> @enderror
-                                    @if (filled(\App\Support\Settings::get(\App\Support\Branding::KEY)))
-                                        <label class="ukc-check" style="margin-top:6px;"><input type="checkbox" name="app_logo_remove" value="1"> Revenir au logo livré</label>
-                                    @endif
-                                </div>
-                                <div>
-                                    <div style="background:var(--ukc-blue);border-radius:10px;padding:14px;display:flex;align-items:center;justify-content:center;min-height:84px;">
-                                        <img src="{{ \App\Support\Branding::logoWhite() }}" alt="Logo (fond sombre)" style="max-height:52px;max-width:100%;">
-                                    </div>
-                                    <div style="font-size:12px;color:var(--ukc-muted);margin:6px 0 6px;">Fonds sombres (connexion, pied de page, bandeau).</div>
-                                    <input type="file" name="app_logo_white" accept="image/png,image/jpeg,image/webp,image/svg+xml">
-                                    @error('app_logo_white') <span class="error">{{ $message }}</span> @enderror
-                                    @if (filled(\App\Support\Settings::get(\App\Support\Branding::KEY_WHITE)))
-                                        <label class="ukc-check" style="margin-top:6px;"><input type="checkbox" name="app_logo_white_remove" value="1"> Revenir au logo livré</label>
-                                    @endif
-                                </div>
-                            </div>
-                            <span class="hint" style="font-size:12px;color:var(--ukc-muted);">
-                                PNG, JPG, WEBP ou SVG, 1 Mo maximum. Le logo s’affiche partout : back-office, espace
-                                participant, pages publiques et page de connexion.
+                            <label>Logos de la plateforme</label>
+                            <span class="hint" style="font-size:12px;color:var(--ukc-muted);margin-bottom:10px;display:block;">
+                                Le <strong>logo large</strong> s’affiche là où la place le permet : pied de page, pages de
+                                connexion et de création de compte, bandeau des pages d’événement. Le <strong>logo compact</strong>
+                                sert à l’en-tête public et aux menus latéraux, y compris réduits. PNG, JPG, WEBP ou SVG, 1 Mo maximum.
                             </span>
-                        </div>
 
+                            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;">
+                                @foreach ([
+                                    ['key' => \App\Support\Branding::WIDE, 'url' => \App\Support\Branding::wide(), 'titre' => 'Large · fond clair', 'fond' => '#fff', 'h' => 46],
+                                    ['key' => \App\Support\Branding::WIDE_WHITE, 'url' => \App\Support\Branding::wideWhite(), 'titre' => 'Large · fond sombre', 'fond' => 'var(--ukc-blue)', 'h' => 46],
+                                    ['key' => \App\Support\Branding::MARK, 'url' => \App\Support\Branding::mark(), 'titre' => 'Compact · fond clair', 'fond' => '#fff', 'h' => 52],
+                                    ['key' => \App\Support\Branding::MARK_WHITE, 'url' => \App\Support\Branding::markWhite(), 'titre' => 'Compact · fond sombre', 'fond' => 'var(--ukc-blue)', 'h' => 52],
+                                ] as $variant)
+                                    <div>
+                                        <div style="background:{{ $variant['fond'] }};border:1px solid var(--ukc-border);border-radius:10px;padding:14px;display:flex;align-items:center;justify-content:center;min-height:86px;">
+                                            <img src="{{ $variant['url'] }}" alt="{{ $variant['titre'] }}" style="max-height:{{ $variant['h'] }}px;max-width:100%;">
+                                        </div>
+                                        <div style="font-size:12px;font-weight:700;color:var(--ukc-muted);margin:6px 0 4px;">{{ $variant['titre'] }}</div>
+                                        <input type="file" name="{{ $variant['key'] }}" accept="image/png,image/jpeg,image/webp,image/svg+xml">
+                                        @error($variant['key']) <span class="error">{{ $message }}</span> @enderror
+                                        @if (\App\Support\Branding::url($variant['key']))
+                                            <label class="ukc-check" style="margin-top:6px;">
+                                                <input type="checkbox" name="{{ $variant['key'] }}_remove" value="1"> Revenir au logo livré
+                                            </label>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
                         <div class="ukc-field">
                             <label for="app_name">Nom de la plateforme</label>
                             <input type="text" id="app_name" name="app_name" value="{{ $v('app_name') }}" maxlength="60" placeholder="GEVES">

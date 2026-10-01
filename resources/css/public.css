@@ -969,3 +969,11 @@ input[data-uppercase] { text-transform: uppercase; }
 .ukc-cb-root { transition: opacity .18s ease, transform .18s ease; }
 body.ukc-overlay-open .ukc-cb-root { opacity: 0; transform: translateY(10px) scale(.92); pointer-events: none; }
 .ukc-cb-root.is-shy { opacity: .2; pointer-events: none; }
+
+/* En-tête public : monogramme, filet de séparation, puis le nom de la
+   plateforme. ⚠️ Le filet reprend le bleu de la charte (#223ea4, `--ukc-blue`),
+   déjà porté par `.brand-tag` : logo, filet et texte s'alignent sur une seule
+   couleur. Il disparaît avec le texte sur petit écran, où il ne sépare plus rien. */
+.brand .brand-logo--mark { height: 44px; width: auto; aspect-ratio: 1 / 1; object-fit: contain; }
+.brand .brand-rule { width: 1px; align-self: stretch; min-height: 34px; background: var(--ukc-blue); opacity: .28; flex-shrink: 0; }
+@media (max-width: 560px) { .brand .brand-rule { display: none; } }

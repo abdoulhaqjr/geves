@@ -533,16 +533,39 @@ paiement (`pay`), inscription à une formation.
     ne collisionne en salle avec le volume ni ne tombe sur le déjeuner. ⚠️ En touchant à ces
     horaires, garder ces fenêtres disjointes (ateliers, plénières ET pause déjeuner) - sinon
     la vue Planning affiche des conflits dès le seed.
-- **Logo de la plateforme** : réglable dans **Réglages › Général**, servi par
-  **`App\Support\Branding`** - `logo()` (fonds clairs) et `logoWhite()` (fonds
-  sombres : connexion, pied public, bandeau de colloque). ⚠️ Ne plus écrire
-  `asset('img/logo-uk.png')` en dur : les six emplacements (back-office, espace
-  participant, en-tête et pied publics, page de connexion, bandeau) passent par
-  le support. **Repli systématique** sur les fichiers livrés dans `public/img`
-  si rien n'est téléversé ou si le fichier réglé a disparu - jamais d'image
-  cassée. Les fichiers vivent sur le disque `public` (`branding/`) et le
-  précédent est **supprimé** à chaque remplacement (un logo n'a pas
-  d'historique, et l'ancien resterait servi publiquement).
+- **Logos de la plateforme** : réglables dans **Réglages › Général**, servis par
+  **`App\Support\Branding`**. **Deux FORMES x deux FONDS**, quatre accesseurs :
+  - **`wide()` / `wideWhite()`** - lockup complet (marque + nom), là où la largeur
+    existe : **pied de page public**, **connexion** et **création de compte**,
+    **bandeau (hero) des pages d'événement**.
+  - **`mark()` / `markWhite()`** - **monogramme carré**, là où le logo côtoie du
+    texte ou se réduit à une colonne d'icônes : **en-tête public** et les **deux
+    menus latéraux** (back-office, espace participant), y compris réduits. C'est
+    aussi l'`apple-touch-icon` (icône carrée, elle suit le monogramme réglé ; les
+    favicons 16/32 restent figés, ils exigent ces tailles).
+  - ⚠️ **Choisir la forme par la place disponible, pas par le fond** : un lockup
+    large dans un menu réduit à 78 px est illisible, un monogramme seul dans un
+    pied de page perd le nom de l'établissement.
+  - **Composition « monogramme + filet + nom »** (en-tête public et menus latéraux
+    déployés) : `<img class="brand-logo--mark">` + `<span class="brand-rule">` +
+    le texte. Le filet et le nom reprennent **`var(--ukc-blue)`** (`#223ea4`), la
+    couleur du logo - c'est ce qui aligne les deux. Menu **réduit** : le filet et
+    le texte disparaissent avec `.logo-sub` (même règle de masquage), il ne reste
+    que le monogramme, centré.
+  - **Repli en cascade**, pour ne jamais afficher d'image cassée : variante
+    demandée → **autre fond de la MÊME forme** → fichier livré dans `public/img`.
+    ⚠️ Jamais de repli d'une forme sur l'autre : la mise en page casserait.
+  - ⚠️ Les **clés stockées gardent leurs noms d'origine** (`app_logo`,
+    `app_logo_white`) bien qu'elles désignent la forme **large** : les renommer
+    orphelinerait les logos déjà téléversés. Les deux nouvelles sont
+    `app_logo_mark` / `app_logo_mark_white`. `Branding::KEYS` est la liste unique
+    (la clé **sert aussi de nom de champ** dans le formulaire de réglages).
+  - ⚠️ Ne plus écrire `asset('img/logo-uk.png')` en dur. Les fichiers vivent sur le
+    disque `public` (`branding/`) et le précédent est **supprimé** à chaque
+    remplacement (un logo n'a pas d'historique, et l'ancien resterait servi
+    publiquement). Chaque variante a sa case **« Revenir au logo livré »**.
+  - L'écran de réglages affiche **chaque variante sur son vrai fond** : un logo à
+    texte sombre téléversé dans une case « fond sombre » se voit immédiatement.
   Tests : `tests/Feature/PlatformLogoTest.php`.
 ### Règles métier - limites communications & attestations
 

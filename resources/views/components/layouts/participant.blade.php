@@ -38,10 +38,13 @@
          :class="{ 'ukc-compact': compact }">
         <aside class="ukc-sidebar" :class="{ 'open': open }">
             <div class="ukc-sidebar-brand">
-                <a href="{{ route('account.dashboard') }}" class="logo-img" aria-label="Université de Kara - espace participant">
-                    <img src="{{ \App\Support\Branding::logo() }}" alt="Université de Kara">
-                </a>
-                <div class="logo-sub" style="margin-top:8px;">Espace participant</div>
+                <div class="brand-lockup">
+                    <a href="{{ route('account.dashboard') }}" class="logo-img" aria-label="{{ config('app.name') }} - espace participant">
+                        <img src="{{ \App\Support\Branding::mark() }}" alt="{{ config('app.name') }}">
+                    </a>
+                    <span class="brand-rule" aria-hidden="true"></span>
+                    <div class="logo-sub"><strong>{{ config('app.name') }}</strong><span>Espace participant</span></div>
+                </div>
                 <button type="button" class="ukc-compact-toggle" @click="toggleCompact()"
                         :aria-pressed="compact" aria-label="Réduire ou déployer le menu" title="Réduire / déployer le menu">
                     <x-ukc.icon name="chevron" :size="16" />

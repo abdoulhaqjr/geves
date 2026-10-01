@@ -2,7 +2,10 @@
 <header class="site-header">
     <div class="ukc-container inner">
         <a href="{{ route('home') }}" class="brand">
-            <img src="{{ \App\Support\Branding::logo() }}" alt="Université de Kara" class="brand-logo">
+            {{-- Monogramme : l'en-tête n'a pas la largeur du logo complet, et le
+                 nom de la plateforme est déjà écrit à côté. --}}
+            <img src="{{ \App\Support\Branding::mark() }}" alt="{{ config('app.name') }}" class="brand-logo brand-logo--mark">
+            <span class="brand-rule" aria-hidden="true"></span>
             <div class="brand-tag">
                 {{ config('app.name') }}
                 <span>{{ __('Direction de la Recherche et de l’Innovation') }}</span>

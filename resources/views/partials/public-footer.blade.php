@@ -3,7 +3,7 @@
     <div class="ukc-container">
         <div class="footer-grid">
             <div>
-                <img src="{{ \App\Support\Branding::logoWhite() }}" alt="Université de Kara" class="footer-logo">
+                <img src="{{ \App\Support\Branding::wideWhite() }}" alt="Université de Kara" class="footer-logo">
                 {{ __('Service de l’Université de Kara - Direction de la Recherche et de l’Innovation (DRI). Plateforme non commerciale.') }}
             </div>
             <div>

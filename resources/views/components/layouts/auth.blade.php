@@ -6,7 +6,7 @@
         <aside class="auth-brand">
             <div>
                 <a href="{{ url('/') }}" class="logo">
-                    <img src="{{ \App\Support\Branding::logoWhite() }}" alt="Université de Kara" class="auth-logo">
+                    <img src="{{ \App\Support\Branding::wideWhite() }}" alt="Université de Kara" class="auth-logo">
                 </a>
                 @isset($brandBody)
                     {{ $brandBody }}

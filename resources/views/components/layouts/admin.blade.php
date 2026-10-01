@@ -14,10 +14,13 @@
          :class="{ 'ukc-compact': compact }">
         <aside class="ukc-sidebar" :class="{ 'open': open }">
             <div class="ukc-sidebar-brand">
-                <a href="{{ route('admin.dashboard') }}" class="logo-img" aria-label="Université de Kara - back-office">
-                    <img src="{{ \App\Support\Branding::logo() }}" alt="Université de Kara">
-                </a>
-                <div class="logo-sub">Back-office · Colloques</div>
+                <div class="brand-lockup">
+                    <a href="{{ route('admin.dashboard') }}" class="logo-img" aria-label="{{ config('app.name') }} - back-office">
+                        <img src="{{ \App\Support\Branding::mark() }}" alt="{{ config('app.name') }}">
+                    </a>
+                    <span class="brand-rule" aria-hidden="true"></span>
+                    <div class="logo-sub"><strong>{{ config('app.name') }}</strong><span>Back-office · Colloques</span></div>
+                </div>
                 <button type="button" class="ukc-compact-toggle" @click="toggleCompact()"
                         :aria-pressed="compact" aria-label="Réduire ou déployer le menu" title="Réduire / déployer le menu">
                     <x-ukc.icon name="chevron" :size="16" />
