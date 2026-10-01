@@ -30,6 +30,9 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class LivretDocx
 {
+    /** Espace de noms WordprocessingML (extraction des fragments OOXML pour les modèles). */
+    public const WNS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+
     // Charte Université de Kara (littéraux : Word ne lit pas les tokens CSS).
     private const BLUE = '223EA4';
 
@@ -129,6 +132,196 @@ class LivretDocx
         }
 
         return $doc;
+    }
+
+    // --- Modèles .docx personnalisés (balises remplies) : valeurs + fragments OOXML ---
+
+    /**
+     * Valeurs des balises « en ligne » d'un modèle ([[TITRE]], [[DATES]]…).
+     *
+     * @return array<string, string>
+     */
+    public function inlineValues(): array
+    {
+        $e = $this->edition;
+        $dates = '';
+        if ($e->date_start) {
+            $dates = $e->date_start->format('d/m/Y');
+            if ($e->date_end) {
+                $dates .= ' - '.$e->date_end->format('d/m/Y');
+            }
+        }
+        $count = 0;
+        foreach ($this->groups as $g) {
+            $count += count($g);
+        }
+
+        return [
+            '[[TITRE]]' => (string) $e->title,
+            '[[EDITION]]' => (string) ($e->edition_label ?? ''),
+            '[[THEME]]' => (string) ($e->theme ?? ''),
+            '[[DATES]]' => $dates,
+            '[[LIEU]]' => (string) ($e->location ?? ''),
+            '[[ANNEE]]' => (string) ($e->date_start?->format('Y') ?? $e->year ?? ''),
+            '[[NB_RESUMES]]' => (string) $count,
+        ];
+    }
+
+    /**
+     * Fragment OOXML (paragraphes/tableaux) d'une balise « bloc » du modèle,
+     * en formatage DIRECT (indépendant des styles du modèle).
+     */
+    public function blockXml(string $tag): string
+    {
+        if ($tag === 'RESUMES' && $this->harmonize) {
+            $this->buildAiMaps();
+        }
+
+        Settings::setOutputEscapingEnabled(true);
+        $doc = new PhpWord;
+        $doc->setDefaultFontName((string) EditionSettings::get($this->edition, 'livret.font_body', 'Times New Roman'));
+        $doc->setDefaultFontSize((int) EditionSettings::get($this->edition, 'livret.size_body', 11));
+        $section = $doc->addSection();
+
+        match ($tag) {
+            'AVANT_PROPOS' => $this->tplForeword($section),
+            'COMITES' => $this->tplCommittees($section),
+            'SOMMAIRE' => $this->tplSommaire($section),
+            'PROGRAMME' => $this->tplProgramme($section),
+            'RESUMES' => $this->tplResumes($section),
+            default => null,
+        };
+
+        return self::bodyInnerXml($doc);
+    }
+
+    /** Sérialise les enfants de <w:body> (hors <w:sectPr>) d'un document phpword. */
+    private static function bodyInnerXml(PhpWord $doc): string
+    {
+        $tmp = tempnam(sys_get_temp_dir(), 'ukcfrag');
+        (new Word2007($doc))->save($tmp);
+        $zip = new \ZipArchive;
+        if ($zip->open($tmp) !== true) {
+            @unlink($tmp);
+
+            return '';
+        }
+        $xml = (string) $zip->getFromName('word/document.xml');
+        $zip->close();
+        @unlink($tmp);
+
+        $dom = new \DOMDocument;
+        if (! @$dom->loadXML($xml)) {
+            return '';
+        }
+        $body = $dom->getElementsByTagNameNS(self::WNS, 'body')->item(0);
+        if (! $body) {
+            return '';
+        }
+        $out = '';
+        foreach (iterator_to_array($body->childNodes) as $child) {
+            if ($child->nodeType === XML_ELEMENT_NODE && $child->localName === 'sectPr') {
+                continue;
+            }
+            $out .= (string) $dom->saveXML($child);
+        }
+
+        return $out;
+    }
+
+    /** Bloc Avant-propos (sans titre : le modèle fournit l'en-tête). */
+    private function tplForeword(Section $section): void
+    {
+        $text = trim((string) EditionSettings::get($this->edition, 'livret.foreword_text', ''));
+        foreach ($text !== '' ? (preg_split('/\R{2,}/', $text) ?: [$text]) : [] as $paragraph) {
+            if (trim((string) $paragraph) !== '') {
+                $section->addText(trim((string) $paragraph), ['size' => 11], ['alignment' => 'both', 'spaceAfter' => 120]);
+            }
+        }
+        if ($signature = trim((string) EditionSettings::get($this->edition, 'livret.signature', ''))) {
+            $section->addText($signature, ['italic' => true, 'size' => 11, 'color' => self::MUTED], ['alignment' => 'right', 'spaceBefore' => 160]);
+        }
+    }
+
+    /** Bloc Comités (libellés de rôle en gras, membres en dessous). */
+    private function tplCommittees(Section $section): void
+    {
+        $byRole = $this->edition->committeeMembers()->orderBy('ordre')->get()->groupBy('role');
+        foreach (self::COMMITTEE_ROLES as $role => $label) {
+            $list = $byRole->get($role);
+            if (! $list || $list->isEmpty()) {
+                continue;
+            }
+            $section->addText($label, ['bold' => true, 'size' => 13, 'color' => self::BLUE], ['spaceBefore' => 160, 'spaceAfter' => 60]);
+            foreach ($list as $m) {
+                $bits = array_filter([trim((string) $m->person_name), trim((string) $m->person_title), trim((string) $m->institution)]);
+                $section->addText(implode(' - ', $bits), ['size' => 11], ['spaceAfter' => 40]);
+            }
+        }
+    }
+
+    /** Bloc Sommaire (liste déterministe des axes des résumés). */
+    private function tplSommaire(Section $section): void
+    {
+        foreach ($this->groups as $track => $submissions) {
+            $run = $section->addTextRun(['spaceAfter' => 40]);
+            $run->addText((string) $track, ['size' => 11, 'bold' => true]);
+            $run->addText('   ('.count($submissions).')', ['size' => 11, 'color' => self::MUTED]);
+        }
+    }
+
+    /** Bloc Programme (séances datées par jour, tableaux). */
+    private function tplProgramme(Section $section): void
+    {
+        $sessions = $this->edition->sessions()->get()
+            ->filter(fn ($s) => $s->starts_at || $s->session_day)
+            ->sortBy(fn ($s) => optional($s->starts_at)->timestamp ?? 0)
+            ->values();
+
+        $byDay = $sessions->groupBy(fn ($s) => optional($s->session_day ?? $s->starts_at)?->format('Y-m-d') ?? '');
+        foreach ($byDay->sortKeys() as $day => $daySessions) {
+            $dayLabel = $day !== '' ? ucfirst(Carbon::parse($day)->translatedFormat('l j F Y')) : 'À programmer';
+            $section->addText($dayLabel, ['bold' => true, 'size' => 13, 'color' => self::BLUE], ['spaceBefore' => 160, 'spaceAfter' => 60]);
+
+            $table = $section->addTable(['bordercolor' => 'DDDDDD', 'borderSize' => 4, 'cellMargin' => 60]);
+            $table->addRow();
+            foreach (['Horaire', 'Session', 'Salle'] as $i => $head) {
+                $table->addCell((int) Converter::cmToTwip([3, 9, 4][$i]), ['bgColor' => 'F1F5F9'])
+                    ->addText($head, ['bold' => true, 'size' => 10, 'color' => self::BLUE]);
+            }
+            foreach ($daySessions as $s) {
+                $h = $s->starts_at?->format('H:i') ?? '-';
+                if ($s->ends_at) {
+                    $h .= '-'.$s->ends_at->format('H:i');
+                }
+                $table->addRow();
+                $table->addCell((int) Converter::cmToTwip(3))->addText($h, ['size' => 10]);
+                $table->addCell((int) Converter::cmToTwip(9))->addText((string) $s->label, ['size' => 10]);
+                $table->addCell((int) Converter::cmToTwip(4))->addText((string) $s->room, ['size' => 10]);
+            }
+        }
+    }
+
+    /** Bloc Résumés (axe en gras direct + résumés), réutilise addAbstract. */
+    private function tplResumes(Section $section): void
+    {
+        $sizeAxis = (int) EditionSettings::get($this->edition, 'livret.size_axis', 16);
+        $primary = self::hex((string) EditionSettings::get($this->edition, 'livret.color_primary', '#223ea4'), self::BLUE);
+        $fontHead = (string) EditionSettings::get($this->edition, 'livret.font_head', 'Jost');
+        $sizeAbstract = (int) EditionSettings::get($this->edition, 'livret.size_abstract', 12);
+        $sizeAuthors = (int) EditionSettings::get($this->edition, 'livret.size_authors', 10);
+        $sizeBody = (int) EditionSettings::get($this->edition, 'livret.size_body', 11);
+        $alignBody = EditionSettings::get($this->edition, 'livret.align_body', 'Justifié') === 'Gauche' ? 'left' : 'both';
+        $number = (bool) EditionSettings::get($this->edition, 'livret.number_abstracts', false);
+
+        $n = 0;
+        foreach ($this->groups as $track => $submissions) {
+            $section->addText(mb_strtoupper((string) $track, 'UTF-8'), ['bold' => true, 'size' => $sizeAxis, 'color' => $primary, 'name' => $fontHead], ['spaceBefore' => 320, 'spaceAfter' => 160]);
+            foreach ($submissions as $s) {
+                $n++;
+                $this->addAbstract($section, $s, $n, $number, $sizeAbstract, $sizeAuthors, $sizeBody, $alignBody);
+            }
+        }
     }
 
     /** Page de garde : logo, bandeau, colloque, titre, thème, dates, « LIVRE DES RÉSUMÉS ». */

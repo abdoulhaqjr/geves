@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Actions\IssueAttestation;
 use App\AI\AiManager;
 use App\Documents\AttestationCertifier;
+use App\Documents\LivretTemplate;
 use App\Http\Controllers\Controller;
 use App\Models\Attestation;
 use App\Models\DocumentTemplate;
@@ -508,35 +509,9 @@ class DocumentHubController extends Controller
      */
     public function baseTemplate(): Response
     {
-        $body = <<<'HTML'
-        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
-        <head><meta charset="utf-8"><title>Modèle de base - Livre des résumés</title>
-        <style>body{font-family:'Times New Roman',serif;font-size:11pt;line-height:1.4;}
-        h1{font-family:Jost,Arial,sans-serif;font-size:24pt;color:#223ea4;text-align:center;}
-        h2{font-family:Jost,Arial,sans-serif;font-size:16pt;color:#223ea4;}
-        h3{font-size:12pt;} .tag{color:#3730a3;font-family:Consolas,monospace;} .muted{color:#5a6577;}</style></head>
-        <body>
-        <h1>{{edition_name}}</h1>
-        <p style="text-align:center;" class="muted">Livre des résumés · Université de Kara</p>
-        <hr>
-        <h2>{{axis}}</h2>
-        <h3>{{abstract_title}}</h3>
-        <p><em>{{authors}}</em></p>
-        <p>{{abstract_body}}</p>
-        <hr>
-        <p class="muted">Balises de fusion disponibles :
-        <span class="tag">{{edition_name}}</span>, <span class="tag">{{axis}}</span>,
-        <span class="tag">{{abstract_title}}</span>, <span class="tag">{{authors}}</span>,
-        <span class="tag">{{abstract_body}}</span>, <span class="tag">{{session}}</span>.</p>
-        <p class="muted">Dupliquez le bloc « Axe → Résumé » autant que nécessaire, puis importez ce fichier
-        comme modèle personnalisé.</p>
-        </body></html>
-        HTML;
-
-        return response($body, 200, [
-            'Content-Type' => 'application/msword; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="ukc-livre-base.doc"',
-        ]);
+        // Vrai .docx à balises [[...]], aligné sur le moteur de fusion (LivretTemplate) :
+        // l'admin le personnalise dans Word puis le re-téléverse comme modèle.
+        return LivretTemplate::downloadBase('modele-livret-uk.docx');
     }
 
     /**

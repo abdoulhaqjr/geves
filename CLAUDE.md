@@ -563,6 +563,28 @@ paiement (`pay`), inscription à une formation.
   autres sont des chaînes). La signature de chaque formateur se téléverse sur la page
   de la formation (`formation_trainers.signature_path`) et est **figée dans
   `attestations.meta` à l'émission** : l'attestation ne change pas si l'équipe évolue.
+- **Livre des résumés (livret)** : communications acceptées groupées par axe, trois sorties
+  depuis `admin.documents.livret` (`DocumentController::livret`) : **aperçu HTML**,
+  **.docx** (`?format=docx`) et **PDF** (`?format=pdf`, dompdf, vue autonome
+  `documents/livret-pdf.blade.php`). Le .docx est **`App\Documents\LivretDocx`** (porté de
+  uk-colloques `booklet.php`) : couverture tricolore, avant-propos (IA possible), comités,
+  sommaire (TOC Word), programme, résumés par axe (auteurs + affiliations en exposant,
+  correspondant), **index des auteurs** (renvoi vers la réf.), **pied de page paginé**.
+  Options `livret.*` dans l'onglet **Apparence du livre** (vue `admin/documents/attestations.blade.php`) :
+  polices, tailles, couleurs, alignements, `number_abstracts`, `author_index`, `page_numbers`,
+  thème/dates, logo de couverture. ⚠️ **PhpWord n'échappe pas** le texte : `Settings::setOutputEscapingEnabled(true)` est obligatoire (un « & » casse le .docx).
+  - **Gabarits .docx personnalisés** (porté de `booklet-templates.php` `ukc_bt_render`) :
+    l'admin télécharge le **modèle de base** à balises (`admin.documents.livret.base-template`
+    → `LivretTemplate::downloadBase`, vrai .docx), le personnalise dans Word en gardant les
+    balises, le re-téléverse (`saveLivretTemplate` → `edition.settings['livret.templates']`),
+    puis le sélectionne (`livret.template`). À la génération .docx, **`App\Documents\LivretTemplate`**
+    ouvre le modèle (ZipArchive + DOM), remplace les balises **bloc** seules sur leur ligne
+    (`[[AVANT_PROPOS]]`, `[[COMITES]]`, `[[SOMMAIRE]]`, `[[PROGRAMME]]`, `[[RESUMES]]`) par les
+    **fragments OOXML** de `LivretDocx::blockXml()` (formatage DIRECT, indépendant des styles
+    du modèle), et les balises **en ligne** (`[[TITRE]]`, `[[EDITION]]`, `[[THEME]]`, `[[DATES]]`,
+    `[[LIEU]]`, `[[ANNEE]]`, `[[NB_RESUMES]]`, via `LivretDocx::inlineValues()`). Repli sur
+    `LivretDocx` quand aucun modèle n'est sélectionné/présent (`selectedLivretTemplate()`).
+    Tests : `tests/Feature/LivretTest.php` (contenu réel du .docx/PDF, fusion des balises).
 - **Remboursement → révocation des attestations** : une attestation atteste d'un droit
   acquis par un paiement. `App\Actions\RevokeAttestationsOnRefund` (appelée par
   `admin.payments.refund`) **révoque** (jamais ne supprime - l'attestation reste

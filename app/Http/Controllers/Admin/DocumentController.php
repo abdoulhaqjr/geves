@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
 use App\Documents\LivretDocx;
+use App\Documents\LivretTemplate;
 use App\Http\Controllers\Controller;
 use App\Models\DocumentTemplate;
 use App\Models\Edition;
@@ -17,6 +18,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -36,8 +38,15 @@ class DocumentController extends Controller
             ->groupBy(fn ($s) => $s->track ?: 'Autres');
 
         if ($request->query('format') === 'docx') {
-            return (new LivretDocx($edition, $groups, $request->boolean('harmonize')))
-                ->download('livret-'.($edition->slug ?: 'edition-'.$edition->id).'.docx');
+            $base = 'livret-'.($edition->slug ?: 'edition-'.$edition->id).'.docx';
+            // Modèle .docx personnalisé sélectionné ? On remplit ses balises ; sinon
+            // on retombe sur le générateur intégré paramétrable.
+            if ($template = $this->selectedLivretTemplate($edition)) {
+                return (new LivretTemplate($edition, $groups, (string) $template['path'], $request->boolean('harmonize')))
+                    ->download($base);
+            }
+
+            return (new LivretDocx($edition, $groups, $request->boolean('harmonize')))->download($base);
         }
 
         if ($request->query('format') === 'pdf') {
@@ -51,6 +60,31 @@ class DocumentController extends Controller
             'edition' => $edition,
             'groups' => $groups,
         ]);
+    }
+
+    /**
+     * Modèle .docx personnalisé sélectionné pour cette édition, ou null (générateur
+     * intégré). Un modèle n'est retenu que si son fichier existe réellement.
+     *
+     * @return array{name?: string, path?: string}|null
+     */
+    private function selectedLivretTemplate(Edition $edition): ?array
+    {
+        $selected = (string) EditionSettings::get($edition, 'livret.template', 'default');
+        if (in_array($selected, ['', 'default', 'base'], true)) {
+            return null;
+        }
+
+        $templates = EditionSettings::get($edition, 'livret.templates');
+        foreach (is_array($templates) ? $templates : [] as $tpl) {
+            if (($tpl['name'] ?? null) === $selected
+                && ! empty($tpl['path'])
+                && Storage::disk('public')->exists($tpl['path'])) {
+                return $tpl;
+            }
+        }
+
+        return null;
     }
 
     /**
