@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use PhpOffice\PhpWord\Element\Footer;
 use PhpOffice\PhpWord\Element\Section;
+use PhpOffice\PhpWord\Element\Table;
 use PhpOffice\PhpWord\Element\TextRun;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\Settings;
@@ -485,16 +486,18 @@ class LivretDocx
         $committees = collect(self::COMMITTEE_ORDER)
             ->filter(fn ($label, $role) => ($byRole->get($role)?->isNotEmpty() ?? false));
 
+        // Style FSS : titre « Comités », rôles SANS numérotation, et PAS de programme
+        // synthétique (le livret de référence n'a que le programme détaillé qui suit).
+        // Style par défaut UK/UP : « Différentes commissions… » + programme synthétique.
+        $fss = $this->isFss();
+
         $synthesis = $this->edition->settings['program_synthesis'] ?? null;
-        $synDays = is_array($synthesis) ? collect($synthesis['days'] ?? []) : collect();
+        $synDays = $fss ? collect() : (is_array($synthesis) ? collect($synthesis['days'] ?? []) : collect());
 
         if ($committees->isEmpty() && $synDays->isEmpty()) {
             return;
         }
 
-        // Style FSS : titre « Comités » et rôles SANS numérotation. Style par défaut
-        // UK/UP : « Différentes commissions… » avec comités numérotés.
-        $fss = $this->isFss();
         $this->partTitle($section, $fss ? 'Comités' : 'Différentes commissions et programmes du colloque');
 
         $num = 0;
@@ -592,8 +595,10 @@ class LivretDocx
                 $section->addText((string) $room, ['bold' => true, 'italic' => true, 'size' => 12, 'color' => '111827'],
                     ['spaceBefore' => 120, 'spaceAfter' => 40, 'keepNext' => true]);
 
+                // Tableau « Horaire | Déroulé » à la manière du livret FSS.
+                $table = $section->addTable(['bordercolor' => 'DDDDDD', 'borderSize' => 4, 'cellMargin' => 60]);
                 foreach ($roomSessions as $sess) {
-                    $this->programmeSession($section, $sess);
+                    $this->programmeSessionRow($table, $sess);
                 }
             }
         }
@@ -601,24 +606,26 @@ class LivretDocx
         $section->addPageBreak();
     }
 
-    /** Une séance du programme FSS : ligne horaire + intitulé + modérateur, puis ses communications. */
-    private function programmeSession(Section $section, EventSession $sess): void
+    /** Une ligne de séance du tableau FSS : « Horaire » | intitulé + modérateur + communications. */
+    private function programmeSessionRow(Table $table, EventSession $sess): void
     {
         $time = '';
         if ($sess->starts_at) {
-            $time = $sess->starts_at->format('H:i');
+            $time = $sess->starts_at->format('H\hi');
             if ($sess->ends_at) {
-                $time .= '–'.$sess->ends_at->format('H:i');
+                $time .= '-'.$sess->ends_at->format('H\hi');
             }
         }
-        $heading = $sess->label !== '' ? $sess->label : 'Séance';
-        $run = $section->addTextRun(['spaceBefore' => 100, 'spaceAfter' => 20, 'keepNext' => true]);
-        if ($time !== '') {
-            $run->addText($time.'   ', ['bold' => true, 'size' => 10, 'color' => self::GREEN]);
-        }
-        $run->addText($heading, ['bold' => true, 'size' => 11, 'color' => self::BLUE]);
+
+        $table->addRow();
+        $table->addCell((int) Converter::cmToTwip(2.8), ['valign' => 'top'])
+            ->addText($time !== '' ? $time : '-', ['bold' => true, 'size' => 9, 'color' => self::GREEN]);
+
+        $cell = $table->addCell((int) Converter::cmToTwip(13.2), ['valign' => 'top']);
+        $head = $cell->addTextRun(['spaceAfter' => 40]);
+        $head->addText($sess->label !== '' ? $sess->label : 'Séance', ['bold' => true, 'size' => 10, 'color' => self::BLUE]);
         if (($mod = trim((string) $sess->moderator_name)) !== '') {
-            $run->addText('   (Modérateur : '.$mod.')', ['size' => 9, 'italic' => true, 'color' => self::MUTED]);
+            $head->addText('   (Modérateur : '.$mod.')', ['size' => 9, 'italic' => true, 'color' => self::MUTED]);
         }
 
         foreach ($sess->slots->sortBy(fn (Slot $sl) => optional($sl->starts_at)->timestamp ?? 0) as $sl) {
@@ -630,8 +637,11 @@ class LivretDocx
                 continue;
             }
             $presenter = $this->slotPresenter($sl);
-            $line = $presenter !== '' ? $title.', '.$presenter : $title;
-            $section->addListItem($line, 0, ['size' => 10], null, ['spaceAfter' => 20]);
+            $line = $cell->addTextRun(['spaceAfter' => 20]);
+            $line->addText($title, ['size' => 9]);
+            if ($presenter !== '') {
+                $line->addText(', '.$presenter, ['size' => 9, 'bold' => true, 'color' => self::MUTED]);
+            }
         }
     }
 
@@ -797,17 +807,27 @@ class LivretDocx
     /** Rendu d'un résumé : référence, titre, auteurs+affiliations, correspondant, corps, mots-clés. */
     private function addAbstract(Section $section, Submission $s, int $n, bool $number, int $sizeAbstract, int $sizeAuthors, int $sizeBody, string $alignBody): void
     {
-        // Référence (ex. UKC-S-0001), centrée. Sert aussi de renvoi dans l'index des auteurs.
+        $fss = $this->isFss();
         $refLabel = trim((string) $s->ref_code);
-        if ($refLabel !== '') {
-            $section->addText($refLabel, ['bold' => true, 'size' => 10, 'color' => self::MUTED], ['alignment' => 'center', 'spaceBefore' => 200, 'keepNext' => true]);
-        }
         $indexRef = $refLabel !== '' ? $refLabel : '#'.$n;
 
-        // Titre (numéroté si l'option est active), aligné selon `livret.align_titles`.
-        // keepNext : le titre ne doit pas être séparé de ses auteurs par une coupure.
-        $title = $number ? $n.'. '.$s->title : (string) $s->title;
-        $section->addText($title, ['bold' => true, 'size' => $sizeAbstract, 'color' => self::BLUE], ['alignment' => $this->align('livret.align_titles'), 'spaceAfter' => 40, 'keepNext' => true]);
+        if ($fss) {
+            // Style FSS : « RÉF. TITRE EN MAJUSCULES » sur un seul paragraphe (comme le livret).
+            $prefix = $refLabel !== '' ? $refLabel.'. ' : ($number ? $n.'. ' : '');
+            $run = $section->addTextRun(['alignment' => $this->align('livret.align_titles'), 'spaceBefore' => 240, 'spaceAfter' => 40, 'keepNext' => true]);
+            if ($prefix !== '') {
+                $run->addText($prefix, ['bold' => true, 'size' => $sizeAbstract, 'color' => self::BLUE]);
+            }
+            $run->addText(mb_strtoupper((string) $s->title, 'UTF-8'), ['bold' => true, 'size' => $sizeAbstract, 'color' => self::BLUE]);
+        } else {
+            // Style par défaut : référence centrée, puis titre.
+            if ($refLabel !== '') {
+                $section->addText($refLabel, ['bold' => true, 'size' => 10, 'color' => self::MUTED], ['alignment' => 'center', 'spaceBefore' => 200, 'keepNext' => true]);
+            }
+            // keepNext : le titre ne doit pas être séparé de ses auteurs par une coupure.
+            $title = $number ? $n.'. '.$s->title : (string) $s->title;
+            $section->addText($title, ['bold' => true, 'size' => $sizeAbstract, 'color' => self::BLUE], ['alignment' => $this->align('livret.align_titles'), 'spaceAfter' => 40, 'keepNext' => true]);
+        }
 
         // Auteurs + affiliations numérotées (exposants) + auteur correspondant (*).
         // ⚠️ Nom affiché en MAJUSCULES (convention du livret).
@@ -871,20 +891,23 @@ class LivretDocx
             }
         }
 
-        // Corps du résumé (préserve gras/italique de base) - libellé masqué si vide.
+        // Corps du résumé (préserve gras/italique de base). Le style FSS n'affiche PAS
+        // de libellé « RÉSUMÉ : » (le texte suit directement, comme dans le livret).
         $paragraphs = $this->paragraphs((string) $s->abstract);
         if ($paragraphs !== []) {
-            $section->addText('RÉSUMÉ :', ['bold' => true, 'size' => 10, 'color' => self::BLUE], ['spaceBefore' => 40, 'spaceAfter' => 20]);
-            foreach ($paragraphs as $paragraphHtml) {
-                $run = $section->addTextRun(['alignment' => $alignBody, 'spaceAfter' => 80]);
+            if (! $fss) {
+                $section->addText('RÉSUMÉ :', ['bold' => true, 'size' => 10, 'color' => self::BLUE], ['spaceBefore' => 40, 'spaceAfter' => 20]);
+            }
+            foreach ($paragraphs as $i => $paragraphHtml) {
+                $run = $section->addTextRun(['alignment' => $alignBody, 'spaceBefore' => ($fss && $i === 0) ? 40 : 0, 'spaceAfter' => 80]);
                 $this->addInlineRuns($run, $paragraphHtml, $sizeBody);
             }
         }
 
-        // Mots-clés.
+        // Mots-clés (trait d'union dans le style FSS, conforme au livret).
         if ($keywords = trim((string) $s->keywords)) {
             $kwRun = $section->addTextRun(['spaceBefore' => 40, 'spaceAfter' => 40]);
-            $kwRun->addText('Mots clés : ', ['bold' => true, 'size' => $sizeBody]);
+            $kwRun->addText($fss ? 'Mots-clés : ' : 'Mots clés : ', ['bold' => true, 'size' => $sizeBody]);
             $kwRun->addText($keywords, ['italic' => true, 'size' => $sizeBody, 'color' => self::MUTED]);
         }
     }

@@ -104,7 +104,7 @@ it('applique le style intégré sélectionné (Journées scientifiques / FSS)', 
             ->streamedContent()
     );
     expect($xmlFss)->toContain('Comités')
-        ->toContain('Innovation durable')   // les résumés sont toujours présents
+        ->toContain('INNOVATION DURABLE')   // titres de résumé en MAJUSCULES (style FSS)
         ->not->toContain('Différentes commissions et programmes du colloque');
 });
 
