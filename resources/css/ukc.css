@@ -429,6 +429,29 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .ukc-avatar-actions .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .ukc-avatar-actions input[type="file"] { position: absolute; width: .1px; height: .1px; opacity: 0; overflow: hidden; z-index: -1; }
 
+/* Blanchiment automatique d'un logo servi sur fond sombre faute de variante
+   dédiée (App\Support\Branding::whitens). `brightness(0)` noircit toute la
+   matière opaque, `invert(1)` la met en blanc : la découpe et la transparence
+   sont conservées, le texte sombre redevient lisible sur le bleu. */
+.logo-auto-white { filter: brightness(0) invert(1); }
+
+/* Téléversement des logos de la plateforme (Réglages › Général) - même grammaire
+   que la photo de profil : vignette d'aperçu, intitulé, aide, puis les actions. */
+.ukc-logo-upload { display: flex; gap: 16px; padding: 14px; background: var(--ukc-bg); border: 1px solid var(--ukc-border); border-radius: 12px; }
+/* Les deux fonds côte à côte : la version sombre n'étant pas téléversée mais
+   blanchie en CSS, l'admin doit voir le résultat avant d'enregistrer. */
+.ukc-logo-upload .shots { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+.ukc-logo-upload .shot { width: 118px; height: 64px; flex-shrink: 0; border-radius: 10px; border: 1px solid var(--ukc-border); display: flex; align-items: center; justify-content: center; padding: 9px; overflow: hidden; }
+.ukc-logo-upload .shot img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; }
+.ukc-logo-upload .shot--light { background: #fff; }
+.ukc-logo-upload .shot--dark { background: var(--ukc-blue); border-color: transparent; }
+.ukc-logo-upload .body { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1; }
+.ukc-logo-upload .name { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px; font-weight: 700; color: var(--ukc-text); }
+.ukc-logo-upload .hint { font-size: 12px; color: var(--ukc-muted); line-height: 1.45; }
+.ukc-logo-upload .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 2px; }
+.ukc-logo-upload input[type="file"] { position: absolute; width: .1px; height: .1px; opacity: 0; overflow: hidden; z-index: -1; }
+@media (max-width: 560px) { .ukc-logo-upload { flex-direction: column; } .ukc-logo-upload .shots { flex-direction: row; } .ukc-logo-upload .shot { width: 100%; } }
+
 /* Interrupteurs (Mon compte · Préférences / Notifications - mockup compte.html) */
 .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--ukc-border); }
 .switch-row:last-of-type { border-bottom: none; }

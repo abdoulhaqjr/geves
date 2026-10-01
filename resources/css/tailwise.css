@@ -68,8 +68,8 @@
     aspect-ratio: 1 / 1; max-height: none;
 }
 .ukc-shell .ukc-sidebar-brand .brand-rule {
-    flex: 0 0 auto; width: 1px; align-self: stretch; min-height: 32px;
-    background: var(--ukc-blue); opacity: .28;
+    flex: 0 0 auto; width: 2px; height: 26px; align-self: center;
+    border-radius: 2px; background: var(--ukc-blue);
 }
 .ukc-shell .ukc-sidebar-brand .brand-lockup .logo-sub {
     display: flex; flex-direction: column; gap: 1px;

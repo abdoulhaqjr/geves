@@ -166,11 +166,10 @@ class SettingController extends Controller
             'sms_http_url' => ['nullable', 'url'],
             'plagiarism_provider' => ['nullable', 'in:none,prepostseo'],
             'orcid_environment' => ['nullable', 'in:sandbox,production'],
-            // Logos : deux formes (large, compacte) x deux fonds (clair, sombre).
+            // Deux logos : large et compact. Leur rendu sur fond sombre est
+            // calculé (blanchiment CSS), il n'y a donc rien à téléverser pour lui.
             'app_logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:1024'],
-            'app_logo_white' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:1024'],
             'app_logo_mark' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:1024'],
-            'app_logo_mark_white' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:1024'],
         ]);
 
         if ($validator->fails()) {
@@ -200,7 +199,7 @@ class SettingController extends Controller
     }
 
     /**
-     * Logos de la plateforme (quatre variantes) et remise à zéro.
+     * Logos de la plateforme (large, compact) et remise à zéro.
      *
      * ⚠️ On remplace le fichier précédent plutôt que d'empiler : un logo n'a pas
      * d'historique, et les anciens resteraient servis publiquement.

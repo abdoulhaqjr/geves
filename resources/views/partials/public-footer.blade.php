@@ -3,7 +3,8 @@
     <div class="ukc-container">
         <div class="footer-grid">
             <div>
-                <img src="{{ \App\Support\Branding::wideWhite() }}" alt="Université de Kara" class="footer-logo">
+                <img src="{{ \App\Support\Branding::wideWhite() }}" alt="{{ config('app.name') }}"
+                     @class(['footer-logo', 'logo-auto-white' => \App\Support\Branding::whitensOnDark(\App\Support\Branding::WIDE)])>
                 {{ __('Service de l’Université de Kara - Direction de la Recherche et de l’Innovation (DRI). Plateforme non commerciale.') }}
             </div>
             <div>

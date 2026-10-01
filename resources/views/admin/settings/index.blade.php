@@ -33,35 +33,90 @@
                             <label for="currency">Devise</label>
                             <input type="text" id="currency" name="currency" value="{{ $v('currency') }}" maxlength="10">
                         </div>
-                        {{-- Deux FORMES (large, compacte) x deux FONDS (clair, sombre).
-                             À défaut, les fichiers livrés dans public/img sont servis. --}}
+                        {{-- Deux logos à fournir (large, compact), présentés comme la
+                             photo de profil : vignettes d'aperçu, intitulé, aide, puis
+                             les actions. Chaque logo est montré sur SES DEUX fonds :
+                             la version sombre n'est pas téléversée, elle est blanchie
+                             en CSS, et l'admin doit pouvoir vérifier ce que ça donne. --}}
                         <div class="ukc-field full">
                             <label>Logos de la plateforme</label>
-                            <span class="hint" style="font-size:12px;color:var(--ukc-muted);margin-bottom:10px;display:block;">
+                            <span class="hint" style="font-size:12px;color:var(--ukc-muted);margin-bottom:12px;display:block;">
                                 Le <strong>logo large</strong> s’affiche là où la place le permet : pied de page, pages de
                                 connexion et de création de compte, bandeau des pages d’événement. Le <strong>logo compact</strong>
-                                sert à l’en-tête public et aux menus latéraux, y compris réduits. PNG, JPG, WEBP ou SVG, 1 Mo maximum.
+                                sert à l’en-tête public et aux menus latéraux, y compris réduits. Sur les fonds bleus, le logo
+                                est <strong>mis en blanc automatiquement</strong> : un seul fichier à fournir par forme,
+                                de préférence sur <strong>fond transparent</strong>. PNG, JPG, WEBP ou SVG, 1 Mo maximum.
                             </span>
 
-                            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;">
+                            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;">
                                 @foreach ([
-                                    ['key' => \App\Support\Branding::WIDE, 'url' => \App\Support\Branding::wide(), 'titre' => 'Large · fond clair', 'fond' => '#fff', 'h' => 46],
-                                    ['key' => \App\Support\Branding::WIDE_WHITE, 'url' => \App\Support\Branding::wideWhite(), 'titre' => 'Large · fond sombre', 'fond' => 'var(--ukc-blue)', 'h' => 46],
-                                    ['key' => \App\Support\Branding::MARK, 'url' => \App\Support\Branding::mark(), 'titre' => 'Compact · fond clair', 'fond' => '#fff', 'h' => 52],
-                                    ['key' => \App\Support\Branding::MARK_WHITE, 'url' => \App\Support\Branding::markWhite(), 'titre' => 'Compact · fond sombre', 'fond' => 'var(--ukc-blue)', 'h' => 52],
-                                ] as $variant)
-                                    <div>
-                                        <div style="background:{{ $variant['fond'] }};border:1px solid var(--ukc-border);border-radius:10px;padding:14px;display:flex;align-items:center;justify-content:center;min-height:86px;">
-                                            <img src="{{ $variant['url'] }}" alt="{{ $variant['titre'] }}" style="max-height:{{ $variant['h'] }}px;max-width:100%;">
+                                    [
+                                        'key' => \App\Support\Branding::WIDE,
+                                        'titre' => 'Logo large',
+                                        'clair' => \App\Support\Branding::wide(),
+                                        'sombre' => \App\Support\Branding::wideWhite(),
+                                        'livreClair' => \App\Support\Branding::shipped(\App\Support\Branding::WIDE),
+                                        'livreSombre' => \App\Support\Branding::shipped(\App\Support\Branding::WIDE, true),
+                                        'aide' => 'Marque complète, nom compris. Rapport conseillé 3:1 environ.',
+                                    ],
+                                    [
+                                        'key' => \App\Support\Branding::MARK,
+                                        'titre' => 'Logo compact',
+                                        'clair' => \App\Support\Branding::mark(),
+                                        'sombre' => \App\Support\Branding::markWhite(),
+                                        'livreClair' => \App\Support\Branding::shipped(\App\Support\Branding::MARK),
+                                        'livreSombre' => \App\Support\Branding::shipped(\App\Support\Branding::MARK, true),
+                                        'aide' => 'Monogramme carré. Sert aussi d’icône d’accueil sur mobile.',
+                                    ],
+                                ] as $logo)
+                                    <div class="ukc-logo-upload" x-data="{
+                                            clair: '{{ $logo['clair'] }}',
+                                            sombre: '{{ $logo['sombre'] }}',
+                                            livreClair: '{{ $logo['livreClair'] }}',
+                                            livreSombre: '{{ $logo['livreSombre'] }}',
+                                            custom: {{ \App\Support\Branding::url($logo['key']) ? 'true' : 'false' }},
+                                            whiten: {{ \App\Support\Branding::whitensOnDark($logo['key']) ? 'true' : 'false' }},
+                                            removed: false,
+                                            pick(e) {
+                                                const f = e.target.files[0]; if (! f) return;
+                                                const u = URL.createObjectURL(f);
+                                                this.clair = u; this.sombre = u;
+                                                this.custom = true; this.whiten = true; this.removed = false;
+                                            },
+                                            reset() {
+                                                this.clair = this.livreClair; this.sombre = this.livreSombre;
+                                                this.custom = false; this.whiten = false; this.removed = true;
+                                                this.$refs.f.value = '';
+                                            }
+                                         }">
+                                        <div class="shots">
+                                            <div class="shot shot--light"><img :src="clair" alt="{{ $logo['titre'] }} sur fond clair"></div>
+                                            <div class="shot shot--dark"><img :src="sombre" :class="{ 'logo-auto-white': whiten }" alt="{{ $logo['titre'] }} sur fond sombre"></div>
                                         </div>
-                                        <div style="font-size:12px;font-weight:700;color:var(--ukc-muted);margin:6px 0 4px;">{{ $variant['titre'] }}</div>
-                                        <input type="file" name="{{ $variant['key'] }}" accept="image/png,image/jpeg,image/webp,image/svg+xml">
-                                        @error($variant['key']) <span class="error">{{ $message }}</span> @enderror
-                                        @if (\App\Support\Branding::url($variant['key']))
-                                            <label class="ukc-check" style="margin-top:6px;">
-                                                <input type="checkbox" name="{{ $variant['key'] }}_remove" value="1"> Revenir au logo livré
-                                            </label>
-                                        @endif
+                                        <div class="body">
+                                            <div class="name">
+                                                {{ $logo['titre'] }}
+                                                <span class="ukc-pill ukc-pill--info" x-show="custom" x-cloak>Personnalisé</span>
+                                                <span class="ukc-pill ukc-pill--muted" x-show="!custom" x-cloak>Logo livré</span>
+                                            </div>
+                                            <p class="hint">{{ $logo['aide'] }}</p>
+                                            <div class="row">
+                                                <input type="file" id="{{ $logo['key'] }}" name="{{ $logo['key'] }}" x-ref="f"
+                                                       accept="image/png,image/jpeg,image/webp,image/svg+xml" @change="pick($event)">
+                                                <label for="{{ $logo['key'] }}" class="ukc-btn ukc-btn--sm" style="cursor:pointer;">
+                                                    <x-ukc.icon name="upload" :size="16" /> <span x-text="custom ? 'Remplacer' : 'Téléverser'">Téléverser</span>
+                                                </label>
+                                                {{-- Supprimer = revenir au logo livré : il n'y a jamais
+                                                     « pas de logo », le repli reprend la main. --}}
+                                                <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" x-show="custom" x-cloak @click="reset()">
+                                                    Supprimer
+                                                </button>
+                                            </div>
+                                            {{-- Champ caché plutôt qu'une case : la remise à zéro se décide
+                                                 par le bouton, qui met aussi les aperçus à jour. --}}
+                                            <input type="hidden" name="{{ $logo['key'] }}_remove" :value="removed ? '1' : '0'">
+                                            @error($logo['key']) <span class="error">{{ $message }}</span> @enderror
+                                        </div>
                                     </div>
                                 @endforeach
                             </div>

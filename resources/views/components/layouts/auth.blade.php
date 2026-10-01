@@ -6,7 +6,8 @@
         <aside class="auth-brand">
             <div>
                 <a href="{{ url('/') }}" class="logo">
-                    <img src="{{ \App\Support\Branding::wideWhite() }}" alt="Université de Kara" class="auth-logo">
+                    <img src="{{ \App\Support\Branding::wideWhite() }}" alt="{{ config('app.name') }}"
+                     @class(['auth-logo', 'logo-auto-white' => \App\Support\Branding::whitensOnDark(\App\Support\Branding::WIDE)])>
                 </a>
                 @isset($brandBody)
                     {{ $brandBody }}

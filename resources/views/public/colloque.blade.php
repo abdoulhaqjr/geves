@@ -50,7 +50,8 @@
         <div class="ukc-container" style="position:relative;z-index:2;">
             <div class="ukc-hero-inner">
                 <div>
-                    <img src="{{ \App\Support\Branding::wideWhite() }}" alt="Université de Kara" class="ukc-hero-logo">
+                    <img src="{{ \App\Support\Branding::wideWhite() }}" alt="{{ config('app.name') }}"
+                     @class(['ukc-hero-logo', 'logo-auto-white' => \App\Support\Branding::whitensOnDark(\App\Support\Branding::WIDE)])>
                     <div class="ukc-hero-badge">
                         <span class="dot" aria-hidden="true"></span>
                         <span>{{ $e->phase()->label() }}</span>

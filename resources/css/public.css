@@ -975,5 +975,8 @@ body.ukc-overlay-open .ukc-cb-root { opacity: 0; transform: translateY(10px) sca
    déjà porté par `.brand-tag` : logo, filet et texte s'alignent sur une seule
    couleur. Il disparaît avec le texte sur petit écran, où il ne sépare plus rien. */
 .brand .brand-logo--mark { height: 44px; width: auto; aspect-ratio: 1 / 1; object-fit: contain; }
-.brand .brand-rule { width: 1px; align-self: stretch; min-height: 34px; background: var(--ukc-blue); opacity: .28; flex-shrink: 0; }
+/* Filet de séparation : bleu de la charte, à hauteur FIXE (plus court que le
+   logo) et centré - en `stretch` il montait à la hauteur du bloc et faisait
+   barre plus que séparateur. */
+.brand .brand-rule { width: 2px; height: 26px; align-self: center; border-radius: 2px; background: var(--ukc-blue); flex-shrink: 0; }
 @media (max-width: 560px) { .brand .brand-rule { display: none; } }
