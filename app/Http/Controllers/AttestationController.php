@@ -34,7 +34,12 @@ class AttestationController extends Controller
         $attestation = Attestation::with(['edition.colloque', 'participant'])
             ->where('uuid', $uuid)->firstOrFail();
 
-        $verifyUrl = route('attestation.verify', $attestation->uuid);
+        // ⚠️ Le QR du document encode cette adresse. Il menait à la page de
+        // vérification seule : on scannait une attestation pour atterrir sur un
+        // verdict, sans le document. Il mène désormais à la page de l'attestation,
+        // qui porte le document ET la vérification. `/verifier/{uuid}` reste
+        // valable - les QR déjà imprimés continuent de fonctionner.
+        $verifyUrl = route('attestation.document', $attestation->uuid);
 
         // Tout document vient d'un modèle ENREGISTRÉ (créé au besoin) : plus de
         // repli implicite à la charte, que l'admin ne pouvait ni voir ni modifier.
@@ -47,7 +52,6 @@ class AttestationController extends Controller
             'attestation' => $attestation,
             'canvas' => $canvas,
             'width' => $layout['width'],
-            'verifyUrl' => $verifyUrl,
             // Même preuve que la page de vérification : les deux doivent dire la
             // même chose d'une même attestation.
             'proof' => $certifier->verify($attestation),
@@ -83,13 +87,18 @@ class AttestationController extends Controller
         $attestation = Attestation::with(['edition.colloque', 'participant'])
             ->where('uuid', $uuid)->firstOrFail();
 
-        $verifyUrl = route('attestation.verify', $attestation->uuid);
+        // ⚠️ Le QR du document encode cette adresse. Il menait à la page de
+        // vérification seule : on scannait une attestation pour atterrir sur un
+        // verdict, sans le document. Il mène désormais à la page de l'attestation,
+        // qui porte le document ET la vérification. `/verifier/{uuid}` reste
+        // valable - les QR déjà imprimés continuent de fonctionner.
+        $verifyUrl = route('attestation.document', $attestation->uuid);
 
         // Même règle que l'aperçu : le PDF rend toujours un modèle enregistré.
         $template = DocumentTemplate::ensureFor((int) $attestation->edition_id, 'attestation', (string) $attestation->type);
 
         $layout = LayoutSanitizer::sanitize((array) $template->layout, 'attestation', $attestation->type);
-        $canvas = LayoutRenderer::render($layout, AttestationVars::for($attestation, $verifyUrl));
+        $canvas = LayoutRenderer::render($layout, AttestationVars::for($attestation, $verifyUrl), pdf: true);
 
         // Page à la taille exacte de la mise en page (px → points à 96 dpi).
         $w = (int) $layout['width'];
@@ -114,6 +123,58 @@ class AttestationController extends Controller
         return view('attestations.verify', [
             'attestation' => $attestation,
             'proof' => $proof,
+        ]);
+    }
+
+    /**
+     * Vérification en direct, pour la page de l'attestation elle-même.
+     *
+     * ⚠️ Le bouton « Vérifier » envoyait le visiteur sur une autre adresse : il
+     * quittait le document pour lire un verdict, et devait revenir. La
+     * vérification se fait donc **sur place**, et elle est *refaite* à la demande
+     * (registre + signature) - ce n'est pas un repli du texte déjà affiché.
+     */
+    public function verifyJson(string $uuid, AttestationCertifier $certifier): JsonResponse
+    {
+        $attestation = Attestation::with(['edition.colloque'])->where('uuid', $uuid)->first();
+
+        if (! $attestation) {
+            return response()->json([
+                'found' => false,
+                'status' => 'unknown',
+                'label' => __('Attestation introuvable'),
+                'detail' => __('Aucune attestation ne correspond à cet identifiant.'),
+                'checked_at' => now()->translatedFormat('j F Y à H:i'),
+            ], 404);
+        }
+
+        $proof = $certifier->verify($attestation);
+        $revoked = (bool) $attestation->revoked;
+        $signed = (bool) $proof['signed'];
+        $valid = (bool) $proof['valid'];
+
+        [$status, $label, $detail] = match (true) {
+            $revoked => ['revoked', __('Attestation révoquée'), __('L’émetteur a retiré ce document : il ne vaut plus comme preuve.')],
+            $signed && ! $valid => ['warn', __('Signature non validée'), __('Le document existe au registre, mais sa signature cryptographique n’a pas pu être validée.')],
+            $valid => ['ok', __('Attestation authentique'), __('Signature cryptographique vérifiée auprès de la clé publique de l’émetteur.')],
+            default => ['ok', __('Attestation authentique'), __('Inscrite au registre officiel de l’émetteur.')],
+        };
+
+        return response()->json([
+            'found' => true,
+            'status' => $status,
+            'label' => $label,
+            'detail' => $detail,
+            'checked_at' => now()->translatedFormat('j F Y à H:i'),
+            'facts' => array_filter([
+                __('Bénéficiaire') => (string) $attestation->recipient_name,
+                __('Type') => $attestation->typeLabel(),
+                __('Émetteur') => (string) ($attestation->edition?->colloque?->name ?? ''),
+                __('Émise le') => $attestation->issued_at?->translatedFormat('j F Y') ?? '',
+                __('Identifiant') => $attestation->uuid,
+                __('Signée par') => $valid ? (string) ($proof['payload']['iss'] ?? '') : '',
+            ], fn (string $v) => $v !== ''),
+            'credential_url' => $valid ? route('attestation.credential', $attestation->uuid) : null,
         ]);
     }
 

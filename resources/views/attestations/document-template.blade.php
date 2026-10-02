@@ -58,10 +58,16 @@
             </p>
         @endif
 
-        {{-- Le document, tel qu'il a été délivré. --}}
+        {{-- Le document, tel qu'il a été délivré. Les gestes se posent par-dessus
+             au survol (et au clavier, via :focus-within) : la colonne de gauche
+             les porte aussi, pour le tactile et l'impression. --}}
         <section class="ukc-cred-stage">
             <div class="ukc-cred-doc" data-doc-width="{{ $width }}" style="--doc-w:{{ $width }}px">
                 <div class="ukc-cred-doc-inner">{!! $canvas !!}</div>
+                <div class="ukc-cred-overlay no-print">
+                    <p class="ukc-cred-overlay-hint">{{ __('Partagez votre attestation ou vérifiez-la en un geste.') }}</p>
+                    @include('attestations._actions', ['variant' => 'overlay'])
+                </div>
             </div>
             <p class="ukc-cred-caption no-print">
                 {{ __('Identifiant de l’attestation') }} :
@@ -81,22 +87,7 @@
                         <strong>{{ $attestation->recipient_name }}</strong>
                     </div>
 
-                    <button type="button" class="ukc-btn ukc-btn--blue ukc-cred-action" data-cred-share data-url="{{ $pageUrl }}"
-                            data-title="{{ $attestation->typeLabel() }} - {{ $attestation->recipient_name }}">
-                        <x-ukc.icon name="share" :size="16" /> {{ __('Partager l’attestation') }}
-                    </button>
-                    <a href="{{ $linkedIn }}" target="_blank" rel="noopener" class="ukc-btn ukc-btn--outline ukc-cred-action">
-                        <x-ukc.icon name="linkedin" :size="16" /> {{ __('Ajouter au profil LinkedIn') }}
-                    </a>
-                    <div class="ukc-cred-row">
-                        <a href="{{ route('attestation.pdf', $attestation->uuid) }}" class="ukc-btn ukc-btn--outline ukc-cred-action">
-                            <x-ukc.icon name="download" :size="16" /> {{ __('Télécharger (PDF)') }}
-                        </a>
-                        <button type="button" class="ukc-btn ukc-btn--outline ukc-cred-icon" data-cred-copy data-url="{{ $pageUrl }}"
-                                title="{{ __('Copier le lien') }}" aria-label="{{ __('Copier le lien') }}">
-                            <x-ukc.icon name="link" :size="16" />
-                        </button>
-                    </div>
+                    @include('attestations._actions', ['variant' => 'side'])
 
                     @if ($contactUrl)
                         <p class="ukc-cred-help">
@@ -125,9 +116,11 @@
                         <p class="ukc-cred-meta">{{ __('Émise le') }} {{ $attestation->issued_at->translatedFormat('j F Y') }}</p>
                     @endif
 
-                    <a href="{{ $verifyUrl }}" class="ukc-btn ukc-btn--green ukc-cred-action">
+                    {{-- Le contrôle est refait à la demande, et son résultat s'écrit ici. --}}
+                    <button type="button" class="ukc-btn ukc-btn--green ukc-cred-action" data-cred-verify
+                            data-url="{{ route('attestation.verify.json', $attestation->uuid) }}">
                         <x-ukc.icon name="check-circle" :size="16" /> {{ __('Vérifier l’attestation') }}
-                    </a>
+                    </button>
                     <p class="ukc-cred-id">{{ __('Identifiant') }} : <span class="ukc-cred-uuid">{{ $attestation->uuid }}</span></p>
                     @if ($signatureOk)
                         <a href="{{ route('attestation.credential', $attestation->uuid) }}" class="ukc-cred-link">
@@ -160,6 +153,21 @@
                     </dl>
                 </div>
             </main>
+        </div>
+    </div>
+
+    {{-- Résultat de la vérification, sur cette page. --}}
+    <div class="ukc-cred-check no-print" id="credCheck" hidden role="dialog" aria-modal="true" aria-labelledby="credCheckTitle">
+        <div class="ukc-cred-check-box">
+            <button type="button" class="ukc-cred-check-close" data-cred-check-close aria-label="{{ __('Fermer') }}">
+                <x-ukc.icon name="close" :size="18" />
+            </button>
+            <div class="ukc-cred-check-badge" data-check-badge><x-ukc.icon name="shield" :size="26" /></div>
+            <h2 id="credCheckTitle" class="ukc-cred-check-title" data-check-label>{{ __('Vérification en cours…') }}</h2>
+            <p class="ukc-cred-check-detail" data-check-detail></p>
+            <dl class="ukc-cred-facts" data-check-facts></dl>
+            <p class="ukc-cred-check-time" data-check-time></p>
+            <a class="ukc-cred-link" data-check-credential hidden>{{ __('Attestation vérifiable (JSON signé)') }}</a>
         </div>
     </div>
 
@@ -196,14 +204,75 @@
                         else if (el) el.setAttribute('title', '{{ __('Lien copié') }}');
                     });
                 }
-                var share = document.querySelector('[data-cred-share]');
-                if (share) share.addEventListener('click', function () {
-                    var url = share.dataset.url;
-                    if (navigator.share) navigator.share({ title: share.dataset.title, url: url }).catch(function () {});
-                    else copy(url, share);
+                document.querySelectorAll('[data-cred-share]').forEach(function (share) {
+                    share.addEventListener('click', function () {
+                        var url = share.dataset.url;
+                        if (navigator.share) navigator.share({ title: share.dataset.title, url: url }).catch(function () {});
+                        else copy(url, share);
+                    });
                 });
-                var link = document.querySelector('[data-cred-copy]');
-                if (link) link.addEventListener('click', function () { copy(link.dataset.url, link); });
+                document.querySelectorAll('[data-cred-copy]').forEach(function (link) {
+                    link.addEventListener('click', function () { copy(link.dataset.url, link); });
+                });
+            })();
+
+            // Vérification SUR CETTE PAGE : le contrôle est refait côté serveur
+            // (registre + signature) et son résultat s'écrit ici, sans quitter le
+            // document.
+            (function () {
+                var box = document.getElementById('credCheck');
+                if (!box) return;
+                var label = box.querySelector('[data-check-label]');
+                var detail = box.querySelector('[data-check-detail]');
+                var facts = box.querySelector('[data-check-facts]');
+                var time = box.querySelector('[data-check-time]');
+                var badge = box.querySelector('[data-check-badge]');
+                var credential = box.querySelector('[data-check-credential]');
+
+                function open() { box.hidden = false; document.body.style.overflow = 'hidden'; }
+                function close() { box.hidden = true; document.body.style.overflow = ''; }
+
+                function render(data) {
+                    badge.className = 'ukc-cred-check-badge is-' + (data.status || 'ok');
+                    label.textContent = data.label || '';
+                    detail.textContent = data.detail || '';
+                    time.textContent = data.checked_at ? '{{ __('Vérifié le') }} ' + data.checked_at : '';
+                    facts.innerHTML = '';
+                    Object.keys(data.facts || {}).forEach(function (k) {
+                        var row = document.createElement('div');
+                        var dt = document.createElement('dt');
+                        var dd = document.createElement('dd');
+                        dt.textContent = k;
+                        dd.textContent = data.facts[k];
+                        row.appendChild(dt); row.appendChild(dd); facts.appendChild(row);
+                    });
+                    if (data.credential_url) { credential.href = data.credential_url; credential.hidden = false; }
+                    else credential.hidden = true;
+                }
+
+                document.querySelectorAll('[data-cred-verify]').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        badge.className = 'ukc-cred-check-badge';
+                        label.textContent = '{{ __('Vérification en cours…') }}';
+                        detail.textContent = '';
+                        facts.innerHTML = '';
+                        time.textContent = '';
+                        credential.hidden = true;
+                        open();
+                        fetch(btn.dataset.url, { headers: { Accept: 'application/json' } })
+                            .then(function (r) { return r.json(); })
+                            .then(render)
+                            .catch(function () {
+                                badge.className = 'ukc-cred-check-badge is-warn';
+                                label.textContent = '{{ __('Vérification impossible') }}';
+                                detail.textContent = '{{ __('Le service n’a pas répondu. Réessayez dans un instant.') }}';
+                            });
+                    });
+                });
+
+                box.addEventListener('click', function (e) { if (e.target === box) close(); });
+                box.querySelector('[data-cred-check-close]').addEventListener('click', close);
+                document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !box.hidden) close(); });
             })();
         </script>
     @endpush

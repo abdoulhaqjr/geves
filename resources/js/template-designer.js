@@ -1139,25 +1139,46 @@
       bgModal.classList.remove('open');
     });
   });
+  /**
+   * Dépose l'image sur le serveur et rend son adresse.
+   *
+   * ⚠️ Les images étaient embarquées en `data:` base64 dans le DOM : elles
+   * restaient visibles dans le concepteur (l'instantané les conserve) mais
+   * `LayoutSanitizer` refuse `data:`, donc elles étaient **jetées de la mise en
+   * page enregistrée** - les logos disparaissaient du document délivré.
+   */
+  function uploadImage(file) {
+    var cfg = window.UKC_EDITOR || {};
+    if (!cfg.uploadUrl) return Promise.reject(new Error('indisponible'));
+    var body = new FormData();
+    body.append('file', file);
+    return fetch(cfg.uploadUrl, {
+      method: 'POST',
+      headers: { 'X-CSRF-TOKEN': cfg.csrf || '', 'Accept': 'application/json' },
+      body: body
+    }).then(function (r) { return r.json(); }).then(function (j) {
+      if (!j || !j.ok || !j.url) throw new Error((j && j.message) || 'échec');
+      return j.url;
+    });
+  }
   document.getElementById('bgImportZone').addEventListener('click', function () {
     document.getElementById('bgFileInput').click();
   });
   document.getElementById('bgFileInput').addEventListener('change', function (e) {
     var file = e.target.files && e.target.files[0];
     if (!file) return;
-    var reader = new FileReader();
-    reader.onload = function () {
+    uploadImage(file).then(function (url) {
       page.classList.remove('bg-none', 'bg-simple', 'bg-gold', 'bg-bands');
       page.classList.add('bg-custom');
       var bgEl = document.getElementById('pageBg');
-      bgEl.style.backgroundImage = 'url(' + reader.result + ')';
+      bgEl.style.backgroundImage = 'url(' + url + ')';
       bgEl.style.backgroundSize = 'cover';
       bgEl.style.backgroundPosition = 'center';
       pushHistory();
       toast('Image de fond importée');
       bgModal.classList.remove('open');
-    };
-    reader.readAsDataURL(file);
+    }).catch(function () { toast('Échec du téléversement de l’image'); });
+    e.target.value = '';
   });
 
   /* Uploads only images */
@@ -1167,21 +1188,20 @@
   document.getElementById('fileUpload').addEventListener('change', function (e) {
     var file = e.target.files && e.target.files[0];
     if (!file) return;
-    var reader = new FileReader();
-    reader.onload = function () {
+    uploadImage(file).then(function (url) {
       var thumb = document.createElement('div');
       thumb.className = 'ed-thumb';
       thumb.title = file.name;
-      thumb.style.backgroundImage = 'url(' + reader.result + ')';
-      thumb.dataset.src = reader.result;
+      thumb.style.backgroundImage = 'url(' + url + ')';
+      thumb.dataset.src = url;
       thumb.dataset.wasUsed = '0';
       thumb.addEventListener('click', function () {
         var el = createEl({
           type: 'logo',
           label: file.name.slice(0, 20),
           x: 100, y: 100, w: 120,
-          uploadSrc: reader.result,
-          html: '<img src="' + reader.result + '" alt="" style="max-width:100%;max-height:80px;display:block;">'
+          uploadSrc: url,
+          html: '<img src="' + url + '" alt="" style="max-width:100%;max-height:80px;display:block;">'
         });
         thumb.dataset.wasUsed = '1';
         selectEl(el);
@@ -1189,8 +1209,7 @@
       });
       document.getElementById('uploadList').appendChild(thumb);
       toast('Image ajoutée');
-    };
-    reader.readAsDataURL(file);
+    }).catch(function () { toast('Échec du téléversement de l’image'); });
     e.target.value = '';
   });
   document.querySelectorAll('#uploadList .ed-thumb').forEach(function (th) {
@@ -1403,7 +1422,11 @@
         spacing: Math.round((parseFloat(cs.letterSpacing) || 0) * 100) / 100
       };
     }).filter(function (e) { return e && !(e.type === 'text' && !e.text); });
-    return { width: W, height: H, bg: pageBg, accent: '#223ea4', elements: elements };
+    // ⚠️ L'image de fond n'était pas sérialisée : une attestation dessinée sur
+    // un fond illustré ressortait sur du blanc.
+    var bgEl = document.getElementById('pageBg');
+    var bgUrl = bgEl ? (getComputedStyle(bgEl).backgroundImage || '').match(/url\((['"]?)(.*?)\)/) : null;
+    return { width: W, height: H, bg: pageBg, bg_image: bgUrl ? bgUrl[2] : '', accent: '#223ea4', elements: elements };
   }
   document.getElementById('btnSave').addEventListener('click', function () {
     var cfg = window.UKC_EDITOR || {};

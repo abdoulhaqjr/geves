@@ -118,6 +118,7 @@ Route::post('/association/{token}', [AuthorLinkController::class, 'decline'])->n
 Route::get('/attestation/{uuid}', [AttestationController::class, 'document'])->name('attestation.document');
 Route::get('/attestation/{uuid}/pdf', [AttestationController::class, 'pdf'])->name('attestation.pdf');
 Route::get('/attestation/{uuid}/credential.json', [AttestationController::class, 'credential'])->name('attestation.credential');
+Route::get('/attestation/{uuid}/verification.json', [AttestationController::class, 'verifyJson'])->name('attestation.verify.json');
 Route::get('/verifier', [AttestationController::class, 'verifyLanding'])->name('attestation.verify.landing');
 Route::get('/verifier/{uuid}', [AttestationController::class, 'verify'])->name('attestation.verify');
 
@@ -490,6 +491,7 @@ Route::prefix('admin')->group(function () {
             Route::delete('/modeles/{template}', [TemplateDesignerController::class, 'destroy'])->name('admin.documents.templates.destroy');
             Route::post('/modeles/generer', [TemplateDesignerController::class, 'generate'])->name('admin.documents.templates.generate');
             Route::post('/modeles/enregistrer', [TemplateDesignerController::class, 'save'])->name('admin.documents.templates.save');
+            Route::post('/modeles/image', [TemplateDesignerController::class, 'upload'])->name('admin.documents.templates.upload');
             Route::get('/editions/{edition}/livret', [DocumentController::class, 'livret'])->name('admin.documents.livret');
             Route::get('/editions/{edition}/badges', [DocumentController::class, 'badges'])->name('admin.documents.badges');
             Route::get('/editions/{edition}/fiches-session', [DocumentController::class, 'sessionSheets'])->name('admin.documents.sessions');

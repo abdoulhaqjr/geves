@@ -15,8 +15,11 @@ class LayoutRenderer
      * @param  array<string, string|list<array{name?: string, src?: string}>>  $vars
      *                                                                                Valeurs des jetons {…}. `signatures` est la seule valeur
      *                                                                                structurée : elle alimente l'élément « signatures ».
+     * @param  bool  $pdf  Rendu destiné à dompdf, qui **ne va chercher aucune image
+     *                     distante** : les adresses servies par le site sont alors
+     *                     résolues en chemins de fichier.
      */
-    public static function render(array $layout, array $vars = []): string
+    public static function render(array $layout, array $vars = [], bool $pdf = false): string
     {
         // ⚠️ Les alias `[espace.cle]` sont ajoutés ICI, et non chez les appelants :
         // chacun fournissait sa propre liste, et un modèle dessiné avec la palette
@@ -30,6 +33,14 @@ class LayoutRenderer
         $html = "<div class=\"ukc-doc-canvas\" style=\"position:relative;width:{$w}px;height:{$h}px;background:"
             .e($bg).";overflow:hidden;font-family:'Jost',system-ui,sans-serif;\">";
 
+        // Fond illustré, sous tous les éléments.
+        if (filled($layout['bg_image'] ?? '')) {
+            $html .= sprintf(
+                '<img src="%s" alt="" style="position:absolute;left:0;top:0;width:%dpx;height:%dpx;object-fit:cover;">',
+                e(self::imageSrc((string) $layout['bg_image'], $pdf)), $w, $h
+            );
+        }
+
         foreach ((array) ($layout['elements'] ?? []) as $el) {
             $x = (int) ($el['x'] ?? 0);
             $y = (int) ($el['y'] ?? 0);
@@ -39,7 +50,7 @@ class LayoutRenderer
                 'text' => self::renderText($el, $x, $y, $vars),
                 'image' => ! empty($el['src']) ? sprintf(
                     '<img src="%s" alt="" style="position:absolute;left:%dpx;top:%dpx;width:%dpx;height:%dpx;object-fit:contain;">',
-                    e($el['src']), $x, $y, (int) ($el['w'] ?? 100), (int) ($el['h'] ?? 30)
+                    e(self::imageSrc((string) $el['src'], $pdf)), $x, $y, (int) ($el['w'] ?? 100), (int) ($el['h'] ?? 30)
                 ) : '',
                 'photo' => self::renderPhoto($el, $x, $y, $vars),
                 'signatures' => self::renderSignatures($el, $x, $y, $vars),
@@ -49,6 +60,28 @@ class LayoutRenderer
         }
 
         return $html.'</div>';
+    }
+
+    /**
+     * Adresse d'image utilisable par le moteur de rendu.
+     *
+     * ⚠️ **dompdf ne télécharge aucune image distante** (`enable_remote` est
+     * faux, et l'activer ferait sortir le PDF du bac à sable). Une image du
+     * concepteur, servie en `/storage/…`, sortait donc du PDF alors qu'elle
+     * s'affichait bien sur la page. On lui passe le fichier.
+     */
+    protected static function imageSrc(string $src, bool $pdf): string
+    {
+        if (! $pdf || $src === '') {
+            return $src;
+        }
+
+        $path = str_starts_with($src, '/') ? $src : (string) parse_url($src, PHP_URL_PATH);
+        $file = public_path(ltrim($path, '/'));
+
+        // Une image hébergée ailleurs reste telle quelle : dompdf la laissera
+        // tomber, mais la remplacer par un chemin inexistant n'aiderait pas.
+        return $path !== '' && is_file($file) ? $file : $src;
     }
 
     /**

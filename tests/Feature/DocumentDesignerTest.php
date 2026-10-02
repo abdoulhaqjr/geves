@@ -3,9 +3,12 @@
 use App\Actions\IssueAttestation;
 use App\AI\AiManager;
 use App\AI\Contracts\AiProvider;
+use App\Documents\LayoutRenderer;
 use App\Models\Colloque;
 use App\Models\DocumentTemplate;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 // adminStaff() -> AdminSubmissionWorkflowTest ; openEdition() -> AccountSubmissionTest
 
@@ -204,4 +207,65 @@ it('ne vide pas le nom quand l’enregistrement n’en porte pas', function () {
 
     $tpl = DocumentTemplate::where('edition_id', $edition->id)->where('type', 'participation')->first();
     expect($tpl->title)->toBe('Mon modèle');
+});
+
+/**
+ * ⚠️ Les images du concepteur étaient embarquées en `data:` base64 : elles
+ * restaient visibles dans le concepteur (l'instantané les conserve) mais
+ * `LayoutSanitizer` refuse `data:`, donc elles étaient jetées de la mise en page
+ * enregistrée - les logos disparaissaient du document délivré, en silence.
+ */
+it('téléverse une image du concepteur et n’enregistre que son adresse', function () {
+    Storage::fake('public');
+
+    $this->actingAs(adminStaff(), 'web')
+        ->post(route('admin.documents.templates.upload'), [
+            'file' => UploadedFile::fake()->image('logo.png', 200, 80),
+        ])
+        ->assertOk()
+        ->assertJsonPath('ok', true);
+
+    expect(Storage::disk('public')->files('documents/templates'))->toHaveCount(1);
+});
+
+it('conserve les images et le fond de page à l’enregistrement', function () {
+    $edition = openEdition();
+
+    $this->actingAs(adminStaff(), 'web')
+        ->postJson(route('admin.documents.templates.save'), [
+            'edition_id' => $edition->id,
+            'kind' => 'attestation',
+            'type' => 'participation',
+            'layout' => [
+                'width' => 900, 'height' => 636, 'bg' => '#ffffff',
+                'bg_image' => '/storage/documents/templates/fond.png',
+                'elements' => [
+                    ['type' => 'image', 'x' => 40, 'y' => 20, 'w' => 160, 'h' => 60, 'src' => '/storage/documents/templates/logo.png'],
+                    // Une image embarquée reste refusée : un document n'a pas à
+                    // porter ses octets, et dompdf veut un fichier.
+                    ['type' => 'image', 'x' => 10, 'y' => 10, 'w' => 50, 'h' => 50, 'src' => 'data:image/png;base64,AAAA'],
+                ],
+            ],
+        ])
+        ->assertOk();
+
+    $layout = (array) DocumentTemplate::where('edition_id', $edition->id)->where('type', 'participation')->value('layout');
+
+    expect($layout['bg_image'])->toBe('/storage/documents/templates/fond.png')
+        ->and(collect($layout['elements'])->where('type', 'image')->pluck('src')->all())
+        ->toBe(['/storage/documents/templates/logo.png', '']);
+});
+
+it('donne à dompdf le fichier de l’image, jamais son adresse distante', function () {
+    // dompdf ne télécharge aucune image distante : une adresse du site sortait
+    // du PDF alors qu'elle s'affichait bien sur la page.
+    $layout = [
+        'width' => 400, 'height' => 200, 'bg' => '#fff', 'accent' => '#223ea4',
+        'elements' => [['type' => 'image', 'x' => 0, 'y' => 0, 'w' => 100, 'h' => 50, 'src' => '/img/logo-uk.png']],
+    ];
+
+    expect(LayoutRenderer::render($layout, [], pdf: true))
+        ->toContain(public_path('img/logo-uk.png'))
+        ->and(LayoutRenderer::render($layout))
+        ->toContain('src="/img/logo-uk.png"');
 });

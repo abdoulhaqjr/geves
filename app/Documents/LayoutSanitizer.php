@@ -96,7 +96,13 @@ class LayoutSanitizer
             $elements = $default['elements'];
         }
 
-        return ['width' => $w, 'height' => $h, 'bg' => $bg, 'accent' => $accent, 'elements' => $elements];
+        // ⚠️ L'image de fond n'était pas enregistrée : une attestation dessinée
+        // sur un fond illustré ressortait sur du blanc.
+        return [
+            'width' => $w, 'height' => $h, 'bg' => $bg, 'accent' => $accent,
+            'bg_image' => self::src($raw['bg_image'] ?? ''),
+            'elements' => $elements,
+        ];
     }
 
     /** Borne un nombre décimal (interlignage, interlettrage). */
@@ -114,8 +120,9 @@ class LayoutSanitizer
      *
      * ⚠️ Seules les URL absolues passaient : un logo téléversé, référencé en
      * `/storage/…`, était rejeté à l'enregistrement et disparaissait du document.
-     * `data:` reste refusé (poids, et un document n'a pas à embarquer d'octets
-     * arbitraires).
+     * `data:` reste refusé : le concepteur téléverse désormais ses images
+     * (`templates.upload`) et n'enregistre que leur adresse - un document n'a
+     * pas à embarquer ses octets, et dompdf lit le fichier sur le disque.
      */
     protected static function src(mixed $raw): string
     {

@@ -664,6 +664,22 @@ deux raisons distinctes.
    logo téléversé (`/storage/…`) retombait dans la branche « texte » et
    disparaissait. `LayoutSanitizer::src()` accepte désormais les chemins servis
    par le site, et refuse `data:`.
+   ⚠️ **Et les images téléversées étaient embarquées en `data:` base64.** Elles
+   survivaient à l'instantané de l'éditeur - donc elles restaient visibles dans
+   le concepteur - mais `src()` refuse `data:` : l'élément était **jeté de la
+   mise en page enregistrée**, et les logos disparaissaient du document délivré,
+   en silence. Le concepteur **téléverse** donc ses images
+   (`admin.documents.templates.upload` → disque `public`, `documents/templates/`)
+   et n'enregistre que leur adresse. Une migration
+   (`2026_10_02_000400_restore_document_template_images`) répare les modèles déjà
+   enregistrés en récupérant les images de l'instantané.
+   ⚠️ **L'image de FOND n'était pas enregistrée du tout** (`bg` ne portait que la
+   couleur) : une attestation dessinée sur un fond illustré ressortait sur du
+   blanc. Elle a désormais sa clé `bg_image` (JS → sanitizer → renderer).
+   ⚠️ **dompdf ne télécharge aucune image distante** (`enable_remote` est faux) :
+   `LayoutRenderer::render(..., pdf: true)` résout les adresses servies par le
+   site en **chemins de fichier**, sans quoi les logos sortent du PDF alors
+   qu'ils s'affichent sur la page.
 2. **Les polices n'étaient chargées que dans le concepteur.** Il tirait Jost et
    Playfair Display de Google Fonts ; ni l'aperçu, ni l'attestation délivrée, ni
    le PDF ne le faisaient - la maquette ressortait en police système, avec
@@ -750,6 +766,19 @@ Certifier/Credsverse).
 - ⚠️ **Les valeurs de rendu ont une source unique** : `App\Documents\AttestationVars`.
   La page et le PDF dressaient la même liste chacun de leur côté, donc un jeton
   ajouté à l'une manquait à l'autre.
+- ⚠️ **La vérification se fait SUR CETTE PAGE** : le bouton interrogeait une
+  autre adresse, et le visiteur quittait le document pour lire un verdict. Il
+  appelle `attestation.verify.json` et le résultat s'écrit dans un panneau de
+  la page. Le contrôle est **refait** (registre + signature), ce n'est pas un
+  repli du texte déjà affiché. Pour la même raison, **le QR du document pointe
+  vers `/attestation/{uuid}`** et non plus vers `/verifier/{uuid}` : on scannait
+  une attestation pour atterrir sur un verdict, sans le document.
+  `/verifier/{uuid}` reste valable (QR déjà imprimés, liens envoyés).
+- **Gestes au survol du document** (partage, LinkedIn, PDF, vérification), en
+  surimpression. ⚠️ Le survol n'existe pas au doigt : la colonne de gauche porte
+  les mêmes actions, et la surimpression est masquée en `@media (hover: none)`.
+  Un seul partial, `attestations/_actions.blade.php`, pour que les deux ne
+  divergent pas.
   Tests : `tests/Feature/AttestationPageTest.php`.
 ### Onglets d'une page = pilules + URL
 

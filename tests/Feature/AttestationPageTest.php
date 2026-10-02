@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\IssueAttestation;
+use App\Documents\AttestationVars;
 use App\Models\Attestation;
 use App\Models\DocumentTemplate;
 use App\Support\EditionSettings;
@@ -27,11 +28,37 @@ it('présente l’attestation, son émetteur et ce qu’elle certifie', function
         ->assertSee('Rendez-vous annuel des universités partenaires.')
         ->assertSee('Innover pour un avenir durable')
         ->assertSee($att->uuid)
-        // Les trois gestes attendus d'une page d'attestation.
+        // Les gestes attendus d'une page d'attestation.
         ->assertSee('Partager l’attestation', false)
         ->assertSee(route('attestation.pdf', $att->uuid))
-        ->assertSee(route('attestation.verify', $att->uuid))
-        ->assertSee('linkedin.com/profile/add', false);
+        ->assertSee('linkedin.com/profile/add', false)
+        // ⚠️ La vérification se fait SUR CETTE PAGE : le bouton interroge
+        // l'endpoint JSON, il n'emmène plus le visiteur ailleurs.
+        ->assertSee(route('attestation.verify.json', $att->uuid))
+        ->assertDontSee('href="'.route('attestation.verify', $att->uuid).'"', false);
+});
+
+it('vérifie l’attestation sur place, sans quitter la page', function () {
+    $edition = openEdition();
+    $p = $edition->participants()->create([
+        'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author',
+    ]);
+    $att = (new IssueAttestation)->handle($p, 'participation');
+
+    $this->getJson(route('attestation.verify.json', $att->uuid))
+        ->assertOk()
+        ->assertJsonPath('found', true)
+        ->assertJsonPath('status', 'ok')
+        ->assertJsonPath('facts.Bénéficiaire', 'Awa Kodjo');
+
+    $att->update(['revoked' => true]);
+    $this->getJson(route('attestation.verify.json', $att->uuid))
+        ->assertOk()
+        ->assertJsonPath('status', 'revoked');
+
+    $this->getJson(route('attestation.verify.json', 'code-bidon'))
+        ->assertNotFound()
+        ->assertJsonPath('found', false);
 });
 
 it('dit qu’une attestation révoquée ne vaut plus preuve', function () {
@@ -88,4 +115,18 @@ it('remplace [signatory.name] par le signataire réglé pour l’édition', func
         ->assertSee('Pr. Padabo KADOUZA');
 
     expect(Attestation::whereKey($att->id)->value('revoked'))->toBeFalsy();
+});
+
+it('fait pointer le QR du document vers la page de l’attestation', function () {
+    // ⚠️ Le QR menait à la page de vérification seule : on scannait une
+    // attestation pour atterrir sur un verdict, sans le document.
+    $edition = openEdition();
+    $p = $edition->participants()->create([
+        'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author',
+    ]);
+    $att = (new IssueAttestation)->handle($p, 'participation');
+
+    $vars = AttestationVars::for($att->fresh(), route('attestation.document', $att->uuid));
+
+    expect($vars['verify_url'])->toBe(route('attestation.document', $att->uuid));
 });

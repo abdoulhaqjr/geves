@@ -1098,6 +1098,68 @@ body.ukc-overlay-open .ukc-cb-root { opacity: 0; transform: translateY(10px) sca
   .ukc-cred-grid { grid-template-columns: 1fr; }
 }
 
+/* ---- Gestes en surimpression du document ----
+   Au survol (et au clavier, via :focus-within) : on agit sur le document qu'on
+   regarde, sans partir chercher les boutons ailleurs. La colonne de gauche les
+   porte aussi - le survol n'existe pas au doigt. */
+.ukc-cred-doc { position: relative; }
+.ukc-cred-doc .ukc-cred-doc-inner { transition: filter .2s ease; }
+.ukc-cred-overlay {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  padding: 24px;
+  background: rgba(15, 23, 42, .46);
+  opacity: 0; visibility: hidden; transition: opacity .2s ease, visibility .2s ease;
+}
+.ukc-cred-doc:hover .ukc-cred-overlay,
+.ukc-cred-doc:focus-within .ukc-cred-overlay { opacity: 1; visibility: visible; }
+.ukc-cred-doc:hover .ukc-cred-doc-inner,
+.ukc-cred-doc:focus-within .ukc-cred-doc-inner { filter: blur(3px) grayscale(.3); }
+.ukc-cred-overlay .ukc-cred-action,
+.ukc-cred-overlay .ukc-cred-row { width: min(100%, 320px); }
+.ukc-cred-overlay-hint {
+  margin-bottom: 4px; padding: 6px 14px; border-radius: 999px;
+  background: rgba(255, 255, 255, .92); color: var(--ukc-text);
+  font-size: .8rem; font-weight: 600; text-align: center;
+}
+/* Sans survol (tactile), la surimpression masquerait le document pour rien. */
+@media (hover: none) {
+  .ukc-cred-overlay { display: none; }
+}
+
+/* ---- Vérification, sur cette page ---- */
+.ukc-cred-check {
+  position: fixed; inset: 0; z-index: 120;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  background: rgba(15, 23, 42, .62);
+}
+.ukc-cred-check[hidden] { display: none; }
+.ukc-cred-check-box {
+  position: relative; width: 100%; max-width: 460px; max-height: 90vh; overflow: auto;
+  background: #fff; border-radius: var(--ukc-radius-lg); padding: 28px 24px 24px;
+  box-shadow: var(--ukc-shadow-lg); text-align: center;
+}
+.ukc-cred-check-close {
+  position: absolute; top: 12px; right: 12px;
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--ukc-bg); color: var(--ukc-muted); border: none; cursor: pointer;
+}
+.ukc-cred-check-close:hover { color: var(--ukc-text); }
+.ukc-cred-check-badge {
+  width: 58px; height: 58px; border-radius: 50%; margin: 0 auto 12px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--ukc-bg); color: var(--ukc-light);
+}
+.ukc-cred-check-badge.is-ok { background: #dcfce7; color: #166534; }
+.ukc-cred-check-badge.is-warn { background: #fef3c7; color: #92400e; }
+.ukc-cred-check-badge.is-revoked,
+.ukc-cred-check-badge.is-unknown { background: #fee2e2; color: #991b1b; }
+.ukc-cred-check-title { font-size: 1.2rem; font-weight: 800; }
+.ukc-cred-check-detail { color: var(--ukc-muted); margin-top: 6px; line-height: 1.5; }
+.ukc-cred-check .ukc-cred-facts { margin-top: 18px; text-align: left; }
+.ukc-cred-check .ukc-cred-facts dd { word-break: break-word; }
+.ukc-cred-check-time { font-size: .76rem; color: var(--ukc-light); margin-top: 16px; }
 /* À l'impression, seul le document sort. */
 @media print {
   .no-print { display: none !important; }

@@ -11,9 +11,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Attestation;
 use App\Models\DocumentTemplate;
 use App\Models\Edition;
+use App\Support\EditionArtwork;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 /**
@@ -285,6 +287,27 @@ class TemplateDesignerController extends Controller
         );
 
         return response()->json(['ok' => true, 'layout' => $layout, 'title' => $title]);
+    }
+
+    /**
+     * Téléversement d'une image du concepteur (logo, illustration, fond).
+     *
+     * ⚠️ Le concepteur embarquait l'image en `data:` base64 dans le DOM. Elle
+     * survivait à l'instantané de l'éditeur - donc elle restait visible dans le
+     * concepteur - mais `LayoutSanitizer::src()` refuse `data:`, donc l'élément
+     * était **jeté de la mise en page enregistrée** : les logos disparaissaient
+     * du document délivré, en silence. Le fichier est donc déposé ici, et la
+     * mise en page ne retient que son adresse (légère, lisible par dompdf).
+     */
+    public function upload(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file' => ['required', 'image', 'mimes:png,jpg,jpeg,webp,gif', 'max:'.EditionArtwork::maxUploadKb()],
+        ]);
+
+        $path = $request->file('file')->store('documents/templates', 'public');
+
+        return response()->json(['ok' => true, 'url' => Storage::disk('public')->url($path)]);
     }
 
     /** @return array{0: string, 1: string} */
