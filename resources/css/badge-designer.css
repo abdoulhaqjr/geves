@@ -31,7 +31,9 @@
     .ed-top .crumb { font-size: 14px; font-weight: 700; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .ed-top .name-input {
       border: 1px solid var(--ukc-border); border-radius: 8px;
-      padding: 7px 12px; font-size: 13px; font-weight: 600; min-width: 200px;
+      padding: 7px 12px; font-size: 13px; font-weight: 600;
+      /* Un libellé d'attestation complet doit tenir sans être tronqué. */
+      flex: 0 1 420px; min-width: 280px;
     }
     .ed-top .btn-save {
       background: var(--ukc-blue); color: #fff; font-weight: 700;

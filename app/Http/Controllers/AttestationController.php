@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Documents\AttestationCertifier;
+use App\Documents\AttestationVars;
 use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
 use App\Models\Attestation;
@@ -33,32 +34,7 @@ class AttestationController extends Controller
         $template = DocumentTemplate::ensureFor((int) $attestation->edition_id, 'attestation', (string) $attestation->type);
 
         $layout = LayoutSanitizer::sanitize((array) $template->layout, 'attestation', $attestation->type);
-        $canvas = LayoutRenderer::render($layout, [
-            'org' => $attestation->edition?->colloque?->name ?? '',
-            'event' => $attestation->edition?->title ?? '',
-            'year' => (string) ($attestation->edition?->year ?: ''),
-            'location' => $attestation->edition?->location ?? '',
-            // Valeurs nommées par la palette du concepteur ([edition.theme],
-            // [recipient.role]…) : sans elles, ses jetons restaient vides.
-            'theme' => (string) ($attestation->edition?->theme ?? ''),
-            'dates' => $attestation->edition?->dateRangeLabel() ?? '',
-            'institution' => (string) ($attestation->participant?->institution ?? ''),
-            'role' => (string) ($attestation->participant?->roleLabel() ?? ''),
-            'name' => (string) $attestation->recipient_name,
-            'type' => mb_strtolower($attestation->typeLabel()),
-            'date' => $attestation->issued_at?->format('d/m/Y') ?? '',
-            'ref' => $attestation->uuid,
-            'verify_url' => $verifyUrl,
-            // Communication concernée (attestation de communication) - vide pour les autres types.
-            'communication' => (string) (($attestation->meta ?? [])['communication_title'] ?? ''),
-            'communication_ref' => (string) (($attestation->meta ?? [])['communication_ref'] ?? ''),
-            // Formation concernée (attestation de formation / animation) - vide sinon.
-            'formation' => (string) (($attestation->meta ?? [])['formation_title'] ?? ''),
-            'formation_theme' => (string) (($attestation->meta ?? [])['formation_theme'] ?? ''),
-            'formateurs' => implode(', ', (array) (($attestation->meta ?? [])['formation_trainers'] ?? [])),
-            // Signatures figées à l'émission (élément « signatures » du concepteur).
-            'signatures' => (array) (($attestation->meta ?? [])['formation_signatures'] ?? []),
-        ]);
+        $canvas = LayoutRenderer::render($layout, AttestationVars::for($attestation, $verifyUrl));
 
         return view('attestations.document-template', [
             'attestation' => $attestation,
@@ -80,32 +56,7 @@ class AttestationController extends Controller
         $template = DocumentTemplate::ensureFor((int) $attestation->edition_id, 'attestation', (string) $attestation->type);
 
         $layout = LayoutSanitizer::sanitize((array) $template->layout, 'attestation', $attestation->type);
-        $canvas = LayoutRenderer::render($layout, [
-            'org' => $attestation->edition?->colloque?->name ?? '',
-            'event' => $attestation->edition?->title ?? '',
-            'year' => (string) ($attestation->edition?->year ?: ''),
-            'location' => $attestation->edition?->location ?? '',
-            // Valeurs nommées par la palette du concepteur ([edition.theme],
-            // [recipient.role]…) : sans elles, ses jetons restaient vides.
-            'theme' => (string) ($attestation->edition?->theme ?? ''),
-            'dates' => $attestation->edition?->dateRangeLabel() ?? '',
-            'institution' => (string) ($attestation->participant?->institution ?? ''),
-            'role' => (string) ($attestation->participant?->roleLabel() ?? ''),
-            'name' => (string) $attestation->recipient_name,
-            'type' => mb_strtolower($attestation->typeLabel()),
-            'date' => $attestation->issued_at?->format('d/m/Y') ?? '',
-            'ref' => $attestation->uuid,
-            'verify_url' => $verifyUrl,
-            // Communication concernée (attestation de communication) - vide pour les autres types.
-            'communication' => (string) (($attestation->meta ?? [])['communication_title'] ?? ''),
-            'communication_ref' => (string) (($attestation->meta ?? [])['communication_ref'] ?? ''),
-            // Formation concernée (attestation de formation / animation) - vide sinon.
-            'formation' => (string) (($attestation->meta ?? [])['formation_title'] ?? ''),
-            'formation_theme' => (string) (($attestation->meta ?? [])['formation_theme'] ?? ''),
-            'formateurs' => implode(', ', (array) (($attestation->meta ?? [])['formation_trainers'] ?? [])),
-            // Signatures figées à l'émission (élément « signatures » du concepteur).
-            'signatures' => (array) (($attestation->meta ?? [])['formation_signatures'] ?? []),
-        ]);
+        $canvas = LayoutRenderer::render($layout, AttestationVars::for($attestation, $verifyUrl));
 
         // Page à la taille exacte de la mise en page (px → points à 96 dpi).
         $w = (int) $layout['width'];

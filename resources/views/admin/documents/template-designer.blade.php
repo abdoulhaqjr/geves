@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Éditeur de templates - {{ config('app.name') }}</title>
   <meta name="csrf-token" content="{{ csrf_token() }}">
-  @php($ukcEditorCfg = ['editionId' => (string) $edition_id, 'kind' => $kind, 'type' => $type, 'typeLabel' => $typeLabel ?? 'Participation', 'backUrl' => route('admin.documents.attestations'), 'saveUrl' => route('admin.documents.templates.save'), 'csrf' => csrf_token(), 'editorState' => $editorState ?? null])
+  @php($ukcEditorCfg = ['editionId' => (string) $edition_id, 'kind' => $kind, 'type' => $type, 'typeLabel' => $typeLabel ?? 'Participation', 'backUrl' => route('admin.documents.attestations'), 'saveUrl' => route('admin.documents.templates.save'), 'csrf' => csrf_token(), 'editorState' => $editorState ?? null, 'vars' => $vars ?? []])
   <script>window.UKC_EDITOR = @json($ukcEditorCfg);</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,7 +18,7 @@
     <button type="button" class="back" onclick="location.href=(window.UKC_EDITOR&&window.UKC_EDITOR.backUrl)||'/admin/attestations'">← Documents</button>
     {{-- Identité du modèle renseignée à sa création (libellé + portée). --}}
     <div class="crumb">{{ $typeLabel }} · {{ $scope ?? 'Participant' }}</div>
-    <input class="name-input" id="tplName" value="{{ $typeLabel }}">
+    <input class="name-input" id="tplName" value="{{ $typeLabel }}" title="Nom du modèle, repris dans la liste des documents">
     <button type="button" class="btn-save" id="btnSave">Enregistrer</button>
   </header>
 
@@ -39,11 +39,11 @@
       </button>
       <button type="button" data-panel="elements" title="Éléments">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5 2 7L12 17l-6.5 3.5 2-7L2 9h7z"/></svg>
-        Elements
+        Éléments
       </button>
       <button type="button" data-panel="text" title="Texte">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 4v3h5.5v12h3V7H19V4H5z"/></svg>
-        Text
+        Texte
       </button>
       <button type="button" data-panel="attributes" title="Champs">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
@@ -51,7 +51,7 @@
       </button>
       <button type="button" data-panel="qrcodes" title="QR codes">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm8-2h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5zm13-2h3v2h-3v-2zm-3 3h2v2h-2v-3h-2v2h2v1zm3 3h3v3h-3v-3zm-3 0h2v2h-2v-2z"/></svg>
-        QR Codes
+        QR codes
       </button>
       <button type="button" class="active" data-panel="layers" title="Calques">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9L2 7v2l10 5 10-5V7l-10 4zm0 4L2 11v2l10 5 10-5v-2l-10 4z"/></svg>
@@ -176,10 +176,10 @@
             <button type="button" id="lyDown" title="Descendre (Ctrl+Shift+[)">↓</button>
             <button type="button" id="lyBack" title="Arriere-plan (Ctrl+[)">⤓</button>
             <button type="button" id="lyDup" title="Dupliquer (Ctrl+D)">⧉</button>
-            <button type="button" id="lyGroup" title="Grouper la selection">⊞</button>
+            <button type="button" id="lyGroup" title="Grouper la sélection">⊞</button>
             <button type="button" id="lyDel" title="Supprimer (Del)">⌫</button>
           </div>
-          <p class="ly-meta">Glisser ⠿ pour reordonner · double-clic nom pour renommer · <span class="kbd">Ctrl+G</span> grouper</p>
+          <p class="ly-meta">Glisser ⠿ pour réordonner · double-clic nom pour renommer · <span class="kbd">Ctrl+G</span> grouper</p>
           <div id="layersList"></div>
           <div class="ly-controls" id="lyControls">
             <label>
@@ -315,7 +315,7 @@
             <div class="ed-page-bg" id="pageBg"></div>
             <div id="guides" style="position:absolute;inset:0;pointer-events:none;z-index:99;"></div>
             <div class="ed-float-bar" id="floatBar">
-              <button type="button" id="fbLock" title="Verrouiller / deverrouiller (Ctrl+L)">
+              <button type="button" id="fbLock" title="Verrouiller / déverrouiller (Ctrl+L)">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
               </button>
               <button type="button" id="fbUnlock" title="Deverrouiller" style="display:none;">

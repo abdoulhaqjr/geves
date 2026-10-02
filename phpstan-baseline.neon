@@ -7,10 +7,34 @@ parameters:
 			path: app/Actions/QueueEmailCampaign.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>timestamp" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			message: '#^Using nullsafe property access "\?\-\>institution" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
-			path: app/Documents/LivretDocx.php
+			path: app/Documents/AttestationVars.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>location" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Documents/AttestationVars.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Documents/AttestationVars.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>theme" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Documents/AttestationVars.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>title" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Documents/AttestationVars.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>edition" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
@@ -41,6 +65,12 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Http/Controllers/Admin/DocumentController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>banner_url" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Admin/EditionFormController.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>edition_label" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
@@ -167,24 +197,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Http/Controllers/Admin/TemplateDesignerController.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>location" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 2
-			path: app/Http/Controllers/AttestationController.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 2
-			path: app/Http/Controllers/AttestationController.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>title" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 2
-			path: app/Http/Controllers/AttestationController.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>title" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'

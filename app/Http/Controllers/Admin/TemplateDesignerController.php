@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Actions\GenerateDocumentLayout;
 use App\AI\AiManager;
+use App\Documents\DocumentVars;
 use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
 use App\Http\Controllers\Controller;
@@ -77,7 +78,9 @@ class TemplateDesignerController extends Controller
             'deleteCode' => $existing ? self::deleteCode($existing) : null,
             'layout' => $layout,
             'editorState' => $existing?->editor_state,
-            'vars' => $this->sampleVars($editionId, $type),
+            // Alias compris : l'aperçu du concepteur résout [recipient.name]
+            // comme le fait le document délivré.
+            'vars' => DocumentVars::expand($this->sampleVars($editionId, $type)),
             'attestationTypes' => self::ATTESTATION_TYPES,
             'aiAvailable' => app(AiManager::class)->available() !== [],
             'variables' => self::VARIABLES,

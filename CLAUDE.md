@@ -37,8 +37,8 @@ php.bat artisan ...        # PHP 8.4
 composer.bat ...           # Composer
 ```
 
-Node/npm sont dans le PATH. Le site est servi par **Herd** sur **http://gesco.test**
-(le domaine de dev et le dossier local restent `gesco`, malgré le renommage GEVES).
+Node/npm sont dans le PATH. Le site est servi par **Herd** sur **https://geves.test**
+(le dossier local reste `gesco`, malgré le renommage GEVES ; `gesco.test` ne répond plus).
 
 ### Commandes utiles
 
@@ -54,11 +54,18 @@ npm run build                               # build des assets (requis pour voir
 ⚠️ `vendor/bin/phpunit` ne marche pas (Pest requis). Le lanceur affiche une sortie
 JSON compacte, pas la trace complète.
 
+⚠️ **PHPStan et les chemins relatifs** : lancé depuis la racine, `phpstan analyse`
+se termine en **code 1 sans rien écrire** - ni erreurs, ni « No errors », ni fatale.
+Le `paths: - app` relatif de `phpstan.neon` en est la cause ; en chemins absolus la
+même analyse s'exécute normalement. Un silence n'est donc **pas** un succès : si la
+commande ne dit rien, rejouer l'analyse avec une configuration temporaire reprenant
+`phpstan.neon` avec `paths` et `includes` en absolu.
+
 ## Voir le rendu
 
-Builder les assets (`npm run build`) puis ouvrir **gesco.test** - **ne pas** compter
+Builder les assets (`npm run build`) puis ouvrir **geves.test** - **ne pas** compter
 sur le serveur Vite dev (bloqué en cross-origin ici). Le navigateur intégré exige une
-approbation par action sur `gesco.test` ; `curl` (statut HTTP + `grep`) est un contrôle
+approbation par action sur `geves.test` ; `curl` (statut HTTP + `grep`) est un contrôle
 rapide fiable.
 
 ## Workflow Git

@@ -92,10 +92,10 @@
     { type: 'text', id: 'name', label: 'Destinataire', x: 150, y: 210, w: 600, cls: 'name attr', text: '[recipient.name]' },
     { type: 'text', id: 'body', label: 'Corps', x: 80, y: 270, w: 740, cls: 'sub', text: 'a suivi avec diligence la formation sur la valorisation des résultats de recherche, tenue en marge du 6e colloque scientifique international de l’Université de Kara, en collaboration avec l’Université de Parakou (06 - 10 octobre 2025, Kara).' },
     { type: 'text', id: 'closing', label: 'Formule', x: 80, y: 380, w: 740, cls: 'sub', text: 'En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.' },
-    { type: 'text', id: 'place', label: 'Lieu / date', x: 520, y: 450, w: 320, cls: 'sub', text: 'Fait a Kara, le 10 octobre 2025' },
+    { type: 'text', id: 'place', label: 'Lieu / date', x: 520, y: 450, w: 320, cls: 'sub', text: 'Fait à Kara, le 10 octobre 2025' },
     { type: 'text', id: 'role', label: 'Fonction', x: 520, y: 490, w: 320, cls: 'sub', text: 'Le Président du Comité d’Organisation,' },
     { type: 'text', id: 'sign', label: 'Signataire', x: 520, y: 530, w: 320, cls: '', text: 'Prof. Padabo KADOUZA' },
-    { type: 'text', id: 'ref', label: 'Reference', x: 40, y: 580, w: 420, cls: 'sub', text: 'Reference : [certificate.uuid]' },
+    { type: 'text', id: 'ref', label: 'Référence', x: 40, y: 580, w: 420, cls: 'sub', text: 'Référence : [certificate.uuid]' },
     { type: 'qr', id: 'qr1', label: 'QR Verification', x: 40, y: 500, w: 72, qrUrl: DEFAULT_QR_URL }
   ];
 
@@ -1424,6 +1424,25 @@
       .catch(function () { toast('Erreur réseau lors de l’enregistrement'); })
       .finally(function () { btn.disabled = false; btn.textContent = original; });
   });
+  /**
+   * Remplace [espace.cle] et {cle} par les valeurs d'exemple fournies par le
+   * serveur. Un jeton sans valeur est laissé tel quel : mieux vaut le voir que
+   * de croire le document complet.
+   */
+  function fillTokens(root) {
+    var vars = (window.UKC_EDITOR || {}).vars || {};
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    var nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(function (n) {
+      n.nodeValue = n.nodeValue.replace(/\[([A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)?)\]|\{([A-Za-z0-9_]+)\}/g,
+        function (whole, bracket, brace) {
+          var key = bracket || brace;
+          var v = vars[key];
+          return (typeof v === 'string' || typeof v === 'number') && String(v) !== '' ? String(v) : whole;
+        });
+    });
+  }
   document.getElementById('btnPreview').addEventListener('click', function () {
     var old = document.getElementById('ukcPreviewOverlay');
     if (old) { old.remove(); return; }
@@ -1441,6 +1460,9 @@
     clone.style.margin = '0';
     clone.style.boxShadow = '0 20px 60px rgba(0,0,0,.5)';
     clone.querySelectorAll('.resize, .ed-guide, .ed-guide-label').forEach(function (n) { n.remove(); });
+    // L'aperçu doit montrer le document, pas ses jetons : mêmes valeurs
+    // d'exemple que l'aperçu serveur, pour que les deux coïncident.
+    fillTokens(clone);
     clone.querySelectorAll('.ed-el').forEach(function (n) {
       n.style.outline = 'none'; n.style.border = 'none'; n.style.boxShadow = 'none';
       n.classList.remove('selected');
@@ -1489,10 +1511,10 @@
         { type: 'text', label: 'Sous-titre', x: 100, y: 148, w: 700, cls: 'sub', text: 'Décernée à' },
         { type: 'text', label: 'Destinataire', x: 100, y: 178, w: 700, cls: 'name attr', text: '[recipient.name]' },
         { type: 'text', label: 'Corps', x: 80, y: 240, w: 740, cls: 'sub', text: 'pour avoir participé au Colloque Scientifique International de l’Université de Kara, en collaboration avec l’Université de Parakou, du 06 au 10 octobre 2025 au palais des congrès de Kara, au Togo.' },
-        { type: 'text', label: 'Theme label', x: 80, y: 320, w: 160, cls: 'sub', text: 'Theme du colloque :' },
-        { type: 'text', label: 'Theme', x: 240, y: 320, w: 580, cls: 'sub attr', text: '[edition.theme]' },
+        { type: 'text', label: 'Thème (libellé)', x: 80, y: 320, w: 160, cls: 'sub', text: 'Thème du colloque :' },
+        { type: 'text', label: 'Thème', x: 240, y: 320, w: 580, cls: 'sub attr', text: '[edition.theme]' },
         { type: 'text', label: 'Formule', x: 80, y: 390, w: 740, cls: 'sub', text: 'En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.' },
-        { type: 'text', label: 'Lieu / date', x: 520, y: 450, w: 320, cls: 'sub', text: 'Fait a Kara, le [certificate.issued_on]' },
+        { type: 'text', label: 'Lieu / date', x: 520, y: 450, w: 320, cls: 'sub', text: 'Fait à Kara, le [certificate.issued_on]' },
         { type: 'text', label: 'Fonction', x: 520, y: 490, w: 320, cls: 'sub', text: 'Le Président du comité d’organisation' },
         { type: 'text', label: 'Signataire', x: 520, y: 540, w: 320, cls: '', text: '[signatory.name]' },
         { type: 'qr', label: 'QR Verification', x: 48, y: 500, w: 64, qrUrl: DEFAULT_QR_URL },
@@ -1505,14 +1527,14 @@
         { type: 'text', label: 'Sous-titre', x: 100, y: 138, w: 700, cls: 'sub', text: 'Décernée à' },
         { type: 'text', label: 'Destinataire', x: 100, y: 168, w: 700, cls: 'name attr', text: '[recipient.name]' },
         { type: 'text', label: 'Corps', x: 80, y: 220, w: 740, cls: 'sub', text: 'pour avoir participé et communiqué au Colloque Scientifique International de l’Université de Kara, en collaboration avec l’Université de Parakou, du 06 au 10 octobre 2025 au palais des congrès de Kara, au Togo.' },
-        { type: 'text', label: 'Theme label', x: 80, y: 290, w: 180, cls: 'sub', text: 'Theme du colloque :' },
-        { type: 'text', label: 'Theme', x: 260, y: 290, w: 560, cls: 'sub attr', text: '[edition.theme]' },
+        { type: 'text', label: 'Thème (libellé)', x: 80, y: 290, w: 180, cls: 'sub', text: 'Thème du colloque :' },
+        { type: 'text', label: 'Thème', x: 260, y: 290, w: 560, cls: 'sub attr', text: '[edition.theme]' },
         { type: 'text', label: 'Titre com. label', x: 80, y: 340, w: 200, cls: 'sub', text: 'Titre de la communication :' },
         { type: 'text', label: 'Titre com.', x: 280, y: 340, w: 540, cls: 'sub attr', text: '[communication.title]' },
         { type: 'text', label: 'Type label', x: 80, y: 400, w: 180, cls: 'sub', text: 'Type de communication :' },
         { type: 'text', label: 'Type', x: 270, y: 400, w: 200, cls: 'sub attr', text: '[communication.type]' },
         { type: 'text', label: 'Formule', x: 80, y: 450, w: 740, cls: 'sub', text: 'En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.' },
-        { type: 'text', label: 'Lieu / date', x: 520, y: 500, w: 320, cls: 'sub', text: 'Fait a Kara, le [certificate.issued_on]' },
+        { type: 'text', label: 'Lieu / date', x: 520, y: 500, w: 320, cls: 'sub', text: 'Fait à Kara, le [certificate.issued_on]' },
         { type: 'text', label: 'Fonction', x: 520, y: 530, w: 320, cls: 'sub', text: 'Le Président du comité d’organisation' },
         { type: 'text', label: 'Signataire', x: 520, y: 570, w: 320, cls: '', text: '[signatory.name]' },
         { type: 'qr', label: 'QR Verification', x: 48, y: 520, w: 56, qrUrl: DEFAULT_QR_URL },
@@ -1525,10 +1547,10 @@
         { type: 'text', label: 'Sous-titre', x: 100, y: 148, w: 700, cls: 'sub', text: 'Décernée à' },
         { type: 'text', label: 'Destinataire', x: 100, y: 178, w: 700, cls: 'name attr', text: '[recipient.name]' },
         { type: 'text', label: 'Corps', x: 80, y: 240, w: 740, cls: 'sub', text: 'pour avoir modéré une session lors du Colloque Scientifique International de l’Université de Kara, en collaboration avec l’Université de Parakou, du 06 au 10 octobre 2025 au palais des congrès de Kara, au Togo.' },
-        { type: 'text', label: 'Theme label', x: 80, y: 330, w: 160, cls: 'sub', text: 'Theme du colloque :' },
-        { type: 'text', label: 'Theme', x: 240, y: 330, w: 580, cls: 'sub attr', text: '[edition.theme]' },
+        { type: 'text', label: 'Thème (libellé)', x: 80, y: 330, w: 160, cls: 'sub', text: 'Thème du colloque :' },
+        { type: 'text', label: 'Thème', x: 240, y: 330, w: 580, cls: 'sub attr', text: '[edition.theme]' },
         { type: 'text', label: 'Formule', x: 80, y: 400, w: 740, cls: 'sub', text: 'En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.' },
-        { type: 'text', label: 'Lieu / date', x: 520, y: 460, w: 320, cls: 'sub', text: 'Fait a Kara, le [certificate.issued_on]' },
+        { type: 'text', label: 'Lieu / date', x: 520, y: 460, w: 320, cls: 'sub', text: 'Fait à Kara, le [certificate.issued_on]' },
         { type: 'text', label: 'Fonction', x: 520, y: 500, w: 320, cls: 'sub', text: 'Le Président du comité d’organisation' },
         { type: 'text', label: 'Signataire', x: 520, y: 550, w: 320, cls: '', text: '[signatory.name]' },
         { type: 'qr', label: 'QR Verification', x: 48, y: 500, w: 64, qrUrl: DEFAULT_QR_URL },
@@ -1542,11 +1564,11 @@
         { type: 'text', label: 'Destinataire', x: 100, y: 220, w: 700, cls: 'name attr', text: '[recipient.name]' },
         { type: 'text', label: 'Corps', x: 80, y: 280, w: 740, cls: 'sub', text: 'a suivi avec diligence la formation sur la valorisation des résultats de recherche, tenue en marge des travaux du colloque scientifique international de l’Université de Kara, en collaboration avec l’Université de Parakou ([edition.dates]), sur le thème : [edition.theme].' },
         { type: 'text', label: 'Formule', x: 80, y: 390, w: 740, cls: 'sub', text: 'En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.' },
-        { type: 'text', label: 'Lieu / date', x: 520, y: 460, w: 320, cls: 'sub', text: 'Fait a Kara, le [certificate.issued_on]' },
+        { type: 'text', label: 'Lieu / date', x: 520, y: 460, w: 320, cls: 'sub', text: 'Fait à Kara, le [certificate.issued_on]' },
         { type: 'text', label: 'Fonction', x: 520, y: 500, w: 320, cls: 'sub', text: 'Le Président du Comité d’Organisation,' },
         { type: 'text', label: 'Signataire', x: 520, y: 550, w: 320, cls: '', text: '[signatory.name]' },
         { type: 'qr', label: 'QR Verification', x: 48, y: 500, w: 64, qrUrl: DEFAULT_QR_URL },
-        { type: 'text', label: 'Reference', x: 48, y: 580, w: 480, cls: 'sub', text: 'Reference : [certificate.uuid]' }
+        { type: 'text', label: 'Référence', x: 48, y: 580, w: 480, cls: 'sub', text: 'Référence : [certificate.uuid]' }
       ],
       'formation-forvarrito': [
         { type: 'logo', label: 'Logo For-VaRRITO', x: 40, y: 24, w: 200, html: 'For-VaRRITO' },
@@ -1557,12 +1579,12 @@
         { type: 'text', label: 'Destinataire', x: 100, y: 220, w: 700, cls: 'name attr', text: '[recipient.name]' },
         { type: 'text', label: 'Corps', x: 80, y: 290, w: 740, cls: 'sub', text: 'a suivi avec diligence et réussite la formation sur l’organisation de la recherche et de l’innovation, la protection de la propriété intellectuelle, le transfert de technologie et la valorisation économique des résultats de recherche ([edition.dates]).' },
         { type: 'text', label: 'Formule', x: 80, y: 400, w: 740, cls: 'sub', text: 'En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.' },
-        { type: 'text', label: 'Lieu / date', x: 80, y: 470, w: 320, cls: 'sub', text: 'Fait a Kara, le [certificate.issued_on]' },
+        { type: 'text', label: 'Lieu / date', x: 80, y: 470, w: 320, cls: 'sub', text: 'Fait à Kara, le [certificate.issued_on]' },
         { type: 'text', label: 'Fonction', x: 520, y: 470, w: 320, cls: 'sub', text: 'Le Coordinateur du projet,' },
         { type: 'text', label: 'Signataire', x: 520, y: 530, w: 320, cls: '', text: '[signatory.name]' },
         { type: 'text', label: 'Partenaires', x: 80, y: 540, w: 300, cls: 'sub', text: 'UE · AUF · RRIWA' },
         { type: 'qr', label: 'QR Verification', x: 48, y: 500, w: 56, qrUrl: DEFAULT_QR_URL },
-        { type: 'text', label: 'Reference', x: 48, y: 580, w: 500, cls: 'sub', text: 'Reference : [certificate.uuid] · forvarrito.tg' }
+        { type: 'text', label: 'Référence', x: 48, y: 580, w: 500, cls: 'sub', text: 'Référence : [certificate.uuid] · forvarrito.tg' }
       ]
     };
     var list = T[key] || T.participation;
@@ -1813,10 +1835,10 @@
         : 'a participe avec assiduite aux travaux du colloque scientifique international de l Universite de Kara.';
       createEl({ type: 'text', id: 'ai-body', label: 'Corps', x: 80, y: 280, w: 740, cls: 'sub', text: body });
       createEl({ type: 'text', id: 'ai-close', label: 'Formule', x: 80, y: 380, w: 740, cls: 'sub', text: 'En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.' });
-      createEl({ type: 'text', id: 'ai-place', label: 'Lieu / date', x: 520, y: 450, w: 320, cls: 'sub', text: 'Fait a Kara, le [certificate.issued_on]' });
+      createEl({ type: 'text', id: 'ai-place', label: 'Lieu / date', x: 520, y: 450, w: 320, cls: 'sub', text: 'Fait à Kara, le [certificate.issued_on]' });
       createEl({ type: 'text', id: 'ai-sign', label: 'Signataire', x: 520, y: 520, w: 320, cls: '', text: '[signatory.name]' });
       createEl({ type: 'qr', id: 'ai-qr', label: 'QR Verification', x: 48, y: 480, w: 72, qrUrl: DEFAULT_QR_URL });
-      createEl({ type: 'text', id: 'ai-ref', label: 'Reference', x: 48, y: 570, w: 400, cls: 'sub', text: 'Reference : [certificate.uuid]' });
+      createEl({ type: 'text', id: 'ai-ref', label: 'Référence', x: 48, y: 570, w: 400, cls: 'sub', text: 'Référence : [certificate.uuid]' });
 
       if (aiFiles.length) {
         toast('Modele genere (ref. ' + aiFiles.length + ' fichier(s) + prompt)');
@@ -1838,12 +1860,8 @@
   /* ---------- Hydratation depuis la mise en page enregistrée ---------- */
   (function () {
     var cfg = window.UKC_EDITOR || {};
-    // Titre du document = type d'attestation en cours d'édition (et non un libellé figé).
-    var docName = (cfg.kind === 'badge' ? 'Badge · ' : 'Attestation de ') + (cfg.typeLabel || '');
-    var crumbEl = document.querySelector('.ed-top .crumb');
-    var nameEl = document.getElementById('tplName');
-    if (crumbEl) crumbEl.textContent = docName;
-    if (nameEl) nameEl.value = docName;
+    // Le nom du modèle et sa portée sont rendus par Blade à partir du titre
+    // enregistré : ne rien réécrire ici, sinon chaque ouverture repréfixait le nom.
 
     var snap = cfg.editorState;
     if (snap && snap.els && snap.els.length) {

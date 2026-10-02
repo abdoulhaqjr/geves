@@ -5,7 +5,7 @@
 >
 > 👥 **Projet développé à plusieurs.** Chaque contributeur utilise Claude Code, dont la mémoire locale ne se transfère pas : **`CLAUDE.md` et ce fichier sont la mémoire/le contexte collectifs**. Tout agent doit les **tenir à jour** à chaque tâche notable (fonctionnalité, décision d'archi, changement de convention/workflow), puis committer et pousser (`git pull --rebase` avant `git push`).
 >
-> ⚠️ **Le projet s'appelle désormais GEVES** (ex-« Gesco »). Le nom d'affichage est **dynamique** (`config('app.name')`, surchargé via Réglages) - ne jamais coder un littéral « Gesco »/« GEVES » dans l'UI. Le **dossier local** reste `Herd/gesco` et le **domaine de dev** reste `gesco.test` (inchangés) ; certaines classes historiques gardent le nom `Gesco` (ex. `AskGesco`, `GescoController`).
+> ⚠️ **Le projet s'appelle désormais GEVES** (ex-« Gesco »). Le nom d'affichage est **dynamique** (`config('app.name')`, surchargé via Réglages) - ne jamais coder un littéral « Gesco »/« GEVES » dans l'UI. Le **dossier local** reste `Herd/gesco` et le **domaine de dev** est désormais `geves.test` ; certaines classes historiques gardent le nom `Gesco` (ex. `AskGesco`, `GescoController`).
 
 Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture**, les **conventions**, le **travail réalisé**, ce qui **reste à faire** et les **pièges** à connaître.
 
@@ -44,7 +44,7 @@ composer.bat ...           # Composer 2.10
 ```
 Node/npm, eux, sont dans le PATH (node v24, npm 12).
 
-- Le site est servi par **Herd** sur **http://gesco.test** (HTTP 200).
+- Le site est servi par **Herd** sur **https://geves.test** (HTTP 200).
 - Base de données : **SQLite** (`database/database.sqlite`, ignorée par git). Migrations pensées **portables MySQL** pour la prod.
 
 ### Installation à froid
@@ -60,8 +60,8 @@ npm install && npm run build
 ```
 
 ### Comptes & données de démo (seeders)
-- **Back-office** : http://gesco.test/admin/connexion → `admin@univkara.tg` / `password` (à changer en prod).
-- **Page publique de démo** : http://gesco.test/colloque/avenir-durable-2025.
+- **Back-office** : https://geves.test/admin/connexion → `admin@univkara.tg` / `password` (à changer en prod).
+- **Page publique de démo** : https://geves.test/colloque/avenir-durable-2025.
 - Seeders : `RolesAndAdminSeeder` (rôles `administrator`/`editor` + permission `manage_colloques` + admin), puis **un seul** colloque de démo à l'échelle réelle - `ColloqueAvenirSeeder` (colloque + édition ouverte `avenir-durable-2025`, **27 sept - 4 oct 2026**) + `ColloqueAvenirVolumeSeeder` (200 communications). Les anciens seeders de colloques de démo (Showcase, Live, DemoColloque, DemoScenario, DemoStaff) ont été **supprimés**.
 
 ### Lancer les tests & la qualité
@@ -103,7 +103,7 @@ composer.bat check                   # pint --test + phpstan + tests (= le CI)
 **Outillage qualité (revue technique)** : contraintes composer **pinnées** (plus de `*`) ; **Larastan** niveau 5 (`phpstan.neon`) avec **baseline** (`phpstan-baseline.neon`, dette figée - surtout inférence Eloquent générique/JSON, pas des bugs ; le CI ne bloque que sur les nouvelles erreurs) ; **CI GitHub Actions** (`.github/workflows/ci.yml` : Pint + PHPStan + build + Pest). **Model factories** dispo pour Colloque/Edition/Account/Participant/Submission/Payment (`Model::factory()`, states). ⚠️ Le style **Pint** est appliqué **projet-wide** (concat sans espaces `'a'.$b`) - lancer `pint` avant de commiter. E-mails transactionnels en **file (ShouldQueue)** → un **worker** est requis en prod (`queue:work`/`queue:listen` ; `composer dev` en lance un). Écritures multi-étapes clés sous **`DB::transaction`** (paiement anti-doublon avec `lockForUpdate`, sync comités, soumission).
 
 ### Vérification visuelle
-Le **navigateur intégré exige une approbation par action** sur `gesco.test`. Se rabattre sur `curl` (statut HTTP + `grep` du contenu attendu + absence d'erreur) comme méthode de contrôle rapide.
+Le **navigateur intégré exige une approbation par action** sur `geves.test`. Se rabattre sur `curl` (statut HTTP + `grep` du contenu attendu + absence d'erreur) comme méthode de contrôle rapide.
 
 ### Fidélité au mockup - couverture des 31 maquettes
 La correspondance **maquette → route → vue Blade → niveau de test** est tenue à jour dans [`docs/COUVERTURE-FIDELITE.md`](docs/COUVERTURE-FIDELITE.md) : les 31 maquettes du dossier de référence `~/Downloads/gesco-mockup/*.html` sont toutes portées sur une route implémentée. La suite de fumée `tests/Feature/SmokeTest.php` parcourt chaque famille de routes et asserte un rendu `200` (verrou de non-régression).

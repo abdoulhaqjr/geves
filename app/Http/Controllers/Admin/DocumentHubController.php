@@ -84,7 +84,9 @@ class DocumentHubController extends Controller
                     'scope' => $meta['scope'],
                     'eligible' => $eligible,
                     'issued' => $attestations->where('type', $key)->where('revoked', false)->count(),
-                    'status' => $eligible > 0 ? 'Actif' : 'Brouillon',
+                    // Non pas un état qu'on bascule : un modèle est « prêt » dès
+                    // qu'il a des destinataires éligibles. Le libellé le dit.
+                    'status' => $eligible > 0 ? 'Actif' : 'Sans destinataire',
                     // Émission déportée : ces attestations s'émettent depuis la page
                     // de chaque formation, pas globalement pour l'édition.
                     'issueFrom' => in_array($key, ['formation', 'formation_animation'], true)
@@ -132,6 +134,10 @@ class DocumentHubController extends Controller
             ...($tab === 'badges' && $stab === 'prets' ? $this->badgeReadyList($request, $edition) : []),
             'opts' => [
                 'attPrefix' => (string) EditionSettings::get($edition, 'attestations.prefix', 'UKC-ATT-2026-'),
+                // Signataire porté par les jetons [signatory.name] / [signatory.role]
+                // des modèles : sans lui, la ligne de signature sortait vide.
+                'attSignatory' => (string) EditionSettings::get($edition, 'attestations.signatory', ''),
+                'attSignatoryRole' => (string) EditionSettings::get($edition, 'attestations.signatory_role', 'Président du comité d’organisation'),
                 'attAuto' => (bool) EditionSettings::get($edition, 'attestations.auto', true),
                 'attNotify' => (bool) EditionSettings::get($edition, 'attestations.notify', true),
                 'attRequirePresence' => (bool) EditionSettings::get($edition, 'attestations.require_presence', false),
@@ -194,7 +200,7 @@ class DocumentHubController extends Controller
                 ['type' => 'Participant', 'title' => 'Badge participant', 'sub' => 'Bandeau bleu UK', 'format' => 'A6 Portrait', 'count' => $counts['participants'], 'status' => 'Actif'],
                 ['type' => 'Communicant', 'title' => 'Badge communicant', 'sub' => 'Bandeau vert', 'format' => 'A6 Portrait', 'count' => $counts['accepted'], 'status' => 'Actif'],
                 ['type' => 'Staff', 'title' => 'Badge organisation', 'sub' => 'Staff / orga', 'format' => 'A6 Portrait', 'count' => Participant::where('edition_id', $edition->id)->whereIn('role', ['committee', 'staff', 'moderator', 'rapporteur'])->count(), 'status' => 'Actif'],
-                ['type' => 'Carte', 'title' => 'Badge carte CR80', 'sub' => '85,6 × 54 mm', 'format' => 'CR80', 'count' => 0, 'status' => 'Brouillon'],
+                ['type' => 'Carte', 'title' => 'Badge carte CR80', 'sub' => '85,6 × 54 mm', 'format' => 'CR80', 'count' => 0, 'status' => 'Sans destinataire'],
             ] : [],
             'livreState' => [
                 'lastGen' => EditionSettings::get($edition, 'livret.last_generated_at'),
@@ -289,6 +295,8 @@ class DocumentHubController extends Controller
 
         EditionSettings::setMany($edition, [
             'attestations.prefix' => (string) $request->input('attPrefix'),
+            'attestations.signatory' => (string) $request->input('attSignatory'),
+            'attestations.signatory_role' => (string) $request->input('attSignatoryRole'),
             'attestations.auto' => $request->boolean('attAuto'),
             'attestations.notify' => $request->boolean('attNotify'),
             'attestations.require_presence' => $request->boolean('attRequirePresence'),

@@ -65,7 +65,7 @@
                                         <td><span class="ukc-stat">{{ $row['eligible'] }}</span></td>
                                         <td>Oui</td>
                                         <td>
-                                            @if ($row['status'] === 'Actif')<span class="ukc-pill ukc-pill--ok">Actif</span>@else<span class="ukc-pill ukc-pill--muted">Brouillon</span>@endif
+                                            @if ($row['status'] === 'Actif')<span class="ukc-pill ukc-pill--ok" title="Des destinataires sont éligibles : vous pouvez émettre.">Prêt</span>@else<span class="ukc-pill ukc-pill--muted" title="Le modèle est complet et modifiable ; aucun destinataire n’est éligible pour l’instant.">Sans destinataire</span>@endif
                                         </td>
                                         <td>
                                             <div class="ukc-actions" style="justify-content:flex-end;">
@@ -147,9 +147,21 @@
                                     </select>
                                     <div class="desc">Signature Ed25519 d’un Verifiable Credential W3C porté par un JWS (VC-JWT).</div>
                                 </div>
-                                <div class="ukc-field">
+                                <div class="ukc-field" style="margin-bottom:12px;">
                                     <label>Préfixe des références</label>
                                     <input type="text" name="attPrefix" value="{{ $opts['attPrefix'] }}">
+                                </div>
+                                {{-- Signataire : ce que remplacent [signatory.name] et [signatory.role]
+                                     sur les modèles. Laissé vide, la ligne de signature sort vide. --}}
+                                <div class="ukc-field" style="margin-bottom:12px;">
+                                    <label>Signataire des attestations</label>
+                                    <input type="text" name="attSignatory" value="{{ $opts['attSignatory'] }}" placeholder="Pr. Prénom NOM">
+                                    <div class="desc">Remplace <code>[signatory.name]</code> sur les modèles.</div>
+                                </div>
+                                <div class="ukc-field">
+                                    <label>Qualité du signataire</label>
+                                    <input type="text" name="attSignatoryRole" value="{{ $opts['attSignatoryRole'] }}" placeholder="Président du comité d’organisation">
+                                    <div class="desc">Remplace <code>[signatory.role]</code>.</div>
                                 </div>
                             </div>
                             <div>
@@ -201,7 +213,7 @@
                                         <td>{{ $b['format'] }}</td>
                                         <td><span class="ukc-stat">{{ $b['count'] }}</span></td>
                                         <td>Oui</td>
-                                        <td>@if ($b['status'] === 'Actif')<span class="ukc-pill ukc-pill--ok">Actif</span>@else<span class="ukc-pill ukc-pill--muted">Brouillon</span>@endif</td>
+                                        <td>@if ($b['count'] > 0)<span class="ukc-pill ukc-pill--ok">Prêt</span>@else<span class="ukc-pill ukc-pill--muted" title="Aucun destinataire pour ce format pour l’instant.">Sans destinataire</span>@endif</td>
                                         <td>
                                             <div class="ukc-actions" style="justify-content:flex-end;">
                                                 <a class="ukc-btn--icon" title="Télécharger la planche (PDF)" href="{{ route('admin.documents.badges', $edition) }}" target="_blank"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></a>

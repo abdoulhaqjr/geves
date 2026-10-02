@@ -16,8 +16,8 @@
 
   <header class="ed-top">
     <button type="button" class="back" onclick="location.href=(window.UKC_EDITOR&&window.UKC_EDITOR.backUrl)||'/admin/attestations'">← Documents</button>
-    <div class="crumb">Badge participant CSIUK25</div>
-    <input class="name-input" id="tplName" value="Badge participant CSIUK25">
+    <div class="crumb">{{ $typeLabel }} · {{ $scope ?? 'Participant' }}</div>
+    <input class="name-input" id="tplName" value="{{ $typeLabel }}" title="Nom du modèle, repris dans la liste des documents">
     <button type="button" class="btn-save" id="btnSave">Save</button>
   </header>
 
