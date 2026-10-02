@@ -35,6 +35,32 @@
                 <div style="white-space:pre-line;line-height:1.7;color:var(--ukc-text);">{{ $section['body'] ?? '' }}</div>
             @endforeach
 
+            {{-- Le tableau demandé, quand la réponse en comporte un : c'est la
+                 réponse elle-même, pas une annexe. --}}
+            @if (! empty($table))
+                <div style="overflow:auto;margin-top:18px;">
+                    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                        <thead>
+                            <tr>
+                                @foreach ($table['columns'] as $col)
+                                    <th style="text-align:left;padding:6px 8px;background:#f8fafc;border-bottom:1px solid var(--ukc-border);white-space:nowrap;">{{ $col }}</th>
+                                @endforeach
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($table['rows'] as $row)
+                                <tr>
+                                    @foreach ($row as $cell)
+                                        <td style="padding:6px 8px;border-bottom:1px solid var(--ukc-border);">{{ $cell }}</td>
+                                    @endforeach
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                <p style="font-size:.78rem;color:var(--ukc-muted);margin-top:6px;">{{ count($table['rows']) }} ligne(s).</p>
+            @endif
+
             {{-- Données réelles jointes selon le périmètre choisi --}}
             @foreach ($datasets as [$name, $headers, $rows])
                 <h2 style="font-size:1rem;color:var(--ukc-blue);margin:24px 0 8px;">{{ $name }} <span style="font-size:.8rem;color:var(--ukc-muted);font-weight:600;">({{ count($rows) }} lignes)</span></h2>

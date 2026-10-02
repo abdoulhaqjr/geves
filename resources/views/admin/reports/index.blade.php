@@ -381,9 +381,10 @@
                 <div class="ukc-card">
                     <h2><span><x-ukc.icon name="sparkles" :size="18" /> Export personnalisé assisté par l’IA</span></h2>
                     <p class="desc">
-                        Décrivez le rapport souhaité <strong>ou</strong> joignez un modèle existant (PDF, Word, Excel).
-                        L’IA rédige un <strong>brouillon</strong> à partir des données réelles de l’édition -
-                        la décision et la diffusion restent à votre main.
+                        Décrivez ce que vous voulez obtenir <strong>ou</strong> joignez un modèle existant (PDF, Word, Excel).
+                        L’IA travaille sur les <strong>données réelles</strong> du périmètre choisi et rend un
+                        <strong>brouillon</strong> à la forme du format demandé - la décision et la diffusion restent à votre main.
+                        Soyez précis : « liste des communications acceptées, colonnes Réf., Titre, Axe, Auteur correspondant, triée par axe ».
                     </p>
 
                     {{-- data-ajax : seul le bloc de résultat est rafraîchi, la description saisie
@@ -391,6 +392,7 @@
                     <form method="POST" action="{{ route('admin.reports.generate') }}" enctype="multipart/form-data" x-ref="aiForm"
                           data-ajax data-ajax-target="ai-report" data-ajax-msg="Rapport généré."
                           data-ai data-ai-title="Rédaction du rapport…"
+                          data-ai-note="Jusqu’à deux minutes pour une longue liste. Le résultat est conservé dans l’historique."
                           data-ai-steps="Lecture de vos instructions…|Collecte des données de l’édition…|Rédaction du brouillon…|Mise en forme du document…">
                         @csrf
                         <input type="hidden" name="edition_id" value="{{ $edition->id }}">
@@ -447,6 +449,7 @@
                                     <option value="pdf" @selected(old('format')==='pdf')>PDF</option>
                                     <option value="docx" @selected(old('format')==='docx')>Word (.docx)</option>
                                 </select>
+                                <span class="ukc-hint">Excel et CSV produisent un <strong>tableau</strong> (une ligne par enregistrement) ; PDF et Word, un <strong>texte rédigé</strong>.</span>
                             </div>
                             <div class="ukc-form-row">
                                 <label for="aiScope">Périmètre des données</label>
@@ -456,6 +459,7 @@
                                     <option value="part" @selected(old('scope')==='part')>Participants uniquement</option>
                                     <option value="pay" @selected(old('scope')==='pay')>Paiements uniquement</option>
                                 </select>
+                                <span class="ukc-hint">Les lignes de ce périmètre sont <strong>transmises au fournisseur d’IA</strong> choisi, pour qu’il réponde sur des données réelles. Choisissez le plus étroit qui suffise.</span>
                             </div>
                         </div>
 
@@ -500,6 +504,32 @@
                             </div>
                             <div style="margin-top:14px;border-top:1px solid #bbf7d0;padding-top:12px;">
                                 <h4 style="font-size:1.1rem;font-weight:900;margin-bottom:10px;color:var(--ukc-text);">{{ $aiReport['title'] }}</h4>
+
+                                {{-- Aperçu du tableau demandé : on le voit AVANT de
+                                     télécharger, limité aux 30 premières lignes. --}}
+                                @if (! empty($aiReport['table']))
+                                    @php($aiTable = $aiReport['table'])
+                                    <div class="ukc-table-wrap" style="margin-bottom:12px;">
+                                        <table class="ukc-table" style="font-size:12.5px;">
+                                            <thead>
+                                                <tr>@foreach ($aiTable['columns'] as $col)<th>{{ $col }}</th>@endforeach</tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (array_slice($aiTable['rows'], 0, 30) as $row)
+                                                    <tr>@foreach ($row as $cell)<td>{{ $cell }}</td>@endforeach</tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <p style="font-size:12px;color:#166534;margin-bottom:10px;">
+                                        {{-- ⚠️ Ternaire et non @if : une directive collée à un mot
+                                             (« ci-dessus@endif ») n'est pas compilée, et le @if
+                                             resté ouvert fait tomber toute la page. --}}
+                                        {{ count($aiTable['rows']) }} ligne(s){{ count($aiTable['rows']) > 30 ? ', dont les 30 premières ci-dessus' : '' }}.
+                                        Le fichier téléchargé les contient toutes.
+                                    </p>
+                                @endif
+
                                 @foreach ($aiReport['sections'] as $section)
                                     @if ($section['heading'])<h5 style="font-weight:800;margin:12px 0 6px;color:var(--ukc-text);">{{ $section['heading'] }}</h5>@endif
                                     <div style="white-space:pre-line;color:var(--ukc-text);line-height:1.7;">{{ $section['body'] }}</div>

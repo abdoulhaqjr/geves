@@ -322,6 +322,7 @@ async function ukcAjaxSubmit(form, submitter) {
 function ukcAiVeilOptions(el) {
     return {
         title: el.dataset.aiTitle || undefined,
+        note: el.dataset.aiNote || undefined,
         steps: (el.dataset.aiSteps || '').split('|').map((s) => s.trim()).filter(Boolean),
     };
 }

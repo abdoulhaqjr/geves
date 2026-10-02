@@ -166,6 +166,10 @@ class SecretariatController extends Controller
         // ancrer les documents logistiques (affiches, ordre du jour, chevalets).
         $brief = $prompt."\n\nContexte - programme réel de l’édition :\n".$this->programContext($edition);
 
+        // ⚠️ Sortir des 30 s par défaut de PHP : un document un peu long dépasse
+        // la minute, et la requête mourait sans message.
+        @set_time_limit(300);
+
         try {
             $doc = $action->handle($edition, $brief, $files, $data['aiProvider'] ?? null, 'document');
 

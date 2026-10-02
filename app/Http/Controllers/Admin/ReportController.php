@@ -101,44 +101,48 @@ class ReportController extends Controller
         $report = new EditionReport($edition);
         $base = 'rapport-ia-'.Str::slug((string) ($entry['title'] ?? 'rapport')).'-'.$id;
 
-        // Feuilles/tables du périmètre demandé.
-        $datasets = match ($scope) {
-            'subs' => [['Communications', $report->submissionHeaders(), $report->submissionRows()]],
-            'part' => [['Participants', $report->participantHeaders(), $report->participantRows()]],
-            'pay' => [['Paiements', $report->paymentHeaders(), $report->paymentRows()]],
-            default => [
-                ['Participants', $report->participantHeaders(), $report->participantRows()],
-                ['Communications', $report->submissionHeaders(), $report->submissionRows()],
-                ['Paiements', $report->paymentHeaders(), $report->paymentRows()],
-            ],
-        };
+        $datasets = $this->datasets($report, $scope);
+        $table = is_array($entry['table'] ?? null) ? $entry['table'] : null;
 
         if ($format === 'xlsx') {
             $writer = new XlsxWriter;
-            // Feuille de tête : le brouillon narratif de l'IA.
-            $narrative = [];
-            foreach ((array) ($entry['sections'] ?? []) as $s) {
-                $narrative[] = [(string) ($s['heading'] ?? ''), (string) ($s['body'] ?? '')];
-            }
-            $writer->sheet('Rapport', ['Section', 'Contenu'], $narrative ?: [['Rapport', (string) ($entry['title'] ?? '')]]);
-            foreach ($datasets as [$name, $headers, $rows]) {
-                $writer->sheet($name, $headers, $rows);
+
+            // ⚠️ Le tableau produit par l'IA EST le rapport demandé : il ouvre le
+            // classeur. Les jeux de données bruts ne suivent qu'à défaut - les
+            // joindre systématiquement noyait la réponse sous toute la base.
+            if ($table !== null) {
+                $writer->sheet('Rapport', $table['columns'], $table['rows']);
+            } else {
+                $narrative = [];
+                foreach ((array) ($entry['sections'] ?? []) as $s) {
+                    $narrative[] = [(string) ($s['heading'] ?? ''), (string) ($s['body'] ?? '')];
+                }
+                $writer->sheet('Rapport', ['Section', 'Contenu'], $narrative ?: [['Rapport', (string) ($entry['title'] ?? '')]]);
+                foreach ($datasets as [$name, $headers, $rows]) {
+                    $writer->sheet($name, $headers, $rows);
+                }
             }
 
             return $writer->download($base.'.xlsx');
         }
 
         if ($format === 'csv') {
-            [$name, $headers, $rows] = $datasets[0];
+            // Un CSV n'a qu'une table : celle demandée, sinon le périmètre brut.
+            [, $headers, $rows] = $datasets[0];
 
-            return $this->csv($base.'.csv', $headers, $rows);
+            return $table !== null
+                ? $this->csv($base.'.csv', $table['columns'], $table['rows'])
+                : $this->csv($base.'.csv', $headers, $rows);
         }
 
         // pdf / docx → vue imprimable (le docx s'ouvre dans Word via l'en-tête).
         $view = view('reports.ai', [
             'edition' => $edition,
             'entry' => $entry,
-            'datasets' => $datasets,
+            'table' => $table,
+            // Les données brutes ne sont jointes QUE si l'IA n'a pas produit le
+            // tableau demandé : sinon elles doublent la réponse.
+            'datasets' => $table === null ? $datasets : [],
         ]);
 
         if ($format === 'docx') {
@@ -150,6 +154,26 @@ class ReportController extends Controller
 
         // PDF : page imprimable (Imprimer → Enregistrer en PDF).
         return response($view->render());
+    }
+
+    /**
+     * Jeux de données du périmètre demandé : ce que l'IA a le droit de lire, et
+     * ce qu'on joint au fichier à défaut de tableau.
+     *
+     * @return array<int, array{0: string, 1: list<string>, 2: array<int, array<int, string|float|int>>}>
+     */
+    protected function datasets(EditionReport $report, string $scope): array
+    {
+        return match ($scope) {
+            'subs' => [['Communications', $report->submissionHeaders(), $report->submissionRows()]],
+            'part' => [['Participants', $report->participantHeaders(), $report->participantRows()]],
+            'pay' => [['Paiements', $report->paymentHeaders(), $report->paymentRows()]],
+            default => [
+                ['Participants', $report->participantHeaders(), $report->participantRows()],
+                ['Communications', $report->submissionHeaders(), $report->submissionRows()],
+                ['Paiements', $report->paymentHeaders(), $report->paymentRows()],
+            ],
+        };
     }
 
     /** Écrit un CSV en flux (UTF-8 BOM pour Excel). */
@@ -205,14 +229,34 @@ class ReportController extends Controller
             $brief = trim('Reproduis la structure du modèle joint. '.(string) ($data['aiNotes'] ?? ''));
         }
 
+        // Le FORMAT décide de la forme : un Excel ou un CSV veut un tableau,
+        // un PDF ou un Word un texte rédigé. C'est ce qui manquait : l'IA
+        // rendait de la prose quel que soit le fichier demandé.
+        $output = in_array($format, ['xlsx', 'csv'], true) ? 'table' : 'document';
+
+        // ⚠️ Sortir des 30 s par défaut de PHP : depuis que l'IA reçoit les
+        // lignes réelles, une liste de cent enregistrements se rédige en une à
+        // deux minutes. Sans cela la requête mourait sans message, et l'écran
+        // restait sur son voile de travail.
+        @set_time_limit(300);
+
         try {
-            $report = $action->handle($edition, $brief, $files, $data['aiProvider'] ?? null);
+            $report = $action->handle(
+                $edition,
+                $brief,
+                $files,
+                $data['aiProvider'] ?? null,
+                'report',
+                $this->datasets(new EditionReport($edition), $scope),
+                $output,
+            );
 
             $entry = [
                 'id' => (string) Str::uuid(),
                 'edition_id' => (string) $edition->id,
                 'title' => $report['title'],
                 'sections' => $report['sections'],
+                'table' => $report['table'],
                 'format' => $format,
                 'scope' => $scope,
                 'mode' => $mode,

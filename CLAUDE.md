@@ -661,6 +661,39 @@ fois** dans `resources/views/admin/settings/_nav.blade.php` - ajouter un onglet
   encore, c'est voulu le temps de les reprendre, pas un oubli.
   Tests : `tests/Feature/AdminSettingsTest.php`.
 
+### Export personnalisé (IA) = le FORMAT décide de la forme
+
+`App\Actions\GenerateReport` rend **deux formes** : **`table`** (colonnes +
+lignes) et **`sections`** (titre + corps). Le **format demandé** choisit :
+**XLSX/CSV → tableau**, **PDF/Word → document rédigé**.
+
+- ⚠️ **Trois défauts rendaient l'export inutilisable**, tous corrigés :
+  1. l'IA ne recevait que **cinq totaux** de l'édition - « la liste des
+     communications acceptées par axe » était donc impossible, elle retombait
+     sur un bilan générique ;
+  2. elle ne savait rendre que de la **prose** : un « export Excel » contenait
+     des paragraphes, complétés par un **déversement brut de toute la base** ;
+  3. un **plan imposé** (« contexte / chiffres clés / analyse / recommandations »)
+     s'appliquait même à une simple liste.
+- **Le périmètre (`scope`) est ce que l'IA a le droit de LIRE** : ses lignes
+  réelles lui sont transmises (`datasets()`, partagé entre la génération et le
+  téléchargement), plafonnées à **600 lignes** par jeu - au-delà la troncature
+  est **annoncée à l'IA**, à qui il est demandé de la signaler. ⚠️ Ces données
+  partent chez le fournisseur configuré : c'est écrit sous le sélecteur.
+- **Le tableau produit EST le fichier** : il ouvre le classeur XLSX, il est le
+  CSV, il s'affiche dans le PDF/Word. Les jeux bruts ne sont joints **qu'à
+  défaut** de tableau.
+- ⚠️ **Un tableur sans tableau est refusé** (message explicite invitant à
+  préciser les colonnes ou à choisir PDF/Word) : livrer un .xlsx de paragraphes
+  est précisément le défaut d'origine. Les lignes sont **recadrées sur les
+  colonnes** (complétées ou coupées) - un tableau décalé est illisible dans Excel.
+- ⚠️ **`set_time_limit(300)`** avant l'appel (Rapports et Secrétariat) : depuis
+  que l'IA reçoit les lignes réelles, une liste de cent enregistrements se rédige
+  en **une à deux minutes**, et les 30 s par défaut de PHP tuaient la requête
+  sans aucun message. Le voile annonce la durée et rappelle que le résultat est
+  conservé dans l'historique.
+  Tests : `tests/Feature/GenerateReportTest.php`.
+
 ### Actions IA du back-office = AJAX + voile de travail
 
 Une analyse IA dure dix à soixante secondes. Sans retour visuel, l'admin
