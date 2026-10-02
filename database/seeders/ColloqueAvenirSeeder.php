@@ -46,11 +46,17 @@ class ColloqueAvenirSeeder extends Seeder
 
     public function run(): void
     {
-        // Dates FIXES de l'événement : le colloque se tient du 27 septembre au
-        // 4 octobre 2026. (Il reste « en cours » tant qu'on est dans cette fenêtre,
-        // ce qui alimente la page « déroulement » et les sessions en direct.)
-        $start = Carbon::create(2026, 9, 27)->startOfDay();
-        $end = Carbon::create(2026, 10, 4)->startOfDay();
+        // Dates FIXES de l'événement : le colloque se tient du 2 au 8 octobre 2026
+        // (vendredi → jeudi). Il reste « en cours » tant qu'on est dans cette
+        // fenêtre, ce qui alimente la page « déroulement » et les sessions en direct.
+        //
+        // ⚠️ Tout le reste se CALE SUR `$start` par décalage en jours (plénières,
+        // programme synthétique, et jusqu'aux séances du seeder de volume, qui
+        // relit `date_start`). Déplacer le colloque = changer ces deux lignes, pas
+        // des dates écrites en dur ailleurs. Les décalages vont de J+0 à J+6 :
+        // tenir la fenêtre à 7 jours, sinon la clôture sortirait de l'édition.
+        $start = Carbon::create(2026, 10, 2)->startOfDay();
+        $end = Carbon::create(2026, 10, 8)->startOfDay();
         $deadline = Carbon::now()->subMonths(3); // clôture des soumissions (passée)
 
         $colloque = Colloque::updateOrCreate(
@@ -117,16 +123,26 @@ class ColloqueAvenirSeeder extends Seeder
                                 ['type' => 'break', 'start' => '12:30', 'end' => '14:00', 'label' => 'Pause déjeuner', 'highlight' => false],
                                 ['type' => 'atelier', 'start' => '14:00', 'end' => '17:00', 'label' => 'Communications en ateliers', 'highlight' => false],
                             ]],
+                            ['date' => (clone $start)->addDays(1)->toDateString(), 'heading' => 'Journée d’ateliers', 'rows' => [
+                                ['type' => 'atelier', 'start' => '08:30', 'end' => '11:30', 'label' => 'Communications en ateliers', 'highlight' => false],
+                                ['type' => 'break', 'start' => '12:30', 'end' => '14:00', 'label' => 'Pause déjeuner', 'highlight' => false],
+                                ['type' => 'atelier', 'start' => '14:00', 'end' => '17:00', 'label' => 'Communications en ateliers (dont séances à distance)', 'highlight' => false],
+                            ]],
+                            ['date' => (clone $start)->addDays(2)->toDateString(), 'heading' => 'Matin', 'rows' => [
+                                ['type' => 'atelier', 'start' => '08:30', 'end' => '11:30', 'label' => 'Communications en ateliers', 'highlight' => false],
+                            ]],
                             ['date' => (clone $start)->addDays(3)->toDateString(), 'heading' => 'Matin', 'rows' => [
-                                ['type' => 'plenary', 'start' => '08:00', 'end' => '10:00', 'label' => 'Table ronde', 'highlight' => true],
+                                ['type' => 'plenary', 'start' => '08:00', 'end' => '10:00', 'label' => 'Table ronde (diffusée en ligne)', 'highlight' => true],
                                 ['type' => 'break', 'start' => '10:00', 'end' => '10:30', 'label' => 'Pause-café', 'highlight' => false],
-                                ['type' => 'atelier', 'start' => '10:30', 'end' => '12:30', 'label' => 'Communications en ateliers', 'highlight' => false],
+                                ['type' => 'atelier', 'start' => '14:00', 'end' => '17:00', 'label' => 'Communications en ateliers', 'highlight' => false],
                             ]],
                             ['date' => (clone $start)->addDays(4)->toDateString(), 'heading' => 'Après-midi', 'rows' => [
                                 ['type' => 'other', 'start' => '14:00', 'end' => '17:00', 'label' => 'Formation', 'highlight' => true],
                             ]],
-                            ['date' => (clone $start)->addDays(5)->toDateString(), 'heading' => 'Clôture', 'rows' => [
-                                ['type' => 'atelier', 'start' => '08:30', 'end' => '10:30', 'label' => 'Communications en ateliers', 'highlight' => false],
+                            ['date' => (clone $start)->addDays(5)->toDateString(), 'heading' => 'Matin', 'rows' => [
+                                ['type' => 'atelier', 'start' => '08:30', 'end' => '11:30', 'label' => 'Communications en ateliers', 'highlight' => false],
+                            ]],
+                            ['date' => (clone $start)->addDays(6)->toDateString(), 'heading' => 'Clôture', 'rows' => [
                                 ['type' => 'plenary', 'start' => '11:00', 'end' => '12:30', 'label' => 'Cérémonie de clôture', 'highlight' => true],
                             ]],
                         ],
@@ -179,8 +195,10 @@ class ColloqueAvenirSeeder extends Seeder
             $mod = $moderators[$i % 2];
             $rap = $rapporteurs[$i % 2];
 
-            // La 1re session est EN DIRECT maintenant (test visio / Q&A) ; les
-            // autres sont des séances de démonstration.
+            // Les trois états d'une visio sont représentés, pour qu'on puisse les
+            // voir sans attendre : la 1re séance est EN DIRECT, la 2e est TERMINÉE
+            // avec un replay, les autres sont PROGRAMMÉES.
+            $recording = null;
             if ($i === 0) {
                 // Séance en direct dans un amphi dédié : n'entre pas en conflit de
                 // salle avec les ateliers de volume (qui occupent « Salle 1 » à
@@ -189,6 +207,15 @@ class ColloqueAvenirSeeder extends Seeder
                 $sEnd = Carbon::now()->addMinutes(90);
                 $meetingStatus = 'live';
                 $room = 'Auditorium';
+            } elseif ($i === 1) {
+                // ⚠️ Calée sur l'HORLOGE, comme la séance en direct : une séance
+                // « terminée » posée à une date fixe se retrouverait annoncée
+                // terminée alors qu'elle n'a pas eu lieu.
+                $sStart = Carbon::now()->subHours(3);
+                $sEnd = Carbon::now()->subMinutes(90);
+                $meetingStatus = 'ended';
+                $room = 'Auditorium B';
+                $recording = 'https://www.youtube.com/watch?v=aqz-KE-bpKQ';
             } else {
                 // Créneau 11:30-12:30, laissé libre par les ateliers de volume (matin
                 // 08:30-11:30, après-midi 14:00-17:00), AVANT la pause déjeuner
@@ -210,7 +237,13 @@ class ColloqueAvenirSeeder extends Seeder
                     'session_day' => $sStart->toDateString(),
                     'starts_at' => $sStart,
                     'ends_at' => $sEnd,
+                    // ⚠️ Fournisseur explicite : `meetings.default` vaut « livekit »,
+                    // sans identifiants d'API en développement. Jitsi public ouvre
+                    // une vraie salle sans rien configurer.
+                    'meeting_provider' => 'jitsi',
                     'meeting_status' => $meetingStatus,
+                    'meeting_visibility' => 'participants',
+                    'recording_url' => $recording,
                     'moderator_name' => $mod->name,
                     'moderator_email' => $mod->email,
                     'rapporteur_name' => $rap->name,
@@ -437,24 +470,29 @@ class ColloqueAvenirSeeder extends Seeder
      * Sessions plénières (exclusives) de l'édition, dans le « Grand amphithéâtre ».
      * Placées hors des fenêtres des ateliers (matin 08:30-11:30, après-midi
      * 14:00-17:00) pour que l'exclusivité des plénières soit respectée :
-     *   - inauguration : dimanche 27/09 matin (avant les ateliers de l'après-midi) ;
-     *   - table ronde : mercredi 30/09 de 8h à 10h ;
-     *   - formation : jeudi 01/10 de 14h à 17h ;
-     *   - clôture : vendredi 02/10 en fin de matinée.
+     *   - inauguration : vendredi 02/10 matin (avant les ateliers de l'après-midi) ;
+     *   - table ronde : lundi 05/10 de 8h à 10h ;
+     *   - formation : mardi 06/10 de 14h à 17h ;
+     *   - clôture : jeudi 08/10 en fin de matinée - DERNIER jour de l'édition,
+     *     d'où l'absence de bloc d'ateliers ce matin-là (cf. le seeder de volume).
+     *
+     * ⚠️ Les cérémonies sont diffusées en visio **publique** : c'est le seul
+     * endroit du jeu de démonstration où `MeetingVisibility::Public` est exercé
+     * (un visiteur non inscrit peut suivre l'ouverture, pas un atelier).
      *
      * @param  list<User>  $moderators
      */
     private function buildPlenaries(Edition $edition, array $moderators, Carbon $start): void
     {
-        // [libellé, décalage en jours, h début, min début, h fin, min fin, animateur]
+        // [libellé, décalage en jours, h début, min début, h fin, min fin, animateur, visio, visibilité]
         $plenaries = [
-            ['Séance inaugurale', 0, 9, 0, 10, 30, 'Comité d’organisation'],
-            ['Table ronde : universités africaines et développement durable', 3, 8, 0, 10, 0, $moderators[0]->name],
-            ['Formation : méthodologie de la recherche et valorisation scientifique', 4, 14, 0, 17, 0, 'Équipe de formation'],
-            ['Séance de clôture et recommandations', 5, 11, 0, 12, 30, 'Comité scientifique'],
+            ['Séance inaugurale', 0, 9, 0, 10, 30, 'Comité d’organisation', 'scheduled', 'public'],
+            ['Table ronde : universités africaines et développement durable', 3, 8, 0, 10, 0, $moderators[0]->name, 'scheduled', 'public'],
+            ['Formation : méthodologie de la recherche et valorisation scientifique', 4, 14, 0, 17, 0, 'Équipe de formation', 'scheduled', 'participants'],
+            ['Séance de clôture et recommandations', 6, 11, 0, 12, 30, 'Comité scientifique', 'scheduled', 'public'],
         ];
 
-        foreach ($plenaries as [$label, $day, $sh, $sm, $eh, $em, $animator]) {
+        foreach ($plenaries as [$label, $day, $sh, $sm, $eh, $em, $animator, $meeting, $visibility]) {
             $begin = (clone $start)->addDays($day)->setTime($sh, $sm);
             $finish = (clone $start)->addDays($day)->setTime($eh, $em);
 
@@ -467,7 +505,12 @@ class ColloqueAvenirSeeder extends Seeder
                     'session_day' => $begin->toDateString(),
                     'starts_at' => $begin,
                     'ends_at' => $finish,
-                    'meeting_status' => 'scheduled',
+                    // ⚠️ Fournisseur explicite : `meetings.default` vaut « livekit »,
+                    // qui sans identifiants d'API n'ouvre aucune salle. Jitsi public
+                    // marche sans configuration - une démo doit s'ouvrir vraiment.
+                    'meeting_provider' => 'jitsi',
+                    'meeting_status' => $meeting,
+                    'meeting_visibility' => $visibility,
                     'moderator_name' => $animator,
                 ]
             );

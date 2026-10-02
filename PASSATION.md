@@ -62,7 +62,7 @@ npm install && npm run build
 ### Comptes & données de démo (seeders)
 - **Back-office** : https://geves.test/admin/connexion → `admin@univkara.tg` / `password` (à changer en prod).
 - **Page publique de démo** : https://geves.test/colloque/avenir-durable-2025.
-- Seeders : `RolesAndAdminSeeder` (rôles `administrator`/`editor` + permission `manage_colloques` + admin), puis **un seul** colloque de démo à l'échelle réelle - `ColloqueAvenirSeeder` (colloque + édition ouverte `avenir-durable-2025`, **27 sept - 4 oct 2026**) + `ColloqueAvenirVolumeSeeder` (200 communications). Les anciens seeders de colloques de démo (Showcase, Live, DemoColloque, DemoScenario, DemoStaff) ont été **supprimés**.
+- Seeders : `RolesAndAdminSeeder` (rôles `administrator`/`editor` + permission `manage_colloques` + admin), puis **un seul** colloque de démo à l'échelle réelle - `ColloqueAvenirSeeder` (colloque + édition ouverte `avenir-durable-2025`, **2 → 8 octobre 2026**) + `ColloqueAvenirVolumeSeeder` (200 communications). Les anciens seeders de colloques de démo (Showcase, Live, DemoColloque, DemoScenario, DemoStaff) ont été **supprimés**.
 
 ### Lancer les tests & la qualité
 ```bash

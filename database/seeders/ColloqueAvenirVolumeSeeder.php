@@ -268,11 +268,14 @@ class ColloqueAvenirVolumeSeeder extends Seeder
      * Séances d'accueil des communications : 6 ateliers (une salle chacun, en
      * parallèle) sur une série de blocs matin/après-midi. Les blocs sont calés
      * HORS des fenêtres des plénières (cf. {@see ColloqueAvenirSeeder::buildPlenaries()} :
-     * inauguration dim. matin, table ronde mer. matin, formation jeu. après-midi,
-     * clôture ven.), afin que l'exclusivité des plénières soit respectée et
-     * qu'aucun conflit de salle n'apparaisse. Sept blocs × 6 ateliers = 42 séances
-     * de 3 h : largement assez de créneaux de 30 min pour les communications
-     * acceptées.
+     * inauguration ven. 02/10 matin, table ronde lun. 05/10 matin, formation
+     * mar. 06/10 après-midi, clôture jeu. 08/10 matin), afin que l'exclusivité des
+     * plénières soit respectée et qu'aucun conflit de salle n'apparaisse. Sept
+     * blocs × 6 ateliers = 42 séances de 3 h : largement assez de créneaux de
+     * 30 min pour les communications acceptées.
+     *
+     * Deux de ces blocs se tiennent **à distance** (visio programmée) : c'est là
+     * que se trouve le volume de créneaux en visioconférence.
      *
      * @param  Collection<int, Atelier>  $ateliers
      * @return Collection<int, EventSession>
@@ -282,19 +285,22 @@ class ColloqueAvenirVolumeSeeder extends Seeder
         $start = $edition->date_start ? Carbon::parse($edition->date_start) : Carbon::now()->startOfDay();
         $sessions = collect();
 
-        // [décalage en jours, h début, min début, h fin, min fin]
+        // [décalage en jours, h début, min début, h fin, min fin, visio]
+        // ⚠️ Un bloc par jour au moins : l'édition court du 2 au 8 octobre, et un
+        // jour sans rien au milieu du programme se lit comme un trou de données.
+        // Le dernier jour (J+6) n'en porte pas : c'est la matinée de clôture.
         $blocks = [
-            [0, 14, 0, 17, 0],  // dim. 27/09 : après-midi (matin = inauguration)
-            [1, 8, 30, 11, 30], // lun. 28/09 : matin
-            [1, 14, 0, 17, 0],  // lun. 28/09 : après-midi
-            [2, 8, 30, 11, 30], // mar. 29/09 : matin
-            [2, 14, 0, 17, 0],  // mar. 29/09 : après-midi
-            [3, 14, 0, 17, 0],  // mer. 30/09 : après-midi (matin = table ronde)
-            [4, 8, 30, 11, 30], // jeu. 01/10 : matin (après-midi = formation)
+            [0, 14, 0, 17, 0, false],  // ven. 02/10 : après-midi (matin = inauguration)
+            [1, 8, 30, 11, 30, false], // sam. 03/10 : matin
+            [1, 14, 0, 17, 0, true],   // sam. 03/10 : après-midi - séances à distance
+            [2, 8, 30, 11, 30, false], // dim. 04/10 : matin
+            [3, 14, 0, 17, 0, true],   // lun. 05/10 : après-midi (matin = table ronde)
+            [4, 8, 30, 11, 30, false], // mar. 06/10 : matin (après-midi = formation)
+            [5, 8, 30, 11, 30, false], // mer. 07/10 : matin
         ];
 
         foreach ($ateliers as $a => $atelier) {
-            foreach ($blocks as $b => [$day, $sh, $sm, $eh, $em]) {
+            foreach ($blocks as $b => [$day, $sh, $sm, $eh, $em, $visio]) {
                 $begin = (clone $start)->addDays($day)->setTime($sh, $sm);
                 $finish = (clone $start)->addDays($day)->setTime($eh, $em);
 
@@ -311,6 +317,13 @@ class ColloqueAvenirVolumeSeeder extends Seeder
                         'ends_at' => $finish,
                         'room' => 'Salle '.($a + 1),
                         'ordre' => $a * 10 + $b,
+                        // Deux blocs entiers se tiennent à distance : ce sont eux qui
+                        // portent le VOLUME de créneaux en visio (les communications
+                        // y sont planifiées comme ailleurs, cf. schedule()). Jitsi en
+                        // dur, « livekit » par défaut n'ayant pas d'identifiants ici.
+                        'meeting_provider' => $visio ? 'jitsi' : null,
+                        'meeting_status' => $visio ? 'scheduled' : 'none',
+                        'meeting_visibility' => 'participants',
                     ]
                 ));
             }
