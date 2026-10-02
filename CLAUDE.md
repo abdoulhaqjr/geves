@@ -657,14 +657,25 @@ deux raisons distinctes.
    logo téléversé (`/storage/…`) retombait dans la branche « texte » et
    disparaissait. `LayoutSanitizer::src()` accepte désormais les chemins servis
    par le site, et refuse `data:`.
-2. **Les polices n'étaient chargées que dans le concepteur.** Il tire Jost et
+2. **Les polices n'étaient chargées que dans le concepteur.** Il tirait Jost et
    Playfair Display de Google Fonts ; ni l'aperçu, ni l'attestation délivrée, ni
    le PDF ne le faisaient - la maquette ressortait en police système, avec
    d'autres métriques et du texte qui ne tenait plus dans sa boîte. D'où le
    partial **`documents/_fonts.blade.php`**, à inclure **partout** où une mise en
-   page du concepteur est rendue. ⚠️ **Sauf dompdf** (`pdf/attestation-template`),
-   qui ne va pas chercher une feuille de styles distante : ce PDF-là rend la pile
-   de repli. L'impression depuis la page de l'attestation, elle, est fidèle.
+   page du concepteur est rendue (aperçu, attestation, planche de badges, carte
+   du participant, PDF).
+   - Les fichiers sont **hébergés par le site** (`public/fonts`), pas tirés d'un
+     CDN : ⚠️ **dompdf ne va chercher aucune feuille de styles distante**, et
+     c'est lui qui produit le PDF téléchargé. Deux formats pour la même raison :
+     **woff2** (navigateurs) et **ttf** (dompdf, qui ne lit pas le woff2).
+   - `@include('documents._fonts', ['pdf' => true])` n'émet que des **chemins de
+     fichier absolus**, que dompdf résout sur le disque (dans son `chroot`, la
+     racine du projet).
+   - ⚠️ **`storage/fonts` doit exister et être inscriptible** : dompdf y met en
+     cache les métriques (`.ufm`) de chaque police embarquée, et son absence fait
+     tomber la génération du PDF en erreur 500.
+   - Les graisses déclarées sont **exactement** celles du concepteur : une graisse
+     absente serait synthétisée par le moteur, ce qui change encore le rendu.
    Tests : `tests/Feature/DocumentTemplateTest.php`.
 
 ### Onglets d'une page = pilules + URL

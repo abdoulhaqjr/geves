@@ -16,6 +16,7 @@
     </div>
 
     @push('head')
+        @include('documents._fonts')
         <style>@media print { .no-print { display:none !important; } body { background:#fff !important; } }</style>
     @endpush
 </x-layouts.app>

@@ -1,4 +1,8 @@
 <x-layouts.participant :title="__('Mes documents')" :subtitle="__('Badge, attestations & reçus')">
+{{-- L'aperçu du badge est une mise en page du concepteur : il lui faut ses polices. --}}
+@push('head')
+    @include('documents._fonts')
+@endpush
 <div class="account-documents">
     @if (! $edition)
         <div class="ukc-empty">
