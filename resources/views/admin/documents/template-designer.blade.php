@@ -19,7 +19,7 @@
     {{-- Identité du modèle renseignée à sa création (libellé + portée). --}}
     <div class="crumb">{{ $typeLabel }} · {{ $scope ?? 'Participant' }}</div>
     <input class="name-input" id="tplName" value="{{ $typeLabel }}">
-    <button type="button" class="btn-save" id="btnSave">Save</button>
+    <button type="button" class="btn-save" id="btnSave">Enregistrer</button>
   </header>
 
   <div class="ed-shell">
@@ -29,39 +29,39 @@
         IA
       </button>
 
-      <button type="button" data-panel="templates" title="Templates">
+      <button type="button" data-panel="templates" title="Modèles">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h10v2H4v-2z"/></svg>
-        Templates
+        Modèles
       </button>
-      <button type="button" data-panel="uploads" title="Uploads">
+      <button type="button" data-panel="uploads" title="Images">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-        Uploads
+        Images
       </button>
-      <button type="button" data-panel="elements" title="Elements">
+      <button type="button" data-panel="elements" title="Éléments">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5 2 7L12 17l-6.5 3.5 2-7L2 9h7z"/></svg>
         Elements
       </button>
-      <button type="button" data-panel="text" title="Text">
+      <button type="button" data-panel="text" title="Texte">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 4v3h5.5v12h3V7H19V4H5z"/></svg>
         Text
       </button>
-      <button type="button" data-panel="attributes" title="Attributes">
+      <button type="button" data-panel="attributes" title="Champs">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
-        Attributes
+        Champs
       </button>
-      <button type="button" data-panel="qrcodes" title="QR Codes">
+      <button type="button" data-panel="qrcodes" title="QR codes">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm8-2h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5zm13-2h3v2h-3v-2zm-3 3h2v2h-2v-3h-2v2h2v1zm3 3h3v3h-3v-3zm-3 0h2v2h-2v-2z"/></svg>
         QR Codes
       </button>
-      <button type="button" class="active" data-panel="layers" title="Layers">
+      <button type="button" class="active" data-panel="layers" title="Calques">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9L2 7v2l10 5 10-5V7l-10 4zm0 4L2 11v2l10 5 10-5v-2l-10 4z"/></svg>
-        Layers
+        Calques
       </button>
     </nav>
 
     <aside class="ed-panel">
       <div class="panel-view" id="panel-templates">
-        <div class="ed-panel-head">Modeles de design</div>
+        <div class="ed-panel-head">Modèles de départ</div>
         <div class="ed-panel-body">
           <p class="ly-meta" style="margin-bottom:12px;">Bases inspirees des attestations CSIUK / For-VaRRITO. Choisissez un design, puis personnalisez les elements.</p>
           <div class="ed-panel-section">Colloque CSIUK (UK · Parakou)</div>
@@ -74,7 +74,7 @@
             Titre + type de communication · theme
           </div>
           <div class="ed-tpl-card" data-tpl="moderation">
-            <div class="mini">MODERATION</div>
+            <div class="mini">MODÉRATION</div>
             Session moderee · theme colloque
           </div>
           <div class="ed-tpl-card" data-tpl="formation-csiuk">
@@ -92,21 +92,21 @@
       </div>
 
       <div class="panel-view" id="panel-uploads">
-        <div class="ed-panel-head">Uploads</div>
+        <div class="ed-panel-head">Images</div>
         <div class="ed-panel-body">
-          <div class="ed-upload" id="btnUploadImg">Upload Image<br><span style="font-size:11px;">SVG, PNG, JPG · max 2 Mo</span></div>
+          <div class="ed-upload" id="btnUploadImg">Téléverser une image<br><span style="font-size:11px;">SVG, PNG, JPG · max 2 Mo</span></div>
           <input type="file" id="fileUpload" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none;">
-          <div class="ed-panel-section">Images ajoutees</div>
+          <div class="ed-panel-section">Images ajoutées</div>
           <div class="ed-grid-2" id="uploadList">
             <div class="ed-thumb" data-logo="uk">UK · Univ. Kara</div>
             <div class="ed-thumb" data-logo="up">Univ. Parakou</div>
           </div>
-          <p class="ly-meta" style="margin-top:10px;">Cliquez une image pour l'ajouter sur le canvas. L'arriere-plan se change via <strong>Add Background Image</strong>.</p>
+          <p class="ly-meta" style="margin-top:10px;">Cliquez une image pour l’ajouter sur la page. Le fond se change avec <strong>Image de fond</strong>.</p>
         </div>
       </div>
 
       <div class="panel-view" id="panel-elements">
-        <div class="ed-panel-head">Elements</div>
+        <div class="ed-panel-head">Éléments</div>
         <div class="ed-panel-body">
           <div class="ed-panel-section">Lignes</div>
           <div class="ed-grid-2">
@@ -124,21 +124,21 @@
       </div>
 
       <div class="panel-view" id="panel-text">
-        <div class="ed-panel-head">Text</div>
+        <div class="ed-panel-head">Texte</div>
         <div class="ed-panel-body">
-          <button type="button" class="ed-tool-btn" data-add="textbox">+ Add text box</button>
-          <div class="ed-panel-section">Text Styles</div>
-          <button type="button" class="ed-tool-btn" data-add="heading" style="font-size:18px;font-family:Georgia,serif;">Add heading</button>
-          <button type="button" class="ed-tool-btn" data-add="subheading">Add subheading</button>
-          <button type="button" class="ed-tool-btn" data-add="normal">Add normal text</button>
-          <p class="ly-meta" style="margin-top:12px;">Double-clic sur un texte du canvas pour l'editer. <span class="kbd">Enter</span> valide, <span class="kbd">Esc</span> annule.</p>
+          <button type="button" class="ed-tool-btn" data-add="textbox">+ Zone de texte</button>
+          <div class="ed-panel-section">Styles de texte</div>
+          <button type="button" class="ed-tool-btn" data-add="heading" style="font-size:18px;font-family:Georgia,serif;">Titre</button>
+          <button type="button" class="ed-tool-btn" data-add="subheading">Sous-titre</button>
+          <button type="button" class="ed-tool-btn" data-add="normal">Paragraphe</button>
+          <p class="ly-meta" style="margin-top:12px;">Double-cliquez un texte de la page pour le modifier. <span class="kbd">Enter</span> valide, <span class="kbd">Esc</span> annule.</p>
         </div>
       </div>
 
       <div class="panel-view" id="panel-attributes">
-        <div class="ed-panel-head">Attributes (champs)</div>
+        <div class="ed-panel-head">Champs du document</div>
         <div class="ed-panel-body">
-          <p style="font-size:12px;color:var(--ukc-muted);margin-bottom:10px;">Cliquer pour ajouter sur le canvas</p>
+          <p style="font-size:12px;color:var(--ukc-muted);margin-bottom:10px;">Cliquez un champ pour le poser sur la page. Il sera remplacé par la vraie valeur sur le document délivré.</p>
           <div class="ed-attr" data-attr="[recipient.name]">[recipient.name]</div>
           <div class="ed-attr" data-attr="[recipient.institution]">[recipient.institution]</div>
           <div class="ed-attr" data-attr="[certificate.uuid]">[certificate.uuid]</div>
@@ -155,18 +155,18 @@
       </div>
 
       <div class="panel-view" id="panel-qrcodes">
-        <div class="ed-panel-head">QR Codes</div>
+        <div class="ed-panel-head">QR codes</div>
         <div class="ed-panel-body">
-          <button type="button" class="ed-tool-btn" data-add="qr-verify">+ Verification Page</button>
+          <button type="button" class="ed-tool-btn" data-add="qr-verify">+ Page de vérification</button>
           <p class="ly-meta">Redirige vers la page publique de verification de l'attestation.</p>
-          <button type="button" class="ed-tool-btn" data-add="qr-custom">+ Custom URL</button>
-          <p class="ly-meta">Redirige vers une URL personnalisee.</p>
+          <button type="button" class="ed-tool-btn" data-add="qr-custom">+ Adresse personnalisée</button>
+          <p class="ly-meta">Pointe vers l’adresse de votre choix.</p>
         </div>
       </div>
 
       <div class="panel-view active" id="panel-layers">
         <div class="ed-panel-head">
-          <span>Layers</span>
+          <span>Calques</span>
           <span style="font-size:11px;font-weight:600;color:var(--ukc-light);" id="lyCount">0</span>
         </div>
         <div class="ed-panel-body">
@@ -191,16 +191,16 @@
               Fusion
               <select id="lyBlend">
                 <option value="normal">Normal</option>
-                <option value="multiply">Multiply</option>
-                <option value="screen">Screen</option>
-                <option value="overlay">Overlay</option>
-                <option value="darken">Darken</option>
-                <option value="lighten">Lighten</option>
-                <option value="color-dodge">Color dodge</option>
-                <option value="color-burn">Color burn</option>
-                <option value="hard-light">Hard light</option>
-                <option value="soft-light">Soft light</option>
-                <option value="difference">Difference</option>
+                <option value="multiply">Produit</option>
+                <option value="screen">Superposition</option>
+                <option value="overlay">Incrustation</option>
+                <option value="darken">Obscurcir</option>
+                <option value="lighten">Éclaircir</option>
+                <option value="color-dodge">Densité couleur -</option>
+                <option value="color-burn">Densité couleur +</option>
+                <option value="hard-light">Lumière crue</option>
+                <option value="soft-light">Lumière tamisée</option>
+                <option value="difference">Différence</option>
                 <option value="exclusion">Exclusion</option>
               </select>
             </label>
@@ -246,11 +246,11 @@
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/></svg>
         </button>
         <span class="sep" style="width:1px;height:22px;background:var(--ukc-border);margin:0 4px;"></span>
-        <button type="button" class="chip" id="btnBg">Add Background Image</button>
-        <span class="label">Paper Size:</span>
+        <button type="button" class="chip" id="btnBg">Image de fond</button>
+        <span class="label">Format :</span>
         <button type="button" class="chip active" data-paper="landscape">A4 Paysage</button>
         <button type="button" class="chip" data-paper="portrait">A4 Portrait</button>
-        <button type="button" class="chip" data-paper="letter">US Letter</button>
+        <button type="button" class="chip" data-paper="letter">Lettre US</button>
         <span class="spacer"></span>
         <div class="ed-zoom-bar">
           <button type="button" id="zoomOut" title="Zoom -">−</button>
@@ -260,7 +260,7 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 3H4v4M16 3h4v4M8 21H4v-4M16 21h4v-4"/></svg>
           </button>
         </div>
-        <button type="button" class="btn-preview" id="btnPreview">Preview</button>
+        <button type="button" class="btn-preview" id="btnPreview">Aperçu</button>
       </div>
       <div class="ed-stylebar" id="styleBar">
         <select id="fontFamily">
@@ -271,11 +271,11 @@
           <option value="Lato, sans-serif">Lato</option>
         </select>
         <select id="fontWeight">
-          <option value="400">Regular</option>
-          <option value="500">Medium</option>
-          <option value="600">SemiBold</option>
-          <option value="700">Bold</option>
-          <option value="800">ExtraBold</option>
+          <option value="400">Normal</option>
+          <option value="500">Moyen</option>
+          <option value="600">Demi-gras</option>
+          <option value="700">Gras</option>
+          <option value="800">Extra-gras</option>
         </select>
         <button type="button" class="sbtn" id="fontSizeMinus" title="Taille -">−</button>
         <input type="number" id="fontSize" value="14" min="8" max="72" style="width:48px;">
@@ -338,7 +338,7 @@
   <div class="ed-modal-bg" id="bgModal">
     <div class="box">
       <div class="box-head">
-        <span>Arriere-plan de l'attestation</span>
+        <span>Fond de l’attestation</span>
         <button type="button" id="bgModalClose" style="font-size:22px;color:var(--ukc-muted);">×</button>
       </div>
       <div class="box-body">
@@ -354,7 +354,7 @@
         <div class="ed-panel-section">Importer une image</div>
         <div class="import-zone" id="bgImportZone">
           Cliquez ou deposez une image (PNG, JPG, SVG)<br>
-          <span style="font-size:11px;">Sera etiree en fond de page</span>
+          <span style="font-size:11px;">Elle sera étirée sur toute la page</span>
         </div>
         <input type="file" id="bgFileInput" accept="image/*" style="display:none;">
       </div>
@@ -378,7 +378,7 @@
     </div>
   </div>
 
-  <div class="ed-toast" id="toast">Enregistre</div>
+  <div class="ed-toast" id="toast">Enregistré</div>
 
 </body>
 </html>

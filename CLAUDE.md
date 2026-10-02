@@ -693,6 +693,20 @@ deux raisons distinctes.
    message de confirmation citait le nouveau nom. Il l'est désormais, et un nom
    **vide n'écrase pas** celui déjà enregistré.
    Tests : `tests/Feature/DocumentDesignerTest.php`.
+5. ⚠️ **« Des caractères ne s'affichent pas » = la source n'en avait pas.** Les
+   modèles livrés par le concepteur étaient rédigés en **ASCII** : ni accents ni
+   apostrophes (« Decernee a », « l Universite », « la presente attestation lui
+   est delivree », « comite d organisation »). Rien n'était filtré à l'affichage -
+   le texte d'origine était ainsi, et les attestations délivrées aussi. Source
+   corrigée, **et migration `2026_10_02_000100_fix_document_template_typography`**
+   pour les modèles **déjà enregistrés**, qui gardaient l'ancien texte (elle ne
+   réécrit QUE ces phrases exactes : un texte personnalisé par un gestionnaire ne
+   doit pas changer sous ses pieds). En français, **les capitales s'accentuent**
+   (UNIVERSITÉ, MODÉRATION).
+6. **Le concepteur parle français.** Son interface était un mélange d'anglais
+   (« Save », « Layers », « Add heading », « Paper Size ») et de français sans
+   accents, alors que tout le back-office est en français. Libellés, infobulles
+   et messages uniformisés.
 
 ### Onglets d'une page = pilules + URL
 

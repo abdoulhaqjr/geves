@@ -309,6 +309,13 @@ class TemplateDesignerController extends Controller
             'role' => 'Communicant',
             'institution' => 'Université de Kara',
             'type' => self::ATTESTATION_TYPES[$type] ?? 'participation',
+            // ⚠️ Valeurs que la palette sait nommer ([edition.theme], [edition.dates]) :
+            // sans elles, l'aperçu laissait un blanc après « Thème du colloque : »,
+            // ce qui ressemblait à un jeton cassé.
+            'theme' => $edition?->theme ?: 'Innover pour un avenir durable',
+            'dates' => $edition?->dateRangeLabel() ?: 'du 06 au 10 octobre 2026',
+            'signatory' => 'Pr. Padabo Kadouza',
+            'signatory_role' => 'Président du comité d’organisation',
             'date' => now()->format('d/m/Y'),
             'ref' => 'UK-2026-001',
             'verify_url' => url('/verifier/exemple'),
