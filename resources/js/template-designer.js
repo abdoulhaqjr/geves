@@ -14,12 +14,22 @@
   var historyIndex = -1;
   var historyLock = false;
   var SNAP = 6;
-  var DEFAULT_QR_URL = 'https://univkara.tg/attestation-verify';
+  // ⚠️ Le QR de vérification encodait une adresse FIXE et sans identifiant
+  // (« /attestation-verify ») : scanner deux attestations différentes menait au
+  // même endroit, qui ne vérifiait rien. Il encode désormais le JETON, que le
+  // rendu remplace par l'adresse de l'attestation délivrée.
+  var DEFAULT_QR_URL = '{verify_url}';
   var zoomLevel = 1;
 
   function qrImageUrl(data, size) {
     size = size || 120;
-    return 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&margin=4&data=' + encodeURIComponent(data || DEFAULT_QR_URL);
+    var value = data || DEFAULT_QR_URL;
+    // Un jeton ne se scanne pas : l'aperçu montre l'adresse d'exemple, pour que
+    // l'image ressemble à celle du document délivré.
+    if (value === DEFAULT_QR_URL) {
+      value = ((window.UKC_EDITOR || {}).vars || {})['verify_url'] || value;
+    }
+    return 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&margin=4&data=' + encodeURIComponent(value);
   }
 
   function setQrContent(el, url) {
@@ -118,6 +128,9 @@
         hidden: el.dataset.hidden,
         group: el.dataset.group || '',
         blend: el.dataset.blend || 'normal',
+        // ⚠️ Sans elle, l'adresse encodée était perdue à la réouverture : le QR
+        // gardait l'image d'alors et le jeton ne revenait pas.
+        qrUrl: el.dataset.qrUrl || '',
         style: {
           left: el.style.left,
           top: el.style.top,
@@ -172,6 +185,7 @@
       el.dataset.group = s.group || '';
       el.dataset.blend = s.blend || 'normal';
       el.innerHTML = s.html;
+      if (s.qrUrl) el.dataset.qrUrl = s.qrUrl;
       Object.keys(s.style || {}).forEach(function (k) {
         if (s.style[k]) el.style[k] = s.style[k];
       });
@@ -181,6 +195,9 @@
         el.appendChild(rz);
       }
       page.appendChild(el);
+      // Le QR est redessiné à partir de son adresse : l'image enregistrée peut
+      // dater d'une autre adresse, et c'est elle qu'on verrait sinon.
+      if (el.classList.contains('qr')) setQrContent(el, el.dataset.qrUrl || DEFAULT_QR_URL);
       bindEl(el);
     });
     selected = null;
@@ -465,7 +482,7 @@
         var cur = el.dataset.qrUrl || DEFAULT_QR_URL;
         openInputModal({
           title: 'Adresse du QR code',
-          hint: 'Lien ouvert lors du scan de ce QR code.',
+          hint: 'Lien ouvert au scan. Laissez {verify_url} pour que chaque attestation pointe vers la sienne.',
           value: cur,
           placeholder: 'https://...',
           onOk: function (url) {
@@ -1260,7 +1277,7 @@
       } else if (kind === 'qr-custom') {
         openInputModal({
           title: 'QR code personnalisé',
-          hint: 'Indiquez l URL qui sera encodee dans le QR code.',
+          hint: 'Adresse encodée dans ce QR code, la même pour toutes les attestations.',
           value: 'https://',
           placeholder: 'https://...',
           onOk: function (url) {

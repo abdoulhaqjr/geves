@@ -997,7 +997,12 @@ body.ukc-overlay-open .ukc-cb-root { opacity: 0; transform: translateY(10px) sca
    L'adresse que porte le QR code et que le bénéficiaire partage : le document
    délivré, puis qui l'a délivré, ce qu'il certifie et comment le vérifier.
    ========================================================================== */
-.ukc-cred { background: var(--ukc-bg); min-height: 100vh; padding-bottom: 48px; }
+.ukc-cred {
+  min-height: 100vh; padding-bottom: 56px;
+  background:
+    radial-gradient(900px 420px at 50% -8%, rgba(34, 62, 164, .09), transparent 62%),
+    var(--ukc-bg);
+}
 
 .ukc-cred-top {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
@@ -1022,8 +1027,23 @@ body.ukc-overlay-open .ukc-cb-root { opacity: 0; transform: translateY(10px) sca
   font-size: .9rem; font-weight: 600;
 }
 
+/* ---- Qui, quoi, par qui ---- */
+.ukc-cred-head {
+  max-width: 1120px; margin: 0 auto; padding: clamp(24px, 4vw, 40px) clamp(16px, 4vw, 40px) 0;
+  text-align: center;
+}
+.ukc-cred-eyebrow {
+  font-size: .74rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ukc-blue);
+}
+.ukc-cred-name {
+  font-size: clamp(1.6rem, 3.4vw, 2.3rem); font-weight: 800; line-height: 1.15;
+  margin-top: 6px; letter-spacing: -.01em;
+}
+.ukc-cred-by { color: var(--ukc-muted); margin-top: 8px; font-size: .95rem; }
+
 /* ---- Le document ---- */
-.ukc-cred-stage { padding: clamp(20px, 4vw, 40px) clamp(16px, 4vw, 40px) 0; }
+.ukc-cred-stage { padding: clamp(18px, 2.5vw, 26px) clamp(16px, 4vw, 40px) 0; }
 .ukc-cred-doc {
   /* Le cadre épouse le document, pas l'inverse : sinon une bande blanche
      reste à côté d'une mise en page plus étroite que la colonne. */
@@ -1042,13 +1062,41 @@ body.ukc-overlay-open .ukc-cb-root { opacity: 0; transform: translateY(10px) sca
 .ukc-cred-uuid { font-family: var(--ukc-mono); color: var(--ukc-blue); word-break: break-all; }
 .ukc-cred-sep { margin: 0 6px; color: var(--ukc-border); }
 
+.ukc-cred-zoom {
+  position: absolute; top: 12px; right: 12px; z-index: 2;
+  display: flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(255, 255, 255, .94); color: var(--ukc-muted);
+  border: 1px solid var(--ukc-border); cursor: pointer;
+  opacity: 0; transition: opacity .2s ease;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, .12);
+}
+.ukc-cred-doc:hover .ukc-cred-zoom,
+.ukc-cred-zoom:focus-visible { opacity: 1; }
+.ukc-cred-zoom:hover { color: var(--ukc-blue); border-color: var(--ukc-blue); }
+/* Sans survol, le bouton doit rester visible : c'est là qu'il sert le plus. */
+@media (hover: none) { .ukc-cred-zoom { opacity: 1; } }
+
+.ukc-cred-zoomview {
+  position: fixed; inset: 0; z-index: 130;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(15, 23, 42, .92); overflow: auto;
+}
+.ukc-cred-zoomview[hidden] { display: none; }
+.ukc-cred-zoomview-inner { transform-origin: center center; background: #fff; }
+.ukc-cred-zoomview .ukc-cred-check-close { background: #fff; z-index: 2; }
+
 /* ---- Colonnes ---- */
 .ukc-cred-grid {
   max-width: 1120px; margin: clamp(20px, 3vw, 32px) auto 0;
   padding: 0 clamp(16px, 4vw, 40px);
   display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start;
 }
-.ukc-cred-side, .ukc-cred-main { display: grid; gap: 20px; }
+.ukc-cred-side, .ukc-cred-main { display: grid; gap: 20px; align-content: start; }
+@media (min-width: 901px) {
+  /* Les gestes restent sous la main pendant qu'on lit la colonne de droite. */
+  .ukc-cred-side { position: sticky; top: 20px; }
+}
 .ukc-cred-card { padding: 20px; }
 
 .ukc-cred-kicker {
@@ -1084,10 +1132,17 @@ body.ukc-overlay-open .ukc-cb-root { opacity: 0; transform: translateY(10px) sca
 .ukc-cred-id { font-size: .76rem; color: var(--ukc-muted); margin-top: 10px; }
 .ukc-cred-link { display: inline-block; margin-top: 8px; font-size: .8rem; color: var(--ukc-blue); font-weight: 600; }
 
-.ukc-cred-issuer { font-size: 1.35rem; font-weight: 800; margin: 8px 0 6px; }
+.ukc-cred-issuer-head { display: flex; align-items: center; gap: 12px; margin: 12px 0 10px; }
+.ukc-cred-avatar.is-issuer { background: var(--ukc-blue-dark); font-size: .85rem; }
+.ukc-cred-issuer { font-size: 1.3rem; font-weight: 800; line-height: 1.2; }
 .ukc-cred-text { color: var(--ukc-muted); line-height: 1.6; }
 
-.ukc-cred-facts { margin-top: 14px; display: grid; gap: 12px; }
+.ukc-cred-facts { margin-top: 14px; display: grid; gap: 14px; }
+@media (min-width: 1000px) {
+  .ukc-cred-main .ukc-cred-facts { grid-template-columns: 1fr 1fr; gap: 14px 28px; }
+  /* Thème et communication sont longs : ils prennent la ligne entière. */
+  .ukc-cred-main .ukc-cred-facts > div:nth-child(3) { grid-column: 1 / -1; }
+}
 .ukc-cred-facts dt {
   font-size: .72rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
   color: var(--ukc-light); margin-bottom: 2px;
@@ -1108,19 +1163,23 @@ body.ukc-overlay-open .ukc-cb-root { opacity: 0; transform: translateY(10px) sca
   position: absolute; inset: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
   padding: 24px;
-  background: rgba(15, 23, 42, .46);
+  /* Voile légèrement sombre : il détache les boutons sans effacer le document.
+     ⚠️ Pas de flou - on cachait ce qu'on venait regarder. */
+  background: rgba(15, 23, 42, .34);
   opacity: 0; visibility: hidden; transition: opacity .2s ease, visibility .2s ease;
 }
 .ukc-cred-doc:hover .ukc-cred-overlay,
 .ukc-cred-doc:focus-within .ukc-cred-overlay { opacity: 1; visibility: visible; }
 .ukc-cred-doc:hover .ukc-cred-doc-inner,
-.ukc-cred-doc:focus-within .ukc-cred-doc-inner { filter: blur(3px) grayscale(.3); }
+.ukc-cred-doc:focus-within .ukc-cred-doc-inner { filter: saturate(.75); }
 .ukc-cred-overlay .ukc-cred-action,
 .ukc-cred-overlay .ukc-cred-row { width: min(100%, 320px); }
+.ukc-cred-overlay .ukc-btn { box-shadow: 0 6px 18px rgba(15, 23, 42, .18); }
 .ukc-cred-overlay-hint {
   margin-bottom: 4px; padding: 6px 14px; border-radius: 999px;
-  background: rgba(255, 255, 255, .92); color: var(--ukc-text);
+  background: #fff; color: var(--ukc-text);
   font-size: .8rem; font-weight: 600; text-align: center;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .14);
 }
 /* Sans survol (tactile), la surimpression masquerait le document pour rien. */
 @media (hover: none) {

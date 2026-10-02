@@ -8,8 +8,10 @@
     $signatureOk = (bool) ($proof['valid'] ?? false);
     $issuer = $attestation->edition?->colloque;
     $pageUrl = route('attestation.document', $attestation->uuid);
-    $initials = collect(preg_split('/\s+/', trim((string) $attestation->recipient_name)) ?: [])
+    $monogram = fn (string $name) => collect(preg_split('/\s+/', trim($name)) ?: [])
         ->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('');
+    $initials = $monogram((string) $attestation->recipient_name);
+    $issuerInitials = $monogram((string) ($issuer?->name ?? config('app.name')));
 
     // Signaler une erreur : l'adresse officielle de l'établissement, avec l'objet
     // et l'identifiant déjà renseignés - le visiteur n'a pas à les retrouver.
@@ -58,6 +60,16 @@
             </p>
         @endif
 
+        {{-- Ce que le visiteur cherche en premier : qui, quoi, délivré par qui.
+             Le document le dit, mais en petit et en image. --}}
+        <section class="ukc-cred-head no-print">
+            <p class="ukc-cred-eyebrow">{{ $attestation->typeLabel() }}</p>
+            <h1 class="ukc-cred-name">{{ $attestation->recipient_name }}</h1>
+            @if ($issuer)
+                <p class="ukc-cred-by">{{ __('Délivré par') }} <strong>{{ $issuer->name }}</strong></p>
+            @endif
+        </section>
+
         {{-- Le document, tel qu'il a été délivré. Les gestes se posent par-dessus
              au survol (et au clavier, via :focus-within) : la colonne de gauche
              les porte aussi, pour le tactile et l'impression. --}}
@@ -68,13 +80,15 @@
                     <p class="ukc-cred-overlay-hint">{{ __('Partagez votre attestation ou vérifiez-la en un geste.') }}</p>
                     @include('attestations._actions', ['variant' => 'overlay'])
                 </div>
+                {{-- Réduit à la largeur de l'écran, le document se lit mal. --}}
+                <button type="button" class="ukc-cred-zoom no-print" data-cred-zoom
+                        title="{{ __('Voir en grand') }}" aria-label="{{ __('Voir en grand') }}">
+                    <x-ukc.icon name="search" :size="16" />
+                </button>
             </div>
             <p class="ukc-cred-caption no-print">
                 {{ __('Identifiant de l’attestation') }} :
                 <span class="ukc-cred-uuid">{{ $attestation->uuid }}</span>
-                @if ($issuer)
-                    <span class="ukc-cred-sep">·</span> {{ __('Délivré par') }} <strong>{{ $issuer->name }}</strong>
-                @endif
             </p>
         </section>
 
@@ -134,7 +148,10 @@
                 @if ($issuer)
                     <div class="ukc-card ukc-cred-card">
                         <div class="ukc-cred-kicker">{{ __('Délivré par') }}</div>
-                        <h2 class="ukc-cred-issuer">{{ $issuer->name }}</h2>
+                        <div class="ukc-cred-issuer-head">
+                            <span class="ukc-cred-avatar is-issuer">{{ $issuerInitials }}</span>
+                            <h2 class="ukc-cred-issuer">{{ $issuer->name }}</h2>
+                        </div>
                         @if (filled($issuer->description))
                             <p class="ukc-cred-text">{{ $issuer->description }}</p>
                         @endif
@@ -157,6 +174,14 @@
     </div>
 
     {{-- Résultat de la vérification, sur cette page. --}}
+    {{-- Le document en grand : sur un téléphone, réduit à la largeur de l'écran,
+         il n'est plus lisible. --}}
+    <div class="ukc-cred-zoomview no-print" id="credZoom" hidden role="dialog" aria-modal="true">
+        <button type="button" class="ukc-cred-check-close" data-cred-zoom-close aria-label="{{ __('Fermer') }}">
+            <x-ukc.icon name="close" :size="18" />
+        </button>
+        <div class="ukc-cred-zoomview-inner" data-doc-width="{{ $width }}">{!! $canvas !!}</div>
+    </div>
     <div class="ukc-cred-check no-print" id="credCheck" hidden role="dialog" aria-modal="true" aria-labelledby="credCheckTitle">
         <div class="ukc-cred-check-box">
             <button type="button" class="ukc-cred-check-close" data-cred-check-close aria-label="{{ __('Fermer') }}">
@@ -273,6 +298,26 @@
                 box.addEventListener('click', function (e) { if (e.target === box) close(); });
                 box.querySelector('[data-cred-check-close]').addEventListener('click', close);
                 document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !box.hidden) close(); });
+            })();
+
+            // Voir le document en grand, à l'échelle de l'écran.
+            (function () {
+                var view = document.getElementById('credZoom');
+                if (!view) return;
+                var inner = view.querySelector('.ukc-cred-zoomview-inner');
+                var w = parseInt(inner.dataset.docWidth, 10) || 0;
+                function fit() {
+                    if (!w) return;
+                    var scale = Math.min((window.innerWidth - 32) / w, (window.innerHeight - 96) / inner.scrollHeight);
+                    inner.style.transform = 'scale(' + Math.max(scale, .2) + ')';
+                }
+                function open() { view.hidden = false; document.body.style.overflow = 'hidden'; fit(); }
+                function close() { view.hidden = true; document.body.style.overflow = ''; }
+                document.querySelectorAll('[data-cred-zoom]').forEach(function (b) { b.addEventListener('click', open); });
+                view.querySelector('[data-cred-zoom-close]').addEventListener('click', close);
+                view.addEventListener('click', function (e) { if (e.target === view) close(); });
+                document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !view.hidden) close(); });
+                window.addEventListener('resize', function () { if (!view.hidden) fit(); });
             })();
         </script>
     @endpush

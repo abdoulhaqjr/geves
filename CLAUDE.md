@@ -778,8 +778,23 @@ Certifier/Credsverse).
   surimpression. ⚠️ Le survol n'existe pas au doigt : la colonne de gauche porte
   les mêmes actions, et la surimpression est masquée en `@media (hover: none)`.
   Un seul partial, `attestations/_actions.blade.php`, pour que les deux ne
-  divergent pas.
-  Tests : `tests/Feature/AttestationPageTest.php`.
+  divergent pas. ⚠️ **Voile légèrement sombre, sans flou** : flouter le document
+  revient à cacher ce qu'on vient regarder.
+- **Voir en grand** : réduit à la largeur d'un téléphone, un document dessiné à
+  900 px n'est plus lisible. Le bouton loupe l'ouvre à l'échelle de l'écran, et
+  il reste **visible en permanence** sans survol.
+- ⚠️ **Le QR de vérification encodait une adresse FIXE et sans identifiant**
+  (`DEFAULT_QR_URL` = « …/attestation-verify ») : scanner deux attestations
+  différentes menait au même endroit, qui ne vérifiait rien. Il encode le jeton
+  `{verify_url}`, et l'aperçu du concepteur affiche l'adresse d'exemple (un
+  jeton ne se scanne pas). Migration
+  `2026_10_02_000500_fix_document_template_qr_target` pour les modèles
+  enregistrés ; une adresse **personnalisée** (QR « Custom ») n'est pas touchée.
+  Un test de garde interdit le retour d'une adresse codée en dur.
+- ⚠️ **L'instantané de l'éditeur ne retenait pas l'adresse du QR** (`qrUrl`) : à
+  la réouverture le jeton était perdu et l'image gardait l'adresse d'alors. Elle
+  fait désormais l'aller-retour, et le QR est redessiné à la restauration.
+  Tests : `tests/Feature/AttestationPageTest.php`, `tests/Feature/DocumentDesignerTest.php`.
 ### Onglets d'une page = pilules + URL
 
 Toutes les sous-navigations du back-office sont en **pilules**

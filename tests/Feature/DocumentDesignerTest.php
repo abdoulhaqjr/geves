@@ -269,3 +269,32 @@ it('donne à dompdf le fichier de l’image, jamais son adresse distante', funct
         ->and(LayoutRenderer::render($layout))
         ->toContain('src="/img/logo-uk.png"');
 });
+
+/**
+ * ⚠️ Le QR de vérification encodait une adresse FIXE et sans identifiant
+ * (« …/attestation-verify ») : scanner deux attestations différentes menait au
+ * même endroit, qui ne vérifiait rien. Il encode le jeton, que le rendu
+ * remplace par l'adresse de l'attestation délivrée.
+ */
+it('n’encode jamais une adresse de vérification figée dans le concepteur', function () {
+    $js = file_get_contents(resource_path('js/template-designer.js'));
+
+    // Le mot peut rester dans un commentaire : c'est l'ADRESSE codée en dur
+    // qu'on interdit.
+    expect(preg_match('#https?://[^\'"\s]*attestation-verify#', $js))->toBe(0)
+        ->and($js)->toContain("var DEFAULT_QR_URL = '{verify_url}';");
+});
+
+it('le QR rendu porte l’adresse de l’attestation, pas un lien générique', function () {
+    $layout = [
+        'width' => 400, 'height' => 300, 'bg' => '#fff', 'accent' => '#223ea4',
+        'elements' => [['type' => 'qr', 'x' => 10, 'y' => 10, 'size' => 80, 'value' => '{verify_url}']],
+    ];
+
+    // Le QR est un SVG : on vérifie que le jeton a bien été substitué avant
+    // encodage, en comparant deux adresses différentes.
+    $a = LayoutRenderer::render($layout, ['verify_url' => 'https://exemple.test/attestation/aaa']);
+    $b = LayoutRenderer::render($layout, ['verify_url' => 'https://exemple.test/attestation/bbb']);
+
+    expect($a)->not->toBe($b);
+});
