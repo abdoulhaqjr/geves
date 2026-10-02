@@ -636,6 +636,31 @@ paiement (`pay`), inscription à une formation.
     part**. Il a désormais sa section dans l'onglet **Apparence**, à la place de
     l'encart supprimé. Vide, il ne s'affiche pas.
   Tests : `tests/Feature/EditionArtworkTest.php`.
+### Réglages = onglets pilules, partagés avec les Agents IA
+
+`admin/reglages` portait les onglets **soulignés** (`.ukc-tabs`) quand tout le
+reste du back-office est en **pilules** (`.ukc-nav-docs` : Programme,
+Soumissions, Documents, Rapports…). Il est aligné, et sa barre vit **une seule
+fois** dans `resources/views/admin/settings/_nav.blade.php` - ajouter un onglet
+= éditer ce seul fichier.
+
+- ⚠️ **Les six onglets restent pilotés par Alpine, pas par l'URL** : les panneaux
+  vivent dans **un seul `<form>`**, donc une navigation par requête ne posterait
+  que l'onglet affiché et **perdrait les autres réglages**. C'est la seule
+  sous-navigation du back-office qui déroge au `?tab=` serveur, et c'est pour
+  cette raison.
+- Le partial a donc **deux régimes**, selon `$current` : `null` sur la page des
+  réglages (boutons Alpine), `'agents'` sur la page des Agents IA (liens qui
+  rouvrent les réglages sur le bon onglet). **Agents IA est une vraie page**,
+  pas un panneau : toujours un lien, sauf quand on y est.
+- La page des réglages accepte donc **`?tab=`** (prioritaire sur le flash
+  `settings_tab`), ⚠️ **filtré sur les onglets connus** : une clé fantaisiste
+  n'afficherait aucun panneau et la page paraîtrait vide.
+- ⚠️ `.ukc-tabs` (souligné) reste utilisé par la **fiche d'édition** et la page
+  **Attestations/Livret** : deux barres d'onglets de styles différents cohabitent
+  encore, c'est voulu le temps de les reprendre, pas un oubli.
+  Tests : `tests/Feature/AdminSettingsTest.php`.
+
 ### Actions IA du back-office = AJAX + voile de travail
 
 Une analyse IA dure dix à soixante secondes. Sans retour visuel, l'admin

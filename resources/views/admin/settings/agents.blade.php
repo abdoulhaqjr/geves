@@ -1,5 +1,7 @@
 <x-layouts.admin title="Agents IA" subtitle="Personas & garde-fous des agents IA">
-    <div style="max-width:820px;" x-data="agentsEditor(@js($agents))">
+    <div class="admin-page admin-settings" x-data="agentsEditor(@js($agents))">
+        @include('admin.settings._nav', ['current' => 'agents'])
+        <div style="max-width:820px;">
 
         <div class="ukc-card" style="margin-bottom:18px;">
             <h2>
@@ -114,5 +116,6 @@
                 </div>
             </template>
         </form>
+        </div>
     </div>
 </x-layouts.admin>

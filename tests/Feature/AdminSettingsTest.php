@@ -14,6 +14,33 @@ it('affiche les réglages au staff habilité', function () {
         ->assertOk()->assertSee('Général')->assertSee('SMTP');
 });
 
+it('partage sa barre d’onglets avec la page des agents IA', function () {
+    $staff = adminStaff();
+
+    // Les deux pages incluent le même partial : « Agents IA » depuis les réglages,
+    // et le retour vers chaque onglet depuis les agents.
+    $this->actingAs($staff, 'web')->get(route('admin.settings'))
+        ->assertOk()
+        ->assertSee('ukc-nav-docs', false)
+        ->assertSee(route('admin.settings.agents'), false);
+
+    $this->actingAs($staff, 'web')->get(route('admin.settings.agents'))
+        ->assertOk()
+        ->assertSee('ukc-nav-docs', false)
+        ->assertSee(route('admin.settings', ['tab' => 'payments']), false);
+});
+
+it('ouvre l’onglet demandé par l’URL, et le premier si la clé est inconnue', function () {
+    $staff = adminStaff();
+
+    $this->actingAs($staff, 'web')->get(route('admin.settings', ['tab' => 'meetings']))
+        ->assertOk()->assertSee("tab: 'meetings'", false);
+
+    // ⚠️ Une clé fantaisiste n'afficherait aucun panneau : la page paraîtrait vide.
+    $this->actingAs($staff, 'web')->get(route('admin.settings', ['tab' => 'nimporte']))
+        ->assertOk()->assertSee("tab: 'general'", false);
+});
+
 it('enregistre les réglages', function () {
     $staff = adminStaff();
 

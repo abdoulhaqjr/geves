@@ -1,15 +1,12 @@
 @php($v = fn ($k) => old($k, $values[$k]))
 <x-layouts.admin title="Réglages" subtitle="Configuration globale de la plateforme">
-    <div class="admin-page admin-settings" x-data="{ tab: '{{ session('settings_tab', 'general') }}' }">
-        <div class="ukc-tabs">
-            <button type="button" @click="tab='general'" :class="{ active: tab==='general' }">Général</button>
-            <button type="button" @click="tab='payments'" :class="{ active: tab==='payments' }">Paiements</button>
-            <button type="button" @click="tab='email'" :class="{ active: tab==='email' }">E-mail</button>
-            <button type="button" @click="tab='ai'" :class="{ active: tab==='ai' }">Intelligence artificielle</button>
-            <button type="button" @click="tab='meetings'" :class="{ active: tab==='meetings' }">Visio</button>
-            <button type="button" @click="tab='integrations'" :class="{ active: tab==='integrations' }">Intégrations</button>
-            <a href="{{ route('admin.settings.agents') }}" style="padding:10px 16px;font-weight:700;font-size:13.5px;color:var(--ukc-muted);text-decoration:none;">Agents IA ↗</a>
-        </div>
+    {{-- `?tab=` l'emporte sur le flash : c'est ce qui permet à une page voisine
+         (les Agents IA) de rouvrir les réglages sur le bon onglet. ⚠️ Valeur
+         filtrée sur les onglets connus : un `?tab=` fantaisiste n'afficherait
+         aucun panneau, et la page paraîtrait vide. --}}
+    @php($openTab = in_array($t = request('tab', session('settings_tab', 'general')), ['general', 'payments', 'email', 'ai', 'meetings', 'integrations'], true) ? $t : 'general')
+    <div class="admin-page admin-settings" x-data="{ tab: @js($openTab) }">
+        @include('admin.settings._nav')
 
         <form method="POST" action="{{ route('admin.settings.update') }}" enctype="multipart/form-data">
             @csrf
