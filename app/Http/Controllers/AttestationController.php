@@ -21,8 +21,15 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class AttestationController extends Controller
 {
-    /** Document imprimable de l'attestation (QR → page de vérification). */
-    public function document(string $uuid): View
+    /**
+     * Page publique de l'attestation : le document tel qu'il a été délivré, son
+     * état de vérification, l'émetteur et ce que l'attestation certifie.
+     *
+     * C'est l'adresse que porte le QR code et que le bénéficiaire partage : elle
+     * doit tenir debout toute seule devant un recruteur, pas se contenter
+     * d'afficher une image imprimable.
+     */
+    public function document(string $uuid, AttestationCertifier $certifier): View
     {
         $attestation = Attestation::with(['edition.colloque', 'participant'])
             ->where('uuid', $uuid)->firstOrFail();
@@ -41,7 +48,33 @@ class AttestationController extends Controller
             'canvas' => $canvas,
             'width' => $layout['width'],
             'verifyUrl' => $verifyUrl,
+            // Même preuve que la page de vérification : les deux doivent dire la
+            // même chose d'une même attestation.
+            'proof' => $certifier->verify($attestation),
+            'facts' => $this->documentFacts($attestation),
         ]);
+    }
+
+    /**
+     * Ce que l'attestation certifie, en lignes lisibles - vide écarté, pour ne
+     * pas afficher d'intitulé sans valeur.
+     *
+     * @return array<string, string>
+     */
+    private function documentFacts(Attestation $attestation): array
+    {
+        $edition = $attestation->edition;
+        $meta = (array) ($attestation->meta ?? []);
+
+        return array_filter([
+            'Type' => $attestation->typeLabel(),
+            'Événement' => (string) ($edition?->title ?? ''),
+            'Thème' => (string) ($edition?->theme ?? ''),
+            'Dates' => (string) ($edition?->dateRangeLabel() ?? ''),
+            'Lieu' => (string) ($edition?->location ?? ''),
+            'Communication' => (string) ($meta['communication_title'] ?? ''),
+            'Formation' => (string) ($meta['formation_title'] ?? ''),
+        ], fn (string $v) => $v !== '');
     }
 
     /** Attestation en vrai PDF serveur (téléchargement, format A4 paysage). */

@@ -715,6 +715,42 @@ deux raisons distinctes.
    accents, alors que tout le back-office est en français. Libellés, infobulles
    et messages uniformisés.
 
+### `/attestation/{uuid}` = la page que le bénéficiaire partage
+
+C'est l'adresse que porte le **QR code** du document et celle qu'un titulaire
+envoie à un recruteur : elle doit tenir debout seule. Elle n'affiche donc plus
+seulement le document imprimable, mais **le document, qui l'a délivré, ce qu'il
+certifie et comment le vérifier** (modèle : les pages de vérification type
+Certifier/Credsverse).
+
+- **Le document d'abord**, rendu par le modèle enregistré comme ailleurs
+  (`LayoutRenderer` + `documents._fonts`), puis **Bénéficiaire** (partage, ajout
+  au profil LinkedIn, PDF, copie du lien), **Vérification** (état, date
+  d'émission, identifiant, lien vers `/verifier/{uuid}`) et **Délivré par** +
+  **Ce que certifie ce document**.
+- ⚠️ **La page dit la même chose que `/verifier/{uuid}`** : les deux lisent la
+  même preuve (`AttestationCertifier::verify()`). Une attestation **révoquée**
+  l'annonce en tête - on ne laisse pas un document révoqué se présenter comme
+  valide parce qu'on est entré par l'autre porte.
+- ⚠️ **Un intitulé sans valeur n'est pas affiché** (`documentFacts()` filtre les
+  vides) : une ligne « Thème : » vide donne l'impression d'un gabarit cassé.
+- Le document est **mis à l'échelle de son cadre** par un petit script de la vue
+  (`.ukc-cred-doc`, largeur réelle en `data-doc-width`) : une mise en page est
+  dessinée à une largeur fixe, et on n'impose pas de défilement horizontal au
+  visiteur. Le cadre **épouse** le document (`--doc-w`), sinon une bande blanche
+  reste à côté d'une mise en page plus étroite que la colonne.
+- Styles `.ukc-cred-*` dans `resources/css/public.css` (charte UK : le public
+  n'est jamais habillé en Tailwise). `@media print` ne laisse sortir que le
+  document.
+- **Signataire** : `[signatory.name]` / `[signatory.role]` n'avaient aucune
+  source - la ligne de signature sortait **vide** sur le document délivré alors
+  que le concepteur montrait un exemple. Ils viennent des réglages
+  `attestations.signatory` / `signatory_role` de l'édition (onglet **Options**
+  des attestations).
+- ⚠️ **Les valeurs de rendu ont une source unique** : `App\Documents\AttestationVars`.
+  La page et le PDF dressaient la même liste chacun de leur côté, donc un jeton
+  ajouté à l'une manquait à l'autre.
+  Tests : `tests/Feature/AttestationPageTest.php`.
 ### Onglets d'une page = pilules + URL
 
 Toutes les sous-navigations du back-office sont en **pilules**

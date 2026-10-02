@@ -991,3 +991,117 @@ body.ukc-overlay-open .ukc-cb-root { opacity: 0; transform: translateY(10px) sca
    barre plus que séparateur. */
 .brand .brand-rule { width: 2px; height: 26px; align-self: center; border-radius: 2px; background: var(--ukc-blue); flex-shrink: 0; }
 @media (max-width: 560px) { .brand .brand-rule { display: none; } }
+
+/* ==========================================================================
+   Page publique d'une attestation (/attestation/{uuid})
+   L'adresse que porte le QR code et que le bénéficiaire partage : le document
+   délivré, puis qui l'a délivré, ce qu'il certifie et comment le vérifier.
+   ========================================================================== */
+.ukc-cred { background: var(--ukc-bg); min-height: 100vh; padding-bottom: 48px; }
+
+.ukc-cred-top {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 14px clamp(16px, 4vw, 40px);
+  background: #fff; border-bottom: 1px solid var(--ukc-border);
+}
+.ukc-cred-brand img { height: 30px; width: auto; display: block; }
+
+.ukc-cred-state {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: .82rem; font-weight: 700; white-space: nowrap;
+  padding: 6px 12px; border-radius: 999px;
+}
+.ukc-cred-state.is-ok { background: #dcfce7; color: #166534; }
+.ukc-cred-state.is-warn { background: #fef3c7; color: #92400e; }
+.ukc-cred-state.is-revoked { background: #fee2e2; color: #991b1b; }
+
+.ukc-cred-alert {
+  display: flex; align-items: center; gap: 10px;
+  max-width: 1120px; margin: 16px auto 0; padding: 12px 16px;
+  background: #fee2e2; color: #991b1b; border-radius: var(--ukc-radius);
+  font-size: .9rem; font-weight: 600;
+}
+
+/* ---- Le document ---- */
+.ukc-cred-stage { padding: clamp(20px, 4vw, 40px) clamp(16px, 4vw, 40px) 0; }
+.ukc-cred-doc {
+  /* Le cadre épouse le document, pas l'inverse : sinon une bande blanche
+     reste à côté d'une mise en page plus étroite que la colonne. */
+  width: min(100%, var(--doc-w, 1120px)); max-width: 1120px;
+  margin: 0 auto; overflow: hidden;
+  border-radius: var(--ukc-radius-lg); background: #fff;
+  box-shadow: var(--ukc-shadow-lg);
+}
+/* Mis à l'échelle de son cadre (cf. script de la vue) : jamais de défilement
+   horizontal imposé au visiteur. */
+.ukc-cred-doc-inner { transform-origin: top left; }
+.ukc-cred-caption {
+  max-width: 1120px; margin: 12px auto 0;
+  text-align: center; font-size: .82rem; color: var(--ukc-muted);
+}
+.ukc-cred-uuid { font-family: var(--ukc-mono); color: var(--ukc-blue); word-break: break-all; }
+.ukc-cred-sep { margin: 0 6px; color: var(--ukc-border); }
+
+/* ---- Colonnes ---- */
+.ukc-cred-grid {
+  max-width: 1120px; margin: clamp(20px, 3vw, 32px) auto 0;
+  padding: 0 clamp(16px, 4vw, 40px);
+  display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start;
+}
+.ukc-cred-side, .ukc-cred-main { display: grid; gap: 20px; }
+.ukc-cred-card { padding: 20px; }
+
+.ukc-cred-kicker {
+  display: flex; align-items: center; gap: 6px;
+  font-size: .7rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--ukc-blue);
+}
+.ukc-cred-kicker.is-ok { color: #166534; }
+.ukc-cred-kicker.is-warn { color: #92400e; }
+.ukc-cred-kicker.is-revoked { color: #991b1b; }
+
+.ukc-cred-person { display: flex; align-items: center; gap: 12px; margin: 12px 0 18px; }
+.ukc-cred-person strong { font-size: 1.12rem; line-height: 1.2; }
+.ukc-cred-avatar {
+  flex-shrink: 0; width: 46px; height: 46px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--ukc-hero); color: #fff; font-weight: 800; font-size: .95rem;
+}
+
+.ukc-cred-action { width: 100%; justify-content: center; margin-bottom: 8px; }
+.ukc-cred-row { display: flex; gap: 8px; }
+.ukc-cred-row .ukc-cred-action { margin-bottom: 0; }
+.ukc-cred-icon { flex-shrink: 0; padding-inline: .9rem; }
+
+.ukc-cred-help { font-size: .8rem; color: var(--ukc-muted); margin-top: 14px; }
+.ukc-cred-help a { color: var(--ukc-blue); font-weight: 600; }
+
+.ukc-cred-verdict { font-size: 1rem; font-weight: 800; margin: 10px 0 2px; }
+.ukc-cred-verdict.is-ok { color: #166534; }
+.ukc-cred-verdict.is-warn { color: #92400e; }
+.ukc-cred-verdict.is-revoked { color: #991b1b; }
+.ukc-cred-meta { font-size: .84rem; color: var(--ukc-muted); margin-bottom: 14px; }
+.ukc-cred-id { font-size: .76rem; color: var(--ukc-muted); margin-top: 10px; }
+.ukc-cred-link { display: inline-block; margin-top: 8px; font-size: .8rem; color: var(--ukc-blue); font-weight: 600; }
+
+.ukc-cred-issuer { font-size: 1.35rem; font-weight: 800; margin: 8px 0 6px; }
+.ukc-cred-text { color: var(--ukc-muted); line-height: 1.6; }
+
+.ukc-cred-facts { margin-top: 14px; display: grid; gap: 12px; }
+.ukc-cred-facts dt {
+  font-size: .72rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
+  color: var(--ukc-light); margin-bottom: 2px;
+}
+.ukc-cred-facts dd { margin: 0; color: var(--ukc-text); line-height: 1.5; }
+
+@media (max-width: 900px) {
+  .ukc-cred-grid { grid-template-columns: 1fr; }
+}
+
+/* À l'impression, seul le document sort. */
+@media print {
+  .no-print { display: none !important; }
+  .ukc-cred { background: #fff; padding: 0; }
+  .ukc-cred-stage { padding: 0; }
+  .ukc-cred-doc { box-shadow: none; border-radius: 0; }
+}
