@@ -355,3 +355,24 @@ it('met les capitales dans le PDF, que dompdf ne sait pas transformer', function
     expect(LayoutRenderer::render($layout, [], pdf: true))->toContain('DÉCERNÉE À')
         ->and(LayoutRenderer::render($layout))->toContain('text-transform:uppercase');
 });
+
+/**
+ * ⚠️ dompdf ne rend pas le SVG : le QR était **absent du PDF téléchargé** alors
+ * qu'il s'affiche sur la page. C'est lui qui mène à la vérification - une
+ * attestation imprimée sans QR n'est plus vérifiable.
+ */
+it('dessine le QR dans le PDF, que dompdf ne saurait pas rendre en SVG', function () {
+    $layout = [
+        'width' => 400, 'height' => 300, 'bg' => '#fff', 'accent' => '#223ea4',
+        'elements' => [['type' => 'qr', 'x' => 10, 'y' => 10, 'size' => 80, 'value' => '{verify_url}']],
+    ];
+    $vars = ['verify_url' => 'https://exemple.test/attestation/aaa'];
+
+    $page = LayoutRenderer::render($layout, $vars);
+    $pdf = LayoutRenderer::render($layout, $vars, pdf: true);
+
+    expect($page)->toContain('<svg')
+        ->and($pdf)->not->toContain('<svg')
+        // Des modules, pas une image : dompdf sait tracer des rectangles.
+        ->and(substr_count($pdf, 'background:#000'))->toBeGreaterThan(50);
+});

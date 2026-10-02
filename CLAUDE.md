@@ -692,6 +692,12 @@ deux raisons distinctes.
      l'image à ses proportions.
    - **`text-transform`** : les capitales se perdaient. En mode PDF, le texte
      est mis en capitales **côté serveur**.
+   - **le SVG** : ⚠️ dompdf **ne rend pas le SVG** du QR - ni en ligne, ni par
+     `<img>`, ni en `data:`. Le QR était donc **absent du PDF téléchargé** alors
+     qu'il s'affiche sur la page, et une attestation imprimée sans QR n'est plus
+     vérifiable. En mode PDF, `qrBoxes()` dessine la **même matrice**
+     (BaconQrCode, niveau L, comme le SVG) en rectangles, les modules d'une même
+     ligne étant fusionnés.
    - **`line-height`** : ⚠️ dompdf ne le rapporte **pas au corps du texte** mais
      à la hauteur propre de la police - `(ascendante - descendante + interligne)
      / em`, multipliée par son `font_height_ratio` (1,1). **Avec Jost (1,445 em)

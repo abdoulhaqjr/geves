@@ -2,6 +2,8 @@
 
 namespace App\Documents;
 
+use BaconQrCode\Common\ErrorCorrectionLevel;
+use BaconQrCode\Encoder\Encoder;
 use FontLib\Font;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
@@ -66,7 +68,7 @@ class LayoutRenderer
                 'image' => self::renderImage($el, $x, $y, $pdf),
                 'photo' => self::renderPhoto($el, $x, $y, $vars),
                 'signatures' => self::renderSignatures($el, $x, $y, $vars),
-                'qr' => self::renderQr($el, $x, $y, $vars),
+                'qr' => self::renderQr($el, $x, $y, $vars, $pdf),
                 default => '',
             };
         }
@@ -253,7 +255,7 @@ class LayoutRenderer
         );
     }
 
-    protected static function renderQr(array $el, int $x, int $y, array $vars): string
+    protected static function renderQr(array $el, int $x, int $y, array $vars, bool $pdf = false): string
     {
         $size = (int) ($el['size'] ?? 96);
         $value = self::substitute((string) ($el['value'] ?? ''), $vars);
@@ -261,12 +263,65 @@ class LayoutRenderer
             $value = $vars['verify_url'] ?? $vars['ref'] ?? '';
         }
 
-        $svg = $value !== '' ? (string) QrCode::format('svg')->size($size)->margin(0)->generate($value) : '';
+        $inner = match (true) {
+            $value === '' => '',
+            $pdf => self::qrBoxes($value, $size),
+            default => (string) QrCode::format('svg')->size($size)->margin(0)->generate($value),
+        };
 
         return sprintf(
             '<div style="position:absolute;left:%dpx;top:%dpx;width:%dpx;height:%dpx;">%s</div>',
-            $x, $y, $size, $size, $svg
+            $x, $y, $size, $size, $inner
         );
+    }
+
+    /**
+     * QR dessiné en rectangles, pour le PDF.
+     *
+     * ⚠️ **dompdf ne rend pas le SVG** du QR - ni en ligne, ni par `<img>`, ni en
+     * `data:` : le QR était tout simplement **absent du PDF téléchargé**, alors
+     * qu'il s'affiche sur la page. Or c'est lui qui mène à la vérification : une
+     * attestation imprimée sans QR n'est plus vérifiable. On dessine donc la
+     * même matrice en blocs, que dompdf sait tracer.
+     *
+     * Les modules sombres d'une même ligne sont fusionnés en un seul bloc :
+     * quelques centaines de rectangles au lieu de plusieurs milliers.
+     */
+    protected static function qrBoxes(string $value, int $size): string
+    {
+        try {
+            $matrix = Encoder::encode($value, ErrorCorrectionLevel::L(), Encoder::DEFAULT_BYTE_MODE_ECODING)->getMatrix();
+        } catch (\Throwable) {
+            return '';
+        }
+
+        $cols = $matrix->getWidth();
+        $rows = $matrix->getHeight();
+        if ($cols < 1 || $rows < 1) {
+            return '';
+        }
+
+        $unit = $size / $cols;
+        $html = sprintf('<div style="position:absolute;left:0;top:0;width:%dpx;height:%dpx;background:#fff;"></div>', $size, $size);
+
+        for ($row = 0; $row < $rows; $row++) {
+            $start = null;
+            for ($col = 0; $col <= $cols; $col++) {
+                $dark = $col < $cols && $matrix->get($col, $row) === 1;
+
+                if ($dark && $start === null) {
+                    $start = $col;
+                } elseif (! $dark && $start !== null) {
+                    $html .= sprintf(
+                        '<div style="position:absolute;left:%.2fpx;top:%.2fpx;width:%.2fpx;height:%.2fpx;background:#000;"></div>',
+                        $start * $unit, $row * $unit, ($col - $start) * $unit, $unit
+                    );
+                    $start = null;
+                }
+            }
+        }
+
+        return $html;
     }
 
     /** Avatar rond (badge) : photo du bénéficiaire, sinon initiales. */
