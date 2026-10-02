@@ -35,7 +35,7 @@ it('présente l’attestation, son émetteur et ce qu’elle certifie', function
         // ⚠️ La vérification se fait SUR CETTE PAGE : le bouton interroge
         // l'endpoint JSON, il n'emmène plus le visiteur ailleurs.
         ->assertSee(route('attestation.verify.json', $att->uuid))
-        ->assertDontSee('href="'.route('attestation.verify', $att->uuid).'"', false);
+        ->assertDontSee('href="'.url('/verifier/'.$att->uuid).'"', false);
 });
 
 it('vérifie l’attestation sur place, sans quitter la page', function () {

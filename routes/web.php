@@ -114,13 +114,13 @@ Route::get('/langue/{locale}', [LocaleController::class, 'switch'])->name('local
 Route::get('/association/{token}', [AuthorLinkController::class, 'show'])->name('author.decline');
 Route::post('/association/{token}', [AuthorLinkController::class, 'decline'])->name('author.decline.confirm');
 
-// Attestations : document imprimable + vérification publique (par UUID).
+// Attestations : la page du document EST la page de vérification (le verdict
+// s'y écrit via « verification.json »). « /verifier » n'est qu'une saisie de code.
 Route::get('/attestation/{uuid}', [AttestationController::class, 'document'])->name('attestation.document');
 Route::get('/attestation/{uuid}/pdf', [AttestationController::class, 'pdf'])->name('attestation.pdf');
 Route::get('/attestation/{uuid}/credential.json', [AttestationController::class, 'credential'])->name('attestation.credential');
 Route::get('/attestation/{uuid}/verification.json', [AttestationController::class, 'verifyJson'])->name('attestation.verify.json');
 Route::get('/verifier', [AttestationController::class, 'verifyLanding'])->name('attestation.verify.landing');
-Route::get('/verifier/{uuid}', [AttestationController::class, 'verify'])->name('attestation.verify');
 
 // Identité vérifiable de l'émetteur : document DID (did:web) + JWKS. Deux formes
 // de résolution did:web (racine et forme par chemin « :colloques »).

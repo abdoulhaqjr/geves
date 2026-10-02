@@ -788,12 +788,11 @@ Certifier/Credsverse).
 - **Le document d'abord**, rendu par le modèle enregistré comme ailleurs
   (`LayoutRenderer` + `documents._fonts`), puis **Bénéficiaire** (partage, ajout
   au profil LinkedIn, PDF, copie du lien), **Vérification** (état, date
-  d'émission, identifiant, lien vers `/verifier/{uuid}`) et **Délivré par** +
+  d'émission, identifiant, contrôle sur place) et **Délivré par** +
   **Ce que certifie ce document**.
-- ⚠️ **La page dit la même chose que `/verifier/{uuid}`** : les deux lisent la
-  même preuve (`AttestationCertifier::verify()`). Une attestation **révoquée**
-  l'annonce en tête - on ne laisse pas un document révoqué se présenter comme
-  valide parce qu'on est entré par l'autre porte.
+- ⚠️ **Une attestation n'a QU'UNE adresse** : `/attestation/{uuid}`. Une
+  attestation **révoquée** l'annonce en tête - un document révoqué ne doit pas
+  pouvoir se présenter comme valide.
 - ⚠️ **Un intitulé sans valeur n'est pas affiché** (`documentFacts()` filtre les
   vides) : une ligne « Thème : » vide donne l'impression d'un gabarit cassé.
 - Le document est **mis à l'échelle de son cadre** par un petit script de la vue
@@ -822,14 +821,20 @@ Certifier/Credsverse).
   repli du texte déjà affiché. Pour la même raison, **le QR du document pointe
   vers `/attestation/{uuid}`** et non plus vers `/verifier/{uuid}` : on scannait
   une attestation pour atterrir sur un verdict, sans le document.
-- ⚠️ **`/verifier/{uuid}` n'a plus de page** : elle faisait double emploi avec
-  celle de l'attestation, qui porte le document **et** sa vérification. La route
-  **reste** et y redirige - elle est encodée dans les **QR déjà imprimés**, dans
-  les liens envoyés, et c'est l'**identifiant des attestations signées**
-  (`AttestationCertifier::buildCredential()`) : la supprimer invaliderait ce que
-  des documents existants déclarent. Un **code inconnu** retourne à la page de
-  saisie avec un message, plutôt qu'un 404. `/verifier` (saisie d'un code)
-  demeure : on y arrive sans identifiant, elle ne double rien.
+- ⚠️ **`/verifier/{uuid}` N'EXISTE PLUS** (route supprimée) : elle faisait double
+  emploi avec la page de l'attestation, qui porte le document **et** sa
+  vérification. Tout ce qui la citait désigne maintenant `/attestation/{uuid}` -
+  **y compris le `credentialStatus.id` des attestations signées**
+  (`AttestationCertifier::buildCredential()`) et le `verify_url` du VC
+  téléchargeable. ⚠️ Les attestations signées **avant** ce changement déclarent
+  l'ancienne adresse : elle ne résout plus. Le stock de test a été jeté ; sur un
+  stock réel il faudrait re-signer (`php artisan attestations:sign`) avant de
+  supprimer la route.
+- `/verifier` (**saisie d'un code**) demeure : on y arrive sans identifiant, elle
+  ne double rien. Elle mène à `/attestation/{uuid}`, et ⚠️ **vérifie que le code
+  existe avant d'y envoyer** : un code inconnu reste sur le formulaire avec un
+  message et la saisie sous les yeux - la faute de frappe se corrige là où elle a
+  été faite, pas sur un 404.
 - **Gestes au survol du document** (partage, LinkedIn, PDF, vérification), en
   surimpression. ⚠️ Le survol n'existe pas au doigt : la colonne de gauche porte
   les mêmes actions, et la surimpression est masquée en `@media (hover: none)`.
@@ -1050,7 +1055,7 @@ rechargeait la page faisait perdre la saisie en cours.
   **Fail-open à l'émission** (sans clé → attestation émise non signée) ; **fail-closed
   sur la preuve** (« signature vérifiée » seulement si elle vérifie vraiment). La
   révocation reste un état DB (une signature ne se « défait » pas). Page publique
-  `/verifier/{uuid}` : vérifie la signature + existence + non-révocation, et propose le
+  `/attestation/{uuid}` : vérifie la signature + existence + non-révocation, et propose le
   **VC JSON téléchargeable** (`/attestation/{uuid}/credential.json`). Rattrapage du stock :
   `php artisan attestations:sign`. Réglages `attestations.did_*` / `crypto_suite`
   (EditionSettings) désormais **effectifs**.

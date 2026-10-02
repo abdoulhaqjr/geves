@@ -35,7 +35,7 @@ visio et de la page chat dédiée.
 | `chat-agent.html` | `public.gesco` | `public.gesco` (+ widget `ukc.gesco-widget`) | Smoke 200 |
 | `connexion.html` | `account.login` | `account.auth.login` | Test métier |
 | `inscription.html` | `account.register` | `account.auth.register` | Test métier |
-| `attestation-verify.html` | `attestation.verify.landing` | `attestation.verify` | Smoke 200 |
+| `attestation-verify.html` | `attestation.verify.landing` | `attestations.verify-landing` | Smoke 200 |
 
 ## Espace participant — 4 pages · layout `participant`
 

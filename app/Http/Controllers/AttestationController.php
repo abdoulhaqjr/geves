@@ -16,8 +16,8 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Attestations : document imprimable (avec QR de vérification) et page publique
- * de vérification par UUID.
+ * Attestations : document imprimable (avec QR) et page publique du document, qui
+ * porte sa propre vérification.
  */
 class AttestationController extends Controller
 {
@@ -34,11 +34,10 @@ class AttestationController extends Controller
         $attestation = Attestation::with(['edition.colloque', 'participant'])
             ->where('uuid', $uuid)->firstOrFail();
 
-        // ⚠️ Le QR du document encode cette adresse. Il menait à la page de
+        // ⚠️ Le QR du document encode cette adresse. Il menait à une page de
         // vérification seule : on scannait une attestation pour atterrir sur un
-        // verdict, sans le document. Il mène désormais à la page de l'attestation,
-        // qui porte le document ET la vérification. `/verifier/{uuid}` reste
-        // valable - les QR déjà imprimés continuent de fonctionner.
+        // verdict, sans le document. Il mène à la page de l'attestation, qui
+        // porte le document ET sa vérification.
         $verifyUrl = route('attestation.document', $attestation->uuid);
 
         // Tout document vient d'un modèle ENREGISTRÉ (créé au besoin) : plus de
@@ -87,11 +86,10 @@ class AttestationController extends Controller
         $attestation = Attestation::with(['edition.colloque', 'participant'])
             ->where('uuid', $uuid)->firstOrFail();
 
-        // ⚠️ Le QR du document encode cette adresse. Il menait à la page de
+        // ⚠️ Le QR du document encode cette adresse. Il menait à une page de
         // vérification seule : on scannait une attestation pour atterrir sur un
-        // verdict, sans le document. Il mène désormais à la page de l'attestation,
-        // qui porte le document ET la vérification. `/verifier/{uuid}` reste
-        // valable - les QR déjà imprimés continuent de fonctionner.
+        // verdict, sans le document. Il mène à la page de l'attestation, qui
+        // porte le document ET sa vérification.
         $verifyUrl = route('attestation.document', $attestation->uuid);
 
         // Même règle que l'aperçu : le PDF rend toujours un modèle enregistré.
@@ -109,27 +107,6 @@ class AttestationController extends Controller
             'canvas' => $canvas,
         ])->setPaper([0, 0, $w * 0.75, $h * 0.75])
             ->download('attestation-'.$attestation->uuid.'.pdf');
-    }
-
-    /**
-     * Ancienne page de vérification : elle conduit désormais à l'attestation.
-     *
-     * ⚠️ La route **reste** : elle est encodée dans les QR déjà imprimés, dans
-     * les liens envoyés, et c'est l'identifiant des attestations signées
-     * (`AttestationCertifier`). Mais la page faisait double emploi avec celle de
-     * l'attestation, qui porte le document **et** sa vérification - on y mène.
-     */
-    public function verify(string $uuid): RedirectResponse
-    {
-        $connue = Attestation::where('uuid', $uuid)->exists();
-
-        if (! $connue) {
-            // Un code inconnu mérite mieux qu'un 404 : on le dit sur la page de saisie.
-            return redirect()->route('attestation.verify.landing')
-                ->with('ukc_error', __('Aucune attestation ne correspond à ce code.'));
-        }
-
-        return redirect()->route('attestation.document', $uuid);
     }
 
     /**
@@ -200,7 +177,7 @@ class AttestationController extends Controller
             'alg' => AttestationCertifier::ALG,
             'jws' => $attestation->credential,
             'credential' => $certifier->buildCredential($attestation),
-            'verify_url' => route('attestation.verify', $attestation->uuid),
+            'verify_url' => route('attestation.document', $attestation->uuid),
         ], 200, [
             'Content-Disposition' => 'attachment; filename="attestation-'.$attestation->uuid.'.json"',
         ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
@@ -228,20 +205,29 @@ class AttestationController extends Controller
 
     /**
      * Landing publique : saisie manuelle d'un code d'attestation (le QR imprimé
-     * pointe déjà directement vers la page de vérification). Redirige vers le
-     * résultat si un code est fourni.
+     * mène directement à l'attestation). Un code valable conduit à la page de
+     * l'attestation, qui porte le document et sa vérification.
      */
     public function verifyLanding(Request $request): View|RedirectResponse
     {
         $code = trim((string) $request->query('code', ''));
 
         if ($code !== '') {
-            // Accepte un UUID brut ou une URL de vérification collée.
+            // Accepte un UUID brut ou une URL d'attestation collée.
             if (preg_match('~([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})~i', $code, $m)) {
                 $code = $m[1];
             }
 
-            return redirect()->route('attestation.verify', $code);
+            // ⚠️ Un code inconnu ne mérite pas un 404 : il a été SAISI ici, et la
+            // faute de frappe se corrige ici. On reste donc sur le formulaire, le
+            // code saisi sous les yeux, plutôt que d'envoyer sur une page absente.
+            if (! Attestation::where('uuid', $code)->exists()) {
+                return view('attestations.verify-landing', [
+                    'erreur' => __('Aucune attestation ne correspond à ce code.'),
+                ]);
+            }
+
+            return redirect()->route('attestation.document', $code);
         }
 
         return view('attestations.verify-landing');

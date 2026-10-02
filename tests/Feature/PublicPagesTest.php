@@ -1,5 +1,8 @@
 <?php
 
+use App\Actions\IssueAttestation;
+use App\Models\Attestation;
+
 // openEdition() -> AccountSubmissionTest
 
 it('affiche la page d’accueil publique', function () {
@@ -94,18 +97,46 @@ it('affiche la landing de vérification d’attestation', function () {
         ->assertSee('Vérifier une attestation');
 });
 
-it('redirige la saisie d’un code vers le résultat', function () {
-    $uuid = '11111111-2222-3333-4444-555555555555';
+/** Une attestation délivrée, pour les redirections de la page de saisie. */
+function attestationDelivree(): Attestation
+{
+    $edition = openEdition();
+    $p = $edition->participants()->create([
+        'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author',
+    ]);
 
-    $this->get(route('attestation.verify.landing', ['code' => $uuid]))
-        ->assertRedirect(route('attestation.verify', $uuid));
+    return (new IssueAttestation)->handle($p, 'participation');
+}
+
+it('redirige la saisie d’un code vers l’attestation', function () {
+    $att = attestationDelivree();
+
+    $this->get(route('attestation.verify.landing', ['code' => $att->uuid]))
+        ->assertRedirect(route('attestation.document', $att->uuid));
 });
 
-it('extrait l’UUID d’une URL de vérification collée', function () {
-    $uuid = '11111111-2222-3333-4444-555555555555';
+it('extrait l’UUID d’une URL d’attestation collée', function () {
+    $att = attestationDelivree();
 
-    $this->get(route('attestation.verify.landing', ['code' => 'https://gesco.test/verifier/'.$uuid]))
-        ->assertRedirect(route('attestation.verify', $uuid));
+    $this->get(route('attestation.verify.landing', ['code' => 'https://gesco.test/attestation/'.$att->uuid]))
+        ->assertRedirect(route('attestation.document', $att->uuid));
+});
+
+// ⚠️ Il n'y a plus QU'UNE adresse pour une attestation. Deux pages disaient la
+// même chose d'une même attestation, et l'une d'elles sans le document.
+it('n’a plus d’adresse de vérification séparée', function () {
+    $att = attestationDelivree();
+
+    $this->get('/verifier/'.$att->uuid)->assertNotFound();
+});
+
+// ⚠️ Un code inconnu n'a plus de page de vérification où échouer : il ne doit pas
+// pour autant tomber sur un 404, la faute de frappe se corrige sur le formulaire.
+it('garde la saisie sur le formulaire quand le code est inconnu', function () {
+    $this->get(route('attestation.verify.landing', ['code' => '11111111-2222-3333-4444-555555555555']))
+        ->assertOk()
+        ->assertSee('Aucune attestation ne correspond à ce code.')
+        ->assertSee('11111111-2222-3333-4444-555555555555');
 });
 
 it('renvoie 404 pour une édition inconnue', function () {

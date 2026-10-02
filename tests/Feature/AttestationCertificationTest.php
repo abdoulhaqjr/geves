@@ -141,11 +141,6 @@ it('affiche la signature vérifiée sur la page de l’attestation', function ()
         ->assertOk()
         ->assertSee('Attestation authentique')
         ->assertSee('Signature cryptographique vérifiée');
-
-    // ⚠️ L'ancienne adresse reste : elle est dans les QR déjà imprimés et sert
-    // d'identifiant aux attestations signées. Elle mène à la page.
-    $this->get(route('attestation.verify', $attestation->uuid))
-        ->assertRedirect(route('attestation.document', $attestation->uuid));
 });
 
 it('marque une attestation révoquée comme invalide malgré une signature valide', function () {

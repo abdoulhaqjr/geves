@@ -344,7 +344,7 @@ class TemplateDesignerController extends Controller
             'signatory_role' => 'Président du comité d’organisation',
             'date' => now()->format('d/m/Y'),
             'ref' => 'UK-2026-001',
-            'verify_url' => url('/verifier/exemple'),
+            'verify_url' => url('/attestation/exemple'),
             'communication' => 'L’apport du numérique dans l’enseignement supérieur',
             'communication_ref' => 'CI-001',
             'formation' => 'Rédaction scientifique et publication',

@@ -157,7 +157,7 @@ class AttestationCertifier
             'validFrom' => $issued->toIso8601String(),
             'credentialSubject' => $subject,
             'credentialStatus' => [
-                'id' => route('attestation.verify', $attestation->uuid),
+                'id' => route('attestation.document', $attestation->uuid),
                 'type' => 'GevesRegistryStatus2026',
             ],
             // Claims JOSE enregistrées, cohérentes avec le VC ci-dessus.
