@@ -312,3 +312,46 @@ it('dessine le fond de page du modèle sur le document', function () {
     expect($layout['bg_image'])->toBe('/img/bg-attestation-uk.png')
         ->and(LayoutRenderer::render($layout))->toContain('/img/bg-attestation-uk.png');
 });
+
+/**
+ * ⚠️ dompdf n'applique pas `line-height` au corps du texte : il le multiplie par
+ * la hauteur propre de la police. Avec Jost (1,445 em), l'interligne sortait
+ * 59 % trop grand et un paragraphe de deux lignes perdait la seconde, coupée par
+ * sa boîte. Le PDF compense ; la page, elle, garde la valeur du concepteur.
+ */
+it('compense l’interligne de dompdf, et seulement pour le PDF', function () {
+    $layout = [
+        'width' => 400, 'height' => 200, 'bg' => '#fff', 'accent' => '#223ea4',
+        'elements' => [[
+            'type' => 'text', 'x' => 10, 'y' => 10, 'w' => 300, 'h' => 40,
+            'text' => 'Texte', 'size' => 13, 'leading' => 1.45, 'font' => 'jost',
+        ]],
+    ];
+
+    expect(LayoutRenderer::render($layout))->toContain('line-height:1.45')
+        // 13 x 1,45 / 1,5895 - le pas obtenu vaut alors 13 x 1,45 px à l'écran.
+        ->and(LayoutRenderer::render($layout, [], pdf: true))->toContain('line-height:11.86px');
+});
+
+it('ne rogne pas le texte dans le PDF', function () {
+    // Une ligne de trop était coupée sans un mot ; mieux vaut qu'elle déborde.
+    $layout = [
+        'width' => 400, 'height' => 200, 'bg' => '#fff', 'accent' => '#223ea4',
+        'elements' => [['type' => 'text', 'x' => 10, 'y' => 10, 'w' => 300, 'h' => 20, 'text' => 'Texte']],
+    ];
+
+    // La page, elle, borne toujours son contenu : c'est le bloc de TEXTE qui ne
+    // doit plus rogner.
+    expect(substr_count(LayoutRenderer::render($layout, [], pdf: true), 'overflow:hidden'))->toBe(1)
+        ->and(substr_count(LayoutRenderer::render($layout), 'overflow:hidden'))->toBe(2);
+});
+
+it('met les capitales dans le PDF, que dompdf ne sait pas transformer', function () {
+    $layout = [
+        'width' => 400, 'height' => 200, 'bg' => '#fff', 'accent' => '#223ea4',
+        'elements' => [['type' => 'text', 'x' => 10, 'y' => 10, 'w' => 300, 'h' => 20, 'text' => 'Décernée à', 'upper' => true]],
+    ];
+
+    expect(LayoutRenderer::render($layout, [], pdf: true))->toContain('DÉCERNÉE À')
+        ->and(LayoutRenderer::render($layout))->toContain('text-transform:uppercase');
+});

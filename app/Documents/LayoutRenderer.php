@@ -2,6 +2,7 @@
 
 namespace App\Documents;
 
+use FontLib\Font;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 /**
@@ -11,6 +12,18 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
  */
 class LayoutRenderer
 {
+    /**
+     * Fichier de police dont dompdf tire ses métriques, par clé du concepteur.
+     * ⚠️ Seules les polices **hébergées** (`public/fonts`) y figurent : les
+     * autres retombent sur les polices natives de dompdf.
+     *
+     * @var array<string, string>
+     */
+    private const PDF_FONTS = [
+        'jost' => 'jost-400.ttf',
+        'playfair' => 'playfair-700.ttf',
+    ];
+
     /**
      * @param  array<string, string|list<array{name?: string, src?: string}>>  $vars
      *                                                                                Valeurs des jetons {…}. `signatures` est la seule valeur
@@ -36,7 +49,9 @@ class LayoutRenderer
         // Fond illustré, sous tous les éléments.
         if (filled($layout['bg_image'] ?? '')) {
             $html .= sprintf(
-                '<img src="%s" alt="" style="position:absolute;left:0;top:0;width:%dpx;height:%dpx;object-fit:cover;">',
+                // Étiré sur la page, comme dans le concepteur. ⚠️ Pas d'`object-fit` :
+                // dompdf l'ignore, et le PDF ne ressemblait plus à l'écran.
+                '<img src="%s" alt="" style="position:absolute;left:0;top:0;width:%dpx;height:%dpx;">',
                 e(self::imageSrc((string) $layout['bg_image'], $pdf)), $w, $h
             );
         }
@@ -47,11 +62,8 @@ class LayoutRenderer
 
             $html .= match ($el['type'] ?? '') {
                 'rect' => self::renderRect($el, $x, $y),
-                'text' => self::renderText($el, $x, $y, $vars),
-                'image' => ! empty($el['src']) ? sprintf(
-                    '<img src="%s" alt="" style="position:absolute;left:%dpx;top:%dpx;width:%dpx;height:%dpx;object-fit:contain;">',
-                    e(self::imageSrc((string) $el['src'], $pdf)), $x, $y, (int) ($el['w'] ?? 100), (int) ($el['h'] ?? 30)
-                ) : '',
+                'text' => self::renderText($el, $x, $y, $vars, $pdf),
+                'image' => self::renderImage($el, $x, $y, $pdf),
                 'photo' => self::renderPhoto($el, $x, $y, $vars),
                 'signatures' => self::renderSignatures($el, $x, $y, $vars),
                 'qr' => self::renderQr($el, $x, $y, $vars),
@@ -60,6 +72,86 @@ class LayoutRenderer
         }
 
         return $html.'</div>';
+    }
+
+    /**
+     * Hauteur de ligne propre à une police, telle que dompdf la calcule :
+     * `(ascendante - descendante + interligne) / em`, multipliée par son
+     * `font_height_ratio`. Vaut 1 pour les polices qu'il ne charge pas depuis
+     * un fichier (elles retombent sur ses polices natives, de hauteur neutre).
+     */
+    protected static function fontHeightRatio(string $key): float
+    {
+        static $cache = [];
+
+        if (array_key_exists($key, $cache)) {
+            return $cache[$key];
+        }
+
+        $file = public_path('fonts/'.(self::PDF_FONTS[$key] ?? ''));
+        if (! isset(self::PDF_FONTS[$key]) || ! is_file($file)) {
+            return $cache[$key] = 1.0;
+        }
+
+        try {
+            $font = Font::load($file);
+            $font->parse();
+            $em = (int) $font->getData('head', 'unitsPerEm');
+            $height = (int) $font->getData('hhea', 'ascent')
+                - (int) $font->getData('hhea', 'descent')
+                + (int) $font->getData('hhea', 'lineGap');
+        } catch (\Throwable) {
+            return $cache[$key] = 1.0;
+        }
+
+        $ratio = (float) config('dompdf.options.font_height_ratio', 1.1);
+
+        return $cache[$key] = $em > 0 && $height > 0 ? $height / $em * $ratio : 1.0;
+    }
+
+    /**
+     * Image, à ses proportions dans sa boîte.
+     *
+     * ⚠️ **dompdf ignore `object-fit`** : le navigateur insérait l'image dans sa
+     * boîte sans la déformer, dompdf l'étirait aux dimensions de la boîte - un
+     * logo large dans une boîte plus carrée sortait écrasé du PDF téléchargé,
+     * alors qu'il était juste à l'écran. Pour le PDF on calcule donc la boîte
+     * nous-mêmes, à partir des dimensions réelles du fichier.
+     */
+    protected static function renderImage(array $el, int $x, int $y, bool $pdf): string
+    {
+        $src = (string) ($el['src'] ?? '');
+        if ($src === '') {
+            return '';
+        }
+
+        $w = (int) ($el['w'] ?? 100);
+        $h = (int) ($el['h'] ?? 30);
+        $resolved = self::imageSrc($src, $pdf);
+
+        if ($pdf) {
+            $size = @getimagesize($resolved);
+            if ($size && $size[0] > 0 && $size[1] > 0) {
+                $scale = min($w / $size[0], $h / $size[1]);
+                $fitW = (int) round($size[0] * $scale);
+                $fitH = (int) round($size[1] * $scale);
+                // Centrée dans la boîte, comme le fait `object-fit: contain`.
+                $x += (int) round(($w - $fitW) / 2);
+                $y += (int) round(($h - $fitH) / 2);
+                $w = $fitW;
+                $h = $fitH;
+            }
+
+            return sprintf(
+                '<img src="%s" alt="" style="position:absolute;left:%dpx;top:%dpx;width:%dpx;height:%dpx;">',
+                e($resolved), $x, $y, $w, $h
+            );
+        }
+
+        return sprintf(
+            '<img src="%s" alt="" style="position:absolute;left:%dpx;top:%dpx;width:%dpx;height:%dpx;object-fit:contain;">',
+            e($resolved), $x, $y, $w, $h
+        );
     }
 
     /**
@@ -109,9 +201,10 @@ class LayoutRenderer
      * étaient perdus : un titre dessiné en Playfair italique ressortait en Jost
      * droit, et le document délivré ne ressemblait plus à la maquette.
      */
-    protected static function renderText(array $el, int $x, int $y, array $vars): string
+    protected static function renderText(array $el, int $x, int $y, array $vars, bool $pdf = false): string
     {
         $font = LayoutSanitizer::FONTS[$el['font'] ?? 'jost'] ?? LayoutSanitizer::FONTS['jost'];
+        $text = self::substitute((string) ($el['text'] ?? ''), $vars);
 
         $extra = '';
         if (! empty($el['italic'])) {
@@ -121,20 +214,42 @@ class LayoutRenderer
             $extra .= 'text-decoration:underline;';
         }
         if (! empty($el['upper'])) {
-            $extra .= 'text-transform:uppercase;';
+            // ⚠️ dompdf ne connaît pas `text-transform` : les capitales se
+            // perdaient dans le PDF alors qu'elles s'affichaient à l'écran.
+            if ($pdf) {
+                $text = mb_strtoupper($text);
+            } else {
+                $extra .= 'text-transform:uppercase;';
+            }
         }
         if (($el['spacing'] ?? 0) != 0) {
             $extra .= sprintf('letter-spacing:%.2fpx;', (float) $el['spacing']);
         }
 
+        $size = (int) ($el['size'] ?? 16);
+        $leading = (float) ($el['leading'] ?? 1.2);
+
+        if ($pdf) {
+            // ⚠️ **dompdf n'applique PAS `line-height` au corps du texte** : il le
+            // multiplie par la hauteur propre de la police. Avec Jost (1,445 em,
+            // × le `font_height_ratio` de 1,1) l'interligne sortait 59 % trop
+            // grand, et un paragraphe de deux lignes perdait la seconde, coupée
+            // par sa boîte. On compense pour retrouver le pas de l'écran.
+            $lineHeight = sprintf('%.2fpx', $size * $leading / self::fontHeightRatio((string) ($el['font'] ?? 'jost')));
+            // Et on ne rogne pas : mieux vaut un texte qui déborde qu'un texte
+            // disparu sans un mot.
+            $box = sprintf('left:%dpx;top:%dpx;width:%dpx;', $x, $y, (int) ($el['w'] ?? 100));
+        } else {
+            $lineHeight = sprintf('%.2f', $leading);
+            $box = sprintf('left:%dpx;top:%dpx;width:%dpx;height:%dpx;overflow:hidden;', $x, $y, (int) ($el['w'] ?? 100), (int) ($el['h'] ?? 30));
+        }
+
         return sprintf(
-            '<div style="position:absolute;left:%dpx;top:%dpx;width:%dpx;height:%dpx;font-family:%s;font-size:%dpx;'
-            .'font-weight:%d;color:%s;text-align:%s;line-height:%.2f;overflow:hidden;white-space:pre-line;%s">%s</div>',
-            $x, $y, (int) ($el['w'] ?? 100), (int) ($el['h'] ?? 30),
-            e($font), (int) ($el['size'] ?? 16), (int) ($el['weight'] ?? 500),
+            '<div style="position:absolute;%sfont-family:%s;font-size:%dpx;'
+            .'font-weight:%d;color:%s;text-align:%s;line-height:%s;white-space:pre-line;%s">%s</div>',
+            $box, e($font), $size, (int) ($el['weight'] ?? 500),
             e($el['color'] ?? '#1a2332'), e($el['align'] ?? 'left'),
-            (float) ($el['leading'] ?? 1.2), $extra,
-            e(self::substitute((string) ($el['text'] ?? ''), $vars))
+            $lineHeight, $extra, e($text)
         );
     }
 

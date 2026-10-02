@@ -684,6 +684,25 @@ deux raisons distinctes.
    `LayoutRenderer::render(..., pdf: true)` résout les adresses servies par le
    site en **chemins de fichier**, sans quoi les logos sortent du PDF alors
    qu'ils s'affichent sur la page.
+   ⚠️ **Trois autres propriétés que dompdf n'applique pas**, et qui faisaient
+   diverger le PDF téléchargé de la page :
+   - **`object-fit`** : il étire l'image aux dimensions de sa boîte. Un logo
+     large dans une boîte plus carrée sortait écrasé. En mode PDF,
+     `renderImage()` calcule la boîte lui-même (`getimagesize()`) et centre
+     l'image à ses proportions.
+   - **`text-transform`** : les capitales se perdaient. En mode PDF, le texte
+     est mis en capitales **côté serveur**.
+   - **`line-height`** : ⚠️ dompdf ne le rapporte **pas au corps du texte** mais
+     à la hauteur propre de la police - `(ascendante - descendante + interligne)
+     / em`, multipliée par son `font_height_ratio` (1,1). **Avec Jost (1,445 em)
+     l'interligne sortait 59 % trop grand**, et un paragraphe de deux lignes
+     perdait la seconde, coupée par sa boîte - c'est ainsi qu'une phrase entière
+     disparaissait du PDF sans un mot. `fontHeightRatio()` lit la métrique dans
+     le fichier de police (FontLib) et l'interligne est compensé ; le texte ne
+     **rogne plus** en mode PDF (mieux vaut déborder que disparaître).
+     ⚠️ Une police ajoutée à `LayoutSanitizer::FONTS` **et hébergée** doit être
+     déclarée dans `LayoutRenderer::PDF_FONTS`, sinon son interligne repart de
+     travers dans le PDF.
 2. **Les polices n'étaient chargées que dans le concepteur.** Il tirait Jost et
    Playfair Display de Google Fonts ; ni l'aperçu, ni l'attestation délivrée, ni
    le PDF ne le faisaient - la maquette ressortait en police système, avec
