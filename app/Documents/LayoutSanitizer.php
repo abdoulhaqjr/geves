@@ -15,6 +15,19 @@ class LayoutSanitizer
     /** `signatures` = bloc des signatures des formateurs (attestations de formation). */
     public const ELEMENT_TYPES = ['text', 'image', 'qr', 'rect', 'signatures'];
 
+    /**
+     * Polices proposées par le concepteur, avec leur pile CSS. ⚠️ Liste blanche :
+     * la valeur enregistrée est une CLÉ, jamais une déclaration CSS libre - un
+     * `font-family` venu du navigateur finirait dans un attribut `style`.
+     */
+    public const FONTS = [
+        'jost' => "'Jost', system-ui, sans-serif",
+        'georgia' => "Georgia, 'Times New Roman', serif",
+        'playfair' => "'Playfair Display', Georgia, serif",
+        'arial' => 'Arial, Helvetica, sans-serif',
+        'lato' => 'Lato, system-ui, sans-serif',
+    ];
+
     /** @return array<string, mixed> */
     public static function sanitize(array $raw, string $kind, string $type = 'default'): array
     {
@@ -53,10 +66,24 @@ class LayoutSanitizer
                 $e['color'] = self::color($el['color'] ?? null, '#1a2332');
                 $align = $el['align'] ?? 'left';
                 $e['align'] = in_array($align, ['left', 'center', 'right'], true) ? $align : 'left';
+                // ⚠️ Mise en forme du concepteur : police, italique, souligné,
+                // interlignage, interlettrage, capitales. Sans elles, un titre
+                // dessiné en Playfair italique ressortait en Jost droit.
+                $font = (string) ($el['font'] ?? 'jost');
+                $e['font'] = isset(self::FONTS[$font]) ? $font : 'jost';
+                $e['italic'] = (bool) ($el['italic'] ?? false);
+                $e['underline'] = (bool) ($el['underline'] ?? false);
+                $e['upper'] = (bool) ($el['upper'] ?? false);
+                $e['leading'] = self::clampFloat($el['leading'] ?? 1.2, 0.8, 3.0, 1.2);
+                $e['spacing'] = self::clampFloat($el['spacing'] ?? 0, -5, 20, 0);
             } elseif ($t === 'rect') {
                 $e['color'] = self::color($el['color'] ?? null, $accent);
+                // Un filet ou un cadre arrondi devenait un aplat rectangulaire.
+                $e['radius'] = self::clampInt($el['radius'] ?? 0, 0, 400, 0);
+                $e['border'] = self::clampInt($el['border'] ?? 0, 0, 40, 0);
+                $e['border_color'] = self::color($el['border_color'] ?? null, $accent);
             } elseif ($t === 'image') {
-                $e['src'] = filter_var($el['src'] ?? '', FILTER_VALIDATE_URL) ?: '';
+                $e['src'] = self::src($el['src'] ?? '');
             } elseif ($t === 'signatures') {
                 $e['size'] = self::clampInt($el['size'] ?? 11, 6, 40, 11);
                 $e['names'] = (bool) ($el['names'] ?? true);
@@ -70,6 +97,39 @@ class LayoutSanitizer
         }
 
         return ['width' => $w, 'height' => $h, 'bg' => $bg, 'accent' => $accent, 'elements' => $elements];
+    }
+
+    /** Borne un nombre décimal (interlignage, interlettrage). */
+    protected static function clampFloat(mixed $v, float $min, float $max, float $def): float
+    {
+        if (! is_numeric($v)) {
+            return $def;
+        }
+
+        return round(max($min, min($max, (float) $v)), 2);
+    }
+
+    /**
+     * Source d'image acceptée : URL absolue **ou** chemin servi par le site.
+     *
+     * ⚠️ Seules les URL absolues passaient : un logo téléversé, référencé en
+     * `/storage/…`, était rejeté à l'enregistrement et disparaissait du document.
+     * `data:` reste refusé (poids, et un document n'a pas à embarquer d'octets
+     * arbitraires).
+     */
+    protected static function src(mixed $raw): string
+    {
+        $src = trim((string) $raw);
+
+        if ($src === '' || str_starts_with($src, 'data:')) {
+            return '';
+        }
+
+        if (str_starts_with($src, '/')) {
+            return mb_substr($src, 0, 500);
+        }
+
+        return (string) (filter_var($src, FILTER_VALIDATE_URL) ?: '');
     }
 
     /** Mise en page par défaut fonctionnelle (utilisée si aucun modèle enregistré). */

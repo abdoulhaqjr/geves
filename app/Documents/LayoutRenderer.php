@@ -30,15 +30,8 @@ class LayoutRenderer
             $y = (int) ($el['y'] ?? 0);
 
             $html .= match ($el['type'] ?? '') {
-                'rect' => sprintf(
-                    '<div style="position:absolute;left:%dpx;top:%dpx;width:%dpx;height:%dpx;background:%s;"></div>',
-                    $x, $y, (int) ($el['w'] ?? 100), (int) ($el['h'] ?? 30), e($el['color'] ?? '#223ea4')
-                ),
-                'text' => sprintf(
-                    '<div style="position:absolute;left:%dpx;top:%dpx;width:%dpx;height:%dpx;font-size:%dpx;font-weight:%d;color:%s;text-align:%s;line-height:1.2;overflow:hidden;white-space:pre-line;">%s</div>',
-                    $x, $y, (int) ($el['w'] ?? 100), (int) ($el['h'] ?? 30), (int) ($el['size'] ?? 16), (int) ($el['weight'] ?? 500),
-                    e($el['color'] ?? '#1a2332'), e($el['align'] ?? 'left'), e(self::substitute((string) ($el['text'] ?? ''), $vars))
-                ),
+                'rect' => self::renderRect($el, $x, $y),
+                'text' => self::renderText($el, $x, $y, $vars),
                 'image' => ! empty($el['src']) ? sprintf(
                     '<img src="%s" alt="" style="position:absolute;left:%dpx;top:%dpx;width:%dpx;height:%dpx;object-fit:contain;">',
                     e($el['src']), $x, $y, (int) ($el['w'] ?? 100), (int) ($el['h'] ?? 30)
@@ -51,6 +44,60 @@ class LayoutRenderer
         }
 
         return $html.'</div>';
+    }
+
+    /**
+     * Bloc coloré, avec son arrondi et son filet.
+     *
+     * ⚠️ Un cadre dessiné dans le concepteur (bordure seule, coins arrondis)
+     * ressortait en aplat rectangulaire : ces deux propriétés manquaient.
+     */
+    protected static function renderRect(array $el, int $x, int $y): string
+    {
+        $border = (int) ($el['border'] ?? 0);
+
+        return sprintf(
+            '<div style="position:absolute;left:%dpx;top:%dpx;width:%dpx;height:%dpx;background:%s;border-radius:%dpx;%s"></div>',
+            $x, $y, (int) ($el['w'] ?? 100), (int) ($el['h'] ?? 30),
+            e($el['color'] ?? '#223ea4'), (int) ($el['radius'] ?? 0),
+            $border > 0 ? sprintf('border:%dpx solid %s;', $border, e($el['border_color'] ?? '#223ea4')) : ''
+        );
+    }
+
+    /**
+     * Texte, avec toute sa mise en forme.
+     *
+     * ⚠️ Police, italique, souligné, interlignage, interlettrage et capitales
+     * étaient perdus : un titre dessiné en Playfair italique ressortait en Jost
+     * droit, et le document délivré ne ressemblait plus à la maquette.
+     */
+    protected static function renderText(array $el, int $x, int $y, array $vars): string
+    {
+        $font = LayoutSanitizer::FONTS[$el['font'] ?? 'jost'] ?? LayoutSanitizer::FONTS['jost'];
+
+        $extra = '';
+        if (! empty($el['italic'])) {
+            $extra .= 'font-style:italic;';
+        }
+        if (! empty($el['underline'])) {
+            $extra .= 'text-decoration:underline;';
+        }
+        if (! empty($el['upper'])) {
+            $extra .= 'text-transform:uppercase;';
+        }
+        if (($el['spacing'] ?? 0) != 0) {
+            $extra .= sprintf('letter-spacing:%.2fpx;', (float) $el['spacing']);
+        }
+
+        return sprintf(
+            '<div style="position:absolute;left:%dpx;top:%dpx;width:%dpx;height:%dpx;font-family:%s;font-size:%dpx;'
+            .'font-weight:%d;color:%s;text-align:%s;line-height:%.2f;overflow:hidden;white-space:pre-line;%s">%s</div>',
+            $x, $y, (int) ($el['w'] ?? 100), (int) ($el['h'] ?? 30),
+            e($font), (int) ($el['size'] ?? 16), (int) ($el['weight'] ?? 500),
+            e($el['color'] ?? '#1a2332'), e($el['align'] ?? 'left'),
+            (float) ($el['leading'] ?? 1.2), $extra,
+            e(self::substitute((string) ($el['text'] ?? ''), $vars))
+        );
     }
 
     protected static function renderQr(array $el, int $x, int $y, array $vars): string

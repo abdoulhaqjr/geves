@@ -1337,9 +1337,27 @@
     if (!m) return '';
     return '#' + [1, 2, 3].map(function (i) { return ('0' + parseInt(m[i], 10).toString(16)).slice(-2); }).join('');
   }
+  /* Police du navigateur → clé de la liste blanche serveur (LayoutSanitizer::FONTS).
+     ⚠️ On n'enregistre JAMAIS la déclaration CSS brute : elle finirait telle quelle
+     dans un attribut `style` du document rendu. */
+  function fontKey(family) {
+    var f = (family || '').toLowerCase();
+    if (f.indexOf('playfair') > -1) return 'playfair';
+    if (f.indexOf('georgia') > -1) return 'georgia';
+    if (f.indexOf('lato') > -1) return 'lato';
+    if (f.indexOf('arial') > -1 || f.indexOf('helvetica') > -1) return 'arial';
+    return 'jost';
+  }
+
+  /* Sérialisation de la maquette vers le modèle enregistré.
+     ⚠️ Tout ce qui n'est pas repris ici est PERDU : le document délivré ne
+     ressemblera plus à ce qui a été dessiné. C'est ce qui est arrivé à la police,
+     à l'italique, au souligné, à l'interlignage, aux coins arrondis, aux filets
+     et au fond de page - tous rétablis ci-dessous. */
   function serializeLayout() {
     var rect = page.getBoundingClientRect();
     var W = Math.max(120, Math.round(rect.width)), H = Math.max(120, Math.round(rect.height));
+    var pageBg = rgbToHex(getComputedStyle(page).backgroundColor) || '#ffffff';
     var elements = getEls().filter(function (el) { return el.style.display !== 'none'; }).map(function (el) {
       var cs = getComputedStyle(el);
       var x = Math.round(parseFloat(el.style.left) || 0);
@@ -1352,11 +1370,22 @@
       if (el.dataset.qrUrl || /\bqr\b/i.test(cls) || (img && /qrserver|qrcode/i.test(img.src))) {
         return { type: 'qr', x: x, y: y, size: Math.max(w, h) || 96, value: el.dataset.qrUrl || '{verify_url}' };
       }
-      if (img && /^https?:/i.test(img.src)) {
-        return { type: 'image', x: x, y: y, w: w, h: h, src: img.src };
+      // ⚠️ `img.src` est toujours absolu côté DOM : un logo téléversé passe donc
+      // bien ici. Le filtre d'avant (^https?:) laissait tomber les blob:/data:
+      // mais surtout renvoyait l'élément vers la branche « texte », où il
+      // disparaissait faute de texte.
+      if (img && /^(https?:|\/)/i.test(img.getAttribute('src') || img.src)) {
+        return { type: 'image', x: x, y: y, w: w, h: h, src: img.getAttribute('src') || img.src };
       }
       if (!text && (/\b(shape|rect|line|ln-|sq)\b/i.test(cls) || el.style.background || cs.backgroundColor !== 'rgba(0, 0, 0, 0)')) {
-        return { type: 'rect', x: x, y: y, w: w, h: h, color: rgbToHex(cs.backgroundColor) || '#223ea4' };
+        var bw = Math.round(parseFloat(cs.borderTopWidth) || 0);
+        return {
+          type: 'rect', x: x, y: y, w: w, h: h,
+          color: rgbToHex(cs.backgroundColor) || '#223ea4',
+          radius: Math.round(parseFloat(cs.borderTopLeftRadius) || 0),
+          border: bw,
+          border_color: bw > 0 ? (rgbToHex(cs.borderTopColor) || '#223ea4') : ''
+        };
       }
       var align = cs.textAlign;
       return {
@@ -1365,10 +1394,16 @@
         size: Math.round(parseFloat(cs.fontSize) || 16),
         weight: parseInt(cs.fontWeight, 10) || 500,
         color: rgbToHex(cs.color) || '#1a2332',
-        align: (align === 'center' || align === 'right') ? align : 'left'
+        align: (align === 'center' || align === 'right') ? align : 'left',
+        font: fontKey(cs.fontFamily),
+        italic: cs.fontStyle === 'italic',
+        underline: (cs.textDecorationLine || cs.textDecoration || '').indexOf('underline') > -1,
+        upper: cs.textTransform === 'uppercase',
+        leading: Math.round((parseFloat(cs.lineHeight) / (parseFloat(cs.fontSize) || 16)) * 100) / 100 || 1.2,
+        spacing: Math.round((parseFloat(cs.letterSpacing) || 0) * 100) / 100
       };
     }).filter(function (e) { return e && !(e.type === 'text' && !e.text); });
-    return { width: W, height: H, bg: '#ffffff', accent: '#223ea4', elements: elements };
+    return { width: W, height: H, bg: pageBg, accent: '#223ea4', elements: elements };
   }
   document.getElementById('btnSave').addEventListener('click', function () {
     var cfg = window.UKC_EDITOR || {};

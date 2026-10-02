@@ -636,6 +636,37 @@ paiement (`pay`), inscription à une formation.
     part**. Il a désormais sa section dans l'onglet **Apparence**, à la place de
     l'encart supprimé. Vide, il ne s'affiche pas.
   Tests : `tests/Feature/EditionArtworkTest.php`.
+### Concepteur de documents : la maquette DOIT survivre à l'enregistrement
+
+Le document délivré ne ressemblait pas à celui dessiné dans le concepteur, pour
+deux raisons distinctes.
+
+1. **Le modèle enregistré était plus pauvre que la maquette.**
+   `serializeLayout()` (`template-designer.js`) aplatit le DOM du concepteur en
+   quatre types (`text`, `rect`, `image`, `qr`) : ⚠️ **tout ce qui n'est pas
+   repris y est perdu**. Étaient jetés - et sont désormais conservés de bout en
+   bout (JS → `LayoutSanitizer` → `LayoutRenderer`) : la **police**
+   (`LayoutSanitizer::FONTS`, liste blanche par **clé** - jamais une déclaration
+   CSS libre, qui finirait dans un attribut `style`), l'**italique**, le
+   **souligné**, les **capitales**, l'**interlignage**, l'**interlettrage**, les
+   **coins arrondis** et les **filets** d'un rectangle, et le **fond de page**
+   (`bg` était codé en dur à `#ffffff`). ⚠️ Avant d'ajouter une possibilité au
+   concepteur, l'ajouter aussi aux trois couches - sinon elle ne survit pas à
+   « Enregistrer ».
+   ⚠️ Une image n'était retenue que si son `src` était une **URL absolue** : un
+   logo téléversé (`/storage/…`) retombait dans la branche « texte » et
+   disparaissait. `LayoutSanitizer::src()` accepte désormais les chemins servis
+   par le site, et refuse `data:`.
+2. **Les polices n'étaient chargées que dans le concepteur.** Il tire Jost et
+   Playfair Display de Google Fonts ; ni l'aperçu, ni l'attestation délivrée, ni
+   le PDF ne le faisaient - la maquette ressortait en police système, avec
+   d'autres métriques et du texte qui ne tenait plus dans sa boîte. D'où le
+   partial **`documents/_fonts.blade.php`**, à inclure **partout** où une mise en
+   page du concepteur est rendue. ⚠️ **Sauf dompdf** (`pdf/attestation-template`),
+   qui ne va pas chercher une feuille de styles distante : ce PDF-là rend la pile
+   de repli. L'impression depuis la page de l'attestation, elle, est fidèle.
+   Tests : `tests/Feature/DocumentTemplateTest.php`.
+
 ### Onglets d'une page = pilules + URL
 
 Toutes les sous-navigations du back-office sont en **pilules**

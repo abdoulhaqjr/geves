@@ -61,3 +61,75 @@ it('échappe le texte utilisateur dans le rendu', function () {
     expect($html)->not->toContain('<script>alert(1)</script>');
     expect($html)->toContain('&lt;script&gt;');
 });
+
+it('conserve la mise en forme dessinée dans le concepteur', function () {
+    // ⚠️ Le défaut d'origine : le modèle enregistré ne retenait que la position,
+    // la taille, la graisse et l'alignement. Un titre dessiné en Playfair
+    // italique souligné ressortait en Jost droit - le document délivré ne
+    // ressemblait plus à la maquette.
+    $raw = [
+        'width' => 900, 'height' => 636, 'bg' => '#fdf6e3',
+        'elements' => [
+            [
+                'type' => 'text', 'x' => 60, 'y' => 150, 'w' => 780, 'h' => 50,
+                'text' => 'Attestation', 'size' => 34, 'weight' => 900, 'align' => 'center',
+                'font' => 'playfair', 'italic' => true, 'underline' => true,
+                'upper' => true, 'leading' => 1.5, 'spacing' => 2.5,
+            ],
+            ['type' => 'rect', 'x' => 40, 'y' => 40, 'w' => 820, 'h' => 556, 'color' => '#ffffff', 'radius' => 18, 'border' => 3, 'border_color' => '#223ea4'],
+        ],
+    ];
+
+    $s = LayoutSanitizer::sanitize($raw, 'attestation');
+
+    expect($s['bg'])->toBe('#fdf6e3');  // le fond de page n'est plus forcé au blanc
+
+    $text = collect($s['elements'])->firstWhere('type', 'text');
+    expect($text['font'])->toBe('playfair');
+    expect($text['italic'])->toBeTrue();
+    expect($text['underline'])->toBeTrue();
+    expect($text['upper'])->toBeTrue();
+    expect($text['leading'])->toBe(1.5);
+    expect($text['spacing'])->toBe(2.5);
+
+    $rect = collect($s['elements'])->firstWhere('type', 'rect');
+    expect($rect['radius'])->toBe(18);
+    expect($rect['border'])->toBe(3);
+
+    // Et le rendu applique réellement ce qui a été retenu.
+    $html = LayoutRenderer::render($s, []);
+    expect($html)->toContain('Playfair Display');
+    expect($html)->toContain('font-style:italic');
+    expect($html)->toContain('text-decoration:underline');
+    expect($html)->toContain('text-transform:uppercase');
+    expect($html)->toContain('letter-spacing:2.50px');
+    expect($html)->toContain('line-height:1.50');
+    expect($html)->toContain('border-radius:18px');
+    expect($html)->toContain('border:3px solid #223ea4');
+    expect($html)->toContain('background:#fdf6e3');
+});
+
+it('refuse une police inconnue et retombe sur Jost', function () {
+    // La valeur enregistrée est une CLÉ : une déclaration CSS libre finirait
+    // telle quelle dans l'attribut `style` du document.
+    $s = LayoutSanitizer::sanitize([
+        'elements' => [['type' => 'text', 'x' => 0, 'y' => 0, 'text' => 'X', 'font' => 'red;}body{display:none']],
+    ], 'attestation');
+
+    expect(collect($s['elements'])->firstWhere('type', 'text')['font'])->toBe('jost');
+});
+
+it('accepte une image téléversée servie par le site', function () {
+    // ⚠️ Seules les URL absolues passaient : un logo référencé en /storage/…
+    // était effacé à l'enregistrement et disparaissait du document.
+    $s = LayoutSanitizer::sanitize([
+        'elements' => [
+            ['type' => 'image', 'x' => 0, 'y' => 0, 'w' => 80, 'h' => 80, 'src' => '/storage/branding/logo.png'],
+            ['type' => 'image', 'x' => 0, 'y' => 0, 'w' => 80, 'h' => 80, 'src' => 'data:image/png;base64,AAAA'],
+        ],
+    ], 'attestation');
+
+    $images = collect($s['elements'])->where('type', 'image')->values();
+    expect($images[0]['src'])->toBe('/storage/branding/logo.png');
+    expect($images[1]['src'])->toBe('');   // data: refusé
+});
