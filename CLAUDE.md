@@ -826,10 +826,15 @@ Certifier/Credsverse).
   vérification. Tout ce qui la citait désigne maintenant `/attestation/{uuid}` -
   **y compris le `credentialStatus.id` des attestations signées**
   (`AttestationCertifier::buildCredential()`) et le `verify_url` du VC
-  téléchargeable. ⚠️ Les attestations signées **avant** ce changement déclarent
-  l'ancienne adresse : elle ne résout plus. Le stock de test a été jeté ; sur un
-  stock réel il faudrait re-signer (`php artisan attestations:sign`) avant de
-  supprimer la route.
+  téléchargeable.
+- ⚠️ **Une signature déclare une ADRESSE : la changer périme les signatures.** Les
+  attestations signées avant ce changement déclaraient `/verifier/{uuid}`, qui ne
+  résout plus - un vérificateur tiers suivant ce `credentialStatus.id` tombait sur
+  un 404. Le stock (5 attestations) a été **re-signé**. ⚠️ **Le même travail sera
+  à refaire à la mise en production** : `APP_URL` passera de `geves.test` au vrai
+  domaine, et toutes les signatures déclareront encore `geves.test`. Remède :
+  `php artisan attestations:sign --force` (il re-signe TOUT le stock, y compris
+  les attestations non signées - l'émission est en fail-open).
 - `/verifier` (**saisie d'un code**) demeure : on y arrive sans identifiant, elle
   ne double rien. Elle mène à `/attestation/{uuid}`, et ⚠️ **vérifie que le code
   existe avant d'y envoyer** : un code inconnu reste sur le formulaire avec un
