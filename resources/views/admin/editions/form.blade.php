@@ -555,15 +555,25 @@
                             </div>
 
 
-                            <h3>Actualité (encart du hero)</h3>
-                            <label class="ukc-check"><input type="checkbox" name="news_enabled" value="1" @checked($v('news_enabled'))> Afficher un encart d’actualité sur le hero</label>
+                            {{-- Bandeau promotionnel : la ligne or en haut de la page du
+                                 colloque. Elle s'affichait déjà côté public mais n'avait
+                                 aucun champ ; l'« encart d'actualité » qui occupait cette
+                                 place, lui, n'était lu nulle part. --}}
+                            <h3>Bandeau promotionnel</h3>
+                            <div class="desc">Ligne mise en avant tout en haut de la page du colloque. Vide, elle ne s’affiche pas.</div>
                             <div class="ukc-form-row">
-                                <label for="news_text">Texte de l’encart</label>
-                                <input type="text" id="news_text" name="news_text" value="{{ $v('news_text') }}" placeholder="Soumissions ouvertes jusqu’au 15 juillet 2026">
+                                <label for="promo_text">Message</label>
+                                <input type="text" id="promo_text" name="promo_text" value="{{ $v('promo_text') }}" maxlength="200" placeholder="Soumissions ouvertes jusqu’au 15 juillet 2026">
                             </div>
-                            <div class="ukc-form-row">
-                                <label for="news_url">Lien (optionnel)</label>
-                                <input type="url" id="news_url" name="news_url" value="{{ $v('news_url') }}" placeholder="https://…">
+                            <div class="ukc-form-grid">
+                                <div class="ukc-form-row">
+                                    <label for="promo_url">Lien (optionnel)</label>
+                                    <input type="url" id="promo_url" name="promo_url" value="{{ $v('promo_url') }}" placeholder="https://…">
+                                </div>
+                                <div class="ukc-form-row">
+                                    <label for="promo_cta">Libellé du bouton</label>
+                                    <input type="text" id="promo_cta" name="promo_cta" value="{{ $v('promo_cta') }}" maxlength="60" placeholder="En savoir plus">
+                                </div>
                             </div>
 
                             <h3>Statistiques (bandeau public)</h3>

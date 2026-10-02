@@ -481,9 +481,6 @@ class EditionFormController extends Controller
             'color_secondary' => (string) ($s['appearance']['color_secondary'] ?? '#009933'),
             'hero_video_enabled' => (bool) ($s['appearance']['hero_video_enabled'] ?? false),
             'hero_video_muted' => (bool) ($s['appearance']['hero_video_muted'] ?? true),
-            'news_enabled' => (bool) ($s['appearance']['news_enabled'] ?? false),
-            'news_text' => (string) ($s['appearance']['news_text'] ?? ''),
-            'news_url' => (string) ($s['appearance']['news_url'] ?? ''),
             'stats_enabled' => (bool) ($s['appearance']['stats_enabled'] ?? false),
             // Options
             'opt_formation' => (bool) ($s['formation_enabled'] ?? false),

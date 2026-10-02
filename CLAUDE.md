@@ -623,6 +623,18 @@ paiement (`pay`), inscription à une formation.
     est de **2 Mo** - pour une vraie vidéo de fond, relever
     `upload_max_filesize` et `post_max_size` dans le `php.ini` de Herd, ou
     héberger la vidéo ailleurs et coller son URL.
+  - ⚠️ **L'« Actualité (encart du hero) » a été SUPPRIMÉE** (`news_enabled`,
+    `news_text`, `news_url`) : ces trois réglages s'enregistraient et se
+    relisaient dans le formulaire, mais **aucune vue publique ne les affichait** -
+    un aller-retour admin → admin, comme l'ancien déroulé éditorial `programme`.
+    Ne pas les réintroduire : le besoin est déjà couvert deux fois, par le
+    **bandeau promotionnel** (message court épinglé en haut de la page colloque)
+    et par le **module Annonces** (`admin.announcements.*`, actualités datées,
+    affichées sur la page Déroulement).
+  - Le **bandeau promotionnel** (`settings['promo']['text'|'url'|'cta']`) était le
+    cas inverse : **affiché** en haut de la page du colloque mais **éditable nulle
+    part**. Il a désormais sa section dans l'onglet **Apparence**, à la place de
+    l'encart supprimé. Vide, il ne s'affiche pas.
   Tests : `tests/Feature/EditionArtworkTest.php`.
 ### Règles métier - limites communications & attestations
 

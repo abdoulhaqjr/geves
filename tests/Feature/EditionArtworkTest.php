@@ -194,6 +194,28 @@ it('téléverse la vidéo de fond et n’en sert le flux que si elle est activé
     $this->get(route('public.colloque', $edition->slug))->assertOk()->assertDontSee('<video', false);
 });
 
+it('règle le bandeau promotionnel depuis l’onglet Apparence', function () {
+    $edition = artworkEdition();
+
+    // ⚠️ Le bandeau s'affichait déjà côté public mais n'avait AUCUN champ : il
+    // était inatteignable. L'encart « actualité » qui occupait sa place dans le
+    // formulaire, lui, n'était lu nulle part.
+    $this->actingAs(adminStaff(), 'web')
+        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+            'promo_text' => 'Soumissions ouvertes jusqu’au 15 juillet 2026',
+            'promo_url' => 'https://geves.test/soumettre',
+            'promo_cta' => 'Déposer un résumé',
+        ])
+        ->assertSessionHasNoErrors();
+
+    auth('web')->logout();
+
+    $this->get(route('public.colloque', $edition->refresh()->slug))
+        ->assertOk()
+        ->assertSee('Soumissions ouvertes jusqu’au 15 juillet 2026', false)
+        ->assertSee('Déposer un résumé', false);
+});
+
 it('refuse un fichier qui n’est pas une vidéo', function () {
     Storage::fake('public');
     $edition = artworkEdition();
