@@ -265,12 +265,23 @@ class TemplateDesignerController extends Controller
         $editorState = $request->input('editor_state');
         $editorState = is_array($editorState) && ! empty($editorState['els']) ? $editorState : null;
 
+        // ⚠️ Le nom du modèle : il était saisissable dans l'en-tête du concepteur,
+        // mais ni envoyé ni enregistré - renommer n'avait donc aucun effet, alors
+        // que le message de confirmation citait le nouveau nom.
+        $title = trim((string) $request->input('title', ''));
+        $title = $title !== '' ? mb_substr($title, 0, 150) : null;
+
         DocumentTemplate::updateOrCreate(
             ['edition_id' => $editionId, 'kind' => $kind, 'type' => $type],
-            ['layout' => $layout, 'editor_state' => $editorState]
+            array_filter(
+                ['layout' => $layout, 'editor_state' => $editorState, 'title' => $title],
+                // Un nom vide ne doit pas EFFACER celui déjà enregistré.
+                fn ($v, $k) => $k !== 'title' || $v !== null,
+                ARRAY_FILTER_USE_BOTH,
+            )
         );
 
-        return response()->json(['ok' => true, 'layout' => $layout]);
+        return response()->json(['ok' => true, 'layout' => $layout, 'title' => $title]);
     }
 
     /** @return array{0: string, 1: string} */

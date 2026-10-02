@@ -18,6 +18,11 @@ class LayoutRenderer
      */
     public static function render(array $layout, array $vars = []): string
     {
+        // ⚠️ Les alias `[espace.cle]` sont ajoutés ICI, et non chez les appelants :
+        // chacun fournissait sa propre liste, et un modèle dessiné avec la palette
+        // du concepteur sortait avec des jetons vides sur le document délivré.
+        $vars = DocumentVars::expand($vars);
+
         $w = (int) $layout['width'];
         $h = (int) $layout['height'];
         $bg = $layout['bg'] ?? '#ffffff';
@@ -194,9 +199,12 @@ class LayoutRenderer
             return is_scalar($v) ? (string) $v : '';
         }, $text);
 
-        // Jetons [namespace.key] (schéma de l'éditeur de badges), insensibles à la
-        // casse ; si le jeton est en MAJUSCULES, la valeur l'est aussi (ex. rôle).
-        return preg_replace_callback('/\[([A-Za-z]+\.[A-Za-z]+)\]/', function ($m) use ($vars) {
+        // Jetons [namespace.key] (schéma de l'éditeur), insensibles à la casse ; si
+        // le jeton est en MAJUSCULES, la valeur l'est aussi (ex. rôle).
+        // ⚠️ Les chiffres et le souligné font partie du nom : sans eux,
+        // `[certificate.issued_on]` n'était pas reconnu et s'affichait tel quel
+        // sur l'attestation délivrée.
+        return preg_replace_callback('/\[([A-Za-z][A-Za-z0-9_]*\.[A-Za-z0-9_]+)\]/', function ($m) use ($vars) {
             $val = (string) ($vars[mb_strtolower($m[1])] ?? '');
             if ($val !== '' && $m[1] === mb_strtoupper($m[1])) {
                 $val = mb_strtoupper($val);

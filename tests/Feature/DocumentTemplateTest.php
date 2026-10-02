@@ -133,3 +133,29 @@ it('accepte une image téléversée servie par le site', function () {
     expect($images[0]['src'])->toBe('/storage/branding/logo.png');
     expect($images[1]['src'])->toBe('');   // data: refusé
 });
+
+it('remplit les jetons de la palette du concepteur', function () {
+    // ⚠️ La palette propose `[espace.cle]` ; les contrôleurs ne fournissaient que
+    // la forme plate `{cle}`. Un modèle dessiné avec la palette sortait donc avec
+    // ses jetons vides - ou affichés tels quels pour ceux contenant un souligné,
+    // que l'expression régulière ne reconnaissait pas.
+    $layout = LayoutSanitizer::sanitize([
+        'elements' => [
+            ['type' => 'text', 'x' => 0, 'y' => 0, 'w' => 600, 'h' => 30, 'text' => '[recipient.name] · [certificate.issued_on] · [edition.theme] · [certificate.uuid]'],
+        ],
+    ], 'attestation');
+
+    $html = LayoutRenderer::render($layout, [
+        'name' => 'Ama Doe',
+        'date' => '12/10/2026',
+        'theme' => 'Innover pour un avenir durable',
+        'ref' => 'abc-123',
+    ]);
+
+    expect($html)->toContain('Ama Doe');
+    expect($html)->toContain('12/10/2026');
+    expect($html)->toContain('Innover pour un avenir durable');
+    expect($html)->toContain('abc-123');
+    expect($html)->not->toContain('[certificate.issued_on]');  // le souligné était le piège
+    expect($html)->not->toContain('[recipient.name]');
+});

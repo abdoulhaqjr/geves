@@ -677,6 +677,22 @@ deux raisons distinctes.
    - Les graisses déclarées sont **exactement** celles du concepteur : une graisse
      absente serait synthétisée par le moteur, ce qui change encore le rendu.
    Tests : `tests/Feature/DocumentTemplateTest.php`.
+3. **Les jetons de la palette n'étaient pas servis.** Deux syntaxes cohabitent -
+   `{cle}` (schéma historique des attestations) et **`[espace.cle]`** (celle que
+   propose la palette du concepteur et qu'emploient ses modèles livrés). Les
+   contrôleurs ne fournissaient que la forme plate : un modèle dessiné à la
+   palette sortait avec `[recipient.name]` **vide**, et `[certificate.issued_on]`
+   **affiché tel quel** (l'expression régulière ignorait le souligné).
+   **`App\Documents\DocumentVars::expand()`** est la table d'alias unique, et
+   elle est appliquée **dans `LayoutRenderer::render()`** - pas chez les
+   appelants, qui avaient chacun leur liste partielle. ⚠️ Un jeton ajouté à la
+   palette doit l'être aussi dans `DocumentVars`, sinon il ne vaudra que dans
+   l'aperçu.
+4. ⚠️ **Le nom du modèle ne s'enregistrait pas** : le champ de l'en-tête du
+   concepteur n'était ni transmis par le JS ni écrit par `save()`, alors que le
+   message de confirmation citait le nouveau nom. Il l'est désormais, et un nom
+   **vide n'écrase pas** celui déjà enregistré.
+   Tests : `tests/Feature/DocumentDesignerTest.php`.
 
 ### Onglets d'une page = pilules + URL
 

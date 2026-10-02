@@ -158,3 +158,50 @@ it('rend la planche de badges via le modèle si présent', function () {
         ->assertOk()
         ->assertSee('CARTE Awa Kodjo');
 });
+
+it('enregistre le nom saisi dans le concepteur', function () {
+    // ⚠️ Le nom était affiché et modifiable dans l'en-tête, mais ni transmis ni
+    // enregistré : renommer n'avait aucun effet, alors que le message de
+    // confirmation citait le nouveau nom.
+    $edition = openEdition();
+
+    $this->actingAs(adminStaff(), 'web')
+        ->postJson(route('admin.documents.templates.save'), [
+            'edition_id' => (string) $edition->id,
+            'kind' => 'attestation',
+            'type' => 'participation',
+            'title' => 'Attestation de présence effective',
+            'layout' => ['width' => 900, 'height' => 636, 'elements' => [
+                ['type' => 'text', 'x' => 10, 'y' => 10, 'w' => 200, 'h' => 30, 'text' => '{name}'],
+            ]],
+        ])
+        ->assertOk()
+        ->assertJson(['ok' => true]);
+
+    $tpl = DocumentTemplate::where('edition_id', $edition->id)->where('type', 'participation')->first();
+    expect($tpl->title)->toBe('Attestation de présence effective');
+
+    // Le concepteur rouvre sur le nom enregistré, pas sur le libellé du type.
+    $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.documents.templates', ['edition_id' => $edition->id, 'kind' => 'attestation', 'type' => 'participation']))
+        ->assertOk()
+        ->assertSee('Attestation de présence effective', false);
+});
+
+it('ne vide pas le nom quand l’enregistrement n’en porte pas', function () {
+    // Un enregistrement automatique sans champ nom (ou un nom effacé par mégarde)
+    // ne doit pas effacer le libellé déjà choisi.
+    $edition = openEdition();
+    $base = [
+        'edition_id' => (string) $edition->id, 'kind' => 'attestation', 'type' => 'participation',
+        'layout' => ['width' => 900, 'height' => 636, 'elements' => [
+            ['type' => 'text', 'x' => 10, 'y' => 10, 'w' => 200, 'h' => 30, 'text' => '{name}'],
+        ]],
+    ];
+
+    $this->actingAs(adminStaff(), 'web')->postJson(route('admin.documents.templates.save'), $base + ['title' => 'Mon modèle']);
+    $this->actingAs(adminStaff(), 'web')->postJson(route('admin.documents.templates.save'), $base + ['title' => '  ']);
+
+    $tpl = DocumentTemplate::where('edition_id', $edition->id)->where('type', 'participation')->first();
+    expect($tpl->title)->toBe('Mon modèle');
+});
