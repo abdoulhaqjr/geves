@@ -7,7 +7,7 @@
 <x-layouts.admin title="Administration assistée" subtitle="Copilote IA · propositions uniquement - vous validez chaque action">
     <x-slot:actions>
         <span class="ukc-pill ukc-pill--info">Agent : {{ $agentName }}</span>
-        <a href="{{ route('admin.settings.agents') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">Configurer l’agent</a>
+        <a href="{{ route('admin.settings', ['tab' => 'agents-ia']) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">Configurer l’agent</a>
     </x-slot:actions>
 
     <div class="admin-page admin-ai"

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Providers\AppServiceProvider;
+use App\Support\AiAgents;
 use App\Support\Branding;
 use App\Support\ParticipantTypes;
 use App\Support\Settings;
@@ -24,6 +25,26 @@ use Illuminate\View\View;
  */
 class SettingController extends Controller
 {
+    /**
+     * Onglets de la page, dans l'ordre d'affichage. Source unique : la barre de
+     * navigation les parcourt, et `?tab=` est validé contre cette liste.
+     *
+     * ⚠️ « Agents IA » est un onglet mais garde **son propre formulaire** (PUT
+     * sur `admin.settings.agents.update`) : il vit hors du formulaire général.
+     */
+    public const TAB_LABELS = [
+        'general' => 'Général',
+        'payments' => 'Paiements',
+        'email' => 'E-mail',
+        'ai' => 'Intelligence artificielle',
+        'agents-ia' => 'Agents IA',
+        'meetings' => 'Visio',
+        'integrations' => 'Intégrations',
+    ];
+
+    /** @var list<string> */
+    public const TABS = ['general', 'payments', 'email', 'ai', 'agents-ia', 'meetings', 'integrations'];
+
     /** Correspondance champ de formulaire → clé de réglage. */
     private const MAP = [
         'app_name' => 'app.name',
@@ -146,7 +167,12 @@ class SettingController extends Controller
             'orcid_client_secret' => $g('orcid.client_secret'),
         ];
 
-        return view('admin.settings.index', ['values' => $values]);
+        // Les agents IA sont un onglet de cette page : leur éditeur a besoin
+        // de la liste, même quand un autre onglet est ouvert (tout est rendu).
+        return view('admin.settings.index', [
+            'values' => $values,
+            'agents' => AiAgents::all(),
+        ]);
     }
 
     public function update(Request $request): RedirectResponse

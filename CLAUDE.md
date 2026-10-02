@@ -636,63 +636,39 @@ paiement (`pay`), inscription à une formation.
     part**. Il a désormais sa section dans l'onglet **Apparence**, à la place de
     l'encart supprimé. Vide, il ne s'affiche pas.
   Tests : `tests/Feature/EditionArtworkTest.php`.
-### Réglages = onglets pilules, partagés avec les Agents IA
+### Onglets d'une page = pilules + URL
 
-`admin/reglages` portait les onglets **soulignés** (`.ukc-tabs`) quand tout le
-reste du back-office est en **pilules** (`.ukc-nav-docs` : Programme,
-Soumissions, Documents, Rapports…). Il est aligné, et sa barre vit **une seule
-fois** dans `resources/views/admin/settings/_nav.blade.php` - ajouter un onglet
-= éditer ce seul fichier.
+Toutes les sous-navigations du back-office sont en **pilules**
+(`.ukc-nav-docs`) et **portées par l'URL** (`?tab=`), donc partageables par lien.
+⚠️ `.ukc-tabs` (onglets soulignés) ne subsiste que sur **Documents ›
+Attestations/Livret** : ne pas s'en servir de modèle.
 
-- ⚠️ **Les six onglets restent pilotés par Alpine, pas par l'URL** : les panneaux
-  vivent dans **un seul `<form>`**, donc une navigation par requête ne posterait
-  que l'onglet affiché et **perdrait les autres réglages**. C'est la seule
-  sous-navigation du back-office qui déroge au `?tab=` serveur, et c'est pour
-  cette raison.
-- Le partial a donc **deux régimes**, selon `$current` : `null` sur la page des
-  réglages (boutons Alpine), `'agents'` sur la page des Agents IA (liens qui
-  rouvrent les réglages sur le bon onglet). **Agents IA est une vraie page**,
-  pas un panneau : toujours un lien, sauf quand on y est.
-- La page des réglages accepte donc **`?tab=`** (prioritaire sur le flash
-  `settings_tab`), ⚠️ **filtré sur les onglets connus** : une clé fantaisiste
-  n'afficherait aucun panneau et la page paraîtrait vide.
-- ⚠️ `.ukc-tabs` (souligné) reste utilisé par la **fiche d'édition** et la page
-  **Attestations/Livret** : deux barres d'onglets de styles différents cohabitent
-  encore, c'est voulu le temps de les reprendre, pas un oubli.
-  Tests : `tests/Feature/AdminSettingsTest.php`.
+Deux mises en œuvre, selon la page :
 
-### Export personnalisé (IA) = le FORMAT décide de la forme
+1. **Navigation serveur** (Programme, Soumissions) : chaque onglet est une URL
+   rendue par le contrôleur, définie une seule fois dans un `_nav.blade.php`.
+   C'est le cas général.
+2. **Réécriture d'URL sans rechargement** - composant Alpine **`ukcUrlTabs`**
+   (`app.js`) : le clic bascule le panneau et réécrit l'URL (`pushState`), et les
+   flèches du navigateur suivent (`popstate`). ⚠️ **Réservé aux pages dont tous
+   les panneaux vivent dans UN SEUL formulaire** : **Réglages** et la **fiche
+   d'édition**. Une vraie navigation y perdrait les saisies non enregistrées des
+   autres onglets. Les onglets restent de vrais `<a href>` (ouvrables dans un
+   nouvel onglet), neutralisés par `@click.prevent`.
 
-`App\Actions\GenerateReport` rend **deux formes** : **`table`** (colonnes +
-lignes) et **`sections`** (titre + corps). Le **format demandé** choisit :
-**XLSX/CSV → tableau**, **PDF/Word → document rédigé**.
-
-- ⚠️ **Trois défauts rendaient l'export inutilisable**, tous corrigés :
-  1. l'IA ne recevait que **cinq totaux** de l'édition - « la liste des
-     communications acceptées par axe » était donc impossible, elle retombait
-     sur un bilan générique ;
-  2. elle ne savait rendre que de la **prose** : un « export Excel » contenait
-     des paragraphes, complétés par un **déversement brut de toute la base** ;
-  3. un **plan imposé** (« contexte / chiffres clés / analyse / recommandations »)
-     s'appliquait même à une simple liste.
-- **Le périmètre (`scope`) est ce que l'IA a le droit de LIRE** : ses lignes
-  réelles lui sont transmises (`datasets()`, partagé entre la génération et le
-  téléchargement), plafonnées à **600 lignes** par jeu - au-delà la troncature
-  est **annoncée à l'IA**, à qui il est demandé de la signaler. ⚠️ Ces données
-  partent chez le fournisseur configuré : c'est écrit sous le sélecteur.
-- **Le tableau produit EST le fichier** : il ouvre le classeur XLSX, il est le
-  CSV, il s'affiche dans le PDF/Word. Les jeux bruts ne sont joints **qu'à
-  défaut** de tableau.
-- ⚠️ **Un tableur sans tableau est refusé** (message explicite invitant à
-  préciser les colonnes ou à choisir PDF/Word) : livrer un .xlsx de paragraphes
-  est précisément le défaut d'origine. Les lignes sont **recadrées sur les
-  colonnes** (complétées ou coupées) - un tableau décalé est illisible dans Excel.
-- ⚠️ **`set_time_limit(300)`** avant l'appel (Rapports et Secrétariat) : depuis
-  que l'IA reçoit les lignes réelles, une liste de cent enregistrements se rédige
-  en **une à deux minutes**, et les 30 s par défaut de PHP tuaient la requête
-  sans aucun message. Le voile annonce la durée et rappelle que le résultat est
-  conservé dans l'historique.
-  Tests : `tests/Feature/GenerateReportTest.php`.
+- **Réglages** : onglets et libellés dans **`SettingController::TAB_LABELS`**
+  (`TABS` pour la validation de `?tab=`), parcourus par
+  `admin/settings/_nav.blade.php`. ⚠️ `?tab=` **filtré sur les clés connues** :
+  une clé fantaisiste n'afficherait aucun panneau et la page paraîtrait vide.
+- ⚠️ **Les Agents IA sont un ONGLET** (`?tab=agents-ia`), plus une page : la
+  route `/admin/reglages/agents-ia` est une **`permanentRedirect`** (signets,
+  liens déjà envoyés), `SettingAgentController` n'a plus que son `update()`, et
+  l'éditeur vit dans `admin/settings/_agents.blade.php`. Son **formulaire est
+  distinct** de celui des réglages (PUT sur sa propre route) : il est donc placé
+  **hors** du formulaire général - deux formulaires imbriqués ne s'enregistrent
+  pas. Le bouton « Enregistrer les réglages » est masqué sur cet onglet, sans
+  quoi deux boutons d'enregistrement voisinaient sans dire ce qu'ils couvrent.
+  Tests : `tests/Feature/AdminSettingsTest.php`, `tests/Feature/AiAgentsTest.php`.
 
 ### Actions IA du back-office = AJAX + voile de travail
 

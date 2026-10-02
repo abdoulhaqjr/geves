@@ -1,11 +1,16 @@
 @php($v = fn ($k) => old($k, $values[$k]))
 <x-layouts.admin title="Réglages" subtitle="Configuration globale de la plateforme">
-    {{-- `?tab=` l'emporte sur le flash : c'est ce qui permet à une page voisine
-         (les Agents IA) de rouvrir les réglages sur le bon onglet. ⚠️ Valeur
-         filtrée sur les onglets connus : un `?tab=` fantaisiste n'afficherait
-         aucun panneau, et la page paraîtrait vide. --}}
-    @php($openTab = in_array($t = request('tab', session('settings_tab', 'general')), ['general', 'payments', 'email', 'ai', 'meetings', 'integrations'], true) ? $t : 'general')
-    <div class="admin-page admin-settings" x-data="{ tab: @js($openTab) }">
+    {{-- Onglets pilotés par l'URL : `?tab=` décide de l'onglet ouvert, et chaque
+         clic le réécrit (`history.pushState`), donc l'onglet se partage par lien
+         et les flèches du navigateur fonctionnent.
+
+         ⚠️ On réécrit l'URL plutôt que de naviguer : les six premiers panneaux
+         vivent dans UN SEUL formulaire, une vraie navigation perdrait les
+         modifications non enregistrées des autres onglets.
+         ⚠️ Valeur filtrée sur les onglets connus : un `?tab=` fantaisiste
+         n'afficherait aucun panneau, et la page paraîtrait vide. --}}
+    @php($openTab = in_array($t = request('tab', session('settings_tab', 'general')), \App\Http\Controllers\Admin\SettingController::TABS, true) ? $t : 'general')
+    <div class="admin-page admin-settings" x-data="ukcUrlTabs(@js($openTab))">
         @include('admin.settings._nav')
 
         <form method="POST" action="{{ route('admin.settings.update') }}" enctype="multipart/form-data">
@@ -488,9 +493,20 @@
                 </div>
             </div>
 
-            <div class="ukc-form-actions" style="border-top:none;padding-top:0;margin-top:4px;">
+            {{-- ⚠️ Masqué sur l'onglet des agents : ce bouton enregistre les RÉGLAGES,
+                 pas les agents, qui ont le leur. Les deux côte à côte faisaient
+                 cliquer sur le mauvais. --}}
+            <div class="ukc-form-actions" style="border-top:none;padding-top:0;margin-top:4px;"
+                 x-show="tab !== 'agents-ia'">
                 <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer les réglages</button>
             </div>
         </form>
+
+        {{-- Agents IA : septième onglet, mais formulaire DISTINCT (il s'enregistre
+             en PUT sur sa propre route) - d'où sa place hors du formulaire
+             ci-dessus, deux formulaires imbriqués étant impossibles. --}}
+        <div class="ukc-panel" :class="{ active: tab==='agents-ia' }" x-data="agentsEditor(@js($agents))">
+            @include('admin.settings._agents')
+        </div>
     </div>
 </x-layouts.admin>

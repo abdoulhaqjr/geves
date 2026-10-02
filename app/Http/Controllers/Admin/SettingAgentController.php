@@ -8,24 +8,19 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\View\View;
 
 /**
- * Réglages « Agents IA » (contrôleur + Blade) : persona et garde-fous
+ * Réglages « Agents IA » : persona et garde-fous
  * (instructions POSITIVES / NÉGATIVES) de chaque agent, extensible. Les agents,
  * onglets et avatars sont gérés côté client (Alpine) ; les avatars sont
  * téléversés à l'enregistrement. Persisté via {@see AiAgents} (réglage
  * `ai.agents`).
+ *
+ * ⚠️ Plus de page dédiée : l'éditeur est l'onglet `?tab=agents-ia` des réglages
+ * (vue `admin/settings/_agents.blade.php`). Seul l'enregistrement vit ici.
  */
 class SettingAgentController extends Controller
 {
-    public function edit(): View
-    {
-        return view('admin.settings.agents', [
-            'agents' => AiAgents::all(),
-        ]);
-    }
-
     public function update(Request $request): RedirectResponse
     {
         $request->validate([

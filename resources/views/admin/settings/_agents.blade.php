@@ -1,7 +1,9 @@
-<x-layouts.admin title="Agents IA" subtitle="Personas & garde-fous des agents IA">
-    <div class="admin-page admin-settings" x-data="agentsEditor(@js($agents))">
-        @include('admin.settings._nav', ['current' => 'agents'])
-        <div style="max-width:820px;">
+{{-- Éditeur des agents IA : persona et garde-fous de chaque agent.
+
+     ⚠️ Ce bloc vit à l'intérieur de la page des réglages, mais **hors** du
+     formulaire des réglages : il a le sien (PUT), et deux formulaires imbriqués
+     ne s'enregistreraient pas. L'état Alpine `agentsEditor` est posé par le
+     panneau qui l'inclut. --}}
 
         <div class="ukc-card" style="margin-bottom:18px;">
             <h2>
@@ -116,6 +118,3 @@
                 </div>
             </template>
         </form>
-        </div>
-    </div>
-</x-layouts.admin>

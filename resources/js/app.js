@@ -492,6 +492,32 @@ document.addEventListener('alpine:init', () => {
     // `keys`. La ligne (un <tr> ou un <tbody>) se montre via
     // `x-show="visibleIds.includes(ID)"`. Placer le x-data sur un élément recréé au
     // swap AJAX (la carte), pas sur le data-ajax-root, pour que init() se rejoue.
+
+    // Onglets pilotés par l'URL SANS rechargement : `?tab=` nomme l'onglet
+    // ouvert, chaque clic le réécrit (pushState) et les flèches du navigateur
+    // reviennent au précédent. ⚠️ À réserver aux pages dont les panneaux vivent
+    // dans un même formulaire (Réglages) : ailleurs, une vraie navigation
+    // serveur est préférable (cf. `?tab=` de Programme et Soumissions). Une
+    // navigation perdrait ici les saisies non enregistrées des autres onglets.
+    window.Alpine.data('ukcUrlTabs', (initial = '') => ({
+        tab: initial,
+        init() {
+            // Retour/avance du navigateur : on suit l'URL, sans la réécrire.
+            window.addEventListener('popstate', (e) => {
+                this.tab = e.state?.ukcTab
+                    || new URLSearchParams(window.location.search).get('tab')
+                    || initial;
+            });
+        },
+        go(key) {
+            if (key === this.tab) return;
+            this.tab = key;
+            const url = new URL(window.location.href);
+            url.searchParams.set('tab', key);
+            window.history.pushState({ ukcTab: key }, '', url);
+        },
+    }));
+
     // Filtres de tableau côté client (instantanés) : les lignes portent
     // `data-filter-row` + `data-<clé>` + `data-text`, et se gouvernent par
     // `x-show="visibleIds.includes(ID)"`. Pour une liste qui doit aussi être

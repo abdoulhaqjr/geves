@@ -54,17 +54,31 @@
         <div class="layout">
             {{-- ===================== COLONNE PRINCIPALE ===================== --}}
             <div>
-                <div class="ukc-tabs">
-                    <button type="button" @click="tab='general'" :class="{ active: tab==='general' }">Général</button>
-                    <button type="button" @click="tab='content'" :class="{ active: tab==='content' }">Appel &amp; contenu</button>
-                    <button type="button" @click="tab='submissions'" :class="{ active: tab==='submissions' }">Soumissions &amp; tarifs</button>
-                    <button type="button" @click="tab='committees'" :class="{ active: tab==='committees' }">Comités</button>
-                    @if ($edition)<button type="button" @click="tab='payment'" :class="{ active: tab==='payment' }">Paiement</button>@endif
-                    @if ($edition)<button type="button" @click="tab='team'" :class="{ active: tab==='team' }">Équipe</button>@endif
-                    <button type="button" @click="tab='partners'" :class="{ active: tab==='partners' }">Partenaires</button>
-                    <button type="button" @click="tab='appearance'" :class="{ active: tab==='appearance' }">Apparence</button>
-                    @if ($edition)<button type="button" @click="tab='translations'" :class="{ active: tab==='translations' }">Traductions</button>@endif
-                    @if ($edition)<button type="button" @click="tab='options'" :class="{ active: tab==='options' }">Options</button>@endif
+                {{-- Onglets « pilules » (.ukc-nav-docs) comme Programme, Soumissions et
+                     Réglages. Pilotés par l'URL (`?tab=`), mais SANS navigation : les
+                     dix panneaux vivent dans un seul formulaire, recharger la page
+                     perdrait les saisies des autres onglets. Les `href` restent de
+                     vrais liens, donc partageables. --}}
+                <div class="ukc-nav-docs">
+                    @foreach ([
+                        'general' => 'Général',
+                        'content' => 'Appel & contenu',
+                        'submissions' => 'Soumissions & tarifs',
+                        'committees' => 'Comités',
+                        'payment' => 'Paiement',
+                        'team' => 'Équipe',
+                        'partners' => 'Partenaires',
+                        'appearance' => 'Apparence',
+                        'translations' => 'Traductions',
+                        'options' => 'Options',
+                    ] as $key => $label)
+                        {{-- Les onglets d'une édition existante n'ont pas de sens à la création. --}}
+                        @if ($edition || ! in_array($key, ['payment', 'team', 'translations', 'options'], true))
+                            <a href="{{ $edition ? route('admin.editions.edit', ['edition' => $edition, 'tab' => $key]) : route('admin.editions.create', ['tab' => $key]) }}"
+                               :class="{ active: tab==='{{ $key }}' }"
+                               @click.prevent="goTab('{{ $key }}')">{{ $label }}</a>
+                        @endif
+                    @endforeach
                 </div>
 
                 {{-- multipart : l'onglet Apparence téléverse le bandeau et la bannière. --}}
@@ -881,6 +895,22 @@
         document.addEventListener('alpine:init', () => {
             Alpine.data('editionForm', (cfg) => ({
                 tab: cfg.tab,
+                // L'onglet vit dans l'URL sans rechargement : un lien s'envoie,
+                // et le retour arrière revient à l'onglet précédent.
+                init() {
+                    window.addEventListener('popstate', (e) => {
+                        this.tab = e.state?.ukcTab
+                            || new URLSearchParams(window.location.search).get('tab')
+                            || cfg.tab;
+                    });
+                },
+                goTab(key) {
+                    if (key === this.tab) return;
+                    this.tab = key;
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('tab', key);
+                    window.history.pushState({ ukcTab: key }, '', url);
+                },
                 f: cfg.f,
                 refMode: @js($v('ref_prefix_mode')),
                 refAxes: @js(old('ref_axes', $refAxes)),

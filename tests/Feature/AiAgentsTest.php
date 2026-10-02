@@ -37,8 +37,9 @@ it('normalise une clé manquante depuis le nom', function () {
 });
 
 it('affiche l’éditeur d’agents au staff', function () {
+    // L'éditeur est un ONGLET des réglages, plus une page à part.
     $this->actingAs(adminStaff(), 'web')
-        ->get(route('admin.settings.agents'))
+        ->get(route('admin.settings', ['tab' => 'agents-ia']))
         ->assertOk()
         ->assertSee('Agents IA')
         ->assertSee('Gesco')

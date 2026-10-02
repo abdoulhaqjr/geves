@@ -515,7 +515,9 @@ Route::prefix('admin')->group(function () {
             Route::get('/reglages', [SettingController::class, 'edit'])->name('admin.settings');
             Route::post('/reglages', [SettingController::class, 'update'])->name('admin.settings.update');
             Route::post('/reglages/test-email', [SettingController::class, 'sendTest'])->name('admin.settings.test');
-            Route::get('/reglages/agents-ia', [SettingAgentController::class, 'edit'])->name('admin.settings.agents');
+            // ⚠️ Les agents IA sont un ONGLET des réglages, plus une page : la
+            // redirection reste pour les signets et les liens déjà envoyés.
+            Route::permanentRedirect('/reglages/agents-ia', '/admin/reglages?tab=agents-ia');
             Route::put('/reglages/agents-ia', [SettingAgentController::class, 'update'])->name('admin.settings.agents.update');
         });
 

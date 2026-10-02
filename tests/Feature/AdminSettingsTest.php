@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\SettingController;
 use App\Meetings\Providers\LiveKitProvider;
 use App\Models\User;
 use App\Providers\AppServiceProvider;
@@ -14,31 +15,45 @@ it('affiche les réglages au staff habilité', function () {
         ->assertOk()->assertSee('Général')->assertSee('SMTP');
 });
 
-it('partage sa barre d’onglets avec la page des agents IA', function () {
+it('porte chaque onglet dans son URL', function () {
     $staff = adminStaff();
 
-    // Les deux pages incluent le même partial : « Agents IA » depuis les réglages,
-    // et le retour vers chaque onglet depuis les agents.
-    $this->actingAs($staff, 'web')->get(route('admin.settings'))
-        ->assertOk()
-        ->assertSee('ukc-nav-docs', false)
-        ->assertSee(route('admin.settings.agents'), false);
+    $page = $this->actingAs($staff, 'web')->get(route('admin.settings'))->assertOk();
+    $page->assertSee('ukc-nav-docs', false);
 
-    $this->actingAs($staff, 'web')->get(route('admin.settings.agents'))
-        ->assertOk()
-        ->assertSee('ukc-nav-docs', false)
-        ->assertSee(route('admin.settings', ['tab' => 'payments']), false);
+    // Chaque onglet est un vrai lien : partageable, ouvrable dans un nouvel onglet.
+    foreach (SettingController::TABS as $tab) {
+        $page->assertSee(route('admin.settings', ['tab' => $tab]), false);
+    }
 });
 
 it('ouvre l’onglet demandé par l’URL, et le premier si la clé est inconnue', function () {
     $staff = adminStaff();
 
     $this->actingAs($staff, 'web')->get(route('admin.settings', ['tab' => 'meetings']))
-        ->assertOk()->assertSee("tab: 'meetings'", false);
+        ->assertOk()->assertSee("ukcUrlTabs('meetings')", false);
 
     // ⚠️ Une clé fantaisiste n'afficherait aucun panneau : la page paraîtrait vide.
     $this->actingAs($staff, 'web')->get(route('admin.settings', ['tab' => 'nimporte']))
-        ->assertOk()->assertSee("tab: 'general'", false);
+        ->assertOk()->assertSee("ukcUrlTabs('general')", false);
+});
+
+it('héberge les agents IA dans un onglet, avec leur propre formulaire', function () {
+    $staff = adminStaff();
+
+    $this->actingAs($staff, 'web')->get(route('admin.settings', ['tab' => 'agents-ia']))
+        ->assertOk()
+        ->assertSee("ukcUrlTabs('agents-ia')", false)
+        // ⚠️ Son formulaire est DISTINCT de celui des réglages : deux formulaires
+        // imbriqués ne s'enregistreraient pas.
+        ->assertSee(route('admin.settings.agents.update'), false)
+        ->assertSee('agentsEditor(', false);
+});
+
+it('redirige l’ancienne adresse des agents IA', function () {
+    // Les notifications et les signets gardent des URL absolues figées.
+    $this->actingAs(adminStaff(), 'web')->get('/admin/reglages/agents-ia')
+        ->assertRedirect('/admin/reglages?tab=agents-ia');
 });
 
 it('enregistre les réglages', function () {
