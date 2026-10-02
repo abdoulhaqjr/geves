@@ -818,8 +818,21 @@
                     <div class="ai-panel">
                         <h2><span>✨</span> Paramétrage assisté (IA)</h2>
                         <div class="desc">Remplir automatiquement les champs à partir de documents (appel, affiche, programme…) ou en décrivant l’édition.</div>
-                        <div class="ai-drop" @click="$refs.aiFile.click()" x-text="fileLabel()"></div>
+                        <div class="ai-drop" :class="{ 'is-over': aiOver }"
+                             @click="$refs.aiFile.click()"
+                             @dragover.prevent="aiOver = true" @dragleave.prevent="aiOver = false"
+                             @drop.prevent="onDrop($event)"
+                             role="button" tabindex="0" @keydown.enter="$refs.aiFile.click()"
+                             x-text="fileLabel()"></div>
                         <input type="file" x-ref="aiFile" multiple accept=".pdf,.png,.jpg,.jpeg,.webp" style="display:none;" @change="onFiles($event)">
+                        <div class="ai-files" x-show="aiFiles.length" x-cloak>
+                            <template x-for="(file, i) in aiFiles" :key="i">
+                                <span class="ai-file">
+                                    <span x-text="file.name"></span>
+                                    <button type="button" @click="removeFile(i)" :aria-label="'Retirer ' + file.name">&times;</button>
+                                </span>
+                            </template>
+                        </div>
                         <textarea x-model="aiPrompt" rows="4" placeholder="Ex. : dates du colloque, thème, axes, public cible…"></textarea>
                         <div class="ai-actions">
                             <button type="button" class="ukc-btn ukc-btn--ai" style="width:100%;" @click="analyze()" :disabled="aiBusy">
@@ -828,6 +841,12 @@
                         </div>
                         <div class="ai-actions" x-show="aiSuggestions" style="margin-top:8px;display:none;">
                             <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" style="width:100%;" @click="applyAi()">Appliquer au formulaire</button>
+                        </div>
+                        {{-- ⚠️ Le piège du panneau : « Appliquer » ne fait que remplir les
+                             champs. Sans ce rappel, l'admin quittait la fiche en croyant
+                             l'édition enregistrée. --}}
+                        <div class="ai-unsaved" x-show="aiApplied" x-cloak>
+                            Champs remplis. <strong>Rien n’est encore enregistré</strong> : relisez les onglets, puis cliquez sur <em>Enregistrer</em>.
                         </div>
                         <span class="ukc-hint" x-text="aiMsg" x-show="aiMsg" style="display:block;margin-top:8px;"></span>
                         <div class="ai-suggestions" x-show="aiSuggestions" style="display:none;">
@@ -867,6 +886,7 @@
                 refAxes: @js(old('ref_axes', $refAxes)),
                 aiUrl: cfg.aiUrl, csrf: cfg.csrf,
                 aiPrompt: '', aiBusy: false, aiMsg: '', aiSuggestions: null, aiFiles: [],
+                aiOver: false, aiApplied: false,
                 comOrg: cfg.arrays.comOrg || [],
                 comSci: cfg.arrays.comSci || [],
                 comSup: cfg.arrays.comSup || [],
@@ -883,8 +903,21 @@
                     const s = (this.stats || []).filter(x => x.label || x.value);
                     return s.length ? s.map(x => (x.value + ' ' + x.label).trim()).join(' · ') : '-';
                 },
-                fileLabel() { return this.aiFiles.length ? (this.aiFiles.length + ' fichier(s) sélectionné(s)') : 'Déposer un document (PDF, image)'; },
-                onFiles(e) { this.aiFiles = Array.from(e.target.files || []); },
+                fileLabel() {
+                    if (this.aiOver) return 'Relâchez pour ajouter';
+                    return this.aiFiles.length
+                        ? (this.aiFiles.length + ' document(s) · cliquez pour en ajouter')
+                        : 'Glissez un document ici (PDF, image) ou cliquez';
+                },
+                // Cumulatif : on ajoute aux documents déjà choisis plutôt que de les
+                // remplacer - un appel et une affiche se déposent rarement ensemble.
+                addFiles(list) {
+                    const ok = Array.from(list || []).filter(f => /\.(pdf|png|jpe?g|webp)$/i.test(f.name));
+                    this.aiFiles = this.aiFiles.concat(ok).slice(0, 8);
+                },
+                onFiles(e) { this.addFiles(e.target.files); this.$refs.aiFile.value = ''; },
+                onDrop(e) { this.aiOver = false; this.addFiles(e.dataTransfer?.files); },
+                removeFile(i) { this.aiFiles.splice(i, 1); },
                 suggestionList() {
                     const s = this.aiSuggestions || {}, labels = { title:'Nom', theme:'Thème', subtitle:'Accroche', location:'Lieu', year:'Année', date_start:'Début', date_end:'Fin', submission_deadline:'Limite', intro:'Présentation' }, out = {};
                     Object.keys(labels).forEach(k => { if (s[k]) out[k] = { label: labels[k], value: String(s[k]).slice(0,120) }; });
@@ -898,6 +931,17 @@
                 async analyze() {
                     if (!this.aiFiles.length && !this.aiPrompt.trim()) { this.aiMsg = 'Ajoutez un document ou une consigne.'; return; }
                     this.aiBusy = true; this.aiMsg = 'Analyse en cours…'; this.aiSuggestions = null;
+                    // Le panneau est étroit et la fiche est longue : sans le voile,
+                    // l'admin qui a fait défiler la page ne voit plus rien travailler.
+                    window.ukcAiVeil?.show({
+                        title: 'Analyse de vos documents…',
+                        steps: [
+                            this.aiFiles.length ? ('Lecture de ' + this.aiFiles.length + ' document(s)…') : 'Lecture de votre consigne…',
+                            'Repérage des dates, du thème et des axes…',
+                            'Relevé des comités, tarifs et partenaires…',
+                            'Préparation des propositions…',
+                        ],
+                    });
                     try {
                         const fd = new FormData();
                         fd.append('aiPrompt', this.aiPrompt || '');
@@ -906,7 +950,13 @@
                         const j = await r.json();
                         this.aiMsg = j.message || '';
                         if (j.ok && j.suggestions && Object.keys(j.suggestions).length) this.aiSuggestions = j.suggestions;
-                    } catch (e) { this.aiMsg = 'Échec de l’analyse.'; }
+                        window.ukcAiVeil?.done(this.aiSuggestions ? 'Propositions prêtes.' : (this.aiMsg || 'Aucune information exploitable.'), !!this.aiSuggestions);
+                    } catch (e) {
+                        this.aiMsg = 'Échec de l’analyse.';
+                        window.ukcAiVeil?.done('Échec de l’analyse.', false);
+                    }
+                    // Le message final reste lisible un instant avant la fermeture.
+                    setTimeout(() => window.ukcAiVeil?.hide(), 900);
                     this.aiBusy = false;
                 },
                 applyAi() {
@@ -921,7 +971,8 @@
                     }
                     if (Array.isArray(s.partners)) this.partners = s.partners;
                     if (Array.isArray(s.faq)) this.faq = s.faq;
-                    this.aiMsg = 'Appliqué au formulaire.'; this.aiSuggestions = null;
+                    this.aiMsg = ''; this.aiSuggestions = null; this.aiApplied = true;
+                    window.ukcToast?.('Champs remplis - pensez à enregistrer la fiche.');
                 },
             }));
         });

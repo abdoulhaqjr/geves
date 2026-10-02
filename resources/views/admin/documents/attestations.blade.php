@@ -327,8 +327,13 @@
                                 <input type="text" name="forewordSignature" value="{{ $opts['forewordSignature'] }}" placeholder="Prof. … - Président du Comité d’Organisation">
                             </div>
                             @if ($aiAvailable)
+                                {{-- data-ai : le voile de travail se lève après la confirmation
+                                     et tient jusqu'au rechargement, l'IA prenant une dizaine
+                                     de secondes sans quoi rien n'indiquerait qu'elle travaille. --}}
                                 <button type="submit" formaction="{{ route('admin.documents.livret.foreword-ai', ['edition_id' => $edition->id]) }}"
                                         class="ukc-btn ukc-btn--green ukc-btn--sm"
+                                        data-ai data-ai-title="Rédaction de l’avant-propos…"
+                                        data-ai-steps="Lecture des métadonnées de l’édition…|Relevé des axes et des résumés retenus…|Rédaction du texte…"
                                         data-confirm="Générer l’avant-propos par IA à partir des métadonnées de l’édition ? Le texte actuel sera remplacé.">
                                     <x-ukc.icon name="sparkles" :size="16" /> Rédiger par IA
                                 </button>

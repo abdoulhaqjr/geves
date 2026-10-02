@@ -386,7 +386,12 @@
                         la décision et la diffusion restent à votre main.
                     </p>
 
-                    <form method="POST" action="{{ route('admin.reports.generate') }}" enctype="multipart/form-data" x-ref="aiForm">
+                    {{-- data-ajax : seul le bloc de résultat est rafraîchi, la description saisie
+                         reste donc à l'écran si l'IA échoue. data-ai lève le voile. --}}
+                    <form method="POST" action="{{ route('admin.reports.generate') }}" enctype="multipart/form-data" x-ref="aiForm"
+                          data-ajax data-ajax-target="ai-report" data-ajax-msg="Rapport généré."
+                          data-ai data-ai-title="Rédaction du rapport…"
+                          data-ai-steps="Lecture de vos instructions…|Collecte des données de l’édition…|Rédaction du brouillon…|Mise en forme du document…">
                         @csrf
                         <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                         <input type="hidden" name="mode" :value="aiMode">
@@ -470,7 +475,11 @@
                             <button type="reset" class="ukc-btn ukc-btn--ghost" @click="clearFile(); aiMode='describe'">Réinitialiser</button>
                         </div>
                     </form>
+                </div>
 
+                {{-- Bloc rafraîchi après génération : erreur, rapport produit et
+                     historique, les trois changeant d'un coup. --}}
+                <div data-ajax-root="ai-report">
                     @if (session('ai_error'))
                         <div class="ukc-alert ukc-alert--err" style="margin-top:14px;">
                             <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
@@ -498,7 +507,6 @@
                             </div>
                         </div>
                     @endif
-                </div>
 
                 {{-- Historique des exports IA --}}
                 <div class="ukc-card">
@@ -516,6 +524,7 @@
                     @empty
                         <p class="ukc-hint">Aucune génération pour l’instant. Décrivez un rapport ci-dessus pour commencer.</p>
                     @endforelse
+                </div>
                 </div>
             </div>
             @endif

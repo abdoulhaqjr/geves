@@ -114,18 +114,24 @@
             @if ($docEditions->isEmpty())
                 <div class="ukc-empty"><h3>Aucune édition</h3><p>Vous n'avez accès aux documents d'aucune édition.</p></div>
             @else
-                <div class="ukc-grid-2" style="align-items:start;">
+                {{-- Bloc rafraîchi après génération : le document produit et
+                     l'historique changent d'un coup. --}}
+                <div class="ukc-grid-2" style="align-items:start;" data-ajax-root="sec-doc">
                     {{-- Générateur --}}
                     <div class="ukc-card"
                          x-data="{
                             presets: @js($presets),
-                            preset: '', prompt: '', format: 'pdf', dataset: 'none',
+                            preset: @js(old('preset', '')), prompt: @js(old('prompt', '')),
+                            format: @js(old('format', 'pdf')), dataset: @js(old('dataset', 'none')),
                             pick(k){ const p=this.presets[k]; if(!p) return; this.preset=k; this.prompt=p.prompt; this.format=p.format; this.dataset=p.dataset; }
                          }">
                         <h3><x-ukc.icon name="sparkles" :size="18" /> Générer un document</h3>
                         <p style="font-size:13px;color:var(--ukc-muted);margin:4px 0 12px;">Choisissez un modèle, décrivez le document ou joignez un exemple. L'IA produit un <strong>brouillon</strong> à partir des données réelles de l'édition (participants, programme) - à relire avant diffusion.</p>
 
-                        <form method="POST" action="{{ route('admin.secretariat.assist') }}" enctype="multipart/form-data">
+                        <form method="POST" action="{{ route('admin.secretariat.assist') }}" enctype="multipart/form-data"
+                              data-ajax data-ajax-target="sec-doc" data-ajax-msg="Document généré."
+                              data-ai data-ai-title="Rédaction du document…"
+                              data-ai-steps="Lecture de votre consigne…|Collecte des données de l’édition…|Rédaction du brouillon…|Mise en forme du document…">
                             @csrf
                             <div class="ukc-field">
                                 <label>Colloque</label>

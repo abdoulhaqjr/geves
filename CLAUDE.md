@@ -636,6 +636,49 @@ paiement (`pay`), inscription à une formation.
     part**. Il a désormais sa section dans l'onglet **Apparence**, à la place de
     l'encart supprimé. Vide, il ne s'affiche pas.
   Tests : `tests/Feature/EditionArtworkTest.php`.
+### Actions IA du back-office = AJAX + voile de travail
+
+Une analyse IA dure dix à soixante secondes. Sans retour visuel, l'admin
+recliquait ou quittait la page en croyant à un blocage ; et une génération qui
+rechargeait la page faisait perdre la saisie en cours.
+
+- **Voile de travail** : **`window.ukcAiVeil`** (`show({title, steps})`,
+  `done(message, ok)`, `hide()`) couvre l'écran du bleu de la charte, fait
+  défiler les étapes et compte le temps écoulé. ⚠️ `z-index: 120`, **au-dessus
+  des modales (100) et des slideovers (60)** : une analyse lancée depuis un
+  panneau doit le couvrir. **Aucun clic ne le ferme** - on ne propose pas
+  d'annuler ce qu'on ne sait pas interrompre côté serveur. Compteur `depth`
+  pour les appels imbriqués, et retrait forcé au retour arrière (bfcache).
+- **Déclenchement déclaratif** : l'attribut **`data-ai`** sur un formulaire *ou*
+  sur le bouton cliqué suffit ; `data-ai-title` et `data-ai-steps` (étapes
+  séparées par `|`) règlent le texte. ⚠️ Avec `data-confirm`, le voile se lève
+  **après** la popup (sinon il la recouvrirait, et resterait affiché en cas de
+  renoncement) : le point d'accroche est dans le gestionnaire de confirmation,
+  car `form.submit()` ne déclenche aucun évènement `submit`.
+- **Passage en AJAX** : ajouter `data-ajax` + `data-ajax-target="<clé>"` au
+  formulaire et envelopper le bloc de résultat dans `data-ajax-root="<clé>"`.
+  Fait pour **Rapports › Export personnalisé (IA)** (`ai-report`) et
+  **Secrétariat › Générer un document** (`sec-doc`). Les panneaux de la **fiche
+  d'édition** et des **formations** étaient déjà en `fetch` : ils appellent
+  désormais le voile.
+- ⚠️ **`ukcAjaxSubmit` lit la réponse du POST**, qui est déjà la page
+  rafraîchie (fetch suit la redirection), **messages flash compris**. Le second
+  GET d'avant consommait le flash et vidait le bloc de résultat - c'est ce qui
+  aurait cassé toutes ces actions IA, dont le résultat passe précisément par un
+  flash. Repli sur un GET seulement si la racine est absente de la réponse.
+- ⚠️ Un bloc rafraîchi **ne doit pas contenir le formulaire** quand la saisie
+  doit survivre à une erreur ; sinon, flasher l'entrée (`back()->withInput()`)
+  et repartir de `old()` dans l'état Alpine (fait pour le Secrétariat).
+- **Paramétrage assisté de la fiche d'édition** : glisser-déposer réel (la zone
+  s'appelait « Déposer un document » mais ne réagissait qu'au clic), documents
+  cumulatifs et retirables un par un (8 maximum), et surtout un **rappel
+  explicite** après « Appliquer au formulaire » - ⚠️ l'IA **ne fait que remplir
+  les champs**, la fiche reste à enregistrer, et l'admin partait en croyant
+  l'édition créée.
+- ⚠️ `admin.editions.ai-assist` (variante non-JSON de `aiAssistJson`) **n'a plus
+  aucun appelant** depuis le passage du panneau en fetch : ne pas s'en servir de
+  modèle pour une nouvelle action.
+
 ### Règles métier - limites communications & attestations
 
 - **Limite de communications** (`settings.max_communications`) : compte **seulement** les

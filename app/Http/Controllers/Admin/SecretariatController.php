@@ -159,7 +159,7 @@ class SecretariatController extends Controller
         }
 
         if ($prompt === '' && $files === []) {
-            return back()->with('sec_error', 'Décrivez le document souhaité, choisissez un modèle prédéfini ou joignez un exemple.');
+            return back()->withInput()->with('sec_error', 'Décrivez le document souhaité, choisissez un modèle prédéfini ou joignez un exemple.');
         }
 
         // Contexte du programme réel (salles, horaires, modérateurs/rapporteurs) pour
@@ -183,7 +183,7 @@ class SecretariatController extends Controller
 
             return back()->with('sec_doc', $entry);
         } catch (\Throwable $e) {
-            return back()->with('sec_error', $e->getMessage());
+            return back()->withInput()->with('sec_error', $e->getMessage());
         }
     }
 

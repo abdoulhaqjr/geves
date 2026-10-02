@@ -821,3 +821,45 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .ukc-shell:has(.ukc-cb-root) .ukc-content { padding-bottom: 104px; }
 body:has(.ukc-cb-root) .ukc-admin-body,
 body:has(.ukc-cb-root) .ukc-content { padding-bottom: 104px; }
+
+/* ============================================================
+   VOILE DE TRAVAIL DE L'IA (window.ukcAiVeil)
+   ============================================================
+   Une analyse dure dix à soixante secondes : sans retour visuel, l'admin
+   recliquait ou quittait la page. Le voile occupe l'écran en bleu de charte et
+   dit ce qui se fait. ⚠️ z-index 120 : au-dessus des modales (100) et des
+   slideovers (60), parce qu'une analyse lancée DEPUIS un panneau doit le
+   couvrir. Aucun clic ne le ferme : on n'annule pas un travail serveur. */
+.ukc-ai-veil {
+  position: fixed; inset: 0; z-index: 120;
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+  background: var(--ukc-hero, linear-gradient(135deg, #14205a 0%, #223ea4 55%, #2f55d4 100%));
+  opacity: 0; transition: opacity .28s ease;
+  cursor: progress;
+}
+.ukc-ai-veil.is-in { opacity: 1; }
+.ukc-ai-veil__box { position: relative; text-align: center; color: #fff; max-width: 420px; width: 100%; }
+/* Halo pulsé : un repère d'activité qui ne promet aucune progression chiffrée. */
+.ukc-ai-veil__halo {
+  width: 68px; height: 68px; margin: 0 auto 22px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 215, 0, .95) 0%, rgba(255, 215, 0, .25) 45%, transparent 70%);
+  animation: ukcAiPulse 1.8s ease-in-out infinite;
+}
+.ukc-ai-veil__title { font-size: 1.25rem; font-weight: 800; letter-spacing: -.01em; margin-bottom: 10px; }
+.ukc-ai-veil__step { font-size: .95rem; color: rgba(255, 255, 255, .88); min-height: 2.6em; line-height: 1.45; }
+.ukc-ai-veil__bar { width: 220px; height: 3px; margin: 18px auto 0; border-radius: 999px; background: rgba(255, 255, 255, .22); overflow: hidden; }
+.ukc-ai-veil__bar span { display: block; width: 40%; height: 100%; border-radius: 999px; background: var(--ukc-gold, #ffd700); animation: ukcAiSlide 1.5s ease-in-out infinite; }
+.ukc-ai-veil__foot { margin-top: 20px; display: flex; gap: 10px; align-items: center; justify-content: center; font-size: 12.5px; color: rgba(255, 255, 255, .7); }
+.ukc-ai-veil__foot .t { font-variant-numeric: tabular-nums; font-weight: 700; }
+.ukc-ai-veil.is-err .ukc-ai-veil__halo { background: radial-gradient(circle at 50% 50%, rgba(248, 113, 113, .95) 0%, rgba(248, 113, 113, .22) 45%, transparent 70%); animation: none; }
+.ukc-ai-veil.is-err .ukc-ai-veil__bar span { background: #f87171; animation: none; width: 100%; }
+body.ukc-ai-busy { overflow: hidden; }
+
+@keyframes ukcAiPulse { 0%, 100% { transform: scale(.88); opacity: .75; } 50% { transform: scale(1.08); opacity: 1; } }
+@keyframes ukcAiSlide { 0% { transform: translateX(-120%); } 100% { transform: translateX(320%); } }
+
+/* ⚠️ Pas d'animation quand l'utilisateur en a demandé moins : le voile reste
+   lisible et statique, l'information étant dans le texte. */
+@media (prefers-reduced-motion: reduce) {
+  .ukc-ai-veil__halo, .ukc-ai-veil__bar span { animation: none; }
+}

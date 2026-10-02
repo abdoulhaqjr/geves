@@ -292,9 +292,17 @@ async function ukcAjaxSubmit(form, submitter) {
         if (!res.ok) throw new Error('http');
         ukcToast(form.dataset.ajaxMsg || 'Action effectuée.');
         if (key) {
-            const html = await (await fetch(window.location.href, { headers: { 'X-Requested-With': 'fetch' } })).text();
-            const doc = new DOMParser().parseFromString(html, 'text/html');
-            const fresh = doc.querySelector('[data-ajax-root="' + key + '"]');
+            // ⚠️ `fetch` suit la redirection : la réponse EST déjà la page
+            // rafraîchie, messages flash compris. La relire ici évite un
+            // aller-retour, et surtout ne consomme pas le flash - un second GET
+            // le trouverait vide, ce qui effaçait le résultat des actions IA.
+            let doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+            let fresh = doc.querySelector('[data-ajax-root="' + key + '"]');
+            if (!fresh) {
+                const html = await (await fetch(window.location.href, { headers: { 'X-Requested-With': 'fetch' } })).text();
+                doc = new DOMParser().parseFromString(html, 'text/html');
+                fresh = doc.querySelector('[data-ajax-root="' + key + '"]');
+            }
             const cur = document.querySelector('[data-ajax-root="' + key + '"]');
             if (fresh && cur) { cur.innerHTML = fresh.innerHTML; window.Alpine?.initTree?.(cur); }
         }
@@ -302,7 +310,20 @@ async function ukcAjaxSubmit(form, submitter) {
         ukcToast('Action impossible.', 'err');
     } finally {
         btns.forEach((b) => { b.disabled = false; });
+        if (form.hasAttribute('data-ai') || form.__ukcAiVeil) {
+            form.__ukcAiVeil = false;
+            window.ukcAiVeil?.hide();
+        }
     }
+}
+
+// Options du voile portées par le formulaire OU par le bouton cliqué (un même
+// formulaire peut avoir un bouton « Enregistrer » et un bouton « Rédiger par IA »).
+function ukcAiVeilOptions(el) {
+    return {
+        title: el.dataset.aiTitle || undefined,
+        steps: (el.dataset.aiSteps || '').split('|').map((s) => s.trim()).filter(Boolean),
+    };
 }
 
 // Confirmation (popup) + soumission. `data-confirm` peut être sur le formulaire OU
@@ -321,6 +342,16 @@ document.addEventListener('submit', (e) => {
     e.preventDefault();
     const run = async () => {
         if (confirmText && ! (await window.ukcConfirm(confirmText, { danger: submitter?.classList.contains('ukc-btn--danger') }))) return;
+
+        // ⚠️ Le voile IA se lève APRÈS la confirmation : sinon il recouvrirait la
+        // popup, et resterait affiché si l'admin renonce. `form.submit()` plus bas
+        // ne déclenche aucun évènement « submit », d'où ce point d'accroche ici.
+        const aiEl = submitter?.hasAttribute('data-ai') ? submitter : (form.hasAttribute('data-ai') ? form : null);
+        if (aiEl) {
+            form.__ukcAiVeil = true;
+            window.ukcAiVeil?.show(ukcAiVeilOptions(aiEl));
+        }
+
         if (isAjax) { ukcAjaxSubmit(form, submitter); return; }
         // Formulaire classique : re-soumission native en préservant le bouton cliqué
         // (name/value) et son éventuel `formaction`/`formmethod`.
@@ -2580,3 +2611,118 @@ function initChatbotPoliteness() {
 }
 
 document.addEventListener('DOMContentLoaded', initChatbotPoliteness);
+
+// ---------------------------------------------------------------------------
+// Voile de travail de l'IA
+// ---------------------------------------------------------------------------
+// Une analyse IA dure dix à soixante secondes, sans rien à l'écran : l'admin
+// recliquait, ou quittait la page en croyant à un blocage. Le voile occupe donc
+// l'écran en bleu de charte, annonce ce qui se fait, fait défiler les étapes et
+// compte le temps écoulé. Il se ferme par `hide()` - jamais au clic : on ne
+// propose pas d'annuler ce qu'on ne sait pas interrompre côté serveur.
+const ukcAiVeil = (() => {
+    let el = null;
+    let timer = null;
+    let tick = null;
+    let depth = 0; // appels imbriqués : on ne ferme qu'au dernier
+
+    const DEFAULT_STEPS = [
+        'Lecture de vos documents…',
+        'Extraction des informations…',
+        'Recoupement avec l’édition en cours…',
+        'Mise en forme du résultat…',
+    ];
+
+    function build(title, note) {
+        const veil = document.createElement('div');
+        veil.className = 'ukc-ai-veil';
+        veil.setAttribute('role', 'status');
+        veil.setAttribute('aria-live', 'polite');
+        veil.innerHTML = '<div class="ukc-ai-veil__box">'
+            + '<div class="ukc-ai-veil__halo" aria-hidden="true"></div>'
+            + '<div class="ukc-ai-veil__title"></div>'
+            + '<div class="ukc-ai-veil__step"></div>'
+            + '<div class="ukc-ai-veil__bar" aria-hidden="true"><span></span></div>'
+            + '<div class="ukc-ai-veil__foot"><span class="t">0 s</span><span class="n"></span></div>'
+            + '</div>';
+        veil.querySelector('.ukc-ai-veil__title').textContent = title;
+        veil.querySelector('.ukc-ai-veil__foot .n').textContent = note;
+
+        return veil;
+    }
+
+    return {
+        /** Affiche le voile. Les étapes défilent tant que `hide()` n'est pas appelé. */
+        show(opts = {}) {
+            depth += 1;
+            if (el) return;
+
+            const steps = (opts.steps && opts.steps.length) ? opts.steps : DEFAULT_STEPS;
+            el = build(opts.title || 'L’IA travaille…', opts.note || 'Ne fermez pas cette page.');
+            document.body.appendChild(el);
+            document.body.classList.add('ukc-ai-busy');
+
+            const stepEl = el.querySelector('.ukc-ai-veil__step');
+            const timeEl = el.querySelector('.ukc-ai-veil__foot .t');
+            let i = 0;
+            const started = Date.now();
+            stepEl.textContent = steps[0];
+
+            timer = setInterval(() => {
+                // La dernière étape reste affichée : mieux vaut un libellé figé
+                // qu'un cycle qui laisserait croire que ça recommence.
+                i = Math.min(i + 1, steps.length - 1);
+                stepEl.textContent = steps[i];
+            }, 2600);
+
+            tick = setInterval(() => {
+                timeEl.textContent = Math.round((Date.now() - started) / 1000) + ' s';
+            }, 1000);
+
+            requestAnimationFrame(() => el?.classList.add('is-in'));
+
+            // ⚠️ Soumission native : la page part et le voile s'en va avec elle,
+            // mais un retour arrière restaure la page depuis le cache - voile
+            // compris. On le retire alors de force.
+            window.addEventListener('pageshow', (ev) => { if (ev.persisted) { depth = 1; this.hide(); } }, { once: true });
+        },
+
+        /** Message final affiché brièvement avant la fermeture (succès ou échec). */
+        done(message, ok = true) {
+            if (!el) return;
+            const stepEl = el.querySelector('.ukc-ai-veil__step');
+            clearInterval(timer);
+            timer = null;
+            stepEl.textContent = message;
+            el.classList.toggle('is-err', !ok);
+        },
+
+        hide() {
+            depth = Math.max(0, depth - 1);
+            if (depth > 0 || !el) return;
+
+            const dying = el;
+            el = null;
+            clearInterval(timer); timer = null;
+            clearInterval(tick); tick = null;
+            document.body.classList.remove('ukc-ai-busy');
+            dying.classList.remove('is-in');
+            setTimeout(() => dying.remove(), 280);
+        },
+    };
+})();
+window.ukcAiVeil = ukcAiVeil;
+
+// Les formulaires IA classiques (soumission native ou data-ajax) déclenchent le
+// voile par le seul attribut `data-ai`. `data-ai-title` / `data-ai-steps`
+// (étapes séparées par « | ») personnalisent le texte.
+document.addEventListener('submit', (e) => {
+    const form = e.target;
+    if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-ai')) return;
+
+    // Confirmation ou AJAX : c'est le gestionnaire ci-dessus qui lève le voile,
+    // au bon moment (après la popup, et avec les options du bouton cliqué).
+    if (form.dataset.confirm || e.submitter?.dataset.confirm || form.hasAttribute('data-ajax')) return;
+
+    ukcAiVeil.show(ukcAiVeilOptions(form));
+}, true);
