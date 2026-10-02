@@ -1000,8 +1000,8 @@ body.ukc-overlay-open .ukc-cb-root { opacity: 0; transform: translateY(10px) sca
 .ukc-cred {
   min-height: 100vh; padding-bottom: 56px;
   background:
-    radial-gradient(900px 420px at 50% -8%, rgba(34, 62, 164, .09), transparent 62%),
-    var(--ukc-bg);
+    radial-gradient(900px 420px at 50% -8%, rgba(34, 62, 164, .10), transparent 62%),
+    #eef1f6;
 }
 
 .ukc-cred-top {
@@ -1022,41 +1022,29 @@ body.ukc-overlay-open .ukc-cb-root { opacity: 0; transform: translateY(10px) sca
 
 .ukc-cred-alert {
   display: flex; align-items: center; gap: 10px;
-  max-width: 1120px; margin: 16px auto 0; padding: 12px 16px;
+  max-width: 1300px; margin: 16px auto 0; padding: 12px 16px;
   background: #fee2e2; color: #991b1b; border-radius: var(--ukc-radius);
   font-size: .9rem; font-weight: 600;
 }
 
-/* ---- Qui, quoi, par qui ---- */
-.ukc-cred-head {
-  max-width: 1120px; margin: 0 auto; padding: clamp(24px, 4vw, 40px) clamp(16px, 4vw, 40px) 0;
-  text-align: center;
-}
-.ukc-cred-eyebrow {
-  font-size: .74rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
-  color: var(--ukc-blue);
-}
-.ukc-cred-name {
-  font-size: clamp(1.6rem, 3.4vw, 2.3rem); font-weight: 800; line-height: 1.15;
-  margin-top: 6px; letter-spacing: -.01em;
-}
-.ukc-cred-by { color: var(--ukc-muted); margin-top: 8px; font-size: .95rem; }
-
 /* ---- Le document ---- */
-.ukc-cred-stage { padding: clamp(18px, 2.5vw, 26px) clamp(16px, 4vw, 40px) 0; }
+.ukc-cred-stage { padding: clamp(22px, 4vw, 40px) clamp(16px, 4vw, 40px) 0; }
 .ukc-cred-doc {
   /* Le cadre épouse le document, pas l'inverse : sinon une bande blanche
      reste à côté d'une mise en page plus étroite que la colonne. */
-  width: min(100%, var(--doc-w, 1120px)); max-width: 1120px;
+  width: min(100%, var(--doc-w, 1260px)); max-width: 1260px;
   margin: 0 auto; overflow: hidden;
   border-radius: var(--ukc-radius-lg); background: #fff;
-  box-shadow: var(--ukc-shadow-lg);
+  /* ⚠️ Papier blanc sur page blanche : sans bord ni ombre portée, on ne voyait
+     pas où commence le document. */
+  border: 1px solid #dbe2ea;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 18px 40px -12px rgba(15, 23, 42, .22);
 }
 /* Mis à l'échelle de son cadre (cf. script de la vue) : jamais de défilement
    horizontal imposé au visiteur. */
 .ukc-cred-doc-inner { transform-origin: top left; }
 .ukc-cred-caption {
-  max-width: 1120px; margin: 12px auto 0;
+  max-width: 1300px; margin: 12px auto 0;
   text-align: center; font-size: .82rem; color: var(--ukc-muted);
 }
 .ukc-cred-uuid { font-family: var(--ukc-mono); color: var(--ukc-blue); word-break: break-all; }
@@ -1088,9 +1076,9 @@ body.ukc-overlay-open .ukc-cb-root { opacity: 0; transform: translateY(10px) sca
 
 /* ---- Colonnes ---- */
 .ukc-cred-grid {
-  max-width: 1120px; margin: clamp(20px, 3vw, 32px) auto 0;
+  max-width: 1300px; margin: clamp(20px, 3vw, 32px) auto 0;
   padding: 0 clamp(16px, 4vw, 40px);
-  display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start;
+  display: grid; grid-template-columns: 350px 1fr; gap: 20px; align-items: start;
 }
 .ukc-cred-side, .ukc-cred-main { display: grid; gap: 20px; align-content: start; }
 @media (min-width: 901px) {

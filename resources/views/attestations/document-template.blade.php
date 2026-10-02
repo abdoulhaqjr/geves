@@ -60,16 +60,6 @@
             </p>
         @endif
 
-        {{-- Ce que le visiteur cherche en premier : qui, quoi, délivré par qui.
-             Le document le dit, mais en petit et en image. --}}
-        <section class="ukc-cred-head no-print">
-            <p class="ukc-cred-eyebrow">{{ $attestation->typeLabel() }}</p>
-            <h1 class="ukc-cred-name">{{ $attestation->recipient_name }}</h1>
-            @if ($issuer)
-                <p class="ukc-cred-by">{{ __('Délivré par') }} <strong>{{ $issuer->name }}</strong></p>
-            @endif
-        </section>
-
         {{-- Le document, tel qu'il a été délivré. Les gestes se posent par-dessus
              au survol (et au clavier, via :focus-within) : la colonne de gauche
              les porte aussi, pour le tactile et l'impression. --}}

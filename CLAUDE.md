@@ -674,8 +674,12 @@ deux raisons distinctes.
    (`2026_10_02_000400_restore_document_template_images`) répare les modèles déjà
    enregistrés en récupérant les images de l'instantané.
    ⚠️ **L'image de FOND n'était pas enregistrée du tout** (`bg` ne portait que la
-   couleur) : une attestation dessinée sur un fond illustré ressortait sur du
-   blanc. Elle a désormais sa clé `bg_image` (JS → sanitizer → renderer).
+   couleur) : une attestation dessinée sur un fond illustré - le cadre couleurs
+   UK, par exemple - ressortait sur du blanc. Elle a désormais sa clé `bg_image`
+   (JS → sanitizer → renderer), et la migration
+   `2026_10_02_000600_restore_document_template_background` la récupère depuis
+   l'instantané pour les modèles déjà enregistrés (seul endroit où le fond avait
+   survécu).
    ⚠️ **dompdf ne télécharge aucune image distante** (`enable_remote` est faux) :
    `LayoutRenderer::render(..., pdf: true)` résout les adresses servies par le
    site en **chemins de fichier**, sans quoi les logos sortent du PDF alors
@@ -763,6 +767,9 @@ Certifier/Credsverse).
   que le concepteur montrait un exemple. Ils viennent des réglages
   `attestations.signatory` / `signatory_role` de l'édition (onglet **Options**
   des attestations).
+- ⚠️ **Papier blanc sur page blanche** : rien ne distinguait le document de la
+  page. Le cadre porte un filet et une ombre portée, et le fond de page un gris
+  franc (`#eef1f6`). Colonne de gestes à **350 px**, page à **1300 px**.
 - ⚠️ **Les valeurs de rendu ont une source unique** : `App\Documents\AttestationVars`.
   La page et le PDF dressaient la même liste chacun de leur côté, donc un jeton
   ajouté à l'une manquait à l'autre.

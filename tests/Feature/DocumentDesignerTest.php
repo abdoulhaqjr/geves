@@ -4,6 +4,7 @@ use App\Actions\IssueAttestation;
 use App\AI\AiManager;
 use App\AI\Contracts\AiProvider;
 use App\Documents\LayoutRenderer;
+use App\Documents\LayoutSanitizer;
 use App\Models\Colloque;
 use App\Models\DocumentTemplate;
 use App\Models\User;
@@ -297,4 +298,17 @@ it('le QR rendu porte l’adresse de l’attestation, pas un lien générique', 
     $b = LayoutRenderer::render($layout, ['verify_url' => 'https://exemple.test/attestation/bbb']);
 
     expect($a)->not->toBe($b);
+});
+
+it('dessine le fond de page du modèle sur le document', function () {
+    // ⚠️ Le fond n'était pas enregistré : une attestation dessinée sur un fond
+    // illustré ressortait sur du blanc.
+    $layout = LayoutSanitizer::sanitize([
+        'width' => 900, 'height' => 636, 'bg' => '#ffffff',
+        'bg_image' => '/img/bg-attestation-uk.png',
+        'elements' => [['type' => 'text', 'x' => 10, 'y' => 10, 'w' => 100, 'h' => 20, 'text' => 'X']],
+    ], 'attestation', 'participation');
+
+    expect($layout['bg_image'])->toBe('/img/bg-attestation-uk.png')
+        ->and(LayoutRenderer::render($layout))->toContain('/img/bg-attestation-uk.png');
 });
