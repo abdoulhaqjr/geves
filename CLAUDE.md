@@ -692,6 +692,23 @@ deux raisons distinctes.
      l'image à ses proportions.
    - **`text-transform`** : les capitales se perdaient. En mode PDF, le texte
      est mis en capitales **côté serveur**.
+   - **les dégradés CSS** : ⚠️ dompdf **ne trace aucun dégradé** (il ne peint que
+     la couleur de fond). Trois fonds du concepteur - « Bandes UK », « Simple »
+     et « Or discret » - étaient des dégradés posés par une **classe** sur la
+     page : le concepteur les affichait, mais la mise en page enregistrée ne
+     retient qu'une **image** de fond, donc le document délivré ressortait blanc.
+     Ils sont désormais des images (`public/img/bg-attestation-{bands,simple,gold}.png`,
+     reproduites au pixel depuis la CSS), comme les deux autres fonds. Migration
+     `2026_10_02_000700_restore_document_template_preset_background`.
+     ⚠️ **Un fond ajouté au concepteur doit être une image**, jamais un dégradé.
+   - **les graisses** : ⚠️ dompdf ne garde que **quatre variantes par famille**
+     (normale, grasse, italique, grasse italique). Les six graisses de Jost s'y
+     écrasaient deux à deux : un texte dessiné en 500 ressortait en 400, un titre
+     en 900 en 700. `App\Documents\DocumentFonts` (source unique des fontes, lue
+     aussi par `documents/_fonts`) déclare pour le PDF **une famille par fonte**
+     (« Jost 500 »), que `renderText()` vise directement avec `font-weight:normal`.
+     ⚠️ Et la pile de polices ne passe **pas** par `e()` : il échappe l'apostrophe
+     en `&#039;` et le moteur ne reconnaît plus la famille (`cssValue()`).
    - **le SVG** : ⚠️ dompdf **ne rend pas le SVG** du QR - ni en ligne, ni par
      `<img>`, ni en `data:`. Le QR était donc **absent du PDF téléchargé** alors
      qu'il s'affiche sur la page, et une attestation imprimée sans QR n'est plus

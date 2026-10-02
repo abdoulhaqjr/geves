@@ -15,18 +15,6 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 class LayoutRenderer
 {
     /**
-     * Fichier de police dont dompdf tire ses métriques, par clé du concepteur.
-     * ⚠️ Seules les polices **hébergées** (`public/fonts`) y figurent : les
-     * autres retombent sur les polices natives de dompdf.
-     *
-     * @var array<string, string>
-     */
-    private const PDF_FONTS = [
-        'jost' => 'jost-400.ttf',
-        'playfair' => 'playfair-700.ttf',
-    ];
-
-    /**
      * @param  array<string, string|list<array{name?: string, src?: string}>>  $vars
      *                                                                                Valeurs des jetons {…}. `signatures` est la seule valeur
      *                                                                                structurée : elle alimente l'élément « signatures ».
@@ -77,6 +65,19 @@ class LayoutRenderer
     }
 
     /**
+     * Valeur CSS posée dans un attribut `style`.
+     *
+     * ⚠️ `e()` échappe **aussi l'apostrophe** : une pile de polices sortait en
+     * `&#039;Jost 500&#039;`, où le moteur de rendu ne reconnaissait plus la
+     * famille et retombait sur une autre graisse. L'attribut est délimité par
+     * des guillemets doubles : eux seuls doivent être échappés.
+     */
+    protected static function cssValue(string $value): string
+    {
+        return htmlspecialchars($value, ENT_COMPAT | ENT_HTML5, 'UTF-8');
+    }
+
+    /**
      * Hauteur de ligne propre à une police, telle que dompdf la calcule :
      * `(ascendante - descendante + interligne) / em`, multipliée par son
      * `font_height_ratio`. Vaut 1 pour les polices qu'il ne charge pas depuis
@@ -90,8 +91,8 @@ class LayoutRenderer
             return $cache[$key];
         }
 
-        $file = public_path('fonts/'.(self::PDF_FONTS[$key] ?? ''));
-        if (! isset(self::PDF_FONTS[$key]) || ! is_file($file)) {
+        $file = DocumentFonts::metricsFile($key);
+        if ($file === null || ! is_file($file)) {
             return $cache[$key] = 1.0;
         }
 
@@ -205,11 +206,21 @@ class LayoutRenderer
      */
     protected static function renderText(array $el, int $x, int $y, array $vars, bool $pdf = false): string
     {
-        $font = LayoutSanitizer::FONTS[$el['font'] ?? 'jost'] ?? LayoutSanitizer::FONTS['jost'];
+        $fontKey = (string) ($el['font'] ?? 'jost');
+        $font = LayoutSanitizer::FONTS[$fontKey] ?? LayoutSanitizer::FONTS['jost'];
+        $weight = (int) ($el['weight'] ?? 500);
+        $italic = ! empty($el['italic']);
         $text = self::substitute((string) ($el['text'] ?? ''), $vars);
 
+        // ⚠️ dompdf ne garde que quatre variantes par famille : la graisse exacte
+        // du concepteur se perdait. On vise la famille dédiée à cette fonte.
+        $pdfFamily = $pdf ? DocumentFonts::pdfFamily($fontKey, $weight, $italic) : null;
+        if ($pdfFamily !== null) {
+            $font = "'".$pdfFamily."', ".$font;
+        }
+
         $extra = '';
-        if (! empty($el['italic'])) {
+        if ($italic && $pdfFamily === null) {
             $extra .= 'font-style:italic;';
         }
         if (! empty($el['underline'])) {
@@ -248,8 +259,8 @@ class LayoutRenderer
 
         return sprintf(
             '<div style="position:absolute;%sfont-family:%s;font-size:%dpx;'
-            .'font-weight:%d;color:%s;text-align:%s;line-height:%s;white-space:pre-line;%s">%s</div>',
-            $box, e($font), $size, (int) ($el['weight'] ?? 500),
+            .'font-weight:%s;color:%s;text-align:%s;line-height:%s;white-space:pre-line;%s">%s</div>',
+            $box, self::cssValue($font), $size, $pdfFamily !== null ? 'normal' : (string) $weight,
             e($el['color'] ?? '#1a2332'), e($el['align'] ?? 'left'),
             $lineHeight, $extra, e($text)
         );

@@ -15,26 +15,10 @@
      résout `url()` sur le disque (dans son `chroot`, ici la racine du projet) et
      n'a pas de serveur HTTP à interroger.
 
-     Les graisses reprennent exactement celles du concepteur
-     (`admin/documents/template-designer.blade.php`) : une graisse absente serait
-     synthétisée par le moteur, ce qui change encore le rendu. --}}
+     Les fontes sont listées une seule fois, dans `App\Documents\DocumentFonts`. --}}
 @php
     $pdf = $pdf ?? false;
-
-    // [fichier de base, famille, graisse, style]
-    $faces = [
-        ['jost-400', 'Jost', 400, 'normal'],
-        ['jost-500', 'Jost', 500, 'normal'],
-        ['jost-600', 'Jost', 600, 'normal'],
-        ['jost-700', 'Jost', 700, 'normal'],
-        ['jost-800', 'Jost', 800, 'normal'],
-        ['jost-900', 'Jost', 900, 'normal'],
-        ['jost-400-italic', 'Jost', 400, 'italic'],
-        ['jost-700-italic', 'Jost', 700, 'italic'],
-        ['playfair-700', 'Playfair Display', 700, 'normal'],
-        ['playfair-900', 'Playfair Display', 900, 'normal'],
-        ['playfair-700-italic', 'Playfair Display', 700, 'italic'],
-    ];
+    $faces = App\Documents\DocumentFonts::FACES;
 @endphp
 <style>
 @foreach ($faces as [$file, $family, $weight, $style])
@@ -51,4 +35,18 @@
 @endif
 }
 @endforeach
+@if ($pdf)
+{{-- ⚠️ **dompdf ne garde que quatre variantes par famille** (normale, grasse,
+     italique, grasse italique) : nos six graisses de Jost s'y écrasaient deux à
+     deux, et un texte dessiné en 500 ressortait en 400, un titre en 700 en 900.
+     Une famille par graisse, que dompdf n'a plus à départager. --}}
+@foreach ($faces as [$file, $family, $weight, $style])
+@font-face {
+    font-family: '{{ App\Documents\DocumentFonts::pdfFamilyName($family, $weight, $style) }}';
+    font-style: normal;
+    font-weight: normal;
+    src: url('{{ public_path('fonts/'.$file.'.ttf') }}') format('truetype');
+}
+@endforeach
+@endif
 </style>

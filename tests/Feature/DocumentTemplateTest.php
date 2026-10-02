@@ -1,5 +1,6 @@
 <?php
 
+use App\Documents\DocumentFonts;
 use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
 
@@ -158,4 +159,42 @@ it('remplit les jetons de la palette du concepteur', function () {
     expect($html)->toContain('abc-123');
     expect($html)->not->toContain('[certificate.issued_on]');  // le souligné était le piège
     expect($html)->not->toContain('[recipient.name]');
+});
+
+/**
+ * ⚠️ **dompdf ne garde que quatre variantes par famille** (normale, grasse,
+ * italique, grasse italique) : les six graisses de Jost s'y écrasaient deux à
+ * deux, et un texte dessiné en 500 ressortait en 400, un titre en 900 en 700.
+ * Chaque fonte a donc sa propre famille dans le PDF.
+ */
+it('garde la graisse exacte du concepteur dans le PDF', function () {
+    expect(DocumentFonts::pdfFamily('jost', 500, false))->toBe('Jost 500')
+        ->and(DocumentFonts::pdfFamily('jost', 900, false))->toBe('Jost 900')
+        ->and(DocumentFonts::pdfFamily('jost', 400, true))->toBe('Jost 400 Italic')
+        ->and(DocumentFonts::pdfFamily('playfair', 900, false))->toBe('Playfair Display 900')
+        // Georgia, Arial, Lato ne sont pas hébergées : rien à viser.
+        ->and(DocumentFonts::pdfFamily('georgia', 400, false))->toBeNull();
+
+    $faces = view('documents._fonts', ['pdf' => true])->render();
+    expect($faces)->toContain("font-family: 'Jost 500'")
+        ->and($faces)->toContain("font-family: 'Playfair Display 900'");
+});
+
+it('demande la fonte par son nom, et non par une graisse que dompdf arrondirait', function () {
+    $layout = [
+        'width' => 400, 'height' => 200, 'bg' => '#fff', 'accent' => '#223ea4',
+        'elements' => [[
+            'type' => 'text', 'x' => 10, 'y' => 10, 'w' => 300, 'h' => 40,
+            'text' => 'Titre', 'size' => 28, 'weight' => 900, 'font' => 'playfair',
+        ]],
+    ];
+
+    $pdf = LayoutRenderer::render($layout, [], pdf: true);
+
+    // ⚠️ `e()` échapperait l'apostrophe en &#039; et le moteur ne reconnaîtrait
+    // plus la famille.
+    expect($pdf)->toContain("font-family:'Playfair Display 900'")
+        ->and($pdf)->toContain('font-weight:normal')
+        ->and($pdf)->not->toContain('&#039;')
+        ->and(LayoutRenderer::render($layout))->toContain('font-weight:900');
 });

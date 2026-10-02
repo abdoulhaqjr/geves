@@ -1132,24 +1132,25 @@
       bgEl.style.backgroundImage = '';
       bgEl.style.backgroundSize = '';
       bgEl.style.backgroundPosition = '';
+      // ⚠️ « Bandes UK », « Simple » et « Or discret » étaient des DÉGRADÉS CSS
+      // posés par une classe : le concepteur les affichait, mais la mise en page
+      // enregistrée ne retient qu'une image de fond - le document délivré
+      // ressortait donc blanc, et dompdf ne sait de toute façon pas tracer un
+      // dégradé. Ils sont désormais des images, comme les deux autres fonds.
+      var FONDS = {
+        'default': '/img/bg-attestation-uk.png',
+        'plain': '/img/bg-attestation.png',
+        'bands': '/img/bg-attestation-bands.png',
+        'simple': '/img/bg-attestation-simple.png',
+        'gold': '/img/bg-attestation-gold.png'
+      };
       var kind = opt.dataset.bg;
-      if (kind === 'default') {
-        bgEl.style.backgroundImage = "url('/img/bg-attestation-uk.png')";
+      if (FONDS[kind]) {
+        bgEl.style.backgroundImage = "url('" + FONDS[kind] + "')";
         bgEl.style.backgroundSize = '100% 100%';
         bgEl.style.backgroundPosition = 'center';
-      } else if (kind === 'plain') {
-        page.classList.add('bg-plain');
-        bgEl.style.backgroundImage = "url('/img/bg-attestation.png')";
-        bgEl.style.backgroundSize = '100% 100%';
-        bgEl.style.backgroundPosition = 'center';
-      } else if (kind === 'bands') {
-        page.classList.add('bg-bands');
-      } else if (kind === 'none') {
+      } else {
         page.classList.add('bg-none');
-      } else if (kind === 'simple') {
-        page.classList.add('bg-simple');
-      } else if (kind === 'gold') {
-        page.classList.add('bg-gold');
       }
       pushHistory();
       toast('Arrière-plan appliqué');
