@@ -822,7 +822,14 @@ Certifier/Credsverse).
   repli du texte déjà affiché. Pour la même raison, **le QR du document pointe
   vers `/attestation/{uuid}`** et non plus vers `/verifier/{uuid}` : on scannait
   une attestation pour atterrir sur un verdict, sans le document.
-  `/verifier/{uuid}` reste valable (QR déjà imprimés, liens envoyés).
+- ⚠️ **`/verifier/{uuid}` n'a plus de page** : elle faisait double emploi avec
+  celle de l'attestation, qui porte le document **et** sa vérification. La route
+  **reste** et y redirige - elle est encodée dans les **QR déjà imprimés**, dans
+  les liens envoyés, et c'est l'**identifiant des attestations signées**
+  (`AttestationCertifier::buildCredential()`) : la supprimer invaliderait ce que
+  des documents existants déclarent. Un **code inconnu** retourne à la page de
+  saisie avec un message, plutôt qu'un 404. `/verifier` (saisie d'un code)
+  demeure : on y arrive sans identifiant, elle ne double rien.
 - **Gestes au survol du document** (partage, LinkedIn, PDF, vérification), en
   surimpression. ⚠️ Le survol n'existe pas au doigt : la colonne de gauche porte
   les mêmes actions, et la surimpression est masquée en `@media (hover: none)`.

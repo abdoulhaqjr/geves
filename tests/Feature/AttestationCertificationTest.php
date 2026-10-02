@@ -133,14 +133,19 @@ it('émet sans signature quand aucune clé n’est configurée (fail-open)', fun
     expect($proof['signed'])->toBeFalse()->and($proof['valid'])->toBeFalse();
 });
 
-it('affiche la signature vérifiée sur la page publique de vérification', function () {
+it('affiche la signature vérifiée sur la page de l’attestation', function () {
     enableAttestationCertification();
     $attestation = app(IssueAttestation::class)->handle(certParticipant(openEdition()), 'participation');
 
-    $this->get(route('attestation.verify', $attestation->uuid))
+    $this->get(route('attestation.document', $attestation->uuid))
         ->assertOk()
         ->assertSee('Attestation authentique')
         ->assertSee('Signature cryptographique vérifiée');
+
+    // ⚠️ L'ancienne adresse reste : elle est dans les QR déjà imprimés et sert
+    // d'identifiant aux attestations signées. Elle mène à la page.
+    $this->get(route('attestation.verify', $attestation->uuid))
+        ->assertRedirect(route('attestation.document', $attestation->uuid));
 });
 
 it('marque une attestation révoquée comme invalide malgré une signature valide', function () {
@@ -148,7 +153,7 @@ it('marque une attestation révoquée comme invalide malgré une signature valid
     $attestation = app(IssueAttestation::class)->handle(certParticipant(openEdition()), 'participation');
     $attestation->update(['revoked' => true]);
 
-    $this->get(route('attestation.verify', $attestation->uuid))
+    $this->get(route('attestation.document', $attestation->uuid))
         ->assertOk()
         ->assertSee('révoquée')
         ->assertDontSee('Signature cryptographique vérifiée');

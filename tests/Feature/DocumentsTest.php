@@ -62,12 +62,18 @@ it('vérifie publiquement une attestation valide, révoquée ou inconnue', funct
     $p = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
     $att = (new IssueAttestation)->handle($p, 'communication');
 
-    $this->get(route('attestation.verify', $att->uuid))->assertOk()->assertSee('authentique')->assertSee('Awa Kodjo');
+    // La vérification se lit sur la page de l'attestation ; l'ancienne adresse
+    // y mène (QR déjà imprimés, liens envoyés, identifiant des signatures).
+    $this->get(route('attestation.verify', $att->uuid))->assertRedirect(route('attestation.document', $att->uuid));
+    $this->get(route('attestation.document', $att->uuid))->assertOk()->assertSee('authentique')->assertSee('Awa Kodjo');
 
     $att->update(['revoked' => true]);
-    $this->get(route('attestation.verify', $att->uuid))->assertOk()->assertSee('révoquée');
+    $this->get(route('attestation.document', $att->uuid))->assertOk()->assertSee('révoquée');
 
-    $this->get(route('attestation.verify', 'code-bidon'))->assertOk()->assertSee('introuvable');
+    // Un code inconnu mérite mieux qu'un 404 : on le dit sur la page de saisie.
+    $this->get(route('attestation.verify', 'code-bidon'))
+        ->assertRedirect(route('attestation.verify.landing'))
+        ->assertSessionHas('ukc_error');
 });
 
 it('génère le document d’attestation avec un QR', function () {

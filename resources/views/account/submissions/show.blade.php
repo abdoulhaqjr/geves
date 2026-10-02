@@ -223,7 +223,7 @@
                         @if ($soumissionAtt)
                             <div style="display:flex;gap:6px;flex-wrap:wrap;">
                                 <a href="{{ route('attestation.document', $soumissionAtt->uuid) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">{{ __('Télécharger') }}</a>
-                                <a href="{{ route('attestation.verify', $soumissionAtt->uuid) }}" target="_blank" class="ukc-btn ukc-btn--ghost ukc-btn--sm">{{ __('Vérifier') }}</a>
+                                <a href="{{ route('attestation.document', $soumissionAtt->uuid) }}" target="_blank" class="ukc-btn ukc-btn--ghost ukc-btn--sm">{{ __('Vérifier') }}</a>
                             </div>
                         @else
                             <span class="ukc-pill ukc-pill--muted">{{ __('En attente') }}</span>

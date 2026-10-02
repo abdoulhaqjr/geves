@@ -111,19 +111,25 @@ class AttestationController extends Controller
             ->download('attestation-'.$attestation->uuid.'.pdf');
     }
 
-    /** Page publique de vérification d'authenticité. */
-    public function verify(string $uuid, AttestationCertifier $certifier): View
+    /**
+     * Ancienne page de vérification : elle conduit désormais à l'attestation.
+     *
+     * ⚠️ La route **reste** : elle est encodée dans les QR déjà imprimés, dans
+     * les liens envoyés, et c'est l'identifiant des attestations signées
+     * (`AttestationCertifier`). Mais la page faisait double emploi avec celle de
+     * l'attestation, qui porte le document **et** sa vérification - on y mène.
+     */
+    public function verify(string $uuid): RedirectResponse
     {
-        $attestation = Attestation::with(['edition.colloque'])
-            ->where('uuid', $uuid)->first();
+        $connue = Attestation::where('uuid', $uuid)->exists();
 
-        // Vérification de la signature cryptographique (au-delà du registre).
-        $proof = $attestation ? $certifier->verify($attestation) : null;
+        if (! $connue) {
+            // Un code inconnu mérite mieux qu'un 404 : on le dit sur la page de saisie.
+            return redirect()->route('attestation.verify.landing')
+                ->with('ukc_error', __('Aucune attestation ne correspond à ce code.'));
+        }
 
-        return view('attestations.verify', [
-            'attestation' => $attestation,
-            'proof' => $proof,
-        ]);
+        return redirect()->route('attestation.document', $uuid);
     }
 
     /**
