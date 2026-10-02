@@ -64,7 +64,12 @@
                     <div class="ukc-rte" style="white-space:pre-line;font-size:14px;line-height:1.55;">{{ $report->highlights }}</div>
                 </div>
             @endif
-            @if ($report->attendance !== null)
+            @if ($presence['present'] > 0)
+                <div style="margin-top:12px;font-size:13px;color:var(--ukc-muted);">
+                    {{ __('Présence pointée') }} : <strong>{{ $presence['present'] }}</strong> {{ __('sur') }} {{ $presence['expected'] }} {{ __('inscrits') }}
+                    · <a href="{{ route('account.attendance.edit', $session) }}">{{ __('Consulter') }}</a>
+                </div>
+            @elseif ($report->attendance !== null)
                 <div style="margin-top:12px;font-size:13px;color:var(--ukc-muted);">{{ __('Affluence estimée') }} : <strong>{{ $report->attendance }}</strong></div>
             @endif
         </div>
@@ -86,9 +91,25 @@
                 @error('highlights') <span class="error">{{ $message }}</span> @enderror
             </div>
 
-            <div class="ukc-field" style="max-width:240px;">
+            <div class="ukc-field" style="max-width:420px;">
                 <label for="attendance">{{ __('Affluence estimée') }}</label>
-                <input id="attendance" name="attendance" type="number" min="0"
+                {{-- ⚠️ Deux chiffres pour une même chose, c'est un chiffre faux :
+                     dès que la présence est pointée, on le dit, et l'estimation
+                     n'est plus qu'un repli. --}}
+                @if ($presence['present'] > 0)
+                    <p style="font-size:12.5px;color:var(--ukc-muted);margin:2px 0 6px;">
+                        {{ __('La présence pointée fait foi dans le PV') }} :
+                        <strong>{{ trans_choice('{1}:count présent|[2,*]:count présents', $presence['present']) }}</strong>
+                        {{ __('sur') }} {{ $presence['expected'] }} {{ __('inscrits') }}.
+                        <a href="{{ route('account.attendance.edit', $session) }}">{{ __('Revoir la présence') }}</a>
+                    </p>
+                @else
+                    <p style="font-size:12.5px;color:var(--ukc-muted);margin:2px 0 6px;">
+                        {{ __('Utile quand la salle est trop nombreuse pour être pointée.') }}
+                        <a href="{{ route('account.attendance.edit', $session) }}">{{ __('Pointer la présence') }}</a>
+                    </p>
+                @endif
+                <input id="attendance" name="attendance" type="number" min="0" style="max-width:240px;"
                        value="{{ old('attendance', $report->attendance) }}" placeholder="{{ __('Nombre de participants') }}">
                 @error('attendance') <span class="error">{{ $message }}</span> @enderror
             </div>

@@ -710,15 +710,19 @@ class DocumentHubController extends Controller
      */
     private function participationTargets(Edition $edition): Collection
     {
-        $paid = Participant::where('edition_id', $edition->id)
-            ->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid'))
-            ->get();
+        $regles = Participant::where('edition_id', $edition->id)
+            ->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid'));
 
         if (! (bool) EditionSettings::get($edition, 'attestations.require_presence', false)) {
-            return $paid;
+            return $regles->get();
         }
 
-        return $paid->filter(fn (Participant $p) => $p->wasPresent())->values();
+        // ⚠️ Même règle que `Participant::wasPresent()`, mais en SQL : filtrer la
+        // collection appelait un `exists()` par participant (une édition en compte
+        // des centaines).
+        return $regles->where(fn ($q) => $q->whereNotNull('checked_in_at')
+            ->orWhereHas('sessionAttendances', fn ($a) => $a->where('status', 'present')))
+            ->get();
     }
 
     /** Auteurs correspondants d'une communication acceptée (lettre d'acceptation). */

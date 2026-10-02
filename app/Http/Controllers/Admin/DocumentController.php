@@ -214,6 +214,10 @@ class DocumentController extends Controller
     {
         $sessions = $edition->sessions()
             ->with(['atelier', 'report'])
+            // Présents RÉELLEMENT pointés par le modérateur / le rapporteur : le PV
+            // doit préférer un comptage à l'affluence estimée à la main. En
+            // `withCount` pour ne pas rouvrir une requête par séance.
+            ->withCount(['attendances as present_count' => fn ($q) => $q->where('status', 'present')])
             ->orderBy('session_day')->orderBy('ordre')->get();
 
         $commsBySession = $edition->slots()

@@ -4,6 +4,8 @@
         @php
             $comms = $session->scheduledCommunications();
             $live = $session->isLive();
+            $started = $session->hasStarted();
+            $presence = $started ? $session->presenceCounts() : null;
         @endphp
         <div class="ukc-card" style="margin-bottom:16px;">
             <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
@@ -44,6 +46,21 @@
                     <a href="{{ route('session.meeting', $session) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">
                         <x-ukc.icon name="video" :size="16" /> {{ __('Rejoindre la visio') }}
                     </a>
+                @endif
+                {{-- Présence : ouverte au début de la séance, comme le rapport -
+                     on ne pointe pas une salle qui n'est pas encore entrée. --}}
+                @if ($started)
+                    <a href="{{ route('account.attendance.edit', $session) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+                        <x-ukc.icon name="users" :size="16" /> {{ __('Présence') }}
+                        @if ($presence['present'] > 0)
+                            <span class="ukc-pill ukc-pill--ok" style="margin-left:6px;">{{ $presence['present'] }}</span>
+                        @endif
+                    </a>
+                @else
+                    <button type="button" class="ukc-btn ukc-btn--outline ukc-btn--sm" disabled style="opacity:.5;cursor:not-allowed;"
+                            title="{{ __('Le pointage ouvrira au début de la séance.') }}">
+                        <x-ukc.icon name="lock" :size="16" /> {{ __('Présence') }}
+                    </button>
                 @endif
             </div>
         </div>

@@ -17,6 +17,7 @@ use App\Http\Controllers\Account\ProfileController;
 use App\Http\Controllers\Account\RegisterController;
 use App\Http\Controllers\Account\ReviewWorkspaceController;
 use App\Http\Controllers\Account\SecurityController;
+use App\Http\Controllers\Account\SessionAttendanceController;
 use App\Http\Controllers\Account\SessionReportController;
 use App\Http\Controllers\Account\SubmissionController;
 use App\Http\Controllers\Account\TestimonialController as AccountTestimonialController;
@@ -208,6 +209,10 @@ Route::middleware(['auth:account', StampAccountSession::class])->group(function 
     Route::get('/rapports', [SessionReportController::class, 'index'])->name('account.reports');
     Route::get('/rapports/{session}', [SessionReportController::class, 'edit'])->name('account.reports.edit');
     Route::post('/rapports/{session}', [SessionReportController::class, 'update'])->name('account.reports.update');
+    // Présence d'une séance : modérateur OU rapporteur (c'est l'un ou l'autre qui
+    // a la salle sous les yeux) - d'où une adresse qui ne dit ni l'un ni l'autre.
+    Route::get('/seances/{session}/presence', [SessionAttendanceController::class, 'edit'])->name('account.attendance.edit');
+    Route::post('/seances/{session}/presence', [SessionAttendanceController::class, 'update'])->name('account.attendance.update');
     Route::get('/relectures', [ReviewWorkspaceController::class, 'index'])->name('account.reviews');
     Route::post('/relectures/candidatures', [ReviewWorkspaceController::class, 'saveBids'])->name('account.reviews.bids');
     Route::post('/relectures/{review}/reponse', [ReviewWorkspaceController::class, 'respond'])->name('account.reviews.respond');

@@ -66,8 +66,15 @@
                                 <div style="font-size:.8rem;font-weight:700;color:var(--ukc-muted);margin-bottom:4px;">{{ $sec['label'] }}</div>
                                 <div style="white-space:pre-line;line-height:1.55;">{{ $report->highlights }}</div>
                             </div>
-                        @elseif ($sec['key'] === 'presents' && $report->attendance !== null)
-                            <div style="font-size:.9rem;margin-bottom:14px;">{{ $sec['label'] }} : <strong>{{ $report->attendance }}</strong></div>
+                        @elseif ($sec['key'] === 'presents' && ((int) ($session->present_count ?? 0) > 0 || $report->attendance !== null))
+                            {{-- ⚠️ Un comptage l'emporte sur une estimation : si la
+                                 présence a été pointée pendant la séance, le PV
+                                 porte ce chiffre-là, et dit qu'il est pointé. --}}
+                            @php($pointes = (int) ($session->present_count ?? 0))
+                            <div style="font-size:.9rem;margin-bottom:14px;">
+                                {{ $sec['label'] }} : <strong>{{ $pointes > 0 ? $pointes : $report->attendance }}</strong>
+                                <span style="color:var(--ukc-muted);">({{ $pointes > 0 ? 'présence pointée' : 'estimation du rapporteur' }})</span>
+                            </div>
                         @endif
                     @endforeach
                     @if ($report->isValidated())

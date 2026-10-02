@@ -863,3 +863,31 @@ body.ukc-ai-busy { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .ukc-ai-veil__halo, .ukc-ai-veil__bar span { animation: none; }
 }
+
+/* ===== Pointage de présence (séance) =====
+   Groupe de radios rendu en segments cliquables : pendant une séance, on pointe
+   au doigt, dans l'ordre où les gens répondent. Les vraies radios restent dans
+   le DOM (clavier, lecteur d'écran, et formulaire qui marche sans JS). */
+.ukc-presence { display: inline-flex; border: 1px solid var(--ukc-border); border-radius: 999px; overflow: hidden; background: #fff; }
+.ukc-presence__opt { position: relative; display: inline-flex; }
+.ukc-presence__opt input {
+  position: absolute; inset: 0; width: 100%; height: 100%; margin: 0;
+  opacity: 0; cursor: pointer;
+}
+.ukc-presence__opt span {
+  display: inline-flex; align-items: center; padding: 7px 13px;
+  font-size: 12.5px; font-weight: 600; color: #64748b; white-space: nowrap;
+  border-left: 1px solid var(--ukc-border); transition: background .12s, color .12s;
+}
+.ukc-presence__opt:first-child span { border-left: 0; }
+.ukc-presence__opt input:hover + span { background: #f1f5f9; }
+/* ⚠️ Anneau de focus VISIBLE : la radio est transparente, sans cela le clavier
+   avance dans le groupe sans qu'on voie où l'on est. */
+.ukc-presence__opt input:focus-visible + span { outline: 2px solid var(--ukc-blue); outline-offset: -2px; }
+.ukc-presence__opt input:checked + span { color: #fff; }
+.ukc-presence__opt--present input:checked + span { background: var(--ukc-green); }
+.ukc-presence__opt--absent input:checked + span { background: #dc2626; }
+.ukc-presence__opt--excused input:checked + span { background: var(--ukc-gold); color: #3f2d00; }
+.ukc-presence__opt--none input:checked + span { background: #e2e8f0; color: #475569; }
+.ukc-presence__opt input:disabled { cursor: not-allowed; }
+.ukc-presence__opt input:disabled + span { opacity: .65; }

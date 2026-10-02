@@ -249,4 +249,45 @@ class EventSession extends Model implements Meetable
     {
         return $this->hasOne(SessionReport::class, 'session_id');
     }
+
+    /** @return HasMany<SessionAttendance, $this> */
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(SessionAttendance::class, 'session_id');
+    }
+
+    // --- Présence (pointée par le modérateur / le rapporteur) --------------
+
+    /**
+     * Comptage par verdict, plus les non pointés.
+     *
+     * ⚠️ `unmarked` se déduit de l'effectif de l'édition : sans lui, « 12
+     * présents » ne dit pas si c'était 12 sur 15 ou 12 sur 300.
+     *
+     * @return array{present: int, absent: int, excused: int, unmarked: int, expected: int}
+     */
+    public function presenceCounts(): array
+    {
+        $parVerdict = $this->attendances()
+            ->selectRaw('status, COUNT(*) as n')
+            ->groupBy('status')
+            ->pluck('n', 'status');
+
+        $attendus = Participant::where('edition_id', $this->edition_id)->count();
+        $pointes = (int) $parVerdict->sum();
+
+        return [
+            'present' => (int) ($parVerdict['present'] ?? 0),
+            'absent' => (int) ($parVerdict['absent'] ?? 0),
+            'excused' => (int) ($parVerdict['excused'] ?? 0),
+            'unmarked' => max(0, $attendus - $pointes),
+            'expected' => $attendus,
+        ];
+    }
+
+    /** La présence a-t-elle été pointée (au moins une ligne) ? */
+    public function hasPresenceMarked(): bool
+    {
+        return $this->attendances()->exists();
+    }
 }

@@ -51,6 +51,9 @@ class SessionReportController extends Controller
             'locked' => $report->isValidated() || EditionLock::frozen($session->edition),
             'frozen' => EditionLock::frozen($session->edition),
             'notStarted' => ! $session->hasStarted(),
+            // Présence pointée en séance : elle remplace l'affluence estimée dès
+            // qu'elle existe - un comptage vaut mieux qu'un chiffre de mémoire.
+            'presence' => $session->presenceCounts(),
         ]);
     }
 

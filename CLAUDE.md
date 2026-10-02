@@ -938,6 +938,43 @@ rechargeait la page faisait perdre la saisie en cours.
   aucun appelant** depuis le passage du panneau en fetch : ne pas s'en servir de
   modèle pour une nouvelle action.
 
+### Présence d'une séance = pointée par le modérateur OU le rapporteur
+
+`/compte/seances/{session}/presence` (`Account\SessionAttendanceController`,
+table `session_attendances`, modèle `SessionAttendance`). Entrées depuis
+**Séances à animer** et **Séances à rapporter**.
+
+- **Les deux rôles y ont droit.** Selon les séances, c'est le modérateur qui
+  anime pendant que le rapporteur tient la liste, ou l'inverse. Imposer un seul
+  des deux aurait condamné la moitié des séances au papier.
+- ⚠️ **Une table `session_attendances` a existé puis été supprimée**
+  (migration `2026_09_17_000200`) : elle n'était alimentée QUE par le **scan de
+  badge**, retiré. Elle revient avec une source humaine - ne pas la relire comme
+  un reliquat du scan.
+- ⚠️ **Trois verdicts, et « non pointé » n'en est pas un** : `present`, `absent`,
+  `excused`. **Pas de ligne = pas encore appelé**, ce qui n'est pas la même
+  information qu'un absent **constaté**. D'où le compteur `unmarked`, rapporté à
+  l'effectif inscrit : « 12 présents » ne dit rien sans savoir 12 sur combien.
+- ⚠️ **L'enregistrement est INCRÉMENTAL et non destructif** : `update()` ne touche
+  QUE les participants présents dans la requête. On pointe par petits lots pendant
+  la séance (liste paginée, recherche en cours) - une sauvegarde qui remettrait à
+  zéro ce qui n'est pas à l'écran effacerait le lot précédent. La vue le **dit** à
+  l'utilisateur, sinon la prudence lui ferait tout ressaisir.
+- **Fenêtre** : ouvert au début de la séance (`hasStarted()`), fermé par l'archivage
+  de l'édition et par la **validation du rapport** par le secrétariat - le PV cite
+  ces chiffres, ils ne doivent plus bouger après. Lecture toujours possible.
+- ⚠️ **`Participant::wasPresent()` s'appuie dessus**, et c'était un trou : depuis le
+  retrait du scan, **rien n'écrivait `checked_in_at`**, donc l'option « présence
+  requise » des attestations de participation ne laissait passer **personne**. La
+  présence en séance est désormais la source réelle. Le filtrage se fait **en SQL**
+  (`participationTargets()`), pas par `filter()` sur une collection : une édition
+  compte des centaines d'inscrits.
+- ⚠️ **Un comptage l'emporte sur une estimation** : le PV (`documents.session-pv`,
+  section `presents`) affiche les présents **pointés** dès qu'il y en a, et
+  l'« affluence estimée » du rapporteur seulement à défaut - en disant lequel des
+  deux il montre. Le champ estimé reste : une plénière de 300 ne se pointe pas.
+- Tests : `tests/Feature/SessionAttendanceTest.php`.
+
 ### Règles métier - limites communications & attestations
 
 - **Limite de communications** (`settings.max_communications`) : compte **seulement** les

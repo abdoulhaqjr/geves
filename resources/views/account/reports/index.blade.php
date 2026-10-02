@@ -33,6 +33,15 @@
                     <span class="ukc-pill ukc-pill--muted">{{ __('À venir') }}</span>
                 @endif
 
+                {{-- Le rapporteur pointe aussi la présence : dans beaucoup de
+                     séances, c'est lui qui tient la liste pendant que le
+                     modérateur anime. --}}
+                @if ($started)
+                    <a href="{{ route('account.attendance.edit', $session) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+                        <x-ukc.icon name="users" :size="16" /> {{ __('Présence') }}
+                    </a>
+                @endif
+
                 @if ($validated)
                     <a href="{{ route('account.reports.edit', $session) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">
                         <x-ukc.icon name="eye" :size="16" /> {{ __('Consulter') }}

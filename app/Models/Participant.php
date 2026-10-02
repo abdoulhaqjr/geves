@@ -52,12 +52,23 @@ class Participant extends Model
     }
 
     /**
-     * Présence réelle avérée (pointé à l'accueil). Sert à conditionner
+     * Présence réelle avérée : pointé à l'accueil, **ou** porté présent à au
+     * moins une séance par son modérateur / rapporteur. Sert à conditionner
      * l'attestation de participation.
+     *
+     * ⚠️ Rien n'écrit `checked_in_at` depuis le retrait du scan de badge : la
+     * présence en séance est devenue la seule source réelle. Sans elle, l'option
+     * « présence requise » des attestations ne laissait passer personne.
      */
     public function wasPresent(): bool
     {
-        return $this->isCheckedIn();
+        return $this->isCheckedIn() || $this->attendedASession();
+    }
+
+    /** Porté présent à au moins une séance. */
+    public function attendedASession(): bool
+    {
+        return $this->sessionAttendances()->where('status', 'present')->exists();
     }
 
     public function roleLabel(): string
@@ -103,6 +114,12 @@ class Participant extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    /** @return HasMany<SessionAttendance, $this> */
+    public function sessionAttendances(): HasMany
+    {
+        return $this->hasMany(SessionAttendance::class);
     }
 
     /**
