@@ -92,7 +92,15 @@
            grille : `grid-template-*` n'y aurait aucun effet. */
         #visio-room .stage-grid:not(.speaker).has-screen-share .tile{display:none;}
         #visio-room .stage-grid:not(.speaker).has-screen-share .tile.main{display:flex;flex:0 0 100%;height:100%;}
-        #visio-room .stage-grid:not(.speaker).has-screen-share .tile.main video{object-fit:contain!important;}
+        /* ⚠️ Un écran partagé se montre ENTIER, jamais rogné. Les tuiles sont en
+           `cover` - c'est juste pour un visage, qu'on cadre - mais sur un écran
+           cela coupe les bords : barres d'outils, bas de diapositive, dernière
+           ligne d'un tableau. Avec un écran 16/9 dans une scène large, c'est près
+           d'un quart de la hauteur qui disparaissait. La règle porte sur la TUILE
+           et non sur la disposition : le partage est tout aussi illisible rogné en
+           vue présentateur qu'en mosaïque. `>` pour ne pas toucher la vignette
+           caméra (PiP), qui elle se cadre. */
+        #visio-room .tile.main.has-screen > video{object-fit:contain!important;background:#000;}
         #visio-room .filmstrip-wrap{flex-shrink:0;border-top:1px solid var(--vborder);background:rgba(0,0,0,.25);}
         #visio-room .filmstrip-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border:none;background:transparent;color:var(--vmuted);font-size:12px;font-weight:700;}
         #visio-room .filmstrip-toggle:hover{color:var(--vtext);background:rgba(255,255,255,.03);}
