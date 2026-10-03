@@ -172,6 +172,28 @@
         #visio-room .tile .name .role-chip.mod{background:rgba(255,255,255,.22);color:#fff;}
         #visio-room .tile .name .role-chip.pres{background:var(--vgold);color:var(--vblue-d);}
         #visio-room .filmstrip .tile .role-chip{display:none;}
+        /* --- Le nom se replie dans le bandeau ---
+           ⚠️ La carte n'y fait que 150px (118 puis 96 sur téléphone) : l'étiquette
+           occupait presque toute la largeur pour un nom qu'elle tronquait de toute
+           façon au tiers - « Modeste Mod… » n'apprend rien que la vignette ne dise
+           déjà. Ne reste que l'état du micro, qui est ce qu'on surveille là ; le nom
+           revient au survol de la carte, entier.
+           ⚠️ `max-width` et non `display:none` : le nom RESTE dans la page, donc
+           énonçable par un lecteur d'écran et trouvable par la recherche du
+           navigateur. Il est replié, pas retiré.
+           ⚠️ La marge négative annule l'écart du conteneur : sans elle, la pastille
+           garderait 6px de vide à gauche du micro, pour un nom large de zéro. */
+        #visio-room .filmstrip .tile .name .nm{max-width:0;opacity:0;margin-right:-6px;
+            transition:max-width .18s ease,opacity .14s ease,margin-right .18s ease;}
+        /* `focus-within` : au clavier, atteindre le bouton de micro doit montrer de
+           QUI il s'agit - sans quoi on coupe le micro de quelqu'un sans le nommer. */
+        #visio-room .filmstrip .tile:hover .name .nm,
+        #visio-room .filmstrip .tile:focus-within .name .nm{max-width:150px;opacity:1;margin-right:0;}
+        /* ⚠️ Au doigt, le survol N'EXISTE PAS : un nom qui ne se montre qu'au survol
+           serait simplement introuvable. Il reste donc affiché, comme avant. */
+        @@media (pointer:coarse){
+            #visio-room .filmstrip .tile .name .nm{max-width:150px;opacity:1;margin-right:0;}
+        }
         /* État du micro, posé là où l'œil cherche déjà le nom. Cliquable par le
            modérateur (et par chacun sur sa propre vignette) : couper un micro
            demandait d'ouvrir le panneau, de trouver la personne, puis le bouton. */
@@ -725,7 +747,8 @@
             #visio-room .side,#visio-room .side-scrim,#visio-room .v-toast,#visio-room .tile,
             #visio-room .ctrl,#visio-room .pip-resize,#visio-room .side-grip::before,
             #visio-room .chat-msg .acts-msg,#visio-room .v-btn,
-            #visio-room .pj-level span{transition-duration:.01ms;}
+            #visio-room .pj-level span,
+            #visio-room .filmstrip .tile .name .nm{transition-duration:.01ms;}
             #visio-room .ctrl:hover:not(:disabled){transform:none;}
         }
     </style>

@@ -557,6 +557,14 @@ paiement (`pay`), inscription à une formation.
     `MeetingProviderRegistry` retombe seul sur Jitsi public quand ce défaut n'est pas
     configuré. Le forcer en base écraserait la configuration du site - c'est ce qui
     masquait LiveKit une fois ses identifiants renseignés.
+- **Le nom se replie dans le bandeau** : la carte n'y fait que 150px (118 puis
+  96 sur téléphone), et l'étiquette l'occupait presque entière pour un nom
+  tronqué au tiers. Ne reste que l'état du micro ; le nom revient **au survol**
+  de la carte. ⚠️ `max-width` et non `display:none` - il est replié, pas retiré,
+  donc toujours énonçable par un lecteur d'écran. ⚠️ `focus-within` pour le
+  clavier (couper le micro de quelqu'un sans le nommer), et **au doigt il reste
+  affiché** : là où le survol n'existe pas, un nom qui ne se montre qu'au survol
+  est introuvable.
 - **Entrer et tenir l'horaire** (audit visuel, quatrième lot) :
   - **Écran d'entrée** (`ecranDEntree`) : aperçu caméra, **niveau du micro**,
     choix des périphériques, avant de se connecter. ⚠️ Seulement pour qui
