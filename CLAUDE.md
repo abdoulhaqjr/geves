@@ -582,6 +582,23 @@ paiement (`pay`), inscription à une formation.
     « Marquer effectuée » part à toute la salle et désactive le bouton. ⚠️ Pas
     `window.confirm` : il gèle la page (la visio continue sans qu'on puisse rien
     faire), sort visuellement de la salle et n'est pas garanti en contexte embarqué.
+  - **Le panneau latéral se règle en largeur** (variable `--vside`, poignée
+    `#sideGrip`, `poseLargeurPanneau`) : 400px par défaut, **360 au minimum**,
+    jamais plus de la moitié de la salle, retenue d'une séance à l'autre
+    (`localStorage`), double-clic pour revenir au défaut, flèches au clavier.
+    ⚠️ 340px fixes ne suffisaient pas : ce panneau porte trois usages très
+    différents (chat, participants, pointage de présence avec nom **et**
+    institution), et aucune largeur ne les sert tous. ⚠️ Au redimensionnement de
+    la fenêtre on repart de la largeur **retenue** et non de la courante : réduire
+    la fenêtre borne le panneau, mais ne doit pas effacer le choix de la personne
+    quand la place revient.
+  - **L'étiquette des vignettes porte le micro** (`.mic-dot`, `majMicroTuiles`) :
+    nom en 11px (12,5 occupait la moitié de la vignette et tronquait les noms au
+    tiers) suivi d'une pastille micro ouvert / coupé. ⚠️ Elle est **cliquable** :
+    le modérateur coupe ou rend un micro depuis la vignette, chacun depuis la
+    sienne (qui repasse par le bouton de la barre, lequel porte les autorisations
+    navigateur). Couper un micro demandait sinon d'ouvrir le panneau, de trouver
+    la personne, puis son bouton.
   - ⚠️ Ces ordres passent par le **canal de données** (coopératif, tous les postes
     exécutant notre code), pas par l'API serveur de LiveKit : un client modifié
     pourrait les ignorer. Acceptable pour une conduite de séance, à revoir si la

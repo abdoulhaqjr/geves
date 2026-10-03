@@ -487,6 +487,9 @@ it('porte dans la salle les commandes de la version téléphone', function () {
         ->assertSee('id="btnCloseSide"', false)
         ->assertSee('id="btnMore"', false)
         ->assertSee('id="moreSlot"', false)
+        // Poignée de largeur du panneau et pastille micro des vignettes.
+        ->assertSee('id="sideGrip"', false)
+        ->assertSee('id="localMic"', false)
         // ⚠️ Un `@endverbatim` sans ouvrant traînait dans le gabarit : Blade
         // l'écrivait tel quel, en premier texte de la page.
         ->assertDontSee('endverbatim', false);

@@ -9,7 +9,7 @@
            le bandeau d'état flottait dans le vide, les menus passaient sous la
            barre d'outils. */
         #visio-room{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;overflow:hidden;
-            --vtop:56px;--vtoolbar:80px;
+            --vtop:56px;--vtoolbar:80px;--vside:400px;
             --vbg:#0b0f1a;--vbg-elev:#121826;--vbg-panel:#161d2e;--vbg-tile:#1c2438;--vborder:rgba(255,255,255,.08);
             --vtext:#f1f5f9;--vmuted:#94a3b8;--vdanger:#e11d48;--vdanger-h:#be123c;--vok:#10b981;
             --vblue:#223ea4;--vblue-d:#1a3080;--vgold:#ffd700;--vgreen:#009933;
@@ -77,7 +77,11 @@
         #visio-room *::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:50px;}
         #visio-room *::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.3);}
         #visio-room *::-webkit-scrollbar-track{background:transparent;}
-        #visio-room .v-main{flex:1;min-height:0;display:grid;grid-template-columns:1fr 340px;position:relative;}
+        /* ⚠️ La largeur du panneau est une VARIABLE, réglable à la poignée : 340px
+           fixes ne suffisaient pas. C'est là que vivent le chat, la liste des
+           participants et le pointage de présence - un nom suivi de son
+           institution y passait à la ligne trois fois. */
+        #visio-room .v-main{flex:1;min-height:0;display:grid;grid-template-columns:1fr var(--vside);position:relative;}
         #visio-room .v-main.side-closed{grid-template-columns:1fr;}
         #visio-room .v-main.side-closed .side{display:none;}
         #visio-room .stage{min-width:0;min-height:0;display:flex;flex-direction:column;padding:12px 12px 8px;background:var(--vbg);}
@@ -132,6 +136,21 @@
         #visio-room .tile.has-video .avatar{display:none!important;}
         #visio-room .tile video,#visio-room .tile .media{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#0a0e17;z-index:1;}
         #visio-room .tile .name{position:absolute;left:10px;bottom:10px;z-index:3;background:rgba(0,0,0,.6);padding:5px 10px;border-radius:8px;font-size:12.5px;font-weight:700;max-width:calc(100% - 20px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        /* ⚠️ Sur les vignettes, l'étiquette doit se faire oublier : à 12,5px elle
+           occupait la moitié de la largeur et tronquait les noms au tiers. La
+           scène garde sa taille - c'est elle qu'on regarde. */
+        #visio-room .tile:not(.main) .name{display:inline-flex;align-items:center;gap:6px;
+            font-size:11px;padding:4px 8px;border-radius:7px;}
+        #visio-room .tile .name .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+        /* État du micro, posé là où l'œil cherche déjà le nom. Cliquable par le
+           modérateur (et par chacun sur sa propre vignette) : couper un micro
+           demandait d'ouvrir le panneau, de trouver la personne, puis le bouton. */
+        #visio-room .mic-dot{flex-shrink:0;width:19px;height:19px;padding:0;border:none;border-radius:50%;
+            background:transparent;color:rgba(255,255,255,.92);display:inline-flex;align-items:center;justify-content:center;}
+        #visio-room .mic-dot svg{width:14px;height:14px;display:block;}
+        #visio-room .mic-dot.off{color:#fda4af;}
+        #visio-room .mic-dot:not(:disabled):hover{background:rgba(255,255,255,.2);}
+        #visio-room .mic-dot:disabled{cursor:default;}
         #visio-room .tile .badges{position:absolute;top:10px;right:10px;z-index:3;display:flex;gap:4px;}
         #visio-room .tile .badges span{font-size:10px;font-weight:800;padding:4px 8px;border-radius:50px;background:rgba(0,0,0,.55);}
         /* Bloc nom + indication : placé SOUS l'avatar centré (72px) pour ne pas se superposer. */
@@ -177,7 +196,19 @@
             #visio-room .pip-resize svg{width:18px;height:18px;}
             #visio-room .pip-bubble,#visio-room .pip-resize{touch-action:none;}
         }
-        #visio-room .side{border-left:1px solid var(--vborder);background:var(--vbg-panel);display:flex;flex-direction:column;min-height:0;}
+        #visio-room .side{position:relative;border-left:1px solid var(--vborder);background:var(--vbg-panel);display:flex;flex-direction:column;min-height:0;}
+        /* Poignée de largeur : une bande d'attrape large (9px) pour un trait fin.
+           ⚠️ La bande visible ne fait que 3px : une poignée épaisse couperait la
+           scène en deux en permanence, alors qu'on ne s'en sert qu'une fois. */
+        #visio-room .side-grip{position:absolute;left:-4px;top:0;bottom:0;width:9px;z-index:26;cursor:col-resize;}
+        #visio-room .side-grip::before{content:'';position:absolute;left:3px;top:0;bottom:0;width:3px;
+            background:transparent;transition:background .15s;}
+        #visio-room .side-grip:hover::before,#visio-room .side-grip.on::before{background:rgba(255,215,0,.55);}
+        #visio-room .side-grip:focus-visible{outline:2px solid var(--vgold);outline-offset:-2px;}
+        /* Au doigt : bande d'attrape élargie, et le geste ne doit pas être pris
+           pour un défilement de page. */
+        @@media (pointer:coarse){#visio-room .side-grip{width:20px;left:-10px;touch-action:none;}
+            #visio-room .side-grip::before{left:8px;}}
         /* La bordure passe sur l'en-tête : la croix de fermeture est à côté des
            onglets, pas dedans, pour ne pas défiler avec eux. */
         #visio-room .side-head{display:flex;flex-shrink:0;min-width:0;border-bottom:1px solid var(--vborder);}
@@ -195,13 +226,21 @@
         #visio-room .chat-input input{flex:1;border-radius:10px;border:1px solid var(--vborder);background:rgba(255,255,255,.05);color:var(--vtext);padding:11px 14px;font-size:13.5px;}
         #visio-room .chat-input input:focus{outline:none;border-color:var(--vblue);}
         #visio-room .people-list,#visio-room .comm-list{flex:1;overflow-y:auto;padding:12px 14px;}
-        #visio-room .person{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--vborder);}
+        /* ⚠️ Une ligne par personne, lue d'un seul balayage : avatar, identité, et
+           l'action à droite. Le bouton de micro était SOUS le nom, poussant chaque
+           personne sur trois lignes - quatre participants et la liste défilait
+           déjà. */
+        #visio-room .person{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--vborder);}
         #visio-room .person:last-child{border-bottom:none;}
         #visio-room .person .av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--vblue),var(--vgreen));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;}
         #visio-room .person .meta{flex:1;min-width:0;}
         #visio-room .person .meta strong{display:block;font-size:13.5px;font-weight:700;}
         #visio-room .person .meta span{font-size:11.5px;color:var(--vmuted);}
-        #visio-room .mod-actions{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;}
+                /* `margin-left:auto` : les actions se collent à droite quelle que soit la
+           longueur du nom. Elles passent dessous seulement si la largeur du
+           panneau ne les tient plus - il se règle (cf. --vside). */
+        #visio-room .mod-actions{display:flex;flex-wrap:wrap;gap:5px;margin-left:auto;
+            justify-content:flex-end;flex-shrink:0;max-width:55%;}
         #visio-room .mod-actions button{font-size:10.5px;font-weight:700;padding:4px 8px;border-radius:6px;border:1px solid var(--vborder);background:rgba(255,255,255,.06);color:var(--vtext);}
         #visio-room .mod-actions button:hover{background:rgba(34,62,164,.45);}
         #visio-room .comm-item{padding:10px 0;border-bottom:1px solid var(--vborder);}
@@ -368,6 +407,8 @@
             #visio-room .v-main .side.open,
             #visio-room .v-main.side-closed .side.open{transform:none;visibility:visible;}
             #visio-room .side-scrim{display:block;}
+            /* Un tiroir qui recouvre déjà toute la scène ne s'élargit pas. */
+            #visio-room .side-grip{display:none;}
             #visio-room .side-close{display:inline-flex;}
             /* Quatre onglets ne tiennent plus côte à côte : ils défilent plutôt
                que de s'écraser sur deux lettres chacun. */
@@ -492,7 +533,8 @@
                     <div class="filmstrip" id="filmstrip">
                         <div class="tile" id="tileLocal">
                             <div class="avatar" id="localAvatar">?</div>
-                            <div class="name" id="localName">-</div>
+                            <div class="name"><span class="nm" id="localName">-</span>
+                                <button type="button" class="mic-dot" id="localMic" title="Micro"></button></div>
                             <div class="badges"><span id="localRole">Vous</span></div>
                         </div>
                     </div>
@@ -500,6 +542,9 @@
             </div>
 
             <aside class="side" id="sidePanel">
+                <div class="side-grip" id="sideGrip" role="separator" aria-orientation="vertical" tabindex="0"
+                     aria-label="Largeur du panneau"
+                     title="Glisser pour élargir · flèches gauche/droite · double-clic pour revenir à la largeur normale"></div>
                 <div class="side-head">
                 <div class="side-tabs">
                     <button type="button" class="active" data-side="chat">Chat</button>

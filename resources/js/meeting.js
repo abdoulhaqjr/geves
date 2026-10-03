@@ -439,7 +439,12 @@ export async function startFromConfig() {
     function ensureRemoteTile(p) {
         const id = 'tile-' + p.identity; let el = $(id); if (el) return el;
         el = document.createElement('div'); el.className = 'tile'; el.id = id;
-        el.innerHTML = '<div class="avatar">' + initials(p.name || p.identity) + '</div><div class="name">' + (p.name || p.identity) + '</div>';
+        el.innerHTML = '<div class="avatar">' + initials(p.name || p.identity) + '</div>'
+            + '<div class="name"><span class="nm"></span><button type="button" class="mic-dot" disabled></button></div>';
+        // `textContent` et non une concaténation : un nom d'affichage vient de
+        // l'utilisateur, et se retrouverait interprété comme du balisage.
+        el.querySelector('.nm').textContent = p.name || p.identity;
+        el.querySelector('.mic-dot').addEventListener('click', (e) => { e.stopPropagation(); basculeMicro(p.identity); });
         (state.speakerLayout ? $('filmstrip') : $('stageGrid')).appendChild(el);
         // ⚠️ En vue présentateur, le bandeau des autres participants était REPLIÉ
         // par défaut : trois personnes connectées, et une scène qui n'en montrait
@@ -513,6 +518,40 @@ export async function startFromConfig() {
         });
     }
 
+    // Micro ouvert / coupé : les deux glyphes de la pastille des vignettes.
+    const ICONE_MICRO = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>';
+    const ICONE_MICRO_COUPE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.54-.9L19.73 21 21 19.73 4.27 3z"/></svg>';
+
+    /**
+     * Micro basculé depuis une vignette.
+     *
+     * Chacun pilote le sien (on repasse par le bouton de la barre, qui porte déjà
+     * les autorisations navigateur), le modérateur pilote ceux des autres.
+     */
+    function basculeMicro(id) {
+        if (id === 'local') { $('btnMic').click(); return; }
+        if (state.role !== 'moderator') return;
+        const pe = people.find((x) => x.id === id);
+        handleModAction(pe && pe.micOn ? 'mic_off' : 'mic', id);
+    }
+
+    /** Aligne la pastille de chaque vignette sur l'état réel du micro. */
+    function majMicroTuiles() {
+        const isMod = state.role === 'moderator';
+        people.forEach((pe) => {
+            const t = pe.id === 'local' ? $('tileLocal') : $('tile-' + pe.id);
+            const b = t && t.querySelector('.mic-dot');
+            if (!b) return;
+            const ouvert = !!pe.micOn;
+            b.innerHTML = ouvert ? ICONE_MICRO : ICONE_MICRO_COUPE;
+            b.classList.toggle('off', !ouvert);
+            b.disabled = !(isMod || pe.id === 'local');
+            const etat = ouvert ? 'Micro ouvert' : 'Micro coupé';
+            b.title = b.disabled ? etat : etat + ' - cliquer pour ' + (ouvert ? 'couper' : 'activer');
+            b.setAttribute('aria-label', pe.name + ' : ' + b.title);
+        });
+    }
+
     function refreshPeople() {
         syncMicStates();
         const rangs = new Map(mainsLevees().map((p, i) => [p.id, i + 1]));
@@ -528,10 +567,10 @@ export async function startFromConfig() {
             return '<div class="person' + (rang ? ' hand-up' : '') + '"><div class="av">' + initials(p.name) + '</div><div class="meta"><strong>' + p.name + '</strong><span>' + roleLabel(p.role) +
                 (rang ? ' · <span class="rank">✋ ' + rang + '</span>' : '') +
                 ' · <span class="mic ' + (p.micOn ? 'on' : 'off') + '">' + (p.micOn ? 'micro ouvert' : 'micro coupé') + '</span>' +
-                (p.screen ? ' · écran' : '') + '</span>' + actions + '</div></div>';
+                (p.screen ? ' · écran' : '') + '</span></div>' + actions + '</div>';
         }).join('');
         $('peopleList').querySelectorAll('.mod-actions button').forEach((b) => b.addEventListener('click', () => handleModAction(b.getAttribute('data-act'), b.getAttribute('data-id'))));
-        refreshHands();
+        refreshHands(); majMicroTuiles();
     }
     function matchComm(c) {
         const pe = people.find((p) => p.name && c.name && p.name.toLowerCase().indexOf(c.name.split(' ').pop().toLowerCase()) >= 0);
@@ -995,6 +1034,72 @@ export async function startFromConfig() {
         } catch (e) { toast('Micro indisponible'); }
     }
 
+    // ---- Largeur du panneau latéral ----
+    // ⚠️ Réglable, et RETENUE : ce panneau porte trois usages très différents (le
+    // chat, la liste des participants, le pointage de présence avec nom et
+    // institution). Aucune largeur ne les sert tous, et personne ne veut la régler
+    // à chaque séance.
+    const PANNEAU_DEFAUT = 400, PANNEAU_MIN = 360;
+
+    /** Au-delà de la moitié de la salle, le panneau mangerait la scène. */
+    function panneauMax() {
+        const l = $('mainLayout')?.clientWidth || 1200;
+
+        return Math.max(PANNEAU_MIN, Math.min(680, Math.round(l * 0.5)));
+    }
+    function poseLargeurPanneau(px, retient) {
+        const l = Math.round(Math.max(PANNEAU_MIN, Math.min(panneauMax(), px || PANNEAU_DEFAUT)));
+        rootEl.style.setProperty('--vside', l + 'px');
+        $('sideGrip')?.setAttribute('aria-valuenow', String(l));
+        if (retient) { try { localStorage.setItem('ukc.sideWidth', String(l)); } catch (e) { /* sans mémoire, tant pis */ } }
+        layoutGrid();
+
+        return l;
+    }
+    function largeurRetenue() {
+        try {
+            const v = parseInt(localStorage.getItem('ukc.sideWidth') || '', 10);
+            if (v >= PANNEAU_MIN) return v;
+        } catch (e) { /* idem */ }
+
+        return PANNEAU_DEFAUT;
+    }
+    function largeurCourante() {
+        return parseInt(getComputedStyle(rootEl).getPropertyValue('--vside'), 10) || PANNEAU_DEFAUT;
+    }
+    (function poigneePanneau() {
+        const g = $('sideGrip');
+        if (!g) return;
+        let actif = false;
+        g.addEventListener('pointerdown', (e) => {
+            actif = true; g.classList.add('on'); g.setPointerCapture(e.pointerId); e.preventDefault();
+        });
+        g.addEventListener('pointermove', (e) => {
+            if (!actif) return;
+            // Le BORD du panneau suit le pointeur : la largeur est ce qui reste à
+            // droite de la main, pas un déplacement cumulé.
+            poseLargeurPanneau($('mainLayout').getBoundingClientRect().right - e.clientX, false);
+        });
+        // ⚠️ `pointercancel` aussi : un geste interrompu laissait la poignée allumée.
+        ['pointerup', 'pointercancel'].forEach((ev) => g.addEventListener(ev, () => {
+            if (!actif) return;
+            actif = false; g.classList.remove('on');
+            poseLargeurPanneau(largeurCourante(), true);
+        }));
+        g.addEventListener('dblclick', () => { poseLargeurPanneau(PANNEAU_DEFAUT, true); toast('Largeur du panneau rétablie'); });
+        // Une salle se pilote aussi au clavier : gauche élargit, droite rétrécit.
+        g.addEventListener('keydown', (e) => {
+            if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+            e.preventDefault();
+            poseLargeurPanneau(largeurCourante() + (e.key === 'ArrowLeft' ? 24 : -24), true);
+        });
+    })();
+    poseLargeurPanneau(largeurRetenue(), false);
+    // ⚠️ On repart de la largeur RETENUE et non de la largeur courante : rétrécir
+    // la fenêtre borne le panneau, mais ne doit pas effacer le choix de la personne
+    // quand la place revient.
+    window.addEventListener('resize', () => poseLargeurPanneau(largeurRetenue(), false));
+
     // ---- Sortie de la salle ----
     async function leave() { if (room) { try { await room.disconnect(); } catch (e) {} } window.location = cfg.backUrl; }
 
@@ -1032,9 +1137,10 @@ export async function startFromConfig() {
     }));
     $('btnHand').addEventListener('click', async () => {
         state.hand = !state.hand;
-        const rang = leveLaMain(people.find((x) => x.id === 'local'), state.hand);
+        leveLaMain(people.find((x) => x.id === 'local'), state.hand);
         refreshPeople(); syncToolbar();
-        toast(state.hand ? 'Main levée (n° ' + rang + ')' : 'Main baissée');
+        // Son propre rang est déjà sur sa vignette : le répéter ici n'ajoute rien.
+        toast(state.hand ? 'Main levée' : 'Main baissée');
         await sendData({ type: 'hand', up: state.hand });
     });
     $('btnLayout').addEventListener('click', () => {
@@ -1146,6 +1252,7 @@ export async function startFromConfig() {
     // toujours celle qui ne fait rien.
     $('vModal')?.addEventListener('click', (e) => { if (e.target === $('vModal') && repondModal) repondModal(false); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && repondModal) repondModal(false); });
+    $('localMic')?.addEventListener('click', (e) => { e.stopPropagation(); basculeMicro('local'); });
     $('btnLeave').addEventListener('click', leave);
     $('btnLeaveTop').addEventListener('click', (e) => { e.preventDefault(); leave(); });
     document.addEventListener('click', (e) => {
