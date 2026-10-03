@@ -391,11 +391,11 @@ export function placeBulle(rang) {
   // Huit places, autant que de bulles vivantes : deux d'entre elles ne tombent
   // jamais au même endroit. Deux rangs qui se suivent changent de rangée, et
   // les deux qui partagent une rangée sont à plus de 25% l'une de l'autre.
-  // ⚠️ 42px entre deux rangées : la bulle en fait 38 de haut, et des rangées
-  // plus serrées se touchaient - mesuré au harnais, pas estimé. De même, l'écart
-  // de 26% entre deux places d'une même rangée tient compte de la largeur
-  // maximale de la bulle (25%) : sans cette marge, le nom le plus long mordait
-  // sur la bulle voisine.
+  // ⚠️ Les écarts sont mesurés au harnais, pas estimés : 42px entre deux
+  // rangées, et 26% entre deux places d'une même rangée. La bulle n'est plus
+  // qu'un emoji - c'est la carte de la personne qui dit de qui il vient - mais
+  // la marge reste : elle rend l'animation lisible quand plusieurs réactions
+  // partent en même temps, ce qui est précisément le moment où on applaudit.
   const places = [
     { gauche: 6, bas: 10 }, { gauche: 34, bas: 52 },
     { gauche: 18, bas: 94 }, { gauche: 46, bas: 136 },

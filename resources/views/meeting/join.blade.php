@@ -496,24 +496,50 @@
            ⚠️ `pointer-events:none` sur la couche : elle recouvre toute la scène, et
            sans cela elle avalerait les clics destinés à la vignette en dessous. */
         #visio-room .reac-layer{position:absolute;inset:0;z-index:40;pointer-events:none;overflow:hidden;}
-        #visio-room .reac-bulle{position:absolute;display:inline-flex;align-items:center;gap:8px;
-            padding:5px 13px 5px 9px;border-radius:999px;background:rgba(15,18,28,.88);
-            border:1px solid var(--vborder);color:var(--vtext);font-size:12.5px;font-weight:700;
-            white-space:nowrap;max-width:25%;box-shadow:0 10px 30px rgba(0,0,0,.5);
+        #visio-room .reac-bulle{position:absolute;font-size:34px;line-height:1;
+            filter:drop-shadow(0 6px 16px rgba(0,0,0,.55));
             animation:vreac 4s cubic-bezier(.25,.7,.4,1) forwards;}
-        #visio-room .reac-bulle .em{font-size:26px;line-height:1;flex-shrink:0;}
-        /* ⚠️ `min-width:0` : sans lui, un élément de flex refuse de descendre sous
-           la largeur de son texte. `max-width` sur la bulle était alors sans
-           effet, et un nom long la faisait déborder sur la moitié de la scène -
-           mesuré, pas supposé. */
-        #visio-room .reac-bulle .qui{min-width:0;overflow:hidden;text-overflow:ellipsis;}
-        /* La sienne est reconnaissable : on vient d'appuyer, on cherche la confirmation. */
-        #visio-room .reac-bulle.soi{border-color:var(--vgold);}
         @@keyframes vreac{
             0%{opacity:0;transform:translateY(18px) scale(.7);}
             12%{opacity:1;transform:translateY(0) scale(1);}
             72%{opacity:1;}
             100%{opacity:0;transform:translateY(-40vh) scale(.94);}
+        }
+        /* --- L'emoji se pose aussi sur la carte de qui a réagi ---
+           ⚠️ C'est la seule chose qui relie la bulle qui monte à une personne. En
+           retrait (opacité réduite) : elle accompagne la vignette, elle ne la
+           recouvre pas.
+           ⚠️ Coin bas-droit : la main levée tient le haut-gauche, les rôles le
+           haut-droit, le nom le bas-gauche. C'est le dernier coin libre, et il
+           l'est sur TOUTES les cartes - le bandeau, la grille et la sienne. */
+        #visio-room .reac-pop{position:absolute;right:8px;bottom:8px;z-index:4;pointer-events:none;
+            font-size:21px;line-height:1;opacity:.72;filter:drop-shadow(0 2px 6px rgba(0,0,0,.6));
+            animation:vreacPop 4.2s ease forwards;}
+        /* ⚠️ Le nom recule le temps de la réaction : sans cela, l'emoji se pose sur
+           la fin d'un nom long, qui occupe le même bas de carte. La transition
+           évite que la pastille saute. */
+        #visio-room .tile .name{transition:max-width .25s ease;}
+        #visio-room .tile.a-reagi .name{max-width:calc(100% - 58px);}
+        /* ⚠️ Dans le bandeau, le nom est replié au micro : il n'atteint jamais ce
+           coin, et le reculer rognerait le micro sur une carte de 96px. Il ne
+           recule que lorsqu'il se déplie - au survol, au clavier, et au doigt où
+           il reste ouvert faute de survol. */
+        #visio-room .filmstrip .tile.a-reagi .name{max-width:calc(100% - 20px);}
+        #visio-room .filmstrip .tile.a-reagi:hover .name,
+        #visio-room .filmstrip .tile.a-reagi:focus-within .name{max-width:calc(100% - 58px);}
+        /* ⚠️ Au doigt le nom reste ouvert, faute de survol - le recul doit donc
+           valoir tout le temps. Et cette règle doit venir APRÈS celle du bandeau :
+           à spécificité égale, posée plus haut dans la feuille, elle perdait et
+           l'emoji se posait sur le micro (mesuré à 375px). */
+        @@media (pointer:coarse){
+            #visio-room .filmstrip .tile.a-reagi .name{max-width:calc(100% - 58px);}
+        }
+        @@keyframes vreacPop{
+            0%{opacity:0;transform:scale(.5);}
+            10%{opacity:.72;transform:scale(1.18);}
+            20%{transform:scale(1);}
+            84%{opacity:.72;}
+            100%{opacity:0;transform:scale(.92);}
         }
         /* Choix de l'emoji : une rangée au-dessus du bouton, pas la feuille large
            des autres menus - cinq pastilles n'ont pas besoin de 340px. */
@@ -889,6 +915,9 @@
                seule trace d'une réaction, et `animation:none` la laisserait figée
                sur la scène pour toujours. Elle se montre, puis s'efface sur place. */
             #visio-room .reac-bulle{animation:vreacFixe 3.6s linear forwards;}
+            /* Même raison : elle doit encore s'effacer, mais sans la pulsation. */
+            #visio-room .reac-pop{animation:vreacFixe 4s linear forwards;}
+            #visio-room .tile .name{transition-duration:.01ms;}
         }
         @@keyframes vreacFixe{0%{opacity:0;}8%{opacity:1;}72%{opacity:1;}100%{opacity:0;}}
     </style>

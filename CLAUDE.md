@@ -559,11 +559,26 @@ paiement (`pay`), inscription à une formation.
     masquait LiveKit une fois ses identifiants renseignés.
 ### Réactions de salle (bouton « Réagir »)
 
-Un emoji qui **monte sur l'écran de présentation**, chez tout le monde, avec le
-**nom de qui l'envoie**. Bouton voisin de « Main » : même intention, deux
-intensités. Purement client (canal de données LiveKit) - **rien n'est envoyé au
-serveur et rien n'est conservé** : la salle n'a pas à garder trace de qui a
-applaudi quoi.
+Un emoji qui **monte sur l'écran de présentation**, chez tout le monde, et qui se
+pose **en même temps sur la carte de qui a réagi** (opacité réduite, coin
+bas-droit). Bouton voisin de « Main » : même intention, deux intensités.
+Purement client (canal de données LiveKit) - **rien n'est envoyé au serveur et
+rien n'est conservé** : la salle n'a pas à garder trace de qui a applaudi quoi.
+
+- ⚠️ **La bulle ne porte PAS de nom.** C'est la carte qui dit de qui vient la
+  réaction, à l'endroit où l'œil cherche déjà la personne ; un nom accroché à
+  chaque bulle encombrait la scène pour redire la même chose.
+- ⚠️ La marque va sur **SA** carte (`tileLocal` / `tile-<identity>`), jamais sur
+  la grande tuile : celle-ci montre qui **parle**, et y poser la réaction de
+  quelqu'un d'autre désignerait la mauvaise personne.
+- ⚠️ **Le minuteur de la marque précédente est annulé** avant d'en poser une
+  nouvelle : sinon il retire la marque de la **seconde**, encore toute fraîche.
+- ⚠️ Le **nom recule** (`.tile.a-reagi .name`) le temps de la réaction, sinon
+  l'emoji se pose sur la fin d'un nom long. Dans le **bandeau** le nom est
+  replié : il ne recule qu'une fois déplié (survol, clavier) - et **au doigt**,
+  où il reste ouvert faute de survol. Cette dernière règle doit venir **après**
+  celle du bandeau : à spécificité égale, posée plus haut, elle perdait et
+  l'emoji se posait sur le micro (mesuré à 375px).
 
 - ⚠️ **À ne pas confondre avec les réactions du fil** (`basculeReaction`,
   `.chip`), qui se posent SUR un message, se comptent et survivent au

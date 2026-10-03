@@ -1317,7 +1317,7 @@ export async function startFromConfig() {
      */
     const reac = { dernier: 0, rang: 0, parQui: new Map() };
 
-    function poseBulleReaction(emoji, nom, soi) {
+    function poseBulleReaction(emoji) {
         const couche = $('reacLayer');
         if (!couche) return;
         // ⚠️ Le plafond n'est pas un goût d'affichage : sans lui, une rafale empile
@@ -1329,22 +1329,47 @@ export async function startFromConfig() {
         // suffit pas seul, deux bulles distantes de quatre rangs y retombent.
         const place = placeBulle(reac.rang++);
         const b = document.createElement('div');
-        b.className = 'reac-bulle' + (soi ? ' soi' : '');
+        b.className = 'reac-bulle';
         b.style.left = place.gauche + '%';
         b.style.bottom = place.bas + 'px';
-
-        const e = document.createElement('span');
-        e.className = 'em'; e.textContent = emoji;
-        const q = document.createElement('span');
-        // ⚠️ `textContent` et non `innerHTML` : le nom vient d'un autre poste.
-        q.className = 'qui'; q.textContent = soi ? 'Vous' : texteCourt(nom || 'Participant', 18);
-        b.appendChild(e); b.appendChild(q);
+        // ⚠️ `textContent` : ce qui arrive vient d'un autre poste. Et il n'y a que
+        // l'emoji - c'est la CARTE qui dit de qui il vient, pas la bulle. Un nom
+        // accroché à chaque bulle encombrait la scène pour redire ce que la carte
+        // montre déjà, à l'endroit où l'œil cherche la personne.
+        b.textContent = emoji;
         couche.appendChild(b);
 
         // ⚠️ Un minuteur, et non `animationend` : quand l'animation ne se joue pas
         // (onglet en arrière-plan, feuille de style non chargée), l'événement
         // n'arrive jamais et la bulle resterait sur la scène indéfiniment.
         setTimeout(() => b.remove(), 4200);
+    }
+
+    /**
+     * Pose l'emoji sur la carte de qui réagit : c'est ce qui relie la bulle qui
+     * monte à une personne.
+     *
+     * ⚠️ Sur SA carte, pas sur la scène : la grande tuile montre qui PARLE, et y
+     * poser la réaction de quelqu'un d'autre désignerait la mauvaise personne.
+     */
+    function marqueLaCarte(id, emoji) {
+        const t = id === 'local' ? $('tileLocal') : $('tile-' + id);
+        if (!t) return;
+        // ⚠️ Deux réactions coup sur coup : sans annuler le minuteur de la
+        // première, il retirerait la marque de la SECONDE, encore toute fraîche.
+        clearTimeout(Number(t.dataset.reacTm) || 0);
+        t.querySelector('.reac-pop')?.remove();
+
+        const b = document.createElement('span');
+        b.className = 'reac-pop';
+        b.textContent = emoji;
+        t.appendChild(b);
+        // La classe recule le nom : sans elle, l'emoji se poserait sur la fin d'un
+        // nom long, dans le même coin.
+        t.classList.add('a-reagi');
+        t.dataset.reacTm = String(setTimeout(() => {
+            b.remove(); t.classList.remove('a-reagi'); delete t.dataset.reacTm;
+        }, 4200));
     }
 
     function envoieReaction(emoji) {
@@ -1354,21 +1379,23 @@ export async function startFromConfig() {
         reac.dernier = n;
         // Affichée tout de suite chez soi : attendre l'aller-retour du serveur
         // donnerait l'impression que le bouton n'a pas pris.
-        poseBulleReaction(emoji, state.name, true);
+        poseBulleReaction(emoji);
+        marqueLaCarte('local', emoji);
         sendData({ type: 'reac_salle', emoji });
     }
 
-    function reactionDeSalle(emoji, nom, id) {
+    function reactionDeSalle(emoji, id) {
         // ⚠️ Le canal de données est public : sans ce filtre, n'importe quel
         // connecté afficherait en grand, chez tout le monde, le texte de son choix.
         if (!reactionRecevable(emoji, emojisAutorises())) return;
         // ⚠️ Et l'anti-rafale vaut AUSSI ici, par expéditeur : un client modifié ne
         // se prive pas d'un verrou qui ne vivrait que dans sa propre page.
         const n = Date.now();
-        const cle = id || nom || '?';
+        const cle = id || '?';
         if (!peutReagir(reac.parQui.get(cle) || 0, n)) return;
         reac.parQui.set(cle, n);
-        poseBulleReaction(emoji, nom, false);
+        poseBulleReaction(emoji);
+        marqueLaCarte(id, emoji);
     }
 
     function construitMenuReactions() {
@@ -1904,7 +1931,7 @@ export async function startFromConfig() {
         const fromId = participant && participant.identity;
         if (msg.type === 'chat') addChat((participant && (participant.name || participant.identity)) || 'Participant', msg.text, false, { id: msg.id, replyTo: msg.replyTo, at: Date.now() });
         else if (msg.type === 'reaction') reactionDistante(msg.uid, msg.emoji, !!msg.on, msg.replaced || null);
-        else if (msg.type === 'reac_salle') reactionDeSalle(msg.emoji, (participant && (participant.name || participant.identity)) || 'Participant', fromId);
+        else if (msg.type === 'reac_salle') reactionDeSalle(msg.emoji, fromId);
         else if (msg.type === 'chat_removed') retireMessage(msg.uid);
         else if (msg.type === 'hand') {
             const pe = people.find((x) => x.id === fromId);

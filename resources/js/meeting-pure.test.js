@@ -362,8 +362,8 @@ describe('réactions de salle', () => {
       expect(placeBulle(i).bas).not.toBe(placeBulle(i + 1).bas);
     }
     // ⚠️ Et quand ils la partagent, leurs colonnes ne doivent pas seulement
-    // différer : elles doivent s'écarter, sinon les deux noms se chevauchent et
-    // aucun ne se lit - c'est ce que montrait le harnais visuel.
+    // différer : elles doivent s'écarter, sinon deux emojis partis ensemble se
+    // chevauchent - c'est ce que montrait le harnais visuel.
     for (let i = 0; i < REACTIONS_MAX; i += 1) {
       for (let j = i + 1; j < REACTIONS_MAX; j += 1) {
         const a = placeBulle(i);
@@ -380,7 +380,7 @@ describe('réactions de salle', () => {
     expect(placeBulle(null)).toEqual(placeBulle(0));
     expect(placeBulle(-1).gauche).toBeGreaterThanOrEqual(0);
     for (let i = 0; i < 40; i += 1) {
-      // La bulle est large d'au plus 25% : au-delà de 48%, elle déborderait.
+      // Au-delà de 48%, la bulle sortirait du bord droit de la scène.
       expect(placeBulle(i).gauche).toBeGreaterThanOrEqual(0);
       expect(placeBulle(i).gauche).toBeLessThanOrEqual(48);
       expect(placeBulle(i).bas).toBeGreaterThanOrEqual(10);
