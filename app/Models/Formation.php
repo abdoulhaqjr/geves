@@ -150,6 +150,12 @@ class Formation extends Model implements Meetable
      * ⚠️ Un inscrit d'une formation **payante** qui n'a pas réglé n'a **aucun**
      * accès à la visio (règle métier explicite).
      */
+    /** Édition qui porte les réglages de visio de cette salle (cf. Meetable). */
+    public function meetingEdition(): ?Edition
+    {
+        return $this->edition;
+    }
+
     public function meetingRoleFor(?User $account, bool $isStaff = false): MeetingRole
     {
         if ($isStaff) {

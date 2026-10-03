@@ -13,7 +13,7 @@ import {
 import {
     enBasDuFil, etatChrono, grilleOptimale, heure, idSur, idsDesParleurs, initials,
     mainsOrdonnees, metadonnee, niveauReseau, ordreRecevable as ordreAutorise, presenceLabel,
-    phraseConnectes, rangsDesMains, roleLabel, teinteDuNom, texteCourt,
+    phraseConnectes, profilVideo, rangsDesMains, roleLabel, teinteDuNom, texteCourt,
 } from './meeting-pure.js';
 
 // Objet compat pour réutiliser la logique de la maquette (LK.RoomEvent, LK.Track…).
@@ -1540,20 +1540,33 @@ export async function startFromConfig() {
     // ---- Connexion ----
     async function connect() {
         setStatus('Connexion à la salle…'); setConnPill('warn', 'Connexion…');
+        // Qualité décidée par l'édition (onglet Visioconférence de sa fiche).
+        const video = profilVideo(cfg.quality);
         room = new LK.Room({
             adaptiveStream: true, dynacast: true,
             // Le périphérique retenu à l'écran d'entrée, s'il y en a eu un : sinon
             // LiveKit reprend celui que le navigateur juge par défaut, qui n'est pas
             // forcément celui qu'on vient de vérifier.
             videoCaptureDefaults: {
-                resolution: { width: 960, height: 540, frameRate: 24 }, facingMode: 'user',
+                resolution: { width: video.largeur, height: video.hauteur, frameRate: video.images },
+                facingMode: 'user',
                 deviceId: entree.camId || undefined,
             },
             audioCaptureDefaults: {
                 echoCancellation: true, noiseSuppression: true, autoGainControl: true,
                 deviceId: entree.micId || undefined,
             },
-            publishDefaults: { dtx: true, red: true, videoSimulcastLayers: LK.VideoPresets ? [LK.VideoPresets.h180, LK.VideoPresets.h360] : undefined, videoCodec: 'vp8' },
+            publishDefaults: {
+                dtx: true, red: true,
+                // ⚠️ Ce sont les couches BASSES, publiées à côté de la capture : elles
+                // servent les petites vignettes et les connexions faibles. Les garder
+                // est ce qui rend une couche haute abordable.
+                videoSimulcastLayers: LK.VideoPresets ? [LK.VideoPresets.h180, LK.VideoPresets.h360] : undefined,
+                // ⚠️ Un débit explicite : laissé au SDK, il se calait sur l'ancienne
+                // définition et une capture plus fine serait sortie en bouillie.
+                videoEncoding: { maxBitrate: video.debit, maxFramerate: video.images },
+                videoCodec: 'vp8',
+            },
         });
 
         room

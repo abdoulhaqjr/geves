@@ -334,6 +334,7 @@ Route::prefix('admin')->group(function () {
             Route::post('/editions/{edition}/relecteurs/expertise', [EditionFormController::class, 'saveReviewerExpertise'])->name('admin.editions.reviewers.expertise');
             Route::post('/editions/{edition}/relecteurs/grille', [EditionFormController::class, 'saveReviewGrid'])->name('admin.editions.reviewers.criteria');
             Route::post('/editions/{edition}/paiement', [EditionFormController::class, 'savePayment'])->name('admin.editions.payment');
+            Route::post('/editions/{edition}/visio', [EditionFormController::class, 'saveMeetings'])->name('admin.editions.meetings');
             Route::post('/editions/{edition}/traductions', [EditionFormController::class, 'saveTranslations'])->name('admin.editions.translations');
             Route::post('/editions/{edition}/equipe', [EditionFormController::class, 'attachTeamMember'])->name('admin.editions.team.attach');
             Route::delete('/editions/{edition}/equipe', [EditionFormController::class, 'detachTeamMember'])->name('admin.editions.team.detach');

@@ -66,6 +66,7 @@
                         'submissions' => 'Soumissions & tarifs',
                         'committees' => 'Comités',
                         'payment' => 'Paiement',
+                        'meetings' => 'Visioconférence',
                         'team' => 'Équipe',
                         'partners' => 'Partenaires',
                         'appearance' => 'Apparence',
@@ -73,7 +74,7 @@
                         'options' => 'Options',
                     ] as $key => $label)
                         {{-- Les onglets d'une édition existante n'ont pas de sens à la création. --}}
-                        @if ($edition || ! in_array($key, ['payment', 'team', 'translations', 'options'], true))
+                        @if ($edition || ! in_array($key, ['payment', 'meetings', 'team', 'translations', 'options'], true))
                             <a href="{{ $edition ? route('admin.editions.edit', ['edition' => $edition, 'tab' => $key]) : route('admin.editions.create', ['tab' => $key]) }}"
                                :class="{ active: tab==='{{ $key }}' }"
                                @click.prevent="goTab('{{ $key }}')">{{ $label }}</a>
@@ -641,11 +642,93 @@
                          à sauvegarde dédiée (Relecteurs, Équipe, Traductions) qui ont leurs
                          propres boutons. --}}
                     <div class="ukc-form-actions" style="margin-top:4px;border-top:none;padding-top:0;"
-                         x-show="!['payment','team','translations'].includes(tab)">
+                         x-show="!['payment','meetings','team','translations'].includes(tab)">
                         <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer</button>
                         <a href="{{ route('admin.editions.index') }}" class="ukc-btn ukc-btn--ghost">Annuler</a>
                     </div>
                 </form>
+
+                {{-- ===== VISIOCONFÉRENCE (propre à l'édition : sauvegarde dédiée) ===== --}}
+                @if ($edition)
+                    @php($vis = $edition->settings['meetings'] ?? [])
+                    <div class="ukc-panel" :class="{ active: tab==='meetings' }">
+                        <div class="ukc-card">
+                            <h2>Visioconférence de cette édition</h2>
+                            <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 12px;">
+                                Comme pour le paiement : <strong>tout champ laissé vide utilise la configuration par défaut de
+                                la plateforme</strong>. Utile pour un colloque qui dispose de son propre serveur de visio.
+                            </p>
+                            <form method="POST" action="{{ route('admin.editions.meetings', $edition) }}" class="ukc-form-grid">
+                                @csrf
+                                <div class="ukc-field full">
+                                    <label for="vis-provider">Fournisseur par défaut de l’édition</label>
+                                    <select id="vis-provider" name="provider">
+                                        <option value="">- Utiliser le fournisseur par défaut de la plateforme -</option>
+                                        <option value="livekit" @selected(($vis['provider'] ?? '') === 'livekit')>LiveKit (salle intégrée à GEVES)</option>
+                                        <option value="jitsi" @selected(($vis['provider'] ?? '') === 'jitsi')>Jitsi</option>
+                                        <option value="custom" @selected(($vis['provider'] ?? '') === 'custom')>Lien externe par séance</option>
+                                    </select>
+                                    <p class="ukc-hint">Une séance peut toujours choisir un autre fournisseur dans sa propre fiche.</p>
+                                </div>
+
+                                <div class="ukc-field full">
+                                    <label for="vis-quality">Qualité vidéo</label>
+                                    <select id="vis-quality" name="quality">
+                                        <option value="">- Qualité par défaut de la plateforme -</option>
+                                        <option value="sd" @selected(($vis['quality'] ?? '') === 'sd')>Économe - 640 x 360, 24 i/s</option>
+                                        <option value="hd" @selected(($vis['quality'] ?? '') === 'hd')>Standard - 1280 x 720, 30 i/s</option>
+                                        <option value="fhd" @selected(($vis['quality'] ?? '') === 'fhd')>Haute - 1920 x 1080, 30 i/s</option>
+                                    </select>
+                                    <p class="ukc-hint">
+                                        C’est la définition de <strong>capture</strong> : rien dans la salle ne peut être plus net
+                                        qu’elle. Les définitions plus basses restent envoyées en parallèle, pour les petites vignettes
+                                        et les connexions faibles. Monter la qualité pèse sur la <strong>liaison montante de qui
+                                        diffuse</strong> : sur un réseau modeste, « Économe » donne une image plus stable qu’une haute
+                                        définition qui saccade.
+                                    </p>
+                                </div>
+
+                                <div class="ukc-field full"><h3 style="font-size:14px;font-weight:800;margin:6px 0 0;">LiveKit</h3></div>
+                                <div class="ukc-field full">
+                                    <label for="lk-url">Serveur</label>
+                                    <input type="text" id="lk-url" name="livekit[url]" value="{{ $vis['livekit']['url'] ?? '' }}" autocomplete="off" placeholder="wss://… (laisser vide = défaut)">
+                                </div>
+                                <div class="ukc-field">
+                                    <label for="lk-key">Clé d’API</label>
+                                    <input type="text" id="lk-key" name="livekit[api_key]" value="{{ $vis['livekit']['api_key'] ?? '' }}" autocomplete="off">
+                                </div>
+                                <div class="ukc-field">
+                                    <label for="lk-secret">Secret d’API</label>
+                                    <input type="text" id="lk-secret" name="livekit[api_secret]" value="{{ $vis['livekit']['api_secret'] ?? '' }}" autocomplete="off">
+                                    <p class="ukc-hint">Les trois vont ensemble : s’il en manque un, l’édition retombe sur le serveur de la plateforme.</p>
+                                </div>
+
+                                <div class="ukc-field full"><h3 style="font-size:14px;font-weight:800;margin:6px 0 0;">Jitsi</h3></div>
+                                <div class="ukc-field">
+                                    <label for="jt-domain">Domaine</label>
+                                    <input type="text" id="jt-domain" name="jitsi[domain]" value="{{ $vis['jitsi']['domain'] ?? '' }}" autocomplete="off" placeholder="meet.jit.si">
+                                </div>
+                                <div class="ukc-field">
+                                    <label for="jt-prefix">Préfixe des salles</label>
+                                    <input type="text" id="jt-prefix" name="jitsi[room_prefix]" value="{{ $vis['jitsi']['room_prefix'] ?? '' }}" autocomplete="off">
+                                </div>
+                                <div class="ukc-field">
+                                    <label for="jt-app">App ID</label>
+                                    <input type="text" id="jt-app" name="jitsi[app_id]" value="{{ $vis['jitsi']['app_id'] ?? '' }}" autocomplete="off">
+                                </div>
+                                <div class="ukc-field">
+                                    <label for="jt-appsecret">App secret</label>
+                                    <input type="text" id="jt-appsecret" name="jitsi[app_secret]" value="{{ $vis['jitsi']['app_secret'] ?? '' }}" autocomplete="off">
+                                    <p class="ukc-hint">Instance auto-hébergée uniquement : sans secret, la salle Jitsi est ouverte et le rôle n’est pas imposé côté serveur.</p>
+                                </div>
+
+                                <div class="ukc-form-actions full">
+                                    <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer la visioconférence</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                @endif
 
                 {{-- ===== PAIEMENT (propre à l'édition : sauvegarde dédiée) ===== --}}
                 @if ($edition)

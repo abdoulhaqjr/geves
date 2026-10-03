@@ -11,6 +11,7 @@ use App\Meetings\Providers\LiveKitProvider;
 use App\Models\EventSession;
 use App\Models\Formation;
 use App\Models\MeetingMessage;
+use App\Support\EditionMeetingConfig;
 use App\Support\SessionPresence;
 use App\Support\Settings;
 use Illuminate\Contracts\View\View;
@@ -48,7 +49,10 @@ class MeetingController extends Controller
         if ($role->canJoin()) {
             $extra = [
                 'communications' => $session->scheduledCommunications(),
-                'canRecord' => $role === MeetingRole::Moderator && app(LiveKitEgress::class)->isConfigured(),
+                'canRecord' => $role === MeetingRole::Moderator && EditionMeetingConfig::using(
+                    $session->edition,
+                    fn () => app(LiveKitEgress::class)->isConfigured(),
+                ),
                 // ⚠️ Présence TENUE DANS LA SALLE : l'aller-retour vers la page de
                 // présence obligeait à quitter la séance au moment précis où l'on
                 // regarde les gens. Même règle que la page sur qui peut pointer -

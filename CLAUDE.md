@@ -557,6 +557,44 @@ paiement (`pay`), inscription à une formation.
     `MeetingProviderRegistry` retombe seul sur Jitsi public quand ce défaut n'est pas
     configuré. Le forcer en base écraserait la configuration du site - c'est ce qui
     masquait LiveKit une fois ses identifiants renseignés.
+### Visioconférence par édition (onglet « Visioconférence » de la fiche)
+
+Même patron que la **passerelle de paiement par édition** : le gestionnaire
+renseigne, pour **son** édition, le fournisseur, les identifiants du serveur
+(LiveKit / Jitsi) et la **qualité vidéo**. Stocké dans
+`edition.settings['meetings']` (seules les valeurs **remplies** sont conservées) ;
+**`App\Support\EditionMeetingConfig::apply($edition)`** surcharge
+`meetings.default` + `meetings.livekit.*` / `meetings.jitsi.*` au runtime, avec
+**repli sur la configuration globale** pour tout champ vide.
+
+- ⚠️ **Toutes les portes d'entrée passent par `EditionMeetingConfig::using()`**,
+  qui **restaure** ensuite : une même requête peut toucher plusieurs éditions (une
+  liste de séances), et `apply()` n'écrase que les champs remplis - sans
+  restauration, une salle s'ouvrirait sur le serveur d'un autre colloque. Le socle
+  commun l'applique dans **`JoinsMeetings::avecReglagesVisio()`** (URL de
+  connexion, embarquement Jitsi, lecteur LiveKit) ; les trois autres appels
+  LiveKit le font explicitement : **Egress** (enregistrer sur le bon serveur),
+  **occupation réelle de la salle** (`SessionPresenceApiController`) et le bouton
+  « Enregistrer » de la salle.
+- **`Meetable::meetingEdition()`** (nouveau au contrat) dit de quelle édition
+  relève une salle - sans lui, le socle ne saurait pas quelle configuration poser.
+
+**Qualité vidéo** (`meetings.quality`, défaut **`hd`**) :
+
+- ⚠️ La salle plafonnait à **960x540 à 24 i/s**, et c'était la **couche simulcast
+  la plus haute** : rien ne pouvait y être plus net, quelle que soit la caméra.
+  Le défaut passe à **1280x720 à 30 i/s** (`profilVideo`, règle pure testée).
+- ⚠️ **Un débit explicite accompagne la définition** (`videoEncoding.maxBitrate`) :
+  laissé au SDK, il se calait sur l'ancienne définition et une capture plus fine
+  serait sortie en bouillie.
+- ⚠️ Les **couches basses** (180p, 360p) restent publiées : ce sont elles que
+  reçoivent les petites vignettes et les connexions faibles, et c'est ce qui rend
+  une couche haute abordable. Ne pas les retirer en croyant « simplifier ».
+- ⚠️ Le coût retombe sur la **liaison montante de qui diffuse** - d'où un réglage
+  **par édition** : sur un réseau modeste, « Économe » (360p) donne une image plus
+  stable qu'une haute définition qui saccade.
+- Tests : `tests/Feature/EditionMeetingConfigTest.php`.
+
 ### Les échanges (Q&A voté, sondages) se tiennent DANS la salle
 
 Questions et sondages vivaient sur une **autre page** (`/session/{id}/echanges`),

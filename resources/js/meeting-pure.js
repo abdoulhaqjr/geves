@@ -293,3 +293,30 @@ export function phraseConnectes(n) {
 
   return t > 1 ? t + ' personnes connectées' : t + ' personne connectée';
 }
+
+/**
+ * Profil de capture vidéo, nommé par l'édition.
+ *
+ * ⚠️ C'est la résolution de CAPTURE, donc la couche simulcast la plus HAUTE :
+ * rien dans la salle ne peut être plus net qu'elle, quelle que soit la caméra.
+ * La salle plafonnait à 960x540 à 24 i/s - en dessous du 720p que donne
+ * n'importe quelle webcam récente.
+ *
+ * ⚠️ Les couches basses (180p, 360p) restent publiées à côté : ce sont elles que
+ * reçoivent les petites vignettes et les connexions faibles, et c'est ce qui rend
+ * une couche haute abordable. Monter le profil n'alourdit donc que la liaison
+ * MONTANTE de celui qui diffuse - d'où un réglage par édition et non une valeur
+ * unique pour toute la plateforme.
+ *
+ * ⚠️ Un nom inconnu retombe sur « hd » : un réglage retiré du code ne doit pas
+ * laisser la salle sans image.
+ */
+export function profilVideo(nom) {
+  const profils = {
+    sd: { largeur: 640, hauteur: 360, images: 24, debit: 500000 },
+    hd: { largeur: 1280, hauteur: 720, images: 30, debit: 1700000 },
+    fhd: { largeur: 1920, hauteur: 1080, images: 30, debit: 3000000 },
+  };
+
+  return profils[String(nom ?? '')] || profils.hd;
+}

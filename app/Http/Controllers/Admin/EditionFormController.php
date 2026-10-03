@@ -12,6 +12,7 @@ use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\Review;
 use App\Models\User;
+use App\Support\EditionMeetingConfig;
 use App\Support\EditionPaymentConfig;
 use App\Support\Locales;
 use App\Support\ReviewerExpertise;
@@ -414,6 +415,51 @@ class EditionFormController extends Controller
         return redirect()->route('admin.editions.edit', $edition)
             ->with('ukc_status', 'Passerelle de paiement de l’édition mise à jour.')
             ->with('edition_tab', 'payment');
+    }
+
+    /**
+     * Réglages de visioconférence propres à l'édition : fournisseur, identifiants
+     * du serveur, qualité vidéo.
+     *
+     * ⚠️ Même règle que le paiement : on ne conserve QUE les champs remplis, et un
+     * champ vide retombe sur la configuration de la plateforme. Enregistrer une
+     * chaîne vide figerait l'édition sur « rien », ce qui n'est pas « par défaut ».
+     */
+    public function saveMeetings(Request $request, Edition $edition): RedirectResponse
+    {
+        $data = $request->validate([
+            'provider' => ['nullable', 'in:livekit,jitsi,custom'],
+            'quality' => ['nullable', 'in:'.implode(',', EditionMeetingConfig::QUALITIES)],
+            'livekit' => ['array'],
+            'livekit.url' => ['nullable', 'string', 'max:255'],
+            'livekit.api_key' => ['nullable', 'string', 'max:255'],
+            'livekit.api_secret' => ['nullable', 'string', 'max:255'],
+            'jitsi' => ['array'],
+            'jitsi.domain' => ['nullable', 'string', 'max:255'],
+            'jitsi.app_id' => ['nullable', 'string', 'max:255'],
+            'jitsi.app_secret' => ['nullable', 'string', 'max:255'],
+            'jitsi.room_prefix' => ['nullable', 'string', 'max:60'],
+        ]);
+
+        $clean = fn (array $a) => array_filter($a, fn ($v) => filled($v));
+        $meetings = array_filter([
+            'provider' => $data['provider'] ?? null,
+            'quality' => $data['quality'] ?? null,
+            'livekit' => $clean($data['livekit'] ?? []),
+            'jitsi' => $clean($data['jitsi'] ?? []),
+        ], fn ($v) => filled($v));
+
+        $settings = $edition->settings ?? [];
+        if ($meetings === []) {
+            unset($settings['meetings']);
+        } else {
+            $settings['meetings'] = $meetings;
+        }
+        $edition->update(['settings' => $settings]);
+
+        return redirect()->route('admin.editions.edit', $edition)
+            ->with('ukc_status', 'Visioconférence de l’édition mise à jour.')
+            ->with('edition_tab', 'meetings');
     }
 
     /**

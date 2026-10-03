@@ -171,6 +171,12 @@ class EventSession extends Model implements Meetable
             && mb_strtolower((string) $this->moderator_email) === mb_strtolower((string) $account->email);
     }
 
+    /** Édition qui porte les réglages de visio de cette salle (cf. Meetable). */
+    public function meetingEdition(): ?Edition
+    {
+        return $this->edition;
+    }
+
     public function meetingRoleFor(?User $account, bool $isStaff = false): MeetingRole
     {
         if ($isStaff) {

@@ -13,6 +13,7 @@ import {
   niveauReseau,
   ordreRecevable,
   phraseConnectes,
+  profilVideo,
   presenceLabel,
   rangsDesMains,
   roleLabel,
@@ -288,5 +289,30 @@ describe('nombre de connectés', () => {
     expect(phraseConnectes(-3)).toBe('0 personne connectée');
     expect(phraseConnectes(null)).toBe('0 personne connectée');
     expect(phraseConnectes(2.8)).toBe('2 personnes connectées');
+  });
+});
+
+describe('profil de capture vidéo', () => {
+  it('monte la salle au-dessus de son ancien plafond', () => {
+    // ⚠️ La salle capturait 960x540 à 24 i/s, et c'était la couche la plus haute :
+    // rien ne pouvait y être plus net, quelle que soit la caméra.
+    expect(profilVideo('hd')).toEqual({ largeur: 1280, hauteur: 720, images: 30, debit: 1700000 });
+    expect(profilVideo('hd').hauteur).toBeGreaterThan(540);
+  });
+
+  it('laisse le choix d’économiser la liaison montante', () => {
+    expect(profilVideo('sd').hauteur).toBe(360);
+    expect(profilVideo('fhd').hauteur).toBe(1080);
+    // Le débit suit la définition, sinon la couche haute sort en bouillie.
+    expect(profilVideo('sd').debit).toBeLessThan(profilVideo('hd').debit);
+    expect(profilVideo('hd').debit).toBeLessThan(profilVideo('fhd').debit);
+  });
+
+  it('retombe sur « hd » devant un nom inconnu', () => {
+    // ⚠️ Un réglage saisi hier et retiré du code demain ne doit pas laisser la
+    // salle sans image.
+    expect(profilVideo('ultra')).toEqual(profilVideo('hd'));
+    expect(profilVideo(null)).toEqual(profilVideo('hd'));
+    expect(profilVideo(undefined)).toEqual(profilVideo('hd'));
   });
 });

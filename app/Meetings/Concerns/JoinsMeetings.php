@@ -7,6 +7,7 @@ use App\Meetings\MeetingProviderRegistry;
 use App\Meetings\Providers\JitsiProvider;
 use App\Meetings\Providers\LiveKitProvider;
 use App\Models\User;
+use App\Support\EditionMeetingConfig;
 
 /**
  * Socle d'accès/embarquement commun à tout objet `Meetable` (session du programme,
@@ -19,6 +20,25 @@ trait JoinsMeetings
 {
     /** Rôle du visiteur dans cette visio (logique propre à chaque modèle). */
     abstract public function meetingRoleFor(?User $account, bool $isStaff = false): MeetingRole;
+
+    /**
+     * Exécute $fn avec les réglages de visio de l'ÉDITION posés par-dessus ceux de
+     * la plateforme, puis les retire.
+     *
+     * ⚠️ Toutes les portes d'entrée du socle passent par ici. Sans cela, une
+     * édition pourvue de son propre serveur LiveKit ouvrirait quand même ses salles
+     * sur celui de la plateforme - et la configuration saisie dans sa fiche ne
+     * servirait à rien.
+     *
+     * @template T
+     *
+     * @param  callable(): T  $fn
+     * @return T
+     */
+    protected function avecReglagesVisio(callable $fn): mixed
+    {
+        return EditionMeetingConfig::using($this->meetingEdition(), $fn);
+    }
 
     /** Cet utilisateur peut-il rejoindre la visio ? */
     public function canJoin(?User $account, bool $isStaff = false): bool
@@ -36,13 +56,15 @@ trait JoinsMeetings
 
         $name = $this->meetingDisplayName($account, $isStaff, $displayName);
 
-        return app(MeetingProviderRegistry::class)->for($this)->joinUrl($this, $role, $name) ?: null;
+        return $this->avecReglagesVisio(
+            fn () => app(MeetingProviderRegistry::class)->for($this)->joinUrl($this, $role, $name) ?: null
+        );
     }
 
     /** La salle du fournisseur peut-elle être embarquée en iframe ? */
     public function meetingEmbeddable(): bool
     {
-        return app(MeetingProviderRegistry::class)->for($this)->embeddable();
+        return $this->avecReglagesVisio(fn () => app(MeetingProviderRegistry::class)->for($this)->embeddable());
     }
 
     /**
@@ -58,12 +80,14 @@ trait JoinsMeetings
             return null;
         }
 
-        $provider = app(MeetingProviderRegistry::class)->for($this);
-        if (! $provider instanceof JitsiProvider) {
-            return null;
-        }
+        return $this->avecReglagesVisio(function () use ($role, $account, $isStaff, $displayName) {
+            $provider = app(MeetingProviderRegistry::class)->for($this);
+            if (! $provider instanceof JitsiProvider) {
+                return null;
+            }
 
-        return $provider->embedConfig($this, $role, $this->meetingDisplayName($account, $isStaff, $displayName));
+            return $provider->embedConfig($this, $role, $this->meetingDisplayName($account, $isStaff, $displayName));
+        });
     }
 
     /**
@@ -80,25 +104,29 @@ trait JoinsMeetings
             return null;
         }
 
-        $provider = app(MeetingProviderRegistry::class)->for($this);
-        if (! $provider instanceof LiveKitProvider) {
-            return null;
-        }
+        return $this->avecReglagesVisio(function () use ($role, $account, $isStaff, $displayName) {
+            $provider = app(MeetingProviderRegistry::class)->for($this);
+            if (! $provider instanceof LiveKitProvider) {
+                return null;
+            }
 
-        $name = $this->meetingDisplayName($account, $isStaff, $displayName);
+            $name = $this->meetingDisplayName($account, $isStaff, $displayName);
 
-        return [
-            'url' => (string) config('meetings.livekit.url'),
-            // ⚠️ L'inscription voyage dans l'IDENTITÉ LiveKit, pas dans le nom
-            // affiché : celui-ci se change depuis la salle, et la présence ne peut
-            // pas dépendre de ce que quelqu'un a tapé dans un champ.
-            'token' => $provider->token($this, $role, $name, $this->meetingParticipantId($account), $account?->id),
-            'userName' => $name,
-            'canPublish' => in_array($role, [MeetingRole::Moderator, MeetingRole::Presenter], true),
-            // Même vocabulaire que la métadonnée du jeton (cf. MeetingRole::roomRole).
-            'role' => $role->roomRole(),
-            'roomName' => $this->meetingRoom(),
-        ];
+            return [
+                'url' => (string) config('meetings.livekit.url'),
+                // ⚠️ L'inscription voyage dans l'IDENTITÉ LiveKit, pas dans le nom
+                // affiché : celui-ci se change depuis la salle, et la présence ne peut
+                // pas dépendre de ce que quelqu'un a tapé dans un champ.
+                'token' => $provider->token($this, $role, $name, $this->meetingParticipantId($account), $account?->id),
+                'userName' => $name,
+                'canPublish' => in_array($role, [MeetingRole::Moderator, MeetingRole::Presenter], true),
+                // Même vocabulaire que la métadonnée du jeton (cf. MeetingRole::roomRole).
+                'role' => $role->roomRole(),
+                'roomName' => $this->meetingRoom(),
+                // Qualité de capture décidée par l'édition (cf. EditionMeetingConfig).
+                'quality' => EditionMeetingConfig::quality($this->meetingEdition()),
+            ];
+        });
     }
 
     /**

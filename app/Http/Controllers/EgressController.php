@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\MeetingRole;
 use App\Meetings\LiveKitEgress;
 use App\Models\EventSession;
+use App\Support\EditionMeetingConfig;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 
@@ -37,7 +38,13 @@ class EgressController extends Controller
         $egress = app(LiveKitEgress::class);
 
         try {
-            $result = $start ? $egress->start($session) : $egress->stop($session);
+            // ⚠️ Sous les réglages de l'ÉDITION : une édition qui tient ses salles sur
+            // son propre serveur doit y enregistrer aussi. Sans cela, l'Egress
+            // s'adresserait au serveur de la plateforme pour une salle qui n'y est pas.
+            $result = EditionMeetingConfig::using(
+                $session->edition,
+                fn () => $start ? $egress->start($session) : $egress->stop($session),
+            );
         } catch (\Throwable $e) {
             return response()->json(['ok' => false, 'message' => $e->getMessage()], 422);
         }
