@@ -848,9 +848,11 @@ export async function startFromConfig() {
             messages.forEach((m) => addChat(m.who, m.body, !!m.mine, {
                 id: m.uid, replyTo: m.replyTo, at: m.at, reactions: m.reactions,
             }));
+            // Rien avant soi : le message d'ouverture suffit, un repère
+            // d'arrivée collé juste dessous ne dirait rien de plus.
             if (messages.length) {
                 const sep = document.createElement('div');
-                sep.className = 'chat-sep'; sep.textContent = 'Vous rejoignez la salle';
+                sep.className = 'chat-sep'; sep.textContent = 'Vous avez rejoint la salle';
                 $('chatLog').appendChild(sep);
             }
         } catch (e) { /* la salle d'abord : un fil injoignable ne doit pas retarder l'entrée */ }
@@ -1533,8 +1535,11 @@ export async function startFromConfig() {
         }, 20000);
     }
     showPresenterInfo(canPublish() ? state.name : 'Présentateur', 'Activez la caméra ou partagez votre écran');
-    await chargeHistorique();
+    // ⚠️ Dans l'ordre où cela s'est passé : la salle s'ouvre, le fil se déroule,
+    // et l'arrivée se marque EN DERNIER. L'inverse donnait un message
+    // d'ouverture posé après des échanges plus anciens que lui.
     addChat('Système', 'Bienvenue dans la salle « ' + roomName + ' ».');
+    await chargeHistorique();
     await connect();
     syncToolbar();
 }
