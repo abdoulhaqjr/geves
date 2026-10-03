@@ -26,17 +26,37 @@
         #visio-room .v-title strong{display:block;font-size:13.5px;font-weight:800;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
         #visio-room .v-title span{display:block;font-size:11.5px;line-height:1.3;color:var(--vmuted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
         #visio-room .v-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
-        #visio-room .pill{font-size:11px;font-weight:700;padding:5px 10px;border-radius:50px;}
-        #visio-room .pill.lk{background:rgba(34,62,164,.35);color:#c7d2fe;}
+        /* Pastille d'état : une puce colorée porte l'information, le texte la nomme.
+           Lue d'un coup d'œil sans avoir à lire. */
+        #visio-room .pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:5px 11px;border-radius:50px;}
+        #visio-room .pill::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;}
         #visio-room .pill.ok{background:rgba(16,185,129,.15);color:#6ee7b7;}
         #visio-room .pill.warn{background:rgba(245,158,11,.15);color:#fcd34d;}
         #visio-room .pill.err{background:rgba(225,29,72,.2);color:#fda4af;}
         #visio-room .v-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:10px;
-            font-weight:700;font-size:13.5px;padding:11px 16px;color:var(--vtext);}
+            font-weight:700;font-size:13.5px;padding:11px 16px;color:var(--vtext);transition:background .15s,filter .15s;}
+        #visio-room .v-btn:hover{filter:brightness(1.12);}
         #visio-room .v-btn.gold{background:var(--vgold);color:var(--vblue-d);}
+        /* ⚠️ L'action courante est BLEUE, pas or : l'or est un accent de la charte,
+           et un gros aplat jaune dans une salle sombre tire l'œil plus que ce qui
+           se passe à l'écran. L'or reste pour signaler, pas pour agir. */
+        #visio-room .v-btn.blue{background:var(--vblue);color:#fff;}
         #visio-room .v-btn.ghost{background:rgba(255,255,255,.06);border:1px solid var(--vborder);}
+        #visio-room .v-btn.ghost:hover{background:rgba(255,255,255,.12);}
         #visio-room .v-btn.danger{background:var(--vdanger);color:#fff;}
         #visio-room .v-btn.sm{padding:8px 12px;font-size:12.5px;border-radius:8px;}
+        /* ⚠️ Anneau de focus VISIBLE partout : une salle se pilote aussi au clavier,
+           et sans lui on ne sait pas quel bouton on s'apprête à déclencher. */
+        #visio-room button:focus-visible,#visio-room a:focus-visible,
+        #visio-room input:focus-visible,#visio-room label:focus-within{
+            outline:2px solid var(--vgold);outline-offset:2px;border-radius:8px;}
+        /* Barres de défilement sombres : les barres claires par défaut tranchaient
+           sur chaque panneau et trahissaient la page web sous l'application. */
+        #visio-room *{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.18) transparent;}
+        #visio-room *::-webkit-scrollbar{width:8px;height:8px;}
+        #visio-room *::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:50px;}
+        #visio-room *::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.3);}
+        #visio-room *::-webkit-scrollbar-track{background:transparent;}
         #visio-room .v-main{flex:1;min-height:0;display:grid;grid-template-columns:1fr 340px;position:relative;}
         #visio-room .v-main.side-closed{grid-template-columns:1fr;}
         #visio-room .v-main.side-closed .side{display:none;}
@@ -179,7 +199,20 @@
         #visio-room .perm-banner .actions .p2{background:rgba(255,255,255,.08);color:var(--vtext);border:1px solid var(--vborder);}
         #visio-room .v-toast{position:absolute;bottom:96px;left:50%;transform:translateX(-50%) translateY(20px);z-index:90;background:rgba(15,18,28,.96);color:var(--vtext);border:1px solid var(--vborder);border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;}
         #visio-room .v-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-        #visio-room .v-status{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#c7d1e6;background:rgba(0,0,0,.4);padding:10px 16px;border-radius:10px;font-size:.9rem;}
+        /* ⚠️ L'état de connexion se posait au MILIEU de la scène, à côté du nom du
+           présentateur : deux informations sans rapport collées l'une à l'autre.
+           Il devient un bandeau discret en haut, qui n'occupe pas la place de ce
+           qu'on est venu regarder. */
+        /* ⚠️ Décalé de la hauteur de la barre (56px) : posé à 14px du haut, il se
+           superposait au titre de la séance. Il appartient à la scène. */
+        #visio-room .v-status{position:absolute;top:72px;left:50%;transform:translateX(-50%);z-index:30;
+            display:none;align-items:center;gap:9px;color:#c7d1e6;background:rgba(10,14,23,.82);
+            border:1px solid var(--vborder);backdrop-filter:blur(6px);padding:8px 14px;border-radius:50px;
+            font-size:12.5px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.35);}
+        #visio-room .v-status.on{display:inline-flex;}
+        #visio-room .v-status::before{content:'';width:12px;height:12px;border-radius:50%;flex-shrink:0;
+            border:2px solid rgba(199,209,230,.25);border-top-color:#c7d1e6;animation:vspin .7s linear infinite;}
+        @@keyframes vspin{to{transform:rotate(360deg);}}
     </style>
     @endverbatim
 
@@ -196,11 +229,13 @@
                 </span>
                 <div class="v-title">
                     <strong id="roomTitle">{{ $liveKit['sessionLabel'] }}</strong>
-                    <span id="roomMeta">{{ $liveKit['editionTitle'] }} · LiveKit</span>
+                    {{-- ⚠️ Pas de nom de fournisseur ici : un participant n'a que
+                         faire de savoir quel SFU porte la salle, et il était écrit
+                         deux fois (ligne de titre + pastille). --}}
+                    <span id="roomMeta">{{ $liveKit['editionTitle'] }}</span>
                 </div>
             </div>
             <div class="v-right">
-                <span class="pill lk">LiveKit</span>
                 <span class="pill warn" id="connPill">Connexion…</span>
                 <button type="button" class="v-btn ghost sm" id="btnToggleSide">Panneau</button>
                 @if ($engagementUrl)
@@ -253,7 +288,7 @@
                     <div class="chat-log" id="chatLog"></div>
                     <div class="chat-input">
                         <input type="text" id="chatInput" placeholder="Écrire un message…" autocomplete="off">
-                        <button type="button" class="v-btn gold sm" id="btnSendChat">Envoyer</button>
+                        <button type="button" class="v-btn blue sm" id="btnSendChat">Envoyer</button>
                     </div>
                 </div>
                 <div class="side-panel" id="panelPeople"><div class="people-list" id="peopleList"></div></div>

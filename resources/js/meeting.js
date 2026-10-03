@@ -42,7 +42,9 @@ export async function startFromConfig() {
         clearTimeout(window.__vTm);
         window.__vTm = setTimeout(() => { t.classList.remove('show'); t.textContent = ''; }, 2600);
     }
-    function setStatus(txt) { const s = $('lkStatus'); if (s) { s.textContent = txt || ''; s.style.display = txt ? 'block' : 'none'; } }
+    // La classe porte l'affichage (le bandeau est un inline-flex avec sa pastille
+    // tournante) : un `display:block` en dur écraserait sa mise en page.
+    function setStatus(txt) { const s = $('lkStatus'); if (s) { s.textContent = txt || ''; s.classList.toggle('on', !!txt); } }
     function setConnPill(mode, label) { const el = $('connPill'); if (el) { el.className = 'pill ' + mode; el.textContent = label; } }
     function initials(n) { return (n || '?').split(/\s+/).filter(Boolean).map((p) => p[0]).join('').slice(0, 2).toUpperCase() || '?'; }
     function roleLabel(r) { return r === 'presenter' ? 'Communicateur' : r === 'moderator' ? 'Modérateur' : 'Auditeur'; }
