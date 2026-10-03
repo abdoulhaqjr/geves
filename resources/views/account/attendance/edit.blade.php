@@ -90,6 +90,13 @@
                                         {{ $ligne['corresponding'] ? __('Auteur correspondant') : __('Co-auteur') }}
                                         @if ($ligne['institution']) · {{ $ligne['institution'] }}@endif
                                     </div>
+                                    {{-- ⚠️ Le modérateur doit voir ce qu'il n'a PAS posé
+                                         lui-même : il endosse ces chiffres dans le PV. --}}
+                                    @if ($participant && in_array($participant->id, $viaVisio, true))
+                                        <div style="font-size:12px;color:var(--ukc-muted);display:inline-flex;align-items:center;gap:4px;margin-top:3px;">
+                                            <x-ukc.icon name="video" :size="13" /> {{ __('Entré en visio') }}
+                                        </div>
+                                    @endif
                                 </td>
                                 <td style="font-size:13px;color:var(--ukc-muted);">
                                     @foreach ($ligne['communications'] as $titre)

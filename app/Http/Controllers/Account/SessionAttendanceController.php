@@ -46,6 +46,13 @@ class SessionAttendanceController extends Controller
             'roster' => SessionRoster::for($session),
             'verdicts' => SessionAttendance::where('session_id', $session->id)
                 ->pluck('status', 'participant_id'),
+            // Ceux que la visio a portés présents : le modérateur doit voir ce
+            // qu'il n'a pas posé lui-même avant d'endosser le chiffre.
+            'viaVisio' => SessionAttendance::where('session_id', $session->id)
+                ->where('source', SessionAttendance::SOURCE_MEETING)
+                ->pluck('participant_id')
+                ->map(fn ($id) => (int) $id)
+                ->all(),
             'counts' => $session->presenceCounts(),
             'canWrite' => $this->canWrite($session, $report),
             'notStarted' => ! $session->hasStarted(),
@@ -102,9 +109,17 @@ class SessionAttendanceController extends Controller
                 continue;
             }
 
+            // ⚠️ `source` repasse à « manual » : à partir du moment où quelqu'un
+            // enregistre la ligne, elle est de sa main - même s'il ne fait que
+            // confirmer ce que la visio avait posé. C'est lui qui l'endosse.
             SessionAttendance::updateOrCreate(
                 ['session_id' => $session->id, 'participant_id' => $participantId],
-                ['status' => $statut, 'marked_by' => $user?->id, 'marked_at' => now()],
+                [
+                    'status' => $statut,
+                    'source' => SessionAttendance::SOURCE_MANUAL,
+                    'marked_by' => $user?->id,
+                    'marked_at' => now(),
+                ],
             );
             $touches++;
         }

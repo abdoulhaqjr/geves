@@ -7,6 +7,7 @@ use App\Meetings\Contracts\Meetable;
 use App\Meetings\LiveKitEgress;
 use App\Models\EventSession;
 use App\Models\Formation;
+use App\Support\SessionPresence;
 use App\Support\Settings;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
@@ -29,6 +30,14 @@ class MeetingController extends Controller
         $isStaff = Auth::guard('web')->check();
         $account = Auth::guard('account')->user();
         $role = $session->meetingRoleFor($account, $isStaff);
+
+        // ⚠️ Entrer dans la visio VAUT présence : le modérateur n'a pas à pointer
+        // à la main quelqu'un qui est déjà dans la salle. Ce qu'on enregistre est
+        // une entrée depuis GEVES, pas une occupation en temps réel (aucun
+        // fournisseur ne la donne ici) - cf. App\Support\SessionPresence.
+        if ($session->isLive() && $role->canJoin()) {
+            SessionPresence::markFromMeeting($session, $account);
+        }
 
         $extra = [];
         if ($role->canJoin()) {

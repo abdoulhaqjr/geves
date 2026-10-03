@@ -979,6 +979,22 @@ table `session_attendances`, modèle `SessionAttendance`). Entrées depuis
     a aucune inscription à laquelle rattacher une présence.
   - Une séance **sans communication** (plénière, cérémonie) affiche un état vide
     qui l'explique - elle ne retombe pas sur la liste de l'édition.
+- **Entrer dans la visio VAUT présence** (`App\Support\SessionPresence`, appelé par
+  `MeetingController::join()`) : le modérateur n'a pas à pointer à la main
+  quelqu'un qui est déjà dans la salle. Même cadrage (attendus de la séance) et
+  mêmes bornes (séance commencée, non figée) que le pointage manuel.
+  - ⚠️ **Ce qu'on enregistre est une ENTRÉE depuis GEVES, pas une occupation de la
+    salle en temps réel** : Jitsi public n'expose aucune API de liste de
+    participants, et LiveKit ne le ferait qu'avec des identifiants d'API. D'où le
+    libellé « Entré en visio » - on ne fait pas dire à une donnée plus qu'elle ne sait.
+  - ⚠️ **Un verdict déjà posé n'est JAMAIS écrasé.** Quelqu'un a regardé la salle ;
+    un clic sur « Rejoindre » ne vaut pas contre ce constat, et faire repasser un
+    « absent » à « présent » dans le dos du modérateur lui ferait signer un chiffre
+    qu'il n'a pas vu.
+  - Colonne **`source`** (`manual` / `meeting`) : la page signale les lignes posées
+    par la visio, parce que le modérateur **endosse ces chiffres dans le PV**.
+    Dès qu'il enregistre, la ligne repasse `manual` - même s'il ne fait que
+    confirmer, elle est de sa main.
 - ⚠️ **Une table `session_attendances` a existé puis été supprimée**
   (migration `2026_09_17_000200`) : elle n'était alimentée QUE par le **scan de
   badge**, retiré. Elle revient avec une source humaine - ne pas la relire comme

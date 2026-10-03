@@ -29,6 +29,17 @@ class SessionAttendance extends Model
         'excused' => 'Excusé',
     ];
 
+    /** Pointage posé à la main, ou déduit d'une entrée dans la visio. */
+    public const SOURCE_MANUAL = 'manual';
+
+    public const SOURCE_MEETING = 'meeting';
+
+    /** Posé automatiquement par l'entrée en visio (et non par une personne). */
+    public function isAutomatic(): bool
+    {
+        return $this->source === self::SOURCE_MEETING;
+    }
+
     protected function casts(): array
     {
         return ['marked_at' => 'datetime'];

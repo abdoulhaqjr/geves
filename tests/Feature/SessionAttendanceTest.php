@@ -317,6 +317,98 @@ it('vaut présence réelle pour l’attestation de participation', function () {
     expect($kofi->fresh()->wasPresent())->toBeFalse();
 });
 
+/**
+ * ⚠️ Entrer dans la visio VAUT présence : le modérateur n'a pas à pointer à la
+ * main quelqu'un qui est déjà dans la salle.
+ */
+it('porte présent automatiquement qui entre dans la visio', function () {
+    [$edition, $session, $awa] = seanceAPointer('modvisio@example.tg');
+    $session->update(['meeting_status' => 'live', 'meeting_provider' => 'jitsi']);
+
+    // Le compte d'Awa, auteur correspondant de la communication de la séance.
+    $compte = officier('awa@example.tg');
+    $awa->update(['user_id' => $compte->id]);
+
+    $this->actingAs($compte, 'account')->get(route('session.meeting', $session))->assertOk();
+
+    $ligne = SessionAttendance::where('session_id', $session->id)
+        ->where('participant_id', $awa->id)->first();
+
+    expect($ligne)->not->toBeNull();
+    expect($ligne->status)->toBe('present');
+    expect($ligne->isAutomatic())->toBeTrue();
+    expect($edition->fresh()->exists)->toBeTrue();
+});
+
+/** Le pointage automatique se voit : le modérateur endosse ces chiffres. */
+it('signale sur la page ce que la visio a pointé', function () {
+    [, $session, $awa] = seanceAPointer('modvu@example.tg');
+    $session->update(['meeting_status' => 'live']);
+    SessionAttendance::create([
+        'session_id' => $session->id, 'participant_id' => $awa->id,
+        'status' => 'present', 'source' => SessionAttendance::SOURCE_MEETING,
+    ]);
+
+    $this->actingAs(officier('modvu@example.tg'), 'account')
+        ->get(route('account.attendance.edit', $session))
+        ->assertOk()
+        ->assertSee('Entré en visio');
+});
+
+/**
+ * ⚠️ Un verdict humain n'est jamais écrasé par un clic sur « Rejoindre » :
+ * quelqu'un a regardé la salle, et le modérateur ne doit pas voir son constat
+ * changer dans son dos.
+ */
+it('n’écrase pas un verdict déjà posé par le modérateur', function () {
+    [, $session, $awa] = seanceAPointer('modw@example.tg');
+    $session->update(['meeting_status' => 'live']);
+    $compte = officier('awa@example.tg');
+    $awa->update(['user_id' => $compte->id]);
+
+    SessionAttendance::create([
+        'session_id' => $session->id, 'participant_id' => $awa->id,
+        'status' => 'absent', 'source' => SessionAttendance::SOURCE_MANUAL,
+    ]);
+
+    $this->actingAs($compte, 'account')->get(route('session.meeting', $session));
+
+    expect(SessionAttendance::where('participant_id', $awa->id)->value('status'))->toBe('absent');
+});
+
+/** La visio ne pointe que des attendus : un visiteur de passage n'a pas de ligne. */
+it('ne porte pas présent un inscrit étranger à la séance', function () {
+    [$edition, $session] = seanceAPointer('modx@example.tg');
+    $session->update(['meeting_status' => 'live']);
+
+    $compte = officier('curieux@example.tg');
+    $curieux = Participant::create([
+        'edition_id' => $edition->id, 'first_name' => 'Cu', 'last_name' => 'Rieux',
+        'email' => 'curieux@example.tg', 'role' => 'attendee', 'user_id' => $compte->id,
+    ]);
+
+    $this->actingAs($compte, 'account')->get(route('session.meeting', $session))->assertOk();
+
+    expect(SessionAttendance::where('participant_id', $curieux->id)->exists())->toBeFalse();
+});
+
+/** Une séance figée ne bouge plus, même par la visio. */
+it('ne pointe pas par la visio quand le rapport est validé', function () {
+    [$edition, $session, $awa] = seanceAPointer('mody@example.tg');
+    $session->update(['meeting_status' => 'live']);
+    $compte = officier('awa@example.tg');
+    $awa->update(['user_id' => $compte->id]);
+    SessionReport::create([
+        'session_id' => $session->id, 'edition_id' => $edition->id,
+        'summary' => 'Rapport validé.', 'status' => 'validated',
+        'submitted_at' => now()->subHour(), 'validated_at' => now(),
+    ]);
+
+    $this->actingAs($compte, 'account')->get(route('session.meeting', $session));
+
+    expect(SessionAttendance::where('participant_id', $awa->id)->exists())->toBeFalse();
+});
+
 it('propose le pointage depuis les espaces modérateur et rapporteur', function () {
     [, $session] = seanceAPointer('modl@example.tg', 'rapl@example.tg');
 
