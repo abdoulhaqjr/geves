@@ -557,6 +557,27 @@ paiement (`pay`), inscription à une formation.
     `MeetingProviderRegistry` retombe seul sur Jitsi public quand ce défaut n'est pas
     configuré. Le forcer en base écraserait la configuration du site - c'est ce qui
     masquait LiveKit une fois ses identifiants renseignés.
+- **Rôle dans la salle de visio : il voyage en MÉTADONNÉE du jeton**
+  (`LiveKitProvider::token()` → `metadata` = `{"role":…}`, vocabulaire unique dans
+  **`MeetingRole::roomRole()`** : `moderator` / `presenter` / `audience`).
+  - ⚠️ **LiveKit ne diffuse rien d'autre.** Les droits du jeton (`video.canPublish`,
+    `roomAdmin`) ne sont connus que du serveur et du porteur : **les autres
+    participants ne les voient pas**. Sans métadonnée, chaque client retombait sur
+    « auditeur » **pour tout le monde** - le modérateur de la séance apparaissait
+    auditeur dans la liste, et la scène, n'ayant aucun présentateur à montrer,
+    annonçait « en attente de la caméra » **pendant que les caméras tournaient**.
+  - ⚠️ Un changement de jeton ne rattrape **pas** les connexions en cours : une
+    salle ouverte avant la correction garde ses anciens rôles jusqu'au rechargement.
+  - **La scène ne doit jamais mentir sur ce qu'elle voit** (`showCurrentPresenterInStage`) :
+    à défaut de présentateur désigné elle montre **quelqu'un qui diffuse vraiment**
+    (`premierDiffuseur`, modérateur d'abord) plutôt qu'un écran vide ; et elle ne dit
+    « caméra désactivée » que si la publication est **coupée** - une piste pas encore
+    abonnée donne « connexion de la caméra… », corrigée seule à l'arrivée de l'image.
+  - ⚠️ **Couper sa caméra n'est pas se désabonner** : `TrackMuted`/`TrackUnmuted`
+    doivent être écoutés, sinon la tuile garde une image gelée et la scène reste sur
+    l'état précédent. Et on retire alors l'image avec **`clearVideo`, jamais
+    `clearMedia`** : le son de la personne est attaché à la **même tuile** et partait
+    avec l'image - éteindre sa caméra rendait muet.
 - **Salle de visio sur téléphone et tablette** (`resources/views/meeting/join.blade.php`,
   `resources/js/meeting.js`) : la salle est une **application plein écran** (`position:fixed`),
   pas une page qui défile. Trois seuils, dans cet ordre dans la feuille :

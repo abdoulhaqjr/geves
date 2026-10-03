@@ -81,6 +81,14 @@ class LiveKitProvider implements MeetingProvider
             'iss' => $key,
             'sub' => $identity,
             'name' => $name,
+            // ⚠️ Le rôle voyage en MÉTADONNÉE, et c'est la seule chose que les
+            // AUTRES participants sauront de lui : LiveKit ne diffuse ni les
+            // droits du jeton ni rien d'autre. Sans elle, chaque salle retombait
+            // sur « auditeur » pour tout le monde - le modérateur de la séance
+            // apparaissait auditeur dans la liste, et la scène n'avait aucun
+            // présentateur à montrer : elle annonçait « en attente de la caméra »
+            // pendant que les caméras tournaient.
+            'metadata' => json_encode(['role' => $role->roomRole()]),
             'nbf' => $now,
             'iat' => $now,
             'exp' => $now + $ttl,

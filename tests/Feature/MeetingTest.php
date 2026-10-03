@@ -491,3 +491,30 @@ it('porte dans la salle les commandes de la version téléphone', function () {
         // l'écrivait tel quel, en premier texte de la page.
         ->assertDontSee('endverbatim', false);
 });
+
+/**
+ * ⚠️ Le rôle doit voyager en MÉTADONNÉE du jeton : c'est la seule chose que les
+ * AUTRES participants sauront de lui. Sans elle, chaque salle retombait sur
+ * « auditeur » pour tout le monde - le modérateur de la séance apparaissait
+ * auditeur dans la liste, et la scène, n'ayant aucun présentateur à montrer,
+ * annonçait « en attente de la caméra » pendant que les caméras tournaient.
+ */
+it('annonce le rôle de chacun dans la métadonnée du jeton LiveKit', function (MeetingRole $role, string $attendu) {
+    config()->set('meetings.default', 'livekit');
+    config()->set('meetings.livekit.url', 'wss://exemple.livekit.cloud');
+    config()->set('meetings.livekit.api_key', 'cle');
+    config()->set('meetings.livekit.api_secret', str_repeat('s', 40));
+
+    $edition = openEdition();
+    $session = liveSession($edition, 'public');
+
+    $jeton = app(LiveKitProvider::class)->token($session, $role, 'Quelqu’un');
+    $claims = json_decode(base64_decode(explode('.', $jeton)[1]), true);
+
+    expect(json_decode((string) $claims['metadata'], true))->toBe(['role' => $attendu]);
+})->with([
+    'modérateur' => [MeetingRole::Moderator, 'moderator'],
+    'communicant' => [MeetingRole::Presenter, 'presenter'],
+    // ⚠️ La salle ne connaît pas « attendee » : elle dit « audience ».
+    'auditeur' => [MeetingRole::Attendee, 'audience'],
+]);

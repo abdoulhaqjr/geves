@@ -95,11 +95,8 @@ trait JoinsMeetings
             'token' => $provider->token($this, $role, $name, $this->meetingParticipantId($account)),
             'userName' => $name,
             'canPublish' => in_array($role, [MeetingRole::Moderator, MeetingRole::Presenter], true),
-            'role' => match ($role) {
-                MeetingRole::Moderator => 'moderator',
-                MeetingRole::Presenter => 'presenter',
-                default => 'audience',
-            },
+            // Même vocabulaire que la métadonnée du jeton (cf. MeetingRole::roomRole).
+            'role' => $role->roomRole(),
             'roomName' => $this->meetingRoom(),
         ];
     }

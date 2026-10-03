@@ -117,6 +117,18 @@ export async function startFromConfig() {
         container.querySelectorAll('video, audio').forEach((el) => { try { el.srcObject = null; } catch (e) {} el.remove(); });
         if (!container.querySelector('video')) container.classList.remove('has-video');
     }
+    /**
+     * Retire la seule IMAGE d'une tuile.
+     *
+     * ⚠️ `clearMedia` emporte aussi l'`<audio>`, qui est attaché à la MÊME tuile :
+     * s'en servir pour une caméra qui s'éteint, c'est faire taire la personne
+     * jusqu'à ce qu'elle rallume sa caméra.
+     */
+    function clearVideo(container) {
+        if (!container) return;
+        container.querySelectorAll('video').forEach((el) => { try { el.srcObject = null; } catch (e) {} el.remove(); });
+        container.classList.remove('has-video');
+    }
 
     // ---- Data channel ----
     async function sendData(msg, destinationIdentities) {
@@ -333,15 +345,64 @@ export async function startFromConfig() {
         if (pe.id === 'local') return room.localParticipant;
         let f = null; room.remoteParticipants.forEach((p) => { if (p.identity === pe.id) f = p; }); return f;
     }
+    /** Caméra réellement diffusée : abonnée **et** non coupée. */
+    function cameraVive(p) {
+        const pub = p && p.getTrackPublication && p.getTrackPublication(LK.Track.Source.Camera);
+        if (!pub || !pub.track || pub.isMuted) return null;
+
+        return pub.track;
+    }
+
+    /**
+     * À défaut de présentateur désigné, quelqu'un qui diffuse vraiment.
+     *
+     * ⚠️ Annoncer « en attente de la caméra » pendant que deux caméras tournent
+     * dans le bandeau, c'est la salle qui ment sur ce qu'elle a sous les yeux.
+     * On montre d'abord un modérateur : c'est lui qui ouvre et anime la séance.
+     */
+    function premierDiffuseur() {
+        if (!room) return null;
+        const liste = [];
+        room.remoteParticipants.forEach((p) => liste.push(p));
+        const rang = (p) => { const pe = people.find((x) => x.id === p.identity); return pe && pe.role === 'moderator' ? 0 : 1; };
+        liste.sort((a, b) => rang(a) - rang(b));
+
+        return liste.find((p) => cameraVive(p)) || null;
+    }
+
     function showCurrentPresenterInStage() {
         const p = findPresenterParticipant();
-        if (!p) { const pe = people.find((x) => x.isFloor || x.role === 'presenter'); showPresenterInfo(pe ? pe.name : 'Présentateur', 'En attente de la caméra ou du partage d’écran'); return; }
+        if (!p) {
+            const relais = premierDiffuseur();
+            if (relais) { focusPresenter({ name: relais.name || relais.identity, identity: relais.identity }, cameraVive(relais)); destroyPip(false); return; }
+            const pe = people.find((x) => x.isFloor || x.role === 'presenter');
+            showPresenterInfo(pe ? pe.name : 'Présentateur', 'En attente de la caméra ou du partage d’écran');
+
+            return;
+        }
         const scr = p.getTrackPublication && p.getTrackPublication(LK.Track.Source.ScreenShare);
         if (scr && scr.track) { showScreenOnPresenter(scr.track, (p.name || p.identity) + ' (écran)'); const cam = p.getTrackPublication(LK.Track.Source.Camera); if (cam && cam.track) setPipCamera(cam.track); else destroyPip(false); return; }
-        const cam = p.getTrackPublication && p.getTrackPublication(LK.Track.Source.Camera);
-        if (cam && cam.track) { focusPresenter({ name: p.name || p.identity, identity: p.identity }, cam.track); destroyPip(false); }
-        else { const c = scheduledComms.find((x) => x.identity === p.identity); showPresenterInfo(p.name || p.identity, c ? c.title : 'Caméra désactivée'); }
+        const cam = cameraVive(p);
+        if (cam) { focusPresenter({ name: p.name || p.identity, identity: p.identity }, cam); destroyPip(false); return; }
+        // ⚠️ Ne dire « caméra désactivée » que si elle l'est vraiment : une
+        // publication non encore abonnée n'est pas une caméra éteinte, et la
+        // scène le corrige d'elle-même dès que l'image arrive.
+        const pub = p.getTrackPublication && p.getTrackPublication(LK.Track.Source.Camera);
+        const c = scheduledComms.find((x) => x.identity === p.identity);
+        showPresenterInfo(p.name || p.identity, c ? c.title : (pub && !pub.isMuted ? 'Connexion de la caméra…' : 'Caméra désactivée'));
     }
+    /** Caméra coupée / rallumée : la tuile et la scène suivent. */
+    function onCameraToggle(pub, participant) {
+        if (!pub || pub.source !== LK.Track.Source.Camera || !participant) return;
+        const tile = $('tile-' + participant.identity);
+        if (tile) {
+            clearVideo(tile);
+            if (!pub.isMuted && pub.track) attachTrack(pub.track, tile);
+        }
+        const main = $('tileMain');
+        if (main && !main.classList.contains('has-screen') && state.speakerLayout) showCurrentPresenterInStage();
+    }
+
     function restoreStage(participant) {
         if (state.role === 'moderator') { showCurrentPresenterInStage(); return; }
         const cam = participant && participant.getTrackPublication && participant.getTrackPublication(LK.Track.Source.Camera);
@@ -718,12 +779,21 @@ export async function startFromConfig() {
                 const tile = $('tile-' + (participant ? participant.identity : ''));
                 const pe = participant && people.find((x) => x.id === participant.identity);
                 if (pub.source === LK.Track.Source.Camera) {
-                    if (tile) { clearMedia(tile); tile.classList.remove('has-video'); }
+                    // ⚠️ `clearVideo` et non `clearMedia` : le son de la personne est
+                    // attaché à la MÊME tuile, et partait avec l'image.
+                    if (tile) clearVideo(tile);
                     const main = $('tileMain'); const screenUp = main && main.classList.contains('has-screen');
                     if (screenUp && pe && (pe.role === 'presenter' || pe.isFloor || pe.screen)) destroyPip(false);
                     else if (!screenUp && pe && (pe.role === 'presenter' || pe.isFloor)) showPresenterInfo(participant.name || participant.identity, 'Caméra désactivée');
                 } else if (pub.source === LK.Track.Source.ScreenShare) { if (pe) pe.screen = false; restoreStage(participant); refreshPeople(); }
             })
+            // ⚠️ Couper sa caméra n'est PAS se désabonner : sans ces deux
+            // événements, la tuile gardait une image gelée (ou un rectangle noir
+            // par-dessus l'avatar) et la scène ne se mettait jamais à jour -
+            // elle continuait d'annoncer une caméra qui venait de s'éteindre, ou
+            // l'inverse.
+            .on(LK.RoomEvent.TrackMuted, (pub, participant) => onCameraToggle(pub, participant))
+            .on(LK.RoomEvent.TrackUnmuted, (pub, participant) => onCameraToggle(pub, participant))
             .on(LK.RoomEvent.ParticipantConnected, (p) => {
                 let role = 'audience'; try { if (p.metadata) { const md = JSON.parse(p.metadata); if (md.role) role = md.role; } } catch (e) {}
                 people.push({ name: p.name || p.identity, role, hand: false, screen: false, id: p.identity });
