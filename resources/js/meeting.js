@@ -127,7 +127,7 @@ export async function startFromConfig() {
         pipEl.className = 'pip-bubble'; pipEl.id = 'screenPip';
         pipEl.innerHTML = '<div class="pip-avatar">' + initials(state.name) + '</div><div class="pip-size-hint"></div><div class="pip-resize"></div>';
         host.appendChild(pipEl);
-        makeDraggable(pipEl, host); makeResizable(pipEl);
+        makeDraggable(pipEl, host); makeResizable(pipEl, host);
         return pipEl;
     }
     function destroyPip(broadcast) {
@@ -143,12 +143,121 @@ export async function startFromConfig() {
         clearMedia(b); attachTrack(track, b); b.classList.add('has-video');
         if (canPublish()) sendData({ type: 'pip_visibility', visible: true });
     }
-    function makeResizable(el) {
-        const h = el.querySelector('.pip-resize'); if (!h) return;
-        let r = false, sx = 0, ss = 120;
-        h.addEventListener('pointerdown', (e) => { if (!canPublish()) return; e.stopPropagation(); e.preventDefault(); r = true; el.classList.add('resizing'); sx = e.clientX; ss = el.offsetWidth; h.setPointerCapture(e.pointerId); });
-        h.addEventListener('pointermove', (e) => { if (!r) return; pipSize = Math.round(Math.max(72, Math.min(240, ss + (e.clientX - sx)))); el.style.width = el.style.height = pipSize + 'px'; const hint = el.querySelector('.pip-size-hint'); if (hint) hint.textContent = pipSize + 'px'; });
-        h.addEventListener('pointerup', () => { r = false; el.classList.remove('resizing'); });
+    /** Tailles proposées par le double-clic, du plus discret au plus lisible. */
+    const PIP_SIZES = [84, 120, 168, 220];
+    const PIP_MIN = 72, PIP_MAX = 260;
+
+    /**
+     * Redimensionnement de la vignette caméra.
+     *
+     * Trois gestes, parce qu'aucun ne s'impose à tout le monde : tirer la poignée,
+     * la molette sur la vignette, ou un double-clic qui fait défiler des tailles.
+     *
+     * ⚠️ La taille suivait le seul déplacement HORIZONTAL du pointeur. Sur un
+     * disque, c'est contre-intuitif : on tire vers l'extérieur, dans la direction
+     * qu'on veut. C'est maintenant le BORD du disque qui suit le pointeur, à
+     * l'écart près mesuré quand on l'attrape - pas de saut au premier contact, et
+     * la vignette grandit d'exactement ce qu'on éloigne la main.
+     */
+    function makeResizable(el, host) {
+        const hint = el.querySelector('.pip-size-hint');
+        let masqueHint = null;
+
+        function applique(px, montrer) {
+            pipSize = Math.round(Math.max(PIP_MIN, Math.min(PIP_MAX, px)));
+            el.style.width = el.style.height = pipSize + 'px';
+            if (hint) hint.textContent = pipSize + ' px';
+            retientTaille(pipSize);
+            if (montrer) {
+                el.classList.add('resizing');
+                clearTimeout(masqueHint);
+                masqueHint = setTimeout(() => el.classList.remove('resizing'), 700);
+            }
+        }
+
+        const h = el.querySelector('.pip-resize');
+        if (h) {
+            let actif = false, ecart = 0, cx = 0, cy = 0;
+            h.addEventListener('pointerdown', (e) => {
+                if (!canPublish()) return;
+                e.stopPropagation(); e.preventDefault();
+                actif = true; el.classList.add('resizing');
+
+                // ⚠️ Le centre est figé pour TOUT le geste. La vignette est ancrée
+                // en bas à droite : en grandissant, son centre se déplaçait, la
+                // mesure suivante partait de ce nouveau centre, et la taille
+                // s'emballait jusqu'au maximum au moindre glissement.
+                const r = el.getBoundingClientRect();
+                cx = r.left + r.width / 2; cy = r.top + r.height / 2;
+
+                // Écart entre le pointeur et le bord : la poignée est posée à
+                // l'intérieur du disque, sans cet écart la vignette sauterait dès
+                // le premier contact.
+                ecart = Math.hypot(e.clientX - cx, e.clientY - cy) - r.width / 2;
+
+                // On passe en position explicite pour pouvoir grandir AUTOUR du
+                // centre, et non depuis le coin où elle était ancrée.
+                const hr = host.getBoundingClientRect();
+                el.style.left = (r.left - hr.left) + 'px'; el.style.top = (r.top - hr.top) + 'px';
+                el.style.right = el.style.bottom = 'auto';
+
+                h.setPointerCapture(e.pointerId);
+            });
+            h.addEventListener('pointermove', (e) => {
+                if (!actif) return;
+                applique(2 * (Math.hypot(e.clientX - cx, e.clientY - cy) - ecart));
+                const hr = host.getBoundingClientRect();
+                const t = el.offsetWidth;
+                el.style.left = Math.max(4, Math.min(hr.width - t - 4, cx - hr.left - t / 2)) + 'px';
+                el.style.top = Math.max(4, Math.min(hr.height - t - 4, cy - hr.top - t / 2)) + 'px';
+            });
+            // ⚠️ `pointercancel` aussi : sans lui, un geste interrompu (fenêtre qui
+            // perd le focus) laissait la vignette en mode redimensionnement.
+            ['pointerup', 'pointercancel'].forEach((ev) => h.addEventListener(ev, () => {
+                actif = false; el.classList.remove('resizing');
+            }));
+            h.addEventListener('dblclick', (e) => e.stopPropagation());
+        }
+
+        // Molette : le geste naturel pour « plus gros / plus petit » sans viser.
+        // Le pas est PROPORTIONNEL : à pas fixe, passer de la plus petite à la plus
+        // grande taille demandait une dizaine de crans.
+        el.addEventListener('wheel', (e) => {
+            if (!canPublish()) return;
+            e.preventDefault();
+            const pas = Math.max(10, Math.round(el.offsetWidth * 0.1));
+            applique(el.offsetWidth - Math.sign(e.deltaY) * pas, true);
+        }, { passive: false });
+
+        // Double-clic : fait défiler des tailles franches, pour qui ne veut pas
+        // doser un geste continu.
+        el.addEventListener('dblclick', (e) => {
+            if (!canPublish()) return;
+            e.preventDefault(); e.stopPropagation();
+            const actuelle = el.offsetWidth;
+            const suivante = PIP_SIZES.find((t) => t > actuelle + 4) ?? PIP_SIZES[0];
+            applique(suivante, true);
+        });
+
+        applique(tailleRetenue(), false);
+    }
+
+    /**
+     * Taille choisie, retenue d'une séance à l'autre. ⚠️ `localStorage` peut lever
+     * (navigation privée, stockage bloqué) : la vignette doit s'afficher quand
+     * même, à sa taille par défaut.
+     */
+    function retientTaille(px) {
+        try { localStorage.setItem('ukc.pipSize', String(px)); } catch (e) { /* sans mémoire, tant pis */ }
+    }
+
+    function tailleRetenue() {
+        try {
+            const v = parseInt(localStorage.getItem('ukc.pipSize') || '', 10);
+            if (v >= PIP_MIN && v <= PIP_MAX) return v;
+        } catch (e) { /* idem */ }
+
+        return pipSize;
     }
     function makeDraggable(el, host) {
         let ox = 0, oy = 0, drag = false;

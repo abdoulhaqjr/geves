@@ -128,8 +128,19 @@
         #visio-room .pip-bubble.dragging{cursor:grabbing;}
         #visio-room .pip-bubble .pip-avatar{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.4rem;color:#fff;background:linear-gradient(135deg,var(--vblue),var(--vgreen));}
         #visio-room .pip-bubble.has-video .pip-avatar{display:none;}
-        #visio-room .pip-resize{position:absolute;right:4px;bottom:4px;z-index:5;width:18px;height:18px;border-radius:4px;background:rgba(0,0,0,.55);cursor:nwse-resize;border:1px solid rgba(255,255,255,.35);}
-        #visio-room .pip-size-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.65);color:#fff;font-size:11px;font-weight:700;padding:4px 8px;border-radius:6px;z-index:6;display:none;}
+        /* ⚠️ La poignée était posée dans le COIN du cadre (right/bottom:4px). Or la
+           vignette est un DISQUE en `overflow:hidden` : ce coin tombe hors du
+           disque, la poignée était donc rognée - invisible et impossible à
+           attraper. Elle se place maintenant sur le disque lui-même, et se montre
+           au survol pour ne pas encombrer l'image en permanence. */
+        #visio-room .pip-resize{position:absolute;right:11%;bottom:11%;z-index:5;width:24px;height:24px;border-radius:50%;
+            background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.45);cursor:nwse-resize;
+            display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s,transform .15s;}
+        #visio-room .pip-bubble:hover .pip-resize,#visio-room .pip-bubble.resizing .pip-resize{opacity:1;}
+        #visio-room .pip-resize:hover{transform:scale(1.12);}
+        #visio-room .pip-resize::before{content:'';width:9px;height:9px;margin:-2px -2px 0 0;
+            border-right:2px solid rgba(255,255,255,.95);border-bottom:2px solid rgba(255,255,255,.95);border-bottom-right-radius:2px;}
+        #visio-room .pip-size-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.72);color:#fff;font-size:11px;font-weight:700;padding:4px 9px;border-radius:50px;z-index:6;display:none;white-space:nowrap;}
         #visio-room .pip-bubble.resizing .pip-size-hint{display:block;}
         #visio-room .side{border-left:1px solid var(--vborder);background:var(--vbg-panel);display:flex;flex-direction:column;min-height:0;}
         #visio-room .side-tabs{display:flex;flex-shrink:0;border-bottom:1px solid var(--vborder);padding:0 8px;}
