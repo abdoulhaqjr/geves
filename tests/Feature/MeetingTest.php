@@ -7,6 +7,7 @@ use App\Meetings\Providers\JitsiProvider;
 use App\Meetings\Providers\LiveKitProvider;
 use App\Models\EventSession;
 use App\Models\User;
+use App\Support\Branding;
 use App\Support\StreamEmbed;
 use Illuminate\Support\Facades\Http;
 
@@ -442,4 +443,24 @@ it('la page visio propose un nouvel onglet pour un lien externe', function () {
         ->assertSee('nouvel onglet')
         ->assertSee('https://zoom.us/j/999')
         ->assertDontSee('JitsiMeetExternalAPI');
+});
+
+/**
+ * ⚠️ La salle porte le logo RÉGLÉ de la plateforme, pas un monogramme écrit en
+ * dur : un « UK » figé dans le gabarit faisait mentir le logo choisi dans
+ * Réglages › Général partout ailleurs. Barre sombre → variante fond sombre.
+ */
+it('affiche dans la salle le logo réglé de la plateforme', function () {
+    config()->set('meetings.default', 'livekit');
+    config()->set('meetings.livekit.url', 'wss://exemple.livekit.cloud');
+    config()->set('meetings.livekit.api_key', 'cle');
+    config()->set('meetings.livekit.api_secret', str_repeat('s', 40)); // HS256 exige une clé longue
+
+    $edition = openEdition();
+    $session = liveSession($edition, 'public');
+
+    $this->get(route('session.meeting', $session))
+        ->assertOk()
+        ->assertSee(Branding::markWhite(), false)
+        ->assertDontSee('<div class="v-mark">UK</div>', false);
 });

@@ -12,8 +12,9 @@
         #visio-room .v-topbar{height:56px;flex-shrink:0;background:var(--vbg-elev);border-bottom:1px solid var(--vborder);
             display:flex;align-items:center;justify-content:space-between;padding:0 16px;gap:12px;}
         #visio-room .v-left{display:flex;align-items:center;gap:12px;min-width:0;}
-        #visio-room .v-mark{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--vblue),var(--vgreen));
-            display:flex;align-items:center;justify-content:center;font-weight:900;font-size:11px;color:#fff;flex-shrink:0;}
+        /* Le logo apporte sa propre forme : pas d'aplat derrière, et `contain`
+           pour ne jamais le déformer quel que soit le fichier téléversé. */
+        #visio-room .v-mark{width:32px;height:32px;border-radius:9px;object-fit:contain;flex-shrink:0;display:block;}
         #visio-room .v-title{min-width:0;}
         #visio-room .v-title strong{display:block;font-size:13.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
         #visio-room .v-title span{font-size:11.5px;color:var(--vmuted);}
@@ -178,7 +179,12 @@
     <div id="visio-room" data-role="{{ $liveKit['role'] }}">
         <header class="v-topbar">
             <div class="v-left">
-                <div class="v-mark">UK</div>
+                {{-- Logo réglé dans Réglages › Général, forme compacte et variante
+                     fond sombre : la barre de la salle est sombre. Un monogramme
+                     « UK » écrit en dur ici faisait mentir le logo de la plateforme
+                     partout ailleurs. --}}
+                <img src="{{ \App\Support\Branding::markWhite() }}" alt="{{ config('app.name') }}"
+                     @class(['v-mark', 'logo-auto-white' => \App\Support\Branding::whitensOnDark(\App\Support\Branding::MARK)])>
                 <div class="v-title">
                     <strong id="roomTitle">{{ $liveKit['sessionLabel'] }}</strong>
                     <span id="roomMeta">{{ $liveKit['editionTitle'] }} · LiveKit</span>

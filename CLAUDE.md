@@ -564,10 +564,15 @@ paiement (`pay`), inscription à une formation.
     existe : **pied de page public**, **connexion** et **création de compte**,
     **bandeau (hero) des pages d'événement**.
   - **`mark()` / `markWhite()`** - **monogramme carré**, là où le logo côtoie du
-    texte ou se réduit à une colonne d'icônes : **en-tête public** et les **deux
-    menus latéraux** (back-office, espace participant), y compris réduits. C'est
+    texte ou se réduit à une colonne d'icônes : **en-tête public**, les **deux
+    menus latéraux** (back-office, espace participant) y compris réduits, et la
+    **barre de la salle de visio** (fond sombre → `markWhite()`). C'est
     aussi l'`apple-touch-icon` (icône carrée ; les favicons 16/32 restent figés,
     ils exigent ces tailles).
+  - ⚠️ **Aucune surface ne redessine la marque elle-même.** La salle de visio
+    affichait un « UK » écrit en dur dans le gabarit : le logo réglé dans
+    Réglages changeait partout sauf là. Un carré de texte est vite écrit, et c'est
+    exactement ce qui fait mentir la configuration.
   - ⚠️ **Choisir la forme par la place disponible, pas par le fond** : un lockup
     large dans un menu réduit à 78 px est illisible, un monogramme seul dans un
     pied de page perd le nom de l'établissement.
