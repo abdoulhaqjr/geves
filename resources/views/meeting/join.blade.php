@@ -221,15 +221,38 @@
         #visio-room .chat-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;}
         #visio-room .chat-msg{position:relative;background:rgba(255,255,255,.04);border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.45;}
         #visio-room .chat-msg .txt{white-space:pre-wrap;overflow-wrap:anywhere;}
+        /* Heure du message : discrète, mais c'est elle qui situe un fil repris en
+           cours de séance. */
+        #visio-room .chat-msg .who{display:flex;align-items:baseline;gap:7px;}
+        #visio-room .chat-msg .who .at{font-size:10px;font-weight:600;color:var(--vmuted);}
+        /* Repère entre le fil rejoué et la séance en cours. */
+        #visio-room .chat-sep{display:flex;align-items:center;gap:8px;margin:2px 0;
+            font-size:10.5px;font-weight:700;color:var(--vmuted);text-transform:uppercase;letter-spacing:.04em;}
+        #visio-room .chat-sep::before,#visio-room .chat-sep::after{content:'';flex:1;height:1px;background:var(--vborder);}
+        /* Réactions : des pastilles sous le message, la sienne mise en avant. */
+        #visio-room .chat-msg .reacts{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;}
+        #visio-room .chat-msg .chip{border:1px solid var(--vborder);background:rgba(255,255,255,.06);
+            color:var(--vtext);font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:50px;line-height:1.5;}
+        #visio-room .chat-msg .chip:hover{background:rgba(255,255,255,.14);}
+        #visio-room .chat-msg .chip.mine{background:rgba(34,62,164,.55);border-color:rgba(255,215,0,.45);}
+        /* Les deux actions d'un message, groupées en haut à droite. */
+        #visio-room .chat-msg .acts-msg{position:absolute;top:6px;right:6px;display:flex;gap:4px;
+            opacity:0;transition:opacity .15s;}
+        #visio-room .chat-msg:hover .acts-msg,#visio-room .chat-msg .acts-msg:focus-within{opacity:1;}
+        @@media (pointer:coarse){#visio-room .chat-msg .acts-msg{opacity:1;}}
+        #visio-room .chat-msg .acts-msg button{border:none;border-radius:50px;background:rgba(255,255,255,.1);
+            color:var(--vmuted);font-size:10.5px;font-weight:700;padding:3px 8px;}
+        #visio-room .chat-msg .acts-msg button:hover{color:var(--vtext);background:rgba(255,255,255,.18);}
+        /* Choix de la réaction : au-dessus du message, jamais sous le doigt. */
+        #visio-room .chat-msg .picker{position:absolute;top:-6px;right:6px;z-index:40;display:flex;gap:2px;
+            background:var(--vbg-elev);border:1px solid var(--vborder);border-radius:50px;padding:3px 5px;
+            box-shadow:0 10px 28px rgba(0,0,0,.45);}
+        #visio-room .chat-msg .picker button{border:none;background:transparent;font-size:16px;line-height:1;
+            padding:3px 4px;border-radius:50%;}
+        #visio-room .chat-msg .picker button:hover{background:rgba(255,255,255,.14);}
         /* « Répondre » se montre au survol : une salle de 40 personnes afficherait
            sinon 40 boutons dans une colonne de 400px. Au doigt, où le survol
            n'existe pas, il reste visible. */
-        #visio-room .chat-msg .reply{position:absolute;top:6px;right:6px;border:none;border-radius:50px;
-            background:rgba(255,255,255,.1);color:var(--vmuted);font-size:10.5px;font-weight:700;padding:3px 8px;
-            opacity:0;transition:opacity .15s;}
-        #visio-room .chat-msg:hover .reply,#visio-room .chat-msg .reply:focus-visible{opacity:1;}
-        #visio-room .chat-msg .reply:hover{color:var(--vtext);background:rgba(255,255,255,.18);}
-        @@media (pointer:coarse){#visio-room .chat-msg .reply{opacity:1;}}
         /* Le message cité : court, cliquable pour remonter à l'original. */
         #visio-room .chat-msg .quote{display:block;width:100%;text-align:left;border:none;
             border-left:3px solid var(--vgold);background:rgba(255,255,255,.05);border-radius:0 8px 8px 0;

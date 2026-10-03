@@ -681,8 +681,15 @@ export async function startFromConfig() {
         d.className = 'chat-msg' + (me ? ' me' : '');
         if (id) d.id = 'msg-' + id;
 
+        if (id) d.dataset.uid = id;
+
         const qui = document.createElement('div');
         qui.className = 'who'; qui.textContent = who;
+        if (meta && meta.at) {
+            const h = document.createElement('span');
+            h.className = 'at'; h.textContent = heure(meta.at);
+            qui.appendChild(h);
+        }
         d.appendChild(qui);
 
         // La citation voyage AVEC le message (auteur + extrait) : un participant
@@ -704,26 +711,169 @@ export async function startFromConfig() {
         txt.className = 'txt'; txt.textContent = text;
         d.appendChild(txt);
 
-        // Pas de bouton sur les messages système : on ne répond pas à la salle.
+        // Pas d'actions sur les messages système : on ne répond pas à la salle.
         if (id) {
-            const b = document.createElement('button');
-            b.type = 'button'; b.className = 'reply'; b.textContent = 'Répondre';
-            b.addEventListener('click', () => preparerReponse(id, who, text));
-            d.appendChild(b);
+            const actions = document.createElement('div');
+            actions.className = 'acts-msg';
+            const bRep = document.createElement('button');
+            bRep.type = 'button'; bRep.textContent = 'Répondre';
+            bRep.addEventListener('click', () => preparerReponse(id, who, text));
+            const bReac = document.createElement('button');
+            bReac.type = 'button'; bReac.textContent = 'Réagir';
+            bReac.addEventListener('click', (e) => { e.stopPropagation(); ouvreChoixReaction(d, id); });
+            actions.appendChild(bRep); actions.appendChild(bReac);
+            d.appendChild(actions);
+            const deja = (meta && meta.reactions) || {};
+            reactionsParMessage.set(id, deja);
+            majReactions(d, deja);
         }
 
         log.appendChild(d); log.scrollTop = log.scrollHeight;
+    }
+
+    /** Heure courte d'un message (chaîne ISO du serveur, ou instant local). */
+    function heure(v) {
+        const d = v instanceof Date ? v : new Date(v);
+
+        return isNaN(d.getTime()) ? '' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // ---- Réactions ----
+    // ⚠️ L'état est tenu PAR MESSAGE et non relu du serveur à chaque geste : une
+    // réaction doit répondre au doigt. Le serveur a le dernier mot et renvoie le
+    // décompte vrai, qui écrase l'optimisme.
+    const reactionsParMessage = new Map();
+
+    /** Emojis autorisés, tels que le serveur les connaît. */
+    function emojisAutorises() {
+        return (cfg.chat && cfg.chat.emojis) || [];
+    }
+
+    function majReactions(el, etat) {
+        let zone = el.querySelector('.reacts');
+        const posees = Object.keys(etat || {}).filter((e) => (etat[e].count || 0) > 0);
+        if (!posees.length) { if (zone) zone.remove(); return; }
+        if (!zone) { zone = document.createElement('div'); zone.className = 'reacts'; el.appendChild(zone); }
+        zone.textContent = '';
+        posees.forEach((emoji) => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'chip' + (etat[emoji].mine ? ' mine' : '');
+            b.textContent = emoji + ' ' + etat[emoji].count;
+            b.title = etat[emoji].mine ? 'Retirer ma réaction' : 'Réagir ' + emoji;
+            b.addEventListener('click', () => basculeReaction(el.dataset.uid, emoji));
+            zone.appendChild(b);
+        });
+    }
+
+    function ouvreChoixReaction(el, uid) {
+        document.querySelectorAll('#visio-room .picker').forEach((p) => p.remove());
+        const p = document.createElement('div');
+        p.className = 'picker';
+        emojisAutorises().forEach((emoji) => {
+            const b = document.createElement('button');
+            b.type = 'button'; b.textContent = emoji; b.title = 'Réagir ' + emoji;
+            b.addEventListener('click', (e) => { e.stopPropagation(); p.remove(); basculeReaction(uid, emoji); });
+            p.appendChild(b);
+        });
+        el.appendChild(p);
+    }
+
+    async function basculeReaction(uid, emoji) {
+        const el = uid && $('msg-' + uid);
+        if (!el || emojisAutorises().indexOf(emoji) < 0) return;
+
+        const etat = Object.assign({}, reactionsParMessage.get(uid) || {});
+        const avant = etat[emoji] || { count: 0, mine: false };
+        const mienne = !avant.mine;
+        etat[emoji] = { count: Math.max(0, (avant.count || 0) + (mienne ? 1 : -1)), mine: mienne };
+        reactionsParMessage.set(uid, etat);
+        majReactions(el, etat);
+        sendData({ type: 'reaction', uid, emoji, on: mienne });
+
+        if (!cfg.chat) return;
+        try {
+            const res = await fetch(cfg.chat.react.replace('UID', encodeURIComponent(uid)), {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrf, 'Content-Type': 'application/json', Accept: 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ emoji }),
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            reactionsParMessage.set(uid, data.reactions || {});
+            majReactions(el, data.reactions || {});
+        } catch (e) { /* la salle d'abord : le décompte se rattrapera au prochain passage */ }
+    }
+
+    /** Réaction posée par quelqu'un d'autre : on ajuste le décompte, pas le sien. */
+    function reactionDistante(uid, emoji, active) {
+        const id = idSur(uid);
+        const el = id && $('msg-' + id);
+        if (!el || emojisAutorises().indexOf(emoji) < 0) return;
+        const etat = Object.assign({}, reactionsParMessage.get(id) || {});
+        const avant = etat[emoji] || { count: 0, mine: false };
+        etat[emoji] = { count: Math.max(0, (avant.count || 0) + (active ? 1 : -1)), mine: avant.mine };
+        reactionsParMessage.set(id, etat);
+        majReactions(el, etat);
+    }
+
+    // ---- Fil archivé ----
+    /**
+     * Rejoue le fil à l'arrivée.
+     *
+     * ⚠️ Sans cela, qui rejoint en cours de séance - ou recharge sa page - trouve
+     * une salle muette : le canal de données ne porte que l'instantané, et les
+     * questions posées avant lui n'existent plus nulle part.
+     */
+    async function chargeHistorique() {
+        if (!cfg.chat) return;
+        try {
+            const res = await fetch(cfg.chat.list, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+            if (!res.ok) return;
+            const data = await res.json();
+            const messages = data.messages || [];
+            messages.forEach((m) => addChat(m.who, m.body, !!m.mine, {
+                id: m.uid, replyTo: m.replyTo, at: m.at, reactions: m.reactions,
+            }));
+            if (messages.length) {
+                const sep = document.createElement('div');
+                sep.className = 'chat-sep'; sep.textContent = 'Vous rejoignez la salle';
+                $('chatLog').appendChild(sep);
+            }
+        } catch (e) { /* la salle d'abord : un fil injoignable ne doit pas retarder l'entrée */ }
+    }
+
+    /** Archive le message qu'on vient d'envoyer (l'instantané est déjà parti). */
+    async function persisteMessage(uid, texte, cite) {
+        if (!cfg.chat) return;
+        try {
+            await fetch(cfg.chat.post, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrf, 'Content-Type': 'application/json', Accept: 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    uid,
+                    body: texte,
+                    reply_uid: (cite && cite.id) || null,
+                    reply_author: (cite && cite.who) || null,
+                    reply_excerpt: (cite && cite.text) || null,
+                }),
+            });
+        } catch (e) { /* le message est parti dans la salle ; l'archive peut manquer un tour */ }
     }
 
     async function sendChat() {
         const input = $('chatInput');
         const text = (input.value || '').trim();
         if (!text) return;
-        const id = Math.random().toString(36).slice(2, 10);
+        // `alpha_num` côté serveur : l'identifiant sert de clé, pas de texte.
+        const id = Math.random().toString(36).replace(/[^a-z0-9]/g, '').slice(0, 8) || 'm' + Date.now();
         const cite = reponseA;
-        addChat(state.name, text, true, { id, replyTo: cite });
+        addChat(state.name, text, true, { id, replyTo: cite, at: Date.now() });
         input.value = ''; annuleReponse();
         await sendData({ type: 'chat', text, id, replyTo: cite });
+        persisteMessage(id, text, cite);
     }
 
     // ---- Toolbar ----
@@ -1069,7 +1219,8 @@ export async function startFromConfig() {
     function onData(payload, participant) {
         let msg; try { msg = JSON.parse(new TextDecoder().decode(payload)); } catch (e) { return; }
         const fromId = participant && participant.identity;
-        if (msg.type === 'chat') addChat((participant && (participant.name || participant.identity)) || 'Participant', msg.text, false, { id: msg.id, replyTo: msg.replyTo });
+        if (msg.type === 'chat') addChat((participant && (participant.name || participant.identity)) || 'Participant', msg.text, false, { id: msg.id, replyTo: msg.replyTo, at: Date.now() });
+        else if (msg.type === 'reaction') reactionDistante(msg.uid, msg.emoji, !!msg.on);
         else if (msg.type === 'hand') {
             const pe = people.find((x) => x.id === fromId);
             if (pe) {
@@ -1252,6 +1403,8 @@ export async function startFromConfig() {
         if (e.key === 'Escape' && reponseA) { e.stopPropagation(); annuleReponse(); }
     });
     $('chatReplyCancel')?.addEventListener('click', annuleReponse);
+    // Un clic ailleurs referme le choix d'emoji resté ouvert.
+    document.addEventListener('click', () => document.querySelectorAll('#visio-room .picker').forEach((p) => p.remove()));
     document.querySelectorAll('#visio-room .side-tabs button').forEach((b) => b.addEventListener('click', () => {
         document.querySelectorAll('#visio-room .side-tabs button').forEach((x) => x.classList.remove('active')); b.classList.add('active');
         const id = b.getAttribute('data-side');
@@ -1368,6 +1521,7 @@ export async function startFromConfig() {
         }, 20000);
     }
     showPresenterInfo(canPublish() ? state.name : 'Présentateur', 'Activez la caméra ou partagez votre écran');
+    await chargeHistorique();
     addChat('Système', 'Bienvenue dans la salle « ' + roomName + ' ».');
     await connect();
     syncToolbar();

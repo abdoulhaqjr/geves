@@ -599,6 +599,26 @@ paiement (`pay`), inscription à une formation.
     sienne (qui repasse par le bouton de la barre, lequel porte les autorisations
     navigateur). Couper un micro demandait sinon d'ouvrir le panneau, de trouver
     la personne, puis son bouton.
+  - **Le fil du chat est ARCHIVÉ et rejoué à l'arrivée** (`meeting_messages`,
+    `MeetingChatController`, routes `meeting.chat.*`). ⚠️ Le chat ne vivait que sur
+    le canal de données : qui rejoignait en cours de séance - ou rechargeait sa
+    page - trouvait une salle muette, et les questions posées avant lui
+    n'existaient plus nulle part. Le canal de données reste pour l'**instantané**
+    (les personnes déjà connectées), la base pour la **mémoire**. Un trait
+    « Vous rejoignez la salle » sépare le fil rejoué de la séance en cours.
+  - ⚠️ **Le nom de l'auteur est calculé par le SERVEUR**
+    (`Meetable::meetingDisplayName`, désormais publique et au contrat) : reçu du
+    client, chacun signerait ses messages du nom d'un autre. Même règle que le nom
+    affiché dans la salle, sinon le même message aurait deux auteurs.
+  - **Réactions** (`meeting_message_reactions`, `MeetingMessage::EMOJIS`) : liste
+    d'emojis **fermée** côté serveur, unicité `(message, réacteur, emoji)` tenue
+    par la **base** - deux clics rapides ou deux onglets compteraient sinon deux
+    fois la même personne. ⚠️ Le « réacteur » est le **compte** (ou le membre du
+    staff), jamais l'identité LiveKit : celle-ci change à chaque connexion.
+    L'affichage est optimiste, puis écrasé par le décompte du serveur.
+  - **Le fil suit l'accès à la salle** : `Meetable::canJoin()`, et un `type`
+    résolu depuis une **liste fermée** (`MeetingChatController::TYPES`) - jamais
+    une classe construite à partir de l'URL.
   - **Chat : on répond à un message** (`preparerReponse` / `addChat`). La citation
     **voyage avec le message** (auteur + extrait de 120 car.) au lieu d'être
     retrouvée par identifiant : ⚠️ un participant arrivé APRÈS l'original n'a pas

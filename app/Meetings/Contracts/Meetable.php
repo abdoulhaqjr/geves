@@ -36,6 +36,9 @@ interface Meetable
     /** Ce visiteur peut-il rejoindre ? */
     public function canJoin(?User $account, bool $isStaff = false): bool;
 
+    /** Nom affiché dans la salle - et signature des messages du fil. */
+    public function meetingDisplayName(?User $account, bool $isStaff, ?string $displayName): string;
+
     /** URL de connexion à la salle, ou null si refusé/absente. */
     public function joinUrl(?User $account, bool $isStaff = false, ?string $displayName = null): ?string;
 

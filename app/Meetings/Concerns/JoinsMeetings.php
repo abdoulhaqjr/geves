@@ -101,8 +101,14 @@ trait JoinsMeetings
         ];
     }
 
-    /** Nom affiché dans la salle (compte unifié `users.name`). */
-    private function meetingDisplayName(?User $account, bool $isStaff, ?string $displayName): string
+    /**
+     * Nom affiché dans la salle (compte unifié `users.name`).
+     *
+     * ⚠️ Public : le fil de discussion signe les messages AVEC CETTE RÈGLE,
+     * côté serveur. Deux règles de nommage, et le même message n'aurait pas le
+     * même auteur dans la salle et dans l'archive.
+     */
+    public function meetingDisplayName(?User $account, bool $isStaff, ?string $displayName): string
     {
         return $displayName ?: ($isStaff ? 'Organisation' : (string) ($account?->name ?: 'Invité'));
     }

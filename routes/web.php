@@ -54,6 +54,7 @@ use App\Http\Controllers\AuthorLinkController;
 use App\Http\Controllers\EgressController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\MeetingChatController;
 use App\Http\Controllers\MeetingController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PaymentController;
@@ -102,6 +103,13 @@ Route::post('/session/{session}/egress/stop', [EgressController::class, 'stop'])
 // rapporteur ; mêmes règles que la page /compte/seances/{id}/presence).
 Route::get('/session/{session}/presence.json', [SessionPresenceApiController::class, 'index'])->name('session.presence.list');
 Route::post('/session/{session}/presence', [SessionPresenceApiController::class, 'store'])->name('session.presence.mark');
+
+// Fil de discussion de la salle, commun à tout objet `Meetable` (séance du
+// programme OU formation). ⚠️ Le chat ne vivait que sur le canal de données :
+// qui arrivait en cours de séance trouvait une salle muette.
+Route::get('/visio/{type}/{id}/messages', [MeetingChatController::class, 'index'])->name('meeting.chat.list');
+Route::post('/visio/{type}/{id}/messages', [MeetingChatController::class, 'store'])->name('meeting.chat.post');
+Route::post('/visio/{type}/{id}/messages/{uid}/reaction', [MeetingChatController::class, 'react'])->name('meeting.chat.react');
 
 // Engagement live d'une séance (Q&A + sondages) - accès géré dans le contrôleur.
 Route::get('/session/{session}/echanges', [SessionEngagementController::class, 'page'])->name('session.engagement');

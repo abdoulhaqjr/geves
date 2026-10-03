@@ -7,6 +7,7 @@ use App\Meetings\Contracts\Meetable;
 use App\Meetings\LiveKitEgress;
 use App\Models\EventSession;
 use App\Models\Formation;
+use App\Models\MeetingMessage;
 use App\Support\SessionPresence;
 use App\Support\Settings;
 use Illuminate\Contracts\View\View;
@@ -114,6 +115,15 @@ class MeetingController extends Controller
             $liveKit['sessionLabel'] = $ctx['label'];
             $liveKit['editionTitle'] = $ctx['editionTitle'];
             $liveKit = array_merge($liveKit, $liveKitExtra);
+            // Fil de discussion archivé : la clé de type vient de la liste
+            // fermée du contrôleur, pour n'avoir qu'un seul vocabulaire.
+            $cle = array_search($meetable::class, MeetingChatController::TYPES, true);
+            $liveKit['chat'] = $cle === false ? null : [
+                'list' => route('meeting.chat.list', [$cle, $meetable->getKey()]),
+                'post' => route('meeting.chat.post', [$cle, $meetable->getKey()]),
+                'react' => route('meeting.chat.react', [$cle, $meetable->getKey(), 'UID']),
+                'emojis' => MeetingMessage::EMOJIS,
+            ];
         }
 
         return view('meeting.join', [
