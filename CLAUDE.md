@@ -599,6 +599,15 @@ paiement (`pay`), inscription à une formation.
     sienne (qui repasse par le bouton de la barre, lequel porte les autorisations
     navigateur). Couper un micro demandait sinon d'ouvrir le panneau, de trouver
     la personne, puis son bouton.
+  - **Chat : on répond à un message** (`preparerReponse` / `addChat`). La citation
+    **voyage avec le message** (auteur + extrait de 120 car.) au lieu d'être
+    retrouvée par identifiant : ⚠️ un participant arrivé APRÈS l'original n'a pas
+    l'historique de la salle (rien n'est stocké côté serveur) et ne comprendrait
+    pas la réponse. Cliquer la citation remonte à l'original quand on l'a.
+  - ⚠️ **Le chat se construit en `textContent`, jamais en `innerHTML`** : message,
+    nom d'affichage et citation viennent d'autres participants. L'ancienne version
+    remplaçait `<` et `>` dans une chaîne injectée en `innerHTML` - une liste
+    noire, donc fausse par construction.
   - ⚠️ Ces ordres passent par le **canal de données** (coopératif, tous les postes
     exécutant notre code), pas par l'API serveur de LiveKit : un client modifié
     pourrait les ignorer. Acceptable pour une conduite de séance, à revoir si la

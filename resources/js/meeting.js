@@ -635,16 +635,95 @@ export async function startFromConfig() {
     }
 
     // ---- Chat ----
-    function addChat(who, text, me) {
-        const log = $('chatLog'); if (!log) return;
-        const d = document.createElement('div'); d.className = 'chat-msg' + (me ? ' me' : '');
-        d.innerHTML = '<div class="who">' + who + '</div>' + text.replace(/[<>]/g, (c) => (c === '<' ? '&lt;' : '&gt;'));
+    // ⚠️ Tout est construit en `textContent` : un message, un nom d'affichage et
+    // une citation viennent d'autres participants. L'ancienne version collait le
+    // texte dans `innerHTML` après avoir remplacé `<` et `>` - une liste noire,
+    // donc fausse par construction (`onerror=` dans un attribut, entités…).
+    let reponseA = null;
+
+    function texteCourt(t, n) {
+        const s = (t || '').replace(/\s+/g, ' ').trim();
+
+        return s.length > n ? s.slice(0, n - 1) + '…' : s;
+    }
+
+    /** Identifiant de message réduit à l'alphabet attendu : il sert d'id DOM. */
+    function idSur(v) {
+        return String(v || '').replace(/[^a-z0-9]/gi, '').slice(0, 24);
+    }
+
+    function montreMessage(id) {
+        const el = idSur(id) && $('msg-' + idSur(id));
+        if (!el) return;
+        el.scrollIntoView({ block: 'nearest' });
+        el.classList.add('cible');
+        setTimeout(() => el.classList.remove('cible'), 1300);
+    }
+
+    function preparerReponse(id, qui, texte) {
+        reponseA = { id: idSur(id), who: texteCourt(qui, 40), text: texteCourt(texte, 120) };
+        $('chatReplyWho').textContent = 'Réponse à ' + reponseA.who;
+        $('chatReplyText').textContent = reponseA.text;
+        $('chatReply').classList.add('on');
+        $('chatInput').focus();
+    }
+
+    function annuleReponse() {
+        reponseA = null;
+        $('chatReply')?.classList.remove('on');
+    }
+
+    function addChat(who, text, me, meta) {
+        const log = $('chatLog');
+        if (!log) return;
+        const id = idSur(meta && meta.id);
+        const d = document.createElement('div');
+        d.className = 'chat-msg' + (me ? ' me' : '');
+        if (id) d.id = 'msg-' + id;
+
+        const qui = document.createElement('div');
+        qui.className = 'who'; qui.textContent = who;
+        d.appendChild(qui);
+
+        // La citation voyage AVEC le message (auteur + extrait) : un participant
+        // arrivé après l'original doit quand même comprendre la réponse.
+        const cite = meta && meta.replyTo;
+        if (cite) {
+            const q = document.createElement('button');
+            q.type = 'button'; q.className = 'quote';
+            const qw = document.createElement('span');
+            qw.className = 'q-who'; qw.textContent = texteCourt(cite.who, 40) || 'Message';
+            const qt = document.createElement('span');
+            qt.className = 'q-text'; qt.textContent = texteCourt(cite.text, 120);
+            q.appendChild(qw); q.appendChild(qt);
+            q.addEventListener('click', () => montreMessage(cite.id));
+            d.appendChild(q);
+        }
+
+        const txt = document.createElement('div');
+        txt.className = 'txt'; txt.textContent = text;
+        d.appendChild(txt);
+
+        // Pas de bouton sur les messages système : on ne répond pas à la salle.
+        if (id) {
+            const b = document.createElement('button');
+            b.type = 'button'; b.className = 'reply'; b.textContent = 'Répondre';
+            b.addEventListener('click', () => preparerReponse(id, who, text));
+            d.appendChild(b);
+        }
+
         log.appendChild(d); log.scrollTop = log.scrollHeight;
     }
+
     async function sendChat() {
-        const input = $('chatInput'); const text = (input.value || '').trim(); if (!text) return;
-        addChat(state.name, text, true); input.value = '';
-        await sendData({ type: 'chat', text });
+        const input = $('chatInput');
+        const text = (input.value || '').trim();
+        if (!text) return;
+        const id = Math.random().toString(36).slice(2, 10);
+        const cite = reponseA;
+        addChat(state.name, text, true, { id, replyTo: cite });
+        input.value = ''; annuleReponse();
+        await sendData({ type: 'chat', text, id, replyTo: cite });
     }
 
     // ---- Toolbar ----
@@ -990,7 +1069,7 @@ export async function startFromConfig() {
     function onData(payload, participant) {
         let msg; try { msg = JSON.parse(new TextDecoder().decode(payload)); } catch (e) { return; }
         const fromId = participant && participant.identity;
-        if (msg.type === 'chat') addChat((participant && (participant.name || participant.identity)) || 'Participant', msg.text);
+        if (msg.type === 'chat') addChat((participant && (participant.name || participant.identity)) || 'Participant', msg.text, false, { id: msg.id, replyTo: msg.replyTo });
         else if (msg.type === 'hand') {
             const pe = people.find((x) => x.id === fromId);
             if (pe) {
@@ -1167,7 +1246,12 @@ export async function startFromConfig() {
     });
     $('btnRec').addEventListener('click', toggleRecording);
     $('btnSendChat').addEventListener('click', sendChat);
-    $('chatInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChat(); });
+    $('chatInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { sendChat(); return; }
+        // Échap abandonne la réponse sans vider ce qu'on a déjà écrit.
+        if (e.key === 'Escape' && reponseA) { e.stopPropagation(); annuleReponse(); }
+    });
+    $('chatReplyCancel')?.addEventListener('click', annuleReponse);
     document.querySelectorAll('#visio-room .side-tabs button').forEach((b) => b.addEventListener('click', () => {
         document.querySelectorAll('#visio-room .side-tabs button').forEach((x) => x.classList.remove('active')); b.classList.add('active');
         const id = b.getAttribute('data-side');

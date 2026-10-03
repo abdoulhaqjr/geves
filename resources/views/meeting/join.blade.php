@@ -219,7 +219,32 @@
         #visio-room .side-panel{display:none;flex:1;min-height:0;flex-direction:column;}
         #visio-room .side-panel.active{display:flex;}
         #visio-room .chat-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;}
-        #visio-room .chat-msg{background:rgba(255,255,255,.04);border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.45;}
+        #visio-room .chat-msg{position:relative;background:rgba(255,255,255,.04);border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.45;}
+        #visio-room .chat-msg .txt{white-space:pre-wrap;overflow-wrap:anywhere;}
+        /* « Répondre » se montre au survol : une salle de 40 personnes afficherait
+           sinon 40 boutons dans une colonne de 400px. Au doigt, où le survol
+           n'existe pas, il reste visible. */
+        #visio-room .chat-msg .reply{position:absolute;top:6px;right:6px;border:none;border-radius:50px;
+            background:rgba(255,255,255,.1);color:var(--vmuted);font-size:10.5px;font-weight:700;padding:3px 8px;
+            opacity:0;transition:opacity .15s;}
+        #visio-room .chat-msg:hover .reply,#visio-room .chat-msg .reply:focus-visible{opacity:1;}
+        #visio-room .chat-msg .reply:hover{color:var(--vtext);background:rgba(255,255,255,.18);}
+        @@media (pointer:coarse){#visio-room .chat-msg .reply{opacity:1;}}
+        /* Le message cité : court, cliquable pour remonter à l'original. */
+        #visio-room .chat-msg .quote{display:block;width:100%;text-align:left;border:none;
+            border-left:3px solid var(--vgold);background:rgba(255,255,255,.05);border-radius:0 8px 8px 0;
+            padding:6px 9px;margin-bottom:7px;font-size:11.5px;line-height:1.35;color:var(--vmuted);}
+        #visio-room .chat-msg .quote .q-who{display:block;font-weight:800;color:var(--vgold);}
+        #visio-room .chat-msg .quote .q-text{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+        #visio-room .chat-msg.cible{box-shadow:0 0 0 2px rgba(255,215,0,.55);}
+        /* Bandeau « on répond à… » : juste au-dessus du champ, là où on écrit. */
+        #visio-room .chat-reply{display:none;align-items:center;gap:8px;padding:8px 12px;background:rgba(255,215,0,.07);}
+        #visio-room .chat-reply.on{display:flex;}
+        #visio-room .chat-reply .r-text{flex:1;min-width:0;font-size:11.5px;line-height:1.35;color:var(--vmuted);}
+        #visio-room .chat-reply .r-text strong{display:block;color:var(--vgold);font-size:11px;}
+        #visio-room .chat-reply .r-text span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+        #visio-room .chat-reply button{border:none;background:transparent;color:var(--vmuted);font-size:17px;line-height:1;padding:2px 6px;}
+        #visio-room .chat-reply button:hover{color:var(--vtext);}
         #visio-room .chat-msg .who{font-size:11px;font-weight:800;color:var(--vgold);margin-bottom:3px;}
         #visio-room .chat-msg.me .who{color:#93c5fd;}
         #visio-room .chat-input{border-top:1px solid var(--vborder);padding:12px;display:flex;gap:8px;}
@@ -559,6 +584,10 @@
                 </div>
                 <div class="side-panel active" id="panelChat">
                     <div class="chat-log" id="chatLog"></div>
+                    <div class="chat-reply" id="chatReply">
+                        <div class="r-text"><strong id="chatReplyWho"></strong><span id="chatReplyText"></span></div>
+                        <button type="button" id="chatReplyCancel" title="Annuler la réponse" aria-label="Annuler la réponse">&times;</button>
+                    </div>
                     <div class="chat-input">
                         <input type="text" id="chatInput" placeholder="Écrire un message…" autocomplete="off">
                         <button type="button" class="v-btn blue sm" id="btnSendChat">Envoyer</button>
