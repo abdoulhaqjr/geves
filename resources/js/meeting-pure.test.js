@@ -10,6 +10,10 @@ import {
   initials,
   mainsOrdonnees,
   metadonnee,
+  peutReagir,
+  placeBulle,
+  REACTIONS_MAX,
+  reactionRecevable,
   niveauReseau,
   ordreRecevable,
   phraseConnectes,
@@ -314,5 +318,72 @@ describe('profil de capture vidéo', () => {
     expect(profilVideo('ultra')).toEqual(profilVideo('hd'));
     expect(profilVideo(null)).toEqual(profilVideo('hd'));
     expect(profilVideo(undefined)).toEqual(profilVideo('hd'));
+  });
+});
+
+describe('réactions de salle', () => {
+  it('n’affiche que les emojis que la salle connaît', () => {
+    // ⚠️ Le canal est public : sans ce filtre, n'importe quel connecté
+    // afficherait en grand, chez tout le monde, le texte de son choix.
+    const permis = ['👍', '👏'];
+    expect(reactionRecevable('👏', permis)).toBe(true);
+    expect(reactionRecevable('🤬', permis)).toBe(false);
+    expect(reactionRecevable('<img src=x onerror=1>', permis)).toBe(false);
+    expect(reactionRecevable('👏', null)).toBe(false);
+  });
+
+  it('espace deux réactions d’une même personne', () => {
+    expect(peutReagir(0, 10_000)).toBe(true);
+    expect(peutReagir(10_000, 10_200, 1500)).toBe(false);
+    expect(peutReagir(10_000, 11_500, 1500)).toBe(true);
+  });
+
+  it('ne verrouille pas le bouton quand l’horloge recule', () => {
+    // ⚠️ Changement d'heure ou synchronisation réseau : un simple « écoulé >=
+    // délai » enfermerait la personne pour une heure.
+    expect(peutReagir(10_000, 4_000, 1500)).toBe(true);
+  });
+
+  it('donne une place distincte à chaque bulle vivante', () => {
+    // ⚠️ Mesuré dans la salle : quand la suite des places reboucle avant le
+    // plafond, deux bulles encore à l'écran se posent EXACTEMENT l'une sur
+    // l'autre. Les deux nombres sont donc solidaires.
+    const vues = new Set();
+    for (let i = 0; i < REACTIONS_MAX; i += 1) {
+      const p = placeBulle(i);
+      vues.add(p.gauche + '/' + p.bas);
+    }
+    expect(vues.size).toBe(REACTIONS_MAX);
+  });
+
+  it('écarte les bulles qui partagent une rangée', () => {
+    // Deux rangs qui se suivent ne partagent jamais la rangée.
+    for (let i = 0; i < 16; i += 1) {
+      expect(placeBulle(i).bas).not.toBe(placeBulle(i + 1).bas);
+    }
+    // ⚠️ Et quand ils la partagent, leurs colonnes ne doivent pas seulement
+    // différer : elles doivent s'écarter, sinon les deux noms se chevauchent et
+    // aucun ne se lit - c'est ce que montrait le harnais visuel.
+    for (let i = 0; i < REACTIONS_MAX; i += 1) {
+      for (let j = i + 1; j < REACTIONS_MAX; j += 1) {
+        const a = placeBulle(i);
+        const b = placeBulle(j);
+        if (a.bas !== b.bas) continue;
+        expect(Math.abs(b.gauche - a.gauche)).toBeGreaterThanOrEqual(25);
+      }
+    }
+  });
+
+  it('garde la bulle sur la scène, quel que soit le rang', () => {
+    // La suite boucle, et un rang douteux ne jette pas la bulle hors de l'écran.
+    expect(placeBulle(REACTIONS_MAX)).toEqual(placeBulle(0));
+    expect(placeBulle(null)).toEqual(placeBulle(0));
+    expect(placeBulle(-1).gauche).toBeGreaterThanOrEqual(0);
+    for (let i = 0; i < 40; i += 1) {
+      // La bulle est large d'au plus 25% : au-delà de 48%, elle déborderait.
+      expect(placeBulle(i).gauche).toBeGreaterThanOrEqual(0);
+      expect(placeBulle(i).gauche).toBeLessThanOrEqual(48);
+      expect(placeBulle(i).bas).toBeGreaterThanOrEqual(10);
+    }
   });
 });

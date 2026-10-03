@@ -13,7 +13,8 @@ import {
 import {
     enBasDuFil, etatChrono, grilleOptimale, heure, idSur, idsDesParleurs, initials,
     mainsOrdonnees, metadonnee, niveauReseau, ordreRecevable as ordreAutorise, presenceLabel,
-    phraseConnectes, profilVideo, rangsDesMains, roleLabel, teinteDuNom, texteCourt,
+    peutReagir, phraseConnectes, placeBulle, profilVideo, rangsDesMains, reactionRecevable,
+    REACTIONS_MAX, roleLabel, teinteDuNom, texteCourt,
 } from './meeting-pure.js';
 
 // Objet compat pour réutiliser la logique de la maquette (LK.RoomEvent, LK.Track…).
@@ -1304,6 +1305,93 @@ export async function startFromConfig() {
         persisteMessage(id, text, cite);
     }
 
+    // ---- Réactions de salle ----
+    /**
+     * Un emoji qui monte sur l'écran de présentation, chez tout le monde, avec le
+     * nom de qui l'envoie.
+     *
+     * ⚠️ Ce n'est PAS la réaction du fil (`basculeReaction`) : celle-là se pose sur
+     * un message, se compte, et le serveur la conserve. Celle-ci est un
+     * applaudissement - elle passe, personne ne la compte, rien ne l'enregistre.
+     * C'est voulu : la salle n'a pas à garder trace de qui a applaudi quoi.
+     */
+    const reac = { dernier: 0, rang: 0, parQui: new Map() };
+
+    function poseBulleReaction(emoji, nom, soi) {
+        const couche = $('reacLayer');
+        if (!couche) return;
+        // ⚠️ Le plafond n'est pas un goût d'affichage : sans lui, une rafale empile
+        // des centaines de nœuds animés sur la scène et la page se fige. La plus
+        // ancienne cède la place.
+        while (couche.children.length >= REACTIONS_MAX) couche.children[0].remove();
+
+        // Colonne ET rangée viennent de la même règle : l'escalier vertical ne
+        // suffit pas seul, deux bulles distantes de quatre rangs y retombent.
+        const place = placeBulle(reac.rang++);
+        const b = document.createElement('div');
+        b.className = 'reac-bulle' + (soi ? ' soi' : '');
+        b.style.left = place.gauche + '%';
+        b.style.bottom = place.bas + 'px';
+
+        const e = document.createElement('span');
+        e.className = 'em'; e.textContent = emoji;
+        const q = document.createElement('span');
+        // ⚠️ `textContent` et non `innerHTML` : le nom vient d'un autre poste.
+        q.className = 'qui'; q.textContent = soi ? 'Vous' : texteCourt(nom || 'Participant', 18);
+        b.appendChild(e); b.appendChild(q);
+        couche.appendChild(b);
+
+        // ⚠️ Un minuteur, et non `animationend` : quand l'animation ne se joue pas
+        // (onglet en arrière-plan, feuille de style non chargée), l'événement
+        // n'arrive jamais et la bulle resterait sur la scène indéfiniment.
+        setTimeout(() => b.remove(), 4200);
+    }
+
+    function envoieReaction(emoji) {
+        if (!state.connected || !reactionRecevable(emoji, emojisAutorises())) return;
+        const n = Date.now();
+        if (!peutReagir(reac.dernier, n)) return;
+        reac.dernier = n;
+        // Affichée tout de suite chez soi : attendre l'aller-retour du serveur
+        // donnerait l'impression que le bouton n'a pas pris.
+        poseBulleReaction(emoji, state.name, true);
+        sendData({ type: 'reac_salle', emoji });
+    }
+
+    function reactionDeSalle(emoji, nom, id) {
+        // ⚠️ Le canal de données est public : sans ce filtre, n'importe quel
+        // connecté afficherait en grand, chez tout le monde, le texte de son choix.
+        if (!reactionRecevable(emoji, emojisAutorises())) return;
+        // ⚠️ Et l'anti-rafale vaut AUSSI ici, par expéditeur : un client modifié ne
+        // se prive pas d'un verrou qui ne vivrait que dans sa propre page.
+        const n = Date.now();
+        const cle = id || nom || '?';
+        if (!peutReagir(reac.parQui.get(cle) || 0, n)) return;
+        reac.parQui.set(cle, n);
+        poseBulleReaction(emoji, nom, false);
+    }
+
+    function construitMenuReactions() {
+        const m = $('reacMenu');
+        if (!m || m.dataset.pret) return m;
+        emojisAutorises().forEach((emoji) => {
+            const b = document.createElement('button');
+            b.type = 'button'; b.textContent = emoji;
+            // Le libellé, pas seulement le dessin : un emoji seul n'est pas énonçable.
+            b.title = 'Réagir ' + emoji; b.setAttribute('aria-label', 'Réagir ' + emoji);
+            b.addEventListener('click', (ev) => { ev.stopPropagation(); fermeMenuReactions(); envoieReaction(emoji); });
+            m.appendChild(b);
+        });
+        m.dataset.pret = '1';
+
+        return m;
+    }
+
+    function fermeMenuReactions() {
+        $('reacMenu')?.classList.remove('open');
+        $('btnReac')?.setAttribute('aria-expanded', 'false');
+    }
+
     // ---- Toolbar ----
     function syncToolbar() {
         const pub = canPublish();
@@ -1312,6 +1400,9 @@ export async function startFromConfig() {
         $('btnScreen').disabled = !state.connected || !pub;
         $('btnBg').disabled = !state.connected || !pub;
         $('btnHand').disabled = !state.connected;
+        // Réagir ne demande ni micro ni caméra : c'est le seul geste que
+        // l'assistance peut faire, et il lui reste ouvert.
+        $('btnReac').disabled = !state.connected;
         $('btnMic').classList.toggle('muted', !state.mic); $('btnMic').classList.toggle('active', state.mic);
         $('btnCam').classList.toggle('muted', !state.cam); $('btnCam').classList.toggle('active', state.cam);
         $('btnScreen').classList.toggle('active', state.screen);
@@ -1639,6 +1730,7 @@ export async function startFromConfig() {
             .on(LK.RoomEvent.ParticipantDisconnected, (p) => {
                 people = people.filter((x) => x.id !== p.identity); refreshPeople(); refreshComms();
                 const tile = $('tile-' + p.identity); if (tile) tile.remove(); updateFilmstripCount(); layoutGrid();
+                reac.parQui.delete(p.identity);
             })
             // ⚠️ `Disconnected` signifie que le SDK a RENONCÉ (ses propres essais
             // ont échoué). Sans porte de sortie, il ne restait qu'à recharger la
@@ -1812,6 +1904,7 @@ export async function startFromConfig() {
         const fromId = participant && participant.identity;
         if (msg.type === 'chat') addChat((participant && (participant.name || participant.identity)) || 'Participant', msg.text, false, { id: msg.id, replyTo: msg.replyTo, at: Date.now() });
         else if (msg.type === 'reaction') reactionDistante(msg.uid, msg.emoji, !!msg.on, msg.replaced || null);
+        else if (msg.type === 'reac_salle') reactionDeSalle(msg.emoji, (participant && (participant.name || participant.identity)) || 'Participant', fromId);
         else if (msg.type === 'chat_removed') retireMessage(msg.uid);
         else if (msg.type === 'hand') {
             const pe = people.find((x) => x.id === fromId);
@@ -2498,6 +2591,17 @@ export async function startFromConfig() {
         toast(state.hand ? 'Main levée' : 'Main baissée');
         await sendData({ type: 'hand', up: state.hand });
     });
+    $('btnReac').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const m = construitMenuReactions();
+        if (!m) return;
+        // Les feuilles de la barre partagent la même place au-dessus d'elle :
+        // deux ouvertes en même temps se recouvrent.
+        ['bgMenu', 'shareMenu', 'volPanel', 'moreSheet'].forEach((id) => $(id)?.classList.remove('open'));
+        const ouvert = m.classList.toggle('open');
+        $('btnReac').setAttribute('aria-expanded', ouvert ? 'true' : 'false');
+        if (ouvert) m.querySelector('button')?.focus();
+    });
     $('btnLayout').addEventListener('click', () => {
         state.speakerLayout = !state.speakerLayout;
         const wrap = $('filmstripWrap'); if (wrap) wrap.classList.toggle('open', !state.speakerLayout);
@@ -2648,7 +2752,7 @@ export async function startFromConfig() {
      * refermaient à la souris, et seulement à la souris. L'ordre compte : on ne
      * referme pas le panneau de quelqu'un qui voulait fermer un menu.
      */
-    const MENUS = ['bgMenu', 'shareMenu', 'volPanel', 'moreSheet'];
+    const MENUS = ['bgMenu', 'shareMenu', 'volPanel', 'moreSheet', 'reacMenu'];
     document.addEventListener('keydown', (e) => {
         if (e.key !== 'Escape') return;
         if (repondModal) { repondModal(false); return; }
@@ -2660,6 +2764,7 @@ export async function startFromConfig() {
         if (ouverts.length) {
             ouverts.forEach((m) => m.classList.remove('open'));
             $('btnMore')?.setAttribute('aria-expanded', 'false');
+            $('btnReac')?.setAttribute('aria-expanded', 'false');
 
             return;
         }
@@ -2678,6 +2783,8 @@ export async function startFromConfig() {
         if (bg && !bg.contains(e.target) && e.target !== $('btnBg') && !$('btnBg').contains(e.target)) bg.classList.remove('open');
         if (sm && !sm.contains(e.target) && !$('btnScreen').contains(e.target)) sm.classList.remove('open');
         if (vp && !vp.contains(e.target) && !$('btnSpeaker').contains(e.target)) vp.classList.remove('open');
+        const rm = $('reacMenu');
+        if (rm && !rm.contains(e.target) && !$('btnReac')?.contains(e.target)) fermeMenuReactions();
     });
     // La grille se recalcule quand la place change : ouvrir le panneau latéral ou
     // réduire la fenêtre modifie la largeur disponible, donc la bonne grille.

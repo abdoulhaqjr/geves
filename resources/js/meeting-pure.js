@@ -320,3 +320,89 @@ export function profilVideo(nom) {
 
   return profils[String(nom ?? '')] || profils.hd;
 }
+
+/* ===================== Réactions de salle ===================== */
+
+/**
+ * Bulles d'emoji qui montent sur la scène, visibles de tous.
+ *
+ * ⚠️ À ne pas confondre avec les réactions du fil de discussion
+ * (`reactionDistante`) : celles-ci se posent SUR un message, se comptent et
+ * survivent au rechargement. Une réaction de salle est un applaudissement :
+ * elle passe, elle ne se compte pas, et rien ne la conserve.
+ */
+
+/**
+ * Bulles affichées en même temps : au-delà, la plus ancienne cède la place.
+ *
+ * ⚠️ Ce nombre est celui des places que `placeBulle` sait distribuer, et les
+ * deux doivent le rester : au-delà, la suite reboucle et deux bulles vivantes
+ * se posent EXACTEMENT au même endroit.
+ */
+export const REACTIONS_MAX = 8;
+/** Intervalle minimal entre deux réactions d'une même personne (ms). */
+export const REACTION_DELAI = 1500;
+
+/**
+ * Vrai si cet emoji fait partie de ceux que la salle connaît.
+ *
+ * ⚠️ Le canal de données est public : n'importe quel client connecté peut
+ * annoncer la réaction qu'il veut. Sans ce filtre, on afficherait en grand, chez
+ * tout le monde, le texte arbitraire d'un participant - une tribune que personne
+ * ne lui a donnée.
+ */
+export function reactionRecevable(emoji, autorises) {
+  return Array.isArray(autorises) && autorises.indexOf(emoji) >= 0;
+}
+
+/**
+ * Vrai si cette personne a le droit de réagir à nouveau.
+ *
+ * ⚠️ Garde-fou contre la rafale, appliqué des DEUX côtés : chez l'émetteur pour
+ * le bouton, chez le récepteur par expéditeur - un client modifié ne se prive
+ * pas d'un verrou qui ne vivrait que dans sa propre page.
+ */
+export function peutReagir(dernierAt, maintenant, delai = REACTION_DELAI) {
+  if (!dernierAt) return true;
+  const ecoule = maintenant - dernierAt;
+  // ⚠️ Horloge reculée (changement d'heure, synchronisation réseau) : on
+  // n'enferme personne pendant une heure. C'est un anti-rafale, pas un verrou.
+  if (ecoule < 0) return true;
+
+  return ecoule >= delai;
+}
+
+/**
+ * Où poser la bulle de rang `n` : `{ gauche }` en % depuis la gauche de la
+ * scène, `{ bas }` en pixels depuis le bas.
+ *
+ * ⚠️ Déterministe, et non tiré au sort : deux bulles tirées au même endroit se
+ * superposent exactement et ne se lisent plus que comme une seule.
+ *
+ * ⚠️ Les deux suites sont solidaires, et c'est tout l'intérêt de les décider
+ * ICI plutôt que dans la feuille de style. Mesuré dans la salle : huit colonnes
+ * au-dessus de quatre rangées font retomber les rangs n et n+4 sur la MÊME
+ * rangée - avec les colonnes « naturelles » (10, 30, 18, 42, 6…), les deux
+ * bulles se chevauchaient et aucun des deux noms n'était lisible. Les colonnes
+ * sont donc ordonnées pour que n et n+4 soient ÉLOIGNÉS, pas seulement
+ * différents.
+ */
+export function placeBulle(rang) {
+  // Huit places, autant que de bulles vivantes : deux d'entre elles ne tombent
+  // jamais au même endroit. Deux rangs qui se suivent changent de rangée, et
+  // les deux qui partagent une rangée sont à plus de 25% l'une de l'autre.
+  // ⚠️ 42px entre deux rangées : la bulle en fait 38 de haut, et des rangées
+  // plus serrées se touchaient - mesuré au harnais, pas estimé. De même, l'écart
+  // de 26% entre deux places d'une même rangée tient compte de la largeur
+  // maximale de la bulle (25%) : sans cette marge, le nom le plus long mordait
+  // sur la bulle voisine.
+  const places = [
+    { gauche: 6, bas: 10 }, { gauche: 34, bas: 52 },
+    { gauche: 18, bas: 94 }, { gauche: 46, bas: 136 },
+    { gauche: 40, bas: 10 }, { gauche: 8, bas: 52 },
+    { gauche: 46, bas: 94 }, { gauche: 20, bas: 136 },
+  ];
+  const n = Math.trunc(Number(rang) || 0);
+
+  return places[((n % places.length) + places.length) % places.length];
+}

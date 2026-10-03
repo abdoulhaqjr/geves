@@ -192,13 +192,28 @@
            énonçable par un lecteur d'écran et trouvable par la recherche du
            navigateur. Il est replié, pas retiré.
            ⚠️ La marge négative annule l'écart du conteneur : sans elle, la pastille
-           garderait 6px de vide à gauche du micro, pour un nom large de zéro. */
+           garderait 6px de vide à gauche du micro, pour un nom large de zéro.
+           ⚠️ Le repli et le dépli ne vont pas à la même vitesse, et c'est voulu :
+           le nom s'ouvre en .32s avec une courbe qui démarre doucement (il
+           arrive, on le lit), et se replie en .16s (on a quitté la carte, on
+           ne l'attend plus). L'opacité part AVANT la largeur au dépli, sans
+           quoi le texte apparaît d'un bloc dans une pastille qui s'ouvre
+           encore - c'est ce qui se lisait comme un à-coup.
+           ⚠️ Un délai de .12s à l'ouverture : en longeant le bandeau, on
+           survole cinq cartes en une seconde, et sans lui elles s'allumeraient
+           toutes au passage. */
         #visio-room .filmstrip .tile .name .nm{max-width:0;opacity:0;margin-right:-6px;
-            transition:max-width .18s ease,opacity .14s ease,margin-right .18s ease;}
+            transition:max-width .16s ease-in,opacity .1s ease-in,margin-right .16s ease-in;}
         /* `focus-within` : au clavier, atteindre le bouton de micro doit montrer de
            QUI il s'agit - sans quoi on coupe le micro de quelqu'un sans le nommer. */
         #visio-room .filmstrip .tile:hover .name .nm,
-        #visio-room .filmstrip .tile:focus-within .name .nm{max-width:150px;opacity:1;margin-right:0;}
+        #visio-room .filmstrip .tile:focus-within .name .nm{max-width:150px;opacity:1;margin-right:0;
+            transition:max-width .32s cubic-bezier(.22,1,.36,1) .12s,
+                opacity .26s ease-out .18s,margin-right .32s cubic-bezier(.22,1,.36,1) .12s;}
+        /* Le clavier, lui, n'a pas longé le bandeau : il a visé. Le nom doit
+           être là tout de suite, sinon la tabulation donne l'impression d'un
+           temps mort avant de savoir de qui il s'agit. */
+        #visio-room .filmstrip .tile:focus-within .name .nm{transition-delay:0s;}
         /* ⚠️ Au doigt, le survol N'EXISTE PAS : un nom qui ne se montre qu'au survol
            serait simplement introuvable. Il reste donc affiché, comme avant. */
         @@media (pointer:coarse){
@@ -471,6 +486,42 @@
         #visio-room .vol-panel label{font-size:12px;font-weight:700;color:var(--vmuted);}
         #visio-room .vol-panel input[type=range]{flex:1;accent-color:var(--vgold);}
         #visio-room .vol-panel .vol-val{font-size:12px;font-weight:800;min-width:36px;text-align:right;}
+        /* --- Réactions de salle : une bulle qui monte sur la scène ---
+           ⚠️ À ne pas confondre avec les réactions du fil (`.chip`), qui se posent
+           SUR un message, se comptent et survivent au rechargement. Celle-ci est un
+           applaudissement : elle passe, elle ne se compte pas, rien ne la conserve.
+           ⚠️ La couche vit dans `.stage-main`, pas dans la page : c'est `.stage-main`
+           qui passe en plein écran, et une bulle posée ailleurs disparaîtrait
+           justement au moment où l'écran de présentation prend toute la place.
+           ⚠️ `pointer-events:none` sur la couche : elle recouvre toute la scène, et
+           sans cela elle avalerait les clics destinés à la vignette en dessous. */
+        #visio-room .reac-layer{position:absolute;inset:0;z-index:40;pointer-events:none;overflow:hidden;}
+        #visio-room .reac-bulle{position:absolute;display:inline-flex;align-items:center;gap:8px;
+            padding:5px 13px 5px 9px;border-radius:999px;background:rgba(15,18,28,.88);
+            border:1px solid var(--vborder);color:var(--vtext);font-size:12.5px;font-weight:700;
+            white-space:nowrap;max-width:25%;box-shadow:0 10px 30px rgba(0,0,0,.5);
+            animation:vreac 4s cubic-bezier(.25,.7,.4,1) forwards;}
+        #visio-room .reac-bulle .em{font-size:26px;line-height:1;flex-shrink:0;}
+        /* ⚠️ `min-width:0` : sans lui, un élément de flex refuse de descendre sous
+           la largeur de son texte. `max-width` sur la bulle était alors sans
+           effet, et un nom long la faisait déborder sur la moitié de la scène -
+           mesuré, pas supposé. */
+        #visio-room .reac-bulle .qui{min-width:0;overflow:hidden;text-overflow:ellipsis;}
+        /* La sienne est reconnaissable : on vient d'appuyer, on cherche la confirmation. */
+        #visio-room .reac-bulle.soi{border-color:var(--vgold);}
+        @@keyframes vreac{
+            0%{opacity:0;transform:translateY(18px) scale(.7);}
+            12%{opacity:1;transform:translateY(0) scale(1);}
+            72%{opacity:1;}
+            100%{opacity:0;transform:translateY(-40vh) scale(.94);}
+        }
+        /* Choix de l'emoji : une rangée au-dessus du bouton, pas la feuille large
+           des autres menus - cinq pastilles n'ont pas besoin de 340px. */
+        #visio-room .reac-menu{width:auto;padding:8px;}
+        #visio-room .reac-menu.open{display:flex;gap:6px;}
+        #visio-room .reac-menu button{width:48px;height:48px;border-radius:14px;border:1px solid transparent;
+            background:transparent;font-size:25px;line-height:1;cursor:pointer;}
+        #visio-room .reac-menu button:hover,#visio-room .reac-menu button:focus-visible{background:rgba(255,255,255,.1);border-color:var(--vborder);}
         #visio-room .perm-banner{display:none;position:absolute;top:calc(var(--vtop) + 8px);left:50%;transform:translateX(-50%);z-index:70;width:min(420px,92vw);background:var(--vbg-elev);border:1px solid rgba(255,215,0,.35);border-radius:14px;padding:14px 16px;box-shadow:0 12px 40px rgba(0,0,0,.4);font-size:13px;line-height:1.45;}
         #visio-room .perm-banner.on{display:block;}
         #visio-room .perm-banner strong{color:var(--vgold);}
@@ -834,7 +885,12 @@
             #visio-room .pj-level span,
             #visio-room .filmstrip .tile .name .nm{transition-duration:.01ms;}
             #visio-room .ctrl:hover:not(:disabled){transform:none;}
+            /* ⚠️ La bulle ne VOYAGE plus, mais elle ne disparaît pas : c'est la
+               seule trace d'une réaction, et `animation:none` la laisserait figée
+               sur la scène pour toujours. Elle se montre, puis s'efface sur place. */
+            #visio-room .reac-bulle{animation:vreacFixe 3.6s linear forwards;}
         }
+        @@keyframes vreacFixe{0%{opacity:0;}8%{opacity:1;}72%{opacity:1;}100%{opacity:0;}}
     </style>
 
     <div id="visio-room" data-role="{{ $liveKit['role'] }}">
@@ -892,6 +948,11 @@
                             <div class="pip-dropzone" id="pipDropzone">↑ Glisser vers le haut pour fermer</div>
                         </div>
                     </div>
+                    {{-- ⚠️ `aria-hidden` : une réaction est un applaudissement, pas une
+                         prise de parole. Énoncées une à une, vingt bulles noieraient le
+                         lecteur d'écran et couvriraient le bandeau d'état. Qui veut dire
+                         quelque chose lève la main - celle-là est annoncée, et listée. --}}
+                    <div class="reac-layer" id="reacLayer" aria-hidden="true"></div>
                 </div>
                 <div class="filmstrip-wrap" id="filmstripWrap">
                     <button type="button" class="filmstrip-toggle" id="filmstripToggle">
@@ -996,6 +1057,13 @@
             <button type="button" class="ctrl hand" id="btnHand" title="Lever la main" data-nom="Main" disabled>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 12V4.5a1.5 1.5 0 0 1 3 0V12"/><path d="M14 12V6.5a1.5 1.5 0 0 1 3 0V14a6 6 0 0 1-6 6a6 6 0 0 1-5.2-3"/><path d="M8 13v2a2 2 0 0 1-4 0v-2.5A1.5 1.5 0 0 1 7 12.5V13"/></svg>
             </button>
+            {{-- Réagir : la seule façon pour l'assistance de dire quelque chose sans
+                 couper la parole. Voisin de « Main » parce que c'est la même
+                 intention, à deux intensités. --}}
+            <button type="button" class="ctrl" id="btnReac" title="Réagir" data-nom="Réagir"
+                    aria-haspopup="true" aria-expanded="false" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/><path d="M9 9.5h.01"/><path d="M15 9.5h.01"/></svg>
+            </button>
             <button type="button" class="ctrl" id="btnLayout" title="Disposition" data-nom="Vue">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z"/></svg>
             </button>
@@ -1041,6 +1109,10 @@
             <button type="button" data-share="browser">Onglet du navigateur</button>
             <button type="button" data-share="stop" id="shareStopBtn" style="display:none;color:#fda4af;">Arrêter le partage</button>
         </div>
+        {{-- Les emojis sont ceux que le serveur connaît déjà (MeetingMessage::EMOJIS) :
+             une seule liste pour le fil et pour la scène, et le récepteur s'y
+             tient (le canal de données est public). --}}
+        <div class="menu reac-menu" id="reacMenu" role="group" aria-label="Réagir"></div>
         <div class="menu more-sheet" id="moreSheet">
             <h4>Plus d’options</h4>
             <div class="more-slot" id="moreSlot"></div>

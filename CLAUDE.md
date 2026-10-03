@@ -557,6 +557,45 @@ paiement (`pay`), inscription à une formation.
     `MeetingProviderRegistry` retombe seul sur Jitsi public quand ce défaut n'est pas
     configuré. Le forcer en base écraserait la configuration du site - c'est ce qui
     masquait LiveKit une fois ses identifiants renseignés.
+### Réactions de salle (bouton « Réagir »)
+
+Un emoji qui **monte sur l'écran de présentation**, chez tout le monde, avec le
+**nom de qui l'envoie**. Bouton voisin de « Main » : même intention, deux
+intensités. Purement client (canal de données LiveKit) - **rien n'est envoyé au
+serveur et rien n'est conservé** : la salle n'a pas à garder trace de qui a
+applaudi quoi.
+
+- ⚠️ **À ne pas confondre avec les réactions du fil** (`basculeReaction`,
+  `.chip`), qui se posent SUR un message, se comptent et survivent au
+  rechargement. Une réaction de salle est un applaudissement : elle passe.
+- ⚠️ **Le canal de données est public.** Le récepteur filtre l'emoji sur la
+  liste connue (`MeetingMessage::EMOJIS`, déjà exposée par `cfg.chat.emojis`) :
+  sans cela, n'importe quel connecté afficherait **en grand, chez tout le
+  monde**, le texte de son choix. `textContent`, jamais `innerHTML`.
+- ⚠️ **L'anti-rafale (`peutReagir`) s'applique des DEUX côtés** : chez
+  l'émetteur pour le bouton, chez le récepteur **par expéditeur** - un client
+  modifié ne se prive pas d'un verrou qui ne vivrait que dans sa propre page.
+  Il laisse passer une horloge qui recule : c'est un anti-rafale, pas un verrou.
+- ⚠️ **`REACTIONS_MAX` et `placeBulle` sont solidaires** : il y a exactement
+  autant de places que de bulles vivantes (8). Quand la suite reboucle avant le
+  plafond, deux bulles encore à l'écran se posent **exactement** l'une sur
+  l'autre. Le test énonce l'invariant.
+- ⚠️ **Mesuré au harnais visuel, pas estimé** : 42px entre deux rangées (la
+  bulle en fait 38 de haut), 26% d'écart entre deux places d'une même rangée
+  pour une bulle large d'au plus 25%, et `min-width:0` sur le nom - sans lui, un
+  élément de flex refuse de descendre sous la largeur de son texte et
+  `max-width` restait sans effet.
+- ⚠️ La couche vit dans **`.stage-main`**, pas dans la page : c'est elle qui
+  passe en plein écran. `pointer-events:none`, sinon elle avale les clics.
+- ⚠️ **Mouvement réduit** : la bulle ne voyage plus mais **ne disparaît pas** -
+  `animation:none` la laisserait figée pour toujours. Elle s'efface sur place,
+  et le retrait s'appuie de toute façon sur un **minuteur**, pas sur
+  `animationend` (qui n'arrive jamais si l'animation ne se joue pas).
+- `aria-hidden` sur la couche : vingt bulles énoncées une à une noieraient le
+  lecteur d'écran. Qui veut dire quelque chose **lève la main** - celle-là est
+  annoncée, et listée.
+- Tests : `meeting-pure.test.js` (6 cas).
+
 ### Visioconférence par édition (onglet « Visioconférence » de la fiche)
 
 Même patron que la **passerelle de paiement par édition** : le gestionnaire
