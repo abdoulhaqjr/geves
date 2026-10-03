@@ -1115,6 +1115,12 @@ export async function startFromConfig() {
             p.appendChild(b);
         });
         el.appendChild(p);
+        // ⚠️ MESURÉ, et non déduit du rang du message : ce qui décide est le
+        // DÉFILEMENT du fil, pas la place du message dedans. Posé au-dessus par
+        // défaut - jamais sous le doigt - il ne bascule que dans le cas où le
+        // cadre du fil le rognerait.
+        const fil = $('chatLog');
+        if (fil && p.getBoundingClientRect().top < fil.getBoundingClientRect().top) p.classList.add('bas');
     }
 
     async function basculeReaction(uid, emoji) {
@@ -2023,7 +2029,34 @@ export async function startFromConfig() {
     // Un clic sur le voile, ou Échap, annulent : la sortie la plus sûre est
     // toujours celle qui ne fait rien.
     $('vModal')?.addEventListener('click', (e) => { if (e.target === $('vModal') && repondModal) repondModal(false); });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && repondModal) repondModal(false); });
+    /**
+     * Échap, du plus intérieur au plus extérieur.
+     *
+     * ⚠️ Il ne fermait QUE la boîte de confirmation : un menu d'arrière-plan, la
+     * feuille « Plus d'options » ou le tiroir ouvert par-dessus les visages se
+     * refermaient à la souris, et seulement à la souris. L'ordre compte : on ne
+     * referme pas le panneau de quelqu'un qui voulait fermer un menu.
+     */
+    const MENUS = ['bgMenu', 'shareMenu', 'volPanel', 'moreSheet'];
+    document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        if (repondModal) { repondModal(false); return; }
+
+        const choix = document.querySelector('#visio-room .picker');
+        if (choix) { choix.remove(); return; }
+
+        const ouverts = MENUS.map($).filter((m) => m && m.classList.contains('open'));
+        if (ouverts.length) {
+            ouverts.forEach((m) => m.classList.remove('open'));
+            $('btnMore')?.setAttribute('aria-expanded', 'false');
+
+            return;
+        }
+        if (reponseA) { annuleReponse(); return; }
+        // Le tiroir n'est une couche par-dessus la scène qu'en dessous de 900px :
+        // au-dessus, il fait partie de la page et Échap n'a pas à l'escamoter.
+        if (ETROIT.matches && $('sidePanel')?.classList.contains('open')) basculePanneau(false);
+    });
     $('localMic')?.addEventListener('click', (e) => { e.stopPropagation(); basculeMicro('local'); });
     $('btnReconnect')?.addEventListener('click', reconnecte);
     $('btnLeave').addEventListener('click', leave);

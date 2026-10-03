@@ -557,6 +557,27 @@ paiement (`pay`), inscription à une formation.
     `MeetingProviderRegistry` retombe seul sur Jitsi public quand ce défaut n'est pas
     configuré. Le forcer en base écraserait la configuration du site - c'est ce qui
     masquait LiveKit une fois ses identifiants renseignés.
+- **Ce que la salle doit ÉNONCER et épargner** (audit visuel, troisième lot) :
+  - **`prefers-reduced-motion`** était ignoré dans la salle, alors que le reste du
+    projet le respecte (`ukc.css`, `admin.css`, `public.css`). Deux animations
+    tournaient **en boucle** pendant toute une séance : le halo du bouton
+    d'enregistrement et la pastille d'état. ⚠️ Rien n'est caché, seul le mouvement
+    s'arrête : le rouge et le mot « REC » disent l'enregistrement, le texte à côté
+    de la pastille dit ce qu'on attend. L'anneau reprend son contour entier, un
+    anneau amputé n'ayant plus de sens une fois immobile.
+  - **Ce que la salle dit à voix haute** : `role="status"` sur l'infobulle et sur
+    l'état de connexion, `role="alert"` sur le bandeau de reprise - perdre la salle
+    interrompt ce qu'on faisait, une coupure de micro décidée par le modérateur
+    non. « Votre micro a été coupé » ne parvenait à personne qui ne regarde pas.
+  - **Échap ferme ce qui est ouvert**, du plus intérieur au plus extérieur :
+    confirmation, choix de réaction, menus, réponse en cours, puis le tiroir
+    (**sous 900px seulement** : au-dessus il fait partie de la page). Il ne fermait
+    que la confirmation. ⚠️ L'ordre est la règle : on ne referme pas le panneau de
+    quelqu'un qui voulait fermer un menu.
+  - ⚠️ **Le choix de réaction n'était PAS rogné sur le premier message** comme
+    l'annonçait l'audit : les 14px de marge du fil l'absorbent. Le vrai cas,
+    mesuré, est un fil **remonté** où le bord haut d'un message affleure celui du
+    panneau. D'où une mesure dans `ouvreChoixReaction`, et non un comptage.
 - **Ce que la salle doit DISTINGUER** (audit visuel, second lot) :
   - **Une teinte par personne**, tirée de son nom (`teinteDuNom`). Les pastilles
     portaient toutes le même dégradé : huit caméras fermées, huit disques

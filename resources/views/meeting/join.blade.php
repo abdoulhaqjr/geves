@@ -283,10 +283,17 @@
         #visio-room .chat-msg .acts-msg button{border:none;border-radius:50px;background:rgba(255,255,255,.1);
             color:var(--vmuted);font-size:10.5px;font-weight:700;padding:3px 8px;}
         #visio-room .chat-msg .acts-msg button:hover{color:var(--vtext);background:rgba(255,255,255,.18);}
-        /* Choix de la réaction : au-dessus du message, jamais sous le doigt. */
+        /* Choix de la réaction : au-dessus du message, jamais sous le doigt.
+           ⚠️ Sauf quand il n'y a rien au-dessus. Sur le PREMIER message, les 14px de
+           marge du fil l'absorbent - mesuré : il ne dépasse pas. Mais sur un fil
+           remonté, un message dont le bord haut affleure celui du panneau reste
+           parfaitement lisible - on clique donc « Réagir » dessus - tandis que le
+           choix, lui, part au-dessus du cadre et se fait rogner.
+           D'où une MESURE dans ouvreChoixReaction, et non un comptage de messages. */
         #visio-room .chat-msg .picker{position:absolute;top:-6px;right:6px;z-index:40;display:flex;gap:2px;
             background:var(--vbg-elev);border:1px solid var(--vborder);border-radius:50px;padding:3px 5px;
             box-shadow:0 10px 28px rgba(0,0,0,.45);}
+        #visio-room .chat-msg .picker.bas{top:auto;bottom:-6px;}
         #visio-room .chat-msg .picker button{border:none;background:transparent;font-size:16px;line-height:1;
             padding:3px 4px;border-radius:50%;}
         #visio-room .chat-msg .picker button:hover{background:rgba(255,255,255,.14);}
@@ -630,6 +637,27 @@
             #visio-room .filmstrip-toggle{padding:5px 12px;}
             #visio-room .filmstrip-wrap .filmstrip{padding:0 12px 8px;}
         }
+
+        /* ===================== Mouvement réduit =====================
+           ⚠️ Deux animations tournaient EN BOUCLE pendant toute une séance : le halo
+           du bouton d'enregistrement et la pastille de l'état de connexion. Le reste
+           du projet respecte ce réglage (ukc.css, admin.css, public.css) ; la salle,
+           non - et c'est elle qu'on regarde deux heures d'affilée.
+           L'information ne tient à aucune des deux : le rouge et le mot « REC »
+           disent l'enregistrement, et le texte à côté de la pastille dit ce qu'on
+           attend. Rien n'est donc caché, seul le mouvement s'arrête. */
+        @@media (prefers-reduced-motion: reduce) {
+            #visio-room .ctrl.rec.active,#visio-room .rec-badge .dot,
+            #visio-room .v-status::before{animation:none;}
+            /* Un anneau amputé de son quart ne veut plus rien dire une fois immobile :
+               il reprend son contour entier. */
+            #visio-room .v-status::before{border-color:rgba(199,209,230,.6);}
+            /* Le tiroir s'ouvre, il ne voyage plus. */
+            #visio-room .side,#visio-room .side-scrim,#visio-room .v-toast,#visio-room .tile,
+            #visio-room .ctrl,#visio-room .pip-resize,#visio-room .side-grip::before,
+            #visio-room .chat-msg .acts-msg,#visio-room .v-btn{transition-duration:.01ms;}
+            #visio-room .ctrl:hover:not(:disabled){transform:none;}
+        }
     </style>
 
     <div id="visio-room" data-role="{{ $liveKit['role'] }}">
@@ -833,12 +861,15 @@
                 </div>
             </div>
         </div>
-        <div class="v-regain" id="reconnectBar">
+        <div class="v-regain" id="reconnectBar" role="alert">
             <span id="reconnectText">La connexion à la salle a été perdue.</span>
             <button type="button" class="v-btn blue sm" id="btnReconnect">Reconnecter</button>
         </div>
-        <div class="v-status" id="lkStatus">Connexion à la salle…</div>
-        <div class="v-toast" id="toast"></div>
+        {{-- ⚠️ `role="status"` : « Votre micro a été coupé par le modérateur » ne
+             parvenait à personne qui ne regarde pas l'écran. Le bandeau de reprise,
+             lui, est une `alert` : perdre la salle interrompt ce qu'on faisait. --}}
+        <div class="v-status" id="lkStatus" role="status">Connexion à la salle…</div>
+        <div class="v-toast" id="toast" role="status" aria-live="polite"></div>
     </div>
 
     <script type="application/json" id="lk-config">@json($liveKit)</script>
