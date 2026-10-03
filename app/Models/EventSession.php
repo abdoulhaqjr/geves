@@ -294,4 +294,22 @@ class EventSession extends Model implements Meetable
     {
         return $this->attendances()->exists();
     }
+
+    /**
+     * Inscription de ce compte sur l'édition de la séance, portée dans l'identité
+     * LiveKit : c'est elle qui permet de reconnaître un connecté dans la salle.
+     */
+    protected function meetingParticipantId(?User $account): ?int
+    {
+        if (! $account) {
+            return null;
+        }
+
+        $id = Participant::where('edition_id', $this->edition_id)
+            ->where(fn ($q) => $q->where('user_id', $account->id)
+                ->orWhereRaw('LOWER(email) = ?', [mb_strtolower((string) $account->email)]))
+            ->value('id');
+
+        return $id !== null ? (int) $id : null;
+    }
 }

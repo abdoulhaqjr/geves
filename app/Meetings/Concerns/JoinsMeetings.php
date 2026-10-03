@@ -89,7 +89,10 @@ trait JoinsMeetings
 
         return [
             'url' => (string) config('meetings.livekit.url'),
-            'token' => $provider->token($this, $role, $name),
+            // ⚠️ L'inscription voyage dans l'IDENTITÉ LiveKit, pas dans le nom
+            // affiché : celui-ci se change depuis la salle, et la présence ne peut
+            // pas dépendre de ce que quelqu'un a tapé dans un champ.
+            'token' => $provider->token($this, $role, $name, $this->meetingParticipantId($account)),
             'userName' => $name,
             'canPublish' => in_array($role, [MeetingRole::Moderator, MeetingRole::Presenter], true),
             'role' => match ($role) {
@@ -105,5 +108,16 @@ trait JoinsMeetings
     private function meetingDisplayName(?User $account, bool $isStaff, ?string $displayName): string
     {
         return $displayName ?: ($isStaff ? 'Organisation' : (string) ($account?->name ?: 'Invité'));
+    }
+
+    /**
+     * Inscription (`participants.id`) de ce compte sur l'objet, quand la notion a
+     * un sens. Sert à reconnaître un connecté dans la salle sans se fier à son nom
+     * d'affichage. Null par défaut : un objet `Meetable` n'a pas forcément de
+     * liste d'inscrits (une formation a la sienne, et ne pointe pas de présence).
+     */
+    protected function meetingParticipantId(?User $account): ?int
+    {
+        return null;
     }
 }

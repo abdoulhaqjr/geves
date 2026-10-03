@@ -394,6 +394,87 @@ export async function startFromConfig() {
         finally { blurState.loading = false; if (btn) btn.disabled = false; }
     }
 
+    // ---- Présence tenue DANS la salle (modérateur / rapporteur) ----
+    // ⚠️ Faire l'aller-retour vers la page de présence obligeait à quitter la
+    // séance au moment précis où l'on regarde les gens. L'onglet n'apparaît que
+    // si le serveur a donné les adresses (cfg.presence) : c'est lui qui décide
+    // qui a le droit de pointer, pas le navigateur.
+    var presenceRows = [];
+    var presenceTimer = null;
+
+    function presenceLabel(st) {
+        return st === 'present' ? 'Présent' : st === 'absent' ? 'Absent' : st === 'excused' ? 'Excusé' : '';
+    }
+
+    function renderPresence(data) {
+        var list = $('presenceList'), counts = $('presenceCounts');
+        if (!list) return;
+
+        var c = data.counts || {};
+        counts.innerHTML = '<span>Présents <b>' + (c.present || 0) + '</b></span>'
+            + '<span>Absents <b>' + (c.absent || 0) + '</b></span>'
+            + '<span>Excusés <b>' + (c.excused || 0) + '</b></span>'
+            + '<span>Attendus <b>' + (c.expected || 0) + '</b></span>';
+
+        if (!presenceRows.length) {
+            list.innerHTML = '<div class="pr-empty">Aucune communication programmée dans cette séance : il n’y a personne à pointer.</div>';
+            return;
+        }
+
+        list.innerHTML = presenceRows.map(function (r) {
+            // ⚠️ « En salle » n'est affiché que si LiveKit a su répondre : on ne
+            // laisse pas croire que personne n'est là quand on ne sait pas.
+            var salle = (data.roomKnown && r.inRoom) ? ' · <span class="in-room">● En salle</span>' : '';
+            var auto = r.auto ? ' · entré en visio' : '';
+            var acts = ['present', 'absent', 'excused'].map(function (st) {
+                return '<button type="button" data-id="' + r.id + '" data-st="' + st + '"'
+                    + (r.status === st ? ' class="on"' : '') + '>' + presenceLabel(st) + '</button>';
+            }).join('');
+
+            return '<div class="pr-item"><div class="nm">' + r.name + '</div>'
+                + '<div class="meta">' + r.role + salle + auto + '</div>'
+                + (data.canWrite ? '<div class="pr-acts">' + acts + '</div>' : '')
+                + '</div>';
+        }).join('');
+
+        list.querySelectorAll('.pr-acts button').forEach(function (b) {
+            b.addEventListener('click', function () {
+                var id = b.getAttribute('data-id');
+                var st = b.getAttribute('data-st');
+                var row = presenceRows.filter(function (r) { return String(r.id) === String(id); })[0];
+                // Recliquer le même verdict le retire : c'est le moyen de défaire
+                // une erreur sans quitter la salle.
+                markPresence(id, (row && row.status === st) ? '' : st);
+            });
+        });
+    }
+
+    async function loadPresence() {
+        if (!cfg.presence) return;
+        try {
+            const res = await fetch(cfg.presence.list, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+            if (!res.ok) return;
+            const data = await res.json();
+            presenceRows = data.rows || [];
+            renderPresence(data);
+        } catch (e) { /* salle d'abord : une présence injoignable ne casse pas la visio */ }
+    }
+
+    async function markPresence(id, status) {
+        if (!cfg.presence) return;
+        try {
+            const res = await fetch(cfg.presence.mark, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrf, 'Content-Type': 'application/json', Accept: 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ participant_id: id, status: status }),
+            });
+            if (!res.ok) { toast('Pointage refusé'); return; }
+            toast(status ? 'Présence enregistrée' : 'Pointage retiré');
+            await loadPresence();
+        } catch (e) { toast('Pointage indisponible'); }
+    }
+
     // ---- Enregistrement (Egress serveur) ----
     async function toggleRecording() {
         if (state.role !== 'moderator' || !cfg.egress) return;
@@ -595,6 +676,8 @@ export async function startFromConfig() {
         const id = b.getAttribute('data-side');
         $('panelChat').classList.toggle('active', id === 'chat'); $('panelPeople').classList.toggle('active', id === 'people');
         const pc = $('panelComms'); if (pc) pc.classList.toggle('active', id === 'comms'); if (id === 'comms') refreshComms();
+        const pp = $('panelPresence'); if (pp) pp.classList.toggle('active', id === 'presence');
+        if (id === 'presence') loadPresence();
     }));
     $('btnToggleSide').addEventListener('click', () => { const m = $('mainLayout'); m.classList.toggle('side-closed'); $('sidePanel').classList.toggle('open'); });
     // Volume / son
@@ -613,12 +696,24 @@ export async function startFromConfig() {
         if (sm && !sm.contains(e.target) && !$('btnScreen').contains(e.target)) sm.classList.remove('open');
         if (vp && !vp.contains(e.target) && !$('btnSpeaker').contains(e.target)) vp.classList.remove('open');
     });
-    window.addEventListener('beforeunload', () => { try { if (room) room.disconnect(); } catch (e) {} });
+    window.addEventListener('beforeunload', () => { try { if (presenceTimer) clearInterval(presenceTimer); } catch (e) {} try { if (room) room.disconnect(); } catch (e) {} });
 
     // ============ Démarrage ============
     $('localName').textContent = state.name; $('localAvatar').textContent = initials(state.name); $('localRole').textContent = 'Vous';
     people = [{ name: state.name, role: state.role, hand: false, screen: false, id: 'local' }];
     updateModUi(); refreshPeople(); refreshComms();
+    // L'onglet Présence n'existe que pour qui a le droit de pointer : c'est le
+    // serveur qui le dit en donnant (ou non) les adresses.
+    if (cfg.presence) {
+        const tab = $('tabPresence'); if (tab) tab.style.display = '';
+        const lien = $('presencePage'); if (lien) lien.href = cfg.presence.page;
+        loadPresence();
+        // Rafraîchissement discret : c'est ce qui fait apparaître « En salle »
+        // quand quelqu'un arrive, sans que le modérateur ait à recharger.
+        presenceTimer = setInterval(() => {
+            if ($('panelPresence')?.classList.contains('active')) loadPresence();
+        }, 20000);
+    }
     showPresenterInfo(canPublish() ? state.name : 'Présentateur', 'Activez la caméra ou partagez votre écran');
     addChat('Système', 'Bienvenue dans la salle « ' + roomName + ' ».');
     await connect();

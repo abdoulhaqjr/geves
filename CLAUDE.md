@@ -553,9 +553,10 @@ paiement (`pay`), inscription à une formation.
     entiers du volume se tiennent **à distance**, ce qui donne le volume de **créneaux en
     visio** (~44). Cérémonies en visibilité **publique** (seul endroit qui exerce
     `MeetingVisibility::Public`), ateliers réservés aux inscrits.
-    ⚠️ **`meeting_provider` est écrit en dur à `jitsi`** : `meetings.default` vaut
-    « livekit », qui **sans identifiants d'API n'ouvre aucune salle**. Jitsi public marche
-    sans configuration - une démo doit s'ouvrir pour de vrai.
+    ⚠️ **Le seeder n'impose AUCUN `meeting_provider`** : il suit `meetings.default`, et
+    `MeetingProviderRegistry` retombe seul sur Jitsi public quand ce défaut n'est pas
+    configuré. Le forcer en base écraserait la configuration du site - c'est ce qui
+    masquait LiveKit une fois ses identifiants renseignés.
 - **Logos de la plateforme** : réglables dans **Réglages › Général**, servis par
   **`App\Support\Branding`**. **Deux formes**, chacune avec une version pour
   fonds sombres **facultative** :
@@ -979,14 +980,32 @@ table `session_attendances`, modèle `SessionAttendance`). Entrées depuis
     a aucune inscription à laquelle rattacher une présence.
   - Une séance **sans communication** (plénière, cérémonie) affiche un état vide
     qui l'explique - elle ne retombe pas sur la liste de l'édition.
-- **Entrer dans la visio VAUT présence** (`App\Support\SessionPresence`, appelé par
-  `MeetingController::join()`) : le modérateur n'a pas à pointer à la main
-  quelqu'un qui est déjà dans la salle. Même cadrage (attendus de la séance) et
-  mêmes bornes (séance commencée, non figée) que le pointage manuel.
-  - ⚠️ **Ce qu'on enregistre est une ENTRÉE depuis GEVES, pas une occupation de la
-    salle en temps réel** : Jitsi public n'expose aucune API de liste de
-    participants, et LiveKit ne le ferait qu'avec des identifiants d'API. D'où le
-    libellé « Entré en visio » - on ne fait pas dire à une donnée plus qu'elle ne sait.
+- **La présence se tient AUSSI depuis la salle** (onglet « Présence » du lecteur,
+  `SessionPresenceApiController` + `resources/js/meeting.js`) : l'aller-retour vers
+  `/compte/seances/{id}/presence` obligeait à quitter la séance au moment précis
+  où l'on regarde les gens. ⚠️ **Les règles ne sont pas redéfinies là-bas** : qui
+  peut pointer (`SessionPresence::canManage()`), quand (`::open()`) et sur qui
+  (`SessionRoster`) ont **une seule** implémentation - trois endroits qui
+  décideraient chacun de leur côté finiraient par diverger. L'onglet n'apparaît que
+  si le serveur a donné les adresses : c'est lui qui décide, pas le navigateur.
+- **Entrer dans la visio VAUT présence** (`App\Support\SessionPresence`), par deux
+  chemins complémentaires : `MeetingController::join()` au passage de la porte, et
+  **`::markConnected()` sur l'occupation RÉELLE de la salle** lue par
+  `App\Meetings\LiveKitRoom` (API LiveKit `ListParticipants`), rafraîchie tant que
+  le panneau est ouvert. Même cadrage et mêmes bornes que le pointage manuel.
+  - ⚠️ **Le rapprochement passe par l'IDENTITÉ LiveKit**, `ukp-{participant}-{aléa}`
+    (`LiveKitRoom::identityFor()`), **jamais par le nom affiché** : celui-ci se
+    change depuis la salle. L'aléa est obligatoire - LiveKit refuse deux connexions
+    de même identité, et on ouvre la salle sur deux appareils.
+  - ⚠️ **Le jeton d'admin doit nommer la salle EXACTE** : `room: '*'` est refusé
+    (401 « permissions denied »). Et un **404 « room does not exist » n'est pas une
+    panne** : LiveKit ne crée la salle qu'à la première connexion, donc 404 = salle
+    vide (`[]`), tandis qu'une vraie panne rend `null` = **on ne sait pas**. Le
+    panneau n'affiche « En salle » que si l'information est connue : ne jamais
+    laisser croire que personne n'est là quand on l'ignore.
+  - ⚠️ Sans LiveKit configuré, il ne reste que l'entrée depuis GEVES : **Jitsi
+    public n'expose aucune API de liste de participants**. D'où le libellé « Entré
+    en visio » - on ne fait pas dire à une donnée plus qu'elle ne sait.
   - ⚠️ **Un verdict déjà posé n'est JAMAIS écrasé.** Quelqu'un a regardé la salle ;
     un clic sur « Rejoindre » ne vaut pas contre ce constat, et faire repasser un
     « absent » à « présent » dans le dos du modérateur lui ferait signer un chiffre

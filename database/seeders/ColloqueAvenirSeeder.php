@@ -237,10 +237,10 @@ class ColloqueAvenirSeeder extends Seeder
                     'session_day' => $sStart->toDateString(),
                     'starts_at' => $sStart,
                     'ends_at' => $sEnd,
-                    // ⚠️ Fournisseur explicite : `meetings.default` vaut « livekit »,
-                    // sans identifiants d'API en développement. Jitsi public ouvre
-                    // une vraie salle sans rien configurer.
-                    'meeting_provider' => 'jitsi',
+                    // ⚠️ Fournisseur NON forcé : il suit `meetings.default`. Le
+                    // registre retombe seul sur Jitsi public si le défaut n'est pas
+                    // configuré - forcer ici écraserait la configuration du site.
+                    'meeting_provider' => null,
                     'meeting_status' => $meetingStatus,
                     'meeting_visibility' => 'participants',
                     'recording_url' => $recording,
@@ -505,10 +505,10 @@ class ColloqueAvenirSeeder extends Seeder
                     'session_day' => $begin->toDateString(),
                     'starts_at' => $begin,
                     'ends_at' => $finish,
-                    // ⚠️ Fournisseur explicite : `meetings.default` vaut « livekit »,
-                    // qui sans identifiants d'API n'ouvre aucune salle. Jitsi public
-                    // marche sans configuration - une démo doit s'ouvrir vraiment.
-                    'meeting_provider' => 'jitsi',
+                    // ⚠️ Fournisseur NON forcé : il suit `meetings.default`, et le
+                    // registre retombe seul sur Jitsi public si ce défaut n'est pas
+                    // configuré - forcer ici écraserait la configuration du site.
+                    'meeting_provider' => null,
                     'meeting_status' => $meeting,
                     'meeting_visibility' => $visibility,
                     'moderator_name' => $animator,

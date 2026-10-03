@@ -5,8 +5,8 @@ namespace App\Meetings\Providers;
 use App\Enums\MeetingRole;
 use App\Meetings\Contracts\Meetable;
 use App\Meetings\Contracts\MeetingProvider;
+use App\Meetings\LiveKitRoom;
 use Firebase\JWT\JWT;
-use Illuminate\Support\Str;
 
 /**
  * LiveKit - SFU WebRTC (Cloud ou self-host). L'accès à une salle se fait avec un
@@ -55,8 +55,13 @@ class LiveKitProvider implements MeetingProvider
         ]);
     }
 
-    /** Token d'accès LiveKit (JWT HS256) avec les droits dérivés du rôle. */
-    public function token(Meetable $session, MeetingRole $role, ?string $displayName = null): string
+    /**
+     * Token d'accès LiveKit (JWT HS256) avec les droits dérivés du rôle.
+     *
+     * `$participantId` est encodé dans l'**identité** de la connexion, ce qui
+     * permet ensuite de reconnaître qui est dans la salle ({@see LiveKitRoom}).
+     */
+    public function token(Meetable $session, MeetingRole $role, ?string $displayName = null, ?int $participantId = null): string
     {
         $now = time();
         $key = (string) config('meetings.livekit.api_key');
@@ -64,8 +69,9 @@ class LiveKitProvider implements MeetingProvider
         $ttl = (int) config('meetings.livekit.token_ttl', 7200);
 
         $name = $displayName ?: 'Invité';
-        // Identité unique par connexion (LiveKit refuse les doublons d'identité).
-        $identity = Str::slug($name).'-'.Str::lower(Str::random(6));
+        // Identité unique par connexion (LiveKit refuse les doublons d'identité),
+        // porteuse de l'inscription quand on la connaît.
+        $identity = LiveKitRoom::identityFor($participantId, $name);
 
         // Présentateur et modérateur peuvent diffuser ; le public s'abonne (écoute/
         // regarde). Seul le modérateur administre la salle.

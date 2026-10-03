@@ -64,6 +64,7 @@ use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Public\DeroulementController;
 use App\Http\Controllers\Public\GescoController;
 use App\Http\Controllers\SessionEngagementController;
+use App\Http\Controllers\SessionPresenceApiController;
 use App\Http\Middleware\StampAccountSession;
 use Illuminate\Support\Facades\Route;
 
@@ -96,6 +97,11 @@ Route::get('/session/{session}/visio', [MeetingController::class, 'join'])->name
 // Enregistrement (LiveKit Egress) - réservé au modérateur (contrôle dans le contrôleur).
 Route::post('/session/{session}/egress/start', [EgressController::class, 'start'])->name('session.egress.start');
 Route::post('/session/{session}/egress/stop', [EgressController::class, 'stop'])->name('session.egress.stop');
+
+// Présence tenue DEPUIS la salle de visio, sans quitter la séance (modérateur ou
+// rapporteur ; mêmes règles que la page /compte/seances/{id}/presence).
+Route::get('/session/{session}/presence.json', [SessionPresenceApiController::class, 'index'])->name('session.presence.list');
+Route::post('/session/{session}/presence', [SessionPresenceApiController::class, 'store'])->name('session.presence.mark');
 
 // Engagement live d'une séance (Q&A + sondages) - accès géré dans le contrôleur.
 Route::get('/session/{session}/echanges', [SessionEngagementController::class, 'page'])->name('session.engagement');

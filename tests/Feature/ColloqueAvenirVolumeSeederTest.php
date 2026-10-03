@@ -1,5 +1,6 @@
 <?php
 
+use App\Meetings\MeetingProviderRegistry;
 use App\Models\Edition;
 use App\Models\EventSession;
 use App\Models\Payment;
@@ -87,8 +88,10 @@ it('tient le colloque du 2 au 8 octobre 2026, sans jour vide', function () {
 });
 
 /**
- * ⚠️ Une démo de visioconférence qui n'ouvre aucune salle ne démontre rien :
- * `meetings.default` vaut « livekit », sans identifiants d'API en développement.
+ * ⚠️ Une démo de visioconférence qui n'ouvre aucune salle ne démontre rien. Mais
+ * le seeder ne doit PAS imposer de fournisseur : il suit `meetings.default`, et
+ * le registre retombe seul sur Jitsi public quand ce défaut n'est pas configuré.
+ * Forcer ici écraserait la configuration du site.
  */
 it('programme des créneaux en visioconférence, sur des salles qui s’ouvrent', function () {
     $this->seed(ColloqueAvenirSeeder::class);
@@ -103,8 +106,11 @@ it('programme des créneaux en visioconférence, sur des salles qui s’ouvrent'
     }
     expect($visios->where('meeting_status', 'ended')->first()->recordingEmbedUrl())->not->toBeNull();
 
-    // Aucun repli silencieux sur un fournisseur non configuré.
-    expect($visios->where('meeting_provider', '!=', 'jitsi'))->toBeEmpty();
+    // Aucun fournisseur imposé en base : c'est la configuration qui décide.
+    expect($visios->filter(fn (EventSession $s) => filled($s->meeting_provider)))->toBeEmpty();
+
+    // Et la salle s'ouvre quand même : le registre résout un fournisseur.
+    expect(app(MeetingProviderRegistry::class)->for($visios->first())->isAvailable())->toBeTrue();
 
     // Une cérémonie est suivable sans être inscrit.
     expect($visios->where('type', 'plenary')->where('meeting_visibility', 'public'))->not->toBeEmpty();

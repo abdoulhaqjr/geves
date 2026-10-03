@@ -319,9 +319,9 @@ class ColloqueAvenirVolumeSeeder extends Seeder
                         'ordre' => $a * 10 + $b,
                         // Deux blocs entiers se tiennent à distance : ce sont eux qui
                         // portent le VOLUME de créneaux en visio (les communications
-                        // y sont planifiées comme ailleurs, cf. schedule()). Jitsi en
-                        // dur, « livekit » par défaut n'ayant pas d'identifiants ici.
-                        'meeting_provider' => $visio ? 'jitsi' : null,
+                        // y sont planifiées comme ailleurs, cf. schedule()).
+                        // ⚠️ Fournisseur NON forcé : il suit `meetings.default`.
+                        'meeting_provider' => null,
                         'meeting_status' => $visio ? 'scheduled' : 'none',
                         'meeting_visibility' => 'participants',
                     ]

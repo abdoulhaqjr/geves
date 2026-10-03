@@ -44,6 +44,15 @@ class MeetingController extends Controller
             $extra = [
                 'communications' => $session->scheduledCommunications(),
                 'canRecord' => $role === MeetingRole::Moderator && app(LiveKitEgress::class)->isConfigured(),
+                // ⚠️ Présence TENUE DANS LA SALLE : l'aller-retour vers la page de
+                // présence obligeait à quitter la séance au moment précis où l'on
+                // regarde les gens. Même règle que la page sur qui peut pointer -
+                // le staff anime la salle mais ne tient pas la présence.
+                'presence' => SessionPresence::canManage($session, $account) ? [
+                    'list' => route('session.presence.list', $session),
+                    'mark' => route('session.presence.mark', $session),
+                    'page' => route('account.attendance.edit', $session),
+                ] : null,
                 'egress' => [
                     'start' => route('session.egress.start', $session),
                     'stop' => route('session.egress.stop', $session),

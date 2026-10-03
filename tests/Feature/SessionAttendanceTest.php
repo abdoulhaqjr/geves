@@ -1,5 +1,6 @@
 <?php
 
+use App\Meetings\LiveKitRoom;
 use App\Models\Edition;
 use App\Models\EventSession;
 use App\Models\Participant;
@@ -8,6 +9,7 @@ use App\Models\SessionReport;
 use App\Models\Slot;
 use App\Models\Submission;
 use App\Models\User;
+use App\Support\SessionPresence;
 use Illuminate\Support\Str;
 
 // openEdition() -> tests/Pest.php
@@ -323,7 +325,8 @@ it('vaut présence réelle pour l’attestation de participation', function () {
  */
 it('porte présent automatiquement qui entre dans la visio', function () {
     [$edition, $session, $awa] = seanceAPointer('modvisio@example.tg');
-    $session->update(['meeting_status' => 'live', 'meeting_provider' => 'jitsi']);
+    // Pas de fournisseur imposé : le registre résout celui qui est configuré.
+    $session->update(['meeting_status' => 'live']);
 
     // Le compte d'Awa, auteur correspondant de la communication de la séance.
     $compte = officier('awa@example.tg');
@@ -407,6 +410,107 @@ it('ne pointe pas par la visio quand le rapport est validé', function () {
     $this->actingAs($compte, 'account')->get(route('session.meeting', $session));
 
     expect(SessionAttendance::where('participant_id', $awa->id)->exists())->toBeFalse();
+});
+
+/**
+ * ⚠️ Pointer DEPUIS la salle : l'aller-retour vers la page de présence obligeait
+ * à quitter la séance au moment précis où l'on regarde les gens.
+ */
+it('sert la liste de présence à la salle de visio', function () {
+    [, $session, $awa, $kofi] = seanceAPointer('modapi@example.tg');
+    $session->update(['meeting_status' => 'live']);
+
+    $reponse = $this->actingAs(officier('modapi@example.tg'), 'account')
+        ->getJson(route('session.presence.list', $session))
+        ->assertOk()
+        ->assertJsonPath('canWrite', true)
+        ->assertJsonPath('counts.expected', 2);
+
+    $noms = collect($reponse->json('rows'))->pluck('name')->all();
+    expect($noms)->toContain('Awa Kodjo')->toContain('Kofi Mensah');
+    expect($kofi->exists)->toBeTrue();
+    expect($awa->exists)->toBeTrue();
+});
+
+it('pointe depuis la salle, et retire sur un verdict vide', function () {
+    [, $session, $awa] = seanceAPointer('modapi2@example.tg');
+    $session->update(['meeting_status' => 'live']);
+    $mod = officier('modapi2@example.tg');
+
+    $this->actingAs($mod, 'account')
+        ->postJson(route('session.presence.mark', $session), ['participant_id' => $awa->id, 'status' => 'present'])
+        ->assertOk()
+        ->assertJsonPath('counts.present', 1);
+
+    expect(SessionAttendance::where('participant_id', $awa->id)->value('source'))
+        ->toBe(SessionAttendance::SOURCE_MANUAL);
+
+    $this->actingAs($mod, 'account')
+        ->postJson(route('session.presence.mark', $session), ['participant_id' => $awa->id, 'status' => null])
+        ->assertOk();
+
+    expect(SessionAttendance::where('participant_id', $awa->id)->exists())->toBeFalse();
+});
+
+it('n’ouvre le panneau de la salle ni à un tiers ni sur un étranger à la séance', function () {
+    [$edition, $session, $awa] = seanceAPointer('modapi3@example.tg');
+    $session->update(['meeting_status' => 'live']);
+    $etranger = Participant::create([
+        'edition_id' => $edition->id, 'first_name' => 'Sans', 'last_name' => 'Rapport',
+        'email' => 'ailleurs@example.tg', 'role' => 'attendee',
+    ]);
+
+    // Un compte qui n'anime ni ne rapporte la séance.
+    $this->actingAs(officier('tiers@example.tg'), 'account')
+        ->getJson(route('session.presence.list', $session))->assertForbidden();
+
+    // Et le modérateur ne peut pas se prononcer sur quelqu'un hors de sa séance.
+    $this->actingAs(officier('modapi3@example.tg'), 'account')
+        ->postJson(route('session.presence.mark', $session), ['participant_id' => $etranger->id, 'status' => 'present'])
+        ->assertStatus(422);
+
+    expect(SessionAttendance::where('participant_id', $awa->id)->exists())->toBeFalse();
+});
+
+/**
+ * ⚠️ La version forte du pointage automatique : une connexion EN COURS à la
+ * salle, et non un simple passage par la porte. Un verdict déjà posé tient.
+ */
+it('porte présents les connectés de la salle, sans écraser un verdict', function () {
+    [, $session, $awa, $kofi] = seanceAPointer('modlk@example.tg');
+    $session->update(['meeting_status' => 'live']);
+
+    SessionAttendance::create([
+        'session_id' => $session->id, 'participant_id' => $kofi->id,
+        'status' => 'absent', 'source' => SessionAttendance::SOURCE_MANUAL,
+    ]);
+
+    $poses = SessionPresence::markConnected($session, [$awa->id, $kofi->id]);
+
+    expect($poses)->toBe(1);
+    expect(SessionAttendance::where('participant_id', $awa->id)->value('status'))->toBe('present');
+    expect(SessionAttendance::where('participant_id', $awa->id)->value('source'))
+        ->toBe(SessionAttendance::SOURCE_MEETING);
+    // Le constat du modérateur n'a pas bougé.
+    expect(SessionAttendance::where('participant_id', $kofi->id)->value('status'))->toBe('absent');
+});
+
+/**
+ * ⚠️ Le rapprochement « connecté dans la salle ↔ inscription » passe par
+ * l'IDENTITÉ LiveKit, jamais par le nom affiché : celui-ci se change depuis la
+ * salle, et la présence ne peut pas dépendre de ce que quelqu'un a tapé.
+ */
+it('encode l’inscription dans l’identité LiveKit, et sait la relire', function () {
+    $identite = LiveKitRoom::identityFor(42, 'Awa Kodjo');
+
+    expect(LiveKitRoom::participantIdFromIdentity($identite))->toBe(42);
+
+    // Deux connexions de la même personne ne portent pas la même identité :
+    // LiveKit refuse les doublons, et on ouvre la salle sur deux appareils.
+    expect(LiveKitRoom::identityFor(42, 'Awa Kodjo'))->not->toBe($identite);
+
+    // Un invité sans inscription ne se fait pas passer pour quelqu'un.
+    expect(LiveKitRoom::participantIdFromIdentity(LiveKitRoom::identityFor(null, 'Visiteur')))->toBeNull();
 });
 
 it('propose le pointage depuis les espaces modérateur et rapporteur', function () {

@@ -140,6 +140,23 @@
         #visio-room .share-menu button{display:flex;width:100%;align-items:center;gap:10px;padding:12px 14px;border:none;border-radius:10px;background:transparent;color:var(--vtext);font-weight:700;font-size:13.5px;text-align:left;}
         #visio-room .share-menu button:hover{background:rgba(255,255,255,.08);}
         #visio-room .share-menu .hint{font-size:11.5px;color:var(--vmuted);padding:8px 10px 4px;line-height:1.4;}
+        /* --- Présence tenue dans la salle (modérateur / rapporteur) --- */
+        #visio-room .presence-counts{display:flex;flex-wrap:wrap;gap:6px;padding:12px 14px 4px;}
+        #visio-room .presence-counts span{font-size:11.5px;font-weight:800;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.07);color:var(--vmuted);}
+        #visio-room .presence-counts span b{color:var(--vtext);}
+        #visio-room .presence-list{flex:1;overflow-y:auto;padding:8px 14px 0;display:flex;flex-direction:column;gap:8px;}
+        #visio-room .pr-item{background:var(--vbg-tile);border:1px solid var(--vborder);border-radius:12px;padding:10px 12px;}
+        #visio-room .pr-item .nm{font-weight:700;font-size:13.5px;}
+        #visio-room .pr-item .meta{font-size:11.5px;color:var(--vmuted);margin-top:2px;}
+        /* Qui est DANS la salle : l'information qui évite d'appeler quelqu'un déjà là. */
+        #visio-room .pr-item .in-room{color:#4ade80;font-weight:700;}
+        #visio-room .pr-acts{display:flex;gap:6px;margin-top:8px;}
+        #visio-room .pr-acts button{flex:1;padding:6px 4px;border-radius:8px;border:1px solid var(--vborder);background:transparent;color:var(--vmuted);font-size:11.5px;font-weight:700;cursor:pointer;}
+        #visio-room .pr-acts button:hover{color:var(--vtext);background:rgba(255,255,255,.06);}
+        #visio-room .pr-acts button.on[data-st=present]{background:#16a34a;border-color:#16a34a;color:#fff;}
+        #visio-room .pr-acts button.on[data-st=absent]{background:#dc2626;border-color:#dc2626;color:#fff;}
+        #visio-room .pr-acts button.on[data-st=excused]{background:var(--vgold);border-color:var(--vgold);color:#2b1f00;}
+        #visio-room .pr-empty{padding:16px 14px;font-size:12.5px;color:var(--vmuted);line-height:1.5;}
         #visio-room .vol-panel{display:none;position:absolute;bottom:92px;left:50%;transform:translateX(-50%);background:var(--vbg-elev);border:1px solid var(--vborder);border-radius:14px;padding:12px 16px;z-index:46;box-shadow:0 12px 40px rgba(0,0,0,.4);align-items:center;gap:10px;min-width:220px;}
         #visio-room .vol-panel.open{display:flex;}
         #visio-room .vol-panel label{font-size:12px;font-weight:700;color:var(--vmuted);}
@@ -214,6 +231,8 @@
                     <button type="button" class="active" data-side="chat">Chat</button>
                     <button type="button" data-side="people">Participants</button>
                     <button type="button" data-side="comms" id="tabComms" style="display:none;">Communicateurs</button>
+                    {{-- Onglet réservé au modérateur / rapporteur de la séance (cf. cfg.presence). --}}
+                    <button type="button" data-side="presence" id="tabPresence" style="display:none;">Présence</button>
                 </div>
                 <div class="side-panel active" id="panelChat">
                     <div class="chat-log" id="chatLog"></div>
@@ -226,6 +245,16 @@
                 <div class="side-panel" id="panelComms">
                     <div style="padding:12px 14px 0;font-size:12px;color:var(--vmuted);line-height:1.4;">Communications programmées de la session. Un seul présentateur à la fois.</div>
                     <div class="comm-list" id="commList"></div>
+                </div>
+                <div class="side-panel" id="panelPresence">
+                    <div style="padding:12px 14px 0;font-size:12px;color:var(--vmuted);line-height:1.4;">
+                        Présence des auteurs des communications de la séance. Les connectés sont repérés automatiquement.
+                    </div>
+                    <div class="presence-counts" id="presenceCounts"></div>
+                    <div class="presence-list" id="presenceList"></div>
+                    <div style="padding:10px 14px 14px;">
+                        <a class="v-btn sm" id="presencePage" href="#" target="_blank" rel="noopener">Ouvrir la page de présence</a>
+                    </div>
                 </div>
             </aside>
         </div>
