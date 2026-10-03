@@ -13,11 +13,18 @@
             display:flex;align-items:center;justify-content:space-between;padding:0 16px;gap:12px;}
         #visio-room .v-left{display:flex;align-items:center;gap:12px;min-width:0;}
         /* Le logo apporte sa propre forme : pas d'aplat derrière, et `contain`
-           pour ne jamais le déformer quel que soit le fichier téléversé. */
-        #visio-room .v-mark{width:32px;height:32px;border-radius:9px;object-fit:contain;flex-shrink:0;display:block;}
-        #visio-room .v-title{min-width:0;}
-        #visio-room .v-title strong{display:block;font-size:13.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-        #visio-room .v-title span{font-size:11.5px;color:var(--vmuted);}
+           pour ne jamais le déformer quel que soit le fichier téléversé.
+           ⚠️ Le cadre ROGNE légèrement (overflow + léger agrandissement) : les
+           fichiers de marque portent presque toujours une marge blanche cuite
+           dans l'image, qui faisait flotter un petit logo dans un grand carré.
+           Le grossissement reste modeste pour ne pas entamer un logo déjà cadré. */
+        #visio-room .v-mark{width:34px;height:34px;border-radius:9px;flex-shrink:0;overflow:hidden;display:block;}
+        #visio-room .v-mark img{width:100%;height:100%;object-fit:contain;display:block;transform:scale(1.16);}
+        #visio-room .v-title{min-width:0;display:flex;flex-direction:column;gap:0;}
+        /* Deux lignes qui se lisent comme un bloc : interlignes serrés, sinon le
+           sous-titre paraît appartenir à autre chose que le titre. */
+        #visio-room .v-title strong{display:block;font-size:13.5px;font-weight:800;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        #visio-room .v-title span{display:block;font-size:11.5px;line-height:1.2;color:var(--vmuted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
         #visio-room .v-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
         #visio-room .pill{font-size:11px;font-weight:700;padding:5px 10px;border-radius:50px;}
         #visio-room .pill.lk{background:rgba(34,62,164,.35);color:#c7d2fe;}
@@ -183,8 +190,10 @@
                      fond sombre : la barre de la salle est sombre. Un monogramme
                      « UK » écrit en dur ici faisait mentir le logo de la plateforme
                      partout ailleurs. --}}
-                <img src="{{ \App\Support\Branding::markWhite() }}" alt="{{ config('app.name') }}"
-                     @class(['v-mark', 'logo-auto-white' => \App\Support\Branding::whitensOnDark(\App\Support\Branding::MARK)])>
+                <span class="v-mark">
+                    <img src="{{ \App\Support\Branding::markWhite() }}" alt="{{ config('app.name') }}"
+                         @class(['logo-auto-white' => \App\Support\Branding::whitensOnDark(\App\Support\Branding::MARK)])>
+                </span>
                 <div class="v-title">
                     <strong id="roomTitle">{{ $liveKit['sessionLabel'] }}</strong>
                     <span id="roomMeta">{{ $liveKit['editionTitle'] }} · LiveKit</span>
