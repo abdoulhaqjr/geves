@@ -11,8 +11,9 @@ import {
 // à part, et sont les seules du fichier à être couvertes par des tests
 // (`meeting-pure.test.js`). Y déplacer une décision, c'est la rendre vérifiable.
 import {
-    grilleOptimale, heure, idSur, initials, mainsOrdonnees, metadonnee,
-    ordreRecevable as ordreAutorise, presenceLabel, rangsDesMains, roleLabel, texteCourt,
+    enBasDuFil, grilleOptimale, heure, idSur, idsDesParleurs, initials, mainsOrdonnees,
+    metadonnee, niveauReseau, ordreRecevable as ordreAutorise, presenceLabel, rangsDesMains,
+    roleLabel, texteCourt,
 } from './meeting-pure.js';
 
 // Objet compat pour réutiliser la logique de la maquette (LK.RoomEvent, LK.Track…).
@@ -135,7 +136,12 @@ export async function startFromConfig() {
         else if (el.tagName === 'AUDIO' || el.tagName === 'VIDEO') el.muted = !state.speakerOn;
         if (container.classList.contains('pip-bubble')) {
             el.removeAttribute('width'); el.removeAttribute('height');
-            el.style.cssText = 'position:absolute;top:50%;left:50%;width:100%;height:100%;transform:translate(-50%,-50%);object-fit:cover;border-radius:50%;';
+            // ⚠️ Le miroir est posé ICI et non dans la feuille de style : la vignette
+            // se centre par un `transform` écrit en style EN LIGNE, que rien
+            // d'extérieur ne peut compléter sans l'écraser entièrement.
+            const miroir = container.classList.contains('soi') ? ' scaleX(-1)' : '';
+            el.style.cssText = 'position:absolute;top:50%;left:50%;width:100%;height:100%;'
+                + 'transform:translate(-50%,-50%)' + miroir + ';object-fit:cover;border-radius:50%;';
         }
         container.appendChild(el);
         if (track.kind === LK.Track.Kind.Video || el.tagName === 'VIDEO') container.classList.add('has-video');
@@ -195,11 +201,22 @@ export async function startFromConfig() {
         clearMedia(pipEl); pipEl.remove(); pipEl = null; pipVisible = false;
         if (broadcast !== false && canPublish()) sendData({ type: 'pip_visibility', visible: false });
     }
+    /** Vrai si cette image est celle de SA caméra, et non d'un présentateur distant. */
+    function estMaCamera(track) {
+        const pub = room && room.localParticipant
+            && room.localParticipant.getTrackPublication(LK.Track.Source.Camera);
+
+        return !!(pub && pub.track && pub.track === track);
+    }
     function setPipCamera(track) {
         if (!track) { destroyPip(false); return; }
         if (pipVisible === false && !canPublish()) return;
         pipVisible = true;
         const b = ensurePip(); if (!b) return;
+        // ⚠️ La bulle porte TANTÔT sa propre caméra (quand on partage son écran),
+        // tantôt celle du présentateur distant. Seul son propre reflet se retourne,
+        // et la classe se pose AVANT l'image : c'est elle qui décide du miroir.
+        b.classList.toggle('soi', estMaCamera(track));
         clearMedia(b); attachTrack(track, b); b.classList.add('has-video');
         if (canPublish()) sendData({ type: 'pip_visibility', visible: true });
     }
@@ -347,7 +364,7 @@ export async function startFromConfig() {
 
     // ---- Scène (présentateur / écran) ----
     function showPresenterInfo(name, meta) {
-        const main = $('tileMain'); clearMedia(main); main.classList.remove('has-video', 'has-screen');
+        const main = $('tileMain'); clearMedia(main); main.classList.remove('has-video', 'has-screen', 'soi');
         $('mainAvatar').style.display = ''; $('mainAvatar').textContent = initials(name);
         $('mainName').textContent = name || 'Présentateur'; $('mainRole').textContent = 'Présentateur';
         const info = $('mainInfo');
@@ -357,13 +374,18 @@ export async function startFromConfig() {
     function showScreenOnPresenter(track, label) {
         const main = $('tileMain'); if (!main || !track) return;
         clearMedia(main); const info = $('mainInfo'); if (info) info.style.display = 'none';
+        // Un écran partagé n'est pas un reflet : retourné, son texte serait illisible.
+        main.classList.remove('soi');
         attachTrack(track, main); $('mainName').textContent = label || 'Présentateur'; $('mainRole').textContent = 'Partage d’écran';
         main.classList.add('is-presenter', 'has-video', 'has-screen'); updateLayoutClasses();
     }
     function focusPresenter(participant, track) {
         const main = $('tileMain'); if (!main || !track) return;
         clearMedia(main); const info = $('mainInfo'); if (info) info.style.display = 'none';
-        main.classList.remove('has-screen'); attachTrack(track, main);
+        main.classList.remove('has-screen');
+        // Sur la scène aussi, sa propre image est un reflet (cf. la feuille de style).
+        main.classList.toggle('soi', participant.identity === 'local');
+        attachTrack(track, main);
         $('mainName').textContent = participant.name || participant.identity;
         $('mainAvatar').textContent = initials(participant.name || participant.identity);
         $('mainRole').textContent = 'Présentateur'; main.classList.add('is-presenter', 'has-video');
@@ -559,6 +581,89 @@ export async function startFromConfig() {
     }
 
     /**
+     * Barres de réseau : DEUX dessins, et non un seul qu'on recolore.
+     *
+     * ⚠️ À 13 px, la couleur seule ne sépare pas « instable » de « perdu », et
+     * l'ambre des barres faibles est exactement celui de la main levée posée juste
+     * à côté. Le dessin porte donc le niveau lui-même : une barre allumée sur
+     * trois, ou le trait qui barre. C'est la règle déjà tenue pour le micro - deux
+     * glyphes, pas une teinte - et la seule qui vaille pour qui distingue mal les
+     * couleurs.
+     */
+    const ICONES_RESEAU = {
+        faible: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
+            + '<rect x="3" y="14" width="4" height="7" rx="1"/>'
+            + '<rect x="10" y="9" width="4" height="12" rx="1" opacity=".3"/>'
+            + '<rect x="17" y="4" width="4" height="17" rx="1" opacity=".3"/></svg>',
+        perdu: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
+            + '<rect x="3" y="14" width="4" height="7" rx="1" opacity=".3"/>'
+            + '<rect x="10" y="9" width="4" height="12" rx="1" opacity=".3"/>'
+            + '<rect x="17" y="4" width="4" height="17" rx="1" opacity=".3"/>'
+            + '<path d="M4 20.5 L20 4.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>',
+    };
+
+    /**
+     * Qui a la parole, sur les tuiles comme dans le panneau.
+     *
+     * ⚠️ L'événement arrive plusieurs fois par seconde : cette fonction ne
+     * RECONSTRUIT rien, elle déplace une classe. Rebâtir la liste à chaque
+     * changement de parole, c'est perdre le défilement du panneau sous les yeux de
+     * celui qui le lit.
+     */
+    function majParleurs(speakers) {
+        const idLocal = room && room.localParticipant ? room.localParticipant.identity : null;
+        const ids = idsDesParleurs(speakers, idLocal);
+        document.querySelectorAll('#visio-room .tile').forEach((t) => t.classList.remove('parle'));
+        ids.forEach((id) => {
+            const t = id === 'local' ? $('tileLocal') : $('tile-' + id);
+            if (t) t.classList.add('parle');
+        });
+        people.forEach((pe) => { pe.parle = ids.has(pe.id); });
+        document.querySelectorAll('#visio-room .person[data-id]').forEach((l) => {
+            l.classList.toggle('parle', ids.has(l.dataset.id));
+        });
+    }
+
+    /** Pose (ou retire) l'état du réseau là où l'œil cherche déjà le nom et le micro. */
+    function poseReseau(tile, qualite) {
+        const zone = tile && tile.querySelector('.name');
+        if (!zone) return;
+        const vieux = zone.querySelector('.net');
+        if (vieux) vieux.remove();
+        const n = niveauReseau(qualite);
+        if (n) zone.appendChild(icone(ICONES_RESEAU[n.classe], 'net ' + n.classe, n.intitule));
+    }
+
+    /**
+     * Réseau d'un participant.
+     *
+     * ⚠️ Pour SOI, l'information remonte aussi dans la pastille du haut : c'est le
+     * seul réseau sur lequel on puisse agir (se rapprocher, couper sa caméra), et
+     * c'est le seul endroit qu'on regarde quand la salle se dégrade.
+     */
+    function majReseau(participant, qualite) {
+        const idLocal = room && room.localParticipant ? room.localParticipant.identity : null;
+        const id = participant && participant.identity === idLocal ? 'local' : (participant && participant.identity);
+        if (!id) return;
+        const pe = people.find((x) => x.id === id);
+        const avant = niveauReseau(pe && pe.reseau);
+        if (pe) pe.reseau = String(qualite || '');
+        poseReseau(id === 'local' ? $('tileLocal') : $('tile-' + id), qualite);
+        // ⚠️ Pas pendant une reprise : la salle annoncerait « Connecté » à la
+        // seconde où elle est en train de se rattraper.
+        if (id === 'local' && state.connected && !state.reprise) {
+            const n = niveauReseau(qualite);
+            setConnPill(n ? 'warn' : 'ok', n ? n.intitule : 'Connecté');
+        }
+        // ⚠️ La liste ne se refait que si ce qui s'y AFFICHE change. L'événement
+        // tombe pour chaque participant, régulièrement et dès l'entrée : refaire
+        // quarante lignes pour passer d'« excellent » à « bon », deux états qui ne
+        // se montrent ni l'un ni l'autre, serait du travail pour rien.
+        const apres = niveauReseau(qualite);
+        if ((avant && avant.classe) !== (apres && apres.classe)) refreshPeople();
+    }
+
+    /**
      * Fabrique un élément dont le texte RESTE du texte.
      *
      * ⚠️ Les listes de la salle (participants, communicateurs, présence) étaient
@@ -603,7 +708,11 @@ export async function startFromConfig() {
 
         people.forEach((p) => {
             const rang = rangs.get(p.id);
-            const ligne = elt('div', 'person' + (rang ? ' hand-up' : ''));
+            const ligne = elt('div', 'person' + (rang ? ' hand-up' : '') + (p.parle ? ' parle' : ''));
+            // L'identifiant reste sur la ligne : le liseré de parole change plusieurs
+            // fois par seconde, et reconstruire quarante lignes pour déplacer une
+            // couleur ferait perdre le défilement du panneau (cf. majParleurs).
+            ligne.dataset.id = p.id;
             ligne.appendChild(elt('div', 'av', initials(p.name)));
 
             const meta = elt('div', 'meta');
@@ -621,6 +730,11 @@ export async function startFromConfig() {
                 'mic ' + (p.micOn ? 'on' : 'off'),
                 p.micOn ? 'Micro ouvert' : 'Micro coupé',
             ));
+            const res = niveauReseau(p.reseau);
+            if (res) {
+                etat.appendChild(document.createTextNode(' · '));
+                etat.appendChild(icone(ICONES_RESEAU[res.classe], 'net ' + res.classe, res.intitule));
+            }
             if (p.screen) etat.appendChild(document.createTextNode(' · écran'));
             meta.appendChild(etat);
             ligne.appendChild(meta);
@@ -817,6 +931,28 @@ export async function startFromConfig() {
         majNonLus();
     }
 
+    // ---- Fil remonté ----
+    // ⚠️ Deux comptes distincts, et il faut s'y tenir : `nonLus` compte ce qui est
+    // arrivé quand le fil n'était PAS sous les yeux (pastille sur l'onglet) ;
+    // celui-ci, ce qui est arrivé alors qu'il l'était, mais qu'on lisait plus haut.
+    let aLireEnBas = 0;
+
+    function descendLeFil() {
+        const log = $('chatLog');
+        if (!log) return;
+        log.scrollTop = log.scrollHeight;
+        if (aLireEnBas) { aLireEnBas = 0; majALireEnBas(); }
+    }
+
+    function majALireEnBas() {
+        const b = $('chatVersBas');
+        if (!b) return;
+        b.textContent = aLireEnBas > 1
+            ? '↓ ' + aLireEnBas + ' nouveaux messages'
+            : '↓ 1 nouveau message';
+        b.classList.toggle('on', aLireEnBas > 0);
+    }
+
     function addChat(who, text, me, meta) {
         const log = $('chatLog');
         if (!log) return;
@@ -878,7 +1014,15 @@ export async function startFromConfig() {
             majReactions(d, deja);
         }
 
-        log.appendChild(d); log.scrollTop = log.scrollHeight;
+        // ⚠️ Mesuré AVANT d'ajouter : une fois le message en place, le fil n'est
+        // plus « en bas » et la mesure dirait toujours non. Le fil se recadrait
+        // jusqu'ici de FORCE : on remontait lire ce qui s'était dit, un message
+        // arrivait, et la lecture était arrachée vers le bas.
+        const colle = enBasDuFil(log.scrollHeight, log.scrollTop, log.clientHeight);
+        log.appendChild(d);
+        // Les siens suivent toujours : on vient de les écrire.
+        if (colle || me) descendLeFil();
+        else if (id && !(meta && meta.rejoue)) { aLireEnBas++; majALireEnBas(); }
 
         // Les siens, les messages système et le fil rejoué ne sont pas « non lus ».
         if (id && !me && !(meta && meta.rejoue) && !filVisible()) {
@@ -1004,6 +1148,8 @@ export async function startFromConfig() {
                 sep.className = 'chat-sep'; sep.textContent = 'Vous avez rejoint la salle';
                 $('chatLog').appendChild(sep);
             }
+            // Un fil rejoué s'ouvre sur ce qui vient de se dire, pas sur son début.
+            descendLeFil();
         } catch (e) { /* la salle d'abord : un fil injoignable ne doit pas retarder l'entrée */ }
     }
 
@@ -1370,6 +1516,12 @@ export async function startFromConfig() {
             .on(LK.RoomEvent.TrackUnpublished, () => refreshPeople())
             .on(LK.RoomEvent.TrackMuted, (pub, participant) => onCameraToggle(pub, participant))
             .on(LK.RoomEvent.TrackUnmuted, (pub, participant) => onCameraToggle(pub, participant))
+            // ⚠️ Ces deux événements n'étaient pas écoutés. Sans le premier, rien ne
+            // dit qui parle - en mosaïque, on coupe quelqu'un sans le savoir. Sans le
+            // second, une image qui se figeait ne disait pas si c'était l'autre qui
+            // décrochait ou soi.
+            .on(LK.RoomEvent.ActiveSpeakersChanged, (speakers) => majParleurs(speakers))
+            .on(LK.RoomEvent.ConnectionQualityChanged, (qualite, participant) => majReseau(participant, qualite))
             .on(LK.RoomEvent.ParticipantConnected, (p) => {
                 const annonce = metadonnee(p);
                 people.push({ name: p.name || p.identity, role: annonce.role, accountId: annonce.accountId, hand: false, screen: false, id: p.identity });
@@ -1384,12 +1536,15 @@ export async function startFromConfig() {
             // page - en pleine séance, et en perdant le fil affiché.
             .on(LK.RoomEvent.Disconnected, () => {
                 state.connected = false;
+                // Un liseré vert oublié affirmerait que quelqu'un parle dans une salle
+                // dont on vient d'être éjecté.
+                majParleurs([]);
                 setConnPill('err', 'Déconnecté');
                 montreReprise(true, 'La connexion à la salle a été perdue.');
                 syncToolbar();
             })
-            .on(LK.RoomEvent.Reconnecting, () => setConnPill('warn', 'Reconnexion…'))
-            .on(LK.RoomEvent.Reconnected, () => { setConnPill('ok', 'Connecté'); montreReprise(false); })
+            .on(LK.RoomEvent.Reconnecting, () => { state.reprise = true; setConnPill('warn', 'Reconnexion…'); })
+            .on(LK.RoomEvent.Reconnected, () => { state.reprise = false; setConnPill('ok', 'Connecté'); montreReprise(false); })
             .on(LK.RoomEvent.DataReceived, (payload, participant) => onData(payload, participant));
 
         try {
@@ -1722,6 +1877,14 @@ export async function startFromConfig() {
     });
     $('btnRec').addEventListener('click', toggleRecording);
     $('btnSendChat').addEventListener('click', sendChat);
+    $('chatVersBas')?.addEventListener('click', descendLeFil);
+    // Revenu en bas de lui-même : le bandeau n'a plus rien à annoncer.
+    $('chatLog')?.addEventListener('scroll', () => {
+        const log = $('chatLog');
+        if (aLireEnBas && enBasDuFil(log.scrollHeight, log.scrollTop, log.clientHeight)) {
+            aLireEnBas = 0; majALireEnBas();
+        }
+    });
     $('chatInput').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') { sendChat(); return; }
         // Échap abandonne la réponse sans vider ce qu'on a déjà écrit.

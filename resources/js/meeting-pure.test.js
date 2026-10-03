@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  enBasDuFil,
   grilleOptimale,
   idSur,
+  idsDesParleurs,
   initials,
   mainsOrdonnees,
   metadonnee,
+  niveauReseau,
   ordreRecevable,
   presenceLabel,
   rangsDesMains,
@@ -153,5 +156,53 @@ describe('intitulés', () => {
     expect(roleLabel('n’importe quoi')).toBe('Auditeur');
     expect(presenceLabel('excused')).toBe('Excusé');
     expect(presenceLabel('')).toBe('');
+  });
+});
+
+describe('qui parle', () => {
+  it('traduit son propre identifiant en « local »', () => {
+    // ⚠️ Sans cette traduction, celui qui parle est repéré pour tout le monde
+    // SAUF pour lui-même : sa vignette et sa ligne portent l'identifiant `local`.
+    const ids = idsDesParleurs([{ identity: 'moi' }, { identity: 'awa' }], 'moi');
+    expect([...ids].sort()).toEqual(['awa', 'local']);
+  });
+
+  it('ne retient rien quand plus personne ne parle', () => {
+    expect(idsDesParleurs([], 'moi').size).toBe(0);
+    expect(idsDesParleurs(null, 'moi').size).toBe(0);
+    expect(idsDesParleurs([{}, null], 'moi').size).toBe(0);
+  });
+});
+
+describe('réseau d’un participant', () => {
+  it('ne dit quelque chose que sur un ennui', () => {
+    // ⚠️ « Excellent » posé en permanence sur tout le monde ne veut plus rien
+    // dire : l'indicateur doit se remarquer le jour où il apparaît. `unknown`
+    // est l'état des premières secondes de chaque arrivée.
+    expect(niveauReseau('excellent')).toBeNull();
+    expect(niveauReseau('good')).toBeNull();
+    expect(niveauReseau('unknown')).toBeNull();
+    expect(niveauReseau(undefined)).toBeNull();
+
+    expect(niveauReseau('poor').intitule).toBe('Réseau instable');
+    expect(niveauReseau('lost').classe).toBe('perdu');
+  });
+});
+
+describe('fil collé au bas', () => {
+  it('laisse quelques pixels de jeu', () => {
+    // 1 000 px de fil dans une fenêtre de 400 : le bas, c'est 600.
+    expect(enBasDuFil(1000, 600, 400)).toBe(true);
+    expect(enBasDuFil(1000, 540, 400)).toBe(true);
+    // Là, on lit plus haut : un message qui arrive ne doit rien recadrer.
+    expect(enBasDuFil(1000, 200, 400)).toBe(false);
+  });
+
+  it('est vrai sur un fil qui ne défile pas encore', () => {
+    // ⚠️ À l'ouverture, le fil est vide ou tient dans sa fenêtre. S'il n'était
+    // pas « collé », la salle s'ouvrirait sur un bandeau « nouveaux messages »
+    // pour des messages qu'on n'a jamais eu l'occasion de ne pas lire.
+    expect(enBasDuFil(0, 0, 0)).toBe(true);
+    expect(enBasDuFil(300, 0, 300)).toBe(true);
   });
 });

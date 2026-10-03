@@ -135,6 +135,14 @@
         #visio-room .tile .avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--vblue),var(--vgreen));display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.3rem;color:#fff;z-index:1;box-shadow:0 8px 24px rgba(0,0,0,.25);}
         #visio-room .tile.has-video .avatar{display:none!important;}
         #visio-room .tile video,#visio-room .tile .media{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#0a0e17;z-index:1;}
+        /* ⚠️ Sa propre image se regarde en MIROIR. Sans cela, lever la main droite
+           l'affiche à gauche, et montrer un document le présente retourné : on se
+           corrige alors à l'envers, en cherchant de quel côté se déplacer. C'est ce
+           que fait toute glace, et tout outil de visio.
+           La règle ne porte QUE sur son reflet : jamais sur un partage d'écran, dont
+           le texte partirait à l'envers, ni sur l'image des autres - eux, on les voit
+           comme on les verrait dans la salle. */
+        #visio-room #tileLocal > video,#visio-room .tile.main.soi > video{transform:scaleX(-1);}
         #visio-room .tile .name{position:absolute;left:10px;bottom:10px;z-index:3;background:rgba(0,0,0,.6);padding:5px 10px;border-radius:8px;font-size:12.5px;font-weight:700;max-width:calc(100% - 20px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
         /* ⚠️ Sur les vignettes, l'étiquette doit se faire oublier : à 12,5px elle
            occupait la moitié de la largeur et tronquait les noms au tiers. La
@@ -222,6 +230,16 @@
         #visio-room .side-panel{display:none;flex:1;min-height:0;flex-direction:column;}
         #visio-room .side-panel.active{display:flex;}
         #visio-room .chat-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;}
+        /* ⚠️ Le fil se recadrait de FORCE à chaque message : on remontait lire ce qui
+           s'était dit, un message arrivait, et la lecture était arrachée vers le bas.
+           Il ne suit plus que si on y était déjà ; sinon ce bandeau annonce ce qui
+           attend en bas. En PLEINE LARGEUR et dans le flux, et non en pastille
+           flottante : au-dessus du champ viennent déjà se poser la citation d'une
+           réponse et les outils du modérateur, qu'une pastille recouvrirait. */
+        #visio-room .chat-bas{display:none;width:100%;border:none;border-top:1px solid var(--vborder);
+            background:rgba(255,215,0,.1);color:var(--vgold);font-size:11.5px;font-weight:800;padding:7px 12px;}
+        #visio-room .chat-bas.on{display:block;}
+        #visio-room .chat-bas:hover{background:rgba(255,215,0,.18);}
         #visio-room .chat-msg{position:relative;background:rgba(255,255,255,.04);border-radius:12px;padding:10px 12px;font-size:13.5px;line-height:1.45;}
         #visio-room .chat-msg .txt{white-space:pre-wrap;overflow-wrap:anywhere;}
         /* Heure du message : discrète, mais c'est elle qui situe un fil repris en
@@ -420,6 +438,26 @@
         #visio-room .person.hand-up{background:rgba(255,215,0,.07);border-radius:10px;padding-left:8px;padding-right:8px;}
         #visio-room .person .rank{background:var(--vgold);color:var(--vblue-d);font-size:10.5px;font-weight:900;
             padding:2px 7px;border-radius:50px;}
+        /* --- Qui parle, maintenant ---
+           ⚠️ Rien ne le montrait : en mosaïque à six tuiles, avec le son d'un
+           haut-parleur de téléphone, on ne sait pas qui a la parole - on coupe
+           quelqu'un, ou on attend son tour sans savoir qu'il est venu.
+           Le liseré est VERT et non or : l'or dit déjà la main levée et le rôle de
+           présentateur. Et il vient APRÈS `hand-up` : à spécificité égale, la
+           dernière règle gagne - une main levée est une demande, la parole est un
+           fait, c'est le fait qui s'affiche. */
+        #visio-room .tile.parle{border-color:rgba(16,185,129,.8);box-shadow:0 0 0 2px rgba(16,185,129,.28);}
+        #visio-room .person.parle{background:rgba(16,185,129,.08);border-radius:10px;padding-left:8px;padding-right:8px;}
+        /* --- Réseau de la personne ---
+           ⚠️ Ne s'affiche QUE sur un ennui (cf. niveauReseau) : une pastille posée en
+           permanence sur tout le monde ne veut plus rien dire. Quand une image se
+           figeait, personne ne savait si c'était l'autre qui décrochait ou soi : on
+           parlait dans le vide, ou on quittait la salle pour rien. */
+        #visio-room .net{display:inline-flex;align-items:center;flex-shrink:0;}
+        #visio-room .net svg{width:13px;height:13px;display:block;}
+        #visio-room .net.faible{color:#fcd34d;}
+        #visio-room .net.perdu{color:#fda4af;}
+        #visio-room .person .net{vertical-align:-2px;}
         /* Compteur sur l'onglet : le panneau est souvent fermé, et toujours sur
            un autre onglet que celui des participants. */
         #visio-room .tab-count{display:none;margin-left:6px;background:var(--vgold);color:var(--vblue-d);
@@ -633,6 +671,8 @@
                     {{-- `role="log"` : un lecteur d’écran doit annoncer les messages qui
                          arrivent, sans que l’on ait à revenir lire le panneau. --}}
                     <div class="chat-log" id="chatLog" role="log" aria-live="polite" aria-relevant="additions"></div>
+                    {{-- Ce qui est arrivé pendant qu'on lisait plus haut. --}}
+                    <button type="button" class="chat-bas" id="chatVersBas"></button>
                     {{-- Compte rendu : le fil s'emporte en texte (modérateur). --}}
                     <div class="chat-tools" id="chatTools">
                         <a id="chatExport" href="#" target="_blank" rel="noopener">⬇ Télécharger le fil (texte)</a>

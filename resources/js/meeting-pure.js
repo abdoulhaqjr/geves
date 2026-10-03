@@ -168,3 +168,51 @@ export function grilleOptimale(n, largeur, hauteur, gap = 10, cible = 16 / 9) {
 
   return { cols: meilleur, rows: Math.ceil(n / meilleur) };
 }
+
+/**
+ * Qui parle, ramené aux identifiants de la salle.
+ *
+ * ⚠️ LiveKit annonce ses propres participants ; notre liste, elle, désigne la
+ * personne devant l'écran par `local` - et c'est sur cet identifiant que sont
+ * nommées les tuiles comme les lignes du panneau. Sans cette traduction, celui
+ * qui parle est repéré pour tout le monde SAUF pour lui-même.
+ */
+export function idsDesParleurs(speakers, idLocal) {
+  return new Set(
+    (speakers || [])
+      .map((p) => (p && p.identity) || '')
+      .filter(Boolean)
+      .map((id) => (idLocal && id === idLocal ? 'local' : id))
+  );
+}
+
+/**
+ * Ce qu'il faut dire d'une qualité de connexion - ou rien.
+ *
+ * ⚠️ « Excellent » ne s'affiche PAS. Un indicateur posé en permanence sur tout
+ * le monde ne veut plus rien dire : celui-ci ne doit se remarquer que le jour où
+ * il apparaît. Il ne parle donc que des ennuis, et tout ce qui n'est pas un
+ * ennui connu reste muet - y compris `unknown`, qui est l'état des premières
+ * secondes de chaque arrivée.
+ */
+export function niveauReseau(q) {
+  const v = String(q || '').toLowerCase();
+
+  return v === 'poor'
+    ? { classe: 'faible', intitule: 'Réseau instable' }
+    : v === 'lost'
+      ? { classe: 'perdu', intitule: 'Connexion perdue' }
+      : null;
+}
+
+/**
+ * Le fil est-il collé au bas ?
+ *
+ * ⚠️ Il se recadrait de force à chaque message : on remontait lire ce qui s'était
+ * dit, un message arrivait, et la lecture était arrachée vers le bas. La marge
+ * laisse « collé » quelques pixels de jeu - une molette, et plus encore un
+ * doigt, ne s'arrêtent pas au pixel près.
+ */
+export function enBasDuFil(hauteurTotale, defilement, hauteurVue, marge = 80) {
+  return hauteurTotale - defilement - hauteurVue <= marge;
+}

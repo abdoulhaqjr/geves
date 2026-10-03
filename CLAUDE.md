@@ -557,6 +557,30 @@ paiement (`pay`), inscription à une formation.
     `MeetingProviderRegistry` retombe seul sur Jitsi public quand ce défaut n'est pas
     configuré. Le forcer en base écraserait la configuration du site - c'est ce qui
     masquait LiveKit une fois ses identifiants renseignés.
+- **Ce que la salle doit MONTRER** (audit visuel, premier lot). Quatre manques qui
+  ne tenaient pas à une règle mais à ce que l'œil cherche pendant une séance :
+  - **Qui parle** (`ActiveSpeakersChanged`, qui n'était pas écouté) : liseré vert
+    sur la vignette, ligne teintée dans le panneau. ⚠️ La règle est posée APRÈS
+    `hand-up` dans la feuille de style : à spécificité égale, la dernière gagne -
+    une main levée est une demande, la parole est un fait. Et la fonction
+    **ne reconstruit rien**, elle déplace une classe (l'événement tombe plusieurs
+    fois par seconde ; rebâtir la liste ferait sauter le défilement du panneau).
+  - **Son propre reflet** : `scaleX(-1)` sur sa seule image. Sans lui, lever la
+    main droite l'affiche à gauche. ⚠️ Jamais sur un partage d'écran (le texte
+    partirait à l'envers) ni sur l'image des autres ; la bulle PiP porte TANTÔT sa
+    caméra TANTÔT celle du présentateur distant, d'où la classe `soi`, posée sur
+    une comparaison de pistes et non sur une devinette.
+  - **Le réseau d'un participant** (`ConnectionQualityChanged`, pas écouté non
+    plus) : une image qui gèle ne disait pas si l'autre décrochait ou soi.
+    ⚠️ Rien ne s'affiche tant que tout va bien (cf. `niveauReseau`) : un indicateur
+    posé en permanence sur tout le monde ne se remarque plus. Et **deux dessins**,
+    pas un seul recoloré - à 13 px la couleur seule ne sépare pas « instable » de
+    « perdu », et l'ambre des barres faibles est celui de la main levée d'à côté.
+  - **Le fil ne s'arrache plus** : il ne suit le bas que si on y était déjà
+    (`enBasDuFil`, mesuré AVANT d'ajouter le message), sinon un bandeau annonce ce
+    qui attend. ⚠️ Deux comptes distincts à ne pas confondre : `nonLus` (le fil
+    n'était pas sous les yeux, pastille sur l'onglet) et `aLireEnBas` (il l'était,
+    mais on lisait plus haut).
 - **Tests JavaScript : Vitest** (`npm run test:js`, `npm run test:js:watch`).
   Premier outillage de test côté client du projet - jusque-là, **aucune ligne de
   JS n'était couverte**.
