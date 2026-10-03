@@ -218,7 +218,11 @@ export async function startFromConfig() {
         el = document.createElement('div'); el.className = 'tile'; el.id = id;
         el.innerHTML = '<div class="avatar">' + initials(p.name || p.identity) + '</div><div class="name">' + (p.name || p.identity) + '</div>';
         (state.speakerLayout ? $('filmstrip') : $('stageGrid')).appendChild(el);
-        updateFilmstripCount(); return el;
+        // ⚠️ En vue présentateur, le bandeau des autres participants était REPLIÉ
+        // par défaut : trois personnes connectées, et une scène qui n'en montrait
+        // aucune. Dès que quelqu'un arrive, on le déplie.
+        if (state.speakerLayout) { $('filmstripWrap')?.classList.add('open'); }
+        updateFilmstripCount(); layoutGrid(); return el;
     }
     function updateFilmstripCount() { const el = $('filmstripCount'); if (el) el.textContent = String($('filmstrip').querySelectorAll('.tile').length); }
     function refreshPeople() {
@@ -323,7 +327,44 @@ export async function startFromConfig() {
         const grid = $('stageGrid'), strip = $('filmstrip'), wrap = $('filmstripWrap');
         if (state.speakerLayout) { [].slice.call(grid.querySelectorAll('.tile:not(.main)')).forEach((t) => strip.appendChild(t)); if (wrap) wrap.style.display = ''; }
         else { [].slice.call(strip.querySelectorAll('.tile')).forEach((t) => grid.appendChild(t)); if (wrap) wrap.style.display = 'none'; }
-        updateLayoutClasses(); updateFilmstripCount();
+        updateLayoutClasses(); updateFilmstripCount(); layoutGrid();
+    }
+
+    /**
+     * Choisit le nombre de COLONNES de la mosaïque : celui qui donne les plus
+     * grandes tuiles sans trop s'éloigner du 16/9.
+     *
+     * ⚠️ Laissé à `auto-fit`, le CSS alignait quatre personnes sur une seule
+     * rangée : des tuiles hautes et étroites, où une image 16/9 cadrée en
+     * `cover` était rognée jusqu'au nez. C'est la place disponible qui doit
+     * décider de la grille, pas une largeur minimale écrite à l'avance.
+     */
+    function layoutGrid() {
+        const grid = $('stageGrid');
+        if (!grid || state.speakerLayout) return;
+
+        const tiles = [].slice.call(grid.children)
+            .filter((t) => t.classList.contains('tile') && getComputedStyle(t).display !== 'none');
+        const n = tiles.length;
+        if (!n) return;
+
+        const gap = 10, cible = 16 / 9;
+        const W = grid.clientWidth, H = grid.clientHeight;
+        let meilleur = 1, meilleureAire = 0;
+
+        for (let cols = 1; cols <= n; cols++) {
+            const rows = Math.ceil(n / cols);
+            const w = (W - gap * (cols - 1)) / cols;
+            const h = (H - gap * (rows - 1)) / rows;
+            if (w <= 0 || h <= 0) continue;
+            // La plus grande tuile au ratio cible qui tient dans la cellule.
+            const tw = Math.min(w, h * cible);
+            const aire = tw * (tw / cible);
+            if (aire > meilleureAire) { meilleureAire = aire; meilleur = cols; }
+        }
+
+        grid.style.setProperty('--cols', meilleur);
+        grid.style.setProperty('--rows', Math.ceil(n / meilleur));
     }
 
     // ---- Partage d'écran ----
@@ -553,7 +594,7 @@ export async function startFromConfig() {
             })
             .on(LK.RoomEvent.ParticipantDisconnected, (p) => {
                 people = people.filter((x) => x.id !== p.identity); refreshPeople(); refreshComms();
-                const tile = $('tile-' + p.identity); if (tile) tile.remove(); updateFilmstripCount();
+                const tile = $('tile-' + p.identity); if (tile) tile.remove(); updateFilmstripCount(); layoutGrid();
             })
             .on(LK.RoomEvent.Disconnected, () => { state.connected = false; setConnPill('err', 'Déconnecté'); syncToolbar(); })
             .on(LK.RoomEvent.Reconnecting, () => setConnPill('warn', 'Reconnexion…'))
@@ -681,7 +722,7 @@ export async function startFromConfig() {
         const pp = $('panelPresence'); if (pp) pp.classList.toggle('active', id === 'presence');
         if (id === 'presence') loadPresence();
     }));
-    $('btnToggleSide').addEventListener('click', () => { const m = $('mainLayout'); m.classList.toggle('side-closed'); $('sidePanel').classList.toggle('open'); });
+    $('btnToggleSide').addEventListener('click', () => { const m = $('mainLayout'); m.classList.toggle('side-closed'); $('sidePanel').classList.toggle('open'); layoutGrid(); });
     // Volume / son
     $('btnSpeaker').addEventListener('click', (e) => { e.stopPropagation(); const p = $('volPanel'); if (p.classList.contains('open')) { state.speakerOn = !state.speakerOn; applyVolume(); } p.classList.toggle('open'); });
     $('volRange').addEventListener('input', (e) => { state.volume = Math.max(0, Math.min(1, e.target.value / 100)); state.speakerOn = state.volume > 0; applyVolume(); });
@@ -698,6 +739,9 @@ export async function startFromConfig() {
         if (sm && !sm.contains(e.target) && !$('btnScreen').contains(e.target)) sm.classList.remove('open');
         if (vp && !vp.contains(e.target) && !$('btnSpeaker').contains(e.target)) vp.classList.remove('open');
     });
+    // La grille se recalcule quand la place change : ouvrir le panneau latéral ou
+    // réduire la fenêtre modifie la largeur disponible, donc la bonne grille.
+    window.addEventListener('resize', layoutGrid);
     window.addEventListener('beforeunload', () => { try { if (presenceTimer) clearInterval(presenceTimer); } catch (e) {} try { if (room) room.disconnect(); } catch (e) {} });
 
     // ============ Démarrage ============

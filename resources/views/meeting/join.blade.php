@@ -69,9 +69,29 @@
         #visio-room .stage-grid{display:grid;gap:10px;align-content:start;}
         #visio-room .stage-grid.speaker{grid-template-columns:1fr;grid-template-rows:1fr;}
         #visio-room .stage-grid.speaker .tile.main{aspect-ratio:auto;height:100%;border-radius:16px;}
-        #visio-room .stage-grid:not(.speaker){grid-template-columns:repeat(auto-fit,minmax(220px,1fr));grid-auto-rows:minmax(140px,1fr);height:100%;align-content:stretch;}
-        #visio-room .stage-grid:not(.speaker) .tile{aspect-ratio:auto;min-height:140px;height:100%;}
-        #visio-room .stage-grid:not(.speaker).has-screen-share{grid-template-columns:1fr;grid-template-rows:1fr;}
+        /* ⚠️ Mosaïque : le nombre de COLONNES est calculé (cf. layoutGrid()), il
+           n'est pas laissé à `auto-fit`. Avec quatre personnes, `auto-fit` les
+           alignait sur une seule rangée : des tuiles hautes et étroites, où un
+           visage filmé en 16/9 était rogné jusqu'au nez. On cherche la grille qui
+           donne les plus grandes tuiles proches du 16/9, et on la centre. */
+        /* ⚠️ Flex et non grid : avec trois personnes sur une grille 2×2, la
+           quatrième cellule restait vide et la dernière tuile se retrouvait collée
+           à gauche d'un trou. En flex, la rangée incomplète se CENTRE. */
+        #visio-room .stage-grid:not(.speaker){display:flex;flex-wrap:wrap;gap:10px;height:100%;
+            align-content:center;justify-content:center;}
+        #visio-room .stage-grid:not(.speaker) .tile{aspect-ratio:auto;min-height:0;
+            flex:0 0 calc((100% - (var(--cols,2) - 1) * 10px) / var(--cols,2));
+            height:calc((100% - (var(--rows,1) - 1) * 10px) / var(--rows,1));}
+        /* La tuile « scène » ne sert qu'à la vue présentateur et au partage
+           d'écran : en mosaïque et sans image, elle ajoutait un cadre
+           « Présentateur - en attente » qui ne correspondait à personne. */
+        #visio-room .stage-grid:not(.speaker) .tile.main:not(.has-video):not(.has-screen){display:none;}
+        /* Partage d'écran en mosaïque : l'écran prend toute la scène - c'est ce
+           qu'on est venu lire, et le réduire à une vignette parmi d'autres le
+           rendrait illisible. ⚠️ Règles en flex, la mosaïque n'étant plus une
+           grille : `grid-template-*` n'y aurait aucun effet. */
+        #visio-room .stage-grid:not(.speaker).has-screen-share .tile{display:none;}
+        #visio-room .stage-grid:not(.speaker).has-screen-share .tile.main{display:flex;flex:0 0 100%;height:100%;}
         #visio-room .stage-grid:not(.speaker).has-screen-share .tile.main video{object-fit:contain!important;}
         #visio-room .filmstrip-wrap{flex-shrink:0;border-top:1px solid var(--vborder);background:rgba(0,0,0,.25);}
         #visio-room .filmstrip-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border:none;background:transparent;color:var(--vmuted);font-size:12px;font-weight:700;}
