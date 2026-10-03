@@ -11,9 +11,9 @@ import {
 // à part, et sont les seules du fichier à être couvertes par des tests
 // (`meeting-pure.test.js`). Y déplacer une décision, c'est la rendre vérifiable.
 import {
-    enBasDuFil, grilleOptimale, heure, idSur, idsDesParleurs, initials, mainsOrdonnees,
-    metadonnee, niveauReseau, ordreRecevable as ordreAutorise, presenceLabel, rangsDesMains,
-    roleLabel, teinteDuNom, texteCourt,
+    enBasDuFil, etatChrono, grilleOptimale, heure, idSur, idsDesParleurs, initials,
+    mainsOrdonnees, metadonnee, niveauReseau, ordreRecevable as ordreAutorise, presenceLabel,
+    rangsDesMains, roleLabel, teinteDuNom, texteCourt,
 } from './meeting-pure.js';
 
 // Objet compat pour réutiliser la logique de la maquette (LK.RoomEvent, LK.Track…).
@@ -109,20 +109,31 @@ export async function startFromConfig() {
             hidePerm();
             return true;
         } catch (e) {
-            const name = (e && e.name) || '';
-            let msg;
-            if (name === 'NotAllowedError' || name === 'SecurityError') {
-                msg = 'Accès caméra / micro refusé. Ouvrez le cadenas de la barre d’adresse → Autoriser, puis réessayez.';
-            } else if (name === 'NotFoundError' || name === 'OverconstrainedError') {
-                msg = 'Aucune caméra / micro détecté. Branchez un périphérique, puis réessayez.';
-            } else if (name === 'NotReadableError' || name === 'AbortError') {
-                msg = 'Caméra / micro déjà utilisé par une autre application. Fermez-la, puis réessayez.';
-            } else {
-                msg = 'Impossible d’accéder à la caméra / au micro' + (name ? ' (' + name + ')' : '') + '. Vérifiez les autorisations du navigateur, puis réessayez.';
-            }
-            showPerm(msg);
+            showPerm(messageMedia(e));
+
             return false;
         }
+    }
+
+    /**
+     * Ce qu'on peut dire d'un refus de caméra ou de micro - et surtout quoi faire
+     * ensuite. Partagé par le bandeau de la salle et par l'écran d'entrée : un même
+     * refus ne doit pas s'expliquer de deux façons selon l'endroit où il tombe.
+     */
+    function messageMedia(e) {
+        const nom = (e && e.name) || '';
+        if (nom === 'NotAllowedError' || nom === 'SecurityError') {
+            return 'Accès caméra / micro refusé. Ouvrez le cadenas de la barre d’adresse → Autoriser, puis réessayez.';
+        }
+        if (nom === 'NotFoundError' || nom === 'OverconstrainedError') {
+            return 'Aucune caméra / micro détecté. Branchez un périphérique, puis réessayez.';
+        }
+        if (nom === 'NotReadableError' || nom === 'AbortError') {
+            return 'Caméra / micro déjà utilisé par une autre application. Fermez-la, puis réessayez.';
+        }
+
+        return 'Impossible d’accéder à la caméra / au micro' + (nom ? ' (' + nom + ')' : '')
+            + '. Vérifiez les autorisations du navigateur, puis réessayez.';
     }
     $('permDismiss')?.addEventListener('click', hidePerm);
     $('permRetry')?.addEventListener('click', async () => { hidePerm(); await ensureMedia(true, true); });
@@ -891,6 +902,8 @@ export async function startFromConfig() {
         scheduledComms.forEach((x) => { if (String(x.order) === String(ordre)) x.done = true; });
         refreshComms();
         sendData({ type: 'comm_done', order: ordre });
+        // La communication est close : le compte n'a plus d'objet.
+        if (String(chrono.ordre) === String(ordre)) { arreteChrono(); diffuseFinChrono(); }
         toast('Communication marquée effectuée');
     }
 
@@ -910,13 +923,16 @@ export async function startFromConfig() {
         if (act === 'mic') { await sendData({ type: 'mod_unmute', from: state.name }, [targetId]); if (p) { p.micOn = true; } refreshPeople(); refreshComms(); toast('Micro autorisé'); }
         else if (act === 'mic_off') { await sendData({ type: 'mod_mute', from: state.name }, [targetId]); if (p) p.micOn = false; refreshPeople(); toast('Micro coupé'); }
         else if (act === 'hand') { await sendData({ type: 'mod_hand_down', from: state.name }, [targetId]); leveLaMain(p, false); refreshPeople(); }
-        else if (act === 'demote') { await sendData({ type: 'mod_role', role: 'audience', from: state.name }, [targetId]); if (p) { p.role = 'audience'; p.isFloor = false; } refreshPeople(); refreshComms(); showCurrentPresenterInStage(); toast('Présentation retirée'); }
+        else if (act === 'demote') { await sendData({ type: 'mod_role', role: 'audience', from: state.name }, [targetId]); if (p) { p.role = 'audience'; p.isFloor = false; } arreteChrono(); diffuseFinChrono(); refreshPeople(); refreshComms(); showCurrentPresenterInStage(); toast('Présentation retirée'); }
         else if (act === 'give_floor') {
             people.forEach((x) => { x.isFloor = x.id === targetId; if (x.id !== targetId && x.role === 'presenter') x.role = 'audience'; });
             const others = people.filter((x) => x.id !== targetId && x.id !== 'local').map((x) => x.id);
             if (others.length) await sendData({ type: 'mod_role', role: 'audience', from: state.name }, others);
             await sendData({ type: 'mod_role', role: 'presenter', from: state.name }, [targetId]);
-            if (p) p.role = 'presenter'; refreshPeople(); refreshComms(); showCurrentPresenterInStage(); toast('Présentation accordée');
+            if (p) p.role = 'presenter'; refreshPeople(); refreshComms(); showCurrentPresenterInStage();
+            // Le temps de parole part avec la parole elle-même, pas au premier mot.
+            demarreChrono(ordreDe(targetId));
+            toast('Présentation accordée');
         }
     }
 
@@ -1509,8 +1525,17 @@ export async function startFromConfig() {
         setStatus('Connexion à la salle…'); setConnPill('warn', 'Connexion…');
         room = new LK.Room({
             adaptiveStream: true, dynacast: true,
-            videoCaptureDefaults: { resolution: { width: 960, height: 540, frameRate: 24 }, facingMode: 'user' },
-            audioCaptureDefaults: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+            // Le périphérique retenu à l'écran d'entrée, s'il y en a eu un : sinon
+            // LiveKit reprend celui que le navigateur juge par défaut, qui n'est pas
+            // forcément celui qu'on vient de vérifier.
+            videoCaptureDefaults: {
+                resolution: { width: 960, height: 540, frameRate: 24 }, facingMode: 'user',
+                deviceId: entree.camId || undefined,
+            },
+            audioCaptureDefaults: {
+                echoCancellation: true, noiseSuppression: true, autoGainControl: true,
+                deviceId: entree.micId || undefined,
+            },
             publishDefaults: { dtx: true, red: true, videoSimulcastLayers: LK.VideoPresets ? [LK.VideoPresets.h180, LK.VideoPresets.h360] : undefined, videoCodec: 'vp8' },
         });
 
@@ -1577,6 +1602,9 @@ export async function startFromConfig() {
                 const annonce = metadonnee(p);
                 people.push({ name: p.name || p.identity, role: annonce.role, accountId: annonce.accountId, hand: false, screen: false, id: p.identity });
                 refreshPeople(); refreshComms(); ensureRemoteTile(p); toast((p.name || p.identity) + ' a rejoint');
+                // Sans cela, l'arrivant attend jusqu'à cinq secondes avant de savoir
+                // depuis combien de temps parle la personne qu'il voit.
+                if (state.role === 'moderator' && chrono.ordre !== null) diffuseChrono();
             })
             .on(LK.RoomEvent.ParticipantDisconnected, (p) => {
                 people = people.filter((x) => x.id !== p.identity); refreshPeople(); refreshComms();
@@ -1590,6 +1618,9 @@ export async function startFromConfig() {
                 // Un liseré vert oublié affirmerait que quelqu'un parle dans une salle
                 // dont on vient d'être éjecté.
                 majParleurs([]);
+                // Et un chronomètre figé affirmerait qu'on tient encore le temps d'une
+                // séance qu'on ne suit plus.
+                arreteChrono();
                 setConnPill('err', 'Déconnecté');
                 montreReprise(true, 'La connexion à la salle a été perdue.');
                 syncToolbar();
@@ -1605,10 +1636,10 @@ export async function startFromConfig() {
             const main = $('tileMain');
             if (main && !main.classList.contains('has-screen') && state.speakerLayout) showCurrentPresenterInStage();
             refreshPeople(); refreshComms();
-            if (canPublish()) {
-                try { await room.localParticipant.setCameraEnabled(true); await room.localParticipant.setMicrophoneEnabled(true); state.cam = true; state.mic = true; mediaPerm.cam = true; mediaPerm.mic = true; }
-                catch (e) { toast('Autorisez caméra / micro'); }
-            }
+            // ⚠️ La salle ouvrait ici caméra ET micro d'office, sans rien demander ni
+            // montrer. C'est le même résultat par défaut, à ceci près qu'il a été vu
+            // et qu'il était révocable AVANT d'entrer (cf. ecranDEntree).
+            await appliqueChoixDEntree();
             syncToolbar();
         } catch (e) {
             setStatus('Connexion impossible : ' + ((e && e.message) || e)); setConnPill('err', 'Échec'); room = null;
@@ -1766,6 +1797,7 @@ export async function startFromConfig() {
         else if (msg.type === 'mod_hand_down') { state.hand = false; leveLaMain(people.find((x) => x.id === 'local'), false); refreshPeople(); syncToolbar(); }
         else if (msg.type === 'screen_takeover') { const my = room && room.localParticipant.identity; if (msg.identity && msg.identity !== my && state.screen) { room.localParticipant.setScreenShareEnabled(false).catch(() => {}); state.screen = false; destroyPip(false); syncToolbar(); toast((msg.by || 'Un participant') + ' a pris le partage'); } }
         else if (msg.type === 'recording') { state.recording = !!msg.on; $('recBadge').classList.toggle('on', state.recording); syncToolbar(); if (msg.on) toast('Enregistrement en cours'); }
+        else if (msg.type === 'floor_time') recoitChrono(msg);
         else if (msg.type === 'comm_done') { scheduledComms.forEach((c) => { if (String(c.order) === String(msg.order)) c.done = true; }); refreshComms(); }
         else if (msg.type === 'pip_visibility') { if (msg.visible === false) { pipVisible = false; destroyPip(false); } else pipVisible = true; }
         else if (msg.type === 'mod_role') {
@@ -1862,6 +1894,265 @@ export async function startFromConfig() {
     window.addEventListener('resize', () => poseLargeurPanneau(largeurRetenue(), false));
 
     // ---- Sortie de la salle ----
+    // ---- Temps de parole ----
+    // ⚠️ Le compte est tenu par le MODÉRATEUR et diffusé. On n'envoie pas une heure
+    // de départ mais un NOMBRE DE SECONDES, réémis toutes les cinq secondes : deux
+    // machines n'ont pas la même horloge, et un écart de quelques minutes entre
+    // elles afficherait un dépassement imaginaire. Celui qui arrive en cours de
+    // communication est ainsi à l'heure sans qu'on ait à lui raconter le passé.
+    const chrono = { ordre: null, nom: '', minutes: null, secondes: 0, depuis: 0, tic: null, envoi: null };
+
+    /**
+     * Qui voit le chronomètre : le modérateur, et celui qui a la parole.
+     *
+     * ⚠️ Pas toute la salle. Un dépassement regarde celui qui préside et celui qui
+     * parle - les deux qui peuvent agir dessus ; l'afficher à quarante personnes en
+     * ferait l'affaire de tout le monde, et une pression sur l'orateur.
+     */
+    function chronoVisible() {
+        if (chrono.ordre === null) return false;
+        if (state.role === 'moderator') return true;
+        const moi = people.find((x) => x.id === 'local');
+
+        return !!(moi && (moi.isFloor || moi.role === 'presenter'));
+    }
+
+    function majChrono() {
+        const el = $('chrono');
+        if (!el) return;
+        if (!chronoVisible()) { el.className = 'v-chrono'; return; }
+        const e = etatChrono(chrono.secondes, chrono.minutes);
+        $('chronoQui').textContent = texteCourt(chrono.nom, 28);
+        $('chronoT').textContent = e.texte;
+        el.className = 'v-chrono on ' + e.classe;
+    }
+
+    function arreteChrono(rafraichir) {
+        if (chrono.tic) clearInterval(chrono.tic);
+        if (chrono.envoi) clearInterval(chrono.envoi);
+        chrono.tic = null; chrono.envoi = null; chrono.ordre = null; chrono.secondes = 0;
+        if (rafraichir !== false) majChrono();
+    }
+
+    /** Fin du temps de parole, annoncée à ceux qui l'affichaient. */
+    function diffuseFinChrono() { sendData({ type: 'floor_time', order: null }); }
+
+    function diffuseChrono() {
+        // Le nom et la durée ne voyagent pas : chacun les a déjà dans le programme
+        // de la séance. Seul le compte circule.
+        if (chrono.ordre !== null) sendData({ type: 'floor_time', order: chrono.ordre, secondes: chrono.secondes });
+    }
+
+    function demarreChrono(ordre) {
+        if (ordre === null || ordre === undefined) { arreteChrono(); return; }
+        arreteChrono(false);
+        const c = scheduledComms.find((x) => String(x.order) === String(ordre));
+        chrono.ordre = ordre;
+        chrono.nom = (c && c.name) || '';
+        chrono.minutes = (c && c.minutes) || null;
+        chrono.secondes = 0;
+        chrono.depuis = Date.now();
+        // Sur une horloge locale, et non par incréments : un onglet mis en veille
+        // ralentit ses minuteries, et le compte prendrait du retard sur la séance.
+        chrono.tic = setInterval(() => {
+            chrono.secondes = Math.floor((Date.now() - chrono.depuis) / 1000);
+            majChrono();
+        }, 1000);
+        diffuseChrono();
+        chrono.envoi = setInterval(diffuseChrono, 5000);
+        majChrono();
+    }
+
+    /** Compte reçu du modérateur : il fait foi, on ne fait que l'égrener entre deux. */
+    function recoitChrono(msg) {
+        if (state.role === 'moderator') return;
+        if (msg.order === null || msg.order === undefined) { arreteChrono(); return; }
+        const c = scheduledComms.find((x) => String(x.order) === String(msg.order));
+        if (String(chrono.ordre) !== String(msg.order)) {
+            arreteChrono(false);
+            chrono.ordre = msg.order;
+            chrono.tic = setInterval(() => { chrono.secondes++; majChrono(); }, 1000);
+        }
+        chrono.nom = (c && c.name) || '';
+        chrono.minutes = (c && c.minutes) || null;
+        chrono.secondes = Math.max(0, Math.floor(Number(msg.secondes) || 0));
+        majChrono();
+    }
+
+    /** Numéro de la communication tenue par cette personne, s'il y en a une. */
+    function ordreDe(identity) {
+        const c = scheduledComms.find((x) => x.identity === identity);
+
+        return c ? c.order : null;
+    }
+
+    // ---- Écran d'entrée ----
+    // ⚠️ On tombait dans la salle, et la demande d'autorisation du navigateur
+    // arrivait par-dessus une séance déjà commencée. C'est ici que se règlent
+    // presque tous les ennuis de première fois.
+    const CLE = 'geves.visio.';
+    function pref(cle, defaut) {
+        // Un navigateur en navigation privée refuse l'écriture ET la lecture :
+        // l'écran doit marcher sans mémoire, simplement sans se souvenir.
+        try { const v = localStorage.getItem(CLE + cle); return v === null ? defaut : v; } catch (e) { return defaut; }
+    }
+    function posePref(cle, valeur) { try { localStorage.setItem(CLE + cle, String(valeur)); } catch (e) {} }
+
+    const entree = { cam: false, mic: false, camId: '', micId: '', flux: null, audio: null, boucle: 0 };
+
+    function messageEntree(txt) {
+        const el = $('pjMsg');
+        if (!el) return;
+        el.textContent = txt || '';
+        el.classList.toggle('on', !!txt);
+    }
+
+    function fermeApercu() {
+        // ⚠️ Impérativement AVANT de connecter : une caméra laissée ouverte par
+        // l'aperçu reste PRISE, et LiveKit ne peut plus l'ouvrir - l'entrée se solde
+        // alors par une tuile noire et un « périphérique déjà utilisé ».
+        if (entree.flux) {
+            entree.flux.getTracks().forEach((t) => { try { t.stop(); } catch (e) {} });
+            entree.flux = null;
+        }
+        if (entree.boucle) { cancelAnimationFrame(entree.boucle); entree.boucle = 0; }
+        if (entree.audio) { try { entree.audio.close(); } catch (e) {} entree.audio = null; }
+        const v = $('pjVideo'); if (v) v.srcObject = null;
+    }
+
+    function majEntree() {
+        $('pjCam')?.setAttribute('aria-pressed', entree.cam ? 'true' : 'false');
+        $('pjMic')?.setAttribute('aria-pressed', entree.mic ? 'true' : 'false');
+        const image = !!(entree.flux && entree.flux.getVideoTracks().length);
+        $('pjVue')?.classList.toggle('on', entree.cam && image);
+        if (!entree.mic) { const b = $('pjNiveau'); if (b) b.style.width = '0'; }
+    }
+
+    /**
+     * Niveau du micro.
+     *
+     * ⚠️ C'est la seule PREUVE qu'il entend quelque chose : un micro muet ne se voit
+     * pas, il se constate - on parle, et la barre bouge. Sans elle, l'écran d'entrée
+     * ne ferait que répéter le nom d'un périphérique.
+     */
+    function mesureLeNiveau() {
+        const barre = $('pjNiveau');
+        const Contexte = window.AudioContext || window.webkitAudioContext;
+        if (!barre || !Contexte || !entree.flux || !entree.flux.getAudioTracks().length) return;
+        try {
+            entree.audio = new Contexte();
+            const analyse = entree.audio.createAnalyser();
+            analyse.fftSize = 512;
+            entree.audio.createMediaStreamSource(entree.flux).connect(analyse);
+            const donnees = new Uint8Array(analyse.frequencyBinCount);
+            const tour = () => {
+                analyse.getByteTimeDomainData(donnees);
+                let somme = 0;
+                for (let i = 0; i < donnees.length; i++) { const d = (donnees[i] - 128) / 128; somme += d * d; }
+                barre.style.width = Math.round(Math.min(1, Math.sqrt(somme / donnees.length) * 4) * 100) + '%';
+                entree.boucle = requestAnimationFrame(tour);
+            };
+            tour();
+        } catch (e) { /* sans niveau, l'écran reste utile */ }
+    }
+
+    async function listeDesAppareils() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+        let appareils = [];
+        try { appareils = await navigator.mediaDevices.enumerateDevices(); } catch (e) { return; }
+        const remplit = (select, genre, choisi, mot) => {
+            if (!select) return;
+            select.textContent = '';
+            appareils.filter((a) => a.kind === genre).forEach((a, i) => {
+                const o = document.createElement('option');
+                o.value = a.deviceId;
+                // ⚠️ Sans autorisation accordée, les étiquettes sont VIDES : on numérote
+                // plutôt que de dérouler une liste de lignes blanches.
+                o.textContent = a.label || mot + ' ' + (i + 1);
+                if (a.deviceId === choisi) o.selected = true;
+                select.appendChild(o);
+            });
+            select.disabled = !select.children.length;
+        };
+        remplit($('pjCamSel'), 'videoinput', entree.camId, 'Caméra');
+        remplit($('pjMicSel'), 'audioinput', entree.micId, 'Micro');
+    }
+
+    async function ouvreApercu() {
+        fermeApercu();
+        if (!entree.cam && !entree.mic) { majEntree(); await listeDesAppareils(); return; }
+        if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            messageEntree('La visioconférence nécessite une connexion sécurisée (HTTPS).');
+            majEntree();
+
+            return;
+        }
+        try {
+            entree.flux = await navigator.mediaDevices.getUserMedia({
+                video: entree.cam ? (entree.camId ? { deviceId: { exact: entree.camId } } : true) : false,
+                audio: entree.mic ? (entree.micId ? { deviceId: { exact: entree.micId } } : true) : false,
+            });
+            // L'autorisation obtenue ici vaut pour la salle : la redemander au premier
+            // clic sur « Micro » rouvrirait une fenêtre du navigateur pour rien.
+            if (entree.cam) mediaPerm.cam = true;
+            if (entree.mic) mediaPerm.mic = true;
+            const v = $('pjVideo'); if (v) v.srcObject = entree.flux;
+            messageEntree('');
+            if (entree.mic) mesureLeNiveau();
+        } catch (e) {
+            messageEntree(messageMedia(e));
+        }
+        await listeDesAppareils();
+        majEntree();
+    }
+
+    /**
+     * L'écran d'entrée, s'il a lieu d'être.
+     *
+     * ⚠️ Seulement pour qui diffuse. Un auditeur ne publie ni son ni image : lui
+     * dresser un mur avant la porte, ce serait le retarder pour rien.
+     */
+    async function ecranDEntree() {
+        const ec = $('prejoin'), bouton = $('pjEntrer');
+        // ⚠️ Sans le bouton, l'attente ci-dessous ne finirait JAMAIS : la salle ne se
+        // connecterait pas, sur un écran vide. Mieux vaut entrer sans vérifier que
+        // de ne pas entrer du tout.
+        if (!ec || !bouton || !canPublish()) return;
+        // ⚠️ Caméra et micro ouverts par défaut : c'est EXACTEMENT ce que la salle
+        // faisait d'office jusqu'ici. L'écran d'entrée ne change pas ce qui se
+        // passe, il le montre et le rend révocable avant que cela n'arrive -
+        // inverser ce défaut ferait entrer muet un communicateur habitué à être
+        // entendu. Ensuite, c'est son dernier choix qui vaut.
+        entree.cam = pref('cam', '1') === '1';
+        entree.mic = pref('mic', '1') === '1';
+        entree.camId = pref('camId', '');
+        entree.micId = pref('micId', '');
+        ec.classList.add('on');
+        majEntree();
+        await ouvreApercu();
+        bouton.focus();
+        await new Promise((resoud) => { bouton.addEventListener('click', resoud, { once: true }); });
+        fermeApercu();
+        ec.classList.remove('on');
+    }
+
+    /** Ce qui a été choisi avant d'entrer s'applique une fois la salle rejointe. */
+    async function appliqueChoixDEntree() {
+        if (!room || !canPublish()) return;
+        if (entree.cam) {
+            try { state.cam = true; await room.localParticipant.setCameraEnabled(true); }
+            catch (e) { state.cam = false; toast('Caméra indisponible'); }
+        }
+        if (entree.mic) {
+            try {
+                state.mic = true;
+                await room.localParticipant.setMicrophoneEnabled(true);
+                const moi = people.find((x) => x.id === 'local'); if (moi) moi.micOn = true;
+            } catch (e) { state.mic = false; toast('Micro indisponible'); }
+        }
+        refreshPeople(); syncToolbar();
+    }
+
     async function leave() { if (room) { try { await room.disconnect(); } catch (e) {} } window.location = cfg.backUrl; }
 
     // ============ Bindings ============
@@ -1928,6 +2219,19 @@ export async function startFromConfig() {
     });
     $('btnRec').addEventListener('click', toggleRecording);
     $('btnSendChat').addEventListener('click', sendChat);
+    // Écran d'entrée : chaque geste rouvre l'aperçu, c'est lui qui fait foi.
+    $('pjCam')?.addEventListener('click', async () => {
+        entree.cam = !entree.cam; posePref('cam', entree.cam ? 1 : 0); await ouvreApercu();
+    });
+    $('pjMic')?.addEventListener('click', async () => {
+        entree.mic = !entree.mic; posePref('mic', entree.mic ? 1 : 0); await ouvreApercu();
+    });
+    $('pjCamSel')?.addEventListener('change', async (e) => {
+        entree.camId = e.target.value; posePref('camId', entree.camId); await ouvreApercu();
+    });
+    $('pjMicSel')?.addEventListener('change', async (e) => {
+        entree.micId = e.target.value; posePref('micId', entree.micId); await ouvreApercu();
+    });
     $('chatVersBas')?.addEventListener('click', descendLeFil);
     // Revenu en bas de lui-même : le bandeau n'a plus rien à annoncer.
     $('chatLog')?.addEventListener('scroll', () => {
@@ -2095,6 +2399,10 @@ export async function startFromConfig() {
     // d'ouverture posé après des échanges plus anciens que lui.
     addChat('Système', 'Bienvenue dans la salle « ' + roomName + ' ».');
     await chargeHistorique();
+    // ⚠️ Avant la connexion, pas après : on ne vérifie pas ses périphériques depuis
+    // une salle où l'on a déjà fait son entrée. Le fil, lui, se charge derrière
+    // l'écran - autant de gagné quand la porte s'ouvre.
+    await ecranDEntree();
     await connect();
     syncToolbar();
 }

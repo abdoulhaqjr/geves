@@ -638,6 +638,75 @@
             #visio-room .filmstrip-wrap .filmstrip{padding:0 12px 8px;}
         }
 
+        /* --- Temps de parole ---
+           ⚠️ La séance a un programme avec des créneaux, et rien ne disait depuis
+           combien de temps la personne parlait : le modérateur tenait son horaire de
+           tête. Le chronomètre s'affiche pour LUI et pour celui qui a la parole - les
+           deux qui peuvent agir dessus ; l'afficher à toute la salle ferait d'un
+           dépassement l'affaire de quarante personnes.
+           `tabular-nums` : sans lui, les chiffres n'ont pas la même largeur et la
+           pastille tremble à chaque seconde. */
+        #visio-room .v-chrono{display:none;position:absolute;top:calc(var(--vtop) + 16px);right:20px;z-index:30;
+            align-items:center;gap:9px;background:rgba(10,14,23,.86);border:1px solid var(--vborder);
+            backdrop-filter:blur(6px);padding:7px 14px;border-radius:50px;font-size:12.5px;font-weight:700;
+            box-shadow:0 8px 24px rgba(0,0,0,.35);}
+        #visio-room .v-chrono.on{display:inline-flex;}
+        #visio-room .v-chrono .qui{color:var(--vmuted);font-weight:600;max-width:170px;
+            overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+        #visio-room .v-chrono .t{font-variant-numeric:tabular-nums;}
+        #visio-room .v-chrono.proche{border-color:rgba(245,158,11,.55);}
+        #visio-room .v-chrono.proche .t{color:#fcd34d;}
+        #visio-room .v-chrono.depasse{border-color:rgba(225,29,72,.6);}
+        #visio-room .v-chrono.depasse .t{color:#fda4af;}
+        /* --- Écran d'entrée ---
+           ⚠️ On tombait dans la salle, et la demande d'autorisation du navigateur
+           arrivait PAR-DESSUS une séance déjà commencée. C'est ici que se règlent
+           presque tous les ennuis de première fois : un micro muet, une caméra prise
+           par une autre application, le mauvais périphérique choisi.
+           ⚠️ Il ne s'affiche QUE pour qui diffuse (communicateur, modérateur) : pour
+           un auditeur, qui ne publie ni son ni image, ce serait un mur sans objet. */
+        #visio-room .v-prejoin{display:none;position:absolute;inset:0;z-index:100;padding:20px;
+            background:var(--vbg);align-items:center;justify-content:center;overflow-y:auto;}
+        #visio-room .v-prejoin.on{display:flex;}
+        #visio-room .pj-box{width:min(460px,100%);background:var(--vbg-elev);border:1px solid var(--vborder);
+            border-radius:18px;padding:20px;box-shadow:0 24px 64px rgba(0,0,0,.5);}
+        #visio-room .pj-box h3{font-size:16px;font-weight:800;}
+        #visio-room .pj-sub{font-size:12.5px;color:var(--vmuted);line-height:1.45;margin-top:4px;}
+        #visio-room .pj-view{position:relative;margin-top:14px;border-radius:14px;overflow:hidden;
+            background:var(--vbg-tile);aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;}
+        /* Son propre reflet ici aussi : c'est la même glace (cf. #tileLocal). */
+        #visio-room .pj-view video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);}
+        #visio-room .pj-off{position:relative;z-index:2;font-size:12.5px;color:var(--vmuted);}
+        #visio-room .pj-view.on video{display:block;}
+        #visio-room .pj-view.on .pj-off{display:none;}
+        #visio-room .pj-view:not(.on) video{display:none;}
+        /* Niveau du micro : la seule preuve qu'il entend quelque chose. Un micro
+           muet ne se voit pas, il se CONSTATE - on parle, et la barre bouge. */
+        #visio-room .pj-level{position:absolute;left:10px;right:10px;bottom:10px;height:5px;z-index:3;
+            border-radius:50px;background:rgba(255,255,255,.14);overflow:hidden;}
+        #visio-room .pj-level span{display:block;height:100%;width:0;border-radius:50px;
+            background:var(--vok);transition:width .08s linear;}
+        #visio-room .pj-togs{display:flex;gap:8px;margin-top:12px;}
+        #visio-room .pj-tog{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+            padding:10px;border-radius:10px;border:1px solid var(--vborder);background:rgba(255,255,255,.05);
+            color:var(--vmuted);font-weight:700;font-size:12.5px;}
+        #visio-room .pj-tog svg{width:17px;height:17px;}
+        #visio-room .pj-tog[aria-pressed=true]{background:var(--vblue);border-color:transparent;color:#fff;}
+        #visio-room .pj-devices{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
+        #visio-room .pj-devices label{font-size:11px;font-weight:700;color:var(--vmuted);
+            display:flex;flex-direction:column;gap:4px;}
+        #visio-room .pj-devices select{border-radius:9px;border:1px solid var(--vborder);
+            background:var(--vbg-tile);color:var(--vtext);padding:9px 10px;font-size:12.5px;font-family:inherit;}
+        #visio-room .pj-msg{display:none;margin-top:12px;font-size:12px;line-height:1.45;color:#fcd34d;}
+        #visio-room .pj-msg.on{display:block;}
+        #visio-room .pj-acts{display:flex;gap:8px;margin-top:16px;}
+        #visio-room .pj-acts .v-btn{flex:1;justify-content:center;}
+        @@media (max-width:640px){
+            #visio-room .v-chrono{right:10px;padding:6px 11px;font-size:12px;}
+            #visio-room .v-chrono .qui{display:none;}
+            #visio-room .pj-box{padding:16px;}
+        }
+
         /* ===================== Mouvement réduit =====================
            ⚠️ Deux animations tournaient EN BOUCLE pendant toute une séance : le halo
            du bouton d'enregistrement et la pastille de l'état de connexion. Le reste
@@ -655,7 +724,8 @@
             /* Le tiroir s'ouvre, il ne voyage plus. */
             #visio-room .side,#visio-room .side-scrim,#visio-room .v-toast,#visio-room .tile,
             #visio-room .ctrl,#visio-room .pip-resize,#visio-room .side-grip::before,
-            #visio-room .chat-msg .acts-msg,#visio-room .v-btn{transition-duration:.01ms;}
+            #visio-room .chat-msg .acts-msg,#visio-room .v-btn,
+            #visio-room .pj-level span{transition-duration:.01ms;}
             #visio-room .ctrl:hover:not(:disabled){transform:none;}
         }
     </style>
@@ -868,8 +938,38 @@
         {{-- ⚠️ `role="status"` : « Votre micro a été coupé par le modérateur » ne
              parvenait à personne qui ne regarde pas l'écran. Le bandeau de reprise,
              lui, est une `alert` : perdre la salle interrompt ce qu'on faisait. --}}
+        {{-- Temps de parole : pour le modérateur et pour qui a la parole. --}}
+        <div class="v-chrono" id="chrono" role="status">
+            <span class="qui" id="chronoQui"></span><span class="t" id="chronoT">00:00</span>
+        </div>
         <div class="v-status" id="lkStatus" role="status">Connexion à la salle…</div>
         <div class="v-toast" id="toast" role="status" aria-live="polite"></div>
+        {{-- Écran d'entrée : vérifier ses périphériques AVANT d'ouvrir la porte.
+             Posé en dernier pour couvrir la salle, et retiré par le script dès que
+             l'on entre (cf. ecranDEntree). --}}
+        <div class="v-prejoin" id="prejoin" role="dialog" aria-modal="true" aria-labelledby="pjTitre">
+            <div class="pj-box">
+                <h3 id="pjTitre">Avant d'entrer</h3>
+                <p class="pj-sub">Vérifiez votre caméra et votre micro : parlez, la barre doit bouger.</p>
+                <div class="pj-view" id="pjVue">
+                    <video id="pjVideo" autoplay playsinline muted></video>
+                    <div class="pj-off" id="pjOff">Caméra fermée</div>
+                    <div class="pj-level"><span id="pjNiveau"></span></div>
+                </div>
+                <div class="pj-togs">
+                    <button type="button" class="pj-tog" id="pjCam" aria-pressed="false">Caméra</button>
+                    <button type="button" class="pj-tog" id="pjMic" aria-pressed="false">Micro</button>
+                </div>
+                <div class="pj-devices">
+                    <label>Caméra<select id="pjCamSel"></select></label>
+                    <label>Micro<select id="pjMicSel"></select></label>
+                </div>
+                <div class="pj-msg" id="pjMsg"></div>
+                <div class="pj-acts">
+                    <button type="button" class="v-btn blue" id="pjEntrer">Rejoindre la salle</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script type="application/json" id="lk-config">@json($liveKit)</script>

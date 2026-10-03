@@ -105,6 +105,9 @@ export const ORDRES_RESERVES = {
   comm_done: 'moderator',
   recording: 'moderator',
   chat_removed: 'moderator',
+  // Le temps de parole affiché chez tout le monde : c'est la séance qu'il
+  // engage, pas un affichage personnel.
+  floor_time: 'moderator',
   // Prendre le partage d'écran ou masquer la vignette caméra ne regarde que
   // ceux qui diffusent.
   screen_takeover: 'presenter',
@@ -240,4 +243,40 @@ export function teinteDuNom(nom) {
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360;
 
   return h;
+}
+
+/** Durée parlée, écrite comme une pendule : mm:ss, et h:mm:ss au-delà de l'heure. */
+export function chronoLabel(secondes) {
+  const t = Math.max(0, Math.floor(Number(secondes) || 0));
+  const h = Math.floor(t / 3600);
+  const m = Math.floor((t % 3600) / 60);
+  const s = t % 60;
+  const deux = (n) => String(n).padStart(2, '0');
+
+  return h ? h + ':' + deux(m) + ':' + deux(s) : deux(m) + ':' + deux(s);
+}
+
+/**
+ * Où en est le temps de parole par rapport au créneau prévu.
+ *
+ * ⚠️ Trois états et non deux : prévenir SEULEMENT au dépassement ne sert à rien -
+ * à ce moment-là, la personne est déjà en train de conclure. L'avertissement
+ * tombe au dernier cinquième du créneau, quand il reste de quoi abréger.
+ *
+ * ⚠️ Sans créneau (`minutes` absent), le chronomètre compte sans jamais alerter :
+ * il n'y a rien à dépasser, et une couleur d'alarme sortie de nulle part ferait
+ * écourter une communication qui tient son temps.
+ */
+export function etatChrono(secondes, minutes) {
+  const t = Math.max(0, Math.floor(Number(secondes) || 0));
+  const prevu = Number(minutes) > 0 ? Math.floor(Number(minutes)) * 60 : 0;
+  if (!prevu) return { classe: 'ok', texte: chronoLabel(t), reste: null };
+
+  const classe = t >= prevu ? 'depasse' : t >= prevu * 0.8 ? 'proche' : 'ok';
+
+  return {
+    classe,
+    texte: chronoLabel(t) + ' / ' + Math.floor(Number(minutes)) + ' min',
+    reste: prevu - t,
+  };
 }

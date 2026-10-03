@@ -189,9 +189,15 @@ class EventSession extends Model implements Meetable
 
     /**
      * Communications programmées dans la session (créneaux → soumissions), pour
-     * la fiche « communicateurs » de la salle : ordre, auteur, titre, compte lié.
+     * la fiche « communicateurs » de la salle : ordre, auteur, titre, compte lié,
+     * et la durée PRÉVUE du créneau.
      *
-     * @return array<int, array{order: int, name: string, title: string, accountId: ?int}>
+     * ⚠️ La durée vient du créneau et non d'un réglage de la salle : c'est le
+     * programme publié qui fait foi, celui que l'auteur a reçu et sur lequel la
+     * séance est annoncée. Elle vaut `null` quand le créneau n'a pas d'horaire de
+     * fin - le chronomètre compte alors sans rien à dépasser.
+     *
+     * @return array<int, array{order: int, name: string, title: string, accountId: ?int, minutes: ?int}>
      */
     public function scheduledCommunications(): array
     {
@@ -210,11 +216,16 @@ class EventSession extends Model implements Meetable
             }
             $name = $sub->correspondingAuthorName()
                 ?: (collect($sub->authors ?? [])->pluck('name')->filter()->first() ?: 'Communicant');
+            $minutes = $slot->starts_at && $slot->ends_at
+                ? (int) round($slot->starts_at->diffInSeconds($slot->ends_at) / 60)
+                : null;
+
             $out[] = [
                 'order' => $order++,
                 'name' => (string) $name,
                 'title' => (string) $sub->title,
                 'accountId' => $sub->participant?->user_id,
+                'minutes' => $minutes && $minutes > 0 ? $minutes : null,
             ];
         }
 

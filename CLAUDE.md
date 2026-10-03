@@ -557,6 +557,32 @@ paiement (`pay`), inscription à une formation.
     `MeetingProviderRegistry` retombe seul sur Jitsi public quand ce défaut n'est pas
     configuré. Le forcer en base écraserait la configuration du site - c'est ce qui
     masquait LiveKit une fois ses identifiants renseignés.
+- **Entrer et tenir l'horaire** (audit visuel, quatrième lot) :
+  - **Écran d'entrée** (`ecranDEntree`) : aperçu caméra, **niveau du micro**,
+    choix des périphériques, avant de se connecter. ⚠️ Seulement pour qui
+    **diffuse** : un auditeur ne publie ni son ni image, lui dresser un mur
+    retarderait tout le monde pour rien. ⚠️ Et les défauts **reprennent ce que la
+    salle faisait déjà** - elle ouvrait caméra ET micro d'office, sans rien
+    demander ; l'écran ne change pas ce qui se passe, il le montre et le rend
+    révocable. ⚠️ L'aperçu doit être **arrêté avant de connecter** (`fermeApercu`)
+    sinon la caméra reste prise et LiveKit ne peut plus l'ouvrir.
+  - Le périphérique choisi est porté dans `videoCaptureDefaults.deviceId` /
+    `audioCaptureDefaults.deviceId` : sans cela, LiveKit reprend celui que le
+    navigateur juge par défaut - pas celui qu'on vient de vérifier. Les choix sont
+    gardés en `localStorage`, lecture ET écriture sous `try` (navigation privée).
+  - **Temps de parole** (`chrono`) : le créneau du programme donne la durée prévue
+    (`minutes`, `null` sans horaire de fin - il n'y a alors rien à dépasser).
+    L'alerte tombe au **dernier cinquième**, pas au dépassement : à ce moment-là,
+    la personne conclut déjà.
+    - ⚠️ Le modérateur tient le compte et diffuse un **nombre de secondes**, pas
+      une heure de départ : deux machines n'ont pas la même horloge, et un écart
+      afficherait un dépassement imaginaire. Réémis toutes les 5 s, et aussitôt
+      pour un arrivant.
+    - ⚠️ `floor_time` est un **ordre réservé au modérateur** (cf. `ORDRES_RESERVES`)
+      - sinon n'importe qui affiche « 25 min » chez tout le monde et fait écourter
+      une communication dans les temps.
+    - ⚠️ Visible pour le modérateur et pour **qui a la parole** seulement : les
+      deux qui peuvent agir dessus.
 - **Ce que la salle doit ÉNONCER et épargner** (audit visuel, troisième lot) :
   - **`prefers-reduced-motion`** était ignoré dans la salle, alors que le reste du
     projet le respecte (`ukc.css`, `admin.css`, `public.css`). Deux animations

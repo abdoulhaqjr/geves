@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  chronoLabel,
   enBasDuFil,
+  etatChrono,
   grilleOptimale,
   idSur,
   idsDesParleurs,
@@ -230,5 +232,45 @@ describe('teinte de l’avatar', () => {
     });
     expect(teinteDuNom('')).toBe(225);
     expect(teinteDuNom(null)).toBe(225);
+  });
+});
+
+describe('temps de parole', () => {
+  it('s’écrit comme une pendule', () => {
+    expect(chronoLabel(0)).toBe('00:00');
+    expect(chronoLabel(72)).toBe('01:12');
+    expect(chronoLabel(3725)).toBe('1:02:05');
+    // Une horloge qui recule n'existe pas.
+    expect(chronoLabel(-5)).toBe('00:00');
+    expect(chronoLabel(null)).toBe('00:00');
+  });
+
+  it('prévient AVANT le dépassement, pas au moment où il est trop tard', () => {
+    // ⚠️ Un créneau de 15 min : l'alerte tombe à 12, quand il reste de quoi
+    // abréger - pas à 15, où la personne conclut déjà.
+    expect(etatChrono(11 * 60, 15).classe).toBe('ok');
+    expect(etatChrono(12 * 60, 15).classe).toBe('proche');
+    expect(etatChrono(15 * 60, 15).classe).toBe('depasse');
+    expect(etatChrono(20 * 60, 15).texte).toBe('20:00 / 15 min');
+  });
+
+  it('compte sans alerter quand le créneau n’a pas d’horaire', () => {
+    // ⚠️ Rien à dépasser : une couleur d'alarme ferait écourter une
+    // communication qui tient parfaitement son temps.
+    const sans = etatChrono(42 * 60, null);
+    expect(sans.classe).toBe('ok');
+    expect(sans.texte).toBe('42:00');
+    expect(sans.reste).toBeNull();
+    expect(etatChrono(60, 0).texte).toBe('01:00');
+  });
+});
+
+describe('le chronomètre engage la salle', () => {
+  it('n’est annonçable que par le modérateur', () => {
+    // ⚠️ Sinon n'importe qui affiche « 25 min » chez tout le monde et fait
+    // écourter une communication dans les temps.
+    expect(ordreRecevable('floor_time', 'audience')).toBe(false);
+    expect(ordreRecevable('floor_time', 'presenter')).toBe(false);
+    expect(ordreRecevable('floor_time', 'moderator')).toBe(true);
   });
 });

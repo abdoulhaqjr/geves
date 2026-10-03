@@ -306,6 +306,43 @@ it('liste les communications programmées de la session pour la salle', function
     expect($comms)->toHaveCount(1);
     expect($comms[0]['title'])->toBe('Ma communication');
     expect($comms[0]['accountId'])->toBe($account->id);
+    // Sans horaire de fin, il n'y a rien à dépasser : le chronomètre de la salle
+    // compte alors sans jamais alerter.
+    expect($comms[0]['minutes'])->toBeNull();
+});
+
+it('donne la durée prévue du créneau, pour le temps de parole en salle', function () {
+    $edition = openEdition();
+    $participant = $edition->participants()->create(['first_name' => 'Moussa', 'last_name' => 'Mensah', 'email' => 'mm@example.tg', 'role' => 'author']);
+    $sub = $edition->submissions()->create([
+        'participant_id' => $participant->id, 'ref_code' => '26-002', 'title' => 'Sols et agronomie', 'abstract' => 'x',
+        'status' => 'accepted', 'authors' => [['name' => 'Moussa Mensah', 'corresponding' => true]],
+    ]);
+    $session = liveSession($edition);
+    $session->slots()->create([
+        'edition_id' => $edition->id, 'submission_id' => $sub->id, 'participant_id' => 0,
+        'starts_at' => now()->setTime(9, 0), 'ends_at' => now()->setTime(9, 15),
+    ]);
+
+    expect($session->scheduledCommunications()[0]['minutes'])->toBe(15);
+});
+
+it('ne retient pas une durée de créneau nulle ou négative', function () {
+    // ⚠️ Un créneau mal saisi donnerait « 0 min », et la salle afficherait un
+    // dépassement dès la première seconde de parole.
+    $edition = openEdition();
+    $participant = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'ak@example.tg', 'role' => 'author']);
+    $sub = $edition->submissions()->create([
+        'participant_id' => $participant->id, 'ref_code' => '26-003', 'title' => 'Créneau vide', 'abstract' => 'x',
+        'status' => 'accepted', 'authors' => [['name' => 'Awa Kodjo', 'corresponding' => true]],
+    ]);
+    $session = liveSession($edition);
+    $session->slots()->create([
+        'edition_id' => $edition->id, 'submission_id' => $sub->id, 'participant_id' => 0,
+        'starts_at' => now()->setTime(9, 0), 'ends_at' => now()->setTime(9, 0),
+    ]);
+
+    expect($session->scheduledCommunications()[0]['minutes'])->toBeNull();
 });
 
 it('la config LiveKit porte le rôle et le nom de salle', function () {
