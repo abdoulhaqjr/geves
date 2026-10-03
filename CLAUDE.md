@@ -557,6 +557,28 @@ paiement (`pay`), inscription à une formation.
     `MeetingProviderRegistry` retombe seul sur Jitsi public quand ce défaut n'est pas
     configuré. Le forcer en base écraserait la configuration du site - c'est ce qui
     masquait LiveKit une fois ses identifiants renseignés.
+- **Le fil, une fois conservé, demande ce qui va avec** (troisième lot de l'audit) :
+  - **Messages non lus** : compteur sur l'onglet Chat **et** pastille sur le bouton
+    « Panneau ». ⚠️ Le tiroir est fermé par défaut sous 900px et le panneau s'ouvre
+    souvent sur un autre onglet : un message arrivait sans que rien ne le signale.
+    Le fil **rejoué** à l'arrivée ne compte pas comme non lu.
+  - **Modération** (`meeting.chat.delete`, modérateur de la séance) : un message
+    déplacé resterait sinon dans le fil pour **toutes les prochaines arrivées**. Le
+    retrait part aussi sur le canal de données, pour disparaître en direct.
+  - **Compte rendu** (`meeting.chat.export`, modérateur) : le fil s'emporte en texte
+    daté. Les questions posées en séance ont une valeur pour le PV, et rien ne
+    permettait de les en sortir.
+  - ⚠️ **Une communication se rattache à son auteur par IDENTIFIANT**
+    (`metadonnee()` → `accountId` dans la métadonnée du jeton, `matchComm`). Le
+    rattachement se faisait par **sous-chaîne du nom de famille** : deux homonymes
+    dans la salle, et le modérateur donnait la parole à la mauvaise personne. Le nom
+    ne subsiste qu'en filet, pour les co-auteurs sans compte.
+  - **Le micro se lit en icône** dans la liste, pas en toutes lettres : « micro
+    coupé » répété sur chaque ligne pesait plus que le nom qu'on y cherche. Le texte
+    reste dans `title`/`aria-label`. ⚠️ Le `innerHTML` du porteur d'icône ne
+    contredit pas la règle des listes : il ne reçoit qu'une **constante du code**.
+  - `#chatLog` est une zone `role="log" aria-live="polite"` : un lecteur d'écran
+    annonce les messages sans qu'on ait à revenir lire le panneau.
 - **Tenue de la salle en conditions réelles** (second lot de l'audit) :
   - **`App\Meetings\MeetableRegistry`** est le seul endroit qui dit quels objets ont
     une salle (`session`, `formation`) et traduit dans les deux sens, URL ↔ objet.

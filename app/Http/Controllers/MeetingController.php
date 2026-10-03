@@ -117,7 +117,7 @@ class MeetingController extends Controller
         abort_unless($provider instanceof LiveKitProvider, 404);
 
         return response()->json([
-            'token' => $provider->token($salle, $role, $salle->meetingDisplayName($account, $isStaff, null)),
+            'token' => $provider->token($salle, $role, $salle->meetingDisplayName($account, $isStaff, null), null, $account?->id),
         ]);
     }
 
@@ -157,6 +157,8 @@ class MeetingController extends Controller
                 'list' => route('meeting.chat.list', [$cle, $meetable->getKey()]),
                 'post' => route('meeting.chat.post', [$cle, $meetable->getKey()]),
                 'react' => route('meeting.chat.react', [$cle, $meetable->getKey(), 'UID']),
+                'delete' => route('meeting.chat.delete', [$cle, $meetable->getKey(), 'UID']),
+                'export' => route('meeting.chat.export', [$cle, $meetable->getKey()]),
                 'emojis' => MeetingMessage::EMOJIS,
             ];
         }

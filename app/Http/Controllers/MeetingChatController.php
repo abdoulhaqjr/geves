@@ -9,6 +9,7 @@ use App\Models\MeetingMessageReaction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 
 /**
@@ -116,11 +117,7 @@ class MeetingChatController extends Controller
             'emoji' => ['required', 'string', 'in:'.implode(',', MeetingMessage::EMOJIS)],
         ]);
 
-        $message = MeetingMessage::query()
-            ->where('meetable_type', $salle::class)
-            ->where('meetable_id', $salle->getKey())
-            ->where('uid', $uid)
-            ->firstOrFail();
+        $message = $this->message($salle, $uid);
 
         $moi = $this->signature();
         // ⚠️ UNE SEULE réaction par personne et par message : on cherche la
@@ -153,6 +150,89 @@ class MeetingChatController extends Controller
             'replaced' => $meme ? null : $ancien,
             'reactions' => $this->compte($message->load('reactions'), $moi),
         ]);
+    }
+
+    /**
+     * Retire un message du fil.
+     *
+     * ⚠️ Le fil est désormais CONSERVÉ : un message déplacé y resterait pour
+     * toutes les prochaines arrivées. Réservé au modérateur de la séance - c'est
+     * lui qui répond de ce qui se dit dans sa salle.
+     */
+    public function destroy(string $type, int $id, string $uid): JsonResponse
+    {
+        $salle = $this->salle($type, $id);
+        abort_unless(
+            $salle->meetingRoleFor(Auth::guard('account')->user(), Auth::guard('web')->check())->isModerator(),
+            403,
+        );
+
+        $this->message($salle, $uid)->delete();
+
+        return response()->json(['ok' => true, 'uid' => $uid]);
+    }
+
+    /**
+     * Le fil en texte, pour le compte rendu de séance.
+     *
+     * Les questions posées en séance ont une valeur pour le PV, et rien ne
+     * permettait de les en sortir. Réservé au modérateur, comme la présence.
+     */
+    public function export(string $type, int $id): Response
+    {
+        $salle = $this->salle($type, $id);
+        abort_unless(
+            $salle->meetingRoleFor(Auth::guard('account')->user(), Auth::guard('web')->check())->isModerator(),
+            403,
+        );
+
+        $messages = MeetingMessage::query()
+            ->where('meetable_type', $salle::class)
+            ->where('meetable_id', $salle->getKey())
+            ->with('reactions')
+            ->orderBy('id')
+            ->get();
+
+        $lignes = [
+            'Fil de discussion - salle '.$salle->meetingRoom(),
+            'Export du '.now()->translatedFormat('d F Y à H:i'),
+            str_repeat('-', 60),
+            '',
+        ];
+
+        foreach ($messages as $m) {
+            $entete = '['.($m->created_at?->format('d/m H:i') ?? '').'] '.$m->author_name;
+            if ($m->reply_uid) {
+                $entete .= ' (en réponse à '.$m->reply_author.' « '.$m->reply_excerpt.' »)';
+            }
+            $lignes[] = $entete.' :';
+            $lignes[] = '    '.str_replace("\n", "\n    ", $m->body);
+
+            $reactions = $m->reactions->groupBy('emoji')->map(fn ($g, $e) => $e.' '.$g->count())->implode(', ');
+            if ($reactions !== '') {
+                $lignes[] = '    réactions : '.$reactions;
+            }
+            $lignes[] = '';
+        }
+
+        if ($messages->isEmpty()) {
+            $lignes[] = '(aucun message)';
+        }
+
+        return response(implode("\n", $lignes), 200, [
+            'Content-Type' => 'text/plain; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="fil-visio-'.$type.'-'.$id.'.txt"',
+        ]);
+    }
+
+    /** Un message de CETTE salle, ou 404. */
+    private function message(Meetable&Model $salle, string $uid): MeetingMessage
+    {
+        return MeetingMessage::query()
+            ->where('meetable_type', $salle::class)
+            ->where('meetable_id', $salle->getKey())
+            ->where('uid', $uid)
+            ->firstOrFail();
     }
 
     /**

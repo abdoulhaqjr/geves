@@ -514,7 +514,8 @@ it('annonce le rôle de chacun dans la métadonnée du jeton LiveKit', function 
     $jeton = app(LiveKitProvider::class)->token($session, $role, 'Quelqu’un');
     $claims = json_decode(base64_decode(explode('.', $jeton)[1]), true);
 
-    expect(json_decode((string) $claims['metadata'], true))->toBe(['role' => $attendu]);
+    // Le rôle, sans figer le reste de la métadonnée (elle porte aussi le compte).
+    expect(json_decode((string) $claims['metadata'], true)['role'])->toBe($attendu);
 })->with([
     'modérateur' => [MeetingRole::Moderator, 'moderator'],
     'communicant' => [MeetingRole::Presenter, 'presenter'],

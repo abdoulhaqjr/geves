@@ -116,6 +116,11 @@ Route::post('/visio/{type}/{id}/messages', [MeetingChatController::class, 'store
 Route::post('/visio/{type}/{id}/messages/{uid}/reaction', [MeetingChatController::class, 'react'])
     ->middleware('throttle:visio-reaction')->name('meeting.chat.react');
 
+// Modération et compte rendu : retirer un message du fil, ou l'emporter en
+// texte pour le PV. Réservés au modérateur de la séance.
+Route::delete('/visio/{type}/{id}/messages/{uid}', [MeetingChatController::class, 'destroy'])->name('meeting.chat.delete');
+Route::get('/visio/{type}/{id}/messages.txt', [MeetingChatController::class, 'export'])->name('meeting.chat.export');
+
 // Nouveau jeton d'accès : la salle en redemande un pour se reconnecter après
 // une coupure, sans recharger la page. Les droits sont recalculés.
 Route::get('/visio/{type}/{id}/jeton', [MeetingController::class, 'token'])->name('meeting.token');

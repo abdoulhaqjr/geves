@@ -92,7 +92,7 @@ trait JoinsMeetings
             // ⚠️ L'inscription voyage dans l'IDENTITÉ LiveKit, pas dans le nom
             // affiché : celui-ci se change depuis la salle, et la présence ne peut
             // pas dépendre de ce que quelqu'un a tapé dans un champ.
-            'token' => $provider->token($this, $role, $name, $this->meetingParticipantId($account)),
+            'token' => $provider->token($this, $role, $name, $this->meetingParticipantId($account), $account?->id),
             'userName' => $name,
             'canPublish' => in_array($role, [MeetingRole::Moderator, MeetingRole::Presenter], true),
             // Même vocabulaire que la métadonnée du jeton (cf. MeetingRole::roomRole).

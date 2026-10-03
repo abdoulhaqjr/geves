@@ -264,6 +264,15 @@
         #visio-room .chat-msg .quote .q-text{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
         #visio-room .chat-msg.cible{box-shadow:0 0 0 2px rgba(255,215,0,.55);}
         /* Bandeau « on répond à… » : juste au-dessus du champ, là où on écrit. */
+        /* Outils du fil, réservés au modérateur. */
+        #visio-room .chat-tools{display:none;padding:8px 14px;border-top:1px solid var(--vborder);}
+        #visio-room .chat-tools.on{display:block;}
+        #visio-room .chat-tools a{font-size:11.5px;font-weight:700;color:var(--vmuted);text-decoration:none;}
+        #visio-room .chat-tools a:hover{color:var(--vtext);}
+        /* Une pastille sur « Panneau » : le tiroir est fermé par défaut sur
+           téléphone, et un message y arrivait sans que rien ne le signale. */
+        #visio-room #btnToggleSide.a-lire::after{content:'';width:7px;height:7px;border-radius:50%;
+            background:var(--vgold);flex-shrink:0;}
         #visio-room .chat-reply{display:none;align-items:center;gap:8px;padding:8px 12px;background:rgba(255,215,0,.07);}
         #visio-room .chat-reply.on{display:flex;}
         #visio-room .chat-reply .r-text{flex:1;min-width:0;font-size:11.5px;line-height:1.35;color:var(--vmuted);}
@@ -416,8 +425,12 @@
         #visio-room .tab-count{display:none;margin-left:6px;background:var(--vgold);color:var(--vblue-d);
             font-size:10.5px;font-weight:900;padding:1px 7px;border-radius:50px;}
         #visio-room .tab-count.on{display:inline-block;}
-        /* État du micro : lu de la salle, jamais deviné (cf. syncMicStates). */
-        #visio-room .person .mic{font-weight:700;}
+        /* État du micro : lu de la salle, jamais deviné (cf. syncMicStates).
+           En ICÔNE et non en toutes lettres - « micro coupé » répété sur chaque
+           ligne pesait plus que le nom qu'on y cherche. Le texte reste dans
+           `title`/`aria-label`, pour le survol comme pour un lecteur d'écran. */
+        #visio-room .person .mic{display:inline-flex;align-items:center;vertical-align:-3px;}
+        #visio-room .person .mic svg{width:14px;height:14px;display:block;}
         #visio-room .person .mic.on{color:#6ee7b7;}
         #visio-room .person .mic.off{color:#fda4af;}
         /* --- Voile du tiroir (téléphone / tablette) ---
@@ -606,7 +619,7 @@
                      title="Glisser pour élargir · flèches gauche/droite · double-clic pour revenir à la largeur normale"></div>
                 <div class="side-head">
                 <div class="side-tabs">
-                    <button type="button" class="active" data-side="chat">Chat</button>
+                    <button type="button" class="active" data-side="chat">Chat<span class="tab-count" id="chatUnread"></span></button>
                     <button type="button" data-side="people">Participants<span class="tab-count" id="handCount"></span></button>
                     <button type="button" data-side="comms" id="tabComms" style="display:none;">Communicateurs</button>
                     {{-- Onglet réservé au modérateur / rapporteur de la séance (cf. cfg.presence). --}}
@@ -617,7 +630,13 @@
                 <button type="button" class="side-close" id="btnCloseSide" title="Fermer le panneau" aria-label="Fermer le panneau">&times;</button>
                 </div>
                 <div class="side-panel active" id="panelChat">
-                    <div class="chat-log" id="chatLog"></div>
+                    {{-- `role="log"` : un lecteur d’écran doit annoncer les messages qui
+                         arrivent, sans que l’on ait à revenir lire le panneau. --}}
+                    <div class="chat-log" id="chatLog" role="log" aria-live="polite" aria-relevant="additions"></div>
+                    {{-- Compte rendu : le fil s'emporte en texte (modérateur). --}}
+                    <div class="chat-tools" id="chatTools">
+                        <a id="chatExport" href="#" target="_blank" rel="noopener">⬇ Télécharger le fil (texte)</a>
+                    </div>
                     <div class="chat-reply" id="chatReply">
                         <div class="r-text"><strong id="chatReplyWho"></strong><span id="chatReplyText"></span></div>
                         <button type="button" id="chatReplyCancel" title="Annuler la réponse" aria-label="Annuler la réponse">&times;</button>

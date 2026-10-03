@@ -202,6 +202,65 @@ it('délivre un nouveau jeton à qui peut rejoindre la salle en cours', function
     $this->getJson(route('meeting.token', ['session', $terminee->id]))->assertForbidden();
 });
 
+it('ne laisse que le modérateur retirer un message du fil', function () {
+    $edition = openEdition();
+    $moderateur = User::factory()->create(['email' => 'mod@example.tg']);
+    $session = liveSession($edition, 'public', ['moderator_email' => 'mod@example.tg']);
+    messageDansLeFil($session, 'mod001', 'Message déplacé');
+
+    $simple = User::factory()->create();
+    $this->actingAs($simple, 'account')
+        ->deleteJson(route('meeting.chat.delete', ['session', $session->id, 'mod001']))
+        ->assertForbidden();
+
+    // ⚠️ Le fil est CONSERVÉ : un message déplacé resterait là pour toutes les
+    // prochaines arrivées.
+    $this->actingAs($moderateur, 'account')
+        ->deleteJson(route('meeting.chat.delete', ['session', $session->id, 'mod001']))
+        ->assertOk();
+
+    expect(MeetingMessage::where('uid', 'mod001')->exists())->toBeFalse();
+});
+
+it('emporte le fil en texte pour le compte rendu, au modérateur seul', function () {
+    $edition = openEdition();
+    $moderateur = User::factory()->create(['email' => 'mod@example.tg']);
+    $session = liveSession($edition, 'public', ['moderator_email' => 'mod@example.tg']);
+    messageDansLeFil($session, 'pv0001', 'Une question sur la méthode');
+
+    $this->get(route('meeting.chat.export', ['session', $session->id]))->assertForbidden();
+
+    $reponse = $this->actingAs($moderateur, 'account')
+        ->get(route('meeting.chat.export', ['session', $session->id]))
+        ->assertOk();
+
+    expect($reponse->headers->get('content-type'))->toContain('text/plain');
+    expect($reponse->getContent())
+        ->toContain('Une question sur la méthode')
+        ->toContain('Awa Kodjo');
+});
+
+it('annonce l’identifiant de compte dans la métadonnée du jeton', function () {
+    config()->set('meetings.default', 'livekit');
+    config()->set('meetings.livekit.url', 'wss://exemple.livekit.cloud');
+    config()->set('meetings.livekit.api_key', 'cle');
+    config()->set('meetings.livekit.api_secret', str_repeat('s', 40));
+
+    $edition = openEdition();
+    $session = liveSession($edition, 'public');
+    $compte = User::factory()->create();
+
+    $this->actingAs($compte, 'account')->get(route('session.meeting', $session))->assertOk();
+
+    $jeton = $session->liveKitEmbedConfig($compte, false)['token'];
+    $claims = json_decode(base64_decode(explode('.', $jeton)[1]), true);
+
+    // ⚠️ C'est un identifiant, et non le nom de famille, qui doit rattacher une
+    // communication à la personne présente : deux homonymes suffisaient à donner
+    // la parole à la mauvaise.
+    expect(json_decode((string) $claims['metadata'], true)['accountId'])->toBe($compte->id);
+});
+
 it('donne à la salle les adresses de son fil', function () {
     config()->set('meetings.default', 'livekit');
     config()->set('meetings.livekit.url', 'wss://exemple.livekit.cloud');

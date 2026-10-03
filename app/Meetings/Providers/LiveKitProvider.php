@@ -61,7 +61,7 @@ class LiveKitProvider implements MeetingProvider
      * `$participantId` est encodé dans l'**identité** de la connexion, ce qui
      * permet ensuite de reconnaître qui est dans la salle ({@see LiveKitRoom}).
      */
-    public function token(Meetable $session, MeetingRole $role, ?string $displayName = null, ?int $participantId = null): string
+    public function token(Meetable $session, MeetingRole $role, ?string $displayName = null, ?int $participantId = null, ?int $accountId = null): string
     {
         $now = time();
         $key = (string) config('meetings.livekit.api_key');
@@ -88,7 +88,11 @@ class LiveKitProvider implements MeetingProvider
             // apparaissait auditeur dans la liste, et la scène n'avait aucun
             // présentateur à montrer : elle annonçait « en attente de la caméra »
             // pendant que les caméras tournaient.
-            'metadata' => json_encode(['role' => $role->roomRole()]),
+            // ⚠️ `accountId` sert à reconnaître QUI présente : la salle rattachait
+            // une communication à son auteur par sous-chaîne du nom de famille, et
+            // deux homonymes suffisaient à donner la parole à la mauvaise
+            // personne. C'est un identifiant, pas un nom, qui doit en décider.
+            'metadata' => json_encode(['role' => $role->roomRole(), 'accountId' => $accountId]),
             'nbf' => $now,
             'iat' => $now,
             'exp' => $now + $ttl,

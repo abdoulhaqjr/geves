@@ -582,6 +582,22 @@ export async function startFromConfig() {
         return n;
     }
 
+    /**
+     * Petit porteur d'icône.
+     *
+     * ⚠️ `innerHTML` ici ne contredit pas la règle des listes : ce qu'on y pose est
+     * une CONSTANTE du code (un glyphe), jamais une donnée venue de la base ou
+     * d'un participant. Le texte, lui, passe par `title`/`aria-label`.
+     */
+    function icone(glyphe, classe, intitule) {
+        const n = document.createElement('span');
+        n.className = classe || '';
+        n.innerHTML = glyphe;
+        if (intitule) { n.title = intitule; n.setAttribute('aria-label', intitule); }
+
+        return n;
+    }
+
     function refreshPeople() {
         syncMicStates();
         const rangs = new Map(mainsLevees().map((p, i) => [p.id, i + 1]));
@@ -604,7 +620,11 @@ export async function startFromConfig() {
                 etat.appendChild(elt('span', 'rank', '✋ ' + rang));
             }
             etat.appendChild(document.createTextNode(' · '));
-            etat.appendChild(elt('span', 'mic ' + (p.micOn ? 'on' : 'off'), p.micOn ? 'micro ouvert' : 'micro coupé'));
+            etat.appendChild(icone(
+                p.micOn ? ICONE_MICRO : ICONE_MICRO_COUPE,
+                'mic ' + (p.micOn ? 'on' : 'off'),
+                p.micOn ? 'Micro ouvert' : 'Micro coupé',
+            ));
             if (p.screen) etat.appendChild(document.createTextNode(' · écran'));
             meta.appendChild(etat);
             ligne.appendChild(meta);
@@ -629,8 +649,21 @@ export async function startFromConfig() {
 
         refreshHands(); majMicroTuiles();
     }
+    /**
+     * Rattache une communication programmée à la personne présente.
+     *
+     * ⚠️ Par IDENTIFIANT de compte d'abord. Le rattachement se faisait par
+     * sous-chaîne du nom de famille : deux homonymes dans la salle, et le
+     * modérateur donnait la parole à la mauvaise personne. Le nom ne subsiste
+     * qu'en filet, pour les co-auteurs sans compte qu'aucun identifiant ne
+     * désigne.
+     */
     function matchComm(c) {
-        const pe = people.find((p) => p.name && c.name && p.name.toLowerCase().indexOf(c.name.split(' ').pop().toLowerCase()) >= 0);
+        const parId = c.accountId
+            ? people.find((p) => p.accountId && Number(p.accountId) === Number(c.accountId))
+            : null;
+        const pe = parId
+            || people.find((p) => p.name && c.name && p.name.toLowerCase().indexOf(c.name.split(' ').pop().toLowerCase()) >= 0);
         if (pe) { c.identity = pe.id; c.online = true; c.isFloor = pe.role === 'presenter' || !!pe.isFloor; }
         else if (c.identity) { c.online = people.some((p) => p.id === c.identity); if (!c.online) c.isFloor = false; }
         else c.online = false;
@@ -771,6 +804,34 @@ export async function startFromConfig() {
         $('chatReply')?.classList.remove('on');
     }
 
+    // ---- Messages non lus ----
+    // ⚠️ Le tiroir est fermé par défaut sous 900px, et le panneau s'ouvre sur un
+    // autre onglet : un message arrivait sans que rien ne le signale.
+    let nonLus = 0;
+
+    /** Vrai quand le fil est réellement sous les yeux. */
+    function filVisible() {
+        const panneau = $('panelChat');
+        if (!panneau || !panneau.classList.contains('active')) return false;
+
+        return !ETROIT.matches || $('sidePanel').classList.contains('open');
+    }
+
+    function majNonLus() {
+        const badge = $('chatUnread');
+        if (badge) {
+            badge.textContent = String(nonLus);
+            badge.classList.toggle('on', nonLus > 0);
+        }
+        $('btnToggleSide')?.classList.toggle('a-lire', nonLus > 0);
+    }
+
+    function filLu() {
+        if (!nonLus) return;
+        nonLus = 0;
+        majNonLus();
+    }
+
     function addChat(who, text, me, meta) {
         const log = $('chatLog');
         if (!log) return;
@@ -820,6 +881,12 @@ export async function startFromConfig() {
             bReac.type = 'button'; bReac.textContent = 'Réagir';
             bReac.addEventListener('click', (e) => { e.stopPropagation(); ouvreChoixReaction(d, id); });
             actions.appendChild(bRep); actions.appendChild(bReac);
+            if (state.role === 'moderator' && cfg.chat && cfg.chat.delete) {
+                const bSup = document.createElement('button');
+                bSup.type = 'button'; bSup.textContent = 'Retirer';
+                bSup.addEventListener('click', () => supprimeMessage(id, text));
+                actions.appendChild(bSup);
+            }
             d.appendChild(actions);
             const deja = (meta && meta.reactions) || {};
             reactionsParMessage.set(id, deja);
@@ -827,6 +894,12 @@ export async function startFromConfig() {
         }
 
         log.appendChild(d); log.scrollTop = log.scrollHeight;
+
+        // Les siens, les messages système et le fil rejoué ne sont pas « non lus ».
+        if (id && !me && !(meta && meta.rejoue) && !filVisible()) {
+            nonLus++;
+            majNonLus();
+        }
     }
 
     /** Heure courte d'un message (chaîne ISO du serveur, ou instant local). */
@@ -944,7 +1017,7 @@ export async function startFromConfig() {
             const data = await res.json();
             const messages = data.messages || [];
             messages.forEach((m) => addChat(m.who, m.body, !!m.mine, {
-                id: m.uid, replyTo: m.replyTo, at: m.at, reactions: m.reactions,
+                id: m.uid, replyTo: m.replyTo, at: m.at, reactions: m.reactions, rejoue: true,
             }));
             // Rien avant soi : le message d'ouverture suffit, un repère
             // d'arrivée collé juste dessous ne dirait rien de plus.
@@ -973,6 +1046,41 @@ export async function startFromConfig() {
                 }),
             });
         } catch (e) { /* le message est parti dans la salle ; l'archive peut manquer un tour */ }
+    }
+
+    /**
+     * Retire un message du fil, pour tout le monde.
+     *
+     * ⚠️ Le fil est conservé : un message déplacé resterait là pour toutes les
+     * prochaines arrivées. Le serveur revérifie le rang - le bouton n'est qu'une
+     * commodité.
+     */
+    async function supprimeMessage(uid, texte) {
+        const ok = await confirme(
+            'Retirer ce message du fil',
+            'Le message <strong>' + texteEchappe(texteCourt(texte, 80)) + '</strong> disparaîtra pour tout le monde, y compris pour qui rejoindra plus tard. Cette suppression ne se défait pas.',
+            'Retirer',
+        );
+        if (!ok || !cfg.chat || !cfg.chat.delete) return;
+
+        try {
+            const res = await fetch(cfg.chat.delete.replace('UID', encodeURIComponent(uid)), {
+                method: 'DELETE',
+                headers: { 'X-CSRF-TOKEN': csrf, Accept: 'application/json' },
+                credentials: 'same-origin',
+            });
+            if (!res.ok) { toast('Suppression refusée'); return; }
+            retireMessage(uid);
+            sendData({ type: 'chat_removed', uid });
+            toast('Message retiré');
+        } catch (e) { toast('Suppression indisponible'); }
+    }
+
+    function retireMessage(uid) {
+        const id = idSur(uid);
+        const el = id && $('msg-' + id);
+        if (el) el.remove();
+        reactionsParMessage.delete(id);
     }
 
     async function sendChat() {
@@ -1005,6 +1113,11 @@ export async function startFromConfig() {
     }
     function updateModUi() {
         const tab = $('tabComms'); if (tab) tab.style.display = state.role === 'moderator' ? '' : 'none';
+        // Emporter le fil pour le compte rendu : c'est au modérateur de le faire.
+        const outils = $('chatTools');
+        if (outils) outils.classList.toggle('on', state.role === 'moderator' && !!(cfg.chat && cfg.chat.export));
+        const lien = $('chatExport');
+        if (lien && cfg.chat && cfg.chat.export) lien.href = cfg.chat.export;
         const rec = $('btnRec'); if (rec) rec.style.display = (state.role === 'moderator' && cfg.canRecord) ? '' : 'none';
     }
     function updateLayoutClasses() {
@@ -1298,8 +1411,8 @@ export async function startFromConfig() {
             .on(LK.RoomEvent.TrackMuted, (pub, participant) => onCameraToggle(pub, participant))
             .on(LK.RoomEvent.TrackUnmuted, (pub, participant) => onCameraToggle(pub, participant))
             .on(LK.RoomEvent.ParticipantConnected, (p) => {
-                let role = 'audience'; try { if (p.metadata) { const md = JSON.parse(p.metadata); if (md.role) role = md.role; } } catch (e) {}
-                people.push({ name: p.name || p.identity, role, hand: false, screen: false, id: p.identity });
+                const annonce = metadonnee(p);
+                people.push({ name: p.name || p.identity, role: annonce.role, accountId: annonce.accountId, hand: false, screen: false, id: p.identity });
                 refreshPeople(); refreshComms(); ensureRemoteTile(p); toast((p.name || p.identity) + ' a rejoint');
             })
             .on(LK.RoomEvent.ParticipantDisconnected, (p) => {
@@ -1337,6 +1450,24 @@ export async function startFromConfig() {
     }
 
     /**
+     * Ce que le serveur annonce d'un participant : son rôle et son compte.
+     *
+     * ⚠️ Seule source digne de confiance pour ces deux informations - elle est
+     * signée dans le jeton, et le participant n'a pas le droit de la modifier
+     * (`canUpdateOwnMetadata` n'est jamais accordé).
+     */
+    function metadonnee(participant) {
+        try {
+            const md = JSON.parse((participant && participant.metadata) || '{}');
+            const role = md.role === 'moderator' || md.role === 'presenter' ? md.role : 'audience';
+
+            return { role, accountId: md.accountId || null };
+        } catch (e) {
+            return { role: 'audience', accountId: null };
+        }
+    }
+
+    /**
      * Rôle ANNONCÉ par le serveur pour ce participant, lu dans la métadonnée de
      * son jeton.
      *
@@ -1347,13 +1478,7 @@ export async function startFromConfig() {
      * jamais accordé).
      */
     function roleAnnonce(participant) {
-        try {
-            const md = JSON.parse((participant && participant.metadata) || '{}');
-
-            return md.role === 'moderator' || md.role === 'presenter' ? md.role : 'audience';
-        } catch (e) {
-            return 'audience';
-        }
+        return metadonnee(participant).role;
     }
 
     /**
@@ -1373,6 +1498,7 @@ export async function startFromConfig() {
         mod_role: 'moderator',
         comm_done: 'moderator',
         recording: 'moderator',
+        chat_removed: 'moderator',
         // Prendre le partage d'écran ou masquer la vignette caméra ne regarde que
         // ceux qui diffusent.
         screen_takeover: 'presenter',
@@ -1400,10 +1526,9 @@ export async function startFromConfig() {
     function adopteParticipantsPresents() {
         if (!room) return;
         room.remoteParticipants.forEach((p) => {
-            let role = 'audience';
-            try { if (p.metadata) { const md = JSON.parse(p.metadata); if (md.role) role = md.role; } } catch (e) { /* rôle inconnu */ }
+            const annonce = metadonnee(p);
             if (!people.some((x) => x.id === p.identity)) {
-                people.push({ name: p.name || p.identity, role, hand: false, screen: false, id: p.identity });
+                people.push({ name: p.name || p.identity, role: annonce.role, accountId: annonce.accountId, hand: false, screen: false, id: p.identity });
             }
             ensureRemoteTile(p);
             p.trackPublications.forEach((pub) => {
@@ -1499,6 +1624,7 @@ export async function startFromConfig() {
         const fromId = participant && participant.identity;
         if (msg.type === 'chat') addChat((participant && (participant.name || participant.identity)) || 'Participant', msg.text, false, { id: msg.id, replyTo: msg.replyTo, at: Date.now() });
         else if (msg.type === 'reaction') reactionDistante(msg.uid, msg.emoji, !!msg.on, msg.replaced || null);
+        else if (msg.type === 'chat_removed') retireMessage(msg.uid);
         else if (msg.type === 'hand') {
             const pe = people.find((x) => x.id === fromId);
             if (pe) {
@@ -1690,6 +1816,7 @@ export async function startFromConfig() {
         const pc = $('panelComms'); if (pc) pc.classList.toggle('active', id === 'comms'); if (id === 'comms') refreshComms();
         const pp = $('panelPresence'); if (pp) pp.classList.toggle('active', id === 'presence');
         if (id === 'presence') loadPresence();
+        if (id === 'chat') filLu();
     }));
     // ---- Panneau latéral : colonne sur grand écran, tiroir en dessous de 900px ----
     // ⚠️ L'ancienne bascule se contentait d'inverser deux classes. Sur téléphone, le
@@ -1705,6 +1832,7 @@ export async function startFromConfig() {
         m.classList.toggle('side-closed', !ouvert);
         $('sideScrim')?.classList.toggle('on', ouvert && ETROIT.matches);
         $('btnToggleSide')?.setAttribute('aria-expanded', ouvert ? 'true' : 'false');
+        if (ouvert && $('panelChat')?.classList.contains('active')) filLu();
         layoutGrid();
     }
     $('btnToggleSide').addEventListener('click', () => basculePanneau());
