@@ -45,7 +45,18 @@ export async function startFromConfig() {
     // La classe porte l'affichage (le bandeau est un inline-flex avec sa pastille
     // tournante) : un `display:block` en dur écraserait sa mise en page.
     function setStatus(txt) { const s = $('lkStatus'); if (s) { s.textContent = txt || ''; s.classList.toggle('on', !!txt); } }
-    function setConnPill(mode, label) { const el = $('connPill'); if (el) { el.className = 'pill ' + mode; el.textContent = label; } }
+    // ⚠️ Le `title` n'est pas décoratif : sur téléphone, la pastille est réduite à
+    // sa seule puce de couleur (cf. la feuille de style). Sans lui, l'état de la
+    // connexion ne serait plus énonçable - ni au survol, ni pour un lecteur
+    // d'écran.
+    function setConnPill(mode, label) {
+        const el = $('connPill');
+        if (!el) return;
+        el.className = 'pill ' + mode;
+        el.textContent = label;
+        el.title = label;
+        el.setAttribute('aria-label', label);
+    }
     function initials(n) { return (n || '?').split(/\s+/).filter(Boolean).map((p) => p[0]).join('').slice(0, 2).toUpperCase() || '?'; }
     function roleLabel(r) { return r === 'presenter' ? 'Communicateur' : r === 'moderator' ? 'Modérateur' : 'Auditeur'; }
 
@@ -848,7 +859,68 @@ export async function startFromConfig() {
         const pp = $('panelPresence'); if (pp) pp.classList.toggle('active', id === 'presence');
         if (id === 'presence') loadPresence();
     }));
-    $('btnToggleSide').addEventListener('click', () => { const m = $('mainLayout'); m.classList.toggle('side-closed'); $('sidePanel').classList.toggle('open'); layoutGrid(); });
+    // ---- Panneau latéral : colonne sur grand écran, tiroir en dessous de 900px ----
+    // ⚠️ L'ancienne bascule se contentait d'inverser deux classes. Sur téléphone, le
+    // tiroir partait donc OUVERT, par-dessus les visages, et il fallait appuyer
+    // deux fois pour le refermer. Un tiroir qui recouvre la scène doit partir
+    // fermé, et se refermer d'un appui sur le voile ou sur sa croix.
+    const ETROIT = matchMedia('(max-width: 900px)');
+    function basculePanneau(ouvrir) {
+        const m = $('mainLayout'), s = $('sidePanel');
+        if (!m || !s) return;
+        const ouvert = typeof ouvrir === 'boolean' ? ouvrir : !s.classList.contains('open');
+        s.classList.toggle('open', ouvert);
+        m.classList.toggle('side-closed', !ouvert);
+        $('sideScrim')?.classList.toggle('on', ouvert && ETROIT.matches);
+        $('btnToggleSide')?.setAttribute('aria-expanded', ouvert ? 'true' : 'false');
+        layoutGrid();
+    }
+    $('btnToggleSide').addEventListener('click', () => basculePanneau());
+    $('btnCloseSide')?.addEventListener('click', () => basculePanneau(false));
+    $('sideScrim')?.addEventListener('click', () => basculePanneau(false));
+    basculePanneau(!ETROIT.matches);
+    ETROIT.addEventListener('change', () => basculePanneau(!ETROIT.matches));
+
+    // ---- Barre d'outils compacte : les commandes secondaires passent en feuille ----
+    // ⚠️ Elles ne sont pas RECOPIÉES dans la feuille, elles y sont DÉPLACÉES. Un
+    // second jeu de boutons voudrait dire deux écouteurs et deux états à tenir
+    // d'accord (micro coupé, enregistrement en cours, partage actif) : la salle
+    // mentirait sur elle-même dès la première divergence.
+    const BARRE_COMPACTE = matchMedia('(max-width: 767px)');
+    const SECONDAIRES = ['btnEngagement', 'btnScreen', 'btnLayout', 'btnFs', 'btnBg', 'btnRec'];
+    const ancres = new Map();
+    function rangeSecondaires() {
+        const slot = $('moreSlot');
+        if (!slot) return;
+        const compact = BARRE_COMPACTE.matches;
+        // ⚠️ Au retour, on remonte du DERNIER au premier : l'ancre d'un bouton est
+        // souvent le bouton suivant, qui doit donc avoir déjà retrouvé sa place -
+        // sinon tout se retrouvait empilé à la fin de la barre.
+        const ids = compact ? SECONDAIRES : SECONDAIRES.slice().reverse();
+        ids.forEach((id) => {
+            const el = $(id);
+            if (!el) return;
+            if (!ancres.has(id)) ancres.set(id, { parent: el.parentElement, apres: el.nextElementSibling });
+            if (compact) { slot.appendChild(el); return; }
+            const a = ancres.get(id);
+            a.parent.insertBefore(el, a.apres && a.apres.parentElement === a.parent ? a.apres : null);
+        });
+        if (!compact) $('moreSheet')?.classList.remove('open');
+    }
+    rangeSecondaires();
+    BARRE_COMPACTE.addEventListener('change', () => { rangeSecondaires(); layoutGrid(); });
+    $('btnMore')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        ['bgMenu', 'shareMenu', 'volPanel'].forEach((id) => $(id)?.classList.remove('open'));
+        const ouvert = $('moreSheet').classList.toggle('open');
+        $('btnMore').setAttribute('aria-expanded', ouvert ? 'true' : 'false');
+    });
+    // ⚠️ En CAPTURE : deux des boutons de la feuille arrêtent la propagation pour
+    // ouvrir leur propre menu (arrière-plan, partage). Sans la capture, la feuille
+    // restait ouverte derrière le menu qu'ils venaient d'ouvrir.
+    $('moreSlot')?.addEventListener('click', (e) => {
+        if (e.target.closest('.ctrl,.v-btn')) $('moreSheet')?.classList.remove('open');
+    }, true);
     // Volume / son
     $('btnSpeaker').addEventListener('click', (e) => { e.stopPropagation(); const p = $('volPanel'); if (p.classList.contains('open')) { state.speakerOn = !state.speakerOn; applyVolume(); } p.classList.toggle('open'); });
     $('volRange').addEventListener('input', (e) => { state.volume = Math.max(0, Math.min(1, e.target.value / 100)); state.speakerOn = state.volume > 0; applyVolume(); });
@@ -860,7 +932,8 @@ export async function startFromConfig() {
     $('btnLeave').addEventListener('click', leave);
     $('btnLeaveTop').addEventListener('click', (e) => { e.preventDefault(); leave(); });
     document.addEventListener('click', (e) => {
-        const bg = $('bgMenu'), sm = $('shareMenu'), vp = $('volPanel');
+        const bg = $('bgMenu'), sm = $('shareMenu'), vp = $('volPanel'), ms = $('moreSheet');
+        if (ms && !ms.contains(e.target) && !$('btnMore')?.contains(e.target)) ms.classList.remove('open');
         if (bg && !bg.contains(e.target) && e.target !== $('btnBg') && !$('btnBg').contains(e.target)) bg.classList.remove('open');
         if (sm && !sm.contains(e.target) && !$('btnScreen').contains(e.target)) sm.classList.remove('open');
         if (vp && !vp.contains(e.target) && !$('btnSpeaker').contains(e.target)) vp.classList.remove('open');

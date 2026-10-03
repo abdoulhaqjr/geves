@@ -2,16 +2,36 @@
 @if ($liveKit)
     {{-- ============ Salle LiveKit intégrée (lecteur maison, SDK bundlé) ============ --}}
     <style>
+        /* ⚠️ Les hauteurs des deux barres sont des VARIABLES : une dizaine de
+           règles s'y accrochent (bandeau d'état, menus, infobulle, panneau de
+           volume). Écrites en dur, elles laissaient tous ces éléments à
+           l'ancienne hauteur dès que les barres se compactaient sur téléphone :
+           le bandeau d'état flottait dans le vide, les menus passaient sous la
+           barre d'outils. */
         #visio-room{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;overflow:hidden;
+            --vtop:56px;--vtoolbar:80px;
             --vbg:#0b0f1a;--vbg-elev:#121826;--vbg-panel:#161d2e;--vbg-tile:#1c2438;--vborder:rgba(255,255,255,.08);
             --vtext:#f1f5f9;--vmuted:#94a3b8;--vdanger:#e11d48;--vdanger-h:#be123c;--vok:#10b981;
             --vblue:#223ea4;--vblue-d:#1a3080;--vgold:#ffd700;--vgreen:#009933;
             background:var(--vbg);color:var(--vtext);font-family:var(--ukc-font,'Jost',sans-serif);}
+        /* ⚠️ Sur téléphone, `inset:0` fait confiance au GRAND viewport : la barre
+           d'adresse du navigateur recouvrait la barre d'outils, et « Quitter »
+           devenait inatteignable. `100dvh` suit la hauteur réellement visible, et
+           les marges de sûreté tiennent compte de l'encoche et de la barre
+           gestuelle (elles valent zéro partout ailleurs). */
+        @@supports (height:100dvh){#visio-room{height:100dvh;}}
+        /* Un défilement qui atteint le bout du chat ne doit pas se propager à
+           la page : sur Android, cela déclenchait « tirer pour recharger » au
+           milieu d'une séance. */
+        #visio-room{overscroll-behavior:contain;}
+        #visio-room{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
         #visio-room *{box-sizing:border-box;margin:0;padding:0;}
         #visio-room button{cursor:pointer;font-family:inherit;}
-        #visio-room .v-topbar{height:56px;flex-shrink:0;background:var(--vbg-elev);border-bottom:1px solid var(--vborder);
+        #visio-room .v-topbar{height:var(--vtop);flex-shrink:0;background:var(--vbg-elev);border-bottom:1px solid var(--vborder);
             display:flex;align-items:center;justify-content:space-between;padding:0 16px;gap:12px;}
-        #visio-room .v-left{display:flex;align-items:center;gap:12px;min-width:0;}
+        /* `flex:1` : sans lui, la droite de la barre (qui ne se comprime pas) écrasait
+           le titre de la séance jusqu'à ZÉRO pixel de large sur téléphone. */
+        #visio-room .v-left{display:flex;align-items:center;gap:12px;min-width:0;flex:1;}
         /* Le logo apporte sa propre forme : pas d'aplat derrière, et `contain`
            pour ne jamais le déformer quel que soit le fichier téléversé.
            ⚠️ Le cadre ROGNE légèrement (overflow + léger agrandissement) : les
@@ -60,9 +80,6 @@
         #visio-room .v-main{flex:1;min-height:0;display:grid;grid-template-columns:1fr 340px;position:relative;}
         #visio-room .v-main.side-closed{grid-template-columns:1fr;}
         #visio-room .v-main.side-closed .side{display:none;}
-        @@media(max-width:900px){#visio-room .v-main{grid-template-columns:1fr;}
-            #visio-room .side{display:none;position:absolute;inset:0;z-index:15;width:100%;max-width:360px;right:0;left:auto;}
-            #visio-room .side.open{display:flex;}}
         #visio-room .stage{min-width:0;min-height:0;display:flex;flex-direction:column;padding:12px 12px 8px;background:var(--vbg);}
         #visio-room .stage-main{flex:1;min-height:0;display:flex;flex-direction:column;position:relative;}
         #visio-room #stageGrid{flex:1;min-height:0;}
@@ -161,7 +178,10 @@
             #visio-room .pip-bubble,#visio-room .pip-resize{touch-action:none;}
         }
         #visio-room .side{border-left:1px solid var(--vborder);background:var(--vbg-panel);display:flex;flex-direction:column;min-height:0;}
-        #visio-room .side-tabs{display:flex;flex-shrink:0;border-bottom:1px solid var(--vborder);padding:0 8px;}
+        /* La bordure passe sur l'en-tête : la croix de fermeture est à côté des
+           onglets, pas dedans, pour ne pas défiler avec eux. */
+        #visio-room .side-head{display:flex;flex-shrink:0;min-width:0;border-bottom:1px solid var(--vborder);}
+        #visio-room .side-tabs{display:flex;flex:1;min-width:0;padding:0 8px;}
         #visio-room .side-tabs button{flex:1;padding:14px 8px;border:none;background:transparent;color:var(--vmuted);font-weight:700;font-size:13px;border-bottom:2px solid transparent;margin-bottom:-1px;}
         #visio-room .side-tabs button:hover{color:var(--vtext);}
         #visio-room .side-tabs button.active{color:var(--vtext);border-bottom-color:var(--vgold);}
@@ -196,7 +216,7 @@
         #visio-room .comm-item .acts button{font-size:11px;font-weight:700;padding:5px 9px;border-radius:6px;border:1px solid var(--vborder);background:rgba(255,255,255,.06);color:var(--vtext);}
         #visio-room .comm-item .acts button.primary{background:var(--vblue);border-color:transparent;}
         #visio-room .comm-item .acts button:hover{filter:brightness(1.15);}
-        #visio-room .toolbar{flex-shrink:0;height:80px;background:var(--vbg-elev);border-top:1px solid var(--vborder);display:flex;align-items:center;justify-content:center;gap:8px;padding:0 16px;}
+        #visio-room .toolbar{flex-shrink:0;height:var(--vtoolbar);background:var(--vbg-elev);border-top:1px solid var(--vborder);display:flex;align-items:center;justify-content:center;gap:8px;padding:0 16px;}
         #visio-room .toolbar .sep{width:1px;height:28px;background:var(--vborder);margin:0 6px;}
         #visio-room .ctrl{width:48px;height:48px;border-radius:50%;border:none;background:rgba(255,255,255,.08);color:var(--vtext);display:inline-flex;align-items:center;justify-content:center;transition:background .15s,transform .1s;}
         #visio-room .ctrl:hover:not(:disabled){background:rgba(255,255,255,.14);transform:translateY(-1px);}
@@ -213,7 +233,7 @@
         #visio-room .rec-badge{display:none;position:absolute;top:12px;left:12px;z-index:28;background:rgba(225,29,72,.9);color:#fff;font-size:11px;font-weight:800;padding:5px 10px;border-radius:6px;}
         #visio-room .rec-badge.on{display:inline-flex;align-items:center;gap:6px;}
         #visio-room .rec-badge .dot{width:8px;height:8px;border-radius:50%;background:#fff;animation:vrec 1.2s ease infinite;}
-        #visio-room .menu{display:none;position:absolute;bottom:92px;left:50%;transform:translateX(-50%);background:var(--vbg-elev);border:1px solid var(--vborder);border-radius:16px;padding:14px;z-index:45;box-shadow:0 16px 48px rgba(0,0,0,.45);width:min(340px,92vw);}
+        #visio-room .menu{display:none;position:absolute;bottom:calc(var(--vtoolbar) + 12px);left:50%;transform:translateX(-50%);background:var(--vbg-elev);border:1px solid var(--vborder);border-radius:16px;padding:14px;z-index:45;box-shadow:0 16px 48px rgba(0,0,0,.45);width:min(340px,92vw);}
         #visio-room .menu.open{display:block;}
         #visio-room .menu h4{font-size:12px;font-weight:800;color:var(--vmuted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;}
         #visio-room .bg-options{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
@@ -242,27 +262,27 @@
         #visio-room .pr-acts button.on[data-st=absent]{background:#dc2626;border-color:#dc2626;color:#fff;}
         #visio-room .pr-acts button.on[data-st=excused]{background:var(--vgold);border-color:var(--vgold);color:#2b1f00;}
         #visio-room .pr-empty{padding:16px 14px;font-size:12.5px;color:var(--vmuted);line-height:1.5;}
-        #visio-room .vol-panel{display:none;position:absolute;bottom:92px;left:50%;transform:translateX(-50%);background:var(--vbg-elev);border:1px solid var(--vborder);border-radius:14px;padding:12px 16px;z-index:46;box-shadow:0 12px 40px rgba(0,0,0,.4);align-items:center;gap:10px;min-width:220px;}
+        #visio-room .vol-panel{display:none;position:absolute;bottom:calc(var(--vtoolbar) + 12px);left:50%;transform:translateX(-50%);background:var(--vbg-elev);border:1px solid var(--vborder);border-radius:14px;padding:12px 16px;z-index:46;box-shadow:0 12px 40px rgba(0,0,0,.4);align-items:center;gap:10px;min-width:220px;}
         #visio-room .vol-panel.open{display:flex;}
         #visio-room .vol-panel label{font-size:12px;font-weight:700;color:var(--vmuted);}
         #visio-room .vol-panel input[type=range]{flex:1;accent-color:var(--vgold);}
         #visio-room .vol-panel .vol-val{font-size:12px;font-weight:800;min-width:36px;text-align:right;}
-        #visio-room .perm-banner{display:none;position:absolute;top:64px;left:50%;transform:translateX(-50%);z-index:70;width:min(420px,92vw);background:var(--vbg-elev);border:1px solid rgba(255,215,0,.35);border-radius:14px;padding:14px 16px;box-shadow:0 12px 40px rgba(0,0,0,.4);font-size:13px;line-height:1.45;}
+        #visio-room .perm-banner{display:none;position:absolute;top:calc(var(--vtop) + 8px);left:50%;transform:translateX(-50%);z-index:70;width:min(420px,92vw);background:var(--vbg-elev);border:1px solid rgba(255,215,0,.35);border-radius:14px;padding:14px 16px;box-shadow:0 12px 40px rgba(0,0,0,.4);font-size:13px;line-height:1.45;}
         #visio-room .perm-banner.on{display:block;}
         #visio-room .perm-banner strong{color:var(--vgold);}
         #visio-room .perm-banner .actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
         #visio-room .perm-banner .actions button{border:none;border-radius:8px;padding:8px 12px;font-weight:700;font-size:12.5px;}
         #visio-room .perm-banner .actions .p1{background:var(--vgold);color:var(--vblue-d);}
         #visio-room .perm-banner .actions .p2{background:rgba(255,255,255,.08);color:var(--vtext);border:1px solid var(--vborder);}
-        #visio-room .v-toast{position:absolute;bottom:96px;left:50%;transform:translateX(-50%) translateY(20px);z-index:90;background:rgba(15,18,28,.96);color:var(--vtext);border:1px solid var(--vborder);border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;}
+        #visio-room .v-toast{position:absolute;bottom:calc(var(--vtoolbar) + 16px);left:50%;transform:translateX(-50%) translateY(20px);z-index:90;background:rgba(15,18,28,.96);color:var(--vtext);border:1px solid var(--vborder);border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;}
         #visio-room .v-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
         /* ⚠️ L'état de connexion se posait au MILIEU de la scène, à côté du nom du
            présentateur : deux informations sans rapport collées l'une à l'autre.
            Il devient un bandeau discret en haut, qui n'occupe pas la place de ce
            qu'on est venu regarder. */
-        /* ⚠️ Décalé de la hauteur de la barre (56px) : posé à 14px du haut, il se
+        /* ⚠️ Décalé de la hauteur de la barre : posé à 14px du haut, il se
            superposait au titre de la séance. Il appartient à la scène. */
-        #visio-room .v-status{position:absolute;top:72px;left:50%;transform:translateX(-50%);z-index:30;
+        #visio-room .v-status{position:absolute;top:calc(var(--vtop) + 16px);left:50%;transform:translateX(-50%);z-index:30;
             display:none;align-items:center;gap:9px;color:#c7d1e6;background:rgba(10,14,23,.82);
             border:1px solid var(--vborder);backdrop-filter:blur(6px);padding:8px 14px;border-radius:50px;
             font-size:12.5px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.35);}
@@ -270,8 +290,120 @@
         #visio-room .v-status::before{content:'';width:12px;height:12px;border-radius:50%;flex-shrink:0;
             border:2px solid rgba(199,209,230,.25);border-top-color:#c7d1e6;animation:vspin .7s linear infinite;}
         @@keyframes vspin{to{transform:rotate(360deg);}}
+        /* --- Voile du tiroir (téléphone / tablette) ---
+           Le panneau recouvre la scène : il faut voir qu'il est AU-DESSUS, et
+           qu'un appui à côté le referme. */
+        #visio-room .side-scrim{display:none;position:absolute;inset:0;z-index:24;
+            background:rgba(4,7,13,.55);opacity:0;pointer-events:none;transition:opacity .22s;}
+        #visio-room .side-scrim.on{opacity:1;pointer-events:auto;}
+        /* Croix de fermeture : quand le panneau occupe tout l'écran, repartir
+           chercher « Panneau » dans la barre du haut n'est plus le geste évident. */
+        #visio-room .side-close{display:none;flex:0 0 auto;align-items:center;justify-content:center;
+            padding:0 14px;border:none;background:transparent;color:var(--vmuted);font-size:16px;font-weight:700;}
+        #visio-room .side-close:hover{color:var(--vtext);}
+        /* --- Feuille « Plus d'options » (barres compactes) ---
+           ⚠️ Les commandes n'y sont pas RECOPIÉES : ce sont les mêmes boutons,
+           déplacés par le script (cf. rangeSecondaires). Un second jeu voudrait
+           dire deux écouteurs et deux états à tenir d'accord (micro coupé,
+           enregistrement en cours…). Leur `title` sert d'étiquette : rien à écrire
+           deux fois, rien à tenir à jour en double. */
+        #visio-room .ctrl.more{display:none;}
+        #visio-room .more-sheet .more-slot{display:flex;flex-direction:column;gap:6px;}
+        #visio-room .more-sheet .ctrl{width:100%;height:auto;border-radius:12px;justify-content:flex-start;
+            gap:12px;padding:12px 14px;background:rgba(255,255,255,.06);}
+        #visio-room .more-sheet .ctrl::after{content:attr(title);font-size:13.5px;font-weight:700;}
+        #visio-room .more-sheet .ctrl:disabled::after{opacity:.6;}
+        #visio-room .more-sheet .v-btn{width:100%;justify-content:flex-start;padding:12px 14px;font-size:13.5px;}
+
+        /* ===================== Tablette et téléphone =====================
+           ⚠️ Ce bloc vient EN DERNIER, après toutes les règles de base, et c'est
+           la correction de fond : l'adaptation ≤900px était écrite AVANT
+           `.side{display:flex}`. À spécificité égale, c'est la dernière règle qui
+           gagne - donc la base rouvrait le tiroir. Sur téléphone, le panneau
+           latéral s'affichait tout seul par-dessus les visages dès l'entrée dans
+           la salle, et la bascule marchait à l'envers. */
+        @@media (max-width:900px) {
+            #visio-room .v-main{grid-template-columns:1fr;}
+            /* Tiroir qui glisse par-dessus la scène. `visibility` en plus de
+               `transform` : fermé, il ne doit pas garder ses champs dans l'ordre
+               de tabulation - on tabulait jusque dans un chat invisible. */
+            #visio-room .v-main .side,
+            #visio-room .v-main.side-closed .side{
+                display:flex;position:absolute;top:0;bottom:0;right:0;left:auto;z-index:25;
+                width:min(400px,100%);box-shadow:-14px 0 44px rgba(0,0,0,.55);
+                transform:translateX(100%);visibility:hidden;
+                transition:transform .22s ease,visibility .22s ease;}
+            #visio-room .v-main .side.open,
+            #visio-room .v-main.side-closed .side.open{transform:none;visibility:visible;}
+            #visio-room .side-scrim{display:block;}
+            #visio-room .side-close{display:inline-flex;}
+            /* Quatre onglets ne tiennent plus côte à côte : ils défilent plutôt
+               que de s'écraser sur deux lettres chacun. */
+            #visio-room .side-tabs{overflow-x:auto;}
+            #visio-room .side-tabs button{flex:0 0 auto;white-space:nowrap;padding:14px 12px;}
+        }
+
+        /* --- Barre d'outils compacte (sous la tablette en portrait) ---
+           ⚠️ Seuil à 767px et non 640 : les dix commandes réclament près de 700px,
+           ce que l'iPad en portrait (768) offre encore, mais pas une tablette plus
+           étroite - les boutons des deux bords y étaient rognés. */
+        @@media (max-width:767px) {
+            #visio-room{--vtoolbar:68px;}
+            #visio-room .toolbar{gap:6px;padding:0 10px;}
+            #visio-room .toolbar .sep{display:none;}
+            #visio-room .ctrl{width:44px;height:44px;}
+            #visio-room .ctrl svg{width:21px;height:21px;}
+            #visio-room .ctrl.more{display:inline-flex;}
+            /* En rond comme les autres : l'étiquette coûtait 60px de barre, et le
+               rouge dit déjà ce que fait ce bouton. */
+            #visio-room .ctrl.leave{width:44px;padding:0;border-radius:50%;}
+            #visio-room .ctrl.leave span{display:none;}
+        }
+
+        /* --- Téléphone : la barre du haut ne garde que ce qui situe la séance --- */
+        @@media (max-width:640px) {
+            #visio-room{--vtop:52px;}
+            #visio-room .v-topbar{padding:0 10px;gap:10px;}
+            #visio-room .v-mark{width:30px;height:30px;border-radius:8px;}
+            #visio-room .v-title strong{font-size:12.5px;}
+            #visio-room .v-title span{font-size:10.5px;}
+            #visio-room .v-right{gap:6px;}
+            /* ⚠️ La droite réclamait 405px sur 375 : le titre tombait à zéro et
+               « Quitter » sortait de l'écran. La pastille garde sa puce - l'état se
+               lit à la couleur - et perd son texte (repris dans son `title`). */
+            #visio-room .v-right .pill{font-size:0;gap:0;padding:7px;}
+            #visio-room .v-right .pill::before{width:9px;height:9px;}
+            /* Quitter est déjà en rouge, en grand, dans la barre du bas. */
+            #visio-room #btnLeaveTop{display:none;}
+            #visio-room .stage{padding:8px 8px 6px;}
+            /* Menus et bandeaux en feuille pleine largeur : centrés sur 340px, ils
+               laissaient deux liserés inutiles et débordaient en hauteur. */
+            #visio-room .menu,#visio-room .vol-panel{left:8px;right:8px;width:auto;
+                transform:none;max-height:62vh;overflow-y:auto;}
+            #visio-room .perm-banner{left:8px;right:8px;width:auto;transform:none;}
+            #visio-room .bg-options{grid-template-columns:repeat(4,1fr);}
+            #visio-room .tile .avatar{width:56px;height:56px;font-size:1.1rem;}
+            #visio-room .info-block{transform:translate(-50%,44px);}
+            #visio-room .info-block .info-name{font-size:1rem;}
+            #visio-room .info-block .info-meta{font-size:.82rem;}
+            #visio-room .filmstrip .tile{flex:0 0 118px;width:118px;}
+        }
+
+        /* --- Téléphone couché : 375px de haut, dont 136 pour les barres ---
+           C'est l'orientation dans laquelle on regarde une visio : les barres se
+           font fines pour rendre la hauteur à la scène. */
+        @@media (max-height:480px) and (orientation:landscape) {
+            #visio-room{--vtop:44px;--vtoolbar:56px;}
+            #visio-room .v-title span{display:none;}
+            #visio-room .ctrl{width:40px;height:40px;}
+            #visio-room .ctrl svg{width:19px;height:19px;}
+            #visio-room .ctrl.leave{width:40px;}
+            #visio-room .stage{padding:6px 8px 4px;}
+            #visio-room .filmstrip .tile{flex:0 0 96px;width:96px;}
+            #visio-room .filmstrip-toggle{padding:5px 12px;}
+            #visio-room .filmstrip-wrap .filmstrip{padding:0 12px 8px;}
+        }
     </style>
-    @endverbatim
 
     <div id="visio-room" data-role="{{ $liveKit['role'] }}">
         <header class="v-topbar">
@@ -296,13 +428,15 @@
                 <span class="pill warn" id="connPill">Connexion…</span>
                 <button type="button" class="v-btn ghost sm" id="btnToggleSide">Panneau</button>
                 @if ($engagementUrl)
-                    <a href="{{ $engagementUrl }}" class="v-btn ghost sm">Questions &amp; sondages</a>
+                    <a href="{{ $engagementUrl }}" class="v-btn ghost sm" id="btnEngagement">Questions &amp; sondages</a>
                 @endif
                 <a href="{{ $liveKit['backUrl'] }}" class="v-btn danger sm" id="btnLeaveTop">Quitter</a>
             </div>
         </header>
 
         <div class="v-main" id="mainLayout">
+            {{-- Voile du tiroir : n'existe qu'en dessous de 900px (cf. style). --}}
+            <div class="side-scrim" id="sideScrim"></div>
             <div class="stage">
                 <div class="stage-main" id="stageMain">
                     <div class="stage-grid speaker" id="stageGrid">
@@ -334,12 +468,17 @@
             </div>
 
             <aside class="side" id="sidePanel">
+                <div class="side-head">
                 <div class="side-tabs">
                     <button type="button" class="active" data-side="chat">Chat</button>
                     <button type="button" data-side="people">Participants</button>
                     <button type="button" data-side="comms" id="tabComms" style="display:none;">Communicateurs</button>
                     {{-- Onglet réservé au modérateur / rapporteur de la séance (cf. cfg.presence). --}}
                     <button type="button" data-side="presence" id="tabPresence" style="display:none;">Présence</button>
+                </div>
+                {{-- Hors des onglets : ils défilent sur téléphone, la croix doit
+                     rester en place. --}}
+                <button type="button" class="side-close" id="btnCloseSide" title="Fermer le panneau" aria-label="Fermer le panneau">&times;</button>
                 </div>
                 <div class="side-panel active" id="panelChat">
                     <div class="chat-log" id="chatLog"></div>
@@ -366,7 +505,7 @@
             </aside>
         </div>
 
-        <div class="toolbar">
+        <div class="toolbar" id="visioToolbar">
             <button type="button" class="ctrl muted" id="btnMic" title="Micro" disabled>
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
             </button>
@@ -395,9 +534,14 @@
             <button type="button" class="ctrl rec" id="btnRec" title="Enregistrer" style="display:none;">
                 <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="7"/></svg>
             </button>
+            {{-- Visible seulement quand la barre se compacte : elle accueille
+                 alors les commandes secondaires, déplacées telles quelles. --}}
+            <button type="button" class="ctrl more" id="btnMore" title="Plus d’options" aria-haspopup="true" aria-expanded="false">
+                <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+            </button>
             <div class="sep"></div>
             <button type="button" class="ctrl leave" id="btnLeave">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg> Quitter
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg> <span>Quitter</span>
             </button>
         </div>
 
@@ -422,6 +566,10 @@
             <button type="button" data-share="monitor">Écran entier</button>
             <button type="button" data-share="browser">Onglet du navigateur</button>
             <button type="button" data-share="stop" id="shareStopBtn" style="display:none;color:#fda4af;">Arrêter le partage</button>
+        </div>
+        <div class="menu more-sheet" id="moreSheet">
+            <h4>Plus d’options</h4>
+            <div class="more-slot" id="moreSlot"></div>
         </div>
         <div class="vol-panel" id="volPanel">
             <label>Volume</label><input type="range" id="volRange" min="0" max="100" value="100"><span class="vol-val" id="volVal">100%</span>

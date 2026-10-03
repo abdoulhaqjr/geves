@@ -557,6 +557,43 @@ paiement (`pay`), inscription à une formation.
     `MeetingProviderRegistry` retombe seul sur Jitsi public quand ce défaut n'est pas
     configuré. Le forcer en base écraserait la configuration du site - c'est ce qui
     masquait LiveKit une fois ses identifiants renseignés.
+- **Salle de visio sur téléphone et tablette** (`resources/views/meeting/join.blade.php`,
+  `resources/js/meeting.js`) : la salle est une **application plein écran** (`position:fixed`),
+  pas une page qui défile. Trois seuils, dans cet ordre dans la feuille :
+  **≤900px** le panneau latéral devient un **tiroir** par-dessus la scène (voile + croix,
+  fermé au départ), **≤767px** la barre d'outils se compacte et ses commandes secondaires
+  passent dans une feuille **« Plus d'options »**, **≤640px** la barre du haut se réduit
+  (pastille d'état sans texte, « Quitter » du haut retiré - il est déjà en bas).
+  Un bloc **téléphone couché** (`max-height:480px`) amincit les deux barres : c'est
+  l'orientation dans laquelle on regarde une visio.
+  - ⚠️ **Les hauteurs des deux barres sont des variables** (`--vtop`, `--vtoolbar`) :
+    une dizaine de règles s'y accrochent (bandeau d'état, menus, infobulle, panneau de
+    volume). Écrites en dur, elles laissaient tous ces éléments à l'ancienne hauteur dès
+    que les barres se compactaient.
+  - ⚠️ **L'adaptation étroite doit venir EN DERNIER dans la feuille.** Elle était écrite
+    avant `.side{display:flex}` : à spécificité égale c'est la dernière règle qui gagne,
+    donc la base rouvrait le tiroir. Sur téléphone, le panneau s'affichait **tout seul
+    par-dessus les visages** dès l'entrée dans la salle, et la bascule marchait à l'envers.
+    Une adaptation responsive ne se place pas « près de la règle qu'elle corrige ».
+  - ⚠️ **Les commandes de la feuille ne sont pas RECOPIÉES, elles sont DÉPLACÉES**
+    (`rangeSecondaires`, `SECONDAIRES`) : un second jeu de boutons voudrait dire deux
+    écouteurs et deux états à tenir d'accord (micro coupé, enregistrement en cours).
+    Leur `title` sert d'étiquette dans la feuille (`content:attr(title)`) - rien à écrire
+    deux fois. **Au retour en grand écran, on remet du dernier au premier** : l'ancre d'un
+    bouton est souvent le bouton suivant, qui doit déjà avoir retrouvé sa place.
+  - ⚠️ **Rien ne doit se comprimer jusqu'à zéro** : la droite de la barre du haut
+    (`flex-shrink:0`) réclamait 405px sur 375 et écrasait le **titre de la séance à zéro
+    pixel** tout en débordant de l'écran. D'où `flex:1` à gauche **et** du contenu retiré
+    à droite - l'un sans l'autre ne suffit pas.
+  - **`100dvh` + `env(safe-area-inset-*)`** : `inset:0` fait confiance au grand viewport,
+    la barre du navigateur recouvrait la barre d'outils et « Quitter » devenait
+    inatteignable. `overscroll-behavior:contain` évite qu'un défilement du chat déclenche
+    « tirer pour recharger ».
+  - Seuil de la barre d'outils à **767px et non 640** : les dix commandes réclament près
+    de 700px, ce que l'iPad en portrait (768) offre encore.
+  - Garde-fou : `tests/Feature/MeetingTest.php` vérifie la présence des crochets
+    (`sideScrim`, `btnCloseSide`, `btnMore`, `moreSlot`) - sans eux le script ne peut plus
+    ni fermer le tiroir ni déplacer les boutons.
 - **Logos de la plateforme** : réglables dans **Réglages › Général**, servis par
   **`App\Support\Branding`**. **Deux formes**, chacune avec une version pour
   fonds sombres **facultative** :

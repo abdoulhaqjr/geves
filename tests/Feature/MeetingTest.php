@@ -464,3 +464,30 @@ it('affiche dans la salle le logo réglé de la plateforme', function () {
         ->assertSee(Branding::markWhite(), false)
         ->assertDontSee('<div class="v-mark">UK</div>', false);
 });
+
+/**
+ * ⚠️ La salle se tient aussi au téléphone : le panneau latéral y devient un
+ * tiroir (voile + croix) et les commandes secondaires une feuille « Plus
+ * d'options ». Sans ces trois crochets dans le gabarit, le script ne peut plus
+ * ni fermer le tiroir ni déplacer les boutons : la barre déborde de l'écran et
+ * le panneau recouvre les visages, exactement l'état d'avant.
+ */
+it('porte dans la salle les commandes de la version téléphone', function () {
+    config()->set('meetings.default', 'livekit');
+    config()->set('meetings.livekit.url', 'wss://exemple.livekit.cloud');
+    config()->set('meetings.livekit.api_key', 'cle');
+    config()->set('meetings.livekit.api_secret', str_repeat('s', 40));
+
+    $edition = openEdition();
+    $session = liveSession($edition, 'public');
+
+    $this->get(route('session.meeting', $session))
+        ->assertOk()
+        ->assertSee('id="sideScrim"', false)
+        ->assertSee('id="btnCloseSide"', false)
+        ->assertSee('id="btnMore"', false)
+        ->assertSee('id="moreSlot"', false)
+        // ⚠️ Un `@endverbatim` sans ouvrant traînait dans le gabarit : Blade
+        // l'écrivait tel quel, en premier texte de la page.
+        ->assertDontSee('endverbatim', false);
+});
