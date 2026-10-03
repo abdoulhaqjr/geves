@@ -108,8 +108,17 @@ Route::post('/session/{session}/presence', [SessionPresenceApiController::class,
 // programme OU formation). ⚠️ Le chat ne vivait que sur le canal de données :
 // qui arrivait en cours de séance trouvait une salle muette.
 Route::get('/visio/{type}/{id}/messages', [MeetingChatController::class, 'index'])->name('meeting.chat.list');
-Route::post('/visio/{type}/{id}/messages', [MeetingChatController::class, 'store'])->name('meeting.chat.post');
-Route::post('/visio/{type}/{id}/messages/{uid}/reaction', [MeetingChatController::class, 'react'])->name('meeting.chat.react');
+// ⚠️ Débit limité PAR PERSONNE et non par IP (cf. AppServiceProvider) : une
+// cérémonie publique se suit depuis le campus, donc depuis quelques adresses
+// partagées - compter par IP ferait taire toute une salle.
+Route::post('/visio/{type}/{id}/messages', [MeetingChatController::class, 'store'])
+    ->middleware('throttle:visio-chat')->name('meeting.chat.post');
+Route::post('/visio/{type}/{id}/messages/{uid}/reaction', [MeetingChatController::class, 'react'])
+    ->middleware('throttle:visio-reaction')->name('meeting.chat.react');
+
+// Nouveau jeton d'accès : la salle en redemande un pour se reconnecter après
+// une coupure, sans recharger la page. Les droits sont recalculés.
+Route::get('/visio/{type}/{id}/jeton', [MeetingController::class, 'token'])->name('meeting.token');
 
 // Engagement live d'une séance (Q&A + sondages) - accès géré dans le contrôleur.
 Route::get('/session/{session}/echanges', [SessionEngagementController::class, 'page'])->name('session.engagement');

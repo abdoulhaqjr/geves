@@ -1306,24 +1306,23 @@ export async function startFromConfig() {
                 people = people.filter((x) => x.id !== p.identity); refreshPeople(); refreshComms();
                 const tile = $('tile-' + p.identity); if (tile) tile.remove(); updateFilmstripCount(); layoutGrid();
             })
-            .on(LK.RoomEvent.Disconnected, () => { state.connected = false; setConnPill('err', 'Déconnecté'); syncToolbar(); })
+            // ⚠️ `Disconnected` signifie que le SDK a RENONCÉ (ses propres essais
+            // ont échoué). Sans porte de sortie, il ne restait qu'à recharger la
+            // page - en pleine séance, et en perdant le fil affiché.
+            .on(LK.RoomEvent.Disconnected, () => {
+                state.connected = false;
+                setConnPill('err', 'Déconnecté');
+                montreReprise(true, 'La connexion à la salle a été perdue.');
+                syncToolbar();
+            })
             .on(LK.RoomEvent.Reconnecting, () => setConnPill('warn', 'Reconnexion…'))
-            .on(LK.RoomEvent.Reconnected, () => setConnPill('ok', 'Connecté'))
+            .on(LK.RoomEvent.Reconnected, () => { setConnPill('ok', 'Connecté'); montreReprise(false); })
             .on(LK.RoomEvent.DataReceived, (payload, participant) => onData(payload, participant));
 
         try {
             await room.connect(cfg.url, cfg.token);
             state.connected = true; setStatus(''); setConnPill('ok', 'Connecté');
-            room.remoteParticipants.forEach((p) => {
-                let role = 'audience'; try { if (p.metadata) { const md = JSON.parse(p.metadata); if (md.role) role = md.role; } } catch (e) {}
-                if (!people.some((x) => x.id === p.identity)) people.push({ name: p.name || p.identity, role, hand: false, screen: false, id: p.identity });
-                ensureRemoteTile(p);
-                p.trackPublications.forEach((pub) => {
-                    if (!pub.track) return;
-                    if (pub.source === LK.Track.Source.ScreenShare) { const pe = people.find((x) => x.id === p.identity); if (pe) { pe.screen = true; pe.isFloor = true; } showScreenOnPresenter(pub.track, (p.name || p.identity) + ' (écran)'); const cam = p.getTrackPublication(LK.Track.Source.Camera); setPipCamera(cam && cam.track ? cam.track : null); }
-                    else attachTrack(pub.track, ensureRemoteTile(p));
-                });
-            });
+            adopteParticipantsPresents();
             const main = $('tileMain');
             if (main && !main.classList.contains('has-screen') && state.speakerLayout) showCurrentPresenterInStage();
             refreshPeople(); refreshComms();
@@ -1387,6 +1386,109 @@ export async function startFromConfig() {
         const role = roleAnnonce(participant);
 
         return exige === 'moderator' ? role === 'moderator' : role === 'moderator' || role === 'presenter';
+    }
+
+    /**
+     * Prend la salle telle qu'elle est : qui s'y trouve déjà, et ce que chacun
+     * diffuse.
+     *
+     * ⚠️ Indispensable APRÈS UNE RECONNEXION autant qu'à l'entrée. Les événements
+     * d'arrivée ne rejouent pas pour les personnes déjà présentes : sans cette
+     * reprise d'état, la salle revenait vide de tout le monde sauf de soi - ce que
+     * le premier essai de reconnexion a montré.
+     */
+    function adopteParticipantsPresents() {
+        if (!room) return;
+        room.remoteParticipants.forEach((p) => {
+            let role = 'audience';
+            try { if (p.metadata) { const md = JSON.parse(p.metadata); if (md.role) role = md.role; } } catch (e) { /* rôle inconnu */ }
+            if (!people.some((x) => x.id === p.identity)) {
+                people.push({ name: p.name || p.identity, role, hand: false, screen: false, id: p.identity });
+            }
+            ensureRemoteTile(p);
+            p.trackPublications.forEach((pub) => {
+                if (!pub.track) return;
+                if (pub.source === LK.Track.Source.ScreenShare) {
+                    const pe = people.find((x) => x.id === p.identity);
+                    if (pe) { pe.screen = true; pe.isFloor = true; }
+                    showScreenOnPresenter(pub.track, (p.name || p.identity) + ' (écran)');
+                    const cam = p.getTrackPublication(LK.Track.Source.Camera);
+                    setPipCamera(cam && cam.track ? cam.track : null);
+                } else {
+                    attachTrack(pub.track, ensureRemoteTile(p));
+                }
+            });
+        });
+    }
+
+    // ---- Reprise après coupure ----
+    /**
+     * Demande un jeton frais au serveur.
+     *
+     * ⚠️ Se reconnecter avec le jeton d'origine échouerait précisément dans le cas
+     * qui compte : une séance longue, où il a expiré (2 h par défaut). Le serveur
+     * recalcule les droits au passage - un rôle retiré entre-temps ne revient pas
+     * par la porte du renouvellement.
+     */
+    async function nouveauJeton() {
+        if (!cfg.tokenUrl) return null;
+        try {
+            const res = await fetch(cfg.tokenUrl, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+            if (!res.ok) return null;
+            const data = await res.json();
+
+            return data.token || null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function montreReprise(montrer, message) {
+        const bar = $('reconnectBar');
+        if (!bar) return;
+        if (message) $('reconnectText').textContent = message;
+        bar.classList.toggle('on', !!montrer);
+    }
+
+    /** Rejoint la salle après une coupure, sans recharger la page. */
+    async function reconnecte() {
+        if (!room) return;
+        const b = $('btnReconnect');
+        if (b) { b.disabled = true; b.textContent = 'Reconnexion…'; }
+        setStatus('Reconnexion à la salle…');
+
+        try {
+            // ⚠️ On repart propre : les vignettes d'avant la coupure ne
+            // correspondent plus à personne tant que les événements n'ont pas
+            // rejoué, et on afficherait des gens qui ne sont plus là.
+            document.querySelectorAll('#visio-room .tile[id^="tile-"]').forEach((t) => t.remove());
+            people = people.filter((x) => x.id === 'local');
+
+            await room.connect(cfg.url, (await nouveauJeton()) || cfg.token);
+            state.connected = true;
+            setConnPill('ok', 'Connecté');
+            montreReprise(false);
+
+            // Les pistes locales ne repartent pas toutes seules : on rétablit ce
+            // qui était ouvert avant la coupure.
+            if (canPublish()) {
+                try {
+                    if (state.cam) await room.localParticipant.setCameraEnabled(true);
+                    if (state.mic) await room.localParticipant.setMicrophoneEnabled(true);
+                } catch (e) { /* le navigateur redemandera l'autorisation */ }
+            }
+            adopteParticipantsPresents();
+            if (state.speakerLayout) showCurrentPresenterInStage();
+            updateFilmstripCount(); refreshPeople(); refreshComms(); layoutGrid();
+            toast('Reconnecté à la salle');
+        } catch (e) {
+            setConnPill('err', 'Déconnecté');
+            montreReprise(true, 'La reconnexion a échoué. Réessayez, ou rechargez la page.');
+        }
+
+        setStatus('');
+        if (b) { b.disabled = false; b.textContent = 'Reconnecter'; }
+        syncToolbar();
     }
 
     function onData(payload, participant) {
@@ -1666,6 +1768,7 @@ export async function startFromConfig() {
     $('vModal')?.addEventListener('click', (e) => { if (e.target === $('vModal') && repondModal) repondModal(false); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && repondModal) repondModal(false); });
     $('localMic')?.addEventListener('click', (e) => { e.stopPropagation(); basculeMicro('local'); });
+    $('btnReconnect')?.addEventListener('click', reconnecte);
     $('btnLeave').addEventListener('click', leave);
     $('btnLeaveTop').addEventListener('click', (e) => { e.preventDefault(); leave(); });
     document.addEventListener('click', (e) => {

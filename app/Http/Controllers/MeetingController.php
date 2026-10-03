@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Enums\MeetingRole;
 use App\Meetings\Contracts\Meetable;
 use App\Meetings\LiveKitEgress;
+use App\Meetings\MeetableRegistry;
+use App\Meetings\MeetingProviderRegistry;
+use App\Meetings\Providers\LiveKitProvider;
 use App\Models\EventSession;
 use App\Models\Formation;
 use App\Models\MeetingMessage;
@@ -12,6 +15,7 @@ use App\Support\SessionPresence;
 use App\Support\Settings;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 
@@ -90,6 +94,34 @@ class MeetingController extends Controller
     }
 
     /**
+     * Nouveau jeton d'accès à la salle, pour se reconnecter sans recharger.
+     *
+     * ⚠️ Le jeton de connexion expire (2 h par défaut). Jusqu'ici, une coupure
+     * réseau après ce délai laissait le participant devant une salle morte, sans
+     * rien d'autre à faire que recharger la page - en pleine séance. Les droits
+     * sont **recalculés** à chaque appel : un rôle retiré entre-temps ne revient
+     * pas par la porte du renouvellement.
+     */
+    public function token(string $type, int $id): JsonResponse
+    {
+        $salle = MeetableRegistry::find($type, $id);
+        abort_if($salle === null, 404);
+
+        $account = Auth::guard('account')->user();
+        $isStaff = Auth::guard('web')->check();
+        $role = $salle->meetingRoleFor($account, $isStaff);
+
+        abort_unless($role->canJoin() && $salle->isLive(), 403);
+
+        $provider = app(MeetingProviderRegistry::class)->for($salle);
+        abort_unless($provider instanceof LiveKitProvider, 404);
+
+        return response()->json([
+            'token' => $provider->token($salle, $role, $salle->meetingDisplayName($account, $isStaff, null)),
+        ]);
+    }
+
+    /**
      * Rendu commun de la salle pour un objet `Meetable`.
      *
      * @param  array{label: string, editionTitle: string, startsAt: Carbon|null, recordingUrl: string|null, backUrl: string, engagementUrl: string|null}  $ctx
@@ -117,8 +149,11 @@ class MeetingController extends Controller
             $liveKit = array_merge($liveKit, $liveKitExtra);
             // Fil de discussion archivé : la clé de type vient de la liste
             // fermée du contrôleur, pour n'avoir qu'un seul vocabulaire.
-            $cle = array_search($meetable::class, MeetingChatController::TYPES, true);
-            $liveKit['chat'] = $cle === false ? null : [
+            $cle = MeetableRegistry::keyFor($meetable);
+            // Renouvellement du jeton : la salle en redemande un pour se
+            // reconnecter après une coupure (cf. commentaire sur `jeton`).
+            $liveKit['tokenUrl'] = $cle === null ? null : route('meeting.token', [$cle, $meetable->getKey()]);
+            $liveKit['chat'] = $cle === null ? null : [
                 'list' => route('meeting.chat.list', [$cle, $meetable->getKey()]),
                 'post' => route('meeting.chat.post', [$cle, $meetable->getKey()]),
                 'react' => route('meeting.chat.react', [$cle, $meetable->getKey(), 'UID']),

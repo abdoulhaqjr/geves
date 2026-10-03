@@ -557,6 +557,34 @@ paiement (`pay`), inscription à une formation.
     `MeetingProviderRegistry` retombe seul sur Jitsi public quand ce défaut n'est pas
     configuré. Le forcer en base écraserait la configuration du site - c'est ce qui
     masquait LiveKit une fois ses identifiants renseignés.
+- **Tenue de la salle en conditions réelles** (second lot de l'audit) :
+  - **`App\Meetings\MeetableRegistry`** est le seul endroit qui dit quels objets ont
+    une salle (`session`, `formation`) et traduit dans les deux sens, URL ↔ objet.
+  - ⚠️ **On n'écrit dans le fil que pendant la séance.** L'API ne vérifiait que le
+    rôle, alors que la page exige rôle **et** séance en direct : on pouvait
+    alimenter le fil d'une séance terminée en appelant l'adresse directement. La
+    LECTURE, elle, reste ouverte à qui peut entrer.
+  - ⚠️ **L'envoi d'un message est idempotent** (`uid` unique par salle, index en
+    base) : un réseau qui bégaie rejouait l'envoi, et deux lignes portaient le même
+    identifiant - une réaction ne savait plus laquelle viser.
+  - ⚠️ **Le débit du fil se compte PAR PERSONNE, jamais par IP**
+    (`AppServiceProvider::limiteLeFilDeVisio`, limiteurs `visio-chat` et
+    `visio-reaction`). Une cérémonie publique se suit depuis le campus, donc depuis
+    quelques adresses partagées : un limiteur par IP ferait taire toute une salle
+    parce qu'une personne écrit vite.
+  - **Reprise après coupure** (route `meeting.token`, `reconnecte()`) : `Disconnected`
+    signifie que le SDK a **renoncé**, et il ne restait qu'à recharger la page en
+    pleine séance. Un bandeau propose « Reconnecter », qui **redemande un jeton**
+    (celui d'origine a pu expirer - 2 h - et c'est précisément le cas des séances
+    longues) et republie les pistes locales. Les droits sont recalculés : un rôle
+    retiré ne revient pas par la porte du renouvellement.
+  - ⚠️ **Après une reconnexion, il faut REPRENDRE l'état de la salle**
+    (`adopteParticipantsPresents`) : les événements d'arrivée ne rejouent pas pour
+    les personnes déjà présentes. Sans cela la salle revenait vide de tout le monde
+    sauf de soi - défaut trouvé en essayant la reconnexion, pas en relisant le code.
+  - **Un délai borne l'API Egress** (`connectTimeout(5)`/`timeout(15)`) : sans lui,
+    un service d'enregistrement muet immobilisait le worker PHP, et c'est le
+    modérateur qui attendait en pleine séance.
 - **Sécurité de la salle de visio** - trois règles qui ne se négocient pas :
   - ⚠️ **Aucune liste de la salle ne se construit en collant du texte dans du
     balisage.** Participants, communicateurs et présence étaient composés par

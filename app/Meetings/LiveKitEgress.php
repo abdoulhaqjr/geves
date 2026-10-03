@@ -82,9 +82,15 @@ class LiveKitEgress
      */
     private function call(string $method, array $body): array
     {
+        // ⚠️ Un délai, sinon un serveur d'enregistrement qui ne répond plus
+        // immobilise le worker PHP sans limite - et c'est le modérateur qui
+        // attend, en pleine séance. Plus large que l'interrogation de salle
+        // (5 s) : démarrer un enregistrement demande au service de se préparer.
         $response = Http::withToken($this->token())
             ->acceptJson()
             ->asJson()
+            ->connectTimeout(5)
+            ->timeout(15)
             ->post($this->apiBase().'/twirp/livekit.Egress/'.$method, $body);
 
         if ($response->failed()) {

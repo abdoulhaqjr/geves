@@ -7,10 +7,14 @@ use App\Models\User;
 use App\Support\Settings;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -25,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->applySettingsToConfig();
+        $this->limiteLeFilDeVisio();
 
         // Pagination sur la charte graphique (composant UKC/Tailwise) partout.
         Paginator::defaultView('vendor.pagination.ukc');
@@ -101,7 +106,36 @@ class AppServiceProvider extends ServiceProvider
      * en repli sur les valeurs de .env/config. Sans effet si la table n'existe
      * pas encore (migrations, installation).
      */
-    protected function applySettingsToConfig(): void
+    /**
+     * Débit d'écriture dans le fil d'une salle de visio.
+     *
+     * ⚠️ La clé n'est PAS l'adresse IP. Une cérémonie publique se suit depuis le
+     * campus, donc depuis une poignée d'adresses partagées : un limiteur par IP
+     * ferait taire toute une salle parce qu'une personne écrit vite. On compte
+     * donc par compte, par membre du staff, ou à défaut par session HTTP.
+     */
+    private function limiteLeFilDeVisio(): void
+    {
+        $qui = function (Request $request): string {
+            $compte = Auth::guard('account')->id();
+            if ($compte) {
+                return 'u'.$compte;
+            }
+
+            $staff = Auth::guard('web')->id();
+
+            return $staff ? 's'.$staff : 'a'.$request->session()->getId();
+        };
+
+        // Écrire : un message toutes les deux secondes en moyenne suffit largement
+        // à une discussion, et coupe court à un remplissage automatique.
+        RateLimiter::for('visio-chat', fn (Request $request) => Limit::perMinute(30)->by('vchat:'.$qui($request)));
+
+        // Réagir : le geste est plus léger, et se pose puis se retire.
+        RateLimiter::for('visio-reaction', fn (Request $request) => Limit::perMinute(60)->by('vreac:'.$qui($request)));
+    }
+
+    private function applySettingsToConfig(): void
     {
         $s = Settings::all();
         if ($s === []) {

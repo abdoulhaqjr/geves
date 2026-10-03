@@ -152,6 +152,56 @@ it('n’enregistre que les réactions proposées', function () {
         ->assertStatus(422);
 });
 
+it('n’écrit pas dans le fil d’une séance qui n’est pas en cours', function () {
+    $edition = openEdition();
+    // Lisible (le rôle le permet), mais la visio est terminée : on ne l'alimente
+    // plus. ⚠️ L'API ne vérifiait que le rôle, alors que la salle exige les deux.
+    $session = liveSession($edition, 'public', ['meeting_status' => 'ended']);
+    messageDansLeFil($session, 'r00005');
+
+    $this->getJson(route('meeting.chat.list', ['session', $session->id]))->assertOk();
+    $this->postJson(route('meeting.chat.post', ['session', $session->id]), [
+        'uid' => 'tard01', 'body' => 'Après la bataille',
+    ])->assertForbidden();
+    $this->postJson(route('meeting.chat.react', ['session', $session->id, 'r00005']), ['emoji' => '👍'])
+        ->assertForbidden();
+});
+
+it('ne crée pas deux fois le même message quand l’envoi est rejoué', function () {
+    $edition = openEdition();
+    $session = liveSession($edition, 'public');
+
+    $envoi = fn () => $this->postJson(route('meeting.chat.post', ['session', $session->id]), [
+        'uid' => 'rejeu01', 'body' => 'Un seul exemplaire',
+    ]);
+
+    $envoi()->assertOk();
+    // ⚠️ Un réseau qui bégaie rejoue l'envoi : deux lignes porteraient le même
+    // identifiant, et une réaction ne saurait plus laquelle viser.
+    $envoi()->assertOk();
+
+    expect(MeetingMessage::where('uid', 'rejeu01')->count())->toBe(1);
+});
+
+it('délivre un nouveau jeton à qui peut rejoindre la salle en cours', function () {
+    config()->set('meetings.default', 'livekit');
+    config()->set('meetings.livekit.url', 'wss://exemple.livekit.cloud');
+    config()->set('meetings.livekit.api_key', 'cle');
+    config()->set('meetings.livekit.api_secret', str_repeat('s', 40));
+
+    $edition = openEdition();
+    $enCours = liveSession($edition, 'public');
+    $terminee = liveSession($edition, 'public', ['meeting_status' => 'ended']);
+
+    $this->getJson(route('meeting.token', ['session', $enCours->id]))
+        ->assertOk()
+        ->assertJsonStructure(['token']);
+
+    // ⚠️ Le renouvellement n'est pas une porte dérobée : il suit les mêmes
+    // conditions que l'entrée dans la salle.
+    $this->getJson(route('meeting.token', ['session', $terminee->id]))->assertForbidden();
+});
+
 it('donne à la salle les adresses de son fil', function () {
     config()->set('meetings.default', 'livekit');
     config()->set('meetings.livekit.url', 'wss://exemple.livekit.cloud');

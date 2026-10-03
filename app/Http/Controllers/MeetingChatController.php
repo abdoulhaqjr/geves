@@ -3,8 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Meetings\Contracts\Meetable;
-use App\Models\EventSession;
-use App\Models\Formation;
+use App\Meetings\MeetableRegistry;
 use App\Models\MeetingMessage;
 use App\Models\MeetingMessageReaction;
 use Illuminate\Database\Eloquent\Model;
@@ -26,16 +25,6 @@ use Illuminate\Support\Facades\Auth;
  */
 class MeetingChatController extends Controller
 {
-    /**
-     * Objets dont la salle porte un fil.
-     *
-     * ⚠️ Liste FERMÉE : le type vient de l'URL, et on ne résout jamais une classe
-     * à partir de ce que le client a écrit.
-     *
-     * @var array<string, class-string<Meetable&Model>>
-     */
-    public const TYPES = ['session' => EventSession::class, 'formation' => Formation::class];
-
     /** Fenêtre rejouée à l'arrivée : de quoi reprendre le fil, pas toute l'histoire. */
     private const LIMITE = 200;
 
@@ -80,7 +69,7 @@ class MeetingChatController extends Controller
     /** Ajoute un message au fil. */
     public function store(Request $request, string $type, int $id): JsonResponse
     {
-        $salle = $this->salle($type, $id);
+        $salle = $this->salle($type, $id, true);
 
         $data = $request->validate([
             'uid' => ['required', 'string', 'max:32', 'alpha_num'],
@@ -89,6 +78,19 @@ class MeetingChatController extends Controller
             'reply_author' => ['nullable', 'string', 'max:120'],
             'reply_excerpt' => ['nullable', 'string', 'max:160'],
         ]);
+
+        // ⚠️ Idempotent : un réseau qui bégaie rejoue l'envoi, et le même
+        // message apparaîtrait deux fois dans le fil - avec deux lignes portant
+        // le même identifiant, dont une réaction ne saurait plus laquelle viser.
+        $existant = MeetingMessage::query()
+            ->where('meetable_type', $salle::class)
+            ->where('meetable_id', $salle->getKey())
+            ->where('uid', $data['uid'])
+            ->first();
+
+        if ($existant) {
+            return response()->json(['ok' => true, 'uid' => $existant->uid]);
+        }
 
         $message = new MeetingMessage($data);
         $message->user_id = Auth::guard('account')->id();
@@ -108,7 +110,7 @@ class MeetingChatController extends Controller
     /** Pose ou retire sa réaction sur un message. */
     public function react(Request $request, string $type, int $id, string $uid): JsonResponse
     {
-        $salle = $this->salle($type, $id);
+        $salle = $this->salle($type, $id, true);
 
         $data = $request->validate([
             'emoji' => ['required', 'string', 'in:'.implode(',', MeetingMessage::EMOJIS)],
@@ -198,14 +200,18 @@ class MeetingChatController extends Controller
         return 'a:'.substr(hash('sha256', (string) session()->getId()), 0, 30);
     }
 
-    /** La salle visée, si elle existe et si l'on a le droit d'y entrer. */
-    private function salle(string $type, int $id): Meetable&Model
+    /**
+     * La salle visée, si elle existe et si l'on a le droit d'y entrer.
+     *
+     * `$pourEcrire` ajoute la condition de la PAGE : on n'écrit que dans une
+     * séance en cours. ⚠️ L'API ne vérifiait que le rôle, alors que la salle
+     * exige rôle **et** séance en direct : on pouvait donc alimenter le fil
+     * d'une séance terminée, ou pas encore ouverte, en appelant l'adresse
+     * directement.
+     */
+    private function salle(string $type, int $id, bool $pourEcrire = false): Meetable&Model
     {
-        $classe = self::TYPES[$type] ?? null;
-        abort_if($classe === null, 404);
-
-        /** @var (Meetable&Model)|null $salle */
-        $salle = $classe::query()->find($id);
+        $salle = MeetableRegistry::find($type, $id);
         abort_if($salle === null, 404);
 
         // Le fil suit l'accès à la salle : qui ne peut pas entrer ne lit pas ce
@@ -214,6 +220,7 @@ class MeetingChatController extends Controller
             $salle->canJoin(Auth::guard('account')->user(), Auth::guard('web')->check()),
             403,
         );
+        abort_if($pourEcrire && ! $salle->isLive(), 403, 'La visio n’est pas en cours.');
 
         return $salle;
     }

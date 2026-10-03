@@ -377,6 +377,14 @@
             border:1px solid var(--vborder);backdrop-filter:blur(6px);padding:8px 14px;border-radius:50px;
             font-size:12.5px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.35);}
         #visio-room .v-status.on{display:inline-flex;}
+        /* Reprise après coupure : la salle ne doit pas rester muette avec, pour
+           seule indication, une pastille rouge dans un coin. */
+        #visio-room .v-regain{display:none;position:absolute;top:calc(var(--vtop) + 16px);left:50%;
+            transform:translateX(-50%);z-index:60;align-items:center;gap:12px;max-width:min(520px,92vw);
+            background:rgba(10,14,23,.96);border:1px solid rgba(225,29,72,.5);border-radius:50px;
+            padding:8px 10px 8px 18px;font-size:13px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.45);}
+        #visio-room .v-regain.on{display:inline-flex;}
+        #visio-room .v-regain span{min-width:0;}
         #visio-room .v-status::before{content:'';width:12px;height:12px;border-radius:50%;flex-shrink:0;
             border:2px solid rgba(199,209,230,.25);border-top-color:#c7d1e6;animation:vspin .7s linear infinite;}
         @@keyframes vspin{to{transform:rotate(360deg);}}
@@ -721,6 +729,10 @@
                     <button type="button" class="v-btn blue sm" id="vModalYes">Confirmer</button>
                 </div>
             </div>
+        </div>
+        <div class="v-regain" id="reconnectBar">
+            <span id="reconnectText">La connexion à la salle a été perdue.</span>
+            <button type="button" class="v-btn blue sm" id="btnReconnect">Reconnecter</button>
         </div>
         <div class="v-status" id="lkStatus">Connexion à la salle…</div>
         <div class="v-toast" id="toast"></div>
