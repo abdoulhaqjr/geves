@@ -133,7 +133,11 @@
            disque, la poignée était donc rognée - invisible et impossible à
            attraper. Elle se place maintenant sur le disque lui-même, et se montre
            au survol pour ne pas encombrer l'image en permanence. */
-        #visio-room .pip-resize{position:absolute;right:11%;bottom:11%;z-index:5;width:24px;height:24px;border-radius:50%;
+        /* ⚠️ 14 % et pas moins : la poignée est posée sur la DIAGONALE, où elle
+           s'éloigne du centre en 0,55·taille quand le disque, lui, ne grandit
+           qu'en 0,5·taille. En deçà de cet encart, elle ressort du disque aux
+           grandes tailles et le masque circulaire la rogne. */
+        #visio-room .pip-resize{position:absolute;right:14%;bottom:14%;z-index:5;width:24px;height:24px;border-radius:50%;
             background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.45);cursor:nwse-resize;
             display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s,transform .15s;}
         #visio-room .pip-bubble:hover .pip-resize,#visio-room .pip-bubble.resizing .pip-resize{opacity:1;}
@@ -145,6 +149,17 @@
         #visio-room .pip-resize svg{width:13px;height:13px;display:block;color:rgba(255,255,255,.95);}
         #visio-room .pip-size-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.72);color:#fff;font-size:11px;font-weight:700;padding:4px 9px;border-radius:50px;z-index:6;display:none;white-space:nowrap;}
         #visio-room .pip-bubble.resizing .pip-size-hint{display:block;}
+        /* ⚠️ AU DOIGT, deux choses tombent en même temps : la cible de 24 px est
+           sous le minimum visable (~44 px), et surtout **le survol n'existe pas**,
+           donc une poignée révélée au survol reste tout simplement INVISIBLE. Elle
+           s'affiche donc en permanence et s'agrandit. `touch-action:none` empêche
+           le navigateur de prendre le geste pour un défilement de page : sans lui,
+           tirer la poignée fait glisser la page au lieu de redimensionner. */
+        @@media (pointer: coarse) {
+            #visio-room .pip-resize{width:40px;height:40px;opacity:1;}
+            #visio-room .pip-resize svg{width:18px;height:18px;}
+            #visio-room .pip-bubble,#visio-room .pip-resize{touch-action:none;}
+        }
         #visio-room .side{border-left:1px solid var(--vborder);background:var(--vbg-panel);display:flex;flex-direction:column;min-height:0;}
         #visio-room .side-tabs{display:flex;flex-shrink:0;border-bottom:1px solid var(--vborder);padding:0 8px;}
         #visio-room .side-tabs button{flex:1;padding:14px 8px;border:none;background:transparent;color:var(--vmuted);font-weight:700;font-size:13px;border-bottom:2px solid transparent;margin-bottom:-1px;}

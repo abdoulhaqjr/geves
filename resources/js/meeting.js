@@ -152,9 +152,17 @@ export async function startFromConfig() {
         clearMedia(b); attachTrack(track, b); b.classList.add('has-video');
         if (canPublish()) sendData({ type: 'pip_visibility', visible: true });
     }
-    /** Tailles proposées par le double-clic, du plus discret au plus lisible. */
-    const PIP_SIZES = [84, 120, 168, 220];
-    const PIP_MIN = 72, PIP_MAX = 260;
+    /** Au doigt : la poignée fait 40 px (cf. la feuille de style). */
+    const AU_DOIGT = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+
+    /**
+     * Tailles proposées par le double-clic, du plus discret au plus lisible.
+     *
+     * ⚠️ Le plancher est plus haut au doigt : avec une poignée de 40 px, une
+     * vignette de 72 px serait à moitié recouverte par sa propre poignée.
+     */
+    const PIP_MIN = AU_DOIGT ? 110 : 72, PIP_MAX = 260;
+    const PIP_SIZES = [84, 120, 168, 220].filter((t) => t >= PIP_MIN);
 
     /**
      * Redimensionnement de la vignette caméra.
