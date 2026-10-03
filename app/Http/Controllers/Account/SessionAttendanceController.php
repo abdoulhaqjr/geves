@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
 use App\Models\EventSession;
-use App\Models\Participant;
 use App\Models\SessionAttendance;
 use App\Models\SessionReport;
 use App\Support\EditionLock;
+use App\Support\SessionRoster;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,34 +19,22 @@ use Illuminate\View\View;
  * les yeux, et que l'organisation ne répartit pas ce geste de la même façon
  * partout.
  *
- * ⚠️ Ce n'est pas un scan de badge (retiré) : on pointe des gens appelés à la
- * voix, dans n'importe quel ordre, par petits lots. D'où un enregistrement
- * **incrémental et non destructif** - voir `update()`.
+ * ⚠️ On ne pointe que les **auteurs des communications de la séance**
+ * ({@see SessionRoster}), jamais l'effectif de l'édition : un modérateur constate
+ * ce qu'il a sous les yeux, et une liste de plusieurs centaines d'inscrits lui
+ * demanderait de se prononcer sur des gens absents de sa salle.
+ *
+ * Ce n'est pas non plus un scan de badge (retiré) : on appelle des gens à la
+ * voix, dans n'importe quel ordre. D'où un enregistrement **incrémental et non
+ * destructif** - voir `update()`.
  */
 class SessionAttendanceController extends Controller
 {
-    /** Taille d'une page de liste : au-delà, on cherche plutôt qu'on défile. */
-    private const PAR_PAGE = 60;
-
-    public function edit(Request $request, EventSession $session): View
+    public function edit(EventSession $session): View
     {
         $this->authorizeSessionOfficer($session);
 
         $session->load('edition.colloque', 'atelier');
-        $recherche = trim((string) $request->query('q', ''));
-
-        $participants = Participant::where('edition_id', $session->edition_id)
-            ->when($recherche !== '', function ($q) use ($recherche) {
-                $motif = '%'.$recherche.'%';
-                $q->where(fn ($w) => $w->where('last_name', 'like', $motif)
-                    ->orWhere('first_name', 'like', $motif)
-                    ->orWhere('email', 'like', $motif)
-                    ->orWhere('institution', 'like', $motif));
-            })
-            ->orderBy('last_name')->orderBy('first_name')->orderBy('id')
-            ->paginate(self::PAR_PAGE)
-            ->withQueryString();
-
         $report = SessionReport::where('session_id', $session->id)->first();
 
         return view('account.attendance.edit', [
@@ -55,10 +43,7 @@ class SessionAttendanceController extends Controller
             // rapporteur qui n'anime rien n'a pas de « séances à animer », et le
             // renvoyer là lui montrerait une page vide.
             'backRoute' => $this->isModerator($session) ? 'account.moderation' : 'account.reports',
-            'participants' => $participants,
-            'recherche' => $recherche,
-            // Verdicts déjà posés, par participant_id - la liste est paginée, pas
-            // le comptage : « 12 présents » doit porter sur la séance entière.
+            'roster' => SessionRoster::for($session),
             'verdicts' => SessionAttendance::where('session_id', $session->id)
                 ->pluck('status', 'participant_id'),
             'counts' => $session->presenceCounts(),
@@ -73,9 +58,9 @@ class SessionAttendanceController extends Controller
      * Enregistre les verdicts **soumis**, et eux seuls.
      *
      * ⚠️ Non destructif par construction : un participant absent du formulaire
-     * (page suivante, recherche en cours) garde son verdict. Un pointage se fait
-     * par petits lots pendant la séance - une sauvegarde qui remettrait à zéro ce
-     * qui n'est pas à l'écran effacerait le travail du lot précédent.
+     * garde son verdict. On pointe par petits lots pendant la séance - une
+     * sauvegarde qui remettrait à zéro ce qui n'est pas à l'écran effacerait le
+     * travail du lot précédent.
      */
     public function update(Request $request, EventSession $session): RedirectResponse
     {
@@ -96,16 +81,14 @@ class SessionAttendanceController extends Controller
             'presence.*' => ['nullable', 'in:'.implode(',', array_keys(SessionAttendance::STATUSES))],
         ]);
 
-        // ⚠️ Un identifiant posté n'est pas une autorisation : on n'accepte que
-        // des participants de CETTE édition (le formulaire est public côté client).
-        $permis = Participant::where('edition_id', $session->edition_id)
-            ->whereIn('id', array_keys($data['presence'] ?? []))
-            ->pluck('id')
-            ->all();
+        // ⚠️ Un identifiant posté n'est pas une autorisation. La garde est la
+        // liste de la SÉANCE, pas celle de l'édition : un modérateur n'a pas à
+        // pouvoir se prononcer sur quelqu'un qui ne passe pas chez lui.
+        $permis = SessionRoster::participantIds($session)
+            ->intersect(array_map('intval', array_keys($data['presence'] ?? [])));
 
         $user = Auth::guard('account')->user();
-        $poses = 0;
-        $effaces = 0;
+        $touches = 0;
 
         foreach ($permis as $participantId) {
             $statut = (string) ($data['presence'][$participantId] ?? '');
@@ -113,7 +96,7 @@ class SessionAttendanceController extends Controller
             if ($statut === '') {
                 // Retour à « non pointé » : on supprime la ligne plutôt que de
                 // garder un verdict vide, qui compterait comme un pointage.
-                $effaces += SessionAttendance::where('session_id', $session->id)
+                $touches += SessionAttendance::where('session_id', $session->id)
                     ->where('participant_id', $participantId)->delete();
 
                 continue;
@@ -123,15 +106,15 @@ class SessionAttendanceController extends Controller
                 ['session_id' => $session->id, 'participant_id' => $participantId],
                 ['status' => $statut, 'marked_by' => $user?->id, 'marked_at' => now()],
             );
-            $poses++;
+            $touches++;
         }
 
         $counts = $session->presenceCounts();
 
-        return redirect()->route('account.attendance.edit', ['session' => $session->id, 'q' => $request->input('q')])
+        return redirect()->route('account.attendance.edit', $session)
             ->with('ukc_status', trans_choice(
-                '{0}Aucun changement de présence.|[1,*]Présence enregistrée : :present présent(s) sur :expected inscrit(s).',
-                $poses + $effaces,
+                '{0}Aucun changement de présence.|[1,*]Présence enregistrée : :present présent(s) sur :expected attendu(s).',
+                $touches,
                 ['present' => $counts['present'], 'expected' => $counts['expected']],
             ));
     }

@@ -1,9 +1,14 @@
 <?php
 
+use App\Models\Edition;
+use App\Models\EventSession;
 use App\Models\Participant;
 use App\Models\SessionAttendance;
 use App\Models\SessionReport;
+use App\Models\Slot;
+use App\Models\Submission;
 use App\Models\User;
+use Illuminate\Support\Str;
 
 // openEdition() -> tests/Pest.php
 
@@ -11,6 +16,9 @@ use App\Models\User;
  * Présence d'une séance, tenue pendant la séance par son modérateur ou son
  * rapporteur. Le scan de badge a été retiré : c'est désormais la seule source de
  * présence réelle, et elle conditionne l'attestation de participation.
+ *
+ * ⚠️ On ne pointe que les AUTEURS des communications de la séance : un modérateur
+ * constate ce qu'il a sous les yeux, pas l'effectif de l'édition.
  */
 
 /** Compte participant vérifié portant un e-mail donné. */
@@ -25,7 +33,12 @@ function officier(string $email): User
     return $user;
 }
 
-/** Une séance commencée + deux inscrits à pointer. */
+/**
+ * Une séance commencée, avec UNE communication programmée : Awa (auteur
+ * correspondant) et Kofi (co-auteur inscrit).
+ *
+ * @return array{0: Edition, 1: EventSession, 2: Participant, 3: Participant}
+ */
 function seanceAPointer(string $moderateur = '', string $rapporteur = ''): array
 {
     $edition = openEdition();
@@ -43,6 +56,23 @@ function seanceAPointer(string $moderateur = '', string $rapporteur = ''): array
     $kofi = Participant::create([
         'edition_id' => $edition->id, 'first_name' => 'Kofi', 'last_name' => 'Mensah',
         'email' => 'kofi@example.tg', 'role' => 'attendee',
+    ]);
+
+    $submission = Submission::create([
+        'edition_id' => $edition->id, 'participant_id' => $awa->id,
+        'ref_code' => 'UK-TEST-001', 'access_token' => Str::random(40),
+        'title' => 'Les universités africaines face au climat',
+        'authors' => [
+            ['name' => 'Awa Kodjo', 'email' => 'awa@example.tg', 'corresponding' => true],
+            ['name' => 'Kofi Mensah', 'email' => 'kofi@example.tg', 'corresponding' => false],
+        ],
+        'track' => 'Sciences', 'type' => 'oral', 'status' => 'accepted', 'revision_of' => 0,
+    ]);
+
+    Slot::create([
+        'edition_id' => $edition->id, 'session_id' => $session->id,
+        'submission_id' => $submission->id, 'participant_id' => $awa->id,
+        'starts_at' => $session->starts_at, 'ends_at' => $session->starts_at->copy()->addMinutes(30),
     ]);
 
     return [$edition, $session, $awa, $kofi];
@@ -71,22 +101,43 @@ it('n’ouvre le pointage ni à un tiers ni à un simple inscrit', function () {
         ->assertForbidden();
 });
 
-it('laisse le modérateur pointer la présence de sa séance', function () {
-    [, $session, $awa, $kofi] = seanceAPointer('mod@example.tg');
+/**
+ * ⚠️ Le cadrage demandé : la liste est celle des auteurs de la séance. Afficher
+ * les centaines d'inscrits de l'édition demandait au modérateur de se prononcer
+ * sur des gens qui n'ont rien à faire dans sa salle.
+ */
+it('ne liste que les auteurs des communications de la séance', function () {
+    [$edition, $session, , $kofi] = seanceAPointer('mod@example.tg');
     $mod = officier('mod@example.tg');
+
+    // Un inscrit de l'édition, étranger à cette séance.
+    Participant::create([
+        'edition_id' => $edition->id, 'first_name' => 'Sans', 'last_name' => 'Rapport',
+        'email' => 'ailleurs@example.tg', 'role' => 'attendee',
+    ]);
 
     $this->actingAs($mod, 'account')
         ->get(route('account.attendance.edit', $session))
         ->assertOk()
         ->assertSee('Awa Kodjo')
         ->assertSee('Kofi Mensah')
-        ->assertSee('Université de Kara');
+        ->assertSee('Les universités africaines face au climat')
+        ->assertSee('Auteur correspondant')
+        ->assertDontSee('Sans Rapport');
+
+    expect($session->presenceCounts())->toMatchArray(['expected' => 2, 'unmarked' => 2]);
+    expect($kofi->exists)->toBeTrue();
+});
+
+it('laisse le modérateur pointer la présence de sa séance', function () {
+    [, $session, $awa, $kofi] = seanceAPointer('mod@example.tg');
+    $mod = officier('mod@example.tg');
 
     $this->actingAs($mod, 'account')
         ->post(route('account.attendance.update', $session), [
             'presence' => [$awa->id => 'present', $kofi->id => 'absent'],
         ])
-        ->assertRedirect(route('account.attendance.edit', ['session' => $session->id, 'q' => null]));
+        ->assertRedirect(route('account.attendance.edit', $session));
 
     expect(SessionAttendance::where('session_id', $session->id)->count())->toBe(2);
     expect(SessionAttendance::where('participant_id', $awa->id)->value('status'))->toBe('present');
@@ -139,13 +190,13 @@ it('revient à « non pointé » sur un verdict vide', function () {
     expect(SessionAttendance::where('participant_id', $awa->id)->exists())->toBeFalse();
 });
 
-it('refuse un participant d’une autre édition', function () {
-    [, $session] = seanceAPointer('mod@example.tg');
+/** ⚠️ Un identifiant posté n'est pas une autorisation : la garde est la SÉANCE. */
+it('refuse un inscrit de l’édition étranger à la séance', function () {
+    [$edition, $session] = seanceAPointer('mod@example.tg');
     $mod = officier('mod@example.tg');
-    $autre = openEdition();
     $etranger = Participant::create([
-        'edition_id' => $autre->id, 'first_name' => 'Hors', 'last_name' => 'Sujet',
-        'email' => 'hors@example.tg', 'role' => 'attendee',
+        'edition_id' => $edition->id, 'first_name' => 'Sans', 'last_name' => 'Rapport',
+        'email' => 'ailleurs@example.tg', 'role' => 'attendee',
     ]);
 
     $this->actingAs($mod, 'account')
@@ -154,12 +205,51 @@ it('refuse un participant d’une autre édition', function () {
     expect(SessionAttendance::where('participant_id', $etranger->id)->exists())->toBeFalse();
 });
 
-it('n’ouvre pas le pointage avant le début de la séance', function () {
+/**
+ * Un co-auteur qui n'est pas inscrit sur l'édition reste VISIBLE - sinon la liste
+ * des auteurs paraîtrait tronquée - mais il n'y a aucune inscription à laquelle
+ * rattacher une présence.
+ */
+it('montre un co-auteur non inscrit sans permettre de le pointer', function () {
+    [, $session] = seanceAPointer('modc@example.tg');
+    $mod = officier('modc@example.tg');
+
+    $submission = Submission::where('ref_code', 'UK-TEST-001')->firstOrFail();
+    $auteurs = $submission->authors;
+    $auteurs[] = ['name' => 'Fatou Diallo', 'email' => 'fatou@ailleurs.tg', 'corresponding' => false];
+    $submission->update(['authors' => $auteurs]);
+
+    $this->actingAs($mod, 'account')
+        ->get(route('account.attendance.edit', $session))
+        ->assertOk()
+        ->assertSee('Fatou Diallo')
+        ->assertSee('Non inscrit');
+
+    // Elle ne compte pas dans l'effectif attendu : on ne peut pas la pointer.
+    expect($session->presenceCounts()['expected'])->toBe(2);
+});
+
+it('le dit quand la séance n’a aucune communication programmée', function () {
     $edition = openEdition();
     $session = $edition->sessions()->create([
-        'label' => 'Séance future', 'type' => 'atelier',
-        'starts_at' => now()->addDay(), 'moderator_email' => 'modf@example.tg',
+        'label' => 'Séance plénière', 'type' => 'plenary',
+        'starts_at' => now()->subHour(), 'moderator_email' => 'modp@example.tg',
     ]);
+    Participant::create([
+        'edition_id' => $edition->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo',
+        'email' => 'awa@example.tg', 'role' => 'author',
+    ]);
+
+    $this->actingAs(officier('modp@example.tg'), 'account')
+        ->get(route('account.attendance.edit', $session))
+        ->assertOk()
+        ->assertSee('Aucune communication programmée')
+        ->assertDontSee('Awa Kodjo');
+});
+
+it('n’ouvre pas le pointage avant le début de la séance', function () {
+    [, $session] = seanceAPointer('modf@example.tg');
+    $session->update(['starts_at' => now()->addDay()]);
     $mod = officier('modf@example.tg');
 
     $this->actingAs($mod, 'account')
@@ -205,24 +295,13 @@ it('fige la présence d’une édition archivée', function () {
         ->assertForbidden();
 });
 
-it('filtre la liste sur une recherche', function () {
-    [, $session] = seanceAPointer('modr@example.tg');
-    $mod = officier('modr@example.tg');
-
-    $this->actingAs($mod, 'account')
-        ->get(route('account.attendance.edit', ['session' => $session->id, 'q' => 'Mensah']))
-        ->assertOk()
-        ->assertSee('Kofi Mensah')
-        ->assertDontSee('Awa Kodjo');
-});
-
 /**
  * ⚠️ La présence en séance est la SEULE source de présence réelle depuis le
  * retrait du scan de badge : sans ce raccordement, l'option « présence requise »
  * des attestations ne laissait passer personne.
  */
 it('vaut présence réelle pour l’attestation de participation', function () {
-    [, $session, $awa, $kofi] = seanceAPointer('modp@example.tg');
+    [, $session, $awa, $kofi] = seanceAPointer('modp2@example.tg');
 
     expect($awa->wasPresent())->toBeFalse();
 

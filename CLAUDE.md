@@ -963,14 +963,30 @@ table `session_attendances`, modèle `SessionAttendance`). Entrées depuis
 - **Les deux rôles y ont droit.** Selon les séances, c'est le modérateur qui
   anime pendant que le rapporteur tient la liste, ou l'inverse. Imposer un seul
   des deux aurait condamné la moitié des séances au papier.
+- ⚠️ **On ne pointe QUE les auteurs des communications de la séance**
+  (`App\Support\SessionRoster`), **jamais l'effectif de l'édition**. La première
+  version listait les 215 inscrits : illisible, et elle demandait au modérateur de
+  se prononcer sur des gens qui n'ont rien à faire dans sa salle. La liste tient
+  donc sur un écran - **ni recherche ni pagination**, on appelle des gens, on ne
+  fouille pas un annuaire.
+  - C'est aussi la **garde d'écriture** : `update()` n'accepte que les inscrits de
+    la liste de la séance, pas ceux de l'édition. Un identifiant posté n'est pas
+    une autorisation.
+  - Une personne qui signe **deux communications** de la même séance n'a qu'**une**
+    ligne : deux donneraient deux verdicts contradictoires sur une même présence.
+  - ⚠️ Un **co-auteur sans inscription** sur l'édition est affiché mais **non
+    pointable** : le cacher ferait croire à une liste d'auteurs tronquée, et il n'y
+    a aucune inscription à laquelle rattacher une présence.
+  - Une séance **sans communication** (plénière, cérémonie) affiche un état vide
+    qui l'explique - elle ne retombe pas sur la liste de l'édition.
 - ⚠️ **Une table `session_attendances` a existé puis été supprimée**
   (migration `2026_09_17_000200`) : elle n'était alimentée QUE par le **scan de
   badge**, retiré. Elle revient avec une source humaine - ne pas la relire comme
   un reliquat du scan.
 - ⚠️ **Trois verdicts, et « non pointé » n'en est pas un** : `present`, `absent`,
   `excused`. **Pas de ligne = pas encore appelé**, ce qui n'est pas la même
-  information qu'un absent **constaté**. D'où le compteur `unmarked`, rapporté à
-  l'effectif inscrit : « 12 présents » ne dit rien sans savoir 12 sur combien.
+  information qu'un absent **constaté**. D'où le compteur `unmarked`, rapporté aux
+  **attendus de la séance** : « 12 présents » ne dit rien sans savoir 12 sur combien.
 - ⚠️ **L'enregistrement est INCRÉMENTAL et non destructif** : `update()` ne touche
   QUE les participants présents dans la requête. On pointe par petits lots pendant
   la séance (liste paginée, recherche en cours) - une sauvegarde qui remettrait à

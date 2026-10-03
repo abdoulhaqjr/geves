@@ -7,6 +7,7 @@ use App\Enums\MeetingStatus;
 use App\Enums\MeetingVisibility;
 use App\Meetings\Concerns\JoinsMeetings;
 use App\Meetings\Contracts\Meetable;
+use App\Support\SessionRoster;
 use App\Support\StreamEmbed;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -261,8 +262,9 @@ class EventSession extends Model implements Meetable
     /**
      * Comptage par verdict, plus les non pointés.
      *
-     * ⚠️ `unmarked` se déduit de l'effectif de l'édition : sans lui, « 12
-     * présents » ne dit pas si c'était 12 sur 15 ou 12 sur 300.
+     * ⚠️ L'effectif attendu est celui des **auteurs des communications de la
+     * séance** (`SessionRoster`), pas celui de l'édition : « 12 présents » sur
+     * 215 inscrits ne voudrait rien dire pour une salle qui en attend 14.
      *
      * @return array{present: int, absent: int, excused: int, unmarked: int, expected: int}
      */
@@ -273,13 +275,15 @@ class EventSession extends Model implements Meetable
             ->groupBy('status')
             ->pluck('n', 'status');
 
-        $attendus = Participant::where('edition_id', $this->edition_id)->count();
+        $attendus = SessionRoster::participantIds($this)->count();
         $pointes = (int) $parVerdict->sum();
 
         return [
             'present' => (int) ($parVerdict['present'] ?? 0),
             'absent' => (int) ($parVerdict['absent'] ?? 0),
             'excused' => (int) ($parVerdict['excused'] ?? 0),
+            // Le programme peut changer après un pointage : on ne descend jamais
+            // sous zéro, et on ne prétend pas qu'il reste des gens à appeler.
             'unmarked' => max(0, $attendus - $pointes),
             'expected' => $attendus,
         ];

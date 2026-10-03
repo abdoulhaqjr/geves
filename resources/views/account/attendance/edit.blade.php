@@ -1,6 +1,7 @@
 {{-- Pointage de la présence d'une séance, par son modérateur ou son rapporteur.
-     Pensé pour être tenu PENDANT la séance : trois boutons par personne, une
-     recherche, et un enregistrement qui ne touche que ce qui est à l'écran. --}}
+     ⚠️ La liste est celle des AUTEURS des communications programmées dans la
+     séance - pas l'effectif de l'édition. Elle tient donc sur un écran, sans
+     recherche ni pagination : on appelle des gens, on ne fouille pas un annuaire. --}}
 <x-layouts.participant :title="__('Présence de la séance')" :subtitle="$session->label">
 <div class="account-attendance" style="display:grid;grid-template-columns:minmax(0,1fr);gap:16px;">
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
@@ -26,19 +27,28 @@
             @if ($session->room) · {{ $session->room }}@endif
         </div>
 
-        {{-- Le comptage porte sur la séance ENTIÈRE, pas sur la page affichée :
-             « 12 présents » ne doit pas changer quand on tourne la page. --}}
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;">
-            <span class="ukc-pill ukc-pill--ok">{{ __('Présents') }} : <strong>{{ $counts['present'] }}</strong></span>
-            <span class="ukc-pill ukc-pill--err">{{ __('Absents') }} : <strong>{{ $counts['absent'] }}</strong></span>
-            <span class="ukc-pill ukc-pill--warn">{{ __('Excusés') }} : <strong>{{ $counts['excused'] }}</strong></span>
-            <span class="ukc-pill ukc-pill--muted">{{ __('Non pointés') }} : <strong>{{ $counts['unmarked'] }}</strong></span>
-            <span class="ukc-pill ukc-pill--muted">{{ __('Inscrits') }} : <strong>{{ $counts['expected'] }}</strong></span>
-        </div>
+        @if ($roster)
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;">
+                <span class="ukc-pill ukc-pill--ok">{{ __('Présents') }} : <strong>{{ $counts['present'] }}</strong></span>
+                <span class="ukc-pill ukc-pill--err">{{ __('Absents') }} : <strong>{{ $counts['absent'] }}</strong></span>
+                <span class="ukc-pill ukc-pill--warn">{{ __('Excusés') }} : <strong>{{ $counts['excused'] }}</strong></span>
+                <span class="ukc-pill ukc-pill--muted">{{ __('Non pointés') }} : <strong>{{ $counts['unmarked'] }}</strong></span>
+                <span class="ukc-pill ukc-pill--muted">{{ __('Attendus') }} : <strong>{{ $counts['expected'] }}</strong></span>
+            </div>
+        @endif
     </div>
 
-    @if ($notStarted)
-        {{-- La séance n'a pas commencé : il n'y a encore personne à pointer. --}}
+    @if (! $roster)
+        {{-- Pas de communication programmée : il n'y a personne à appeler. Le dire,
+             plutôt que de retomber sur la liste des inscrits de l'édition. --}}
+        <div class="ukc-card" style="text-align:center;">
+            <span class="ico" style="color:var(--ukc-muted);"><x-ukc.icon name="users" :size="28" /></span>
+            <h3 style="justify-content:center;">{{ __('Aucune communication programmée') }}</h3>
+            <p style="color:var(--ukc-muted);margin-top:6px;">
+                {{ __('La présence se pointe sur les auteurs des communications de la séance. Dès qu’une communication y sera programmée, ses auteurs apparaîtront ici.') }}
+            </p>
+        </div>
+    @elseif ($notStarted)
         <div class="ukc-card" style="text-align:center;">
             <span class="ico" style="color:var(--ukc-muted);"><x-ukc.icon name="clock" :size="28" /></span>
             <h3 style="justify-content:center;">{{ __('Pointage pas encore ouvert') }}</h3>
@@ -48,28 +58,8 @@
             </p>
         </div>
     @else
-        <div class="ukc-card">
-            <form method="GET" action="{{ route('account.attendance.edit', $session) }}"
-                  style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:4px;">
-                <div class="ukc-field" style="margin:0;flex:1 1 240px;">
-                    <label for="q">{{ __('Rechercher une personne') }}</label>
-                    <input id="q" name="q" type="search" value="{{ $recherche }}"
-                           placeholder="{{ __('Nom, prénom, e-mail, institution') }}">
-                </div>
-                <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm">
-                    <x-ukc.icon name="search" :size="16" /> {{ __('Chercher') }}
-                </button>
-                @if ($recherche !== '')
-                    <a href="{{ route('account.attendance.edit', $session) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
-                        {{ __('Effacer') }}
-                    </a>
-                @endif
-            </form>
-        </div>
-
         <form method="POST" action="{{ route('account.attendance.update', $session) }}" class="ukc-card">
             @csrf
-            <input type="hidden" name="q" value="{{ $recherche }}">
 
             @if (! $canWrite)
                 <p style="color:var(--ukc-muted);font-size:13px;margin:0 0 12px;display:flex;align-items:center;gap:6px;">
@@ -84,64 +74,67 @@
                 <table class="ukc-table" style="width:100%;border-collapse:collapse;">
                     <thead>
                         <tr>
-                            <th style="text-align:left;">{{ __('Participant') }}</th>
-                            <th style="text-align:left;">{{ __('Qualité') }}</th>
+                            <th style="text-align:left;">{{ __('Auteur') }}</th>
+                            <th style="text-align:left;">{{ __('Communication') }}</th>
                             <th style="text-align:left;width:1%;white-space:nowrap;">{{ __('Présence') }}</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse ($participants as $p)
-                            @php($verdict = $verdicts[$p->id] ?? '')
+                        @foreach ($roster as $ligne)
+                            @php($participant = $ligne['participant'])
+                            @php($verdict = $participant ? ($verdicts[$participant->id] ?? '') : '')
                             <tr>
                                 <td>
-                                    <strong>{{ $p->full_name }}</strong>
-                                    @if ($p->institution)
-                                        <div style="font-size:12.5px;color:var(--ukc-muted);">{{ $p->institution }}</div>
-                                    @endif
-                                </td>
-                                <td style="font-size:13px;color:var(--ukc-muted);">{{ $p->roleLabel() }}</td>
-                                <td style="white-space:nowrap;">
-                                    {{-- Un groupe de radios : « non pointé » est une
-                                         valeur comme les autres, pour pouvoir revenir
-                                         sur une erreur de pointage. --}}
-                                    <div class="ukc-presence" role="group"
-                                         aria-label="{{ __('Présence de :nom', ['nom' => $p->full_name]) }}">
-                                        @foreach (['present' => __('Présent'), 'absent' => __('Absent'), 'excused' => __('Excusé'), '' => __('Non pointé')] as $valeur => $libelle)
-                                            <label class="ukc-presence__opt ukc-presence__opt--{{ $valeur ?: 'none' }}">
-                                                <input type="radio" name="presence[{{ $p->id }}]" value="{{ $valeur }}"
-                                                       @checked($verdict === $valeur) @disabled(! $canWrite)>
-                                                <span>{{ $libelle }}</span>
-                                            </label>
-                                        @endforeach
+                                    <strong>{{ $ligne['name'] }}</strong>
+                                    <div style="font-size:12.5px;color:var(--ukc-muted);">
+                                        {{ $ligne['corresponding'] ? __('Auteur correspondant') : __('Co-auteur') }}
+                                        @if ($ligne['institution']) · {{ $ligne['institution'] }}@endif
                                     </div>
                                 </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="3" style="color:var(--ukc-muted);padding:14px 6px;">
-                                    {{ $recherche !== ''
-                                        ? __('Aucun participant ne correspond à cette recherche.')
-                                        : __('Aucun participant inscrit sur cette édition.') }}
+                                <td style="font-size:13px;color:var(--ukc-muted);">
+                                    @foreach ($ligne['communications'] as $titre)
+                                        <div>{{ $titre }}</div>
+                                    @endforeach
+                                </td>
+                                <td style="white-space:nowrap;">
+                                    @if ($participant)
+                                        {{-- Un groupe de radios : « non pointé » est une
+                                             valeur comme les autres, pour pouvoir revenir
+                                             sur une erreur de pointage. --}}
+                                        <div class="ukc-presence" role="group"
+                                             aria-label="{{ __('Présence de :nom', ['nom' => $ligne['name']]) }}">
+                                            @foreach (['present' => __('Présent'), 'absent' => __('Absent'), 'excused' => __('Excusé'), '' => __('Non pointé')] as $valeur => $libelle)
+                                                <label class="ukc-presence__opt ukc-presence__opt--{{ $valeur ?: 'none' }}">
+                                                    <input type="radio" name="presence[{{ $participant->id }}]" value="{{ $valeur }}"
+                                                           @checked($verdict === $valeur) @disabled(! $canWrite)>
+                                                    <span>{{ $libelle }}</span>
+                                                </label>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        {{-- ⚠️ Co-auteur sans inscription sur l'édition : il
+                                             est bien auteur de la communication (le cacher
+                                             ferait croire à une liste d'auteurs tronquée),
+                                             mais il n'y a aucune inscription à laquelle
+                                             rattacher une présence. --}}
+                                        <span class="ukc-pill ukc-pill--muted" title="{{ __('Cette personne n’a pas d’inscription sur cette édition.') }}">
+                                            {{ __('Non inscrit') }}
+                                        </span>
+                                    @endif
                                 </td>
                             </tr>
-                        @endforelse
+                        @endforeach
                     </tbody>
                 </table>
             </div>
 
-            @if ($participants->hasPages())
-                <div style="margin-top:12px;">{{ $participants->links() }}</div>
-            @endif
-
-            @if ($canWrite && count($participants) > 0)
+            @if ($canWrite)
                 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:16px;">
                     <button type="submit" class="ukc-btn ukc-btn--green">
                         <x-ukc.icon name="check" :size="16" /> {{ __('Enregistrer la présence') }}
                     </button>
-                    {{-- ⚠️ Dit explicitement que l'enregistrement est partiel : on
-                         peut pointer par lots sans craindre d'effacer le reste. --}}
                     <span style="font-size:12.5px;color:var(--ukc-muted);">
-                        {{ __('Seules les personnes affichées sont enregistrées : les autres gardent leur pointage.') }}
+                        {{ __('Vous pouvez enregistrer plusieurs fois au cours de la séance : rien n’est effacé.') }}
                     </span>
                 </div>
             @endif
