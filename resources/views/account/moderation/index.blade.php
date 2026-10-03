@@ -1,4 +1,4 @@
-<x-layouts.participant :title="__('Mes séances à animer')" :subtitle="__('Espace modérateur · Q&A et sondages en direct')">
+<x-layouts.participant :title="__('Mes séances à modérer')" :subtitle="__('Espace modérateur · Q&A et sondages en direct')">
 <div class="account-moderation">
     @forelse ($sessions as $session)
         @php
@@ -67,8 +67,8 @@
     @empty
         <div class="ukc-empty">
             <span class="ico"><x-ukc.icon name="mic" :size="28" /></span>
-            <h3>{{ __('Aucune séance à animer') }}</h3>
-            <p>{{ __('Les séances dont vous êtes le modérateur apparaîtront ici, avec les outils d’animation en direct.') }}</p>
+            <h3>{{ __('Aucune séance à modérer') }}</h3>
+            <p>{{ __('Les séances dont vous êtes le modérateur apparaîtront ici, avec les outils de modération en direct.') }}</p>
         </div>
     @endforelse
 </div>

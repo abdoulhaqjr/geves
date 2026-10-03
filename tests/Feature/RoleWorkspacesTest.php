@@ -58,13 +58,15 @@ it('propose au modérateur un accès à son espace depuis le tableau de bord', f
         ->assertSee(route('account.moderation'), false);
 });
 
-it('affiche l’état vide pour un compte sans séance à animer', function () {
+it('ferme la page de modération à un compte sans séance confiée', function () {
+    // ⚠️ Ce cas montrait l'état vide : la page s'ouvrait à tout compte connecté.
+    // Elle appartient désormais aux modérateurs (cf. ModerationPageTest) - un
+    // espace de travail n'est pas une page qu'on visite.
     $mod = eventActor('rien@example.tg');
 
     $this->actingAs($mod, 'account')
         ->get(route('account.moderation'))
-        ->assertOk()
-        ->assertSee('Aucune séance à animer');
+        ->assertForbidden();
 });
 
 it('permet au rapporteur de rédiger et soumettre un rapport de séance commencée', function () {

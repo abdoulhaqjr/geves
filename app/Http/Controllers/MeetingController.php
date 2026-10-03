@@ -70,8 +70,14 @@ class MeetingController extends Controller
             'editionTitle' => (string) ($session->edition->title ?? ''),
             'startsAt' => $session->starts_at,
             'recordingUrl' => $session->hasRecording() ? (string) $session->recording_url : null,
-            // « Quitter » ramène toujours à la page de déroulement du colloque.
-            'backUrl' => route('public.deroulement'),
+            // ⚠️ « Quitter » ramène le modérateur à SES séances, et non à la page
+            // publique de déroulement : il sort d'une séance pour enchaîner sur la
+            // suivante, ou pour en écrire le rapport. Le test porte sur la séance
+            // confiée, pas sur le rôle en salle - le staff y est modérateur aussi,
+            // et n'a pas d'espace personnel où atterrir.
+            'backUrl' => $session->isModeratedBy($account)
+                ? route('account.moderation')
+                : route('public.deroulement'),
             'engagementUrl' => $role->canJoin() ? route('session.engagement', $session) : null,
         ], $extra);
     }

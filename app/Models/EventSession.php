@@ -155,6 +155,22 @@ class EventSession extends Model implements Meetable
      * communicant programmé → présentateur ; inscrit (ou public) → participant ;
      * sinon accès refusé. (Gating plus fin, ex. payés, à décider avec le mockup.)
      */
+    /**
+     * Cette personne est-elle le modérateur ASSIGNÉ de la séance ?
+     *
+     * ⚠️ À ne pas confondre avec le rôle `Moderator` dans la salle, que le staff
+     * obtient aussi : celui-ci dit que la séance lui a été confiée, par
+     * rapprochement d'e-mail. C'est cette question-là, et non le rôle en salle,
+     * qui décide de l'espace personnel (page « Séances à modérer », retour de
+     * visio) - un administrateur n'a pas de séance à lui.
+     */
+    public function isModeratedBy(?User $account): bool
+    {
+        return $account !== null
+            && filled($this->moderator_email)
+            && mb_strtolower((string) $this->moderator_email) === mb_strtolower((string) $account->email);
+    }
+
     public function meetingRoleFor(?User $account, bool $isStaff = false): MeetingRole
     {
         if ($isStaff) {
@@ -167,8 +183,7 @@ class EventSession extends Model implements Meetable
             return $public ? MeetingRole::Attendee : MeetingRole::None;
         }
 
-        if (filled($this->moderator_email)
-            && mb_strtolower((string) $this->moderator_email) === mb_strtolower((string) $account->email)) {
+        if ($this->isModeratedBy($account)) {
             return MeetingRole::Moderator;
         }
 

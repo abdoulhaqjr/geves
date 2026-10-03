@@ -233,7 +233,11 @@ Route::middleware(['auth:account', StampAccountSession::class])->group(function 
     Route::post('/colloque/{slug}/soumettre', [SubmissionController::class, 'store'])->name('account.submissions.store');
 
     // Fonctions événementielles (modérateur / rapporteur / relecteur)
-    Route::get('/animation', [ModerationController::class, 'index'])->name('account.moderation');
+    // Un seul mot pour une seule chose : le rôle s'appelle « modérateur »
+    // partout ailleurs (jeton de salle, pastille, `moderator_email`).
+    Route::get('/moderation', [ModerationController::class, 'index'])->name('account.moderation');
+    // Ancienne adresse : des signets et des courriels la portent encore.
+    Route::redirect('/animation', '/moderation');
     Route::get('/rapports', [SessionReportController::class, 'index'])->name('account.reports');
     Route::get('/rapports/{session}', [SessionReportController::class, 'edit'])->name('account.reports.edit');
     Route::post('/rapports/{session}', [SessionReportController::class, 'update'])->name('account.reports.update');

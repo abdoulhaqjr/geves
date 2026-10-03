@@ -557,6 +557,30 @@ paiement (`pay`), inscription à une formation.
     `MeetingProviderRegistry` retombe seul sur Jitsi public quand ce défaut n'est pas
     configuré. Le forcer en base écraserait la configuration du site - c'est ce qui
     masquait LiveKit une fois ses identifiants renseignés.
+### « Séances à modérer » (`/moderation`) = un espace de travail, pas une page
+
+Un seul mot pour une seule chose : le rôle s'appelle **modérateur** partout
+ailleurs (`moderator_email`, `MeetingRole::Moderator`, pastille de la salle,
+`ModerationController`). L'interface disait « animer » - d'où `/animation` et
+« Séances à animer », seuls endroits à employer un troisième verbe. Tout est
+aligné sur **modérer** ; `/animation` reste en **redirection** (signets, courriels).
+
+- ⚠️ **La page est fermée à qui ne modère rien** (`abort_unless(isModeratorSomewhere)`).
+  Elle n'était gardée que par `auth:account` : tout compte connecté l'ouvrait - vide,
+  mais ouverte, et avec elle l'idée qu'il y a là des outils qui ne le regardent pas.
+- **Le contenu suit le colloque sélectionné**, comme toutes les pages personnelles.
+  ⚠️ **Sauf quand la sélection ne veut rien dire ici** : un modérateur est rapproché
+  par **e-mail** et n'est pas forcément **inscrit** à l'édition qu'il modère - le
+  sélecteur ne la lui proposerait donc jamais (`CurrentColloque::selectable()` part
+  des `Participant`), et la page resterait vide à jamais. Dans ce cas on montre tout
+  ce qu'il modère, chaque carte portant déjà le nom de son colloque.
+- **Quitter la visio ramène le modérateur à ses séances** (`backUrl`), pas à la page
+  publique de déroulement : il sort d'une séance pour enchaîner sur la suivante ou
+  pour en écrire le rapport. ⚠️ Le test porte sur **`EventSession::isModeratedBy()`**
+  (la séance confiée) et **non sur le rôle en salle** : le staff y est modérateur
+  aussi, et n'a pas d'espace personnel où atterrir - il tomberait sur un 403.
+- Tests : `tests/Feature/ModerationPageTest.php`.
+
 - **Le nombre de connectés, dans la barre du haut.** Il ne se lisait **nulle
   part** en mosaïque : le compte du bandeau n'existe qu'en vue présentateur, et
   seulement une fois celui-ci déplié. La barre du haut, elle, ne disparaît dans

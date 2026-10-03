@@ -142,9 +142,9 @@
                 @if ($isModerator || $isRapporteur || $isReviewer)
                     <span class="nav-label">{{ __('Mes fonctions') }}</span>
                     @if ($isModerator)
-                        <a href="{{ route('account.moderation') }}" title="{{ __('Séances à animer') }}"
+                        <a href="{{ route('account.moderation') }}" title="{{ __('Séances à modérer') }}"
                            @class(['active' => request()->routeIs('account.moderation')])>
-                            <x-ukc.icon name="mic" :size="18" /> <span class="txt">{{ __('Séances à animer') }}</span>
+                            <x-ukc.icon name="mic" :size="18" /> <span class="txt">{{ __('Séances à modérer') }}</span>
                         </a>
                     @endif
                     @if ($isRapporteur)
