@@ -125,7 +125,16 @@ export async function startFromConfig() {
         const host = $('tileMain'); if (!host) return null;
         pipEl = document.createElement('div');
         pipEl.className = 'pip-bubble'; pipEl.id = 'screenPip';
-        pipEl.innerHTML = '<div class="pip-avatar">' + initials(state.name) + '</div><div class="pip-size-hint"></div><div class="pip-resize"></div>';
+        // Double flèche diagonale : le geste va dans les deux sens, et le curseur
+        // de la poignée (`nwse-resize`) dit déjà exactement cela.
+        const flecheRedim = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"'
+            + ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+            + '<polyline points="9 4 4 4 4 9"/><polyline points="15 20 20 20 20 15"/>'
+            + '<line x1="4" y1="4" x2="10.5" y2="10.5"/><line x1="20" y1="20" x2="13.5" y2="13.5"/></svg>';
+
+        pipEl.innerHTML = '<div class="pip-avatar">' + initials(state.name) + '</div>'
+            + '<div class="pip-size-hint"></div>'
+            + '<div class="pip-resize" title="Glisser pour redimensionner · molette · double-clic">' + flecheRedim + '</div>';
         host.appendChild(pipEl);
         makeDraggable(pipEl, host); makeResizable(pipEl, host);
         return pipEl;

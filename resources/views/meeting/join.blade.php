@@ -138,8 +138,11 @@
             display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s,transform .15s;}
         #visio-room .pip-bubble:hover .pip-resize,#visio-room .pip-bubble.resizing .pip-resize{opacity:1;}
         #visio-room .pip-resize:hover{transform:scale(1.12);}
-        #visio-room .pip-resize::before{content:'';width:9px;height:9px;margin:-2px -2px 0 0;
-            border-right:2px solid rgba(255,255,255,.95);border-bottom:2px solid rgba(255,255,255,.95);border-bottom-right-radius:2px;}
+        /* ⚠️ Double flèche diagonale, et non un coin de fenêtre : un disque n'a pas
+           de coin, le geste va dans les DEUX sens (tirer pour agrandir, pousser
+           pour réduire), et c'est déjà ce que montre le curseur `nwse-resize` -
+           icône et curseur doivent raconter la même chose. */
+        #visio-room .pip-resize svg{width:13px;height:13px;display:block;color:rgba(255,255,255,.95);}
         #visio-room .pip-size-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.72);color:#fff;font-size:11px;font-weight:700;padding:4px 9px;border-radius:50px;z-index:6;display:none;white-space:nowrap;}
         #visio-room .pip-bubble.resizing .pip-size-hint{display:block;}
         #visio-room .side{border-left:1px solid var(--vborder);background:var(--vbg-panel);display:flex;flex-direction:column;min-height:0;}
