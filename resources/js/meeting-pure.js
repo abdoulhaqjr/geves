@@ -280,3 +280,16 @@ export function etatChrono(secondes, minutes) {
     reste: prevu - t,
   };
 }
+
+/**
+ * Combien de personnes sont dans la salle, en toutes lettres.
+ *
+ * ⚠️ Le chiffre seul ne dit pas ce qu'il compte : la pastille n'affiche qu'un
+ * nombre, et c'est cette phrase qui le nomme au survol comme au lecteur d'écran.
+ * Le singulier vaut aussi pour zéro, comme le veut le français.
+ */
+export function phraseConnectes(n) {
+  const t = Math.max(0, Math.floor(Number(n) || 0));
+
+  return t > 1 ? t + ' personnes connectées' : t + ' personne connectée';
+}

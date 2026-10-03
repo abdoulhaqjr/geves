@@ -46,6 +46,16 @@
         #visio-room .v-title strong{display:block;font-size:13.5px;font-weight:800;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
         #visio-room .v-title span{display:block;font-size:11.5px;line-height:1.3;color:var(--vmuted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
         #visio-room .v-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+        /* ⚠️ Combien de personnes sont là ne se lisait NULLE PART en mosaïque : le
+           compte du bandeau n'existe qu'en vue présentateur, et seulement une fois
+           celui-ci déplié. Il est donc posé dans la barre du haut, qui ne disparaît
+           dans aucune disposition ni à aucune largeur - c'est la seule chose de la
+           salle dont on puisse dire cela. */
+        #visio-room .v-count{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;
+            font-size:11.5px;font-weight:800;padding:5px 10px;border-radius:50px;
+            background:rgba(255,255,255,.07);color:var(--vtext);}
+        #visio-room .v-count svg{width:14px;height:14px;display:block;color:var(--vmuted);}
+        #visio-room .v-count b{font-variant-numeric:tabular-nums;}
         /* Pastille d'état : une puce colorée porte l'information, le texte la nomme.
            Lue d'un coup d'œil sans avoir à lire. */
         #visio-room .pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:5px 11px;border-radius:50px;}
@@ -624,6 +634,7 @@
             /* ⚠️ La droite réclamait 405px sur 375 : le titre tombait à zéro et
                « Quitter » sortait de l'écran. La pastille garde sa puce - l'état se
                lit à la couleur - et perd son texte (repris dans son `title`). */
+            #visio-room .v-count{padding:5px 8px;gap:4px;}
             #visio-room .v-right .pill{font-size:0;gap:0;padding:7px;}
             #visio-room .v-right .pill::before{width:9px;height:9px;}
             /* Quitter est déjà en rouge, en grand, dans la barre du bas. */
@@ -773,6 +784,13 @@
                 </div>
             </div>
             <div class="v-right">
+                {{-- Nombre de personnes dans la salle : le chiffre se lit d'un coup
+                     d'œil, la phrase entière est dans son `title` / `aria-label`. --}}
+                <span class="v-count" id="compteConnectes" title="1 personne connectée"
+                      aria-label="1 personne connectée">
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                    <b id="compteConnectesN">1</b>
+                </span>
                 <span class="pill warn" id="connPill">Connexion…</span>
                 <button type="button" class="v-btn ghost sm" id="btnToggleSide">Panneau</button>
                 @if ($engagementUrl)

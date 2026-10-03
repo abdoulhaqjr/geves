@@ -557,6 +557,13 @@ paiement (`pay`), inscription à une formation.
     `MeetingProviderRegistry` retombe seul sur Jitsi public quand ce défaut n'est pas
     configuré. Le forcer en base écraserait la configuration du site - c'est ce qui
     masquait LiveKit une fois ses identifiants renseignés.
+- **Le nombre de connectés, dans la barre du haut.** Il ne se lisait **nulle
+  part** en mosaïque : le compte du bandeau n'existe qu'en vue présentateur, et
+  seulement une fois celui-ci déplié. La barre du haut, elle, ne disparaît dans
+  aucune disposition ni à aucune largeur. ⚠️ Le compte vient de `people`, qui
+  suit les arrivées et les départs - pas des vignettes, dont le nombre dépend de
+  ce qui est AFFICHÉ. Le chiffre se lit seul ; la phrase qui le nomme
+  (`phraseConnectes`, accord compris) est dans son `title` / `aria-label`.
 - **Le nom se replie dans le bandeau** : la carte n'y fait que 150px (118 puis
   96 sur téléphone), et l'étiquette l'occupait presque entière pour un nom
   tronqué au tiers. Ne reste que l'état du micro ; le nom revient **au survol**

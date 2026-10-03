@@ -12,6 +12,7 @@ import {
   metadonnee,
   niveauReseau,
   ordreRecevable,
+  phraseConnectes,
   presenceLabel,
   rangsDesMains,
   roleLabel,
@@ -272,5 +273,20 @@ describe('le chronomètre engage la salle', () => {
     expect(ordreRecevable('floor_time', 'audience')).toBe(false);
     expect(ordreRecevable('floor_time', 'presenter')).toBe(false);
     expect(ordreRecevable('floor_time', 'moderator')).toBe(true);
+  });
+});
+
+describe('nombre de connectés', () => {
+  it('accorde le pluriel, et le garde au singulier pour zéro et un', () => {
+    expect(phraseConnectes(0)).toBe('0 personne connectée');
+    expect(phraseConnectes(1)).toBe('1 personne connectée');
+    expect(phraseConnectes(2)).toBe('2 personnes connectées');
+    expect(phraseConnectes(42)).toBe('42 personnes connectées');
+  });
+
+  it('ne compte jamais en négatif ni en virgule', () => {
+    expect(phraseConnectes(-3)).toBe('0 personne connectée');
+    expect(phraseConnectes(null)).toBe('0 personne connectée');
+    expect(phraseConnectes(2.8)).toBe('2 personnes connectées');
   });
 });

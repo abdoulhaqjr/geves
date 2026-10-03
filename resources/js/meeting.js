@@ -13,7 +13,7 @@ import {
 import {
     enBasDuFil, etatChrono, grilleOptimale, heure, idSur, idsDesParleurs, initials,
     mainsOrdonnees, metadonnee, niveauReseau, ordreRecevable as ordreAutorise, presenceLabel,
-    rangsDesMains, roleLabel, teinteDuNom, texteCourt,
+    phraseConnectes, rangsDesMains, roleLabel, teinteDuNom, texteCourt,
 } from './meeting-pure.js';
 
 // Objet compat pour réutiliser la logique de la maquette (LK.RoomEvent, LK.Track…).
@@ -747,8 +747,25 @@ export async function startFromConfig() {
         });
     }
 
+    /**
+     * Le nombre de personnes dans la salle, dans la barre du haut.
+     *
+     * ⚠️ `people` fait foi : la liste suit les arrivées et les départs, là où le
+     * compte des vignettes dépend de la disposition affichée.
+     */
+    function majCompteConnectes() {
+        const el = $('compteConnectes');
+        if (!el) return;
+        const phrase = phraseConnectes(people.length);
+        const nb = $('compteConnectesN');
+        if (nb) nb.textContent = String(people.length);
+        el.title = phrase;
+        el.setAttribute('aria-label', phrase);
+    }
+
     function refreshPeople() {
         syncMicStates();
+        majCompteConnectes();
         const rangs = rangsDesMains(people);
         const isMod = state.role === 'moderator';
         const liste = $('peopleList');
