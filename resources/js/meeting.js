@@ -79,7 +79,17 @@ export async function startFromConfig() {
         el.title = label;
         el.setAttribute('aria-label', label);
     }
-    function initials(n) { return (n || '?').split(/\s+/).filter(Boolean).map((p) => p[0]).join('').slice(0, 2).toUpperCase() || '?'; }
+    /**
+     * Initiales d'un nom.
+     *
+     * ⚠️ Filtrées aux lettres et aux chiffres : elles sont posées dans deux
+     * gabarits construits en `innerHTML` (vignette, bulle caméra), et le premier
+     * caractère d'un nom hostile y ouvrirait une balise.
+     */
+    function initials(n) {
+        return (String(n || '?').match(/[\p{L}\p{N}]+/gu) || [])
+            .map((mot) => mot[0]).join('').slice(0, 2).toUpperCase() || '?';
+    }
     function roleLabel(r) { return r === 'presenter' ? 'Communicateur' : r === 'moderator' ? 'Modérateur' : 'Auditeur'; }
 
     // ---- Permissions média ----
@@ -552,24 +562,71 @@ export async function startFromConfig() {
         });
     }
 
+    /**
+     * Fabrique un élément dont le texte RESTE du texte.
+     *
+     * ⚠️ Les listes de la salle (participants, communicateurs, présence) étaient
+     * construites par concaténation puis posées en `innerHTML`, avec dedans des
+     * noms et des titres venus de la base. Un inscrit qui écrit
+     * `<img src=x onerror=…>` dans son nom - rien ne l'en empêche, le profil
+     * n'accepte qu'une longueur maximale - faisait alors exécuter son code chez
+     * TOUS les participants de la salle, et dans le panneau du modérateur.
+     * Aucune liste de la salle ne se construit plus en collant du texte dans du
+     * balisage.
+     */
+    function elt(balise, classe, texte) {
+        const n = document.createElement(balise);
+        if (classe) n.className = classe;
+        if (texte !== undefined && texte !== null) n.textContent = String(texte);
+
+        return n;
+    }
+
     function refreshPeople() {
         syncMicStates();
         const rangs = new Map(mainsLevees().map((p, i) => [p.id, i + 1]));
         const isMod = state.role === 'moderator';
-        $('peopleList').innerHTML = people.map((p) => {
-            let actions = '';
-            if (isMod && p.id !== 'local') {
-                actions = '<div class="mod-actions">' +
-                    '<button type="button" data-act="' + (p.micOn ? 'mic_off' : 'mic') + '" data-id="' + p.id + '">' + (p.micOn ? 'Couper micro' : 'Autoriser micro') + '</button>' +
-                    (p.hand ? '<button type="button" data-act="hand" data-id="' + p.id + '">Baisser main</button>' : '') + '</div>';
-            }
+        const liste = $('peopleList');
+        liste.textContent = '';
+
+        people.forEach((p) => {
             const rang = rangs.get(p.id);
-            return '<div class="person' + (rang ? ' hand-up' : '') + '"><div class="av">' + initials(p.name) + '</div><div class="meta"><strong>' + p.name + '</strong><span>' + roleLabel(p.role) +
-                (rang ? ' · <span class="rank">✋ ' + rang + '</span>' : '') +
-                ' · <span class="mic ' + (p.micOn ? 'on' : 'off') + '">' + (p.micOn ? 'micro ouvert' : 'micro coupé') + '</span>' +
-                (p.screen ? ' · écran' : '') + '</span></div>' + actions + '</div>';
-        }).join('');
-        $('peopleList').querySelectorAll('.mod-actions button').forEach((b) => b.addEventListener('click', () => handleModAction(b.getAttribute('data-act'), b.getAttribute('data-id'))));
+            const ligne = elt('div', 'person' + (rang ? ' hand-up' : ''));
+            ligne.appendChild(elt('div', 'av', initials(p.name)));
+
+            const meta = elt('div', 'meta');
+            meta.appendChild(elt('strong', '', p.name));
+
+            const etat = elt('span');
+            etat.appendChild(document.createTextNode(roleLabel(p.role)));
+            if (rang) {
+                etat.appendChild(document.createTextNode(' · '));
+                etat.appendChild(elt('span', 'rank', '✋ ' + rang));
+            }
+            etat.appendChild(document.createTextNode(' · '));
+            etat.appendChild(elt('span', 'mic ' + (p.micOn ? 'on' : 'off'), p.micOn ? 'micro ouvert' : 'micro coupé'));
+            if (p.screen) etat.appendChild(document.createTextNode(' · écran'));
+            meta.appendChild(etat);
+            ligne.appendChild(meta);
+
+            if (isMod && p.id !== 'local') {
+                const actions = elt('div', 'mod-actions');
+                const micro = elt('button', '', p.micOn ? 'Couper micro' : 'Autoriser micro');
+                micro.type = 'button';
+                micro.addEventListener('click', () => handleModAction(p.micOn ? 'mic_off' : 'mic', p.id));
+                actions.appendChild(micro);
+                if (p.hand) {
+                    const main = elt('button', '', 'Baisser main');
+                    main.type = 'button';
+                    main.addEventListener('click', () => handleModAction('hand', p.id));
+                    actions.appendChild(main);
+                }
+                ligne.appendChild(actions);
+            }
+
+            liste.appendChild(ligne);
+        });
+
         refreshHands(); majMicroTuiles();
     }
     function matchComm(c) {
@@ -579,44 +636,85 @@ export async function startFromConfig() {
         else c.online = false;
     }
     function refreshComms() {
-        const list = $('commList'); if (!list) return;
+        const list = $('commList');
+        if (!list) return;
         scheduledComms.forEach(matchComm);
         const isMod = state.role === 'moderator';
-        list.innerHTML = scheduledComms.map((c) => {
-            const st = c.done ? '<span class="st on">✓ Effectuée</span>' : c.isFloor ? '<span class="st live">● En présentation</span>' : c.online ? '<span class="st on">En ligne</span>' : '<span class="st off">Hors ligne</span>';
-            let acts = '';
-            if (isMod) {
-                acts = '<div class="acts">';
-                if (c.online && c.identity) {
-                    acts += !c.isFloor ? '<button type="button" class="primary" data-act="give_floor" data-id="' + c.identity + '">Donner la présentation</button>' : '<button type="button" data-act="demote" data-id="' + c.identity + '">Retirer</button>';
-                    acts += '<button type="button" data-act="mic" data-id="' + c.identity + '">Autoriser micro</button>';
-                }
-                acts += c.done ? '<button type="button" disabled style="opacity:.6;">✓ Effectuée</button>' : '<button type="button" data-act="mark_done" data-order="' + c.order + '" data-id="' + (c.identity || ('ord-' + c.order)) + '">Marquer effectuée</button>';
-                acts += '</div>';
-            }
-            return '<div class="comm-item' + (c.isFloor ? ' speaking' : '') + '"><div class="row"><div><strong>' + c.order + '. ' + c.name + '</strong><div style="font-size:12px;color:var(--vmuted);margin-top:2px;">' + c.title + '</div></div>' + st + '</div>' + acts + '</div>';
-        }).join('');
-        list.querySelectorAll('.acts button').forEach((b) => b.addEventListener('click', async () => {
-            const act = b.getAttribute('data-act');
-            if (act === 'mark_done') {
-                const ord = b.getAttribute('data-order');
-                const c = scheduledComms.find((x) => String(x.order) === String(ord));
-                // ⚠️ Geste SANS RETOUR : la marque part à toute la salle et le
-                // bouton se désactive. Un clic de trop sur un panneau tenu au
-                // doigt faisait passer une communication qui n'avait pas eu lieu.
-                const ok = await confirme(
-                    'Marquer la communication effectuée',
-                    'La communication <strong>' + ((c && c.order) || ord) + '. ' + ((c && c.name) || '') + '</strong> sera signalée comme passée pour toute la salle. Cette marque ne se retire pas.',
-                    'Marquer effectuée',
-                );
-                if (!ok) return;
-                scheduledComms.forEach((x) => { if (String(x.order) === String(ord)) x.done = true; });
-                refreshComms(); sendData({ type: 'comm_done', order: ord }); toast('Communication marquée effectuée');
+        list.textContent = '';
 
-                return;
+        scheduledComms.forEach((c) => {
+            const item = elt('div', 'comm-item' + (c.isFloor ? ' speaking' : ''));
+
+            const ligne = elt('div', 'row');
+            const bloc = elt('div');
+            bloc.appendChild(elt('strong', '', c.order + '. ' + c.name));
+            const titre = elt('div', '', c.title);
+            titre.style.cssText = 'font-size:12px;color:var(--vmuted);margin-top:2px;';
+            bloc.appendChild(titre);
+            ligne.appendChild(bloc);
+
+            const statut = c.done
+                ? elt('span', 'st on', '✓ Effectuée')
+                : c.isFloor ? elt('span', 'st live', '● En présentation')
+                    : elt('span', 'st ' + (c.online ? 'on' : 'off'), c.online ? 'En ligne' : 'Hors ligne');
+            ligne.appendChild(statut);
+            item.appendChild(ligne);
+
+            if (isMod) {
+                const acts = elt('div', 'acts');
+                const bouton = (libelle, classe, action) => {
+                    const b = elt('button', classe || '', libelle);
+                    b.type = 'button';
+                    b.addEventListener('click', action);
+
+                    return b;
+                };
+
+                if (c.online && c.identity) {
+                    acts.appendChild(c.isFloor
+                        ? bouton('Retirer', '', () => handleModAction('demote', c.identity))
+                        : bouton('Donner la présentation', 'primary', () => handleModAction('give_floor', c.identity)));
+                    acts.appendChild(bouton('Autoriser micro', '', () => handleModAction('mic', c.identity)));
+                }
+
+                if (c.done) {
+                    const fait = elt('button', '', '✓ Effectuée');
+                    fait.type = 'button'; fait.disabled = true; fait.style.opacity = '.6';
+                    acts.appendChild(fait);
+                } else {
+                    acts.appendChild(bouton('Marquer effectuée', '', () => marqueEffectuee(c.order)));
+                }
+                item.appendChild(acts);
             }
-            handleModAction(act, b.getAttribute('data-id'));
-        }));
+
+            list.appendChild(item);
+        });
+    }
+
+    /** ⚠️ Geste SANS RETOUR : la marque part à toute la salle et ne se retire pas. */
+    async function marqueEffectuee(ordre) {
+        const c = scheduledComms.find((x) => String(x.order) === String(ordre));
+        const ok = await confirme(
+            'Marquer la communication effectuée',
+            'La communication <strong>' + ((c && c.order) || ordre) + '. ' + texteEchappe((c && c.name) || '') + '</strong> sera signalée comme passée pour toute la salle. Cette marque ne se retire pas.',
+            'Marquer effectuée',
+        );
+        if (!ok) return;
+        scheduledComms.forEach((x) => { if (String(x.order) === String(ordre)) x.done = true; });
+        refreshComms();
+        sendData({ type: 'comm_done', order: ordre });
+        toast('Communication marquée effectuée');
+    }
+
+    /**
+     * Le seul endroit qui compose encore du balisage (la boîte de confirmation met
+     * un nom en gras) : le texte inséré y est donc échappé explicitement.
+     */
+    function texteEchappe(t) {
+        const n = document.createElement('span');
+        n.textContent = String(t ?? '');
+
+        return n.innerHTML;
     }
     async function handleModAction(act, targetId) {
         if (state.role !== 'moderator') return;
@@ -1042,45 +1140,54 @@ export async function startFromConfig() {
     }
 
     function renderPresence(data) {
-        var list = $('presenceList'), counts = $('presenceCounts');
+        const list = $('presenceList'), counts = $('presenceCounts');
         if (!list) return;
 
-        var c = data.counts || {};
-        counts.innerHTML = '<span>Présents <b>' + (c.present || 0) + '</b></span>'
-            + '<span>Absents <b>' + (c.absent || 0) + '</b></span>'
-            + '<span>Excusés <b>' + (c.excused || 0) + '</b></span>'
-            + '<span>Attendus <b>' + (c.expected || 0) + '</b></span>';
+        const c = data.counts || {};
+        counts.textContent = '';
+        [['Présents', c.present], ['Absents', c.absent], ['Excusés', c.excused], ['Attendus', c.expected]]
+            .forEach(([libelle, valeur]) => {
+                const s = elt('span', '', libelle + ' ');
+                s.appendChild(elt('b', '', valeur || 0));
+                counts.appendChild(s);
+            });
 
+        list.textContent = '';
         if (!presenceRows.length) {
-            list.innerHTML = '<div class="pr-empty">Aucune communication programmée dans cette séance : il n’y a personne à pointer.</div>';
+            list.appendChild(elt('div', 'pr-empty', 'Aucune communication programmée dans cette séance : il n’y a personne à pointer.'));
+
             return;
         }
 
-        list.innerHTML = presenceRows.map(function (r) {
+        presenceRows.forEach((r) => {
+            const item = elt('div', 'pr-item');
+            item.appendChild(elt('div', 'nm', r.name));
+
+            const meta = elt('div', 'meta');
+            meta.appendChild(document.createTextNode(r.role));
             // ⚠️ « En salle » n'est affiché que si LiveKit a su répondre : on ne
             // laisse pas croire que personne n'est là quand on ne sait pas.
-            var salle = (data.roomKnown && r.inRoom) ? ' · <span class="in-room">● En salle</span>' : '';
-            var auto = r.auto ? ' · entré en visio' : '';
-            var acts = ['present', 'absent', 'excused'].map(function (st) {
-                return '<button type="button" data-id="' + r.id + '" data-st="' + st + '"'
-                    + (r.status === st ? ' class="on"' : '') + '>' + presenceLabel(st) + '</button>';
-            }).join('');
+            if (data.roomKnown && r.inRoom) {
+                meta.appendChild(document.createTextNode(' · '));
+                meta.appendChild(elt('span', 'in-room', '● En salle'));
+            }
+            if (r.auto) meta.appendChild(document.createTextNode(' · entré en visio'));
+            item.appendChild(meta);
 
-            return '<div class="pr-item"><div class="nm">' + r.name + '</div>'
-                + '<div class="meta">' + r.role + salle + auto + '</div>'
-                + (data.canWrite ? '<div class="pr-acts">' + acts + '</div>' : '')
-                + '</div>';
-        }).join('');
+            if (data.canWrite) {
+                const acts = elt('div', 'pr-acts');
+                ['present', 'absent', 'excused'].forEach((st) => {
+                    const b = elt('button', r.status === st ? 'on' : '', presenceLabel(st));
+                    b.type = 'button';
+                    // Recliquer le même verdict le retire : c'est le moyen de défaire
+                    // une erreur sans quitter la salle.
+                    b.addEventListener('click', () => markPresence(r.id, r.status === st ? '' : st));
+                    acts.appendChild(b);
+                });
+                item.appendChild(acts);
+            }
 
-        list.querySelectorAll('.pr-acts button').forEach(function (b) {
-            b.addEventListener('click', function () {
-                var id = b.getAttribute('data-id');
-                var st = b.getAttribute('data-st');
-                var row = presenceRows.filter(function (r) { return String(r.id) === String(id); })[0];
-                // Recliquer le même verdict le retire : c'est le moyen de défaire
-                // une erreur sans quitter la salle.
-                markPresence(id, (row && row.status === st) ? '' : st);
-            });
+            list.appendChild(item);
         });
     }
 
@@ -1230,8 +1337,63 @@ export async function startFromConfig() {
         }
     }
 
+    /**
+     * Rôle ANNONCÉ par le serveur pour ce participant, lu dans la métadonnée de
+     * son jeton.
+     *
+     * ⚠️ Surtout pas `people[].role` : c'est précisément ce que les messages
+     * `mod_role` modifient. On authentifierait un ordre avec ce que l'ordre
+     * précédent a écrit. La métadonnée, elle, est signée dans le jeton et le
+     * participant n'a pas le droit de la changer (`canUpdateOwnMetadata` n'est
+     * jamais accordé).
+     */
+    function roleAnnonce(participant) {
+        try {
+            const md = JSON.parse((participant && participant.metadata) || '{}');
+
+            return md.role === 'moderator' || md.role === 'presenter' ? md.role : 'audience';
+        } catch (e) {
+            return 'audience';
+        }
+    }
+
+    /**
+     * Qui a le droit d'émettre quoi.
+     *
+     * ⚠️ Rien ne le vérifiait : n'importe quel participant pouvait, depuis la
+     * console de son navigateur, couper le micro de toute la salle, retirer la
+     * parole au présentateur, marquer une communication effectuée ou afficher un
+     * faux bandeau « enregistrement en cours ». Le canal de données est public
+     * pour tous les connectés ; c'est au RÉCEPTEUR de ne pas obéir à n'importe
+     * qui.
+     */
+    const ORDRES_RESERVES = {
+        mod_unmute: 'moderator',
+        mod_mute: 'moderator',
+        mod_hand_down: 'moderator',
+        mod_role: 'moderator',
+        comm_done: 'moderator',
+        recording: 'moderator',
+        // Prendre le partage d'écran ou masquer la vignette caméra ne regarde que
+        // ceux qui diffusent.
+        screen_takeover: 'presenter',
+        pip_visibility: 'presenter',
+    };
+
+    /** Vrai si cet émetteur a le rang exigé par ce type de message. */
+    function ordreRecevable(type, participant) {
+        const exige = ORDRES_RESERVES[type];
+        if (!exige) return true;
+        const role = roleAnnonce(participant);
+
+        return exige === 'moderator' ? role === 'moderator' : role === 'moderator' || role === 'presenter';
+    }
+
     function onData(payload, participant) {
         let msg; try { msg = JSON.parse(new TextDecoder().decode(payload)); } catch (e) { return; }
+        // Un ordre forgé est ignoré en silence : le signaler apprendrait surtout
+        // à celui qui essaie que la salle le voit.
+        if (!ordreRecevable(msg.type, participant)) return;
         const fromId = participant && participant.identity;
         if (msg.type === 'chat') addChat((participant && (participant.name || participant.identity)) || 'Participant', msg.text, false, { id: msg.id, replyTo: msg.replyTo, at: Date.now() });
         else if (msg.type === 'reaction') reactionDistante(msg.uid, msg.emoji, !!msg.on, msg.replaced || null);

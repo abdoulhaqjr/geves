@@ -557,6 +557,28 @@ paiement (`pay`), inscription à une formation.
     `MeetingProviderRegistry` retombe seul sur Jitsi public quand ce défaut n'est pas
     configuré. Le forcer en base écraserait la configuration du site - c'est ce qui
     masquait LiveKit une fois ses identifiants renseignés.
+- **Sécurité de la salle de visio** - trois règles qui ne se négocient pas :
+  - ⚠️ **Aucune liste de la salle ne se construit en collant du texte dans du
+    balisage.** Participants, communicateurs et présence étaient composés par
+    concaténation puis posés en `innerHTML`, avec dedans des **noms et des titres
+    venus de la base**. Le profil n'impose qu'une longueur maximale : un inscrit
+    qui écrivait `<img src=x onerror=…>` dans son nom faisait exécuter son code
+    chez **tous les participants**, et dans le panneau du modérateur. Tout passe
+    par `elt()` (`textContent`). Le seul endroit qui compose encore du balisage
+    est la boîte de confirmation, dont le texte inséré passe par `texteEchappe()`.
+    `initials()` filtre aux lettres et chiffres, pour la même raison.
+  - ⚠️ **Les ordres reçus sur le canal de données sont vérifiés** (`ORDRES_RESERVES`,
+    `ordreRecevable`). Rien ne les contrôlait : n'importe quel participant pouvait,
+    depuis la console de son navigateur, couper le micro de toute la salle, retirer
+    la parole, marquer une communication effectuée ou afficher un faux bandeau
+    « enregistrement ». Le canal est **public pour tous les connectés** : c'est au
+    RÉCEPTEUR de ne pas obéir à n'importe qui. Le rang est lu dans la **métadonnée
+    du jeton** (`roleAnnonce`) et surtout **pas** dans `people[].role`, que ces mêmes
+    messages modifient - on authentifierait un ordre avec ce que le précédent a écrit.
+  - ⚠️ **Un visiteur sans compte doit rester distinct des autres**
+    (`MeetingChatController::signature`) : tous partageaient la clé `anon`, si bien
+    que le deuxième visiteur **retirait** la réaction du premier. La session HTTP les
+    distingue, hachée pour ne pas recopier un identifiant de session dans une table.
 - **Conduite de séance dans la salle** (`resources/js/meeting.js`) :
   - **Le micro s'ouvre AVEC la présentation.** Donner la parole promeut en
     `presenter` (message `mod_role`) : le poste visé ouvre alors son micro de

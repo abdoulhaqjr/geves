@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\MeetingMessage;
+use App\Models\MeetingMessageReaction;
 use App\Models\User;
 
 /**
@@ -116,6 +117,30 @@ it('remplace sa réaction quand on en choisit une autre', function () {
     $reagir($autre, '👍')->assertOk()->assertJsonPath('reactions.👍.count', 1);
 
     expect($message->reactions()->count())->toBe(2);
+});
+
+it('ne confond pas deux visiteurs anonymes qui réagissent', function () {
+    $edition = openEdition();
+    $session = liveSession($edition, 'public');
+    $message = messageDansLeFil($session, 'r00004');
+
+    $reagir = fn () => $this->postJson(
+        route('meeting.chat.react', ['session', $session->id, 'r00004']),
+        ['emoji' => '👍'],
+    );
+
+    $reagir()->assertOk()->assertJsonPath('reactions.👍.count', 1);
+    $premier = MeetingMessageReaction::firstOrFail()->reactor;
+
+    // ⚠️ Tous les visiteurs sans compte partageaient la clé « anon » : le second
+    // RETIRAIT la réaction du premier au lieu d'ajouter la sienne.
+    expect($premier)->toStartWith('a:')->not->toBe('anon');
+
+    // Un autre visiteur, donc une autre session.
+    $this->flushSession();
+    $reagir()->assertOk();
+
+    expect($message->reactions()->pluck('reactor')->unique())->toHaveCount(2);
 });
 
 it('n’enregistre que les réactions proposées', function () {

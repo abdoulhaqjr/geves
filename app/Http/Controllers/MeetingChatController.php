@@ -186,8 +186,16 @@ class MeetingChatController extends Controller
         }
 
         $staff = Auth::guard('web')->id();
+        if ($staff) {
+            return 's:'.$staff;
+        }
 
-        return $staff ? 's:'.$staff : 'anon';
+        // ⚠️ Un visiteur sans compte - une cérémonie publique en accueille - doit
+        // lui aussi être distinct des autres. Ils partageaient tous la clé
+        // « anon » : le deuxième visiteur RETIRAIT la réaction du premier. Sa
+        // session HTTP le distingue, et elle est HACHÉE pour ne pas recopier un
+        // identifiant de session en clair dans une table.
+        return 'a:'.substr(hash('sha256', (string) session()->getId()), 0, 30);
     }
 
     /** La salle visée, si elle existe et si l'on a le droit d'y entrer. */
