@@ -557,6 +557,35 @@ paiement (`pay`), inscription à une formation.
     `MeetingProviderRegistry` retombe seul sur Jitsi public quand ce défaut n'est pas
     configuré. Le forcer en base écraserait la configuration du site - c'est ce qui
     masquait LiveKit une fois ses identifiants renseignés.
+- **Conduite de séance dans la salle** (`resources/js/meeting.js`) :
+  - **Le micro s'ouvre AVEC la présentation.** Donner la parole promeut en
+    `presenter` (message `mod_role`) : le poste visé ouvre alors son micro de
+    lui-même (`ouvreMonMicro`). ⚠️ Sinon la salle entière regarde quelqu'un parler
+    en silence, et personne ne sait d'où vient la panne. La personne reste libre
+    de se recouper juste après : c'est son micro. (À l'entrée dans la salle, un
+    modérateur ou un communicateur a déjà micro **et** caméra ouverts.)
+  - ⚠️ **L'état des micros se LIT de la salle, il ne se devine pas**
+    (`syncMicStates` / `microActif`, sur `TrackMuted`/`TrackUnmuted`/
+    `TrackPublished`/`TrackUnpublished`). `micOn` n'était écrit que par les actions
+    du modérateur : il disait ce qu'il avait **demandé**, pas ce que la personne
+    faisait. Quelqu'un qui se coupait restait affiché « micro ouvert », et le
+    bouton proposait de couper un micro déjà coupé.
+  - **Mains levées numérotées** (`leveLaMain` / `mainsLevees` / `refreshHands`) :
+    badge **✋ n** sur la tuile, rang dans la liste, compteur sur l'onglet
+    Participants, et une infobulle à chaque main qui se lève. ⚠️ Le rang vient d'un
+    **compteur local**, pas de l'horloge : deux postes n'ont pas la même heure,
+    alors que les messages arrivent dans l'ordre d'émission. Il se **recalcule** à
+    chaque affichage, donc une main baissée renumérote les suivantes au lieu de
+    laisser un trou. ⚠️ Une main levée dans un panneau fermé n'existe pas : d'où la
+    tuile et l'onglet, pas seulement la liste.
+  - **Les gestes sans retour se confirment** (`confirme()`, boîte `#vModal`) :
+    « Marquer effectuée » part à toute la salle et désactive le bouton. ⚠️ Pas
+    `window.confirm` : il gèle la page (la visio continue sans qu'on puisse rien
+    faire), sort visuellement de la salle et n'est pas garanti en contexte embarqué.
+  - ⚠️ Ces ordres passent par le **canal de données** (coopératif, tous les postes
+    exécutant notre code), pas par l'API serveur de LiveKit : un client modifié
+    pourrait les ignorer. Acceptable pour une conduite de séance, à revoir si la
+    coupure de micro devient une mesure de police.
 - **Rôle dans la salle de visio : il voyage en MÉTADONNÉE du jeton**
   (`LiveKitProvider::token()` → `metadata` = `{"role":…}`, vocabulaire unique dans
   **`MeetingRole::roomRole()`** : `moderator` / `presenter` / `audience`).

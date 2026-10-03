@@ -290,6 +290,38 @@
         #visio-room .v-status::before{content:'';width:12px;height:12px;border-radius:50%;flex-shrink:0;
             border:2px solid rgba(199,209,230,.25);border-top-color:#c7d1e6;animation:vspin .7s linear infinite;}
         @@keyframes vspin{to{transform:rotate(360deg);}}
+        /* --- Boîte de confirmation ---
+           ⚠️ Pas le `confirm()` du navigateur : il sort visuellement de la salle,
+           gèle la page (donc la visio continue sans qu'on puisse rien faire) et
+           n'est pas garanti dans un contexte embarqué. */
+        #visio-room .v-modal{display:none;position:absolute;inset:0;z-index:95;padding:20px;
+            background:rgba(4,7,13,.62);align-items:center;justify-content:center;}
+        #visio-room .v-modal.on{display:flex;}
+        #visio-room .v-modal-box{background:var(--vbg-elev);border:1px solid var(--vborder);border-radius:16px;
+            padding:20px;width:min(430px,100%);box-shadow:0 24px 64px rgba(0,0,0,.5);}
+        #visio-room .v-modal-box h4{font-size:15px;font-weight:800;margin-bottom:8px;}
+        #visio-room .v-modal-box p{font-size:13.5px;line-height:1.5;color:var(--vmuted);}
+        #visio-room .v-modal-box p strong{color:var(--vtext);}
+        #visio-room .v-modal-acts{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;flex-wrap:wrap;}
+        /* --- Mains levées ---
+           ⚠️ Une main levée dans un panneau fermé n'existe pas : elle doit se voir
+           sur la TUILE. Et son NUMÉRO dit qui a demandé la parole en premier -
+           sans lui, le modérateur donne la parole dans l'ordre où son œil tombe. */
+        #visio-room .tile.hand-up{border-color:rgba(255,215,0,.65);box-shadow:0 0 0 2px rgba(255,215,0,.22);}
+        #visio-room .hand-badge{position:absolute;top:10px;left:10px;z-index:4;background:var(--vgold);
+            color:var(--vblue-d);font-size:11px;font-weight:900;padding:4px 9px;border-radius:50px;}
+        #visio-room .person.hand-up{background:rgba(255,215,0,.07);border-radius:10px;padding-left:8px;padding-right:8px;}
+        #visio-room .person .rank{background:var(--vgold);color:var(--vblue-d);font-size:10.5px;font-weight:900;
+            padding:2px 7px;border-radius:50px;}
+        /* Compteur sur l'onglet : le panneau est souvent fermé, et toujours sur
+           un autre onglet que celui des participants. */
+        #visio-room .tab-count{display:none;margin-left:6px;background:var(--vgold);color:var(--vblue-d);
+            font-size:10.5px;font-weight:900;padding:1px 7px;border-radius:50px;}
+        #visio-room .tab-count.on{display:inline-block;}
+        /* État du micro : lu de la salle, jamais deviné (cf. syncMicStates). */
+        #visio-room .person .mic{font-weight:700;}
+        #visio-room .person .mic.on{color:#6ee7b7;}
+        #visio-room .person .mic.off{color:#fda4af;}
         /* --- Voile du tiroir (téléphone / tablette) ---
            Le panneau recouvre la scène : il faut voir qu'il est AU-DESSUS, et
            qu'un appui à côté le referme. */
@@ -471,7 +503,7 @@
                 <div class="side-head">
                 <div class="side-tabs">
                     <button type="button" class="active" data-side="chat">Chat</button>
-                    <button type="button" data-side="people">Participants</button>
+                    <button type="button" data-side="people">Participants<span class="tab-count" id="handCount"></span></button>
                     <button type="button" data-side="comms" id="tabComms" style="display:none;">Communicateurs</button>
                     {{-- Onglet réservé au modérateur / rapporteur de la séance (cf. cfg.presence). --}}
                     <button type="button" data-side="presence" id="tabPresence" style="display:none;">Présence</button>
@@ -578,6 +610,17 @@
             <strong>Permissions navigateur</strong>
             <div id="permBannerText" style="margin-top:6px;color:var(--vmuted);"></div>
             <div class="actions"><button type="button" class="p1" id="permRetry">Réessayer</button><button type="button" class="p2" id="permDismiss">Fermer</button></div>
+        </div>
+        {{-- Confirmation des gestes qu'on ne peut pas défaire. --}}
+        <div class="v-modal" id="vModal" role="dialog" aria-modal="true" aria-labelledby="vModalTitle">
+            <div class="v-modal-box">
+                <h4 id="vModalTitle">Confirmer</h4>
+                <p id="vModalText"></p>
+                <div class="v-modal-acts">
+                    <button type="button" class="v-btn ghost sm" id="vModalNo">Annuler</button>
+                    <button type="button" class="v-btn blue sm" id="vModalYes">Confirmer</button>
+                </div>
+            </div>
         </div>
         <div class="v-status" id="lkStatus">Connexion à la salle…</div>
         <div class="v-toast" id="toast"></div>

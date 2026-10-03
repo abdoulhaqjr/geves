@@ -36,6 +36,28 @@ export async function startFromConfig() {
     const $ = (id) => document.getElementById(id);
     const canPublish = () => state.role === 'presenter' || state.role === 'moderator';
 
+    /**
+     * Confirmation d'un geste qu'on ne peut pas défaire. Renvoie une promesse.
+     *
+     * ⚠️ Pas `window.confirm` : il gèle la page (la visio continue sans qu'on
+     * puisse rien faire), sort visuellement de la salle, et n'est pas garanti
+     * dans un contexte embarqué.
+     */
+    let repondModal = null;
+    function confirme(titre, texte, libelleOui) {
+        const m = $('vModal');
+        if (!m) return Promise.resolve(true);
+        $('vModalTitle').textContent = titre;
+        $('vModalText').innerHTML = texte;
+        $('vModalYes').textContent = libelleOui || 'Confirmer';
+        m.classList.add('on');
+        $('vModalYes').focus();
+
+        return new Promise((resoud) => {
+            repondModal = (ok) => { m.classList.remove('on'); repondModal = null; resoud(ok); };
+        });
+    }
+
     function toast(msg) {
         const t = $('toast'); if (!t) return;
         t.textContent = msg; t.classList.add('show');
@@ -391,8 +413,11 @@ export async function startFromConfig() {
         const c = scheduledComms.find((x) => x.identity === p.identity);
         showPresenterInfo(p.name || p.identity, c ? c.title : (pub && !pub.isMuted ? 'Connexion de la caméra…' : 'Caméra désactivée'));
     }
-    /** Caméra coupée / rallumée : la tuile et la scène suivent. */
+    /** Piste coupée / rallumée : la tuile, la scène et la liste suivent. */
     function onCameraToggle(pub, participant) {
+        // Un micro qu'on coupe ne change rien à l'image, mais tout à la liste :
+        // c'est là que le modérateur lit qui a la parole.
+        if (pub && pub.source === LK.Track.Source.Microphone) { refreshPeople(); return; }
         if (!pub || pub.source !== LK.Track.Source.Camera || !participant) return;
         const tile = $('tile-' + participant.identity);
         if (tile) {
@@ -423,7 +448,74 @@ export async function startFromConfig() {
         updateFilmstripCount(); layoutGrid(); return el;
     }
     function updateFilmstripCount() { const el = $('filmstripCount'); if (el) el.textContent = String($('filmstrip').querySelectorAll('.tile').length); }
+    /** Micro réellement ouvert : publié **et** non coupé. */
+    function microActif(p) {
+        const pub = p && p.getTrackPublication && p.getTrackPublication(LK.Track.Source.Microphone);
+
+        return !!(pub && pub.track && !pub.isMuted);
+    }
+
+    /**
+     * Aligne l'état des micros sur ce que la salle diffuse vraiment.
+     *
+     * ⚠️ `micOn` n'était écrit que par les actions du modérateur : il disait ce
+     * qu'il avait DEMANDÉ, pas ce que la personne faisait. Quelqu'un qui se
+     * coupait restait affiché « micro ouvert », et le bouton proposait de couper
+     * un micro déjà coupé.
+     */
+    function syncMicStates() {
+        people.forEach((pe) => {
+            if (pe.id === 'local') { pe.micOn = !!state.mic; return; }
+            if (!room) return;
+            let trouve = null;
+            room.remoteParticipants.forEach((p) => { if (p.identity === pe.id) trouve = p; });
+            if (trouve) pe.micOn = microActif(trouve);
+        });
+    }
+
+    /**
+     * Mains levées, de la plus ancienne à la plus récente.
+     *
+     * ⚠️ Un compteur local et non l'horloge : les horloges de deux postes ne sont
+     * pas comparables, alors que les messages arrivent dans l'ordre où ils ont été
+     * émis. Le rang se recalcule à chaque affichage, donc une main baissée
+     * renumérote les suivantes au lieu de laisser un trou.
+     */
+    let compteurMains = 0;
+    function mainsLevees() {
+        return people.filter((p) => p.hand && p.handAt).sort((a, b) => a.handAt - b.handAt);
+    }
+    function leveLaMain(pe, levee) {
+        if (!pe) return 0;
+        pe.hand = !!levee;
+        pe.handAt = levee ? ++compteurMains : 0;
+
+        return levee ? mainsLevees().findIndex((x) => x === pe) + 1 : 0;
+    }
+
+    /** La main levée se voit sur la tuile et sur l'onglet, panneau fermé ou non. */
+    function refreshHands() {
+        const mains = mainsLevees();
+        const compteur = $('handCount');
+        if (compteur) { compteur.textContent = String(mains.length); compteur.classList.toggle('on', mains.length > 0); }
+        document.querySelectorAll('#visio-room .tile').forEach((t) => {
+            t.classList.remove('hand-up');
+            const b = t.querySelector('.hand-badge'); if (b) b.remove();
+        });
+        mains.forEach((pe, i) => {
+            const t = pe.id === 'local' ? $('tileLocal') : $('tile-' + pe.id);
+            if (!t) return;
+            t.classList.add('hand-up');
+            const b = document.createElement('span');
+            b.className = 'hand-badge';
+            b.textContent = '✋ ' + (i + 1);
+            t.appendChild(b);
+        });
+    }
+
     function refreshPeople() {
+        syncMicStates();
+        const rangs = new Map(mainsLevees().map((p, i) => [p.id, i + 1]));
         const isMod = state.role === 'moderator';
         $('peopleList').innerHTML = people.map((p) => {
             let actions = '';
@@ -432,10 +524,14 @@ export async function startFromConfig() {
                     '<button type="button" data-act="' + (p.micOn ? 'mic_off' : 'mic') + '" data-id="' + p.id + '">' + (p.micOn ? 'Couper micro' : 'Autoriser micro') + '</button>' +
                     (p.hand ? '<button type="button" data-act="hand" data-id="' + p.id + '">Baisser main</button>' : '') + '</div>';
             }
-            return '<div class="person"><div class="av">' + initials(p.name) + '</div><div class="meta"><strong>' + p.name + '</strong><span>' + roleLabel(p.role) +
-                (p.hand ? ' · ✋ main' : '') + (p.screen ? ' · écran' : '') + '</span>' + actions + '</div></div>';
+            const rang = rangs.get(p.id);
+            return '<div class="person' + (rang ? ' hand-up' : '') + '"><div class="av">' + initials(p.name) + '</div><div class="meta"><strong>' + p.name + '</strong><span>' + roleLabel(p.role) +
+                (rang ? ' · <span class="rank">✋ ' + rang + '</span>' : '') +
+                ' · <span class="mic ' + (p.micOn ? 'on' : 'off') + '">' + (p.micOn ? 'micro ouvert' : 'micro coupé') + '</span>' +
+                (p.screen ? ' · écran' : '') + '</span>' + actions + '</div></div>';
         }).join('');
         $('peopleList').querySelectorAll('.mod-actions button').forEach((b) => b.addEventListener('click', () => handleModAction(b.getAttribute('data-act'), b.getAttribute('data-id'))));
+        refreshHands();
     }
     function matchComm(c) {
         const pe = people.find((p) => p.name && c.name && p.name.toLowerCase().indexOf(c.name.split(' ').pop().toLowerCase()) >= 0);
@@ -461,9 +557,25 @@ export async function startFromConfig() {
             }
             return '<div class="comm-item' + (c.isFloor ? ' speaking' : '') + '"><div class="row"><div><strong>' + c.order + '. ' + c.name + '</strong><div style="font-size:12px;color:var(--vmuted);margin-top:2px;">' + c.title + '</div></div>' + st + '</div>' + acts + '</div>';
         }).join('');
-        list.querySelectorAll('.acts button').forEach((b) => b.addEventListener('click', () => {
+        list.querySelectorAll('.acts button').forEach((b) => b.addEventListener('click', async () => {
             const act = b.getAttribute('data-act');
-            if (act === 'mark_done') { const ord = b.getAttribute('data-order'); scheduledComms.forEach((c) => { if (String(c.order) === String(ord)) c.done = true; }); refreshComms(); sendData({ type: 'comm_done', order: ord }); toast('Communication marquée effectuée'); return; }
+            if (act === 'mark_done') {
+                const ord = b.getAttribute('data-order');
+                const c = scheduledComms.find((x) => String(x.order) === String(ord));
+                // ⚠️ Geste SANS RETOUR : la marque part à toute la salle et le
+                // bouton se désactive. Un clic de trop sur un panneau tenu au
+                // doigt faisait passer une communication qui n'avait pas eu lieu.
+                const ok = await confirme(
+                    'Marquer la communication effectuée',
+                    'La communication <strong>' + ((c && c.order) || ord) + '. ' + ((c && c.name) || '') + '</strong> sera signalée comme passée pour toute la salle. Cette marque ne se retire pas.',
+                    'Marquer effectuée',
+                );
+                if (!ok) return;
+                scheduledComms.forEach((x) => { if (String(x.order) === String(ord)) x.done = true; });
+                refreshComms(); sendData({ type: 'comm_done', order: ord }); toast('Communication marquée effectuée');
+
+                return;
+            }
             handleModAction(act, b.getAttribute('data-id'));
         }));
     }
@@ -472,7 +584,7 @@ export async function startFromConfig() {
         const p = people.find((x) => x.id === targetId);
         if (act === 'mic') { await sendData({ type: 'mod_unmute', from: state.name }, [targetId]); if (p) { p.micOn = true; } refreshPeople(); refreshComms(); toast('Micro autorisé'); }
         else if (act === 'mic_off') { await sendData({ type: 'mod_mute', from: state.name }, [targetId]); if (p) p.micOn = false; refreshPeople(); toast('Micro coupé'); }
-        else if (act === 'hand') { await sendData({ type: 'mod_hand_down', from: state.name }, [targetId]); if (p) p.hand = false; refreshPeople(); }
+        else if (act === 'hand') { await sendData({ type: 'mod_hand_down', from: state.name }, [targetId]); leveLaMain(p, false); refreshPeople(); }
         else if (act === 'demote') { await sendData({ type: 'mod_role', role: 'audience', from: state.name }, [targetId]); if (p) { p.role = 'audience'; p.isFloor = false; } refreshPeople(); refreshComms(); showCurrentPresenterInStage(); toast('Présentation retirée'); }
         else if (act === 'give_floor') {
             people.forEach((x) => { x.isFloor = x.id === targetId; if (x.id !== targetId && x.role === 'presenter') x.role = 'audience'; });
@@ -792,6 +904,8 @@ export async function startFromConfig() {
             // par-dessus l'avatar) et la scène ne se mettait jamais à jour -
             // elle continuait d'annoncer une caméra qui venait de s'éteindre, ou
             // l'inverse.
+            .on(LK.RoomEvent.TrackPublished, () => refreshPeople())
+            .on(LK.RoomEvent.TrackUnpublished, () => refreshPeople())
             .on(LK.RoomEvent.TrackMuted, (pub, participant) => onCameraToggle(pub, participant))
             .on(LK.RoomEvent.TrackUnmuted, (pub, participant) => onCameraToggle(pub, participant))
             .on(LK.RoomEvent.ParticipantConnected, (p) => {
@@ -838,10 +952,18 @@ export async function startFromConfig() {
         let msg; try { msg = JSON.parse(new TextDecoder().decode(payload)); } catch (e) { return; }
         const fromId = participant && participant.identity;
         if (msg.type === 'chat') addChat((participant && (participant.name || participant.identity)) || 'Participant', msg.text);
-        else if (msg.type === 'hand') { const pe = people.find((x) => x.id === fromId); if (pe) { pe.hand = !!msg.up; refreshPeople(); } }
-        else if (msg.type === 'mod_unmute') { toast((msg.from || 'Modérateur') + ' vous autorise le micro'); if (room) room.localParticipant.setMicrophoneEnabled(true).then(() => { state.mic = true; syncToolbar(); }).catch(() => {}); }
-        else if (msg.type === 'mod_mute') { if (room) room.localParticipant.setMicrophoneEnabled(false).then(() => { state.mic = false; syncToolbar(); toast('Le modérateur a coupé votre micro'); }).catch(() => {}); }
-        else if (msg.type === 'mod_hand_down') { state.hand = false; const me = people.find((x) => x.id === 'local'); if (me) me.hand = false; refreshPeople(); syncToolbar(); }
+        else if (msg.type === 'hand') {
+            const pe = people.find((x) => x.id === fromId);
+            if (pe) {
+                const rang = leveLaMain(pe, !!msg.up);
+                refreshPeople();
+                // Le panneau peut être fermé, ou sur un autre onglet : on le dit.
+                if (msg.up) toast(pe.name + ' lève la main (n° ' + rang + ')');
+            }
+        }
+        else if (msg.type === 'mod_unmute') { const me = people.find((x) => x.id === 'local'); if (me) me.micGranted = true; ouvreMonMicro((msg.from || 'Modérateur') + ' vous autorise le micro'); }
+        else if (msg.type === 'mod_mute') { if (room) room.localParticipant.setMicrophoneEnabled(false).then(() => { state.mic = false; syncToolbar(); refreshPeople(); toast('Le modérateur a coupé votre micro'); }).catch(() => {}); }
+        else if (msg.type === 'mod_hand_down') { state.hand = false; leveLaMain(people.find((x) => x.id === 'local'), false); refreshPeople(); syncToolbar(); }
         else if (msg.type === 'screen_takeover') { const my = room && room.localParticipant.identity; if (msg.identity && msg.identity !== my && state.screen) { room.localParticipant.setScreenShareEnabled(false).catch(() => {}); state.screen = false; destroyPip(false); syncToolbar(); toast((msg.by || 'Un participant') + ' a pris le partage'); } }
         else if (msg.type === 'recording') { state.recording = !!msg.on; $('recBadge').classList.toggle('on', state.recording); syncToolbar(); if (msg.on) toast('Enregistrement en cours'); }
         else if (msg.type === 'comm_done') { scheduledComms.forEach((c) => { if (String(c.order) === String(msg.order)) c.done = true; }); refreshComms(); }
@@ -853,7 +975,24 @@ export async function startFromConfig() {
             updateModUi(); refreshPeople(); syncToolbar();
             toast(nr === 'presenter' ? 'Vous êtes nommé communicateur' : 'Rôle communicateur retiré');
             if (nr === 'audience' && room) { room.localParticipant.setCameraEnabled(false).catch(() => {}); room.localParticipant.setScreenShareEnabled(false).catch(() => {}); state.cam = false; state.screen = false; destroyPip(); syncToolbar(); }
+            // ⚠️ Prendre la parole avec le micro coupé, c'est la salle entière qui
+            // regarde quelqu'un parler en silence - et personne ne sait d'où vient
+            // la panne. Le micro s'ouvre donc AVEC la présentation ; la personne
+            // reste libre de le recouper juste après, c'est son micro.
+            if (nr === 'presenter' && room) ouvreMonMicro('Votre micro a été activé pour votre présentation');
         }
+    }
+
+    /** Ouvre son propre micro (promotion en présentation, autorisation du modérateur). */
+    async function ouvreMonMicro(message) {
+        if (!room || state.mic) return;
+        if (!await ensureMedia(false, true)) return;
+        try {
+            await room.localParticipant.setMicrophoneEnabled(true);
+            state.mic = true;
+            syncToolbar(); refreshPeople();
+            if (message) toast(message);
+        } catch (e) { toast('Micro indisponible'); }
     }
 
     // ---- Sortie de la salle ----
@@ -892,8 +1031,10 @@ export async function startFromConfig() {
         await startScreenShare(t);
     }));
     $('btnHand').addEventListener('click', async () => {
-        state.hand = !state.hand; const me = people.find((x) => x.id === 'local'); if (me) me.hand = state.hand;
-        refreshPeople(); syncToolbar(); toast(state.hand ? 'Main levée' : 'Main baissée');
+        state.hand = !state.hand;
+        const rang = leveLaMain(people.find((x) => x.id === 'local'), state.hand);
+        refreshPeople(); syncToolbar();
+        toast(state.hand ? 'Main levée (n° ' + rang + ')' : 'Main baissée');
         await sendData({ type: 'hand', up: state.hand });
     });
     $('btnLayout').addEventListener('click', () => {
@@ -999,6 +1140,12 @@ export async function startFromConfig() {
         document.querySelectorAll('#visio-room video, #visio-room audio').forEach((el) => { if (el.closest('#tileLocal') || el.closest('.pip-bubble')) return; el.muted = vol === 0; try { el.volume = vol; } catch (e) {} });
         $('volVal').textContent = Math.round(state.volume * 100) + '%'; syncToolbar();
     }
+    $('vModalYes')?.addEventListener('click', () => repondModal && repondModal(true));
+    $('vModalNo')?.addEventListener('click', () => repondModal && repondModal(false));
+    // Un clic sur le voile, ou Échap, annulent : la sortie la plus sûre est
+    // toujours celle qui ne fait rien.
+    $('vModal')?.addEventListener('click', (e) => { if (e.target === $('vModal') && repondModal) repondModal(false); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && repondModal) repondModal(false); });
     $('btnLeave').addEventListener('click', leave);
     $('btnLeaveTop').addEventListener('click', (e) => { e.preventDefault(); leave(); });
     document.addEventListener('click', (e) => {
