@@ -557,6 +557,25 @@ paiement (`pay`), inscription à une formation.
     `MeetingProviderRegistry` retombe seul sur Jitsi public quand ce défaut n'est pas
     configuré. Le forcer en base écraserait la configuration du site - c'est ce qui
     masquait LiveKit une fois ses identifiants renseignés.
+- **Tests JavaScript : Vitest** (`npm run test:js`, `npm run test:js:watch`).
+  Premier outillage de test côté client du projet - jusque-là, **aucune ligne de
+  JS n'était couverte**.
+  - **`resources/js/meeting-pure.js`** rassemble les règles de la salle qui ne
+    dépendent ni du DOM, ni de LiveKit, ni d'une connexion : initiales, troncature,
+    identifiants, lecture de la métadonnée, **table des ordres autorisés**, file des
+    mains levées, grille de la mosaïque. ⚠️ Elles vivaient dans la fermeture de
+    `meeting.js` (~1 600 lignes), donc hors d'atteinte de tout test - alors que ce
+    sont elles qui portent les décisions les plus corrigées de ce module.
+  - **Déplacer une décision dans ce fichier, c'est la rendre vérifiable.** Les cas
+    de `meeting-pure.test.js` ne sont pas décoratifs : chacun fige un défaut
+    constaté en salle réelle (un ordre forgé par un simple participant, quatre
+    visages écrasés sur une rangée, un rang de main qui laisse un trou, un nom
+    hostile dans des initiales).
+  - `meeting.js` ne garde que des **adaptateurs** minuscules (par exemple
+    `ordreRecevable(type, participant)` qui donne le rang à la règle pure).
+  - ⚠️ `meeting.js` **ne passe pas `prettier --check`**, et ne le passait pas avant :
+    le reformater en bloc noierait toute relecture. Les fichiers neufs, eux, sont
+    conformes.
 - **Le fil, une fois conservé, demande ce qui va avec** (troisième lot de l'audit) :
   - **Messages non lus** : compteur sur l'onglet Chat **et** pastille sur le bouton
     « Panneau ». ⚠️ Le tiroir est fermé par défaut sous 900px et le panneau s'ouvre

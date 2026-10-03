@@ -7,6 +7,14 @@ import {
     createLocalAudioTrack, createLocalVideoTrack,
 } from 'livekit-client';
 
+// Règles de la salle qui ne dépendent ni du DOM ni de LiveKit : elles vivent
+// à part, et sont les seules du fichier à être couvertes par des tests
+// (`meeting-pure.test.js`). Y déplacer une décision, c'est la rendre vérifiable.
+import {
+    grilleOptimale, heure, idSur, initials, mainsOrdonnees, metadonnee,
+    ordreRecevable as ordreAutorise, presenceLabel, rangsDesMains, roleLabel, texteCourt,
+} from './meeting-pure.js';
+
 // Objet compat pour réutiliser la logique de la maquette (LK.RoomEvent, LK.Track…).
 const LK = { Room, RoomEvent, Track, VideoPresets, createLocalAudioTrack, createLocalVideoTrack };
 
@@ -79,18 +87,6 @@ export async function startFromConfig() {
         el.title = label;
         el.setAttribute('aria-label', label);
     }
-    /**
-     * Initiales d'un nom.
-     *
-     * ⚠️ Filtrées aux lettres et aux chiffres : elles sont posées dans deux
-     * gabarits construits en `innerHTML` (vignette, bulle caméra), et le premier
-     * caractère d'un nom hostile y ouvrirait une balise.
-     */
-    function initials(n) {
-        return (String(n || '?').match(/[\p{L}\p{N}]+/gu) || [])
-            .map((mot) => mot[0]).join('').slice(0, 2).toUpperCase() || '?';
-    }
-    function roleLabel(r) { return r === 'presenter' ? 'Communicateur' : r === 'moderator' ? 'Modérateur' : 'Auditeur'; }
 
     // ---- Permissions média ----
     const mediaPerm = { cam: false, mic: false };
@@ -498,7 +494,7 @@ export async function startFromConfig() {
      */
     let compteurMains = 0;
     function mainsLevees() {
-        return people.filter((p) => p.hand && p.handAt).sort((a, b) => a.handAt - b.handAt);
+        return mainsOrdonnees(people);
     }
     function leveLaMain(pe, levee) {
         if (!pe) return 0;
@@ -600,7 +596,7 @@ export async function startFromConfig() {
 
     function refreshPeople() {
         syncMicStates();
-        const rangs = new Map(mainsLevees().map((p, i) => [p.id, i + 1]));
+        const rangs = rangsDesMains(people);
         const isMod = state.role === 'moderator';
         const liste = $('peopleList');
         liste.textContent = '';
@@ -772,17 +768,6 @@ export async function startFromConfig() {
     // donc fausse par construction (`onerror=` dans un attribut, entités…).
     let reponseA = null;
 
-    function texteCourt(t, n) {
-        const s = (t || '').replace(/\s+/g, ' ').trim();
-
-        return s.length > n ? s.slice(0, n - 1) + '…' : s;
-    }
-
-    /** Identifiant de message réduit à l'alphabet attendu : il sert d'id DOM. */
-    function idSur(v) {
-        return String(v || '').replace(/[^a-z0-9]/gi, '').slice(0, 24);
-    }
-
     function montreMessage(id) {
         const el = idSur(id) && $('msg-' + idSur(id));
         if (!el) return;
@@ -900,13 +885,6 @@ export async function startFromConfig() {
             nonLus++;
             majNonLus();
         }
-    }
-
-    /** Heure courte d'un message (chaîne ISO du serveur, ou instant local). */
-    function heure(v) {
-        const d = v instanceof Date ? v : new Date(v);
-
-        return isNaN(d.getTime()) ? '' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
 
     // ---- Réactions ----
@@ -1151,23 +1129,9 @@ export async function startFromConfig() {
         const n = tiles.length;
         if (!n) return;
 
-        const gap = 10, cible = 16 / 9;
-        const W = grid.clientWidth, H = grid.clientHeight;
-        let meilleur = 1, meilleureAire = 0;
-
-        for (let cols = 1; cols <= n; cols++) {
-            const rows = Math.ceil(n / cols);
-            const w = (W - gap * (cols - 1)) / cols;
-            const h = (H - gap * (rows - 1)) / rows;
-            if (w <= 0 || h <= 0) continue;
-            // La plus grande tuile au ratio cible qui tient dans la cellule.
-            const tw = Math.min(w, h * cible);
-            const aire = tw * (tw / cible);
-            if (aire > meilleureAire) { meilleureAire = aire; meilleur = cols; }
-        }
-
-        grid.style.setProperty('--cols', meilleur);
-        grid.style.setProperty('--rows', Math.ceil(n / meilleur));
+        const { cols, rows } = grilleOptimale(n, grid.clientWidth, grid.clientHeight);
+        grid.style.setProperty('--cols', cols);
+        grid.style.setProperty('--rows', rows);
     }
 
     // ---- Partage d'écran ----
@@ -1247,10 +1211,6 @@ export async function startFromConfig() {
     // qui a le droit de pointer, pas le navigateur.
     var presenceRows = [];
     var presenceTimer = null;
-
-    function presenceLabel(st) {
-        return st === 'present' ? 'Présent' : st === 'absent' ? 'Absent' : st === 'excused' ? 'Excusé' : '';
-    }
 
     function renderPresence(data) {
         const list = $('presenceList'), counts = $('presenceCounts');
@@ -1456,17 +1416,6 @@ export async function startFromConfig() {
      * signée dans le jeton, et le participant n'a pas le droit de la modifier
      * (`canUpdateOwnMetadata` n'est jamais accordé).
      */
-    function metadonnee(participant) {
-        try {
-            const md = JSON.parse((participant && participant.metadata) || '{}');
-            const role = md.role === 'moderator' || md.role === 'presenter' ? md.role : 'audience';
-
-            return { role, accountId: md.accountId || null };
-        } catch (e) {
-            return { role: 'audience', accountId: null };
-        }
-    }
-
     /**
      * Rôle ANNONCÉ par le serveur pour ce participant, lu dans la métadonnée de
      * son jeton.
@@ -1481,37 +1430,9 @@ export async function startFromConfig() {
         return metadonnee(participant).role;
     }
 
-    /**
-     * Qui a le droit d'émettre quoi.
-     *
-     * ⚠️ Rien ne le vérifiait : n'importe quel participant pouvait, depuis la
-     * console de son navigateur, couper le micro de toute la salle, retirer la
-     * parole au présentateur, marquer une communication effectuée ou afficher un
-     * faux bandeau « enregistrement en cours ». Le canal de données est public
-     * pour tous les connectés ; c'est au RÉCEPTEUR de ne pas obéir à n'importe
-     * qui.
-     */
-    const ORDRES_RESERVES = {
-        mod_unmute: 'moderator',
-        mod_mute: 'moderator',
-        mod_hand_down: 'moderator',
-        mod_role: 'moderator',
-        comm_done: 'moderator',
-        recording: 'moderator',
-        chat_removed: 'moderator',
-        // Prendre le partage d'écran ou masquer la vignette caméra ne regarde que
-        // ceux qui diffusent.
-        screen_takeover: 'presenter',
-        pip_visibility: 'presenter',
-    };
-
-    /** Vrai si cet émetteur a le rang exigé par ce type de message. */
+    /** Même règle, à partir de l'émetteur plutôt que de son rang. */
     function ordreRecevable(type, participant) {
-        const exige = ORDRES_RESERVES[type];
-        if (!exige) return true;
-        const role = roleAnnonce(participant);
-
-        return exige === 'moderator' ? role === 'moderator' : role === 'moderator' || role === 'presenter';
+        return ordreAutorise(type, roleAnnonce(participant));
     }
 
     /**
