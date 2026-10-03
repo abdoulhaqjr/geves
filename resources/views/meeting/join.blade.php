@@ -139,8 +139,11 @@
         /* ⚠️ Sur les vignettes, l'étiquette doit se faire oublier : à 12,5px elle
            occupait la moitié de la largeur et tronquait les noms au tiers. La
            scène garde sa taille - c'est elle qu'on regarde. */
+        /* ⚠️ Collée au bord bas, et non à 10px : une vignette cadre un buste, donc
+           l'étiquette tombait en plein sur le menton. Les quelques pixels gagnés
+           la font passer sous le visage. */
         #visio-room .tile:not(.main) .name{display:inline-flex;align-items:center;gap:6px;
-            font-size:11px;padding:4px 8px;border-radius:7px;}
+            font-size:11px;padding:4px 8px;border-radius:7px;left:6px;bottom:4px;}
         #visio-room .tile .name .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
         /* État du micro, posé là où l'œil cherche déjà le nom. Cliquable par le
            modérateur (et par chacun sur sa propre vignette) : couper un micro

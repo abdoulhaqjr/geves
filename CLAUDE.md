@@ -611,11 +611,16 @@ paiement (`pay`), inscription à une formation.
     client, chacun signerait ses messages du nom d'un autre. Même règle que le nom
     affiché dans la salle, sinon le même message aurait deux auteurs.
   - **Réactions** (`meeting_message_reactions`, `MeetingMessage::EMOJIS`) : liste
-    d'emojis **fermée** côté serveur, unicité `(message, réacteur, emoji)` tenue
-    par la **base** - deux clics rapides ou deux onglets compteraient sinon deux
-    fois la même personne. ⚠️ Le « réacteur » est le **compte** (ou le membre du
-    staff), jamais l'identité LiveKit : celle-ci change à chaque connexion.
-    L'affichage est optimiste, puis écrasé par le décompte du serveur.
+    d'emojis **fermée** côté serveur, et **une seule réaction par personne et par
+    message** - unicité `(message, réacteur)` tenue par la **base**. ⚠️ L'unicité
+    portait d'abord aussi sur l'emoji : la même personne empilait 👍 ET ❤️ ET 👏,
+    et pesait à elle seule plus que trois autres. Le même emoji retire la sienne,
+    un autre la **remplace** (la réponse porte `replaced`, pour que les autres
+    salles ajustent leur décompte sans recharger le fil). ⚠️ Le « réacteur » est
+    le **compte** (ou le membre du staff), jamais l'identité LiveKit : celle-ci
+    change à chaque connexion, et la même personne compterait deux fois en
+    rechargeant sa page. L'affichage est optimiste, puis écrasé par le décompte
+    du serveur.
   - **Le fil suit l'accès à la salle** : `Meetable::canJoin()`, et un `type`
     résolu depuis une **liste fermée** (`MeetingChatController::TYPES`) - jamais
     une classe construite à partir de l'URL.

@@ -95,6 +95,29 @@ it('pose et retire une réaction du même geste, sans jamais compter deux fois',
     expect(MeetingMessage::where('uid', 'r00001')->firstOrFail()->reactions()->count())->toBe(0);
 });
 
+it('remplace sa réaction quand on en choisit une autre', function () {
+    $edition = openEdition();
+    $session = liveSession($edition, 'public');
+    $message = messageDansLeFil($session, 'r00003');
+    $compte = User::factory()->create();
+    $autre = User::factory()->create();
+
+    $reagir = fn (User $qui, string $emoji) => $this->actingAs($qui, 'account')
+        ->postJson(route('meeting.chat.react', ['session', $session->id, 'r00003']), ['emoji' => $emoji]);
+
+    $reagir($compte, '👍')->assertOk();
+    // ⚠️ Une seule réaction par personne : le 👍 doit DISPARAÎTRE, pas s'ajouter.
+    $reagir($compte, '❤️')->assertOk()
+        ->assertJsonPath('replaced', '👍')
+        ->assertJsonPath('reactions.❤️.count', 1)
+        ->assertJsonMissingPath('reactions.👍');
+
+    // Celle d'une autre personne n'est pas touchée pour autant.
+    $reagir($autre, '👍')->assertOk()->assertJsonPath('reactions.👍.count', 1);
+
+    expect($message->reactions()->count())->toBe(2);
+});
+
 it('n’enregistre que les réactions proposées', function () {
     $edition = openEdition();
     $session = liveSession($edition, 'public');

@@ -121,16 +121,20 @@ class MeetingChatController extends Controller
             ->firstOrFail();
 
         $moi = $this->signature();
+        // ⚠️ UNE SEULE réaction par personne et par message : on cherche la
+        // sienne quel que soit son emoji. Sans cela, la même personne empilait
+        // 👍 ET ❤️ ET 👏, et pesait à elle seule plus que trois autres.
         $pose = MeetingMessageReaction::query()
             ->where('meeting_message_id', $message->id)
             ->where('reactor', $moi)
-            ->where('emoji', $data['emoji'])
             ->first();
+        $ancien = $pose?->emoji;
+        $meme = $ancien === $data['emoji'];
 
-        // Une réaction se retire comme elle se pose : le même geste.
-        if ($pose) {
-            $pose->delete();
-        } else {
+        // Le même emoji retire la sienne (un seul geste pour poser et retirer) ;
+        // un autre emoji la REMPLACE.
+        $pose?->delete();
+        if (! $meme) {
             MeetingMessageReaction::create([
                 'meeting_message_id' => $message->id,
                 'reactor' => $moi,
@@ -141,7 +145,10 @@ class MeetingChatController extends Controller
         return response()->json([
             'uid' => $message->uid,
             'emoji' => $data['emoji'],
-            'on' => ! $pose,
+            'on' => ! $meme,
+            // L'emoji retiré au passage : les autres salles ajustent leur
+            // décompte sans avoir à recharger tout le fil.
+            'replaced' => $meme ? null : $ancien,
             'reactions' => $this->compte($message->load('reactions'), $moi),
         ]);
     }

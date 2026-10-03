@@ -786,10 +786,15 @@ export async function startFromConfig() {
         const etat = Object.assign({}, reactionsParMessage.get(uid) || {});
         const avant = etat[emoji] || { count: 0, mine: false };
         const mienne = !avant.mine;
+        // ⚠️ Une seule réaction par personne : choisir un autre emoji RETIRE le
+        // sien. Sans ce retrait ici, l'affichage montrerait deux réactions d'une
+        // même personne jusqu'à la réponse du serveur.
+        const ancien = mienne ? Object.keys(etat).find((e) => e !== emoji && etat[e].mine) : null;
+        if (ancien) etat[ancien] = { count: Math.max(0, (etat[ancien].count || 1) - 1), mine: false };
         etat[emoji] = { count: Math.max(0, (avant.count || 0) + (mienne ? 1 : -1)), mine: mienne };
         reactionsParMessage.set(uid, etat);
         majReactions(el, etat);
-        sendData({ type: 'reaction', uid, emoji, on: mienne });
+        sendData({ type: 'reaction', uid, emoji, on: mienne, replaced: ancien || null });
 
         if (!cfg.chat) return;
         try {
@@ -806,14 +811,21 @@ export async function startFromConfig() {
         } catch (e) { /* la salle d'abord : le décompte se rattrapera au prochain passage */ }
     }
 
-    /** Réaction posée par quelqu'un d'autre : on ajuste le décompte, pas le sien. */
-    function reactionDistante(uid, emoji, active) {
+    /**
+     * Réaction de quelqu'un d'autre : on ajuste le décompte, jamais le sien
+     * (`mine` reste ce qu'il était - c'est propre à chaque poste).
+     */
+    function reactionDistante(uid, emoji, active, remplace) {
         const id = idSur(uid);
         const el = id && $('msg-' + id);
         if (!el || emojisAutorises().indexOf(emoji) < 0) return;
         const etat = Object.assign({}, reactionsParMessage.get(id) || {});
         const avant = etat[emoji] || { count: 0, mine: false };
         etat[emoji] = { count: Math.max(0, (avant.count || 0) + (active ? 1 : -1)), mine: avant.mine };
+        // La personne avait déjà réagi autrement : sa réaction précédente part.
+        if (remplace && emojisAutorises().indexOf(remplace) >= 0 && etat[remplace]) {
+            etat[remplace] = { count: Math.max(0, (etat[remplace].count || 1) - 1), mine: etat[remplace].mine };
+        }
         reactionsParMessage.set(id, etat);
         majReactions(el, etat);
     }
@@ -1220,7 +1232,7 @@ export async function startFromConfig() {
         let msg; try { msg = JSON.parse(new TextDecoder().decode(payload)); } catch (e) { return; }
         const fromId = participant && participant.identity;
         if (msg.type === 'chat') addChat((participant && (participant.name || participant.identity)) || 'Participant', msg.text, false, { id: msg.id, replyTo: msg.replyTo, at: Date.now() });
-        else if (msg.type === 'reaction') reactionDistante(msg.uid, msg.emoji, !!msg.on);
+        else if (msg.type === 'reaction') reactionDistante(msg.uid, msg.emoji, !!msg.on, msg.replaced || null);
         else if (msg.type === 'hand') {
             const pe = people.find((x) => x.id === fromId);
             if (pe) {
