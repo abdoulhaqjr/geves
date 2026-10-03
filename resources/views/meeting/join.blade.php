@@ -23,8 +23,8 @@
         #visio-room .v-title{min-width:0;display:flex;flex-direction:column;gap:0;}
         /* Deux lignes qui se lisent comme un bloc : interlignes serrés, sinon le
            sous-titre paraît appartenir à autre chose que le titre. */
-        #visio-room .v-title strong{display:block;font-size:13.5px;font-weight:800;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-        #visio-room .v-title span{display:block;font-size:11.5px;line-height:1.2;color:var(--vmuted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        #visio-room .v-title strong{display:block;font-size:13.5px;font-weight:800;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        #visio-room .v-title span{display:block;font-size:11.5px;line-height:1.3;color:var(--vmuted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
         #visio-room .v-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
         #visio-room .pill{font-size:11px;font-weight:700;padding:5px 10px;border-radius:50px;}
         #visio-room .pill.lk{background:rgba(34,62,164,.35);color:#c7d2fe;}
