@@ -13,6 +13,7 @@ import {
   presenceLabel,
   rangsDesMains,
   roleLabel,
+  teinteDuNom,
   texteCourt,
 } from './meeting-pure.js';
 
@@ -204,5 +205,30 @@ describe('fil collé au bas', () => {
     // pour des messages qu'on n'a jamais eu l'occasion de ne pas lire.
     expect(enBasDuFil(0, 0, 0)).toBe(true);
     expect(enBasDuFil(300, 0, 300)).toBe(true);
+  });
+});
+
+describe('teinte de l’avatar', () => {
+  it('donne toujours la même couleur à la même personne', () => {
+    // ⚠️ C'est tout l'intérêt : on reconnaît quelqu'un à sa pastille, dans la
+    // mosaïque comme dans la liste, et d'une séance à l'autre.
+    expect(teinteDuNom('Awa Kodjo')).toBe(teinteDuNom('Awa Kodjo'));
+    expect(teinteDuNom('Awa Kodjo')).toBe(teinteDuNom('  awa kodjo  '));
+  });
+
+  it('sépare des noms voisins', () => {
+    expect(teinteDuNom('Awa Kodjo')).not.toBe(teinteDuNom('Awa Kodja'));
+    expect(teinteDuNom('Moussa Mensah')).not.toBe(teinteDuNom('Moussa Mensa'));
+  });
+
+  it('reste dans le tour des teintes, et retombe sur le bleu sans nom', () => {
+    ['Élodie', '组织', '<img src=x>', 'a'.repeat(200)].forEach((n) => {
+      const h = teinteDuNom(n);
+      expect(h).toBeGreaterThanOrEqual(0);
+      expect(h).toBeLessThan(360);
+      expect(Number.isInteger(h)).toBe(true);
+    });
+    expect(teinteDuNom('')).toBe(225);
+    expect(teinteDuNom(null)).toBe(225);
   });
 });

@@ -13,7 +13,7 @@ import {
 import {
     enBasDuFil, grilleOptimale, heure, idSur, idsDesParleurs, initials, mainsOrdonnees,
     metadonnee, niveauReseau, ordreRecevable as ordreAutorise, presenceLabel, rangsDesMains,
-    roleLabel, texteCourt,
+    roleLabel, teinteDuNom, texteCourt,
 } from './meeting-pure.js';
 
 // Objet compat pour réutiliser la logique de la maquette (LK.RoomEvent, LK.Track…).
@@ -189,10 +189,11 @@ export async function startFromConfig() {
             + '<polyline points="9 4 4 4 4 9"/><polyline points="15 20 20 20 20 15"/>'
             + '<line x1="4" y1="4" x2="10.5" y2="10.5"/><line x1="20" y1="20" x2="13.5" y2="13.5"/></svg>';
 
-        pipEl.innerHTML = '<div class="pip-avatar">' + initials(state.name) + '</div>'
+        pipEl.innerHTML = '<div class="pip-avatar"></div>'
             + '<div class="pip-size-hint"></div>'
             + '<div class="pip-resize" title="Glisser pour redimensionner · molette · double-clic">' + flecheRedim + '</div>';
         host.appendChild(pipEl);
+        poseAvatar(pipEl.querySelector('.pip-avatar'), state.name);
         makeDraggable(pipEl, host); makeResizable(pipEl, host);
         return pipEl;
     }
@@ -365,7 +366,7 @@ export async function startFromConfig() {
     // ---- Scène (présentateur / écran) ----
     function showPresenterInfo(name, meta) {
         const main = $('tileMain'); clearMedia(main); main.classList.remove('has-video', 'has-screen', 'soi');
-        $('mainAvatar').style.display = ''; $('mainAvatar').textContent = initials(name);
+        $('mainAvatar').style.display = ''; poseAvatar($('mainAvatar'), name);
         $('mainName').textContent = name || 'Présentateur'; $('mainRole').textContent = 'Présentateur';
         const info = $('mainInfo');
         if (info) { if (meta) { info.style.display = 'block'; $('mainInfoName').textContent = name || '-'; $('mainInfoMeta').textContent = meta; } else info.style.display = 'none'; }
@@ -387,7 +388,7 @@ export async function startFromConfig() {
         main.classList.toggle('soi', participant.identity === 'local');
         attachTrack(track, main);
         $('mainName').textContent = participant.name || participant.identity;
-        $('mainAvatar').textContent = initials(participant.name || participant.identity);
+        poseAvatar($('mainAvatar'), participant.name || participant.identity);
         $('mainRole').textContent = 'Présentateur'; main.classList.add('is-presenter', 'has-video');
     }
     function findPresenterParticipant() {
@@ -467,11 +468,12 @@ export async function startFromConfig() {
     function ensureRemoteTile(p) {
         const id = 'tile-' + p.identity; let el = $(id); if (el) return el;
         el = document.createElement('div'); el.className = 'tile'; el.id = id;
-        el.innerHTML = '<div class="avatar">' + initials(p.name || p.identity) + '</div>'
+        el.innerHTML = '<div class="avatar"></div>'
             + '<div class="name"><span class="nm"></span><button type="button" class="mic-dot" disabled></button></div>';
         // `textContent` et non une concaténation : un nom d'affichage vient de
         // l'utilisateur, et se retrouverait interprété comme du balisage.
         el.querySelector('.nm').textContent = p.name || p.identity;
+        poseAvatar(el.querySelector('.avatar'), p.name || p.identity);
         el.querySelector('.mic-dot').addEventListener('click', (e) => { e.stopPropagation(); basculeMicro(p.identity); });
         (state.speakerLayout ? $('filmstrip') : $('stageGrid')).appendChild(el);
         // ⚠️ En vue présentateur, le bandeau des autres participants était REPLIÉ
@@ -631,7 +633,9 @@ export async function startFromConfig() {
         const vieux = zone.querySelector('.net');
         if (vieux) vieux.remove();
         const n = niveauReseau(qualite);
-        if (n) zone.appendChild(icone(ICONES_RESEAU[n.classe], 'net ' + n.classe, n.intitule));
+        // Avant la pastille de rôle, qui ferme la ligne (`insertBefore(x, null)`
+        // revient à l'ajouter en bout quand il n'y en a pas).
+        if (n) zone.insertBefore(icone(ICONES_RESEAU[n.classe], 'net ' + n.classe, n.intitule), zone.querySelector('.role-chip'));
     }
 
     /**
@@ -699,6 +703,39 @@ export async function startFromConfig() {
         return n;
     }
 
+    /**
+     * Pastille d'une personne : ses initiales, et SA couleur.
+     *
+     * ⚠️ Un seul endroit pour les trois pastilles (vignette, liste, bulle) : une
+     * teinte posée à deux endroits sur trois donnerait à la même personne deux
+     * couleurs dans la même salle.
+     */
+    function poseAvatar(el, nom) {
+        if (!el) return;
+        el.textContent = initials(nom);
+        el.style.setProperty('--teinte', String(teinteDuNom(nom)));
+    }
+
+    /**
+     * Qui préside, sur la vignette.
+     *
+     * ⚠️ Seuls le modérateur et le communicateur sont nommés : « Auditeur » répété
+     * sur quarante vignettes n'apprend rien et mange la place du nom. La pastille
+     * se REFAIT à chaque passage, car un rôle se donne et se reprend en séance.
+     */
+    function majRolesTuiles() {
+        people.forEach((pe) => {
+            const t = pe.id === 'local' ? $('tileLocal') : $('tile-' + pe.id);
+            const zone = t && t.querySelector('.name');
+            if (!zone) return;
+            const vieux = zone.querySelector('.role-chip');
+            if (vieux) vieux.remove();
+            if (pe.role !== 'moderator' && pe.role !== 'presenter') return;
+            const chip = elt('span', 'role-chip ' + (pe.role === 'moderator' ? 'mod' : 'pres'), roleLabel(pe.role));
+            zone.appendChild(chip);
+        });
+    }
+
     function refreshPeople() {
         syncMicStates();
         const rangs = rangsDesMains(people);
@@ -713,29 +750,27 @@ export async function startFromConfig() {
             // fois par seconde, et reconstruire quarante lignes pour déplacer une
             // couleur ferait perdre le défilement du panneau (cf. majParleurs).
             ligne.dataset.id = p.id;
-            ligne.appendChild(elt('div', 'av', initials(p.name)));
+            const pastille = elt('div', 'av');
+            poseAvatar(pastille, p.name);
+            ligne.appendChild(pastille);
 
             const meta = elt('div', 'meta');
             meta.appendChild(elt('strong', '', p.name));
 
+            // ⚠️ Plus de « · » entre les états : la ligne les range par un écart
+            // (cf. la feuille de style). Quatre séparateurs, c'était une quarantaine
+            // de pixels pris au nom, et la ligne passait sur deux étages.
             const etat = elt('span');
-            etat.appendChild(document.createTextNode(roleLabel(p.role)));
-            if (rang) {
-                etat.appendChild(document.createTextNode(' · '));
-                etat.appendChild(elt('span', 'rank', '✋ ' + rang));
-            }
-            etat.appendChild(document.createTextNode(' · '));
+            etat.appendChild(elt('span', '', roleLabel(p.role)));
+            if (rang) etat.appendChild(elt('span', 'rank', '✋ ' + rang));
             etat.appendChild(icone(
                 p.micOn ? ICONE_MICRO : ICONE_MICRO_COUPE,
                 'mic ' + (p.micOn ? 'on' : 'off'),
                 p.micOn ? 'Micro ouvert' : 'Micro coupé',
             ));
             const res = niveauReseau(p.reseau);
-            if (res) {
-                etat.appendChild(document.createTextNode(' · '));
-                etat.appendChild(icone(ICONES_RESEAU[res.classe], 'net ' + res.classe, res.intitule));
-            }
-            if (p.screen) etat.appendChild(document.createTextNode(' · écran'));
+            if (res) etat.appendChild(icone(ICONES_RESEAU[res.classe], 'net ' + res.classe, res.intitule));
+            if (p.screen) etat.appendChild(elt('span', '', 'écran'));
             meta.appendChild(etat);
             ligne.appendChild(meta);
 
@@ -757,7 +792,7 @@ export async function startFromConfig() {
             liste.appendChild(ligne);
         });
 
-        refreshHands(); majMicroTuiles();
+        refreshHands(); majMicroTuiles(); majRolesTuiles();
     }
     /**
      * Rattache une communication programmée à la personne présente.
@@ -784,6 +819,16 @@ export async function startFromConfig() {
         scheduledComms.forEach(matchComm);
         const isMod = state.role === 'moderator';
         list.textContent = '';
+
+        // ⚠️ Un panneau noir et nu se lit comme une panne : l'onglet s'ouvre pour
+        // tout modérateur, y compris sur une séance dont le programme n'a pas
+        // encore été saisi.
+        if (!scheduledComms.length) {
+            list.appendChild(elt('div', 'v-vide',
+                'Aucune communication n’est programmée dans cette séance : il n’y a pas d’ordre de passage à tenir.'));
+
+            return;
+        }
 
         scheduledComms.forEach((c) => {
             const item = elt('div', 'comm-item' + (c.isFloor ? ' speaking' : ''));
@@ -1996,7 +2041,7 @@ export async function startFromConfig() {
     window.addEventListener('beforeunload', () => { try { if (presenceTimer) clearInterval(presenceTimer); } catch (e) {} try { if (room) room.disconnect(); } catch (e) {} });
 
     // ============ Démarrage ============
-    $('localName').textContent = state.name; $('localAvatar').textContent = initials(state.name); $('localRole').textContent = 'Vous';
+    $('localName').textContent = state.name; poseAvatar($('localAvatar'), state.name); $('localRole').textContent = 'Vous';
     people = [{ name: state.name, role: state.role, hand: false, screen: false, id: 'local' }];
     updateModUi(); refreshPeople(); refreshComms();
     // L'onglet Présence n'existe que pour qui a le droit de pointer : c'est le

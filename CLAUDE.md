@@ -557,6 +557,32 @@ paiement (`pay`), inscription à une formation.
     `MeetingProviderRegistry` retombe seul sur Jitsi public quand ce défaut n'est pas
     configuré. Le forcer en base écraserait la configuration du site - c'est ce qui
     masquait LiveKit une fois ses identifiants renseignés.
+- **Ce que la salle doit DISTINGUER** (audit visuel, second lot) :
+  - **Une teinte par personne**, tirée de son nom (`teinteDuNom`). Les pastilles
+    portaient toutes le même dégradé : huit caméras fermées, huit disques
+    identiques. ⚠️ Seule la **teinte** varie ; la feuille de style fixe saturation
+    et clarté basse pour que le blanc des initiales garde son contraste quelle que
+    soit la couleur tirée. Et la pose passe par **un seul** `poseAvatar()` : une
+    teinte écrite à deux endroits sur trois donnerait deux couleurs à la même
+    personne dans la même salle.
+  - **Le rôle sur la vignette**, pastille dans la ligne du nom, pour le modérateur
+    et le communicateur **seulement** - « Auditeur » répété quarante fois n'apprend
+    rien et mange la place du nom. Masqué dans le bandeau (150 px : le nom passe
+    d'abord).
+  - **La ligne de la liste se range par un ÉCART**, plus par des « · ».
+    ⚠️ Et la règle s'écrit `#visio-room .person .meta > span`, avec le **chevron** :
+    sans lui elle est plus spécifique que celles du rang, du micro et du réseau
+    qu'elle contient, et les repeint tous en gris - un rang gris sur fond or.
+    Vérifié en lisant les couleurs calculées, pas à l'œil.
+  - **La barre d'outils porte des mots** (`data-nom`, un mot) : les intitulés ne
+    vivaient que dans `title`, qui **n'existe pas au doigt**. ⚠️ `data-nom` et non
+    `title` : « Plus d'options » sous une icône de 44 px disloquerait la barre ; le
+    `title` entier reste pour le survol, le lecteur d'écran et la feuille « Plus
+    d'options ». Les mots s'effacent en téléphone couché, où la hauteur rendue à la
+    scène vaut mieux qu'un mot.
+  - ⚠️ **Deux « états vides » annoncés à l'audit n'existent pas** : le fil porte
+    toujours son message d'ouverture, et la liste contient toujours au moins
+    soi-même. Seul le panneau des communicateurs pouvait s'ouvrir nu.
 - **Ce que la salle doit MONTRER** (audit visuel, premier lot). Quatre manques qui
   ne tenaient pas à une règle mais à ce que l'œil cherche pendant une séance :
   - **Qui parle** (`ActiveSpeakersChanged`, qui n'était pas écouté) : liseré vert

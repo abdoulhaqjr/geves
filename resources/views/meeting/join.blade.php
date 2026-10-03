@@ -132,7 +132,16 @@
         #visio-room .stage-grid:not(.speaker) .filmstrip-wrap{display:none;}
         #visio-room .tile{position:relative;background:var(--vbg-tile);border:1px solid var(--vborder);border-radius:12px;overflow:hidden;aspect-ratio:16/10;display:flex;align-items:center;justify-content:center;transition:border-color .2s,box-shadow .2s;}
         #visio-room .tile.is-presenter{border-color:rgba(255,215,0,.35);box-shadow:0 0 0 1px rgba(255,215,0,.12);}
-        #visio-room .tile .avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--vblue),var(--vgreen));display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.3rem;color:#fff;z-index:1;box-shadow:0 8px 24px rgba(0,0,0,.25);}
+        /* ⚠️ Une TEINTE par personne, tirée de son nom (cf. teinteDuNom) : les
+           pastilles portaient toutes le même dégradé, et huit caméras fermées
+           faisaient huit disques identiques qu'on ne séparait qu'à deux lettres.
+           Seule la teinte bouge : la saturation et une clarté BASSE sont fixées ici,
+           pour que le blanc des initiales garde son contraste quelle que soit la
+           couleur tirée - un jaune clair les effacerait. */
+        #visio-room .tile .avatar,#visio-room .person .av,
+        #visio-room .pip-bubble .pip-avatar{background:linear-gradient(135deg,
+            hsl(var(--teinte,225) 58% 29%),hsl(calc(var(--teinte,225) + 32) 58% 21%));}
+        #visio-room .tile .avatar{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.3rem;color:#fff;z-index:1;box-shadow:0 8px 24px rgba(0,0,0,.25);}
         #visio-room .tile.has-video .avatar{display:none!important;}
         #visio-room .tile video,#visio-room .tile .media{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#0a0e17;z-index:1;}
         /* ⚠️ Sa propre image se regarde en MIROIR. Sans cela, lever la main droite
@@ -153,6 +162,16 @@
         #visio-room .tile:not(.main) .name{display:inline-flex;align-items:center;gap:6px;
             font-size:11px;padding:4px 8px;border-radius:7px;left:6px;bottom:4px;}
         #visio-room .tile .name .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+        /* ⚠️ Qui préside, lu sur la vignette. Les tuiles distantes ne portaient
+           AUCUN rôle : en mosaïque, rien ne disait qui animait la séance. La
+           pastille ne nomme que le modérateur et le communicateur - écrire
+           « Auditeur » quarante fois n'apprend rien et mange la place du nom.
+           Masquée dans le bandeau : à 150 px de large, le nom passe d'abord. */
+        #visio-room .tile .name .role-chip{flex-shrink:0;font-size:9.5px;font-weight:800;
+            padding:1px 6px;border-radius:50px;letter-spacing:.01em;}
+        #visio-room .tile .name .role-chip.mod{background:rgba(255,255,255,.22);color:#fff;}
+        #visio-room .tile .name .role-chip.pres{background:var(--vgold);color:var(--vblue-d);}
+        #visio-room .filmstrip .tile .role-chip{display:none;}
         /* État du micro, posé là où l'œil cherche déjà le nom. Cliquable par le
            modérateur (et par chacun sur sa propre vignette) : couper un micro
            demandait d'ouvrir le panneau, de trouver la personne, puis le bouton. */
@@ -173,7 +192,7 @@
         #visio-room .pip-dropzone.active{border-color:var(--vgold);color:var(--vgold);}
         #visio-room .pip-bubble{position:absolute;width:120px;height:120px;border-radius:50%;overflow:hidden;border:3px solid rgba(255,215,0,.75);box-shadow:0 8px 28px rgba(0,0,0,.45);z-index:20;background:#1c2438;cursor:grab;user-select:none;right:16px;bottom:16px;}
         #visio-room .pip-bubble.dragging{cursor:grabbing;}
-        #visio-room .pip-bubble .pip-avatar{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.4rem;color:#fff;background:linear-gradient(135deg,var(--vblue),var(--vgreen));}
+        #visio-room .pip-bubble .pip-avatar{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.4rem;color:#fff;}
         #visio-room .pip-bubble.has-video .pip-avatar{display:none;}
         /* ⚠️ La poignée était posée dans le COIN du cadre (right/bottom:4px). Or la
            vignette est un DISQUE en `overflow:hidden` : ce coin tombe hors du
@@ -310,10 +329,18 @@
            déjà. */
         #visio-room .person{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--vborder);}
         #visio-room .person:last-child{border-bottom:none;}
-        #visio-room .person .av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--vblue),var(--vgreen));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;}
+        #visio-room .person .av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;}
         #visio-room .person .meta{flex:1;min-width:0;}
         #visio-room .person .meta strong{display:block;font-size:13.5px;font-weight:700;}
-        #visio-room .person .meta span{font-size:11.5px;color:var(--vmuted);}
+        /* ⚠️ Les états se suivent par un ÉCART et non par des « · » : rang, micro,
+           réseau et deux boutons dans 400 px, et la ligne passait sur deux étages.
+           Quatre séparateurs, c'est une quarantaine de pixels pris au nom. */
+        /* ⚠️ `>` et non un descendant quelconque : la ligne d'état CONTIENT le rang,
+           le micro et le réseau, qui ont chacun leur couleur. Écrite sans le
+           chevron, cette règle est plus spécifique que les leurs et les repeignait
+           tous en gris - un rang gris sur fond or, un réseau qui ne dit plus rien. */
+        #visio-room .person .meta > span{font-size:11.5px;color:var(--vmuted);
+            display:flex;align-items:center;flex-wrap:wrap;gap:5px;}
                 /* `margin-left:auto` : les actions se collent à droite quelle que soit la
            longueur du nom. Elles passent dessous seulement si la largeur du
            panneau ne les tient plus - il se règle (cf. --vside). */
@@ -346,6 +373,22 @@
         #visio-room .ctrl.rec.active{background:var(--vdanger);color:#fff;animation:vrec 1.4s ease infinite;}
         #visio-room .ctrl.leave{background:var(--vdanger);color:#fff;width:auto;padding:0 18px;border-radius:24px;font-weight:700;font-size:13.5px;gap:8px;}
         #visio-room .ctrl.leave svg{width:18px;height:18px;}
+        /* ⚠️ Les commandes ne portaient AUCUN mot : leur intitulé ne vivait que dans
+           `title`, qui n'existe pas au doigt. Sur téléphone, c'était six ronds muets
+           pour un public qui n'est pas celui d'un outil de développeur.
+           Le libellé vient de `data-nom` (un mot) et non de `title` (la phrase
+           complète, qui reste pour le survol et le lecteur d'écran) : « Plus
+           d'options » sous une icône de 44 px disloquerait la barre.
+           ⚠️ Portée à `.toolbar` seulement : dans la feuille « Plus d'options », les
+           mêmes boutons - ce sont les mêmes, déplacés - reprennent leur mise en page
+           en ligne et leur `title` entier. */
+        #visio-room .toolbar .ctrl{flex-direction:column;gap:3px;width:auto;height:auto;
+            min-width:50px;padding:7px 9px 6px;border-radius:14px;}
+        #visio-room .toolbar .ctrl::after{content:attr(data-nom);font-size:9.5px;font-weight:700;line-height:1;}
+        #visio-room .toolbar .ctrl.leave{width:auto;padding:7px 11px 6px;border-radius:14px;}
+        /* Le mot vient de `data-nom` comme pour les autres : plus d'étiquette qui
+           apparaît sur grand écran et disparaît sur petit. */
+        #visio-room .ctrl.leave span{display:none;}
         @@keyframes vrec{0%,100%{box-shadow:0 0 0 0 rgba(225,29,72,.5);}50%{box-shadow:0 0 0 6px rgba(225,29,72,0);}}
         #visio-room .rec-badge{display:none;position:absolute;top:12px;left:12px;z-index:28;background:rgba(225,29,72,.9);color:#fff;font-size:11px;font-weight:800;padding:5px 10px;border-radius:6px;}
         #visio-room .rec-badge.on{display:inline-flex;align-items:center;gap:6px;}
@@ -378,7 +421,8 @@
         #visio-room .pr-acts button.on[data-st=present]{background:#16a34a;border-color:#16a34a;color:#fff;}
         #visio-room .pr-acts button.on[data-st=absent]{background:#dc2626;border-color:#dc2626;color:#fff;}
         #visio-room .pr-acts button.on[data-st=excused]{background:var(--vgold);border-color:var(--vgold);color:#2b1f00;}
-        #visio-room .pr-empty{padding:16px 14px;font-size:12.5px;color:var(--vmuted);line-height:1.5;}
+        /* Un panneau vide se lit comme une panne : il dit donc ce qu'il attend. */
+        #visio-room .pr-empty,#visio-room .v-vide{padding:16px 14px;font-size:12.5px;color:var(--vmuted);line-height:1.5;}
         #visio-room .vol-panel{display:none;position:absolute;bottom:calc(var(--vtoolbar) + 12px);left:50%;transform:translateX(-50%);background:var(--vbg-elev);border:1px solid var(--vborder);border-radius:14px;padding:12px 16px;z-index:46;box-shadow:0 12px 40px rgba(0,0,0,.4);align-items:center;gap:10px;min-width:220px;}
         #visio-room .vol-panel.open{display:flex;}
         #visio-room .vol-panel label{font-size:12px;font-weight:700;color:var(--vmuted);}
@@ -534,13 +578,10 @@
             #visio-room{--vtoolbar:68px;}
             #visio-room .toolbar{gap:6px;padding:0 10px;}
             #visio-room .toolbar .sep{display:none;}
-            #visio-room .ctrl{width:44px;height:44px;}
+            #visio-room .toolbar .ctrl{min-width:44px;padding:5px 7px 4px;}
             #visio-room .ctrl svg{width:21px;height:21px;}
             #visio-room .ctrl.more{display:inline-flex;}
-            /* En rond comme les autres : l'étiquette coûtait 60px de barre, et le
-               rouge dit déjà ce que fait ce bouton. */
-            #visio-room .ctrl.leave{width:44px;padding:0;border-radius:50%;}
-            #visio-room .ctrl.leave span{display:none;}
+            #visio-room .toolbar .ctrl.leave{padding:5px 8px 4px;}
         }
 
         /* --- Téléphone : la barre du haut ne garde que ce qui situe la séance --- */
@@ -578,9 +619,12 @@
         @@media (max-height:480px) and (orientation:landscape) {
             #visio-room{--vtop:44px;--vtoolbar:56px;}
             #visio-room .v-title span{display:none;}
-            #visio-room .ctrl{width:40px;height:40px;}
+            /* ⚠️ 375 px de haut : ici, chaque pixel rendu à la scène compte plus que
+               le mot sous l'icône. Les boutons redeviennent ronds et muets. */
+            #visio-room .toolbar .ctrl{width:40px;height:40px;min-width:0;padding:0;border-radius:50%;}
+            #visio-room .toolbar .ctrl::after{display:none;}
             #visio-room .ctrl svg{width:19px;height:19px;}
-            #visio-room .ctrl.leave{width:40px;}
+            #visio-room .toolbar .ctrl.leave{width:40px;padding:0;border-radius:50%;}
             #visio-room .stage{padding:6px 8px 4px;}
             #visio-room .filmstrip .tile{flex:0 0 96px;width:96px;}
             #visio-room .filmstrip-toggle{padding:5px 12px;}
@@ -705,41 +749,41 @@
         </div>
 
         <div class="toolbar" id="visioToolbar">
-            <button type="button" class="ctrl muted" id="btnMic" title="Micro" disabled>
+            <button type="button" class="ctrl muted" id="btnMic" title="Micro" data-nom="Micro" disabled>
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
             </button>
-            <button type="button" class="ctrl" id="btnSpeaker" title="Son">
+            <button type="button" class="ctrl" id="btnSpeaker" title="Son" data-nom="Son">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
             </button>
-            <button type="button" class="ctrl muted" id="btnCam" title="Caméra" disabled>
+            <button type="button" class="ctrl muted" id="btnCam" title="Caméra" data-nom="Caméra" disabled>
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
             </button>
-            <button type="button" class="ctrl" id="btnScreen" title="Partager l’écran" disabled>
+            <button type="button" class="ctrl" id="btnScreen" title="Partager l’écran" data-nom="Écran" disabled>
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg>
             </button>
             <div class="sep"></div>
-            <button type="button" class="ctrl hand" id="btnHand" title="Lever la main" disabled>
+            <button type="button" class="ctrl hand" id="btnHand" title="Lever la main" data-nom="Main" disabled>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12"/><path d="M11 12V4.5a1.5 1.5 0 0 1 3 0V12"/><path d="M14 12V6.5a1.5 1.5 0 0 1 3 0V14a6 6 0 0 1-6 6a6 6 0 0 1-5.2-3"/><path d="M8 13v2a2 2 0 0 1-4 0v-2.5A1.5 1.5 0 0 1 7 12.5V13"/></svg>
             </button>
-            <button type="button" class="ctrl" id="btnLayout" title="Disposition">
+            <button type="button" class="ctrl" id="btnLayout" title="Disposition" data-nom="Vue">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z"/></svg>
             </button>
-            <button type="button" class="ctrl" id="btnFs" title="Plein écran">
+            <button type="button" class="ctrl" id="btnFs" title="Plein écran" data-nom="Plein">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
             </button>
-            <button type="button" class="ctrl" id="btnBg" title="Arrière-plan" disabled>
+            <button type="button" class="ctrl" id="btnBg" title="Arrière-plan" data-nom="Fond" disabled>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M3 16l5-4 3 2 4-5 6 7"/></svg>
             </button>
-            <button type="button" class="ctrl rec" id="btnRec" title="Enregistrer" style="display:none;">
+            <button type="button" class="ctrl rec" id="btnRec" title="Enregistrer" data-nom="REC" style="display:none;">
                 <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="7"/></svg>
             </button>
             {{-- Visible seulement quand la barre se compacte : elle accueille
                  alors les commandes secondaires, déplacées telles quelles. --}}
-            <button type="button" class="ctrl more" id="btnMore" title="Plus d’options" aria-haspopup="true" aria-expanded="false">
+            <button type="button" class="ctrl more" id="btnMore" title="Plus d’options" data-nom="Plus" aria-haspopup="true" aria-expanded="false">
                 <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
             </button>
             <div class="sep"></div>
-            <button type="button" class="ctrl leave" id="btnLeave">
+            <button type="button" class="ctrl leave" id="btnLeave" title="Quitter la salle" data-nom="Quitter">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg> <span>Quitter</span>
             </button>
         </div>

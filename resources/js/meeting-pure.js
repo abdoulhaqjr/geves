@@ -216,3 +216,28 @@ export function niveauReseau(q) {
 export function enBasDuFil(hauteurTotale, defilement, hauteurVue, marge = 80) {
   return hauteurTotale - defilement - hauteurVue <= marge;
 }
+
+/**
+ * Teinte de l'avatar d'une personne, tirée de son nom.
+ *
+ * ⚠️ Les pastilles portaient TOUTES le même dégradé bleu-vert : huit caméras
+ * fermées, c'était huit disques identiques qu'on ne séparait qu'à deux lettres.
+ * La teinte est tirée du nom, donc toujours la même pour la même personne, d'un
+ * bout à l'autre de la salle (vignette, liste, bulle) et d'une séance à l'autre.
+ *
+ * ⚠️ Seule la TEINTE varie : la feuille de style fixe la saturation et une
+ * clarté basse, pour que le blanc des initiales garde son contraste quelle que
+ * soit la couleur tirée - un jaune clair les effacerait. Sans nom, on retombe
+ * sur le bleu de la charte.
+ */
+export function teinteDuNom(nom) {
+  const s = String(nom ?? '')
+    .trim()
+    .toLowerCase();
+  if (!s) return 225;
+
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360;
+
+  return h;
+}
