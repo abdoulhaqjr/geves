@@ -557,6 +557,36 @@ paiement (`pay`), inscription à une formation.
     `MeetingProviderRegistry` retombe seul sur Jitsi public quand ce défaut n'est pas
     configuré. Le forcer en base écraserait la configuration du site - c'est ce qui
     masquait LiveKit une fois ses identifiants renseignés.
+### Les échanges (Q&A voté, sondages) se tiennent DANS la salle
+
+Questions et sondages vivaient sur une **autre page** (`/session/{id}/echanges`),
+atteinte par un lien de la barre du haut de la visio : ⚠️ poser une question
+obligeait à **quitter la visio**, donc à cesser de voir et d'entendre ce dont on
+voulait parler. Ils sont un **onglet du panneau** (« Échanges »), au-dessus du
+chat et des participants.
+
+- ⚠️ **Aucune règle n'est réécrite** : la salle appelle les **mêmes points d'entrée
+  JSON** que la page autonome (`SessionEngagementController`), et c'est le serveur
+  qui dit qui peut poser, voter et modérer. Masquer un bouton n'a jamais protégé
+  personne. L'onglet n'apparaît que si le serveur a donné les adresses
+  (`cfg.engagement`, posées sous la même garde `canJoin()` que la salle).
+- **La page autonome demeure** : une séance peut se tenir en présentiel avec des
+  questions à distance, sans visio. Seul le lien **dans la salle** a disparu.
+- **Rafraîchissement** : toutes les 10 s **panneau ouvert sur cet onglet
+  seulement** - la salle entière interrogeant le serveur pour un panneau que
+  personne ne regarde, c'est du bruit pur. Entre-temps, une annonce sur le canal
+  de données (`type: 'engagement'`) fait relire aussitôt. ⚠️ Elle est **bridée à
+  une relecture toutes les 2 s** : n'importe qui peut émettre sur ce canal, et
+  sans ce frein un client modifié ferait relire la liste à toute la salle en
+  boucle. Ce n'est PAS un ordre réservé - poser une question est le droit de tous.
+- **Le compteur de l'onglet** = les questions **en attente**, pas le total : c'est
+  la file de la séance, pas l'archive.
+- ⚠️ **Les onglets du panneau DÉFILENT à toutes les largeurs** (c'était la règle
+  sous 900px) : ils sont désormais jusqu'à cinq, et « Communicateurs » à 80px se
+  serait coupé en plein mot.
+- Tout est construit en `textContent` (`elt()`) : question, nom d'auteur et
+  intitulé de sondage viennent de participants.
+
 ### « Séances à modérer » (`/moderation`) = un espace de travail, pas une page
 
 Un seul mot pour une seule chose : le rôle s'appelle **modérateur** partout

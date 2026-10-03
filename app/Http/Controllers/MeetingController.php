@@ -62,6 +62,23 @@ class MeetingController extends Controller
                     'start' => route('session.egress.start', $session),
                     'stop' => route('session.egress.stop', $session),
                 ],
+                // ⚠️ Les échanges (questions votées, sondages) se tiennent DANS la
+                // salle : ils accompagnent la séance, et le lien qui y menait faisait
+                // SORTIR de la visio pour y participer - on quittait ce dont on
+                // voulait parler. Ce sont les mêmes points d'entrée que la page
+                // autonome : aucune règle n'est réécrite ici, le serveur revérifie
+                // qui peut poser, voter et modérer.
+                'engagement' => [
+                    'questions' => route('session.engagement.questions', $session),
+                    'ask' => route('session.engagement.ask', $session),
+                    'polls' => route('session.engagement.polls', $session),
+                    'createPoll' => route('session.engagement.polls.create', $session),
+                    // Les gestes qui visent un objet précis composent leur adresse à
+                    // partir de ces bases (vote, modération, ouverture/clôture).
+                    'question' => url('session/'.$session->id.'/echanges/questions'),
+                    'poll' => url('session/'.$session->id.'/echanges/sondages'),
+                    'page' => route('session.engagement', $session),
+                ],
             ];
         }
 

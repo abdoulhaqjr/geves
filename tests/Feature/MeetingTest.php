@@ -559,3 +559,34 @@ it('annonce le rôle de chacun dans la métadonnée du jeton LiveKit', function 
     // ⚠️ La salle ne connaît pas « attendee » : elle dit « audience ».
     'auditeur' => [MeetingRole::Attendee, 'audience'],
 ]);
+
+it('tient les échanges DANS la salle, et non derrière un lien qui en sort', function () {
+    // ⚠️ Questions et sondages se tenaient sur une autre page : poser une question
+    // obligeait à quitter la visio, donc à cesser de voir et d'entendre ce dont on
+    // voulait parler.
+    configureLiveKit();
+    $edition = openEdition();
+    $session = liveSession($edition, 'public', ['meeting_provider' => 'livekit']);
+
+    $this->get(route('session.meeting', $session))
+        ->assertOk()
+        ->assertSee('panelEng', false)   // l'onglet « Échanges » du panneau
+        ->assertSee('engList', false)
+        // Les adresses sont celles de la page autonome : aucune règle n'est réécrite.
+        ->assertSee(trim(json_encode(route('session.engagement.questions', $session)), '"'), false)
+        ->assertSee(trim(json_encode(route('session.engagement.polls', $session)), '"'), false)
+        // Et le lien qui faisait sortir de la salle a disparu.
+        ->assertDontSee('btnEngagement', false);
+});
+
+it('ne donne pas les adresses des échanges à qui ne peut pas entrer', function () {
+    // ⚠️ Même porte que la salle : une séance réservée ne laisse pas un anonyme
+    // lire la file des questions, fût-ce par l'adresse JSON.
+    configureLiveKit();
+    $edition = openEdition();
+    $session = liveSession($edition, 'participants', ['meeting_provider' => 'livekit']);
+
+    $this->get(route('session.meeting', $session))
+        ->assertOk()
+        ->assertDontSee(trim(json_encode(route('session.engagement.questions', $session)), '"'), false);
+});

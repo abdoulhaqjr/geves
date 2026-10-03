@@ -1814,6 +1814,7 @@ export async function startFromConfig() {
         else if (msg.type === 'mod_hand_down') { state.hand = false; leveLaMain(people.find((x) => x.id === 'local'), false); refreshPeople(); syncToolbar(); }
         else if (msg.type === 'screen_takeover') { const my = room && room.localParticipant.identity; if (msg.identity && msg.identity !== my && state.screen) { room.localParticipant.setScreenShareEnabled(false).catch(() => {}); state.screen = false; destroyPip(false); syncToolbar(); toast((msg.by || 'Un participant') + ' a pris le partage'); } }
         else if (msg.type === 'recording') { state.recording = !!msg.on; $('recBadge').classList.toggle('on', state.recording); syncToolbar(); if (msg.on) toast('Enregistrement en cours'); }
+        else if (msg.type === 'engagement') echangesABouge();
         else if (msg.type === 'floor_time') recoitChrono(msg);
         else if (msg.type === 'comm_done') { scheduledComms.forEach((c) => { if (String(c.order) === String(msg.order)) c.done = true; }); refreshComms(); }
         else if (msg.type === 'pip_visibility') { if (msg.visible === false) { pipVisible = false; destroyPip(false); } else pipVisible = true; }
@@ -2170,6 +2171,278 @@ export async function startFromConfig() {
         refreshPeople(); syncToolbar();
     }
 
+    // ---- Échanges : questions votées et sondages ----
+    // ⚠️ Ils vivaient sur une AUTRE PAGE, atteinte par un lien de la barre du haut :
+    // poser une question obligeait à quitter la visio, donc à cesser de voir et
+    // d'entendre ce dont on voulait parler. Le panneau les accueille.
+    //
+    // ⚠️ Rien n'est réécrit ici : ce sont les points d'entrée JSON de la page
+    // autonome, et c'est le SERVEUR qui dit qui peut poser, voter et modérer. Le
+    // bouton n'est qu'une commodité - le masquer n'a jamais protégé personne.
+    const echanges = { questions: [], sondages: [], peutPoster: false, tic: null, dernier: 0 };
+
+    const FLECHE_HAUT = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
+        + '<path d="M12 5l7 8h-4v6h-6v-6H5l7-8z"/></svg>';
+
+    function echangesActifs() {
+        return !!(cfg.engagement && cfg.engagement.questions);
+    }
+
+    /** Vrai quand le panneau des échanges est réellement sous les yeux. */
+    function echangesVisibles() {
+        const p = $('panelEng');
+
+        return !!(p && p.classList.contains('active')) && (!ETROIT.matches || $('sidePanel')?.classList.contains('open'));
+    }
+
+    async function chargeEchanges() {
+        if (!echangesActifs()) return;
+        echanges.dernier = Date.now();
+        const lire = async (url) => {
+            try {
+                const res = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+
+                return res.ok ? await res.json() : null;
+            } catch (e) { return null; }
+        };
+        const [q, p] = await Promise.all([lire(cfg.engagement.questions), lire(cfg.engagement.polls)]);
+        if (q) { echanges.questions = q.questions || []; echanges.peutPoster = !!q.canPost; }
+        if (p) { echanges.sondages = p.polls || []; }
+        rendEchanges();
+    }
+
+    /**
+     * Rafraîchissement déclenché par la salle.
+     *
+     * ⚠️ Bridé : l'annonce passe par le canal de données, que n'importe qui peut
+     * émettre. Sans ce frein, un client modifié ferait relire la liste à toute la
+     * salle en boucle.
+     */
+    function echangesABouge() {
+        if (!echangesActifs()) return;
+        if (Date.now() - echanges.dernier < 2000) return;
+        chargeEchanges();
+    }
+
+    function majCompteEchanges() {
+        const badge = $('engCount');
+        if (!badge) return;
+        // Ce qui attend une réponse : c'est la file de la séance, pas l'archive.
+        const n = echanges.questions.filter((q) => q.status === 'pending').length;
+        badge.textContent = String(n);
+        badge.classList.toggle('on', n > 0);
+    }
+
+    function rendEchanges() {
+        const zone = $('engList');
+        if (!zone) return;
+        const estMod = state.role === 'moderator';
+        zone.textContent = '';
+
+        // --- Sondages ---
+        const titreP = elt('h5', '', 'Sondages');
+        zone.appendChild(titreP);
+        if (estMod) zone.appendChild(brouillonDeSondage());
+        if (!echanges.sondages.length) {
+            zone.appendChild(elt('div', 'eng-vide', estMod
+                ? 'Aucun sondage. Lancez-en un : la salle répond sans quitter la séance.'
+                : 'Aucun sondage en cours.'));
+        }
+        echanges.sondages.forEach((p) => zone.appendChild(carteSondage(p, estMod)));
+
+        // --- Questions ---
+        zone.appendChild(elt('h5', '', 'Questions'));
+        if (!echanges.questions.length) {
+            zone.appendChild(elt('div', 'eng-vide', 'Aucune question pour le moment.'));
+        }
+        const liste = elt('div');
+        echanges.questions.forEach((q) => liste.appendChild(ligneQuestion(q, estMod)));
+        zone.appendChild(liste);
+
+        $('engForm').style.display = echanges.peutPoster ? '' : 'none';
+        $('engNote').style.display = echanges.peutPoster ? 'none' : '';
+        majCompteEchanges();
+    }
+
+    function carteSondage(p, estMod) {
+        const c = elt('div', 'poll');
+        const tete = elt('div');
+        tete.style.cssText = 'display:flex;align-items:flex-start;justify-content:space-between;gap:8px;';
+        tete.appendChild(elt('div', 'q', p.question));
+        if (p.status !== 'open') tete.appendChild(elt('span', 'clos', 'Clos'));
+        c.appendChild(tete);
+
+        const opts = elt('div', 'opts');
+        (p.options || []).forEach((libelle, i) => {
+            const n = (p.counts && p.counts[i]) || 0;
+            const part = p.total ? Math.round((n / p.total) * 100) : 0;
+            const b = elt('button', 'opt' + (p.mine === i ? ' mine' : ''));
+            b.type = 'button';
+            // La barre est le FOND du bouton : le résultat ne se lit pas ailleurs.
+            const barre = elt('span', 'bar');
+            barre.style.width = part + '%';
+            b.appendChild(barre);
+            b.appendChild(elt('span', 'lb', libelle));
+            b.appendChild(elt('span', 'pc', p.total ? part + '%' : ''));
+            b.disabled = p.status !== 'open' || !echanges.peutPoster;
+            b.addEventListener('click', () => voteSondage(p.id, i));
+            opts.appendChild(b);
+        });
+        c.appendChild(opts);
+
+        const pied = elt('div', 'pied');
+        pied.appendChild(elt('span', 'tot', p.total === 1 ? '1 réponse' : p.total + ' réponses'));
+        if (estMod) {
+            const b = elt('button', '', p.status === 'open' ? 'Clore' : 'Rouvrir');
+            b.type = 'button';
+            b.className = 'v-btn ghost sm';
+            b.addEventListener('click', () => basculeSondage(p.id));
+            pied.appendChild(b);
+        }
+        c.appendChild(pied);
+
+        return c;
+    }
+
+    function ligneQuestion(q, estMod) {
+        const l = elt('div', 'qst' + (q.status === 'answered' ? ' answered' : ''));
+
+        const vote = elt('button', 'vote' + (q.voted ? ' on' : ''));
+        vote.type = 'button';
+        vote.appendChild(icone(FLECHE_HAUT, '', q.voted ? 'Retirer mon vote' : 'Soutenir cette question'));
+        vote.appendChild(elt('span', '', String(q.votes)));
+        vote.disabled = !echanges.peutPoster;
+        vote.addEventListener('click', () => voteQuestion(q.id));
+        l.appendChild(vote);
+
+        const corps = elt('div', 'corps');
+        corps.appendChild(elt('div', 'txt', q.body));
+        const sig = elt('div', 'sig');
+        sig.appendChild(elt('span', '', q.author));
+        if (q.status === 'answered') sig.appendChild(elt('span', 'st answered', 'Répondue'));
+        if (q.status === 'hidden') sig.appendChild(elt('span', 'st hidden', 'Masquée'));
+        corps.appendChild(sig);
+
+        if (estMod) {
+            const acts = elt('div', 'acts');
+            const bouton = (libelle, statut) => {
+                const b = elt('button', '', libelle);
+                b.type = 'button';
+                b.addEventListener('click', () => modereQuestion(q.id, statut));
+
+                return b;
+            };
+            if (q.status !== 'answered') acts.appendChild(bouton('✓ Répondue', 'answered'));
+            if (q.status !== 'hidden') acts.appendChild(bouton('Masquer', 'hidden'));
+            if (q.status !== 'pending') acts.appendChild(bouton('Remettre en attente', 'pending'));
+            corps.appendChild(acts);
+        }
+        l.appendChild(corps);
+
+        return l;
+    }
+
+    /** Brouillon de sondage du modérateur : replié tant qu'il n'en lance pas un. */
+    function brouillonDeSondage() {
+        const zone = elt('div');
+        const ouvrir = elt('button', 'v-btn ghost sm', '+ Nouveau sondage');
+        ouvrir.type = 'button';
+        const boite = elt('div', 'poll-new');
+
+        const question = document.createElement('input');
+        question.type = 'text'; question.maxLength = 300; question.placeholder = 'Question posée à la salle';
+        boite.appendChild(question);
+
+        const champs = elt('div');
+        champs.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+        const ajouteOption = () => {
+            if (champs.children.length >= 6) return;
+            const ligne = elt('div', 'opt-ligne');
+            const o = document.createElement('input');
+            o.type = 'text'; o.maxLength = 150; o.placeholder = 'Option ' + (champs.children.length + 1);
+            ligne.appendChild(o);
+            const retirer = elt('button', '', '×');
+            retirer.type = 'button'; retirer.title = 'Retirer cette option';
+            retirer.addEventListener('click', () => { if (champs.children.length > 2) ligne.remove(); });
+            ligne.appendChild(retirer);
+            champs.appendChild(ligne);
+        };
+        ajouteOption(); ajouteOption();
+        boite.appendChild(champs);
+
+        const acts = elt('div', 'acts');
+        const plus = elt('button', 'v-btn ghost sm', '+ Option');
+        plus.type = 'button';
+        plus.addEventListener('click', ajouteOption);
+        const lancer = elt('button', 'v-btn blue sm', 'Lancer');
+        lancer.type = 'button';
+        lancer.addEventListener('click', async () => {
+            const options = [].slice.call(champs.querySelectorAll('input')).map((i) => i.value.trim()).filter(Boolean);
+            if (!question.value.trim() || options.length < 2) { toast('Une question et deux options au moins'); return; }
+            await creeSondage(question.value.trim(), options);
+            boite.classList.remove('on');
+        });
+        acts.appendChild(plus); acts.appendChild(lancer);
+        boite.appendChild(acts);
+
+        ouvrir.addEventListener('click', () => {
+            boite.classList.toggle('on');
+            if (boite.classList.contains('on')) question.focus();
+        });
+        zone.appendChild(ouvrir);
+        zone.appendChild(boite);
+
+        return zone;
+    }
+
+    /** Envoi commun : le serveur tranche, on relit ensuite ce qu'il a retenu. */
+    async function posteEchange(url, corps) {
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrf, 'Content-Type': 'application/json', Accept: 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify(corps || {}),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) { toast(data.error || data.message || 'Action refusée'); return false; }
+            echanges.dernier = 0;
+            await chargeEchanges();
+            // Les autres salles relisent aussitôt, au lieu d'attendre leur tour.
+            sendData({ type: 'engagement' });
+
+            return true;
+        } catch (e) { toast('Échanges indisponibles'); return false; }
+    }
+
+    async function poseQuestion() {
+        const champ = $('engInput');
+        const texte = (champ.value || '').trim();
+        if (!texte) return;
+        champ.value = '';
+        if (!await posteEchange(cfg.engagement.ask, { body: texte })) champ.value = texte;
+    }
+
+    function voteQuestion(id) {
+        posteEchange(cfg.engagement.question + '/' + encodeURIComponent(id) + '/vote');
+    }
+
+    function modereQuestion(id, statut) {
+        posteEchange(cfg.engagement.question + '/' + encodeURIComponent(id) + '/moderation', { status: statut });
+    }
+
+    function creeSondage(question, options) {
+        return posteEchange(cfg.engagement.createPoll, { question, options });
+    }
+
+    function voteSondage(id, choix) {
+        posteEchange(cfg.engagement.poll + '/' + encodeURIComponent(id) + '/vote', { choice: choix });
+    }
+
+    function basculeSondage(id) {
+        posteEchange(cfg.engagement.poll + '/' + encodeURIComponent(id) + '/etat');
+    }
+
     async function leave() { if (room) { try { await room.disconnect(); } catch (e) {} } window.location = cfg.backUrl; }
 
     // ============ Bindings ============
@@ -2271,7 +2544,9 @@ export async function startFromConfig() {
         $('panelChat').classList.toggle('active', id === 'chat'); $('panelPeople').classList.toggle('active', id === 'people');
         const pc = $('panelComms'); if (pc) pc.classList.toggle('active', id === 'comms'); if (id === 'comms') refreshComms();
         const pp = $('panelPresence'); if (pp) pp.classList.toggle('active', id === 'presence');
+        const pe = $('panelEng'); if (pe) pe.classList.toggle('active', id === 'eng');
         if (id === 'presence') loadPresence();
+        if (id === 'eng') chargeEchanges();
         if (id === 'chat') filLu();
     }));
     // ---- Panneau latéral : colonne sur grand écran, tiroir en dessous de 900px ----
@@ -2303,7 +2578,9 @@ export async function startFromConfig() {
     // d'accord (micro coupé, enregistrement en cours, partage actif) : la salle
     // mentirait sur elle-même dès la première divergence.
     const BARRE_COMPACTE = matchMedia('(max-width: 767px)');
-    const SECONDAIRES = ['btnEngagement', 'btnScreen', 'btnLayout', 'btnFs', 'btnBg', 'btnRec'];
+    // (« btnEngagement » n'est plus de la partie : les échanges sont un onglet du
+    // panneau, plus un lien qui fait sortir de la salle.)
+    const SECONDAIRES = ['btnScreen', 'btnLayout', 'btnFs', 'btnBg', 'btnRec'];
     const ancres = new Map();
     function rangeSecondaires() {
         const slot = $('moreSlot');
@@ -2392,7 +2669,7 @@ export async function startFromConfig() {
     // La grille se recalcule quand la place change : ouvrir le panneau latéral ou
     // réduire la fenêtre modifie la largeur disponible, donc la bonne grille.
     window.addEventListener('resize', layoutGrid);
-    window.addEventListener('beforeunload', () => { try { if (presenceTimer) clearInterval(presenceTimer); } catch (e) {} try { if (room) room.disconnect(); } catch (e) {} });
+    window.addEventListener('beforeunload', () => { try { if (echanges.tic) clearInterval(echanges.tic); } catch (e) {} try { if (presenceTimer) clearInterval(presenceTimer); } catch (e) {} try { if (room) room.disconnect(); } catch (e) {} });
 
     // ============ Démarrage ============
     $('localName').textContent = state.name; poseAvatar($('localAvatar'), state.name); $('localRole').textContent = 'Vous';
@@ -2400,6 +2677,19 @@ export async function startFromConfig() {
     updateModUi(); refreshPeople(); refreshComms();
     // L'onglet Présence n'existe que pour qui a le droit de pointer : c'est le
     // serveur qui le dit en donnant (ou non) les adresses.
+    // Échanges : l'onglet n'existe que si le serveur a donné les adresses - c'est
+    // lui qui décide de l'accès, pas le navigateur.
+    if (echangesActifs()) {
+        const onglet = $('tabEng'); if (onglet) onglet.style.display = '';
+        chargeEchanges();
+        // ⚠️ Le rafraîchissement périodique ne tourne que panneau OUVERT sur cet
+        // onglet : la salle entière interrogeant le serveur toutes les dix secondes
+        // pour un panneau que personne ne regarde, c'est du bruit pur. L'annonce par
+        // le canal de données tient le compteur à jour entre-temps.
+        echanges.tic = setInterval(() => { if (!document.hidden && echangesVisibles()) chargeEchanges(); }, 10000);
+    }
+    $('engSend')?.addEventListener('click', poseQuestion);
+    $('engInput')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') poseQuestion(); });
     if (cfg.presence) {
         const tab = $('tabPresence'); if (tab) tab.style.display = '';
         const lien = $('presencePage'); if (lien) lien.href = cfg.presence.page;

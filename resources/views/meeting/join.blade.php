@@ -274,8 +274,12 @@
         /* La bordure passe sur l'en-tête : la croix de fermeture est à côté des
            onglets, pas dedans, pour ne pas défiler avec eux. */
         #visio-room .side-head{display:flex;flex-shrink:0;min-width:0;border-bottom:1px solid var(--vborder);}
-        #visio-room .side-tabs{display:flex;flex:1;min-width:0;padding:0 8px;}
-        #visio-room .side-tabs button{flex:1;padding:14px 8px;border:none;background:transparent;color:var(--vmuted);font-weight:700;font-size:13px;border-bottom:2px solid transparent;margin-bottom:-1px;}
+        /* ⚠️ Les onglets DÉFILENT, à toutes les largeurs, et ne se partagent plus la
+           place à parts égales : ils sont jusqu'à cinq (chat, participants,
+           échanges, communicateurs, présence) et « Communicateurs » à 80px se
+           serait coupé en plein mot. C'était déjà la règle sous 900px. */
+        #visio-room .side-tabs{display:flex;flex:1;min-width:0;padding:0 8px;overflow-x:auto;}
+        #visio-room .side-tabs button{flex:0 0 auto;white-space:nowrap;padding:14px 11px;border:none;background:transparent;color:var(--vmuted);font-weight:700;font-size:13px;border-bottom:2px solid transparent;margin-bottom:-1px;}
         #visio-room .side-tabs button:hover{color:var(--vtext);}
         #visio-room .side-tabs button.active{color:var(--vtext);border-bottom-color:var(--vgold);}
         #visio-room .side-panel{display:none;flex:1;min-height:0;flex-direction:column;}
@@ -554,6 +558,76 @@
         #visio-room .person .mic svg{width:14px;height:14px;display:block;}
         #visio-room .person .mic.on{color:#6ee7b7;}
         #visio-room .person .mic.off{color:#fda4af;}
+        /* ===================== Échanges (questions & sondages) =====================
+           ⚠️ Ils se tenaient sur une AUTRE PAGE : poser une question demandait de
+           quitter la visio, donc de cesser de voir et d'entendre ce dont on voulait
+           parler. Le panneau accueille les deux, dans l'ordre de la séance : le
+           sondage en cours d'abord - c'est lui qui attend une réponse tout de
+           suite - puis la file des questions. */
+        #visio-room .eng{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:14px;}
+        #visio-room .eng h5{font-size:11px;font-weight:800;color:var(--vmuted);text-transform:uppercase;
+            letter-spacing:.04em;display:flex;align-items:center;gap:7px;}
+        #visio-room .eng-vide{font-size:12.5px;color:var(--vmuted);line-height:1.5;}
+        /* --- Sondage --- */
+        #visio-room .poll{background:var(--vbg-tile);border:1px solid var(--vborder);border-radius:12px;padding:12px;}
+        #visio-room .poll .q{font-size:13.5px;font-weight:700;line-height:1.35;}
+        #visio-room .poll .clos{font-size:10.5px;font-weight:800;color:var(--vmuted);}
+        #visio-room .poll .opts{display:flex;flex-direction:column;gap:6px;margin-top:10px;}
+        /* La barre de résultat est le FOND du bouton : le choix et le score se lisent
+           d'un seul regard, sans légende à rapprocher. */
+        #visio-room .poll .opt{position:relative;overflow:hidden;display:flex;align-items:center;gap:8px;
+            width:100%;text-align:left;border:1px solid var(--vborder);border-radius:9px;
+            background:rgba(255,255,255,.04);color:var(--vtext);font-size:12.5px;font-weight:600;padding:8px 10px;}
+        #visio-room .poll .opt .bar{position:absolute;inset:0 auto 0 0;background:rgba(34,62,164,.55);
+            transition:width .25s ease;z-index:0;}
+        #visio-room .poll .opt .lb,#visio-room .poll .opt .pc{position:relative;z-index:1;}
+        #visio-room .poll .opt .lb{flex:1;min-width:0;}
+        #visio-room .poll .opt .pc{font-variant-numeric:tabular-nums;font-weight:800;color:var(--vmuted);}
+        #visio-room .poll .opt.mine{border-color:rgba(255,215,0,.6);}
+        #visio-room .poll .opt.mine .pc{color:var(--vgold);}
+        #visio-room .poll .pied{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px;}
+        #visio-room .poll .tot{font-size:11px;color:var(--vmuted);font-weight:700;}
+        /* --- Question --- */
+        #visio-room .qst{display:flex;gap:9px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--vborder);}
+        #visio-room .qst:last-child{border-bottom:none;}
+        /* Le vote est une colonne, pas une ligne : c'est le classement de la file,
+           et il doit se lire en balayant verticalement. */
+        #visio-room .qst .vote{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:1px;
+            min-width:38px;padding:5px 4px;border:1px solid var(--vborder);border-radius:9px;
+            background:rgba(255,255,255,.04);color:var(--vtext);font-size:12px;font-weight:800;}
+        #visio-room .qst .vote svg{width:13px;height:13px;display:block;}
+        #visio-room .qst .vote.on{background:rgba(34,62,164,.6);border-color:rgba(255,215,0,.5);}
+        #visio-room .qst .vote:disabled{opacity:.55;cursor:default;}
+        #visio-room .qst .corps{flex:1;min-width:0;}
+        #visio-room .qst .txt{font-size:13px;line-height:1.45;overflow-wrap:anywhere;}
+        #visio-room .qst .sig{font-size:11px;color:var(--vmuted);margin-top:3px;
+            display:flex;align-items:center;flex-wrap:wrap;gap:6px;}
+        #visio-room .qst .st{font-size:10px;font-weight:800;padding:2px 7px;border-radius:50px;}
+        #visio-room .qst .st.answered{background:rgba(16,185,129,.15);color:#6ee7b7;}
+        #visio-room .qst .st.hidden{background:rgba(148,163,184,.15);color:var(--vmuted);}
+        #visio-room .qst.answered .txt{color:var(--vmuted);}
+        #visio-room .qst .acts{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;}
+        #visio-room .qst .acts button{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:6px;
+            border:1px solid var(--vborder);background:rgba(255,255,255,.06);color:var(--vtext);}
+        #visio-room .qst .acts button:hover{background:rgba(34,62,164,.45);}
+        /* --- Ce qu'on écrit (question, sondage) --- */
+        #visio-room .eng-form{border-top:1px solid var(--vborder);padding:12px;display:flex;flex-direction:column;gap:8px;}
+        #visio-room .eng-form input{border-radius:10px;border:1px solid var(--vborder);background:rgba(255,255,255,.05);
+            color:var(--vtext);padding:10px 13px;font-size:13px;font-family:inherit;width:100%;}
+        #visio-room .eng-form input:focus{outline:none;border-color:var(--vblue);}
+        #visio-room .eng-form .ligne{display:flex;gap:8px;align-items:center;}
+        #visio-room .eng-form .ligne input{flex:1;}
+        #visio-room .eng-note{font-size:11.5px;color:var(--vmuted);line-height:1.45;padding:10px 14px;}
+        /* Brouillon de sondage : replié tant que le modérateur n'en lance pas un. */
+        #visio-room .poll-new{display:none;flex-direction:column;gap:7px;background:var(--vbg-tile);
+            border:1px dashed var(--vborder);border-radius:12px;padding:12px;}
+        #visio-room .poll-new.on{display:flex;}
+        #visio-room .poll-new .opt-ligne{display:flex;gap:6px;align-items:center;}
+        #visio-room .poll-new .opt-ligne input{flex:1;}
+        #visio-room .poll-new .opt-ligne button{flex:0 0 auto;border:none;background:transparent;
+            color:var(--vmuted);font-size:16px;line-height:1;padding:2px 6px;}
+        #visio-room .poll-new .acts{display:flex;justify-content:space-between;gap:8px;margin-top:3px;}
+
         /* --- Voile du tiroir (téléphone / tablette) ---
            Le panneau recouvre la scène : il faut voir qu'il est AU-DESSUS, et
            qu'un appui à côté le referme. */
@@ -603,10 +677,9 @@
             /* Un tiroir qui recouvre déjà toute la scène ne s'élargit pas. */
             #visio-room .side-grip{display:none;}
             #visio-room .side-close{display:inline-flex;}
-            /* Quatre onglets ne tiennent plus côte à côte : ils défilent plutôt
-               que de s'écraser sur deux lettres chacun. */
-            #visio-room .side-tabs{overflow-x:auto;}
-            #visio-room .side-tabs button{flex:0 0 auto;white-space:nowrap;padding:14px 12px;}
+            /* Le défilement des onglets est désormais la règle générale (cf. plus
+               haut) : il ne reste ici qu'un peu d'air en moins. */
+            #visio-room .side-tabs button{padding:14px 10px;}
         }
 
         /* --- Barre d'outils compacte (sous la tablette en portrait) ---
@@ -793,9 +866,10 @@
                 </span>
                 <span class="pill warn" id="connPill">Connexion…</span>
                 <button type="button" class="v-btn ghost sm" id="btnToggleSide">Panneau</button>
-                @if ($engagementUrl)
-                    <a href="{{ $engagementUrl }}" class="v-btn ghost sm" id="btnEngagement">Questions &amp; sondages</a>
-                @endif
+                {{-- ⚠️ Plus de lien « Questions & sondages » ici : il faisait SORTIR de
+                     la visio pour participer à ce dont la séance parlait. Les
+                     échanges sont un onglet du panneau (cf. #tabEng) ; la page
+                     autonome demeure pour une séance sans visio. --}}
                 <a href="{{ $liveKit['backUrl'] }}" class="v-btn danger sm" id="btnLeaveTop">Quitter</a>
             </div>
         </header>
@@ -842,6 +916,9 @@
                 <div class="side-tabs">
                     <button type="button" class="active" data-side="chat">Chat<span class="tab-count" id="chatUnread"></span></button>
                     <button type="button" data-side="people">Participants<span class="tab-count" id="handCount"></span></button>
+                    {{-- Questions votées et sondages : ils se tenaient sur une autre
+                         page, qu'il fallait quitter la visio pour atteindre. --}}
+                    <button type="button" data-side="eng" id="tabEng" style="display:none;">Échanges<span class="tab-count" id="engCount"></span></button>
                     <button type="button" data-side="comms" id="tabComms" style="display:none;">Communicateurs</button>
                     {{-- Onglet réservé au modérateur / rapporteur de la séance (cf. cfg.presence). --}}
                     <button type="button" data-side="presence" id="tabPresence" style="display:none;">Présence</button>
@@ -870,6 +947,21 @@
                     </div>
                 </div>
                 <div class="side-panel" id="panelPeople"><div class="people-list" id="peopleList"></div></div>
+                <div class="side-panel" id="panelEng">
+                    <div class="eng" id="engList"></div>
+                    {{-- Poser une question : réservé aux comptes connectés (le serveur
+                         le revérifie). Un visiteur anonyme lit la file sans y écrire. --}}
+                    <div class="eng-form" id="engForm" style="display:none;">
+                        <div class="ligne">
+                            <input type="text" id="engInput" maxlength="600" autocomplete="off"
+                                   placeholder="Poser une question…" aria-label="Poser une question">
+                            <button type="button" class="v-btn blue sm" id="engSend">Envoyer</button>
+                        </div>
+                    </div>
+                    <div class="eng-note" id="engNote" style="display:none;">
+                        Connectez-vous pour poser une question et voter.
+                    </div>
+                </div>
                 <div class="side-panel" id="panelComms">
                     <div style="padding:12px 14px 0;font-size:12px;color:var(--vmuted);line-height:1.4;">Communications programmées de la session. Un seul présentateur à la fois.</div>
                     <div class="comm-list" id="commList"></div>
