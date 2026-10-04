@@ -548,6 +548,59 @@
         #visio-room .reac-menu button{width:48px;height:48px;border-radius:14px;border:1px solid transparent;
             background:transparent;font-size:25px;line-height:1;cursor:pointer;}
         #visio-room .reac-menu button:hover,#visio-room .reac-menu button:focus-visible{background:rgba(255,255,255,.1);border-color:var(--vborder);}
+        /* --- Tableau blanc ---
+           ⚠️ Il recouvre la scène mais passe SOUS la couche des réactions (40) :
+           applaudir pendant qu'on explique un schéma doit rester visible. Et il
+           vit dans `.stage-main`, donc il suit la scène en plein écran.
+           ⚠️ Le cadre garde un rapport fixe (16/9) et se centre, marges comprises :
+           un tableau est un document, il doit être identique chez tout le monde.
+           Sa position est posée par `cadreTableau`, pas par la feuille de style -
+           le dessin s'y rapporte, les deux ne peuvent pas diverger. */
+        #visio-room .v-board{display:none;position:absolute;inset:0;z-index:38;background:var(--vbg);}
+        #visio-room .v-board.on{display:block;}
+        #visio-room .bd-cadre{position:absolute;background:#fff;border-radius:10px;overflow:hidden;
+            box-shadow:0 12px 44px rgba(0,0,0,.55);}
+        /* ⚠️ `touch-action:none` : sans lui, le doigt fait défiler la page au lieu
+           de tracer, et le tableau est inutilisable sur tablette. */
+        #visio-room .bd-cadre canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair;}
+        #visio-room .v-board.lecture .bd-cadre canvas{cursor:default;}
+        /* ⚠️ Centrage par `left:0;right:0;margin:auto`, et NON par `left:50%` +
+           `translateX(-50%)` : positionné en absolu, `left:50%` ne laisse à
+           l'élément que la MOITIÉ de la largeur disponible. Mesuré : la barre
+           d'outils se repliait sur deux lignes à 900px de large alors que son
+           contenu tient en 630. Le `transform` centrait ensuite un élément déjà
+           trop étroit, et rien ne le laissait voir. */
+        #visio-room .bd-qui{position:absolute;top:10px;left:0;right:0;margin:0 auto;width:max-content;z-index:3;
+            background:rgba(15,18,28,.9);border:1px solid var(--vborder);border-radius:999px;
+            padding:5px 14px;font-size:12px;font-weight:700;color:var(--vtext);
+            max-width:calc(100% - 24px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        #visio-room .bd-outils{display:none;position:absolute;left:0;right:0;margin:0 auto;width:max-content;bottom:12px;z-index:4;
+            align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;
+            background:var(--vbg-elev);border:1px solid var(--vborder);border-radius:14px;padding:7px 10px;
+            box-shadow:0 10px 30px rgba(0,0,0,.45);max-width:calc(100% - 20px);}
+        #visio-room .v-board:not(.lecture) .bd-outils{display:flex;}
+        #visio-room .bd-outils button{border:1px solid transparent;border-radius:9px;background:transparent;
+            color:var(--vtext);font-size:12px;font-weight:700;padding:6px 9px;cursor:pointer;}
+        #visio-room .bd-outils button:hover,#visio-room .bd-outils button:focus-visible{background:rgba(255,255,255,.09);}
+        #visio-room .bd-outils button.on{background:rgba(255,215,0,.16);border-color:var(--vgold);}
+        #visio-room .bd-outils .sep{width:1px;height:20px;background:var(--vborder);margin:0 2px;}
+        #visio-room .bd-outils label{font-size:11px;font-weight:700;color:var(--vmuted);}
+        #visio-room .bd-outils input[type=range]{width:84px;accent-color:var(--vgold);}
+        #visio-room .bd-palette{display:inline-flex;gap:5px;}
+        /* Le crayon courant porte un anneau : sur cinq pastilles de couleur, rien
+           d'autre ne dit laquelle est tenue. */
+        #visio-room .bd-c{width:24px;height:24px;padding:0;border-radius:50%;border:2px solid transparent;
+            box-shadow:inset 0 0 0 1px rgba(255,255,255,.25);cursor:pointer;}
+        #visio-room .bd-c.on{border-color:var(--vgold);}
+        #visio-room .bd-danger{color:#fda4af;}
+        @@media (max-width:640px){
+            /* Sur téléphone, le mot disparaît : il ne reste que les pastilles et les
+               verbes les plus courts, sinon la barre mange la moitié du tableau. */
+            #visio-room .bd-outils{gap:4px;padding:6px 8px;bottom:8px;}
+            #visio-room .bd-outils label,#visio-room .bd-outils .sep{display:none;}
+            #visio-room .bd-outils input[type=range]{width:64px;}
+            #visio-room .bd-outils button{padding:6px 7px;font-size:11.5px;}
+        }
         #visio-room .perm-banner{display:none;position:absolute;top:calc(var(--vtop) + 8px);left:50%;transform:translateX(-50%);z-index:70;width:min(420px,92vw);background:var(--vbg-elev);border:1px solid rgba(255,215,0,.35);border-radius:14px;padding:14px 16px;box-shadow:0 12px 40px rgba(0,0,0,.4);font-size:13px;line-height:1.45;}
         #visio-room .perm-banner.on{display:block;}
         #visio-room .perm-banner strong{color:var(--vgold);}
@@ -981,6 +1034,27 @@
                          prise de parole. Énoncées une à une, vingt bulles noieraient le
                          lecteur d'écran et couvriraient le bandeau d'état. Qui veut dire
                          quelque chose lève la main - celle-là est annoncée, et listée. --}}
+                    {{-- Tableau blanc. Il recouvre la scène, et seul qui anime peut y
+                         tracer (le récepteur le vérifie : cf. ORDRES_RESERVES). --}}
+                    <div class="v-board" id="board">
+                        <div class="bd-qui" id="boardWho">Tableau blanc</div>
+                        <div class="bd-cadre" id="boardFrame"><canvas id="boardCanvas"></canvas></div>
+                        <div class="bd-outils" id="boardTools" role="toolbar" aria-label="Outils du tableau">
+                            {{-- Les crayons sont posés par le script : une seule liste,
+                                 celle que le récepteur accepte. --}}
+                            <span class="bd-palette" id="boardPalette"></span>
+                            <button type="button" id="bdGomme" title="Gomme">Gomme</button>
+                            <span class="sep"></span>
+                            <label for="bdTaille">Trait</label>
+                            <input type="range" id="bdTaille" min="2" max="16" value="4" aria-label="Épaisseur du trait">
+                            <span class="sep"></span>
+                            <button type="button" id="bdUndo" title="Annuler mon dernier trait">Annuler</button>
+                            <button type="button" id="bdClear" class="bd-danger" title="Tout effacer, pour tout le monde">Effacer</button>
+                            <button type="button" id="bdSave" title="Enregistrer le tableau en image">Image</button>
+                            <span class="sep"></span>
+                            <button type="button" id="bdClose" title="Fermer le tableau">Fermer</button>
+                        </div>
+                    </div>
                     <div class="reac-layer" id="reacLayer" aria-hidden="true"></div>
                 </div>
                 <div class="filmstrip-wrap" id="filmstripWrap">
@@ -1092,6 +1166,11 @@
             <button type="button" class="ctrl" id="btnReac" title="Réagir" data-nom="Réagir"
                     aria-haspopup="true" aria-expanded="false" disabled>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/><path d="M9 9.5h.01"/><path d="M15 9.5h.01"/></svg>
+            </button>
+            {{-- Le tableau se range avec le partage d'écran : c'est la même chose
+                 du point de vue de la salle - ce qu'on montre à la place des visages. --}}
+            <button type="button" class="ctrl" id="btnBoard" title="Tableau blanc" data-nom="Tableau" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M12 17v3"/><path d="M8 20h8"/><path d="M7 12.5c1.6-3 3-3 4 0s2.4 3 4-1"/></svg>
             </button>
             <button type="button" class="ctrl" id="btnLayout" title="Disposition" data-nom="Vue">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z"/></svg>

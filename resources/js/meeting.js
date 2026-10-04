@@ -11,10 +11,11 @@ import {
 // à part, et sont les seules du fichier à être couvertes par des tests
 // (`meeting-pure.test.js`). Y déplacer une décision, c'est la rendre vérifiable.
 import {
-    enBasDuFil, etatChrono, grilleOptimale, heure, idSur, idsDesParleurs, initials,
-    mainsOrdonnees, metadonnee, niveauReseau, ordreRecevable as ordreAutorise, presenceLabel,
-    peutReagir, phraseConnectes, placeBulle, profilVideo, rangsDesMains, reactionRecevable,
-    REACTIONS_MAX, roleLabel, teinteDuNom, texteCourt,
+    cadreTableau, enBasDuFil, etatChrono, grilleOptimale, heure, idSur, idsDesParleurs,
+    initials, lotsDeTraits, mainsOrdonnees, metadonnee, niveauReseau,
+    ordreRecevable as ordreAutorise, presenceLabel, peutReagir, phraseConnectes, placeBulle,
+    pointTableau, profilVideo, rangsDesMains, reactionRecevable, REACTIONS_MAX, roleLabel,
+    teinteDuNom, texteCourt, traitAllege, traitRecu,
 } from './meeting-pure.js';
 
 // Objet compat pour réutiliser la logique de la maquette (LK.RoomEvent, LK.Track…).
@@ -1419,6 +1420,287 @@ export async function startFromConfig() {
         $('btnReac')?.setAttribute('aria-expanded', 'false');
     }
 
+    // ---- Tableau blanc ----
+    /**
+     * Une surface de dessin partagée, qui recouvre la scène chez tout le monde.
+     *
+     * ⚠️ Tout passe par le canal de données : **rien n'est envoyé au serveur**. Le
+     * tableau vit le temps de la séance, et on l'emporte en image. Le jour où il
+     * devra rejoindre le compte rendu, c'est un point d'entrée à ajouter - pas ce
+     * module à refaire.
+     *
+     * ⚠️ Seul qui anime (modérateur ou présentateur) peut ouvrir, tracer, effacer
+     * et refermer : le tableau cache les visages de toute la salle. Le RÉCEPTEUR
+     * le vérifie (`ORDRES_RESERVES`), parce que le canal est public.
+     */
+    const BOARD_CRAYONS = ['#111827', '#1d4ed8', '#dc2626', '#15803d', '#d97706'];
+    const BOARD_GOMME = '#ffffff';
+    // Le blanc n'est pas dans la palette, mais le récepteur doit l'accepter :
+    // c'est la gomme.
+    const BOARD_PERMIS = BOARD_CRAYONS.concat([BOARD_GOMME]);
+    /** Traits gardés : au-delà, le tableau devient trop lourd à redessiner. */
+    const BOARD_TRAITS_MAX = 3000;
+
+    const board = {
+        ouvert: false, parQui: null, traits: [], enCours: null,
+        couleur: BOARD_CRAYONS[0], taille: 4, gomme: false,
+        suite: 0, envoyes: 0, tm: 0, trace: false, demandes: new Map(),
+    };
+
+    function peutTracer() { return canPublish(); }
+    function monIdentite() {
+        return (room && room.localParticipant && room.localParticipant.identity) || 'local';
+    }
+
+    /**
+     * Pose le cadre de dessin et accorde le canevas à sa taille réelle.
+     *
+     * ⚠️ `width`/`height` du canevas, et non sa taille CSS : un canevas étiré par
+     * le style rend un trait flou. Et on multiplie par la densité de l'écran,
+     * sinon le tableau est pâteux sur un portable récent - c'est précisément
+     * l'endroit où on écrit une formule.
+     */
+    function cadreDuTableau() {
+        const z = $('board');
+        const f = $('boardFrame');
+        const c = $('boardCanvas');
+        if (!z || !f || !c || !board.ouvert) return;
+        const r = z.getBoundingClientRect();
+        // ⚠️ Le titre et la barre d'outils ne FLOTTENT pas au-dessus du tableau :
+        // leur place est retirée avant le calcul. Mesuré au harnais - posés en
+        // surimpression, ils recouvraient le bas de la zone de dessin, et on ne
+        // pouvait pas écrire là où on venait de montrer quelque chose. La barre
+        // est mesurée, pas estimée : elle passe sur deux lignes quand la salle
+        // est étroite, et elle est absente pour qui regarde sans tracer.
+        const haut = 12 + ($('boardWho')?.offsetHeight || 0);
+        const bas = 12 + ($('boardTools')?.offsetHeight || 0);
+        const cadre = cadreTableau(r.width - 24, Math.max(80, r.height - haut - bas - 12));
+        f.style.left = (cadre.x + 12) + 'px'; f.style.top = (cadre.y + haut) + 'px';
+        f.style.width = cadre.w + 'px'; f.style.height = cadre.h + 'px';
+        const densite = Math.min(2, window.devicePixelRatio || 1);
+        c.width = Math.max(1, Math.round(cadre.w * densite));
+        c.height = Math.max(1, Math.round(cadre.h * densite));
+        redessineTableau();
+    }
+
+    function traceLe(g, t, W, H) {
+        const pts = t && t.pts;
+        if (!pts || !pts.length) return;
+        g.strokeStyle = t.c; g.fillStyle = t.c;
+        g.lineCap = 'round'; g.lineJoin = 'round';
+        // ⚠️ L'épaisseur se rapporte à la LARGEUR DU CADRE, pas au pixel : sinon un
+        // trait fin sur un vidéoprojecteur devient un gros trait sur un portable,
+        // et le tableau n'est plus le même document pour tout le monde.
+        g.lineWidth = Math.max(1, (t.e / 1000) * W);
+        if (pts.length === 1) {
+            // ⚠️ Un point posé sans glisser ne trace RIEN avec `lineTo` : le segment
+            // est de longueur nulle. Il faut un disque.
+            g.beginPath(); g.arc(pts[0].x * W, pts[0].y * H, g.lineWidth / 2, 0, Math.PI * 2); g.fill();
+
+            return;
+        }
+        g.beginPath();
+        g.moveTo(pts[0].x * W, pts[0].y * H);
+        for (let i = 1; i < pts.length; i += 1) g.lineTo(pts[i].x * W, pts[i].y * H);
+        g.stroke();
+    }
+
+    /**
+     * Ne trace QUE le dernier segment d'un trait en cours.
+     *
+     * ⚠️ Redessiner tout le tableau à chaque point paraît inoffensif sur un
+     * tableau vide. À deux cents traits, chaque mouvement du crayon en redessine
+     * deux cents, soixante fois par seconde : la salle entière se met à ramer
+     * pendant qu'on écrit. Le redessin complet reste pour ce qui le demande
+     * vraiment - redimensionner, effacer, recevoir un trait entier.
+     */
+    function traceDernierSegment(t) {
+        const c = $('boardCanvas');
+        if (!c || !c.getContext || !t || !t.pts || t.pts.length < 2) return;
+        const g = c.getContext('2d');
+        const a = t.pts[t.pts.length - 2];
+        const b = t.pts[t.pts.length - 1];
+        g.strokeStyle = t.c; g.lineCap = 'round'; g.lineJoin = 'round';
+        g.lineWidth = Math.max(1, (t.e / 1000) * c.width);
+        g.beginPath();
+        g.moveTo(a.x * c.width, a.y * c.height);
+        g.lineTo(b.x * c.width, b.y * c.height);
+        g.stroke();
+    }
+
+    function redessineTableau() {
+        const c = $('boardCanvas');
+        if (!c || !c.getContext) return;
+        const g = c.getContext('2d');
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        g.fillStyle = BOARD_GOMME; g.fillRect(0, 0, c.width, c.height);
+        board.traits.forEach((t) => traceLe(g, t, c.width, c.height));
+        if (board.enCours) traceLe(g, board.enCours, c.width, c.height);
+    }
+
+    function poseTrait(t) {
+        board.traits.push(t);
+        // ⚠️ Plafond : chaque trait est redessiné à chaque image du geste en cours.
+        // Sans lui, une séance entière de schémas finit par figer la salle.
+        if (board.traits.length > BOARD_TRAITS_MAX) board.traits.splice(0, board.traits.length - BOARD_TRAITS_MAX);
+    }
+
+    /** Point d'écran → repère du tableau, par le cadre RÉEL du canevas. */
+    function pointDuGeste(ev) {
+        const r = $('boardCanvas').getBoundingClientRect();
+
+        return pointTableau(ev.clientX, ev.clientY, { x: r.left, y: r.top, w: r.width, h: r.height });
+    }
+
+    function pousseTrait(fin) {
+        const t = board.enCours;
+        if (!t) return;
+        const nouveaux = t.pts.slice(board.envoyes);
+        board.envoyes = t.pts.length;
+        if (!nouveaux.length && !fin) return;
+        // ⚠️ Le dernier message porte le trait ENTIER (`net`), pas seulement la
+        // fin : il a été allégé à la levée du crayon, et sans ce remplacement les
+        // autres postes garderaient la version brute. Un tableau est un document :
+        // il doit être identique partout, au point près.
+        sendData(fin
+            ? { type: 'board_pts', id: t.id, c: t.c, e: t.e, pts: t.pts, net: true, fin: true }
+            : { type: 'board_pts', id: t.id, c: t.c, e: t.e, pts: nouveaux });
+    }
+
+    function debutTrait(ev) {
+        if (!board.ouvert || !peutTracer() || board.trace) return;
+        ev.preventDefault();
+        try { $('boardCanvas').setPointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
+        board.trace = true; board.suite += 1; board.envoyes = 0;
+        board.enCours = {
+            id: monIdentite() + '-' + board.suite,
+            c: board.gomme ? BOARD_GOMME : board.couleur,
+            // La gomme est un crayon blanc plus large : sur un tableau qui est
+            // blanc, c'est exactement une gomme - et le dessin reste redessinable.
+            e: board.gomme ? Math.min(60, board.taille * 3) : board.taille,
+            pts: [pointDuGeste(ev)],
+        };
+        redessineTableau();
+        pousseTrait(false);
+    }
+
+    function suiteTrait(ev) {
+        if (!board.trace || !board.enCours) return;
+        ev.preventDefault();
+        const p = pointDuGeste(ev);
+        const d = board.enCours.pts[board.enCours.pts.length - 1];
+        // ⚠️ Le filtre se pose à la SAISIE : `pointermove` tire des points à moins
+        // d'un pixel l'un de l'autre, et un seul trait brut dépasse la taille d'un
+        // message du canal.
+        if (Math.abs(p.x - d.x) < 0.002 && Math.abs(p.y - d.y) < 0.002) return;
+        board.enCours.pts.push(p);
+        traceDernierSegment(board.enCours);
+        if (!board.tm) board.tm = setTimeout(() => { board.tm = 0; pousseTrait(false); }, 110);
+    }
+
+    function finTrait() {
+        if (!board.trace) return;
+        board.trace = false;
+        const t = board.enCours;
+        if (!t) return;
+        if (board.tm) { clearTimeout(board.tm); board.tm = 0; }
+        t.pts = traitAllege(t.pts);
+        pousseTrait(true);
+        poseTrait(t);
+        board.enCours = null; board.envoyes = 0;
+        redessineTableau();
+    }
+
+    function recoitTrait(msg) {
+        const t = traitRecu(msg, BOARD_PERMIS);
+        if (!t) return;
+        const connu = board.traits.find((x) => x.id === t.id);
+        if (!connu) { poseTrait({ id: t.id, c: t.c, e: t.e, pts: t.pts }); redessineTableau(); return; }
+        // Le trait entier remplace ce qu'on avait : c'est la version allégée, celle
+        // qui fait foi chez tout le monde.
+        if (t.net) { connu.pts = t.pts; redessineTableau(); return; }
+        // Quelques points de plus sur un trait en cours : même raison qu'en local,
+        // on ne redessine pas deux cents traits pour trois segments.
+        t.pts.forEach((p) => { connu.pts.push(p); traceDernierSegment(connu); });
+    }
+
+    function majOutilsTableau() {
+        document.querySelectorAll('#boardPalette .bd-c').forEach((b) => {
+            b.classList.toggle('on', !board.gomme && b.dataset.couleur === board.couleur);
+        });
+        $('bdGomme')?.classList.toggle('on', board.gomme);
+    }
+
+    function ouvreTableau(nom, diffuse) {
+        board.ouvert = true;
+        const z = $('board');
+        z.classList.add('on');
+        // ⚠️ La lecture seule n'est pas qu'un affichage : les écouteurs de dessin
+        // vérifient aussi `peutTracer()`. Masquer la barre sans cela laisserait
+        // tracer à qui ouvre la console.
+        z.classList.toggle('lecture', !peutTracer());
+        $('boardWho').textContent = peutTracer() || !nom ? 'Tableau blanc' : 'Tableau blanc - ' + texteCourt(nom, 28);
+        $('btnBoard')?.classList.add('on');
+        majOutilsTableau();
+        cadreDuTableau();
+        if (diffuse) { board.parQui = 'local'; sendData({ type: 'board_open' }); }
+    }
+
+    function fermeTableau(diffuse) {
+        board.ouvert = false; board.trace = false; board.enCours = null;
+        $('board')?.classList.remove('on');
+        $('btnBoard')?.classList.remove('on');
+        // Les traits SURVIVENT à la fermeture : rouvrir doit retrouver le schéma.
+        // « Effacer » est le geste qui efface, et il se confirme.
+        if (diffuse) { board.parQui = null; sendData({ type: 'board_close' }); }
+    }
+
+    /**
+     * Répond à qui demande le tableau en arrivant.
+     *
+     * ⚠️ C'est l'ARRIVANT qui demande, et non le propriétaire qui devine. Envoyé
+     * dès l'annonce d'arrivée, l'instantané peut partir avant que l'arrivant
+     * n'écoute : il regarderait alors une scène vide pendant que les autres
+     * commentent un schéma. Celui qui demande, lui, est prêt par construction -
+     * et cela rattrape aussi les reconnexions, qui ne sont pas des arrivées.
+     *
+     * ⚠️ Seul celui qui a OUVERT le tableau répond : à trois présentateurs, trois
+     * instantanés partiraient pour la même personne. Revers assumé : si celui-ci
+     * a quitté la salle, un arrivant ne reçoit plus le tableau - ceux qui sont
+     * déjà là le gardent.
+     */
+    function repondAuTableau(a) {
+        if (!board.ouvert || board.parQui !== 'local' || !a) return;
+        // ⚠️ Le canal est public : une demande répétée ferait repartir tout le
+        // tableau à chaque fois. Même garde-fou que pour les réactions.
+        const n = Date.now();
+        if (!peutReagir(board.demandes.get(a) || 0, n, 3000)) return;
+        board.demandes.set(a, n);
+
+        const cible = [a];
+        sendData({ type: 'board_open' }, cible);
+        lotsDeTraits(board.traits, 400).forEach((lot) => {
+            sendData({ type: 'board_state', traits: lot }, cible);
+        });
+    }
+
+    /** Enregistre le tableau en image, pour le compte rendu. */
+    function enregistreTableau() {
+        const c = $('boardCanvas');
+        if (!c || !c.toBlob) return;
+        c.toBlob((blob) => {
+            if (!blob) return;
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'tableau-' + new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-') + '.png';
+            document.body.appendChild(a); a.click(); a.remove();
+            // ⚠️ Sans cela, l'image reste en mémoire pour toute la séance - et on
+            // en enregistre plusieurs.
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }, 'image/png');
+    }
+
     // ---- Toolbar ----
     function syncToolbar() {
         const pub = canPublish();
@@ -1430,6 +1712,9 @@ export async function startFromConfig() {
         // Réagir ne demande ni micro ni caméra : c'est le seul geste que
         // l'assistance peut faire, et il lui reste ouvert.
         $('btnReac').disabled = !state.connected;
+        // Le tableau recouvre les visages de toute la salle : il s'ouvre depuis
+        // la place de qui anime.
+        $('btnBoard').disabled = !state.connected || !pub;
         $('btnMic').classList.toggle('muted', !state.mic); $('btnMic').classList.toggle('active', state.mic);
         $('btnCam').classList.toggle('muted', !state.cam); $('btnCam').classList.toggle('active', state.cam);
         $('btnScreen').classList.toggle('active', state.screen);
@@ -1758,6 +2043,7 @@ export async function startFromConfig() {
                 people = people.filter((x) => x.id !== p.identity); refreshPeople(); refreshComms();
                 const tile = $('tile-' + p.identity); if (tile) tile.remove(); updateFilmstripCount(); layoutGrid();
                 reac.parQui.delete(p.identity);
+                board.demandes.delete(p.identity);
             })
             // ⚠️ `Disconnected` signifie que le SDK a RENONCÉ (ses propres essais
             // ont échoué). Sans porte de sortie, il ne restait qu'à recharger la
@@ -1851,6 +2137,10 @@ export async function startFromConfig() {
                 }
             });
         });
+        // ⚠️ Ici et pas ailleurs : c'est le seul endroit qui passe à l'entrée ET
+        // après une reconnexion. Un tableau ouvert pendant qu'on était coupé doit
+        // revenir, sinon la salle commente un schéma qu'on ne voit plus.
+        if (room.remoteParticipants.size) sendData({ type: 'board_ask' });
     }
 
     // ---- Reprise après coupure ----
@@ -1932,6 +2222,20 @@ export async function startFromConfig() {
         if (msg.type === 'chat') addChat((participant && (participant.name || participant.identity)) || 'Participant', msg.text, false, { id: msg.id, replyTo: msg.replyTo, at: Date.now() });
         else if (msg.type === 'reaction') reactionDistante(msg.uid, msg.emoji, !!msg.on, msg.replaced || null);
         else if (msg.type === 'reac_salle') reactionDeSalle(msg.emoji, fromId);
+        else if (msg.type === 'board_ask') repondAuTableau(fromId);
+        else if (msg.type === 'board_open') { board.parQui = fromId; ouvreTableau((participant && participant.name) || '', false); }
+        else if (msg.type === 'board_close') fermeTableau(false);
+        else if (msg.type === 'board_pts') recoitTrait(msg);
+        else if (msg.type === 'board_state') (Array.isArray(msg.traits) ? msg.traits : []).forEach((t) => recoitTrait(Object.assign({ net: true }, t)));
+        else if (msg.type === 'board_clear') { board.traits = []; board.enCours = null; redessineTableau(); }
+        else if (msg.type === 'board_undo') {
+            // Chaque trait porte l'identité de son auteur : on ne défait que le sien.
+            const prefixe = String(fromId || '') + '-';
+            for (let i = board.traits.length - 1; i >= 0; i -= 1) {
+                if (board.traits[i].id.indexOf(prefixe) === 0) { board.traits.splice(i, 1); break; }
+            }
+            redessineTableau();
+        }
         else if (msg.type === 'chat_removed') retireMessage(msg.uid);
         else if (msg.type === 'hand') {
             const pe = people.find((x) => x.id === fromId);
@@ -2629,6 +2933,59 @@ export async function startFromConfig() {
         $('btnReac').setAttribute('aria-expanded', ouvert ? 'true' : 'false');
         if (ouvert) m.querySelector('button')?.focus();
     });
+    $('btnBoard').addEventListener('click', () => {
+        if (board.ouvert) {
+            // ⚠️ Celui qui n'a pas ouvert le tableau ne le referme que CHEZ LUI :
+            // refermer la scène de toute la salle n'appartient qu'à qui l'a prise.
+            fermeTableau(board.parQui === 'local');
+            toast(board.parQui === 'local' ? 'Tableau fermé' : 'Tableau masqué chez vous');
+
+            return;
+        }
+        ouvreTableau('', true);
+        toast('Tableau ouvert');
+    });
+    (function outilsDuTableau() {
+        const palette = $('boardPalette');
+        BOARD_CRAYONS.forEach((couleur) => {
+            const b = document.createElement('button');
+            b.type = 'button'; b.className = 'bd-c'; b.dataset.couleur = couleur;
+            b.style.background = couleur;
+            b.title = 'Crayon'; b.setAttribute('aria-label', 'Crayon ' + couleur);
+            b.addEventListener('click', () => { board.couleur = couleur; board.gomme = false; majOutilsTableau(); });
+            palette?.appendChild(b);
+        });
+        majOutilsTableau();
+        $('bdGomme')?.addEventListener('click', () => { board.gomme = !board.gomme; majOutilsTableau(); });
+        $('bdTaille')?.addEventListener('input', (e) => { board.taille = Math.max(1, Number(e.target.value) || 4); });
+        $('bdUndo')?.addEventListener('click', () => {
+            const prefixe = monIdentite() + '-';
+            for (let i = board.traits.length - 1; i >= 0; i -= 1) {
+                if (board.traits[i].id.indexOf(prefixe) === 0) { board.traits.splice(i, 1); break; }
+            }
+            redessineTableau(); sendData({ type: 'board_undo' });
+        });
+        $('bdClear')?.addEventListener('click', async () => {
+            // ⚠️ Effacer emporte le travail de TOUT LE MONDE, et rien ne le rend.
+            if (!board.traits.length) return;
+            if (!await confirme('Effacer le tableau', 'Le tableau sera vidé pour tous les participants. Rien ne permet de le retrouver.', 'Effacer')) return;
+            board.traits = []; board.enCours = null; redessineTableau();
+            sendData({ type: 'board_clear' });
+        });
+        $('bdSave')?.addEventListener('click', enregistreTableau);
+        $('bdClose')?.addEventListener('click', () => fermeTableau(board.parQui === 'local'));
+        const toile = $('boardCanvas');
+        toile?.addEventListener('pointerdown', debutTrait);
+        toile?.addEventListener('pointermove', suiteTrait);
+        // ⚠️ `pointercancel` autant que `pointerup` : un appel entrant ou un geste
+        // du système annulent le pointeur sans jamais le relever - le trait
+        // resterait ouvert pour toujours.
+        ['pointerup', 'pointercancel'].forEach((e) => toile?.addEventListener(e, finTrait));
+        // ⚠️ Et PAS `pointerleave` : atteindre le bord du cadre couperait le trait
+        // en pleine écriture. Le relâchement hors du canevas est rattrapé par la
+        // fenêtre, pour le cas où la capture du pointeur a échoué.
+        window.addEventListener('pointerup', finTrait);
+    })();
     $('btnLayout').addEventListener('click', () => {
         state.speakerLayout = !state.speakerLayout;
         const wrap = $('filmstripWrap'); if (wrap) wrap.classList.toggle('open', !state.speakerLayout);
@@ -2724,7 +3081,7 @@ export async function startFromConfig() {
     const BARRE_COMPACTE = matchMedia('(max-width: 767px)');
     // (« btnEngagement » n'est plus de la partie : les échanges sont un onglet du
     // panneau, plus un lien qui fait sortir de la salle.)
-    const SECONDAIRES = ['btnScreen', 'btnLayout', 'btnFs', 'btnBg', 'btnRec'];
+    const SECONDAIRES = ['btnScreen', 'btnBoard', 'btnLayout', 'btnFs', 'btnBg', 'btnRec'];
     const ancres = new Map();
     function rangeSecondaires() {
         const slot = $('moreSlot');
@@ -2815,7 +3172,7 @@ export async function startFromConfig() {
     });
     // La grille se recalcule quand la place change : ouvrir le panneau latéral ou
     // réduire la fenêtre modifie la largeur disponible, donc la bonne grille.
-    window.addEventListener('resize', layoutGrid);
+    window.addEventListener('resize', () => { layoutGrid(); cadreDuTableau(); });
     window.addEventListener('beforeunload', () => { try { if (echanges.tic) clearInterval(echanges.tic); } catch (e) {} try { if (presenceTimer) clearInterval(presenceTimer); } catch (e) {} try { if (room) room.disconnect(); } catch (e) {} });
 
     // ============ Démarrage ============

@@ -557,6 +557,64 @@ paiement (`pay`), inscription à une formation.
     `MeetingProviderRegistry` retombe seul sur Jitsi public quand ce défaut n'est pas
     configuré. Le forcer en base écraserait la configuration du site - c'est ce qui
     masquait LiveKit une fois ses identifiants renseignés.
+### Tableau blanc (bouton « Tableau »)
+
+Une surface de dessin partagée qui recouvre la scène chez tout le monde.
+Crayons, gomme, épaisseur, annuler, effacer, et **enregistrement en image**.
+Tout passe par le **canal de données** : rien n'est envoyé au serveur, le
+tableau vit le temps de la séance. Le jour où il devra rejoindre le compte
+rendu, c'est un point d'entrée à ajouter - pas ce module à refaire.
+
+- ⚠️ **Le cadre a un rapport FIXE (16/9) et se centre** (`cadreTableau`). C'est
+  la décision qui tient tout le reste : un tableau est un **document**, il doit
+  être identique partout. Si chaque poste normalisait sur SA scène, un cercle
+  tracé sur un portable deviendrait une ellipse sur l'écran d'à côté, et un
+  schéma annoté deviendrait faux. Les marges sont le prix à payer.
+- ⚠️ **L'épaisseur se rapporte à la largeur du cadre**, pas au pixel, pour la
+  même raison.
+- ⚠️ **Réservé à qui anime** (`ORDRES_RESERVES`, niveau `presenter`) : le
+  tableau cache les visages de toute la salle. La lecture seule masque la barre
+  **et** les écouteurs vérifient `peutTracer()` - sinon il suffisait d'ouvrir la
+  console.
+- ⚠️ **`ordreRecevable` dit d'où vient un message, pas ce qu'il contient.**
+  `traitRecu` assainit : couleur prise dans la palette, épaisseur bornée,
+  coordonnées ramenées dans le cadre, points plafonnés, `Infinity` écarté
+  (il passe `!isNaN` et fige le canevas de toute la salle).
+- ⚠️ **C'est l'ARRIVANT qui demande** (`board_ask`), pas le propriétaire qui
+  devine : envoyé à l'annonce d'arrivée, l'instantané partirait peut-être avant
+  que l'arrivant n'écoute. La demande part dans
+  `adopteParticipantsPresents()` - le seul endroit qui passe à l'entrée **et**
+  après une reconnexion. Seul celui qui a **ouvert** répond (sinon trois
+  présentateurs envoient trois instantanés), avec un garde-fou de 3 s par
+  demandeur. Revers assumé : s'il a quitté la salle, un arrivant ne reçoit plus
+  le tableau.
+- ⚠️ **L'instantané se découpe par POINTS** (`lotsDeTraits`) : un tableau d'une
+  heure dépasse la taille d'un message du canal, et envoyé d'un bloc il n'arrive
+  pas du tout. Un trait plus long qu'un lot part seul - le couper en ferait deux
+  traits avec un blanc au milieu.
+- ⚠️ **Le dernier message d'un trait porte le trait ENTIER** (`net`), allégé à
+  la levée du crayon : sans ce remplacement, les autres postes garderaient la
+  version brute et le document ne serait plus le même partout.
+- ⚠️ **On ne redessine pas tout à chaque point** (`traceDernierSegment`). À deux
+  cents traits, chaque mouvement du crayon en redessinerait deux cents, soixante
+  fois par seconde.
+- ⚠️ **Pas de `pointerleave`** pour finir un trait : atteindre le bord du cadre
+  le couperait en pleine écriture. `pointerup` + `pointercancel`, plus un
+  `pointerup` sur la fenêtre si la capture a échoué.
+- ⚠️ **Mesuré au harnais** : le titre et la barre d'outils ne flottent pas
+  au-dessus du tableau, leur place est **retirée avant** le calcul du cadre -
+  posés en surimpression, ils recouvraient le bas de la zone de dessin. Et la
+  barre est centrée par `left:0;right:0;margin:auto`, **pas** par `left:50%` +
+  `translateX(-50%)` : en positionnement absolu, `left:50%` ne laisse que la
+  moitié de la largeur disponible, et la barre se repliait sur deux lignes alors
+  que son contenu tenait largement.
+- « Effacer » **se confirme** : il emporte le travail de tout le monde et rien
+  ne le rend. Fermer, en revanche, **garde les traits** - rouvrir doit retrouver
+  le schéma.
+- Qui n'a pas ouvert le tableau ne le ferme que **chez lui** : reprendre la
+  scène de toute la salle n'appartient qu'à qui l'a prise.
+- Tests : `meeting-pure.test.js` (12 cas).
+
 ### Réactions de salle (bouton « Réagir »)
 
 Un emoji qui **monte sur l'écran de présentation**, chez tout le monde, et qui se

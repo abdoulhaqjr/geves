@@ -111,6 +111,16 @@ export const ORDRES_RESERVES = {
   // Prendre le partage d'écran ou masquer la vignette caméra ne regarde que
   // ceux qui diffusent.
   screen_takeover: 'presenter',
+  // Le tableau blanc s'affiche en grand chez tout le monde et recouvre la
+  // scène : l'ouvrir, y tracer, l'effacer ou le refermer appartient à qui
+  // anime. Sans cette réserve, n'importe quel assistant masquerait le
+  // présentateur en pleine communication, ou effacerait son schéma.
+  board_open: 'presenter',
+  board_close: 'presenter',
+  board_pts: 'presenter',
+  board_undo: 'presenter',
+  board_clear: 'presenter',
+  board_state: 'presenter',
   pip_visibility: 'presenter',
 };
 
@@ -405,4 +415,135 @@ export function placeBulle(rang) {
   const n = Math.trunc(Number(rang) || 0);
 
   return places[((n % places.length) + places.length) % places.length];
+}
+
+/* ===================== Tableau blanc ===================== */
+
+/**
+ * Le cadre de dessin : un rectangle de rapport FIXE, centré dans la scène.
+ *
+ * ⚠️ C'est la décision qui tient tout le reste. Un tableau est un **document** :
+ * il doit être identique chez tout le monde. Si chaque poste normalisait les
+ * points sur SA scène, le dessin se déformerait dès que deux participants n'ont
+ * pas le même format d'écran - un cercle tracé sur un portable deviendrait une
+ * ellipse sur l'écran d'à côté, et un schéma annoté deviendrait faux. Le cadre
+ * garde donc son rapport et se centre, quitte à laisser des marges.
+ */
+export function cadreTableau(largeur, hauteur, ratio = 16 / 9) {
+  const L = Math.max(0, Number(largeur) || 0);
+  const H = Math.max(0, Number(hauteur) || 0);
+  const r = Number(ratio) > 0 ? Number(ratio) : 16 / 9;
+  if (!L || !H) return { x: 0, y: 0, w: 0, h: 0 };
+
+  const parLaLargeur = L / r <= H;
+  const w = parLaLargeur ? L : H * r;
+  const h = parLaLargeur ? L / r : H;
+
+  return { x: (L - w) / 2, y: (H - h) / 2, w, h };
+}
+
+/**
+ * Point d'écran → repère du tableau (0..1 sur les deux axes).
+ *
+ * ⚠️ Borné : le doigt qui sort du cadre en plein trait ne doit pas envoyer des
+ * coordonnées hors tableau, que les autres postes dessineraient par-dessus les
+ * vignettes. Arrondi à trois décimales : au millième d'un cadre de 1280px, c'est
+ * déjà sous le pixel, et un trait de 300 points pèse trois fois moins sur le
+ * canal de données.
+ */
+export function pointTableau(x, y, cadre) {
+  if (!cadre || !cadre.w || !cadre.h) return { x: 0, y: 0 };
+  const borne = (v) => Math.min(1, Math.max(0, v));
+
+  return {
+    x: Math.round(borne((x - cadre.x) / cadre.w) * 1000) / 1000,
+    y: Math.round(borne((y - cadre.y) / cadre.h) * 1000) / 1000,
+  };
+}
+
+/**
+ * Allège un trait : on ne garde un point que s'il s'éloigne assez du précédent.
+ *
+ * ⚠️ `pointermove` tire des centaines de points par seconde, dont la plupart à
+ * moins d'un pixel l'un de l'autre. Sans ce filtre, un seul trait de tableau
+ * dépasse la taille d'un message du canal de données - et l'instantané envoyé à
+ * un retardataire n'a plus aucune chance de passer. Le DERNIER point est
+ * toujours gardé par l'appelant : sans lui, le trait s'arrêterait avant la fin
+ * du geste.
+ */
+export function traitAllege(points, minimum = 0.004) {
+  const liste = Array.isArray(points) ? points : [];
+  if (liste.length < 3) return liste.slice();
+  const m = Number(minimum) > 0 ? Number(minimum) : 0.004;
+  const gardes = [liste[0]];
+  for (let i = 1; i < liste.length - 1; i += 1) {
+    const d = liste[i];
+    const p = gardes[gardes.length - 1];
+    if (Math.abs(d.x - p.x) >= m || Math.abs(d.y - p.y) >= m) gardes.push(d);
+  }
+  gardes.push(liste[liste.length - 1]);
+
+  return gardes;
+}
+
+/**
+ * Découpe l'instantané du tableau en messages digestes.
+ *
+ * ⚠️ Le canal de données n'accepte pas un message de n'importe quelle taille.
+ * Un tableau d'une heure de séance pèse bien plus que la limite : envoyé d'un
+ * bloc à un retardataire, il n'arrive pas du tout, et celui-ci voit un tableau
+ * vide pendant que les autres le regardent plein. On découpe donc par nombre de
+ * POINTS et non de traits : un seul trait long pèse plus que vingt traits
+ * courts.
+ */
+export function lotsDeTraits(traits, maxPoints = 400) {
+  const liste = Array.isArray(traits) ? traits : [];
+  const max = Number(maxPoints) > 0 ? Number(maxPoints) : 400;
+  const lots = [];
+  let lot = [];
+  let n = 0;
+  liste.forEach((t) => {
+    const taille = (t && Array.isArray(t.pts) ? t.pts.length : 0) || 1;
+    // ⚠️ Un trait plus long que le lot part SEUL : le couper en deux messages
+    // en ferait deux traits distincts, avec un blanc au milieu.
+    if (lot.length && n + taille > max) { lots.push(lot); lot = []; n = 0; }
+    lot.push(t); n += taille;
+  });
+  if (lot.length) lots.push(lot);
+
+  return lots;
+}
+
+/** Points au-delà desquels un trait reçu est tronqué. */
+export const TRAIT_POINTS_MAX = 4000;
+
+/**
+ * Assainit un trait venu d'un autre poste. Rend `null` si rien n'est exploitable.
+ *
+ * ⚠️ Le canal de données est public, et `ordreRecevable` ne dit QUE d'où vient
+ * le message - pas ce qu'il contient. Sans ce filtre, un client modifié traçait
+ * sur le tableau de tout le monde avec une épaisseur de mille pixels (plus rien
+ * d'autre n'est visible), hors du cadre (par-dessus les vignettes), ou avec une
+ * couleur de son choix. Un tableau est un document commun : on n'y écrit qu'avec
+ * les crayons de la salle.
+ */
+export function traitRecu(msg, couleurs) {
+  if (!msg || typeof msg.id !== 'string' || !msg.id || msg.id.length > 120) return null;
+  const permises = Array.isArray(couleurs) ? couleurs : [];
+  const c = permises.indexOf(msg.c) >= 0 ? msg.c : permises[0];
+  if (!c) return null;
+  const e = Math.min(60, Math.max(1, Number(msg.e) || 1));
+  const bruts = Array.isArray(msg.pts) ? msg.pts.slice(0, TRAIT_POINTS_MAX) : [];
+  const pts = [];
+  bruts.forEach((p) => {
+    if (!p) return;
+    const x = Number(p.x);
+    const y = Number(p.y);
+    // ⚠️ `Number.isFinite` et non `!isNaN` : `Infinity` passe le second, et une
+    // coordonnée infinie fige le rendu du canevas chez tout le monde.
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    pts.push({ x: Math.min(1, Math.max(0, x)), y: Math.min(1, Math.max(0, y)) });
+  });
+
+  return { id: msg.id, c, e, pts, net: !!msg.net, fin: !!msg.fin };
 }

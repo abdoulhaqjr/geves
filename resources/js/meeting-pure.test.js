@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  cadreTableau,
   chronoLabel,
   enBasDuFil,
   etatChrono,
@@ -9,11 +10,16 @@ import {
   idsDesParleurs,
   initials,
   mainsOrdonnees,
+  lotsDeTraits,
   metadonnee,
   peutReagir,
   placeBulle,
+  pointTableau,
   REACTIONS_MAX,
   reactionRecevable,
+  TRAIT_POINTS_MAX,
+  traitAllege,
+  traitRecu,
   niveauReseau,
   ordreRecevable,
   phraseConnectes,
@@ -385,5 +391,132 @@ describe('réactions de salle', () => {
       expect(placeBulle(i).gauche).toBeLessThanOrEqual(48);
       expect(placeBulle(i).bas).toBeGreaterThanOrEqual(10);
     }
+  });
+});
+
+describe('tableau blanc', () => {
+  it('garde le même cadre sur deux écrans de formats différents', () => {
+    // ⚠️ Le cœur du sujet : un tableau est un document. Un cercle tracé sur un
+    // portable doit rester un cercle sur l'écran d'à côté.
+    const large = cadreTableau(1600, 600); // scène très large : marges latérales
+    const haute = cadreTableau(800, 900); // scène haute : marges haut et bas
+    expect(large.w / large.h).toBeCloseTo(16 / 9, 5);
+    expect(haute.w / haute.h).toBeCloseTo(16 / 9, 5);
+    // Le cadre tient dans la scène, et il est centré.
+    expect(large.w).toBeLessThanOrEqual(1600);
+    expect(large.h).toBeLessThanOrEqual(600);
+    expect(large.x).toBeCloseTo((1600 - large.w) / 2, 5);
+    expect(haute.y).toBeCloseTo((900 - haute.h) / 2, 5);
+  });
+
+  it('ne rend pas un cadre impossible', () => {
+    expect(cadreTableau(0, 500)).toEqual({ x: 0, y: 0, w: 0, h: 0 });
+    expect(cadreTableau(NaN, NaN)).toEqual({ x: 0, y: 0, w: 0, h: 0 });
+    // Un rapport absurde retombe sur le 16/9 plutôt que de rendre un cadre nul.
+    expect(cadreTableau(1600, 900, 0).w / cadreTableau(1600, 900, 0).h).toBeCloseTo(16 / 9, 5);
+  });
+
+  it('place le même point au même endroit chez les deux', () => {
+    const a = cadreTableau(1600, 600);
+    const b = cadreTableau(800, 900);
+    // Le centre du cadre, chez l'un et chez l'autre.
+    const pa = pointTableau(a.x + a.w / 2, a.y + a.h / 2, a);
+    const pb = pointTableau(b.x + b.w / 2, b.y + b.h / 2, b);
+    expect(pa).toEqual(pb);
+  });
+
+  it('retient le doigt qui sort du cadre', () => {
+    // ⚠️ Sans borne, un geste qui déborde enverrait des coordonnées hors tableau,
+    // que les autres postes dessineraient par-dessus les vignettes.
+    const c = cadreTableau(1600, 900);
+    expect(pointTableau(c.x - 500, c.y - 500, c)).toEqual({ x: 0, y: 0 });
+    expect(pointTableau(c.x + c.w + 500, c.y + c.h + 500, c)).toEqual({ x: 1, y: 1 });
+    expect(pointTableau(10, 10, { x: 0, y: 0, w: 0, h: 0 })).toEqual({ x: 0, y: 0 });
+  });
+
+  it('allège un trait sans lui couper la fin', () => {
+    // ⚠️ `pointermove` tire des points à moins d'un pixel l'un de l'autre : sans
+    // filtre, un seul trait dépasse la taille d'un message du canal.
+    const points = [];
+    for (let i = 0; i < 200; i += 1) points.push({ x: i / 10000, y: 0 });
+    points.push({ x: 0.9, y: 0.9 });
+    const allege = traitAllege(points, 0.01);
+    expect(allege.length).toBeLessThan(points.length / 4);
+    // ⚠️ Le dernier point survit toujours : sinon le trait s'arrête avant la fin
+    // du geste, et la ligne ne rejoint pas là où on a levé le crayon.
+    expect(allege[allege.length - 1]).toEqual({ x: 0.9, y: 0.9 });
+    expect(allege[0]).toEqual(points[0]);
+    // Un trait trop court pour être allégé revient intact.
+    expect(traitAllege([{ x: 0, y: 0 }, { x: 1, y: 1 }])).toHaveLength(2);
+  });
+
+  it('découpe l’instantané par points, pas par traits', () => {
+    // ⚠️ Un tableau d'une heure dépasse la taille d'un message : envoyé d'un
+    // bloc, il n'arrive pas du tout et le retardataire voit un tableau vide.
+    const long = { pts: new Array(500).fill({ x: 0, y: 0 }) };
+    const courts = new Array(10).fill(null).map(() => ({ pts: [{ x: 0, y: 0 }] }));
+    const lots = lotsDeTraits([...courts, long, ...courts], 20);
+    expect(lots.length).toBeGreaterThan(1);
+    // ⚠️ Un trait plus long que le lot part SEUL plutôt que coupé en deux : le
+    // couper en ferait deux traits, avec un blanc au milieu.
+    expect(lots.some((l) => l.length === 1 && l[0] === long)).toBe(true);
+    // Rien ne se perd et rien ne se duplique.
+    expect(lots.reduce((n, l) => n + l.length, 0)).toBe(21);
+    expect(lotsDeTraits([], 20)).toEqual([]);
+  });
+
+  it('réserve le tableau à qui anime', () => {
+    // ⚠️ Le canal est public : sans cela, un assistant masquerait le
+    // présentateur en pleine communication, ou effacerait son schéma.
+    ['board_open', 'board_close', 'board_pts', 'board_undo', 'board_clear', 'board_state'].forEach((t) => {
+      expect(ordreRecevable(t, 'audience')).toBe(false);
+      expect(ordreRecevable(t, 'presenter')).toBe(true);
+      expect(ordreRecevable(t, 'moderator')).toBe(true);
+    });
+  });
+});
+
+describe('trait reçu d’un autre poste', () => {
+  const crayons = ['#111827', '#1d4ed8', '#ffffff'];
+
+  it('n’accepte que les crayons de la salle', () => {
+    // ⚠️ `ordreRecevable` dit d'où vient le message, pas ce qu'il contient.
+    expect(traitRecu({ id: 'a-1', c: '#1d4ed8', pts: [] }, crayons).c).toBe('#1d4ed8');
+    // Une couleur inventée retombe sur le premier crayon plutôt que d'être tracée.
+    expect(traitRecu({ id: 'a-1', c: 'url(http://x)', pts: [] }, crayons).c).toBe('#111827');
+  });
+
+  it('borne l’épaisseur et les coordonnées', () => {
+    // ⚠️ Sans borne : un trait de mille pixels cache tout le reste, et un point
+    // hors cadre se dessine par-dessus les vignettes.
+    const t = traitRecu({
+      id: 'a-1', c: '#111827', e: 9999,
+      pts: [{ x: -4, y: 2 }, { x: 0.5, y: 0.5 }],
+    }, crayons);
+    expect(t.e).toBe(60);
+    expect(t.pts[0]).toEqual({ x: 0, y: 1 });
+    expect(t.pts[1]).toEqual({ x: 0.5, y: 0.5 });
+  });
+
+  it('écarte une coordonnée infinie', () => {
+    // ⚠️ `Infinity` passe `!isNaN` et fige le rendu du canevas chez tout le monde.
+    const t = traitRecu({
+      id: 'a-1', c: '#111827', e: 3,
+      pts: [{ x: Infinity, y: 0 }, { x: 'abc', y: 0 }, { x: 0.2, y: 0.2 }],
+    }, crayons);
+    expect(t.pts).toEqual([{ x: 0.2, y: 0.2 }]);
+  });
+
+  it('refuse ce qui n’est pas un trait', () => {
+    expect(traitRecu(null, crayons)).toBeNull();
+    expect(traitRecu({ c: '#111827' }, crayons)).toBeNull();
+    expect(traitRecu({ id: 'x'.repeat(500), c: '#111827' }, crayons)).toBeNull();
+    // Sans crayon permis, rien ne se trace.
+    expect(traitRecu({ id: 'a-1', c: '#111827' }, [])).toBeNull();
+  });
+
+  it('tronque un trait démesuré au lieu de le garder entier', () => {
+    const pts = new Array(TRAIT_POINTS_MAX + 500).fill({ x: 0.1, y: 0.1 });
+    expect(traitRecu({ id: 'a-1', c: '#111827', pts }, crayons).pts).toHaveLength(TRAIT_POINTS_MAX);
   });
 });
