@@ -153,9 +153,23 @@
                                     <label for="edition_label">Libellé d’édition</label>
                                     <input type="text" id="edition_label" name="edition_label" x-model="f.edition_label" placeholder="3e édition">
                                 </div>
+                                {{-- ⚠️ SANS L'ANNÉE : la barre collante de la page publique
+                                     l'ajoute elle-même (« nom court · année »). L'exemple
+                                     proposé ici était « CSIUK 2026 », ce qui poussait à la
+                                     saisir - une édition s'est retrouvée annoncée
+                                     « Colloque Avenir durable 2025 · 2026 », deux années
+                                     contradictoires sur la même ligne. L'aperçu ci-dessous
+                                     montre la ligne telle qu'elle sortira. --}}
                                 <div class="ukc-form-row">
                                     <label for="short_name">Nom court <span class="ukc-hint" style="display:inline;">(en-têtes, badges)</span></label>
-                                    <input type="text" id="short_name" name="short_name" x-model="f.short_name" placeholder="CSIUK 2026">
+                                    <input type="text" id="short_name" name="short_name" x-model="f.short_name" placeholder="Colloque Avenir durable">
+                                    <span class="ukc-hint" x-show="f.short_name" x-cloak>
+                                        Sur la page publique : <strong x-text="f.short_name + (f.year ? ' · ' + f.year : '')"></strong>
+                                    </span>
+                                    <span class="ukc-hint" style="color:#b45309;" x-cloak
+                                          x-show="f.short_name && /(^|\s)(19|20)\d{2}\s*$/.test(f.short_name)">
+                                        Le nom court finit déjà par une année : la barre du colloque en affichera deux.
+                                    </span>
                                 </div>
                             </div>
                             <div class="ukc-form-row">

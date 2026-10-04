@@ -1858,6 +1858,21 @@ table `session_attendances`, modèle `SessionAttendance`). Entrées depuis
   l'aperçu admin (le zoom 90% ne rend pas les mêmes largeurs), où « Jour 7 »
   tombait seul sur une seconde ligne. À 16px, les deux gardent ≈ 100px de jeu.
 
+### Le nom court se saisit SANS l'année
+
+La barre collante de la page colloque affiche `nom court · année` : l'année est
+ajoutée par la vue, elle ne se saisit pas.
+
+- ⚠️ L'exemple proposé sous le champ était « CSIUK 2026 », ce qui poussait
+  justement à la saisir - une édition s'est retrouvée annoncée **« Colloque
+  Avenir durable 2025 · 2026 »**, deux années contradictoires sur la même ligne.
+  Un placeholder est un **exemple à copier** : s'il montre la faute, elle est
+  commise.
+- Le champ affiche désormais **la ligne telle qu'elle sortira**, et prévient
+  quand le nom court se termine par une année.
+- Ce bloc est aussi le lien **« retour en haut »** de la page et porte la pastille
+  d'état : le retirer coûterait plus que l'année qu'on y lisait en double.
+
 ### Onglets de la fiche d'édition
 
 - **Onze onglets dans UN seul écran** (`admin/editions/form.blade.php`), pilotés
@@ -1878,6 +1893,13 @@ table `session_attendances`, modèle `SessionAttendance`). Entrées depuis
   `integrations`, `translations` → `appearance`). Un lien partagé, un favori ou
   une session ouverte porte l'ancien nom : sans cela, la page s'ouvre sur un
   onglet qui n'existe plus - aucune pilule allumée, **aucun panneau affiché**.
+- ⚠️ **Le cadre blanc d'un monogramme est INVISIBLE sur une barre claire** : son
+  rembourrage ne se lit pas comme une marge intérieure mais comme du vide, qui
+  s'ajoute à la gouttière du groupe. Dans la marque des barres latérales, 6px de
+  rembourrage + 10px de gouttière mettaient le logo à 16px du filet quand le
+  texte n'en était qu'à 10 - l'écart de gauche paraissait moitié plus grand. Le
+  cadre épouse l'image, et seule la gouttière espace. **Mesuré : 10 / 10.**
+  (L'en-tête public, lui, n'a pas de cadre : il était déjà à 12 / 12.)
 - **Répéteurs de la fiche** (membres de comité, tarifs, partenaires) : une carte
   par entrée, champs **étiquetés** (pas seulement des indications de saisie, qui
   disparaissent une fois remplies), et la pastille destructive **partagée**

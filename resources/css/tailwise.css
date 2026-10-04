@@ -66,8 +66,14 @@
    filet et les deux gouttières, le monogramme peut aller jusqu'à ~80px ; à 62 il
    reste 37px de jeu pour un nom de plateforme plus long. En barre réduite
    (78px) il tient aussi : 8px de marge de chaque côté. */
+/* ⚠️ Le cadre blanc du monogramme est INVISIBLE sur une barre claire : son
+   rembourrage ne se lit pas comme une marge intérieure mais comme du vide, qui
+   s'AJOUTE à la gouttière du groupe. À 6px de rembourrage et 10px de gouttière,
+   le logo était à 16px du filet quand le texte n'en était qu'à 10 - l'écart de
+   gauche paraissait moitié plus grand. Le cadre épouse donc l'image, et c'est
+   la seule gouttière qui espace, des deux côtés pareil. */
 .ukc-shell .ukc-sidebar-brand .brand-lockup .logo-img {
-    flex: 0 0 auto; width: 62px; padding: 6px;
+    flex: 0 0 auto; width: 50px; padding: 0;
 }
 .ukc-shell .ukc-sidebar-brand .brand-lockup .logo-img img {
     aspect-ratio: 1 / 1; max-height: none;
@@ -193,7 +199,7 @@
         padding-left: 0; padding-right: 0; text-align: center;
     }
     .ukc-shell.ukc-compact .ukc-sidebar:not(:hover) .ukc-sidebar-brand .brand-lockup { justify-content: center; }
-    .ukc-shell.ukc-compact .ukc-sidebar:not(:hover) .ukc-sidebar-brand .brand-lockup .logo-img { padding: 6px; }
+    .ukc-shell.ukc-compact .ukc-sidebar:not(:hover) .ukc-sidebar-brand .brand-lockup .logo-img { padding: 0; }
     .ukc-shell.ukc-compact .ukc-sidebar:not(:hover) .ukc-user-chip { justify-content: center; }
 }
 
