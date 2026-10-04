@@ -634,6 +634,36 @@ rendu, c'est un point d'entrée à ajouter - pas ce module à refaire.
   scène de toute la salle n'appartient qu'à qui l'a prise.
 - Tests : `meeting-pure.test.js` (12 cas).
 
+**Deux modes** (bouton « Tableau | Annoter » dans la barre du tableau) :
+
+- **Tableau** : surface blanche, cadre 16/9.
+- **Annoter** : la couche devient transparente et le cadre se cale sur l'**image
+  présentée** (`cadreMedia`). Le mode est **deviné à l'ouverture** - un écran
+  partagé s'ouvre en annotation, c'est presque toujours pour cela qu'on prend le
+  crayon.
+- ⚠️ **La salle force `object-fit:contain` pendant qu'on annote.** En `cover`,
+  l'image est ROGNÉE, et pas pareil selon le format de chaque fenêtre : deux
+  personnes ne verraient pas la même portion du document, et la flèche de l'une
+  tomberait à côté chez l'autre. Mesuré au harnais : cadre aligné sur un
+  diaporama 4/3 à moins de 2px près, rapport exact.
+- ⚠️ **Le repère se calcule à l'identique partout** parce qu'il ne dépend que de
+  la taille **intrinsèque** du média (la même pour tous) et de la boîte locale.
+- ⚠️ **`loadedmetadata`, pas seulement l'appel direct** : à l'instant où la piste
+  est attachée, `videoWidth` vaut zéro. Sans cette attente, l'annotation
+  retombait sur le 16/9 du tableau alors qu'un diaporama 4/3 arrivait une
+  fraction de seconde plus tard.
+- ⚠️ **La toile reste transparente en annotation** : la remplir de blanc
+  masquerait la présentation. Revers assumé : la gomme y laisse une trace
+  blanche au lieu d'effacer - « Annuler » est l'outil qui défait.
+- ⚠️ **L'export compose** l'image de la scène PUIS les traits, à la taille
+  **intrinsèque** de la vidéo : exporter la seule couche de dessin rendrait des
+  traits flottant sur du vide, et exporter à la taille du canevas rendrait un
+  diaporama illisible sur un petit écran. Une piste WebRTC ne salit pas le
+  canevas, `toBlob` reste autorisé.
+- ⚠️ **La barre d'outils ne peut plus être retirée du cadre** (il doit coller à
+  l'image) : elle se loge dans la bande laissée par le format quand il y en a
+  une, et s'efface à 40% sinon, jusqu'à ce qu'on la vise.
+
 ### Réactions de salle (bouton « Réagir »)
 
 Un emoji qui **monte sur l'écran de présentation**, chez tout le monde, et qui se

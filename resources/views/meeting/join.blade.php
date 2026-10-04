@@ -560,6 +560,26 @@
         #visio-room .v-board.on{display:block;}
         #visio-room .bd-cadre{position:absolute;background:#fff;border-radius:10px;overflow:hidden;
             box-shadow:0 12px 44px rgba(0,0,0,.55);}
+        /* --- Mode annotation : on écrit SUR ce qui est présenté ---
+           ⚠️ La couche devient transparente, et le cadre se cale sur l'image
+           elle-même (`cadreMedia`) - pas sur un rectangle 16/9. Un diaporama 4/3
+           annoté dans un cadre 16/9 verrait toutes ses flèches décalées.
+           ⚠️ Et la salle force `object-fit:contain` sur la scène PENDANT qu'on
+           annote. En `cover`, l'image est rognée - et pas pareil selon le format
+           de chaque fenêtre : deux personnes ne verraient pas la même portion du
+           document, et la flèche de l'une tomberait à côté chez l'autre. */
+        #visio-room .v-board.annote{background:transparent;}
+        #visio-room .v-board.annote .bd-cadre{background:transparent;box-shadow:none;border-radius:0;
+            outline:2px dashed rgba(255,215,0,.45);outline-offset:-1px;}
+        #visio-room .v-board.annote.lecture .bd-cadre{outline:none;}
+        #visio-room.annote .tile.main > video{object-fit:contain!important;background:#000;}
+        /* Le choix du mode, là où l'on travaille déjà. */
+        /* Pas de place sous l'image : la barre s'efface jusqu'à ce qu'on la vise. */
+        #visio-room .bd-outils.flottante{opacity:.4;transition:opacity .18s ease;}
+        #visio-room .bd-outils.flottante:hover,#visio-room .bd-outils.flottante:focus-within{opacity:1;}
+        #visio-room .bd-mode{display:inline-flex;border:1px solid var(--vborder);border-radius:10px;overflow:hidden;}
+        #visio-room .bd-mode button{border-radius:0;border:none;padding:6px 10px;font-size:11.5px;}
+        #visio-room .bd-mode button.on{background:var(--vgold);color:var(--vblue-d);}
         /* ⚠️ `touch-action:none` : sans lui, le doigt fait défiler la page au lieu
            de tracer, et le tableau est inutilisable sur tablette. */
         #visio-room .bd-cadre canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair;}
@@ -1042,6 +1062,12 @@
                         <div class="bd-outils" id="boardTools" role="toolbar" aria-label="Outils du tableau">
                             {{-- Les crayons sont posés par le script : une seule liste,
                                  celle que le récepteur accepte. --}}
+                            {{-- Tableau ou annotation : le même crayon, deux fonds. --}}
+                            <span class="bd-mode" id="boardMode" role="group" aria-label="Mode du tableau">
+                                <button type="button" data-mode="blanc" class="on">Tableau</button>
+                                <button type="button" data-mode="annote">Annoter</button>
+                            </span>
+                            <span class="sep"></span>
                             <span class="bd-palette" id="boardPalette"></span>
                             <button type="button" id="bdGomme" title="Gomme">Gomme</button>
                             <span class="sep"></span>

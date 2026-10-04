@@ -576,3 +576,35 @@ export function traitRecu(msg, couleurs) {
 
   return { id: msg.id, c, e, pts, net: !!msg.net, fin: !!msg.fin };
 }
+
+/**
+ * Le rectangle réellement occupé par une vidéo dans sa boîte, en `contain`.
+ *
+ * ⚠️ C'est le repère des ANNOTATIONS, et il doit être calculable à l'identique
+ * chez tout le monde. Il l'est parce qu'il ne dépend que de deux choses : la
+ * taille INTRINSÈQUE du média (la même pour tous, elle vient de l'émetteur) et
+ * la boîte locale. Chacun calcule son propre rectangle, et un trait posé au
+ * tiers de l'image tombe au tiers de l'image partout.
+ *
+ * ⚠️ `contain` et non `cover` : en `cover`, l'image est ROGNÉE, et elle ne l'est
+ * pas pareil selon le format de la fenêtre. Deux personnes ne verraient alors
+ * pas la même portion du document, et la flèche de l'une tomberait à côté chez
+ * l'autre. C'est pourquoi la salle force `contain` pendant qu'on annote.
+ *
+ * ⚠️ Taille intrinsèque inconnue (image pas encore arrivée) : on rend une boîte
+ * vide plutôt qu'un rectangle inventé. L'appelant retombe alors sur le cadre
+ * 16/9 du tableau - mieux vaut un cadre franc qu'un cadre faux.
+ */
+export function cadreMedia(boiteL, boiteH, mediaL, mediaH) {
+  const BL = Math.max(0, Number(boiteL) || 0);
+  const BH = Math.max(0, Number(boiteH) || 0);
+  const ML = Math.max(0, Number(mediaL) || 0);
+  const MH = Math.max(0, Number(mediaH) || 0);
+  if (!BL || !BH || !ML || !MH) return { x: 0, y: 0, w: 0, h: 0 };
+
+  const parLaLargeur = BL / (ML / MH) <= BH;
+  const w = parLaLargeur ? BL : BH * (ML / MH);
+  const h = parLaLargeur ? BL / (ML / MH) : BH;
+
+  return { x: (BL - w) / 2, y: (BH - h) / 2, w, h };
+}

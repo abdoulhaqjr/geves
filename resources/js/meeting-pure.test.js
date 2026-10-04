@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  cadreMedia,
   cadreTableau,
   chronoLabel,
   enBasDuFil,
@@ -551,5 +552,44 @@ describe('écran d’entrée', () => {
 
   it('laisse entrer qui ne demande ni caméra ni micro', () => {
     expect(entreeDirecte(true, false, false, 'denied', 'denied')).toBe(true);
+  });
+});
+describe('annotation de la présentation', () => {
+  it('pose le même repère chez deux spectateurs de formats différents', () => {
+    // ⚠️ Le repère ne dépend QUE de la taille intrinsèque du média - la même
+    // pour tous - et de la boîte locale. Un trait au tiers de l'image doit
+    // tomber au tiers de l'image partout.
+    const a = cadreMedia(1600, 600, 1920, 1080);
+    const b = cadreMedia(800, 900, 1920, 1080);
+    expect(a.w / a.h).toBeCloseTo(1920 / 1080, 5);
+    expect(b.w / b.h).toBeCloseTo(1920 / 1080, 5);
+    // Le même point normalisé retombe au même endroit de l'image chez les deux.
+    const pa = pointTableau(a.x + a.w / 3, a.y + a.h / 4, a);
+    const pb = pointTableau(b.x + b.w / 3, b.y + b.h / 4, b);
+    expect(pa).toEqual(pb);
+  });
+
+  it('suit le format du document, pas celui du tableau', () => {
+    // Un diaporama 4/3 n'est pas un tableau 16/9 : l'annotation se cale sur ce
+    // qui est montré, sinon elle flotte à côté.
+    const c = cadreMedia(1600, 900, 1024, 768);
+    expect(c.w / c.h).toBeCloseTo(4 / 3, 5);
+    expect(c.h).toBe(900);
+    expect(c.x).toBeCloseTo((1600 - c.w) / 2, 5);
+  });
+
+  it('tient dans la boîte et reste centré', () => {
+    const large = cadreMedia(1600, 600, 1920, 1080);
+    expect(large.w).toBeLessThanOrEqual(1600);
+    expect(large.h).toBeLessThanOrEqual(600);
+    expect(large.y).toBeCloseTo((600 - large.h) / 2, 5);
+  });
+
+  it('rend une boîte vide quand l’image n’est pas encore arrivée', () => {
+    // ⚠️ Mieux vaut que l'appelant retombe sur le cadre 16/9 du tableau qu'un
+    // rectangle inventé : une annotation posée sur un faux repère est fausse
+    // chez tout le monde, et rien ne le signale.
+    expect(cadreMedia(1600, 900, 0, 0)).toEqual({ x: 0, y: 0, w: 0, h: 0 });
+    expect(cadreMedia(0, 0, 1920, 1080)).toEqual({ x: 0, y: 0, w: 0, h: 0 });
   });
 });

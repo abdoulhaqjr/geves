@@ -11,7 +11,7 @@ import {
 // à part, et sont les seules du fichier à être couvertes par des tests
 // (`meeting-pure.test.js`). Y déplacer une décision, c'est la rendre vérifiable.
 import {
-    cadreTableau, enBasDuFil, etatChrono, grilleOptimale, heure, idSur, idsDesParleurs,
+    cadreMedia, cadreTableau, enBasDuFil, etatChrono, grilleOptimale, heure, idSur, idsDesParleurs,
     initials, lotsDeTraits, mainsOrdonnees, metadonnee, niveauReseau,
     ordreRecevable as ordreAutorise, presenceLabel, peutReagir, phraseConnectes, placeBulle,
     entreeDirecte, pointTableau, profilVideo, rangsDesMains, reactionRecevable, REACTIONS_MAX, roleLabel,
@@ -392,6 +392,9 @@ export async function startFromConfig() {
         main.classList.remove('soi');
         attachTrack(track, main); $('mainName').textContent = label || 'Présentateur'; $('mainRole').textContent = 'Partage d’écran';
         main.classList.add('is-presenter', 'has-video', 'has-screen'); updateLayoutClasses();
+        // ⚠️ L'annotation se cale sur l'image : si elle change, le repère change.
+        // Sans cela, les traits restaient calés sur la présentation PRÉCÉDENTE.
+        suitLaScene(track);
     }
     function focusPresenter(participant, track) {
         const main = $('tileMain'); if (!main || !track) return;
@@ -403,7 +406,23 @@ export async function startFromConfig() {
         $('mainName').textContent = participant.name || participant.identity;
         poseAvatar($('mainAvatar'), participant.name || participant.identity);
         $('mainRole').textContent = 'Présentateur'; main.classList.add('is-presenter', 'has-video');
+        suitLaScene(track);
     }
+    /**
+     * Recale le cadre d'annotation sur ce que la scène vient d'afficher.
+     *
+     * ⚠️ `loadedmetadata` et pas seulement l'appel direct : au moment où la piste
+     * est attachée, `videoWidth` vaut encore zéro. Recalculer tout de suite
+     * donnerait un cadre vide, et l'annotation retomberait sur le 16/9 du tableau
+     * alors qu'un diaporama 4/3 arrive une fraction de seconde plus tard.
+     */
+    function suitLaScene() {
+        if (!board.ouvert || board.mode !== 'annote') return;
+        const v = $('tileMain')?.querySelector('video');
+        if (v) v.addEventListener('loadedmetadata', cadreDuTableau, { once: true });
+        cadreDuTableau();
+    }
+
     function findPresenterParticipant() {
         const pe = people.find((x) => x.isFloor || x.role === 'presenter'); if (!pe || !room) return null;
         if (pe.id === 'local') return room.localParticipant;
@@ -1442,7 +1461,7 @@ export async function startFromConfig() {
     const BOARD_TRAITS_MAX = 3000;
 
     const board = {
-        ouvert: false, parQui: null, traits: [], enCours: null,
+        ouvert: false, mode: 'blanc', nom: '', parQui: null, traits: [], enCours: null,
         couleur: BOARD_CRAYONS[0], taille: 4, gomme: false,
         suite: 0, envoyes: 0, tm: 0, trace: false, demandes: new Map(),
     };
@@ -1452,20 +1471,42 @@ export async function startFromConfig() {
         return (room && room.localParticipant && room.localParticipant.identity) || 'local';
     }
 
-    /**
-     * Pose le cadre de dessin et accorde le canevas à sa taille réelle.
-     *
-     * ⚠️ `width`/`height` du canevas, et non sa taille CSS : un canevas étiré par
-     * le style rend un trait flou. Et on multiplie par la densité de l'écran,
-     * sinon le tableau est pâteux sur un portable récent - c'est précisément
-     * l'endroit où on écrit une formule.
-     */
+    /** Pose le cadre de dessin et accorde le canevas à sa taille réelle. */
+    /** L'image actuellement sur la scène, si elle est exploitable. */
+    function mediaDeLaScene() {
+        const v = $('tileMain')?.querySelector('video');
+
+        return v && v.videoWidth && v.videoHeight ? v : null;
+    }
+
     function cadreDuTableau() {
         const z = $('board');
         const f = $('boardFrame');
         const c = $('boardCanvas');
         if (!z || !f || !c || !board.ouvert) return;
         const r = z.getBoundingClientRect();
+        if (board.mode === 'annote') {
+            // ⚠️ Le repère est celui de l'IMAGE, pas du tableau : un diaporama 4/3
+            // annoté dans un cadre 16/9 verrait toutes ses flèches décalées. Et il se
+            // calcule à l'identique partout, puisqu'il ne dépend que de la taille
+            // intrinsèque du média - la même pour tous - et de la boîte locale.
+            const v = mediaDeLaScene();
+            const sur = v ? $('tileMain').getBoundingClientRect() : null;
+            const cm = v ? cadreMedia(sur.width, sur.height, v.videoWidth, v.videoHeight) : null;
+            if (cm && cm.w) {
+                // Le cadre est posé par rapport à la SCÈNE, et la couche la recouvre
+                // exactement : les deux rectangles partagent donc leur origine.
+                f.style.left = (sur.left - r.left + cm.x) + 'px';
+                f.style.top = (sur.top - r.top + cm.y) + 'px';
+                f.style.width = cm.w + 'px'; f.style.height = cm.h + 'px';
+                accordeLaToile(c, cm.w, cm.h);
+                poseLaBarre(r.height - (sur.top - r.top + cm.y + cm.h));
+
+                return;
+            }
+            // Rien d'exploitable sur la scène : on retombe sur le cadre franc du
+            // tableau plutôt que d'annoter un repère inventé.
+        }
         // ⚠️ Le titre et la barre d'outils ne FLOTTENT pas au-dessus du tableau :
         // leur place est retirée avant le calcul. Mesuré au harnais - posés en
         // surimpression, ils recouvraient le bas de la zone de dessin, et on ne
@@ -1477,9 +1518,42 @@ export async function startFromConfig() {
         const cadre = cadreTableau(r.width - 24, Math.max(80, r.height - haut - bas - 12));
         f.style.left = (cadre.x + 12) + 'px'; f.style.top = (cadre.y + haut) + 'px';
         f.style.width = cadre.w + 'px'; f.style.height = cadre.h + 'px';
+        accordeLaToile(c, cadre.w, cadre.h);
+        poseLaBarre(null);
+    }
+
+    /**
+     * Place la barre d'outils sous l'image quand il y a la place, par-dessus sinon.
+     *
+     * ⚠️ En mode tableau, la place de la barre est RETIRÉE du cadre : elle ne
+     * recouvre jamais rien. En annotation c'est impossible - le cadre doit coller
+     * à l'image, qu'on ne peut pas rétrécir sans la désaligner de ce que voient
+     * les autres. Alors on se sert de la bande laissée par le format : un
+     * diaporama 4/3 dans une scène large n'en laisse pas en bas, un 16/9 dans une
+     * scène haute en laisse. Quand il n'y en a pas, la barre s'efface jusqu'à ce
+     * qu'on la vise - mieux vaut une barre discrète qu'une barre qui cache le bas
+     * du document qu'on est en train de commenter.
+     */
+    function poseLaBarre(bande) {
+        const o = $('boardTools');
+        if (!o) return;
+        if (bande === null) { o.style.bottom = ''; o.classList.remove('flottante'); return; }
+        const h = o.offsetHeight || 0;
+        const tient = bande >= h + 16;
+        o.classList.toggle('flottante', !tient);
+        o.style.bottom = (tient ? Math.round((bande - h) / 2) : 10) + 'px';
+    }
+
+    /**
+     * ⚠️ `width`/`height` du canevas, et non sa taille CSS : un canevas étiré par
+     * le style rend un trait flou. Et on multiplie par la densité de l'écran,
+     * sinon le tableau est pâteux sur un portable récent - c'est précisément
+     * l'endroit où on écrit une formule.
+     */
+    function accordeLaToile(c, largeur, hauteur) {
         const densite = Math.min(2, window.devicePixelRatio || 1);
-        c.width = Math.max(1, Math.round(cadre.w * densite));
-        c.height = Math.max(1, Math.round(cadre.h * densite));
+        c.width = Math.max(1, Math.round(largeur * densite));
+        c.height = Math.max(1, Math.round(hauteur * densite));
         redessineTableau();
     }
 
@@ -1533,7 +1607,12 @@ export async function startFromConfig() {
         if (!c || !c.getContext) return;
         const g = c.getContext('2d');
         g.setTransform(1, 0, 0, 1, 0, 0);
-        g.fillStyle = BOARD_GOMME; g.fillRect(0, 0, c.width, c.height);
+        // ⚠️ En annotation, la toile reste TRANSPARENTE : la remplir de blanc
+        // masquerait la présentation qu'on vient justement d'annoter. Revers
+        // assumé : la gomme blanche y laisse une trace blanche au lieu d'effacer -
+        // « Annuler » est l'outil qui défait, et il est à côté.
+        if (board.mode === 'annote') g.clearRect(0, 0, c.width, c.height);
+        else { g.fillStyle = BOARD_GOMME; g.fillRect(0, 0, c.width, c.height); }
         board.traits.forEach((t) => traceLe(g, t, c.width, c.height));
         if (board.enCours) traceLe(g, board.enCours, c.width, c.height);
     }
@@ -1624,6 +1703,40 @@ export async function startFromConfig() {
         t.pts.forEach((p) => { connu.pts.push(p); traceDernierSegment(connu); });
     }
 
+    /**
+     * Change de mode, et le dit à la salle.
+     *
+     * ⚠️ Les traits SONT CONSERVÉS d'un mode à l'autre : ils sont enregistrés en
+     * coordonnées du cadre (0..1), pas en pixels. Passer du tableau à
+     * l'annotation les replace donc sur l'image - ce qui est rarement ce qu'on
+     * veut, mais toujours mieux que de les perdre sans prévenir. « Effacer » reste
+     * le geste qui efface, et il se confirme.
+     */
+    function poseModeTableau(mode, diffuse) {
+        board.mode = mode === 'annote' ? 'annote' : 'blanc';
+        $('board')?.classList.toggle('annote', board.mode === 'annote');
+        // ⚠️ Sur la SALLE et non sur le tableau : c'est la vidéo de la scène qu'il
+        // faut passer en `contain`, et elle n'est pas dans la couche de dessin.
+        $('visio-room')?.classList.toggle('annote', board.mode === 'annote' && board.ouvert);
+        document.querySelectorAll('#boardMode button').forEach((b) => {
+            b.classList.toggle('on', b.dataset.mode === board.mode);
+        });
+        majTitreTableau();
+        const img = $('bdSave');
+        if (img) img.title = board.mode === 'annote'
+            ? 'Enregistrer la présentation annotée'
+            : 'Enregistrer le tableau en image';
+        cadreDuTableau();
+        if (diffuse) sendData({ type: 'board_open', mode: board.mode });
+    }
+
+    function majTitreTableau() {
+        const el = $('boardWho');
+        if (!el) return;
+        const quoi = board.mode === 'annote' ? 'Annotation' : 'Tableau blanc';
+        el.textContent = peutTracer() || !board.nom ? quoi : quoi + ' - ' + texteCourt(board.nom, 28);
+    }
+
     function majOutilsTableau() {
         document.querySelectorAll('#boardPalette .bd-c').forEach((b) => {
             b.classList.toggle('on', !board.gomme && b.dataset.couleur === board.couleur);
@@ -1631,25 +1744,28 @@ export async function startFromConfig() {
         $('bdGomme')?.classList.toggle('on', board.gomme);
     }
 
-    function ouvreTableau(nom, diffuse) {
+    function ouvreTableau(nom, mode, diffuse) {
         board.ouvert = true;
+        board.nom = nom || '';
         const z = $('board');
         z.classList.add('on');
         // ⚠️ La lecture seule n'est pas qu'un affichage : les écouteurs de dessin
         // vérifient aussi `peutTracer()`. Masquer la barre sans cela laisserait
         // tracer à qui ouvre la console.
         z.classList.toggle('lecture', !peutTracer());
-        $('boardWho').textContent = peutTracer() || !nom ? 'Tableau blanc' : 'Tableau blanc - ' + texteCourt(nom, 28);
         $('btnBoard')?.classList.add('on');
         majOutilsTableau();
-        cadreDuTableau();
-        if (diffuse) { board.parQui = 'local'; sendData({ type: 'board_open' }); }
+        poseModeTableau(mode, false);
+        if (diffuse) { board.parQui = 'local'; sendData({ type: 'board_open', mode: board.mode }); }
     }
 
     function fermeTableau(diffuse) {
         board.ouvert = false; board.trace = false; board.enCours = null;
         $('board')?.classList.remove('on');
         $('btnBoard')?.classList.remove('on');
+        // La scène retrouve son cadrage : `contain` imposé par l'annotation
+        // laisserait des bandes noires autour des visages.
+        $('visio-room')?.classList.remove('annote');
         // Les traits SURVIVENT à la fermeture : rouvrir doit retrouver le schéma.
         // « Effacer » est le geste qui efface, et il se confirme.
         if (diffuse) { board.parQui = null; sendData({ type: 'board_close' }); }
@@ -1678,27 +1794,63 @@ export async function startFromConfig() {
         board.demandes.set(a, n);
 
         const cible = [a];
-        sendData({ type: 'board_open' }, cible);
+        sendData({ type: 'board_open', mode: board.mode }, cible);
         lotsDeTraits(board.traits, 400).forEach((lot) => {
             sendData({ type: 'board_state', traits: lot }, cible);
         });
     }
 
-    /** Enregistre le tableau en image, pour le compte rendu. */
+    /**
+     * Enregistre en image, pour le compte rendu.
+     *
+     * ⚠️ En annotation, exporter la seule couche de dessin rendrait des traits
+     * flottant sur du vide - c'est la PRÉSENTATION ANNOTÉE qu'on veut emporter.
+     * On compose donc l'image de la scène, puis les traits par-dessus. Le montage
+     * est exact parce que les deux partagent le même repère : le cadre du média.
+     *
+     * ⚠️ La vidéo est exportée à sa taille INTRINSÈQUE et non à celle du canevas :
+     * sur un petit écran, le canevas fait quelques centaines de pixels, et la
+     * capture d'un diaporama y serait illisible. Les traits, eux, sont en
+     * coordonnées relatives : ils se remettent à l'échelle sans rien perdre.
+     *
+     * ⚠️ Une piste WebRTC ne « salit » pas le canevas (ce n'est pas une image
+     * d'une autre origine) : `toBlob` reste autorisé. Un échec éventuel est
+     * rattrapé plutôt que laissé filer sans rien dire.
+     */
     function enregistreTableau() {
-        const c = $('boardCanvas');
-        if (!c || !c.toBlob) return;
-        c.toBlob((blob) => {
-            if (!blob) return;
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'tableau-' + new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-') + '.png';
-            document.body.appendChild(a); a.click(); a.remove();
-            // ⚠️ Sans cela, l'image reste en mémoire pour toute la séance - et on
-            // en enregistre plusieurs.
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-        }, 'image/png');
+        const toile = $('boardCanvas');
+        if (!toile || !toile.toBlob) return;
+        const video = board.mode === 'annote' ? mediaDeLaScene() : null;
+
+        let source = toile;
+        if (video) {
+            const montage = document.createElement('canvas');
+            montage.width = video.videoWidth;
+            montage.height = video.videoHeight;
+            const g = montage.getContext('2d');
+            try {
+                g.drawImage(video, 0, 0, montage.width, montage.height);
+                g.drawImage(toile, 0, 0, montage.width, montage.height);
+                source = montage;
+            } catch (e) {
+                toast('La présentation n’a pas pu être capturée : seules les annotations sont enregistrées.');
+            }
+        }
+
+        const nom = (board.mode === 'annote' ? 'annotation-' : 'tableau-')
+            + new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-') + '.png';
+        try {
+            source.toBlob((blob) => {
+                if (!blob) { toast('Enregistrement impossible'); return; }
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = nom;
+                document.body.appendChild(a); a.click(); a.remove();
+                // ⚠️ Sans cela, l'image reste en mémoire pour toute la séance - et on
+                // en enregistre plusieurs.
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }, 'image/png');
+        } catch (e) { toast('Enregistrement impossible'); }
     }
 
     // ---- Toolbar ----
@@ -2228,7 +2380,7 @@ export async function startFromConfig() {
         else if (msg.type === 'reaction') reactionDistante(msg.uid, msg.emoji, !!msg.on, msg.replaced || null);
         else if (msg.type === 'reac_salle') reactionDeSalle(msg.emoji, fromId);
         else if (msg.type === 'board_ask') repondAuTableau(fromId);
-        else if (msg.type === 'board_open') { board.parQui = fromId; ouvreTableau((participant && participant.name) || '', false); }
+        else if (msg.type === 'board_open') { board.parQui = fromId; ouvreTableau((participant && participant.name) || '', msg.mode, false); }
         else if (msg.type === 'board_close') fermeTableau(false);
         else if (msg.type === 'board_pts') recoitTrait(msg);
         else if (msg.type === 'board_state') (Array.isArray(msg.traits) ? msg.traits : []).forEach((t) => recoitTrait(Object.assign({ net: true }, t)));
@@ -2976,8 +3128,12 @@ export async function startFromConfig() {
 
             return;
         }
-        ouvreTableau('', true);
-        toast('Tableau ouvert');
+        // ⚠️ Deviné, pas imposé : quand un écran est partagé, c'est presque
+        // toujours pour l'annoter qu'on ouvre le crayon. Le bouton de mode reste
+        // là pour dire le contraire.
+        const surScene = $('tileMain')?.classList.contains('has-screen') && mediaDeLaScene();
+        ouvreTableau('', surScene ? 'annote' : 'blanc', true);
+        toast(surScene ? 'Annotation de la présentation' : 'Tableau ouvert');
     });
     (function outilsDuTableau() {
         const palette = $('boardPalette');
@@ -2990,6 +3146,9 @@ export async function startFromConfig() {
             palette?.appendChild(b);
         });
         majOutilsTableau();
+        document.querySelectorAll('#boardMode button').forEach((b) => {
+            b.addEventListener('click', () => poseModeTableau(b.dataset.mode, true));
+        });
         $('bdGomme')?.addEventListener('click', () => { board.gomme = !board.gomme; majOutilsTableau(); });
         $('bdTaille')?.addEventListener('input', (e) => { board.taille = Math.max(1, Number(e.target.value) || 4); });
         $('bdUndo')?.addEventListener('click', () => {
