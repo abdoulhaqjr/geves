@@ -1830,6 +1830,16 @@ table `session_attendances`, modèle `SessionAttendance`). Entrées depuis
 - ⚠️ **Mesuré** : le surtitre « Jour N » à `opacity: .72` tombait à **2,8:1** sur
   les onglets inactifs (gris clair sur blanc, en 10,5px). La hiérarchie se fait à
   la taille et à la graisse, qui ne coûtent aucun contraste - tout est ≥ 7,5:1.
+- ⚠️ **Mesuré** : le jour s'étalait sur TOUTE la largeur du conteneur (1316px à
+  1391px de fenêtre), sans respiration latérale - la date collée à gauche,
+  « 1 moment » collé à droite, à quatorze cents pixels l'un de l'autre. Le jour
+  est posé sur une **surface** (carte blanche, ~30px de marge intérieure) et le
+  bloc est **borné à 960px** : passé ~900px, l'œil perd la ligne entre l'heure et
+  son libellé. La borne vaut pour les onglets, qui sont dans le même bloc.
+- ⚠️ L'aperçu de l'onglet admin **garde la même surface**, sur un fond teinté : sa
+  raison d'être est de montrer exactement ce qui est publié, et l'y retirer parce
+  qu'il vit déjà dans une carte ferait diverger les deux rendus - ce que le
+  partage de ce partial sert précisément à éviter.
 
 ### Onglets de la fiche d'édition
 

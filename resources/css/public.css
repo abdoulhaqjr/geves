@@ -932,6 +932,27 @@ input[data-uppercase] { text-transform: uppercase; }
 /* Programme synthétique (saisi dans l'onglet Programme, affiché ici et en admin).
    Présentation en onglets jour par jour : réutilise .ukc-tabs-scroll / .ukc-tab /
    .ukc-program-day ci-dessus. */
+/* ⚠️ MESURÉ : le jour s'étalait sur TOUTE la largeur du conteneur (1316px à
+   1391px de fenêtre), d'un bord à l'autre et sans respiration latérale - la date
+   collée à gauche, « 1 moment » collé à droite, à quatorze cents pixels l'un de
+   l'autre - alors que les onglets au-dessus sont centrés et que les autres
+   sections du colloque vivent dans des cartes. Le jour est donc posé sur une
+   SURFACE, et la largeur est bornée : passé ~900px, l'œil perd la ligne entre
+   l'heure et son libellé.
+   La borne vaut pour les onglets aussi (ils sont dans le même bloc), ce qui les
+   rapproche du panneau qu'ils commandent. */
+.ukc-prog-syn { max-width: 960px; margin-left: auto; margin-right: auto; }
+.ukc-program-day.active {
+  background: #fff; border: 1px solid var(--ukc-border);
+  border-radius: var(--ukc-radius-lg); box-shadow: 0 2px 10px rgba(20, 40, 90, .04);
+  padding: clamp(18px, 2.4vw, 28px) clamp(16px, 2.6vw, 30px);
+}
+/* ⚠️ L'aperçu de l'onglet admin garde la MÊME surface : sa raison d'être est de
+   montrer exactement ce qui est publié. L'y retirer parce qu'il vit déjà dans
+   une carte ferait diverger les deux rendus - et c'est précisément ce que le
+   partage de ce partial sert à éviter. Il repose sur un fond légèrement teinté,
+   pour que la surface blanche s'y voie. */
+.ukc-shell .prog-public-preview { background: var(--ukc-bg, #f8fafc); border-radius: 12px; padding: 14px; }
 /* En-tête du jour : la date en toutes lettres, et ce qu'elle contient. Un onglet
    « Ven. 02 oct. » dit QUAND ; cet en-tête confirme où l'on vient d'atterrir. */
 .ukc-prog-syn__head {
