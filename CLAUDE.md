@@ -894,6 +894,14 @@ aligné sur **modérer** ; `/animation` reste en **redirection** (signets, courr
   suit les arrivées et les départs - pas des vignettes, dont le nombre dépend de
   ce qui est AFFICHÉ. Le chiffre se lit seul ; la phrase qui le nomme
   (`phraseConnectes`, accord compris) est dans son `title` / `aria-label`.
+- ⚠️ **Le bandeau des participants part REPLIÉ, et rien ne l'ouvre tout seul.**
+  Il se dépliait à chaque arrivée - pour qu'une scène vide ne cache pas trois
+  personnes connectées - mais il s'ouvrait alors par-dessus la séance sans
+  qu'on l'ait demandé, et il fallait le refermer à la main. Son en-tête porte
+  déjà le compte (« Participants (3) ») ; l'ouvrir est un geste. La bascule
+  **Vue** n'y touche plus non plus : elle le **refermait de force** au retour
+  en vue présentateur, y compris pour qui venait de l'ouvrir. Son ouverture
+  n'appartient qu'à son propre bouton. Cas de garde dans `MeetingTest`.
 - **Le nom se replie dans le bandeau** : la carte n'y fait que 150px (118 puis
   96 sur téléphone), et l'étiquette l'occupait presque entière pour un nom
   tronqué au tiers. Ne reste que l'état du micro ; le nom revient **au survol**

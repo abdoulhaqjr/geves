@@ -598,3 +598,17 @@ it('ne donne pas les adresses des échanges à qui ne peut pas entrer', function
         ->assertOk()
         ->assertDontSee(trim(json_encode(route('session.engagement.questions', $session)), '"'), false);
 });
+
+it('livre le bandeau des participants REPLIÉ', function () {
+    // ⚠️ Il s'ouvrait tout seul à chaque arrivée - par-dessus la séance, sans
+    // qu'on l'ait demandé, et il fallait le refermer à la main. Son en-tête porte
+    // déjà le compte (« Participants (3) ») ; l'ouvrir est un geste. Ce cas fige
+    // le défaut : la page ne doit jamais partir avec le bandeau déplié.
+    configureLiveKit();
+    $session = liveSession(openEdition(), 'public', ['meeting_provider' => 'livekit']);
+
+    $this->get(route('session.meeting', $session))
+        ->assertOk()
+        ->assertSee('class="filmstrip-wrap" id="filmstripWrap"', false)
+        ->assertDontSee('filmstrip-wrap open', false);
+});

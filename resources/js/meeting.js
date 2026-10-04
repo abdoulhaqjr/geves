@@ -509,10 +509,11 @@ export async function startFromConfig() {
         poseAvatar(el.querySelector('.avatar'), p.name || p.identity);
         el.querySelector('.mic-dot').addEventListener('click', (e) => { e.stopPropagation(); basculeMicro(p.identity); });
         (state.speakerLayout ? $('filmstrip') : $('stageGrid')).appendChild(el);
-        // ⚠️ En vue présentateur, le bandeau des autres participants était REPLIÉ
-        // par défaut : trois personnes connectées, et une scène qui n'en montrait
-        // aucune. Dès que quelqu'un arrive, on le déplie.
-        if (state.speakerLayout) { $('filmstripWrap')?.classList.add('open'); }
+        // ⚠️ Le bandeau NE S'OUVRE PAS tout seul à l'arrivée de quelqu'un. Il le
+        // faisait, pour qu'une scène vide ne cache pas trois personnes connectées -
+        // mais il s'ouvrait alors par-dessus la séance à chaque arrivée, sans qu'on
+        // l'ait demandé, et il fallait le refermer à la main. Le compteur de son
+        // en-tête (« Participants (3) ») dit déjà qui est là ; l'ouvrir est un geste.
         updateFilmstripCount(); layoutGrid(); return el;
     }
     function updateFilmstripCount() { const el = $('filmstripCount'); if (el) el.textContent = String($('filmstrip').querySelectorAll('.tile').length); }
@@ -3283,7 +3284,10 @@ export async function startFromConfig() {
     })();
     $('btnLayout').addEventListener('click', () => {
         state.speakerLayout = !state.speakerLayout;
-        const wrap = $('filmstripWrap'); if (wrap) wrap.classList.toggle('open', !state.speakerLayout);
+        // ⚠️ On ne touche plus à l'état du bandeau ici : en mosaïque il est masqué
+        // (les vignettes sont sur la scène), et au retour en vue présentateur il
+        // était REFERMÉ de force - y compris pour qui venait de l'ouvrir. Son
+        // ouverture n'appartient qu'à son propre bouton.
         syncGridTiles(); if (state.speakerLayout) showCurrentPresenterInStage();
         toast(state.speakerLayout ? 'Vue présentateur' : 'Vue grille');
     });
