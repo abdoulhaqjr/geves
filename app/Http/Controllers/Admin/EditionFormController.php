@@ -332,6 +332,8 @@ class EditionFormController extends Controller
 
         return redirect()->route('admin.editions.edit', $edition)
             ->with('ukc_status', 'Traductions enregistrées ('.mb_strtoupper($locale).').')
+            // Les traductions vivent dans l'onglet Apparence : les deux faces de ce
+            // que le visiteur voit du site public.
             ->with('edition_tab', 'appearance');
     }
 
@@ -414,7 +416,9 @@ class EditionFormController extends Controller
 
         return redirect()->route('admin.editions.edit', $edition)
             ->with('ukc_status', 'Passerelle de paiement de l’édition mise à jour.')
-            ->with('edition_tab', 'payment');
+            // Paiement et visioconférence partagent l'onglet « Intégrations » :
+            // ce sont les deux branchements de l'édition sur un service extérieur.
+            ->with('edition_tab', 'integrations');
     }
 
     /**
@@ -459,7 +463,7 @@ class EditionFormController extends Controller
 
         return redirect()->route('admin.editions.edit', $edition)
             ->with('ukc_status', 'Visioconférence de l’édition mise à jour.')
-            ->with('edition_tab', 'meetings');
+            ->with('edition_tab', 'integrations');
     }
 
     /**

@@ -235,3 +235,82 @@ it('renvoie 404 pour une édition en brouillon', function () {
 
     $this->get(route('public.colloque', 'brouillon'))->assertNotFound();
 });
+
+/**
+ * **Réorganisation des onglets de l'édition.**
+ *
+ * ⚠️ « Intégrations » réunit paiement et visioconférence - deux formulaires de
+ * même nature (brancher l'édition sur un service extérieur), chacun gardant sa
+ * sauvegarde. Les traductions rejoignent l'apparence : les deux faces de ce que
+ * le visiteur voit du site public.
+ *
+ * Ce cas gèle la disparition des trois anciens onglets. Il compare les `tab=`
+ * des liens, et non les intitulés : « Paiement » et « Visioconférence » restent
+ * des mots de la page - ce sont les titres des deux cartes de l'onglet.
+ */
+it('réunit paiement et visio dans Intégrations, et les traductions dans Apparence', function () {
+    $user = staffWithPermission();
+    $colloque = Colloque::create(['name' => 'C', 'slug' => 'c-onglets']);
+    $edition = $colloque->editions()->create(['title' => 'Ed', 'status' => 'draft', 'slug' => 'ed-onglets']);
+
+    $reponse = $this->actingAs($user, 'web')
+        ->get(route('admin.editions.edit', $edition))
+        ->assertOk();
+
+    $reponse->assertSee('tab=integrations', false);
+    $reponse->assertSee('Intégrations');
+
+    // Les trois onglets n'existent plus.
+    $reponse->assertDontSee('tab=payment', false);
+    $reponse->assertDontSee('tab=meetings', false);
+    $reponse->assertDontSee('tab=translations', false);
+
+    // Mais leur contenu est toujours là, sur les onglets qui les ont repris.
+    $reponse->assertSee('Passerelle de paiement de cette édition');
+    $reponse->assertSee('Visioconférence de cette édition');
+    $reponse->assertSee('Traductions du contenu');
+});
+
+/**
+ * ⚠️ Enregistrer une passerelle ou un serveur de visio doit ramener sur
+ * l'onglet qui les porte : revenir sur « Général » après un enregistrement
+ * laisse croire que la saisie n'a pas été prise.
+ */
+it('ramène sur Intégrations après avoir enregistré paiement ou visio', function () {
+    $user = staffWithPermission();
+    $colloque = Colloque::create(['name' => 'C', 'slug' => 'c-retour']);
+    $edition = $colloque->editions()->create(['title' => 'Ed', 'status' => 'draft', 'slug' => 'ed-retour']);
+
+    $this->actingAs($user, 'web')
+        ->post(route('admin.editions.payment', $edition), ['gateway' => ''])
+        ->assertSessionHas('edition_tab', 'integrations');
+
+    $this->actingAs($user, 'web')
+        ->post(route('admin.editions.meetings', $edition), ['provider' => ''])
+        ->assertSessionHas('edition_tab', 'integrations');
+});
+
+/**
+ * ⚠️ Un lien partagé, un favori ou une session encore ouverte portent l'ancien
+ * nom d'onglet. Sans traduction, la page s'ouvrirait sur un onglet qui n'existe
+ * plus : aucune pilule allumée, aucun panneau affiché - une page vide, sans
+ * explication.
+ */
+it('ouvre les anciens liens d’onglets sur l’onglet qui les a repris', function () {
+    $user = staffWithPermission();
+    $colloque = Colloque::create(['name' => 'C', 'slug' => 'c-vieux-liens']);
+    $edition = $colloque->editions()->create(['title' => 'Ed', 'status' => 'draft', 'slug' => 'ed-vieux-liens']);
+
+    foreach (['payment' => 'integrations', 'meetings' => 'integrations', 'translations' => 'appearance'] as $ancien => $repris) {
+        $this->actingAs($user, 'web')
+            ->get(route('admin.editions.edit', ['edition' => $edition, 'tab' => $ancien]))
+            ->assertOk()
+            ->assertSee("tab: '".$repris."'", false);
+    }
+
+    // Un onglet toujours valide n'est pas touché.
+    $this->actingAs($user, 'web')
+        ->get(route('admin.editions.edit', ['edition' => $edition, 'tab' => 'committees']))
+        ->assertOk()
+        ->assertSee("tab: 'committees'", false);
+});

@@ -1,8 +1,25 @@
 @php($v = fn ($k) => old($k, $init[$k]))
+{{-- Onglet actif, ANCIENS NOMS COMPRIS.
+
+     ⚠️ « Paiement », « Visioconférence » et « Traductions » ont été fondus dans
+     « Intégrations » et « Apparence ». Un lien partagé, un favori ou une session
+     encore ouverte portent toujours l'ancien nom : sans cette traduction, la page
+     s'ouvrirait sur un onglet qui n'existe plus - aucune pilule allumée, aucun
+     panneau affiché, une page vide sans explication.
+
+     ⚠️ Écrit en PHP EN LIGNE, comme tout le fichier. Et surtout : ne JAMAIS
+     écrire les directives de bloc PHP de Blade en toutes lettres dans un
+     commentaire. Blade extrait les blocs de code AVANT de retirer les
+     commentaires : il prend alors le texte du commentaire pour du vrai code,
+     avale tout ce qui précède, et la page tombe sur une « variable indéfinie »
+     très loin de sa cause. --}}
+@php($ongletsFondus = ['payment' => 'integrations', 'meetings' => 'integrations', 'translations' => 'appearance'])
+@php($ongletActif = (string) session('edition_tab', request('tab', 'general')))
+@php($ongletActif = $ongletsFondus[$ongletActif] ?? $ongletActif)
 <x-layouts.admin :title="$edition ? 'Modifier l’édition' : 'Nouvelle édition'" subtitle="Paramètres, contenu, tarifs, apparence & documents">
     <div class="admin-page admin-edition-detail"
          x-data="editionForm({
-            tab: '{{ session('edition_tab', request('tab', 'general')) }}',
+            tab: @js($ongletActif),
             aiUrl: '{{ route('admin.editions.ai-assist-json') }}',
             csrf: @js(csrf_token()),
             f: {
@@ -65,16 +82,21 @@
                         'content' => 'Appel & contenu',
                         'submissions' => 'Soumissions & tarifs',
                         'committees' => 'Comités',
-                        'payment' => 'Paiement',
-                        'meetings' => 'Visioconférence',
+                        {{-- ⚠️ « Intégrations » réunit ce qui branche l'édition sur un
+                             service EXTÉRIEUR - passerelle de paiement, serveur de visio.
+                             Deux onglets pour deux formulaires de même nature, chacun avec
+                             sa propre sauvegarde, faisaient chercher au même endroit deux
+                             fois. --}}
+                        'integrations' => 'Intégrations',
                         'team' => 'Équipe',
                         'partners' => 'Partenaires',
+                        {{-- Les traductions ont rejoint l'apparence : ce sont les deux
+                             faces de ce que le visiteur VOIT du site public. --}}
                         'appearance' => 'Apparence',
-                        'translations' => 'Traductions',
                         'options' => 'Options',
                     ] as $key => $label)
                         {{-- Les onglets d'une édition existante n'ont pas de sens à la création. --}}
-                        @if ($edition || ! in_array($key, ['payment', 'meetings', 'team', 'translations', 'options'], true))
+                        @if ($edition || ! in_array($key, ['integrations', 'team', 'options'], true))
                             <a href="{{ $edition ? route('admin.editions.edit', ['edition' => $edition, 'tab' => $key]) : route('admin.editions.create', ['tab' => $key]) }}"
                                :class="{ active: tab==='{{ $key }}' }"
                                @click.prevent="goTab('{{ $key }}')">{{ $label }}</a>
@@ -639,19 +661,106 @@
                     @endif
 
                     {{-- Enregistrer/Annuler du formulaire principal : masqués sur les onglets
-                         à sauvegarde dédiée (Relecteurs, Équipe, Traductions) qui ont leurs
-                         propres boutons. --}}
+                         à sauvegarde dédiée (Intégrations, Équipe) qui ont leurs propres
+                         boutons.
+                         ⚠️ **Apparence n'en fait plus partie** : l'onglet porte désormais
+                         DEUX choses - l'apparence (formulaire principal, ce bouton) et les
+                         traductions (un formulaire par langue, leurs propres boutons). Le
+                         bouton reste donc affiché, juste sous ce qu'il enregistre. --}}
                     <div class="ukc-form-actions" style="margin-top:4px;border-top:none;padding-top:0;"
-                         x-show="!['payment','meetings','team','translations'].includes(tab)">
+                         x-show="!['integrations','team'].includes(tab)">
                         <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer</button>
                         <a href="{{ route('admin.editions.index') }}" class="ukc-btn ukc-btn--ghost">Annuler</a>
                     </div>
                 </form>
 
-                {{-- ===== VISIOCONFÉRENCE (propre à l'édition : sauvegarde dédiée) ===== --}}
+                {{-- ===== INTÉGRATIONS · PAIEMENT (sauvegarde dédiée) ===== --}}
+                @if ($edition)
+                    @php($pay = $edition->settings['payment'] ?? [])
+                    <div class="ukc-panel" :class="{ active: tab==='integrations' }">
+                        <div class="ukc-card">
+                            <h2>Passerelle de paiement de cette édition</h2>
+                            <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 12px;">
+                                Renseignez ici les identifiants propres à cette édition. <strong>Tout champ laissé vide utilise la configuration
+                                par défaut de la plateforme</strong> (réglages globaux). Utile pour encaisser sur un compte marchand dédié à l’édition.
+                            </p>
+                            <form method="POST" action="{{ route('admin.editions.payment', $edition) }}" class="ukc-form-grid">
+                                @csrf
+                                <div class="ukc-field full">
+                                    <label for="pay-gateway">Passerelle par défaut de l’édition</label>
+                                    <select id="pay-gateway" name="gateway">
+                                        <option value="">- Utiliser la passerelle par défaut de la plateforme -</option>
+                                        <option value="manual" @selected(($pay['gateway'] ?? '') === 'manual')>Paiement manuel (hors ligne)</option>
+                                        <option value="fedapay" @selected(($pay['gateway'] ?? '') === 'fedapay')>FedaPay</option>
+                                        <option value="cashpay" @selected(($pay['gateway'] ?? '') === 'cashpay')>CashPay (SEMOA)</option>
+                                    </select>
+                                </div>
+
+                                <div class="ukc-field full"><h3 style="font-size:14px;font-weight:800;margin:6px 0 0;">FedaPay</h3></div>
+                                <div class="ukc-field">
+                                    <label for="fp-secret">Clé secrète</label>
+                                    <input type="text" id="fp-secret" name="fedapay[secret]" value="{{ $pay['fedapay']['secret'] ?? '' }}" autocomplete="off" placeholder="sk_live_… (laisser vide = défaut)">
+                                </div>
+                                <div class="ukc-field">
+                                    <label for="fp-mode">Mode</label>
+                                    <select id="fp-mode" name="fedapay[mode]">
+                                        <option value="">- Défaut -</option>
+                                        <option value="test" @selected(($pay['fedapay']['mode'] ?? '') === 'test')>Test (sandbox)</option>
+                                        <option value="live" @selected(($pay['fedapay']['mode'] ?? '') === 'live')>Live</option>
+                                    </select>
+                                </div>
+                                <div class="ukc-field full">
+                                    <label for="fp-wh">Secret de webhook</label>
+                                    <input type="text" id="fp-wh" name="fedapay[webhook_secret]" value="{{ $pay['fedapay']['webhook_secret'] ?? '' }}" autocomplete="off" placeholder="wh_… (laisser vide = défaut)">
+                                    <p class="ukc-hint">Copié depuis le tableau de bord FedaPay (section Webhooks). <strong>Indispensable</strong> : sans lui, une notification de paiement ne peut pas être authentifiée et le règlement resterait « en attente ».</p>
+                                </div>
+                                <x-ukc.webhook-url :url="route('payment.webhook.edition', ['gateway' => 'fedapay', 'edition' => $edition])"
+                                                   label="URL du webhook FedaPay à déclarer" />
+
+                                <div class="ukc-field full"><h3 style="font-size:14px;font-weight:800;margin:6px 0 0;">CashPay (SEMOA)</h3></div>
+                                <div class="ukc-field">
+                                    <label for="cp-base">Base URL</label>
+                                    <input type="text" id="cp-base" name="cashpay[base_url]" value="{{ $pay['cashpay']['base_url'] ?? '' }}" autocomplete="off" placeholder="https://… (laisser vide = défaut)">
+                                </div>
+                                <div class="ukc-field">
+                                    <label for="cp-user">Utilisateur</label>
+                                    <input type="text" id="cp-user" name="cashpay[username]" value="{{ $pay['cashpay']['username'] ?? '' }}" autocomplete="off">
+                                </div>
+                                <div class="ukc-field">
+                                    <label for="cp-pass">Mot de passe</label>
+                                    <input type="text" id="cp-pass" name="cashpay[password]" value="{{ $pay['cashpay']['password'] ?? '' }}" autocomplete="off">
+                                </div>
+                                <div class="ukc-field">
+                                    <label for="cp-cid">Client ID</label>
+                                    <input type="text" id="cp-cid" name="cashpay[client_id]" value="{{ $pay['cashpay']['client_id'] ?? '' }}" autocomplete="off">
+                                </div>
+                                <div class="ukc-field">
+                                    <label for="cp-csecret">Client secret</label>
+                                    <input type="text" id="cp-csecret" name="cashpay[client_secret]" value="{{ $pay['cashpay']['client_secret'] ?? '' }}" autocomplete="off">
+                                </div>
+                                <div class="ukc-field">
+                                    <label for="cp-api">Clé API (callback)</label>
+                                    <input type="text" id="cp-api" name="cashpay[api_key]" value="{{ $pay['cashpay']['api_key'] ?? '' }}" autocomplete="off">
+                                </div>
+                                <x-ukc.webhook-url :url="route('payment.webhook.edition', ['gateway' => 'cashpay', 'edition' => $edition])"
+                                                   label="URL du callback CashPay à déclarer" />
+
+                                <div class="ukc-form-actions full">
+                                    <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer la passerelle</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                @endif
+
+                {{-- ===== INTÉGRATIONS · VISIOCONFÉRENCE (sauvegarde dédiée) ===== --}}
+                {{-- ⚠️ Deuxième panneau du MÊME onglet : les deux gardent leur propre
+                     formulaire et leur propre bouton, parce qu'ils enregistrent des
+                     réglages distincts. Les fondre en un seul ferait d'une correction
+                     de clé d'API une réécriture des deux configurations. --}}
                 @if ($edition)
                     @php($vis = $edition->settings['meetings'] ?? [])
-                    <div class="ukc-panel" :class="{ active: tab==='meetings' }">
+                    <div class="ukc-panel" :class="{ active: tab==='integrations' }">
                         <div class="ukc-card">
                             <h2>Visioconférence de cette édition</h2>
                             <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 12px;">
@@ -732,85 +841,6 @@
                     </div>
                 @endif
 
-                {{-- ===== PAIEMENT (propre à l'édition : sauvegarde dédiée) ===== --}}
-                @if ($edition)
-                    @php($pay = $edition->settings['payment'] ?? [])
-                    <div class="ukc-panel" :class="{ active: tab==='payment' }">
-                        <div class="ukc-card">
-                            <h2>Passerelle de paiement de cette édition</h2>
-                            <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 12px;">
-                                Renseignez ici les identifiants propres à cette édition. <strong>Tout champ laissé vide utilise la configuration
-                                par défaut de la plateforme</strong> (réglages globaux). Utile pour encaisser sur un compte marchand dédié à l’édition.
-                            </p>
-                            <form method="POST" action="{{ route('admin.editions.payment', $edition) }}" class="ukc-form-grid">
-                                @csrf
-                                <div class="ukc-field full">
-                                    <label for="pay-gateway">Passerelle par défaut de l’édition</label>
-                                    <select id="pay-gateway" name="gateway">
-                                        <option value="">- Utiliser la passerelle par défaut de la plateforme -</option>
-                                        <option value="manual" @selected(($pay['gateway'] ?? '') === 'manual')>Paiement manuel (hors ligne)</option>
-                                        <option value="fedapay" @selected(($pay['gateway'] ?? '') === 'fedapay')>FedaPay</option>
-                                        <option value="cashpay" @selected(($pay['gateway'] ?? '') === 'cashpay')>CashPay (SEMOA)</option>
-                                    </select>
-                                </div>
-
-                                <div class="ukc-field full"><h3 style="font-size:14px;font-weight:800;margin:6px 0 0;">FedaPay</h3></div>
-                                <div class="ukc-field">
-                                    <label for="fp-secret">Clé secrète</label>
-                                    <input type="text" id="fp-secret" name="fedapay[secret]" value="{{ $pay['fedapay']['secret'] ?? '' }}" autocomplete="off" placeholder="sk_live_… (laisser vide = défaut)">
-                                </div>
-                                <div class="ukc-field">
-                                    <label for="fp-mode">Mode</label>
-                                    <select id="fp-mode" name="fedapay[mode]">
-                                        <option value="">- Défaut -</option>
-                                        <option value="test" @selected(($pay['fedapay']['mode'] ?? '') === 'test')>Test (sandbox)</option>
-                                        <option value="live" @selected(($pay['fedapay']['mode'] ?? '') === 'live')>Live</option>
-                                    </select>
-                                </div>
-                                <div class="ukc-field full">
-                                    <label for="fp-wh">Secret de webhook</label>
-                                    <input type="text" id="fp-wh" name="fedapay[webhook_secret]" value="{{ $pay['fedapay']['webhook_secret'] ?? '' }}" autocomplete="off" placeholder="wh_… (laisser vide = défaut)">
-                                    <p class="ukc-hint">Copié depuis le tableau de bord FedaPay (section Webhooks). <strong>Indispensable</strong> : sans lui, une notification de paiement ne peut pas être authentifiée et le règlement resterait « en attente ».</p>
-                                </div>
-                                <x-ukc.webhook-url :url="route('payment.webhook.edition', ['gateway' => 'fedapay', 'edition' => $edition])"
-                                                   label="URL du webhook FedaPay à déclarer" />
-
-                                <div class="ukc-field full"><h3 style="font-size:14px;font-weight:800;margin:6px 0 0;">CashPay (SEMOA)</h3></div>
-                                <div class="ukc-field">
-                                    <label for="cp-base">Base URL</label>
-                                    <input type="text" id="cp-base" name="cashpay[base_url]" value="{{ $pay['cashpay']['base_url'] ?? '' }}" autocomplete="off" placeholder="https://… (laisser vide = défaut)">
-                                </div>
-                                <div class="ukc-field">
-                                    <label for="cp-user">Utilisateur</label>
-                                    <input type="text" id="cp-user" name="cashpay[username]" value="{{ $pay['cashpay']['username'] ?? '' }}" autocomplete="off">
-                                </div>
-                                <div class="ukc-field">
-                                    <label for="cp-pass">Mot de passe</label>
-                                    <input type="text" id="cp-pass" name="cashpay[password]" value="{{ $pay['cashpay']['password'] ?? '' }}" autocomplete="off">
-                                </div>
-                                <div class="ukc-field">
-                                    <label for="cp-cid">Client ID</label>
-                                    <input type="text" id="cp-cid" name="cashpay[client_id]" value="{{ $pay['cashpay']['client_id'] ?? '' }}" autocomplete="off">
-                                </div>
-                                <div class="ukc-field">
-                                    <label for="cp-csecret">Client secret</label>
-                                    <input type="text" id="cp-csecret" name="cashpay[client_secret]" value="{{ $pay['cashpay']['client_secret'] ?? '' }}" autocomplete="off">
-                                </div>
-                                <div class="ukc-field">
-                                    <label for="cp-api">Clé API (callback)</label>
-                                    <input type="text" id="cp-api" name="cashpay[api_key]" value="{{ $pay['cashpay']['api_key'] ?? '' }}" autocomplete="off">
-                                </div>
-                                <x-ukc.webhook-url :url="route('payment.webhook.edition', ['gateway' => 'cashpay', 'edition' => $edition])"
-                                                   label="URL du callback CashPay à déclarer" />
-
-                                <div class="ukc-form-actions full">
-                                    <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer la passerelle</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                @endif
-
                 @if ($edition)
                     {{-- ===== ÉQUIPE (staff affecté à CETTE édition) ===== --}}
                     <div class="ukc-panel" :class="{ active: tab==='team' }">
@@ -873,8 +903,13 @@
                         </div>
                     </div>
 
-                    {{-- ===== TRADUCTIONS (i18n : contenu par langue) ===== --}}
-                    <div class="ukc-panel" :class="{ active: tab==='translations' }">
+                    {{-- ===== APPARENCE · TRADUCTIONS (i18n : contenu par langue) ===== --}}
+                    {{-- ⚠️ Même onglet que l'apparence, mais HORS du formulaire principal :
+                         chaque langue a son formulaire et son bouton (le contrôleur
+                         enregistre une locale à la fois). Imbriquer un formulaire dans un
+                         autre n'existe pas en HTML - d'où deux panneaux frères qui
+                         s'allument sur le même onglet. --}}
+                    <div class="ukc-panel" :class="{ active: tab==='appearance' }">
                         @php($fallback = config('app.fallback_locale'))
                         @php($fieldLabels = ['title' => 'Titre', 'theme' => 'Thème', 'edition_label' => 'Libellé de l’édition', 'location' => 'Lieu'])
                         <div class="ukc-card">
@@ -882,6 +917,10 @@
                             <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 10px;">
                                 Version française = contenu de base (onglets Général / Appel). Renseignez ici les
                                 autres langues ; un champ laissé vide affiche le français.
+                                {{-- ⚠️ Deux sauvegardes sur un même onglet : sans ce rappel, on croit
+                                     que « Enregistrer » plus haut emporte aussi les traductions. --}}
+                                <br><strong>Chaque langue s’enregistre séparément</strong>, avec son propre bouton
+                                ci-dessous - le bouton « Enregistrer » de l’apparence ne les emporte pas.
                             </p>
                             @foreach (\App\Support\Locales::available() as $code => $label)
                                 @continue($code === $fallback)

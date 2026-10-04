@@ -1814,6 +1814,34 @@ table `session_attendances`, modèle `SessionAttendance`). Entrées depuis
   deux il montre. Le champ estimé reste : une plénière de 300 ne se pointe pas.
 - Tests : `tests/Feature/SessionAttendanceTest.php`.
 
+### Onglets de la fiche d'édition
+
+- **Onze onglets dans UN seul écran** (`admin/editions/form.blade.php`), pilotés
+  par `?tab=` **sans navigation** : les panneaux vivent dans le même formulaire,
+  recharger perdrait les saisies des autres onglets.
+- **« Intégrations » réunit paiement et visioconférence** : deux formulaires de
+  même nature - brancher l'édition sur un service extérieur - qui faisaient
+  chercher au même endroit deux fois. Chacun **garde sa sauvegarde** : les fondre
+  ferait d'une correction de clé d'API une réécriture des deux configurations.
+- **« Traductions » a rejoint « Apparence »** : les deux faces de ce que le
+  visiteur voit du site public.
+  - ⚠️ Le panneau des traductions reste **hors du formulaire principal** (une
+    locale par formulaire, un bouton par langue) : imbriquer un formulaire dans
+    un autre n'existe pas en HTML. D'où **deux panneaux frères** qui s'allument
+    sur le même onglet - et un rappel explicite que les traductions ont leur
+    propre bouton, sinon on croit que « Enregistrer » les emporte.
+- ⚠️ **Les anciens noms d'onglets sont traduits** (`payment`/`meetings` →
+  `integrations`, `translations` → `appearance`). Un lien partagé, un favori ou
+  une session ouverte porte l'ancien nom : sans cela, la page s'ouvre sur un
+  onglet qui n'existe plus - aucune pilule allumée, **aucun panneau affiché**.
+- ⚠️ **PIÈGE BLADE, payé deux fois ici** : ne jamais écrire les directives de bloc
+  PHP de Blade en toutes lettres dans un `{{-- commentaire --}}`. Blade extrait
+  les **blocs de code avant** de retirer les commentaires : il prend le texte du
+  commentaire pour du vrai code, avale tout ce qui précède, et la page tombe sur
+  une « variable indéfinie » ou un `endif` orphelin **très loin de la cause**. De
+  même, un bloc `php … endphp` posé juste après une directive PHP en ligne se
+  télescope avec elle : ce fichier n'utilise **que** la forme en ligne.
+
 ### Règles métier - limites communications & attestations
 
 - **Limite de communications** (`settings.max_communications`) : compte **seulement** les
