@@ -26,7 +26,7 @@ function plateformeLiveKit(): void
     config()->set('meetings.livekit.url', 'wss://plateforme.livekit.cloud');
     config()->set('meetings.livekit.api_key', 'APIplateforme');
     config()->set('meetings.livekit.api_secret', str_repeat('p', 40));
-    config()->set('meetings.quality', 'hd');
+    config()->set('meetings.quality', 'md');
 }
 
 it('ouvre les salles d’une édition sur SON serveur', function () {
@@ -107,7 +107,7 @@ it('retient la qualité choisie par l’édition', function () {
     expect(EditionMeetingConfig::quality($edition->fresh()))->toBe('fhd');
 });
 
-it('retombe sur la plateforme, puis sur « hd », devant une qualité inconnue', function () {
+it('retombe sur la plateforme, puis sur « md », devant une qualité inconnue', function () {
     // ⚠️ Un réglage saisi hier et retiré du code demain ne doit pas laisser la
     // salle sans image.
     plateformeLiveKit();
@@ -116,10 +116,10 @@ it('retombe sur la plateforme, puis sur « hd », devant une qualité inconnue',
         'meetings' => ['quality' => 'ultra'],
     ])]);
 
-    expect(EditionMeetingConfig::quality($edition->fresh()))->toBe('hd');
+    expect(EditionMeetingConfig::quality($edition->fresh()))->toBe('md');
 
     config()->set('meetings.quality', 'n’importe quoi');
-    expect(EditionMeetingConfig::quality(null))->toBe('hd');
+    expect(EditionMeetingConfig::quality(null))->toBe('md');
 
     config()->set('meetings.quality', 'sd');
     expect(EditionMeetingConfig::quality(null))->toBe('sd');
@@ -136,6 +136,16 @@ it('porte la qualité jusque dans la salle', function () {
     $cfg = $session->liveKitEmbedConfig(null, false);
 
     expect($cfg['quality'])->toBe('fhd');
+});
+
+it('garde « md » comme défaut de la plateforme', function () {
+    // ⚠️ Ce cas fige une RÉGRESSION : le défaut était passé en 720p pour toute la
+    // plateforme, ce qui a doublé la liaison montante demandée et fait lâcher les
+    // connexions modestes. Le défaut est redevenu ce que la salle faisait avant
+    // d'être réglable ; monter reste un choix d'édition.
+    expect(EditionMeetingConfig::QUALITY_DEFAULT)->toBe('md');
+    expect(EditionMeetingConfig::QUALITIES)->toContain('md');
+    expect(config('meetings.quality'))->toBe('md');
 });
 
 // --- Enregistrement du formulaire -------------------------------------------

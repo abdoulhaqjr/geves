@@ -557,6 +557,25 @@ paiement (`pay`), inscription à une formation.
     `MeetingProviderRegistry` retombe seul sur Jitsi public quand ce défaut n'est pas
     configuré. Le forcer en base écraserait la configuration du site - c'est ce qui
     masquait LiveKit une fois ses identifiants renseignés.
+### Écran d'entrée : montré quand il sert, franchi sinon
+
+Il a sa raison d'être la **première fois** : on tombait dans la salle, et la
+demande d'autorisation du navigateur arrivait par-dessus une séance déjà
+commencée.
+
+- ⚠️ **Mais reposé à chaque actualisation et à chaque reconnexion, il devient un
+  péage** : on le franchit sans rien lire, et on le traverse justement au pire
+  moment - quand on vient de perdre la salle en pleine séance. `entreeDirecte`
+  (règle pure testée) laisse entrer directement si on est **déjà passé par là
+  POUR CETTE SALLE** (`localStorage`, clé `vu:<roomName>`) **et** que le
+  navigateur accorde encore ce qu'on lui demande.
+- ⚠️ **`prompt` n'est pas `granted`**, et c'est tout l'intérêt : un navigateur
+  qui n'a pas encore demandé, ou qui a oublié, repasse par l'écran - sinon la
+  fenêtre d'autorisation s'ouvre par-dessus la séance, ce que cet écran existe
+  pour éviter. Firefox ne connaît pas ces noms de permission : on rend `prompt`,
+  et l'écran s'affiche. Mieux vaut un écran de trop que la mauvaise surprise.
+- Entrer sans caméra ni micro ne demande aucune autorisation : rien à vérifier.
+
 ### Tableau blanc (bouton « Tableau »)
 
 Une surface de dessin partagée qui recouvre la scène chez tout le monde.
@@ -691,11 +710,22 @@ renseigne, pour **son** édition, le fournisseur, les identifiants du serveur
 - **`Meetable::meetingEdition()`** (nouveau au contrat) dit de quelle édition
   relève une salle - sans lui, le socle ne saurait pas quelle configuration poser.
 
-**Qualité vidéo** (`meetings.quality`, défaut **`hd`**) :
+**Qualité vidéo** (`meetings.quality`, défaut **`md`** = 960x540 à 24 i/s) :
 
-- ⚠️ La salle plafonnait à **960x540 à 24 i/s**, et c'était la **couche simulcast
-  la plus haute** : rien ne pouvait y être plus net, quelle que soit la caméra.
-  Le défaut passe à **1280x720 à 30 i/s** (`profilVideo`, règle pure testée).
+- ⚠️⚠️ **RÉGRESSION VÉCUE, puis corrigée.** Le défaut avait été porté à 720p pour
+  toute la plateforme. Les trois couches additionnées passaient d'environ
+  **1,45 Mb/s à 2,35** de liaison montante : sur un réseau modeste, ce n'est plus
+  une image qui saccade, **c'est la salle qu'on perd**. Le défaut est revenu à
+  `md`, qui est **exactement** ce que la salle faisait avant d'être réglable.
+  Monter reste possible - mais c'est un **choix d'édition**, pas un défaut
+  imposé à tout le monde. Ne pas refaire le trajet inverse sans avoir mesuré la
+  liaison montante réelle des salles concernées.
+- ⚠️ `profilVideo` est une règle pure testée, et le cas Pest
+  « garde « md » comme défaut de la plateforme » **fige cette régression**.
+- ⚠️ `degradationPreference: 'balanced'` : sans elle, l'encodeur s'obstine sur un
+  seul critère quand la liaison faiblit - il tient la définition et hache le
+  mouvement, ou l'inverse. Une image qui se dégrade vaut mieux qu'une salle
+  qu'on perd.
 - ⚠️ **Un débit explicite accompagne la définition** (`videoEncoding.maxBitrate`) :
   laissé au SDK, il se calait sur l'ancienne définition et une capture plus fine
   serait sortie en bouillie.

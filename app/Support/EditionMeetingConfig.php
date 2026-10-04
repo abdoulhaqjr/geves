@@ -33,9 +33,9 @@ class EditionMeetingConfig
      * dégraderait leur image au lieu de l'améliorer. D'où un réglage par édition,
      * et non une valeur unique pour toute la plateforme.
      */
-    public const QUALITIES = ['sd', 'hd', 'fhd'];
+    public const QUALITIES = ['sd', 'md', 'hd', 'fhd'];
 
-    public const QUALITY_DEFAULT = 'hd';
+    public const QUALITY_DEFAULT = 'md';
 
     /**
      * Réglages de visio propres à une édition, ou null.

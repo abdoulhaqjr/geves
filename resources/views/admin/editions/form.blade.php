@@ -676,6 +676,7 @@
                                     <select id="vis-quality" name="quality">
                                         <option value="">- Qualité par défaut de la plateforme -</option>
                                         <option value="sd" @selected(($vis['quality'] ?? '') === 'sd')>Économe - 640 x 360, 24 i/s</option>
+                                        <option value="md" @selected(($vis['quality'] ?? '') === 'md')>Équilibrée - 960 x 540, 24 i/s (défaut)</option>
                                         <option value="hd" @selected(($vis['quality'] ?? '') === 'hd')>Standard - 1280 x 720, 30 i/s</option>
                                         <option value="fhd" @selected(($vis['quality'] ?? '') === 'fhd')>Haute - 1920 x 1080, 30 i/s</option>
                                     </select>
@@ -683,8 +684,9 @@
                                         C’est la définition de <strong>capture</strong> : rien dans la salle ne peut être plus net
                                         qu’elle. Les définitions plus basses restent envoyées en parallèle, pour les petites vignettes
                                         et les connexions faibles. Monter la qualité pèse sur la <strong>liaison montante de qui
-                                        diffuse</strong> : sur un réseau modeste, « Économe » donne une image plus stable qu’une haute
-                                        définition qui saccade.
+                                        diffuse</strong>, et pas seulement sur l’image : au-delà de ce que le réseau supporte, ce ne
+                                        sont plus des saccades, c’est la salle qu’on perd. Ne montez d’un cran qu’après avoir
+                                        vérifié que la séance tient.
                                     </p>
                                 </div>
 

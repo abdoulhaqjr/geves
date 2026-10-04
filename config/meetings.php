@@ -29,7 +29,7 @@ return [
     |
     */
 
-    'quality' => env('MEETING_VIDEO_QUALITY', 'hd'),
+    'quality' => env('MEETING_VIDEO_QUALITY', 'md'),
 
     'livekit' => [
         // Serveur LiveKit (Cloud ou self-host) + identifiants d'API. Sans ces

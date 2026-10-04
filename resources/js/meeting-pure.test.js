@@ -4,6 +4,7 @@ import {
   cadreTableau,
   chronoLabel,
   enBasDuFil,
+  entreeDirecte,
   etatChrono,
   grilleOptimale,
   idSur,
@@ -303,10 +304,15 @@ describe('nombre de connectés', () => {
 });
 
 describe('profil de capture vidéo', () => {
-  it('monte la salle au-dessus de son ancien plafond', () => {
+  it('propose de monter la salle au-dessus de son ancien plafond', () => {
     // ⚠️ La salle capturait 960x540 à 24 i/s, et c'était la couche la plus haute :
     // rien ne pouvait y être plus net, quelle que soit la caméra.
-    expect(profilVideo('hd')).toEqual({ largeur: 1280, hauteur: 720, images: 30, debit: 1700000 });
+    // ⚠️ Le défaut est REVENU à ce que la salle faisait avant d'être réglable.
+    // Porter toute la plateforme en 720p a doublé la liaison montante demandée,
+    // et les connexions modestes se sont mises à lâcher : ce n'est plus une
+    // image qui saccade, c'est la salle qu'on perd. Monter reste possible,
+    // mais c'est un choix, pas un défaut imposé.
+    expect(profilVideo('md')).toEqual({ largeur: 960, hauteur: 540, images: 24, debit: 900000 });
     expect(profilVideo('hd').hauteur).toBeGreaterThan(540);
   });
 
@@ -314,16 +320,17 @@ describe('profil de capture vidéo', () => {
     expect(profilVideo('sd').hauteur).toBe(360);
     expect(profilVideo('fhd').hauteur).toBe(1080);
     // Le débit suit la définition, sinon la couche haute sort en bouillie.
-    expect(profilVideo('sd').debit).toBeLessThan(profilVideo('hd').debit);
+    expect(profilVideo('sd').debit).toBeLessThan(profilVideo('md').debit);
+    expect(profilVideo('md').debit).toBeLessThan(profilVideo('hd').debit);
     expect(profilVideo('hd').debit).toBeLessThan(profilVideo('fhd').debit);
   });
 
-  it('retombe sur « hd » devant un nom inconnu', () => {
+  it('retombe sur « md » devant un nom inconnu', () => {
     // ⚠️ Un réglage saisi hier et retiré du code demain ne doit pas laisser la
     // salle sans image.
-    expect(profilVideo('ultra')).toEqual(profilVideo('hd'));
-    expect(profilVideo(null)).toEqual(profilVideo('hd'));
-    expect(profilVideo(undefined)).toEqual(profilVideo('hd'));
+    expect(profilVideo('ultra')).toEqual(profilVideo('md'));
+    expect(profilVideo(null)).toEqual(profilVideo('md'));
+    expect(profilVideo(undefined)).toEqual(profilVideo('md'));
   });
 });
 
@@ -518,5 +525,31 @@ describe('trait reçu d’un autre poste', () => {
   it('tronque un trait démesuré au lieu de le garder entier', () => {
     const pts = new Array(TRAIT_POINTS_MAX + 500).fill({ x: 0.1, y: 0.1 });
     expect(traitRecu({ id: 'a-1', c: '#111827', pts }, crayons).pts).toHaveLength(TRAIT_POINTS_MAX);
+  });
+});
+
+describe('écran d’entrée', () => {
+  it('ne se repose pas à chaque actualisation', () => {
+    // ⚠️ Reposé à chaque venue, il devient un péage : on le franchit sans rien
+    // lire, et on le traverse au pire moment - quand on vient de perdre la salle
+    // en pleine séance.
+    expect(entreeDirecte(true, true, true, 'granted', 'granted')).toBe(true);
+  });
+
+  it('se montre la première fois', () => {
+    expect(entreeDirecte(false, true, true, 'granted', 'granted')).toBe(false);
+  });
+
+  it('revient dès qu’une autorisation n’est plus acquise', () => {
+    // ⚠️ `prompt` n'est pas `granted` : sans ce retour, la fenêtre d'autorisation
+    // du navigateur s'ouvrirait par-dessus une séance déjà commencée - ce que cet
+    // écran existe précisément pour éviter.
+    expect(entreeDirecte(true, true, true, 'prompt', 'granted')).toBe(false);
+    expect(entreeDirecte(true, true, true, 'granted', 'denied')).toBe(false);
+    expect(entreeDirecte(true, false, true, 'denied', 'granted')).toBe(true);
+  });
+
+  it('laisse entrer qui ne demande ni caméra ni micro', () => {
+    expect(entreeDirecte(true, false, false, 'denied', 'denied')).toBe(true);
   });
 });

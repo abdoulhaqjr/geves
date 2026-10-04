@@ -318,17 +318,23 @@ export function phraseConnectes(n) {
  * MONTANTE de celui qui diffuse - d'où un réglage par édition et non une valeur
  * unique pour toute la plateforme.
  *
- * ⚠️ Un nom inconnu retombe sur « hd » : un réglage retiré du code ne doit pas
+ * ⚠️ Un nom inconnu retombe sur « md » : un réglage retiré du code ne doit pas
  * laisser la salle sans image.
  */
 export function profilVideo(nom) {
   const profils = {
     sd: { largeur: 640, hauteur: 360, images: 24, debit: 500000 },
-    hd: { largeur: 1280, hauteur: 720, images: 30, debit: 1700000 },
-    fhd: { largeur: 1920, hauteur: 1080, images: 30, debit: 3000000 },
+    // ⚠️ `md` est EXACTEMENT ce que la salle faisait avant d'être réglable, et
+    // c'est redevenu le défaut. Porter la plateforme entière en 720p a doublé la
+    // liaison montante demandée (≈1,45 Mb/s → ≈2,35 une fois les trois couches
+    // additionnées), et les connexions modestes se sont mises à lâcher. Monter
+    // en qualité reste possible - mais c'est un choix, pas un défaut imposé.
+    md: { largeur: 960, hauteur: 540, images: 24, debit: 900000 },
+    hd: { largeur: 1280, hauteur: 720, images: 30, debit: 1400000 },
+    fhd: { largeur: 1920, hauteur: 1080, images: 30, debit: 2600000 },
   };
 
-  return profils[String(nom ?? '')] || profils.hd;
+  return profils[String(nom ?? '')] || profils.md;
 }
 
 /* ===================== Réactions de salle ===================== */
@@ -417,6 +423,29 @@ export function placeBulle(rang) {
   return places[((n % places.length) + places.length) % places.length];
 }
 
+/**
+ * Faut-il remontrer l'écran d'entrée ?
+ *
+ * ⚠️ Il a sa raison d'être la PREMIÈRE fois : on tombait dans la salle et la
+ * demande d'autorisation du navigateur arrivait par-dessus une séance déjà
+ * commencée. Mais le reposer à chaque actualisation et à chaque reconnexion le
+ * transforme en péage - on le franchit sans rien lire, et on le traverse
+ * justement au pire moment, quand on vient de perdre la salle en pleine séance.
+ *
+ * ⚠️ Il revient dès que quelque chose n'est PAS acquis : première venue dans
+ * cette salle, ou autorisation qui n'est plus accordée (refusée, révoquée, ou
+ * simplement inconnue du navigateur). C'est exactement le cas où l'écran sert à
+ * quelque chose - et c'est là qu'il dit quoi faire du cadenas.
+ */
+export function entreeDirecte(dejaVu, veutCam, veutMic, permCam, permMic) {
+  if (!dejaVu) return false;
+  // Entrer sans caméra ni micro ne demande aucune autorisation : rien à vérifier.
+  if (!veutCam && !veutMic) return true;
+  if (veutCam && permCam !== 'granted') return false;
+  if (veutMic && permMic !== 'granted') return false;
+
+  return true;
+}
 /* ===================== Tableau blanc ===================== */
 
 /**

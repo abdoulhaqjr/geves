@@ -14,7 +14,7 @@ import {
     cadreTableau, enBasDuFil, etatChrono, grilleOptimale, heure, idSur, idsDesParleurs,
     initials, lotsDeTraits, mainsOrdonnees, metadonnee, niveauReseau,
     ordreRecevable as ordreAutorise, presenceLabel, peutReagir, phraseConnectes, placeBulle,
-    pointTableau, profilVideo, rangsDesMains, reactionRecevable, REACTIONS_MAX, roleLabel,
+    entreeDirecte, pointTableau, profilVideo, rangsDesMains, reactionRecevable, REACTIONS_MAX, roleLabel,
     teinteDuNom, texteCourt, traitAllege, traitRecu,
 } from './meeting-pure.js';
 
@@ -1968,6 +1968,11 @@ export async function startFromConfig() {
                 // ⚠️ Un débit explicite : laissé au SDK, il se calait sur l'ancienne
                 // définition et une capture plus fine serait sortie en bouillie.
                 videoEncoding: { maxBitrate: video.debit, maxFramerate: video.images },
+                // ⚠️ Sans cette préférence, l'encodeur s'obstine sur un seul critère
+                // quand la liaison faiblit : il tient la définition et hache le
+                // mouvement, ou l'inverse. `balanced` le laisse céder sur les deux -
+                // une image qui se dégrade vaut mieux qu'une salle qu'on perd.
+                degradationPreference: 'balanced',
                 videoCodec: 'vp8',
             },
         });
@@ -2567,6 +2572,22 @@ export async function startFromConfig() {
      * ⚠️ Seulement pour qui diffuse. Un auditeur ne publie ni son ni image : lui
      * dresser un mur avant la porte, ce serait le retarder pour rien.
      */
+    /**
+     * Ce que le navigateur dit d'une autorisation, SANS la demander.
+     *
+     * ⚠️ `prompt` n'est pas `granted` : c'est tout l'intérêt. Un navigateur qui
+     * n'a pas encore demandé, ou qui a oublié, doit repasser par l'écran d'entrée
+     * - sinon la fenêtre d'autorisation s'ouvre par-dessus la séance, ce que cet
+     * écran existe précisément pour éviter. Firefox ne connaît pas ces noms : on
+     * rend `prompt`, et l'écran s'affiche. Mieux vaut un écran de trop que la
+     * mauvaise surprise.
+     */
+    async function etatPermission(nom) {
+        if (!navigator.permissions || !navigator.permissions.query) return 'prompt';
+        try { return (await navigator.permissions.query({ name: nom })).state; }
+        catch (e) { return 'prompt'; }
+    }
+
     async function ecranDEntree() {
         const ec = $('prejoin'), bouton = $('pjEntrer');
         // ⚠️ Sans le bouton, l'attente ci-dessous ne finirait JAMAIS : la salle ne se
@@ -2582,6 +2603,16 @@ export async function startFromConfig() {
         entree.mic = pref('mic', '1') === '1';
         entree.camId = pref('camId', '');
         entree.micId = pref('micId', '');
+        // ⚠️ Déjà passé par ici POUR CETTE SALLE, et le navigateur accorde encore ce
+        // qu'on lui demande : on entre directement. Reposer l'écran à chaque
+        // actualisation et à chaque reconnexion en faisait un péage - franchi sans
+        // rien lire, et justement au pire moment : quand on vient de perdre la
+        // salle en pleine séance.
+        if (entreeDirecte(
+            pref('vu:' + roomName, '') === '1',
+            entree.cam, entree.mic,
+            await etatPermission('camera'), await etatPermission('microphone'),
+        )) return;
         ec.classList.add('on');
         majEntree();
         await ouvreApercu();
@@ -2589,6 +2620,9 @@ export async function startFromConfig() {
         await new Promise((resoud) => { bouton.addEventListener('click', resoud, { once: true }); });
         fermeApercu();
         ec.classList.remove('on');
+        // Franchi une fois pour cette salle : la prochaine venue ira droit au but,
+        // tant que les autorisations tiennent.
+        posePref('vu:' + roomName, '1');
     }
 
     /** Ce qui a été choisi avant d'entrer s'applique une fois la salle rejointe. */
