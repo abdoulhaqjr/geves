@@ -36,7 +36,16 @@ class ReceiptController extends Controller
         $payment->setRelation('participant', $participant);
         $payment->setRelation('edition', $edition);
 
-        return view('receipts.payment', ['payment' => $payment, 'sample' => true]);
+        // Aperçu verrouillé (même présentation que l'attestation/le badge) : le reçu
+        // réel rendu avec des valeurs d'exemple, dans un cadre sombre, « Fermer » ramène
+        // aux paiements.
+        $backUrl = route('admin.payments.index', $edition ? ['edition_id' => $edition->id] : []);
+
+        return view('receipts.payment', [
+            'payment' => $payment,
+            'sample' => true,
+            'backUrl' => $backUrl,
+        ]);
     }
 
     public function __invoke(Payment $payment, Request $request): View|Response

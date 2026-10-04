@@ -2125,10 +2125,15 @@ ajoutée par la vue, elle ne se saisit pas.
     l'overlay d'aperçu** (clone exact du canevas, jetons remplis par `fillTokens` avec
     `sampleVars()`), chrome d'édition masqué ; « Fermer » revient aux Documents (`backUrl`).
     ⚠️ On NE reconstruit PAS le rendu côté serveur (`LayoutRenderer`) pour l'aperçu : il serait
-    approximatif (logos/typographie). Le **reçu** a son aperçu d'exemple
-    `admin.payments.receipt.sample` (`ReceiptController::sample`, Payment fabriqué non persisté),
-    et le **livret** ouvre son **PDF en inline** (`?format=pdf&inline=1`, `DocumentController`
-    `stream()` vs `download()`). Tests : `DocumentPreviewTest`.
+    approximatif (logos/typographie). Le **reçu** suit la **même grammaire d'aperçu verrouillé**
+    (`admin.payments.receipt.sample`, `ReceiptController::sample`, Payment fabriqué non persisté) :
+    le reçu réel (partial unique `receipts/_document.blade.php`, partagé avec la vue imprimable)
+    est rendu avec des valeurs d'exemple dans un **cadre sombre** (`#1e293b`), tag « Aperçu du reçu -
+    valeurs d'exemple », bouton **« Fermer »** (+ Échap, clic sur le fond) qui ramène aux paiements
+    (`backUrl`), actions imprimer/PDF masquées. ⚠️ Pas besoin de concepteur côté reçu : son design
+    EST la vue Blade, donc la rendre suffit à montrer le final. Le **livret** ouvre son **PDF en
+    inline** (`?format=pdf&inline=1`, `DocumentController` `stream()` vs `download()`). Tests :
+    `DocumentPreviewTest`.
 - **Livre des résumés (livret)** : communications acceptées groupées par axe, trois sorties
   depuis `admin.documents.livret` (`DocumentController::livret`) : **aperçu HTML**,
   **.docx** (`?format=docx`) et **PDF** (`?format=pdf`, dompdf, vue autonome
