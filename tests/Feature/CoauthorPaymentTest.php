@@ -6,9 +6,11 @@ use App\Models\Attestation;
 use App\Models\Edition;
 use App\Models\Email;
 use App\Models\Participant;
-use App\Models\Payment;
 use App\Models\Submission;
+use App\Models\SubmissionAuthor;
+use App\Models\User;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
 // adminStaff() -> AdminSubmissionWorkflowTest ; openEdition() -> AccountSubmissionTest
@@ -41,15 +43,45 @@ function acceptedWithCoauthor(Edition $edition, string $coEmail = 'co@example.tg
     ]);
 }
 
-it('retrouve les communications acceptées du co-auteur et calcule le montant du grade', function () {
+/**
+ * ⚠️ **La page oriente, elle n'encaisse plus.** Elle doublonnait le chemin par
+ * compte - celui que `LinkSubmissionAuthors` ouvre dès la soumission - et les
+ * deux créaient leur propre participant, l'un par e-mail sans `user_id`,
+ * l'autre par `user_id`. Elle confirme donc que la personne est bien citée,
+ * puis l'envoie créer son compte ou s'y connecter.
+ */
+it('retrouve les communications du co-auteur et l’oriente vers son espace', function () {
     $edition = coauthorEdition();
     acceptedWithCoauthor($edition);
 
-    $this->get(route('public.coauthor', $edition->slug).'?email=co@example.tg')
+    $page = $this->get(route('public.coauthor', $edition->slug).'?email=co@example.tg')
         ->assertOk()
         ->assertSee('AA-001')
-        ->assertSee('Docteur')
-        ->assertSee('20 000'); // tarif du grade dans la grille (montant calculé côté client)
+        ->assertSee('votre espace participant', false)
+        ->assertSee('Créer mon compte');
+
+    // L'adresse voyage avec l'inscription : c'est elle qui rattachera la
+    // communication au compte créé (cf. LinkPendingAuthorships).
+    $page->assertSee(urlencode('co@example.tg'), false);
+
+    // Plus aucun geste de paiement ici.
+    $page->assertDontSee('Montant à régler');
+    $page->assertDontSee('<form method="POST"', false);
+});
+
+/** Déjà connecté : on ne lui redemande rien, il règle dans son espace. */
+it('renvoie un visiteur connecté vers le règlement de son espace', function () {
+    $edition = coauthorEdition();
+    acceptedWithCoauthor($edition);
+
+    $this->actingAs(verifiedAccount(), 'account')
+        ->get(route('public.coauthor', $edition->slug).'?email=co@example.tg')
+        ->assertRedirect(route('account.payment', $edition));
+});
+
+/** ⚠️ La route de paiement sans compte n'existe plus : elle était la cause du doublon. */
+it('n’expose plus de paiement sans compte', function () {
+    expect(Route::has('public.coauthor.pay'))->toBeFalse();
 });
 
 it('n’associe rien à un e-mail inconnu', function () {
@@ -61,99 +93,10 @@ it('n’associe rien à un e-mail inconnu', function () {
 });
 
 /**
- * ⚠️ **Le tarif ne se choisit pas, il se déduit du grade.** La page proposait
- * les *catégories tarifaires* dans un menu, montant affiché en face : un
- * co-auteur y prenait la moins chère, et le grade déclaré dans la soumission -
- * l'information dont le logiciel se sert partout ailleurs - ne servait à rien.
- * Le montant du grade connu est écrit en clair, et aucun autre prix ne l'est.
+ * ⚠️ Conservé pour les règlements co-auteur **anciens** : le retour de
+ * passerelle d'un paiement `meta.flow = coauthor` atterrit encore sur cette
+ * page, et doit y trouver sa confirmation et son reçu.
  */
-it('n’affiche que le montant du grade déclaré, et aucun autre tarif', function () {
-    $edition = coauthorEdition();
-    acceptedWithCoauthor($edition); // co-auteur « Docteur » -> 20 000
-
-    $page = $this->get(route('public.coauthor', $edition->slug).'?email=co@example.tg')
-        ->assertOk()
-        ->assertSee('Docteur')
-        ->assertSee('20 000');
-
-    // Le tarif des autres catégories n'est plus proposé : il n'y a rien à choisir.
-    $page->assertDontSee('10 000');
-    $page->assertDontSee('<select', false);
-});
-
-/**
- * Sans grade déclaré, on demande un GRADE (liste de référence) - jamais une
- * catégorie tarifaire, jamais un prix.
- */
-it('demande le grade, et non une catégorie tarifaire, quand il manque', function () {
-    $edition = coauthorEdition();
-    acceptedWithCoauthor($edition, 'co@example.tg', ''); // grade absent de la soumission
-
-    $this->get(route('public.coauthor', $edition->slug).'?email=co@example.tg')
-        ->assertOk()
-        ->assertSee('<select', false)
-        // Les grades de référence, sans leur montant.
-        ->assertSee('Doctorant')
-        ->assertDontSee('Doctorant - 10 000')
-        ->assertDontSee('déclaré lors de la soumission');
-});
-
-/**
- * ⚠️ Le grade connu n'est pas repostable : sinon n'importe qui ajustait son
- * tarif en postant le libellé de la catégorie la moins chère.
- */
-it('ignore le grade posté quand la soumission en déclare un', function () {
-    $edition = coauthorEdition();
-    acceptedWithCoauthor($edition); // « Docteur » -> 20 000
-
-    $this->post(route('public.coauthor.pay', $edition->slug), [
-        'email' => 'co@example.tg',
-        'grade' => 'Doctorant', // moins cher : ne doit pas être retenu
-        'gateway' => 'manual',
-    ]);
-
-    $participant = Participant::where('edition_id', $edition->id)
-        ->where('email', 'co@example.tg')->first();
-
-    expect($participant->title)->toBe('Docteur');
-    expect((float) Payment::where('participant_id', $participant->id)->first()->amount)->toBe(20000.0);
-});
-
-/** Un grade hors liste de référence posté sans grade connu est refusé. */
-it('n’accepte qu’un grade de la liste de référence quand aucun n’est connu', function () {
-    $edition = coauthorEdition();
-    acceptedWithCoauthor($edition, 'co@example.tg', '');
-
-    $this->post(route('public.coauthor.pay', $edition->slug), [
-        'email' => 'co@example.tg',
-        'grade' => 'Tarif maison à 0 FCFA',
-        'gateway' => 'manual',
-    ])->assertSessionHasErrors('grade');
-
-    expect(Payment::where('edition_id', $edition->id)->count())->toBe(0);
-});
-
-it('crée un participant co-auteur et un paiement en attente marqué flow=coauthor', function () {
-    $edition = coauthorEdition();
-    acceptedWithCoauthor($edition);
-
-    $this->post(route('public.coauthor.pay', $edition->slug), [
-        'email' => 'co@example.tg',
-        'grade' => 'Docteur',
-        'gateway' => 'manual',
-    ]);
-
-    $participant = Participant::where('edition_id', $edition->id)->where('email', 'co@example.tg')->first();
-    expect($participant)->not->toBeNull();
-    expect($participant->role)->toBe('coauthor');
-    expect($participant->title)->toBe('Docteur');
-
-    $payment = Payment::where('participant_id', $participant->id)->first();
-    expect($payment->status)->toBe('pending');
-    expect((float) $payment->amount)->toBe(20000.0);
-    expect($payment->meta['flow'] ?? null)->toBe('coauthor');
-});
-
 it('affiche l’état « déjà réglé » pour un co-auteur ayant payé', function () {
     $edition = coauthorEdition();
     acceptedWithCoauthor($edition);
@@ -224,4 +167,44 @@ it('n’associe pas un co-auteur non payé à l’attestation de communication',
     ]);
 
     expect(Attestation::where('participant_id', $co->id)->exists())->toBeFalse();
+});
+
+/**
+ * Le chemin complet que la porte d'entrée promet : le co-auteur cité dans une
+ * soumission crée son compte avec la même adresse, la liaison en attente
+ * s'active (`LinkPendingAuthorships`), **un seul** participant existe, et son
+ * espace lui propose le montant de son grade.
+ */
+it('mène le co-auteur de la porte d’entrée au règlement dans son espace', function () {
+    $edition = coauthorEdition();
+    $submission = acceptedWithCoauthor($edition);
+
+    // Liaison « invitée », telle que LinkSubmissionAuthors la pose pour un non-inscrit.
+    SubmissionAuthor::create([
+        'submission_id' => $submission->id, 'edition_id' => $edition->id, 'role' => 'coauthor',
+        'author_index' => 1, 'name' => 'Ben Co', 'email' => 'co@example.tg',
+        'token' => Str::random(48), 'status' => 'invited', 'invited_at' => now(),
+    ]);
+
+    $this->post(route('account.register.store'), [
+        'first_name' => 'Ben', 'last_name' => 'Co', 'email' => 'co@example.tg',
+        'phone' => '+22890000042', 'password' => 'Motdepasse!1', 'password_confirmation' => 'Motdepasse!1',
+        'terms' => '1', 'grade' => 'Docteur', 'affiliation' => 'UK', 'country' => 'TG',
+    ])->assertRedirect(route('account.dashboard'));
+
+    $compte = User::where('email', 'co@example.tg')->firstOrFail();
+
+    // ⚠️ UN SEUL participant : c'est tout l'objet du retrait du paiement sans
+    // compte, qui en créait un second sans `user_id`.
+    $participants = Participant::where('edition_id', $edition->id)
+        ->whereRaw('LOWER(email) = ?', ['co@example.tg'])->get();
+
+    expect($participants)->toHaveCount(1);
+    expect($participants->first()->user_id)->toBe($compte->id);
+
+    // Et son espace lui propose bien le tarif de son grade.
+    $this->actingAs($compte, 'account')
+        ->get(route('account.payment', $edition))
+        ->assertOk()
+        ->assertSee('20 000');
 });

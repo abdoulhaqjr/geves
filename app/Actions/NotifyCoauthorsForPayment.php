@@ -9,8 +9,12 @@ use Illuminate\Support\Facades\Mail;
 
 /**
  * Notifie par e-mail les co-auteurs d'une communication acceptée pour les
- * inviter à régler leurs frais (lien pré-rempli vers le parcours co-auteur).
- * Journalise chaque envoi dans la table `emails`.
+ * inviter à régler leurs frais. Journalise chaque envoi dans `emails`.
+ *
+ * ⚠️ Le lien mène à la **porte d'entrée** co-auteur, qui oriente vers l'espace
+ * participant - elle n'encaisse plus. C'est le seul chemin de règlement :
+ * deux parcours concurrents laissaient **deux participants** pour la même
+ * personne, et l'attestation partait sur celui qui n'avait pas de compte.
  */
 class NotifyCoauthorsForPayment
 {

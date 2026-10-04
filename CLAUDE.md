@@ -2360,26 +2360,45 @@ l'inverse et ont été repris :
   **un seul** appel à l'action. Quand aucune catégorie ne déclare de grade, la
   page le dit au visiteur : le tarif lui sera confirmé à l'inscription - sinon il
   reste devant trois prix sans savoir lequel est le sien.
-- **Paiement des co-auteurs** (`/colloque/{slug}/co-auteur`) : le menu proposait
-  les *catégories tarifaires* **avec leur montant en face**, si bien qu'un
-  co-auteur prenait la moins chère pendant que le grade déclaré dans sa
-  soumission ne servait à rien. Le grade **connu fait foi** (participant, sinon
-  entrée co-auteur de la soumission) et n'est plus repostable ; quand il manque,
-  c'est un **GRADE** qu'on demande (`ParticipantTypes`), jamais une catégorie,
-  jamais un prix. ⚠️ `pay()` **relit le contexte** plutôt que de faire confiance
-  au formulaire, et n'accepte en secours qu'un grade de la liste de référence.
-- ⚠️ Les montants exposés à la vue sont indexés **par grade**, jamais par
-  catégorie : `Fees` reste seule à savoir faire le rapprochement. La table
-  contient aussi le grade connu **même hors liste de référence** (une soumission
-  ancienne a pu porter un intitulé libre), sinon les boutons de paiement
-  restaient désactivés faute de montant.
-- ⚠️ Un repli (aucune catégorie ne couvre le grade) est **dit** avant de payer :
-  taire le montant le plus élevé reviendrait à faire payer un tarif qu'aucune
-  règle ne justifie.
+- **Co-auteurs** : voir la section suivante - ce parcours n'encaisse plus.
 - ⚠️ **Rien de personnalisé sur la page publique** (pas de « votre tarif » pour
   qui est connecté) : elle doit rester identique pour tout le monde, donc
   cacheable en HTTP - cf. l'en-tête de `ColloqueController`.
 
+### ⚠️ UN SEUL chemin de règlement pour un co-auteur : son compte
+
+`/colloque/{slug}/co-auteur` est une **porte d'entrée**, plus un parcours de
+paiement. Elle confirme par e-mail que des communications acceptées citent la
+personne, puis l'envoie créer son compte ou s'y connecter ; un visiteur déjà
+connecté est redirigé droit sur `account.payment`.
+
+- **Pourquoi** : le chemin par compte existe déjà et il est plus riche -
+  `LinkSubmissionAuthors` rapproche chaque co-auteur des comptes dès la
+  soumission (sinon invitation à en créer un, réactivée à l'inscription par
+  `LinkPendingAuthorships`), la communication apparaît dans « Mes
+  communications », l'autorité se décline, l'attestation se retrouve dans
+  « Mes documents ».
+- ⚠️ **Les deux parcours créaient chacun leur participant** - l'un par e-mail
+  **sans `user_id`** (`UpsertCoauthorParticipant`, supprimée), l'autre par
+  `user_id` (`UpsertParticipantForAccount`) - et **rien ne les rapproche** : il
+  n'existe aucune contrainte d'unicité sur `(edition_id, email)`. **Mesuré** :
+  payer sur la page publique puis créer son compte laissait **deux
+  participants** pour la même personne sur la même édition. Chiffres faussés, et
+  surtout l'attestation émise sur le participant sans compte - donc
+  **introuvable dans l'espace de l'intéressé**. Dans l'autre ordre il n'y avait
+  pas de doublon, la page réutilisant la ligne existante : le défaut dépendait
+  de l'ordre, donc il passait inaperçu.
+- ⚠️ **L'URL est conservée** : les e-mails d'acceptation déjà partis la portent,
+  et un lien mort aurait coûté des règlements. L'e-mail d'acceptation
+  (`NotifyCoauthorsForPayment`) est **gardé aussi** - c'est lui qui annonce
+  « votre communication est acceptée, vos frais sont dus », ce que l'invitation
+  envoyée à la soumission ne dit pas - mais il pointe désormais sur la porte
+  d'entrée et non plus sur un encaissement parallèle.
+- ⚠️ L'état **« frais déjà réglés »** reste sur la page : le retour de passerelle
+  d'un règlement co-auteur **ancien** (`meta.flow = coauthor`) y atterrit encore
+  (cf. `PaymentController::return`).
+- L'adresse voyage dans le lien d'inscription (`?email=`) : c'est elle qui
+  rattache les communications au compte créé.
 ### Densité des back-offices : zoom 90%
 
 `html.ukc-dense { zoom: .9 }` (`ukc.css`), posé par les layouts `admin` et

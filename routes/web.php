@@ -92,8 +92,10 @@ Route::middleware('auth:account,web')->group(function () {
 });
 
 // Parcours de paiement des co-auteurs (public, sans compte, retrouvé par e-mail).
+// Porte d'entrée des co-auteurs : elle ORIENTE vers l'espace participant et
+// n'encaisse plus (cf. CoauthorController). L'URL est conservée parce que les
+// e-mails d'acceptation déjà partis la portent.
 Route::get('/colloque/{slug}/co-auteur', [CoauthorController::class, 'show'])->name('public.coauthor');
-Route::post('/colloque/{slug}/co-auteur', [CoauthorController::class, 'pay'])->name('public.coauthor.pay');
 
 // Visio interactive d'une session (accès géré dans le contrôleur selon le rôle).
 Route::get('/session/{session}/visio', [MeetingController::class, 'join'])->name('session.meeting');

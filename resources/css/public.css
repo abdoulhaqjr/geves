@@ -747,7 +747,16 @@ input[data-uppercase] { text-transform: uppercase; }
   background: var(--ukc-bg); border: 1px solid var(--ukc-border);
 }
 .coauthor-grade strong { font-size: 15px; font-weight: 800; color: var(--ukc-blue); }
-.coauthor-grade span { font-size: 12.5px; color: var(--ukc-muted); }
+/* Porte d'entrée du co-auteur : ce qu'il gagne à passer par son espace, puis
+   le geste. On oriente, on n'encaisse plus. */
+.coauthor-next { border-top: 1px solid var(--ukc-border); padding-top: 18px; }
+.coauthor-next .lead { margin: 0 0 12px; font-size: 15px; line-height: 1.6; }
+.coauthor-next ul { list-style: none; margin: 0 0 18px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.coauthor-next li { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: var(--ukc-muted); }
+.coauthor-next li svg { flex-shrink: 0; margin-top: 3px; color: var(--ukc-green); }
+.coauthor-next .acts { display: flex; flex-wrap: wrap; gap: 10px; }
+.coauthor-next .acts .ukc-btn { flex: 1 1 200px; justify-content: center; }
+.coauthor-next .hint { margin: 14px 0 0; font-size: 12.5px; color: var(--ukc-light); }
 .ukc-price-card h3 { font-size: 16px; font-weight: 700; color: var(--ukc-muted); margin-bottom: 8px; }
 .ukc-price-card .amount { font-size: clamp(28px, 4vw, 36px); font-weight: 900; color: var(--ukc-blue); line-height: 1.1; }
 .ukc-price-card .amount small { font-size: 14px; font-weight: 600; color: var(--ukc-light); }
