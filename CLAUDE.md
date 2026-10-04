@@ -1710,6 +1710,30 @@ table `session_attendances`, modèle `SessionAttendance`). Entrées depuis
     un clic sur « Rejoindre » ne vaut pas contre ce constat, et faire repasser un
     « absent » à « présent » dans le dos du modérateur lui ferait signer un chiffre
     qu'il n'a pas vu.
+- **Le pointage automatique s'affiche À MI-CHEMIN, et se confirme d'un clic**
+  (`gestePointage`, règle pure). Il compte **déjà** dans « Présents » : rien
+  n'est perdu si personne ne le confirme. Mais il dit seulement que quelqu'un
+  est entré dans la salle, pas que le modérateur l'a constaté - et c'est lui qui
+  endosse le chiffre dans le PV. D'où le bouton **plein** (constaté) contre
+  **pointillé** (déduit, `aria-pressed="mixed"`), la pastille « À confirmer N »
+  qui disparaît une fois tout vu, et la bascule :
+  - ligne **automatique**, même verdict → **confirme** (`source` passe à `manual`,
+    `marked_by` prend le modérateur) ;
+  - ligne **de sa main**, même verdict → **retire** (défaire une erreur sans
+    quitter la salle) ;
+  - autre verdict → **pose**, dans les deux cas.
+  ⚠️ Sans cette distinction, le geste le plus naturel - appuyer sur le verdict
+  qu'on approuve - **effaçait** la présence au lieu de l'endosser.
+  ⚠️ Retirer un pointage sur quelqu'un **encore en salle** le fait revenir en
+  pointillé au rafraîchissement suivant : `markConnected()` reconstate une
+  connexion qui est toujours vraie. Ce n'est pas un bug - le fait machine tient,
+  seul l'aval humain a été retiré. Pour écarter quelqu'un, on pose « Absent »,
+  qui est un verdict et que rien n'écrase.
+  ⚠️ **Défaut gelé par un cas** : les trois boutons portaient `.on` sans
+  `data-st`, alors que la feuille colore `.on[data-st=…]`. Le verdict était
+  enregistré **sans jamais se voir** - trois boutons identiques sous un compteur
+  qui disait « Présents 1 ». Les deux moitiés de l'état (classe et attribut) se
+  posent désormais au même endroit.
   - Colonne **`source`** (`manual` / `meeting`) : la page signale les lignes posées
     par la visio, parce que le modérateur **endosse ces chiffres dans le PV**.
     Dès qu'il enregistre, la ligne repasse `manual` - même s'il ne fait que

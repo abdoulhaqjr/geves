@@ -452,6 +452,41 @@ it('pointe depuis la salle, et retire sur un verdict vide', function () {
     expect(SessionAttendance::where('participant_id', $awa->id)->exists())->toBeFalse();
 });
 
+/**
+ * ⚠️ Le modérateur ENDOSSE le chiffre dans le PV : un pointage que la visio a
+ * déduit doit pouvoir passer de sa main sans changer de verdict. C'est ce que
+ * fait son clic sur « Présent » d'une ligne automatique - et la salle le lui
+ * montre en demi-teinte tant qu'il ne l'a pas fait.
+ */
+it('confirme un pointage de la visio sans changer le verdict', function () {
+    [, $session, $awa] = seanceAPointer('modconf@example.tg');
+    $session->update(['meeting_status' => 'live']);
+    $mod = officier('modconf@example.tg');
+
+    SessionAttendance::create([
+        'session_id' => $session->id, 'participant_id' => $awa->id,
+        'status' => 'present', 'source' => SessionAttendance::SOURCE_MEETING,
+    ]);
+
+    // La salle annonce la ligne comme automatique : c'est ce qui déclenche la
+    // demi-teinte et le « à confirmer » du panneau.
+    $this->actingAs($mod, 'account')
+        ->getJson(route('session.presence.list', $session))
+        ->assertOk()
+        ->assertJsonPath('rows.0.auto', true)
+        ->assertJsonPath('rows.0.status', 'present');
+
+    $this->actingAs($mod, 'account')
+        ->postJson(route('session.presence.mark', $session), ['participant_id' => $awa->id, 'status' => 'present'])
+        ->assertOk()
+        ->assertJsonPath('counts.present', 1);
+
+    $ligne = SessionAttendance::where('participant_id', $awa->id)->first();
+    expect($ligne->status)->toBe('present');
+    expect($ligne->source)->toBe(SessionAttendance::SOURCE_MANUAL);
+    expect($ligne->marked_by)->toBe($mod->id);
+});
+
 it('n’ouvre le panneau de la salle ni à un tiers ni sur un étranger à la séance', function () {
     [$edition, $session, $awa] = seanceAPointer('modapi3@example.tg');
     $session->update(['meeting_status' => 'live']);

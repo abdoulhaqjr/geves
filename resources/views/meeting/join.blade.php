@@ -467,18 +467,41 @@
         #visio-room .presence-counts{display:flex;flex-wrap:wrap;gap:6px;padding:12px 14px 4px;}
         #visio-room .presence-counts span{font-size:11.5px;font-weight:800;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.07);color:var(--vmuted);}
         #visio-room .presence-counts span b{color:var(--vtext);}
+        /* Ce que le modérateur n'a pas encore regardé lui-même. La pastille
+           disparaît quand il n'y a plus rien à confirmer : un compteur à zéro
+           permanent se lit comme un reproche. */
+        #visio-room .presence-counts span.pr-avoir{background:rgba(255,215,0,.14);color:var(--vgold);}
+        #visio-room .presence-counts span.pr-avoir b{color:var(--vgold);}
         #visio-room .presence-list{flex:1;overflow-y:auto;padding:8px 14px 0;display:flex;flex-direction:column;gap:8px;}
         #visio-room .pr-item{background:var(--vbg-tile);border:1px solid var(--vborder);border-radius:12px;padding:10px 12px;}
         #visio-room .pr-item .nm{font-weight:700;font-size:13.5px;}
         #visio-room .pr-item .meta{font-size:11.5px;color:var(--vmuted);margin-top:2px;}
         /* Qui est DANS la salle : l'information qui évite d'appeler quelqu'un déjà là. */
         #visio-room .pr-item .in-room{color:#4ade80;font-weight:700;}
+        #visio-room .pr-item .meta .pr-avoir{color:var(--vgold);font-weight:700;}
         #visio-room .pr-acts{display:flex;gap:6px;margin-top:8px;}
-        #visio-room .pr-acts button{flex:1;padding:6px 4px;border-radius:8px;border:1px solid var(--vborder);background:transparent;color:var(--vmuted);font-size:11.5px;font-weight:700;cursor:pointer;}
+        /* ⚠️ Bordure de 2px pour TOUS, y compris les boutons éteints : le
+           pointillé du demi-état a besoin d'épaisseur pour se voir (en dessous,
+           le navigateur arrondit au pixel écran et le trait redevient plein),
+           et une épaisseur réservée au demi-état décalerait la ligne de 1,6px au
+           moment précis où l'on confirme. Même bordure partout, rien ne bouge. */
+        #visio-room .pr-acts button{flex:1;padding:6px 4px;border-radius:8px;border:2px solid var(--vborder);background:transparent;color:var(--vmuted);font-size:11.5px;font-weight:700;cursor:pointer;}
         #visio-room .pr-acts button:hover{color:var(--vtext);background:rgba(255,255,255,.06);}
         #visio-room .pr-acts button.on[data-st=present]{background:#16a34a;border-color:#16a34a;color:#fff;}
         #visio-room .pr-acts button.on[data-st=absent]{background:#dc2626;border-color:#dc2626;color:#fff;}
         #visio-room .pr-acts button.on[data-st=excused]{background:var(--vgold);border-color:var(--vgold);color:#2b1f00;}
+        /* ⚠️ MI-CHEMIN, et c'est voulu : un pointage posé par la visio compte dans
+           « Présents », mais personne ne l'a encore regardé. Plein = constaté par
+           le modérateur, pointillé = déduit de la connexion, en attente de son
+           aval. Un seul clic suffit à le remplir.
+           ⚠️ `[data-st]` est dans le sélecteur pour PASSER DEVANT les trois règles
+           pleines ci-dessus : à spécificité égale, l'ordre déciderait, et une
+           règle déplacée changerait silencieusement le rendu. */
+        #visio-room .pr-acts button.on.auto[data-st]{background:transparent;border-style:dashed;}
+        #visio-room .pr-acts button.on.auto[data-st=present]{border-color:#4ade80;color:#4ade80;}
+        #visio-room .pr-acts button.on.auto[data-st=absent]{border-color:#f87171;color:#f87171;}
+        #visio-room .pr-acts button.on.auto[data-st=excused]{border-color:var(--vgold);color:var(--vgold);}
+        #visio-room .pr-acts button.on.auto[data-st]:hover{background:rgba(255,255,255,.08);}
         /* Un panneau vide se lit comme une panne : il dit donc ce qu'il attend. */
         #visio-room .pr-empty,#visio-room .v-vide{padding:16px 14px;font-size:12.5px;color:var(--vmuted);line-height:1.5;}
         #visio-room .vol-panel{display:none;position:absolute;bottom:calc(var(--vtoolbar) + 12px);left:50%;transform:translateX(-50%);background:var(--vbg-elev);border:1px solid var(--vborder);border-radius:14px;padding:12px 16px;z-index:46;box-shadow:0 12px 40px rgba(0,0,0,.4);align-items:center;gap:10px;min-width:220px;}

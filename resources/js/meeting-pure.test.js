@@ -32,6 +32,8 @@ import {
   profilVideo,
   questionsFiltrees,
   presenceLabel,
+  gestePointage,
+  compteAConfirmer,
   rangsDesMains,
   roleLabel,
   teinteDuNom,
@@ -178,6 +180,44 @@ describe('intitulés', () => {
     expect(roleLabel('n’importe quoi')).toBe('Auditeur');
     expect(presenceLabel('excused')).toBe('Excusé');
     expect(presenceLabel('')).toBe('');
+  });
+});
+
+describe('pointage de présence', () => {
+  it('confirme un pointage automatique au lieu de l’effacer', () => {
+    // ⚠️ LE défaut que ce cas gèle : la visio porte quelqu'un présent, le
+    // modérateur appuie sur « Présent » pour l'approuver... et l'ancien bascule
+    // le retirait. Le geste le plus naturel effaçait la présence.
+    expect(gestePointage('present', true, 'present')).toEqual({ statut: 'present', geste: 'confirme' });
+  });
+
+  it('retire son propre verdict quand on le rappuie', () => {
+    // C'est le moyen de défaire une erreur sans quitter la salle.
+    expect(gestePointage('present', false, 'present')).toEqual({ statut: '', geste: 'retire' });
+  });
+
+  it('change de verdict d’un seul clic, confirmé ou non', () => {
+    expect(gestePointage('present', true, 'absent')).toEqual({ statut: 'absent', geste: 'pose' });
+    expect(gestePointage('present', false, 'excused')).toEqual({ statut: 'excused', geste: 'pose' });
+    expect(gestePointage('', false, 'present')).toEqual({ statut: 'present', geste: 'pose' });
+  });
+
+  it('traite une ligne non pointée comme vide, quoi qu’envoie le serveur', () => {
+    expect(gestePointage(null, false, 'present').statut).toBe('present');
+    expect(gestePointage(undefined, true, 'absent').statut).toBe('absent');
+  });
+
+  it('ne compte à confirmer que les lignes automatiques POSÉES', () => {
+    // ⚠️ `auto` sans verdict n'existe pas côté serveur, mais une ligne vide
+    // comptée « à confirmer » demanderait au modérateur de confirmer le vide.
+    expect(compteAConfirmer([
+      { auto: true, status: 'present' },
+      { auto: true, status: '' },
+      { auto: false, status: 'present' },
+      { auto: true, status: 'absent' },
+    ])).toBe(2);
+    expect(compteAConfirmer(null)).toBe(0);
+    expect(compteAConfirmer([])).toBe(0);
   });
 });
 

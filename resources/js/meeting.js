@@ -14,6 +14,7 @@ import {
     cadreMedia, cadreTableau, celuiQuiPresente, droitDeTracer, enBasDuFil, etatChrono, grilleOptimale, heure, idSur,
     idsDesParleurs, indexDuDernierTraitDe, initials, lotsDeTraits, mainsOrdonnees, metadonnee, niveauReseau,
     ordreRecevable as ordreAutorise, presenceLabel, peutReagir, phraseConnectes, placeBulle,
+    gestePointage, compteAConfirmer,
     compteEnAttente, entreeDirecte, pointTableau, profilVideo, questionsFiltrees, rangsDesMains,
     reactionRecevable, REACTIONS_MAX, roleLabel,
     teinteDuNom, texteCourt, traitAllege, traitRecu,
@@ -2110,6 +2111,16 @@ export async function startFromConfig() {
                 s.appendChild(elt('b', '', valeur || 0));
                 counts.appendChild(s);
             });
+        // ⚠️ Les pointages de la visio comptent DÉJÀ dans « Présents » : rien n'est
+        // perdu si le modérateur ne confirme jamais. Ce compteur dit seulement ce
+        // qu'il n'a pas encore regardé lui-même, et disparaît quand il n'y a plus
+        // rien à regarder.
+        const aVoir = compteAConfirmer(presenceRows);
+        if (aVoir) {
+            const s = elt('span', 'pr-avoir', 'À confirmer ');
+            s.appendChild(elt('b', '', aVoir));
+            counts.appendChild(s);
+        }
 
         list.textContent = '';
         if (!presenceRows.length) {
@@ -2130,17 +2141,31 @@ export async function startFromConfig() {
                 meta.appendChild(document.createTextNode(' · '));
                 meta.appendChild(elt('span', 'in-room', '● En salle'));
             }
-            if (r.auto) meta.appendChild(document.createTextNode(' · entré en visio'));
+            if (r.auto && r.status) {
+                meta.appendChild(document.createTextNode(' · '));
+                meta.appendChild(elt('span', 'pr-avoir', 'entré en visio - à confirmer'));
+            }
             item.appendChild(meta);
 
             if (data.canWrite) {
                 const acts = elt('div', 'pr-acts');
                 ['present', 'absent', 'excused'].forEach((st) => {
-                    const b = elt('button', r.status === st ? 'on' : '', presenceLabel(st));
+                    const pose = r.status === st;
+                    // ⚠️ `data-st` porte la COULEUR du verdict (vert / rouge / or) :
+                    // sans lui, les règles `.on[data-st=…]` ne s'accrochaient à rien et
+                    // le bouton actif ne se distinguait pas des deux autres. L'état
+                    // était enregistré sans jamais se voir.
+                    const b = elt('button', pose ? (r.auto ? 'on auto' : 'on') : '', presenceLabel(st));
                     b.type = 'button';
-                    // Recliquer le même verdict le retire : c'est le moyen de défaire
-                    // une erreur sans quitter la salle.
-                    b.addEventListener('click', () => markPresence(r.id, r.status === st ? '' : st));
+                    b.dataset.st = st;
+                    // Mi-chemin assumé : ni « posé », ni « rien ». C'est exactement ce
+                    // qu'est un pointage que la machine a déduit.
+                    b.setAttribute('aria-pressed', pose ? (r.auto ? 'mixed' : 'true') : 'false');
+                    if (pose && r.auto) b.title = 'Confirmer la présence relevée par la visio';
+                    b.addEventListener('click', () => {
+                        const g = gestePointage(r.status, r.auto, st);
+                        markPresence(r.id, g.statut, g.geste);
+                    });
                     acts.appendChild(b);
                 });
                 item.appendChild(acts);
@@ -2161,7 +2186,7 @@ export async function startFromConfig() {
         } catch (e) { /* salle d'abord : une présence injoignable ne casse pas la visio */ }
     }
 
-    async function markPresence(id, status) {
+    async function markPresence(id, status, geste) {
         if (!cfg.presence) return;
         try {
             const res = await fetch(cfg.presence.mark, {
@@ -2171,7 +2196,8 @@ export async function startFromConfig() {
                 body: JSON.stringify({ participant_id: id, status: status }),
             });
             if (!res.ok) { toast('Pointage refusé'); return; }
-            toast(status ? 'Présence enregistrée' : 'Pointage retiré');
+            toast(geste === 'confirme' ? 'Présence confirmée'
+                : status ? 'Présence enregistrée' : 'Pointage retiré');
             await loadPresence();
         } catch (e) { toast('Pointage indisponible'); }
     }

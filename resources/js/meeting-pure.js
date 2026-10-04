@@ -70,6 +70,38 @@ export function presenceLabel(st) {
 }
 
 /**
+ * Ce qu'un clic sur un bouton de pointage doit envoyer, et de quel geste il
+ * s'agit.
+ *
+ * ⚠️ **Un pointage automatique n'est pas un verdict.** Il dit que la personne
+ * est entrée dans la salle, pas que le modérateur l'a constatée - et c'est lui
+ * qui endosse le chiffre dans le PV. Cliquer « Présent » sur une ligne
+ * automatique la **confirme** (elle devient de sa main), là où le même clic sur
+ * une ligne qu'il a posée la **retire**. Sans cette distinction, le geste le
+ * plus naturel - appuyer sur le verdict qu'on approuve - effacerait la présence
+ * au lieu de l'endosser.
+ *
+ * @returns {{statut: string, geste: 'pose'|'confirme'|'retire'}} `statut` vide = retirer.
+ */
+export function gestePointage(statut, auto, bouton) {
+  if (String(statut || '') !== bouton) return { statut: bouton, geste: 'pose' };
+  if (auto) return { statut: bouton, geste: 'confirme' };
+
+  return { statut: '', geste: 'retire' };
+}
+
+/**
+ * Combien de lignes attendent encore le regard du modérateur.
+ *
+ * ⚠️ Compté sur les lignes AFFICHÉES et non demandé au serveur : c'est la même
+ * liste qu'il a sous les yeux, et un compteur qui divergerait de ce qui est
+ * à l'écran serait pire que pas de compteur.
+ */
+export function compteAConfirmer(lignes) {
+  return (Array.isArray(lignes) ? lignes : []).filter((r) => r && r.auto && r.status).length;
+}
+
+/**
  * Ce que le serveur annonce d'un participant : son rôle et son compte.
  *
  * ⚠️ Seule source digne de confiance pour ces deux informations - elle est signée
