@@ -9,6 +9,16 @@
             <x-ukc.icon name="chevron" :size="16" />
             {{ $backRoute === 'account.moderation' ? __('Mes séances à animer') : __('Mes séances à rapporter') }}
         </a>
+        {{-- ⚠️ `target` nommé : si la salle est déjà ouverte dans un onglet, le
+             navigateur la RAMÈNE au lieu d'en ouvrir une seconde - deux
+             connexions, deux vignettes et de l'écho (cf. MeetableRegistry). --}}
+        @if ($meetingUrl)
+            <a href="{{ $meetingUrl }}" id="retourVisio"
+               @if ($meetingTab) target="{{ $meetingTab }}" @endif
+               class="ukc-btn ukc-btn--green ukc-btn--sm">
+                <x-ukc.icon name="video" :size="16" /> {{ __('Retour dans la visio') }}
+            </a>
+        @endif
         @if ($validated)
             <span class="ukc-pill ukc-pill--ok">{{ __('Rapport validé · présence figée') }}</span>
         @elseif ($frozen)
@@ -147,4 +157,35 @@
         </form>
     @endif
 </div>
+
+@if ($meetingUrl)
+<script>
+    // ⚠️ Revenir dans la salle SANS la recharger. Cette page s'ouvre depuis la
+    // salle dans un nouvel onglet : recharger la salle en ferait sortir puis
+    // rentrer le modérateur sous les yeux de toute l'assistance. Si l'onglet
+    // d'origine vit encore, on le remet simplement devant.
+    (function () {
+        var lien = document.getElementById('retourVisio');
+        if (!lien) return;
+        lien.addEventListener('click', function (e) {
+            var salle = null;
+            // Une poignée morte (onglet fermé, autre origine) ne vaut rien : on
+            // laisse alors le lien faire son travail, son `target` nommé retrouve
+            // l'onglet de la salle ou en ouvre un.
+            try { salle = window.opener && !window.opener.closed ? window.opener : null; } catch (err) { salle = null; }
+            if (!salle) return;
+            e.preventDefault();
+            try { salle.focus(); } catch (err) { /* refusé : la vérification ci-dessous rattrape */ }
+            try { window.close(); } catch (err) { /* le navigateur ne ferme que ce qu'il a ouvert */ }
+            // ⚠️ VÉRIFIÉ, pas supposé : certains navigateurs ignorent `focus()` sur
+            // un autre onglet. S'il avait pris, cette page serait masquée ; elle est
+            // encore visible, donc le clic n'a rien fait - et un bouton qui ne fait
+            // rien est pire que le rechargement qu'on voulait éviter.
+            setTimeout(function () {
+                if (document.visibilityState === 'visible') window.location.href = lien.href;
+            }, 400);
+        });
+    })();
+</script>
+@endif
 </x-layouts.participant>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
+use App\Meetings\MeetableRegistry;
 use App\Models\EventSession;
 use App\Models\SessionAttendance;
 use App\Models\SessionReport;
@@ -43,6 +44,11 @@ class SessionAttendanceController extends Controller
             // rapporteur qui n'anime rien n'a pas de « séances à animer », et le
             // renvoyer là lui montrerait une page vide.
             'backRoute' => $this->isModerator($session) ? 'account.moderation' : 'account.reports',
+            // ⚠️ Retour DIRECT dans la salle : on vient d'y pointer des gens, et
+            // repasser par la liste des séances pour y revenir est un détour que
+            // personne ne fait pendant qu'il anime.
+            'meetingUrl' => $session->hasMeeting() ? route('session.meeting', $session) : null,
+            'meetingTab' => MeetableRegistry::tabFor($session),
             'roster' => SessionRoster::for($session),
             'verdicts' => SessionAttendance::where('session_id', $session->id)
                 ->pluck('status', 'participant_id'),

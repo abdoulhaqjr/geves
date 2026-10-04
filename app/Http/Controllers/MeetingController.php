@@ -192,6 +192,9 @@ class MeetingController extends Controller
 
         return view('meeting.join', [
             'label' => $ctx['label'],
+            // Nom de cet onglet : il permet aux pages de la séance d'y revenir
+            // sans ouvrir une seconde salle (cf. MeetableRegistry::tabFor()).
+            'onglet' => MeetableRegistry::tabFor($meetable),
             'editionTitle' => $ctx['editionTitle'],
             'startsAt' => $ctx['startsAt'],
             'recordingUrl' => $ctx['recordingUrl'],

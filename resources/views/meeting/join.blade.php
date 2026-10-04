@@ -1,4 +1,12 @@
 <x-layouts.app :title="'Visio - ' . $label">
+{{-- ⚠️ L'onglet se nomme pour pouvoir être RETROUVÉ. Les pages de la séance
+     (présence…) ramènent vers la salle avec ce nom en `target` : le navigateur
+     réutilise alors cet onglet-ci au lieu d'ouvrir une seconde salle - deux
+     connexions, deux vignettes et de l'écho. Posé pour les DEUX lecteurs
+     (LiveKit et Jitsi), sinon le retour marcherait selon le fournisseur. --}}
+@if ($onglet)
+    <script>try { window.name = @json($onglet); } catch (e) {}</script>
+@endif
 @if ($liveKit)
     {{-- ============ Salle LiveKit intégrée (lecteur maison, SDK bundlé) ============ --}}
     <style>
@@ -1272,7 +1280,12 @@
                     <div class="presence-counts" id="presenceCounts" role="group" aria-label="Filtrer la liste de présence"></div>
                     <div class="presence-list" id="presenceList"></div>
                     <div style="padding:10px 14px 14px;">
-                        <a class="v-btn sm" id="presencePage" href="#" target="_blank" rel="noopener">Ouvrir la page de présence</a>
+                        {{-- ⚠️ PAS de `rel="noopener"` ici, et c'est délibéré : la page
+                             ouverte est la nôtre, sur la même origine, et elle a besoin
+                             de la poignée (`window.opener`) pour remettre CET onglet
+                             devant au retour - sans quoi revenir rechargerait la salle,
+                             donc en sortirait et y rentrerait sous les yeux de tous. --}}
+                        <a class="v-btn sm" id="presencePage" href="#" target="_blank">Ouvrir la page de présence</a>
                     </div>
                 </div>
             </aside>

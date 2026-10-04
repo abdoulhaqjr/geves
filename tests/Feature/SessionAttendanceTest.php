@@ -1,6 +1,7 @@
 <?php
 
 use App\Meetings\LiveKitRoom;
+use App\Meetings\MeetableRegistry;
 use App\Models\Edition;
 use App\Models\EventSession;
 use App\Models\Participant;
@@ -183,6 +184,32 @@ it('ne connaît plus que présent et absent, page et salle', function () {
         ->assertStatus(422);
 
     expect(SessionAttendance::where('participant_id', $awa->id)->exists())->toBeFalse();
+});
+
+/**
+ * ⚠️ On vient de pointer des gens pendant qu'on anime : repasser par la liste
+ * des séances pour retourner dans la salle est un détour que personne ne fait.
+ * Le `target` nommé vaut autant que le lien - sans lui, le retour ouvrirait une
+ * SECONDE salle à côté de celle qui tourne déjà (deux connexions, de l'écho).
+ */
+it('ramène dans la visio depuis la page de présence, dans l’onglet de la salle', function () {
+    [, $session] = seanceAPointer('modretour@example.tg');
+    $mod = officier('modretour@example.tg');
+
+    // Sans visio, rien à proposer : le bouton n'existe pas.
+    $this->actingAs($mod, 'account')
+        ->get(route('account.attendance.edit', $session))
+        ->assertOk()
+        ->assertDontSee('retourVisio');
+
+    $session->update(['meeting_status' => 'live']);
+
+    $this->actingAs($mod, 'account')
+        ->get(route('account.attendance.edit', $session))
+        ->assertOk()
+        ->assertSee('Retour dans la visio')
+        ->assertSee(route('session.meeting', $session))
+        ->assertSee('target="'.MeetableRegistry::tabFor($session).'"', false);
 });
 
 /**

@@ -1692,6 +1692,26 @@ table `session_attendances`, modèle `SessionAttendance`). Entrées depuis
     a aucune inscription à laquelle rattacher une présence.
   - Une séance **sans communication** (plénière, cérémonie) affiche un état vide
     qui l'explique - elle ne retombe pas sur la liste de l'édition.
+- **La page de présence RAMÈNE dans la salle** (`MeetableRegistry::tabFor()`) :
+  on vient d'y pointer des gens pendant qu'on anime, repasser par la liste des
+  séances est un détour que personne ne fait.
+  - ⚠️ **L'onglet de la salle porte un nom** (`window.name`, posé par
+    `meeting/join.blade.php` pour les DEUX lecteurs), et le lien de retour le
+    pose en `target` : le navigateur **réutilise** cet onglet au lieu d'ouvrir
+    une seconde salle - deux connexions, deux vignettes et de l'écho. Le nom a
+    **une seule définition** ; deux chaînes construites chacune de leur côté se
+    décaleraient un jour, et l'onglet cesserait d'être retrouvé sans que rien ne
+    casse visiblement.
+  - ⚠️ **Pas de `rel="noopener"`** sur le lien de la salle vers la page, et
+    c'est délibéré : la page ouverte est la nôtre, même origine, et elle a
+    besoin de `window.opener` pour remettre l'onglet de la salle devant **sans
+    la recharger**. Un rechargement en ferait sortir puis rentrer le modérateur
+    sous les yeux de toute l'assistance.
+  - ⚠️ `focus()` sur un autre onglet **peut être ignoré** selon le navigateur.
+    D'où une vérification et non une supposition : 400 ms plus tard, si la page
+    est encore `visible`, c'est que le clic n'a rien fait - on suit alors le
+    lien. **Un bouton qui ne fait rien est pire que le rechargement qu'on
+    voulait éviter.**
 - **La présence se tient AUSSI depuis la salle** (onglet « Présence » du lecteur,
   `SessionPresenceApiController` + `resources/js/meeting.js`) : l'aller-retour vers
   `/compte/seances/{id}/presence` obligeait à quitter la séance au moment précis

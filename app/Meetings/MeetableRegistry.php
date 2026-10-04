@@ -38,6 +38,24 @@ class MeetableRegistry
         return $objet;
     }
 
+    /**
+     * Nom de l'ONGLET qui tient la salle de cet objet, ou null s'il n'en a pas.
+     *
+     * ⚠️ La salle se nomme elle-même avec cette chaîne (`window.name`), et les
+     * pages qui ramènent vers elle la posent en `target` : le navigateur
+     * **réutilise** alors l'onglet déjà ouvert au lieu d'en créer un second -
+     * deux onglets sur la même salle, c'est deux connexions, deux vignettes et
+     * de l'écho. D'où une **définition unique** : deux chaînes construites
+     * chacune de leur côté se décaleraient un jour, et l'onglet cesserait
+     * d'être retrouvé sans que rien ne casse visiblement.
+     */
+    public static function tabFor(Meetable&Model $objet): ?string
+    {
+        $cle = self::keyFor($objet);
+
+        return $cle === null ? null : 'geves-visio-'.$cle.'-'.$objet->getKey();
+    }
+
     /** Clé d'URL de cet objet (« session », « formation »), ou null s'il n'en a pas. */
     public static function keyFor(Meetable&Model $objet): ?string
     {
