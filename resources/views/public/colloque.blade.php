@@ -367,6 +367,10 @@
                  ⚠️ Les trois mêmes avantages répétés sur chaque carte ne
                  distinguaient rien : ils sont dits UNE fois sous la grille, et la
                  carte garde la seule chose qui diffère, le grade couvert.
+                 ⚠️ La règle « le tarif se déduit du grade » se lit dans les CARTES
+                 elles-mêmes (les grades couverts y figurent) : le bandeau qui la
+                 répétait au-dessus de la grille a été retiré, il doublait ce que
+                 la grille montre déjà. Ne pas le réintroduire.
                  ⚠️ Rien de personnalisé ici (pas de « votre tarif » pour qui est
                  connecté) : la page reste la même pour tout le monde, donc
                  cacheable en HTTP - cf. ColloqueController. --}}
@@ -386,10 +390,6 @@
                         <p>{{ __('Tarifs officiels du colloque (FCFA).') }}@if ($feesNote) {{ $feesNote }}@endif</p>
                     </div>
 
-                    <p class="ukc-fees-rule">
-                        <x-ukc.icon name="info" :size="17" />
-                        <span>{!! __('Votre tarif est <strong>déterminé par votre grade</strong> - vous ne le choisissez pas. Il s’applique automatiquement au moment de l’inscription.') !!}</span>
-                    </p>
 
                     <div class="ukc-pricing">
                         @foreach ($fees as $fee)

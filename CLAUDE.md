@@ -2355,7 +2355,10 @@ l'inverse et ont été repris :
 
 - **Page publique, grille des tarifs** : un bouton « Choisir » par carte et une
   pastille « Recommandé » posée sur la carte du MILIEU - un index, pas un
-  conseil. Les cartes **renseignent** désormais (qui est concerné, à quel prix),
+  conseil. ⚠️ La règle se lit **dans les cartes** (les grades couverts y
+  figurent) : le bandeau qui la répétait au-dessus de la grille a été retiré,
+  il doublait ce que la grille montre déjà. Ne pas le réintroduire (un cas Pest
+  le gèle). Les cartes **renseignent** (qui est concerné, à quel prix),
   avec les grades couverts dedans, les avantages dits UNE fois sous la grille, et
   **un seul** appel à l'action. Quand aucune catégorie ne déclare de grade, la
   page le dit au visiteur : le tarif lui sera confirmé à l'inscription - sinon il

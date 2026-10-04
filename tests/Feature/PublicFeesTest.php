@@ -116,7 +116,9 @@ it('la grille publique renseigne au lieu de faire choisir', function () {
 
     $page = $this->get(route('public.colloque', $edition->slug))->assertOk();
 
-    $page->assertSee('déterminé par votre grade', false);
+    // La règle se lit dans les cartes elles-mêmes : le bandeau qui la répétait
+    // au-dessus de la grille doublait ce qu'elles montrent déjà.
+    $page->assertDontSee('ukc-fees-rule', false);
     // Les grades couverts, c'est-à-dire la seule chose qui distingue une carte.
     $page->assertSee('Enseignant / Chercheur')->assertSee('Doctorant')->assertSee('Tout autre grade');
     // Plus de geste d'achat par carte.

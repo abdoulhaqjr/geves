@@ -717,13 +717,7 @@ input[data-uppercase] { text-transform: uppercase; }
 /* ⚠️ Plus de carte « Recommandé » : le tarif se DÉDUIT du grade, il ne se
    recommande pas. La pastille était posée sur la carte du milieu - un index,
    pas un conseil - et invitait à prendre le moins cher. */
-/* La règle avant la grille : elle répond à « laquelle dois-je prendre ? ». */
-.ukc-fees-rule {
-  display: flex; align-items: flex-start; gap: 10px; max-width: 640px; margin: 0 auto 22px;
-  padding: 12px 16px; border-radius: 12px; background: #eef2ff; border: 1px solid #c7d2fe;
-  font-size: 14px; line-height: 1.55; color: #1e3a8a; text-align: left;
-}
-.ukc-fees-rule svg { flex-shrink: 0; margin-top: 3px; }
+
 /* Dans la carte, la seule chose qui distingue réellement une catégorie. */
 .ukc-price-card .who { margin-top: 18px; text-align: left; }
 .ukc-price-card .who-head {
