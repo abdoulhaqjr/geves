@@ -298,7 +298,7 @@ class EventSession extends Model implements Meetable
      * séance** (`SessionRoster`), pas celui de l'édition : « 12 présents » sur
      * 215 inscrits ne voudrait rien dire pour une salle qui en attend 14.
      *
-     * @return array{present: int, absent: int, excused: int, unmarked: int, expected: int}
+     * @return array{present: int, absent: int, unmarked: int, expected: int}
      */
     public function presenceCounts(): array
     {
@@ -313,7 +313,6 @@ class EventSession extends Model implements Meetable
         return [
             'present' => (int) ($parVerdict['present'] ?? 0),
             'absent' => (int) ($parVerdict['absent'] ?? 0),
-            'excused' => (int) ($parVerdict['excused'] ?? 0),
             // Le programme peut changer après un pointage : on ne descend jamais
             // sous zéro, et on ne prétend pas qu'il reste des gens à appeler.
             'unmarked' => max(0, $attendus - $pointes),

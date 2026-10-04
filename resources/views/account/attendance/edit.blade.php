@@ -31,7 +31,6 @@
             <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;">
                 <span class="ukc-pill ukc-pill--ok">{{ __('Présents') }} : <strong>{{ $counts['present'] }}</strong></span>
                 <span class="ukc-pill ukc-pill--err">{{ __('Absents') }} : <strong>{{ $counts['absent'] }}</strong></span>
-                <span class="ukc-pill ukc-pill--warn">{{ __('Excusés') }} : <strong>{{ $counts['excused'] }}</strong></span>
                 <span class="ukc-pill ukc-pill--muted">{{ __('Non pointés') }} : <strong>{{ $counts['unmarked'] }}</strong></span>
                 <span class="ukc-pill ukc-pill--muted">{{ __('Attendus') }} : <strong>{{ $counts['expected'] }}</strong></span>
             </div>
@@ -110,7 +109,7 @@
                                              sur une erreur de pointage. --}}
                                         <div class="ukc-presence" role="group"
                                              aria-label="{{ __('Présence de :nom', ['nom' => $ligne['name']]) }}">
-                                            @foreach (['present' => __('Présent'), 'absent' => __('Absent'), 'excused' => __('Excusé'), '' => __('Non pointé')] as $valeur => $libelle)
+                                            @foreach (['present' => __('Présent'), 'absent' => __('Absent'), '' => __('Non pointé')] as $valeur => $libelle)
                                                 <label class="ukc-presence__opt ukc-presence__opt--{{ $valeur ?: 'none' }}">
                                                     <input type="radio" name="presence[{{ $participant->id }}]" value="{{ $valeur }}"
                                                            @checked($verdict === $valeur) @disabled(! $canWrite)>

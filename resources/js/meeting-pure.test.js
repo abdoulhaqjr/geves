@@ -34,6 +34,8 @@ import {
   presenceLabel,
   gestePointage,
   compteAConfirmer,
+  presencesFiltrees,
+  filtrePresenceTenable,
   rangsDesMains,
   roleLabel,
   teinteDuNom,
@@ -178,7 +180,11 @@ describe('intitulés', () => {
     expect(roleLabel('presenter')).toBe('Communicateur');
     expect(roleLabel('moderator')).toBe('Modérateur');
     expect(roleLabel('n’importe quoi')).toBe('Auditeur');
-    expect(presenceLabel('excused')).toBe('Excusé');
+    expect(presenceLabel('present')).toBe('Présent');
+    expect(presenceLabel('absent')).toBe('Absent');
+    // « Excusé » a été retiré : il ne pesait rien en aval et ajoutait un choix
+    // à trancher pendant qu'on appelle des gens à la voix.
+    expect(presenceLabel('excused')).toBe('');
     expect(presenceLabel('')).toBe('');
   });
 });
@@ -198,13 +204,42 @@ describe('pointage de présence', () => {
 
   it('change de verdict d’un seul clic, confirmé ou non', () => {
     expect(gestePointage('present', true, 'absent')).toEqual({ statut: 'absent', geste: 'pose' });
-    expect(gestePointage('present', false, 'excused')).toEqual({ statut: 'excused', geste: 'pose' });
+    expect(gestePointage('absent', false, 'present')).toEqual({ statut: 'present', geste: 'pose' });
     expect(gestePointage('', false, 'present')).toEqual({ statut: 'present', geste: 'pose' });
   });
 
   it('traite une ligne non pointée comme vide, quoi qu’envoie le serveur', () => {
     expect(gestePointage(null, false, 'present').statut).toBe('present');
     expect(gestePointage(undefined, true, 'absent').statut).toBe('absent');
+  });
+
+  it('filtre sur chaque étiquette, et rend tout le monde sur « Attendus »', () => {
+    const lignes = [
+      { id: 1, status: 'present', auto: true },
+      { id: 2, status: 'present', auto: false },
+      { id: 3, status: 'absent', auto: false },
+      { id: 4, status: '', auto: false },
+    ];
+    expect(presencesFiltrees(lignes, 'present').map((r) => r.id)).toEqual([1, 2]);
+    expect(presencesFiltrees(lignes, 'absent').map((r) => r.id)).toEqual([3]);
+    expect(presencesFiltrees(lignes, 'confirmer').map((r) => r.id)).toEqual([1]);
+    // « Attendus » est le chemin de retour : il ne retire personne, pas même les
+    // non pointés - ce sont EUX qu'il reste à appeler.
+    expect(presencesFiltrees(lignes, 'tous').map((r) => r.id)).toEqual([1, 2, 3, 4]);
+    expect(presencesFiltrees(null, 'present')).toEqual([]);
+  });
+
+  it('quitte « À confirmer » quand l’étiquette s’efface', () => {
+    // ⚠️ C'est souvent le DERNIER clic du modérateur qui escamote l'étiquette,
+    // pendant qu'il la regarde : rester dessus laisserait une liste vide et plus
+    // aucune étiquette pour en sortir.
+    const restantes = [{ status: 'present', auto: true }];
+    expect(filtrePresenceTenable('confirmer', restantes)).toBe('confirmer');
+    expect(filtrePresenceTenable('confirmer', [{ status: 'present', auto: false }])).toBe('tous');
+    expect(filtrePresenceTenable('confirmer', [])).toBe('tous');
+    // Un filtre inconnu (ancien onglet laissé ouvert, valeur bricolée) rend tout.
+    expect(filtrePresenceTenable('excused', restantes)).toBe('tous');
+    expect(filtrePresenceTenable('absent', restantes)).toBe('absent');
   });
 
   it('ne compte à confirmer que les lignes automatiques POSÉES', () => {

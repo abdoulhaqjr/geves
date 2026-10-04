@@ -1657,6 +1657,18 @@ rechargeait la page faisait perdre la saisie en cours.
 
 ### Présence d'une séance = pointée par le modérateur OU le rapporteur
 
+- ⚠️ **Deux verdicts : présent ou absent.** « Excusé » a existé et a été retiré
+  (migration `2026_10_04_000100`, lignes versées dans `absent`). Il ne pesait
+  **rien en aval** - seul `present` compte dans le PV (`SessionReportController`)
+  et dans l'attestation (`DocumentController`) - mais il ajoutait un troisième
+  choix à trancher pendant qu'on appelle des gens à la voix. Un motif d'absence
+  se dit dans le compte rendu, pas dans une colonne qui ne sert à aucun calcul.
+  ⚠️ Les anciennes lignes deviennent `absent` et **non** « non pointé » : un
+  modérateur avait regardé sa salle, c'est un verdict, pas un blanc - et le
+  remettre à zéro ferait remonter le compteur des gens à appeler.
+  ⚠️ `SessionAttendance::STATUSES` est la **source unique** : les deux
+  contrôleurs valident sur ses clés, donc y remettre une valeur l'ouvre partout.
+
 `/compte/seances/{session}/presence` (`Account\SessionAttendanceController`,
 table `session_attendances`, modèle `SessionAttendance`). Entrées depuis
 **Séances à animer** et **Séances à rapporter**.
@@ -1729,6 +1741,22 @@ table `session_attendances`, modèle `SessionAttendance`). Entrées depuis
   connexion qui est toujours vraie. Ce n'est pas un bug - le fait machine tient,
   seul l'aval humain a été retiré. Pour écarter quelqu'un, on pose « Absent »,
   qui est un verdict et que rien n'écrase.
+- **Les étiquettes SONT les filtres** (`presencesFiltrees`, `filtrePresenceTenable`,
+  règles pures). On lit « Absents 3 » et on veut voir lesquels : demander de le
+  redire ailleurs serait une étape pour rien. « Attendus » est le chemin de
+  retour vers la liste entière, non pointés compris - ce sont eux qu'il reste à
+  appeler.
+  ⚠️ **« À confirmer » peut disparaître sous le doigt** : c'est souvent le
+  dernier clic du modérateur qui l'escamote, pendant qu'il la regarde. Le filtre
+  **se replie** alors sur « Attendus » - sinon il resterait une liste vide et
+  plus aucune étiquette pour en sortir.
+  ⚠️ `compteAConfirmer()` est défini **par** le filtre, pas à côté : le nombre
+  sur l'étiquette et la longueur de la liste qu'elle ouvre doivent être le même
+  calcul.
+  ⚠️ Le filtre choisi **survit au rafraîchissement** (20 s) : repartir sur
+  « Attendus » toutes les 20 secondes ferait sauter la liste sous les yeux.
+  ⚠️ Bordure transparente sur TOUTES les étiquettes : réservée à l'allumée, elle
+  décalerait la rangée au moment du clic.
   ⚠️ **Défaut gelé par un cas** : les trois boutons portaient `.on` sans
   `data-st`, alors que la feuille colore `.on[data-st=…]`. Le verdict était
   enregistré **sans jamais se voir** - trois boutons identiques sous un compteur

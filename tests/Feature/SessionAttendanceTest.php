@@ -145,7 +145,7 @@ it('laisse le modérateur pointer la présence de sa séance', function () {
     expect(SessionAttendance::where('participant_id', $awa->id)->value('status'))->toBe('present');
     expect(SessionAttendance::where('participant_id', $awa->id)->value('marked_by'))->toBe($mod->id);
     expect($session->presenceCounts())->toMatchArray([
-        'present' => 1, 'absent' => 1, 'excused' => 0, 'unmarked' => 0, 'expected' => 2,
+        'present' => 1, 'absent' => 1, 'unmarked' => 0, 'expected' => 2,
     ]);
 });
 
@@ -154,10 +154,35 @@ it('laisse aussi le rapporteur pointer : c’est souvent lui qui tient la liste'
     $rap = officier('rap@example.tg');
 
     $this->actingAs($rap, 'account')
-        ->post(route('account.attendance.update', $session), ['presence' => [$awa->id => 'excused']])
+        ->post(route('account.attendance.update', $session), ['presence' => [$awa->id => 'absent']])
         ->assertRedirect();
 
-    expect(SessionAttendance::where('participant_id', $awa->id)->value('status'))->toBe('excused');
+    expect(SessionAttendance::where('participant_id', $awa->id)->value('status'))->toBe('absent');
+});
+
+/**
+ * ⚠️ « Excusé » a été retiré : il ne pesait rien en aval (seul `present` compte
+ * dans le PV et dans l'attestation) et ajoutait un choix à trancher pendant
+ * qu'on appelle des gens à la voix. Ce cas gèle le refus des DEUX côtés - la
+ * page et la salle valident sur la même liste, et y remettre une valeur
+ * l'ouvrirait partout.
+ */
+it('ne connaît plus que présent et absent, page et salle', function () {
+    [, $session, $awa] = seanceAPointer('modbin@example.tg');
+    $session->update(['meeting_status' => 'live']);
+    $mod = officier('modbin@example.tg');
+
+    expect(array_keys(SessionAttendance::STATUSES))->toBe(['present', 'absent']);
+
+    $this->actingAs($mod, 'account')
+        ->post(route('account.attendance.update', $session), ['presence' => [$awa->id => 'excused']])
+        ->assertSessionHasErrors('presence.'.$awa->id);
+
+    $this->actingAs($mod, 'account')
+        ->postJson(route('session.presence.mark', $session), ['participant_id' => $awa->id, 'status' => 'excused'])
+        ->assertStatus(422);
+
+    expect(SessionAttendance::where('participant_id', $awa->id)->exists())->toBeFalse();
 });
 
 /**

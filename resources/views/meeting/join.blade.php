@@ -465,13 +465,22 @@
         #visio-room .share-menu .hint{font-size:11.5px;color:var(--vmuted);padding:8px 10px 4px;line-height:1.4;}
         /* --- Présence tenue dans la salle (modérateur / rapporteur) --- */
         #visio-room .presence-counts{display:flex;flex-wrap:wrap;gap:6px;padding:12px 14px 4px;}
-        #visio-room .presence-counts span{font-size:11.5px;font-weight:800;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.07);color:var(--vmuted);}
-        #visio-room .presence-counts span b{color:var(--vtext);}
-        /* Ce que le modérateur n'a pas encore regardé lui-même. La pastille
+        /* ⚠️ Chaque compteur EST son filtre : on lit « Absents 3 » et on veut voir
+           lesquels. D'où des BOUTONS, et non des étiquettes mortes.
+           ⚠️ La bordure transparente est posée sur TOUTES : réservée à l'allumée,
+           elle décalerait la rangée au moment du clic. */
+        #visio-room .presence-counts button{font-family:inherit;font-size:11.5px;font-weight:800;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.07);color:var(--vmuted);border:1px solid transparent;cursor:pointer;}
+        #visio-room .presence-counts button b{color:var(--vtext);}
+        #visio-room .presence-counts button:hover{background:rgba(255,255,255,.13);color:var(--vtext);}
+        /* Ce que le modérateur n'a pas encore regardé lui-même. L'étiquette
            disparaît quand il n'y a plus rien à confirmer : un compteur à zéro
            permanent se lit comme un reproche. */
-        #visio-room .presence-counts span.pr-avoir{background:rgba(255,215,0,.14);color:var(--vgold);}
-        #visio-room .presence-counts span.pr-avoir b{color:var(--vgold);}
+        #visio-room .presence-counts button.pr-avoir{background:rgba(255,215,0,.14);color:var(--vgold);}
+        #visio-room .presence-counts button.pr-avoir b{color:var(--vgold);}
+        /* L'allumée dit ce que la liste montre - sans elle, une liste filtrée se
+           lit comme une liste incomplète. */
+        #visio-room .presence-counts button.on{background:rgba(34,62,164,.55);border-color:rgba(255,215,0,.5);color:var(--vtext);}
+        #visio-room .presence-counts button.pr-avoir.on{background:rgba(255,215,0,.26);border-color:var(--vgold);color:var(--vgold);}
         #visio-room .presence-list{flex:1;overflow-y:auto;padding:8px 14px 0;display:flex;flex-direction:column;gap:8px;}
         #visio-room .pr-item{background:var(--vbg-tile);border:1px solid var(--vborder);border-radius:12px;padding:10px 12px;}
         #visio-room .pr-item .nm{font-weight:700;font-size:13.5px;}
@@ -489,7 +498,6 @@
         #visio-room .pr-acts button:hover{color:var(--vtext);background:rgba(255,255,255,.06);}
         #visio-room .pr-acts button.on[data-st=present]{background:#16a34a;border-color:#16a34a;color:#fff;}
         #visio-room .pr-acts button.on[data-st=absent]{background:#dc2626;border-color:#dc2626;color:#fff;}
-        #visio-room .pr-acts button.on[data-st=excused]{background:var(--vgold);border-color:var(--vgold);color:#2b1f00;}
         /* ⚠️ MI-CHEMIN, et c'est voulu : un pointage posé par la visio compte dans
            « Présents », mais personne ne l'a encore regardé. Plein = constaté par
            le modérateur, pointillé = déduit de la connexion, en attente de son
@@ -500,7 +508,6 @@
         #visio-room .pr-acts button.on.auto[data-st]{background:transparent;border-style:dashed;}
         #visio-room .pr-acts button.on.auto[data-st=present]{border-color:#4ade80;color:#4ade80;}
         #visio-room .pr-acts button.on.auto[data-st=absent]{border-color:#f87171;color:#f87171;}
-        #visio-room .pr-acts button.on.auto[data-st=excused]{border-color:var(--vgold);color:var(--vgold);}
         #visio-room .pr-acts button.on.auto[data-st]:hover{background:rgba(255,255,255,.08);}
         /* Un panneau vide se lit comme une panne : il dit donc ce qu'il attend. */
         #visio-room .pr-empty,#visio-room .v-vide{padding:16px 14px;font-size:12.5px;color:var(--vmuted);line-height:1.5;}
@@ -1260,8 +1267,9 @@
                 <div class="side-panel" id="panelPresence">
                     <div style="padding:12px 14px 0;font-size:12px;color:var(--vmuted);line-height:1.4;">
                         Présence des auteurs des communications de la séance. Les connectés sont repérés automatiquement.
+                        Les étiquettes filtrent la liste.
                     </div>
-                    <div class="presence-counts" id="presenceCounts"></div>
+                    <div class="presence-counts" id="presenceCounts" role="group" aria-label="Filtrer la liste de présence"></div>
                     <div class="presence-list" id="presenceList"></div>
                     <div style="padding:10px 14px 14px;">
                         <a class="v-btn sm" id="presencePage" href="#" target="_blank" rel="noopener">Ouvrir la page de présence</a>

@@ -22,11 +22,22 @@ class SessionAttendance extends Model
 {
     protected $guarded = ['id'];
 
-    /** Verdicts possibles, et leurs libellés. */
+    /**
+     * Verdicts possibles, et leurs libellés.
+     *
+     * ⚠️ **Deux verdicts, pas trois.** « Excusé » a existé et a été retiré : il
+     * ne changeait rien en aval - seul `present` compte dans le PV et dans
+     * l'attestation - mais il ajoutait un troisième bouton à trancher pendant
+     * qu'on appelle des gens à la voix. Un motif d'absence se dit dans le compte
+     * rendu, pas dans une colonne qui ne sert à aucun calcul.
+     *
+     * ⚠️ Source unique : les deux contrôleurs valident sur `array_keys()` de
+     * cette liste. Y remettre une valeur l'ouvre PARTOUT, y compris dans la
+     * salle de visio.
+     */
     public const STATUSES = [
         'present' => 'Présent',
         'absent' => 'Absent',
-        'excused' => 'Excusé',
     ];
 
     /** Pointage posé à la main, ou déduit d'une entrée dans la visio. */

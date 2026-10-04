@@ -14,7 +14,7 @@ import {
     cadreMedia, cadreTableau, celuiQuiPresente, droitDeTracer, enBasDuFil, etatChrono, grilleOptimale, heure, idSur,
     idsDesParleurs, indexDuDernierTraitDe, initials, lotsDeTraits, mainsOrdonnees, metadonnee, niveauReseau,
     ordreRecevable as ordreAutorise, presenceLabel, peutReagir, phraseConnectes, placeBulle,
-    gestePointage, compteAConfirmer,
+    gestePointage, compteAConfirmer, presencesFiltrees, filtrePresenceTenable,
     compteEnAttente, entreeDirecte, pointTableau, profilVideo, questionsFiltrees, rangsDesMains,
     reactionRecevable, REACTIONS_MAX, roleLabel,
     teinteDuNom, texteCourt, traitAllege, traitRecu,
@@ -2098,29 +2098,42 @@ export async function startFromConfig() {
     // qui a le droit de pointer, pas le navigateur.
     var presenceRows = [];
     var presenceTimer = null;
+    // L'étiquette choisie survit au rafraîchissement : le panneau se relit toutes
+    // les 20 s, et repartir sur « Attendus » à chaque fois ferait sauter la liste
+    // sous les yeux du modérateur.
+    var presenceFiltre = 'tous';
 
     function renderPresence(data) {
         const list = $('presenceList'), counts = $('presenceCounts');
         if (!list) return;
 
         const c = data.counts || {};
-        counts.textContent = '';
-        [['Présents', c.present], ['Absents', c.absent], ['Excusés', c.excused], ['Attendus', c.expected]]
-            .forEach(([libelle, valeur]) => {
-                const s = elt('span', '', libelle + ' ');
-                s.appendChild(elt('b', '', valeur || 0));
-                counts.appendChild(s);
-            });
         // ⚠️ Les pointages de la visio comptent DÉJÀ dans « Présents » : rien n'est
-        // perdu si le modérateur ne confirme jamais. Ce compteur dit seulement ce
-        // qu'il n'a pas encore regardé lui-même, et disparaît quand il n'y a plus
-        // rien à regarder.
+        // perdu si le modérateur ne confirme jamais. Cette étiquette dit seulement
+        // ce qu'il n'a pas encore regardé lui-même, et s'efface quand il n'y a plus
+        // rien à regarder - d'où le repli du filtre.
         const aVoir = compteAConfirmer(presenceRows);
-        if (aVoir) {
-            const s = elt('span', 'pr-avoir', 'À confirmer ');
-            s.appendChild(elt('b', '', aVoir));
-            counts.appendChild(s);
-        }
+        presenceFiltre = filtrePresenceTenable(presenceFiltre, presenceRows);
+
+        counts.textContent = '';
+        const etiquettes = [
+            ['tous', 'Attendus', c.expected],
+            ['present', 'Présents', c.present],
+            ['absent', 'Absents', c.absent],
+        ];
+        if (aVoir) etiquettes.push(['confirmer', 'À confirmer', aVoir]);
+        etiquettes.forEach(([f, libelle, valeur]) => {
+            // Chaque compteur EST son filtre : le modérateur lit « Absents 3 » et
+            // veut voir lesquels - il n'y a pas de raison de lui demander de le
+            // dire ailleurs.
+            const b = elt('button', (f === 'confirmer' ? 'pr-avoir' : '') + (presenceFiltre === f ? ' on' : ''), libelle + ' ');
+            b.type = 'button';
+            b.dataset.f = f;
+            b.setAttribute('aria-pressed', presenceFiltre === f ? 'true' : 'false');
+            b.appendChild(elt('b', '', valeur || 0));
+            b.addEventListener('click', () => { presenceFiltre = f; renderPresence(data); });
+            counts.appendChild(b);
+        });
 
         list.textContent = '';
         if (!presenceRows.length) {
@@ -2129,7 +2142,18 @@ export async function startFromConfig() {
             return;
         }
 
-        presenceRows.forEach((r) => {
+        const vues = presencesFiltrees(presenceRows, presenceFiltre);
+        if (!vues.length) {
+            // ⚠️ Dire CE QUI manque, et pas « aucun résultat » : une liste vide sous
+            // une étiquette allumée se lit comme une panne du panneau.
+            list.appendChild(elt('div', 'pr-empty', presenceFiltre === 'present'
+                ? 'Personne n’est encore pointé présent.'
+                : 'Aucune absence constatée pour l’instant.'));
+
+            return;
+        }
+
+        vues.forEach((r) => {
             const item = elt('div', 'pr-item');
             item.appendChild(elt('div', 'nm', r.name));
 
@@ -2149,7 +2173,9 @@ export async function startFromConfig() {
 
             if (data.canWrite) {
                 const acts = elt('div', 'pr-acts');
-                ['present', 'absent', 'excused'].forEach((st) => {
+                // Deux verdicts, pas trois : « Excusé » ne pesait rien en aval et
+                // ajoutait un choix à trancher pendant qu'on appelle des gens à la voix.
+                ['present', 'absent'].forEach((st) => {
                     const pose = r.status === st;
                     // ⚠️ `data-st` porte la COULEUR du verdict (vert / rouge / or) :
                     // sans lui, les règles `.on[data-st=…]` ne s'accrochaient à rien et

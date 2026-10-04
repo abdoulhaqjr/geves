@@ -58,15 +58,59 @@ export function roleLabel(r) {
   return r === 'presenter' ? 'Communicateur' : r === 'moderator' ? 'Modérateur' : 'Auditeur';
 }
 
-/** Nom d'un verdict de présence. */
+/**
+ * Nom d'un verdict de présence.
+ *
+ * ⚠️ **Deux verdicts, pas trois** : « Excusé » a été retiré. Il ne pesait rien en
+ * aval (seul `present` compte dans le PV et dans l'attestation) et ajoutait un
+ * choix à trancher pendant qu'on appelle des gens à la voix.
+ */
 export function presenceLabel(st) {
-  return st === 'present'
-    ? 'Présent'
-    : st === 'absent'
-      ? 'Absent'
-      : st === 'excused'
-        ? 'Excusé'
-        : '';
+  return st === 'present' ? 'Présent' : st === 'absent' ? 'Absent' : '';
+}
+
+/** Les quatre étiquettes du panneau de présence, qui servent de filtres. */
+export const PRESENCE_FILTRES = ['tous', 'present', 'absent', 'confirmer'];
+
+/**
+ * Les lignes que ce filtre laisse passer.
+ *
+ * `tous` répond aux « Attendus » : l'étiquette du total est le chemin de retour
+ * vers la liste entière.
+ */
+export function presencesFiltrees(lignes, filtre) {
+  const liste = (Array.isArray(lignes) ? lignes : []).filter(Boolean);
+
+  if (filtre === 'present' || filtre === 'absent') return liste.filter((r) => r.status === filtre);
+  if (filtre === 'confirmer') return liste.filter((r) => r.auto && r.status);
+
+  return liste;
+}
+
+/**
+ * Combien de lignes attendent encore le regard du modérateur.
+ *
+ * ⚠️ Défini PAR le filtre, et non à côté : le nombre sur l'étiquette et la
+ * longueur de la liste qu'elle ouvre doivent être le même calcul, sinon le jour
+ * où l'un des deux bouge, l'étiquette annonce un compte que la liste ne montre
+ * pas.
+ */
+export function compteAConfirmer(lignes) {
+  return presencesFiltrees(lignes, 'confirmer').length;
+}
+
+/**
+ * Le filtre qu'on peut VRAIMENT appliquer à ces lignes.
+ *
+ * ⚠️ « À confirmer » disparaît dès qu'il n'y a plus rien à confirmer - et c'est
+ * souvent le dernier clic du modérateur qui l'escamote, pendant qu'il la
+ * regarde. Rester dessus laisserait une liste vide et plus aucune étiquette pour
+ * en sortir.
+ */
+export function filtrePresenceTenable(filtre, lignes) {
+  if (filtre === 'confirmer' && !compteAConfirmer(lignes)) return 'tous';
+
+  return PRESENCE_FILTRES.indexOf(filtre) >= 0 ? filtre : 'tous';
 }
 
 /**
@@ -90,16 +134,6 @@ export function gestePointage(statut, auto, bouton) {
   return { statut: '', geste: 'retire' };
 }
 
-/**
- * Combien de lignes attendent encore le regard du modérateur.
- *
- * ⚠️ Compté sur les lignes AFFICHÉES et non demandé au serveur : c'est la même
- * liste qu'il a sous les yeux, et un compteur qui divergerait de ce qui est
- * à l'écran serait pire que pas de compteur.
- */
-export function compteAConfirmer(lignes) {
-  return (Array.isArray(lignes) ? lignes : []).filter((r) => r && r.auto && r.status).length;
-}
 
 /**
  * Ce que le serveur annonce d'un participant : son rôle et son compte.
