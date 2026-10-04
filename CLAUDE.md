@@ -1827,6 +1827,53 @@ table `session_attendances`, modèle `SessionAttendance`). Entrées depuis
   on **privilégie les communications où la personne est auteur correspondant**, puis les
   autres par ordre chronologique). Calcul dans `App\Support\CommunicationAttestations` ;
   émission via `IssueAttestation::handle($participant, 'communication', $submission)`.
+- **En ligne ou sur papier** (`App\Support\AttestationPolicy`, option
+  `attestations.delivery` par édition, **en ligne par défaut**) :
+  - **En ligne** : le modérateur **valide le passage** d'une communication pendant
+    la séance, et ses auteurs reçoivent aussitôt leur attestation (in-app,
+    e-mail, SMS si ouvert) ; chacun la retrouve dans « Mes documents ».
+  - **Papier** : le passage se constate quand même - il dit qui est monté à la
+    tribune - mais **rien n'est émis ni envoyé** : le secrétariat émet le lot,
+    le relit et l'imprime. L'attestation reste **consultable** dans l'espace du
+    participant : lui fermer aussi cette porte n'y renverrait que ses questions.
+  - ⚠️ **Un seul endroit décide** (`AttestationPolicy`). Trois chemins lisent ce
+    choix - émission en masse, validation du passage, annonce au bénéficiaire -
+    et chacun en tirerait son interprétation si le réglage était relu brut.
+  - ⚠️ **SMS fermé par défaut** (`attestations.sms`) : chaque envoi est facturé, et
+    une édition de deux cents communications en enverrait autant sans que personne
+    ne l'ait décidé. Rien ne part non plus sans passerelle configurée - le
+    fournisseur « log » est celui du développement.
+- **Passage d'une communication = fait tenu en base** (`slots.presented_at` /
+  `presented_by`, `ValidateCommunicationPassage`). La salle le marquait déjà
+  (« Marquer effectuée ») mais **seulement dans les navigateurs** : la marque
+  partait sur le canal de données et mourait avec la séance.
+  - ⚠️ **Deux portes, un seul geste** : l'onglet Communicateurs de la visio **et**
+    la page de modération (une séance en salle n'a pas de visio, et c'est pourtant
+    là que les communications ont lieu). Même contrôleur, même garde.
+  - ⚠️ **Le créneau doit appartenir à la séance** : sans cette vérification, le
+    modérateur d'une salle validerait le passage d'une communication tenue
+    ailleurs - et en enverrait les attestations.
+  - ⚠️ **Irréversible côté séance**, et idempotent. Une attestation partie ne se
+    reprend pas : elle est signée et porte un QR de vérification. L'erreur se
+    répare au back-office, en **révoquant**.
+  - ⚠️ Le constat est posé **avant** l'émission et séparément : si l'émission
+    échoue à mi-parcours, le passage reste constaté (il a bien eu lieu). L'inverse
+    ferait disparaître le fait parce qu'un envoi a échoué.
+  - ⚠️ Mêmes ayants droit que la présence (`SessionPresence::canManage`) :
+    modérateur **ou** rapporteur. Le réserver au seul modérateur laisserait sans
+    recours une séance qu'il a dû quitter.
+- **Qui reçoit une attestation de communication** (`attestations.communication_scope`) :
+  **tous les auteurs concernés** (défaut) ou **seulement les pointés présents** à la
+  séance où elle est programmée. ⚠️ Le filtre s'applique **avant** le plafond par
+  personne : écarter d'abord les absents laisse la place à une communication où la
+  personne était là. ⚠️ Une communication **sans séance au programme** n'est jamais
+  écartée - c'est au programme qu'il manque quelque chose, pas à l'auteur.
+  ⚠️ Les deux chemins (masse et séance) lisent la même option, sinon le bouton
+  utilisé changerait la liste des bénéficiaires.
+  ⚠️ **Le plafond par personne se compte différemment** selon le chemin : en masse,
+  on classe tout (priorité auteur correspondant) ; en séance, on compte le **déjà
+  émis**, parce qu'on ne voit pas les passages à venir et que ce qui est parti est
+  parti. **Premier passé, premier servi.**
 - **Documents = modèles éditables** : badges/attestations utilisent le **modèle conçu par
   l'admin** (concepteur `admin/modeles`, `TemplateDesignerController` : génération IA +
   JSON éditable + aperçu ; `DocumentTemplate` par édition/kind/type, rendu

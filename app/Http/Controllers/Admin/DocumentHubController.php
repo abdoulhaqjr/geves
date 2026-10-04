@@ -14,6 +14,7 @@ use App\Models\Edition;
 use App\Models\Formation;
 use App\Models\Participant;
 use App\Models\Submission;
+use App\Support\AttestationPolicy;
 use App\Support\CommunicationAttestations;
 use App\Support\EditionSettings;
 use App\Support\ListSort;
@@ -141,6 +142,13 @@ class DocumentHubController extends Controller
                 'attAuto' => (bool) EditionSettings::get($edition, 'attestations.auto', true),
                 'attNotify' => (bool) EditionSettings::get($edition, 'attestations.notify', true),
                 'attRequirePresence' => (bool) EditionSettings::get($edition, 'attestations.require_presence', false),
+                // Comment l'édition délivre : en ligne (envoi + téléchargement) ou
+                // sur papier (le secrétariat imprime et remet).
+                'attDelivery' => AttestationPolicy::delivery($edition),
+                'attDeliveries' => AttestationPolicy::DELIVERIES,
+                'attCommunicationScope' => AttestationPolicy::communicationScope($edition),
+                'attScopes' => AttestationPolicy::SCOPES,
+                'attSms' => (bool) EditionSettings::get($edition, 'attestations.sms', false),
                 'attIncludeQr' => (bool) EditionSettings::get($edition, 'attestations.include_qr', true),
                 'attAllowBeforeValidation' => (bool) EditionSettings::get($edition, 'attestations.allow_before_validation', false),
                 // Identité vérifiable (DIDs) - signature EdDSA / VC-JWT effective.
@@ -300,6 +308,9 @@ class DocumentHubController extends Controller
             'attestations.auto' => $request->boolean('attAuto'),
             'attestations.notify' => $request->boolean('attNotify'),
             'attestations.require_presence' => $request->boolean('attRequirePresence'),
+            'attestations.delivery' => (string) $request->input('attDelivery'),
+            'attestations.communication_scope' => (string) $request->input('attCommunicationScope'),
+            'attestations.sms' => $request->boolean('attSms'),
             'attestations.include_qr' => $request->boolean('attIncludeQr'),
             'attestations.allow_before_validation' => $request->boolean('attAllowBeforeValidation'),
             'attestations.did_issuer' => (string) $request->input('attDidIssuer'),

@@ -113,6 +113,35 @@
                         <h3>Options générales · Attestations</h3>
                         <x-ukc.scope-edition :edition="$edition" />
                         <div class="desc">Paramètres de génération, identité vérifiable (DID) et notifications pour cette édition.</div>
+                        {{-- ⚠️ LE choix qui commande les autres : en ligne, le passage d'une
+                             communication émet et envoie les attestations de ses auteurs ;
+                             sur papier, le secrétariat émet le lot et l'imprime. --}}
+                        <div class="ukc-field" style="margin:12px 0;max-width:520px;">
+                            <label>Mode de délivrance</label>
+                            <select name="attDelivery">
+                                @foreach ($opts['attDeliveries'] as $cle => $libelle)
+                                    <option value="{{ $cle }}" @selected($opts['attDelivery'] === $cle)>{{ $libelle }}</option>
+                                @endforeach
+                            </select>
+                            <div class="desc">
+                                <strong>En ligne</strong> : dès que le modérateur valide le passage d'une communication,
+                                ses auteurs reçoivent leur attestation et la retrouvent dans leur espace.<br>
+                                <strong>Physique</strong> : rien n'est envoyé. Le secrétariat émet le lot ici, puis
+                                l'imprime et le remet - l'attestation reste consultable dans l'espace du participant.
+                            </div>
+                        </div>
+                        <div class="ukc-field" style="margin:12px 0;max-width:520px;">
+                            <label>Qui reçoit une attestation de communication</label>
+                            <select name="attCommunicationScope">
+                                @foreach ($opts['attScopes'] as $cle => $libelle)
+                                    <option value="{{ $cle }}" @selected($opts['attCommunicationScope'] === $cle)>{{ $libelle }}</option>
+                                @endforeach
+                            </select>
+                            <div class="desc">
+                                « Présents » s'appuie sur le pointage de la séance où la communication est programmée.
+                                Une communication sans séance au programme n'est jamais écartée par ce filtre.
+                            </div>
+                        </div>
                         @if ($opts['attCertEnabled'])
                             <div class="ukc-pill--ok" style="display:inline-flex;align-items:center;gap:6px;margin-bottom:12px;">
                                 <x-ukc.icon name="shield" :size="14" /> Certification active - clé de signature configurée
@@ -167,6 +196,9 @@
                             <div>
                                 <label class="ukc-check"><input type="checkbox" name="attAuto" value="1" @checked($opts['attAuto'])> Générer automatiquement après paiement / fin de colloque</label>
                                 <label class="ukc-check"><input type="checkbox" name="attNotify" value="1" @checked($opts['attNotify'])> Notifier le participant par e-mail</label>
+                                {{-- ⚠️ Fermé par défaut : chaque SMS est facturé, et une édition de
+                                     deux cents communications en enverrait autant. --}}
+                                <label class="ukc-check"><input type="checkbox" name="attSms" value="1" @checked($opts['attSms'])> Envoyer aussi un SMS (passerelle requise - facturé à l’envoi)</label>
                                 <label class="ukc-check"><input type="checkbox" name="attAllowBeforeValidation" value="1" @checked($opts['attAllowBeforeValidation'])> Autoriser le téléchargement avant validation admin</label>
                                 <label class="ukc-check"><input type="checkbox" name="attIncludeQr" value="1" @checked($opts['attIncludeQr'])> Inclure le QR de vérification par défaut</label>
                                 <label class="ukc-check"><input type="checkbox" name="attRequirePresence" value="1" @checked($opts['attRequirePresence'])> Attestation de participation réservée aux présents (pointés à l’accueil ou à une séance)</label>

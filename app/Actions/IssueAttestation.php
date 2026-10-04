@@ -7,6 +7,8 @@ use App\Models\Attestation;
 use App\Models\Formation;
 use App\Models\Participant;
 use App\Models\Submission;
+use App\Sms\SmsManager;
+use App\Support\AttestationPolicy;
 use App\Support\Notifier;
 
 /**
@@ -21,7 +23,10 @@ use App\Support\Notifier;
  */
 class IssueAttestation
 {
-    public function __construct(private ?AttestationCertifier $certifier = null) {}
+    public function __construct(
+        private ?AttestationCertifier $certifier = null,
+        private ?SmsManager $sms = null,
+    ) {}
 
     public function handle(Participant $participant, string $type, ?Submission $submission = null, ?Formation $formation = null): Attestation
     {
@@ -69,7 +74,28 @@ class IssueAttestation
         ]);
 
         $this->certify($attestation);
+        $this->announce($attestation, $participant);
 
+        return $attestation;
+    }
+
+    /**
+     * Prévient le bénéficiaire - si l'édition délivre en ligne.
+     *
+     * ⚠️ **Rien en mode papier.** L'exemplaire qui fait foi est celui qu'on remet
+     * en main propre : annoncer un document qu'on ne peut pas encore retirer ne
+     * fait qu'amener la personne au secrétariat. L'attestation reste visible dans
+     * son espace - lui fermer aussi cette porte n'y renverrait que ses questions.
+     */
+    private function announce(Attestation $attestation, Participant $participant): void
+    {
+        $edition = $attestation->edition;
+
+        if (! AttestationPolicy::notifies($edition)) {
+            return;
+        }
+
+        // In-app, et e-mail si la personne l'a laissé ouvert (cf. SystemNotification).
         Notifier::account(
             $participant->user,
             kind: 'attestation',
@@ -79,7 +105,38 @@ class IssueAttestation
             icon: 'award',
         );
 
-        return $attestation;
+        if (! AttestationPolicy::sendsSms($edition)) {
+            return;
+        }
+
+        $this->maybeSms(
+            $participant->phone ?: $participant->user?->phone,
+            'Votre attestation ('.$attestation->typeLabel().') est disponible dans votre espace '.config('app.name').'.',
+        );
+    }
+
+    /**
+     * Envoi SMS best-effort.
+     *
+     * ⚠️ Rien sans numéro NI sans passerelle configurée : le fournisseur « log »
+     * est celui du développement, et laisser croire qu'un SMS est parti parce
+     * qu'une ligne a été journalisée serait pire que de ne rien envoyer.
+     * ⚠️ Un échec n'interrompt JAMAIS l'émission : l'attestation existe, elle est
+     * signée, et la personne la trouvera dans son espace.
+     */
+    private function maybeSms(?string $phone, string $message): void
+    {
+        $phone = trim((string) $phone);
+
+        if ($phone === '' || config('sms.default', 'log') === 'log') {
+            return;
+        }
+
+        try {
+            ($this->sms ?? app(SmsManager::class))->send($phone, $message);
+        } catch (\Throwable) {
+            // Best-effort : un SMS perdu ne doit pas faire échouer une émission.
+        }
     }
 
     /**

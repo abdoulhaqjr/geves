@@ -11,6 +11,7 @@ use App\Meetings\Providers\LiveKitProvider;
 use App\Models\EventSession;
 use App\Models\Formation;
 use App\Models\MeetingMessage;
+use App\Support\AttestationPolicy;
 use App\Support\EditionMeetingConfig;
 use App\Support\SessionPresence;
 use App\Support\Settings;
@@ -62,6 +63,15 @@ class MeetingController extends Controller
                     'mark' => route('session.presence.mark', $session),
                     'page' => route('account.attendance.edit', $session),
                 ] : null,
+                // ⚠️ Valider le passage d'une communication ÉMET les attestations de
+                // ses auteurs : la salle ne se contente plus de l'annoncer sur le
+                // canal de données, elle le fait constater par le serveur. `SLOT` est
+                // remplacé par le créneau au moment du clic (même procédé que le chat).
+                'passage' => SessionPresence::canManage($session, $account)
+                    ? route('session.passage', [$session, 'SLOT'])
+                    : null,
+                // Mode de délivrance : la salle doit dire ce que le clic déclenche.
+                'attestationsEnLigne' => AttestationPolicy::issuesOnPassage($session->edition),
                 'egress' => [
                     'start' => route('session.egress.start', $session),
                     'stop' => route('session.egress.stop', $session),

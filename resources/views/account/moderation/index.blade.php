@@ -30,9 +30,28 @@
             @if ($comms)
                 <div style="margin-top:12px;">
                     <div style="font-size:12px;font-weight:600;color:var(--ukc-muted);margin-bottom:6px;">{{ __('Communications programmées') }}</div>
-                    <ol style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:13.5px;">
+                    {{-- ⚠️ Le passage se constate ICI aussi, et pas seulement dans la visio :
+                         une séance tenue en salle n'a pas de visio, et c'est pourtant là que
+                         les communications ont lieu. Même porte serveur, même geste. --}}
+                    <ol style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;">
                         @foreach ($comms as $c)
-                            <li><strong>{{ $c['title'] }}</strong> - {{ $c['name'] }}</li>
+                            <li>
+                                <strong>{{ $c['title'] }}</strong> - {{ $c['name'] }}
+                                @if ($c['done'])
+                                    <span class="ukc-pill ukc-pill--ok" style="margin-left:6px;">{{ __('Passage validé') }}</span>
+                                @elseif (($passageOuvert[$session->id] ?? false) && $c['slotId'])
+                                    <form method="POST" action="{{ route('session.passage', [$session, $c['slotId']]) }}"
+                                          style="display:inline;margin-left:6px;"
+                                          onsubmit="return confirm(@js(($passageEmet[$session->id] ?? false)
+                                              ? __('Constater le passage de cette communication ? Ses auteurs recevront aussitôt leur attestation, et ce constat ne se retire pas.')
+                                              : __('Constater le passage de cette communication ? Ce constat ne se retire pas.')));">
+                                        @csrf
+                                        <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+                                            <x-ukc.icon name="check" :size="14" /> {{ __('Valider le passage') }}
+                                        </button>
+                                    </form>
+                                @endif
+                            </li>
                         @endforeach
                     </ol>
                 </div>

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
+use App\Support\AttestationPolicy;
 use App\Support\CurrentColloque;
+use App\Support\EditionLock;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -48,6 +50,15 @@ class ModerationController extends Controller
         // deux requêtes).
         return view('account.moderation.index', [
             'sessions' => $sessions,
+            // Ce que déclenche « Valider le passage » sur chaque séance : la page
+            // doit l'annoncer avant le clic, pas après. Calculé ici pour ne pas
+            // relire les réglages de l'édition à chaque communication affichée.
+            'passageEmet' => $sessions->mapWithKeys(fn ($s) => [
+                $s->id => AttestationPolicy::issuesOnPassage($s->edition) && ! EditionLock::frozen($s->edition),
+            ])->all(),
+            'passageOuvert' => $sessions->mapWithKeys(fn ($s) => [
+                $s->id => $s->hasStarted() && ! EditionLock::frozen($s->edition),
+            ])->all(),
         ]);
     }
 }

@@ -18,6 +18,7 @@ use App\Http\Controllers\Account\RegisterController;
 use App\Http\Controllers\Account\ReviewWorkspaceController;
 use App\Http\Controllers\Account\SecurityController;
 use App\Http\Controllers\Account\SessionAttendanceController;
+use App\Http\Controllers\Account\SessionPassageController;
 use App\Http\Controllers\Account\SessionReportController;
 use App\Http\Controllers\Account\SubmissionController;
 use App\Http\Controllers\Account\TestimonialController as AccountTestimonialController;
@@ -103,6 +104,11 @@ Route::post('/session/{session}/egress/stop', [EgressController::class, 'stop'])
 // rapporteur ; mêmes règles que la page /compte/seances/{id}/presence).
 Route::get('/session/{session}/presence.json', [SessionPresenceApiController::class, 'index'])->name('session.presence.list');
 Route::post('/session/{session}/presence', [SessionPresenceApiController::class, 'store'])->name('session.presence.mark');
+
+// Passage d'une communication constaté par qui tient la séance. ⚠️ C'est ce
+// geste qui ouvre les attestations de ses auteurs : une seule porte serveur
+// pour la salle de visio ET la page de modération.
+Route::post('/session/{session}/passage/{slot}', [SessionPassageController::class, 'store'])->name('session.passage');
 
 // Fil de discussion de la salle, commun à tout objet `Meetable` (séance du
 // programme OU formation). ⚠️ Le chat ne vivait que sur le canal de données :

@@ -5,7 +5,11 @@ use App\Models\Attestation;
 use App\Models\DocumentTemplate;
 use App\Models\Edition;
 use App\Models\Participant;
+use App\Models\SessionAttendance;
+use App\Models\Slot;
 use App\Models\Submission;
+use App\Support\AttestationPolicy;
+use App\Support\EditionSettings;
 use Illuminate\Support\Str;
 
 // adminStaff() -> AdminSubmissionWorkflowTest ; openEdition() -> tests/Pest.php
@@ -140,4 +144,73 @@ it('nomme la communication dans un modèle personnalisé via {communication}', f
         ->assertOk()
         ->assertSee($sub->title)
         ->assertSee('CI-042');
+});
+
+/**
+ * ⚠️ L'émission en masse suit la MÊME option que la salle : « seulement les
+ * présents » s'appuie sur le pointage de la séance où la communication est
+ * programmée. Deux chemins qui en décideraient chacun de leur côté enverraient
+ * des attestations différentes selon le bouton utilisé.
+ */
+it('réserve l’émission en masse aux présents quand l’édition le demande', function () {
+    $edition = openEdition();
+    EditionSettings::set($edition, 'attestations.communication_scope', AttestationPolicy::SCOPE_PRESENT);
+
+    $auteur = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $co = $edition->participants()->create(['first_name' => 'Ben', 'last_name' => 'Co', 'email' => 'ben@example.tg', 'role' => 'coauthor']);
+    payParticipant($edition, $co);
+    $sub = acceptedComm($edition, $auteur, 'AA-010', [$co]);
+
+    $session = $edition->sessions()->create(['label' => 'Séance', 'type' => 'atelier', 'starts_at' => now()->subHour()]);
+    Slot::create([
+        'edition_id' => $edition->id, 'session_id' => $session->id,
+        'submission_id' => $sub->id, 'participant_id' => $auteur->id,
+        'starts_at' => $session->starts_at, 'ends_at' => $session->starts_at->copy()->addMinutes(20),
+    ]);
+    SessionAttendance::create([
+        'session_id' => $session->id, 'participant_id' => $auteur->id,
+        'status' => 'present', 'source' => SessionAttendance::SOURCE_MANUAL,
+    ]);
+
+    $this->actingAs(adminStaff(), 'web')->post(route('admin.documents.attestations.issue'), [
+        'edition_id' => (string) $edition->id, 'type' => 'communication',
+    ]);
+
+    expect(Attestation::where('participant_id', $auteur->id)->where('type', 'communication')->exists())->toBeTrue();
+    expect(Attestation::where('participant_id', $co->id)->where('type', 'communication')->exists())->toBeFalse();
+});
+
+/**
+ * ⚠️ Une communication **non programmée** n'a aucune séance où se pointer : la
+ * réserve aux présents l'écarterait pour de bon. C'est au programme qu'il manque
+ * quelque chose, pas à l'auteur.
+ */
+it('n’écarte pas une communication sans séance au programme', function () {
+    $edition = openEdition();
+    EditionSettings::set($edition, 'attestations.communication_scope', AttestationPolicy::SCOPE_PRESENT);
+
+    $auteur = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    acceptedComm($edition, $auteur, 'AA-011');
+
+    $this->actingAs(adminStaff(), 'web')->post(route('admin.documents.attestations.issue'), [
+        'edition_id' => (string) $edition->id, 'type' => 'communication',
+    ]);
+
+    expect(Attestation::where('participant_id', $auteur->id)->where('type', 'communication')->exists())->toBeTrue();
+});
+
+/** Les options de délivrance font l'aller-retour par le formulaire du hub. */
+it('enregistre le mode de délivrance depuis les options générales', function () {
+    $edition = openEdition();
+
+    $this->actingAs(adminStaff(), 'web')->post(route('admin.documents.attestations.options'), [
+        'edition_id' => (string) $edition->id,
+        'attDelivery' => AttestationPolicy::DELIVERY_PAPER,
+        'attCommunicationScope' => AttestationPolicy::SCOPE_PRESENT,
+        'attSms' => '1',
+    ])->assertRedirect();
+
+    $edition->refresh();
+    expect(AttestationPolicy::isPaper($edition))->toBeTrue();
+    expect(AttestationPolicy::requiresPresence($edition))->toBeTrue();
 });

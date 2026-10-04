@@ -20,6 +20,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $starts_at
  * @property Carbon|null $ends_at
  * @property bool $chosen_by_participant
+ * @property Carbon|null $presented_at
+ * @property int|null $presented_by
  */
 class Slot extends Model
 {
@@ -31,7 +33,21 @@ class Slot extends Model
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'chosen_by_participant' => 'boolean',
+            'presented_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Le passage a-t-il été constaté par qui tenait la séance ?
+     *
+     * ⚠️ C'est ce constat qui ouvre les attestations des auteurs : il ne se
+     * déduit pas de l'horaire passé. Un créneau peut être dépassé sans que la
+     * communication ait eu lieu - l'auteur ne s'est pas connecté, la séance a
+     * pris du retard, le sujet a été reporté.
+     */
+    public function wasPresented(): bool
+    {
+        return $this->presented_at !== null;
     }
 
     /** @return BelongsTo<Edition, $this> */

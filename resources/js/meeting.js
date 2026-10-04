@@ -41,9 +41,12 @@ export async function startFromConfig() {
     let room = null;
     let people = [];
 
+    // ⚠️ `done` vient du SERVEUR : le passage d'une communication est un fait
+    // tenu en base (il ouvre les attestations), plus une marque qui mourait
+    // avec la séance. Qui arrive en cours de route voit ce qui est déjà passé.
     const scheduledComms = (cfg.communications || []).map((c) => ({
         order: c.order, name: c.name, title: c.title, accountId: c.accountId,
-        identity: '', online: false, isFloor: false, done: false,
+        slotId: c.slotId, identity: '', online: false, isFloor: false, done: !!c.done,
     }));
 
     const $ = (id) => document.getElementById(id);
@@ -922,11 +925,15 @@ export async function startFromConfig() {
                 }
 
                 if (c.done) {
-                    const fait = elt('button', '', '✓ Effectuée');
+                    const fait = elt('button', '', '✓ Passage validé');
                     fait.type = 'button'; fait.disabled = true; fait.style.opacity = '.6';
                     acts.appendChild(fait);
-                } else {
-                    acts.appendChild(bouton('Marquer effectuée', '', () => marqueEffectuee(c.order)));
+                } else if (cfg.passage && c.slotId) {
+                    // ⚠️ Le bouton suit `cfg.passage`, pas le rôle dans la salle : un
+                    // agent du back-office y est modérateur, mais le passage est
+                    // constaté par qui TIENT la séance (son modérateur ou son
+                    // rapporteur). Le serveur refuserait de toute façon.
+                    acts.appendChild(bouton('Valider le passage', '', () => valideLePassage(c.order)));
                 }
                 item.appendChild(acts);
             }
@@ -935,21 +942,44 @@ export async function startFromConfig() {
         });
     }
 
-    /** ⚠️ Geste SANS RETOUR : la marque part à toute la salle et ne se retire pas. */
-    async function marqueEffectuee(ordre) {
+    /**
+     * Constate le passage d'une communication.
+     *
+     * ⚠️ Geste SANS RETOUR, et il ne se contente plus de l'annoncer : en
+     * délivrance en ligne, il ÉMET les attestations des auteurs, signées et
+     * envoyées. On le dit avant, en toutes lettres - une attestation partie ne se
+     * reprend pas, elle se révoque au back-office.
+     */
+    async function valideLePassage(ordre) {
         const c = scheduledComms.find((x) => String(x.order) === String(ordre));
+        if (!c || !c.slotId || !cfg.passage) return;
         const ok = await confirme(
-            'Marquer la communication effectuée',
-            'La communication <strong>' + ((c && c.order) || ordre) + '. ' + texteEchappe((c && c.name) || '') + '</strong> sera signalée comme passée pour toute la salle. Cette marque ne se retire pas.',
-            'Marquer effectuée',
+            'Valider le passage',
+            'La communication <strong>' + c.order + '. ' + texteEchappe(c.name || '') + '</strong> sera constatée comme présentée.'
+                + (cfg.attestationsEnLigne
+                    ? ' Ses auteurs recevront aussitôt leur <strong>attestation de communication</strong>.'
+                    : ' Le secrétariat émettra et imprimera les attestations.')
+                + ' Ce constat ne se retire pas.',
+            'Valider le passage',
         );
         if (!ok) return;
-        scheduledComms.forEach((x) => { if (String(x.order) === String(ordre)) x.done = true; });
-        refreshComms();
-        sendData({ type: 'comm_done', order: ordre });
-        // La communication est close : le compte n'a plus d'objet.
-        if (String(chrono.ordre) === String(ordre)) { arreteChrono(); diffuseFinChrono(); }
-        toast('Communication marquée effectuée');
+        try {
+            const res = await fetch(cfg.passage.replace('SLOT', encodeURIComponent(c.slotId)), {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrf, Accept: 'application/json' },
+                credentials: 'same-origin',
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) { toast(data.message || 'Validation refusée'); return; }
+            // ⚠️ L'état local ne bouge qu'APRÈS le serveur : afficher « validé » sur
+            // un appel qui a échoué ferait croire les attestations parties.
+            scheduledComms.forEach((x) => { if (String(x.order) === String(ordre)) x.done = true; });
+            refreshComms();
+            sendData({ type: 'comm_done', order: ordre });
+            // La communication est close : le compte n'a plus d'objet.
+            if (String(chrono.ordre) === String(ordre)) { arreteChrono(); diffuseFinChrono(); }
+            toast(data.message || 'Passage validé');
+        } catch (e) { toast('Validation indisponible'); }
     }
 
     /**

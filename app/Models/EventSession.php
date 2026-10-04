@@ -247,6 +247,10 @@ class EventSession extends Model implements Meetable
                 'title' => (string) $sub->title,
                 'accountId' => $sub->participant?->user_id,
                 'minutes' => $minutes && $minutes > 0 ? $minutes : null,
+                // Le créneau et son passage : la salle valide SUR le créneau, et
+                // un passage déjà constaté ne se redemande pas.
+                'slotId' => $slot->id,
+                'done' => $slot->wasPresented(),
             ];
         }
 
