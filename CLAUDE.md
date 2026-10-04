@@ -1873,6 +1873,11 @@ et le pied de page du site. On y arrive un diplôme à la main, pas en naviguant
 - ⚠️ **Mesuré à 375px** : ces 36 caractères ne tenaient pas dans un champ de
   302px à 14,5px - le code collé défilait dans sa boîte et ne pouvait plus se
   relire en entier. La taille suit la largeur de l'écran (`clamp`).
+- ⚠️ La colonne fait **920px** (cartes de 840) : ce sont les CARTES qui
+  s'élargissent, pas les lignes de texte. À 760px la prose était déjà à **74
+  caractères par ligne**, le haut du confortable ; elle est donc bornée à 62ch
+  tandis que le champ et le bouton prennent toute la carte - un formulaire se
+  remplit, il ne se lit pas. Mesuré après : 62 caractères.
 
 ### Le nom court se saisit SANS l'année
 
