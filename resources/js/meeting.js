@@ -1822,7 +1822,28 @@ export async function startFromConfig() {
         $('bdGomme')?.classList.toggle('on', board.gomme);
     }
 
-    function ouvreTableau(nom, mode, diffuse) {
+    /**
+     * Ouvre le tableau au nom de `parQui`.
+     *
+     * ⚠️ **Un tableau appartient à la communication de qui l'a ouvert.** Quand
+     * quelqu'un d'autre l'ouvre, on repart d'une surface VIERGE : le schéma du
+     * communicateur précédent n'a rien à faire sous l'exposé du suivant. Rouvrir
+     * le sien, en revanche, le retrouve - on referme parfois par mégarde, et
+     * perdre son tableau pour un clic serait rude.
+     *
+     * ⚠️ C'est pourquoi `fermeTableau` **ne remet pas** `parQui` à zéro : sans
+     * propriétaire mémorisé, le rouvrir reviendrait à l'ouvrir pour la première
+     * fois, et l'effacerait.
+     */
+    function ouvreTableau(parQui, nom, mode, diffuse) {
+        if (board.parQui !== parQui) {
+            const avait = board.traits.length;
+            board.traits = []; board.enCours = null; board.defaits = [];
+            // Dit d'où vient la page blanche : sans cela, celui qui regardait un
+            // schéma le voit disparaître sans explication.
+            if (avait) toast('Nouveau tableau');
+        }
+        board.parQui = parQui;
         board.ouvert = true;
         board.nom = nom || '';
         const z = $('board');
@@ -1833,9 +1854,9 @@ export async function startFromConfig() {
         z.classList.toggle('lecture', !peutTracer());
         $('btnBoard')?.classList.add('on');
         majOutilsTableau();
-        majBoutonsHistorique();
         poseModeTableau(mode, false);
-        if (diffuse) { board.parQui = 'local'; sendData({ type: 'board_open', mode: board.mode }); }
+        majBoutonsHistorique();
+        if (diffuse) sendData({ type: 'board_open', mode: board.mode });
     }
 
     function fermeTableau(diffuse) {
@@ -1845,9 +1866,10 @@ export async function startFromConfig() {
         // La scène retrouve son cadrage : `contain` imposé par l'annotation
         // laisserait des bandes noires autour des visages.
         $('visio-room')?.classList.remove('annote');
-        // Les traits SURVIVENT à la fermeture : rouvrir doit retrouver le schéma.
-        // « Effacer » est le geste qui efface, et il se confirme.
-        if (diffuse) { board.parQui = null; sendData({ type: 'board_close' }); }
+        // ⚠️ Les traits SURVIVENT à la fermeture, et le propriétaire AUSSI :
+        // rouvrir le sien doit retrouver le schéma. C'est l'ouverture par
+        // quelqu'un d'autre qui fait table rase, pas la fermeture.
+        if (diffuse) sendData({ type: 'board_close' });
     }
 
     /**
@@ -2459,7 +2481,7 @@ export async function startFromConfig() {
         else if (msg.type === 'reaction') reactionDistante(msg.uid, msg.emoji, !!msg.on, msg.replaced || null);
         else if (msg.type === 'reac_salle') reactionDeSalle(msg.emoji, fromId);
         else if (msg.type === 'board_ask') repondAuTableau(fromId);
-        else if (msg.type === 'board_open') { board.parQui = fromId; ouvreTableau((participant && participant.name) || '', msg.mode, false); }
+        else if (msg.type === 'board_open') ouvreTableau(fromId, (participant && participant.name) || '', msg.mode, false);
         else if (msg.type === 'board_close') fermeTableau(false);
         else if (msg.type === 'board_pts') recoitTrait(msg);
         else if (msg.type === 'board_state') (Array.isArray(msg.traits) ? msg.traits : []).forEach((t) => recoitTrait(Object.assign({ net: true }, t)));
@@ -3233,20 +3255,32 @@ export async function startFromConfig() {
         $('btnReac').setAttribute('aria-expanded', ouvert ? 'true' : 'false');
         if (ouvert) m.querySelector('button')?.focus();
     });
-    $('btnBoard').addEventListener('click', () => {
-        if (board.ouvert) {
-            // ⚠️ Celui qui n'a pas ouvert le tableau ne le referme que CHEZ LUI :
-            // refermer la scène de toute la salle n'appartient qu'à qui l'a prise.
-            fermeTableau(board.parQui === 'local');
-            toast(board.parQui === 'local' ? 'Tableau fermé' : 'Tableau masqué chez vous');
+    $('btnBoard').addEventListener('click', async () => {
+        if (board.ouvert && board.parQui === 'local') {
+            fermeTableau(true);
+            toast('Tableau fermé');
 
             return;
+        }
+        if (board.ouvert) {
+            // ⚠️ Le tableau ouvert est celui de quelqu'un d'autre. L'ouvrir pour sa
+            // propre communication EFFACE son schéma chez tout le monde, et rien ne
+            // le rend : on le demande avant. (Son auteur peut l'emporter en image
+            // tant qu'il est à l'écran.)
+            const ok = !board.traits.length || await confirme(
+                'Nouveau tableau',
+                'Le tableau en cours est celui de <strong>' + texteEchappe(board.nom || 'quelqu’un d’autre')
+                    + '</strong>. L’ouvrir pour votre communication effacera son contenu '
+                    + 'pour tous les participants.',
+                'Nouveau tableau',
+            );
+            if (!ok) return;
         }
         // ⚠️ Deviné, pas imposé : quand un écran est partagé, c'est presque
         // toujours pour l'annoter qu'on ouvre le crayon. Le bouton de mode reste
         // là pour dire le contraire.
         const surScene = $('tileMain')?.classList.contains('has-screen') && mediaDeLaScene();
-        ouvreTableau('', surScene ? 'annote' : 'blanc', true);
+        ouvreTableau('local', '', surScene ? 'annote' : 'blanc', true);
         toast(surScene ? 'Annotation de la présentation' : 'Tableau ouvert');
     });
     (function outilsDuTableau() {

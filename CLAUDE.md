@@ -700,11 +700,20 @@ rendu, c'est un point d'entrée à ajouter - pas ce module à refaire.
   **vide la pile** (la branche reprise est abandonnée), et un `board_clear`
   aussi - rendre un trait sur un tableau qu'on vient de vider ferait
   réapparaître un fantôme.
-- « Effacer » **se confirme** : il emporte le travail de tout le monde et rien
-  ne le rend. Fermer, en revanche, **garde les traits** - rouvrir doit retrouver
-  le schéma.
-- Qui n'a pas ouvert le tableau ne le ferme que **chez lui** : reprendre la
-  scène de toute la salle n'appartient qu'à qui l'a prise.
+- ⚠️ **UN TABLEAU APPARTIENT À LA COMMUNICATION DE QUI L'A OUVERT.** Le
+  présentateur n'attend personne : il ouvre quand il veut, et c'est SON
+  tableau. Quand **quelqu'un d'autre** l'ouvre, on repart d'une surface
+  **vierge** - le schéma du communicateur précédent n'a rien à faire sous
+  l'exposé du suivant. Rouvrir le sien, en revanche, le retrouve : on referme
+  parfois par mégarde, et perdre son tableau pour un clic serait rude.
+  ⚠️ C'est pourquoi `fermeTableau` **ne remet pas `parQui` à zéro** : sans
+  propriétaire mémorisé, rouvrir le sien reviendrait à l'ouvrir pour la
+  première fois - et l'effacerait.
+- **Reprendre le tableau d'un autre se confirme** : l'ouvrir pour sa propre
+  communication efface son contenu **chez tout le monde**, et rien ne le rend
+  (son auteur peut l'emporter en image tant qu'il est à l'écran). Un tableau
+  vide se reprend sans rien demander - il n'y a rien à perdre.
+- « Effacer » **se confirme** aussi : il emporte le travail de tout le monde.
 - Tests : `meeting-pure.test.js` (12 cas).
 
 **Deux modes** (bouton « Tableau | Annoter » dans la barre du tableau) :
