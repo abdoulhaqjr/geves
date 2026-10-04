@@ -208,3 +208,22 @@ it('mène le co-auteur de la porte d’entrée au règlement dans son espace', f
         ->assertOk()
         ->assertSee('20 000');
 });
+
+/**
+ * ⚠️ La page emprunte la grammaire des **autres pages publiques** : en-tête
+ * commun, `page-hero`, barre d'étapes, pied de page du colloque. On y arrive par
+ * un lien reçu par e-mail, souvent sans savoir de quel colloque il s'agit ni
+ * comment en sortir - le bloc centré sans contexte qu'elle était ne le disait pas.
+ */
+it('porte la présentation des autres pages publiques', function () {
+    $edition = coauthorEdition();
+
+    $page = $this->get(route('public.coauthor', $edition->slug))->assertOk();
+
+    $page->assertSee('site-header', false)   // en-tête public commun
+        ->assertSee('page-hero', false)      // hero des pages secondaires
+        ->assertSee('ukc-step', false)       // barre d'étapes du projet
+        ->assertSee('ukc-info-bar', false)   // pied de page DU COLLOQUE
+        ->assertSee($edition->title)         // de quel colloque il s'agit
+        ->assertSee(route('public.colloque', $edition->slug), false); // comment en sortir
+});

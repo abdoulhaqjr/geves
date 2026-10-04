@@ -2399,6 +2399,20 @@ connecté est redirigé droit sur `account.payment`.
   (cf. `PaymentController::return`).
 - L'adresse voyage dans le lien d'inscription (`?email=`) : c'est elle qui
   rattache les communications au compte créé.
+- **Présentation** : la page emprunte la grammaire des autres pages publiques -
+  `partials.public-header`, `section.page-hero`, `ukc-section`, barre d'étapes
+  `ukc-steps`, puis `partials.colloque-footer`. On y arrive par un lien reçu par
+  e-mail, souvent **sans savoir de quel colloque il s'agit ni comment en sortir** :
+  le bloc centré sans en-tête ni pied de page qu'elle était ne le disait pas.
+- ⚠️ **MESURÉ** : `background: currentColor` dans le même bloc que `color: #fff`
+  résout le fond sur le `color` qu'on vient de poser - la pastille de l'étape
+  active sortait **blanche sur blanc**, numéro invisible. On nomme chaque fond,
+  état par état (9,16:1 pour l'étape active).
+- ⚠️ `.ukc-card h2` est en `space-between` **pour le back-office**, où une action
+  vit à droite du titre. Sur une page publique il n'y en a aucune et le titre
+  partait à l'autre bout de la carte, loin de son icône : les pages publiques
+  (portée `.site-header ~ …`) le regroupent à gauche. Corrige aussi
+  « Vérifier une attestation », qui portait le même défaut.
 ### Densité des back-offices : zoom 90%
 
 `html.ukc-dense { zoom: .9 }` (`ukc.css`), posé par les layouts `admin` et
