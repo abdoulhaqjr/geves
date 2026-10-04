@@ -344,6 +344,15 @@ Une relecture n'est plus un simple « assignée / rendue » : `Review::STATUSES`
   la ramenant dès que le pointeur s'approche. Son `z-index` est **55** (au-dessus
   du contenu, sous slideover 60 / confirmation 90 / modales 100) - ne pas le
   remonter.
+  - ⚠️ **Le décor de page reste sous 55.** `.ukc-nav-bar` (barre collante de la
+    page colloque) était à **100**, le rang des modales : elle **tranchait** le
+    panneau ouvert du chatbot, une bande blanche en travers de la conversation,
+    et « Mon espace » / FR-EN paraissaient flotter par-dessus. Ramenée à **50**,
+    l'étage de `.site-header` - c'est du décor, pas une surface modale. Quand un
+    élément collant masque une surface flottante, **c'est presque toujours lui
+    qui est trop haut**, pas la surface qui est trop basse : remonter le chat
+    l'aurait fait recouvrir les modales, ce qu'un correctif antérieur avait
+    précisément défait.
 
 - **Vocabulaire de la relecture (un seul mot par chose)** : la **tâche** est une
   **« relecture »** (statuts `Review::STATUSES` : *Invitée / Acceptée / Refusée /

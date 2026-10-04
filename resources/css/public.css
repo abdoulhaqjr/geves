@@ -694,7 +694,14 @@ input[data-uppercase] { text-transform: uppercase; }
 .ukc-countdown-item .num { font-size: clamp(22px, 3.5vw, 32px); font-weight: 900; color: var(--ukc-gold); line-height: 1.1; }
 .ukc-countdown-item .unit { font-size: 11px; font-weight: 600; text-transform: uppercase; color: rgba(255,255,255,0.65); margin-top: 4px; }
 
-.ukc-nav-bar { position: sticky; top: 0; z-index: 100; background: #fff; border-bottom: 1px solid var(--ukc-border); box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+/* ⚠️ z-index 50 = le MÊME étage que `.site-header` : cette barre est du décor de
+   page, pas une surface modale. À 100 elle était au rang des modales et
+   TRANCHAIT le panneau du chatbot ouvert (z-index 55) - une bande blanche en
+   travers de la conversation, et les boutons « Mon espace » et FR/EN qui
+   paraissaient flotter par-dessus. Le chat passe désormais au-dessus d'elle
+   (c'est une surface que l'on vient d'ouvrir), et les vraies modales (100+)
+   passent au-dessus des deux. */
+.ukc-nav-bar { position: sticky; top: 0; z-index: 50; background: #fff; border-bottom: 1px solid var(--ukc-border); box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
 .ukc-nav-bar-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; overflow-x: auto; scrollbar-width: none; }
 .ukc-nav-bar-inner::-webkit-scrollbar { display: none; }
 .ukc-nav-links { display: flex; gap: 4px; list-style: none; margin: 0; padding: 0; }
