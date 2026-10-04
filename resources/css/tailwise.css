@@ -61,8 +61,13 @@
 .ukc-shell .ukc-sidebar-brand .brand-lockup {
     display: flex; align-items: center; gap: 10px; min-width: 0;
 }
+/* ⚠️ MESURÉ avant d'agrandir : la marque dispose de 228px utiles (260 de barre
+   moins 2 x 16 de retrait), et le nom + son sous-titre en occupent 117. Avec le
+   filet et les deux gouttières, le monogramme peut aller jusqu'à ~80px ; à 62 il
+   reste 37px de jeu pour un nom de plateforme plus long. En barre réduite
+   (78px) il tient aussi : 8px de marge de chaque côté. */
 .ukc-shell .ukc-sidebar-brand .brand-lockup .logo-img {
-    flex: 0 0 auto; width: 46px; padding: 5px;
+    flex: 0 0 auto; width: 62px; padding: 6px;
 }
 .ukc-shell .ukc-sidebar-brand .brand-lockup .logo-img img {
     aspect-ratio: 1 / 1; max-height: none;
