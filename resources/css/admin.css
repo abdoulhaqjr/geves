@@ -699,20 +699,64 @@
 }
 @media (max-width: 700px) { .admin-edition-detail .tarif-row { grid-template-columns: 1fr 1fr; } }
 
-/* Partenaires */
+/* Partenaires - même grammaire que les autres répéteurs de la fiche (.list-item,
+   .artwork-field) : une carte par entrée, l'aperçu à gauche, les champs ÉTIQUETÉS
+   au centre, le retrait à droite.
+   ⚠️ Des libellés, pas seulement des indications de saisie : une fois les champs
+   remplis, celles-ci disparaissent et plus rien ne dit laquelle des deux adresses
+   est celle du site et laquelle celle du logo. */
 .admin-edition-detail .partner-item {
-  display: flex; align-items: center; gap: 12px; padding: 12px;
-  border: 1px solid var(--ukc-border); border-radius: 10px; margin-bottom: 8px; background: #fafbfd;
+  display: grid; grid-template-columns: 124px minmax(0, 1fr) 36px; gap: 14px; align-items: center;
+  padding: 14px; border: 1px solid var(--ukc-border); border-radius: 12px;
+  margin-bottom: 10px; background: #fafbfd; transition: border-color .15s ease, background .15s ease;
 }
-.admin-edition-detail .partner-item .logo-ph {
-  width: 56px; height: 40px; border-radius: 6px; background: #f1f5f9; border: 1px dashed var(--ukc-border);
-  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-  font-size: 10px; font-weight: 700; color: var(--ukc-light); overflow: hidden;
+.admin-edition-detail .partner-item:hover { border-color: #cbd5e1; background: #fff; }
+/* L'aperçu reproduit le bandeau public : le logo, ou le nom à défaut. */
+.admin-edition-detail .p-logo {
+  height: 76px; padding: 8px; border-radius: 10px; background: #fff;
+  border: 1px dashed var(--ukc-border); overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: var(--ukc-light);
+  text-align: center; line-height: 1.3; word-break: break-word;
 }
-.admin-edition-detail .partner-item .logo-ph img { width: 100%; height: 100%; object-fit: contain; }
-.admin-edition-detail .partner-item .meta { flex: 1; min-width: 0; display: grid; gap: 4px; }
-.admin-edition-detail .partner-item .meta input {
-  width: 100%; border: 1px solid var(--ukc-border); border-radius: 8px; padding: 6px 10px; font-size: 13px;
+.admin-edition-detail .p-logo.has-logo { border-style: solid; }
+.admin-edition-detail .p-logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.admin-edition-detail .p-fields { display: grid; grid-template-columns: minmax(0, 1fr) 170px; gap: 10px; }
+.admin-edition-detail .p-field { display: grid; gap: 4px; min-width: 0; }
+.admin-edition-detail .p-field > span {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11.5px; font-weight: 700; color: var(--ukc-muted);
+}
+/* Pastille « interne » : le champ est conservé mais ne sort pas sur le site. */
+.admin-edition-detail .p-field em {
+  font-style: normal; font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em;
+  padding: 1px 6px; border-radius: 999px; background: #eef2f7; color: var(--ukc-light);
+}
+.admin-edition-detail .p-field input {
+  width: 100%; border: 1px solid var(--ukc-border); border-radius: 8px;
+  padding: 8px 10px; font-size: 13px; background: #fff;
+}
+.admin-edition-detail .p-field input:focus {
+  border-color: var(--ukc-blue); outline: 2px solid #c7d2fe; outline-offset: -1px;
+}
+/* Un répéteur vide se lit comme une panne : il dit ce qu'il attend. */
+.admin-edition-detail .partner-empty {
+  border: 2px dashed var(--ukc-border); border-radius: 12px; padding: 22px 16px;
+  margin-bottom: 10px; text-align: center; background: #fafbfd;
+  font-size: 13px; line-height: 1.6; color: var(--ukc-muted);
+}
+/* Les quatre champs passent en colonne avant que « Niveau » ne devienne illisible. */
+@media (max-width: 760px) {
+  .admin-edition-detail .partner-item { grid-template-columns: 96px minmax(0, 1fr) 32px; gap: 10px; padding: 12px; }
+  .admin-edition-detail .p-logo { height: 62px; padding: 6px; font-size: 11px; }
+  .admin-edition-detail .p-fields { grid-template-columns: minmax(0, 1fr); }
+}
+/* ⚠️ MESURÉ à 375px : à trois colonnes, les champs tombaient à 144px de large et
+   le cadre du logo tronquait les noms longs en plein milieu d'un mot. L'aperçu
+   prend donc TOUTE la ligne, et les champs récupèrent la largeur de l'écran. */
+@media (max-width: 560px) {
+  .admin-edition-detail .partner-item { grid-template-columns: minmax(0, 1fr) 32px; column-gap: 10px; row-gap: 12px; }
+  .admin-edition-detail .p-logo { grid-column: 1 / -1; height: 72px; font-size: 12px; }
 }
 
 /* Apparence */

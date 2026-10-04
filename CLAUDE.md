@@ -1834,13 +1834,31 @@ table `session_attendances`, modèle `SessionAttendance`). Entrées depuis
   `integrations`, `translations` → `appearance`). Un lien partagé, un favori ou
   une session ouverte porte l'ancien nom : sans cela, la page s'ouvre sur un
   onglet qui n'existe plus - aucune pilule allumée, **aucun panneau affiché**.
-- ⚠️ **PIÈGE BLADE, payé deux fois ici** : ne jamais écrire les directives de bloc
+- **Répéteurs de la fiche** (membres de comité, tarifs, partenaires) : une carte
+  par entrée, champs **étiquetés** (pas seulement des indications de saisie, qui
+  disparaissent une fois remplies), et la pastille destructive **partagée**
+  (`ukc-btn--icon danger`, déjà utilisée par le programme) - une couleur inventée
+  au cas par cas, et deux écrans ne diraient plus la même chose du même geste.
+  - L'aperçu d'un partenaire **reproduit le rendu public** : le logo s'il existe,
+    le nom sinon - exactement ce que fait le bandeau de `public/colloque`. On voit
+    ce que verra le visiteur au lieu d'un carré gris marqué « LOGO ».
+  - ⚠️ Le champ **« Niveau » ne sort nulle part** : le bandeau public n'affiche que
+    logo, nom et lien. Il porte donc une pastille « interne » - sans elle, on croit
+    à un classement qui n'existe pas.
+  - ⚠️ **Mesuré au harnais** : à 375px, la grille à trois colonnes réduisait les
+    champs à 144px et tronquait les noms longs **au milieu d'un mot**. Sous 560px,
+    l'aperçu prend donc toute la ligne.
+- ⚠️ **PIÈGE BLADE, payé trois fois ici** : ne jamais écrire les directives de bloc
   PHP de Blade en toutes lettres dans un `{{-- commentaire --}}`. Blade extrait
   les **blocs de code avant** de retirer les commentaires : il prend le texte du
   commentaire pour du vrai code, avale tout ce qui précède, et la page tombe sur
   une « variable indéfinie » ou un `endif` orphelin **très loin de la cause**. De
   même, un bloc `php … endphp` posé juste après une directive PHP en ligne se
   télescope avec elle : ce fichier n'utilise **que** la forme en ligne.
+  - ⚠️ Et **jamais la forme courte d'Alpine avec une arobase** quand le nom
+    d'événement est aussi une directive Blade : `@error` sur une image a été
+    compilé comme l'erreur de validation de Blade, ouvrant une condition jamais
+    refermée. On écrit `x-on:error`.
 
 ### Règles métier - limites communications & attestations
 

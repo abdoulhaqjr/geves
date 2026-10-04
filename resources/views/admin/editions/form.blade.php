@@ -468,25 +468,84 @@
                     <div class="ukc-panel" :class="{ active: tab==='partners' }">
                         <div class="ukc-card">
                             <h2>Partenaires</h2>
-                            <div class="desc">Logos et liens affichés sur la page publique du colloque.</div>
+                            <div class="desc">
+                                Ils défilent dans le bandeau <strong>« Partenaires &amp; Sponsors »</strong> de la page
+                                publique. Sans partenaire, la section n’y apparaît pas.
+                            </div>
+
+                            {{-- ⚠️ Le vide se DIT : une carte qui s'ouvre sur une ligne grise ne
+                                 laisse pas deviner qu'il n'y a encore rien, ni ce qui arrivera
+                                 une fois remplie. --}}
+                            <div class="partner-empty" x-show="!partners.length" x-cloak>
+                                Aucun partenaire pour l’instant.<br>
+                                Ajoutez-en un : son logo rejoindra le bandeau défilant du site public.
+                            </div>
+
                             <template x-for="(p, i) in partners" :key="i">
                                 <div class="partner-item">
-                                    <div class="logo-ph">
-                                        <template x-if="p.logo_url"><img :src="p.logo_url" alt=""></template>
-                                        <template x-if="!p.logo_url"><span>LOGO</span></template>
+                                    {{-- ⚠️ L'aperçu REPRODUIT le rendu public : le logo s'il est là,
+                                         le nom sinon (c'est exactement ce que fait le bandeau de
+                                         `public/colloque`). On voit donc ce que verra le visiteur,
+                                         au lieu d'un carré gris marqué « LOGO ».
+                                         ⚠️ Repli sur erreur de chargement : une URL de logo fautive
+                                         est fréquente (on colle l'adresse d'une page, pas d'une
+                                         image). Sans lui, la ligne affichait l'icône d'image cassée
+                                         du navigateur - un défaut qu'on prend pour un bug de la fiche.
+                                         ⚠️ Écrit `x-on:error` et NON la forme courte d'Alpine : avec
+                                         l'arobase, Blade y voit sa propre directive d'erreur de
+                                         validation, ouvre une condition qu'il ne referme jamais, et
+                                         la vue casse à la compilation. --}}
+                                    <div class="p-logo" :class="{ 'has-logo': p.logo_url && !p.logo_ko }">
+                                        <template x-if="p.logo_url && !p.logo_ko">
+                                            <img :src="p.logo_url" :alt="p.name || ''"
+                                                 x-on:error="p.logo_ko = true" x-on:load="p.logo_ko = false">
+                                        </template>
+                                        <template x-if="!p.logo_url || p.logo_ko">
+                                            <span x-text="p.name || 'Logo'"></span>
+                                        </template>
                                     </div>
-                                    <div class="meta">
-                                        <input type="text" :name="'partners['+i+'][name]'" x-model="p.name" placeholder="Nom">
-                                        <input type="url" :name="'partners['+i+'][url]'" x-model="p.url" placeholder="https://site-du-partenaire">
-                                        <div style="display:grid;grid-template-columns:1fr 120px;gap:4px;">
-                                            <input type="text" :name="'partners['+i+'][logo_url]'" x-model="p.logo_url" placeholder="URL du logo">
-                                            <input type="text" :name="'partners['+i+'][level]'" x-model="p.level" placeholder="Niveau">
-                                        </div>
+
+                                    <div class="p-fields">
+                                        <label class="p-field">
+                                            <span>Nom</span>
+                                            <input type="text" :name="'partners['+i+'][name]'" x-model="p.name"
+                                                   placeholder="Université de Kara">
+                                        </label>
+                                        {{-- ⚠️ Dit en toutes lettres que ce champ ne sort nulle part :
+                                             le bandeau public n'affiche que logo, nom et lien. Le
+                                             laisser sans mention laisse croire à un classement qui
+                                             n'existe pas. --}}
+                                        <label class="p-field">
+                                            <span>Niveau <em title="Non affiché sur la page publique">interne</em></span>
+                                            <input type="text" :name="'partners['+i+'][level]'" x-model="p.level"
+                                                   placeholder="Or, institutionnel…">
+                                        </label>
+                                        <label class="p-field">
+                                            <span>Site web</span>
+                                            <input type="url" :name="'partners['+i+'][url]'" x-model="p.url"
+                                                   placeholder="https://site-du-partenaire.tg">
+                                        </label>
+                                        <label class="p-field">
+                                            <span>URL du logo</span>
+                                            <input type="text" :name="'partners['+i+'][logo_url]'" x-model="p.logo_url"
+                                                   placeholder="https://…/logo.png">
+                                        </label>
                                     </div>
-                                    <button type="button" class="ukc-btn--icon" @click="removePartner(i)" aria-label="Retirer">&times;</button>
+
+                                    {{-- Même pastille destructive que le programme : une couleur
+                                         de plus inventée ici, et deux écrans ne diraient plus la
+                                         même chose du même geste. --}}
+                                    <button type="button" class="ukc-btn--icon danger" @click="removePartner(i)"
+                                            title="Retirer ce partenaire"
+                                            :aria-label="'Retirer ' + (p.name || 'ce partenaire')">
+                                        <x-ukc.icon name="trash" :size="16" />
+                                    </button>
                                 </div>
                             </template>
-                            <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="addPartner()">+ Partenaire</button>
+
+                            <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="addPartner()">
+                                <x-ukc.icon name="plus" :size="15" /> Ajouter un partenaire
+                            </button>
                         </div>
                     </div>
 
