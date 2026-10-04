@@ -1881,7 +1881,20 @@ table `session_attendances`, modèle `SessionAttendance`). Entrées depuis
   - ⚠️ **`/attestation/{uuid}/pdf` est fermé au public** en mode papier, sinon la
     restriction serait cosmétique. Le **back-office garde l'accès** : c'est lui
     qui imprime (cf. le lot).
-  - ⚠️ **Le filigrane se pose PAR-DESSUS le rendu**, jamais dans la mise en page :
+  - ⚠️ **Le spécimen EST le document imprimé, plus la mention.** C'est sa mise en
+    page que le bénéficiaire vient regarder : un aperçu qui diffère de l'original
+    ne lui apprend rien et lui ferait découvrir le vrai document le jour de la
+    remise. Les deux sortent du **même modèle enregistré**, par le **même
+    moteur** ; le drapeau `pdf` de `LayoutRenderer` ne change que l'embarquement
+    des images et des polices (dompdf ne va rien chercher à distance) - **jamais
+    une position, une taille ni un contenu**. Gelé par un cas qui compare les
+    deux rendus, géométrie et texte.
+    - ⚠️ **Seule exception connue, et documentée** : le QR est un **SVG** à
+      l'écran et des **blocs** dans le PDF (dompdf ne rend pas le SVG, cf.
+      `qrBoxes()`). Même cadre, même emplacement, autre tracé - le cas compare
+      donc les positions **entières** (éléments de mise en page et cadre du QR)
+      et laisse de côté les modules, aux coordonnées décimales.
+  - ⚠️ **La mention se pose PAR-DESSUS le rendu**, jamais dans la mise en page :
     le même modèle sert au lot que le secrétariat imprime, et une marque qui y
     entrerait sortirait sur les **originaux**.
   - ⚠️ **Mesuré au harnais** : `font-size: clamp(42px, 13%, 150px)` se calcule sur

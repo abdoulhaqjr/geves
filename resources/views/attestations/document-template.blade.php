@@ -64,17 +64,21 @@
              au survol (et au clavier, via :focus-within) : la colonne de gauche
              les porte aussi, pour le tactile et l'impression. --}}
         @if ($papier)
-            {{-- Dire POURQUOI le document porte une marque : un filigrane sans
-                 explication se lit comme un défaut du document. --}}
+            {{-- ⚠️ Le document est celui qui sera imprimé, au pixel près : seule la
+                 mention SPÉCIMEN s'y ajoute. Le bandeau dit pourquoi - une marque
+                 sans explication se lit comme un défaut du document. --}}
             <p class="ukc-cred-note no-print">
-                {{ __('Cette édition délivre ses attestations sur papier. Le document ci-dessous est un spécimen : il porte les mêmes informations que l’original et se vérifie de la même façon, mais seul l’exemplaire remis par le secrétariat fait foi.') }}
+                <strong>{{ __('SPÉCIMEN') }}</strong> -
+                {{ __('cette édition délivre ses attestations sur papier. Le document ci-dessous reproduit exactement celui qui vous sera remis - même mise en page, mêmes informations, même vérification - à la mention SPÉCIMEN près. Seul l’exemplaire imprimé par le secrétariat fait foi.') }}
             </p>
         @endif
         <section class="ukc-cred-stage">
-            <div class="ukc-cred-doc" data-doc-width="{{ $width }}" style="--doc-w:{{ $width }}px">
-                {{-- ⚠️ La marque est POSÉE PAR-DESSUS le rendu, jamais dans la mise en
-                     page : le modèle sert aussi au lot que le secrétariat imprime,
-                     et un filigrane qui y entrerait sortirait sur les originaux. --}}
+            <div class="ukc-cred-doc @if ($papier) is-specimen @endif" data-doc-width="{{ $width }}" style="--doc-w:{{ $width }}px">
+                {{-- ⚠️ **Le canevas est celui du PDF imprimé, à l'identique** : même
+                     modèle, même mise en page, mêmes données. La mention SPÉCIMEN est
+                     la SEULE chose ajoutée, et elle est posée PAR-DESSUS le rendu -
+                     jamais dans la mise en page, sinon elle ressortirait sur les
+                     originaux que le secrétariat imprime. --}}
                 <div class="ukc-cred-doc-inner">{!! $canvas !!}@if ($papier)<span class="ukc-cred-specimen" aria-hidden="true">{{ __('SPÉCIMEN') }}</span>@endif</div>
                 <div class="ukc-cred-overlay no-print">
                     <p class="ukc-cred-overlay-hint">{{ __('Partagez votre attestation ou vérifiez-la en un geste.') }}</p>
@@ -87,6 +91,10 @@
                 </button>
             </div>
             <p class="ukc-cred-caption no-print">
+                @if ($papier)
+                    {{-- Hors du cadre : le document reste celui qui sera remis. --}}
+                    <span class="ukc-cred-tag">{{ __('Spécimen') }}</span>
+                @endif
                 {{ __('Identifiant de l’attestation') }} :
                 <span class="ukc-cred-uuid">{{ $attestation->uuid }}</span>
             </p>
