@@ -52,9 +52,30 @@ class SaveEdition
                 'default' => (bool) ($f['default'] ?? false),
             ])->values()->all();
 
+        // Logo d'un partenaire : téléversé OU collé, par le même chemin que
+        // l'habillage de l'édition - le fichier l'emporte sur l'URL.
+        // ⚠️ Chaque ligne porte l'URL qu'elle avait, et on ne rapproche JAMAIS
+        // l'ancienne liste de la nouvelle par l'index : le répéteur se réordonne
+        // et se vide, l'index ne désigne plus la même entrée. Le ménage des
+        // fichiers devenus orphelins se fait après coup, sur les deux listes
+        // entières.
+        $logosAvant = collect($edition ? ($edition->settings['partners'] ?? []) : [])
+            ->map(fn ($p) => (string) ($p['logo_url'] ?? ''))->all();
+
         $partners = collect($data['partners'] ?? [])
             ->filter(fn ($p) => trim((string) ($p['name'] ?? '')) !== '')
-            ->map(fn ($p) => ['name' => $p['name'], 'url' => $p['url'] ?? null, 'logo_url' => $p['logo_url'] ?? null, 'level' => $p['level'] ?? null])->values()->all();
+            ->map(fn ($p, $i) => [
+                'name' => $p['name'],
+                'url' => $p['url'] ?? null,
+                'logo_url' => EditionArtwork::resolve(
+                    $request->file('partners.'.$i.'.logo_file'),
+                    (string) ($p['logo_url'] ?? ''),
+                    null,
+                ),
+                'level' => $p['level'] ?? null,
+            ])->values()->all();
+
+        EditionArtwork::forgetMissing($logosAvant, array_column($partners, 'logo_url'));
 
         $faq = collect($data['faq'] ?? [])
             ->filter(fn ($f) => trim((string) ($f['question'] ?? '')) !== '')

@@ -1856,9 +1856,29 @@ table `session_attendances`, modèle `SessionAttendance`). Entrées depuis
   disparaissent une fois remplies), et la pastille destructive **partagée**
   (`ukc-btn--icon danger`, déjà utilisée par le programme) - une couleur inventée
   au cas par cas, et deux écrans ne diraient plus la même chose du même geste.
-  - L'aperçu d'un partenaire **reproduit le rendu public** : le logo s'il existe,
-    le nom sinon - exactement ce que fait le bandeau de `public/colloque`. On voit
-    ce que verra le visiteur au lieu d'un carré gris marqué « LOGO ».
+  - Le cadre du logo d'un partenaire **est le bouton de téléversement** : on
+    téléverse un fichier OU on colle une URL, et **l'aperçu s'affiche dans les
+    deux cas** - c'est lui qui dit si l'adresse pointe bien sur une image, un
+    logo absent du bandeau public se découvrant sinon après publication. Une URL
+    qui ne charge pas se dit (« Image introuvable ») au lieu de laisser l'icône
+    cassée du navigateur, qu'on prend pour une panne de la fiche.
+  - ⚠️ **Hauteur du cadre = hauteur des champs** (`align-items: stretch` sur la
+    ligne, `flex: 1` sur le cadre), jamais une valeur fixe : à 76px la colonne de
+    gauche s'arrêtait au milieu de la seconde ligne de champs.
+  - ⚠️ **La liste se réordonne** (flèches), et son ordre **est** celui du bandeau
+    public. Deux conséquences, toutes deux coûteuses si on les oublie :
+    - Côté client, la clé de `x-for` est **l'identifiant de la ligne** (`p.uid`),
+      jamais son index : Alpine recycle les nœuds à clé égale, et le fichier déjà
+      choisi dans un champ de téléversement resterait sur place pendant que la
+      ligne se déplacerait - **on enregistrerait le logo d'un partenaire chez son
+      voisin**. Vérifié au navigateur : le fichier suit bien sa ligne.
+    - Côté serveur, le ménage des logos devenus orphelins se fait sur les **deux
+      listes entières** (`EditionArtwork::forgetMissing`), jamais ligne à ligne :
+      après un déplacement, l'index 0 ne désigne plus le même partenaire.
+  - ⚠️ **Pas de SVG en téléversement** : il serait servi depuis notre domaine et
+    peut porter du script - un logo de partenaire vient d'un tiers.
+  - ⚠️ Le survol rouge générique de la fiche vise les **retraits** ; sous `.p-acts`
+    il est ramené au bleu pour les flèches, qui ne détruisent rien.
   - ⚠️ Le champ **« Niveau » ne sort nulle part** : le bandeau public n'affiche que
     logo, nom et lien. Il porte donc une pastille « interne » - sans elle, on croit
     à un classement qui n'existe pas.

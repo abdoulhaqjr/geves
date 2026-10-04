@@ -263,3 +263,158 @@ function storagePath(string $url): string
 {
     return trim(str_replace('/storage/', '', (string) parse_url($url, PHP_URL_PATH)), '/');
 }
+
+/**
+ * Logos des partenaires (onglet **Partenaires**) : même règle que l'habillage,
+ * mais dans un **répéteur** - la liste se réordonne, se vide et se complète.
+ */
+it('téléverse le logo d’un partenaire, fichier ou URL', function () {
+    Storage::fake('public');
+    $edition = artworkEdition();
+
+    $this->actingAs(adminStaff(), 'web')
+        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+            'partners' => [
+                ['name' => 'Université de Kara', 'logo_file' => UploadedFile::fake()->image('uk.png', 400, 200)],
+                ['name' => 'Ministère', 'logo_url' => 'https://ailleurs.tg/logo.png'],
+            ],
+        ])
+        ->assertSessionHasNoErrors();
+
+    $partners = $edition->refresh()->settings['partners'];
+
+    expect($partners)->toHaveCount(2);
+    expect($partners[0]['logo_url'])->toContain('editions/');
+    Storage::disk('public')->assertExists(storagePath($partners[0]['logo_url']));
+    // Une URL externe reste telle quelle : elle ne nous appartient pas.
+    expect($partners[1]['logo_url'])->toBe('https://ailleurs.tg/logo.png');
+});
+
+/**
+ * ⚠️ L'ordre de la liste EST celui du bandeau public : il doit survivre à
+ * l'enregistrement tel que l'admin l'a rangé, sans tri d'aucune sorte.
+ */
+it('garde l’ordre des partenaires tel qu’il a été rangé', function () {
+    Storage::fake('public');
+    $edition = artworkEdition();
+    $staff = adminStaff();
+
+    $this->actingAs($staff, 'web')
+        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+            'partners' => [['name' => 'Alpha'], ['name' => 'Beta'], ['name' => 'Gamma']],
+        ])->assertSessionHasNoErrors();
+
+    // L'admin remonte Gamma en tête.
+    $this->actingAs($staff, 'web')
+        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+            'partners' => [['name' => 'Gamma'], ['name' => 'Alpha'], ['name' => 'Beta']],
+        ])->assertSessionHasNoErrors();
+
+    expect(array_column($edition->refresh()->settings['partners'], 'name'))
+        ->toBe(['Gamma', 'Alpha', 'Beta']);
+});
+
+/**
+ * ⚠️ Le ménage se fait sur les DEUX listes entières, jamais ligne à ligne :
+ * après un déplacement, l'index 0 ne désigne plus le même partenaire, et un
+ * rapprochement par position effacerait le logo du voisin.
+ */
+it('ne supprime pas le logo d’un partenaire qu’on déplace', function () {
+    Storage::fake('public');
+    $edition = artworkEdition();
+    $staff = adminStaff();
+
+    $this->actingAs($staff, 'web')
+        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+            'partners' => [
+                ['name' => 'Alpha', 'logo_file' => UploadedFile::fake()->image('a.png')],
+                ['name' => 'Beta', 'logo_file' => UploadedFile::fake()->image('b.png')],
+            ],
+        ])->assertSessionHasNoErrors();
+
+    $avant = array_column($edition->refresh()->settings['partners'], 'logo_url', 'name');
+
+    // Beta passe devant : les deux lignes repostent l'URL qu'elles portent.
+    $this->actingAs($staff, 'web')
+        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+            'partners' => [
+                ['name' => 'Beta', 'logo_url' => $avant['Beta']],
+                ['name' => 'Alpha', 'logo_url' => $avant['Alpha']],
+            ],
+        ])->assertSessionHasNoErrors();
+
+    $apres = array_column($edition->refresh()->settings['partners'], 'logo_url', 'name');
+
+    expect($apres)->toBe(['Beta' => $avant['Beta'], 'Alpha' => $avant['Alpha']]);
+    Storage::disk('public')->assertExists(storagePath($avant['Alpha']));
+    Storage::disk('public')->assertExists(storagePath($avant['Beta']));
+});
+
+/** Le fichier d'un partenaire retiré ne reste pas servi publiquement. */
+it('efface le logo d’un partenaire retiré de la liste', function () {
+    Storage::fake('public');
+    $edition = artworkEdition();
+    $staff = adminStaff();
+
+    $this->actingAs($staff, 'web')
+        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+            'partners' => [
+                ['name' => 'Alpha', 'logo_file' => UploadedFile::fake()->image('a.png')],
+                ['name' => 'Beta', 'logo_file' => UploadedFile::fake()->image('b.png')],
+            ],
+        ])->assertSessionHasNoErrors();
+
+    $avant = array_column($edition->refresh()->settings['partners'], 'logo_url', 'name');
+
+    $this->actingAs($staff, 'web')
+        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+            'partners' => [['name' => 'Alpha', 'logo_url' => $avant['Alpha']]],
+        ])->assertSessionHasNoErrors();
+
+    Storage::disk('public')->assertExists(storagePath($avant['Alpha']));
+    Storage::disk('public')->assertMissing(storagePath($avant['Beta']));
+});
+
+/** Remplacer le logo d'une ligne n'empile pas les fichiers. */
+it('remplace le logo d’un partenaire sans garder l’ancien', function () {
+    Storage::fake('public');
+    $edition = artworkEdition();
+    $staff = adminStaff();
+
+    $this->actingAs($staff, 'web')
+        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+            'partners' => [['name' => 'Alpha', 'logo_file' => UploadedFile::fake()->image('a.png')]],
+        ])->assertSessionHasNoErrors();
+
+    $ancien = $edition->refresh()->settings['partners'][0]['logo_url'];
+
+    $this->actingAs($staff, 'web')
+        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+            'partners' => [[
+                'name' => 'Alpha',
+                'logo_url' => $ancien,
+                'logo_file' => UploadedFile::fake()->image('a2.png'),
+            ]],
+        ])->assertSessionHasNoErrors();
+
+    $nouveau = $edition->refresh()->settings['partners'][0]['logo_url'];
+
+    expect($nouveau)->not->toBe($ancien);
+    Storage::disk('public')->assertExists(storagePath($nouveau));
+    Storage::disk('public')->assertMissing(storagePath($ancien));
+});
+
+/**
+ * ⚠️ Pas de SVG : il serait servi depuis notre domaine et peut porter du
+ * script - un logo de partenaire est fourni par un tiers.
+ */
+it('refuse un logo de partenaire au format SVG', function () {
+    Storage::fake('public');
+    $edition = artworkEdition();
+
+    $this->actingAs(adminStaff(), 'web')
+        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+            'partners' => [['name' => 'Alpha', 'logo_file' => UploadedFile::fake()->create('logo.svg', 4, 'image/svg+xml')]],
+        ])
+        ->assertSessionHasErrors('partners.0.logo_file');
+});

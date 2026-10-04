@@ -79,6 +79,32 @@ class EditionArtwork
         return $limits === [] ? 10240 : (int) min($limits);
     }
 
+    /**
+     * Supprime nos fichiers qu'une nouvelle liste ne référence plus.
+     *
+     * ⚠️ Pour un répéteur - les logos de partenaires - on ne peut PAS comparer
+     * ligne à ligne : l'index d'une ligne ne désigne plus la même entrée dès
+     * qu'on réordonne ou qu'on retire, et le ménage effacerait le logo du
+     * voisin. On compare donc les deux listes dans leur ENSEMBLE : tout fichier
+     * à nous disparu de la nouvelle est orphelin, et resterait servi
+     * publiquement si on l'oubliait.
+     *
+     * @param  list<string|null>  $avant
+     * @param  list<string|null>  $apres
+     */
+    public static function forgetMissing(array $avant, array $apres): void
+    {
+        $garde = array_filter(array_map(fn ($u) => trim((string) $u), $apres));
+
+        foreach ($avant as $url) {
+            $url = trim((string) $url);
+
+            if ($url !== '' && ! in_array($url, $garde, true)) {
+                self::forget($url);
+            }
+        }
+    }
+
     /** Valeur d'un réglage php.ini de taille, en kilo-octets (0 = illimité). */
     private static function iniKb(string $key): int
     {

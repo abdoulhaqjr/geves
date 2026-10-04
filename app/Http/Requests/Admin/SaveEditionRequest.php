@@ -107,6 +107,9 @@ class SaveEditionRequest extends FormRequest
             'partners.*.name' => ['nullable', 'string', 'max:200'],
             'partners.*.url' => ['nullable', 'string', 'max:500'],
             'partners.*.logo_url' => ['nullable', 'string', 'max:500'],
+            // Logo téléversé, ligne par ligne. ⚠️ Pas de SVG : il serait servi
+            // depuis notre domaine et peut porter du script.
+            'partners.*.logo_file' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:'.min(2048, EditionArtwork::maxUploadKb())],
             'partners.*.level' => ['nullable', 'string', 'max:40'],
             'faq' => ['array'],
             'faq.*.question' => ['nullable', 'string', 'max:300'],

@@ -1850,10 +1850,27 @@ document.addEventListener('alpine:init', () => {
 
     // Listes répétables du formulaire d'édition (admin) : tarifs, comités,
     // partenaires, FAQ - ajout/suppression côté client.
+    // ⚠️ Un répéteur qui se RÉORDONNE ne peut pas être repéré par sa position :
+    // Alpine recycle les nœuds à clé égale, et le fichier déjà choisi dans un
+    // champ de téléversement resterait en place pendant que la ligne, elle, se
+    // déplacerait - on enregistrerait le logo d'un partenaire chez son voisin.
+    // Chaque ligne porte donc un identifiant qui la suit.
+    let partnerSeq = 0;
+    const partnerRow = (p = {}) => ({
+        uid: 'p' + (++partnerSeq),
+        name: p.name || '',
+        url: p.url || '',
+        logo_url: p.logo_url || '',
+        level: p.level || '',
+        // Aperçu : l'URL enregistrée, ou l'image choisie tant qu'elle n'est pas envoyée.
+        preview: p.logo_url || '',
+        logo_ko: false,
+    });
+
     const editionArraysFactory = (init = {}) => ({
         fees: Array.isArray(init.fees) ? init.fees : [],
         committees: Array.isArray(init.committees) ? init.committees : [],
-        partners: Array.isArray(init.partners) ? init.partners : [],
+        partners: (Array.isArray(init.partners) ? init.partners : []).map((p) => partnerRow(p)),
         faq: Array.isArray(init.faq) ? init.faq : [],
         keyDates: Array.isArray(init.keyDates) ? init.keyDates : [],
         programme: Array.isArray(init.programme) ? init.programme : [],
@@ -1877,8 +1894,39 @@ document.addEventListener('alpine:init', () => {
         },
         addCommittee() { this.committees.push({ role: 'organisation', person_name: '', person_title: '', institution: '', photo_url: '' }); },
         removeCommittee(i) { this.committees.splice(i, 1); },
-        addPartner() { this.partners.push({ name: '', url: '', logo_url: '', level: '' }); },
+        addPartner() { this.partners.push(partnerRow()); },
         removePartner(i) { this.partners.splice(i, 1); },
+        setPartners(list) { this.partners = (Array.isArray(list) ? list : []).map((p) => partnerRow(p)); },
+        // L'ordre de la liste EST celui du bandeau public : le déplacement est donc
+        // un réglage, pas un confort de saisie.
+        movePartner(i, dir) {
+            const to = i + dir;
+            if (to < 0 || to >= this.partners.length) return;
+            const [row] = this.partners.splice(i, 1);
+            this.partners.splice(to, 0, row);
+        },
+        // Téléversement : l'aperçu passe à l'image locale sans attendre l'envoi.
+        pickPartnerLogo(p, e) {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            p.preview = URL.createObjectURL(file);
+            p.logo_ko = false;
+        },
+        // ⚠️ Saisir une URL ANNULE le fichier choisi : à l'enregistrement, c'est le
+        // fichier qui l'emporte, et l'aperçu montrerait sinon une image que la
+        // fiche n'allait pas retenir.
+        typePartnerLogo(p, value, input) {
+            p.logo_url = value;
+            p.preview = value;
+            p.logo_ko = false;
+            if (input) input.value = '';
+        },
+        clearPartnerLogo(p, input) {
+            p.logo_url = '';
+            p.preview = '';
+            p.logo_ko = false;
+            if (input) input.value = '';
+        },
         addFaq() { this.faq.push({ question: '', answer: '' }); },
         removeFaq(i) { this.faq.splice(i, 1); },
         addKeyDate() { this.keyDates.push({ date: '', label: '' }); },

@@ -470,7 +470,8 @@
                             <h2>Partenaires</h2>
                             <div class="desc">
                                 Ils défilent dans le bandeau <strong>« Partenaires &amp; Sponsors »</strong> de la page
-                                publique. Sans partenaire, la section n’y apparaît pas.
+                                publique, <strong>dans l’ordre de cette liste</strong>. Sans partenaire, la
+                                section n’y apparaît pas.
                             </div>
 
                             {{-- ⚠️ Le vide se DIT : une carte qui s'ouvre sur une ligne grise ne
@@ -481,28 +482,52 @@
                                 Ajoutez-en un : son logo rejoindra le bandeau défilant du site public.
                             </div>
 
-                            <template x-for="(p, i) in partners" :key="i">
+                            {{-- ⚠️ Clé = l’identifiant de la ligne, JAMAIS son index : la liste se
+                                 réordonne, et une clé d’index ferait recycler les nœuds - le
+                                 fichier déjà choisi dans un champ de téléversement resterait
+                                 sur place pendant que la ligne se déplacerait. --}}
+                            <template x-for="(p, i) in partners" :key="p.uid">
                                 <div class="partner-item">
-                                    {{-- ⚠️ L'aperçu REPRODUIT le rendu public : le logo s'il est là,
-                                         le nom sinon (c'est exactement ce que fait le bandeau de
-                                         `public/colloque`). On voit donc ce que verra le visiteur,
-                                         au lieu d'un carré gris marqué « LOGO ».
-                                         ⚠️ Repli sur erreur de chargement : une URL de logo fautive
-                                         est fréquente (on colle l'adresse d'une page, pas d'une
-                                         image). Sans lui, la ligne affichait l'icône d'image cassée
-                                         du navigateur - un défaut qu'on prend pour un bug de la fiche.
+                                    {{-- ⚠️ DEUX voies vers le même champ, et un aperçu dans les deux cas :
+                                         téléverser un fichier, ou coller une URL. C'est l'aperçu qui
+                                         dit si l'adresse pointe bien sur une image - un logo absent
+                                         du bandeau public est sinon découvert après publication.
+                                         Le fichier l'emporte à l'enregistrement (EditionArtwork).
+                                         ⚠️ Le cadre n'imite plus le rendu public (le nom à défaut de
+                                         logo) : il est devenu le BOUTON de téléversement, et doit
+                                         donc dire ce que le clic va faire.
+                                         ⚠️ Repli sur erreur de chargement : coller l'adresse d'une
+                                         PAGE au lieu de celle d'une image est l'erreur courante ;
+                                         sans lui, la ligne affiche l'icône cassée du navigateur,
+                                         qu'on prend pour une panne de la fiche.
                                          ⚠️ Écrit `x-on:error` et NON la forme courte d'Alpine : avec
                                          l'arobase, Blade y voit sa propre directive d'erreur de
                                          validation, ouvre une condition qu'il ne referme jamais, et
                                          la vue casse à la compilation. --}}
-                                    <div class="p-logo" :class="{ 'has-logo': p.logo_url && !p.logo_ko }">
-                                        <template x-if="p.logo_url && !p.logo_ko">
-                                            <img :src="p.logo_url" :alt="p.name || ''"
-                                                 x-on:error="p.logo_ko = true" x-on:load="p.logo_ko = false">
-                                        </template>
-                                        <template x-if="!p.logo_url || p.logo_ko">
-                                            <span x-text="p.name || 'Logo'"></span>
-                                        </template>
+                                    <div class="p-media">
+                                        <input type="file" class="p-file" :id="'partner-logo-'+i"
+                                               :name="'partners['+i+'][logo_file]'"
+                                               :aria-label="'Logo de ' + (p.name || 'ce partenaire')"
+                                               accept="image/png,image/jpeg,image/webp"
+                                               @change="pickPartnerLogo(p, $event)">
+                                        <label class="p-logo" :for="'partner-logo-'+i"
+                                               :class="{ 'has-logo': p.preview && ! p.logo_ko, 'is-ko': p.logo_ko }"
+                                               :title="p.preview ? 'Remplacer le logo' : 'Téléverser un logo'">
+                                            <template x-if="p.preview && ! p.logo_ko">
+                                                <img :src="p.preview" :alt="p.name || ''"
+                                                     x-on:error="p.logo_ko = true" x-on:load="p.logo_ko = false">
+                                            </template>
+                                            <template x-if="! p.preview || p.logo_ko">
+                                                <span class="p-logo__void">
+                                                    <x-ukc.icon name="upload" :size="17" />
+                                                    <em x-text="p.logo_ko ? 'Image introuvable' : 'Téléverser'"></em>
+                                                </span>
+                                            </template>
+                                            <span class="p-logo__over" aria-hidden="true">Remplacer</span>
+                                        </label>
+                                        <button type="button" class="p-logo__clear" x-show="p.preview" x-cloak
+                                                @click="clearPartnerLogo(p, $el.closest('.partner-item').querySelector('input[type=file]'))"
+                                                title="Retirer le logo" aria-label="Retirer le logo">&times;</button>
                                     </div>
 
                                     <div class="p-fields">
@@ -527,19 +552,32 @@
                                         </label>
                                         <label class="p-field">
                                             <span>URL du logo</span>
-                                            <input type="text" :name="'partners['+i+'][logo_url]'" x-model="p.logo_url"
+                                            <input type="text" :name="'partners['+i+'][logo_url]'" :value="p.logo_url"
+                                                   @input="typePartnerLogo(p, $event.target.value, $el.closest('.partner-item').querySelector('input[type=file]'))"
                                                    placeholder="https://…/logo.png">
                                         </label>
                                     </div>
 
-                                    {{-- Même pastille destructive que le programme : une couleur
-                                         de plus inventée ici, et deux écrans ne diraient plus la
-                                         même chose du même geste. --}}
-                                    <button type="button" class="ukc-btn--icon danger" @click="removePartner(i)"
-                                            title="Retirer ce partenaire"
-                                            :aria-label="'Retirer ' + (p.name || 'ce partenaire')">
-                                        <x-ukc.icon name="trash" :size="16" />
-                                    </button>
+                                    {{-- L'ordre de la liste est celui du bandeau public : les flèches sont
+                                         un réglage, pas un confort de saisie. Même grammaire que le
+                                         programme synthétique - monter, descendre, retirer. --}}
+                                    <div class="p-acts">
+                                        <button type="button" class="ukc-btn--icon" @click="movePartner(i, -1)"
+                                                :disabled="i === 0" title="Monter"
+                                                :aria-label="'Monter ' + (p.name || 'ce partenaire')">
+                                            <x-ukc.icon name="arrow-up" :size="15" />
+                                        </button>
+                                        <button type="button" class="ukc-btn--icon" @click="movePartner(i, 1)"
+                                                :disabled="i === partners.length - 1" title="Descendre"
+                                                :aria-label="'Descendre ' + (p.name || 'ce partenaire')">
+                                            <x-ukc.icon name="arrow-down" :size="15" />
+                                        </button>
+                                        <button type="button" class="ukc-btn--icon danger" @click="removePartner(i)"
+                                                title="Retirer ce partenaire"
+                                                :aria-label="'Retirer ' + (p.name || 'ce partenaire')">
+                                            <x-ukc.icon name="trash" :size="16" />
+                                        </button>
+                                    </div>
                                 </div>
                             </template>
 
@@ -1182,7 +1220,7 @@
                         this.comSci = s.committees.filter(c => c.role === 'scientifique');
                         this.comSup = s.committees.filter(c => c.role === 'supervision');
                     }
-                    if (Array.isArray(s.partners)) this.partners = s.partners;
+                    if (Array.isArray(s.partners)) this.setPartners(s.partners);
                     if (Array.isArray(s.faq)) this.faq = s.faq;
                     this.aiMsg = ''; this.aiSuggestions = null; this.aiApplied = true;
                     window.ukcToast?.('Champs remplis - pensez à enregistrer la fiche.');
