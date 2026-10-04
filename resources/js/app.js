@@ -1069,13 +1069,31 @@ document.addEventListener('alpine:init', () => {
         storagePrefix: 'gesco.chat.v1.',
         scope: String(scope || 'guest'),
         get storageKey() { return this.storagePrefix + this.scope; },
+        // Clé de l'identifiant de conversation : se termine par « .<scope> » pour
+        // que purgeForeignScopes la conserve pour l'utilisateur courant et la purge
+        // pour les autres (même règle que la discussion).
+        get cidKey() { return this.storagePrefix + 'cid.' + this.scope; },
+        conversationId: '',
         seedText: seed || 'Bonjour, je suis Gesco.',
         init() {
             this.purgeForeignScopes();
             const saved = this.restore();
             this.messages = saved || [{ role: 'bot', text: this.seedText }];
+            this.conversationId = this.restoreCid() || this.freshConversation();
             this.$watch('messages', () => this.persist());
             this.scrollSoon();
+        },
+        // Un identifiant par discussion : une nouvelle conversation = une éventuelle
+        // nouvelle réclamation ; les tours suivants mettent à jour la même.
+        freshConversation() {
+            let id;
+            try { id = crypto.randomUUID(); } catch (e) { id = 'c-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10); }
+            this.conversationId = id;
+            try { sessionStorage.setItem(this.cidKey, id); } catch (e) { /* stockage indisponible */ }
+            return id;
+        },
+        restoreCid() {
+            try { return sessionStorage.getItem(this.cidKey) || ''; } catch (e) { return ''; }
         },
         // Retire les discussions rattachées à un autre utilisateur (changement de compte).
         purgeForeignScopes() {
@@ -1101,6 +1119,7 @@ document.addEventListener('alpine:init', () => {
         reset() {
             this.messages = [{ role: 'bot', text: this.seedText }];
             this.input = '';
+            this.freshConversation(); // nouvelle discussion = nouvelle réclamation possible
             this.resetInputHeight();
             this.persist();
             this.scrollSoon();
@@ -1162,7 +1181,7 @@ document.addEventListener('alpine:init', () => {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
                     },
-                    body: JSON.stringify({ question, history }),
+                    body: JSON.stringify({ question, history, conversation_id: this.conversationId }),
                 });
                 const data = await res.json().catch(() => ({}));
                 this.messages.push({

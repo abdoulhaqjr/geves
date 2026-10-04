@@ -49,6 +49,10 @@ class GescoController extends Controller
             'history' => ['array'],
             'history.*.role' => ['string'],
             'history.*.text' => ['string'],
+            // Identifiant de la discussion en cours (généré côté client, remis à zéro
+            // par « Nouvelle discussion ») : rattache les tours d'une même conversation
+            // à UNE seule réclamation.
+            'conversation_id' => ['nullable', 'string', 'max:64'],
         ]);
 
         // Limite d'usage du chatbot public : X questions par JOUR et par utilisateur
@@ -103,10 +107,14 @@ class GescoController extends Controller
 
             // Gesco n'a pas pu résoudre → enregistrement d'une réclamation/incident.
             if ($result['claim'] !== null) {
-                $claimRef = $this->recordClaim($result['claim'], $account, $edition);
-                if ($claimRef !== null) {
-                    $answer .= "\n\nVotre demande a été enregistrée. **Référence de suivi : {$claimRef}**. "
-                        .'Elle sera traitée par l’organisation.';
+                $recorded = $this->recordClaim($result['claim'], $account, $edition, $data['conversation_id'] ?? null);
+                if ($recorded !== null) {
+                    $claimRef = $recorded['reference'];
+                    $answer .= $recorded['updated']
+                        ? "\n\nVotre demande (**référence {$claimRef}**) a été mise à jour avec ces précisions. "
+                            .'Elle sera traitée par l’organisation.'
+                        : "\n\nVotre demande a été enregistrée. **Référence de suivi : {$claimRef}**. "
+                            .'Elle sera traitée par l’organisation.';
                 }
             }
         } catch (\Throwable $e) {
@@ -117,19 +125,28 @@ class GescoController extends Controller
     }
 
     /**
-     * Enregistre une réclamation/incident préparé par Gesco (si un e-mail de
-     * contact est disponible) et notifie le staff. Retourne la référence, ou null.
+     * Enregistre (ou MET À JOUR) une réclamation/incident préparé par Gesco, si un
+     * e-mail de contact est disponible, et notifie le staff à la création.
+     *
+     * Au fil d'une même discussion (même `conversation_id`), les tours suivants -
+     * souvent des précisions que Gesco a demandées - **modifient la réclamation
+     * existante** au lieu d'en créer une nouvelle : une seule demande, une seule
+     * référence. Une nouvelle réclamation n'est créée que pour une nouvelle
+     * conversation, ou quand la précédente a déjà été traitée (résolue/clôturée).
      *
      * @param  array<string, mixed>  $claim
+     * @return array{reference: string, updated: bool}|null
      */
-    private function recordClaim(array $claim, ?User $account, ?Edition $edition): ?string
+    private function recordClaim(array $claim, ?User $account, ?Edition $edition, ?string $conversationId = null): ?array
     {
         $email = $account?->email ?: (filled($claim['contactEmail'] ?? null) ? (string) $claim['contactEmail'] : null);
         if ($email === null) {
             return null; // pas de contact fiable : Gesco redemandera l'e-mail
         }
 
-        $record = Claim::create([
+        $conversationId = filled($conversationId) ? (string) $conversationId : null;
+
+        $attributes = [
             'edition_id' => $edition?->id,
             'user_id' => $account?->id,
             'name' => $account?->full_name ?: ((string) ($claim['contactName'] ?? '') ?: null),
@@ -138,8 +155,33 @@ class GescoController extends Controller
             'category' => filled($claim['category'] ?? null) ? (string) $claim['category'] : null,
             'subject' => (string) ($claim['subject'] ?? 'Réclamation'),
             'message' => (string) ($claim['summary'] ?? ''),
+        ];
+
+        // Réclamation déjà ouverte pour CETTE conversation : on l'enrichit des
+        // dernières précisions plutôt que d'en créer une nouvelle. On la restreint
+        // au même demandeur (garde-fou si un identifiant de conversation fuyait).
+        $existing = $conversationId !== null
+            ? Claim::query()
+                ->where('conversation', $conversationId)
+                ->where('source', 'chatbot')
+                ->whereIn('status', ['open', 'in_progress'])
+                ->when($account, fn ($q) => $q->where('user_id', $account->id), fn ($q) => $q->whereNull('user_id')->where('email', $email))
+                ->latest('id')
+                ->first()
+            : null;
+
+        if ($existing !== null) {
+            // On ne rétrograde jamais le travail du staff : le statut et l'affectation
+            // restent, seuls le contenu et la catégorie suivent la conversation.
+            $existing->fill($attributes)->save();
+
+            return ['reference' => $existing->reference, 'updated' => true];
+        }
+
+        $record = Claim::create($attributes + [
             'status' => 'open',
             'source' => 'chatbot',
+            'conversation' => $conversationId,
         ]);
 
         Notifier::staff(
@@ -150,7 +192,7 @@ class GescoController extends Controller
             icon: 'inbox',
         );
 
-        return $record->reference;
+        return ['reference' => $record->reference, 'updated' => false];
     }
 
     /**
