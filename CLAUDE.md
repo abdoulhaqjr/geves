@@ -630,9 +630,16 @@ rendu, c'est un point d'entrée à ajouter - pas ce module à refaire.
   la parole a été donnée (`isFloor`, posé à la réception de `mod_role`) ou qui
   partage son écran. Le **modérateur** le garde : il conduit la séance, et
   sans lui le tableau blanc serait inutilisable tant que personne ne présente.
-  ⚠️ `majDroitDeTracer()` doit être rappelé **partout où la parole change**
-  (`mod_role`, début et fin de partage, reprise du partage) : sans cela celui
-  qui vient de rendre l'écran continue d'écrire sur la présentation du suivant.
+  ⚠️⚠️ **Une SEULE définition de « qui présente »** : `celuiQuiPresente()`,
+  partagée par la **scène** et par le **crayon**. Elles l'ont calculée chacune
+  de leur côté - la scène prenait « parole donnée OU rôle présentateur », le
+  crayon exigeait la parole donnée - et un communicateur affiché
+  « Présentateur » **en grand sur la scène** trouvait le bouton Tableau grisé.
+  La salle lui disait deux choses contraires en même temps.
+  ⚠️ `majDroitDeTracer()` est rappelé depuis **`refreshPeople()`** : c'est la
+  liste des personnes qui dit qui présente, et tout y passe (arrivée, départ,
+  parole donnée, rôle retiré). L'accrocher aux seuls événements qu'on avait en
+  tête en oubliait toujours un.
 - ⚠️ **C'est une règle de CONDUITE, pas une barrière.** La frontière
   vérifiable reste le **rôle signé dans le jeton** (`ORDRES_RESERVES`, niveau
   `presenter`), qui interdit déjà le tableau à l'assistance. Qui tient la

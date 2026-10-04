@@ -691,3 +691,23 @@ export function droitDeTracer(role, partageSonEcran, aLaParole) {
 
   return !!partageSonEcran || !!aLaParole;
 }
+
+/**
+ * La personne que la salle désigne comme présentateur.
+ *
+ * ⚠️ Cette définition doit être UNIQUE. La scène et le crayon la calculaient
+ * chacun de leur côté : la scène prenait « parole donnée OU rôle présentateur »,
+ * le crayon exigeait la parole donnée. Un communicateur affiché « Présentateur »
+ * en grand sur la scène trouvait donc le bouton Tableau grisé - la salle lui
+ * disait deux choses contraires en même temps.
+ *
+ * ⚠️ `isFloor` d'abord, puis le rôle : au début d'une séance, le serveur donne
+ * `presenter` à TOUS les auteurs de communication. Tant que la parole n'a été
+ * donnée à personne, c'est le premier de la liste qui tient la scène - et c'est
+ * bien lui qu'on y voit.
+ */
+export function celuiQuiPresente(gens) {
+  const liste = Array.isArray(gens) ? gens : [];
+
+  return liste.find((p) => p && p.isFloor) || liste.find((p) => p && p.role === 'presenter') || null;
+}

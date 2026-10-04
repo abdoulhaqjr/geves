@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   cadreMedia,
   cadreTableau,
+  celuiQuiPresente,
   chronoLabel,
   compteEnAttente,
   droitDeTracer,
@@ -675,5 +676,35 @@ describe('qui tient le crayon', () => {
   it('ne le donne jamais à l’assistance', () => {
     expect(droitDeTracer('audience', true, true)).toBe(false);
     expect(droitDeTracer(undefined, true, true)).toBe(false);
+  });
+});
+
+describe('qui la salle montre comme présentateur', () => {
+  it('désigne la même personne pour la scène et pour le crayon', () => {
+    // ⚠️ Le défaut vécu : deux définitions séparées. Un communicateur affiché
+    // « Présentateur » en grand trouvait le bouton Tableau grisé.
+    const gens = [
+      { id: 'local', role: 'presenter' },
+      { id: 'b', role: 'audience' },
+    ];
+    const qui = celuiQuiPresente(gens);
+    expect(qui.id).toBe('local');
+    expect(droitDeTracer('presenter', false, qui.id === 'local')).toBe(true);
+  });
+
+  it('préfère la parole donnée au rôle porté', () => {
+    // ⚠️ Au début d'une séance, le serveur donne `presenter` à TOUS les auteurs :
+    // c'est la parole donnée qui tranche dès qu'elle l'a été.
+    const gens = [
+      { id: 'a', role: 'presenter' },
+      { id: 'b', role: 'presenter', isFloor: true },
+    ];
+    expect(celuiQuiPresente(gens).id).toBe('b');
+  });
+
+  it('ne désigne personne quand personne ne présente', () => {
+    expect(celuiQuiPresente([{ id: 'a', role: 'audience' }])).toBeNull();
+    expect(celuiQuiPresente(null)).toBeNull();
+    expect(celuiQuiPresente([null, undefined])).toBeNull();
   });
 });

@@ -11,7 +11,7 @@ import {
 // à part, et sont les seules du fichier à être couvertes par des tests
 // (`meeting-pure.test.js`). Y déplacer une décision, c'est la rendre vérifiable.
 import {
-    cadreMedia, cadreTableau, droitDeTracer, enBasDuFil, etatChrono, grilleOptimale, heure, idSur,
+    cadreMedia, cadreTableau, celuiQuiPresente, droitDeTracer, enBasDuFil, etatChrono, grilleOptimale, heure, idSur,
     idsDesParleurs, indexDuDernierTraitDe, initials, lotsDeTraits, mainsOrdonnees, metadonnee, niveauReseau,
     ordreRecevable as ordreAutorise, presenceLabel, peutReagir, phraseConnectes, placeBulle,
     compteEnAttente, entreeDirecte, pointTableau, profilVideo, questionsFiltrees, rangsDesMains,
@@ -425,7 +425,7 @@ export async function startFromConfig() {
     }
 
     function findPresenterParticipant() {
-        const pe = people.find((x) => x.isFloor || x.role === 'presenter'); if (!pe || !room) return null;
+        const pe = celuiQuiPresente(people); if (!pe || !room) return null;
         if (pe.id === 'local') return room.localParticipant;
         let f = null; room.remoteParticipants.forEach((p) => { if (p.identity === pe.id) f = p; }); return f;
     }
@@ -844,6 +844,10 @@ export async function startFromConfig() {
         });
 
         refreshHands(); majMicroTuiles(); majRolesTuiles();
+        // ⚠️ C'est la liste des personnes qui dit qui présente : arrivée, départ,
+        // parole donnée, rôle retiré - tout passe par ici. Rappeler la règle du
+        // crayon à un seul de ces endroits en oubliait toujours un.
+        majDroitDeTracer();
     }
     /**
      * Rattache une communication programmée à la personne présente.
@@ -1478,9 +1482,12 @@ export async function startFromConfig() {
      * sans lui le tableau blanc serait inutilisable tant que personne ne présente.
      */
     function peutTracer() {
-        const moi = people.find((x) => x.id === 'local');
+        // ⚠️ La MÊME règle que la scène (`celuiQuiPresente`), et pas une seconde
+        // écrite à côté : elles ont divergé, et un communicateur affiché
+        // « Présentateur » en grand trouvait le bouton Tableau grisé.
+        const qui = celuiQuiPresente(people);
 
-        return droitDeTracer(state.role, state.screen, !!(moi && (moi.isFloor || moi.aLaParole)));
+        return droitDeTracer(state.role, state.screen, !!(qui && qui.id === 'local'));
     }
 
     /**
