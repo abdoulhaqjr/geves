@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\RecordAttestationEvent;
 use App\Documents\AttestationCertifier;
 use App\Documents\AttestationVars;
 use App\Documents\LayoutRenderer;
@@ -31,10 +32,18 @@ class AttestationController extends Controller
      * doit tenir debout toute seule devant un recruteur, pas se contenter
      * d'afficher une image imprimable.
      */
-    public function document(string $uuid, AttestationCertifier $certifier): View
+    public function document(string $uuid, AttestationCertifier $certifier, Request $request, RecordAttestationEvent $constate): View
     {
         $attestation = Attestation::with(['edition.colloque', 'participant'])
             ->where('uuid', $uuid)->firstOrFail();
+
+        // ⚠️ **Délivrer n'est pas être reçu.** Rien ne disait si une attestation
+        // en ligne était jamais arrivée à son destinataire : émise, notifiée et
+        // jamais ouverte, elle était indiscernable d'une attestation lue et
+        // partagée. Le geste est constaté ici, à la seule adresse par laquelle on
+        // consulte une attestation. Le titulaire connecté pose du même coup son
+        // accusé de réception ; le staff ne compte pas (RecordAttestationEvent).
+        $constate($attestation, 'view', $request);
 
         // ⚠️ Le QR du document encode cette adresse. Il menait à une page de
         // vérification seule : on scannait une attestation pour atterrir sur un
@@ -89,7 +98,7 @@ class AttestationController extends Controller
     }
 
     /** Attestation en vrai PDF serveur (téléchargement, format A4 paysage). */
-    public function pdf(string $uuid): Response
+    public function pdf(string $uuid, Request $request, RecordAttestationEvent $constate): Response
     {
         $attestation = Attestation::with(['edition.colloque', 'participant'])
             ->where('uuid', $uuid)->firstOrFail();
@@ -123,11 +132,46 @@ class AttestationController extends Controller
         $w = (int) $layout['width'];
         $h = (int) $layout['height'];
 
+        // Emporter le document, c'est l'avoir ouvert : le journal distingue les
+        // deux gestes, la synthèse les additionne sous « ouverte ». Constaté
+        // APRÈS le rendu : un PDF qui échoue n'a été emporté par personne.
+        $constate($attestation, 'download', $request);
+
         return Pdf::loadView('pdf.attestation-template', [
             'attestation' => $attestation,
             'canvas' => $canvas,
         ])->setPaper([0, 0, $w * 0.75, $h * 0.75])
             ->download('attestation-'.$attestation->uuid.'.pdf');
+    }
+
+    /**
+     * **Gestes posés dans la page** : partage mené à son terme, lien copié,
+     * départ vers « Ajouter au profil » de LinkedIn.
+     *
+     * ⚠️ Le serveur ne peut pas les voir : ils se passent dans le navigateur, et
+     * le partage comme la copie n'émettent aucune requête. La page les déclare
+     * donc ici - c'est le SEUL moyen de répondre à « l'a-t-il partagée ? ».
+     *
+     * ⚠️ **Débit limité et liste de gestes fermée** : l'adresse est publique, et
+     * sans garde n'importe qui gonflerait les compteurs d'une attestation
+     * nominative. Le geste inconnu est refusé, jamais journalisé « au cas où ».
+     */
+    public function trace(string $uuid, Request $request, RecordAttestationEvent $constate): JsonResponse
+    {
+        $attestation = Attestation::where('uuid', $uuid)->firstOrFail();
+
+        $geste = (string) $request->input('kind', '');
+
+        // Seuls les gestes que la page peut honnêtement déclarer : l'ouverture et
+        // le téléchargement, eux, sont constatés côté serveur et ne se déclarent
+        // pas - sinon on pourrait s'inventer des lectures.
+        if (! in_array($geste, ['share', 'copy', 'linkedin'], true)) {
+            return response()->json(['ok' => false], 422);
+        }
+
+        $constate($attestation, $geste, $request);
+
+        return response()->json(['ok' => true]);
     }
 
     /**

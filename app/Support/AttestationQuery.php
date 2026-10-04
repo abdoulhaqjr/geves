@@ -45,6 +45,23 @@ class AttestationQuery
             $query->whereNull('delivered_at');
         }
 
+        // Suivi après délivrance : « qui n'a jamais ouvert la sienne ? » est à
+        // cette liste ce que « ce qui reste à remettre » est au guichet - la
+        // question qu'on se pose avant de relancer.
+        // ⚠️ `unopened` ne regarde PAS l'accusé de réception : une attestation
+        // ouverte par un tiers a bien été ouverte, et relancer son titulaire
+        // au motif qu'il n'a rien accusé est une autre démarche (`unacknowledged`).
+        $suivi = (string) $request->query('trail', '');
+        match ($suivi) {
+            'unopened' => $query->whereNull('first_viewed_at'),
+            'opened' => $query->whereNotNull('first_viewed_at'),
+            'acknowledged' => $query->whereNotNull('acknowledged_at'),
+            'unacknowledged' => $query->whereNull('acknowledged_at'),
+            'shared' => $query->whereNotNull('shared_at'),
+            'linkedin' => $query->whereNotNull('linkedin_at'),
+            default => null,
+        };
+
         // Recherche nom / e-mail : sur l'attestation (figés à l'émission) ET sur le
         // participant lié, car une attestation peut viser quelqu'un sans compte.
         $search = trim((string) $request->query('search', ''));
@@ -79,7 +96,7 @@ class AttestationQuery
     {
         $out = [];
 
-        foreach (['type', 'state', 'delivery', 'search', 'from', 'to'] as $cle) {
+        foreach (['type', 'state', 'delivery', 'trail', 'search', 'from', 'to'] as $cle) {
             $valeur = trim((string) $request->query($cle, ''));
             if ($valeur !== '') {
                 $out[$cle] = $valeur;

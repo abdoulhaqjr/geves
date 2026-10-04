@@ -27,7 +27,11 @@
     <x-ukc.icon name="share" :size="16" /> {{ __('Partager l’attestation') }}
 </button>
 
-<a href="{{ $linkedIn }}" target="_blank" rel="noopener" class="ukc-btn ukc-btn--outline ukc-cred-action">
+{{-- ⚠️ `data-cred-linkedin` ne constate QUE le départ vers le formulaire
+     « Ajouter au profil », pré-rempli par nous. LinkedIn ne nous rappelle
+     jamais : personne ici ne sait si l'ajout a été confirmé, et les libellés du
+     back-office le disent (cf. AttestationTrail). --}}
+<a href="{{ $linkedIn }}" target="_blank" rel="noopener" class="ukc-btn ukc-btn--outline ukc-cred-action" data-cred-linkedin>
     <x-ukc.icon name="linkedin" :size="16" /> {{ __('Ajouter au profil LinkedIn') }}
 </a>
 

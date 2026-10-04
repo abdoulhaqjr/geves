@@ -1587,6 +1587,61 @@ Certifier/Credsverse).
   la réouverture le jeton était perdu et l'image gardait l'adresse d'alors. Elle
   fait désormais l'aller-retour, et le QR est redessiné à la restauration.
   Tests : `tests/Feature/AttestationPageTest.php`, `tests/Feature/DocumentDesignerTest.php`.
+
+### ⚠️ Délivrer n'est pas être reçu : le suivi d'une attestation
+
+`delivered_at` dit que le secrétariat a **tendu le papier**. Rien ne disait si
+une attestation **en ligne** était jamais arrivée à son destinataire : émise,
+notifiée et jamais ouverte, elle était indiscernable d'une attestation lue et
+partagée - et c'est pourtant la seule chose que le gestionnaire veut savoir
+avant de relancer.
+
+- **Journal en ajout seul** (`attestation_events`, `App\Models\AttestationEvent`) :
+  `view`, `download`, `share`, `copy`, `linkedin`. **Une seule porte d'écriture**,
+  `App\Actions\RecordAttestationEvent` - quatre endroits constatent, et chacun
+  tirerait sinon sa propre idée de ce qui compte.
+- **Synthèse dénormalisée sur `attestations`** (`acknowledged_at`,
+  `first_viewed_at`, `last_viewed_at`, `views_count`, `shared_at`,
+  `shares_count`, `linkedin_at`) : « qui n'a jamais ouvert la sienne ? » se pose
+  en **filtrant une liste paginée et triable**, comme « ce qui reste à remettre ».
+  Le journal reste la source de vérité et la synthèse se recalcule
+  (`AttestationTrail::recompute()`).
+- ⚠️ **L'ACCUSÉ DE RÉCEPTION n'est posé que par le TITULAIRE connecté** à son
+  espace. Une ouverture anonyme n'en est pas un : le lien circule - recruteur,
+  collègue, jury - et compter ces visites comme une réception ferait croire que
+  la personne a son document quand c'est un tiers qui l'a lu.
+- ⚠️ **Le staff ne compte pas.** La liste des attestations délivrées ouvre le
+  document dans un onglet : si le clic du gestionnaire comptait, toute
+  attestation qu'il relit passerait pour « ouverte », et la colonne dirait
+  l'activité du secrétariat. Le geste reste au journal (`actor = staff`), hors
+  synthèse. ⚠️ **L'impersonation est du staff**, jamais le titulaire - sinon
+  l'assistance fabriquerait l'accusé de réception de la personne qu'elle aide.
+- ⚠️ **Les robots d'aperçu sont écartés** (`RecordAttestationEvent::ROBOTS`). Le
+  cas courant n'est pas un moteur de recherche : c'est WhatsApp, LinkedIn ou
+  Slack qui va chercher le titre quand le titulaire **colle son lien dans une
+  conversation**. L'attestation passerait pour « ouverte » avant que le
+  destinataire ait vu le message.
+- ⚠️ **Un F5 ne vaut pas une seconde ouverture** : dédoublonnage par empreinte de
+  visiteur, 30 min pour les consultations, 1 min pour les gestes volontaires.
+  L'empreinte est un **HMAC tronqué** d'IP + agent - **aucune adresse IP n'est
+  conservée**, et elle ne sert qu'à ne pas compter deux fois.
+- **Partage et LinkedIn se passent dans le navigateur** : ni l'un ni l'autre
+  n'émet de requête, le serveur ne peut pas les voir. La page les **déclare**
+  (`POST /attestation/{uuid}/trace`, débit limité `attestation-trail`, liste de
+  gestes fermée). ⚠️ **`view` et `download` y sont REFUSÉS** (422) : ils sont
+  constatés côté serveur, et les laisser se déclarer permettrait de s'inventer
+  des lectures. ⚠️ `navigator.share` ne tient sa promesse **que si le partage est
+  allé au bout** : on ne constate pas l'ouverture de la feuille.
+- ⚠️ **« LinkedIn » est une INTENTION, pas un résultat.** On constate le départ
+  vers le formulaire « Ajouter au profil », pré-rempli par nous ; **LinkedIn ne
+  rappelle jamais**. Écrire « Ajoutée à LinkedIn » serait une affirmation que
+  rien ne soutient, et le gestionnaire s'en servirait pour conclure. Les
+  libellés et leurs infobulles vivent dans `App\Support\AttestationTrail`.
+- **Lecture** : colonne « Suivi » (pastilles + infobulles datées), compteurs
+  *Jamais ouvertes* / *Accusés de réception*, filtre `?trail=` partagé avec les
+  exports via `AttestationQuery`.
+  Test : `tests/Feature/AttestationTrailTest.php`.
+
 ### Onglets d'une page = pilules + URL
 
 Toutes les sous-navigations du back-office sont en **pilules**

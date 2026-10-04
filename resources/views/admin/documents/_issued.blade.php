@@ -10,6 +10,19 @@
          guichet. Émettre n'est pas remettre, et sans ce compteur une attestation
          imprimée peut attendre des mois dans une chemise. --}}
     <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="users" :size="20" /></div><div class="lbl">Reste à remettre</div><div class="val">{{ $issuedStats['pending'] }}</div></div>
+    {{-- ⚠️ **Délivrer n'est pas être reçu.** Une attestation en ligne émise,
+         notifiée et jamais ouverte était indiscernable d'une attestation lue et
+         partagée : c'est ce compteur qui déclenche une relance. --}}
+    <div class="ukc-stat-card tw-stat" title="Attestations valides que personne n’a encore ouvertes en ligne. Les consultations du back-office ne comptent pas.">
+        <div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="eye-off" :size="20" /></div>
+        <div class="lbl">Jamais ouvertes</div><div class="val" style="color:#b45309;">{{ $issuedStats['unopened'] }}</div>
+    </div>
+    {{-- L'accusé de réception : le TITULAIRE, connecté à son espace, a ouvert son
+         document. Une ouverture anonyme n'en est pas un - le lien circule. --}}
+    <div class="ukc-stat-card tw-stat" title="Le titulaire, connecté à son espace, a ouvert son attestation.">
+        <div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="inbox" :size="20" /></div>
+        <div class="lbl">Accusés de réception</div><div class="val green">{{ $issuedStats['acknowledged'] }}</div>
+    </div>
 </div>
 
 <form method="GET" class="filter-bar">
@@ -31,12 +44,19 @@
         <option value="pending" @selected($delivery === 'pending')>À remettre</option>
         <option value="done" @selected($delivery === 'done')>Déjà remises</option>
     </select>
+    {{-- Suivi après délivrance : « qui n'a jamais ouvert la sienne ? » --}}
+    <select name="trail" onchange="this.form.submit()" title="Suivi après délivrance (ouverture, accusé de réception, partage)">
+        <option value="">Tout le suivi</option>
+        @foreach (\App\Support\AttestationTrail::FILTRES as $cle => $libelle)
+            <option value="{{ $cle }}" @selected($trail === $cle)>{{ $libelle }}</option>
+        @endforeach
+    </select>
     <input type="search" name="search" value="{{ $search }}" placeholder="Nom ou e-mail du bénéficiaire…" style="min-width:230px;"
            onkeydown="if(event.key==='Enter'){this.form.submit();}">
     <span class="sep" style="width:1px;height:24px;background:var(--ukc-border);align-self:center;"></span>
     <input type="date" name="from" value="{{ $from }}" title="Émise à partir du" onchange="this.form.submit()">
     <input type="date" name="to" value="{{ $to }}" title="Émise jusqu’au" onchange="this.form.submit()">
-    @if ($type !== '' || $state !== '' || $delivery !== '' || $search !== '' || $from !== '' || $to !== '')
+    @if ($type !== '' || $state !== '' || $delivery !== '' || $trail !== '' || $search !== '' || $from !== '' || $to !== '')
         <a href="{{ route('admin.documents.attestations', $base) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
     @endif
 </form>
@@ -85,6 +105,7 @@
                     <x-ukc.th sort="issued_at" :current="$sort" :dir="$dir">Émise le</x-ukc.th>
                     <x-ukc.th sort="revoked" :current="$sort" :dir="$dir">État</x-ukc.th>
                     <x-ukc.th sort="delivered_at" :current="$sort" :dir="$dir">Remise</x-ukc.th>
+                    <x-ukc.th sort="last_viewed_at" :current="$sort" :dir="$dir">Suivi</x-ukc.th>
                     <th style="text-align:right;">Actions</th>
                 </tr>
             </thead>
@@ -102,6 +123,18 @@
                             @else
                                 <span class="ukc-pill ukc-pill--muted">À remettre</span>
                             @endif
+                        </td>
+                        {{-- ⚠️ Chaque pastille dit ce qui a été CONSTATÉ, et son
+                             infobulle dit quoi exactement : « LinkedIn » est un
+                             départ vers le formulaire « Ajouter au profil », pas
+                             une confirmation - LinkedIn ne rappelle personne.
+                             Libellés et nuances : App\Support\AttestationTrail. --}}
+                        <td>
+                            <div style="display:flex;flex-wrap:wrap;gap:4px;max-width:220px;">
+                                @foreach (\App\Support\AttestationTrail::pastilles($a) as $pastille)
+                                    <span class="ukc-pill ukc-pill--{{ $pastille['tone'] }}" title="{{ $pastille['title'] }}">{{ $pastille['label'] }}</span>
+                                @endforeach
+                            </div>
                         </td>
                         <td>
                             <div class="ukc-actions" style="justify-content:flex-end;">
@@ -129,7 +162,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="7" style="padding:28px;text-align:center;color:var(--ukc-muted);">
+                    <tr><td colspan="8" style="padding:28px;text-align:center;color:var(--ukc-muted);">
                         Aucune attestation délivrée pour ce filtre. Émettez-en depuis l’onglet
                         <a href="{{ route('admin.documents.attestations', ['edition_id' => $edition_id, 'tab' => 'attestations', 'stab' => 'modeles']) }}">Modèles</a>.
                     </td></tr>

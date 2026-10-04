@@ -232,22 +232,69 @@
 
             // Partage : la feuille de partage du système quand elle existe, sinon
             // le lien copié - jamais une impasse.
+            //
+            // ⚠️ Ces gestes se passent ENTIÈREMENT dans le navigateur : ni le
+            // partage ni la copie n'émettent de requête, et le serveur ne peut
+            // donc pas les voir. La page les déclare (`attestation.trace`) -
+            // c'est le seul moyen de répondre à « l'a-t-il partagée ? ». Un échec
+            // de déclaration est silencieux : on ne gâche pas le geste du
+            // visiteur pour une statistique.
             (function () {
+                var traceUrl = '{{ route('attestation.trace', $attestation->uuid) }}';
+                var jeton = document.querySelector('meta[name="csrf-token"]');
+
+                function trace(kind) {
+                    if (!jeton) return;
+                    fetch(traceUrl, {
+                        method: 'POST',
+                        keepalive: true,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': jeton.content,
+                            Accept: 'application/json',
+                        },
+                        body: JSON.stringify({ kind: kind }),
+                    }).catch(function () {});
+                }
+
+                // ⚠️ **Le presse-papiers se refuse** (permission non accordée,
+                // origine non sécurisée) et la promesse est alors REJETÉE. Sans
+                // reprise, le bouton ne faisait rien du tout : ni message, ni
+                // lien copié, et le visiteur repartait en croyant l'avoir. On ne
+                // constate évidemment pas de partage dans ce cas - rien n'a été
+                // copié - mais on le DIT.
                 function copy(url, el) {
                     navigator.clipboard.writeText(url).then(function () {
+                        trace('copy');
                         if (window.ukcToast) window.ukcToast('{{ __('Lien copié') }}');
                         else if (el) el.setAttribute('title', '{{ __('Lien copié') }}');
+                    }).catch(function () {
+                        if (window.ukcToast) window.ukcToast('{{ __('Copie impossible : sélectionnez l’adresse dans la barre du navigateur.') }}');
+                        else if (el) el.setAttribute('title', '{{ __('Copie impossible') }}');
                     });
                 }
                 document.querySelectorAll('[data-cred-share]').forEach(function (share) {
                     share.addEventListener('click', function () {
                         var url = share.dataset.url;
-                        if (navigator.share) navigator.share({ title: share.dataset.title, url: url }).catch(function () {});
-                        else copy(url, share);
+                        // ⚠️ `navigator.share` ne tient sa promesse QUE si le partage
+                        // est allé au bout : un visiteur qui referme la feuille la
+                        // rejette. On ne constate donc que les partages aboutis -
+                        // compter l'ouverture de la feuille reviendrait à compter
+                        // des partages qui n'ont jamais eu lieu.
+                        if (navigator.share) {
+                            navigator.share({ title: share.dataset.title, url: url })
+                                .then(function () { trace('share'); })
+                                .catch(function () {});
+                        } else copy(url, share);
                     });
                 });
                 document.querySelectorAll('[data-cred-copy]').forEach(function (link) {
                     link.addEventListener('click', function () { copy(link.dataset.url, link); });
+                });
+                // Départ vers LinkedIn : le lien s'ouvre dans un autre onglet, la
+                // déclaration part en même temps.
+                document.querySelectorAll('[data-cred-linkedin]').forEach(function (link) {
+                    link.addEventListener('click', function () { trace('linkedin'); });
                 });
             })();
 
