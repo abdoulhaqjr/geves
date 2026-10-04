@@ -81,3 +81,59 @@ it('masque les questions cachées au public mais les garde pour le modérateur',
     $modList = $this->actingAs($staff, 'web')->getJson(route('session.engagement.questions', $session));
     expect(count($modList->json('questions')))->toBe(1);
 });
+
+it('fait descendre les questions traitées sous celles qui attendent', function () {
+    // ⚠️ Une question répondue il y a dix minutes mais portée par vingt votes
+    // restait en tête de file pour le reste de la séance, au-dessus de celles qui
+    // attendaient encore. L'animateur lit la file de haut en bas : ce qui est fait
+    // doit descendre. Les masquées, que seul le modérateur voit, descendent plus
+    // bas encore - ce sont des déchets, pas des archives.
+    $edition = openEdition();
+    $session = sessionFor($edition);
+    $account = participantAccount($edition);
+    $staff = adminStaff();
+
+    $faire = function (string $corps, string $statut) use ($session, $edition, $account) {
+        return SessionQuestion::create([
+            'session_id' => $session->id, 'edition_id' => $edition->id,
+            'user_id' => $account->id, 'author_name' => 'Awa Kodjo',
+            'body' => $corps, 'status' => $statut,
+        ]);
+    };
+    // La plus votée est traitée : elle ne doit plus ouvrir la file.
+    $traitee = $faire('Déjà répondue', 'answered');
+    $attend = $faire('Attend encore', 'pending');
+    $masquee = $faire('Masquée', 'hidden');
+
+    $this->actingAs($account, 'account')
+        ->postJson(route('session.engagement.vote', [$session, $traitee]))->assertOk();
+
+    $corps = $this->actingAs($staff, 'web')
+        ->getJson(route('session.engagement.questions', $session))->json('questions');
+
+    expect(array_column($corps, 'id'))->toBe([$attend->id, $traitee->id, $masquee->id]);
+    // Et le vote reste bien compté : on ne fait que déplacer, pas effacer.
+    expect($corps[1]['votes'])->toBe(1);
+});
+
+it('classe par votes à l’intérieur de ce qui attend', function () {
+    $edition = openEdition();
+    $session = sessionFor($edition);
+    $account = participantAccount($edition);
+
+    $faire = fn (string $corps) => SessionQuestion::create([
+        'session_id' => $session->id, 'edition_id' => $edition->id,
+        'user_id' => $account->id, 'author_name' => 'Awa Kodjo',
+        'body' => $corps, 'status' => 'pending',
+    ]);
+    $premiere = $faire('Posée en premier');
+    $votee = $faire('Posée après, mais votée');
+
+    $this->actingAs($account, 'account')
+        ->postJson(route('session.engagement.vote', [$session, $votee]))->assertOk();
+
+    $corps = $this->actingAs($account, 'account')
+        ->getJson(route('session.engagement.questions', $session))->json('questions');
+
+    expect(array_column($corps, 'id'))->toBe([$votee->id, $premiere->id]);
+});

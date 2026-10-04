@@ -621,6 +621,57 @@
             #visio-room .bd-outils input[type=range]{width:64px;}
             #visio-room .bd-outils button{padding:6px 7px;font-size:11.5px;}
         }
+        /* --- Échanges : leur propre surface ---
+           ⚠️ Deux colonnes dès qu'il y a la place : sondages et questions se
+           consultent ENSEMBLE pendant une séance, et l'un chassait l'autre dans
+           une colonne de 400px. En dessous, elles s'empilent et chacune garde son
+           propre défilement - sinon répondre à un sondage obligeait à remonter
+           par-dessus trente questions. */
+        #visio-room .v-ech{display:none;position:absolute;inset:0;z-index:58;
+            background:rgba(5,8,16,.72);padding:16px;align-items:center;justify-content:center;}
+        #visio-room .v-ech.on{display:flex;}
+        #visio-room .ech-box{display:flex;flex-direction:column;width:min(1040px,100%);max-height:100%;
+            background:var(--vbg-elev);border:1px solid var(--vborder);border-radius:18px;overflow:hidden;
+            box-shadow:0 24px 70px rgba(0,0,0,.6);}
+        #visio-room .ech-tete{flex-shrink:0;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+            padding:12px 14px;border-bottom:1px solid var(--vborder);}
+        #visio-room .ech-tete h3{font-size:15px;font-weight:800;margin:0;}
+        #visio-room .ech-filtres{display:flex;gap:4px;margin-left:auto;}
+        #visio-room .ech-filtres button{border:1px solid var(--vborder);background:transparent;color:var(--vmuted);
+            border-radius:50px;padding:5px 11px;font-size:11.5px;font-weight:700;cursor:pointer;}
+        #visio-room .ech-filtres button:hover{color:var(--vtext);}
+        #visio-room .ech-filtres button.on{background:rgba(34,62,164,.55);border-color:rgba(255,215,0,.5);color:var(--vtext);}
+        #visio-room .ech-x{flex-shrink:0;width:32px;height:32px;border:none;border-radius:9px;background:transparent;
+            color:var(--vmuted);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;}
+        #visio-room .ech-x svg{width:17px;height:17px;}
+        #visio-room .ech-x:hover{background:rgba(255,255,255,.08);color:var(--vtext);}
+        #visio-room .ech-corps{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,7fr) minmax(0,9fr);}
+        #visio-room .ech-col{min-width:0;min-height:0;display:flex;flex-direction:column;}
+        #visio-room .ech-col + .ech-col{border-left:1px solid var(--vborder);}
+        #visio-room .ech-col h5{flex-shrink:0;font-size:11px;font-weight:800;color:var(--vmuted);
+            text-transform:uppercase;letter-spacing:.05em;padding:12px 14px 0;margin:0;}
+        #visio-room .ech-pied{flex-shrink:0;border-top:1px solid var(--vborder);padding:10px 14px;}
+        #visio-room .ech-pied .eng-form{padding:0;border:none;}
+        /* La pastille du bouton : ce qui attend une réponse. */
+        #visio-room .ctrl-pastille{position:absolute;top:-2px;right:-2px;min-width:17px;height:17px;padding:0 4px;
+            border-radius:50px;background:var(--vgold);color:var(--vblue-d);font-size:10px;font-weight:800;
+            line-height:17px;text-align:center;display:none;}
+        #visio-room .ctrl-pastille.on{display:block;}
+        #visio-room .toolbar .ctrl{position:relative;}
+        /* Une question arrivée pendant qu'on avait fermé : la pastille respire une
+           fois, puis se tait. Un signal permanent cesse d'être un signal. */
+        #visio-room .ctrl.neuf .ctrl-pastille{animation:vneuf 1s ease 3;}
+        @@keyframes vneuf{0%,100%{transform:scale(1);}50%{transform:scale(1.35);}}
+        @@media (max-width:860px){
+            #visio-room .v-ech{padding:0;}
+            #visio-room .ech-box{width:100%;height:100%;max-height:100%;border-radius:0;border:none;}
+            #visio-room .ech-corps{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);}
+            #visio-room .ech-col + .ech-col{border-left:none;border-top:1px solid var(--vborder);}
+            /* ⚠️ Les sondages ne prennent que ce qu'il leur faut : en hauteur fixe,
+               deux sondages mangeaient l'écran et la file de questions disparaissait. */
+            #visio-room .ech-col:first-child .eng{max-height:38vh;}
+            #visio-room .ech-filtres{margin-left:0;width:100%;order:3;}
+        }
         #visio-room .perm-banner{display:none;position:absolute;top:calc(var(--vtop) + 8px);left:50%;transform:translateX(-50%);z-index:70;width:min(420px,92vw);background:var(--vbg-elev);border:1px solid rgba(255,215,0,.35);border-radius:14px;padding:14px 16px;box-shadow:0 12px 40px rgba(0,0,0,.4);font-size:13px;line-height:1.45;}
         #visio-room .perm-banner.on{display:block;}
         #visio-room .perm-banner strong{color:var(--vgold);}
@@ -1108,7 +1159,6 @@
                     <button type="button" data-side="people">Participants<span class="tab-count" id="handCount"></span></button>
                     {{-- Questions votées et sondages : ils se tenaient sur une autre
                          page, qu'il fallait quitter la visio pour atteindre. --}}
-                    <button type="button" data-side="eng" id="tabEng" style="display:none;">Échanges<span class="tab-count" id="engCount"></span></button>
                     <button type="button" data-side="comms" id="tabComms" style="display:none;">Communicateurs</button>
                     {{-- Onglet réservé au modérateur / rapporteur de la séance (cf. cfg.presence). --}}
                     <button type="button" data-side="presence" id="tabPresence" style="display:none;">Présence</button>
@@ -1137,21 +1187,6 @@
                     </div>
                 </div>
                 <div class="side-panel" id="panelPeople"><div class="people-list" id="peopleList"></div></div>
-                <div class="side-panel" id="panelEng">
-                    <div class="eng" id="engList"></div>
-                    {{-- Poser une question : réservé aux comptes connectés (le serveur
-                         le revérifie). Un visiteur anonyme lit la file sans y écrire. --}}
-                    <div class="eng-form" id="engForm" style="display:none;">
-                        <div class="ligne">
-                            <input type="text" id="engInput" maxlength="600" autocomplete="off"
-                                   placeholder="Poser une question…" aria-label="Poser une question">
-                            <button type="button" class="v-btn blue sm" id="engSend">Envoyer</button>
-                        </div>
-                    </div>
-                    <div class="eng-note" id="engNote" style="display:none;">
-                        Connectez-vous pour poser une question et voter.
-                    </div>
-                </div>
                 <div class="side-panel" id="panelComms">
                     <div style="padding:12px 14px 0;font-size:12px;color:var(--vmuted);line-height:1.4;">Communications programmées de la session. Un seul présentateur à la fois.</div>
                     <div class="comm-list" id="commList"></div>
@@ -1195,6 +1230,13 @@
             </button>
             {{-- Le tableau se range avec le partage d'écran : c'est la même chose
                  du point de vue de la salle - ce qu'on montre à la place des visages. --}}
+            {{-- Les échanges ont leur bouton : c'est une activité de la séance,
+                 pas un onglet d'un panneau qu'il faut d'abord ouvrir. --}}
+            <button type="button" class="ctrl" id="btnEch" title="Questions et sondages" data-nom="Échanges"
+                    aria-expanded="false" style="display:none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a7.5 7.5 0 0 1-9.9 7.1L5 20l1.4-4.3A7.5 7.5 0 1 1 20 11z"/><path d="M9.6 9.2a2.5 2.5 0 0 1 4.7 1.1c0 1.7-2.4 2-2.4 3.2"/><path d="M12 16.2h.01"/></svg>
+                <span class="ctrl-pastille" id="echCount"></span>
+            </button>
             <button type="button" class="ctrl" id="btnBoard" title="Tableau blanc" data-nom="Tableau" disabled>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M12 17v3"/><path d="M8 20h8"/><path d="M7 12.5c1.6-3 3-3 4 0s2.4 3 4-1"/></svg>
             </button>
@@ -1221,6 +1263,51 @@
             </button>
         </div>
 
+        {{-- ===== Échanges : questions votées et sondages =====
+             ⚠️ Ils tenaient dans une colonne de 400px partagée avec le fil, les
+             personnes et la présence. Une file de questions et des sondages en
+             cours n'y tenaient pas ensemble : on passait son temps à faire
+             défiler, et sur téléphone le tiroir recouvrait la séance. Ils ont
+             maintenant leur surface et leur bouton. --}}
+        <div class="v-ech" id="ech" role="dialog" aria-modal="false" aria-labelledby="echTitre">
+            <div class="ech-box">
+                <header class="ech-tete">
+                    <h3 id="echTitre">Échanges</h3>
+                    <div class="ech-filtres" id="echFiltres" role="group" aria-label="Filtrer les questions">
+                        <button type="button" data-f="toutes" class="on">Toutes</button>
+                        <button type="button" data-f="attente">Sans réponse</button>
+                        <button type="button" data-f="miennes">Les miennes</button>
+                    </div>
+                    <button type="button" class="ech-x" id="echClose" aria-label="Fermer les échanges">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                    </button>
+                </header>
+                <div class="ech-corps">
+                    <section class="ech-col" aria-labelledby="echTP">
+                        <h5 id="echTP">Sondages</h5>
+                        <div class="eng" id="engPolls"></div>
+                    </section>
+                    <section class="ech-col" aria-labelledby="echTQ">
+                        <h5 id="echTQ">Questions</h5>
+                        <div class="eng" id="engList"></div>
+                    </section>
+                </div>
+                {{-- Poser une question : réservé aux comptes connectés (le serveur
+                     le revérifie). Un visiteur anonyme lit la file sans y écrire. --}}
+                <footer class="ech-pied">
+                    <div class="eng-form" id="engForm" style="display:none;">
+                        <div class="ligne">
+                            <input type="text" id="engInput" maxlength="600" autocomplete="off"
+                                   placeholder="Poser une question…" aria-label="Poser une question">
+                            <button type="button" class="v-btn blue sm" id="engSend">Envoyer</button>
+                        </div>
+                    </div>
+                    <div class="eng-note" id="engNote" style="display:none;">
+                        Connectez-vous pour poser une question et voter.
+                    </div>
+                </footer>
+            </div>
+        </div>
         <div class="menu" id="bgMenu">
             <h4>Arrière-plan caméra</h4>
             <div class="bg-options">

@@ -4,6 +4,7 @@ import {
   cadreMedia,
   cadreTableau,
   chronoLabel,
+  compteEnAttente,
   enBasDuFil,
   entreeDirecte,
   etatChrono,
@@ -26,6 +27,7 @@ import {
   ordreRecevable,
   phraseConnectes,
   profilVideo,
+  questionsFiltrees,
   presenceLabel,
   rangsDesMains,
   roleLabel,
@@ -591,5 +593,38 @@ describe('annotation de la présentation', () => {
     // chez tout le monde, et rien ne le signale.
     expect(cadreMedia(1600, 900, 0, 0)).toEqual({ x: 0, y: 0, w: 0, h: 0 });
     expect(cadreMedia(0, 0, 1920, 1080)).toEqual({ x: 0, y: 0, w: 0, h: 0 });
+  });
+});
+
+describe('échanges', () => {
+  const file = [
+    { id: 1, status: 'pending', mine: false },
+    { id: 2, status: 'answered', mine: true },
+    { id: 3, status: 'pending', mine: true },
+    { id: 4, status: 'hidden', mine: false },
+  ];
+
+  it('restreint sans réordonner', () => {
+    // ⚠️ Le tri par votes vient du serveur : le filtre ne fait que retirer.
+    expect(questionsFiltrees(file, 'toutes').map((q) => q.id)).toEqual([1, 2, 3, 4]);
+    expect(questionsFiltrees(file, 'attente').map((q) => q.id)).toEqual([1, 3]);
+    expect(questionsFiltrees(file, 'miennes').map((q) => q.id)).toEqual([2, 3]);
+  });
+
+  it('ne rend pas la liste d’origine', () => {
+    // ⚠️ Rendre le tableau lui-même laisserait l'appelant le modifier par
+    // mégarde - et c'est la file de la séance qu'il abîmerait.
+    const sortie = questionsFiltrees(file, 'toutes');
+    sortie.pop();
+    expect(file).toHaveLength(4);
+    expect(questionsFiltrees(null, 'toutes')).toEqual([]);
+  });
+
+  it('n’annonce que ce qui attend une réponse', () => {
+    // ⚠️ Une file de quarante questions dont trente-huit sont traitées n'appelle
+    // pas l'animateur : c'est le reste à faire qui doit sauter aux yeux.
+    expect(compteEnAttente(file)).toBe(2);
+    expect(compteEnAttente([{ status: 'answered' }, { status: 'hidden' }])).toBe(0);
+    expect(compteEnAttente(null)).toBe(0);
   });
 });

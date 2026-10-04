@@ -37,7 +37,16 @@ class SessionEngagementController extends Controller
         ]);
     }
 
-    /** Liste des questions (JSON) - triées par votes puis ancienneté. */
+    /**
+     * Liste des questions (JSON) - ce qui ATTEND passe devant, puis les plus
+     * votées, puis les plus anciennes.
+     *
+     * ⚠️ Une question traitée il y a dix minutes mais portée par vingt votes
+     * restait en tête de file pour le reste de la séance, au-dessus de celles
+     * qui attendaient encore. L'animateur lit la file de haut en bas : ce qui
+     * est fait doit descendre. Les questions masquées (que seul le modérateur
+     * voit) descendent plus bas encore - ce sont des déchets, pas des archives.
+     */
     public function questions(EventSession $session): JsonResponse
     {
         [$account, $isStaff, $role] = $this->viewer($session);
@@ -55,7 +64,9 @@ class SessionEngagementController extends Controller
                 ->where('user_id', $account->id)->pluck('question_id')->flip()
             : collect();
 
-        $questions = $query->orderByDesc('votes_count')->orderBy('id')->get()
+        $questions = $query
+            ->orderByRaw("CASE status WHEN 'pending' THEN 0 WHEN 'answered' THEN 1 ELSE 2 END")
+            ->orderByDesc('votes_count')->orderBy('id')->get()
             ->map(fn (SessionQuestion $q) => [
                 'id' => (int) $q->id,
                 'author' => $q->author_name ?: 'Anonyme',

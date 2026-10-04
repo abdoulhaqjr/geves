@@ -576,6 +576,37 @@ commencée.
   et l'écran s'affiche. Mieux vaut un écran de trop que la mauvaise surprise.
 - Entrer sans caméra ni micro ne demande aucune autorisation : rien à vérifier.
 
+### Les échanges (Q&A voté, sondages) ont leur SURFACE et leur bouton
+
+⚠️ Ils ont d'abord vécu sur une autre page (poser une question faisait quitter
+la visio), puis comme **onglet du panneau latéral** - et c'était encore trop
+peu : une colonne de 400px partagée avec le fil, les personnes et la présence ne
+tient pas une file de questions **et** des sondages en cours. On passait son
+temps à faire défiler, et sur téléphone le tiroir recouvrait la séance.
+
+- **`#btnEch`** dans la barre (pastille `#echCount`), **`#ech`** comme surface :
+  deux colonnes au-dessus de 860px, empilées en dessous, **chacune avec son
+  propre défilement** - sinon répondre à un sondage oblige à remonter par-dessus
+  trente questions.
+- ⚠️ **Tri côté serveur : ce qui ATTEND passe devant.** Une question répondue
+  mais portée par vingt votes restait en tête de file pour le reste de la
+  séance. L'animateur lit de haut en bas : ce qui est fait descend, et les
+  masquées (que seul le modérateur voit) descendent plus bas encore.
+- **Filtres** (`questionsFiltrees`, règle pure) : Toutes / Sans réponse / Les
+  miennes. ⚠️ Un vide **filtré** ne se dit pas comme un vide : annoncer « aucune
+  question » alors qu'il y en a trente derrière un filtre, c'est la salle qui
+  ment.
+- ⚠️ **La pastille ne compte que ce qui attend** (`compteEnAttente`) : une file
+  de quarante dont trente-huit sont traitées n'appelle pas l'animateur. Elle
+  **respire trois fois** quand une question arrive alors que la surface est
+  fermée, puis se tait - un signal permanent cesse d'être un signal.
+- ⚠️ **Deux rythmes de relecture** : 10 s surface ouverte (un vote qui monte doit
+  se voir), 45 s fermée. Fermée, on relit **quand même** - sinon la pastille
+  mentirait jusqu'à ce qu'on pense à ouvrir, et c'est précisément ce qu'elle
+  existe pour éviter.
+- Rien n'est réécrit côté règles : ce sont les points d'entrée JSON de la page
+  autonome, et c'est le **serveur** qui dit qui peut poser, voter et modérer.
+
 ### Tableau blanc (bouton « Tableau »)
 
 Une surface de dessin partagée qui recouvre la scène chez tout le monde.
@@ -767,7 +798,7 @@ renseigne, pour **son** édition, le fournisseur, les identifiants du serveur
   stable qu'une haute définition qui saccade.
 - Tests : `tests/Feature/EditionMeetingConfigTest.php`.
 
-### Les échanges (Q&A voté, sondages) se tiennent DANS la salle
+### Les échanges : pourquoi ils ne sont plus sur une page à part
 
 Questions et sondages vivaient sur une **autre page** (`/session/{id}/echanges`),
 atteinte par un lien de la barre du haut de la visio : ⚠️ poser une question

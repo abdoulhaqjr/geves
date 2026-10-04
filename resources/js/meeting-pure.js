@@ -608,3 +608,36 @@ export function cadreMedia(boiteL, boiteH, mediaL, mediaH) {
 
   return { x: (BL - w) / 2, y: (BH - h) / 2, w, h };
 }
+
+/* ===================== Échanges ===================== */
+
+/**
+ * Les questions que ce filtre laisse passer.
+ *
+ * ⚠️ À trente questions, la file devient illisible : celle qu'on cherche - la
+ * sienne, ou celle qui attend encore - est noyée au milieu de ce qui est déjà
+ * traité. Le tri par votes vient du serveur ; ceci ne fait que RESTREINDRE, et
+ * ne réordonne rien.
+ *
+ * ⚠️ « Les miennes » s'appuie sur `mine`, que le serveur calcule : un visiteur
+ * anonyme n'a aucune question à lui, et la liste rendue vide le dit mieux
+ * qu'une liste pleine qui ne serait pas la sienne.
+ */
+export function questionsFiltrees(questions, filtre) {
+  const liste = Array.isArray(questions) ? questions : [];
+  if (filtre === 'attente') return liste.filter((q) => q && q.status === 'pending');
+  if (filtre === 'miennes') return liste.filter((q) => q && q.mine);
+
+  return liste.slice();
+}
+
+/**
+ * Ce que le pastille du bouton « Échanges » doit annoncer.
+ *
+ * ⚠️ Ce qui ATTEND une réponse, et non le total : une file de quarante
+ * questions dont trente-huit sont traitées n'appelle pas l'animateur. C'est le
+ * reste à faire qui doit sauter aux yeux.
+ */
+export function compteEnAttente(questions) {
+  return (Array.isArray(questions) ? questions : []).filter((q) => q && q.status === 'pending').length;
+}

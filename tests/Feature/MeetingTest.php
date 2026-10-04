@@ -564,14 +564,22 @@ it('tient les échanges DANS la salle, et non derrière un lien qui en sort', fu
     // ⚠️ Questions et sondages se tenaient sur une autre page : poser une question
     // obligeait à quitter la visio, donc à cesser de voir et d'entendre ce dont on
     // voulait parler.
+    //
+    // ⚠️ Ils ont ensuite été un ONGLET du panneau latéral, et c'était trop peu :
+    // une colonne de 400px partagée avec le fil, les personnes et la présence ne
+    // tient pas une file de questions ET des sondages. Ils ont désormais leur
+    // surface (#ech) et leur bouton (#btnEch) - d'où le changement de repères ici.
     configureLiveKit();
     $edition = openEdition();
     $session = liveSession($edition, 'public', ['meeting_provider' => 'livekit']);
 
     $this->get(route('session.meeting', $session))
         ->assertOk()
-        ->assertSee('panelEng', false)   // l'onglet « Échanges » du panneau
-        ->assertSee('engList', false)
+        ->assertSee('btnEch', false)     // le bouton de la barre
+        ->assertSee('engList', false)   // la file des questions
+        ->assertSee('engPolls', false)  // les sondages, dans leur propre colonne
+        // L'onglet du panneau a disparu avec le panneau.
+        ->assertDontSee('panelEng', false)
         // Les adresses sont celles de la page autonome : aucune règle n'est réécrite.
         ->assertSee(trim(json_encode(route('session.engagement.questions', $session)), '"'), false)
         ->assertSee(trim(json_encode(route('session.engagement.polls', $session)), '"'), false)

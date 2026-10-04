@@ -14,7 +14,8 @@ import {
     cadreMedia, cadreTableau, enBasDuFil, etatChrono, grilleOptimale, heure, idSur, idsDesParleurs,
     initials, lotsDeTraits, mainsOrdonnees, metadonnee, niveauReseau,
     ordreRecevable as ordreAutorise, presenceLabel, peutReagir, phraseConnectes, placeBulle,
-    entreeDirecte, pointTableau, profilVideo, rangsDesMains, reactionRecevable, REACTIONS_MAX, roleLabel,
+    compteEnAttente, entreeDirecte, pointTableau, profilVideo, questionsFiltrees, rangsDesMains,
+    reactionRecevable, REACTIONS_MAX, roleLabel,
     teinteDuNom, texteCourt, traitAllege, traitRecu,
 } from './meeting-pure.js';
 
@@ -2797,12 +2798,21 @@ export async function startFromConfig() {
     // ---- Échanges : questions votées et sondages ----
     // ⚠️ Ils vivaient sur une AUTRE PAGE, atteinte par un lien de la barre du haut :
     // poser une question obligeait à quitter la visio, donc à cesser de voir et
-    // d'entendre ce dont on voulait parler. Le panneau les accueille.
+    // d'entendre ce dont on voulait parler.
+    //
+    // ⚠️ Puis ils ont été un ONGLET du panneau latéral, et c'était trop peu : une
+    // colonne de 400px partagée avec le fil, les personnes et la présence ne tient
+    // pas une file de questions ET des sondages en cours. Ils ont leur surface et
+    // leur bouton - c'est une activité de la séance, pas un onglet qu'il faut
+    // d'abord penser à ouvrir.
     //
     // ⚠️ Rien n'est réécrit ici : ce sont les points d'entrée JSON de la page
     // autonome, et c'est le SERVEUR qui dit qui peut poser, voter et modérer. Le
     // bouton n'est qu'une commodité - le masquer n'a jamais protégé personne.
-    const echanges = { questions: [], sondages: [], peutPoster: false, tic: null, dernier: 0 };
+    const echanges = {
+        questions: [], sondages: [], peutPoster: false, tic: null, dernier: 0,
+        ouvert: false, filtre: 'toutes', vus: 0,
+    };
 
     const FLECHE_HAUT = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">'
         + '<path d="M12 5l7 8h-4v6h-6v-6H5l7-8z"/></svg>';
@@ -2811,11 +2821,17 @@ export async function startFromConfig() {
         return !!(cfg.engagement && cfg.engagement.questions);
     }
 
-    /** Vrai quand le panneau des échanges est réellement sous les yeux. */
-    function echangesVisibles() {
-        const p = $('panelEng');
-
-        return !!(p && p.classList.contains('active')) && (!ETROIT.matches || $('sidePanel')?.classList.contains('open'));
+    function ouvreEchanges(ouvrir) {
+        echanges.ouvert = !!ouvrir;
+        $('ech')?.classList.toggle('on', echanges.ouvert);
+        $('btnEch')?.setAttribute('aria-expanded', echanges.ouvert ? 'true' : 'false');
+        if (!echanges.ouvert) return;
+        // ⚠️ Ce qu'on vient de voir cesse d'être « nouveau » : une pastille qui
+        // clignote encore après qu'on a ouvert ne veut plus rien dire.
+        $('btnEch')?.classList.remove('neuf');
+        echanges.vus = compteEnAttente(echanges.questions);
+        chargeEchanges();
+        $('engInput')?.focus();
     }
 
     async function chargeEchanges() {
@@ -2848,40 +2864,52 @@ export async function startFromConfig() {
     }
 
     function majCompteEchanges() {
-        const badge = $('engCount');
+        const badge = $('echCount');
         if (!badge) return;
         // Ce qui attend une réponse : c'est la file de la séance, pas l'archive.
-        const n = echanges.questions.filter((q) => q.status === 'pending').length;
+        const n = compteEnAttente(echanges.questions);
         badge.textContent = String(n);
         badge.classList.toggle('on', n > 0);
+        // ⚠️ Le signal ne vaut que fermé : une question arrivée pendant qu'on
+        // regardait la file n'a pas à faire clignoter un bouton déjà ouvert.
+        if (!echanges.ouvert && n > echanges.vus) $('btnEch')?.classList.add('neuf');
+        if (echanges.ouvert) echanges.vus = n;
+        // Une question retirée fait redescendre le repère : sinon la suivante
+        // n'annoncerait plus rien.
+        if (n < echanges.vus) echanges.vus = n;
     }
 
     function rendEchanges() {
-        const zone = $('engList');
-        if (!zone) return;
+        const zoneP = $('engPolls');
+        const zoneQ = $('engList');
+        if (!zoneP || !zoneQ) return;
         const estMod = state.role === 'moderator';
-        zone.textContent = '';
 
         // --- Sondages ---
-        const titreP = elt('h5', '', 'Sondages');
-        zone.appendChild(titreP);
-        if (estMod) zone.appendChild(brouillonDeSondage());
+        zoneP.textContent = '';
+        if (estMod) zoneP.appendChild(brouillonDeSondage());
         if (!echanges.sondages.length) {
-            zone.appendChild(elt('div', 'eng-vide', estMod
+            zoneP.appendChild(elt('div', 'eng-vide', estMod
                 ? 'Aucun sondage. Lancez-en un : la salle répond sans quitter la séance.'
                 : 'Aucun sondage en cours.'));
         }
-        echanges.sondages.forEach((p) => zone.appendChild(carteSondage(p, estMod)));
+        echanges.sondages.forEach((p) => zoneP.appendChild(carteSondage(p, estMod)));
 
         // --- Questions ---
-        zone.appendChild(elt('h5', '', 'Questions'));
-        if (!echanges.questions.length) {
-            zone.appendChild(elt('div', 'eng-vide', 'Aucune question pour le moment.'));
+        zoneQ.textContent = '';
+        const vues = questionsFiltrees(echanges.questions, echanges.filtre);
+        if (!vues.length) {
+            // ⚠️ Un vide filtré n'est pas un vide : dire « aucune question » alors
+            // qu'il y en a trente derrière un filtre, c'est la salle qui ment.
+            zoneQ.appendChild(elt('div', 'eng-vide', echanges.questions.length
+                ? 'Aucune question ne correspond à ce filtre.'
+                : 'Aucune question pour le moment. Posez la vôtre ci-dessous.'));
         }
-        const liste = elt('div');
-        echanges.questions.forEach((q) => liste.appendChild(ligneQuestion(q, estMod)));
-        zone.appendChild(liste);
+        vues.forEach((q) => zoneQ.appendChild(ligneQuestion(q, estMod)));
 
+        document.querySelectorAll('#echFiltres button').forEach((b) => {
+            b.classList.toggle('on', b.dataset.f === echanges.filtre);
+        });
         $('engForm').style.display = echanges.peutPoster ? '' : 'none';
         $('engNote').style.display = echanges.peutPoster ? 'none' : '';
         majCompteEchanges();
@@ -3238,9 +3266,7 @@ export async function startFromConfig() {
         $('panelChat').classList.toggle('active', id === 'chat'); $('panelPeople').classList.toggle('active', id === 'people');
         const pc = $('panelComms'); if (pc) pc.classList.toggle('active', id === 'comms'); if (id === 'comms') refreshComms();
         const pp = $('panelPresence'); if (pp) pp.classList.toggle('active', id === 'presence');
-        const pe = $('panelEng'); if (pe) pe.classList.toggle('active', id === 'eng');
         if (id === 'presence') loadPresence();
-        if (id === 'eng') chargeEchanges();
         if (id === 'chat') filLu();
     }));
     // ---- Panneau latéral : colonne sur grand écran, tiroir en dessous de 900px ----
@@ -3333,6 +3359,9 @@ export async function startFromConfig() {
     document.addEventListener('keydown', (e) => {
         if (e.key !== 'Escape') return;
         if (repondModal) { repondModal(false); return; }
+        // Avant les menus : c'est la couche la plus haute, donc la première que
+        // l'on veut refermer.
+        if (echanges.ouvert) { ouvreEchanges(false); return; }
 
         const choix = document.querySelector('#visio-room .picker');
         if (choix) { choix.remove(); return; }
@@ -3377,14 +3406,31 @@ export async function startFromConfig() {
     // Échanges : l'onglet n'existe que si le serveur a donné les adresses - c'est
     // lui qui décide de l'accès, pas le navigateur.
     if (echangesActifs()) {
-        const onglet = $('tabEng'); if (onglet) onglet.style.display = '';
+        const bouton = $('btnEch'); if (bouton) bouton.style.display = '';
         chargeEchanges();
         // ⚠️ Le rafraîchissement périodique ne tourne que panneau OUVERT sur cet
         // onglet : la salle entière interrogeant le serveur toutes les dix secondes
         // pour un panneau que personne ne regarde, c'est du bruit pur. L'annonce par
         // le canal de données tient le compteur à jour entre-temps.
-        echanges.tic = setInterval(() => { if (!document.hidden && echangesVisibles()) chargeEchanges(); }, 10000);
+        // ⚠️ Deux rythmes. Surface ouverte, on relit souvent : un vote qui monte
+        // pendant qu'on regarde doit se voir. Fermée, on relit QUAND MÊME, mais
+        // rarement - sinon la pastille mentirait jusqu'à ce qu'on pense à ouvrir,
+        // et c'est précisément ce qu'elle existe pour éviter. L'annonce par le
+        // canal de données rafraîchit de toute façon dès que quelqu'un poste.
+        echanges.tic = setInterval(() => {
+            if (document.hidden || !echangesActifs()) return;
+            if (!echanges.ouvert && Date.now() - echanges.dernier < 45000) return;
+            chargeEchanges();
+        }, 10000);
     }
+    $('btnEch')?.addEventListener('click', () => ouvreEchanges(!echanges.ouvert));
+    $('echClose')?.addEventListener('click', () => ouvreEchanges(false));
+    // Un clic sur le voile referme : c'est ce qu'on attend d'une couche posée
+    // par-dessus la séance.
+    $('ech')?.addEventListener('click', (e) => { if (e.target === $('ech')) ouvreEchanges(false); });
+    document.querySelectorAll('#echFiltres button').forEach((b) => {
+        b.addEventListener('click', () => { echanges.filtre = b.dataset.f; rendEchanges(); });
+    });
     $('engSend')?.addEventListener('click', poseQuestion);
     $('engInput')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') poseQuestion(); });
     if (cfg.presence) {
