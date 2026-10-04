@@ -1814,6 +1814,23 @@ table `session_attendances`, modèle `SessionAttendance`). Entrées depuis
   deux il montre. Le champ estimé reste : une plénière de 300 ne se pointe pas.
 - Tests : `tests/Feature/SessionAttendanceTest.php`.
 
+### Programme synthétique = un onglet par JOUR
+
+- `partials/program-synthesis.blade.php`, **partagé** par la page publique et
+  l'aperçu de l'onglet Programme : l'admin doit voir exactement ce qui est publié.
+- ⚠️ **Un onglet = un JOUR, pas un bloc de saisie.** Une journée se saisit souvent
+  en deux blocs (« Matin », « Après-midi ») : un onglet par bloc affichait quatre
+  pastilles « Matin » côte à côte, et le visiteur qui cherchait le 3 octobre ne
+  savait pas laquelle ouvrir. Les blocs d'une même date sont **regroupés** et leur
+  intitulé devient un **intertitre** dans le jour.
+- ⚠️ **Jamais trié** : les jours sortent dans l'ordre où l'admin a rangé ses blocs,
+  flèches à l'appui. C'est lui qui décide de la succession.
+- ⚠️ Un bloc **sans date** garde son propre onglet : rien ne dit à quel jour il
+  appartient, et le coller au précédent inventerait une information.
+- ⚠️ **Mesuré** : le surtitre « Jour N » à `opacity: .72` tombait à **2,8:1** sur
+  les onglets inactifs (gris clair sur blanc, en 10,5px). La hiérarchie se fait à
+  la taille et à la graisse, qui ne coûtent aucun contraste - tout est ≥ 7,5:1.
+
 ### Onglets de la fiche d'édition
 
 - **Onze onglets dans UN seul écran** (`admin/editions/form.blade.php`), pilotés

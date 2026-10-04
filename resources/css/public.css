@@ -831,16 +831,42 @@ input[data-uppercase] { text-transform: uppercase; }
 /* Programme synthétique (saisi dans l'onglet Programme, affiché ici et en admin).
    Présentation en onglets jour par jour : réutilise .ukc-tabs-scroll / .ukc-tab /
    .ukc-program-day ci-dessus. */
-.ukc-prog-syn__date { font-size: 13.5px; font-weight: 700; color: var(--ukc-muted); text-transform: capitalize; margin-bottom: 10px; }
+/* En-tête du jour : la date en toutes lettres, et ce qu'elle contient. Un onglet
+   « Ven. 02 oct. » dit QUAND ; cet en-tête confirme où l'on vient d'atterrir. */
+.ukc-prog-syn__head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding-bottom: 10px; margin-bottom: 6px; border-bottom: 2px solid var(--ukc-border);
+}
+.ukc-prog-syn__date { font-size: 16px; font-weight: 800; color: var(--ukc-text); text-transform: capitalize; }
+.ukc-prog-syn__count { font-size: 12.5px; font-weight: 700; color: var(--ukc-muted); white-space: nowrap; }
+/* Intertitre d'un bloc (« Matin », « Après-midi ») : il situe les heures qui
+   suivent, là où il réclamait auparavant un onglet à lui. */
+.ukc-prog-syn__bloc {
+  display: flex; align-items: center; gap: 10px;
+  margin: 18px 0 2px; font-size: 11.5px; font-weight: 800;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--ukc-blue);
+}
+.ukc-prog-syn__bloc::after { content: ""; flex: 1; height: 1px; background: var(--ukc-border); }
 .ukc-prog-syn__rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-.ukc-prog-syn__row { display: grid; grid-template-columns: 140px 1fr; gap: 16px; padding: 12px 0; font-size: 14px; color: var(--ukc-text); border-bottom: 1px solid var(--ukc-border); }
+/* Le filet de gauche porte la nature du moment : il se lit en diagonale, sans
+   ajouter une colonne d'étiquettes qui alourdirait la liste. */
+.ukc-prog-syn__row {
+  display: grid; grid-template-columns: 140px 1fr; gap: 16px;
+  padding: 12px 14px; font-size: 14px; color: var(--ukc-text);
+  border-bottom: 1px solid var(--ukc-border);
+  border-left: 3px solid transparent; border-radius: 0 8px 8px 0;
+  transition: background .15s ease;
+}
 .ukc-prog-syn__row:last-child { border-bottom: none; }
+.ukc-prog-syn__row:hover { background: var(--ukc-bg, #f6f8fb); }
 .ukc-prog-syn__time { font-weight: 800; color: var(--ukc-blue); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ukc-prog-syn__row.is-plenary { border-left-color: var(--ukc-blue); }
+.ukc-prog-syn__row.is-atelier { border-left-color: var(--ukc-green, #009933); }
 .ukc-prog-syn__row.is-strong .ukc-prog-syn__label { font-weight: 800; color: var(--ukc-blue); }
 .ukc-prog-syn__row.is-break { color: var(--ukc-muted); }
 .ukc-prog-syn__row.is-break .ukc-prog-syn__time { color: var(--ukc-light); font-weight: 700; }
 .ukc-prog-syn__row.is-break .ukc-prog-syn__label { font-style: italic; }
-@media (max-width: 560px) { .ukc-prog-syn__row { grid-template-columns: 1fr; gap: 2px; } }
+@media (max-width: 560px) { .ukc-prog-syn__row { grid-template-columns: 1fr; gap: 2px; padding: 10px 12px; } }
 
 /* Partenaires & Sponsors : marquee de logos (exact mockup) */
 .ukc-partners { padding: clamp(40px, 6vw, 64px) 0; border-top: 1px solid var(--ukc-border); }
@@ -872,6 +898,14 @@ input[data-uppercase] { text-transform: uppercase; }
 @media (min-width: 700px) { .ukc-tabs-scroll { justify-content: center; flex-wrap: wrap; overflow-x: visible; } }
 .ukc-tab { flex-shrink: 0; padding: 10px 22px; border-radius: 50px; font-weight: 700; font-size: 14px; border: 2px solid var(--ukc-border); background: #fff; color: var(--ukc-muted); cursor: pointer; transition: all .15s; font-family: var(--ukc-font); white-space: nowrap; }
 .ukc-tab.active, .ukc-tab:hover { border-color: var(--ukc-blue); background: var(--ukc-blue); color: #fff; }
+/* Onglet de JOUR : « Jour 2 » en surtitre, la date en dessous. Le rang seul ne
+   dit pas quand ; la date seule oblige à compter. */
+.ukc-tab--day { display: flex; flex-direction: column; align-items: center; gap: 1px; line-height: 1.2; padding: 8px 20px; }
+/* ⚠️ MESURÉ : une opacité de .72 sur ce surtitre le faisait tomber à 2,8:1 sur
+   les onglets inactifs - du gris clair sur blanc, en 10,5px. La hiérarchie se
+   fait à la TAILLE et à la graisse, qui ne coûtent aucun contraste. */
+.ukc-tab--day .j { font-size: 10.5px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+.ukc-tab--day .d { font-size: 14.5px; font-weight: 800; text-transform: capitalize; }
 
 .ukc-swiper { position: relative; padding: 0 48px; }
 .ukc-swiper-track { display: flex; gap: 18px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }

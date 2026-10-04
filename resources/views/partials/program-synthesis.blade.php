@@ -4,8 +4,13 @@
     colloque (#programme) ET l'aperçu de l'onglet admin - afin que l'admin voie
     EXACTEMENT ce qui est publié.
 
-    Présentation en ONGLETS jour par jour (charte UK : .ukc-tabs-scroll +
+    Présentation en ONGLETS JOUR PAR JOUR (charte UK : .ukc-tabs-scroll +
     .ukc-program-day, non scopées → rendent aussi sous .ukc-shell).
+
+    ⚠️ Un onglet = UN JOUR, pas un bloc de saisie. Les blocs d'une même date
+    (« Matin », « Après-midi »…) se rangent DANS l'onglet de leur jour : un onglet
+    par bloc donnait quatre pastilles « Matin » côte à côte, et le visiteur qui
+    cherchait le 3 octobre ne savait pas laquelle ouvrir.
 
     Donnée attendue : $synthesis = ['title' => string, 'days' => [
         ['date' => 'Y-m-d'|'', 'heading' => string, 'rows' => [
@@ -26,43 +31,83 @@
 
         return $e !== '' ? $s.' - '.$e : $s;
     };
-    $synDays = collect($synthesis['days'] ?? [])->map(function ($d) {
+
+    $synBlocs = collect($synthesis['days'] ?? [])->map(function ($d) {
         $rows = collect($d['rows'] ?? [])
             ->filter(fn ($r) => trim((string) ($r['label'] ?? '')) !== '' || trim((string) ($r['start'] ?? '')) !== '' || trim((string) ($r['time'] ?? '')) !== '')
             ->values();
 
         return ['date' => trim((string) ($d['date'] ?? '')), 'heading' => trim((string) ($d['heading'] ?? '')), 'rows' => $rows];
     })->filter(fn ($d) => $d['heading'] !== '' || $d['date'] !== '' || $d['rows']->isNotEmpty())->values();
+
+    // Regroupement PAR DATE, dans l'ordre où l'admin a rangé ses blocs - jamais
+    // trié : c'est lui qui décide de la succession, flèches à l'appui.
+    // ⚠️ Un bloc SANS date garde son propre onglet : rien ne dit à quel jour il
+    // appartient, et le coller au précédent inventerait une information.
+    $synJours = [];
+    foreach ($synBlocs as $i => $bloc) {
+        $cle = $bloc['date'] !== '' ? 'd:'.$bloc['date'] : 'x:'.$i;
+        $synJours[$cle] ??= ['date' => $bloc['date'], 'blocs' => []];
+        $synJours[$cle]['blocs'][] = ['heading' => $bloc['heading'], 'rows' => $bloc['rows']];
+    }
+    $synJours = collect(array_values($synJours))->map(function (array $jour) {
+        $jour['compte'] = collect($jour['blocs'])->sum(fn (array $b) => $b['rows']->count());
+
+        return $jour;
+    });
 @endphp
-@if ($synDays->isNotEmpty())
+@if ($synJours->isNotEmpty())
     <div x-data="{ progDay: 0 }" class="ukc-prog-syn">
         <div class="ukc-tabs-scroll" role="tablist">
-            @foreach ($synDays as $i => $day)
+            @foreach ($synJours as $i => $jour)
                 @php
-                    $tabLabel = $day['heading'] !== ''
-                        ? $day['heading']
-                        : ($day['date'] !== '' ? \Illuminate\Support\Carbon::parse($day['date'])->translatedFormat('D d M') : __('Jour :n', ['n' => $i + 1]));
+                    $date = $jour['date'] !== '' ? \Illuminate\Support\Carbon::parse($jour['date']) : null;
+                    // Sans date, on montre l'intitulé du bloc : c'est tout ce qu'on sait de lui.
+                    $principal = $date?->translatedFormat('D d M') ?: ($jour['blocs'][0]['heading'] ?: __('Jour :n', ['n' => $i + 1]));
                 @endphp
-                <button type="button" class="ukc-tab" :class="{ active: progDay==={{ $i }} }" @click="progDay={{ $i }}" role="tab">{{ $tabLabel }}</button>
+                <button type="button" class="ukc-tab ukc-tab--day" :class="{ active: progDay==={{ $i }} }"
+                        @click="progDay={{ $i }}" role="tab" :aria-selected="progDay==={{ $i }} ? 'true' : 'false'">
+                    <span class="j">{{ $date ? __('Jour :n', ['n' => $i + 1]) : __('Bloc') }}</span>
+                    <span class="d">{{ $principal }}</span>
+                </button>
             @endforeach
         </div>
 
-        @foreach ($synDays as $i => $day)
+        @foreach ($synJours as $i => $jour)
             <div class="ukc-program-day" :class="{ active: progDay==={{ $i }} }">
-                @if ($day['heading'] !== '' && $day['date'] !== '')
-                    <div class="ukc-prog-syn__date">{{ \Illuminate\Support\Carbon::parse($day['date'])->translatedFormat('l d F Y') }}</div>
+                @if ($jour['date'] !== '')
+                    <div class="ukc-prog-syn__head">
+                        <span class="ukc-prog-syn__date">{{ \Illuminate\Support\Carbon::parse($jour['date'])->translatedFormat('l d F Y') }}</span>
+                        @if ($jour['compte'] > 0)
+                            <span class="ukc-prog-syn__count">{{ trans_choice('{1}:count moment|[2,*]:count moments', $jour['compte']) }}</span>
+                        @endif
+                    </div>
                 @endif
-                @if ($day['rows']->isNotEmpty())
-                    <ul class="ukc-prog-syn__rows">
-                        @foreach ($day['rows'] as $row)
-                            @php $tt = $timeText($row); $isBreak = ($row['type'] ?? '') === 'break'; @endphp
-                            <li @class(['ukc-prog-syn__row', 'is-strong' => ! empty($row['highlight']), 'is-break' => $isBreak])>
-                                <span class="ukc-prog-syn__time">{{ $tt !== '' ? $tt : '-' }}</span>
-                                <span class="ukc-prog-syn__label">{{ $row['label'] }}</span>
-                            </li>
-                        @endforeach
-                    </ul>
-                @endif
+
+                @foreach ($jour['blocs'] as $bloc)
+                    {{-- L'intitulé du bloc devient un intertitre : il situe les heures qui
+                         suivent sans réclamer un onglet à lui. --}}
+                    @if ($bloc['heading'] !== '')
+                        <div class="ukc-prog-syn__bloc">{{ $bloc['heading'] }}</div>
+                    @endif
+                    @if ($bloc['rows']->isNotEmpty())
+                        <ul class="ukc-prog-syn__rows">
+                            @foreach ($bloc['rows'] as $row)
+                                @php $tt = $timeText($row); $type = (string) ($row['type'] ?? ''); @endphp
+                                <li @class([
+                                    'ukc-prog-syn__row',
+                                    'is-strong' => ! empty($row['highlight']),
+                                    'is-break' => $type === 'break',
+                                    'is-plenary' => $type === 'plenary',
+                                    'is-atelier' => $type === 'atelier',
+                                ])>
+                                    <span class="ukc-prog-syn__time">{{ $tt !== '' ? $tt : '-' }}</span>
+                                    <span class="ukc-prog-syn__label">{{ $row['label'] }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                @endforeach
             </div>
         @endforeach
     </div>

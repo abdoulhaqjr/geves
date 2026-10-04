@@ -145,3 +145,67 @@ it('protège les fiches de session sans permission', function () {
 
     $this->actingAs($user, 'web')->get(route('admin.documents.sessions', $edition))->assertForbidden();
 });
+
+/**
+ * ⚠️ **Un onglet = UN JOUR, pas un bloc de saisie.** Une journée se saisit
+ * souvent en deux blocs (« Matin », « Après-midi ») : un onglet par bloc donnait
+ * quatre pastilles « Matin » côte à côte, et le visiteur qui cherchait le
+ * 3 octobre ne savait pas laquelle ouvrir. Les blocs d'une même date se rangent
+ * donc DANS l'onglet de leur jour, en intertitres.
+ */
+it('range les blocs d’une même journée sous un seul onglet de jour', function () {
+    [$edition] = scheduledEdition();
+
+    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+        'program_synthesis' => [
+            'title' => 'Programme',
+            'days' => [
+                ['date' => '2026-09-27', 'heading' => 'Matin', 'rows' => [
+                    ['type' => 'plenary', 'start' => '08:30', 'end' => '10:15', 'label' => 'Ouverture', 'highlight' => true],
+                ]],
+                ['date' => '2026-09-27', 'heading' => 'Après-midi', 'rows' => [
+                    ['type' => 'atelier', 'start' => '14:00', 'end' => '17:00', 'label' => 'Communications', 'highlight' => false],
+                ]],
+                ['date' => '2026-09-28', 'heading' => 'Matin', 'rows' => [
+                    ['type' => 'plenary', 'start' => '09:00', 'end' => '12:00', 'label' => 'Clôture', 'highlight' => false],
+                ]],
+            ],
+        ],
+    ])]);
+
+    $html = $this->get(route('public.colloque', $edition->slug))->assertOk()->getContent();
+
+    // Deux jours saisis en trois blocs : deux onglets, pas trois.
+    expect(substr_count($html, 'ukc-tab--day'))->toBe(2);
+    // Les intitulés de bloc restent, en intertitres.
+    expect(substr_count($html, 'ukc-prog-syn__bloc'))->toBe(3);
+    // Et le contenu des deux blocs du 27 cohabite dans le même panneau.
+    expect($html)->toContain('Ouverture')->toContain('Communications')->toContain('Clôture');
+});
+
+/**
+ * ⚠️ Un bloc SANS date garde son propre onglet : rien ne dit à quel jour il
+ * appartient, et le coller au précédent inventerait une information.
+ */
+it('laisse son propre onglet à un bloc sans date', function () {
+    [$edition] = scheduledEdition();
+
+    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+        'program_synthesis' => [
+            'title' => 'Programme',
+            'days' => [
+                ['date' => '2026-09-27', 'heading' => 'Matin', 'rows' => [
+                    ['type' => 'plenary', 'start' => '08:30', 'end' => '10:15', 'label' => 'Ouverture', 'highlight' => false],
+                ]],
+                ['date' => '', 'heading' => 'Visites libres', 'rows' => [
+                    ['type' => 'other', 'start' => '', 'end' => '', 'label' => 'Sur inscription', 'highlight' => false],
+                ]],
+            ],
+        ],
+    ])]);
+
+    $html = $this->get(route('public.colloque', $edition->slug))->assertOk()->getContent();
+
+    expect(substr_count($html, 'ukc-tab--day'))->toBe(2);
+    expect($html)->toContain('Visites libres');
+});
