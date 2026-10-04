@@ -100,3 +100,40 @@ it('le grade choisi à l’inscription permet de résoudre le tarif', function (
             ->not->toBeNull("aucun tarif pour le grade « {$grade} »");
     }
 });
+
+/**
+ * ⚠️ **Le participant ne choisit pas son tarif.** Les cartes étaient des cartes
+ * d'achat - un bouton « Choisir » par tarif, et une pastille « Recommandé »
+ * posée sur la carte du milieu : elles disaient l'inverse de ce que fait le
+ * logiciel et invitaient à prendre la moins chère.
+ */
+it('la grille publique renseigne au lieu de faire choisir', function () {
+    $edition = openEdition(['fees' => [
+        ['label' => 'Enseignants et chercheurs', 'amount' => 35000, 'grades' => ['Enseignant / Chercheur', 'Professeur']],
+        ['label' => 'Doctorants et assimilés', 'amount' => 15000, 'grades' => ['Doctorant']],
+        ['label' => 'Autres participants', 'amount' => 50000, 'grades' => [], 'default' => true],
+    ]]);
+
+    $page = $this->get(route('public.colloque', $edition->slug))->assertOk();
+
+    $page->assertSee('déterminé par votre grade', false);
+    // Les grades couverts, c'est-à-dire la seule chose qui distingue une carte.
+    $page->assertSee('Enseignant / Chercheur')->assertSee('Doctorant')->assertSee('Tout autre grade');
+    // Plus de geste d'achat par carte.
+    $page->assertDontSee('>Choisir<', false);
+    $page->assertDontSee('ukc-price-card--featured', false);
+});
+
+/**
+ * Sans grade rattaché, le visiteur ne peut PAS savoir laquelle des cartes est
+ * la sienne : on le lui dit plutôt que de le laisser deviner devant trois prix.
+ */
+it('annonce que le tarif sera confirmé quand aucun grade n’est rattaché', function () {
+    $edition = openEdition(['fees' => [
+        ['label' => 'Enseignants et chercheurs', 'amount' => 35000],
+        ['label' => 'Doctorants et assimilés', 'amount' => 15000],
+    ]]);
+
+    $this->get(route('public.colloque', $edition->slug))->assertOk()
+        ->assertSee('confirmé au moment de l’inscription', false);
+});

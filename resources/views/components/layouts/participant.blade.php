@@ -32,7 +32,7 @@
     // Même règle que la garde de la page (404 sinon).
     $hasFormations = \App\Models\Formation::offeredIn($currentEdition);
 @endphp
-<x-layouts.app :title="$title ?? 'Mon espace'">
+<x-layouts.app :title="$title ?? 'Mon espace'" html-class="ukc-dense">
     <div class="ukc-shell"
          x-data="{ open: false, compact: localStorage.getItem('ukcCompact')==='1', toggleCompact(){ this.compact=!this.compact; localStorage.setItem('ukcCompact', this.compact?'1':'0'); } }"
          :class="{ 'ukc-compact': compact }">

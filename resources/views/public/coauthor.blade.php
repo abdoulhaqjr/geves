@@ -6,7 +6,7 @@
             </div>
             <h1 style="font-size:1.4rem;margin:6px 0 4px;color:var(--ukc-blue);">{{ __('Paiement des frais - co-auteur') }}</h1>
             <p style="color:var(--ukc-muted);font-size:.92rem;margin:0;">
-                {{ __('Retrouvez vos communications acceptées et réglez vos frais au tarif de votre grade.') }}
+                {{ __('Retrouvez vos communications acceptées par votre e-mail, et réglez vos frais au tarif de votre grade.') }}
             </p>
         </div>
 
@@ -48,8 +48,12 @@
                 </div>
             </div>
         @elseif (! empty($foundSubmissions))
-            <div class="ukc-card" x-data="{ grade: @js(old('grade', $grade)), fees: @js($feeMap), highest: {{ $highestAmount ?: 'null' }},
-                     get amount() { return (this.fees[this.grade] ?? (this.grade ? this.highest : null)); } }">
+            {{-- ⚠️ Les montants sont indexés par GRADE, pas par catégorie tarifaire :
+                 la vue n'a jamais à rapprocher un grade d'une catégorie, `Fees` est
+                 seule à savoir le faire (couverture explicite, puis libellé exact,
+                 puis tarif par défaut). --}}
+            <div class="ukc-card" x-data="{ grade: @js(old('grade', $grade)), montants: @js($amountByGrade),
+                     get amount() { return this.montants[this.grade] ?? null; } }">
                 <h2 style="font-size:1rem;margin:0 0 10px;">{{ __('Vos communications acceptées') }}</h2>
                 <ul style="list-style:none;padding:0;margin:0 0 18px;display:flex;flex-direction:column;gap:8px;">
                     @foreach ($foundSubmissions as $s)
@@ -64,27 +68,59 @@
                     @csrf
                     <input type="hidden" name="email" value="{{ $email }}">
 
-                    <div class="ukc-field">
-                        <label>{{ __('Votre grade') }} <span class="ukc-muted">{{ __('(détermine le montant)') }}</span></label>
-                        @if (count($feeGrid))
+                    {{-- ⚠️ ON NE CHOISIT PAS SON TARIF. Le menu proposait les
+                         *catégories tarifaires* avec leur montant en face : un
+                         co-auteur y prenait la moins chère, et le grade déclaré dans
+                         la soumission - l'information dont le logiciel se sert partout
+                         ailleurs - ne servait à rien. Quand le grade est connu il est
+                         montré comme un FAIT, pas comme un champ ; le serveur ne lit
+                         même pas ce qui serait posté à sa place. --}}
+                    @if ($gradeConnu)
+                        <div class="ukc-field">
+                            <label>{{ __('Votre grade') }}</label>
+                            <div class="coauthor-grade">
+                                <strong>{{ $grade }}</strong>
+                                <span>{{ __('déclaré lors de la soumission') }}</span>
+                            </div>
+                            <p class="ukc-hint" style="margin-top:6px;">
+                                {{ __('C’est lui qui détermine le montant. Une erreur ? Contactez l’organisation avant de régler.') }}
+                            </p>
+                        </div>
+                    @else
+                        <div class="ukc-field">
+                            <label>{{ __('Votre grade') }} <span class="ukc-muted">{{ __('(il détermine le montant)') }}</span></label>
                             <select name="grade" x-model="grade">
-                                <option value="">- {{ __('Choisir') }} -</option>
-                                @foreach ($feeGrid as $fee)
-                                    <option value="{{ $fee['label'] }}">{{ $fee['label'] }} - {{ number_format($fee['amount'], 0, ',', ' ') }} FCFA</option>
+                                <option value="">- {{ __('Indiquez votre grade') }} -</option>
+                                @foreach ($gradeOptions as $gradeOption)
+                                    <option value="{{ $gradeOption }}">{{ $gradeOption }}</option>
                                 @endforeach
                             </select>
-                        @else
-                            <input type="text" name="grade" x-model="grade" placeholder="{{ __('Votre grade') }}">
-                        @endif
-                        @error('grade') <span class="error">{{ $message }}</span> @enderror
-                    </div>
+                            @error('grade') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                    @endif
 
                     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;
-                                padding:14px 16px;border-radius:12px;background:var(--ukc-bg);border:1px solid var(--ukc-border);margin:16px 0 18px;">
+                                padding:14px 16px;border-radius:12px;background:var(--ukc-bg);border:1px solid var(--ukc-border);margin:16px 0 0;">
                         <span style="font-weight:600;">{{ __('Montant à régler') }}</span>
-                        <span style="font-size:1.35rem;font-weight:900;color:var(--ukc-blue);"
-                              x-text="amount ? (new Intl.NumberFormat('fr-FR').format(Math.round(amount)) + ' FCFA') : '-'"></span>
+                        {{-- Grade connu = montant connu AVANT le rendu : il est écrit en
+                             clair, pas calculé par le navigateur. Le calcul côté client ne
+                             sert qu'au grade qu'on est en train de saisir. --}}
+                        @if ($gradeConnu)
+                            <span style="font-size:1.35rem;font-weight:900;color:var(--ukc-blue);">{{ number_format((float) $amount, 0, ',', ' ') }} FCFA</span>
+                        @else
+                            <span style="font-size:1.35rem;font-weight:900;color:var(--ukc-blue);"
+                                  x-text="amount ? (new Intl.NumberFormat('fr-FR').format(Math.round(amount)) + ' FCFA') : '-'"></span>
+                        @endif
                     </div>
+                    {{-- Aucune catégorie ne couvre ce grade : le montant affiché est le
+                         plus élevé de la grille, par repli. Le taire reviendrait à faire
+                         payer un tarif qu'aucune règle ne justifie. --}}
+                    @if ($amountIsFallback)
+                        <p class="ukc-hint" style="margin:8px 0 0;color:#b45309;">
+                            {{ __('Aucune catégorie tarifaire ne couvre ce grade : le tarif le plus élevé de la grille s’applique. Contactez l’organisation si ce n’est pas le vôtre.') }}
+                        </p>
+                    @endif
+                    <div style="margin-bottom:18px;"></div>
 
                     @error('pay') <div class="ukc-alert ukc-alert--err"><span class="ico"><x-ukc.icon name="info" :size="18" /></span><div>{{ $message }}</div></div> @enderror
 

@@ -355,39 +355,87 @@
                 </div>
             </section>
 
-            {{-- Frais de participation (fidèle au mockup : cartes de prix) --}}
+            {{-- Frais de participation.
+                 ⚠️ Le participant NE CHOISIT PAS son tarif : il se DÉDUIT de son
+                 grade (`Fees::resolveAmount`, par les grades rattachés à chaque
+                 catégorie dans l'onglet « Soumissions & tarifs »). Les cartes
+                 étaient des cartes d'achat - un bouton « Choisir » par tarif, et
+                 une pastille « Recommandé » posée sur la carte du MILIEU, donc
+                 sur rien : elles disaient l'inverse de ce que fait le logiciel et
+                 invitaient à prendre le moins cher. Elles RENSEIGNENT désormais -
+                 qui est concerné, à quel prix.
+                 ⚠️ Les trois mêmes avantages répétés sur chaque carte ne
+                 distinguaient rien : ils sont dits UNE fois sous la grille, et la
+                 carte garde la seule chose qui diffère, le grade couvert.
+                 ⚠️ Rien de personnalisé ici (pas de « votre tarif » pour qui est
+                 connecté) : la page reste la même pour tout le monde, donc
+                 cacheable en HTTP - cf. ColloqueController. --}}
             @if (count($fees))
-                @php $featuredIndex = intdiv(count($fees), 2); @endphp
+                {{-- ⚠️ Forme BLOC et non `@php(…)` inline : ce fichier contient plus bas
+                     des blocs `@php … @endphp`, et Blade extrait les blocs de code AVANT
+                     tout le reste - un `@php(` inline s'apparie alors avec le `@endphp`
+                     suivant et avale tout ce qui les sépare, directives comprises. --}}
+                @php
+                    $feesRattaches = collect($fees)
+                        ->contains(fn ($fee) => ($fee['grades'] ?? []) !== [] || ($fee['default'] ?? false));
+                @endphp
                 <section id="tarifs" style="scroll-margin-top:72px;">
                     <div class="ukc-block-head">
                         <h2>{{ __('Frais de participation') }}</h2>
                         <div class="ukc-accent"><i></i><i></i><i></i></div>
                         <p>{{ __('Tarifs officiels du colloque (FCFA).') }}@if ($feesNote) {{ $feesNote }}@endif</p>
                     </div>
+
+                    <p class="ukc-fees-rule">
+                        <x-ukc.icon name="info" :size="17" />
+                        <span>{!! __('Votre tarif est <strong>déterminé par votre grade</strong> - vous ne le choisissez pas. Il s’applique automatiquement au moment de l’inscription.') !!}</span>
+                    </p>
+
                     <div class="ukc-pricing">
-                        @foreach ($fees as $i => $fee)
-                            <div @class(['ukc-price-card', 'ukc-price-card--featured' => $i === $featuredIndex])>
+                        @foreach ($fees as $fee)
+                            <div class="ukc-price-card">
                                 <h3>{{ $fee['label'] }}</h3>
                                 <div class="amount">{{ number_format((float) ($fee['amount'] ?? 0), 0, ',', ' ') }} <small>FCFA</small></div>
-                                <ul>
-                                    <li><x-ukc.icon name="check" :size="16" /> {{ __('Accès aux sessions') }}</li>
-                                    <li><x-ukc.icon name="check" :size="16" /> {{ __('Communications & ateliers') }}</li>
-                                    <li><x-ukc.icon name="check" :size="16" /> {{ __('Attestation de participation') }}</li>
-                                </ul>
-                                <a href="{{ route('account.register') }}"
-                                   @class(['ukc-btn', 'ukc-btn--primary' => $i === $featuredIndex, 'ukc-btn--outline' => $i !== $featuredIndex])
-                                   style="width:100%;justify-content:center;">{{ __('Choisir') }}</a>
+                                @if (($fee['grades'] ?? []) !== [] || ($fee['default'] ?? false))
+                                    <div class="who">
+                                        <span class="who-head">{{ __('Grades concernés') }}</span>
+                                        <ul>
+                                            @foreach ($fee['grades'] ?? [] as $gradeCouvert)
+                                                <li><x-ukc.icon name="check" :size="16" /> {{ $gradeCouvert }}</li>
+                                            @endforeach
+                                            @if ($fee['default'] ?? false)
+                                                <li><x-ukc.icon name="check" :size="16" /> {{ __('Tout autre grade') }}</li>
+                                            @endif
+                                        </ul>
+                                    </div>
+                                @endif
                             </div>
                         @endforeach
                     </div>
-                    <p style="margin:20px 0 0;font-size:.9rem;color:var(--ukc-muted);text-align:center;">
-                        {{ __('Co-auteur d’une communication acceptée ?') }}
-                        <a href="{{ route('public.coauthor', $edition->slug) }}" style="color:var(--ukc-blue);font-weight:700;">{{ __('Réglez vos frais ici') }}</a>.
-                    </p>
+
+                    <div class="ukc-fees-foot">
+                        <p class="incl">
+                            <x-ukc.icon name="check" :size="15" />
+                            {{ __('Tous les tarifs comprennent l’accès aux sessions, les communications & ateliers et l’attestation de participation.') }}
+                        </p>
+                        {{-- Sans grade rattaché, le visiteur ne peut PAS savoir laquelle des
+                             cartes est la sienne : on le lui dit plutôt que de le laisser
+                             deviner devant trois prix. --}}
+                        @unless ($feesRattaches)
+                            <p class="pending">{{ __('Le tarif qui vous sera appliqué vous est confirmé au moment de l’inscription.') }}</p>
+                        @endunless
+                        <a href="{{ route('account.register') }}" class="ukc-btn ukc-btn--primary">
+                            <x-ukc.icon name="user-plus" :size="16" /> {{ __('Créer mon compte et m’inscrire') }}
+                        </a>
+                        <p class="coauthor">
+                            {{ __('Co-auteur d’une communication acceptée ?') }}
+                            <a href="{{ route('public.coauthor', $edition->slug) }}">{{ __('Réglez vos frais ici') }}</a>.
+                        </p>
+                    </div>
                 </section>
             @endif
 
-            {{-- Formations (module activable ; formations publiées et publiques) --}}
+{{-- Formations (module activable ; formations publiées et publiques) --}}
             @if ($formations->isNotEmpty())
                 <section id="formations" style="scroll-margin-top:72px;">
                     <div class="ukc-block-head">

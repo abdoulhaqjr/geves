@@ -1,5 +1,9 @@
+{{-- `htmlClass` se pose sur <html> et non sur <body> : le back-office s'en
+     sert pour régler sa densité au zoom, et un zoom posé ailleurs que sur
+     la racine diviserait les unités de viewport qu'il contient. --}}
+@props(['title' => null, 'description' => null, 'htmlClass' => ''])
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"@if ($htmlClass) class="{{ $htmlClass }}"@endif>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">

@@ -171,6 +171,19 @@ html { scrollbar-gutter: stable; }
 .ukc-section--tight { padding: clamp(36px, 5vw, 56px) 0; }
 
 /* ---- Layout shell (sidebar + main) ---- */
+/* Densité du back-office : 90% par défaut, côté gestion comme côté
+   participant - ces écrans sont des tableaux de bord, et une ligne de plus
+   sans défilement vaut mieux qu'un caractère plus gros.
+   ⚠️ Posé sur <html> et NON sur le shell : le `zoom` d'un sous-arbre met à
+   l'échelle les longueurs qu'il contient sans toucher au viewport, donc un
+   `min-height: 100vh` ne couvrirait plus que 90% de l'écran. Sur la racine,
+   c'est le bloc conteneur initial qui est mis à l'échelle - exactement ce
+   que fait le zoom du navigateur, qui reste d'ailleurs cumulable.
+   ⚠️ Les media queries, elles, continuent de mesurer la fenêtre RÉELLE :
+   les points de rupture se déclenchent donc un peu tôt, dans le sens
+   prudent (on passe à la mise en page étroite avec de la place en trop). */
+html.ukc-dense { zoom: .9; }
+
 .ukc-shell { display: flex; min-height: 100vh; }
 .ukc-sidebar {
   width: var(--ukc-sidebar); flex-shrink: 0;

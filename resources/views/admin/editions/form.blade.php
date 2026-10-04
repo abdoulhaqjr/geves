@@ -420,6 +420,18 @@
                                     </p>
                                 </div>
                             </template>
+                            {{-- ⚠️ La règle invisible, dite : sans catégorie « par défaut », un
+                                 grade que rien ne couvre tombe sur le montant LE PLUS ÉLEVÉ de la
+                                 grille (`Fees::highestAmount`, repli des appelants). L'avertissement
+                                 par catégorie disait qu'elle ne s'appliquerait jamais ; il ne disait
+                                 pas ce qui s'applique À LA PLACE - et un doctorant se retrouvait
+                                 facturé au tarif « Autres participants » sans que personne le voie. --}}
+                            <p x-show="fees.length && ! fees.some(f => f.default)" x-cloak
+                               style="font-size:12.5px;line-height:1.55;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin:10px 0 0;">
+                                Aucune catégorie n’est marquée <strong>« Tarif par défaut »</strong> : un participant dont le
+                                grade n’est couvert par aucune catégorie se verra appliquer le <strong>montant le plus élevé</strong>
+                                de la grille.
+                            </p>
                             <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="addFee()" style="margin-top:8px;">+ Catégorie</button>
                         </div>
 

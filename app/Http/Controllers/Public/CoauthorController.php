@@ -11,6 +11,7 @@ use App\Models\Submission;
 use App\Payments\GatewayRegistry;
 use App\Support\EditionPaymentConfig;
 use App\Support\Fees;
+use App\Support\ParticipantTypes;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -18,9 +19,16 @@ use Illuminate\View\View;
 /**
  * Parcours public de paiement des co-auteurs (contrôleur + Blade, sans compte).
  * Le co-auteur se retrouve par e-mail (recherche en GET), voit les
- * communications acceptées qui l'associent, choisit son grade (montant calculé
- * côté client depuis la grille tarifaire) puis paie. Un co-auteur ayant payé
- * devient éligible à l'attestation de communication.
+ * communications acceptées qui l'associent, et règle **au tarif de son grade**.
+ * Un co-auteur ayant payé devient éligible à l'attestation de communication.
+ *
+ * ⚠️ **Le tarif ne se choisit pas, il se déduit du grade.** La page proposait
+ * les *catégories tarifaires* dans un menu, montant affiché en face : un
+ * co-auteur y prenait la moins chère, et le grade déclaré dans la soumission
+ * - qui est l'information dont le logiciel se sert partout ailleurs - était
+ * ignoré. Le grade **connu fait foi** et n'est plus repostable ; il n'est
+ * demandé que lorsqu'il manque, et alors c'est un GRADE qu'on demande
+ * (`ParticipantTypes`), jamais une catégorie, jamais un prix.
  */
 class CoauthorController extends Controller
 {
@@ -31,23 +39,37 @@ class CoauthorController extends Controller
         $email = trim((string) $request->query('email', ''));
         $ctx = $email !== '' ? $this->resolve($edition, $email) : null;
 
-        $grid = array_map(
-            fn ($f) => ['label' => (string) ($f['label'] ?? ''), 'amount' => (float) ($f['amount'] ?? 0)],
-            Fees::grid($edition),
-        );
+        $grade = trim((string) ($ctx['grade'] ?? ''));
+        $plusEleve = Fees::highestAmount($edition);
+
+        // Montant par GRADE, et non par catégorie : la vue n'a jamais à faire
+        // le rapprochement elle-même, `Fees` reste la seule à le savoir.
+        // ⚠️ Le grade connu y figure MÊME s'il ne vient pas de la liste de
+        // référence (une soumission ancienne a pu porter un intitulé libre, et
+        // la liste est éditable en Réglages). Sans lui, la vue ne trouverait
+        // aucun montant et les boutons de paiement resteraient désactivés.
+        $parGrade = collect(ParticipantTypes::all())
+            ->when($grade !== '', fn ($c) => $c->push($grade))
+            ->unique()
+            ->mapWithKeys(fn ($g) => [$g => Fees::resolveAmount($edition, $g) ?? $plusEleve])
+            ->all();
 
         return view('public.coauthor', [
             'edition' => $edition,
             'email' => $email,
             'searched' => $email !== '',
             'foundSubmissions' => $ctx['found'] ?? [],
-            'grade' => $ctx['grade'] ?? '',
+            'grade' => $grade,
+            'gradeConnu' => $grade !== '',
+            'gradeOptions' => ParticipantTypes::all(),
+            'amountByGrade' => $parGrade,
+            'amount' => $grade !== '' ? (Fees::resolveAmount($edition, $grade) ?? $plusEleve) : null,
+            // Aucune catégorie ne couvre ce grade : le montant affiché est un
+            // repli, et le co-auteur a le droit de le savoir avant de payer.
+            'amountIsFallback' => $grade !== '' && Fees::resolveAmount($edition, $grade) === null,
             'participant' => $ctx['participant'] ?? null,
             'hasPaid' => ($ctx['participant'] ?? null)?->hasPaid() ?? false,
             'paidReceipt' => ($ctx['participant'] ?? null)?->participationPayments()->where('status', 'paid')->latest('id')->first(),
-            'feeGrid' => $grid,
-            'feeMap' => collect($grid)->mapWithKeys(fn ($f) => [$f['label'] => $f['amount']])->all(),
-            'highestAmount' => Fees::highestAmount($edition),
             'gateways' => app(GatewayRegistry::class)->available(),
         ]);
     }
@@ -58,7 +80,6 @@ class CoauthorController extends Controller
         EditionPaymentConfig::apply($edition); // passerelle propre à l'édition
 
         $email = mb_strtolower(trim((string) $request->input('email')));
-        $grade = trim((string) $request->input('grade'));
         $back = route('public.coauthor', $edition->slug).'?email='.urlencode($email);
 
         $ctx = $email !== '' ? $this->resolve($edition, $email) : ['found' => []];
@@ -66,8 +87,20 @@ class CoauthorController extends Controller
         if (empty($ctx['found'])) {
             return redirect()->to($back)->withErrors(['pay' => 'Paiement indisponible.']);
         }
+
+        // ⚠️ Le grade DÉJÀ CONNU fait foi - celui du participant, sinon celui
+        // déclaré dans la soumission. Le champ posté ne sert qu'à le renseigner
+        // quand il manque, et seul un grade de la liste de référence est reçu :
+        // sinon n'importe qui ajustait son tarif en postant un autre libellé.
+        // (le garde ci-dessus a déjà écarté le contexte vide)
+        $grade = trim($ctx['grade']);
         if ($grade === '') {
-            return redirect()->to($back)->withErrors(['grade' => 'Choisissez votre grade.']);
+            $propose = trim((string) $request->input('grade'));
+            $grade = in_array($propose, ParticipantTypes::all(), true) ? $propose : '';
+        }
+
+        if ($grade === '') {
+            return redirect()->to($back)->withErrors(['grade' => 'Indiquez votre grade : c’est lui qui détermine le tarif.']);
         }
 
         $amount = Fees::resolveAmount($edition, $grade) ?? Fees::highestAmount($edition);

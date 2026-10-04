@@ -2339,10 +2339,62 @@ Voir la liste complète en [§8 de PASSATION.md](PASSATION.md). Les plus courant
   la catégorie aux participants, et **`default`** qui désigne le tarif de repli.
   `Fees::resolveAmount()` cherche dans cet ordre : grades rattachés → libellé
   exactement égal au grade (grilles anciennes) → catégorie par défaut. Une catégorie
-  sans grade ni défaut n'est jamais appliquée (l'écran d'édition le signale).
+  sans grade ni défaut n'est jamais appliquée (l'écran d'édition le signale), et
+  **sans AUCUNE catégorie par défaut, un grade non couvert tombe sur le montant le
+  plus élevé** de la grille (repli `Fees::highestAmount()` chez tous les appelants) :
+  un doctorant se retrouve facturé au tarif « Autres participants » sans que
+  personne le voie. L'onglet « Soumissions & tarifs » le dit maintenant en clair.
   Ancienne forme `['label' => string, 'amount' => float]` (jamais un
   tableau associatif `grade => montant`). Toujours lire via **`App\Support\Fees::grid()`**
   / **`Fees::normalize()`** (qui ignorent les entrées malformées) - jamais l'accès brut,
   sinon `$fee['label']` sur une valeur scalaire fait planter la page publique en 500.
+### ⚠️ Le tarif NE SE CHOISIT PAS, il se déduit du grade
+
+C'est la règle du logiciel (`Fees::resolveAmount`) ; trois écrans disaient
+l'inverse et ont été repris :
+
+- **Page publique, grille des tarifs** : un bouton « Choisir » par carte et une
+  pastille « Recommandé » posée sur la carte du MILIEU - un index, pas un
+  conseil. Les cartes **renseignent** désormais (qui est concerné, à quel prix),
+  avec les grades couverts dedans, les avantages dits UNE fois sous la grille, et
+  **un seul** appel à l'action. Quand aucune catégorie ne déclare de grade, la
+  page le dit au visiteur : le tarif lui sera confirmé à l'inscription - sinon il
+  reste devant trois prix sans savoir lequel est le sien.
+- **Paiement des co-auteurs** (`/colloque/{slug}/co-auteur`) : le menu proposait
+  les *catégories tarifaires* **avec leur montant en face**, si bien qu'un
+  co-auteur prenait la moins chère pendant que le grade déclaré dans sa
+  soumission ne servait à rien. Le grade **connu fait foi** (participant, sinon
+  entrée co-auteur de la soumission) et n'est plus repostable ; quand il manque,
+  c'est un **GRADE** qu'on demande (`ParticipantTypes`), jamais une catégorie,
+  jamais un prix. ⚠️ `pay()` **relit le contexte** plutôt que de faire confiance
+  au formulaire, et n'accepte en secours qu'un grade de la liste de référence.
+- ⚠️ Les montants exposés à la vue sont indexés **par grade**, jamais par
+  catégorie : `Fees` reste seule à savoir faire le rapprochement. La table
+  contient aussi le grade connu **même hors liste de référence** (une soumission
+  ancienne a pu porter un intitulé libre), sinon les boutons de paiement
+  restaient désactivés faute de montant.
+- ⚠️ Un repli (aucune catégorie ne couvre le grade) est **dit** avant de payer :
+  taire le montant le plus élevé reviendrait à faire payer un tarif qu'aucune
+  règle ne justifie.
+- ⚠️ **Rien de personnalisé sur la page publique** (pas de « votre tarif » pour
+  qui est connecté) : elle doit rester identique pour tout le monde, donc
+  cacheable en HTTP - cf. l'en-tête de `ColloqueController`.
+
+### Densité des back-offices : zoom 90%
+
+`html.ukc-dense { zoom: .9 }` (`ukc.css`), posé par les layouts `admin` et
+`participant` via l'attribut `html-class` de `x-layouts.app`.
+
+- ⚠️ **Sur `<html>`, jamais sur le shell** : le `zoom` d'un sous-arbre met à
+  l'échelle les longueurs qu'il contient **sans toucher au viewport**, donc un
+  `min-height: 100vh` ne couvrirait plus que 90% de l'écran et la barre latérale
+  fixe s'arrêterait avant le bas. Sur la racine, c'est le bloc conteneur initial
+  qui est mis à l'échelle - exactement ce que fait le zoom du navigateur, qui
+  reste d'ailleurs cumulable. **Vérifié** : barre latérale 698,4px pour une
+  fenêtre de 698px, aucun débordement horizontal.
+- ⚠️ Les **media queries** continuent de mesurer la fenêtre réelle : les points
+  de rupture se déclenchent un peu tôt, dans le sens prudent (mise en page
+  étroite avec de la place en trop).
+- Le **public** garde l'échelle du navigateur du visiteur.
 - **Pint** applique un style projet-wide (concat sans espaces `'a'.$b`) - lancer `pint`
   avant de commiter.

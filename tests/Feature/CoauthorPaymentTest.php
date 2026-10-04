@@ -60,16 +60,77 @@ it('n’associe rien à un e-mail inconnu', function () {
         ->assertSee('Aucune communication');
 });
 
-it('expose la grille tarifaire pour recalculer le montant selon le grade (client)', function () {
+/**
+ * ⚠️ **Le tarif ne se choisit pas, il se déduit du grade.** La page proposait
+ * les *catégories tarifaires* dans un menu, montant affiché en face : un
+ * co-auteur y prenait la moins chère, et le grade déclaré dans la soumission -
+ * l'information dont le logiciel se sert partout ailleurs - ne servait à rien.
+ * Le montant du grade connu est écrit en clair, et aucun autre prix ne l'est.
+ */
+it('n’affiche que le montant du grade déclaré, et aucun autre tarif', function () {
     $edition = coauthorEdition();
-    acceptedWithCoauthor($edition);
+    acceptedWithCoauthor($edition); // co-auteur « Docteur » -> 20 000
 
-    // Le montant est recalculé côté client (Alpine) depuis la grille exposée.
+    $page = $this->get(route('public.coauthor', $edition->slug).'?email=co@example.tg')
+        ->assertOk()
+        ->assertSee('Docteur')
+        ->assertSee('20 000');
+
+    // Le tarif des autres catégories n'est plus proposé : il n'y a rien à choisir.
+    $page->assertDontSee('10 000');
+    $page->assertDontSee('<select', false);
+});
+
+/**
+ * Sans grade déclaré, on demande un GRADE (liste de référence) - jamais une
+ * catégorie tarifaire, jamais un prix.
+ */
+it('demande le grade, et non une catégorie tarifaire, quand il manque', function () {
+    $edition = coauthorEdition();
+    acceptedWithCoauthor($edition, 'co@example.tg', ''); // grade absent de la soumission
+
     $this->get(route('public.coauthor', $edition->slug).'?email=co@example.tg')
         ->assertOk()
+        ->assertSee('<select', false)
+        // Les grades de référence, sans leur montant.
         ->assertSee('Doctorant')
-        ->assertSee('10 000')
-        ->assertSee('20 000');
+        ->assertDontSee('Doctorant - 10 000')
+        ->assertDontSee('déclaré lors de la soumission');
+});
+
+/**
+ * ⚠️ Le grade connu n'est pas repostable : sinon n'importe qui ajustait son
+ * tarif en postant le libellé de la catégorie la moins chère.
+ */
+it('ignore le grade posté quand la soumission en déclare un', function () {
+    $edition = coauthorEdition();
+    acceptedWithCoauthor($edition); // « Docteur » -> 20 000
+
+    $this->post(route('public.coauthor.pay', $edition->slug), [
+        'email' => 'co@example.tg',
+        'grade' => 'Doctorant', // moins cher : ne doit pas être retenu
+        'gateway' => 'manual',
+    ]);
+
+    $participant = Participant::where('edition_id', $edition->id)
+        ->where('email', 'co@example.tg')->first();
+
+    expect($participant->title)->toBe('Docteur');
+    expect((float) Payment::where('participant_id', $participant->id)->first()->amount)->toBe(20000.0);
+});
+
+/** Un grade hors liste de référence posté sans grade connu est refusé. */
+it('n’accepte qu’un grade de la liste de référence quand aucun n’est connu', function () {
+    $edition = coauthorEdition();
+    acceptedWithCoauthor($edition, 'co@example.tg', '');
+
+    $this->post(route('public.coauthor.pay', $edition->slug), [
+        'email' => 'co@example.tg',
+        'grade' => 'Tarif maison à 0 FCFA',
+        'gateway' => 'manual',
+    ])->assertSessionHasErrors('grade');
+
+    expect(Payment::where('edition_id', $edition->id)->count())->toBe(0);
 });
 
 it('crée un participant co-auteur et un paiement en attente marqué flow=coauthor', function () {
