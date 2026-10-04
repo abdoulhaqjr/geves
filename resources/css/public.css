@@ -952,7 +952,7 @@ input[data-uppercase] { text-transform: uppercase; }
    une carte ferait diverger les deux rendus - et c'est précisément ce que le
    partage de ce partial sert à éviter. Il repose sur un fond légèrement teinté,
    pour que la surface blanche s'y voie. */
-.ukc-shell .prog-public-preview { background: var(--ukc-bg, #f8fafc); border-radius: 12px; padding: 14px; }
+.ukc-shell .prog-public-preview { background: var(--ukc-bg, #f8fafc); border-radius: 12px; padding: 18px; }
 /* En-tête du jour : la date en toutes lettres, et ce qu'elle contient. Un onglet
    « Ven. 02 oct. » dit QUAND ; cet en-tête confirme où l'on vient d'atterrir. */
 .ukc-prog-syn__head {
@@ -1022,7 +1022,11 @@ input[data-uppercase] { text-transform: uppercase; }
 .ukc-tab.active, .ukc-tab:hover { border-color: var(--ukc-blue); background: var(--ukc-blue); color: #fff; }
 /* Onglet de JOUR : « Jour 2 » en surtitre, la date en dessous. Le rang seul ne
    dit pas quand ; la date seule oblige à compter. */
-.ukc-tab--day { display: flex; flex-direction: column; align-items: center; gap: 1px; line-height: 1.2; padding: 8px 20px; }
+/* ⚠️ MESURÉ : à 20px de rembourrage, sept jours totalisaient 958,7px dans une
+   piste de 960 - un pixel de marge sur la page publique, et 13px de TROP dans
+   l'aperçu admin, où « Jour 7 » tombait seul sur une seconde ligne. À 16px, les
+   deux rendus gardent une cinquantaine de pixels de jeu. */
+.ukc-tab--day { display: flex; flex-direction: column; align-items: center; gap: 1px; line-height: 1.2; padding: 8px 16px; }
 /* ⚠️ MESURÉ : une opacité de .72 sur ce surtitre le faisait tomber à 2,8:1 sur
    les onglets inactifs - du gris clair sur blanc, en 10,5px. La hiérarchie se
    fait à la TAILLE et à la graisse, qui ne coûtent aucun contraste. */

@@ -1840,6 +1840,14 @@ table `session_attendances`, modèle `SessionAttendance`). Entrées depuis
   raison d'être est de montrer exactement ce qui est publié, et l'y retirer parce
   qu'il vit déjà dans une carte ferait diverger les deux rendus - ce que le
   partage de ce partial sert précisément à éviter.
+- ⚠️ **Mesuré** : `.prog-public-preview` était bridé à **760px** dans une carte de
+  **1114px** - plus de quatre cents pixels de vide à droite. Le bridage est levé :
+  c'est la largeur de la page publique (960px) qui décide, et c'est bien elle que
+  l'aperçu doit montrer. Un bridage propre à l'admin le ferait mentir.
+- ⚠️ **Mesuré** : à 20px de rembourrage, sept onglets de jour totalisaient 958,7px
+  dans une piste de 960 - **un pixel** de marge en public, et 13px de trop dans
+  l'aperçu admin (le zoom 90% ne rend pas les mêmes largeurs), où « Jour 7 »
+  tombait seul sur une seconde ligne. À 16px, les deux gardent ≈ 100px de jeu.
 
 ### Onglets de la fiche d'édition
 

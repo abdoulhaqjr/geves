@@ -460,7 +460,11 @@
 .admin-program .plan-ev--atelier.room-conflict .ahead { border-bottom-color: #fcd34d; }
 .admin-program .plan-ev--plenary.room-conflict { box-shadow: 0 4px 14px -6px rgba(26,48,128,.6), inset 0 0 0 2px #f59e0b; }
 /* Onglet Programme : apercu du rendu public (contenu enregistre). */
-.ukc-shell .prog-public-preview { max-width: 760px; margin-top: 6px; }
+/* ⚠️ MESURÉ : la carte de l'aperçu fait 1114px et le bridage à 760 n'en
+   occupait que 684 - plus de quatre cents pixels de vide à droite. L'aperçu
+   prend toute la carte ; c'est la largeur de la page PUBLIQUE (960px, bornés
+   pour la lecture) qui décide ensuite, et c'est bien ce qu'il doit montrer. */
+.ukc-shell .prog-public-preview { margin-top: 6px; }
 
 /* Onglet Programme : editeur (jours dates + lignes type/heures/libelle). */
 .ukc-shell .prog-syn-day { border: 1px solid var(--ukc-border); border-radius: 12px; padding: 14px; margin: 12px 0; background: #fbfcfe; }
