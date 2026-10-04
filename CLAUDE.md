@@ -1858,6 +1858,22 @@ table `session_attendances`, modèle `SessionAttendance`). Entrées depuis
   l'aperçu admin (le zoom 90% ne rend pas les mêmes largeurs), où « Jour 7 »
   tombait seul sur une seconde ligne. À 16px, les deux gardent ≈ 100px de jeu.
 
+### `/verifier` est de la famille de la page d'attestation
+
+Les deux répondent à la même question - « ce document est-il authentique ? » -
+et l'une mène à l'autre : la saisie de code emprunte donc `.ukc-cred` (fond
+dégradé, barre de marque, pastille d'état, cartes à surtitre), et non l'en-tête
+et le pied de page du site. On y arrive un diplôme à la main, pas en naviguant.
+
+- ⚠️ **`--ukc-mono` n'est PAS une chasse fixe** : `ukc.css` la définit comme
+  `var(--ukc-font)`, un alias de la police du site. Tout ce qui s'en remet à
+  elle - références, numéros de reçu, identifiants d'attestation - s'affiche en
+  proportionnel malgré le nom. Le champ de `/verifier` nomme donc sa pile
+  monospace : y recopier 36 caractères est le propos même du champ.
+- ⚠️ **Mesuré à 375px** : ces 36 caractères ne tenaient pas dans un champ de
+  302px à 14,5px - le code collé défilait dans sa boîte et ne pouvait plus se
+  relire en entier. La taille suit la largeur de l'écran (`clamp`).
+
 ### Le nom court se saisit SANS l'année
 
 La barre collante de la page colloque affiche `nom court · année` : l'année est

@@ -1295,6 +1295,44 @@ body.ukc-overlay-open .ukc-cb-root { opacity: 0; transform: translateY(10px) sca
 }
 .ukc-cred-card { padding: 20px; }
 
+/* ---- Saisie d'un code (/verifier) : même famille que la page d'attestation.
+   C'est la même démarche, et l'une mène à l'autre - elle portait pourtant
+   l'en-tête et le pied de page du site, comme une page d'information. ---- */
+.ukc-cred-landing {
+  max-width: 760px; margin: 0 auto;
+  padding: clamp(22px, 4vw, 40px) clamp(16px, 4vw, 40px) 0;
+  display: grid; gap: 18px;
+}
+/* Dans la colonne, l'alerte n'a plus à se centrer elle-même. */
+.ukc-cred-landing-alert { max-width: none; margin: 0; }
+.ukc-cred-landing h1 { font-size: clamp(1.45rem, 3vw, 1.9rem); font-weight: 900; color: var(--ukc-blue); margin: 10px 0 10px; letter-spacing: -.01em; }
+.ukc-cred-form { margin-top: 20px; }
+/* L'identifiant est une suite de 36 caractères qu'on recopie : à chasse fixe,
+   on repère tout de suite celui qu'on a manqué.
+   ⚠️ **Pas** `var(--ukc-mono)` : cette variable est un ALIAS de la police du
+   site (`--ukc-mono: var(--ukc-font)` dans ukc.css), donc proportionnelle
+   malgré son nom. Ici la chasse fixe est le propos même du champ, on la nomme. */
+.ukc-cred-form input {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  letter-spacing: .01em;
+  /* ⚠️ MESURÉ à 375px : les 36 caractères de l'identifiant ne tenaient pas
+     dans un champ de 302px à 14,5px - le code collé défilait dans sa boîte,
+     et on ne pouvait pas le relire en entier pour le vérifier. La taille suit
+     donc la largeur de l'écran. */
+  font-size: clamp(11.5px, 3.3vw, 14.5px);
+}
+.ukc-cred-form .ukc-hint { display: block; margin-top: 6px; }
+.ukc-cred-form .ukc-cred-action { margin: 16px 0 0; }
+.ukc-cred-how ol { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 16px; }
+.ukc-cred-how li { display: flex; align-items: flex-start; gap: 12px; }
+.ukc-cred-how .n {
+  flex-shrink: 0; width: 24px; height: 24px; border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--ukc-blue); color: #fff; font-size: 12px; font-weight: 800;
+}
+.ukc-cred-how strong { display: block; font-size: 14.5px; margin-bottom: 3px; }
+.ukc-cred-how p { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--ukc-muted); }
+
 .ukc-cred-kicker {
   display: flex; align-items: center; gap: 6px;
   font-size: .7rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase;

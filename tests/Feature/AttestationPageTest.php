@@ -232,3 +232,34 @@ it('rend le spécimen avec la géométrie exacte du document imprimé', function
     expect($texte($ecran))->toBe($texte($imprime));
     expect($layout['width'])->toBeGreaterThan(0);
 });
+
+/**
+ * ⚠️ `/verifier` appartient à la **même famille visuelle** que la page d'une
+ * attestation (`.ukc-cred`) : c'est la même démarche - « ce document est-il
+ * authentique ? » - et l'une mène à l'autre. Elle portait l'en-tête et le pied
+ * de page du site, comme une page d'information quelconque, alors qu'on y
+ * arrive un diplôme à la main.
+ */
+it('présente la saisie de code comme la page d’attestation', function () {
+    $page = $this->get(route('attestation.verify.landing'))->assertOk();
+
+    $page->assertSee('ukc-cred-top', false)      // barre de marque + pastille d'état
+        ->assertSee('ukc-cred-landing', false)
+        ->assertSee('ukc-cred-kicker', false);   // surtitre des cartes
+
+    // Et plus le décor des pages d'information.
+    $page->assertDontSee('site-header', false)
+        ->assertDontSee('page-hero', false);
+});
+
+/**
+ * ⚠️ Un code inconnu ne mérite pas un 404 : il a été SAISI ici, et la faute de
+ * frappe se corrige ici - le code reste donc sous les yeux.
+ */
+it('garde le code saisi sous les yeux quand il ne correspond à rien', function () {
+    $this->get(route('attestation.verify.landing', ['code' => '00000000-0000-0000-0000-000000000000']))
+        ->assertOk()
+        ->assertSee('Aucune attestation ne correspond')
+        ->assertSee('00000000-0000-0000-0000-000000000000', false)
+        ->assertSee('ukc-cred-alert', false);
+});
