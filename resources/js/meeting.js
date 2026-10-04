@@ -11,8 +11,8 @@ import {
 // à part, et sont les seules du fichier à être couvertes par des tests
 // (`meeting-pure.test.js`). Y déplacer une décision, c'est la rendre vérifiable.
 import {
-    cadreMedia, cadreTableau, enBasDuFil, etatChrono, grilleOptimale, heure, idSur, idsDesParleurs,
-    initials, lotsDeTraits, mainsOrdonnees, metadonnee, niveauReseau,
+    cadreMedia, cadreTableau, droitDeTracer, enBasDuFil, etatChrono, grilleOptimale, heure, idSur,
+    idsDesParleurs, indexDuDernierTraitDe, initials, lotsDeTraits, mainsOrdonnees, metadonnee, niveauReseau,
     ordreRecevable as ordreAutorise, presenceLabel, peutReagir, phraseConnectes, placeBulle,
     compteEnAttente, entreeDirecte, pointTableau, profilVideo, questionsFiltrees, rangsDesMains,
     reactionRecevable, REACTIONS_MAX, roleLabel,
@@ -1464,10 +1464,37 @@ export async function startFromConfig() {
     const board = {
         ouvert: false, mode: 'blanc', nom: '', parQui: null, traits: [], enCours: null,
         couleur: BOARD_CRAYONS[0], taille: 4, gomme: false,
-        suite: 0, envoyes: 0, tm: 0, trace: false, demandes: new Map(),
+        suite: 0, envoyes: 0, tm: 0, trace: false, demandes: new Map(), defaits: [],
     };
 
-    function peutTracer() { return canPublish(); }
+    /**
+     * Le crayon suit la PAROLE, pas le rôle.
+     *
+     * ⚠️ Une séance compte plusieurs communicateurs, tous `presenter` pendant
+     * toute la séance : avec `canPublish()`, ils pouvaient tous écrire sur le
+     * diaporama de celui qui parle. Le crayon va à qui présente - ou qui partage
+     * son écran - en ce moment. Le modérateur le garde : il conduit la séance, et
+     * sans lui le tableau blanc serait inutilisable tant que personne ne présente.
+     */
+    function peutTracer() {
+        const moi = people.find((x) => x.id === 'local');
+
+        return droitDeTracer(state.role, state.screen, !!(moi && (moi.isFloor || moi.aLaParole)));
+    }
+
+    /**
+     * Rend la barre et le bouton cohérents avec qui tient le crayon.
+     *
+     * ⚠️ La parole change EN COURS de séance : sans ce rappel, celui à qui on
+     * vient de la donner gardait une barre grisée, et celui qui vient de la rendre
+     * continuait d'écrire sur la présentation du suivant.
+     */
+    function majDroitDeTracer() {
+        const z = $('board');
+        if (z && board.ouvert) z.classList.toggle('lecture', !peutTracer());
+        majTitreTableau();
+        syncToolbar();
+    }
     function monIdentite() {
         return (room && room.localParticipant && room.localParticipant.identity) || 'local';
     }
@@ -1652,6 +1679,9 @@ export async function startFromConfig() {
         ev.preventDefault();
         try { $('boardCanvas').setPointerCapture(ev.pointerId); } catch (e) { /* ignore */ }
         board.trace = true; board.suite += 1; board.envoyes = 0;
+        // ⚠️ Dessiner après avoir annulé abandonne la branche reprise : la rendre
+        // ensuite la poserait par-dessus un dessin qui a continué sans elle.
+        board.defaits = [];
         board.enCours = {
             id: monIdentite() + '-' + board.suite,
             c: board.gomme ? BOARD_GOMME : board.couleur,
@@ -1689,6 +1719,7 @@ export async function startFromConfig() {
         poseTrait(t);
         board.enCours = null; board.envoyes = 0;
         redessineTableau();
+        majBoutonsHistorique();
     }
 
     function recoitTrait(msg) {
@@ -1738,6 +1769,44 @@ export async function startFromConfig() {
         el.textContent = peutTracer() || !board.nom ? quoi : quoi + ' - ' + texteCourt(board.nom, 28);
     }
 
+    /**
+     * Reprend son dernier trait, et le garde de côté pour pouvoir le rendre.
+     *
+     * ⚠️ On ne défait QUE les siens (`indexDuDernierTraitDe`) : deux personnes
+     * annotent la même présentation, et « Annuler » ne doit pas effacer par
+     * surprise la flèche du voisin.
+     */
+    function annuleMonTrait() {
+        const i = indexDuDernierTraitDe(board.traits, monIdentite());
+        if (i < 0) return;
+        board.defaits.push(board.traits.splice(i, 1)[0]);
+        redessineTableau();
+        majBoutonsHistorique();
+        sendData({ type: 'board_undo' });
+    }
+
+    /**
+     * Rend le trait repris.
+     *
+     * ⚠️ Il repart ENTIER (`net`), comme à la levée du crayon : les autres postes
+     * l'avaient retiré, il ne suffit pas de leur envoyer la suite.
+     */
+    function refaisMonTrait() {
+        const t = board.defaits.pop();
+        if (!t) return;
+        poseTrait(t);
+        redessineTableau();
+        majBoutonsHistorique();
+        sendData({ type: 'board_pts', id: t.id, c: t.c, e: t.e, pts: t.pts, net: true, fin: true });
+    }
+
+    function majBoutonsHistorique() {
+        const u = $('bdUndo');
+        const r = $('bdRedo');
+        if (u) u.disabled = indexDuDernierTraitDe(board.traits, monIdentite()) < 0;
+        if (r) r.disabled = !board.defaits.length;
+    }
+
     function majOutilsTableau() {
         document.querySelectorAll('#boardPalette .bd-c').forEach((b) => {
             b.classList.toggle('on', !board.gomme && b.dataset.couleur === board.couleur);
@@ -1756,6 +1825,7 @@ export async function startFromConfig() {
         z.classList.toggle('lecture', !peutTracer());
         $('btnBoard')?.classList.add('on');
         majOutilsTableau();
+        majBoutonsHistorique();
         poseModeTableau(mode, false);
         if (diffuse) { board.parQui = 'local'; sendData({ type: 'board_open', mode: board.mode }); }
     }
@@ -1865,9 +1935,9 @@ export async function startFromConfig() {
         // Réagir ne demande ni micro ni caméra : c'est le seul geste que
         // l'assistance peut faire, et il lui reste ouvert.
         $('btnReac').disabled = !state.connected;
-        // Le tableau recouvre les visages de toute la salle : il s'ouvre depuis
-        // la place de qui anime.
-        $('btnBoard').disabled = !state.connected || !pub;
+        // ⚠️ Même règle que le crayon : qui ne présente pas n'ouvre pas le
+        // tableau par-dessus la présentation de celui qui parle.
+        $('btnBoard').disabled = !state.connected || !peutTracer();
         $('btnMic').classList.toggle('muted', !state.mic); $('btnMic').classList.toggle('active', state.mic);
         $('btnCam').classList.toggle('muted', !state.cam); $('btnCam').classList.toggle('active', state.cam);
         $('btnScreen').classList.toggle('active', state.screen);
@@ -2132,7 +2202,7 @@ export async function startFromConfig() {
 
         room
             .on(LK.RoomEvent.LocalTrackPublished, (pub) => {
-                if (pub.source === LK.Track.Source.ScreenShare && pub.track) { state.screen = true; onLocalScreenTrack(pub.track); syncToolbar(); }
+                if (pub.source === LK.Track.Source.ScreenShare && pub.track) { state.screen = true; onLocalScreenTrack(pub.track); majDroitDeTracer(); }
                 if (pub.source === LK.Track.Source.Camera && pub.track) {
                     const lt = $('tileLocal'); clearMedia(lt); attachTrack(pub.track, lt);
                     if (blurState.mode === 'blur') applyBackground('blur');
@@ -2141,7 +2211,7 @@ export async function startFromConfig() {
                 }
             })
             .on(LK.RoomEvent.LocalTrackUnpublished, (pub) => {
-                if (pub.source === LK.Track.Source.ScreenShare) { state.screen = false; destroyPip(true); syncToolbar(); }
+                if (pub.source === LK.Track.Source.ScreenShare) { state.screen = false; destroyPip(true); majDroitDeTracer(); }
                 if (pub.source === LK.Track.Source.Camera) { const lt = $('tileLocal'); if (lt) { clearMedia(lt); lt.classList.remove('has-video'); } if (state.screen) destroyPip(true); }
             })
             .on(LK.RoomEvent.TrackSubscribed, (track, pub, participant) => {
@@ -2385,14 +2455,16 @@ export async function startFromConfig() {
         else if (msg.type === 'board_close') fermeTableau(false);
         else if (msg.type === 'board_pts') recoitTrait(msg);
         else if (msg.type === 'board_state') (Array.isArray(msg.traits) ? msg.traits : []).forEach((t) => recoitTrait(Object.assign({ net: true }, t)));
-        else if (msg.type === 'board_clear') { board.traits = []; board.enCours = null; redessineTableau(); }
+        else if (msg.type === 'board_clear') {
+            // ⚠️ La pile des traits repris part avec : rendre un trait sur un tableau
+            // que quelqu'un vient de vider ferait réapparaître un fantôme.
+            board.traits = []; board.enCours = null; board.defaits = [];
+            redessineTableau(); majBoutonsHistorique();
+        }
         else if (msg.type === 'board_undo') {
             // Chaque trait porte l'identité de son auteur : on ne défait que le sien.
-            const prefixe = String(fromId || '') + '-';
-            for (let i = board.traits.length - 1; i >= 0; i -= 1) {
-                if (board.traits[i].id.indexOf(prefixe) === 0) { board.traits.splice(i, 1); break; }
-            }
-            redessineTableau();
+            const i = indexDuDernierTraitDe(board.traits, fromId);
+            if (i >= 0) { board.traits.splice(i, 1); redessineTableau(); }
         }
         else if (msg.type === 'chat_removed') retireMessage(msg.uid);
         else if (msg.type === 'hand') {
@@ -2407,7 +2479,7 @@ export async function startFromConfig() {
         else if (msg.type === 'mod_unmute') { const me = people.find((x) => x.id === 'local'); if (me) me.micGranted = true; ouvreMonMicro((msg.from || 'Modérateur') + ' vous autorise le micro'); }
         else if (msg.type === 'mod_mute') { if (room) room.localParticipant.setMicrophoneEnabled(false).then(() => { state.mic = false; syncToolbar(); refreshPeople(); toast('Le modérateur a coupé votre micro'); }).catch(() => {}); }
         else if (msg.type === 'mod_hand_down') { state.hand = false; leveLaMain(people.find((x) => x.id === 'local'), false); refreshPeople(); syncToolbar(); }
-        else if (msg.type === 'screen_takeover') { const my = room && room.localParticipant.identity; if (msg.identity && msg.identity !== my && state.screen) { room.localParticipant.setScreenShareEnabled(false).catch(() => {}); state.screen = false; destroyPip(false); syncToolbar(); toast((msg.by || 'Un participant') + ' a pris le partage'); } }
+        else if (msg.type === 'screen_takeover') { const my = room && room.localParticipant.identity; if (msg.identity && msg.identity !== my && state.screen) { room.localParticipant.setScreenShareEnabled(false).catch(() => {}); state.screen = false; destroyPip(false); majDroitDeTracer(); toast((msg.by || 'Un participant') + ' a pris le partage'); } }
         else if (msg.type === 'recording') { state.recording = !!msg.on; $('recBadge').classList.toggle('on', state.recording); syncToolbar(); if (msg.on) toast('Enregistrement en cours'); }
         else if (msg.type === 'engagement') echangesABouge();
         else if (msg.type === 'floor_time') recoitChrono(msg);
@@ -2415,16 +2487,22 @@ export async function startFromConfig() {
         else if (msg.type === 'pip_visibility') { if (msg.visible === false) { pipVisible = false; destroyPip(false); } else pipVisible = true; }
         else if (msg.type === 'mod_role') {
             const nr = msg.role === 'presenter' ? 'presenter' : 'audience'; state.role = nr;
-            const me = people.find((x) => x.id === 'local'); if (me) me.role = nr;
+            // ⚠️ `isFloor` et pas seulement le rôle : au début d'une séance, TOUS les
+            // auteurs portent `presenter` (le serveur le donne à chaque communicateur).
+            // Ce qui désigne celui qui présente MAINTENANT, c'est la parole donnée.
+            const me = people.find((x) => x.id === 'local');
+            if (me) { me.role = nr; me.isFloor = nr === 'presenter'; }
             $('localRole').textContent = roleLabel(nr); rootEl.setAttribute('data-role', nr);
             updateModUi(); refreshPeople(); syncToolbar();
             toast(nr === 'presenter' ? 'Vous êtes nommé communicateur' : 'Rôle communicateur retiré');
-            if (nr === 'audience' && room) { room.localParticipant.setCameraEnabled(false).catch(() => {}); room.localParticipant.setScreenShareEnabled(false).catch(() => {}); state.cam = false; state.screen = false; destroyPip(); syncToolbar(); }
+            if (nr === 'audience' && room) { room.localParticipant.setCameraEnabled(false).catch(() => {}); room.localParticipant.setScreenShareEnabled(false).catch(() => {}); state.cam = false; state.screen = false; destroyPip(); }
             // ⚠️ Prendre la parole avec le micro coupé, c'est la salle entière qui
             // regarde quelqu'un parler en silence - et personne ne sait d'où vient
             // la panne. Le micro s'ouvre donc AVEC la présentation ; la personne
             // reste libre de le recouper juste après, c'est son micro.
             if (nr === 'presenter' && room) ouvreMonMicro('Votre micro a été activé pour votre présentation');
+            // Le crayon suit la parole : la barre du tableau s'ouvre ou se ferme ici.
+            majDroitDeTracer();
         }
     }
 
@@ -3179,18 +3257,14 @@ export async function startFromConfig() {
         });
         $('bdGomme')?.addEventListener('click', () => { board.gomme = !board.gomme; majOutilsTableau(); });
         $('bdTaille')?.addEventListener('input', (e) => { board.taille = Math.max(1, Number(e.target.value) || 4); });
-        $('bdUndo')?.addEventListener('click', () => {
-            const prefixe = monIdentite() + '-';
-            for (let i = board.traits.length - 1; i >= 0; i -= 1) {
-                if (board.traits[i].id.indexOf(prefixe) === 0) { board.traits.splice(i, 1); break; }
-            }
-            redessineTableau(); sendData({ type: 'board_undo' });
-        });
+        $('bdUndo')?.addEventListener('click', annuleMonTrait);
+        $('bdRedo')?.addEventListener('click', refaisMonTrait);
         $('bdClear')?.addEventListener('click', async () => {
             // ⚠️ Effacer emporte le travail de TOUT LE MONDE, et rien ne le rend.
             if (!board.traits.length) return;
             if (!await confirme('Effacer le tableau', 'Le tableau sera vidé pour tous les participants. Rien ne permet de le retrouver.', 'Effacer')) return;
-            board.traits = []; board.enCours = null; redessineTableau();
+            board.traits = []; board.enCours = null; board.defaits = [];
+            redessineTableau(); majBoutonsHistorique();
             sendData({ type: 'board_clear' });
         });
         $('bdSave')?.addEventListener('click', enregistreTableau);

@@ -641,3 +641,53 @@ export function questionsFiltrees(questions, filtre) {
 export function compteEnAttente(questions) {
   return (Array.isArray(questions) ? questions : []).filter((q) => q && q.status === 'pending').length;
 }
+
+/**
+ * Rang du dernier trait posé par cet auteur, ou -1.
+ *
+ * ⚠️ Chaque trait porte l'identité de son auteur dans son `id` : on ne défait
+ * JAMAIS le trait de quelqu'un d'autre. Deux personnes annotent la même
+ * présentation, et « Annuler » doit rester le geste qui reprend SON trait - pas
+ * celui qui efface par surprise la flèche du voisin.
+ *
+ * ⚠️ Le préfixe se compare avec son tiret (`alice-`), sinon l'identité `alice`
+ * reprendrait aussi les traits d'`alice2`.
+ */
+export function indexDuDernierTraitDe(traits, auteur) {
+  const liste = Array.isArray(traits) ? traits : [];
+  const prefixe = String(auteur ?? '') + '-';
+  if (prefixe === '-') return -1;
+  for (let i = liste.length - 1; i >= 0; i -= 1) {
+    const t = liste[i];
+    if (t && typeof t.id === 'string' && t.id.indexOf(prefixe) === 0) return i;
+  }
+
+  return -1;
+}
+
+/**
+ * Qui tient le crayon du tableau.
+ *
+ * ⚠️ Pas « tout présentateur » : une séance compte plusieurs communicateurs, et
+ * tous portent le rôle `presenter` pendant toute la séance. Ils pouvaient donc
+ * tous écrire sur le diaporama de celui qui parle. Le crayon suit **la parole** -
+ * celui qui présente, ou qui partage son écran en ce moment.
+ *
+ * ⚠️ Le modérateur garde la main : il conduit la séance, coupe les micros et
+ * donne la parole. Lui refuser le crayon rendrait le tableau blanc inutilisable
+ * tant que personne ne présente - et c'est précisément le moment où l'on veut
+ * dessiner quelque chose.
+ *
+ * ⚠️ Ceci est une règle de CONDUITE, pas une barrière : la frontière vérifiable
+ * reste le rôle signé dans le jeton (`ORDRES_RESERVES`), qui interdit déjà le
+ * tableau à l'assistance. Qui tient la parole se décide sur le canal de données,
+ * donc ne s'authentifie pas - et un récepteur qui filtrerait là-dessus écarterait
+ * des traits légitimes dès que sa vue de la parole diffère d'un poste à l'autre.
+ * Un tableau qui perd des traits en silence est pire que le mal qu'on soigne.
+ */
+export function droitDeTracer(role, partageSonEcran, aLaParole) {
+  if (role === 'moderator') return true;
+  if (role !== 'presenter') return false;
+
+  return !!partageSonEcran || !!aLaParole;
+}

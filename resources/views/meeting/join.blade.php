@@ -579,7 +579,12 @@
         #visio-room .bd-outils.flottante:hover,#visio-room .bd-outils.flottante:focus-within{opacity:1;}
         #visio-room .bd-mode{display:inline-flex;border:1px solid var(--vborder);border-radius:10px;overflow:hidden;}
         #visio-room .bd-mode button{border-radius:0;border:none;padding:6px 10px;font-size:11.5px;}
-        #visio-room .bd-mode button.on{background:var(--vgold);color:var(--vblue-d);}
+        /* ⚠️ Le chevron n'est pas décoratif : `#visio-room .bd-outils button.on`
+           (fond or à 16%) a la MÊME spécificité et vient plus bas dans la
+           feuille - elle gagnait donc le fond, en laissant à celle-ci la seule
+           couleur du texte. Résultat mesuré : bleu foncé sur fond sombre, la
+           pastille du mode actif paraissait VIDE. */
+        #visio-room .bd-outils .bd-mode button.on{background:var(--vgold);color:var(--vblue-d);border-color:transparent;}
         /* ⚠️ `touch-action:none` : sans lui, le doigt fait défiler la page au lieu
            de tracer, et le tableau est inutilisable sur tablette. */
         #visio-room .bd-cadre canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair;}
@@ -601,10 +606,22 @@
         #visio-room .v-board:not(.lecture) .bd-outils{display:flex;}
         #visio-room .bd-outils button{border:1px solid transparent;border-radius:9px;background:transparent;
             color:var(--vtext);font-size:12px;font-weight:700;padding:6px 9px;cursor:pointer;}
-        #visio-room .bd-outils button:hover,#visio-room .bd-outils button:focus-visible{background:rgba(255,255,255,.09);}
+        /* Le dessin par-dessus, le mot en dessous - même grammaire que la barre de
+           la salle, pour qu'un outil se reconnaisse d'un écran à l'autre. */
+        #visio-room .bd-outils button[data-nom]{display:inline-flex;flex-direction:column;align-items:center;
+            gap:3px;min-width:46px;padding:5px 7px 4px;}
+        #visio-room .bd-outils button[data-nom]::after{content:attr(data-nom);font-size:9.5px;font-weight:700;line-height:1;}
+        #visio-room .bd-outils button svg{width:19px;height:19px;display:block;}
+        #visio-room .bd-outils button:hover:not(:disabled),
+        #visio-room .bd-outils button:focus-visible{background:rgba(255,255,255,.09);}
         #visio-room .bd-outils button.on{background:rgba(255,215,0,.16);border-color:var(--vgold);}
-        #visio-room .bd-outils .sep{width:1px;height:20px;background:var(--vborder);margin:0 2px;}
-        #visio-room .bd-outils label{font-size:11px;font-weight:700;color:var(--vmuted);}
+        /* ⚠️ Un bouton éteint doit se VOIR éteint : « Refaire » n'a rien à rendre
+           tant qu'on n'a rien annulé, et le proposer quand même fait douter du
+           tableau quand il ne se passe rien. */
+        #visio-room .bd-outils button:disabled{opacity:.38;cursor:default;}
+        #visio-room .bd-outils .sep{width:1px;height:26px;background:var(--vborder);margin:0 2px;}
+        #visio-room .bd-outils label{display:inline-flex;align-items:center;color:var(--vmuted);}
+        #visio-room .bd-outils label svg{width:17px;height:17px;display:block;}
         #visio-room .bd-outils input[type=range]{width:84px;accent-color:var(--vgold);}
         #visio-room .bd-palette{display:inline-flex;gap:5px;}
         /* Le crayon courant porte un anneau : sur cinq pastilles de couleur, rien
@@ -617,9 +634,14 @@
             /* Sur téléphone, le mot disparaît : il ne reste que les pastilles et les
                verbes les plus courts, sinon la barre mange la moitié du tableau. */
             #visio-room .bd-outils{gap:4px;padding:6px 8px;bottom:8px;}
-            #visio-room .bd-outils label,#visio-room .bd-outils .sep{display:none;}
+            #visio-room .bd-outils .sep{display:none;}
             #visio-room .bd-outils input[type=range]{width:64px;}
-            #visio-room .bd-outils button{padding:6px 7px;font-size:11.5px;}
+            /* ⚠️ Le mot disparaît, le dessin reste : à 375px la barre mangeait la
+               moitié du tableau. Le `title` et l'`aria-label` portent toujours
+               l'intitulé entier. */
+            #visio-room .bd-outils button[data-nom]{min-width:0;padding:7px;}
+            #visio-room .bd-outils button[data-nom]::after{display:none;}
+            #visio-room .bd-mode button{padding:7px 9px;font-size:11px;}
         }
         /* --- Échanges : leur propre surface ---
            ⚠️ Deux colonnes dès qu'il y a la place : sondages et questions se
@@ -1120,16 +1142,37 @@
                             </span>
                             <span class="sep"></span>
                             <span class="bd-palette" id="boardPalette"></span>
-                            <button type="button" id="bdGomme" title="Gomme">Gomme</button>
+                            {{-- ⚠️ Icône ET mot, comme la barre de la salle : le `title` seul
+                                 n'existe pas au doigt, et une rangée de six dessins sans
+                                 légende se devine mal. Le mot s'efface sous 640px, où la
+                                 place rendue au tableau vaut mieux qu'une légende. --}}
+                            <button type="button" id="bdGomme" title="Gomme" data-nom="Gomme" aria-label="Gomme">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 20H20"/><path d="M15.4 4.6a2 2 0 0 1 2.8 0l2.2 2.2a2 2 0 0 1 0 2.8L11.8 18H7l-2.4-2.4a2 2 0 0 1 0-2.8z"/><path d="M11 9l4 4"/></svg>
+                            </button>
                             <span class="sep"></span>
-                            <label for="bdTaille">Trait</label>
+                            <label for="bdTaille" title="Épaisseur du trait" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M3 7h18" stroke-width="1.2"/><path d="M3 12h18" stroke-width="2.6"/><path d="M3 17.5h18" stroke-width="4.4"/></svg>
+                            </label>
                             <input type="range" id="bdTaille" min="2" max="16" value="4" aria-label="Épaisseur du trait">
                             <span class="sep"></span>
-                            <button type="button" id="bdUndo" title="Annuler mon dernier trait">Annuler</button>
-                            <button type="button" id="bdClear" class="bd-danger" title="Tout effacer, pour tout le monde">Effacer</button>
-                            <button type="button" id="bdSave" title="Enregistrer le tableau en image">Image</button>
+                            <button type="button" id="bdUndo" title="Annuler mon dernier trait" data-nom="Annuler" aria-label="Annuler mon dernier trait">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
+                            </button>
+                            {{-- ⚠️ « Refaire » manquait : on annulait un trait d'un geste, et
+                                 rien ne le rendait. Il ne rend QUE ses propres traits. --}}
+                            <button type="button" id="bdRedo" title="Refaire mon trait annulé" data-nom="Refaire" aria-label="Refaire mon trait annulé" disabled>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg>
+                            </button>
+                            <button type="button" id="bdSave" title="Enregistrer le tableau en image" data-nom="Image" aria-label="Enregistrer en image">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v11"/><path d="M8 10l4 4 4-4"/><path d="M4 16v2a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2"/></svg>
+                            </button>
                             <span class="sep"></span>
-                            <button type="button" id="bdClose" title="Fermer le tableau">Fermer</button>
+                            <button type="button" id="bdClear" class="bd-danger" title="Tout effacer, pour tout le monde" data-nom="Effacer" aria-label="Tout effacer, pour tout le monde">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/><path d="M10 11v6M14 11v6"/></svg>
+                            </button>
+                            <button type="button" id="bdClose" title="Fermer le tableau" data-nom="Fermer" aria-label="Fermer le tableau">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                            </button>
                         </div>
                     </div>
                     <div class="reac-layer" id="reacLayer" aria-hidden="true"></div>

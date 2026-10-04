@@ -5,12 +5,14 @@ import {
   cadreTableau,
   chronoLabel,
   compteEnAttente,
+  droitDeTracer,
   enBasDuFil,
   entreeDirecte,
   etatChrono,
   grilleOptimale,
   idSur,
   idsDesParleurs,
+  indexDuDernierTraitDe,
   initials,
   mainsOrdonnees,
   lotsDeTraits,
@@ -626,5 +628,52 @@ describe('échanges', () => {
     expect(compteEnAttente(file)).toBe(2);
     expect(compteEnAttente([{ status: 'answered' }, { status: 'hidden' }])).toBe(0);
     expect(compteEnAttente(null)).toBe(0);
+  });
+});
+
+describe('annuler un trait', () => {
+  const traits = [
+    { id: 'alice-1' }, { id: 'bob-1' }, { id: 'alice-2' }, { id: 'bob-2' },
+  ];
+
+  it('reprend son dernier trait, pas celui du voisin', () => {
+    // ⚠️ Deux personnes annotent la même présentation : « Annuler » ne doit pas
+    // effacer par surprise la flèche de l'autre.
+    expect(indexDuDernierTraitDe(traits, 'alice')).toBe(2);
+    expect(indexDuDernierTraitDe(traits, 'bob')).toBe(3);
+    expect(indexDuDernierTraitDe(traits, 'carole')).toBe(-1);
+  });
+
+  it('ne confond pas deux identités voisines', () => {
+    // ⚠️ Sans le tiret, « alice » reprendrait aussi les traits d'« alice2 ».
+    expect(indexDuDernierTraitDe([{ id: 'alice2-1' }], 'alice')).toBe(-1);
+  });
+
+  it('se tait devant ce qui n’est pas une liste de traits', () => {
+    expect(indexDuDernierTraitDe(null, 'alice')).toBe(-1);
+    expect(indexDuDernierTraitDe(traits, '')).toBe(-1);
+    expect(indexDuDernierTraitDe([{}, { id: 42 }], 'alice')).toBe(-1);
+  });
+});
+
+describe('qui tient le crayon', () => {
+  it('ne le donne qu’à qui présente en ce moment', () => {
+    // ⚠️ Le défaut corrigé : une séance compte plusieurs communicateurs, tous
+    // `presenter` pendant toute la séance - ils pouvaient donc tous écrire sur
+    // le diaporama de celui qui parle.
+    expect(droitDeTracer('presenter', false, false)).toBe(false);
+    expect(droitDeTracer('presenter', false, true)).toBe(true);
+    expect(droitDeTracer('presenter', true, false)).toBe(true);
+  });
+
+  it('le laisse au modérateur, qui conduit la séance', () => {
+    // ⚠️ Sans cela, le tableau blanc serait inutilisable tant que personne ne
+    // présente - et c'est le moment où l'on veut dessiner quelque chose.
+    expect(droitDeTracer('moderator', false, false)).toBe(true);
+  });
+
+  it('ne le donne jamais à l’assistance', () => {
+    expect(droitDeTracer('audience', true, true)).toBe(false);
+    expect(droitDeTracer(undefined, true, true)).toBe(false);
   });
 });

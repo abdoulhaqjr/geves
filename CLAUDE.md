@@ -622,10 +622,26 @@ rendu, c'est un point d'entrée à ajouter - pas ce module à refaire.
   schéma annoté deviendrait faux. Les marges sont le prix à payer.
 - ⚠️ **L'épaisseur se rapporte à la largeur du cadre**, pas au pixel, pour la
   même raison.
-- ⚠️ **Réservé à qui anime** (`ORDRES_RESERVES`, niveau `presenter`) : le
-  tableau cache les visages de toute la salle. La lecture seule masque la barre
-  **et** les écouteurs vérifient `peutTracer()` - sinon il suffisait d'ouvrir la
-  console.
+- ⚠️ **Le crayon suit la PAROLE, pas le rôle** (`droitDeTracer`, règle pure).
+  Le serveur donne `presenter` à **chaque auteur** de communication de la
+  séance (`presenterAccountIds()`) : avec `canPublish()`, les six
+  communicateurs d'une séance pouvaient tous écrire sur le diaporama de
+  celui qui parle. Le crayon va à qui **présente en ce moment** - celui à qui
+  la parole a été donnée (`isFloor`, posé à la réception de `mod_role`) ou qui
+  partage son écran. Le **modérateur** le garde : il conduit la séance, et
+  sans lui le tableau blanc serait inutilisable tant que personne ne présente.
+  ⚠️ `majDroitDeTracer()` doit être rappelé **partout où la parole change**
+  (`mod_role`, début et fin de partage, reprise du partage) : sans cela celui
+  qui vient de rendre l'écran continue d'écrire sur la présentation du suivant.
+- ⚠️ **C'est une règle de CONDUITE, pas une barrière.** La frontière
+  vérifiable reste le **rôle signé dans le jeton** (`ORDRES_RESERVES`, niveau
+  `presenter`), qui interdit déjà le tableau à l'assistance. Qui tient la
+  parole se décide sur le canal de données, donc ne s'authentifie pas - et un
+  récepteur qui filtrerait là-dessus écarterait des traits légitimes dès que
+  sa vue de la parole diffère d'un poste à l'autre. **Un tableau qui perd des
+  traits en silence est pire que le mal qu'on soigne.**
+- La lecture seule masque la barre **et** les écouteurs vérifient
+  `peutTracer()` - sinon il suffisait d'ouvrir la console.
 - ⚠️ **`ordreRecevable` dit d'où vient un message, pas ce qu'il contient.**
   `traitRecu` assainit : couleur prise dans la palette, épaisseur bornée,
   coordonnées ramenées dans le cadre, points plafonnés, `Infinity` écarté
@@ -658,6 +674,25 @@ rendu, c'est un point d'entrée à ajouter - pas ce module à refaire.
   `translateX(-50%)` : en positionnement absolu, `left:50%` ne laisse que la
   moitié de la largeur disponible, et la barre se repliait sur deux lignes alors
   que son contenu tenait largement.
+- **Barre en icône + mot**, même grammaire que la barre de la salle : le
+  `title` seul **n'existe pas au doigt**, et une rangée de six dessins sans
+  légende se devine mal. Le mot s'efface sous 640px, où la place rendue au
+  tableau vaut mieux qu'une légende ; `title` et `aria-label` restent.
+  ⚠️ **Mesuré au harnais** : la pastille du mode actif paraissait **vide** -
+  `#visio-room .bd-outils button.on` (fond or à 16%) a la même spécificité
+  que la règle du mode et vient plus bas dans la feuille, elle gagnait donc
+  le fond en laissant à l'autre la seule couleur du texte. Bleu foncé sur
+  fond sombre. D'où le chevron `.bd-outils .bd-mode button.on` (contraste
+  remonté à 8,4:1).
+- **Annuler / Refaire** (`indexDuDernierTraitDe`, règle pure) : on ne défait
+  **que les siens** - deux personnes annotent la même présentation, et
+  « Annuler » ne doit pas effacer par surprise la flèche du voisin. Le
+  préfixe se compare **avec son tiret**, sinon `alice` reprendrait les traits
+  d'`alice2`. ⚠️ Le trait rendu repart **entier** (`net`) : les autres postes
+  l'avaient retiré, leur envoyer la suite ne suffit pas. ⚠️ Un trait neuf
+  **vide la pile** (la branche reprise est abandonnée), et un `board_clear`
+  aussi - rendre un trait sur un tableau qu'on vient de vider ferait
+  réapparaître un fantôme.
 - « Effacer » **se confirme** : il emporte le travail de tout le monde et rien
   ne le rend. Fermer, en revanche, **garde les traits** - rouvrir doit retrouver
   le schéma.
