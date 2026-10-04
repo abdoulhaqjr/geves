@@ -25,6 +25,7 @@ use App\Http\Controllers\Account\TestimonialController as AccountTestimonialCont
 use App\Http\Controllers\Account\VerifyEmailController;
 use App\Http\Controllers\Admin\AiAssistantController;
 use App\Http\Controllers\Admin\AnnouncementController;
+use App\Http\Controllers\Admin\AttestationExportController;
 use App\Http\Controllers\Admin\ClaimController;
 use App\Http\Controllers\Admin\DocumentController;
 use App\Http\Controllers\Admin\DocumentHubController;
@@ -522,6 +523,12 @@ Route::prefix('admin')->group(function () {
             Route::post('/attestations/{attestation}/revoquer', [DocumentHubController::class, 'revoke'])->name('admin.documents.attestations.revoke');
             Route::post('/attestations/{attestation}/retablir', [DocumentHubController::class, 'restore'])->name('admin.documents.attestations.restore');
             Route::post('/attestations/options', [DocumentHubController::class, 'saveAttestationOptions'])->name('admin.documents.attestations.options');
+            // Sortie PAPIER : le lot à imprimer, la liste d'émargement, et la trace
+            // de ce qui a été remis. ⚠️ Ces exports portent sur les filtres de
+            // l'écran (AttestationQuery) : on imprime ce qu'on regarde.
+            Route::get('/attestations/lot.pdf', [AttestationExportController::class, 'pdf'])->name('admin.documents.attestations.lot');
+            Route::get('/attestations/emargement.pdf', [AttestationExportController::class, 'emargement'])->name('admin.documents.attestations.emargement');
+            Route::post('/attestations/{attestation}/remise', [AttestationExportController::class, 'deliver'])->name('admin.documents.attestations.deliver');
             Route::post('/badges/options', [DocumentHubController::class, 'saveBadgeOptions'])->name('admin.documents.badges.options');
             Route::post('/livret/options', [DocumentHubController::class, 'saveLivretOptions'])->name('admin.documents.livret.options');
             Route::post('/livret/avant-propos-ia', [DocumentHubController::class, 'generateForewordAi'])->name('admin.documents.livret.foreword-ai');

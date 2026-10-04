@@ -14,6 +14,7 @@ use Illuminate\Support\Carbon;
  *
  * @property array<string, mixed>|null $meta
  * @property Carbon|null $issued_at
+ * @property Carbon|null $delivered_at
  * @property string|null $credential
  * @property string|null $key_id
  * @property Carbon|null $signed_at
@@ -45,6 +46,18 @@ class Attestation extends Model
         return ! $this->revoked;
     }
 
+    /**
+     * Remise en main propre ? (délivrance papier)
+     *
+     * ⚠️ **Émettre n'est pas remettre.** Une attestation peut être émise,
+     * imprimée, et attendre des mois dans une chemise parce que personne ne
+     * sait ce qui reste à distribuer.
+     */
+    public function isDelivered(): bool
+    {
+        return $this->delivered_at !== null;
+    }
+
     /** L'attestation porte-t-elle une signature cryptographique ? */
     public function isSigned(): bool
     {
@@ -57,6 +70,7 @@ class Attestation extends Model
             'meta' => 'array',
             'revoked' => 'boolean',
             'issued_at' => 'datetime',
+            'delivered_at' => 'datetime',
             'signed_at' => 'datetime',
         ];
     }

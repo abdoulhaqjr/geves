@@ -15,6 +15,7 @@ use App\Models\Formation;
 use App\Models\Participant;
 use App\Models\Submission;
 use App\Support\AttestationPolicy;
+use App\Support\AttestationQuery;
 use App\Support\CommunicationAttestations;
 use App\Support\EditionSettings;
 use App\Support\ListSort;
@@ -73,8 +74,13 @@ class DocumentHubController extends Controller
             $customTitles = $templates->map(fn (DocumentTemplate $t) => $t->title);
 
             foreach ($typeMeta as $key => $meta) {
+                // ⚠️ Ce que l'émission ferait VRAIMENT, écarts compris : le bouton
+                // engageait un lot sans jamais dire ce qu'il contenait. Avec la
+                // réserve aux présents, un nombre qui baisse sans explication se lit
+                // comme une panne - et on réimprime pour rien.
+                $apercu = $key === 'communication' ? CommunicationAttestations::preview($edition) : null;
                 $eligible = match ($key) {
-                    'communication' => CommunicationAttestations::count($edition),
+                    'communication' => $apercu['retenus'],
                     'formation', 'formation_animation' => $formationCounts[$key],
                     default => $this->targetsFor($edition, $key)->count(),
                 };
@@ -84,6 +90,8 @@ class DocumentHubController extends Controller
                     'sub' => $meta['sub'],
                     'scope' => $meta['scope'],
                     'eligible' => $eligible,
+                    // Écartés faute de présence (attestation de communication).
+                    'excluded' => $apercu['ecartes'] ?? 0,
                     'issued' => $attestations->where('type', $key)->where('revoked', false)->count(),
                     // Non pas un état qu'on bascule : un modèle est « prêt » dès
                     // qu'il a des destinataires éligibles. Le libellé le dit.
@@ -133,6 +141,12 @@ class DocumentHubController extends Controller
             'stab' => $stab,
             ...($tab === 'attestations' && $stab === 'delivrees' ? $this->issuedList($request, $edition) : []),
             ...($tab === 'badges' && $stab === 'prets' ? $this->badgeReadyList($request, $edition) : []),
+            // ⚠️ La page qui ÉMET doit dire ce que l'émission déclenche : en ligne,
+            // chaque attestation part par e-mail ; sur papier, rien ne part.
+            'attDelivery' => AttestationPolicy::delivery($edition),
+            'attDeliveryLabel' => AttestationPolicy::DELIVERIES[AttestationPolicy::delivery($edition)],
+            'attPaper' => AttestationPolicy::isPaper($edition),
+            'attScopeLabel' => AttestationPolicy::SCOPES[AttestationPolicy::communicationScope($edition)],
             'opts' => [
                 'attPrefix' => (string) EditionSettings::get($edition, 'attestations.prefix', 'UKC-ATT-2026-'),
                 // Signataire porté par les jetons [signatory.name] / [signatory.role]
@@ -277,7 +291,20 @@ class DocumentHubController extends Controller
             }
         }
 
-        return back()->with('ukc_status', $count.' attestation(s) « '.Attestation::TYPES[$type].' » émise(s).');
+        $message = $count.' attestation(s) « '.Attestation::TYPES[$type].' » émise(s).';
+
+        // ⚠️ Le bouton « Émettre et exporter » ne générait AUCUN PDF : il émettait
+        // et rendait la main, laissant croire que le lot était prêt. Il mène
+        // maintenant à la liste délivrée, filtrée sur ce type, où les lots PDF et
+        // la liste d'émargement attendent.
+        if ((string) $request->input('mode') === 'zip') {
+            return redirect()->route('admin.documents.attestations', [
+                'edition_id' => $edition->id, 'tab' => 'attestations', 'stab' => 'delivrees',
+                'type' => $type, 'state' => 'valid',
+            ])->with('ukc_status', $message.' Choisissez un lot à imprimer ci-dessous.');
+        }
+
+        return back()->with('ukc_status', $message);
     }
 
     public function revoke(Attestation $attestation): RedirectResponse
@@ -551,44 +578,20 @@ class DocumentHubController extends Controller
      */
     private function issuedList(Request $request, ?Edition $edition): array
     {
-        $query = $edition ? Attestation::where('edition_id', $edition->id) : Attestation::query()->whereRaw('1 = 0');
+        // ⚠️ Les filtres viennent d'AttestationQuery, partagés avec les exports :
+        // on imprime ce qu'on regarde. Deux constructions de requête finiraient
+        // par diverger, et le lot ne correspondrait plus à la liste.
+        $query = AttestationQuery::filtered($request, $edition);
 
-        if (($type = (string) $request->query('type', '')) !== '' && array_key_exists($type, Attestation::TYPES)) {
-            $query->where('type', $type);
-        }
-        if (($state = (string) $request->query('state', '')) === 'valid') {
-            $query->where('revoked', false);
-        } elseif ($state === 'revoked') {
-            $query->where('revoked', true);
-        }
-
-        // Recherche nom / e-mail : sur l'attestation (figés à l'émission) ET sur le
-        // participant lié, car une attestation peut viser quelqu'un sans compte.
+        $type = (string) $request->query('type', '');
+        $state = (string) $request->query('state', '');
+        $delivery = (string) $request->query('delivery', '');
         $search = trim((string) $request->query('search', ''));
-        if ($search !== '') {
-            $term = '%'.$search.'%';
-            $query->where(fn ($q) => $q
-                ->where('recipient_name', 'like', $term)
-                ->orWhere('recipient_email', 'like', $term)
-                ->orWhereHas('participant', fn ($p) => $p
-                    ->where('first_name', 'like', $term)
-                    ->orWhere('last_name', 'like', $term)
-                    ->orWhere('email', 'like', $term)));
-        }
-
-        // Période d'émission.
         $from = (string) $request->query('from', '');
         $to = (string) $request->query('to', '');
-        if ($from !== '') {
-            $query->whereDate('issued_at', '>=', $from);
-        }
-        if ($to !== '') {
-            $query->whereDate('issued_at', '<=', $to);
-        }
-
         $sort = ListSort::resolve(
             $request,
-            ['recipient_name', 'type', 'uuid', 'issued_at', 'revoked'],
+            ['recipient_name', 'type', 'uuid', 'issued_at', 'revoked', 'delivered_at'],
             'issued_at',
             'desc'
         );
@@ -602,15 +605,24 @@ class DocumentHubController extends Controller
             'total' => Attestation::where('edition_id', $edition->id)->count(),
             'valid' => Attestation::where('edition_id', $edition->id)->where('revoked', false)->count(),
             'revoked' => Attestation::where('edition_id', $edition->id)->where('revoked', true)->count(),
+            // Délivrance papier : « ce qui reste à remettre » est la question du
+            // guichet, et elle n'a de sens que sur les attestations valides.
+            'delivered' => Attestation::where('edition_id', $edition->id)->whereNotNull('delivered_at')->count(),
+            'pending' => Attestation::where('edition_id', $edition->id)->where('revoked', false)->whereNull('delivered_at')->count(),
             'byType' => Attestation::where('edition_id', $edition->id)->where('revoked', false)
                 ->selectRaw('type, count(*) as c')->groupBy('type')->pluck('c', 'type'),
-        ] : ['total' => 0, 'valid' => 0, 'revoked' => 0, 'byType' => collect()];
+        ] : ['total' => 0, 'valid' => 0, 'revoked' => 0, 'delivered' => 0, 'pending' => 0, 'byType' => collect()];
 
         return [
             'issued' => $issued,
             'issuedStats' => $stats,
             'type' => $type,
             'state' => $state,
+            'delivery' => $delivery,
+            // Reportés tels quels sur les liens d'export : ils doivent porter sur
+            // le même ensemble que la liste affichée.
+            'exportParams' => AttestationQuery::params($request),
+            'exportLot' => AttestationExportController::LOT,
             'search' => $search,
             'from' => $from,
             'to' => $to,

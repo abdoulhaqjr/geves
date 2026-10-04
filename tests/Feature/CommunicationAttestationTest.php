@@ -9,6 +9,7 @@ use App\Models\SessionAttendance;
 use App\Models\Slot;
 use App\Models\Submission;
 use App\Support\AttestationPolicy;
+use App\Support\CommunicationAttestations;
 use App\Support\EditionSettings;
 use Illuminate\Support\Str;
 
@@ -213,4 +214,50 @@ it('enregistre le mode de délivrance depuis les options générales', function 
     $edition->refresh();
     expect(AttestationPolicy::isPaper($edition))->toBeTrue();
     expect(AttestationPolicy::requiresPresence($edition))->toBeTrue();
+});
+
+/**
+ * ⚠️ Le bouton « Émettre » engageait un lot sans jamais dire ce qu'il contenait.
+ * Avec la réserve aux présents, un nombre qui baisse sans explication se lit
+ * comme une panne - et on réimprime pour rien. La page annonce donc combien
+ * partent ET combien sont écartés.
+ */
+it('annonce les destinataires écartés faute de présence avant d’émettre', function () {
+    $edition = openEdition();
+    EditionSettings::set($edition, 'attestations.communication_scope', AttestationPolicy::SCOPE_PRESENT);
+
+    $auteur = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $co = $edition->participants()->create(['first_name' => 'Ben', 'last_name' => 'Co', 'email' => 'ben@example.tg', 'role' => 'coauthor']);
+    payParticipant($edition, $co);
+    $sub = acceptedComm($edition, $auteur, 'AA-020', [$co]);
+
+    $session = $edition->sessions()->create(['label' => 'Séance', 'type' => 'atelier', 'starts_at' => now()->subHour()]);
+    Slot::create([
+        'edition_id' => $edition->id, 'session_id' => $session->id,
+        'submission_id' => $sub->id, 'participant_id' => $auteur->id,
+        'starts_at' => $session->starts_at, 'ends_at' => $session->starts_at->copy()->addMinutes(20),
+    ]);
+    SessionAttendance::create([
+        'session_id' => $session->id, 'participant_id' => $auteur->id,
+        'status' => 'present', 'source' => SessionAttendance::SOURCE_MANUAL,
+    ]);
+
+    // Un retenu (présent), un écarté (le co-auteur, non pointé).
+    expect(CommunicationAttestations::preview($edition))->toBe(['retenus' => 1, 'ecartes' => 1]);
+
+    $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.documents.attestations', [
+            'edition_id' => $edition->id, 'tab' => 'attestations', 'stab' => 'modeles',
+        ]))
+        ->assertOk()
+        ->assertSee('écarté(s) · absents');
+});
+
+/** Sans réserve de présence, rien n'est écarté : le compteur reste muet. */
+it('n’annonce aucun écart quand l’attestation va à tous les auteurs', function () {
+    $edition = openEdition();
+    $auteur = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    acceptedComm($edition, $auteur, 'AA-021');
+
+    expect(CommunicationAttestations::preview($edition))->toBe(['retenus' => 1, 'ecartes' => 0]);
 });

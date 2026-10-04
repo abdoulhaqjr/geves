@@ -1874,6 +1874,36 @@ table `session_attendances`, modèle `SessionAttendance`). Entrées depuis
   on classe tout (priorité auteur correspondant) ; en séance, on compte le **déjà
   émis**, parce qu'on ne voit pas les passages à venir et que ce qui est parti est
   parti. **Premier passé, premier servi.**
+- **Sortie PAPIER** (`AttestationExportController`) : le mode physique existait
+  sans le geste qui le rend tenable - il fallait ouvrir les attestations **une par
+  une** à leur adresse. Trois sorties, et une trace :
+  - **Lot PDF** (`admin.documents.attestations.lot`) : une attestation par page,
+    prêt à imprimer. ⚠️ **Un seul type par fichier** - la taille de page vient de
+    la mise en page du modèle, et un lot mêlant A4 paysage et A5 portrait
+    sortirait rogné. ⚠️ **Lots bornés** (`AttestationExportController::LOT`) :
+    chaque attestation est composée élément par élément, et un millier d'un coup
+    épuiserait la mémoire du générateur **au milieu** du rendu - page blanche
+    après dix minutes. Un lot borné échoue vite, ou réussit vite.
+  - **Liste d'émargement** (`…attestations.emargement`) : le pendant papier de
+    l'accusé de réception. Pas de découpage en lots (c'est un tableau), en-tête
+    répété sur chaque page - une liste qui se signe sur plusieurs feuilles ne se
+    lit plus sans ses titres de colonnes.
+  - **Remise en main propre** (`attestations.delivered_at` / `delivered_by`) :
+    ⚠️ **émettre n'est pas remettre.** Sans cette trace, une attestation imprimée
+    attend dans une chemise sans que personne sache ce qui reste à distribuer.
+    **Réversible**, contrairement au passage d'une communication : se tromper de
+    ligne au guichet est banal, et une remise fausse ferait croire que quelqu'un a
+    déjà son document.
+  - ⚠️ **Les exports portent sur les filtres de l'écran** (`App\Support\AttestationQuery`,
+    partagé avec la liste) : on imprime ce qu'on regarde. Deux constructions de
+    requête finiraient par diverger, et le lot ne correspondrait plus à la liste -
+    sans rien pour s'en apercevoir.
+- **La page qui émet dit ce que l'émission déclenche** : bandeau du mode de
+  délivrance, nombre de destinataires **et** d'écartés (`CommunicationAttestations::preview()`),
+  confirmation chiffrée. ⚠️ Un nombre qui baisse sans explication se lit comme une
+  panne - et on réimprime pour rien. ⚠️ Le bouton « Émettre et exporter » ne
+  générait **aucun PDF** : il émettait et rendait la main. Il mène désormais à la
+  liste délivrée filtrée sur le type, où les lots attendent.
 - **Documents = modèles éditables** : badges/attestations utilisent le **modèle conçu par
   l'admin** (concepteur `admin/modeles`, `TemplateDesignerController` : génération IA +
   JSON éditable + aperçu ; `DocumentTemplate` par édition/kind/type, rendu

@@ -51,6 +51,28 @@
                         <span style="font-size:13px;color:var(--ukc-muted);">Templates liés à l’édition · génération PDF + QR de vérification. Émission idempotente.</span>
                     </div>
 
+                    {{-- ⚠️ On est sur l'écran qui ÉMET : il doit dire ce que l'émission
+                         déclenche. En ligne, chaque attestation part chez son
+                         bénéficiaire ; sur papier, rien ne part et c'est l'export qui
+                         prend le relais. Sans ce bandeau, le même clic a deux effets
+                         très différents sans que rien ne le signale. --}}
+                    <div class="ukc-card" style="margin-bottom:14px;display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
+                        <span class="ukc-pill {{ $attPaper ? 'ukc-pill--warn' : 'ukc-pill--ok' }}">{{ $attDeliveryLabel }}</span>
+                        <div style="font-size:13px;color:var(--ukc-muted);flex:1;min-width:260px;line-height:1.5;">
+                            @if ($attPaper)
+                                Rien n’est envoyé : émettez le lot ici, puis imprimez-le depuis
+                                <a href="{{ route('admin.documents.attestations', ['edition_id' => $edition->id, 'tab' => 'attestations', 'stab' => 'delivrees']) }}">Attestations délivrées</a>
+                                (lot PDF + liste d’émargement). L’attestation reste consultable dans l’espace du participant.
+                            @else
+                                Chaque attestation émise part chez son bénéficiaire (notification, e-mail, SMS si activé)
+                                et apparaît dans son espace. Les attestations de communication s’émettent aussi
+                                <strong>au fil des passages</strong>, quand le modérateur les valide en séance.
+                            @endif
+                            <br>Attestation de communication : {{ \Illuminate\Support\Str::lower($attScopeLabel) }}.
+                            <a href="{{ route('admin.documents.attestations', ['edition_id' => $edition->id, 'tab' => 'attestations', 'stab' => 'options']) }}">Changer</a>
+                        </div>
+                    </div>
+
                     <div class="ukc-table-wrap">
                         <table class="ukc-table">
                             <thead>
@@ -62,7 +84,17 @@
                                         <td><span class="ukc-pill ukc-pill--info">{{ $row['label'] }}</span></td>
                                         <td><strong>{{ $row['title'] }}</strong><div style="font-size:12px;color:var(--ukc-muted);">{{ $row['sub'] }}</div></td>
                                         <td>{{ $row['scope'] }}</td>
-                                        <td><span class="ukc-stat">{{ $row['eligible'] }}</span></td>
+                                        <td>
+                                            <span class="ukc-stat">{{ $row['eligible'] }}</span>
+                                            {{-- ⚠️ Un nombre qui baisse sans explication se lit comme une
+                                                 panne : on dit POURQUOI il manque des gens. --}}
+                                            @if ($row['excluded'] > 0)
+                                                <div style="font-size:11.5px;color:var(--ukc-muted);margin-top:2px;"
+                                                     title="Auteurs non pointés présents à la séance où leur communication est programmée.">
+                                                    {{ $row['excluded'] }} écarté(s) · absents
+                                                </div>
+                                            @endif
+                                        </td>
                                         <td>Oui</td>
                                         <td>
                                             @if ($row['status'] === 'Actif')<span class="ukc-pill ukc-pill--ok" title="Des destinataires sont éligibles : vous pouvez émettre.">Prêt</span>@else<span class="ukc-pill ukc-pill--muted" title="Le modèle est complet et modifiable ; aucun destinataire n’est éligible pour l’instant.">Sans destinataire</span>@endif
@@ -76,14 +108,20 @@
                                                     </a>
                                                 @else
                                                     <form method="POST" action="{{ route('admin.documents.attestations.issue') }}" style="display:contents;"
-                                                          onsubmit="return confirm('Émettre / générer les attestations « {{ $row['title'] }} » ({{ $row['eligible'] }} destinataire(s)) ?')">
+                                                          onsubmit="return confirm(@js(
+                                                              'Émettre les attestations « '.$row['title'].' » : '.$row['eligible'].' destinataire(s)'
+                                                              .($row['excluded'] > 0 ? ', '.$row['excluded'].' écarté(s) faute de présence' : '').'.'
+                                                              .($attPaper
+                                                                  ? ' Rien ne sera envoyé : la délivrance de cette édition est physique.'
+                                                                  : ' Autant de notifications partiront chez les bénéficiaires.')
+                                                              .' Continuer ?'))">
                                                         @csrf
                                                         <input type="hidden" name="edition_id" value="{{ $edition->id }}">
                                                         <input type="hidden" name="type" value="{{ $key }}">
-                                                        <button type="submit" name="mode" value="zip" class="ukc-btn--icon" title="Émettre &amp; générer les PDF" @disabled($row['eligible'] === 0)>
+                                                        <button type="submit" name="mode" value="zip" class="ukc-btn--icon" title="Émettre, puis choisir le lot PDF à imprimer" @disabled($row['eligible'] === 0)>
                                                             <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
                                                         </button>
-                                                        <button type="submit" name="mode" value="send" class="ukc-btn--icon" title="Émettre &amp; notifier les destinataires" @disabled($row['eligible'] === 0)>
+                                                        <button type="submit" name="mode" value="send" class="ukc-btn--icon" title="Émettre (les destinataires sont prévenus si la délivrance est en ligne)" @disabled($row['eligible'] === 0)>
                                                             <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                                                         </button>
                                                     </form>

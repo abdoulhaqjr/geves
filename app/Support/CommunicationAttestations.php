@@ -40,7 +40,7 @@ class CommunicationAttestations
     /**
      * @return Collection<int, array{participant: Participant, submission: Submission, corresponding: bool}>
      */
-    public static function entitlements(Edition $edition): Collection
+    public static function entitlements(Edition $edition, bool $avecPresence = true): Collection
     {
         $attestationMax = self::attestationMax($edition);
         $coauthorsMax = self::coauthorsMax($edition);
@@ -77,7 +77,7 @@ class CommunicationAttestations
         // d'abord les absents laisse la place à une communication où la personne
         // était là, plutôt que de lui faire consommer son quota sur une séance
         // qu'elle a manquée.
-        if (AttestationPolicy::requiresPresence($edition)) {
+        if ($avecPresence && AttestationPolicy::requiresPresence($edition)) {
             $seances = self::sessionsOf($retenus->pluck('submission.id')->unique()->all());
             $presents = self::presentsOf($seances);
             $retenus = $retenus->filter(fn (array $i) => self::estPresent($i, $seances, $presents));
@@ -142,6 +142,34 @@ class CommunicationAttestations
     public static function count(Edition $edition): int
     {
         return self::entitlements($edition)->count();
+    }
+
+    /**
+     * Ce qu'une émission en masse ferait : combien partent, combien sont
+     * écartés, et pourquoi.
+     *
+     * ⚠️ Le bouton « Émettre » engageait un lot sans jamais dire ce qu'il
+     * contenait. Avec la réserve aux présents, un nombre qui baisse sans
+     * explication se lit comme une panne - et on réimprime pour rien.
+     *
+     * @return array{retenus: int, ecartes: int}
+     */
+    public static function preview(Edition $edition): array
+    {
+        $retenus = self::entitlements($edition)->count();
+
+        if (! AttestationPolicy::requiresPresence($edition)) {
+            return ['retenus' => $retenus, 'ecartes' => 0];
+        }
+
+        // ⚠️ Le plafond par personne s'applique APRÈS le filtre de présence : le
+        // total sans filtre n'est donc pas « retenus + absents » mais bien ce
+        // que l'édition émettrait si elle n'exigeait pas la présence. C'est cette
+        // différence-là qui intéresse le gestionnaire.
+        return [
+            'retenus' => $retenus,
+            'ecartes' => max(0, self::entitlements($edition, avecPresence: false)->count() - $retenus),
+        ];
     }
 
     /**
