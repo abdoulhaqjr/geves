@@ -1485,12 +1485,21 @@
     });
   }
   document.getElementById('btnPreview').addEventListener('click', function () {
+    var cfgP = window.UKC_EDITOR || {};
+    var isPrev = !!cfgP.preview;
     var old = document.getElementById('ukcPreviewOverlay');
-    if (old) { old.remove(); return; }
+    if (old) { if (!isPrev) old.remove(); return; }
+
+    // En mode aperçu verrouillé, fermer ramène aux Documents (le concepteur n'est
+    // pas censé rester visible derrière) ; sinon on retire simplement l'overlay.
+    function dismiss() {
+      if (isPrev) { location.href = cfgP.backUrl || '/admin/documents'; return; }
+      var o = document.getElementById('ukcPreviewOverlay'); if (o) o.remove();
+    }
 
     var overlay = document.createElement('div');
     overlay.id = 'ukcPreviewOverlay';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.88);display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:' + (isPrev ? '#1e293b' : 'rgba(15,23,42,.88)') + ';display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;';
 
     var pw = page.offsetWidth || 900, ph = page.offsetHeight || 636;
     var scale = Math.min(1, (window.innerWidth - 80) / pw, (window.innerHeight - 120) / ph);
@@ -1515,16 +1524,22 @@
 
     var close = document.createElement('button');
     close.type = 'button';
-    close.textContent = '✕ Fermer l’aperçu';
-    close.style.cssText = 'position:fixed;top:16px;right:20px;z-index:10000;background:#fff;color:#1a2332;border-radius:8px;padding:9px 16px;font-weight:700;font-family:inherit;font-size:13.5px;box-shadow:0 4px 14px rgba(0,0,0,.3);';
-    close.addEventListener('click', function () { overlay.remove(); });
+    close.textContent = isPrev ? '✕ Fermer' : '✕ Fermer l’aperçu';
+    close.style.cssText = 'position:fixed;top:16px;right:20px;z-index:10000;background:#fff;color:#1a2332;border-radius:8px;padding:9px 16px;font-weight:700;font-family:inherit;font-size:13.5px;box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer;';
+    close.addEventListener('click', dismiss);
 
-    overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
-    function onEsc(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onEsc); } }
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) dismiss(); });
+    function onEsc(e) { if (e.key === 'Escape') { document.removeEventListener('keydown', onEsc); dismiss(); } }
     document.addEventListener('keydown', onEsc);
 
     overlay.appendChild(frame);
     overlay.appendChild(close);
+    if (isPrev) {
+      var tag = document.createElement('div');
+      tag.textContent = 'Aperçu du modèle - valeurs d’exemple';
+      tag.style.cssText = 'position:fixed;top:18px;left:20px;z-index:10000;color:#cbd5e1;font-family:inherit;font-size:13px;';
+      overlay.appendChild(tag);
+    }
     document.body.appendChild(overlay);
   });
   document.getElementById('btnBlank').addEventListener('click', function () {
@@ -1928,5 +1943,17 @@
         updateUndoButtons();
       } catch (e) { /* conserve le rendu par défaut si le template intégré échoue */ }
     }
+  })();
+
+  /* ---------- Mode APERÇU verrouillé : ouvre l'aperçu exact du modèle ---------- */
+  (function () {
+    var cfg = window.UKC_EDITOR || {};
+    if (!cfg.preview) return;
+    // Le canevas vient d'être bâti (hydratation ci-dessus) : on ouvre l'aperçu
+    // plein écran, qui clone ce canevas exact et remplace les jetons.
+    requestAnimationFrame(function () {
+      var b = document.getElementById('btnPreview');
+      if (b) b.click();
+    });
   })();
 })();

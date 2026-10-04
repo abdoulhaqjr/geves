@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Éditeur de badges - {{ config('app.name') }}</title>
   <meta name="csrf-token" content="{{ csrf_token() }}">
-  @php($ukcEditorCfg = ['editionId' => (string) $edition_id, 'kind' => $kind, 'type' => $type, 'typeLabel' => $typeLabel ?? 'Badge', 'backUrl' => route('admin.documents.attestations'), 'saveUrl' => route('admin.documents.templates.save'), 'csrf' => csrf_token(), 'editorState' => $editorState ?? null])
+  @php($ukcEditorCfg = ['editionId' => (string) $edition_id, 'kind' => $kind, 'type' => $type, 'typeLabel' => $typeLabel ?? 'Badge', 'backUrl' => route('admin.documents.attestations', ['edition_id' => $edition_id, 'tab' => 'badges']), 'saveUrl' => route('admin.documents.templates.save'), 'csrf' => csrf_token(), 'editorState' => $editorState ?? null, 'vars' => $vars ?? [], 'preview' => $preview ?? false])
   <script>window.UKC_EDITOR = @json($ukcEditorCfg);</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

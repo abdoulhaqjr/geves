@@ -795,12 +795,32 @@
       .catch(function () { toast('Erreur réseau lors de l’enregistrement'); })
       .finally(function () { btn.disabled = false; btn.textContent = original; });
   });
+  function fillBadgeTokens(root) {
+    var vars = (window.UKC_EDITOR || {}).vars || {};
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    var nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(function (n) {
+      n.nodeValue = n.nodeValue.replace(/\[([A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)?)\]|\{([A-Za-z0-9_]+)\}/g,
+        function (whole, bracket, brace) {
+          var key = bracket || brace;
+          var v = vars[key];
+          return (typeof v === 'string' || typeof v === 'number') && String(v) !== '' ? String(v) : whole;
+        });
+    });
+  }
   document.getElementById('btnPreview').addEventListener('click', function () {
+    var cfgP = window.UKC_EDITOR || {};
+    var isPrev = !!cfgP.preview;
     var old = document.getElementById('ukcPreviewOverlay');
-    if (old) { old.remove(); return; }
+    if (old) { if (!isPrev) old.remove(); return; }
+    function dismiss() {
+      if (isPrev) { location.href = cfgP.backUrl || '/admin/documents'; return; }
+      var o = document.getElementById('ukcPreviewOverlay'); if (o) o.remove();
+    }
     var overlay = document.createElement('div');
     overlay.id = 'ukcPreviewOverlay';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.88);display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:' + (isPrev ? '#1e293b' : 'rgba(15,23,42,.88)') + ';display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto;';
     var pw = page.offsetWidth || 397, ph = page.offsetHeight || 560;
     var scale = Math.min(1, (window.innerWidth - 80) / pw, (window.innerHeight - 120) / ph);
     var clone = page.cloneNode(true);
@@ -809,20 +829,27 @@
     clone.style.margin = '0';
     clone.style.boxShadow = '0 20px 60px rgba(0,0,0,.5)';
     clone.querySelectorAll('.resize, .ed-guide, .ed-guide-label').forEach(function (n) { n.remove(); });
+    fillBadgeTokens(clone);
     clone.querySelectorAll('.ed-el').forEach(function (n) { n.style.outline = 'none'; n.style.border = 'none'; n.style.boxShadow = 'none'; n.classList.remove('selected'); });
     var frame = document.createElement('div');
     frame.style.cssText = 'transform:scale(' + scale + ');transform-origin:center center;';
     frame.appendChild(clone);
     var close = document.createElement('button');
     close.type = 'button';
-    close.textContent = '✕ Fermer l’aperçu';
-    close.style.cssText = 'position:fixed;top:16px;right:20px;z-index:10000;background:#fff;color:#1a2332;border-radius:8px;padding:9px 16px;font-weight:700;font-family:inherit;font-size:13.5px;box-shadow:0 4px 14px rgba(0,0,0,.3);';
-    close.addEventListener('click', function () { overlay.remove(); });
-    overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
-    function onEsc(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onEsc); } }
+    close.textContent = isPrev ? '✕ Fermer' : '✕ Fermer l’aperçu';
+    close.style.cssText = 'position:fixed;top:16px;right:20px;z-index:10000;background:#fff;color:#1a2332;border-radius:8px;padding:9px 16px;font-weight:700;font-family:inherit;font-size:13.5px;box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer;';
+    close.addEventListener('click', dismiss);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) dismiss(); });
+    function onEsc(e) { if (e.key === 'Escape') { document.removeEventListener('keydown', onEsc); dismiss(); } }
     document.addEventListener('keydown', onEsc);
     overlay.appendChild(frame);
     overlay.appendChild(close);
+    if (isPrev) {
+      var tag = document.createElement('div');
+      tag.textContent = 'Aperçu du modèle - valeurs d’exemple';
+      tag.style.cssText = 'position:fixed;top:18px;left:20px;z-index:10000;color:#cbd5e1;font-family:inherit;font-size:13px;';
+      overlay.appendChild(tag);
+    }
     document.body.appendChild(overlay);
   });
   document.getElementById('btnPreview').addEventListener('click', function () {
@@ -1013,5 +1040,14 @@
         updateUndoButtons();
       } catch (e) { /* conserve le badge par défaut si l'instantané est invalide */ }
     }
+  })();
+
+  /* ---------- Mode APERÇU verrouillé : ouvre l'aperçu exact du badge ---------- */
+  (function () {
+    if (!(window.UKC_EDITOR || {}).preview) return;
+    requestAnimationFrame(function () {
+      var b = document.getElementById('btnPreview');
+      if (b) b.click();
+    });
   })();
 })();

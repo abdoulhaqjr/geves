@@ -4,7 +4,7 @@ use App\Models\User;
 
 // adminStaff() / openEdition() : fabriques partagées de tests/Pest.php.
 
-it('affiche un aperçu d’attestation avec des valeurs d’exemple (balises substituées)', function () {
+it('ouvre l’aperçu d’attestation sur le concepteur verrouillé (canevas exact + valeurs d’exemple)', function () {
     $staff = adminStaff();
     $edition = openEdition();
 
@@ -14,11 +14,11 @@ it('affiche un aperçu d’attestation avec des valeurs d’exemple (balises sub
 
     $res->assertOk();
     expect($res->getContent())
-        ->toContain('Awa Kodjo')   // valeur d'exemple injectée
-        ->not->toContain('{name}'); // la balise brute ne doit PAS rester visible
+        ->toContain('"preview":true')  // concepteur ouvert en mode aperçu verrouillé
+        ->toContain('Awa Kodjo');      // valeurs d'exemple fournies au canevas (jetons remplis côté client)
 });
 
-it('affiche un aperçu de badge avec des valeurs d’exemple', function () {
+it('ouvre l’aperçu de badge sur le concepteur verrouillé', function () {
     $staff = adminStaff();
     $edition = openEdition();
 
@@ -27,7 +27,7 @@ it('affiche un aperçu de badge avec des valeurs d’exemple', function () {
     ]));
 
     $res->assertOk();
-    expect($res->getContent())->toContain('Awa Kodjo')->not->toContain('{name}');
+    expect($res->getContent())->toContain('"preview":true')->toContain('Awa Kodjo');
 });
 
 it('affiche un aperçu de reçu avec des valeurs d’exemple', function () {
