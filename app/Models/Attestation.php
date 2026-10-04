@@ -58,6 +58,19 @@ class Attestation extends Model
         return $this->delivered_at !== null;
     }
 
+    /**
+     * Titre de la formation que cette attestation porte (vide sinon).
+     *
+     * ⚠️ `meta` d'abord : il est **figé à l'émission**, alors que la formation
+     * peut avoir été renommée depuis. Une attestation doit dire ce qu'elle disait
+     * le jour où elle a été délivrée, pas ce que le catalogue dit aujourd'hui.
+     */
+    public function formationTitle(): string
+    {
+        return (string) ($this->meta['formation_title'] ?? '')
+            ?: (string) $this->formation?->title;
+    }
+
     /** L'attestation porte-t-elle une signature cryptographique ? */
     public function isSigned(): bool
     {

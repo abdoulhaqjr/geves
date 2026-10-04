@@ -2,7 +2,10 @@
 
 use App\Actions\IssueAttestation;
 use App\Models\DocumentTemplate;
+use App\Models\Formation;
 use App\Models\User;
+use App\Support\AttestationPolicy;
+use App\Support\EditionSettings;
 
 // openEdition() / verifiedAccount() -> AccountSubmissionTest
 
@@ -85,4 +88,90 @@ it('rend l’aperçu du badge à partir du modèle admin, avec les vraies donné
     expect($html)->not->toContain('[recipient.name]')
         ->not->toContain('[edition.name]')
         ->not->toContain('[badge.ref]');
+});
+
+/**
+ * ⚠️ La page n'affichait **qu'une** attestation de formation, sans dire laquelle :
+ * quelqu'un qui a suivi trois ateliers n'en voyait qu'un, et pouvait croire les
+ * autres perdus. L'animation y figure aussi - le formateur est, lui aussi,
+ * attestataire de cette édition.
+ */
+it('liste chaque attestation de formation et d’animation, avec son intitulé', function () {
+    $edition = openEdition();
+    $account = verifiedAccount();
+    $participant = $edition->participants()->create([
+        'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
+    ]);
+
+    $suivie = Formation::create([
+        'edition_id' => $edition->id, 'title' => 'Atelier statistiques appliquées', 'slug' => 'stats-'.$edition->id,
+    ]);
+    $animee = Formation::create([
+        'edition_id' => $edition->id, 'title' => 'Atelier rédaction scientifique', 'slug' => 'redac-'.$edition->id,
+    ]);
+
+    (new IssueAttestation)->handle($participant, 'formation', null, $suivie);
+    (new IssueAttestation)->handle($participant, 'formation_animation', null, $animee);
+
+    $this->actingAs($account, 'account')
+        ->get(route('account.documents'))
+        ->assertOk()
+        ->assertSee('Formations')
+        ->assertSee('Attestation de formation')
+        ->assertSee('Attestation d’animation de formation', false)
+        ->assertSee('Atelier statistiques appliquées')
+        ->assertSee('Atelier rédaction scientifique');
+});
+
+/**
+ * ⚠️ Les attestations de communication sont **une par communication**. Indexées
+ * par type, celle de la dernière s'affichait en face de toutes les autres : deux
+ * communications renvoyaient au même document.
+ */
+it('rattache chaque attestation de communication à SA communication', function () {
+    $edition = openEdition();
+    $account = verifiedAccount();
+    $participant = $edition->participants()->create([
+        'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
+    ]);
+
+    $faire = fn (string $ref, string $titre) => $edition->submissions()->create([
+        'participant_id' => $participant->id, 'ref_code' => $ref, 'title' => $titre,
+        'abstract' => 'Résumé.', 'track' => 'Sciences', 'type' => 'oral', 'status' => 'accepted',
+        'authors' => [['name' => 'Awa Kodjo', 'corresponding' => true]],
+    ]);
+
+    $a1 = (new IssueAttestation)->handle($participant, 'communication', $faire('26-101', 'Première communication'));
+    $a2 = (new IssueAttestation)->handle($participant, 'communication', $faire('26-102', 'Seconde communication'));
+
+    expect($a1->id)->not->toBe($a2->id);
+
+    // Chaque communication porte SON identifiant d'attestation.
+    $this->actingAs($account, 'account')->get(route('account.documents'))
+        ->assertOk()
+        ->assertSee($a1->uuid)
+        ->assertSee($a2->uuid);
+});
+
+/**
+ * ⚠️ Délivrance PHYSIQUE : l'attestation se voit et se vérifie, mais ne se
+ * télécharge pas - l'exemplaire qui fait foi est remis en main propre. Laisser le
+ * téléchargement viderait le choix de son sens.
+ */
+it('montre l’attestation sans la laisser télécharger en délivrance papier', function () {
+    $edition = openEdition();
+    EditionSettings::set($edition, 'attestations.delivery', AttestationPolicy::DELIVERY_PAPER);
+    $account = verifiedAccount();
+    $participant = $edition->participants()->create([
+        'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
+    ]);
+    (new IssueAttestation)->handle($participant, 'participation');
+
+    $this->actingAs($account, 'account')
+        ->get(route('account.documents'))
+        ->assertOk()
+        ->assertSee('Attestation de participation')
+        ->assertSee('Vérifier (spécimen)')
+        ->assertSee('À retirer au secrétariat')
+        ->assertDontSee('>Télécharger<', false);
 });

@@ -12,6 +12,7 @@ use App\Models\Edition;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Models\Submission;
+use App\Support\AttestationPolicy;
 use App\Support\CurrentColloque;
 use App\Support\EditionSettings;
 use Illuminate\Contracts\View\View;
@@ -64,10 +65,28 @@ class DocumentController extends Controller
             ->whereIn('participant_id', $edParticipantIds)
             ->where('revision_of', 0)->latest('id')->get();
 
-        // Attestations émises (une par type), pour lookup rapide.
-        $atts = Attestation::whereIn('participant_id', $edParticipantIds)
+        // Attestations émises et valides de cette édition.
+        $attestations = Attestation::whereIn('participant_id', $edParticipantIds)
             ->where('edition_id', $edition->id)->where('revoked', false)
-            ->get()->keyBy('type');
+            ->with('formation')
+            ->orderBy('id')
+            ->get();
+
+        // Types dont il n'existe qu'un exemplaire par personne (participation…).
+        $atts = $attestations->keyBy('type');
+
+        // ⚠️ Les attestations de COMMUNICATION sont une par communication : indexées
+        // par type, celle de la dernière s'affichait en face de toutes les autres,
+        // et deux communications renvoyaient au même document.
+        $attsParCommunication = $attestations->where('type', 'communication')->keyBy('submission_id');
+
+        // ⚠️ Formations et animations : une par formation suivie ou animée. La page
+        // n'en montrait qu'UNE, sans dire laquelle - quelqu'un qui a suivi trois
+        // ateliers n'en voyait qu'un seul, et pouvait croire les autres perdus.
+        $attsFormation = $attestations
+            ->whereIn('type', ['formation', 'formation_animation'])
+            ->sortBy(fn (Attestation $a) => $a->type.'-'.$a->formationTitle())
+            ->values();
 
         $hasBooklet = $edition->submissions()
             ->where('revision_of', 0)->where('status', 'accepted')->exists();
@@ -95,6 +114,11 @@ class DocumentController extends Controller
             'payment' => $payment,
             'submissions' => $submissions,
             'atts' => $atts,
+            'attsParCommunication' => $attsParCommunication,
+            'attsFormation' => $attsFormation,
+            // Délivrance physique : le participant VOIT son attestation et peut la
+            // vérifier, mais l'exemplaire qui fait foi lui est remis en main propre.
+            'papier' => AttestationPolicy::isPaper($edition),
             'hasBooklet' => $hasBooklet,
             'media' => $edition->media,
             'badgeRef' => $badgeRef,

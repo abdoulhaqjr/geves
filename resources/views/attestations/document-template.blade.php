@@ -63,9 +63,19 @@
         {{-- Le document, tel qu'il a été délivré. Les gestes se posent par-dessus
              au survol (et au clavier, via :focus-within) : la colonne de gauche
              les porte aussi, pour le tactile et l'impression. --}}
+        @if ($papier)
+            {{-- Dire POURQUOI le document porte une marque : un filigrane sans
+                 explication se lit comme un défaut du document. --}}
+            <p class="ukc-cred-note no-print">
+                {{ __('Cette édition délivre ses attestations sur papier. Le document ci-dessous est un spécimen : il porte les mêmes informations que l’original et se vérifie de la même façon, mais seul l’exemplaire remis par le secrétariat fait foi.') }}
+            </p>
+        @endif
         <section class="ukc-cred-stage">
             <div class="ukc-cred-doc" data-doc-width="{{ $width }}" style="--doc-w:{{ $width }}px">
-                <div class="ukc-cred-doc-inner">{!! $canvas !!}</div>
+                {{-- ⚠️ La marque est POSÉE PAR-DESSUS le rendu, jamais dans la mise en
+                     page : le modèle sert aussi au lot que le secrétariat imprime,
+                     et un filigrane qui y entrerait sortirait sur les originaux. --}}
+                <div class="ukc-cred-doc-inner">{!! $canvas !!}@if ($papier)<span class="ukc-cred-specimen" aria-hidden="true">{{ __('SPÉCIMEN') }}</span>@endif</div>
                 <div class="ukc-cred-overlay no-print">
                     <p class="ukc-cred-overlay-hint">{{ __('Partagez votre attestation ou vérifiez-la en un geste.') }}</p>
                     @include('attestations._actions', ['variant' => 'overlay'])
@@ -170,7 +180,9 @@
         <button type="button" class="ukc-cred-check-close" data-cred-zoom-close aria-label="{{ __('Fermer') }}">
             <x-ukc.icon name="close" :size="18" />
         </button>
-        <div class="ukc-cred-zoomview-inner" data-doc-width="{{ $width }}">{!! $canvas !!}</div>
+        {{-- ⚠️ `--doc-w` AUSSI ici : le filigrane se dimensionne dessus, et sans
+             elle il repartirait à sa taille plancher dans la vue agrandie. --}}
+        <div class="ukc-cred-zoomview-inner" data-doc-width="{{ $width }}" style="--doc-w:{{ $width }}px">{!! $canvas !!}@if ($papier)<span class="ukc-cred-specimen" aria-hidden="true">{{ __('SPÉCIMEN') }}</span>@endif</div>
     </div>
     <div class="ukc-cred-check no-print" id="credCheck" hidden role="dialog" aria-modal="true" aria-labelledby="credCheckTitle">
         <div class="ukc-cred-check-box">

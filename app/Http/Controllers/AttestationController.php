@@ -8,11 +8,13 @@ use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
 use App\Models\Attestation;
 use App\Models\DocumentTemplate;
+use App\Support\AttestationPolicy;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -50,6 +52,12 @@ class AttestationController extends Controller
         return view('attestations.document-template', [
             'attestation' => $attestation,
             'canvas' => $canvas,
+            // ⚠️ Délivrance PHYSIQUE : l'exemplaire qui fait foi est celui qu'on
+            // remet en main propre. La page montre donc un SPÉCIMEN - il dit ce que
+            // l'attestation certifie et se vérifie, mais il ne se télécharge ni ne
+            // se partage comme l'original. Sans la marque, deux documents
+            // identiques circuleraient, dont un que l'émetteur n'a jamais remis.
+            'papier' => AttestationPolicy::isPaper($attestation->edition),
             'width' => $layout['width'],
             // Même preuve que la page de vérification : les deux doivent dire la
             // même chose d'une même attestation.
@@ -85,6 +93,19 @@ class AttestationController extends Controller
     {
         $attestation = Attestation::with(['edition.colloque', 'participant'])
             ->where('uuid', $uuid)->firstOrFail();
+
+        // ⚠️ En délivrance physique, le PDF n'est pas public : l'original est
+        // imprimé et remis par le secrétariat. Le laisser se télécharger ici
+        // viderait le choix de son sens - deux exemplaires circuleraient, dont un
+        // que personne n'a remis.
+        // ⚠️ Le BACK-OFFICE garde l'accès : c'est lui qui imprime (cf. le lot
+        // d'AttestationExportController). Lui fermer la porte reviendrait à
+        // interdire la délivrance qu'on vient de choisir.
+        abort_if(
+            AttestationPolicy::isPaper($attestation->edition) && ! Auth::guard('web')->check(),
+            403,
+            'Cette attestation est délivrée sur papier : son exemplaire officiel est remis par le secrétariat.',
+        );
 
         // ⚠️ Le QR du document encode cette adresse. Il menait à une page de
         // vérification seule : on scannait une attestation pour atterrir sur un

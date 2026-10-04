@@ -86,6 +86,15 @@
                 {!! __('Une personne peut disposer d’<strong>une ou plusieurs attestations</strong> selon le nombre de communications. Le <strong>badge physique</strong> est imprimé par l’organisation (non téléchargeable ici).') !!}
             </p>
 
+            {{-- ⚠️ Dit UNE FOIS, en tête, pourquoi aucune attestation ne se télécharge
+                 sur cette page : sans cela, le participant croit à une panne et écrit
+                 au secrétariat. --}}
+            @if ($papier)
+                <div class="ukc-note" style="margin-bottom:14px;padding:12px 14px;border:1px solid #f3d7a0;background:#fffaf0;border-radius:12px;font-size:13px;line-height:1.55;color:#7a5a12;">
+                    {{ __('Cette édition délivre ses attestations sur papier : votre exemplaire officiel vous est remis par le secrétariat. Vous pouvez consulter et vérifier chacune d’elles ici — le document affiché en est un spécimen.') }}
+                </div>
+            @endif
+
             @if ($submissions->isNotEmpty())
                 <div class="ukc-doc-section">{{ __('Par communication') }}</div>
                 @foreach ($submissions as $i => $s)
@@ -105,15 +114,38 @@
                                 'att' => $atts['acceptation'] ?? null,
                                 'status' => $s->status === 'accepted' ? __('Bientôt') : __('En attente'),
                             ])
+                            {{-- ⚠️ Indexée par COMMUNICATION : par type, c'est celle de la
+                                 dernière qui s'affichait en face de toutes les autres, et
+                                 deux communications renvoyaient au même document. --}}
                             @include('account._doc-row', [
                                 'name' => __('Attestation de communication'),
-                                'sub' => __('Après présentation · QR DIDs'),
-                                'att' => $atts['communication'] ?? null,
-                                'status' => __('Après le colloque'),
+                                'sub' => __('Après validation du passage · QR DIDs'),
+                                'att' => $attsParCommunication[$s->id] ?? null,
+                                'status' => __('Après le passage'),
                             ])
                         </ul>
                     </div>
                 @endforeach
+            @endif
+
+            {{-- ⚠️ Une section à part, et une ligne PAR formation : la page n'en
+                 montrait qu'une seule, sans dire laquelle. Quelqu'un qui a suivi trois
+                 ateliers n'en voyait qu'un, et pouvait croire les autres perdus.
+                 L'animation d'une formation y figure aussi : le formateur est, lui
+                 aussi, attestataire de cette édition. --}}
+            @if ($attsFormation->isNotEmpty())
+                <div class="ukc-doc-section">{{ __('Formations') }}</div>
+                <ul class="ukc-doc-list">
+                    @foreach ($attsFormation as $a)
+                        @include('account._doc-row', [
+                            'name' => $a->type === 'formation_animation'
+                                ? __('Attestation d’animation de formation')
+                                : __('Attestation de formation'),
+                            'sub' => $a->formationTitle() ?: __('Atelier en marge du colloque'),
+                            'att' => $a,
+                        ])
+                    @endforeach
+                </ul>
             @endif
 
             <div class="ukc-doc-section">{{ __('Commun au participant') }}</div>
@@ -124,12 +156,7 @@
                     'att' => $atts['participation'] ?? null,
                     'status' => __('Après le colloque'),
                 ])
-                @include('account._doc-row', [
-                    'name' => __('Attestation de formation'),
-                    'sub' => __('Ateliers en marge (si inscrit) · une par formation suivie'),
-                    'att' => $atts['formation'] ?? null,
-                    'status' => __('Si éligible'),
-                ])
+
                 @include('account._doc-row', [
                     'name' => __('Reçu de paiement'),
                     'sub' => $paid ? __('Frais d’inscription réglés') : __('Après règlement des frais d’inscription'),

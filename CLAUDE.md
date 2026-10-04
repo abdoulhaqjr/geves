@@ -1874,6 +1874,35 @@ table `session_attendances`, modèle `SessionAttendance`). Entrées depuis
   on classe tout (priorité auteur correspondant) ; en séance, on compte le **déjà
   émis**, parce qu'on ne voit pas les passages à venir et que ce qui est parti est
   parti. **Premier passé, premier servi.**
+- **Côté bénéficiaire, le papier donne un SPÉCIMEN** : l'attestation se **voit**
+  et se **vérifie** dans son espace, mais ne se télécharge ni ne se partage -
+  l'exemplaire qui fait foi est celui qu'on lui remet. Sans cette coupure, deux
+  documents identiques circuleraient, dont un que l'émetteur n'a jamais délivré.
+  - ⚠️ **`/attestation/{uuid}/pdf` est fermé au public** en mode papier, sinon la
+    restriction serait cosmétique. Le **back-office garde l'accès** : c'est lui
+    qui imprime (cf. le lot).
+  - ⚠️ **Le filigrane se pose PAR-DESSUS le rendu**, jamais dans la mise en page :
+    le même modèle sert au lot que le secrétariat imprime, et une marque qui y
+    entrerait sortirait sur les **originaux**.
+  - ⚠️ **Mesuré au harnais** : `font-size: clamp(42px, 13%, 150px)` se calcule sur
+    la police **héritée**, pas sur la largeur - le filigrane restait figé à 42px
+    sur un document de 1000px. Il se dimensionne désormais sur `--doc-w`, que la
+    vue porte déjà (et qu'il a fallu poser **aussi** sur la vue agrandie).
+  - ⚠️ Le sens n'est **pas porté par le filigrane seul** (il est `aria-hidden`,
+    et volontairement pâle pour ne pas masquer le texte) : un encadré l'explique,
+    et la ligne de « Mes documents » dit si l'exemplaire a été remis ou reste à
+    retirer.
+- **« Mes documents » montre TOUTES les attestations de l'édition** : une par
+  communication (`keyBy('submission_id')`) et une par formation suivie **ou
+  animée**, avec son intitulé.
+  - ⚠️ **Défauts gelés par des cas** : indexées par *type*, l'attestation de la
+    dernière communication s'affichait en face de **toutes** les autres (deux
+    communications, un seul document) ; et la page ne montrait qu'**une** ligne
+    « Attestation de formation », sans dire laquelle - qui avait suivi trois
+    ateliers pouvait croire les deux autres perdues.
+  - ⚠️ Le titre de la formation vient de **`meta`** (`Attestation::formationTitle()`),
+    figé à l'émission : une attestation doit dire ce qu'elle disait le jour où
+    elle a été délivrée, pas ce que le catalogue dit aujourd'hui.
 - **Sortie PAPIER** (`AttestationExportController`) : le mode physique existait
   sans le geste qui le rend tenable - il fallait ouvrir les attestations **une par
   une** à leur adresse. Trois sorties, et une trace :

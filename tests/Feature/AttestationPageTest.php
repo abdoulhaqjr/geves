@@ -4,6 +4,7 @@ use App\Actions\IssueAttestation;
 use App\Documents\AttestationVars;
 use App\Models\Attestation;
 use App\Models\DocumentTemplate;
+use App\Support\AttestationPolicy;
 use App\Support\EditionSettings;
 
 /**
@@ -129,4 +130,59 @@ it('fait pointer le QR du document vers la page de l’attestation', function ()
     $vars = AttestationVars::for($att->fresh(), route('attestation.document', $att->uuid));
 
     expect($vars['verify_url'])->toBe(route('attestation.document', $att->uuid));
+});
+
+// adminStaff() -> AdminSubmissionWorkflowTest
+
+/** Une attestation de participation, sur une édition neuve. */
+function attestationPublique(): Attestation
+{
+    $edition = openEdition();
+    $p = $edition->participants()->create([
+        'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa-pub@example.tg', 'role' => 'author',
+    ]);
+
+    return (new IssueAttestation)->handle($p, 'participation');
+}
+
+/**
+ * ⚠️ En délivrance physique, la page publique montre un **spécimen** : mêmes
+ * informations, même vérification, mais ni téléchargement ni partage. Sans la
+ * marque, deux documents identiques circuleraient, dont un que l'émetteur n'a
+ * jamais remis.
+ */
+it('marque le document SPÉCIMEN et retire les gestes en délivrance papier', function () {
+    $attestation = attestationPublique();
+    EditionSettings::set(
+        $attestation->edition,
+        'attestations.delivery',
+        AttestationPolicy::DELIVERY_PAPER,
+    );
+
+    $this->get(route('attestation.document', $attestation->uuid))
+        ->assertOk()
+        ->assertSee('SPÉCIMEN')
+        ->assertSee('Vérifier l’attestation', false)
+        ->assertSee('secrétariat')
+        ->assertDontSee('Partager l’attestation', false)
+        ->assertDontSee('Télécharger (PDF)');
+
+    // ⚠️ Et le PDF n'est pas une porte dérobée : il est fermé au public.
+    $this->get(route('attestation.pdf', $attestation->uuid))->assertForbidden();
+
+    // ⚠️ Mais le back-office garde l'accès : c'est lui qui imprime les originaux.
+    $this->actingAs(adminStaff(), 'web')
+        ->get(route('attestation.pdf', $attestation->uuid))
+        ->assertOk();
+});
+
+/** En délivrance en ligne, rien ne change : partage et téléchargement restent. */
+it('garde partage et téléchargement en délivrance en ligne', function () {
+    $attestation = attestationPublique();
+
+    $this->get(route('attestation.document', $attestation->uuid))
+        ->assertOk()
+        ->assertSee('Partager l’attestation', false)
+        ->assertSee('Télécharger (PDF)')
+        ->assertDontSee('SPÉCIMEN');
 });

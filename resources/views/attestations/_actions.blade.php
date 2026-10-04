@@ -1,6 +1,27 @@
 {{-- Gestes d'une attestation, rendus à deux endroits : en surimpression du
      document (au survol) et dans la colonne de gauche. Un seul fichier, pour
-     que les deux ne divergent pas. --}}
+     que les deux ne divergent pas.
+
+     ⚠️ En délivrance PHYSIQUE, il ne reste que la vérification : l'exemplaire qui
+     fait foi est remis en main propre, et ce qui est à l'écran n'en est que le
+     spécimen. Partager ou télécharger un spécimen reviendrait à faire circuler un
+     second document que l'émetteur n'a jamais délivré. --}}
+@if ($papier ?? false)
+    @if ($variant === 'overlay')
+        <button type="button" class="ukc-btn ukc-btn--green ukc-cred-action" data-cred-verify
+                data-url="{{ route('attestation.verify.json', $attestation->uuid) }}">
+            <x-ukc.icon name="check-circle" :size="16" /> {{ __('Vérifier l’attestation') }}
+        </button>
+    @endif
+    <p class="ukc-cred-help">
+        {{ __('Attestation délivrée sur papier.') }}
+        @if ($attestation->delivered_at)
+            {{ __('Remise le') }} {{ $attestation->delivered_at->format('d/m/Y') }}.
+        @else
+            {{ __('L’exemplaire officiel est à retirer auprès du secrétariat.') }}
+        @endif
+    </p>
+@else
 <button type="button" class="ukc-btn ukc-btn--blue ukc-cred-action" data-cred-share data-url="{{ $pageUrl }}"
         data-title="{{ $attestation->typeLabel() }} - {{ $attestation->recipient_name }}">
     <x-ukc.icon name="share" :size="16" /> {{ __('Partager l’attestation') }}
@@ -27,4 +48,5 @@
             data-url="{{ route('attestation.verify.json', $attestation->uuid) }}">
         <x-ukc.icon name="check-circle" :size="16" /> {{ __('Vérifier l’attestation') }}
     </button>
+@endif
 @endif
