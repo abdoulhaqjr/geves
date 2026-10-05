@@ -53,8 +53,8 @@ class DocumentHubController extends Controller
         $typeMeta = [
             'communication' => ['title' => 'Attestation de communication', 'sub' => 'Orale / poster', 'scope' => 'Par communication'],
             'participation' => ['title' => 'Attestation de participation', 'sub' => 'Une par participant', 'scope' => 'Participant'],
-            'moderation' => ['title' => 'Attestation de modération', 'sub' => 'Modérateurs de séance', 'scope' => 'Une par personne'],
-            'rapporteur' => ['title' => 'Attestation de rapporteur', 'sub' => 'Rapporteurs de séance', 'scope' => 'Une par personne'],
+            'moderation' => ['title' => 'Attestation de modération', 'sub' => 'Modérateurs de séance', 'scope' => 'Une par modérateur'],
+            'rapporteur' => ['title' => 'Attestation de rapporteur', 'sub' => 'Rapporteurs de séance', 'scope' => 'Une par rapporteur'],
             // Module Formation : les modèles se conçoivent ici, mais l'émission se
             // fait formation par formation (cf. Admin\FormationController).
             'formation' => ['title' => 'Attestation de formation', 'sub' => 'Inscrits aux formations', 'scope' => 'Par formation'],
