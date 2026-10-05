@@ -172,7 +172,7 @@
                 </div>
 
                 {{-- ===== Panneau latéral : lire / améliorer / valider un rapport ===== --}}
-                <x-ukc.slideover open="open" onClose="open=false" width="560px">
+                <x-ukc.slideover open="open" onClose="open=false" width="660px">
                     <x-slot:header><span x-text="cur.validated ? 'Rapport validé' : 'Améliorer / valider le rapport'"></span></x-slot:header>
 
                     <div style="display:flex;flex-direction:column;gap:14px;">
@@ -191,11 +191,11 @@
                             @csrf
                             <div class="ukc-field">
                                 <label>Synthèse de la séance</label>
-                                <textarea name="summary" rows="10" x-model="cur.summary"></textarea>
+                                <textarea name="summary" rows="6" x-model="cur.summary"></textarea>
                             </div>
                             <div class="ukc-field">
                                 <label>Points saillants & recommandations</label>
-                                <textarea name="highlights" rows="5" x-model="cur.highlights"></textarea>
+                                <textarea name="highlights" rows="3" x-model="cur.highlights"></textarea>
                             </div>
                             <div class="ukc-field" style="max-width:220px;">
                                 <label>Affluence estimée</label>
