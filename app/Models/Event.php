@@ -67,7 +67,7 @@ class Event extends Model
     }
 
     /**
-     * Équipe staff affectée à cette événement (fonction dans le pivot).
+     * Équipe staff affectée à cet événement (fonction dans le pivot).
      *
      * @return BelongsToMany<User, $this>
      */
@@ -135,7 +135,7 @@ class Event extends Model
         return in_array($this->status, ['open', 'closed', 'archived'], true);
     }
 
-    /** Le module Formations est-il activé pour cette événement ? (réglage du formulaire d'événement). */
+    /** Le module Formations est-il activé pour cet événement ? (réglage du formulaire d'événement). */
     public function formationEnabled(): bool
     {
         return (bool) ($this->settings['formation_enabled'] ?? false);

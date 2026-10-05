@@ -1,6 +1,6 @@
 <x-layouts.app :title="__(':app - Université de Kara', ['app' => config('app.name')])">
     @php
-        // Style de bannière d'une événement : image si disponible, sinon dégradé UK.
+        // Style de bannière d'un événement : image si disponible, sinon dégradé UK.
         $bannerStyle = function ($event) {
             $fallback = 'background:linear-gradient(120deg,#0f1a33,#1a3080 55%,#0a7a2f);';
             if ($event && $event->banner_url) {

@@ -5,7 +5,7 @@ namespace App\Support;
 use App\Models\Event;
 
 /**
- * **Comment les attestations sont délivrées** sur une événement : en ligne (envoi
+ * **Comment les attestations sont délivrées** sur un événement : en ligne (envoi
  * et téléchargement) ou sur papier (le gestionnaire imprime et remet).
  *
  * ⚠️ **Un seul endroit décide.** Trois écrans lisent ce choix - l'émission en

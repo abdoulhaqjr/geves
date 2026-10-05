@@ -7,11 +7,11 @@ use App\Meetings\Providers\LiveKitProvider;
 use App\Support\EventMeetingConfig;
 
 /**
- * Réglages de visioconférence PROPRES à une événement, sur le modèle du paiement :
+ * Réglages de visioconférence PROPRES à un événement, sur le modèle du paiement :
  * un colloque peut tenir ses salles sur son propre serveur, et choisir sa qualité
  * vidéo. Tout champ vide retombe sur la configuration de la plateforme.
  */
-/** Séance en direct de cette événement (helper local : celui de MeetingTest n'est pas partagé). */
+/** Séance en direct de cet événement (helper local : celui de MeetingTest n'est pas partagé). */
 function seanceEnDirect($event, array $attrs = [])
 {
     return $event->sessions()->create(array_merge([
@@ -29,7 +29,7 @@ function plateformeLiveKit(): void
     config()->set('meetings.quality', 'md');
 }
 
-it('ouvre les salles d’une événement sur SON serveur', function () {
+it('ouvre les salles d’un événement sur SON serveur', function () {
     plateformeLiveKit();
     $event = openEdition();
     $event->update(['settings' => array_merge($event->settings ?? [], [
@@ -48,7 +48,7 @@ it('ouvre les salles d’une événement sur SON serveur', function () {
 
 it('rend la configuration de la plateforme en sortant', function () {
     // ⚠️ C'est la raison d'être de `using()` : `apply()` n'écrase que les champs
-    // remplis, donc sans restauration les identifiants d'une événement resteraient
+    // remplis, donc sans restauration les identifiants d'un événement resteraient
     // actifs pour la suivante - et une salle s'ouvrirait sur le serveur d'un
     // autre colloque.
     plateformeLiveKit();
@@ -221,7 +221,7 @@ it('réserve ces réglages à qui peut écrire sur l’événement', function ()
 });
 
 it('donne au jeton de la salle le serveur de l’événement', function () {
-    // Bout en bout : la salle d'une séance de cette événement est signée avec la clé
+    // Bout en bout : la salle d'une séance de cet événement est signée avec la clé
     // du colloque, pas avec celle de la plateforme.
     plateformeLiveKit();
     $event = openEdition();

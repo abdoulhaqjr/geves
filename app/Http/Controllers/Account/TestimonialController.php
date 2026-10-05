@@ -56,7 +56,7 @@ class TestimonialController extends Controller
             'consent' => ['accepted'],
         ]);
 
-        // Le contexte d'événement doit être une événement de la personne (anti-forgerie).
+        // Le contexte d'événement doit être un événement de la personne (anti-forgerie).
         $editionId = null;
         if (! empty($data['event_id'])) {
             $editionId = Participant::where('user_id', $account->id)

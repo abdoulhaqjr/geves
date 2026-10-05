@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * Documents & médias d'une événement (table `media`), contrôleur + Blade : liens
+ * Documents & médias d'un événement (table `media`), contrôleur + Blade : liens
  * et ressources exposés aux participants de l'événement dans leur espace (livret,
  * documents, vidéos…).
  */

@@ -27,10 +27,10 @@
             </p>
         @endif
         @if (! $event)
-            <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);">Sélectionnez une événement pour lancer l’attribution.</p></div>
+            <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);">Sélectionnez un événement pour lancer l’attribution.</p></div>
         @elseif (empty($preview['reviewers']))
             <div class="ukc-card">
-                <p style="margin:0;color:var(--ukc-muted);">Aucun relecteur sur cette événement. Assignez d’abord un relecteur depuis une soumission,
+                <p style="margin:0;color:var(--ukc-muted);">Aucun relecteur sur cet événement. Assignez d’abord un relecteur depuis une soumission,
                     ou invitez des relecteurs, puis revenez ici.</p>
             </div>
         @else

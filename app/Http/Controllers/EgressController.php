@@ -38,7 +38,7 @@ class EgressController extends Controller
         $egress = app(LiveKitEgress::class);
 
         try {
-            // ⚠️ Sous les réglages de l'ÉDITION : une événement qui tient ses salles sur
+            // ⚠️ Sous les réglages de l'ÉDITION : un événement qui tient ses salles sur
             // son propre serveur doit y enregistrer aussi. Sans cela, l'Egress
             // s'adresserait au serveur de la plateforme pour une salle qui n'y est pas.
             $result = EventMeetingConfig::using(

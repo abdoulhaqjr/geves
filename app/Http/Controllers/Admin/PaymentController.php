@@ -46,7 +46,7 @@ class PaymentController extends Controller
         if ($request->has('event_id')) {
             $editionId = (string) $request->query('event_id', '');
         } else {
-            // La page est gardée par edition.cap:payments → au moins une événement accessible.
+            // La page est gardée par edition.cap:payments → au moins un événement accessible.
             $default = $events->firstWhere('status', 'open') ?? $events->first();
             $editionId = $default !== null ? (string) $default->id : '';
         }

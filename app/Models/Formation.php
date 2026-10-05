@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
- * Formation proposée dans le cadre d'une événement (module activable). Une événement
+ * Formation proposée dans le cadre d'un événement (module activable). Un événement
  * peut en proposer plusieurs ; chacune a ses formateurs, ses frais (0 = gratuite),
  * son lieu/salle, ses dates et, à terme, sa visio.
  *
@@ -44,8 +44,8 @@ class Formation extends Model implements Meetable
     }
 
     /**
-     * Formations publiées d'une événement donnée. Une formation appartient toujours
-     * à une événement (= l'événement) : l'espace participant se scope sur l'événement
+     * Formations publiées d'un événement donné. Une formation appartient toujours
+     * à un événement (= l'événement) : l'espace participant se scope sur l'événement
      * sélectionnée globalement, jamais sur « toutes les événements ».
      *
      * @param  Builder<Formation>  $query

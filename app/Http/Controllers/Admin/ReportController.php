@@ -19,7 +19,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Rapports d'une événement (contrôleur + Blade) : synthèse chiffrée + graphiques
+ * Rapports d'un événement (contrôleur + Blade) : synthèse chiffrée + graphiques
  * à l'écran, exports Excel/PDF, et « Export personnalisé » assisté par IA
  * (brief + exemple optionnel → brouillon, décision humaine). L'événement est
  * choisie via query string ; les graphiques se réinitialisent au rechargement.
@@ -323,7 +323,7 @@ class ReportController extends Controller
 
     /**
      * Données des 4 graphiques (statuts, soumissions/mois, paiements cumulés,
-     * axes) pour l'événement donnée - mêmes clés/canvas que le tableau de bord.
+     * axes) pour l'événement donné - mêmes clés/canvas que le tableau de bord.
      *
      * @return array<string, mixed>
      */

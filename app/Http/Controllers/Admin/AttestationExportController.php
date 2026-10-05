@@ -48,7 +48,7 @@ class AttestationExportController extends Controller
         $event = Event::find($request->query('event_id'));
 
         if (! $event) {
-            return back()->with('ukc_error', 'Sélectionnez une événement.');
+            return back()->with('ukc_error', 'Sélectionnez un événement.');
         }
 
         // ⚠️ Un seul type par fichier : la taille de page vient de la mise en page
@@ -104,7 +104,7 @@ class AttestationExportController extends Controller
         $event = Event::find($request->query('event_id'));
 
         if (! $event) {
-            return back()->with('ukc_error', 'Sélectionnez une événement.');
+            return back()->with('ukc_error', 'Sélectionnez un événement.');
         }
 
         $attestations = AttestationQuery::filtered($request, $event)

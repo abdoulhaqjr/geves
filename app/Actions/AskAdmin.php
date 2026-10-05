@@ -18,7 +18,7 @@ use Illuminate\Support\Str;
 /**
  * Copilote d'administration : répond aux questions du staff (synthèses,
  * brouillons, vérifications) à partir de l'agent « admin » (cf. {@see AiAgents})
- * et des chiffres réels de l'événement active. Il peut aussi PROPOSER une action
+ * et des chiffres réels de l'événement actif. Il peut aussi PROPOSER une action
  * concrète (parmi {@see CopilotActions}) que l'utilisateur autorise explicitement
  * avant qu'elle ne soit exécutée côté serveur - jamais d'exécution d'office.
  *
@@ -148,7 +148,7 @@ class AskAdmin
         $agent = AiAgents::find('admin') ?? AiAgents::defaults()[1];
         $role = $this->role($staff, $event);
 
-        $context = 'Aucune événement active.';
+        $context = 'Aucun événement actif.';
         $knowledge = '';
         if ($event) {
             $report = new EventReport($event);

@@ -265,7 +265,7 @@
 
     {{-- ===== Panneau d'évaluation (en place, sans changer de page) ===== --}}
     <x-ukc.slideover open="open" onClose="open = false" width="560px">
-        <x-slot:header><span x-text="cur.frozen ? '{{ __('Évaluation rendue (événement archivée)') }}' : (cur.completed ? '{{ __('Revoir mon évaluation') }}' : '{{ __('Évaluer la communication') }}')"></span></x-slot:header>
+        <x-slot:header><span x-text="cur.frozen ? '{{ __('Évaluation rendue (événement archivé)') }}' : (cur.completed ? '{{ __('Revoir mon évaluation') }}' : '{{ __('Évaluer la communication') }}')"></span></x-slot:header>
 
         {{-- Communication (en aveugle : pas d'auteurs) --}}
         <div style="margin-bottom:16px;">

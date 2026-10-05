@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Atelier : regroupe un ou plusieurs axes thématiques d'une événement et contient
+ * Atelier : regroupe un ou plusieurs axes thématiques d'un événement et contient
  * une ou plusieurs sessions.
  *
  * @property array<int, string>|null $tracks

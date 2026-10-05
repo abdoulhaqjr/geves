@@ -50,7 +50,7 @@ it('liste les événements de la plus récente à la plus ancienne (par année)'
         ->assertSeeInOrder(['E 2026', 'E 2025', 'E 2024']);
 });
 
-it('exporte une événement donnée en JSON', function () {
+it('exporte un événement donné en JSON', function () {
     $user = staffWithPermission();
     $series = EventSeries::create(['name' => 'UK', 'slug' => 'uk']);
     $event = $series->events()->create(['title' => 'UK 2026', 'status' => 'open', 'slug' => 'uk-2026', 'year' => 2026, 'settings' => ['tracks' => ['A']]]);
@@ -85,7 +85,7 @@ it('importe une configuration dans l’événement courante (identité conservé
     expect($event->slug)->toBe('uk-2026');
 });
 
-it('crée une événement avec un nouveau colloque via le formulaire', function () {
+it('crée un événement avec un nouveau colloque via le formulaire', function () {
     $user = staffWithPermission();
 
     $response = $this->actingAs($user, 'web')->post(route('admin.evenements.store'), [
@@ -124,7 +124,7 @@ it('affiche un toast de confirmation après enregistrement (reste sur la fiche)'
         ->assertSee("tab: 'programme'", false); // onglet actif restauré
 });
 
-it('modifie une événement existante', function () {
+it('modifie un événement existant', function () {
     $user = staffWithPermission();
     $series = EventSeries::create(['name' => 'C', 'slug' => 'c']);
     $event = $series->events()->create(['title' => 'Ancien titre', 'status' => 'draft', 'slug' => 'ancien']);
@@ -216,7 +216,7 @@ it('préserve submission_form et enregistre hero/contact au save', function () {
     expect($settings['hero_image'])->toBe('https://example.tg/banniere.jpg');
 });
 
-it('affiche la page publique d’une événement publiée', function () {
+it('affiche la page publique d’un événement publié', function () {
     $series = EventSeries::create(['name' => 'EventSeries UK', 'slug' => 'uk']);
     $series->events()->create([
         'title' => 'UK 2026', 'status' => 'open', 'slug' => 'uk-2026',
@@ -229,7 +229,7 @@ it('affiche la page publique d’une événement publiée', function () {
         ->assertSee('Ateliers disciplinaires');
 });
 
-it('renvoie 404 pour une événement en brouillon', function () {
+it('renvoie 404 pour un événement en brouillon', function () {
     $series = EventSeries::create(['name' => 'EventSeries UK', 'slug' => 'uk']);
     $series->events()->create(['title' => 'Brouillon', 'status' => 'draft', 'slug' => 'brouillon']);
 
@@ -266,8 +266,8 @@ it('réunit paiement et visio dans Intégrations, et les traductions dans Appare
     $reponse->assertDontSee('tab=translations', false);
 
     // Mais leur contenu est toujours là, sur les onglets qui les ont repris.
-    $reponse->assertSee('Passerelle de paiement de cette événement');
-    $reponse->assertSee('Visioconférence de cette événement');
+    $reponse->assertSee('Passerelle de paiement de cet événement');
+    $reponse->assertSee('Visioconférence de cet événement');
     $reponse->assertSee('Traductions du contenu');
 });
 

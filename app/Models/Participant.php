@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * Participant : présence d'une personne sur une événement (auteur, auditeur,
+ * Participant : présence d'une personne sur un événement (auteur, auditeur,
  * relecteur, membre de comité, co-auteur…). Reliée au compte global quand
  * connue.
  *

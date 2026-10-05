@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 /**
- * Participants d'une événement (Blade, fidèle au mockup) : rôle, paiement, invitation.
+ * Participants d'un événement (Blade, fidèle au mockup) : rôle, paiement, invitation.
  * Filtres par query string ; invitations (individuelle ou groupée aux payés non
  * invités) en POST. L'aperçu « Sa page » est une vue en lecture seule.
  */

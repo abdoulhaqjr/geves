@@ -7,7 +7,7 @@
 
     <div class="admin-page">
         <p style="color:var(--ukc-muted);font-size:13.5px;margin:0 0 16px;">
-            Choisissez les entêtes et les colonnes des <strong>fiches de session</strong> et des <strong>procès-verbaux</strong>, et renommez-les au besoin. Ces réglages s'appliquent à cette événement.
+            Choisissez les entêtes et les colonnes des <strong>fiches de session</strong> et des <strong>procès-verbaux</strong>, et renommez-les au besoin. Ces réglages s'appliquent à cet événement.
         </p>
 
         <form method="POST" action="{{ route('admin.documents.session-layout.save', $event) }}">

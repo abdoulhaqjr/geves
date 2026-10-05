@@ -105,7 +105,7 @@ class PaymentController extends Controller
                 return response('OK', 200);
             }
 
-            // Étanchéité : le marchand d'une événement ne peut confirmer que SES
+            // Étanchéité : le marchand d'un événement ne peut confirmer que SES
             // paiements (la config globale, elle, couvre toutes les événements).
             if ($candidate && $payment->event_id !== $candidate->id) {
                 Log::channel('payments')->warning('Webhook paiement : événement signataire ≠ événement du paiement (ignoré).', [

@@ -16,7 +16,7 @@
         </div>
 
         @if ($event_id === '' || ! $event)
-            <div class="ukc-empty"><h3>Choisissez une événement</h3><p>Sélectionnez une événement pour gérer ses annonces.</p></div>
+            <div class="ukc-empty"><h3>Choisissez un événement</h3><p>Sélectionnez un événement pour gérer ses annonces.</p></div>
         @else
             <div class="ukc-grid-2" style="align-items:start;gap:18px;">
                 {{-- Nouvelle annonce --}}

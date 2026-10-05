@@ -541,7 +541,7 @@
                 {{-- Historique des exports IA --}}
                 <div class="ukc-card">
                     <h2>Historique des exports IA</h2>
-                    <p class="desc">Dernières générations pour cette événement (stockées côté serveur).</p>
+                    <p class="desc">Dernières générations pour cet événement (stockées côté serveur).</p>
                     @forelse ($aiHistory as $h)
                         <div class="ai-history-item">
                             <div>
@@ -559,7 +559,7 @@
             </div>
             @endif
         @else
-            <div class="ukc-empty"><h3>Aucune événement</h3><p>Sélectionnez une événement pour générer ses rapports.</p></div>
+            <div class="ukc-empty"><h3>Aucun événement</h3><p>Sélectionnez un événement pour générer ses rapports.</p></div>
         @endif
     </div>
 </x-layouts.admin>

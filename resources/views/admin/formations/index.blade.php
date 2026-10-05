@@ -16,7 +16,7 @@
         </div>
 
         @if ($event_id === '' || ! $event)
-            <div class="ukc-empty"><h3>Choisissez une événement</h3><p>Sélectionnez une événement pour gérer ses formations.</p></div>
+            <div class="ukc-empty"><h3>Choisissez un événement</h3><p>Sélectionnez un événement pour gérer ses formations.</p></div>
         @elseif (! $moduleEnabled)
             <div class="ukc-empty">
                 <h3>Module Formations désactivé</h3>

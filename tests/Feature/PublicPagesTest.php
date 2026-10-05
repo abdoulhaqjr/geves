@@ -33,14 +33,14 @@ it('n’affiche pas la galerie sur l’accueil sans média passé', function () 
 });
 
 it('affiche la liste des archives', function () {
-    openEdition(); // événement publiée mais non passée → liste vide, page OK
+    openEdition(); // événement publié mais non passé → liste vide, page OK
 
     $this->get(route('public.archives'))
         ->assertOk()
         ->assertSee('Colloques passés');
 });
 
-it('liste une événement passée dans les archives', function () {
+it('liste un événement passé dans les archives', function () {
     $event = openEdition();
     $event->update(['status' => 'archived', 'date_start' => '2024-03-18', 'date_end' => '2024-03-20', 'location' => 'Kara']);
 
@@ -50,7 +50,7 @@ it('liste une événement passée dans les archives', function () {
         ->assertSee('Kara');
 });
 
-it('affiche le détail d’une événement avec sa galerie', function () {
+it('affiche le détail d’un événement avec sa galerie', function () {
     $event = openEdition();
     $event->media()->create(['type' => 'photo', 'url' => 'https://example.test/p1.jpg', 'title' => 'Plénière', 'ordre' => 1]);
 
@@ -139,11 +139,11 @@ it('garde la saisie sur le formulaire quand le code est inconnu', function () {
         ->assertSee('11111111-2222-3333-4444-555555555555');
 });
 
-it('renvoie 404 pour une événement inconnue', function () {
+it('renvoie 404 pour un événement inconnu', function () {
     $this->get(route('public.archive', 'edition-inexistante'))->assertNotFound();
 });
 
-it('n’expose pas une événement en brouillon', function () {
+it('n’expose pas un événement en brouillon', function () {
     $event = openEdition();
     $event->update(['status' => 'draft']);
 

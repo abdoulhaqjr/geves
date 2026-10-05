@@ -56,11 +56,11 @@ it('n’autorise qu’un seul témoignage en attente à la fois', function () {
 it('ignore un contexte d’événement auquel la personne n’a pas participé', function () {
     $account = verifiedAccount();
     $event = openEdition();
-    // Le compte n'a AUCUN participant sur cette événement.
+    // Le compte n'a AUCUN participant sur cet événement.
 
     $this->actingAs($account, 'account')
         ->post(route('account.testimonials.store'), [
-            'quote' => 'Témoignage avec une événement qui n’est pas la mienne.',
+            'quote' => 'Témoignage avec un événement qui n’est pas la mienne.',
             'event_id' => $event->id,
             'consent' => '1',
         ])->assertRedirect();

@@ -32,7 +32,7 @@ it('normalise une grille personnalisée et retombe sur le défaut si vide', func
     expect(ReviewGrid::normalize(null))->toBe(ReviewGrid::DEFAULTS);
 });
 
-it('lit la grille personnalisée d’une événement', function () {
+it('lit la grille personnalisée d’un événement', function () {
     $event = openEdition();
     $event->update(['settings' => array_merge($event->settings ?? [], [
         'review_criteria' => [['key' => 'x', 'label' => 'Critère X']],

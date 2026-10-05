@@ -277,7 +277,7 @@
                                 <span class="desc">{{ $a['text'] ?? '' }}</span>
                             </div>
                         @empty
-                            <p style="color:var(--ukc-muted);margin:0;">{{ __('Aucune annonce publiée pour cette événement.') }}</p>
+                            <p style="color:var(--ukc-muted);margin:0;">{{ __('Aucune annonce publiée pour cet événement.') }}</p>
                         @endforelse
                     </div>
                 </div>

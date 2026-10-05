@@ -16,7 +16,7 @@ use Illuminate\View\View;
 /**
  * Réclamations & incidents (back-office). Traitement par l'admin, les
  * gestionnaires ou toute personne à qui la capacité `claims` a été déléguée sur
- * une événement. À la demande, l'IA propose une analyse de traitement.
+ * un événement. À la demande, l'IA propose une analyse de traitement.
  */
 class ClaimController extends Controller
 {

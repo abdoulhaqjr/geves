@@ -50,7 +50,7 @@ class EmailTemplates
             'label' => 'Soumission - refusée',
             'subject' => 'Décision concernant votre communication',
             'heading' => 'Communication non retenue',
-            'intro' => 'Après examen, votre communication n’a pas été retenue pour cette événement.',
+            'intro' => 'Après examen, votre communication n’a pas été retenue pour cet événement.',
         ],
         'participant_invitation' => [
             'label' => 'Invitation participant',

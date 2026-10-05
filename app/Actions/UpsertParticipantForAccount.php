@@ -7,7 +7,7 @@ use App\Models\Participant;
 use App\Models\User;
 
 /**
- * Crée ou retrouve le participant d'un compte sur une événement donnée.
+ * Crée ou retrouve le participant d'un compte sur un événement donné.
  *
  * Règles (alignées sur le plugin WordPress) :
  * - **Identité imposée par le compte** : nom/prénom proviennent du compte
@@ -25,7 +25,7 @@ class UpsertParticipantForAccount
      * @param  string|null  $grade  grade POUR CETTE ÉDITION (repli : grade du compte).
      *                              Permet à une même personne d'avoir des grades
      *                              différents au fil des colloques.
-     * @param  string|null  $affiliation  affiliation pour cette événement (repli : compte).
+     * @param  string|null  $affiliation  affiliation pour cet événement (repli : compte).
      */
     public function handle(Event $event, User $account, string $role = 'author', ?string $grade = null, ?string $affiliation = null): Participant
     {

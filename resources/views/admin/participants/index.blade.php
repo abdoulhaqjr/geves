@@ -119,7 +119,7 @@
                     @if ($participants->hasPages())<div>{{ $participants->links() }}</div>@endif
                 </div>
             @else
-                <div class="ukc-empty"><h3>Aucun participant</h3><p>Sélectionnez une événement ou ajustez les filtres.</p></div>
+                <div class="ukc-empty"><h3>Aucun participant</h3><p>Sélectionnez un événement ou ajustez les filtres.</p></div>
             @endif
         </div>
     </div>

@@ -29,7 +29,7 @@
         </div>
 
         @if ($events->isEmpty())
-            <div class="ukc-empty"><h3>Aucune événement accessible</h3><p>Vous n'êtes rattaché à aucune événement pour le moment.</p></div>
+            <div class="ukc-empty"><h3>Aucun événement accessible</h3><p>Vous n'êtes rattaché à aucun événement pour le moment.</p></div>
         @else
             {{-- ===== Rapports à valider ===== --}}
             <div class="ukc-card" style="padding:0;margin-bottom:18px;">
@@ -112,7 +112,7 @@
         {{-- ===== Secrétariat assisté ===== --}}
         <div x-show="tab==='assist'" x-cloak>
             @if ($docEditions->isEmpty())
-                <div class="ukc-empty"><h3>Aucune événement</h3><p>Vous n'avez accès aux documents d'aucune événement.</p></div>
+                <div class="ukc-empty"><h3>Aucun événement</h3><p>Vous n'avez accès aux documents d'aucun événement.</p></div>
             @else
                 {{-- Bloc rafraîchi après génération : le document produit et
                      l'historique changent d'un coup. --}}

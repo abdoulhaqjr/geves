@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Formations d'une événement : module activable, plusieurs formations par événement
+ * Formations d'un événement : module activable, plusieurs formations par événement
  * (titre/thème, objectif, lieu/salle, frais — 0 = gratuite, dates), avec visio
  * optionnelle (couche App\Meetings, comme les sessions du programme).
  */

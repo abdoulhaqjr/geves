@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
- * Images d'habillage d'une événement : **bandeau (hero)** et **bannière officielle**.
+ * Images d'habillage d'un événement : **bandeau (hero)** et **bannière officielle**.
  *
  * Les deux champs stockent une **URL**, parce qu'une partie des événements pointe
  * vers une image hébergée ailleurs (affiche du colloque, visuel d'un partenaire).
@@ -15,7 +15,7 @@ use Illuminate\Support\Str;
  * téléversement l'emporte, puisqu'il est l'action la plus explicite.
  *
  * ⚠️ On ne supprime du disque que **nos** fichiers (`editions/`) : une URL
- * externe ne nous appartient pas, et l'ancien fichier d'une événement resterait
+ * externe ne nous appartient pas, et l'ancien fichier d'un événement resterait
  * servi publiquement si on l'oubliait.
  */
 class EventArtwork

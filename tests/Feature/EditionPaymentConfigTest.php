@@ -27,7 +27,7 @@ it('conserve la config globale quand l’événement n’a pas de réglage paiem
     expect(config('services.fedapay.secret'))->toBe('global_secret');
 });
 
-it('permet au staff d’enregistrer la passerelle de paiement d’une événement', function () {
+it('permet au staff d’enregistrer la passerelle de paiement d’un événement', function () {
     $event = openEdition();
 
     $this->actingAs(adminStaff(), 'web')

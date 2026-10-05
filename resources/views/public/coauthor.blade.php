@@ -122,7 +122,7 @@
                     <div>
                         <span class="ico"><x-ukc.icon name="user-plus" :size="18" /></span>
                         <strong>{{ __('Un compte, un seul dossier') }}</strong>
-                        <p>{{ __('Vos communications, votre reçu et vos attestations se retrouvent au même endroit, d’une événement à l’autre.') }}</p>
+                        <p>{{ __('Vos communications, votre reçu et vos attestations se retrouvent au même endroit, d’un événement à l’autre.') }}</p>
                     </div>
                     <div>
                         <span class="ico"><x-ukc.icon name="diploma" :size="18" /></span>

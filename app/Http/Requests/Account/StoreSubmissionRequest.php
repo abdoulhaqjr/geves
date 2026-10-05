@@ -196,9 +196,9 @@ class StoreSubmissionRequest extends FormRequest
             if (! $account->canSubmit()) {
                 $v->errors()->add('abstract', 'Votre e-mail doit être vérifié et votre profil complété (affiliation).');
             } elseif (! $event->submission_open) {
-                $v->errors()->add('abstract', 'Les soumissions sont fermées pour cette événement.');
+                $v->errors()->add('abstract', 'Les soumissions sont fermées pour cet événement.');
             } elseif (Submission::remainingFor($event, $account) <= 0) {
-                $v->errors()->add('abstract', 'Vous avez atteint le nombre maximum de communications pour cette événement.');
+                $v->errors()->add('abstract', 'Vous avez atteint le nombre maximum de communications pour cet événement.');
             }
 
             // Co-auteurs : nom + e-mail + affiliation obligatoires (pour toute ligne

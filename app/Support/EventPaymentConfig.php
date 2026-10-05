@@ -7,10 +7,10 @@ use Illuminate\Support\Facades\Config;
 
 /**
  * Surcharge, au runtime, la configuration de paiement à partir des réglages
- * PROPRES à une événement (`settings.payment`) : passerelle par défaut + identifiants
+ * PROPRES à un événement (`settings.payment`) : passerelle par défaut + identifiants
  * FedaPay / CashPay. Les champs laissés VIDES retombent sur la configuration
  * globale (réglages plateforme). À appeler avant de résoudre/utiliser une
- * passerelle pour un paiement rattaché à une événement.
+ * passerelle pour un paiement rattaché à un événement.
  */
 class EventPaymentConfig
 {
@@ -19,7 +19,7 @@ class EventPaymentConfig
 
     public const CASHPAY_KEYS = ['base_url', 'username', 'password', 'client_id', 'client_secret', 'api_key'];
 
-    /** Réglages de paiement propres à une événement, ou null. @return array<string, mixed>|null */
+    /** Réglages de paiement propres à un événement, ou null. @return array<string, mixed>|null */
     public static function settings(?Event $event): ?array
     {
         $p = $event?->settings['payment'] ?? null;

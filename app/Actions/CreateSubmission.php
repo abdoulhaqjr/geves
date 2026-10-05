@@ -94,7 +94,7 @@ class CreateSubmission
 
         // Grade/affiliation POUR CE COLLOQUE : quand le déposant est l'auteur
         // correspondant, ce qu'il a saisi ici est enregistré sur son participant de
-        // cette événement (grades différents possibles d'un colloque à l'autre).
+        // cet événement (grades différents possibles d'un colloque à l'autre).
         $editionGrade = $isSelf ? $corrGrade : null;
         $editionAffiliation = $isSelf ? $corrAffiliation : null;
 

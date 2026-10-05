@@ -4,7 +4,7 @@ use App\Models\EventSeries;
 use App\Models\EventSession;
 use App\Models\User;
 
-it('crée un colloque avec une événement et ses entités liées', function () {
+it('crée un colloque avec un événement et ses entités liées', function () {
     $series = EventSeries::create(['name' => 'EventSeries de Kara', 'slug' => 'kara']);
 
     $event = $series->events()->create([

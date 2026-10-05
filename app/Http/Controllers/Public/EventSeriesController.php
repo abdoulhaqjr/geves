@@ -9,7 +9,7 @@ use App\Support\Fees;
 use Illuminate\Contracts\View\View;
 
 /**
- * Page publique d'une événement de colloque (accessible seulement si publiée).
+ * Page publique d'un événement de colloque (accessible seulement si publiée).
  *
  * Vue statique en lecture seule rendue par contrôleur + Blade : la page ne porte
  * aucune interactivité serveur (elle est donc cacheable en HTTP). Le formulaire

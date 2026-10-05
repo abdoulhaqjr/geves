@@ -16,7 +16,7 @@ use Illuminate\View\View;
 /**
  * Copilote d'administration (chat), contrôleur + Blade + endpoints JSON. Assiste
  * le staff par des synthèses et brouillons à partir des chiffres réels de
- * l'événement active, et peut EXÉCUTER une action ({@see CopilotActions}) une fois
+ * l'événement actif, et peut EXÉCUTER une action ({@see CopilotActions}) une fois
  * celle-ci explicitement autorisée par l'utilisateur (endpoint execute, capacité
  * RBAC revérifiée). Chaque décision/exécution est journalisée. Consomme l'agent
  * « admin » via {@see AskAdmin}.

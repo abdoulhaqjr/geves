@@ -6,7 +6,7 @@
 @unless ($badgeTemplate)
     <div class="ukc-alert ukc-alert--warn" style="margin-bottom:14px;">
         <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
-        <div>Aucun modèle de badge n’est encore conçu pour cette événement : l’impression utilisera la mise en page par défaut.</div>
+        <div>Aucun modèle de badge n’est encore conçu pour cet événement : l’impression utilisera la mise en page par défaut.</div>
     </div>
 @endunless
 

@@ -111,7 +111,7 @@ class ReviewWorkspaceController extends Controller
         // encore ouvertes et non déjà confiées à ce relecteur.
         $reviewerIds = $reviewerParticipants->pluck('id');
         $biddable = Submission::whereIn('event_id', $editionIds)
-            // Une événement archivée est close : plus de candidature possible.
+            // Un événement archivé est close : plus de candidature possible.
             ->whereHas('event', fn ($q) => $q->where('status', '!=', 'archived'))
             ->where('revision_of', 0)
             ->whereIn('status', ['submitted', 'under_review'])

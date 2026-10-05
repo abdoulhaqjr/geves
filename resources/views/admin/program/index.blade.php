@@ -60,7 +60,7 @@
         </div>
 
         @if ($event_id === '')
-            <div class="ukc-empty"><h3>Choisissez une événement</h3></div>
+            <div class="ukc-empty"><h3>Choisissez un événement</h3></div>
         @else
             @include('admin.program._nav', ['current' => $tab])
 

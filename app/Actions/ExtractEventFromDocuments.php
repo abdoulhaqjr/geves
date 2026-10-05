@@ -6,7 +6,7 @@ use App\AI\AiManager;
 use Illuminate\Support\Carbon;
 
 /**
- * Paramétrage assisté par IA : extrait les métadonnées d'une événement depuis des
+ * Paramétrage assisté par IA : extrait les métadonnées d'un événement depuis des
  * documents (appel à communications, affiche…) et les normalise pour
  * pré-remplir le formulaire. N'invente rien ; seules les valeurs trouvées sont
  * renvoyées.

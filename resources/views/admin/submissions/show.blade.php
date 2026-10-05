@@ -338,7 +338,7 @@
                     @php($coiIgnoresInstitution = \App\Support\ConflictOfInterest::ignoresSameInstitution($s))
                     <p class="hint" style="margin-top:10px;font-size:12px;color:var(--ukc-light);">
                         Règles : {{ $coiIgnoresInstitution ? '' : 'même institution · ' }}co-auteur &lt; 5 ans · homonymie (lien familial possible) → vérification manuelle.
-                        {{ $coiIgnoresInstitution ? 'La règle « même institution » est ignorée pour cette événement (onglet Options).' : '' }}
+                        {{ $coiIgnoresInstitution ? 'La règle « même institution » est ignorée pour cet événement (onglet Options).' : '' }}
                     </p>
                 </div>
 

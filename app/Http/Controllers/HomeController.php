@@ -45,7 +45,7 @@ class HomeController extends Controller
                 ->distinct()->count('institution'),
         ];
 
-        // Galerie « dernier colloque » : médias de l'événement passée la plus récente.
+        // Galerie « dernier colloque » : médias de l'événement passé le plus récent.
         $gallery = Gallery::for($past->first());
 
         return view('home', [

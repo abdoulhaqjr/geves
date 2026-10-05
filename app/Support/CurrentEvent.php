@@ -10,10 +10,10 @@ use Illuminate\Support\Collection;
 
 /**
  * Contexte « colloque courant » de l'espace participant. Un compte peut participer
- * à plusieurs colloques/événements : ce helper résout l'événement active (sélection en
+ * à plusieurs colloques/événements : ce helper résout l'événement actif (sélection en
  * session, sinon défaut), liste les colloques du compte pour le sélecteur, et
  * bascule d'un colloque à l'autre. Les pages personnelles (tableau de bord,
- * soumissions, documents, paiement) se scopent sur cette événement.
+ * soumissions, documents, paiement) se scopent sur cet événement.
  */
 class CurrentEvent
 {
@@ -103,7 +103,7 @@ class CurrentEvent
     }
 
     /**
-     * Bascule le contexte vers une événement donnée. Ne fait rien (et retourne false)
+     * Bascule le contexte vers un événement donné. Ne fait rien (et retourne false)
      * si l'événement n'est pas sélectionnable (ni participation, ni appel ouvert).
      */
     public static function switchTo(User $account, int $editionId): bool

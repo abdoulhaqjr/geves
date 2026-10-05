@@ -6,7 +6,7 @@ use App\Models\Slot;
 
 // adminStaff(), seededSubmission() -> AdminSubmissionWorkflowTest ; openEdition() -> AccountSubmissionTest
 
-it('crée un atelier et des sessions pour une événement', function () {
+it('crée un atelier et des sessions pour un événement', function () {
     $staff = adminStaff();
     $event = openEdition();
 

@@ -213,7 +213,7 @@ class SubmissionController extends Controller
         }, 'soumissions-'.now()->format('Ymd-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
-    /** Export bibliographique (actes) des communications ACCEPTÉES d'une événement. */
+    /** Export bibliographique (actes) des communications ACCEPTÉES d'un événement. */
     public function bibliography(Request $request, string $format, BibliographyExporter $exporter): StreamedResponse
     {
         abort_unless(in_array($format, ['bibtex', 'ris'], true), 404);
@@ -505,7 +505,7 @@ class SubmissionController extends Controller
     }
 
     /**
-     * Attribution automatique des relecteurs (aperçu) : sélectionne une événement,
+     * Attribution automatique des relecteurs (aperçu) : sélectionne un événement,
      * règle la cible et le plafond, propose un plan (matching axe + COI + charge).
      * L'expertise des relecteurs se règle dans l'onglet « Relecteurs » de la fiche
      * d'événement.

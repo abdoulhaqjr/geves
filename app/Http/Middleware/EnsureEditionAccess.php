@@ -11,13 +11,13 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Étanchéité d'accès par événement (modèle « pur ») : un membre du staff n'agit
- * sur une événement que s'il y est affecté avec une fonction couvrant la capacité
+ * sur un événement que s'il y est affecté avec une fonction couvrant la capacité
  * demandée. L'administrateur (super-capacité `manage_colloques`) passe partout.
  *
  * Résolution de l'événement en contexte : paramètre de route {event}, sinon
  * modèle enfant lié (via event_id / relation edition), sinon `event_id` de
- * la requête. Sur une page de liste (aucune événement en contexte), l'accès est
- * accordé s'il reste au moins une événement sur laquelle l'utilisateur a la
+ * la requête. Sur une page de liste (aucun événement en contexte), l'accès est
+ * accordé s'il reste au moins un événement sur laquelle l'utilisateur a la
  * capacité ; le contrôleur restreint alors les résultats à ces événements.
  *
  * Usage : ->middleware('edition.cap:payments')
@@ -66,7 +66,7 @@ class EnsureEditionAccess
             abort(403);
         }
 
-        // Création d'un colloque (aucune événement en contexte) : réservée aux
+        // Création d'un colloque (aucun événement en contexte) : réservée aux
         // administrateurs de colloque (Phase 3).
         if ($capability === 'editions_write' && $user->canCreateColloque()) {
             return $next($request);

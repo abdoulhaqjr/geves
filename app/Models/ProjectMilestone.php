@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * Jalon du projet d'une événement : une échéance clé du cycle de vie du colloque
+ * Jalon du projet d'un événement : une échéance clé du cycle de vie du colloque
  * (ouverture de l'appel, clôture des soumissions, notifications, tenue, actes…).
  *
  * @property int $id

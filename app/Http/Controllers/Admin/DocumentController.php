@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Documents imprimables d'une événement : livret des résumés et planche de badges.
+ * Documents imprimables d'un événement : livret des résumés et planche de badges.
  * (Imprimer / Enregistrer en PDF depuis le navigateur.)
  */
 class DocumentController extends Controller
@@ -65,7 +65,7 @@ class DocumentController extends Controller
     }
 
     /**
-     * Modèle .docx personnalisé sélectionné pour cette événement, ou null (générateur
+     * Modèle .docx personnalisé sélectionné pour cet événement, ou null (générateur
      * intégré). Un modèle n'est retenu que si son fichier existe réellement.
      *
      * @return array{name?: string, path?: string}|null

@@ -137,7 +137,7 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Fonctions du staff sur une événement donnée.
+     * Fonctions du staff sur un événement donné.
      *
      * @return list<string>
      */
@@ -149,14 +149,14 @@ class User extends Authenticatable implements MustVerifyEmail
             ->pluck('pivot.role')->unique()->values()->all();
     }
 
-    /** L'utilisateur peut-il accéder à cette événement (admin global, ou affecté) ? */
+    /** L'utilisateur peut-il accéder à cet événement (admin global, ou affecté) ? */
     public function canAccessEdition(Event|int $event): bool
     {
         return $this->isColloqueSuperAdmin() || $this->rolesOnEdition($event) !== [];
     }
 
     /**
-     * Capacités effectives de l'utilisateur SUR une événement (union des matrices
+     * Capacités effectives de l'utilisateur SUR un événement (union des matrices
      * de ses fonctions ; toutes les capacités pour un super-admin).
      *
      * @return list<string>
@@ -175,7 +175,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return array_values(array_unique($caps));
     }
 
-    /** L'utilisateur a-t-il la capacité `$capability` sur cette événement ? */
+    /** L'utilisateur a-t-il la capacité `$capability` sur cet événement ? */
     public function canOnEdition(string $capability, Event|int $event): bool
     {
         return $this->isColloqueSuperAdmin()
@@ -217,7 +217,7 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * L'utilisateur a-t-il la capacité sur AU MOINS une événement (pilote la
+     * L'utilisateur a-t-il la capacité sur AU MOINS un événement (pilote la
      * visibilité des sections du menu) ? Sans capacité : au moins une affectation.
      */
     public function canAnyEdition(?string $capability = null): bool

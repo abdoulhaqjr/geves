@@ -44,7 +44,7 @@ class SessionReportController extends Controller
             'session' => $session,
             'report' => $report,
             'communications' => $session->scheduledCommunications(),
-            // ⚠️ Le rapporteur garde TOUJOURS accès à son rapport : une événement
+            // ⚠️ Le rapporteur garde TOUJOURS accès à son rapport : un événement
             // archivée le rend simplement non modifiable (branche « verrouillé »
             // de la vue, qui en affiche le contenu).
             'canWrite' => $session->hasStarted() && ! $report->isValidated() && ! EventLock::frozen($session->event),

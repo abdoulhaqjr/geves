@@ -12,7 +12,7 @@ use Illuminate\Support\Str;
 /**
  * Répond à une question de participant via l'assistante Gesco. Utilise la
  * configuration de l'agent « gesco » (persona + instructions POSITIVES /
- * NÉGATIVES, cf. {@see AiAgents}) et le contexte de l'événement active. Gesco
+ * NÉGATIVES, cf. {@see AiAgents}) et le contexte de l'événement actif. Gesco
  * informe et oriente : elle ne réalise aucune action à la place de l'utilisateur.
  *
  * @phpstan-type ChatTurn array{role: string, text: string}
@@ -87,7 +87,7 @@ class AskGesco
         // Base de connaissance factuelle (tarifs, axes, échéances, règles, FAQ…) :
         // c'est la source prioritaire pour répondre avec précision.
         $knowledge = EventKnowledge::brief($event);
-        $context = $knowledge !== '' ? $knowledge : 'Aucune événement active pour le moment.';
+        $context = $knowledge !== '' ? $knowledge : 'Aucun événement actif pour le moment.';
 
         // Derniers tours de conversation (bornés).
         $convo = collect($history)

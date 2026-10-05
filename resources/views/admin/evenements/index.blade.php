@@ -1,7 +1,7 @@
 <x-layouts.admin title="Événements" subtitle="Colloques & conférences · Université de Kara">
     <x-slot:actions>
         <a href="{{ route('admin.evenements.create') }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">
-            <x-ukc.icon name="plus" :size="16" /> Nouvelle événement
+            <x-ukc.icon name="plus" :size="16" /> Nouvel événement
         </a>
     </x-slot:actions>
 
@@ -31,7 +31,7 @@
 
         {{-- Barre d'outils : recherche + statut (GET, auto-submit) --}}
         <form method="GET" class="filter-bar" style="margin-bottom:16px;">
-            <input type="search" name="search" value="{{ $search }}" placeholder="Rechercher une événement…"
+            <input type="search" name="search" value="{{ $search }}" placeholder="Rechercher un événement…"
                    style="min-width:220px;" onkeydown="if(event.key==='Enter'){this.form.submit();}">
             <select name="status" onchange="this.form.submit()">
                 <option value="">Tous les statuts</option>
@@ -65,7 +65,7 @@
                 </div>
                 <div class="ukc-actions">
                     <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.evenements.edit', $e) }}"><x-ukc.icon name="pen" :size="14" /> Éditer</a>
-                    <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.evenements.export', $e) }}" title="Exporter cette événement (JSON)"><x-ukc.icon name="download" :size="14" /> Exporter</a>
+                    <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.evenements.export', $e) }}" title="Exporter cet événement (JSON)"><x-ukc.icon name="download" :size="14" /> Exporter</a>
                     @if ($e->status === 'open')
                         <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="{{ route('admin.submissions.index', ['event_id' => $e->id]) }}"><x-ukc.icon name="inbox" :size="14" /> Soumissions</a>
                     @else
@@ -77,7 +77,7 @@
                     @endif
                     <form method="POST" action="{{ route('admin.evenements.destroy', $e) }}"
                           data-ajax data-ajax-target="events" data-ajax-msg="Événement supprimée."
-                          data-confirm="Supprimer cette événement et tout son contenu ?">
+                          data-confirm="Supprimer cet événement et tout son contenu ?">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="ukc-btn ukc-btn--danger ukc-btn--sm" title="Supprimer"><x-ukc.icon name="trash" :size="14" /></button>
@@ -85,7 +85,7 @@
                 </div>
             </div>
         @empty
-            <div class="ukc-card"><div class="ukc-empty"><h3>Aucune événement</h3><p>Créez votre première événement de colloque.</p><a href="{{ route('admin.evenements.create') }}" class="ukc-btn ukc-btn--blue">Nouvelle événement</a></div></div>
+            <div class="ukc-card"><div class="ukc-empty"><h3>Aucun événement</h3><p>Créez votre premier événement de colloque.</p><a href="{{ route('admin.evenements.create') }}" class="ukc-btn ukc-btn--blue">Nouvel événement</a></div></div>
         @endforelse
         </div>
 

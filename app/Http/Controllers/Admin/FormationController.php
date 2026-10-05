@@ -25,7 +25,7 @@ use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 /**
- * Module Formations d'une événement (capacité `formation`). Activable par événement
+ * Module Formations d'un événement (capacité `formation`). Activable par événement
  * (`settings['formation']['enabled']`) ; plusieurs formations possibles, avec
  * formateurs, frais (0 = gratuite), lieu/salle, dates. Paiements, inscriptions,
  * page publique, e-mails, attestations et visio arrivent aux phases suivantes.

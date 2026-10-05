@@ -162,7 +162,7 @@ it('la page paiements se cale par défaut sur le colloque courant (pas toutes le
     $old->payments()->create(['participant_id' => $pOld->id, 'amount' => 15000, 'status' => 'paid', 'reference' => 'PAY-OLD-0001']);
     $new->payments()->create(['participant_id' => $pNew->id, 'amount' => 15000, 'status' => 'paid', 'reference' => 'PAY-NEW-0001']);
 
-    // Sans filtre → colloque courant (événement ouverte la plus récente) uniquement.
+    // Sans filtre → colloque courant (événement ouvert le plus récent) uniquement.
     $this->actingAs(adminStaff(), 'web')
         ->get(route('admin.payments.index'))
         ->assertOk()

@@ -7,11 +7,11 @@ use Illuminate\Support\Facades\Config;
 
 /**
  * Surcharge, au runtime, la configuration de visioconférence à partir des réglages
- * PROPRES à une événement (`settings.meetings`) : fournisseur par défaut, identifiants
+ * PROPRES à un événement (`settings.meetings`) : fournisseur par défaut, identifiants
  * LiveKit / Jitsi, et qualité vidéo. Les champs laissés VIDES retombent sur la
  * configuration globale (réglages plateforme). Même esprit - et mêmes pièges - que
  * {@see EventPaymentConfig} : à appeler AVANT de résoudre ou d'utiliser un
- * fournisseur pour une salle rattachée à une événement.
+ * fournisseur pour une salle rattachée à un événement.
  */
 class EventMeetingConfig
 {
@@ -38,7 +38,7 @@ class EventMeetingConfig
     public const QUALITY_DEFAULT = 'md';
 
     /**
-     * Réglages de visio propres à une événement, ou null.
+     * Réglages de visio propres à un événement, ou null.
      *
      * @return array<string, mixed>|null
      */
@@ -56,7 +56,7 @@ class EventMeetingConfig
     }
 
     /**
-     * Qualité vidéo retenue pour cette événement, sinon celle de la plateforme.
+     * Qualité vidéo retenue pour cet événement, sinon celle de la plateforme.
      *
      * ⚠️ Une valeur inconnue retombe sur le défaut : un réglage saisi hier et
      * retiré du code demain ne doit pas rendre la salle muette d'image.
@@ -104,7 +104,7 @@ class EventMeetingConfig
      *
      * ⚠️ Indispensable dès qu'une même requête touche plusieurs événements (une liste
      * de séances, un tableau de bord) : `apply()` n'écrase que les champs remplis,
-     * donc sans restauration les identifiants d'une événement resteraient actifs pour
+     * donc sans restauration les identifiants d'un événement resteraient actifs pour
      * la suivante - et une salle s'ouvrirait sur le serveur d'un autre colloque.
      *
      * @template T

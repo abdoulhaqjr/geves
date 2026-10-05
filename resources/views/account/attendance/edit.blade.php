@@ -74,7 +74,7 @@
                 <p style="color:var(--ukc-muted);font-size:13px;margin:0 0 12px;display:flex;align-items:center;gap:6px;">
                     <x-ukc.icon name="lock" :size="16" />
                     {{ $frozen
-                        ? __('Cette événement est archivée : la présence reste consultable mais n’est plus modifiable.')
+                        ? __('Cet événement est archivée : la présence reste consultable mais n’est plus modifiable.')
                         : __('Le rapport de séance a été validé par le secrétariat : la présence est figée avec lui.') }}
                 </p>
             @endif
@@ -133,7 +133,7 @@
                                              ferait croire à une liste d'auteurs tronquée),
                                              mais il n'y a aucune inscription à laquelle
                                              rattacher une présence. --}}
-                                        <span class="ukc-pill ukc-pill--muted" title="{{ __('Cette personne n’a pas d’inscription sur cette événement.') }}">
+                                        <span class="ukc-pill ukc-pill--muted" title="{{ __('Cette personne n’a pas d’inscription sur cet événement.') }}">
                                             {{ __('Non inscrit') }}
                                         </span>
                                     @endif

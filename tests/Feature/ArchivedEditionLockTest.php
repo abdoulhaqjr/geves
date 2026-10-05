@@ -9,7 +9,7 @@ use App\Models\User;
 use App\Support\EventLock;
 
 /**
- * Une événement **archivée** est en lecture seule pour les participants : plus de
+ * Un événement **archivée** est en lecture seule pour les participants : plus de
  * dépôt, plus de relecture, plus de rapport, plus de paiement. L'admin et les
  * gestionnaires gardent la main (back-office, RBAC par événement).
  *
@@ -49,7 +49,7 @@ it('ne gèle que les événements archivées', function () {
     expect(EventLock::frozen(null))->toBeFalse();
 });
 
-it('interdit au relecteur de rendre une évaluation sur une événement archivée', function () {
+it('interdit au relecteur de rendre une évaluation sur un événement archivé', function () {
     $submission = seededSubmission();
     $reviewer = lockedReviewer($submission);
     $review = Review::create([
@@ -64,7 +64,7 @@ it('interdit au relecteur de rendre une évaluation sur une événement archivé
     expect($review->fresh()->status)->toBe('accepted');
 });
 
-it('interdit au relecteur d’accepter ou de refuser sur une événement archivée', function () {
+it('interdit au relecteur d’accepter ou de refuser sur un événement archivé', function () {
     $submission = seededSubmission();
     $reviewer = lockedReviewer($submission);
     $review = Review::create([
@@ -79,7 +79,7 @@ it('interdit au relecteur d’accepter ou de refuser sur une événement archiv�
     expect($review->fresh()->status)->toBe('invited');
 });
 
-it('laisse le relecteur travailler sur une événement seulement clôturée', function () {
+it('laisse le relecteur travailler sur un événement seulement clôturée', function () {
     $submission = seededSubmission();
     $reviewer = lockedReviewer($submission);
     $review = Review::create([
@@ -95,7 +95,7 @@ it('laisse le relecteur travailler sur une événement seulement clôturée', fu
     expect($review->fresh()->status)->toBe('accepted');
 });
 
-it('retire l’appel à candidatures d’une événement archivée', function () {
+it('retire l’appel à candidatures d’un événement archivé', function () {
     $submission = seededSubmission('submitted');
     $reviewer = lockedReviewer($submission);
 
@@ -112,7 +112,7 @@ it('retire l’appel à candidatures d’une événement archivée', function ()
         ->assertDontSee($submission->ref_code);
 });
 
-it('refuse une candidature envoyée malgré tout sur une événement archivée', function () {
+it('refuse une candidature envoyée malgré tout sur un événement archivé', function () {
     $submission = seededSubmission('submitted');
     $reviewer = lockedReviewer($submission);
     $submission->event->update(['status' => 'archived']);
@@ -125,7 +125,7 @@ it('refuse une candidature envoyée malgré tout sur une événement archivée',
     expect(ReviewerBid::count())->toBe(0);
 });
 
-it('interdit à l’auteur de corriger sa communication sur une événement archivée', function () {
+it('interdit à l’auteur de corriger sa communication sur un événement archivé', function () {
     $submission = seededSubmission();
     $submission->event->update(['status' => 'archived']);
     $author = $submission->participant->user;
@@ -159,7 +159,7 @@ it('laisse consulter la page de paiement mais ferme le règlement', function () 
         ->assertForbidden();
 });
 
-it('laisse l’admin intervenir sur une événement archivée', function () {
+it('laisse l’admin intervenir sur un événement archivé', function () {
     $submission = seededSubmission();
     $submission->event->update(['status' => 'archived']);
 
@@ -197,7 +197,7 @@ it('laisse le relecteur consulter l’évaluation qu’il a rendue', function ()
         ->assertSee('Archivée');
 });
 
-it('laisse le rapporteur relire son rapport sur une événement archivée', function () {
+it('laisse le rapporteur relire son rapport sur un événement archivé', function () {
     $event = openEdition();
     $account = verifiedAccount();
     $session = sessionFor($event);

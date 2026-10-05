@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Média d'une événement : photo de galerie, vidéo, livret ou document.
+ * Média d'un événement : photo de galerie, vidéo, livret ou document.
  */
 class Media extends Model
 {
@@ -14,7 +14,7 @@ class Media extends Model
 
     protected $guarded = ['id'];
 
-    /** Types de média d'une événement (documents exposés aux participants). */
+    /** Types de média d'un événement (documents exposés aux participants). */
     public const TYPES = [
         'document' => 'Document',
         'livret' => 'Livret',

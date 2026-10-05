@@ -30,7 +30,7 @@ class ArchiveController extends Controller
         return view('public.archives', ['events' => $events]);
     }
 
-    /** Détail d'une événement passée. */
+    /** Détail d'un événement passé. */
     public function show(string $slug): View
     {
         $event = Event::with('series')->where('slug', $slug)->first();

@@ -219,7 +219,7 @@
                     <div class="ukc-block-head">
                         <h2>{{ __('Dates clés') }}</h2>
                         <div class="ukc-accent"><i></i><i></i><i></i></div>
-                        <p>{{ __('Retenez les échéances importantes de cette événement.') }}</p>
+                        <p>{{ __('Retenez les échéances importantes de cet événement.') }}</p>
                     </div>
                     <div class="ukc-dates-grid">
                         @foreach ($keyDates as $d)
@@ -577,7 +577,7 @@
                     <div class="ukc-block-head" style="margin-bottom:0;">
                         <h2>{{ __('Partenaires & Sponsors') }}</h2>
                         <div class="ukc-accent"><i></i><i></i><i></i></div>
-                        <p>{{ __('Ils soutiennent cette événement.') }}</p>
+                        <p>{{ __('Ils soutiennent cet événement.') }}</p>
                     </div>
                     <div class="ukc-marquee">
                         <div class="ukc-marquee-track">

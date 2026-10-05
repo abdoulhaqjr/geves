@@ -12,7 +12,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
- * Communications de TEST pour le colloque en cours (événement ouverte) : un éventail
+ * Communications de TEST pour le colloque en cours (événement ouvert) : un éventail
  * réaliste de soumissions (nouvelles, en revue, corrections, acceptées, refusées)
  * réparties sur les axes de l'événement, avec avis de relecture et paiements - pour
  * pouvoir tester le back-office (pipeline, documents, livret, badges, paiements).
@@ -41,7 +41,7 @@ class ColloqueTestSubmissionsSeeder extends Seeder
             ?? Event::latest('id')->first();
 
         if (! $event) {
-            $this->command?->warn('Aucune événement ouverte trouvée.');
+            $this->command?->warn('Aucun événement ouvert trouvée.');
 
             return;
         }

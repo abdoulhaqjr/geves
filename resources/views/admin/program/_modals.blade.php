@@ -23,7 +23,7 @@
             @forelse ($tracks as $t)
                 <label class="ukc-check"><input type="checkbox" name="atelierTracks[]" value="{{ $t }}" x-model="form.tracks"> {{ $t }}</label>
             @empty
-                <p class="ukc-hint">Aucun axe défini pour cette événement (réglés dans le formulaire d’événement).</p>
+                <p class="ukc-hint">Aucun axe défini pour cet événement (réglés dans le formulaire d’événement).</p>
             @endforelse
         </div>
         <div class="ukc-form-row" x-show="form.id" x-cloak>

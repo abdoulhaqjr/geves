@@ -14,7 +14,7 @@
         @include('admin.submissions._nav', ['current' => 'relecteurs'])
 
         @if (! $event)
-            <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);">Sélectionnez une événement pour gérer l’expertise des relecteurs.</p></div>
+            <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);">Sélectionnez un événement pour gérer l’expertise des relecteurs.</p></div>
         @else
             <div class="ukc-stats">
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="mic" :size="20" /></div><div class="lbl">Relecteurs</div><div class="val blue">{{ $reviewers->count() }}</div></div>
@@ -51,14 +51,14 @@
 
                     @if (empty($reviewerAxes))
                         <div style="padding:22px;color:var(--ukc-muted);">
-                            Aucun axe thématique défini pour cette événement. Renseignez les axes dans l’onglet
+                            Aucun axe thématique défini pour cet événement. Renseignez les axes dans l’onglet
                             <strong>Appel &amp; contenu</strong> de la
                             <a href="{{ route('admin.evenements.edit', $event) }}" style="color:var(--ukc-blue);font-weight:600;">fiche d’événement</a>,
                             puis revenez ici.
                         </div>
                     @elseif ($reviewers->isEmpty())
                         <div style="padding:22px;color:var(--ukc-muted);">
-                            Aucun relecteur sur cette événement. Assignez un relecteur depuis une soumission
+                            Aucun relecteur sur cet événement. Assignez un relecteur depuis une soumission
                             (ou depuis la page d’attribution), il apparaîtra ici.
                         </div>
                     @else

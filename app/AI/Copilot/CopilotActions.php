@@ -9,7 +9,7 @@ use App\Models\User;
 
 /**
  * Registre des actions exécutables par le copilote. Fournit la liste des actions
- * qu'un utilisateur donné peut réellement déclencher sur une événement (selon ses
+ * qu'un utilisateur donné peut réellement déclencher sur un événement (selon ses
  * capacités), pour cadrer aussi bien le prompt de l'IA que l'exécution serveur.
  */
 class CopilotActions
@@ -43,7 +43,7 @@ class CopilotActions
     }
 
     /**
-     * Actions que l'utilisateur peut exécuter sur cette événement (capacité RBAC).
+     * Actions que l'utilisateur peut exécuter sur cet événement (capacité RBAC).
      *
      * @return array<int, CopilotAction>
      */
@@ -60,7 +60,7 @@ class CopilotActions
     }
 
     /**
-     * Résout une action autorisée pour cet utilisateur sur cette événement, ou null
+     * Résout une action autorisée pour cet utilisateur sur cet événement, ou null
      * si elle n'existe pas / n'est pas permise.
      */
     public function resolveFor(User $user, ?Event $event, string $key): ?CopilotAction

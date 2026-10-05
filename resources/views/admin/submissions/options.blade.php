@@ -14,7 +14,7 @@
         @include('admin.submissions._nav', ['current' => 'options'])
 
         @if (! $event)
-            <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);">Sélectionnez une événement pour régler ses règles d’évaluation.</p></div>
+            <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);">Sélectionnez un événement pour régler ses règles d’évaluation.</p></div>
         @else
             {{-- Dépôt : limites du formulaire public. Elles étaient dans un onglet
                  de l'éditeur de formulaire ; ce sont des règles, elles rejoignent
@@ -26,7 +26,7 @@
                     <h2><span><x-ukc.icon name="list" :size="18" /> Dépôt : règles &amp; limites</span></h2>
                     <p class="desc">
                         Appliquées au <a href="{{ route('admin.evenements.form', $event) }}"
-                        style="color:var(--ukc-blue);font-weight:600;">formulaire de soumission</a> de cette événement.
+                        style="color:var(--ukc-blue);font-weight:600;">formulaire de soumission</a> de cet événement.
                     </p>
 
                     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;">
@@ -115,7 +115,7 @@
                     <h2><span><x-ukc.icon name="award" :size="18" /> Grille de notation &amp; délai</span></h2>
                     <p class="desc">
                         Critères notés de 0 à {{ $reviewScale }} par les relecteurs ; la note globale /20 en est
-                        dérivée (moyenne). Laissez la grille par défaut ou personnalisez-la pour cette événement.
+                        dérivée (moyenne). Laissez la grille par défaut ou personnalisez-la pour cet événement.
                     </p>
 
                     <div class="ukc-field" style="max-width:320px;margin-bottom:16px;">

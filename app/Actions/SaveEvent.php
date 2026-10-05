@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * Crée ou met à jour une événement depuis la fiche back-office : rattachement au
+ * Crée ou met à jour un événement depuis la fiche back-office : rattachement au
  * colloque (existant ou nouveau), composition du bloc `settings` (contenu public,
  * tarifs, apparence, options…), synchronisation des comités et slug unique, le
  * tout de façon atomique. La validation est faite en amont par

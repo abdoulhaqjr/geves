@@ -87,7 +87,7 @@ it('affiche comités, partenaires, FAQ et le compte à rebours sur la page publi
         ->assertSee('ukcCountdown', false); // compte à rebours (date future)
 });
 
-it('n’affiche pas le compte à rebours pour une événement passée', function () {
+it('n’affiche pas le compte à rebours pour un événement passé', function () {
     $series = EventSeries::create(['name' => 'EventSeries UK', 'slug' => 'uk']);
     $event = $series->events()->create([
         'title' => 'UK 2020', 'status' => 'archived', 'slug' => 'uk-2020',

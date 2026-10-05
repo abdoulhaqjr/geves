@@ -229,7 +229,7 @@ it('FedaPay : l’URL de webhook dédiée à l’événement confirme aussi le p
     expect($payment->fresh()->status)->toBe('paid');
 });
 
-it('FedaPay : le marchand d’une événement ne peut pas confirmer le paiement d’une AUTRE événement', function () {
+it('FedaPay : le marchand d’un événement ne peut pas confirmer le paiement d’une AUTRE événement', function () {
     configureFedapay();
     [$event, $account, $participant] = onlineSetup();
     fedapayForEdition($event); // événement A : « wh_edition »

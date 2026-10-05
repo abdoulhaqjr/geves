@@ -8,7 +8,7 @@ use Illuminate\Support\Collection;
 
 /**
  * Résout la liste des destinataires d'une campagne d'e-mails selon une
- * audience ciblée sur une événement. Ne retient que les participants ayant une
+ * audience ciblée sur un événement. Ne retient que les participants ayant une
  * adresse e-mail, dédoublonnés par e-mail (insensible à la casse).
  */
 class EmailAudience

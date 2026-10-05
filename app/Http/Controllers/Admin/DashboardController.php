@@ -14,7 +14,7 @@ use Illuminate\View\View;
 
 /**
  * Tableau de bord du back-office (Blade, fidèle au mockup admin-dashboard.html) :
- * bannière de l'événement active, indicateurs, pipeline des soumissions, graphiques
+ * bannière de l'événement actif, indicateurs, pipeline des soumissions, graphiques
  * (Chart.js), dernières soumissions, actions prioritaires et activité récente.
  * Données agrégées en temps réel - vue en lecture seule, sans état (donc Blade).
  */

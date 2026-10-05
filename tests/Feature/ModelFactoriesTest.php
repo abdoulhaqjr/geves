@@ -7,7 +7,7 @@ use App\Models\Payment;
 use App\Models\Submission;
 use App\Models\User;
 
-it('crée un colloque et une événement (avec colloque parent)', function () {
+it('crée un colloque et un événement (avec colloque parent)', function () {
     $event = Event::factory()->create();
 
     expect($event->exists)->toBeTrue();

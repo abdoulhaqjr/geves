@@ -6,7 +6,7 @@ use App\Enums\Concerns\HasLabels;
 use App\Models\Event;
 
 /**
- * Phase du cycle de vie d'une événement (guide §2.2), dérivée des signaux existants
+ * Phase du cycle de vie d'un événement (guide §2.2), dérivée des signaux existants
  * (publication, dates de l'événement, ouverture/clôture des soumissions).
  *
  * ⚠️ Piège métier : un simple appel à communications ouvert n'est PAS « en cours »
@@ -69,7 +69,7 @@ enum EventPhase: string
         };
     }
 
-    /** Est-ce une événement passée (archives) ? */
+    /** Est-ce un événement passé (archives) ? */
     public function isPast(): bool
     {
         return $this === self::Closed;

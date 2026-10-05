@@ -20,7 +20,7 @@ class DemoDataSeeder extends Seeder
     {
         $event = Event::where('status', 'open')->latest('id')->first() ?? Event::latest('id')->first();
         if (! $event) {
-            $this->command?->warn('Aucune événement - créez-en une d’abord.');
+            $this->command?->warn('Aucun événement - créez-en une d’abord.');
 
             return;
         }

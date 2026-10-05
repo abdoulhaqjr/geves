@@ -19,7 +19,7 @@ use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Gestion de projet d'une événement : chaque événement est pilotée comme un projet
+ * Gestion de projet d'un événement : chaque événement est pilotée comme un projet
  * (tâches façon kanban + jalons du cycle de vie). Contrôleur + Blade, briques
  * Tailwise (cards, tabs, progress, slideover, tom-select, datepicker).
  */
@@ -68,8 +68,8 @@ class ProjectController extends Controller
         $event = $this->currentEdition($request);
         if (! $event) {
             return $request->expectsJson()
-                ? response()->json(['error' => 'Sélectionnez une événement.'], 422)
-                : back()->with('ukc_error', 'Sélectionnez une événement.');
+                ? response()->json(['error' => 'Sélectionnez un événement.'], 422)
+                : back()->with('ukc_error', 'Sélectionnez un événement.');
         }
 
         $data = $this->validateTask($request, $event);
@@ -203,8 +203,8 @@ class ProjectController extends Controller
         $event = $this->currentEdition($request);
         if (! $event) {
             return $request->expectsJson()
-                ? response()->json(['error' => 'Sélectionnez une événement.'], 422)
-                : back()->with('ukc_error', 'Sélectionnez une événement.');
+                ? response()->json(['error' => 'Sélectionnez un événement.'], 422)
+                : back()->with('ukc_error', 'Sélectionnez un événement.');
         }
 
         $data = $this->validateMilestone($request);
@@ -263,8 +263,8 @@ class ProjectController extends Controller
         $event = $this->currentEdition($request);
         if (! $event) {
             return $request->expectsJson()
-                ? response()->json(['error' => 'Sélectionnez une événement.'], 422)
-                : back()->with('ukc_error', 'Sélectionnez une événement.');
+                ? response()->json(['error' => 'Sélectionnez un événement.'], 422)
+                : back()->with('ukc_error', 'Sélectionnez un événement.');
         }
 
         // Sécurité : on n'amorce que si le projet est vierge.
@@ -302,7 +302,7 @@ class ProjectController extends Controller
     {
         $event = $this->currentEdition($request);
         if (! $event) {
-            return back()->with('ukc_error', 'Sélectionnez une événement.');
+            return back()->with('ukc_error', 'Sélectionnez un événement.');
         }
 
         $tasks = ProjectTask::where('event_id', $event->id)->with('assignee')
@@ -341,7 +341,7 @@ class ProjectController extends Controller
     {
         $event = $this->currentEdition($request);
         if (! $event) {
-            return back()->with('ukc_error', 'Sélectionnez une événement.');
+            return back()->with('ukc_error', 'Sélectionnez un événement.');
         }
 
         $tasks = ProjectTask::where('event_id', $event->id)->with('assignee')
@@ -588,7 +588,7 @@ class ProjectController extends Controller
     }
 
     /**
-     * Tâches + jalons d'une événement, mis en forme pour l'état client.
+     * Tâches + jalons d'un événement, mis en forme pour l'état client.
      *
      * @return array{tasks: array<int, array<string, mixed>>, milestones: array<int, array<string, mixed>>}
      */

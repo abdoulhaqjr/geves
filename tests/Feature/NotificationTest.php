@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Mail;
 // helpers globaux : openEdition()/verifiedAccount() -> AccountSubmissionTest ;
 // adminStaff()/seededSubmission() -> AdminSubmissionWorkflowTest
 
-/** Participant lié à un compte sur une événement. */
+/** Participant lié à un compte sur un événement. */
 function notifiedParticipant($event, $account, array $attrs = [])
 {
     return $event->participants()->create(array_merge([

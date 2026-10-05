@@ -18,7 +18,7 @@ use Illuminate\View\View;
 
 /**
  * Campagnes d'e-mails ciblées (audiences) et rappels programmés, contrôleur +
- * Blade. Compose un message pour une audience d'une événement, l'envoie tout de
+ * Blade. Compose un message pour une audience d'un événement, l'envoie tout de
  * suite ou à une date planifiée, et affiche le journal des e-mails. L'événement
  * et le statut filtrent journal/KPIs via query string ; le nombre de
  * destinataires par audience est pré-calculé et affiché côté client (Alpine).

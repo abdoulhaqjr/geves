@@ -6,7 +6,7 @@ use App\Models\User;
 use App\Notifications\SystemNotification;
 use Illuminate\Support\Facades\Notification;
 
-it('affiche le hub Projet d’une événement', function () {
+it('affiche le hub Projet d’un événement', function () {
     $staff = adminStaff();
     $event = openEdition();
 

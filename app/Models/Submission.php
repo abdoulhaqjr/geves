@@ -95,7 +95,7 @@ class Submission extends Model
         return SubmissionStatus::pills();
     }
 
-    /** Communications originales (non révisions) déjà déposées par un compte sur une événement. */
+    /** Communications originales (non révisions) déjà déposées par un compte sur un événement. */
     public static function usedCountFor(Event $event, User $account): int
     {
         return self::where('event_id', $event->id)
@@ -104,7 +104,7 @@ class Submission extends Model
             ->count();
     }
 
-    /** Communications encore déposables par ce compte sur cette événement (0 = quota atteint). */
+    /** Communications encore déposables par ce compte sur cet événement (0 = quota atteint). */
     public static function remainingFor(Event $event, User $account): int
     {
         $max = (int) ($event->settings['max_communications'] ?? 3);

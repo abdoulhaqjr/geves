@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
 /**
- * Formulaire de contact public d'une événement (Blade + POST classique, sans
+ * Formulaire de contact public d'un événement (Blade + POST classique, sans
  * Livewire). Anti-spam conservé :
  * - honeypot (champ « website » invisible qui doit rester vide) ;
  * - délai minimal de remplissage (rejette les envois quasi-instantanés) ;

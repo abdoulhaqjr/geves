@@ -125,16 +125,16 @@
         @elseif (! $event->submission_open)
             <div class="ukc-alert ukc-alert--err">
                 <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
-                <div>{!! __('Les soumissions sont actuellement <strong>fermées</strong> pour cette événement.') !!}</div>
+                <div>{!! __('Les soumissions sont actuellement <strong>fermées</strong> pour cet événement.') !!}</div>
             </div>
         @elseif ($remaining <= 0)
             <div class="ukc-alert ukc-alert--info">
                 <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
-                <div>{{ __('Vous avez atteint le nombre maximum de communications pour cette événement.') }}</div>
+                <div>{{ __('Vous avez atteint le nombre maximum de communications pour cet événement.') }}</div>
             </div>
         @else
             {{-- Formulaire multi-étapes (wizard). L'étape « Fichiers » n'existe que si
-                 le dépôt de fichier est activé pour cette événement. --}}
+                 le dépôt de fichier est activé pour cet événement. --}}
             @php
                 $fileStep = $config->enabled('file');
                 $validationStep = $fileStep ? 5 : 4;
@@ -204,7 +204,7 @@
                         <h2><x-ukc.icon name="users" :size="20" /> {{ __('Auteur correspondant') }}</h2>
 
                         {{-- Auteur correspondant : prérempli avec le compte connecté ; le grade
-                             saisi vaut POUR CE COLLOQUE (il peut évoluer d'une événement à l'autre). --}}
+                             saisi vaut POUR CE COLLOQUE (il peut évoluer d'un événement à l'autre). --}}
                         <input type="hidden" name="corresponding[self]" :value="corr.self ? 1 : 0">
                         <label class="ukc-switch">
                             <input type="checkbox" x-model="corr.self" @change="onSelfToggle()">

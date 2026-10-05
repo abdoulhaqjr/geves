@@ -239,7 +239,7 @@ class TemplateDesignerController extends Controller
     {
         $editionId = (string) $request->input('event_id', '');
         if ($editionId === '') {
-            return response()->json(['ok' => false, 'error' => 'Choisissez une événement.'], 422);
+            return response()->json(['ok' => false, 'error' => 'Choisissez un événement.'], 422);
         }
 
         [$kind, $type] = $this->kindType($request->input('kind'), $request->input('type'));

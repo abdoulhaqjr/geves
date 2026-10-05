@@ -15,7 +15,7 @@
         </div>
 
         @if (! $event)
-            <div class="ukc-empty"><h3>Choisissez une événement</h3><p>Sélectionnez une événement pour gérer ses documents.</p></div>
+            <div class="ukc-empty"><h3>Choisissez un événement</h3><p>Sélectionnez un événement pour gérer ses documents.</p></div>
         @else
             {{-- Onglets principaux : des liens, comme les sous-onglets. Les panneaux
                  sont rendus côté serveur d'après ?tab=, l'URL doit donc changer. --}}
@@ -112,7 +112,7 @@
                                                               'Émettre les attestations « '.$row['title'].' » : '.$row['eligible'].' destinataire(s)'
                                                               .($row['excluded'] > 0 ? ', '.$row['excluded'].' écarté(s) faute de présence' : '').'.'
                                                               .($attPaper
-                                                                  ? ' Rien ne sera envoyé : la délivrance de cette événement est physique.'
+                                                                  ? ' Rien ne sera envoyé : la délivrance de cet événement est physique.'
                                                                   : ' Autant de notifications partiront chez les bénéficiaires.')
                                                               .' Continuer ?'))">
                                                         @csrf
@@ -150,7 +150,7 @@
                         @csrf
                         <h3>Options générales · Attestations</h3>
                         <x-ukc.scope-edition :event="$event" />
-                        <div class="desc">Paramètres de génération, identité vérifiable (DID) et notifications pour cette événement.</div>
+                        <div class="desc">Paramètres de génération, identité vérifiable (DID) et notifications pour cet événement.</div>
                         {{-- ⚠️ LE choix qui commande les autres : en ligne, le passage d'une
                              communication émet et envoie les attestations de ses auteurs ;
                              sur papier, le secrétariat émet le lot et l'imprime. --}}
@@ -234,7 +234,7 @@
                             <div>
                                 <label class="ukc-check"><input type="checkbox" name="attAuto" value="1" @checked($opts['attAuto'])> Générer automatiquement après paiement / fin de colloque</label>
                                 <label class="ukc-check"><input type="checkbox" name="attNotify" value="1" @checked($opts['attNotify'])> Notifier le participant par e-mail</label>
-                                {{-- ⚠️ Fermé par défaut : chaque SMS est facturé, et une événement de
+                                {{-- ⚠️ Fermé par défaut : chaque SMS est facturé, et un événement de
                                      deux cents communications en enverrait autant. --}}
                                 <label class="ukc-check"><input type="checkbox" name="attSms" value="1" @checked($opts['attSms'])> Envoyer aussi un SMS (passerelle requise - facturé à l’envoi)</label>
                                 <label class="ukc-check"><input type="checkbox" name="attAllowBeforeValidation" value="1" @checked($opts['attAllowBeforeValidation'])> Autoriser le téléchargement avant validation admin</label>
@@ -502,7 +502,7 @@
                     <div class="ukc-card">
                         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
                             <div>
-                                <h3 style="margin:0 0 4px;">Modèle utilisé pour cette événement</h3>
+                                <h3 style="margin:0 0 4px;">Modèle utilisé pour cet événement</h3>
                                 <div class="desc" style="margin:0;">Choisissez le modèle qui sert à compiler le <strong>Word (.docx)</strong>. L’aperçu HTML et le PDF utilisent toujours la mise en page par défaut.</div>
                             </div>
                             <span class="ukc-pill ukc-pill--info" style="white-space:nowrap;"><x-ukc.icon name="check" :size="14" /> Actif : {{ $livretActiveLabel }}</span>

@@ -6,7 +6,7 @@ use App\Models\User;
 // fakeAiProvider(), bindFakeAi() -> GenerateReportTest ; adminStaff(), openEdition() -> helpers
 
 it('le copilote admin répond au staff', function () {
-    bindFakeAi(fakeAiProvider(['answer' => 'Voici une synthèse de l’événement active.']));
+    bindFakeAi(fakeAiProvider(['answer' => 'Voici une synthèse de l’événement actif.']));
 
     $this->actingAs(adminStaff(), 'web')
         ->get(route('admin.ai'))
@@ -14,9 +14,9 @@ it('le copilote admin répond au staff', function () {
         ->assertSee('copilote', false);
 
     $this->actingAs(adminStaff(), 'web')
-        ->postJson(route('admin.ai.ask'), ['question' => 'Résume l’événement active.'])
+        ->postJson(route('admin.ai.ask'), ['question' => 'Résume l’événement actif.'])
         ->assertOk()
-        ->assertJsonPath('answer', 'Voici une synthèse de l’événement active.');
+        ->assertJsonPath('answer', 'Voici une synthèse de l’événement actif.');
 });
 
 it('exige une saisie', function () {

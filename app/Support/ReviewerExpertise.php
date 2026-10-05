@@ -8,7 +8,7 @@ use App\Models\Review;
 use Illuminate\Support\Collection;
 
 /**
- * Relecteurs d'une événement avec leur expertise (axes cochés) et leur charge.
+ * Relecteurs d'un événement avec leur expertise (axes cochés) et leur charge.
  *
  * Source UNIQUE : la matrice vivait dans le formulaire d'événement et une copie en
  * lecture seule sur la page d'attribution automatique, chacune avec sa propre

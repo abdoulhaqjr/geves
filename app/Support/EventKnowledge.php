@@ -7,7 +7,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
- * Base de connaissance factuelle d'une événement, destinée aux agents IA (Gesco et
+ * Base de connaissance factuelle d'un événement, destinée aux agents IA (Gesco et
  * copilote admin). Rassemble en un texte compact les informations officielles
  * réellement configurées (identité, axes, échéances, règles de soumission,
  * tarifs, infos pratiques, contact, FAQ) pour que l'assistant réponde avec

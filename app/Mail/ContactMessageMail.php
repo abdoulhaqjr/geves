@@ -11,7 +11,7 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
 /**
- * Message envoyé depuis le formulaire de contact public d'une événement, à
+ * Message envoyé depuis le formulaire de contact public d'un événement, à
  * l'adresse de contact de l'organisation. Le « répondre à » pointe vers
  * l'expéditeur du message.
  */

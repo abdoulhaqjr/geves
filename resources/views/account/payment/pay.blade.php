@@ -48,7 +48,7 @@
 
     {{-- Paiement --}}
     @if (! $participant)
-        <div class="ukc-alert ukc-alert--info"><span class="ico"><x-ukc.icon name="info" :size="18" /></span><div>Aucune participation trouvée pour cette événement.</div></div>
+        <div class="ukc-alert ukc-alert--info"><span class="ico"><x-ukc.icon name="info" :size="18" /></span><div>Aucune participation trouvée pour cet événement.</div></div>
     @elseif ($paid)
         <div class="ukc-card" style="text-align:center;">
             <div style="width:56px;height:56px;border-radius:50%;margin:0 auto 14px;background:#dcfce7;color:#166534;display:flex;align-items:center;justify-content:center;">
@@ -63,7 +63,7 @@
              parcours de règlement est clos. --}}
         <div class="ukc-alert ukc-alert--info">
             <span class="ico"><x-ukc.icon name="lock" :size="18" /></span>
-            <div>Cette événement est <strong>archivée</strong> : le règlement en ligne est clos. Rapprochez-vous du secrétariat si un paiement reste à régulariser.</div>
+            <div>Cet événement est <strong>archivée</strong> : le règlement en ligne est clos. Rapprochez-vous du secrétariat si un paiement reste à régulariser.</div>
         </div>
     @elseif (! $eligible)
         <div class="ukc-alert ukc-alert--warn"><span class="ico"><x-ukc.icon name="lock" :size="18" /></span><div>Le paiement s’ouvrira dès qu’au moins une de vos communications sera <strong>acceptée</strong>.</div></div>

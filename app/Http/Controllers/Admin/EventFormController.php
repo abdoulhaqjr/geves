@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 /**
- * Création / événement d'une événement de colloque (contrôleur + Blade) : champs
+ * Création / événement d'un événement de colloque (contrôleur + Blade) : champs
  * cœur + réglages (introduction, axes, tarifs, comités, partenaires, FAQ,
  * apparence, contact, promo, infos pratiques). Onglets pilotés par Alpine ; les
  * listes répétables (tarifs/comités/partenaires/FAQ) aussi. Le paramétrage
@@ -56,7 +56,7 @@ class EventFormController extends Controller
         $event = $action->handle($request, null);
 
         // L'administrateur de colloque qui crée l'événement en devient gestionnaire
-        // (fonction pleine sur cette événement) afin de pouvoir la gérer. Le
+        // (fonction pleine sur cet événement) afin de pouvoir la gérer. Le
         // super-admin voit déjà tout : pas besoin de l'affecter.
         $creator = $request->user();
         if ($creator instanceof User && ! $creator->isColloqueSuperAdmin()) {
@@ -467,7 +467,7 @@ class EventFormController extends Controller
     }
 
     /**
-     * Valeurs initiales du formulaire : événement existante, écrasée par les
+     * Valeurs initiales du formulaire : événement existant, écrasée par les
      * valeurs extraites par IA (flash) le cas échéant.
      *
      * @return array<string, mixed>

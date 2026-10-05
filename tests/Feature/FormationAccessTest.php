@@ -7,7 +7,7 @@ use App\Models\Payment;
 
 // openEdition()/verifiedAccount() -> tests/Pest.php ; publishedFormation() -> FormationEnrollmentTest
 
-/** Formation payante, en direct, dans une événement où le compte participe. */
+/** Formation payante, en direct, dans un événement où le compte participe. */
 function livePaidFormation($event): Formation
 {
     $f = publishedFormation($event, 10000);

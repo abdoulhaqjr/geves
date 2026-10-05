@@ -618,7 +618,7 @@ class ColloqueAvenirSeeder extends Seeder
         }
     }
 
-    /** Rattache (idempotent) un membre du staff à une événement avec une fonction. */
+    /** Rattache (idempotent) un membre du staff à un événement avec une fonction. */
     private function assignStaff(User $user, Event $event, string $role): void
     {
         $exists = $user->assignedEditions()

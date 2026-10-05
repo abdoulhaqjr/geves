@@ -24,7 +24,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Documents de l'événement accessibles au participant connecté : livret des
- * résumés d'une événement à laquelle il a participé (contrôle de propriété).
+ * résumés d'un événement à laquelle il a participé (contrôle de propriété).
  */
 class DocumentController extends Controller
 {
@@ -65,7 +65,7 @@ class DocumentController extends Controller
             ->whereIn('participant_id', $edParticipantIds)
             ->where('revision_of', 0)->latest('id')->get();
 
-        // Attestations émises et valides de cette événement.
+        // Attestations émises et valides de cet événement.
         $attestations = Attestation::whereIn('participant_id', $edParticipantIds)
             ->where('event_id', $event->id)->where('revoked', false)
             ->with('formation')

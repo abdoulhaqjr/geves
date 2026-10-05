@@ -16,7 +16,7 @@
 @php($ongletsFondus = ['payment' => 'integrations', 'meetings' => 'integrations', 'translations' => 'appearance'])
 @php($ongletActif = (string) session('edition_tab', request('tab', 'general')))
 @php($ongletActif = $ongletsFondus[$ongletActif] ?? $ongletActif)
-<x-layouts.admin :title="$event ? 'Modifier l’événement' : 'Nouvelle événement'" subtitle="Paramètres, contenu, tarifs, apparence & documents">
+<x-layouts.admin :title="$event ? 'Modifier l’événement' : 'Nouvel événement'" subtitle="Paramètres, contenu, tarifs, apparence & documents">
     <div class="admin-page admin-edition-detail"
          x-data="editionForm({
             tab: @js($ongletActif),
@@ -41,7 +41,7 @@
                     <span> / </span><span style="color:var(--ukc-muted);">{{ $event ? 'Modifier' : 'Nouvelle' }}</span>
                     <span> · </span><code x-text="f.year || '-'"></code>
                 </div>
-                <h1 style="font-size:1.2rem;font-weight:800;" x-text="f.title || '{{ $event ? 'Événement' : 'Nouvelle événement' }}'"></h1>
+                <h1 style="font-size:1.2rem;font-weight:800;" x-text="f.title || '{{ $event ? 'Événement' : 'Nouvel événement' }}'"></h1>
                 <div class="sub" style="font-size:13px;color:var(--ukc-muted);margin-top:4px;">
                     <span class="ukc-pill" :class="statusLive() ? 'ukc-pill--live' : 'ukc-pill--muted'" x-text="statusLabel()"></span>
                     &nbsp; Paramétrage complet · assisté IA
@@ -50,15 +50,15 @@
             <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0;" x-data="{}">
                 <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.evenements.index') }}">← Liste</a>
                 @if ($event)
-                    {{-- Importer la configuration dans cette événement (fichier JSON) --}}
+                    {{-- Importer la configuration dans cet événement (fichier JSON) --}}
                     <form method="POST" action="{{ route('admin.evenements.import', $event) }}" enctype="multipart/form-data" x-ref="importForm" style="display:none;">
                         @csrf
                         <input type="file" name="file" accept=".json,application/json" x-ref="importFile" @change="$refs.importForm.submit()">
                     </form>
-                    <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="$refs.importFile.click()" title="Importer une configuration (JSON) dans cette événement">
+                    <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="$refs.importFile.click()" title="Importer une configuration (JSON) dans cet événement">
                         <x-ukc.icon name="upload" :size="15" /> Importer
                     </button>
-                    <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.evenements.export', $event) }}" title="Exporter cette événement (JSON)">
+                    <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.evenements.export', $event) }}" title="Exporter cet événement (JSON)">
                         <x-ukc.icon name="download" :size="15" /> Exporter
                     </a>
                 @endif
@@ -95,7 +95,7 @@
                         'appearance' => 'Apparence',
                         'options' => 'Options',
                     ] as $key => $label)
-                        {{-- Les onglets d'une événement existante n'ont pas de sens à la création. --}}
+                        {{-- Les onglets d'un événement existant n'ont pas de sens à la création. --}}
                         @if ($event || ! in_array($key, ['integrations', 'team', 'options'], true))
                             <a href="{{ $event ? route('admin.evenements.edit', ['event' => $event, 'tab' => $key]) : route('admin.evenements.create', ['tab' => $key]) }}"
                                :class="{ active: tab==='{{ $key }}' }"
@@ -166,7 +166,7 @@
                                 {{-- ⚠️ SANS L'ANNÉE : la barre collante de la page publique
                                      l'ajoute elle-même (« nom court · année »). L'exemple
                                      proposé ici était « CSIUK 2026 », ce qui poussait à la
-                                     saisir - une événement s'est retrouvée annoncée
+                                     saisir - un événement s'est retrouvée annoncée
                                      « Colloque Avenir durable 2025 · 2026 », deux années
                                      contradictoires sur la même ligne. L'aperçu ci-dessous
                                      montre la ligne telle qu'elle sortira. --}}
@@ -408,7 +408,7 @@
 
                         <div class="ukc-card">
                             <h2>Frais d’inscription</h2>
-                            <div class="desc">Catégories tarifaires liées à cette événement (FCFA).</div>
+                            <div class="desc">Catégories tarifaires liées à cet événement (FCFA).</div>
                             <div class="tarif-row" style="font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--ukc-light);">
                                 <span>Catégorie</span><span>Montant</span><span></span>
                             </div>
@@ -812,9 +812,9 @@
                     @php($pay = $event->settings['payment'] ?? [])
                     <div class="ukc-panel" :class="{ active: tab==='integrations' }">
                         <div class="ukc-card">
-                            <h2>Passerelle de paiement de cette événement</h2>
+                            <h2>Passerelle de paiement de cet événement</h2>
                             <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 12px;">
-                                Renseignez ici les identifiants propres à cette événement. <strong>Tout champ laissé vide utilise la configuration
+                                Renseignez ici les identifiants propres à cet événement. <strong>Tout champ laissé vide utilise la configuration
                                 par défaut de la plateforme</strong> (réglages globaux). Utile pour encaisser sur un compte marchand dédié à l’événement.
                             </p>
                             <form method="POST" action="{{ route('admin.evenements.payment', $event) }}" class="ukc-form-grid">
@@ -895,7 +895,7 @@
                     @php($vis = $event->settings['meetings'] ?? [])
                     <div class="ukc-panel" :class="{ active: tab==='integrations' }">
                         <div class="ukc-card">
-                            <h2>Visioconférence de cette événement</h2>
+                            <h2>Visioconférence de cet événement</h2>
                             <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 12px;">
                                 Comme pour le paiement : <strong>tout champ laissé vide utilise la configuration par défaut de
                                 la plateforme</strong>. Utile pour un colloque qui dispose de son propre serveur de visio.
@@ -1004,7 +1004,7 @@
 
                             @if ($team->isEmpty())
                                 <div class="ukc-empty" style="padding:24px 0;">
-                                    <p style="margin:0;">Aucun membre affecté à cette événement pour l’instant.</p>
+                                    <p style="margin:0;">Aucun membre affecté à cet événement pour l’instant.</p>
                                 </div>
                             @else
                                 <div class="ukc-table-wrap" style="margin-top:16px;">
@@ -1020,7 +1020,7 @@
                                                     </td>
                                                     <td style="text-align:right;">
                                                         <form method="POST" action="{{ route('admin.evenements.team.detach', $event) }}"
-                                                              onsubmit="return confirm('Retirer {{ $m['name'] }} ({{ $m['role_label'] }}) de cette événement ?')" style="display:inline;">
+                                                              onsubmit="return confirm('Retirer {{ $m['name'] }} ({{ $m['role_label'] }}) de cet événement ?')" style="display:inline;">
                                                             @csrf @method('DELETE')
                                                             <input type="hidden" name="user_id" value="{{ $m['user_id'] }}">
                                                             <input type="hidden" name="role" value="{{ $m['role'] }}">

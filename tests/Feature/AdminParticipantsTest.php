@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Mail;
 
 // adminStaff() -> AdminSubmissionWorkflowTest ; openEdition() -> AccountSubmissionTest
 
-it('liste les participants d’une événement avec rôle et paiement', function () {
+it('liste les participants d’un événement avec rôle et paiement', function () {
     $staff = adminStaff();
     $event = openEdition();
     $p = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);

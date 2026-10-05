@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 /**
- * Éditeur du formulaire de soumission d'une événement (contrôleur + Blade) :
+ * Éditeur du formulaire de soumission d'un événement (contrôleur + Blade) :
  * libellés/aides des champs standard, options requis/activé, limites du résumé,
  * et champs personnalisés (ajout/suppression/réordonnancement pilotés par
  * Alpine). Écrit dans settings.submission_form.

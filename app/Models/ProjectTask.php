@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * Tâche du projet d'une événement (colonne kanban : à faire / en cours / en
+ * Tâche du projet d'un événement (colonne kanban : à faire / en cours / en
  * revue / terminé). Reliée à l'événement et, éventuellement, à un responsable
  * (membre de l'équipe) et à une phase du cycle de vie du colloque.
  *

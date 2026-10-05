@@ -30,7 +30,7 @@
 
             @if ($events->isEmpty())
                 <div class="ukc-empty">
-                    <h3>{{ __('Aucune événement archivée pour le moment') }}</h3>
+                    <h3>{{ __('Aucun événement archivé pour le moment') }}</h3>
                     <p>{{ __('Les événements clôturées apparaîtront ici avec leurs programmes, galeries et documents.') }}</p>
                 </div>
             @else

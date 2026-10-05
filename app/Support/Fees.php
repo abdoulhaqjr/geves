@@ -5,7 +5,7 @@ namespace App\Support;
 use App\Models\Event;
 
 /**
- * Résolution des frais d'inscription d'une événement (grille tarifaire par profil,
+ * Résolution des frais d'inscription d'un événement (grille tarifaire par profil,
  * stockée dans settings.fees).
  */
 class Fees

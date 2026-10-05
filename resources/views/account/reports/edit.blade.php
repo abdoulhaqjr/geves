@@ -51,7 +51,7 @@
             <p style="color:var(--ukc-muted);font-size:13px;margin:0 0 12px;display:flex;align-items:center;gap:6px;">
                 <x-ukc.icon name="lock" :size="16" />
                 {{ $frozen
-                    ? __('Cette événement est archivée : votre rapport reste consultable mais n’est plus modifiable.')
+                    ? __('Cet événement est archivée : votre rapport reste consultable mais n’est plus modifiable.')
                     : __('Ce rapport a été validé par le secrétariat. Il n’est plus modifiable.') }}
             </p>
             <div class="ukc-field">

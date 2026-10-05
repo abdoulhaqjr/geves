@@ -46,7 +46,7 @@
         </div>
 
         @if (! $event)
-            <div class="ukc-empty"><h3>Choisissez une événement</h3><p>Sélectionnez une événement pour piloter son projet.</p></div>
+            <div class="ukc-empty"><h3>Choisissez un événement</h3><p>Sélectionnez un événement pour piloter son projet.</p></div>
         @else
             {{-- Projet vierge --}}
             <div class="ukc-empty" style="text-align:center;padding:40px 24px;" x-show="isEmpty()" x-cloak>

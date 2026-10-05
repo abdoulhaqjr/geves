@@ -5,10 +5,10 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Affectation d'un membre du staff (User) à une événement avec une fonction
+ * Affectation d'un membre du staff (User) à un événement avec une fonction
  * (organisation, secrétariat, comptabilité, accueil…). Support de l'étanchéité
  * d'accès par événement : chaque colloque a sa propre équipe. Un même utilisateur
- * peut cumuler plusieurs fonctions sur une événement (une ligne par fonction).
+ * peut cumuler plusieurs fonctions sur un événement (une ligne par fonction).
  */
 return new class extends Migration
 {

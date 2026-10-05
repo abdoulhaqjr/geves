@@ -136,7 +136,7 @@ class EventController extends Controller
         return back()->with('ukc_status', 'Configuration importée dans « '.$event->title.' ».');
     }
 
-    /** Définit une événement comme active (publiée/ouverte sur le site public). */
+    /** Définit un événement comme actif (publié/ouvert sur le site public). */
     public function activate(Event $event): RedirectResponse
     {
         $event->update(['status' => 'open']);

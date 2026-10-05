@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Médias d'une événement : galerie photo, vidéos, livret, documents. Rendus sur la
+ * Médias d'un événement : galerie photo, vidéos, livret, documents. Rendus sur la
  * page publique (surtout pour les événements archivées).
  */
 return new class extends Migration

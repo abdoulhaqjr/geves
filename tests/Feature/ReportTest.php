@@ -26,7 +26,7 @@ function reportEdition(): Event
     return $event;
 }
 
-it('calcule la synthèse d’une événement', function () {
+it('calcule la synthèse d’un événement', function () {
     $event = reportEdition();
     $summary = (new EventReport($event))->summary();
 

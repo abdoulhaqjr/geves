@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 /**
- * Programme d'une événement (contrôleur + Blade) : ateliers (regroupant des axes),
+ * Programme d'un événement (contrôleur + Blade) : ateliers (regroupant des axes),
  * sessions (plénières ou d'atelier, avec modérateur/rapporteur), contrôles de
  * visio par session, et créneaux de passage (assignation des communications
  * acceptées). L'événement est choisie via query string.

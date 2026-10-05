@@ -53,7 +53,7 @@
                 @if ($s->status === 'accepted')
                     {!! __('Communication <strong>acceptée</strong>. Finalisez votre inscription et choisissez votre créneau.') !!}
                 @elseif ($s->status === 'rejected')
-                    {{ __('Après examen, votre communication n’a pas été retenue pour cette événement.') }}
+                    {{ __('Après examen, votre communication n’a pas été retenue pour cet événement.') }}
                 @elseif ($s->status === 'revision')
                     {!! __('Une <strong>correction</strong> est demandée : modifiez puis renvoyez votre communication.') !!}
                 @else

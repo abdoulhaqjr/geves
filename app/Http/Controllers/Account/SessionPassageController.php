@@ -45,7 +45,7 @@ class SessionPassageController extends Controller
         abort_unless((int) $slot->session_id === (int) $session->id, 404);
         abort_unless($slot->submission_id > 0, 422, 'Ce créneau ne porte aucune communication.');
         abort_unless($session->hasStarted(), 403, 'La séance n’a pas commencé.');
-        abort_if(EventLock::frozen($session->event), 403, 'Cette événement est archivée.');
+        abort_if(EventLock::frozen($session->event), 403, 'Cet événement est archivée.');
 
         $bilan = $action->handle($slot->load('submission.event', 'session'), Auth::guard('account')->user());
 

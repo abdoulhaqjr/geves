@@ -174,7 +174,7 @@ it('coupe l’annonce en mode papier, et garde le SMS fermé par défaut', funct
 
     expect(AttestationPolicy::delivery($event))->toBe(AttestationPolicy::DELIVERY_ONLINE);
     expect(AttestationPolicy::notifies($event))->toBeTrue();
-    // Chaque SMS est facturé : une événement de deux cents communications en
+    // Chaque SMS est facturé : un événement de deux cents communications en
     // enverrait autant sans que personne ne l'ait décidé.
     expect(AttestationPolicy::sendsSms($event))->toBeFalse();
 

@@ -84,7 +84,7 @@
                         @forelse ($documents as $doc)
                             <a href="{{ $doc['url'] }}" target="_blank" rel="noopener">{{ $doc['label'] }} <span>↓</span></a>
                         @empty
-                            <p style="font-size:13.5px;color:var(--ukc-muted);margin:0;">Aucun document public pour cette événement.</p>
+                            <p style="font-size:13.5px;color:var(--ukc-muted);margin:0;">Aucun document public pour cet événement.</p>
                         @endforelse
                         <a href="mailto:dri@univkara.tg">Demander un document <span>→</span></a>
                     </div>

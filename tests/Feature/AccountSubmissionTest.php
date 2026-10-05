@@ -14,7 +14,7 @@ it('redirige les invités du formulaire de soumission vers la connexion', functi
         ->assertRedirect(route('account.login'));
 });
 
-it('renvoie 404 pour une événement non publiée', function () {
+it('renvoie 404 pour un événement non publiée', function () {
     $series = EventSeries::create(['name' => 'C', 'slug' => 'c']);
     $draft = $series->events()->create(['title' => 'Brouillon', 'status' => 'draft', 'slug' => 'draft']);
     $account = verifiedAccount();

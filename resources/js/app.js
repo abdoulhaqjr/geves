@@ -630,7 +630,7 @@ document.addEventListener('alpine:init', () => {
             if (t) { clearTimeout(t.timer); t.show = false; }
         },
     }));
-    // Gestion de projet d'une événement (kanban + liste + jalons), 100 % AJAX : un
+    // Gestion de projet d'un événement (kanban + liste + jalons), 100 % AJAX : un
     // seul composant porte l'état (tasks[]/milestones[]) ; tout le CRUD passe par
     // fetch et met à jour l'état en direct - aucun rechargement de page.
     window.Alpine.data('ukcProject', (config = {}) => ({

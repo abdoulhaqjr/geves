@@ -70,7 +70,7 @@ class ReviewGrid
     }
 
     /**
-     * Grille effective d'une événement (réglage propre à l'événement sinon défaut).
+     * Grille effective d'un événement (réglage propre à l'événement sinon défaut).
      *
      * @return list<array{key:string, label:string}>
      */

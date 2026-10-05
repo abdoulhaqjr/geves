@@ -6,7 +6,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Images d'habillage d'une événement : bandeau (hero) et bannière officielle,
+ * Images d'habillage d'un événement : bandeau (hero) et bannière officielle,
  * réglées dans l'onglet **Apparence** de la fiche d'événement.
  *
  * Les deux acceptent un téléversement **ou** une URL : une partie des événements

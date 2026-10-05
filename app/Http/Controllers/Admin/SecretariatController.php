@@ -105,7 +105,7 @@ class SecretariatController extends Controller
 
     /** Génère un document du secrétariat via IA (prompt ou modèle joint). */
     /**
-     * Rapports de séance d'une événement : lecture et amélioration par le
+     * Rapports de séance d'un événement : lecture et amélioration par le
      * secrétariat, avant validation.
      *
      * ⚠️ Les rapports relèvent du secrétariat et de lui seul - le module

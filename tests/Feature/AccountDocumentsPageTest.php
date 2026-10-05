@@ -94,7 +94,7 @@ it('rend l’aperçu du badge à partir du modèle admin, avec les vraies donné
  * ⚠️ La page n'affichait **qu'une** attestation de formation, sans dire laquelle :
  * quelqu'un qui a suivi trois ateliers n'en voyait qu'un, et pouvait croire les
  * autres perdus. L'animation y figure aussi - le formateur est, lui aussi,
- * attestataire de cette événement.
+ * attestataire de cet événement.
  */
 it('liste chaque attestation de formation et d’animation, avec son intitulé', function () {
     $event = openEdition();

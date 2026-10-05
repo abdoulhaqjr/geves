@@ -34,7 +34,7 @@ class RefonteTestSeeder extends Seeder
             ]
         );
 
-        // 2) Administrateur de colloque - peut créer un colloque (aucune événement
+        // 2) Administrateur de colloque - peut créer un colloque (aucun événement
         //    au départ, pour tester la création + la gérance automatique).
         User::updateOrCreate(
             ['email' => 'gerant@uk.tg'],
@@ -70,6 +70,6 @@ class RefonteTestSeeder extends Seeder
         }
 
         $this->command?->info('Comptes de test : super@uk.tg · gerant@uk.tg · membre@uk.tg (mot de passe : password)'
-            .($event ? '' : ' - aucune événement trouvée, participant non rattaché.'));
+            .($event ? '' : ' - aucun événement trouvé, participant non rattaché.'));
     }
 }

@@ -27,7 +27,7 @@ use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Hub Documents d'une événement (contrôleur + Blade, fidèle au mockup
+ * Hub Documents d'un événement (contrôleur + Blade, fidèle au mockup
  * admin-documents) : trois volets - Attestations (émission par type + options),
  * Badges (génération + options) et Livre des résumés (avant-propos, apparence).
  * Options persistées dans les réglages. Volets/onglets pilotés par Alpine.
@@ -325,7 +325,7 @@ class DocumentHubController extends Controller
     {
         $event = $this->currentEdition($request);
         if (! $event) {
-            return back()->with('ukc_error', 'Sélectionnez une événement.');
+            return back()->with('ukc_error', 'Sélectionnez un événement.');
         }
 
         EventSettings::setMany($event, [
@@ -352,7 +352,7 @@ class DocumentHubController extends Controller
     {
         $event = $this->currentEdition($request);
         if (! $event) {
-            return back()->with('ukc_error', 'Sélectionnez une événement.');
+            return back()->with('ukc_error', 'Sélectionnez un événement.');
         }
 
         EventSettings::setMany($event, [
@@ -371,7 +371,7 @@ class DocumentHubController extends Controller
     {
         $event = $this->currentEdition($request);
         if (! $event) {
-            return back()->with('ukc_error', 'Sélectionnez une événement.');
+            return back()->with('ukc_error', 'Sélectionnez un événement.');
         }
 
         EventSettings::setMany($event, [
@@ -405,7 +405,7 @@ class DocumentHubController extends Controller
         $event = $this->currentEdition($request);
 
         if (! $event) {
-            return back()->with('ukc_error', 'Sélectionnez une événement.');
+            return back()->with('ukc_error', 'Sélectionnez un événement.');
         }
         if (! $ai->resolve()) {
             return back()->with('ukc_error', 'Aucun fournisseur IA configuré (Réglages → Intelligence artificielle).');
@@ -461,7 +461,7 @@ class DocumentHubController extends Controller
     {
         $event = $this->currentEdition($request);
         if (! $event) {
-            return back()->with('ukc_error', 'Sélectionnez une événement.');
+            return back()->with('ukc_error', 'Sélectionnez un événement.');
         }
 
         EventSettings::setMany($event, [
@@ -501,7 +501,7 @@ class DocumentHubController extends Controller
     {
         $event = $this->currentEdition($request);
         if (! $event) {
-            return back()->with('ukc_error', 'Sélectionnez une événement.');
+            return back()->with('ukc_error', 'Sélectionnez un événement.');
         }
 
         $request->validate([
@@ -538,7 +538,7 @@ class DocumentHubController extends Controller
     {
         $event = $this->currentEdition($request);
         if (! $event) {
-            return back()->with('ukc_error', 'Sélectionnez une événement.');
+            return back()->with('ukc_error', 'Sélectionnez un événement.');
         }
 
         $name = (string) $request->input('name');
@@ -741,7 +741,7 @@ class DocumentHubController extends Controller
         }
 
         // ⚠️ Même règle que `Participant::wasPresent()`, mais en SQL : filtrer la
-        // collection appelait un `exists()` par participant (une événement en compte
+        // collection appelait un `exists()` par participant (un événement en compte
         // des centaines).
         return $regles->where(fn ($q) => $q->whereNotNull('checked_in_at')
             ->orWhereHas('sessionAttendances', fn ($a) => $a->where('status', 'present')))

@@ -14,7 +14,7 @@
         </div>
 
         @if ($event_id === '')
-            <div class="ukc-empty"><h3>Choisissez une événement</h3><p>Sélectionnez une événement pour consulter les rapports de séance.</p></div>
+            <div class="ukc-empty"><h3>Choisissez un événement</h3><p>Sélectionnez un événement pour consulter les rapports de séance.</p></div>
         @else
             @php
                 $reportStats = [
@@ -111,7 +111,7 @@
                     </form>
                 </div>
             @empty
-                <div class="ukc-empty"><h3>Aucune séance</h3><p>Cette événement n'a pas encore de séance programmée.</p></div>
+                <div class="ukc-empty"><h3>Aucune séance</h3><p>Cet événement n'a pas encore de séance programmée.</p></div>
             @endforelse
 
         @endif

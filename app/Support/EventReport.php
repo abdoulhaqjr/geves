@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
 /**
- * Agrège les données de reporting d'une événement : synthèse chiffrée et jeux de
+ * Agrège les données de reporting d'un événement : synthèse chiffrée et jeux de
  * lignes (participants, communications, paiements) prêts à l'export Excel/PDF.
  * Source unique pour le classeur .xlsx, le rapport PDF et les tuiles Livewire.
  */

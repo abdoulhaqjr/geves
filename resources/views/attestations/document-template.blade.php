@@ -69,7 +69,7 @@
                  sans explication se lit comme un défaut du document. --}}
             <p class="ukc-cred-note no-print">
                 <strong>{{ __('SPÉCIMEN') }}</strong> -
-                {{ __('cette événement délivre ses attestations sur papier. Le document ci-dessous reproduit exactement celui qui vous sera remis - même mise en page, mêmes informations, même vérification - à la mention SPÉCIMEN près. Seul l’exemplaire imprimé par le secrétariat fait foi.') }}
+                {{ __('cet événement délivre ses attestations sur papier. Le document ci-dessous reproduit exactement celui qui vous sera remis - même mise en page, mêmes informations, même vérification - à la mention SPÉCIMEN près. Seul l’exemplaire imprimé par le secrétariat fait foi.') }}
             </p>
         @endif
         <section class="ukc-cred-stage">

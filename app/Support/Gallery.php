@@ -6,7 +6,7 @@ use App\Models\Event;
 use App\Models\Media;
 
 /**
- * Construit la galerie publique d'une événement (photos + vidéos ordonnées) au
+ * Construit la galerie publique d'un événement (photos + vidéos ordonnées) au
  * format attendu par le partiel `partials.gallery` / le lightbox (public.js).
  * Partagé entre l'accueil (galerie du dernier colloque) et l'archive-détail.
  */

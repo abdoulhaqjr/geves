@@ -8,5 +8,5 @@
         <button type="button" class="ukc-btn ukc-btn--outline" @click="copy()"
                 x-text="copied ? 'Copié' : 'Copier'">Copier</button>
     </div>
-    <p class="ukc-hint">À coller dans le tableau de bord du marchand pour que les paiements soient confirmés automatiquement. Cette URL est propre à cette événement.</p>
+    <p class="ukc-hint">À coller dans le tableau de bord du marchand pour que les paiements soient confirmés automatiquement. Cette URL est propre à cet événement.</p>
 </div>

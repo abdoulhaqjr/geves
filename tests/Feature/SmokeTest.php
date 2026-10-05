@@ -8,7 +8,7 @@
  * Verrou de non-régression contre les 500 introduits par un changement de vue/contrôleur.
  */
 it('les pages publiques répondent sans erreur', function () {
-    $event = openEdition(); // événement ouverte → page colloque publiée
+    $event = openEdition(); // événement ouvert → page colloque publiée
 
     $routes = [
         route('home'),
@@ -26,7 +26,7 @@ it('les pages publiques répondent sans erreur', function () {
 
 it('les pages du back-office répondent sans erreur (staff)', function () {
     $staff = adminStaff();
-    openEdition(); // au moins une événement pour les écrans qui en dépendent
+    openEdition(); // au moins un événement pour les écrans qui en dépendent
 
     $this->actingAs($staff, 'web');
 
@@ -57,7 +57,7 @@ it('les pages du back-office répondent sans erreur (staff)', function () {
     }
 });
 
-it('les documents générés d’une événement répondent sans erreur (staff)', function () {
+it('les documents générés d’un événement répondent sans erreur (staff)', function () {
     $staff = adminStaff();
     $submission = seededSubmission('accepted'); // événement avec une communication acceptée
     $event = $submission->event;

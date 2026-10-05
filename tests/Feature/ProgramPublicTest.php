@@ -6,7 +6,7 @@ use App\Models\User;
 
 function scheduledEdition(): array
 {
-    $submission = seededSubmission('accepted'); // événement ouverte « uk-2026 », comm. « Innovation durable »
+    $submission = seededSubmission('accepted'); // événement ouvert « uk-2026 », comm. « Innovation durable »
     $event = $submission->event;
 
     $plenary = $event->sessions()->create(['type' => 'plenary', 'label' => 'Cérémonie d’ouverture', 'ordre' => 0, 'room' => 'Amphi A']);
@@ -50,7 +50,7 @@ it('affiche le programme synthétique saisi (et pas le détail des communication
 });
 
 it('n’affiche pas de programme quand aucun contenu n’est saisi', function () {
-    // Une événement avec des sessions mais SANS programme synthétique saisi : la
+    // Un événement avec des sessions mais SANS programme synthétique saisi : la
     // section publique reste masquée (elle ne dépend plus des sessions).
     [$event] = scheduledEdition();
 

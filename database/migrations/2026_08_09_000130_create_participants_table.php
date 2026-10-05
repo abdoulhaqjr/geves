@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Participants : présence d'une personne sur une événement donnée (auteur,
+ * Participants : présence d'une personne sur un événement donné (auteur,
  * congressiste/auditeur, relecteur, membre de comité…). Reliée au compte global
  * (`account_id`) quand la personne s'est connectée. Le rôle « fort » n'est pas
  * rétrogradé lors des upserts.

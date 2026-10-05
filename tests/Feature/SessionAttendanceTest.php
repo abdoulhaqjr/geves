@@ -336,7 +336,7 @@ it('fige la présence quand le secrétariat a validé le rapport', function () {
         ->assertForbidden();
 });
 
-it('fige la présence d’une événement archivée', function () {
+it('fige la présence d’un événement archivé', function () {
     [$event, $session, $awa] = seanceAPointer('moda@example.tg');
     $mod = officier('moda@example.tg');
     $event->update(['status' => 'archived']);

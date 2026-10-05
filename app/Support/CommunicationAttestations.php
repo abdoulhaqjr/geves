@@ -27,7 +27,7 @@ use Illuminate\Support\Collection;
  * déposant, sans condition de paiement supplémentaire ici.
  *
  * ⚠️ **Deux chemins, deux moments.** {@see self::entitlements()} calcule le lot
- * complet d'une événement (émission en masse par le gestionnaire).
+ * complet d'un événement (émission en masse par le gestionnaire).
  * {@see self::forSubmission()} répond pour UNE communication, au moment où le
  * modérateur constate son passage. Les plafonds sont les mêmes, mais le second
  * ne voit pas l'avenir : il compte ce qui est **déjà émis** au lieu de classer

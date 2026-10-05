@@ -53,7 +53,7 @@
                                     @foreach ($assignees as $u)<option value="{{ $u->id }}" @selected($claim->assigned_to === $u->id)>{{ $u->name }}</option>@endforeach
                                 </select>
                             </div>
-                            <p style="font-size:12px;color:var(--ukc-muted);">Personnes habilitées (admin, gestionnaires ou délégués « réclamations » de cette événement).</p>
+                            <p style="font-size:12px;color:var(--ukc-muted);">Personnes habilitées (admin, gestionnaires ou délégués « réclamations » de cet événement).</p>
                         </form>
                     </div>
                 </div>

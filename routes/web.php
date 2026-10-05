@@ -73,7 +73,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
 
-// Page publique d'une événement de colloque.
+// Page publique d'un événement de colloque.
 Route::get('/deroulement', DeroulementController::class)->name('public.deroulement');
 Route::get('/assistante', [GescoController::class, 'page'])->name('public.gesco');
 Route::post('/gesco/demander', [GescoController::class, 'ask'])->name('gesco.ask');
@@ -169,7 +169,7 @@ Route::get('/.well-known/jwks.json', [AttestationController::class, 'jwks'])->na
 // Paiement en ligne : retour navigateur + webhook serveur-à-serveur.
 Route::get('/paiement/retour/{gateway}', [PaymentController::class, 'return'])->name('payment.return');
 Route::post('/webhooks/paiement/{gateway}', [PaymentController::class, 'webhook'])->name('payment.webhook');
-// Variante dédiée à une événement : à déclarer chez le marchand quand l'événement
+// Variante dédiée à un événement : à déclarer chez le marchand quand l'événement
 // utilise son PROPRE compte passerelle (évite d'essayer toutes les signatures).
 Route::post('/webhooks/paiement/{gateway}/{event}', [PaymentController::class, 'webhook'])->name('payment.webhook.edition');
 

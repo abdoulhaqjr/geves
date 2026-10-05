@@ -83,7 +83,7 @@ it('ne montre pas le livret sans communication acceptée', function () {
         ->assertDontSee('Livret des résumés');
 });
 
-it('donne accès au livret d’une événement à laquelle le participant a participé', function () {
+it('donne accès au livret d’un événement à laquelle le participant a participé', function () {
     $event = openEdition();
     $account = verifiedAccount();
     $participant = participantFor($account, $event);

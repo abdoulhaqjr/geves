@@ -14,7 +14,7 @@ use App\Support\ReviewerAssignmentPlanner;
 use Illuminate\Support\Facades\Mail;
 
 /**
- * Attribution automatique des relecteurs sur une événement : prépare les données
+ * Attribution automatique des relecteurs sur un événement : prépare les données
  * réelles (soumissions à couvrir, relecteurs + expertise + charge, conflits
  * d'intérêts), délègue le choix au {@see ReviewerAssignmentPlanner}, et sait
  * appliquer un plan validé en réutilisant {@see AssignReviewer} (idempotent).

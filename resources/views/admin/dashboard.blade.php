@@ -21,7 +21,7 @@
             $statusPills = \App\Models\Submission::statusPills();
         @endphp
 
-        {{-- Bannière événement active --}}
+        {{-- Bannière événement actif --}}
         @if ($event)
             <div class="edition-banner">
                 <div class="body">
@@ -82,7 +82,7 @@
             <div>
                 <div class="ukc-card">
                     <h2>Pipeline des soumissions <a href="{{ route('admin.submissions.index') }}" style="font-size:12.5px;font-weight:700;">Voir tout →</a></h2>
-                    <div class="desc">Répartition par statut - événement active</div>
+                    <div class="desc">Répartition par statut - événement actif</div>
                     <div class="pipeline-grid">
                         <div>
                             <div class="status-row"><span>Soumises (nouvelles)</span><span class="count">{{ $pipeline['submitted'] }} <span class="ukc-pill ukc-pill--info">Nouvelles</span></span></div>

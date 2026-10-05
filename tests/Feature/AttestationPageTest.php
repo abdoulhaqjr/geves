@@ -136,7 +136,7 @@ it('fait pointer le QR du document vers la page de l’attestation', function ()
 
 // adminStaff() -> AdminSubmissionWorkflowTest
 
-/** Une attestation de participation, sur une événement neuve. */
+/** Une attestation de participation, sur un événement neuf. */
 function attestationPublique(): Attestation
 {
     $event = openEdition();
