@@ -32,7 +32,8 @@
                     <x-ukc.icon name="home" :size="18" /> <span class="txt">Tableau de bord</span>
                 </a>
 
-                @if ($staff?->canAnyEdition('editions_read') || $staff?->canAnyEdition('submissions_list') || $staff?->canAnyEdition('participants'))
+                {{-- ===== Scientifique : cœur académique de l'événement ===== --}}
+                @if ($staff?->canAnyEdition('editions_read') || $staff?->canAnyEdition('submissions_list') || $staff?->canAnyEdition('formation'))
                     <span class="nav-label">Scientifique</span>
                 @endif
                 @if ($staff?->canAnyEdition('editions_read'))
@@ -50,30 +51,12 @@
                         <x-ukc.icon name="inbox" :size="18" /> <span class="txt">Soumissions</span>
                     </a>
                 @endif
-                @if ($staff?->canAnyEdition('participants'))
-                    <a href="{{ route('admin.participants.index') }}" title="Participants"
-                       @class(['active' => request()->routeIs('admin.participants.*')])>
-                        <x-ukc.icon name="users" :size="18" /> <span class="txt">Participants</span>
-                    </a>
-                @endif
                 @if ($staff?->canAnyEdition('editions_read'))
                     <a href="{{ route('admin.program.index') }}" title="Programme"
                        @class(['active' => request()->routeIs('admin.program.*')])>
                         <x-ukc.icon name="calendar" :size="18" /> <span class="txt">Programme</span>
                     </a>
-                    <a href="{{ route('admin.secretariat') }}" title="Secrétariat"
-                       @class(['active' => request()->routeIs('admin.secretariat')])>
-                        <x-ukc.icon name="inbox" :size="18" /> <span class="txt">Secrétariat</span>
-                    </a>
                 @endif
-
-                @if ($staff?->canAnyEdition('announcements'))
-                    <a href="{{ route('admin.announcements') }}" title="Annonces du déroulement"
-                       @class(['active' => request()->routeIs('admin.announcements')])>
-                        <x-ukc.icon name="bell" :size="18" /> <span class="txt">Annonces</span>
-                    </a>
-                @endif
-
                 @if ($staff?->canAnyEdition('formation'))
                     <a href="{{ route('admin.formations') }}" title="Formations"
                        @class(['active' => request()->routeIs('admin.formations')])>
@@ -81,19 +64,26 @@
                     </a>
                 @endif
 
-                @if ($staff?->canAnyEdition('project') || $staff?->canAnyEdition('payments') || $staff?->canAnyEdition('documents') || $staff?->canAnyEdition('emails'))
+                {{-- ===== Gestion : participants, finances, secrétariat, documents ===== --}}
+                @if ($staff?->canAnyEdition('participants') || $staff?->canAnyEdition('payments') || $staff?->canAnyEdition('editions_read') || $staff?->canAnyEdition('documents'))
                     <span class="nav-label">Gestion</span>
                 @endif
-                @if ($staff?->canAnyEdition('project'))
-                    <a href="{{ route('admin.project.index') }}" title="Projet"
-                       @class(['active' => request()->routeIs('admin.project.*')])>
-                        <x-ukc.icon name="layers" :size="18" /> <span class="txt">Projet</span>
+                @if ($staff?->canAnyEdition('participants'))
+                    <a href="{{ route('admin.participants.index') }}" title="Participants"
+                       @class(['active' => request()->routeIs('admin.participants.*')])>
+                        <x-ukc.icon name="users" :size="18" /> <span class="txt">Participants</span>
                     </a>
                 @endif
                 @if ($staff?->canAnyEdition('payments'))
                     <a href="{{ route('admin.payments.index') }}" title="Paiements"
                        @class(['active' => request()->routeIs('admin.payments.*')])>
                         <x-ukc.icon name="card" :size="18" /> <span class="txt">Paiements</span>
+                    </a>
+                @endif
+                @if ($staff?->canAnyEdition('editions_read'))
+                    <a href="{{ route('admin.secretariat') }}" title="Secrétariat"
+                       @class(['active' => request()->routeIs('admin.secretariat') || request()->routeIs('admin.secretariat.*')])>
+                        <x-ukc.icon name="sheet" :size="18" /> <span class="txt">Secrétariat</span>
                     </a>
                 @endif
                 @if ($staff?->canAnyEdition('documents'))
@@ -103,21 +93,47 @@
                     </a>
                     {{-- « Attestations délivrées » est un sous-onglet de Documents. --}}
                 @endif
+
+                {{-- ===== Communication : e-mails, annonces, témoignages, réclamations ===== --}}
+                @if ($staff?->canAnyEdition('emails') || $staff?->canAnyEdition('announcements') || auth('web')->user()?->can('testimonials') || $staff?->canAnyEdition('claims'))
+                    <span class="nav-label">Communication</span>
+                @endif
                 @if ($staff?->canAnyEdition('emails'))
                     <a href="{{ route('admin.emails.index') }}" title="E-mails"
                        @class(['active' => request()->routeIs('admin.emails.*')])>
                         <x-ukc.icon name="mail" :size="18" /> <span class="txt">E-mails</span>
                     </a>
                 @endif
+                @if ($staff?->canAnyEdition('announcements'))
+                    <a href="{{ route('admin.announcements') }}" title="Annonces du déroulement"
+                       @class(['active' => request()->routeIs('admin.announcements')])>
+                        <x-ukc.icon name="bell" :size="18" /> <span class="txt">Annonces</span>
+                    </a>
+                @endif
+                @can('testimonials')
+                    <a href="{{ route('admin.testimonials.index') }}" title="Témoignages (accueil)"
+                       @class(['active' => request()->routeIs('admin.testimonials.*')])>
+                        <x-ukc.icon name="award" :size="18" /> <span class="txt">Témoignages</span>
+                    </a>
+                @endcan
                 @if ($staff?->canAnyEdition('claims'))
                     <a href="{{ route('admin.claims.index') }}" title="Réclamations & incidents"
                        @class(['active' => request()->routeIs('admin.claims.*')])>
-                        <x-ukc.icon name="inbox" :size="18" /> <span class="txt">Réclamations</span>
+                        <x-ukc.icon name="alert-triangle" :size="18" /> <span class="txt">Réclamations</span>
                     </a>
                 @endif
 
-                @if ($staff?->canAnyEdition('view_dashboard'))
+                {{-- ===== Pilotage : projet, rapports, assistant IA ===== --}}
+                @if ($staff?->canAnyEdition('project') || $staff?->canAnyEdition('view_dashboard'))
                     <span class="nav-label">Pilotage</span>
+                @endif
+                @if ($staff?->canAnyEdition('project'))
+                    <a href="{{ route('admin.project.index') }}" title="Projet"
+                       @class(['active' => request()->routeIs('admin.project.*')])>
+                        <x-ukc.icon name="layers" :size="18" /> <span class="txt">Projet</span>
+                    </a>
+                @endif
+                @if ($staff?->canAnyEdition('view_dashboard'))
                     <a href="{{ route('admin.reports.index') }}" title="Rapports"
                        @class(['active' => request()->routeIs('admin.reports.*')])>
                         <x-ukc.icon name="chart" :size="18" /> <span class="txt">Rapports</span>
@@ -128,15 +144,10 @@
                     </a>
                 @endif
 
-                @if (auth('web')->user()?->can('users_roles') || auth('web')->user()?->can('settings') || auth('web')->user()?->can('testimonials'))
+                {{-- ===== Système : utilisateurs, réglages ===== --}}
+                @if (auth('web')->user()?->can('users_roles') || auth('web')->user()?->can('settings'))
                     <span class="nav-label">Système</span>
                 @endif
-                @can('testimonials')
-                    <a href="{{ route('admin.testimonials.index') }}" title="Témoignages (accueil)"
-                       @class(['active' => request()->routeIs('admin.testimonials.*')])>
-                        <x-ukc.icon name="sparkles" :size="18" /> <span class="txt">Témoignages</span>
-                    </a>
-                @endcan
                 @can('users_roles')
                     <a href="{{ route('admin.users.index') }}" title="Utilisateurs"
                        @class(['active' => request()->routeIs('admin.users.*')])>

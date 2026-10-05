@@ -157,6 +157,13 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
 - Éditeurs de documents (badge/template) = **pages autonomes hors `.ukc-shell`**
   (overlay `resources/css/designer-tailwise.css`, tokens surchargés via `html:root`).
 - Vérif visuelle : viewport ≥1024px pour voir le menu déployé (reset `desktop` après).
+- ⚠️ **Catégories du menu latéral** (`components/layouts/admin.blade.php`, `<span class="nav-label">`),
+  chacune masquée si aucun de ses liens n'est accessible : **Scientifique** (Événements,
+  Soumissions, Programme, Formations) · **Gestion** (Participants, Paiements, Secrétariat,
+  Documents) · **Communication** (E-mails, Annonces, Témoignages, Réclamations) · **Pilotage**
+  (Projet, Rapports, Assistant IA) · **Système** (Utilisateurs, Réglages). En ajoutant un lien,
+  le ranger dans la bonne catégorie **et** inclure sa capacité dans la garde du `nav-label` du
+  groupe (sinon un label vide peut apparaître).
 
 ### Composants transverses à réutiliser
 
