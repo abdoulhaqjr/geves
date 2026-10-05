@@ -20,7 +20,7 @@
         @elseif (! $moduleEnabled)
             <div class="ukc-empty">
                 <h3>Module Formations désactivé</h3>
-                <p>Activez-le dans les <a href="{{ route('admin.evenements.edit', $event) }}" style="color:var(--ukc-blue);font-weight:600;">paramètres de l’événement</a> (onglet « Options ») pour proposer des formations.</p>
+                <p>Activez-le dans les <a href="{{ route('admin.evenements.edit', [$event, 'tab' => 'options']) }}" style="color:var(--ukc-blue);font-weight:600;">paramètres de l’événement</a> (onglet « Options ») pour proposer des formations.</p>
             </div>
         @else
             <div class="ukc-card" style="padding:0;">
