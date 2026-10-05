@@ -868,6 +868,13 @@ body:has(.ukc-cb-root) .ukc-content { padding-bottom: 104px; }
 .ukc-ai-veil.is-err .ukc-ai-veil__bar span { background: #f87171; animation: none; width: 100%; }
 body.ukc-ai-busy { overflow: hidden; }
 
+/* Surface modale ouverte (slideover, modale, confirmation, visionneuse) : on
+   verrouille le défilement de la PAGE - sinon deux barres de défilement
+   cohabitent (la page derrière ET le panneau). La gouttière reste réservée
+   (`html { scrollbar-gutter: stable }`), donc le contenu ne saute pas.
+   Posé par `initOverlayGuard()` (resources/js/app.js). */
+body.ukc-overlay-open { overflow: hidden; }
+
 @keyframes ukcAiPulse { 0%, 100% { transform: scale(.88); opacity: .75; } 50% { transform: scale(1.08); opacity: 1; } }
 @keyframes ukcAiSlide { 0% { transform: translateX(-120%); } 100% { transform: translateX(320%); } }
 

@@ -1146,6 +1146,9 @@ input[data-uppercase] { text-transform: uppercase; }
    et revient en fondu : elle ne doit jamais masquer un bouton d'action. */
 .ukc-cb-root { transition: opacity .18s ease, transform .18s ease; }
 body.ukc-overlay-open .ukc-cb-root { opacity: 0; transform: translateY(10px) scale(.92); pointer-events: none; }
+/* Surface modale ouverte : la page ne défile plus derrière le panneau (pas de
+   double barre de défilement). Posé par initOverlayGuard() (app.js). */
+body.ukc-overlay-open { overflow: hidden; }
 .ukc-cb-root.is-shy { opacity: .2; pointer-events: none; }
 
 /* En-tête public : monogramme, filet de séparation, puis le nom de la

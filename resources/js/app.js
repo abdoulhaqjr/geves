@@ -2596,12 +2596,14 @@ document.addEventListener('alpine:init', () => {
 Alpine.start();
 
 // ---------------------------------------------------------------------------
-// Bulle du chatbot : s'efface pendant une surface modale, revient en douceur.
-// Elle est fixée en bas à droite - exactement là où les slideovers, les modales
-// et les popups de confirmation posent leurs boutons d'action. Plutôt que de
-// jouer au plus fort avec les z-index (elle finissait par recouvrir un bouton
-// « Confirmer »), on la retire de l'écran tant qu'une surface modale est
-// ouverte, et on la ramène en fondu dès sa fermeture.
+// Garde des surfaces modales : pose `body.ukc-overlay-open` dès qu'un slideover,
+// une modale, une confirmation ou une visionneuse est ouvert. Deux effets, via
+// la CSS : (1) la **page est verrouillée** (`overflow: hidden`) pour ne plus
+// avoir deux barres de défilement - celle de la page ET celle du panneau - et
+// pour qu'elle réapparaisse à la fermeture ; (2) la **bulle du chatbot** s'efface
+// (elle est fixée en bas à droite, pile où ces surfaces posent leurs boutons).
+// ⚠️ `html { scrollbar-gutter: stable }` réserve déjà la gouttière : verrouiller
+// la page ne décale donc pas le contenu.
 // ---------------------------------------------------------------------------
 const UKC_OVERLAYS = '.ukc-slideover, .ukc-confirm-overlay, .ukc-modal, .modal-overlay, .lb-overlay';
 
@@ -2613,12 +2615,7 @@ function ukcOverlayVisible() {
     });
 }
 
-function initChatbotOverlayGuard() {
-    // Rien à surveiller si la bulle n'est pas sur la page.
-    if (!document.querySelector('.ukc-cb-root')) {
-        return;
-    }
-
+function initOverlayGuard() {
     let queued = false;
     const sync = () => {
         queued = false;
@@ -2640,7 +2637,7 @@ function initChatbotOverlayGuard() {
     sync();
 }
 
-document.addEventListener('DOMContentLoaded', initChatbotOverlayGuard);
+document.addEventListener('DOMContentLoaded', initOverlayGuard);
 
 // Bulle « polie » : elle s'efface quand elle recouvre une action (bouton, lien,
 // champ) et revient dès que le pointeur s'en approche. Le lanceur est fixé en
