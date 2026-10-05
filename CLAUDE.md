@@ -559,9 +559,9 @@ paiement (`pay`), inscription à une formation.
 - **Un seul colloque de démo, à l'échelle** : `migrate:fresh --seed` ne crée plus
   qu'**un** colloque (le VIIIe conjoint Parakou-Kara, `avenir-durable-2025`), au
   volume d'un vrai événement. `DatabaseSeeder` enchaîne `ColloqueAvenirSeeder`
-  (colloque + édition **2 → 8 octobre 2026**, ateliers, staff, relecteurs,
+  (colloque + édition **5 → 9 octobre 2026**, ateliers, staff, relecteurs,
   direct) puis `ColloqueAvenirVolumeSeeder` (**200 communications** réf. `AVD-###`,
-  un auteur correspondant chacune ; statuts variés ; créneaux pour les acceptées ;
+  un correspondant **et des co-auteurs** chacune ; statuts variés ; créneaux pour les acceptées ;
   relectures dans tous les états ; **93 % de paiements de participation validés
   manuellement**, passerelle `manual`, reçu numéroté). Montants via
   `Fees::resolveAmount()`, grades via `ParticipantTypes::all()`. Seeders idempotents ;
@@ -571,13 +571,13 @@ paiement (`pay`), inscription à une formation.
   - **Programme du seed = ateliers + plénières SANS conflit** (l'exclusivité des
     plénières est respectée dans les données de démo). Les **ateliers** de volume
     occupent « Salle 1 » à « Salle 6 » (6 en parallèle) par blocs matin **08:30-11:30**
-    et après-midi **14:00-17:00** (`ColloqueAvenirVolumeSeeder::buildSessions()`, 7 blocs
-    du **ven. 02/10 au mer. 07/10**, 42 séances de 3 h - au moins un bloc par jour, un jour
+    et après-midi **14:00-17:00** (`ColloqueAvenirVolumeSeeder::buildSessions()`, **4 blocs**
+    du **lun. 05/10 au jeu. 08/10**, 24 séances de 3 h - un bloc par jour, un jour
     vide au milieu d'un programme se lisant comme un trou de données). Les **4 sessions
     plénières** (`ColloqueAvenirSeeder::buildPlenaries()`, salle « Grand amphithéâtre »,
-    `type=plenary`) sont calées **hors** de ces fenêtres : inauguration **ven. 02/10
-    09:00-10:30**, table ronde **lun. 05/10 08:00-10:00**, formation **mar. 06/10
-    14:00-17:00**, clôture **jeu. 08/10 11:00-12:30** - dernier jour de l'édition, d'où
+    `type=plenary`) sont calées **hors** de ces fenêtres : inauguration **lun. 05/10
+    09:00-10:30**, table ronde **mer. 07/10 08:00-10:00**, formation **jeu. 08/10
+    14:00-17:00**, clôture **ven. 09/10 11:00-12:30** - dernier jour de l'édition, d'où
     l'absence de bloc d'ateliers ce matin-là. Les **séances de démo** de la base
     (`Session - {atelier}`, rapports/Q&A) sont à **11:30-12:30** (juste avant la pause
     déjeuner 12:30-14:00, laissé libre par le volume), et les séances **en direct** /
@@ -585,15 +585,56 @@ paiement (`pay`), inscription à une formation.
     volume ni ne tombe sur le déjeuner. ⚠️ En touchant à ces horaires, garder ces fenêtres
     disjointes (ateliers, plénières ET pause déjeuner) - sinon la vue Planning affiche des
     conflits dès le seed.
-  - ⚠️ **Tout se cale sur `$start`** (`ColloqueAvenirSeeder`, décalages J+0 à J+6) et le
+  - ⚠️ **Tout se cale sur `$start`** (`ColloqueAvenirSeeder`, décalages J+0 à J+4) et le
     seeder de volume **relit `date_start`**. Déplacer le colloque = changer `$start`/`$end`,
-    jamais des dates en dur ailleurs. Garder une fenêtre de **7 jours** : la clôture est à J+6.
+    jamais des dates en dur ailleurs. Garder une fenêtre de **5 jours** : la clôture est à J+4.
+    ⚠️ **RÉTRÉCIR la fenêtre ne se fait PAS en changeant ces deux lignes seules** : en passant
+    de 7 à 5 jours il a fallu replier les décalages des plénières (table ronde J+3 → J+2,
+    formation J+4 → J+3, clôture J+6 → J+4), les blocs d'ateliers et le **programme
+    synthétique** - sinon la clôture tombait deux jours après la fin de l'édition. Deux tests
+    de garde : aucune séance hors fenêtre, et aucune journée du programme publié hors fenêtre.
+  - ⚠️ **5 communications MINIMUM par séance d'atelier** (`MIN_PAR_SEANCE`), et c'est ce
+    minimum qui **dicte le nombre de blocs**, pas le calendrier : 130 communications
+    acceptées sur 42 séances en laissaient 3 par séance, et une séance à trois ne démontre
+    ni la modération, ni le rapportage, ni le passage en salle. 24 séances en portent 5 ou 6
+    - et 6 × 30 min remplit exactement le bloc de 3 h, donc un bloc de plus redescendrait
+    à 4. ⚠️ La séance se choisit **au tour de rôle**, pas par `id % n` : le modulo de
+    l'identifiant répartissait des identifiants non contigus (une communication sur trois
+    est acceptée) et laissait des séances à 3 quand d'autres en avaient 8.
+  - ⚠️ **Le créneau est identifié par sa COMMUNICATION** (`edition_id` + `submission_id`),
+    pas par le couple séance + communication : une communication se présente une fois, et
+    l'ancienne clé créait un SECOND créneau au lieu de déplacer le premier dès que le plan
+    changeait.
+  - ⚠️ **Le plan peut RÉTRÉCIR**, et `updateOrCreate` ne sait que créer ou mettre à jour :
+    `buildSessions()` **supprime** ses séances d'atelier hors plan (et leurs créneaux -
+    `slots.session_id` n'a pas de clé étrangère, ils survivraient orphelins). Sans ce
+    ménage, un rejeu sur une base déjà semée gardait les 42 anciennes séances et la règle
+    des 5 minimum devenait fausse en silence.
+  - **Co-auteurs** (`attachCoauthors()` / `attachDemoCoauthors()`, en **seconde passe** :
+    une communication ne peut citer que des comptes déjà créés). Chaque communication porte
+    son correspondant **et deux co-auteurs inscrits**, plus - une fois sur trois - un
+    co-auteur **non inscrit** resté `invited`, qui donne sa matière à l'association différée
+    (`LinkPendingAuthorships`, à la création du compte). Les six comptes `commN@test.tg` ont
+    chacun un dépôt à eux et deux co-signatures.
+    ⚠️ **Les seeders n'appellent PAS `LinkSubmissionAuthors`** : cette action **notifie** -
+    un e-mail et un SMS par rapprochement, soit six cents envois pour un seed. Ils écrivent
+    les lignes `submission_authors` directement, **dans la forme exacte** que l'action leur
+    aurait donnée (c'est `status = 'linked'` + `user_id` que lit « Mes communications »).
+    ⚠️ **Jetons déterministes** (`hash('sha256', …)`) : le jeton porte le lien de
+    déclinaison, et un `Str::random()` le changerait à chaque rejeu.
+  - ⚠️ **`users.phone` est UNIQUE**, et un compte semé peut avoir été **renommé à la main**
+    en base de développement : il garde son numéro, et l'insertion du compte attendu échouait
+    sur la contrainte. Le scénario étant dans une transaction, c'étaient **200 communications
+    qui ne se semaient pas** pour un numéro fictif. Le seeder cède le numéro (compte sans
+    téléphone) au lieu de tomber.
   - **Visioconférences dans le jeu de démo** : les trois états sont représentés sans rien
     attendre - une séance **en direct**, une **terminée avec replay** (toutes deux calées sur
     l'**horloge**, pas sur une date fixe : une séance « terminée » posée à date fixe
-    s'annoncerait terminée avant d'avoir eu lieu), et des séances **programmées**. Deux blocs
-    entiers du volume se tiennent **à distance**, ce qui donne le volume de **créneaux en
-    visio** (~44). Cérémonies en visibilité **publique** (seul endroit qui exerce
+    s'annoncerait terminée avant d'avoir eu lieu), et des séances **programmées**.
+    ⚠️ **TOUTES les séances ouvrent une salle** (`meeting_status` jamais `none`) : deux blocs
+    seulement la portaient, et on ne pouvait pas vérifier la visio depuis une communication
+    prise au hasard du programme. Les 130 créneaux de communication sont donc tous en
+    visio. Cérémonies en visibilité **publique** (seul endroit qui exerce
     `MeetingVisibility::Public`), ateliers réservés aux inscrits.
     ⚠️ **Le seeder n'impose AUCUN `meeting_provider`** : il suit `meetings.default`, et
     `MeetingProviderRegistry` retombe seul sur Jitsi public quand ce défaut n'est pas
