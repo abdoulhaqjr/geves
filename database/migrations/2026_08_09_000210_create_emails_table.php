@@ -14,7 +14,7 @@ return new class extends Migration
     {
         Schema::create('emails', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('edition_id')->nullable()->index();
+            $table->foreignId('event_id')->nullable()->index();
             $table->foreignId('participant_id')->nullable();
             $table->string('template', 60)->nullable();
             $table->string('recipient', 200)->default('');

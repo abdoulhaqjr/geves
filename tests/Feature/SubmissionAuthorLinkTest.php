@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Notification;
 
 // Fabriques partagées : openEdition(), verifiedAccount() (tests/Pest.php).
 
-function submitWithCoauthor(User $submitter, $edition, array $coauthor): void
+function submitWithCoauthor(User $submitter, $event, array $coauthor): void
 {
     // Le nom du co-auteur est désormais séparé (nom/prénom) : on traduit un
     // éventuel 'name' hérité, et on complète les champs obligatoires par défaut.
@@ -27,7 +27,7 @@ function submitWithCoauthor(User $submitter, $edition, array $coauthor): void
     $coauthor = array_merge(['first_name' => 'Co', 'last_name' => 'Auteur', 'affiliation' => 'Université de Kara'], $coauthor);
 
     test()->actingAs($submitter, 'account')
-        ->post(route('account.submissions.store', $edition->slug), [
+        ->post(route('account.submissions.store', $event->slug), [
             'title' => 'Étude liée',
             'track' => 'Sciences',
             'abstract' => str_repeat('a', 60),
@@ -39,14 +39,14 @@ function submitWithCoauthor(User $submitter, $edition, array $coauthor): void
 it('lie un co-auteur à son compte existant (e-mail) et le notifie', function () {
     Mail::fake();
     Notification::fake();
-    $edition = openEdition();
+    $event = openEdition();
     $submitter = verifiedAccount();
     $coauthor = User::create([
         'name' => 'Yao Doe', 'first_name' => 'Yao', 'last_name' => 'Doe',
         'email' => 'yao@uk.tg', 'password' => 'pass12345', 'affiliation' => 'Université de Kara',
     ]);
 
-    submitWithCoauthor($submitter, $edition, ['name' => 'Yao Doe', 'email' => 'yao@uk.tg', 'affiliation' => 'Université de Kara', 'grade' => 'Dr']);
+    submitWithCoauthor($submitter, $event, ['name' => 'Yao Doe', 'email' => 'yao@uk.tg', 'affiliation' => 'Université de Kara', 'grade' => 'Dr']);
 
     $sub = Submission::first();
     $link = SubmissionAuthor::where('submission_id', $sub->id)->where('role', 'coauthor')->first();
@@ -55,7 +55,7 @@ it('lie un co-auteur à son compte existant (e-mail) et le notifie', function ()
     expect($link->match_type)->toBe('email');
 
     // Participant créé pour le co-auteur + communication visible dans son espace.
-    expect(Participant::where('edition_id', $edition->id)->where('user_id', $coauthor->id)->exists())->toBeTrue();
+    expect(Participant::where('event_id', $event->id)->where('user_id', $coauthor->id)->exists())->toBeTrue();
     $mine = Submission::whereHas('authorLinks', fn ($l) => $l->where('user_id', $coauthor->id)->where('status', 'linked'))->count();
     expect($mine)->toBe(1);
 
@@ -79,10 +79,10 @@ it('rapproche par nom + affiliation (AuthorMatcher, homonymes départagés)', fu
 
 it('invite un co-auteur non inscrit', function () {
     Mail::fake();
-    $edition = openEdition();
+    $event = openEdition();
     $submitter = verifiedAccount();
 
-    submitWithCoauthor($submitter, $edition, ['name' => 'Inconnu X', 'email' => 'inconnu@x.tg']);
+    submitWithCoauthor($submitter, $event, ['name' => 'Inconnu X', 'email' => 'inconnu@x.tg']);
 
     $link = SubmissionAuthor::where('email', 'inconnu@x.tg')->first();
     expect($link->status)->toBe('invited');
@@ -91,9 +91,9 @@ it('invite un co-auteur non inscrit', function () {
 
 it('rattache automatiquement les communications en attente à l’inscription', function () {
     Mail::fake();
-    $edition = openEdition();
+    $event = openEdition();
     $submitter = verifiedAccount();
-    submitWithCoauthor($submitter, $edition, ['name' => 'Futur Membre', 'email' => 'futur@x.tg', 'affiliation' => 'Université de Kara']);
+    submitWithCoauthor($submitter, $event, ['name' => 'Futur Membre', 'email' => 'futur@x.tg', 'affiliation' => 'Université de Kara']);
 
     $new = User::create([
         'name' => 'Futur Membre', 'first_name' => 'Futur', 'last_name' => 'Membre',
@@ -104,18 +104,18 @@ it('rattache automatiquement les communications en attente à l’inscription', 
     $link = SubmissionAuthor::where('email', 'futur@x.tg')->first();
     expect($link->status)->toBe('linked');
     expect($link->user_id)->toBe($new->id);
-    expect(Participant::where('edition_id', $edition->id)->where('user_id', $new->id)->exists())->toBeTrue();
+    expect(Participant::where('event_id', $event->id)->where('user_id', $new->id)->exists())->toBeTrue();
 });
 
 it('permet de décliner une association', function () {
     Mail::fake();
-    $edition = openEdition();
+    $event = openEdition();
     $submitter = verifiedAccount();
     $coauthor = User::create([
         'name' => 'Yao Doe', 'first_name' => 'Yao', 'last_name' => 'Doe',
         'email' => 'yao@uk.tg', 'password' => 'pass12345', 'affiliation' => 'UK',
     ]);
-    submitWithCoauthor($submitter, $edition, ['name' => 'Yao Doe', 'email' => 'yao@uk.tg']);
+    submitWithCoauthor($submitter, $event, ['name' => 'Yao Doe', 'email' => 'yao@uk.tg']);
 
     $link = SubmissionAuthor::where('user_id', $coauthor->id)->first();
     $this->post(route('author.decline.confirm', ['token' => $link->token]))->assertRedirect();
@@ -127,13 +127,13 @@ it('permet de décliner une association', function () {
 
 it('affiche le statut de rattachement des auteurs côté back-office', function () {
     Mail::fake();
-    $edition = openEdition();
+    $event = openEdition();
     $submitter = verifiedAccount();
     $coauthor = User::create([
         'name' => 'Yao Doe', 'first_name' => 'Yao', 'last_name' => 'Doe',
         'email' => 'yao@uk.tg', 'password' => 'pass12345', 'affiliation' => 'UK',
     ]);
-    submitWithCoauthor($submitter, $edition, ['name' => 'Yao Doe', 'email' => 'yao@uk.tg']);
+    submitWithCoauthor($submitter, $event, ['name' => 'Yao Doe', 'email' => 'yao@uk.tg']);
     $sub = Submission::first();
 
     $this->actingAs(adminStaff(), 'web')
@@ -145,9 +145,9 @@ it('affiche le statut de rattachement des auteurs côté back-office', function 
 
 it('permet au staff de rattacher manuellement un auteur à un compte', function () {
     Mail::fake();
-    $edition = openEdition();
+    $event = openEdition();
     $submitter = verifiedAccount();
-    submitWithCoauthor($submitter, $edition, ['name' => 'Kossi Alpha', 'email' => 'kossi@x.tg']);
+    submitWithCoauthor($submitter, $event, ['name' => 'Kossi Alpha', 'email' => 'kossi@x.tg']);
     $sub = Submission::first();
     $link = SubmissionAuthor::where('submission_id', $sub->id)->where('role', 'coauthor')->first();
     expect($link->status)->toBe('invited');
@@ -166,18 +166,18 @@ it('permet au staff de rattacher manuellement un auteur à un compte', function 
     expect($link->user_id)->toBe($user->id);
     expect($link->status)->toBe('linked');
     expect($link->match_type)->toBe('manual');
-    expect(Participant::where('edition_id', $edition->id)->where('user_id', $user->id)->exists())->toBeTrue();
+    expect(Participant::where('event_id', $event->id)->where('user_id', $user->id)->exists())->toBeTrue();
 });
 
 it('permet au staff de détacher un compte mal rapproché', function () {
     Mail::fake();
-    $edition = openEdition();
+    $event = openEdition();
     $submitter = verifiedAccount();
     $coauthor = User::create([
         'name' => 'Yao Doe', 'first_name' => 'Yao', 'last_name' => 'Doe',
         'email' => 'yao@uk.tg', 'password' => 'pass12345',
     ]);
-    submitWithCoauthor($submitter, $edition, ['name' => 'Yao Doe', 'email' => 'yao@uk.tg']);
+    submitWithCoauthor($submitter, $event, ['name' => 'Yao Doe', 'email' => 'yao@uk.tg']);
     $sub = Submission::first();
     $link = SubmissionAuthor::where('user_id', $coauthor->id)->first();
 
@@ -192,14 +192,14 @@ it('permet au staff de détacher un compte mal rapproché', function () {
 
 it('filtre les soumissions ayant des co-auteurs non rattachés', function () {
     Mail::fake();
-    $edition = openEdition();
+    $event = openEdition();
     $submitter = verifiedAccount();
 
-    submitWithCoauthor($submitter, $edition, ['name' => 'Inconnu Z', 'email' => 'inconnu@z.tg']); // -> invited (non rattaché)
+    submitWithCoauthor($submitter, $event, ['name' => 'Inconnu Z', 'email' => 'inconnu@z.tg']); // -> invited (non rattaché)
     $subA = Submission::orderBy('id')->first();
 
     User::create(['name' => 'Lie Ok', 'first_name' => 'Lie', 'last_name' => 'Ok', 'email' => 'lie@uk.tg', 'password' => 'pass12345']);
-    submitWithCoauthor($submitter, $edition, ['name' => 'Lie Ok', 'email' => 'lie@uk.tg']); // -> linked
+    submitWithCoauthor($submitter, $event, ['name' => 'Lie Ok', 'email' => 'lie@uk.tg']); // -> linked
     $subB = Submission::orderBy('id', 'desc')->first();
 
     $this->actingAs(adminStaff(), 'web')
@@ -211,14 +211,14 @@ it('filtre les soumissions ayant des co-auteurs non rattachés', function () {
 
 it('un co-auteur voit la fiche mais ne peut pas la modifier', function () {
     Mail::fake();
-    $edition = openEdition();
+    $event = openEdition();
     $submitter = verifiedAccount();
     $coauthor = User::create([
         'name' => 'Yao Doe', 'first_name' => 'Yao', 'last_name' => 'Doe',
         'email' => 'yao@uk.tg', 'password' => 'pass12345', 'affiliation' => 'UK',
     ]);
     $coauthor->markEmailAsVerified();
-    submitWithCoauthor($submitter, $edition, ['name' => 'Yao Doe', 'email' => 'yao@uk.tg']);
+    submitWithCoauthor($submitter, $event, ['name' => 'Yao Doe', 'email' => 'yao@uk.tg']);
     $sub = Submission::first();
 
     $this->actingAs($coauthor, 'account')->get(route('account.submissions.show', $sub))->assertOk();

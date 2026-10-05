@@ -1,8 +1,8 @@
-<x-layouts.admin :title="'Documents - '.($edition->title ?: $edition->year)" subtitle="Ressources & documents de l’édition">
+<x-layouts.admin :title="'Documents - '.($event->title ?: $event->year)" subtitle="Ressources & documents de l’événement">
     <div style="max-width:820px;">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
-            <a href="{{ route('admin.editions.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">← Éditions</a>
-            <a href="{{ route('admin.documents.livret', $edition) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+            <a href="{{ route('admin.evenements.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">← Événements</a>
+            <a href="{{ route('admin.documents.livret', $event) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
                 <x-ukc.icon name="book" :size="16" /> Livret des résumés
             </a>
         </div>
@@ -11,9 +11,9 @@
         <div class="ukc-card" style="margin-bottom:18px;">
             <h2 style="font-size:1.05rem;margin:0 0 4px;">Ajouter un document</h2>
             <p class="ukc-muted" style="font-size:.85rem;margin:0 0 14px;">
-                Ces ressources sont accessibles aux participants de l’édition depuis leur espace.
+                Ces ressources sont accessibles aux participants de l’événement depuis leur espace.
             </p>
-            <form method="POST" action="{{ route('admin.editions.documents.store', $edition) }}"
+            <form method="POST" action="{{ route('admin.evenements.documents.store', $event) }}"
                   style="display:grid;grid-template-columns:160px 1fr 1fr auto;gap:12px;align-items:end;">
                 @csrf
                 <div class="ukc-field" style="margin:0;">
@@ -51,7 +51,7 @@
                                     <td>{{ $m->title }}</td>
                                     <td><a href="{{ $m->url }}" target="_blank" style="color:var(--ukc-blue);">{{ \Illuminate\Support\Str::limit($m->url, 40) }}</a></td>
                                     <td style="text-align:right;">
-                                        <form method="POST" action="{{ route('admin.editions.documents.destroy', [$edition, $m]) }}"
+                                        <form method="POST" action="{{ route('admin.evenements.documents.destroy', [$event, $m]) }}"
                                               onsubmit="return confirm('Retirer ce document ?')">
                                             @csrf
                                             @method('DELETE')

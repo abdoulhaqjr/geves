@@ -53,34 +53,34 @@ it('n’autorise qu’un seul témoignage en attente à la fois', function () {
     expect(Testimonial::where('user_id', $account->id)->count())->toBe(1);
 });
 
-it('ignore un contexte d’édition auquel la personne n’a pas participé', function () {
+it('ignore un contexte d’événement auquel la personne n’a pas participé', function () {
     $account = verifiedAccount();
-    $edition = openEdition();
-    // Le compte n'a AUCUN participant sur cette édition.
+    $event = openEdition();
+    // Le compte n'a AUCUN participant sur cette événement.
 
     $this->actingAs($account, 'account')
         ->post(route('account.testimonials.store'), [
-            'quote' => 'Témoignage avec une édition qui n’est pas la mienne.',
-            'edition_id' => $edition->id,
+            'quote' => 'Témoignage avec une événement qui n’est pas la mienne.',
+            'event_id' => $event->id,
             'consent' => '1',
         ])->assertRedirect();
 
-    expect(Testimonial::first()->edition_id)->toBeNull();
+    expect(Testimonial::first()->event_id)->toBeNull();
 });
 
-it('conserve le contexte d’édition d’un participant légitime', function () {
+it('conserve le contexte d’événement d’un participant légitime', function () {
     $account = verifiedAccount();
-    $edition = openEdition();
-    Participant::create(['edition_id' => $edition->id, 'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email, 'role' => 'author']);
+    $event = openEdition();
+    Participant::create(['event_id' => $event->id, 'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email, 'role' => 'author']);
 
     $this->actingAs($account, 'account')
         ->post(route('account.testimonials.store'), [
-            'quote' => 'Un vrai retour sur l’édition à laquelle j’ai participé.',
-            'edition_id' => $edition->id,
+            'quote' => 'Un vrai retour sur l’événement à laquelle j’ai participé.',
+            'event_id' => $event->id,
             'consent' => '1',
         ])->assertRedirect();
 
-    expect(Testimonial::first()->edition_id)->toBe($edition->id);
+    expect(Testimonial::first()->event_id)->toBe($event->id);
 });
 
 /*

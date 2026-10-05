@@ -69,7 +69,7 @@ class SessionPresence
     }
 
     /**
-     * Le pointage est-il ouvert à l'écriture ? Séance commencée, édition non
+     * Le pointage est-il ouvert à l'écriture ? Séance commencée, événement non
      * archivée, rapport non validé (le PV cite ces chiffres).
      *
      * ⚠️ **Règle unique**, partagée par la page de présence, la salle de visio et
@@ -78,7 +78,7 @@ class SessionPresence
      */
     public static function open(EventSession $session): bool
     {
-        if (! $session->hasStarted() || EditionLock::frozen($session->edition)) {
+        if (! $session->hasStarted() || EventLock::frozen($session->event)) {
             return false;
         }
 
@@ -182,13 +182,13 @@ class SessionPresence
     }
 
     /**
-     * Inscription de ce compte sur l'édition de la séance. Rapprochement par
+     * Inscription de ce compte sur l'événement de la séance. Rapprochement par
      * compte lié d'abord, par e-mail ensuite : un co-auteur n'est souvent relié à
      * son inscription que par son adresse.
      */
     private static function participantFor(EventSession $session, User $account): ?Participant
     {
-        return Participant::where('edition_id', $session->edition_id)
+        return Participant::where('event_id', $session->event_id)
             ->where(fn ($q) => $q->where('user_id', $account->id)
                 ->orWhereRaw('LOWER(email) = ?', [mb_strtolower((string) $account->email)]))
             ->first();

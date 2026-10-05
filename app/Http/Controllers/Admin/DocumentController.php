@@ -8,9 +8,9 @@ use App\Documents\LivretDocx;
 use App\Documents\LivretTemplate;
 use App\Http\Controllers\Controller;
 use App\Models\DocumentTemplate;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Submission;
-use App\Support\EditionSettings;
+use App\Support\EventSettings;
 use App\Support\SessionDocLayout;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
@@ -22,15 +22,15 @@ use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Documents imprimables d'une édition : livret des résumés et planche de badges.
+ * Documents imprimables d'une événement : livret des résumés et planche de badges.
  * (Imprimer / Enregistrer en PDF depuis le navigateur.)
  */
 class DocumentController extends Controller
 {
     /** Livret des résumés : communications acceptées, groupées par axe. */
-    public function livret(Edition $edition, Request $request): View|Response
+    public function livret(Event $event, Request $request): View|Response
     {
-        $groups = $edition->submissions()
+        $groups = $event->submissions()
             ->where('revision_of', 0)
             ->where('status', 'accepted')
             ->orderBy('track')
@@ -38,48 +38,48 @@ class DocumentController extends Controller
             ->groupBy(fn ($s) => $s->track ?: 'Autres');
 
         if ($request->query('format') === 'docx') {
-            $base = 'livret-'.($edition->slug ?: 'edition-'.$edition->id).'.docx';
+            $base = 'livret-'.($event->slug ?: 'edition-'.$event->id).'.docx';
             // Modèle .docx personnalisé sélectionné ? On remplit ses balises ; sinon
             // on retombe sur le générateur intégré paramétrable.
-            if ($template = $this->selectedLivretTemplate($edition)) {
-                return (new LivretTemplate($edition, $groups, (string) $template['path'], $request->boolean('harmonize')))
+            if ($template = $this->selectedLivretTemplate($event)) {
+                return (new LivretTemplate($event, $groups, (string) $template['path'], $request->boolean('harmonize')))
                     ->download($base);
             }
 
-            return (new LivretDocx($edition, $groups, $request->boolean('harmonize'), $this->livretStyle($edition)))->download($base);
+            return (new LivretDocx($event, $groups, $request->boolean('harmonize'), $this->livretStyle($event)))->download($base);
         }
 
         if ($request->query('format') === 'pdf') {
-            $pdf = Pdf::loadView('documents.livret-pdf', $this->livretViewData($edition, $groups))
+            $pdf = Pdf::loadView('documents.livret-pdf', $this->livretViewData($event, $groups))
                 ->setPaper('a4');
-            $file = 'livret-'.($edition->slug ?: 'edition-'.$edition->id).'.pdf';
+            $file = 'livret-'.($event->slug ?: 'edition-'.$event->id).'.pdf';
 
             // `inline` → aperçu dans le navigateur (vrai rendu final) ; sinon téléchargement.
             return $request->boolean('inline') ? $pdf->stream($file) : $pdf->download($file);
         }
 
         return view('documents.livret', [
-            'edition' => $edition,
+            'event' => $event,
             'groups' => $groups,
         ]);
     }
 
     /**
-     * Modèle .docx personnalisé sélectionné pour cette édition, ou null (générateur
+     * Modèle .docx personnalisé sélectionné pour cette événement, ou null (générateur
      * intégré). Un modèle n'est retenu que si son fichier existe réellement.
      *
      * @return array{name?: string, path?: string}|null
      */
-    private function selectedLivretTemplate(Edition $edition): ?array
+    private function selectedLivretTemplate(Event $event): ?array
     {
-        $selected = (string) EditionSettings::get($edition, 'livret.template', 'default');
+        $selected = (string) EventSettings::get($event, 'livret.template', 'default');
         // 'default'/'base'/'fss' = styles intégrés (générateur LivretDocx), pas un
         // modèle .docx importé.
         if (in_array($selected, ['', 'default', 'base', ...array_keys(LivretDocx::STYLES)], true)) {
             return null;
         }
 
-        $templates = EditionSettings::get($edition, 'livret.templates');
+        $templates = EventSettings::get($event, 'livret.templates');
         foreach (is_array($templates) ? $templates : [] as $tpl) {
             if (($tpl['name'] ?? null) === $selected
                 && ! empty($tpl['path'])
@@ -92,9 +92,9 @@ class DocumentController extends Controller
     }
 
     /** Style intégré actif pour le .docx : 'fss' si sélectionné, sinon 'default'. */
-    private function livretStyle(Edition $edition): string
+    private function livretStyle(Event $event): string
     {
-        $selected = (string) EditionSettings::get($edition, 'livret.template', 'default');
+        $selected = (string) EventSettings::get($event, 'livret.template', 'default');
 
         return array_key_exists($selected, LivretDocx::STYLES) ? $selected : 'default';
     }
@@ -106,9 +106,9 @@ class DocumentController extends Controller
      * @param  Collection<int|string, \Illuminate\Database\Eloquent\Collection<int, Submission>>  $groups
      * @return array<string, mixed>
      */
-    private function livretViewData(Edition $edition, Collection $groups): array
+    private function livretViewData(Event $event, Collection $groups): array
     {
-        $g = fn (string $key, mixed $default = null): mixed => EditionSettings::get($edition, $key, $default);
+        $g = fn (string $key, mixed $default = null): mixed => EventSettings::get($event, $key, $default);
         // Alignement (réglage FR) -> valeur CSS text-align.
         $css = fn (mixed $v): string => match ((string) $v) {
             'Gauche' => 'left', 'Droite' => 'right', 'Justifié' => 'justify', default => 'center',
@@ -134,7 +134,7 @@ class DocumentController extends Controller
         $authorIndex = array_map(fn ($refs) => implode(', ', array_values(array_unique($refs))), $authorIndex);
 
         // Programme : communications placées (créneaux) regroupées par jour.
-        $programme = $edition->slots()->with(['submission', 'session'])
+        $programme = $event->slots()->with(['submission', 'session'])
             ->whereNotNull('starts_at')->orderBy('starts_at')->get()
             ->filter(fn ($sl) => $sl->submission || trim((string) $sl->session_label) !== '')
             ->groupBy(fn ($sl) => $sl->starts_at?->format('Y-m-d') ?? '')
@@ -147,15 +147,15 @@ class DocumentController extends Controller
             'scientifique' => 'Comité scientifique',
         ];
 
-        $synthesis = $edition->settings['program_synthesis'] ?? null;
+        $synthesis = $event->settings['program_synthesis'] ?? null;
 
         return [
-            'edition' => $edition,
+            'event' => $event,
             'groups' => $groups,
             'authorIndex' => $authorIndex,
             'programme' => $programme,
             'programSynthesis' => is_array($synthesis) ? $synthesis : ['title' => '', 'days' => []],
-            'committees' => $edition->committeeMembers()->orderBy('ordre')->get()->groupBy('role'),
+            'committees' => $event->committeeMembers()->orderBy('ordre')->get()->groupBy('role'),
             'committeeRoles' => $committeeRoles,
             'dayLabel' => fn (string $d) => $d !== '' ? ucfirst(Carbon::parse($d)->translatedFormat('l j F Y')) : 'À programmer',
             'opts' => [
@@ -187,15 +187,15 @@ class DocumentController extends Controller
     }
 
     /** Fiches de session imprimables : chaque session avec ses communications. */
-    public function sessionSheets(Edition $edition): View
+    public function sessionSheets(Event $event): View
     {
-        $sessions = $edition->sessions()
+        $sessions = $event->sessions()
             ->with('atelier')
             ->orderBy('session_day')
             ->orderBy('ordre')
             ->get();
 
-        $commsBySession = $edition->slots()
+        $commsBySession = $event->slots()
             ->where('submission_id', '>', 0)
             ->with('submission')
             ->orderBy('starts_at')
@@ -203,16 +203,16 @@ class DocumentController extends Controller
             ->groupBy('session_id');
 
         return view('documents.session-sheets', [
-            'edition' => $edition,
+            'event' => $event,
             'sessions' => $sessions,
             'commsBySession' => $commsBySession,
         ]);
     }
 
     /** PV / procès-verbaux imprimables : entête + communications + synthèse du rapport. */
-    public function sessionPv(Edition $edition): View
+    public function sessionPv(Event $event): View
     {
-        $sessions = $edition->sessions()
+        $sessions = $event->sessions()
             ->with(['atelier', 'report'])
             // Présents RÉELLEMENT pointés par le modérateur / le rapporteur : le PV
             // doit préférer un comptage à l'affluence estimée à la main. En
@@ -220,46 +220,46 @@ class DocumentController extends Controller
             ->withCount(['attendances as present_count' => fn ($q) => $q->where('status', 'present')])
             ->orderBy('session_day')->orderBy('ordre')->get();
 
-        $commsBySession = $edition->slots()
+        $commsBySession = $event->slots()
             ->where('submission_id', '>', 0)
             ->with('submission')
             ->orderBy('starts_at')->get()
             ->groupBy('session_id');
 
         return view('documents.session-pv', [
-            'edition' => $edition,
+            'event' => $event,
             'sessions' => $sessions,
             'commsBySession' => $commsBySession,
         ]);
     }
 
     /** Éditeur de mise en page (entêtes + colonnes) des documents de séance. */
-    public function sessionLayout(Edition $edition): View
+    public function sessionLayout(Event $event): View
     {
         return view('admin.documents.session-layout', [
-            'edition' => $edition,
+            'event' => $event,
             'columns' => SessionDocLayout::COLUMNS,
             'headerFields' => SessionDocLayout::HEADER_FIELDS,
             'pvSections' => SessionDocLayout::PV_SECTIONS,
             'sel' => [
-                'sheet_columns' => array_column(SessionDocLayout::sheetColumns($edition), 'key'),
-                'sheet_header' => array_column(SessionDocLayout::sheetHeader($edition), 'key'),
-                'pv_columns' => array_column(SessionDocLayout::pvColumns($edition), 'key'),
-                'pv_header' => array_column(SessionDocLayout::pvHeader($edition), 'key'),
-                'pv_sections' => array_column(SessionDocLayout::pvSections($edition), 'key'),
+                'sheet_columns' => array_column(SessionDocLayout::sheetColumns($event), 'key'),
+                'sheet_header' => array_column(SessionDocLayout::sheetHeader($event), 'key'),
+                'pv_columns' => array_column(SessionDocLayout::pvColumns($event), 'key'),
+                'pv_header' => array_column(SessionDocLayout::pvHeader($event), 'key'),
+                'pv_sections' => array_column(SessionDocLayout::pvSections($event), 'key'),
             ],
             'labels' => [
-                'sheet_columns' => (array) EditionSettings::get($edition, 'session_sheets.columns_labels', []),
-                'sheet_header' => (array) EditionSettings::get($edition, 'session_sheets.header_labels', []),
-                'pv_columns' => (array) EditionSettings::get($edition, 'session_pv.columns_labels', []),
-                'pv_header' => (array) EditionSettings::get($edition, 'session_pv.header_labels', []),
-                'pv_sections' => (array) EditionSettings::get($edition, 'session_pv.sections_labels', []),
+                'sheet_columns' => (array) EventSettings::get($event, 'session_sheets.columns_labels', []),
+                'sheet_header' => (array) EventSettings::get($event, 'session_sheets.header_labels', []),
+                'pv_columns' => (array) EventSettings::get($event, 'session_pv.columns_labels', []),
+                'pv_header' => (array) EventSettings::get($event, 'session_pv.header_labels', []),
+                'pv_sections' => (array) EventSettings::get($event, 'session_pv.sections_labels', []),
             ],
         ]);
     }
 
-    /** Enregistre la mise en page (colonnes/entêtes/sections) dans les réglages d'édition. */
-    public function saveSessionLayout(Request $request, Edition $edition): RedirectResponse
+    /** Enregistre la mise en page (colonnes/entêtes/sections) dans les réglages d'événement. */
+    public function saveSessionLayout(Request $request, Event $event): RedirectResponse
     {
         $values = array_merge(
             $this->layoutGroup($request, 'sheet_columns', 'session_sheets.columns', SessionDocLayout::COLUMNS),
@@ -268,7 +268,7 @@ class DocumentController extends Controller
             $this->layoutGroup($request, 'pv_header', 'session_pv.header', SessionDocLayout::HEADER_FIELDS),
             $this->layoutGroup($request, 'pv_sections', 'session_pv.sections', SessionDocLayout::PV_SECTIONS),
         );
-        EditionSettings::setMany($edition, $values);
+        EventSettings::setMany($event, $values);
 
         return back()->with('ukc_status', 'Mise en page des documents de séance enregistrée.');
     }
@@ -298,9 +298,9 @@ class DocumentController extends Controller
     }
 
     /** Planche de badges (A4, 2 colonnes), couleur par rôle. */
-    public function badges(Edition $edition, Request $request): View
+    public function badges(Event $event, Request $request): View
     {
-        $query = $edition->participants();
+        $query = $event->participants();
 
         if ($request->boolean('paid')) {
             $query->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid'));
@@ -310,21 +310,21 @@ class DocumentController extends Controller
 
         // Toujours un modèle enregistré (créé au besoin) : plus de planche de repli
         // que l'admin ne pouvait ni voir ni modifier.
-        $template = DocumentTemplate::ensureFor((int) $edition->id, 'badge');
+        $template = DocumentTemplate::ensureFor((int) $event->id, 'badge');
 
         $layout = LayoutSanitizer::sanitize((array) $template->layout, 'badge');
         $badges = $participants->map(fn ($p) => LayoutRenderer::render($layout, [
-            'org' => $edition->colloque?->name ?? '',
-            'event' => $edition->title ?? '',
-            'year' => (string) ($edition->year ?: ''),
+            'org' => $event->series?->name ?? '',
+            'event' => $event->title ?? '',
+            'year' => (string) ($event->year ?: ''),
             'name' => $p->full_name,
             'role' => $p->roleLabel(),
             'institution' => (string) $p->institution,
-            'ref' => $edition->id.'-'.$p->id,
+            'ref' => $event->id.'-'.$p->id,
         ]));
 
         return view('documents.badges-template', [
-            'edition' => $edition,
+            'event' => $event,
             'badges' => $badges,
             'width' => $layout['width'],
         ]);

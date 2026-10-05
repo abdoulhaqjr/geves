@@ -1,5 +1,5 @@
 @php
-    /** @var \App\Models\Edition $edition */
+    /** @var \App\Models\Event $event */
     $primary = $opts['color_primary'];
     $muted = '#6b7280';
     $hm = fn ($t) => $t ? \Illuminate\Support\Carbon::parse($t)->format('H:i') : '';
@@ -8,7 +8,7 @@
 <html lang="fr">
 <head>
     <meta charset="utf-8">
-    <title>Livret des résumés - {{ $edition->title }}</title>
+    <title>Livret des résumés - {{ $event->title }}</title>
     <style>
         @page { margin: 2.2cm 2.2cm 2.4cm; }
         * { box-sizing: border-box; }
@@ -44,20 +44,20 @@
 
 {{-- ===================== PAGE DE GARDE ===================== --}}
 <div style="padding-top: 90px;">
-    @if ($name = trim((string) $edition->colloque?->name))
+    @if ($name = trim((string) $event->series?->name))
         <p class="center sans" style="font-weight:bold;color:{{ $primary }};font-size:12pt;margin:0 0 6px;">{{ \Illuminate\Support\Str::upper($name) }}</p>
     @endif
-    <h1 class="sans center" style="font-size:24pt;margin:30px 0 6px;color:#111827;">{{ $edition->title }}</h1>
-    @if ($label = trim((string) $edition->edition_label))
+    <h1 class="sans center" style="font-size:24pt;margin:30px 0 6px;color:#111827;">{{ $event->title }}</h1>
+    @if ($label = trim((string) $event->event_label))
         <p class="center muted" style="margin:0 0 6px;">{{ $label }}</p>
     @endif
-    @if ($opts['show_theme'] && ($theme = trim((string) $edition->theme)) !== '')
+    @if ($opts['show_theme'] && ($theme = trim((string) $event->theme)) !== '')
         <p class="center" style="font-style:italic;color:{{ $primary }};">« {{ $theme }} »</p>
     @endif
-    @if ($opts['show_dates'] && $edition->date_start)
+    @if ($opts['show_dates'] && $event->date_start)
         <p class="center muted" style="margin-top:8px;">
-            {{ $edition->date_start->format('d/m/Y') }}@if ($edition->date_end) - {{ $edition->date_end->format('d/m/Y') }}@endif
-            @if ($loc = trim((string) $edition->location)) &nbsp;·&nbsp; {{ $loc }} @endif
+            {{ $event->date_start->format('d/m/Y') }}@if ($event->date_end) - {{ $event->date_end->format('d/m/Y') }}@endif
+            @if ($loc = trim((string) $event->location)) &nbsp;·&nbsp; {{ $loc }} @endif
         </p>
     @endif
     <p class="center sans" style="font-weight:bold;color:{{ $primary }};font-size:13pt;margin-top:60px;">{{ $opts['cover_mention'] }}</p>

@@ -48,7 +48,7 @@
 
     {{-- Filtres (même grammaire que les listes du back-office : on filtre la
          liste, jamais les compteurs ci-dessus). --}}
-    @if (count($reviewsData) || $status !== '' || $search !== '' || $edition_id !== '' || $track !== '')
+    @if (count($reviewsData) || $status !== '' || $search !== '' || $event_id !== '' || $track !== '')
         <form method="GET" class="filter-bar filter-bar--inline">
             <select name="status" onchange="this.form.submit()" title="{{ __('État de la relecture') }}">
                 <option value="">{{ __('Tous les états') }}</option>
@@ -56,11 +56,11 @@
                     <option value="{{ $key }}" @selected($status === $key)>{{ $label }}</option>
                 @endforeach
             </select>
-            @if ($editions->count() > 1)
-                <select name="edition_id" onchange="this.form.submit()" title="{{ __('Événement') }}">
+            @if ($events->count() > 1)
+                <select name="event_id" onchange="this.form.submit()" title="{{ __('Événement') }}">
                     <option value="">{{ __('Tous les événements') }}</option>
-                    @foreach ($editions as $ed)
-                        <option value="{{ $ed->id }}" @selected($edition_id === (string) $ed->id)>{{ $ed->title ?: $ed->year }}</option>
+                    @foreach ($events as $ed)
+                        <option value="{{ $ed->id }}" @selected($event_id === (string) $ed->id)>{{ $ed->title ?: $ed->year }}</option>
                     @endforeach
                 </select>
             @endif
@@ -72,7 +72,7 @@
             @endif
             <input type="search" name="search" value="{{ $search }}" placeholder="{{ __('Référence ou titre…') }}"
                    style="width:230px;" onkeydown="if(event.key==='Enter'){this.form.submit();}">
-            @if ($status !== '' || $search !== '' || $edition_id !== '' || $track !== '')
+            @if ($status !== '' || $search !== '' || $event_id !== '' || $track !== '')
                 <a href="{{ route('account.reviews') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">{{ __('Réinitialiser') }}</a>
             @endif
         </form>
@@ -127,11 +127,11 @@
                                     </template>
                                 </td>
                                 <td style="text-align:right;white-space:nowrap;">
-                                    {{-- Édition archivée : plus d'action possible, mais le
+                                    {{-- Événement archivée : plus d'action possible, mais le
                                          relecteur garde l'accès à ce qu'il a rendu. --}}
                                     <template x-if="r.frozen">
                                         <span style="display:inline-flex;align-items:center;gap:8px;justify-content:flex-end;">
-                                            <span class="ukc-pill ukc-pill--muted" title="{{ __('Édition archivée : lecture seule.') }}">{{ __('Archivée') }}</span>
+                                            <span class="ukc-pill ukc-pill--muted" title="{{ __('Événement archivée : lecture seule.') }}">{{ __('Archivée') }}</span>
                                             <template x-if="r.completed">
                                                 <button type="button" class="ukc-btn ukc-btn--outline ukc-btn--sm" @click="edit(r)">
                                                     <x-ukc.icon name="eye" :size="15" /> {{ __('Consulter') }}
@@ -169,7 +169,7 @@
                     </tbody>
                 </table>
             </div>
-        @elseif ($status !== '' || $search !== '' || $edition_id !== '' || $track !== '')
+        @elseif ($status !== '' || $search !== '' || $event_id !== '' || $track !== '')
             <div class="ukc-empty" style="border:none;">
                 <span class="ico"><x-ukc.icon name="search" :size="28" /></span>
                 <h3>{{ __('Aucune relecture pour ce filtre') }}</h3>
@@ -265,7 +265,7 @@
 
     {{-- ===== Panneau d'évaluation (en place, sans changer de page) ===== --}}
     <x-ukc.slideover open="open" onClose="open = false" width="560px">
-        <x-slot:header><span x-text="cur.frozen ? '{{ __('Évaluation rendue (édition archivée)') }}' : (cur.completed ? '{{ __('Revoir mon évaluation') }}' : '{{ __('Évaluer la communication') }}')"></span></x-slot:header>
+        <x-slot:header><span x-text="cur.frozen ? '{{ __('Évaluation rendue (événement archivée)') }}' : (cur.completed ? '{{ __('Revoir mon évaluation') }}' : '{{ __('Évaluer la communication') }}')"></span></x-slot:header>
 
         {{-- Communication (en aveugle : pas d'auteurs) --}}
         <div style="margin-bottom:16px;">

@@ -35,7 +35,7 @@ class AuthorLinkController extends Controller
 
     private function findLink(string $token): SubmissionAuthor
     {
-        $link = SubmissionAuthor::where('token', $token)->with('submission.edition')->first();
+        $link = SubmissionAuthor::where('token', $token)->with('submission.event')->first();
         abort_unless($link && $token !== '', 404);
 
         return $link;

@@ -14,7 +14,7 @@ return new class extends Migration
     {
         Schema::create('committee_members', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('edition_id')->constrained('editions')->cascadeOnDelete();
+            $table->foreignId('event_id')->constrained('events')->cascadeOnDelete();
             $table->string('person_name', 200)->default('');
             $table->string('person_title', 200)->nullable();
             $table->string('institution', 255)->nullable();

@@ -6,7 +6,7 @@ use App\Actions\ValidateCommunicationPassage;
 use App\Http\Controllers\Controller;
 use App\Models\EventSession;
 use App\Models\Slot;
-use App\Support\EditionLock;
+use App\Support\EventLock;
 use App\Support\SessionPresence;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -45,9 +45,9 @@ class SessionPassageController extends Controller
         abort_unless((int) $slot->session_id === (int) $session->id, 404);
         abort_unless($slot->submission_id > 0, 422, 'Ce créneau ne porte aucune communication.');
         abort_unless($session->hasStarted(), 403, 'La séance n’a pas commencé.');
-        abort_if(EditionLock::frozen($session->edition), 403, 'Cette édition est archivée.');
+        abort_if(EventLock::frozen($session->event), 403, 'Cette événement est archivée.');
 
-        $bilan = $action->handle($slot->load('submission.edition', 'session'), Auth::guard('account')->user());
+        $bilan = $action->handle($slot->load('submission.event', 'session'), Auth::guard('account')->user());
 
         $message = $bilan['already']
             ? 'Passage déjà validé.'

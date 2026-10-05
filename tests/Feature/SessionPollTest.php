@@ -7,8 +7,8 @@ use App\Models\SessionPollVote;
 // openEdition() / adminStaff() : helpers partagés (tests/Pest.php).
 
 it('permet au modérateur de lancer un sondage', function () {
-    $edition = openEdition();
-    $session = sessionFor($edition);
+    $event = openEdition();
+    $session = sessionFor($event);
 
     $this->actingAs(adminStaff(), 'web')
         ->postJson(route('session.engagement.polls.create', $session), [
@@ -24,9 +24,9 @@ it('permet au modérateur de lancer un sondage', function () {
 });
 
 it('refuse la création de sondage à un participant', function () {
-    $edition = openEdition();
-    $session = sessionFor($edition);
-    $account = participantAccount($edition);
+    $event = openEdition();
+    $session = sessionFor($event);
+    $account = participantAccount($event);
 
     $this->actingAs($account, 'account')
         ->postJson(route('session.engagement.polls.create', $session), [
@@ -36,11 +36,11 @@ it('refuse la création de sondage à un participant', function () {
 });
 
 it('enregistre le vote et l’actualise (un choix par compte)', function () {
-    $edition = openEdition();
-    $session = sessionFor($edition);
-    $account = participantAccount($edition);
+    $event = openEdition();
+    $session = sessionFor($event);
+    $account = participantAccount($event);
     $poll = SessionPoll::create([
-        'session_id' => $session->id, 'edition_id' => $edition->id,
+        'session_id' => $session->id, 'event_id' => $event->id,
         'question' => 'Format ?', 'options' => ['A', 'B', 'C'], 'status' => 'open',
     ]);
 
@@ -58,11 +58,11 @@ it('enregistre le vote et l’actualise (un choix par compte)', function () {
 });
 
 it('agrège les résultats et expose le choix du visiteur', function () {
-    $edition = openEdition();
-    $session = sessionFor($edition);
-    $account = participantAccount($edition);
+    $event = openEdition();
+    $session = sessionFor($event);
+    $account = participantAccount($event);
     $poll = SessionPoll::create([
-        'session_id' => $session->id, 'edition_id' => $edition->id,
+        'session_id' => $session->id, 'event_id' => $event->id,
         'question' => 'Format ?', 'options' => ['A', 'B'], 'status' => 'open',
     ]);
     SessionPollVote::create(['poll_id' => $poll->id, 'user_id' => $account->id, 'choice' => 0]);
@@ -76,11 +76,11 @@ it('agrège les résultats et expose le choix du visiteur', function () {
 });
 
 it('refuse le vote sur un sondage clos', function () {
-    $edition = openEdition();
-    $session = sessionFor($edition);
-    $account = participantAccount($edition);
+    $event = openEdition();
+    $session = sessionFor($event);
+    $account = participantAccount($event);
     $poll = SessionPoll::create([
-        'session_id' => $session->id, 'edition_id' => $edition->id,
+        'session_id' => $session->id, 'event_id' => $event->id,
         'question' => 'Format ?', 'options' => ['A', 'B'], 'status' => 'closed',
     ]);
 

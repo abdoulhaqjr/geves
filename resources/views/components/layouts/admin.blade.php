@@ -1,5 +1,5 @@
 @php($staff = auth('web')->user())
-@php($navEdition = \App\Models\Edition::where('status', 'open')->latest('id')->first() ?? \App\Models\Edition::latest('id')->first())
+@php($navEdition = \App\Models\Event::where('status', 'open')->latest('id')->first() ?? \App\Models\Event::latest('id')->first())
 @php($paletteItems = \App\Support\AdminPalette::items($staff))
 @props(['title' => 'Back-office', 'subtitle' => null])
 <x-layouts.app :title="($title ?? 'Back-office') . ' - '.config('app.name')" html-class="ukc-dense">
@@ -37,16 +37,16 @@
                 @endif
                 @if ($staff?->canAnyEdition('editions_read'))
                     {{-- ⚠️ L'éditeur de formulaire est un onglet du module Soumissions
-                         bien que sa route vive sous `admin.editions.*` : sans cette
+                         bien que sa route vive sous `admin.evenements.*` : sans cette
                          exclusion, les deux entrées du menu s'allument ensemble. --}}
-                    <a href="{{ route('admin.editions.index') }}" title="Éditions"
-                       @class(['active' => request()->routeIs('admin.editions.*') && ! request()->routeIs('admin.editions.form*')])>
-                        <x-ukc.icon name="calendar" :size="18" /> <span class="txt">Éditions</span>
+                    <a href="{{ route('admin.evenements.index') }}" title="Événements"
+                       @class(['active' => request()->routeIs('admin.evenements.*') && ! request()->routeIs('admin.evenements.form*')])>
+                        <x-ukc.icon name="calendar" :size="18" /> <span class="txt">Événements</span>
                     </a>
                 @endif
                 @if ($staff?->canAnyEdition('submissions_list'))
                     <a href="{{ route('admin.submissions.index') }}" title="Soumissions"
-                       @class(['active' => request()->routeIs('admin.submissions.*') || request()->routeIs('admin.editions.form')])>
+                       @class(['active' => request()->routeIs('admin.submissions.*') || request()->routeIs('admin.evenements.form')])>
                         <x-ukc.icon name="inbox" :size="18" /> <span class="txt">Soumissions</span>
                     </a>
                 @endif

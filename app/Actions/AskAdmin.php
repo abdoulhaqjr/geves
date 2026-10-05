@@ -5,12 +5,12 @@ namespace App\Actions;
 use App\AI\AiManager;
 use App\AI\AiRouter;
 use App\AI\Copilot\CopilotActions;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Submission;
 use App\Models\User;
 use App\Support\AiAgents;
-use App\Support\ColloqueKnowledge;
-use App\Support\EditionReport;
+use App\Support\EventKnowledge;
+use App\Support\EventReport;
 use App\Support\StaffRoles;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -18,7 +18,7 @@ use Illuminate\Support\Str;
 /**
  * Copilote d'administration : répond aux questions du staff (synthèses,
  * brouillons, vérifications) à partir de l'agent « admin » (cf. {@see AiAgents})
- * et des chiffres réels de l'édition active. Il peut aussi PROPOSER une action
+ * et des chiffres réels de l'événement active. Il peut aussi PROPOSER une action
  * concrète (parmi {@see CopilotActions}) que l'utilisateur autorise explicitement
  * avant qu'elle ne soit exécutée côté serveur - jamais d'exécution d'office.
  *
@@ -32,7 +32,7 @@ class AskAdmin
      * @param  list<ChatTurn>  $history
      * @return array{answer: string, proposal: array{title: string, detail: string, impact: string}|null, action: array{key: string, label: string, summary: string, params: array<string, mixed>}|null}
      */
-    public function handle(array $history, string $question, ?Edition $edition = null, ?User $staff = null): array
+    public function handle(array $history, string $question, ?Event $event = null, ?User $staff = null): array
     {
         if (! $this->manager->resolve(false)) {
             throw new \RuntimeException('Le copilote IA est momentanément indisponible (voir Réglages).');
@@ -42,30 +42,30 @@ class AskAdmin
         $tier = $this->router->tier('chat_admin', $question, historyTurns: count($history));
 
         // Bascule automatique entre fournisseurs configurés en cas d'échec.
-        $raw = $this->manager->extract($this->instruction($history, $question, $edition, $staff), [], $tier);
+        $raw = $this->manager->extract($this->instruction($history, $question, $event, $staff), [], $tier);
         $answer = trim((string) ($raw['answer'] ?? ''));
 
         return [
             'answer' => $answer !== '' ? Str::limit($answer, 4000, '') : 'Je n’ai pas d’élément suffisant pour répondre.',
             'proposal' => $this->sanitizeProposal($raw['proposal'] ?? null),
-            'action' => $this->sanitizeAction($raw['action'] ?? null, $staff, $edition),
+            'action' => $this->sanitizeAction($raw['action'] ?? null, $staff, $event),
         ];
     }
 
     /**
      * Normalise l'action exécutable éventuellement choisie par l'IA : on ne retient
      * QUE si l'action existe ET que l'utilisateur a la capacité de l'exécuter sur
-     * l'édition (double garde-fou : le serveur revérifie à l'exécution).
+     * l'événement (double garde-fou : le serveur revérifie à l'exécution).
      *
      * @return array{key: string, label: string, summary: string, params: array<string, mixed>}|null
      */
-    protected function sanitizeAction(mixed $action, ?User $staff, ?Edition $edition): ?array
+    protected function sanitizeAction(mixed $action, ?User $staff, ?Event $event): ?array
     {
-        if (! is_array($action) || $staff === null || $edition === null) {
+        if (! is_array($action) || $staff === null || $event === null) {
             return null;
         }
 
-        $resolved = $this->copilot->resolveFor($staff, $edition, (string) ($action['key'] ?? ''));
+        $resolved = $this->copilot->resolveFor($staff, $event, (string) ($action['key'] ?? ''));
         if ($resolved === null) {
             return null;
         }
@@ -75,7 +75,7 @@ class AskAdmin
         return [
             'key' => $resolved->key(),
             'label' => $resolved->label(),
-            'summary' => Str::limit($resolved->summary($params, $edition), 300, ''),
+            'summary' => Str::limit($resolved->summary($params, $event), 300, ''),
             'params' => $params,
         ];
     }
@@ -113,7 +113,7 @@ class AskAdmin
      *
      * @return array{fonction: string, perimetre: string}
      */
-    protected function role(?User $staff, ?Edition $edition): array
+    protected function role(?User $staff, ?Event $event): array
     {
         if ($staff === null) {
             return ['fonction' => 'Membre du staff', 'perimetre' => 'périmètre limité'];
@@ -122,13 +122,13 @@ class AskAdmin
             return ['fonction' => 'Administrateur du colloque (accès complet)', 'perimetre' => 'toutes les fonctions'];
         }
 
-        $roles = $edition ? $staff->rolesOnEdition($edition) : [];
+        $roles = $event ? $staff->rolesOnEdition($event) : [];
         if ($roles === []) {
-            $roles = DB::table('edition_user')->where('user_id', $staff->id)->distinct()->pluck('role')->all();
+            $roles = DB::table('event_user')->where('user_id', $staff->id)->distinct()->pluck('role')->all();
         }
         $fonction = collect($roles)->map(fn ($r) => StaffRoles::label((string) $r))->unique()->implode(' + ');
 
-        $caps = $edition ? $staff->capabilitiesOnEdition($edition) : [];
+        $caps = $event ? $staff->capabilitiesOnEdition($event) : [];
         if ($caps === []) {
             foreach ($roles as $r) {
                 $caps = array_merge($caps, StaffRoles::permissionsFor((string) $r));
@@ -143,15 +143,15 @@ class AskAdmin
         ];
     }
 
-    protected function instruction(array $history, string $question, ?Edition $edition, ?User $staff = null): string
+    protected function instruction(array $history, string $question, ?Event $event, ?User $staff = null): string
     {
         $agent = AiAgents::find('admin') ?? AiAgents::defaults()[1];
-        $role = $this->role($staff, $edition);
+        $role = $this->role($staff, $event);
 
-        $context = 'Aucune édition active.';
+        $context = 'Aucune événement active.';
         $knowledge = '';
-        if ($edition) {
-            $report = new EditionReport($edition);
+        if ($event) {
+            $report = new EventReport($event);
             $s = $report->summary();
             $pay = $report->paymentStats();
 
@@ -168,8 +168,8 @@ class AskAdmin
                 ->implode(', ');
 
             $context = implode("\n", array_filter([
-                'Édition : '.($edition->title ?: 'Édition').' ('.$edition->year.') · statut '.$edition->status
-                    .($edition->submission_deadline ? ' · clôture soumissions le '.$edition->submission_deadline->translatedFormat('d/m/Y') : ''),
+                'Événement : '.($event->title ?: 'Événement').' ('.$event->year.') · statut '.$event->status
+                    .($event->submission_deadline ? ' · clôture soumissions le '.$event->submission_deadline->translatedFormat('d/m/Y') : ''),
                 'Participants : '.$s['participants'],
                 'Communications : '.$s['submissions'].' (acceptées : '.$s['accepted'].')'.($byStatus ? ' - '.$byStatus : ''),
                 $axes ? 'Axes principaux : '.$axes : null,
@@ -178,26 +178,26 @@ class AskAdmin
                     .number_format($s['pending'], 0, ',', ' ').' '.$s['currency'].' en attente',
             ]));
 
-            $knowledge = ColloqueKnowledge::brief($edition);
+            $knowledge = EventKnowledge::brief($event);
         }
 
         $convo = collect($history)->slice(-8)
             ->map(fn (array $t) => ($t['role'] === 'user' ? 'Admin' : 'Copilote').' : '.Str::limit((string) $t['text'], 500, ''))
             ->implode("\n");
 
-        // Colloque en contexte : toutes les réponses et actions s'y rapportent.
-        $selected = $edition !== null
-            ? ($edition->title ?: 'Colloque').' ('.$edition->year.')'
+        // Événement en contexte : toutes les réponses et actions s'y rapportent.
+        $selected = $event !== null
+            ? ($event->title ?: 'Événement').' ('.$event->year.')'
             : 'aucun colloque sélectionné';
 
-        // Actions réellement exécutables pour CET utilisateur sur CETTE édition,
+        // Actions réellement exécutables pour CET utilisateur sur CETTE événement,
         // avec l'ÉTAT RÉEL de leur ciblage (pour décider sur les bonnes données).
-        $available = $staff !== null ? $this->copilot->availableFor($staff, $edition) : [];
+        $available = $staff !== null ? $this->copilot->availableFor($staff, $event) : [];
         $actionsBlock = $available === []
             ? 'ACTIONS EXÉCUTABLES : aucune action exécutable n’est disponible pour ta fonction sur ce colloque. Mets toujours "action" à null.'
             : "ACTIONS EXÉCUTABLES DISPONIBLES (tu peux en proposer UNE, et une seule, quand la demande de l’utilisateur le justifie) :\n"
-                .collect($available)->map(function ($a) use ($edition) {
-                    $ctx = $edition !== null ? $a->context($edition) : null;
+                .collect($available)->map(function ($a) use ($event) {
+                    $ctx = $event !== null ? $a->context($event) : null;
 
                     return '- key "'.$a->key().'" : '.$a->description()
                         .($ctx !== null && $ctx !== '' ? "\n  ÉTAT ACTUEL (ciblage réel de l’action) : ".$ctx : '');
@@ -237,7 +237,7 @@ class AskAdmin
 
         COLLOQUE SÉLECTIONNÉ (contexte de TOUTES tes réponses, analyses et actions) : {$selected}.
         Raisonne exclusivement sur ce colloque et ses données ci-dessous ; ne mélange jamais avec
-        d'autres éditions.
+        d'autres événements.
 
         CHIFFRES RÉELS DE L'ÉDITION ACTIVE :
         {$context}

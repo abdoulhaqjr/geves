@@ -123,12 +123,12 @@ it('injecte les données personnelles du participant connecté dans le prompt', 
     };
     bindFakeAi($provider);
 
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
-    $participant = $edition->participants()->create([
+    $participant = $event->participants()->create([
         'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
     ]);
-    $edition->submissions()->create([
+    $event->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => '26-XYZ', 'title' => 'Ma communication test',
         'status' => 'accepted', 'revision_of' => 0,
     ]);

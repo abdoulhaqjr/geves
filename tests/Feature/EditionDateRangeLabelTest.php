@@ -1,11 +1,11 @@
 <?php
 
-use App\Models\Edition;
+use App\Models\Event;
 use Illuminate\Support\Carbon;
 
-function edStub(?string $start, ?string $end): Edition
+function edStub(?string $start, ?string $end): Event
 {
-    $e = new Edition;
+    $e = new Event;
     $e->date_start = $start ? Carbon::parse($start) : null;
     $e->date_end = $end ? Carbon::parse($end) : null;
 

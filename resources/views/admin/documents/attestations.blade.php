@@ -1,12 +1,12 @@
-<x-layouts.admin title="Documents" :subtitle="$edition ? 'Édition active · '.($edition->title ?: $edition->year) : 'Attestations, badges & livre des résumés'">
+<x-layouts.admin title="Documents" :subtitle="$event ? 'Événement active · '.($event->title ?: $event->year) : 'Attestations, badges & livre des résumés'">
     <div class="admin-page admin-documents" x-data="{ livre: 'main', newAtt: false, newBadge: false, del: null, typed: '' }">
-        {{-- Sélecteur d'édition partagé + vérification publique --}}
+        {{-- Sélecteur d'événement partagé + vérification publique --}}
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
             <div class="ukc-field" style="max-width:340px;margin:0;">
-                <label>Édition</label>
-                <select onchange="window.location='{{ route('admin.documents.attestations') }}?edition_id='+this.value">
+                <label>Événement</label>
+                <select onchange="window.location='{{ route('admin.documents.attestations') }}?event_id='+this.value">
                     <option value="">- Choisir -</option>
-                    @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
+                    @foreach ($events as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $event_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
                 </select>
             </div>
             <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('attestation.verify.landing') }}" target="_blank">
@@ -14,22 +14,22 @@
             </a>
         </div>
 
-        @if (! $edition)
-            <div class="ukc-empty"><h3>Choisissez une édition</h3><p>Sélectionnez une édition pour gérer ses documents.</p></div>
+        @if (! $event)
+            <div class="ukc-empty"><h3>Choisissez une événement</h3><p>Sélectionnez une événement pour gérer ses documents.</p></div>
         @else
             {{-- Onglets principaux : des liens, comme les sous-onglets. Les panneaux
                  sont rendus côté serveur d'après ?tab=, l'URL doit donc changer. --}}
             <div class="ukc-nav-docs">
-                <a href="{{ route('admin.documents.attestations', ['edition_id' => $edition->id, 'tab' => 'attestations', 'stab' => 'modeles']) }}" @class(['active' => $tab === 'attestations'])>Attestations</a>
-                <a href="{{ route('admin.documents.attestations', ['edition_id' => $edition->id, 'tab' => 'badges', 'stab' => 'modeles']) }}" @class(['active' => $tab === 'badges'])>Badges</a>
-                <a href="{{ route('admin.documents.attestations', ['edition_id' => $edition->id, 'tab' => 'livre']) }}" @class(['active' => $tab === 'livre'])>Livre des résumés</a>
+                <a href="{{ route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'attestations', 'stab' => 'modeles']) }}" @class(['active' => $tab === 'attestations'])>Attestations</a>
+                <a href="{{ route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'badges', 'stab' => 'modeles']) }}" @class(['active' => $tab === 'badges'])>Badges</a>
+                <a href="{{ route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'livre']) }}" @class(['active' => $tab === 'livre'])>Livre des résumés</a>
             </div>
 
             {{-- ======================= ATTESTATIONS ======================= --}}
             <div @if ($tab !== 'attestations') style="display:none;" @endif>
                 {{-- Sous-onglets portés par l'URL (?tab=attestations&stab=…) : chaque
                      onglet a son lien, et « délivrées » garde filtres/tri/pagination. --}}
-                @php($stabBase = ['edition_id' => $edition->id, 'tab' => 'attestations'])
+                @php($stabBase = ['event_id' => $event->id, 'tab' => 'attestations'])
                 <div class="ukc-tabs">
                     <a href="{{ route('admin.documents.attestations', $stabBase + ['stab' => 'modeles']) }}" @class(['active' => $stab === 'modeles'])>Modèles</a>
                     <a href="{{ route('admin.documents.attestations', $stabBase + ['stab' => 'delivrees']) }}" @class(['active' => $stab === 'delivrees'])>
@@ -48,7 +48,7 @@
                             <x-ukc.icon name="plus" :size="16" /> Nouveau modèle
                         </button>
                         <span class="sep"></span>
-                        <span style="font-size:13px;color:var(--ukc-muted);">Templates liés à l’édition · génération PDF + QR de vérification. Émission idempotente.</span>
+                        <span style="font-size:13px;color:var(--ukc-muted);">Templates liés à l’événement · génération PDF + QR de vérification. Émission idempotente.</span>
                     </div>
 
                     {{-- ⚠️ On est sur l'écran qui ÉMET : il doit dire ce que l'émission
@@ -61,7 +61,7 @@
                         <div style="font-size:13px;color:var(--ukc-muted);flex:1;min-width:260px;line-height:1.5;">
                             @if ($attPaper)
                                 Rien n’est envoyé : émettez le lot ici, puis imprimez-le depuis
-                                <a href="{{ route('admin.documents.attestations', ['edition_id' => $edition->id, 'tab' => 'attestations', 'stab' => 'delivrees']) }}">Attestations délivrées</a>
+                                <a href="{{ route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'attestations', 'stab' => 'delivrees']) }}">Attestations délivrées</a>
                                 (lot PDF + liste d’émargement). L’attestation reste consultable dans l’espace du participant.
                             @else
                                 Chaque attestation émise part chez son bénéficiaire (notification, e-mail, SMS si activé)
@@ -69,7 +69,7 @@
                                 <strong>au fil des passages</strong>, quand le modérateur les valide en séance.
                             @endif
                             <br>Attestation de communication : {{ \Illuminate\Support\Str::lower($attScopeLabel) }}.
-                            <a href="{{ route('admin.documents.attestations', ['edition_id' => $edition->id, 'tab' => 'attestations', 'stab' => 'options']) }}">Changer</a>
+                            <a href="{{ route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'attestations', 'stab' => 'options']) }}">Changer</a>
                         </div>
                     </div>
 
@@ -102,7 +102,7 @@
                                         <td>
                                             <div class="ukc-actions" style="justify-content:flex-end;">
                                                 @if ($row['issueFrom'])
-                                                    {{-- Émission par formation, pas globale pour l'édition. --}}
+                                                    {{-- Émission par formation, pas globale pour l'événement. --}}
                                                     <a href="{{ $row['issueFrom'] }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm" title="Ces attestations s’émettent depuis chaque formation">
                                                         <x-ukc.icon name="book" :size="14" /> Émettre par formation
                                                     </a>
@@ -112,11 +112,11 @@
                                                               'Émettre les attestations « '.$row['title'].' » : '.$row['eligible'].' destinataire(s)'
                                                               .($row['excluded'] > 0 ? ', '.$row['excluded'].' écarté(s) faute de présence' : '').'.'
                                                               .($attPaper
-                                                                  ? ' Rien ne sera envoyé : la délivrance de cette édition est physique.'
+                                                                  ? ' Rien ne sera envoyé : la délivrance de cette événement est physique.'
                                                                   : ' Autant de notifications partiront chez les bénéficiaires.')
                                                               .' Continuer ?'))">
                                                         @csrf
-                                                        <input type="hidden" name="edition_id" value="{{ $edition->id }}">
+                                                        <input type="hidden" name="event_id" value="{{ $event->id }}">
                                                         <input type="hidden" name="type" value="{{ $key }}">
                                                         <button type="submit" name="mode" value="zip" class="ukc-btn--icon" title="Émettre, puis choisir le lot PDF à imprimer" @disabled($row['eligible'] === 0)>
                                                             <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
@@ -126,8 +126,8 @@
                                                         </button>
                                                     </form>
                                                 @endif
-                                                <a class="ukc-btn--icon" title="Éditer le template" href="{{ route('admin.documents.templates', ['edition_id' => $edition->id, 'kind' => 'attestation', 'type' => $key]) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a>
-                                                <a class="ukc-btn--icon" title="Aperçu (valeurs d’exemple)" target="_blank" href="{{ route('admin.documents.templates.preview', ['edition_id' => $edition->id, 'kind' => 'attestation', 'type' => $key]) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></a>
+                                                <a class="ukc-btn--icon" title="Éditer le template" href="{{ route('admin.documents.templates', ['event_id' => $event->id, 'kind' => 'attestation', 'type' => $key]) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a>
+                                                <a class="ukc-btn--icon" title="Aperçu (valeurs d’exemple)" target="_blank" href="{{ route('admin.documents.templates.preview', ['event_id' => $event->id, 'kind' => 'attestation', 'type' => $key]) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></a>
                                                 @if ($row['template'])
                                                     <button type="button" class="ukc-btn--icon" title="Supprimer le modèle"
                                                             @click="del = { id: {{ $row['template']->id }}, title: @js($row['title']), code: @js(\App\Http\Controllers\Admin\TemplateDesignerController::deleteCode($row['template'])) }; typed = ''">
@@ -146,11 +146,11 @@
                 {{-- Options générales attestations --}}
                 <div @if ($stab !== 'options') style="display:none;" @endif>
                     <form method="POST" action="{{ route('admin.documents.attestations.options') }}" data-ajax data-ajax-msg="Options des attestations enregistrées." class="ukc-card">
-                        <input type="hidden" name="edition_id" value="{{ $edition->id }}">
+                        <input type="hidden" name="event_id" value="{{ $event->id }}">
                         @csrf
                         <h3>Options générales · Attestations</h3>
-                        <x-ukc.scope-edition :edition="$edition" />
-                        <div class="desc">Paramètres de génération, identité vérifiable (DID) et notifications pour cette édition.</div>
+                        <x-ukc.scope-edition :event="$event" />
+                        <div class="desc">Paramètres de génération, identité vérifiable (DID) et notifications pour cette événement.</div>
                         {{-- ⚠️ LE choix qui commande les autres : en ligne, le passage d'une
                              communication émet et envoie les attestations de ses auteurs ;
                              sur papier, le secrétariat émet le lot et l'imprime. --}}
@@ -234,7 +234,7 @@
                             <div>
                                 <label class="ukc-check"><input type="checkbox" name="attAuto" value="1" @checked($opts['attAuto'])> Générer automatiquement après paiement / fin de colloque</label>
                                 <label class="ukc-check"><input type="checkbox" name="attNotify" value="1" @checked($opts['attNotify'])> Notifier le participant par e-mail</label>
-                                {{-- ⚠️ Fermé par défaut : chaque SMS est facturé, et une édition de
+                                {{-- ⚠️ Fermé par défaut : chaque SMS est facturé, et une événement de
                                      deux cents communications en enverrait autant. --}}
                                 <label class="ukc-check"><input type="checkbox" name="attSms" value="1" @checked($opts['attSms'])> Envoyer aussi un SMS (passerelle requise - facturé à l’envoi)</label>
                                 <label class="ukc-check"><input type="checkbox" name="attAllowBeforeValidation" value="1" @checked($opts['attAllowBeforeValidation'])> Autoriser le téléchargement avant validation admin</label>
@@ -252,7 +252,7 @@
             {{-- ======================= BADGES ======================= --}}
             <div @if ($tab !== 'badges') style="display:none;" @endif>
                 {{-- Mêmes URL que les attestations : ?tab=badges&stab=… --}}
-                @php($bBase = ['edition_id' => $edition->id, 'tab' => 'badges'])
+                @php($bBase = ['event_id' => $event->id, 'tab' => 'badges'])
                 <div class="ukc-tabs">
                     <a href="{{ route('admin.documents.attestations', $bBase + ['stab' => 'modeles']) }}" @class(['active' => $tab === 'badges' && $stab === 'modeles'])>Modèles</a>
                     <a href="{{ route('admin.documents.attestations', $bBase + ['stab' => 'prets']) }}" @class(['active' => $tab === 'badges' && $stab === 'prets'])>
@@ -286,9 +286,9 @@
                                         <td>@if ($b['count'] > 0)<span class="ukc-pill ukc-pill--ok">Prêt</span>@else<span class="ukc-pill ukc-pill--muted" title="Aucun destinataire pour ce format pour l’instant.">Sans destinataire</span>@endif</td>
                                         <td>
                                             <div class="ukc-actions" style="justify-content:flex-end;">
-                                                <a class="ukc-btn--icon" title="Télécharger la planche (PDF)" href="{{ route('admin.documents.badges', $edition) }}" target="_blank"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></a>
-                                                <a class="ukc-btn--icon" title="Éditer le template" href="{{ route('admin.documents.templates', ['edition_id' => $edition->id, 'kind' => 'badge']) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a>
-                                                <a class="ukc-btn--icon" title="Aperçu (valeurs d’exemple)" target="_blank" href="{{ route('admin.documents.templates.preview', ['edition_id' => $edition->id, 'kind' => 'badge']) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></a>
+                                                <a class="ukc-btn--icon" title="Télécharger la planche (PDF)" href="{{ route('admin.documents.badges', $event) }}" target="_blank"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></a>
+                                                <a class="ukc-btn--icon" title="Éditer le template" href="{{ route('admin.documents.templates', ['event_id' => $event->id, 'kind' => 'badge']) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></a>
+                                                <a class="ukc-btn--icon" title="Aperçu (valeurs d’exemple)" target="_blank" href="{{ route('admin.documents.templates.preview', ['event_id' => $event->id, 'kind' => 'badge']) }}"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></a>
                                             </div>
                                         </td>
                                     </tr>
@@ -300,10 +300,10 @@
 
                 <div @if ($tab !== 'badges' || $stab !== 'options') style="display:none;" @endif>
                     <form method="POST" action="{{ route('admin.documents.badges.options') }}" data-ajax data-ajax-msg="Options des badges enregistrées." class="ukc-card">
-                        <input type="hidden" name="edition_id" value="{{ $edition->id }}">
+                        <input type="hidden" name="event_id" value="{{ $event->id }}">
                         @csrf
                         <h3>Options générales · Badges</h3>
-                        <x-ukc.scope-edition :edition="$edition" />
+                        <x-ukc.scope-edition :event="$event" />
                         <div class="desc">Génération, formats d’impression et contrôle d’accès.</div>
                         <div class="ukc-opts-grid">
                             <div>
@@ -363,11 +363,11 @@
                             </span>
                         </div>
                         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;">
-                            <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="{{ route('admin.documents.livret', $edition) }}?format=docx"><x-ukc.icon name="file" :size="16" /> Word (.docx)</a>
-                            <a class="ukc-btn ukc-btn--outline ukc-btn--sm" href="{{ route('admin.documents.livret', $edition) }}?format=pdf"><x-ukc.icon name="download" :size="16" /> PDF</a>
-                            <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.documents.livret', $edition) }}?format=pdf&inline=1" target="_blank"><x-ukc.icon name="eye" :size="16" /> Aperçu (rendu final)</a>
-                            <a class="ukc-btn ukc-btn--green ukc-btn--sm" href="{{ route('admin.documents.livret', $edition) }}?format=docx&harmonize=1"><x-ukc.icon name="sparkles" :size="16" /> .docx + harmonisation IA</a>
-                            <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.documents.sessions', $edition) }}" target="_blank"><x-ukc.icon name="layers" :size="16" /> Fiches de session</a>
+                            <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="{{ route('admin.documents.livret', $event) }}?format=docx"><x-ukc.icon name="file" :size="16" /> Word (.docx)</a>
+                            <a class="ukc-btn ukc-btn--outline ukc-btn--sm" href="{{ route('admin.documents.livret', $event) }}?format=pdf"><x-ukc.icon name="download" :size="16" /> PDF</a>
+                            <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.documents.livret', $event) }}?format=pdf&inline=1" target="_blank"><x-ukc.icon name="eye" :size="16" /> Aperçu (rendu final)</a>
+                            <a class="ukc-btn ukc-btn--green ukc-btn--sm" href="{{ route('admin.documents.livret', $event) }}?format=docx&harmonize=1"><x-ukc.icon name="sparkles" :size="16" /> .docx + harmonisation IA</a>
+                            <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.documents.sessions', $event) }}" target="_blank"><x-ukc.icon name="layers" :size="16" /> Fiches de session</a>
                         </div>
                         <p class="ukc-hint" style="margin-top:10px;">L’harmonisation IA normalise les noms d’auteurs, affiliations et accents avant export. Changez de modèle dans l’onglet <strong>Modèles de document</strong>, ajustez la typographie dans <strong>Apparence du livre</strong>.</p>
                     </div>
@@ -381,13 +381,13 @@
                     </div>
 
                     <form method="POST" action="{{ route('admin.documents.livret.options') }}" class="ukc-card">
-                        <input type="hidden" name="edition_id" value="{{ $edition->id }}">
+                        <input type="hidden" name="event_id" value="{{ $event->id }}">
                         @csrf
                         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
                             <h3 style="margin:0;">Contenu du livre</h3>
                             <span class="ukc-pill ukc-pill--info">{{ $livretSectionsFilled }}/{{ $livretSectionCount }} section(s) renseignée(s)</span>
                         </div>
-                        <x-ukc.scope-edition :edition="$edition" />
+                        <x-ukc.scope-edition :event="$event" />
                         <div class="desc">Pages de tête du livret, dans l’ordre d’apparition. <strong>Une section laissée vide n’apparaît pas</strong> dans le livre généré.</div>
 
                         {{-- Avant-propos --}}
@@ -412,11 +412,11 @@
                                 {{-- data-ai : le voile de travail se lève après la confirmation
                                      et tient jusqu'au rechargement, l'IA prenant une dizaine
                                      de secondes sans quoi rien n'indiquerait qu'elle travaille. --}}
-                                <button type="submit" formaction="{{ route('admin.documents.livret.foreword-ai', ['edition_id' => $edition->id]) }}"
+                                <button type="submit" formaction="{{ route('admin.documents.livret.foreword-ai', ['event_id' => $event->id]) }}"
                                         class="ukc-btn ukc-btn--green ukc-btn--sm"
                                         data-ai data-ai-title="Rédaction de l’avant-propos…"
-                                        data-ai-steps="Lecture des métadonnées de l’édition…|Relevé des axes et des résumés retenus…|Rédaction du texte…"
-                                        data-confirm="Générer l’avant-propos par IA à partir des métadonnées de l’édition ? Le texte actuel sera remplacé.">
+                                        data-ai-steps="Lecture des métadonnées de l’événement…|Relevé des axes et des résumés retenus…|Rédaction du texte…"
+                                        data-confirm="Générer l’avant-propos par IA à partir des métadonnées de l’événement ? Le texte actuel sera remplacé.">
                                     <x-ukc.icon name="sparkles" :size="16" /> Rédiger par IA
                                 </button>
                                 <p class="ukc-hint" style="margin-top:8px;">L’IA rédige l’avant-propos à partir du colloque, du thème, des axes et du nombre de résumés retenus.</p>
@@ -502,12 +502,12 @@
                     <div class="ukc-card">
                         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
                             <div>
-                                <h3 style="margin:0 0 4px;">Modèle utilisé pour cette édition</h3>
+                                <h3 style="margin:0 0 4px;">Modèle utilisé pour cette événement</h3>
                                 <div class="desc" style="margin:0;">Choisissez le modèle qui sert à compiler le <strong>Word (.docx)</strong>. L’aperçu HTML et le PDF utilisent toujours la mise en page par défaut.</div>
                             </div>
                             <span class="ukc-pill ukc-pill--info" style="white-space:nowrap;"><x-ukc.icon name="check" :size="14" /> Actif : {{ $livretActiveLabel }}</span>
                         </div>
-                        <x-ukc.scope-edition :edition="$edition" />
+                        <x-ukc.scope-edition :event="$event" />
 
                         <h4 style="margin:16px 0 8px;color:var(--ukc-muted);text-transform:uppercase;letter-spacing:.04em;font-size:12px;">Modèles intégrés</h4>
                         @foreach ($livretBuiltins as $m)
@@ -524,7 +524,7 @@
                                     @else
                                         <form method="POST" action="{{ route('admin.documents.livret.template') }}" style="display:inline;">
                                             @csrf
-                                            <input type="hidden" name="edition_id" value="{{ $edition->id }}">
+                                            <input type="hidden" name="event_id" value="{{ $event->id }}">
                                             <input type="hidden" name="livretTemplate" value="{{ $m['key'] }}">
                                             <button type="submit" class="ukc-btn ukc-btn--sm">Utiliser</button>
                                         </form>
@@ -536,11 +536,11 @@
 
                     <div class="ukc-card">
                         <h3>Modèles personnalisés (.docx)</h3>
-                        <x-ukc.scope-edition :edition="$edition" />
+                        <x-ukc.scope-edition :event="$event" />
                         <div class="desc">Partez du <a href="{{ route('admin.documents.livret.base-template') }}">modèle de base</a>, personnalisez-le dans Word <strong>en conservant les balises</strong>, puis redéposez-le ici.</div>
                         <form method="POST" action="{{ route('admin.documents.livret.template') }}" enctype="multipart/form-data">
                             @csrf
-                            <input type="hidden" name="edition_id" value="{{ $edition->id }}">
+                            <input type="hidden" name="event_id" value="{{ $event->id }}">
                             <label class="ukc-drop">
                                 <x-ukc.icon name="upload" :size="20" /><br>
                                 Déposer un modèle .docx<br>
@@ -563,7 +563,7 @@
                                         @else
                                             <form method="POST" action="{{ route('admin.documents.livret.template') }}" style="display:inline;">
                                                 @csrf
-                                                <input type="hidden" name="edition_id" value="{{ $edition->id }}">
+                                                <input type="hidden" name="event_id" value="{{ $event->id }}">
                                                 <input type="hidden" name="livretTemplate" value="{{ $tpl['name'] }}">
                                                 <button type="submit" class="ukc-btn ukc-btn--sm">Utiliser</button>
                                             </form>
@@ -571,7 +571,7 @@
                                         <form method="POST" action="{{ route('admin.documents.livret.template.delete') }}" style="display:inline;"
                                               data-confirm="Supprimer le modèle « {{ $tpl['name'] }} » ? @if ($isActive)Le modèle par défaut redeviendra actif.@endif">
                                             @csrf
-                                            <input type="hidden" name="edition_id" value="{{ $edition->id }}">
+                                            <input type="hidden" name="event_id" value="{{ $event->id }}">
                                             <input type="hidden" name="name" value="{{ $tpl['name'] }}">
                                             <button type="submit" class="ukc-btn ukc-btn--danger ukc-btn--sm" title="Supprimer"><x-ukc.icon name="trash" :size="15" /></button>
                                         </form>
@@ -589,10 +589,10 @@
                 {{-- ---------- Apparence du livre ---------- --}}
                 <div x-show="livre==='apparence'" x-cloak>
                     <form method="POST" action="{{ route('admin.documents.livret.apparence') }}" data-ajax data-ajax-msg="Apparence du livre enregistrée." class="ukc-card" enctype="multipart/form-data">
-                        <input type="hidden" name="edition_id" value="{{ $edition->id }}">
+                        <input type="hidden" name="event_id" value="{{ $event->id }}">
                         @csrf
                         <h3>Apparence du livre · modèles intégrés</h3>
-                        <x-ukc.scope-edition :edition="$edition" />
+                        <x-ukc.scope-edition :event="$event" />
                         <div class="desc">Typographie, couleurs et page de garde appliquées aux <strong>deux modèles intégrés</strong> (par défaut et Journées scientifiques). Les modèles .docx importés gardent leur propre mise en forme.</div>
 
                         <div class="ukc-form-grid">
@@ -687,7 +687,7 @@
                             @endif
                             @error('livretCoverLogo') <span class="error">{{ $message }}</span> @enderror
                         </div>
-                        <label class="ukc-check"><input type="checkbox" name="livretShowTheme" value="1" @checked($opts['livretShowTheme'])> Afficher le thème de l’édition sur la couverture</label>
+                        <label class="ukc-check"><input type="checkbox" name="livretShowTheme" value="1" @checked($opts['livretShowTheme'])> Afficher le thème de l’événement sur la couverture</label>
                         <label class="ukc-check"><input type="checkbox" name="livretShowDates" value="1" @checked($opts['livretShowDates'])> Afficher les dates et le lieu</label>
                         <label class="ukc-check"><input type="checkbox" name="livretNumber" value="1" @checked($opts['livretNumber'])> Numérotation des résumés</label>
                         <label class="ukc-check"><input type="checkbox" name="livretAuthorIndex" value="1" @checked($opts['livretAuthorIndex'])> Index des auteurs (en fin de livret)</label>
@@ -695,7 +695,7 @@
 
                         <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
                             <button type="submit" class="ukc-btn"><x-ukc.icon name="check" :size="16" /> Enregistrer l’apparence</button>
-                            <a class="ukc-btn ukc-btn--ghost" href="{{ route('admin.documents.livret', $edition) }}?format=pdf&inline=1" target="_blank"><x-ukc.icon name="eye" :size="16" /> Aperçu (rendu final)</a>
+                            <a class="ukc-btn ukc-btn--ghost" href="{{ route('admin.documents.livret', $event) }}?format=pdf&inline=1" target="_blank"><x-ukc.icon name="eye" :size="16" /> Aperçu (rendu final)</a>
                         </div>
                     </form>
                 </div>
@@ -748,7 +748,7 @@
                 <form method="POST" action="{{ route('admin.documents.templates.create') }}" id="newAttForm"
                       x-data="{ t: 'participation', scopes: @js(\App\Http\Controllers\Admin\TemplateDesignerController::SCOPES), labels: @js($types) }">
                     @csrf
-                    <input type="hidden" name="edition_id" value="{{ $edition->id }}">
+                    <input type="hidden" name="event_id" value="{{ $event->id }}">
                     <input type="hidden" name="kind" value="attestation">
                     <div class="ukc-form-row">
                         <label for="att-type">Type <span class="req">*</span></label>
@@ -782,7 +782,7 @@
                 <x-slot:header>Nouveau modèle de badge</x-slot:header>
                 <form method="POST" action="{{ route('admin.documents.templates.create') }}" id="newBadgeForm">
                     @csrf
-                    <input type="hidden" name="edition_id" value="{{ $edition->id }}">
+                    <input type="hidden" name="event_id" value="{{ $event->id }}">
                     <input type="hidden" name="kind" value="badge">
                     <input type="hidden" name="type" value="default">
                     <div class="ukc-form-row">

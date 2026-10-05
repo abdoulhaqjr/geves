@@ -11,7 +11,7 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
- * Rôles métier UK Colloques, permissions (matrice d'accès du back-office) et
+ * Rôles métier UK Colloque, permissions (matrice d'accès du back-office) et
  * compte administrateur par défaut. Les rôles/permissions viennent de la source
  * unique App\Support\StaffRoles (guard « web »). La permission historique
  * `manage_colloques` reste la porte d'entrée du back-office (rôles « Système »).

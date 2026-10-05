@@ -1,74 +1,74 @@
 <?php
 
-use App\Models\Colloque;
-use App\Models\Edition;
+use App\Models\EventSeries;
+use App\Models\Event;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Images d'habillage d'une édition : bandeau (hero) et bannière officielle,
- * réglées dans l'onglet **Apparence** de la fiche d'édition.
+ * Images d'habillage d'une événement : bandeau (hero) et bannière officielle,
+ * réglées dans l'onglet **Apparence** de la fiche d'événement.
  *
- * Les deux acceptent un téléversement **ou** une URL : une partie des éditions
+ * Les deux acceptent un téléversement **ou** une URL : une partie des événements
  * pointe vers une affiche hébergée ailleurs.
  */
 
 // adminStaff() -> tests/Pest.php
 
-/** Le minimum que la fiche d'édition exige, pour ne poster que l'habillage. */
-function editionBase(Edition $edition): array
+/** Le minimum que la fiche d'événement exige, pour ne poster que l'habillage. */
+function editionBase(Event $event): array
 {
     return [
-        'title' => $edition->title,
+        'title' => $event->title,
         'status' => 'open',
-        'colloque_id' => $edition->colloque_id,
+        'event_series_id' => $event->event_series_id,
         'max_communications' => 3,
     ];
 }
 
-function artworkEdition(): Edition
+function artworkEdition(): Event
 {
-    $colloque = Colloque::create(['name' => 'UK', 'slug' => 'uk']);
+    $series = EventSeries::create(['name' => 'UK', 'slug' => 'uk']);
 
-    return $colloque->editions()->create(['title' => 'UK 2026', 'status' => 'open', 'slug' => 'uk-2026']);
+    return $series->events()->create(['title' => 'UK 2026', 'status' => 'open', 'slug' => 'uk-2026']);
 }
 
 it('téléverse le bandeau et la bannière depuis l’onglet Apparence', function () {
     Storage::fake('public');
-    $edition = artworkEdition();
+    $event = artworkEdition();
 
     $this->actingAs(adminStaff(), 'web')
-        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+        ->put(route('admin.evenements.update', $event), editionBase($event) + [
             'hero_image_file' => UploadedFile::fake()->image('hero.jpg', 1920, 800),
             'banner_image_file' => UploadedFile::fake()->image('banniere.jpg', 1680, 720),
         ])
         ->assertSessionHasNoErrors();
 
-    $edition->refresh();
+    $event->refresh();
 
-    expect($edition->settings['hero_image'])->toContain('editions/');
-    expect($edition->banner_url)->toContain('editions/');
+    expect($event->settings['hero_image'])->toContain('events/');
+    expect($event->banner_url)->toContain('events/');
 
-    foreach ([$edition->settings['hero_image'], $edition->banner_url] as $url) {
+    foreach ([$event->settings['hero_image'], $event->banner_url] as $url) {
         Storage::disk('public')->assertExists(storagePath($url));
     }
 });
 
 it('remplace le fichier précédent au lieu de l’empiler', function () {
     Storage::fake('public');
-    $edition = artworkEdition();
+    $event = artworkEdition();
     $staff = adminStaff();
 
-    $this->actingAs($staff, 'web')->put(route('admin.editions.update', $edition), editionBase($edition) + [
+    $this->actingAs($staff, 'web')->put(route('admin.evenements.update', $event), editionBase($event) + [
         'banner_image_file' => UploadedFile::fake()->image('premiere.jpg'),
     ]);
-    $first = $edition->refresh()->banner_url;
+    $first = $event->refresh()->banner_url;
 
-    $this->actingAs($staff, 'web')->put(route('admin.editions.update', $edition), editionBase($edition) + [
+    $this->actingAs($staff, 'web')->put(route('admin.evenements.update', $event), editionBase($event) + [
         'banner_image' => $first,   // le champ URL renvoie la valeur affichée
         'banner_image_file' => UploadedFile::fake()->image('seconde.jpg'),
     ]);
-    $second = $edition->refresh()->banner_url;
+    $second = $event->refresh()->banner_url;
 
     // ⚠️ Une bannière n'a pas d'historique : l'ancienne ne doit plus être servie.
     expect($second)->not->toBe($first);
@@ -78,130 +78,130 @@ it('remplace le fichier précédent au lieu de l’empiler', function () {
 
 it('accepte une URL externe et ne cherche pas à la supprimer', function () {
     Storage::fake('public');
-    $edition = artworkEdition();
+    $event = artworkEdition();
     $staff = adminStaff();
 
     $externe = 'https://cdn.example.org/affiche.jpg';
 
-    $this->actingAs($staff, 'web')->put(route('admin.editions.update', $edition), editionBase($edition) + [
+    $this->actingAs($staff, 'web')->put(route('admin.evenements.update', $event), editionBase($event) + [
         'banner_image' => $externe,
     ])->assertSessionHasNoErrors();
 
-    expect($edition->refresh()->banner_url)->toBe($externe);
+    expect($event->refresh()->banner_url)->toBe($externe);
 
     // Ré-enregistrer sans toucher au champ ne doit rien changer.
-    $this->actingAs($staff, 'web')->put(route('admin.editions.update', $edition), editionBase($edition) + [
+    $this->actingAs($staff, 'web')->put(route('admin.evenements.update', $event), editionBase($event) + [
         'banner_image' => $externe,
     ]);
 
-    expect($edition->refresh()->banner_url)->toBe($externe);
+    expect($event->refresh()->banner_url)->toBe($externe);
 });
 
 it('supprime l’image quand l’admin le demande', function () {
     Storage::fake('public');
-    $edition = artworkEdition();
+    $event = artworkEdition();
     $staff = adminStaff();
 
-    $this->actingAs($staff, 'web')->put(route('admin.editions.update', $edition), editionBase($edition) + [
+    $this->actingAs($staff, 'web')->put(route('admin.evenements.update', $event), editionBase($event) + [
         'hero_image_file' => UploadedFile::fake()->image('hero.jpg'),
     ]);
-    $hero = $edition->refresh()->settings['hero_image'];
+    $hero = $event->refresh()->settings['hero_image'];
 
-    $this->actingAs($staff, 'web')->put(route('admin.editions.update', $edition), editionBase($edition) + [
+    $this->actingAs($staff, 'web')->put(route('admin.evenements.update', $event), editionBase($event) + [
         'hero_image_remove' => '1',
     ]);
 
-    $edition->refresh();
-    expect($edition->settings['hero_image'])->toBeNull();
+    $event->refresh();
+    expect($event->settings['hero_image'])->toBeNull();
     Storage::disk('public')->assertMissing(storagePath($hero));
 });
 
 it('garde l’habillage quand on enregistre un autre onglet', function () {
     Storage::fake('public');
-    $edition = artworkEdition();
+    $event = artworkEdition();
     $staff = adminStaff();
 
-    $this->actingAs($staff, 'web')->put(route('admin.editions.update', $edition), editionBase($edition) + [
+    $this->actingAs($staff, 'web')->put(route('admin.evenements.update', $event), editionBase($event) + [
         'banner_image_file' => UploadedFile::fake()->image('banniere.jpg'),
     ]);
-    $banner = $edition->refresh()->banner_url;
+    $banner = $event->refresh()->banner_url;
 
     // ⚠️ La fiche poste tous les onglets d'un coup : un enregistrement qui ne
     // renvoie pas le champ image ne doit pas effacer la bannière.
-    $this->actingAs($staff, 'web')->put(route('admin.editions.update', $edition), editionBase($edition) + [
+    $this->actingAs($staff, 'web')->put(route('admin.evenements.update', $event), editionBase($event) + [
         'subtitle' => 'Nouveau sous-titre',
     ]);
 
-    expect($edition->refresh()->banner_url)->toBe($banner);
+    expect($event->refresh()->banner_url)->toBe($banner);
     Storage::disk('public')->assertExists(storagePath($banner));
 });
 
 it('active et désactive la bannière officielle', function () {
     Storage::fake('public');
-    $edition = artworkEdition();
+    $event = artworkEdition();
     $staff = adminStaff();
 
     $poser = fn (array $extra) => $this->actingAs($staff, 'web')
-        ->put(route('admin.editions.update', $edition), editionBase($edition) + $extra + [
+        ->put(route('admin.evenements.update', $event), editionBase($event) + $extra + [
             'banner_image' => 'https://cdn.example.org/affiche.jpg',
         ]);
 
     $poser(['banner_enabled' => '1']);
-    expect($edition->refresh()->settings['banner_enabled'])->toBeTrue();
+    expect($event->refresh()->settings['banner_enabled'])->toBeTrue();
 
     auth('web')->logout();
-    $this->get(route('public.colloque', $edition->slug))->assertOk()->assertSee('id="banniere"', false);
+    $this->get(route('public.colloque', $event->slug))->assertOk()->assertSee('id="banniere"', false);
 
     // Décochée, la case n'est pas postée du tout : c'est bien l'absence qui vaut « non ».
     $poser([]);
-    expect($edition->refresh()->settings['banner_enabled'])->toBeFalse();
+    expect($event->refresh()->settings['banner_enabled'])->toBeFalse();
 
     auth('web')->logout();
-    $this->get(route('public.colloque', $edition->slug))->assertOk()->assertDontSee('id="banniere"', false);
+    $this->get(route('public.colloque', $event->slug))->assertOk()->assertDontSee('id="banniere"', false);
 });
 
 it('téléverse la vidéo de fond et n’en sert le flux que si elle est activée', function () {
     Storage::fake('public');
-    $edition = artworkEdition();
+    $event = artworkEdition();
     $staff = adminStaff();
 
     // ⚠️ La règle est `mimetypes:` (type réel, pas l'extension) : le faux
     // fichier doit donc annoncer son type, un .mp4 vide n'étant pas reconnu.
     $mp4 = UploadedFile::fake()->create('fond.mp4', 300, 'video/mp4');
 
-    $this->actingAs($staff, 'web')->put(route('admin.editions.update', $edition), editionBase($edition) + [
+    $this->actingAs($staff, 'web')->put(route('admin.evenements.update', $event), editionBase($event) + [
         'hero_video_file' => $mp4,
         'hero_video_enabled' => '1',
     ])->assertSessionHasNoErrors();
 
-    $edition->refresh();
-    $video = $edition->settings['hero_video'];
-    expect($video)->toContain('editions/');
+    $event->refresh();
+    $video = $event->settings['hero_video'];
+    expect($video)->toContain('events/');
     Storage::disk('public')->assertExists(storagePath($video));
 
     auth('web')->logout();
-    $this->get(route('public.colloque', $edition->slug))->assertOk()->assertSee('<video', false);
+    $this->get(route('public.colloque', $event->slug))->assertOk()->assertSee('<video', false);
 
     // ⚠️ Décochée, la case doit réellement couper la vidéo : le fichier reste
     // enregistré, mais la page publique ne le sert plus.
-    $this->actingAs($staff, 'web')->put(route('admin.editions.update', $edition), editionBase($edition) + [
+    $this->actingAs($staff, 'web')->put(route('admin.evenements.update', $event), editionBase($event) + [
         'hero_video' => $video,
     ]);
 
-    expect($edition->refresh()->settings['hero_video'])->toBe($video);
+    expect($event->refresh()->settings['hero_video'])->toBe($video);
 
     auth('web')->logout();
-    $this->get(route('public.colloque', $edition->slug))->assertOk()->assertDontSee('<video', false);
+    $this->get(route('public.colloque', $event->slug))->assertOk()->assertDontSee('<video', false);
 });
 
 it('règle le bandeau promotionnel depuis l’onglet Apparence', function () {
-    $edition = artworkEdition();
+    $event = artworkEdition();
 
     // ⚠️ Le bandeau s'affichait déjà côté public mais n'avait AUCUN champ : il
     // était inatteignable. L'encart « actualité » qui occupait sa place dans le
     // formulaire, lui, n'était lu nulle part.
     $this->actingAs(adminStaff(), 'web')
-        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+        ->put(route('admin.evenements.update', $event), editionBase($event) + [
             'promo_text' => 'Soumissions ouvertes jusqu’au 15 juillet 2026',
             'promo_url' => 'https://geves.test/soumettre',
             'promo_cta' => 'Déposer un résumé',
@@ -210,7 +210,7 @@ it('règle le bandeau promotionnel depuis l’onglet Apparence', function () {
 
     auth('web')->logout();
 
-    $this->get(route('public.colloque', $edition->refresh()->slug))
+    $this->get(route('public.colloque', $event->refresh()->slug))
         ->assertOk()
         ->assertSee('Soumissions ouvertes jusqu’au 15 juillet 2026', false)
         ->assertSee('Déposer un résumé', false);
@@ -218,44 +218,44 @@ it('règle le bandeau promotionnel depuis l’onglet Apparence', function () {
 
 it('refuse un fichier qui n’est pas une vidéo', function () {
     Storage::fake('public');
-    $edition = artworkEdition();
+    $event = artworkEdition();
 
     $this->actingAs(adminStaff(), 'web')
-        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+        ->put(route('admin.evenements.update', $event), editionBase($event) + [
             'hero_video_file' => UploadedFile::fake()->image('affiche.jpg'),
         ])
         ->assertSessionHasErrors('hero_video_file');
 
-    expect($edition->refresh()->settings['hero_video'] ?? null)->toBeNull();
+    expect($event->refresh()->settings['hero_video'] ?? null)->toBeNull();
 });
 
 it('refuse un fichier qui n’est pas une image', function () {
     Storage::fake('public');
-    $edition = artworkEdition();
+    $event = artworkEdition();
 
     $this->actingAs(adminStaff(), 'web')
-        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+        ->put(route('admin.evenements.update', $event), editionBase($event) + [
             'banner_image_file' => UploadedFile::fake()->create('programme.pdf', 60, 'application/pdf'),
         ])
         ->assertSessionHasErrors('banner_image_file');
 
-    expect($edition->refresh()->banner_url)->toBeNull();
+    expect($event->refresh()->banner_url)->toBeNull();
 });
 
 it('affiche la bannière pleine largeur sur la page publique', function () {
     Storage::fake('public');
-    $edition = artworkEdition();
+    $event = artworkEdition();
 
-    $this->actingAs(adminStaff(), 'web')->put(route('admin.editions.update', $edition), editionBase($edition) + [
+    $this->actingAs(adminStaff(), 'web')->put(route('admin.evenements.update', $event), editionBase($event) + [
         'banner_image_file' => UploadedFile::fake()->image('banniere.jpg', 1680, 720),
         'banner_enabled' => '1',
     ]);
 
     auth('web')->logout();
 
-    $this->get(route('public.colloque', $edition->refresh()->slug))
+    $this->get(route('public.colloque', $event->refresh()->slug))
         ->assertOk()
-        ->assertSee($edition->banner_url, false);
+        ->assertSee($event->banner_url, false);
 });
 
 /** Chemin disque d'une URL produite par le disque public. */
@@ -270,10 +270,10 @@ function storagePath(string $url): string
  */
 it('téléverse le logo d’un partenaire, fichier ou URL', function () {
     Storage::fake('public');
-    $edition = artworkEdition();
+    $event = artworkEdition();
 
     $this->actingAs(adminStaff(), 'web')
-        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+        ->put(route('admin.evenements.update', $event), editionBase($event) + [
             'partners' => [
                 ['name' => 'Université de Kara', 'logo_file' => UploadedFile::fake()->image('uk.png', 400, 200)],
                 ['name' => 'Ministère', 'logo_url' => 'https://ailleurs.tg/logo.png'],
@@ -281,10 +281,10 @@ it('téléverse le logo d’un partenaire, fichier ou URL', function () {
         ])
         ->assertSessionHasNoErrors();
 
-    $partners = $edition->refresh()->settings['partners'];
+    $partners = $event->refresh()->settings['partners'];
 
     expect($partners)->toHaveCount(2);
-    expect($partners[0]['logo_url'])->toContain('editions/');
+    expect($partners[0]['logo_url'])->toContain('events/');
     Storage::disk('public')->assertExists(storagePath($partners[0]['logo_url']));
     // Une URL externe reste telle quelle : elle ne nous appartient pas.
     expect($partners[1]['logo_url'])->toBe('https://ailleurs.tg/logo.png');
@@ -296,21 +296,21 @@ it('téléverse le logo d’un partenaire, fichier ou URL', function () {
  */
 it('garde l’ordre des partenaires tel qu’il a été rangé', function () {
     Storage::fake('public');
-    $edition = artworkEdition();
+    $event = artworkEdition();
     $staff = adminStaff();
 
     $this->actingAs($staff, 'web')
-        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+        ->put(route('admin.evenements.update', $event), editionBase($event) + [
             'partners' => [['name' => 'Alpha'], ['name' => 'Beta'], ['name' => 'Gamma']],
         ])->assertSessionHasNoErrors();
 
     // L'admin remonte Gamma en tête.
     $this->actingAs($staff, 'web')
-        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+        ->put(route('admin.evenements.update', $event), editionBase($event) + [
             'partners' => [['name' => 'Gamma'], ['name' => 'Alpha'], ['name' => 'Beta']],
         ])->assertSessionHasNoErrors();
 
-    expect(array_column($edition->refresh()->settings['partners'], 'name'))
+    expect(array_column($event->refresh()->settings['partners'], 'name'))
         ->toBe(['Gamma', 'Alpha', 'Beta']);
 });
 
@@ -321,29 +321,29 @@ it('garde l’ordre des partenaires tel qu’il a été rangé', function () {
  */
 it('ne supprime pas le logo d’un partenaire qu’on déplace', function () {
     Storage::fake('public');
-    $edition = artworkEdition();
+    $event = artworkEdition();
     $staff = adminStaff();
 
     $this->actingAs($staff, 'web')
-        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+        ->put(route('admin.evenements.update', $event), editionBase($event) + [
             'partners' => [
                 ['name' => 'Alpha', 'logo_file' => UploadedFile::fake()->image('a.png')],
                 ['name' => 'Beta', 'logo_file' => UploadedFile::fake()->image('b.png')],
             ],
         ])->assertSessionHasNoErrors();
 
-    $avant = array_column($edition->refresh()->settings['partners'], 'logo_url', 'name');
+    $avant = array_column($event->refresh()->settings['partners'], 'logo_url', 'name');
 
     // Beta passe devant : les deux lignes repostent l'URL qu'elles portent.
     $this->actingAs($staff, 'web')
-        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+        ->put(route('admin.evenements.update', $event), editionBase($event) + [
             'partners' => [
                 ['name' => 'Beta', 'logo_url' => $avant['Beta']],
                 ['name' => 'Alpha', 'logo_url' => $avant['Alpha']],
             ],
         ])->assertSessionHasNoErrors();
 
-    $apres = array_column($edition->refresh()->settings['partners'], 'logo_url', 'name');
+    $apres = array_column($event->refresh()->settings['partners'], 'logo_url', 'name');
 
     expect($apres)->toBe(['Beta' => $avant['Beta'], 'Alpha' => $avant['Alpha']]);
     Storage::disk('public')->assertExists(storagePath($avant['Alpha']));
@@ -353,21 +353,21 @@ it('ne supprime pas le logo d’un partenaire qu’on déplace', function () {
 /** Le fichier d'un partenaire retiré ne reste pas servi publiquement. */
 it('efface le logo d’un partenaire retiré de la liste', function () {
     Storage::fake('public');
-    $edition = artworkEdition();
+    $event = artworkEdition();
     $staff = adminStaff();
 
     $this->actingAs($staff, 'web')
-        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+        ->put(route('admin.evenements.update', $event), editionBase($event) + [
             'partners' => [
                 ['name' => 'Alpha', 'logo_file' => UploadedFile::fake()->image('a.png')],
                 ['name' => 'Beta', 'logo_file' => UploadedFile::fake()->image('b.png')],
             ],
         ])->assertSessionHasNoErrors();
 
-    $avant = array_column($edition->refresh()->settings['partners'], 'logo_url', 'name');
+    $avant = array_column($event->refresh()->settings['partners'], 'logo_url', 'name');
 
     $this->actingAs($staff, 'web')
-        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+        ->put(route('admin.evenements.update', $event), editionBase($event) + [
             'partners' => [['name' => 'Alpha', 'logo_url' => $avant['Alpha']]],
         ])->assertSessionHasNoErrors();
 
@@ -378,18 +378,18 @@ it('efface le logo d’un partenaire retiré de la liste', function () {
 /** Remplacer le logo d'une ligne n'empile pas les fichiers. */
 it('remplace le logo d’un partenaire sans garder l’ancien', function () {
     Storage::fake('public');
-    $edition = artworkEdition();
+    $event = artworkEdition();
     $staff = adminStaff();
 
     $this->actingAs($staff, 'web')
-        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+        ->put(route('admin.evenements.update', $event), editionBase($event) + [
             'partners' => [['name' => 'Alpha', 'logo_file' => UploadedFile::fake()->image('a.png')]],
         ])->assertSessionHasNoErrors();
 
-    $ancien = $edition->refresh()->settings['partners'][0]['logo_url'];
+    $ancien = $event->refresh()->settings['partners'][0]['logo_url'];
 
     $this->actingAs($staff, 'web')
-        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+        ->put(route('admin.evenements.update', $event), editionBase($event) + [
             'partners' => [[
                 'name' => 'Alpha',
                 'logo_url' => $ancien,
@@ -397,7 +397,7 @@ it('remplace le logo d’un partenaire sans garder l’ancien', function () {
             ]],
         ])->assertSessionHasNoErrors();
 
-    $nouveau = $edition->refresh()->settings['partners'][0]['logo_url'];
+    $nouveau = $event->refresh()->settings['partners'][0]['logo_url'];
 
     expect($nouveau)->not->toBe($ancien);
     Storage::disk('public')->assertExists(storagePath($nouveau));
@@ -410,10 +410,10 @@ it('remplace le logo d’un partenaire sans garder l’ancien', function () {
  */
 it('refuse un logo de partenaire au format SVG', function () {
     Storage::fake('public');
-    $edition = artworkEdition();
+    $event = artworkEdition();
 
     $this->actingAs(adminStaff(), 'web')
-        ->put(route('admin.editions.update', $edition), editionBase($edition) + [
+        ->put(route('admin.evenements.update', $event), editionBase($event) + [
             'partners' => [['name' => 'Alpha', 'logo_file' => UploadedFile::fake()->create('logo.svg', 4, 'image/svg+xml')]],
         ])
         ->assertSessionHasErrors('partners.0.logo_file');

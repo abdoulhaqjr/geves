@@ -17,7 +17,7 @@
                     <h3 style="margin:0 0 4px;">{{ $claim->subject }}</h3>
                     <div style="font-size:13px;color:var(--ukc-muted);margin-bottom:12px;">
                         {{ $claim->name ?: 'Déclarant inconnu' }} · {{ $claim->email }}
-                        @if ($claim->edition) · {{ $claim->edition->colloque?->name ? $claim->edition->colloque->name.' - ' : '' }}{{ $claim->edition->title ?: $claim->edition->year }}@endif
+                        @if ($claim->event) · {{ $claim->event->series?->name ? $claim->event->series->name.' - ' : '' }}{{ $claim->event->title ?: $claim->event->year }}@endif
                         · reçue le {{ $claim->created_at?->translatedFormat('d/m/Y à H:i') }}
                     </div>
                     <div class="ukc-rte" style="white-space:pre-line;line-height:1.6;">{{ $claim->message }}</div>
@@ -53,7 +53,7 @@
                                     @foreach ($assignees as $u)<option value="{{ $u->id }}" @selected($claim->assigned_to === $u->id)>{{ $u->name }}</option>@endforeach
                                 </select>
                             </div>
-                            <p style="font-size:12px;color:var(--ukc-muted);">Personnes habilitées (admin, gestionnaires ou délégués « réclamations » de cette édition).</p>
+                            <p style="font-size:12px;color:var(--ukc-muted);">Personnes habilitées (admin, gestionnaires ou délégués « réclamations » de cette événement).</p>
                         </form>
                     </div>
                 </div>

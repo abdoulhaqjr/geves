@@ -47,13 +47,13 @@
                         <input type="text" id="author_affiliation" name="author_affiliation" maxlength="200"
                                value="{{ old('author_affiliation', $account->affiliation) }}">
                     </div>
-                    @if ($editions->isNotEmpty())
+                    @if ($events->isNotEmpty())
                         <div class="ukc-field">
-                            <label for="edition_id">{{ __('À propos de quel événement ? (optionnel)') }}</label>
-                            <select id="edition_id" name="edition_id">
+                            <label for="event_id">{{ __('À propos de quel événement ? (optionnel)') }}</label>
+                            <select id="event_id" name="event_id">
                                 <option value="">- {{ __('Non précisé') }} -</option>
-                                @foreach ($editions as $ed)
-                                    <option value="{{ $ed->id }}" @selected((string) old('edition_id') === (string) $ed->id)>{{ $ed->title ?: $ed->year }}</option>
+                                @foreach ($events as $ed)
+                                    <option value="{{ $ed->id }}" @selected((string) old('event_id') === (string) $ed->id)>{{ $ed->title ?: $ed->year }}</option>
                                 @endforeach
                             </select>
                         </div>

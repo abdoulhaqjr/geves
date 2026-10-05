@@ -5,11 +5,11 @@
 
 {{ $meta['intro'] }}
 
-@if ($participant->edition?->date_start)
-- **{{ __('Dates :') }}** {{ __('du') }} {{ $participant->edition->date_start->format('d/m/Y') }}@if ($participant->edition->date_end) {{ __('au') }} {{ $participant->edition->date_end->format('d/m/Y') }}@endif
+@if ($participant->event?->date_start)
+- **{{ __('Dates :') }}** {{ __('du') }} {{ $participant->event->date_start->format('d/m/Y') }}@if ($participant->event->date_end) {{ __('au') }} {{ $participant->event->date_end->format('d/m/Y') }}@endif
 @endif
-@if ($participant->edition?->location)
-- **{{ __('Lieu :') }}** {{ $participant->edition->location }}
+@if ($participant->event?->location)
+- **{{ __('Lieu :') }}** {{ $participant->event->location }}
 @endif
 
 {{ __('Retrouvez toutes les informations et vos documents dans votre espace participant.') }}

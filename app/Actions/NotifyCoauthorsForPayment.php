@@ -25,8 +25,8 @@ class NotifyCoauthorsForPayment
             return 0;
         }
 
-        $edition = $submission->edition;
-        $slug = $edition?->slug;
+        $event = $submission->event;
+        $slug = $event?->slug;
         if (! $slug) {
             return 0;
         }
@@ -53,7 +53,7 @@ class NotifyCoauthorsForPayment
             Mail::to($email)->send($mail);
 
             Email::create([
-                'edition_id' => $submission->edition_id,
+                'event_id' => $submission->event_id,
                 'participant_id' => null,
                 'template' => 'coauthor_payment',
                 'recipient' => $email,

@@ -4,17 +4,17 @@ use App\Enums\MeetingRole;
 use App\Meetings\MeetingProviderRegistry;
 use App\Meetings\Providers\JitsiProvider;
 use App\Meetings\Providers\LiveKitProvider;
-use App\Support\EditionMeetingConfig;
+use App\Support\EventMeetingConfig;
 
 /**
- * Réglages de visioconférence PROPRES à une édition, sur le modèle du paiement :
+ * Réglages de visioconférence PROPRES à une événement, sur le modèle du paiement :
  * un colloque peut tenir ses salles sur son propre serveur, et choisir sa qualité
  * vidéo. Tout champ vide retombe sur la configuration de la plateforme.
  */
-/** Séance en direct de cette édition (helper local : celui de MeetingTest n'est pas partagé). */
-function seanceEnDirect($edition, array $attrs = [])
+/** Séance en direct de cette événement (helper local : celui de MeetingTest n'est pas partagé). */
+function seanceEnDirect($event, array $attrs = [])
 {
-    return $edition->sessions()->create(array_merge([
+    return $event->sessions()->create(array_merge([
         'type' => 'plenary', 'label' => 'Séance', 'meeting_status' => 'live',
         'meeting_visibility' => 'public',
     ], $attrs));
@@ -29,10 +29,10 @@ function plateformeLiveKit(): void
     config()->set('meetings.quality', 'md');
 }
 
-it('ouvre les salles d’une édition sur SON serveur', function () {
+it('ouvre les salles d’une événement sur SON serveur', function () {
     plateformeLiveKit();
-    $edition = openEdition();
-    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+    $event = openEdition();
+    $event->update(['settings' => array_merge($event->settings ?? [], [
         'meetings' => ['livekit' => [
             'url' => 'wss://colloque.exemple.tg',
             'api_key' => 'APIcolloque',
@@ -40,7 +40,7 @@ it('ouvre les salles d’une édition sur SON serveur', function () {
         ]],
     ])]);
 
-    EditionMeetingConfig::using($edition->fresh(), function () {
+    EventMeetingConfig::using($event->fresh(), function () {
         expect(config('meetings.livekit.url'))->toBe('wss://colloque.exemple.tg');
         expect(config('meetings.livekit.api_key'))->toBe('APIcolloque');
     });
@@ -48,45 +48,45 @@ it('ouvre les salles d’une édition sur SON serveur', function () {
 
 it('rend la configuration de la plateforme en sortant', function () {
     // ⚠️ C'est la raison d'être de `using()` : `apply()` n'écrase que les champs
-    // remplis, donc sans restauration les identifiants d'une édition resteraient
+    // remplis, donc sans restauration les identifiants d'une événement resteraient
     // actifs pour la suivante - et une salle s'ouvrirait sur le serveur d'un
     // autre colloque.
     plateformeLiveKit();
-    $edition = openEdition();
-    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+    $event = openEdition();
+    $event->update(['settings' => array_merge($event->settings ?? [], [
         'meetings' => ['livekit' => ['url' => 'wss://colloque.exemple.tg']],
     ])]);
 
-    EditionMeetingConfig::using($edition->fresh(), fn () => null);
+    EventMeetingConfig::using($event->fresh(), fn () => null);
 
     expect(config('meetings.livekit.url'))->toBe('wss://plateforme.livekit.cloud');
 });
 
 it('laisse un champ vide retomber sur la plateforme', function () {
     plateformeLiveKit();
-    $edition = openEdition();
-    $edition->update(['settings' => array_merge($edition->settings ?? [], [
-        // Seule l'adresse du serveur est propre à l'édition : les clés restent
+    $event = openEdition();
+    $event->update(['settings' => array_merge($event->settings ?? [], [
+        // Seule l'adresse du serveur est propre à l'événement : les clés restent
         // celles de la plateforme.
         'meetings' => ['livekit' => ['url' => 'wss://colloque.exemple.tg']],
     ])]);
 
-    EditionMeetingConfig::using($edition->fresh(), function () {
+    EventMeetingConfig::using($event->fresh(), function () {
         expect(config('meetings.livekit.url'))->toBe('wss://colloque.exemple.tg');
         expect(config('meetings.livekit.api_key'))->toBe('APIplateforme');
     });
 });
 
-it('impose le fournisseur choisi par l’édition', function () {
+it('impose le fournisseur choisi par l’événement', function () {
     plateformeLiveKit();
-    $edition = openEdition();
-    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+    $event = openEdition();
+    $event->update(['settings' => array_merge($event->settings ?? [], [
         'meetings' => ['provider' => 'jitsi'],
     ])]);
-    $session = seanceEnDirect($edition->fresh());
+    $session = seanceEnDirect($event->fresh());
 
-    $defaut = EditionMeetingConfig::using(
-        $session->edition,
+    $defaut = EventMeetingConfig::using(
+        $session->event,
         fn () => app(MeetingProviderRegistry::class)->default(),
     );
 
@@ -97,41 +97,41 @@ it('impose le fournisseur choisi par l’édition', function () {
 
 // --- Qualité vidéo ----------------------------------------------------------
 
-it('retient la qualité choisie par l’édition', function () {
+it('retient la qualité choisie par l’événement', function () {
     plateformeLiveKit();
-    $edition = openEdition();
-    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+    $event = openEdition();
+    $event->update(['settings' => array_merge($event->settings ?? [], [
         'meetings' => ['quality' => 'fhd'],
     ])]);
 
-    expect(EditionMeetingConfig::quality($edition->fresh()))->toBe('fhd');
+    expect(EventMeetingConfig::quality($event->fresh()))->toBe('fhd');
 });
 
 it('retombe sur la plateforme, puis sur « md », devant une qualité inconnue', function () {
     // ⚠️ Un réglage saisi hier et retiré du code demain ne doit pas laisser la
     // salle sans image.
     plateformeLiveKit();
-    $edition = openEdition();
-    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+    $event = openEdition();
+    $event->update(['settings' => array_merge($event->settings ?? [], [
         'meetings' => ['quality' => 'ultra'],
     ])]);
 
-    expect(EditionMeetingConfig::quality($edition->fresh()))->toBe('md');
+    expect(EventMeetingConfig::quality($event->fresh()))->toBe('md');
 
     config()->set('meetings.quality', 'n’importe quoi');
-    expect(EditionMeetingConfig::quality(null))->toBe('md');
+    expect(EventMeetingConfig::quality(null))->toBe('md');
 
     config()->set('meetings.quality', 'sd');
-    expect(EditionMeetingConfig::quality(null))->toBe('sd');
+    expect(EventMeetingConfig::quality(null))->toBe('sd');
 });
 
 it('porte la qualité jusque dans la salle', function () {
     plateformeLiveKit();
-    $edition = openEdition();
-    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+    $event = openEdition();
+    $event->update(['settings' => array_merge($event->settings ?? [], [
         'meetings' => ['quality' => 'fhd'],
     ])]);
-    $session = seanceEnDirect($edition->fresh(), ['meeting_provider' => 'livekit']);
+    $session = seanceEnDirect($event->fresh(), ['meeting_provider' => 'livekit']);
 
     $cfg = $session->liveKitEmbedConfig(null, false);
 
@@ -142,9 +142,9 @@ it('garde « md » comme défaut de la plateforme', function () {
     // ⚠️ Ce cas fige une RÉGRESSION : le défaut était passé en 720p pour toute la
     // plateforme, ce qui a doublé la liaison montante demandée et fait lâcher les
     // connexions modestes. Le défaut est redevenu ce que la salle faisait avant
-    // d'être réglable ; monter reste un choix d'édition.
-    expect(EditionMeetingConfig::QUALITY_DEFAULT)->toBe('md');
-    expect(EditionMeetingConfig::QUALITIES)->toContain('md');
+    // d'être réglable ; monter reste un choix d'événement.
+    expect(EventMeetingConfig::QUALITY_DEFAULT)->toBe('md');
+    expect(EventMeetingConfig::QUALITIES)->toContain('md');
     expect(config('meetings.quality'))->toBe('md');
 });
 
@@ -152,16 +152,16 @@ it('garde « md » comme défaut de la plateforme', function () {
 
 it('n’enregistre que les champs renseignés', function () {
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
 
-    $this->actingAs($staff, 'web')->post(route('admin.editions.meetings', $edition), [
+    $this->actingAs($staff, 'web')->post(route('admin.evenements.meetings', $event), [
         'provider' => 'livekit',
         'quality' => 'sd',
         'livekit' => ['url' => 'wss://colloque.exemple.tg', 'api_key' => '', 'api_secret' => ''],
         'jitsi' => ['domain' => '', 'app_id' => '', 'app_secret' => '', 'room_prefix' => ''],
     ])->assertRedirect();
 
-    $m = $edition->fresh()->settings['meetings'];
+    $m = $event->fresh()->settings['meetings'];
     expect($m['provider'])->toBe('livekit');
     expect($m['quality'])->toBe('sd');
     expect($m['livekit'])->toBe(['url' => 'wss://colloque.exemple.tg']);
@@ -172,67 +172,67 @@ it('n’enregistre que les champs renseignés', function () {
 
 it('efface le réglage quand tout est vidé', function () {
     $staff = adminStaff();
-    $edition = openEdition();
-    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+    $event = openEdition();
+    $event->update(['settings' => array_merge($event->settings ?? [], [
         'meetings' => ['provider' => 'jitsi'],
     ])]);
 
-    $this->actingAs($staff, 'web')->post(route('admin.editions.meetings', $edition), [
+    $this->actingAs($staff, 'web')->post(route('admin.evenements.meetings', $event), [
         'provider' => '', 'quality' => '', 'livekit' => [], 'jitsi' => [],
     ])->assertRedirect();
 
-    expect($edition->fresh()->settings)->not->toHaveKey('meetings');
+    expect($event->fresh()->settings)->not->toHaveKey('meetings');
 });
 
 it('refuse une qualité inventée', function () {
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs($staff, 'web')
-        ->post(route('admin.editions.meetings', $edition), ['quality' => 'ultra'])
+        ->post(route('admin.evenements.meetings', $event), ['quality' => 'ultra'])
         ->assertSessionHasErrors('quality');
 });
 
-it('garde le reste des réglages de l’édition intact', function () {
-    // ⚠️ La fiche d'édition poste tous ses onglets dans des formulaires distincts :
+it('garde le reste des réglages de l’événement intact', function () {
+    // ⚠️ La fiche d'événement poste tous ses onglets dans des formulaires distincts :
     // enregistrer la visio ne doit pas emporter le paiement.
     $staff = adminStaff();
-    $edition = openEdition();
-    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+    $event = openEdition();
+    $event->update(['settings' => array_merge($event->settings ?? [], [
         'payment' => ['gateway' => 'fedapay'],
     ])]);
 
-    $this->actingAs($staff, 'web')->post(route('admin.editions.meetings', $edition), [
+    $this->actingAs($staff, 'web')->post(route('admin.evenements.meetings', $event), [
         'provider' => 'jitsi',
     ])->assertRedirect();
 
-    $settings = $edition->fresh()->settings;
+    $settings = $event->fresh()->settings;
     expect($settings['payment']['gateway'])->toBe('fedapay');
     expect($settings['meetings']['provider'])->toBe('jitsi');
 });
 
-it('réserve ces réglages à qui peut écrire sur l’édition', function () {
-    $edition = openEdition();
+it('réserve ces réglages à qui peut écrire sur l’événement', function () {
+    $event = openEdition();
 
-    $this->post(route('admin.editions.meetings', $edition), ['provider' => 'jitsi'])
+    $this->post(route('admin.evenements.meetings', $event), ['provider' => 'jitsi'])
         ->assertRedirect();
 
-    expect($edition->fresh()->settings)->not->toHaveKey('meetings');
+    expect($event->fresh()->settings)->not->toHaveKey('meetings');
 });
 
-it('donne au jeton de la salle le serveur de l’édition', function () {
-    // Bout en bout : la salle d'une séance de cette édition est signée avec la clé
+it('donne au jeton de la salle le serveur de l’événement', function () {
+    // Bout en bout : la salle d'une séance de cette événement est signée avec la clé
     // du colloque, pas avec celle de la plateforme.
     plateformeLiveKit();
-    $edition = openEdition();
-    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+    $event = openEdition();
+    $event->update(['settings' => array_merge($event->settings ?? [], [
         'meetings' => ['livekit' => [
             'url' => 'wss://colloque.exemple.tg',
             'api_key' => 'APIcolloque',
             'api_secret' => str_repeat('c', 40),
         ]],
     ])]);
-    $session = seanceEnDirect($edition->fresh(), ['meeting_provider' => 'livekit']);
+    $session = seanceEnDirect($event->fresh(), ['meeting_provider' => 'livekit']);
 
     $cfg = $session->liveKitEmbedConfig(null, false);
 

@@ -34,11 +34,11 @@ it('rend l’interface participant en anglais selon la préférence du compte', 
 });
 
 it('applique la langue choisie en session à la page publique', function () {
-    $edition = openEdition();
+    $event = openEdition();
 
     // Choix de langue mémorisé en session, puis page publique du colloque.
     $this->get(route('locale.switch', 'en'));
-    $this->get(route('public.colloque', $edition->slug))
+    $this->get(route('public.colloque', $event->slug))
         ->assertOk()
         ->assertSee('Home'); // nav « Accueil » traduit
 });

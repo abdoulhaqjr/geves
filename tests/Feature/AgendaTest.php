@@ -40,17 +40,17 @@ it('construit un lien Google Agenda', function () {
 });
 
 it('exporte l’agenda du participant en ICS (ses créneaux)', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
-    $participant = $edition->participants()->create([
+    $participant = $event->participants()->create([
         'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
     ]);
-    $submission = $edition->submissions()->create([
+    $submission = $event->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => '26-1', 'title' => 'Ma communication',
         'abstract' => 'a', 'track' => 'Sciences', 'type' => 'oral', 'status' => 'accepted', 'authors' => [],
     ]);
     Slot::create([
-        'edition_id' => $edition->id, 'submission_id' => $submission->id, 'participant_id' => $participant->id,
+        'event_id' => $event->id, 'submission_id' => $submission->id, 'participant_id' => $participant->id,
         'session_label' => 'Session 1', 'room' => 'Amphi A',
         'starts_at' => '2026-09-03 09:00', 'ends_at' => '2026-09-03 09:20',
     ]);

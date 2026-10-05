@@ -1,7 +1,7 @@
 <?php
 
 use App\Meetings\MeetingProviderRegistry;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\EventSession;
 use App\Models\Payment;
 use App\Models\Review;
@@ -18,12 +18,12 @@ it('produit 200 communications dont 93 % payées manuellement', function () {
     $this->seed(ColloqueAvenirSeeder::class);
     $this->seed(ColloqueAvenirVolumeSeeder::class);
 
-    $edition = Edition::where('slug', 'avenir-durable-2025')->firstOrFail();
-    $submissions = Submission::where('edition_id', $edition->id)->where('ref_code', 'like', 'AVD-%')->get();
+    $event = Event::where('slug', 'avenir-durable-2025')->firstOrFail();
+    $submissions = Submission::where('event_id', $event->id)->where('ref_code', 'like', 'AVD-%')->get();
 
     expect($submissions)->toHaveCount(200);
 
-    $paid = Payment::where('edition_id', $edition->id)
+    $paid = Payment::where('event_id', $event->id)
         ->whereIn('participant_id', $submissions->pluck('participant_id'))
         ->where('gateway', 'manual')
         ->where('status', 'paid')
@@ -36,8 +36,8 @@ it('donne un jeu complet : statuts variés, créneaux et relectures', function (
     $this->seed(ColloqueAvenirSeeder::class);
     $this->seed(ColloqueAvenirVolumeSeeder::class);
 
-    $edition = Edition::where('slug', 'avenir-durable-2025')->firstOrFail();
-    $byStatus = Submission::where('edition_id', $edition->id)->where('ref_code', 'like', 'AVD-%')
+    $event = Event::where('slug', 'avenir-durable-2025')->firstOrFail();
+    $byStatus = Submission::where('event_id', $event->id)->where('ref_code', 'like', 'AVD-%')
         ->get()->groupBy('status');
 
     // Toutes les étapes du circuit sont représentées.
@@ -46,10 +46,10 @@ it('donne un jeu complet : statuts variés, créneaux et relectures', function (
     }
 
     // Les communications acceptées sont planifiées, et la relecture est en cours.
-    expect($edition->slots()->where('submission_id', '>', 0)->count())
+    expect($event->slots()->where('submission_id', '>', 0)->count())
         ->toBeGreaterThanOrEqual($byStatus->get('accepted')->count());
 
-    $reviews = Review::whereHas('submission', fn ($q) => $q->where('edition_id', $edition->id))->get();
+    $reviews = Review::whereHas('submission', fn ($q) => $q->where('event_id', $event->id))->get();
     expect($reviews->where('status', 'completed')->count())->toBeGreaterThan(0);
     expect($reviews->filter(fn (Review $r) => $r->isLate())->count())->toBeGreaterThan(0);
 });
@@ -57,29 +57,29 @@ it('donne un jeu complet : statuts variés, créneaux et relectures', function (
 /**
  * ⚠️ Les dates de l'événement sont une demande explicite, et tout le programme
  * s'y cale par décalage. Un seeder qui glisse d'un jour sort la clôture de
- * l'édition ou laisse un jour vide au milieu du colloque.
+ * l'événement ou laisse un jour vide au milieu du colloque.
  */
 it('tient le colloque du 2 au 8 octobre 2026, sans jour vide', function () {
     $this->seed(ColloqueAvenirSeeder::class);
     $this->seed(ColloqueAvenirVolumeSeeder::class);
 
-    $edition = Edition::where('slug', 'avenir-durable-2025')->firstOrFail();
+    $event = Event::where('slug', 'avenir-durable-2025')->firstOrFail();
 
-    expect($edition->date_start->toDateString())->toBe('2026-10-02');
-    expect($edition->date_end->toDateString())->toBe('2026-10-08');
+    expect($event->date_start->toDateString())->toBe('2026-10-02');
+    expect($event->date_end->toDateString())->toBe('2026-10-08');
 
-    $sessions = EventSession::where('edition_id', $edition->id)->whereNotNull('session_day')->get();
+    $sessions = EventSession::where('event_id', $event->id)->whereNotNull('session_day')->get();
 
     // Aucune séance hors de la fenêtre annoncée...
-    expect($sessions->filter(fn (EventSession $s) => $s->session_day->lt($edition->date_start)
-        || $s->session_day->gt($edition->date_end)))->toBeEmpty();
+    expect($sessions->filter(fn (EventSession $s) => $s->session_day->lt($event->date_start)
+        || $s->session_day->gt($event->date_end)))->toBeEmpty();
 
     // ...et chaque jour du colloque porte quelque chose. Les séances calées sur
     // l'horloge (direct, replay) tombent le jour du lancement du seed : on ne
     // compte que les séances du programme, datées en dur.
     $jours = $sessions->map(fn (EventSession $s) => $s->session_day->toDateString())->unique();
     $vides = collect(range(0, 6))
-        ->map(fn (int $i) => $edition->date_start->copy()->addDays($i)->toDateString())
+        ->map(fn (int $i) => $event->date_start->copy()->addDays($i)->toDateString())
         ->reject(fn (string $jour) => $jours->contains($jour))
         ->values()
         ->all();
@@ -97,8 +97,8 @@ it('programme des créneaux en visioconférence, sur des salles qui s’ouvrent'
     $this->seed(ColloqueAvenirSeeder::class);
     $this->seed(ColloqueAvenirVolumeSeeder::class);
 
-    $edition = Edition::where('slug', 'avenir-durable-2025')->firstOrFail();
-    $visios = EventSession::where('edition_id', $edition->id)->where('meeting_status', '!=', 'none')->get();
+    $event = Event::where('slug', 'avenir-durable-2025')->firstOrFail();
+    $visios = EventSession::where('event_id', $event->id)->where('meeting_status', '!=', 'none')->get();
 
     // Les trois états se voient sans attendre : direct, terminée (replay), programmée.
     foreach (['live', 'ended', 'scheduled'] as $etat) {
@@ -116,7 +116,7 @@ it('programme des créneaux en visioconférence, sur des salles qui s’ouvrent'
     expect($visios->where('type', 'plenary')->where('meeting_visibility', 'public'))->not->toBeEmpty();
 
     // Et surtout : des CRÉNEAUX de communication se tiennent en visio.
-    $creneaux = $edition->slots()->where('submission_id', '>', 0)
+    $creneaux = $event->slots()->where('submission_id', '>', 0)
         ->whereIn('session_id', $visios->pluck('id'))->count();
     expect($creneaux)->toBeGreaterThan(10);
 });
@@ -126,7 +126,7 @@ it('rejoue sans rien dupliquer', function () {
     $this->seed(ColloqueAvenirVolumeSeeder::class);
     $this->seed(ColloqueAvenirVolumeSeeder::class);
 
-    $edition = Edition::where('slug', 'avenir-durable-2025')->firstOrFail();
+    $event = Event::where('slug', 'avenir-durable-2025')->firstOrFail();
 
-    expect(Submission::where('edition_id', $edition->id)->where('ref_code', 'like', 'AVD-%')->count())->toBe(200);
+    expect(Submission::where('event_id', $event->id)->where('ref_code', 'like', 'AVD-%')->count())->toBe(200);
 });

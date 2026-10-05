@@ -6,7 +6,7 @@ use App\Models\Attestation;
 use App\Models\DocumentTemplate;
 use App\Models\Formation;
 use App\Models\User;
-use App\Support\EditionSettings;
+use App\Support\EventSettings;
 use App\Support\Settings;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -29,8 +29,8 @@ function docxDocumentXml(string $binary): string
 }
 
 it('émet une attestation vérifiable et reste idempotente', function () {
-    $edition = openEdition();
-    $p = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $event = openEdition();
+    $p = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
 
     $a1 = (new IssueAttestation)->handle($p, 'participation');
     expect($a1->uuid)->not->toBeEmpty();
@@ -43,13 +43,13 @@ it('émet une attestation vérifiable et reste idempotente', function () {
 
 it('émet en masse les attestations aux participants ayant payé', function () {
     $staff = adminStaff();
-    $edition = openEdition();
-    $paid = $edition->participants()->create(['first_name' => 'A', 'last_name' => 'Payé', 'email' => 'p@example.tg', 'role' => 'author']);
-    $edition->payments()->create(['participant_id' => $paid->id, 'amount' => 15000, 'status' => 'paid']);
-    $edition->participants()->create(['first_name' => 'B', 'last_name' => 'Impayé', 'email' => 'i@example.tg', 'role' => 'author']);
+    $event = openEdition();
+    $paid = $event->participants()->create(['first_name' => 'A', 'last_name' => 'Payé', 'email' => 'p@example.tg', 'role' => 'author']);
+    $event->payments()->create(['participant_id' => $paid->id, 'amount' => 15000, 'status' => 'paid']);
+    $event->participants()->create(['first_name' => 'B', 'last_name' => 'Impayé', 'email' => 'i@example.tg', 'role' => 'author']);
 
     $this->actingAs($staff, 'web')->post(route('admin.documents.attestations.issue'), [
-        'edition_id' => (string) $edition->id,
+        'event_id' => (string) $event->id,
         'type' => 'participation',
     ]);
 
@@ -58,8 +58,8 @@ it('émet en masse les attestations aux participants ayant payé', function () {
 });
 
 it('vérifie publiquement une attestation valide, révoquée ou inconnue', function () {
-    $edition = openEdition();
-    $p = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $event = openEdition();
+    $p = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
     $att = (new IssueAttestation)->handle($p, 'communication');
 
     // La vérification se lit sur la page de l'attestation : il n'y a plus
@@ -74,8 +74,8 @@ it('vérifie publiquement une attestation valide, révoquée ou inconnue', funct
 });
 
 it('génère le document d’attestation avec un QR', function () {
-    $edition = openEdition();
-    $p = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $event = openEdition();
+    $p = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
     $att = (new IssueAttestation)->handle($p, 'participation');
 
     $this->get(route('attestation.document', $att->uuid))
@@ -85,11 +85,11 @@ it('génère le document d’attestation avec un QR', function () {
 });
 
 it('le PDF d’attestation utilise le modèle enregistré du type', function () {
-    $edition = openEdition();
+    $event = openEdition();
 
     // Modèle personnalisé pour ce type, avec une taille distinctive (700×500 px → 525×375 pt).
     DocumentTemplate::create([
-        'edition_id' => $edition->id,
+        'event_id' => $event->id,
         'kind' => 'attestation',
         'type' => 'participation',
         'layout' => [
@@ -102,7 +102,7 @@ it('le PDF d’attestation utilise le modèle enregistré du type', function () 
         ],
     ]);
 
-    $p = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $p = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
     $att = (new IssueAttestation)->handle($p, 'participation');
 
     $res = $this->get(route('attestation.pdf', $att->uuid));
@@ -118,9 +118,9 @@ it('le PDF d’attestation utilise le modèle enregistré du type', function () 
 it('génère le livret des résumés groupé par axe', function () {
     $staff = adminStaff();
     $submission = seededSubmission('accepted'); // titre « Innovation durable », axe « Sciences »
-    $edition = $submission->edition;
+    $event = $submission->event;
 
-    $this->actingAs($staff, 'web')->get(route('admin.documents.livret', $edition))
+    $this->actingAs($staff, 'web')->get(route('admin.documents.livret', $event))
         ->assertOk()
         ->assertSee('Livret des résumés')
         ->assertSee('Innovation durable')
@@ -130,10 +130,10 @@ it('génère le livret des résumés groupé par axe', function () {
 it('génère le livret des résumés au format Word (.docx)', function () {
     $staff = adminStaff();
     $submission = seededSubmission('accepted'); // titre « Innovation durable », axe « Sciences »
-    $edition = $submission->edition;
+    $event = $submission->event;
 
     $response = $this->actingAs($staff, 'web')
-        ->get(route('admin.documents.livret', [$edition, 'format' => 'docx']));
+        ->get(route('admin.documents.livret', [$event, 'format' => 'docx']));
 
     $response->assertOk();
     $response->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
@@ -146,13 +146,13 @@ it('génère le livret des résumés au format Word (.docx)', function () {
         ->toContain('SCIENCES');
 });
 
-it('permet au participant de télécharger le livret .docx de son édition', function () {
+it('permet au participant de télécharger le livret .docx de son événement', function () {
     $submission = seededSubmission('accepted');
-    $edition = $submission->edition;
+    $event = $submission->event;
     $account = $submission->participant->user;
 
     $response = $this->actingAs($account, 'account')
-        ->get(route('account.documents.livret', [$edition, 'format' => 'docx']));
+        ->get(route('account.documents.livret', [$event, 'format' => 'docx']));
 
     $response->assertOk();
     $response->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
@@ -160,20 +160,20 @@ it('permet au participant de télécharger le livret .docx de son édition', fun
 });
 
 it('refuse le livret .docx à un compte non participant', function () {
-    $edition = openEdition();
-    $intrus = verifiedAccount(); // compte sans participation sur l'édition
+    $event = openEdition();
+    $intrus = verifiedAccount(); // compte sans participation sur l'événement
 
     $this->actingAs($intrus, 'account')
-        ->get(route('account.documents.livret', [$edition, 'format' => 'docx']))
+        ->get(route('account.documents.livret', [$event, 'format' => 'docx']))
         ->assertForbidden();
 });
 
 it('génère la planche de badges', function () {
     $staff = adminStaff();
-    $edition = openEdition();
-    $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $event = openEdition();
+    $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
 
-    $this->actingAs($staff, 'web')->get(route('admin.documents.badges', $edition))
+    $this->actingAs($staff, 'web')->get(route('admin.documents.badges', $event))
         ->assertOk()
         ->assertSee('Awa Kodjo')
         ->assertSee('Communicant');
@@ -181,12 +181,12 @@ it('génère la planche de badges', function () {
 
 it('la planche de badges utilise le modèle enregistré', function () {
     $staff = adminStaff();
-    $edition = openEdition();
-    $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $event = openEdition();
+    $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
 
     // Modèle de badge personnalisé avec un texte distinctif substitué.
     DocumentTemplate::create([
-        'edition_id' => $edition->id,
+        'event_id' => $event->id,
         'kind' => 'badge',
         'type' => 'default',
         'layout' => [
@@ -200,24 +200,24 @@ it('la planche de badges utilise le modèle enregistré', function () {
     ]);
 
     // Le rendu reprend le modèle (texte substitué) → preuve que le template enregistré est utilisé.
-    $this->actingAs($staff, 'web')->get(route('admin.documents.badges', $edition))
+    $this->actingAs($staff, 'web')->get(route('admin.documents.badges', $event))
         ->assertOk()
         ->assertSee('BADGE PERSO Awa Kodjo');
 });
 
 it('protège les documents admin sans permission', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $user = User::factory()->create();
 
-    $this->actingAs($user, 'web')->get(route('admin.documents.livret', $edition))->assertForbidden();
+    $this->actingAs($user, 'web')->get(route('admin.documents.livret', $event))->assertForbidden();
 });
 
 it('affiche le hub Documents fidèle au mockup (volets + table par type)', function () {
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs($staff, 'web')
-        ->get(route('admin.documents.attestations', ['edition_id' => $edition->id]))
+        ->get(route('admin.documents.attestations', ['event_id' => $event->id]))
         ->assertOk()
         ->assertSee('Modèles')
         ->assertSee('Attestations délivrées')
@@ -229,34 +229,34 @@ it('affiche le hub Documents fidèle au mockup (volets + table par type)', funct
 
 it('liste les modèles d’attestation du module Formation avec émission par formation', function () {
     $staff = adminStaff();
-    $edition = openEdition(['formation_enabled' => true]);
+    $event = openEdition(['formation_enabled' => true]);
     $formation = Formation::create([
-        'edition_id' => $edition->id, 'title' => 'Atelier', 'fee' => 0, 'published' => true,
+        'event_id' => $event->id, 'title' => 'Atelier', 'fee' => 0, 'published' => true,
     ]);
     $formation->trainers()->create(['name' => 'Pr. Awa Kodjo']);
 
     $this->actingAs($staff, 'web')
-        ->get(route('admin.documents.attestations', ['edition_id' => $edition->id, 'tab' => 'attestations', 'stab' => 'modeles']))
+        ->get(route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'attestations', 'stab' => 'modeles']))
         ->assertOk()
         ->assertSee('Attestation de formation')
         ->assertSee('Attestation d’animation', false)
         // Ces attestations s'émettent depuis chaque formation, pas globalement.
         ->assertSee('Émettre par formation')
-        ->assertSee(route('admin.formations', ['edition_id' => $edition->id]), false);
+        ->assertSee(route('admin.formations', ['event_id' => $event->id]), false);
 });
 
 it('filtre les attestations délivrées par nom, e-mail et date d’émission', function () {
     $staff = adminStaff();
-    $edition = openEdition();
-    $base = ['edition_id' => $edition->id, 'tab' => 'attestations', 'stab' => 'delivrees'];
+    $event = openEdition();
+    $base = ['event_id' => $event->id, 'tab' => 'attestations', 'stab' => 'delivrees'];
 
     Attestation::create([
-        'edition_id' => $edition->id, 'type' => 'participation', 'uuid' => 'uuid-awa',
+        'event_id' => $event->id, 'type' => 'participation', 'uuid' => 'uuid-awa',
         'recipient_name' => 'Awa Kodjo', 'recipient_email' => 'awa@example.tg',
         'revoked' => false, 'issued_at' => now()->subDays(10),
     ]);
     Attestation::create([
-        'edition_id' => $edition->id, 'type' => 'participation', 'uuid' => 'uuid-kofi',
+        'event_id' => $event->id, 'type' => 'participation', 'uuid' => 'uuid-kofi',
         'recipient_name' => 'Kofi Mensah', 'recipient_email' => 'kofi@example.tg',
         'revoked' => false, 'issued_at' => now(),
     ]);
@@ -276,8 +276,8 @@ it('filtre les attestations délivrées par nom, e-mail et date d’émission', 
 
 it('sert chaque sous-onglet des attestations par son URL (?stab=)', function () {
     $staff = adminStaff();
-    $edition = openEdition();
-    $base = ['edition_id' => $edition->id, 'tab' => 'attestations'];
+    $event = openEdition();
+    $base = ['event_id' => $event->id, 'tab' => 'attestations'];
 
     // Modèles (défaut) : la table des types d'attestation.
     $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['stab' => 'modeles']))
@@ -300,20 +300,20 @@ it('sert chaque sous-onglet des attestations par son URL (?stab=)', function () 
 
 it('persiste l’avant-propos du livre dans les réglages et l’injecte au .docx', function () {
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs($staff, 'web')->post(route('admin.documents.livret.options'), [
-        'edition_id' => $edition->id,
+        'event_id' => $event->id,
         'forewordTitle' => 'Préface',
         'forewordText' => 'Un mot du comité.',
         'forewordSignature' => 'Le Président',
     ]);
 
-    // Réglages documents scopés par édition (« à chaque colloque ses templates »).
-    expect(EditionSettings::get($edition->fresh(), 'livret.foreword_text'))->toBe('Un mot du comité.');
+    // Réglages documents scopés par événement (« à chaque colloque ses templates »).
+    expect(EventSettings::get($event->fresh(), 'livret.foreword_text'))->toBe('Un mot du comité.');
 
     // Le .docx inclut l'avant-propos (réponse streamée → capture via tampon).
-    $response = (new LivretDocx($edition->fresh(), collect()))->download('t.docx');
+    $response = (new LivretDocx($event->fresh(), collect()))->download('t.docx');
     ob_start();
     $response->sendContent();
     $binary = (string) ob_get_clean();
@@ -324,10 +324,10 @@ it('persiste l’avant-propos du livre dans les réglages et l’injecte au .doc
 
 it('persiste l’apparence du livre (typographie, couleurs, page de garde)', function () {
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs($staff, 'web')->post(route('admin.documents.livret.apparence'), [
-        'edition_id' => $edition->id,
+        'event_id' => $event->id,
         'livretFontBody' => 'Georgia',
         'livretSizeBody' => '12',
         'livretColorPrimary' => '#123456',
@@ -336,17 +336,17 @@ it('persiste l’apparence du livre (typographie, couleurs, page de garde)', fun
         'livretNumber' => '1',
     ])->assertSessionHasNoErrors();
 
-    $edition = $edition->fresh();
-    expect(EditionSettings::get($edition, 'livret.font_body'))->toBe('Georgia');
-    expect((int) EditionSettings::get($edition, 'livret.size_body'))->toBe(12);
-    expect(EditionSettings::get($edition, 'livret.color_primary'))->toBe('#123456');
-    expect(EditionSettings::get($edition, 'livret.cover_mention'))->toBe('Livre des résumés · UK');
-    expect((bool) EditionSettings::get($edition, 'livret.number_abstracts'))->toBeTrue();
+    $event = $event->fresh();
+    expect(EventSettings::get($event, 'livret.font_body'))->toBe('Georgia');
+    expect((int) EventSettings::get($event, 'livret.size_body'))->toBe(12);
+    expect(EventSettings::get($event, 'livret.color_primary'))->toBe('#123456');
+    expect(EventSettings::get($event, 'livret.cover_mention'))->toBe('Livre des résumés · UK');
+    expect((bool) EventSettings::get($event, 'livret.number_abstracts'))->toBeTrue();
 });
 
 it('applique les réglages d’apparence au .docx (mention de couverture + numérotation)', function () {
     $submission = seededSubmission('accepted'); // titre « Innovation durable »
-    $edition = $submission->edition;
+    $event = $submission->event;
 
     Settings::setMany([
         'livret.cover_mention' => 'MENTION COUVERTURE TEST',
@@ -354,7 +354,7 @@ it('applique les réglages d’apparence au .docx (mention de couverture + numé
     ]);
 
     $groups = collect(['Sciences' => collect([$submission])]);
-    $response = (new LivretDocx($edition->fresh(), $groups))->download('t.docx');
+    $response = (new LivretDocx($event->fresh(), $groups))->download('t.docx');
     ob_start();
     $response->sendContent();
     $xml = docxDocumentXml((string) ob_get_clean());
@@ -370,10 +370,10 @@ it('échappe les caractères spéciaux (& < >) : le .docx reste un document vali
         'track' => 'Sciences & technologies',
         'abstract' => 'Étude sur A & B avec seuils < 5 et > 1.',
     ]);
-    $edition = $submission->edition;
+    $event = $submission->event;
 
     $groups = collect(['Sciences & technologies' => collect([$submission->fresh()])]);
-    $response = (new LivretDocx($edition->fresh(), $groups))->download('t.docx');
+    $response = (new LivretDocx($event->fresh(), $groups))->download('t.docx');
     ob_start();
     $response->sendContent();
     $xml = docxDocumentXml((string) ob_get_clean());
@@ -386,10 +386,10 @@ it('échappe les caractères spéciaux (& < >) : le .docx reste un document vali
 it('livre des résumés : préserve les « < » / « > » nus et le gras du corps', function () {
     $submission = seededSubmission('accepted');
     $submission->update(['abstract' => 'Seuils < 5 et > 1 avec <b>résultat majeur</b>.']);
-    $edition = $submission->edition;
+    $event = $submission->event;
 
     $groups = collect(['Sciences' => collect([$submission->fresh()])]);
-    $response = (new LivretDocx($edition->fresh(), $groups))->download('t.docx');
+    $response = (new LivretDocx($event->fresh(), $groups))->download('t.docx');
     ob_start();
     $response->sendContent();
     $xml = docxDocumentXml((string) ob_get_clean());
@@ -403,24 +403,24 @@ it('audit livret : aperçu HTML, export .docx et harmonisation IA (normalise les
     $staff = adminStaff();
     $submission = seededSubmission('accepted');
     $submission->update(['authors' => [['name' => '  jean   DUPONT ']]]);
-    $edition = $submission->edition;
+    $event = $submission->event;
 
     $this->actingAs($staff, 'web');
-    $this->get(route('admin.documents.livret', $edition))->assertOk();                                        // aperçu HTML
-    $this->get(route('admin.documents.livret', ['edition' => $edition, 'format' => 'docx']))->assertOk();     // export .docx
+    $this->get(route('admin.documents.livret', $event))->assertOk();                                        // aperçu HTML
+    $this->get(route('admin.documents.livret', ['event' => $event, 'format' => 'docx']))->assertOk();     // export .docx
 
     // Harmonisation : « jean   DUPONT » → « Jean Dupont », puis affiché en MAJUSCULES.
-    $response = $this->get(route('admin.documents.livret', ['edition' => $edition, 'format' => 'docx', 'harmonize' => 1]));
+    $response = $this->get(route('admin.documents.livret', ['event' => $event, 'format' => 'docx', 'harmonize' => 1]));
     $response->assertOk();
     expect(docxDocumentXml($response->streamedContent()))->toContain('JEAN DUPONT');
 });
 
 it('avant-propos IA : endpoint sûr même sans fournisseur IA (redirige, aucun 500)', function () {
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs($staff, 'web')
-        ->post(route('admin.documents.livret.foreword-ai', ['edition_id' => $edition->id]))
+        ->post(route('admin.documents.livret.foreword-ai', ['event_id' => $event->id]))
         ->assertRedirect();
 
     // Aucun fournisseur IA configuré en test → rien n'est généré ni persisté.
@@ -429,10 +429,10 @@ it('avant-propos IA : endpoint sûr même sans fournisseur IA (redirige, aucun 5
 
 it('audit options : DIDs attestations et réglages badges se persistent sans erreur', function () {
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs($staff, 'web')->post(route('admin.documents.attestations.options'), [
-        'edition_id' => $edition->id,
+        'event_id' => $event->id,
         'attPrefix' => 'UKC-ATT-2026-',
         'attDidIssuer' => 'did:web:univkara.tg:colloques',
         'attDidMethod' => 'did:web:univkara.tg:colloques#key-ed25519-1',
@@ -440,79 +440,79 @@ it('audit options : DIDs attestations et réglages badges se persistent sans err
         'attAuto' => '1', 'attNotify' => '1', 'attIncludeQr' => '1',
     ])->assertSessionHasNoErrors();
 
-    expect(EditionSettings::get($edition->fresh(), 'attestations.did_issuer'))->toBe('did:web:univkara.tg:colloques');
-    expect(EditionSettings::get($edition->fresh(), 'attestations.crypto_suite'))->toBe('Ed25519Signature2020');
+    expect(EventSettings::get($event->fresh(), 'attestations.did_issuer'))->toBe('did:web:univkara.tg:colloques');
+    expect(EventSettings::get($event->fresh(), 'attestations.crypto_suite'))->toBe('Ed25519Signature2020');
 
     $this->actingAs($staff, 'web')->post(route('admin.documents.badges.options'), [
-        'edition_id' => $edition->id,
+        'event_id' => $event->id,
         'badgePrefix' => 'UKC-2026-',
         'badgeFormat' => 'CR80',
         'badgeGenerateAfterPayment' => '1',
         'badgeBatchPrint' => '1',
     ])->assertSessionHasNoErrors();
 
-    expect(EditionSettings::get($edition->fresh(), 'badges.format'))->toBe('CR80');
-    expect((bool) EditionSettings::get($edition->fresh(), 'badges.batch_print'))->toBeTrue();
+    expect(EventSettings::get($event->fresh(), 'badges.format'))->toBe('CR80');
+    expect((bool) EventSettings::get($event->fresh(), 'badges.batch_print'))->toBeTrue();
 });
 
 it('importe un modèle .docx et fixe le modèle actif', function () {
     Storage::fake('public');
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs($staff, 'web')->post(route('admin.documents.livret.template'), [
-        'edition_id' => $edition->id,
+        'event_id' => $event->id,
         'templateFile' => UploadedFile::fake()->create('modele.docx', 20, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
     ])->assertSessionHasNoErrors();
 
-    $templates = EditionSettings::get($edition->fresh(), 'livret.templates');
+    $templates = EventSettings::get($event->fresh(), 'livret.templates');
     expect($templates)->toHaveCount(1);
     expect($templates[0]['name'])->toBe('modele.docx');
     Storage::disk('public')->assertExists($templates[0]['path']);
 
-    $this->actingAs($staff, 'web')->post(route('admin.documents.livret.template'), ['edition_id' => $edition->id, 'livretTemplate' => 'base']);
-    expect(EditionSettings::get($edition->fresh(), 'livret.template'))->toBe('base');
+    $this->actingAs($staff, 'web')->post(route('admin.documents.livret.template'), ['event_id' => $event->id, 'livretTemplate' => 'base']);
+    expect(EventSettings::get($event->fresh(), 'livret.template'))->toBe('base');
 });
 
 it('crée un modèle avec son libellé avant d’ouvrir le concepteur', function () {
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs($staff, 'web')->post(route('admin.documents.templates.create'), [
-        'edition_id' => $edition->id, 'kind' => 'attestation',
+        'event_id' => $event->id, 'kind' => 'attestation',
         'type' => 'participation', 'title' => 'Attestation de présence',
     ])->assertRedirect(route('admin.documents.templates', [
-        'edition_id' => $edition->id, 'kind' => 'attestation', 'type' => 'participation',
+        'event_id' => $event->id, 'kind' => 'attestation', 'type' => 'participation',
     ]));
 
-    $tpl = DocumentTemplate::where('edition_id', $edition->id)->where('type', 'participation')->first();
+    $tpl = DocumentTemplate::where('event_id', $event->id)->where('type', 'participation')->first();
     expect($tpl)->not->toBeNull();
     expect($tpl->title)->toBe('Attestation de présence');
 
     // Le libellé saisi remplace celui du type dans la liste des modèles.
     $this->actingAs($staff, 'web')
-        ->get(route('admin.documents.attestations', ['edition_id' => $edition->id, 'tab' => 'attestations', 'stab' => 'modeles']))
+        ->get(route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'attestations', 'stab' => 'modeles']))
         ->assertOk()->assertSee('Attestation de présence');
 });
 
 it('retient le format choisi pour un modèle de badge', function () {
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs($staff, 'web')->post(route('admin.documents.templates.create'), [
-        'edition_id' => $edition->id, 'kind' => 'badge', 'type' => 'default', 'format' => 'cr80',
+        'event_id' => $event->id, 'kind' => 'badge', 'type' => 'default', 'format' => 'cr80',
     ])->assertRedirect();
 
-    $tpl = DocumentTemplate::where('edition_id', $edition->id)->where('kind', 'badge')->first();
+    $tpl = DocumentTemplate::where('event_id', $event->id)->where('kind', 'badge')->first();
     expect($tpl->format)->toBe('cr80');
     expect($tpl->title)->toBe('Badge');
 });
 
 it('ne supprime un modèle que si le code de confirmation est exact', function () {
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
     $tpl = DocumentTemplate::create([
-        'edition_id' => $edition->id, 'kind' => 'attestation', 'type' => 'participation',
+        'event_id' => $event->id, 'kind' => 'attestation', 'type' => 'participation',
         'title' => 'Attestation de présence', 'layout' => ['width' => 900, 'height' => 640, 'elements' => []],
     ]);
 
@@ -526,18 +526,18 @@ it('ne supprime un modèle que si le code de confirmation est exact', function (
     $this->actingAs($staff, 'web')
         ->delete(route('admin.documents.templates.destroy', $tpl), ['confirm' => 'supprimer-participation'])
         ->assertRedirect(route('admin.documents.attestations', [
-            'edition_id' => $edition->id, 'tab' => 'attestations', 'stab' => 'modeles',
+            'event_id' => $event->id, 'tab' => 'attestations', 'stab' => 'modeles',
         ]));
     expect(DocumentTemplate::find($tpl->id))->toBeNull();
 });
 
 it('sert les sous-onglets des badges par leur URL, dont « badges prêts »', function () {
     $staff = adminStaff();
-    $edition = openEdition();
-    $edition->participants()->create([
+    $event = openEdition();
+    $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author',
     ]);
-    $base = ['edition_id' => $edition->id, 'tab' => 'badges'];
+    $base = ['event_id' => $event->id, 'tab' => 'badges'];
 
     // Prêts : par défaut seules les inscriptions réglées (aucune ici).
     $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', $base + ['stab' => 'prets']))
@@ -553,52 +553,52 @@ it('sert les sous-onglets des badges par leur URL, dont « badges prêts »', fu
 
 it('sert chaque onglet principal de Documents par son URL (?tab=)', function () {
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
 
     // Chaque onglet doit pointer vers une URL : les panneaux sont rendus côté
     // serveur, un simple état JavaScript afficherait une page vide.
-    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', ['edition_id' => $edition->id]))
+    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', ['event_id' => $event->id]))
         ->assertOk()
         // (les & des URL sont échappés en &amp; dans le HTML : on vise les fragments)
         ->assertSee('tab=badges', false)
         ->assertSee('tab=livre', false);
 
-    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', ['edition_id' => $edition->id, 'tab' => 'badges', 'stab' => 'modeles']))
+    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'badges', 'stab' => 'modeles']))
         ->assertOk()->assertSee('Nouveau modèle de badge');
 
-    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', ['edition_id' => $edition->id, 'tab' => 'livre']))
+    $this->actingAs($staff, 'web')->get(route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'livre']))
         ->assertOk()->assertSee('Livre des résumés');
 });
 
 it('rend toujours une attestation depuis un modèle enregistré (plus de repli)', function () {
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
     $attestation = Attestation::create([
-        'edition_id' => $edition->id, 'type' => 'participation', 'uuid' => 'uuid-rendu',
+        'event_id' => $event->id, 'type' => 'participation', 'uuid' => 'uuid-rendu',
         'recipient_name' => 'Awa Kodjo', 'revoked' => false, 'issued_at' => now(),
     ]);
 
-    expect(DocumentTemplate::where('edition_id', $edition->id)->where('type', 'participation')->exists())->toBeFalse();
+    expect(DocumentTemplate::where('event_id', $event->id)->where('type', 'participation')->exists())->toBeFalse();
 
     $this->actingAs($staff, 'web')->get(route('attestation.document', $attestation->uuid))->assertOk();
 
     // Le rendu a créé le modèle : il est désormais visible et modifiable.
-    $tpl = DocumentTemplate::where('edition_id', $edition->id)->where('kind', 'attestation')->where('type', 'participation')->first();
+    $tpl = DocumentTemplate::where('event_id', $event->id)->where('kind', 'attestation')->where('type', 'participation')->first();
     expect($tpl)->not->toBeNull();
     expect($tpl->layout)->not->toBeEmpty();
 });
 
 it('provisionne un modèle enregistré pour chaque type sur l’onglet Modèles', function () {
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs($staff, 'web')
-        ->get(route('admin.documents.attestations', ['edition_id' => $edition->id, 'tab' => 'attestations', 'stab' => 'modeles']))
+        ->get(route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'attestations', 'stab' => 'modeles']))
         ->assertOk();
 
     // Tous les types listés ont un modèle : la suppression est proposée partout.
     foreach (['soumission', 'acceptation', 'communication', 'participation', 'moderation', 'rapporteur', 'formation', 'formation_animation'] as $type) {
-        expect(DocumentTemplate::where('edition_id', $edition->id)->where('kind', 'attestation')->where('type', $type)->exists())
+        expect(DocumentTemplate::where('event_id', $event->id)->where('kind', 'attestation')->where('type', $type)->exists())
             ->toBeTrue("modèle manquant pour {$type}");
     }
 });

@@ -82,11 +82,11 @@ it('rend le Mailable de statut (le template markdown compile)', function () {
 
 it('envoie un accusé de réception à la création d’une soumission', function () {
     Mail::fake();
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
 
     $this->actingAs($account, 'account')
-        ->post(route('account.submissions.store', $edition->slug), [
+        ->post(route('account.submissions.store', $event->slug), [
             'title' => 'Ma communication',
             'track' => 'Sciences',
             'abstract' => str_repeat('a', 60),
@@ -97,22 +97,22 @@ it('envoie un accusé de réception à la création d’une soumission', functio
 });
 
 it('trie les soumissions par nom d’auteur dans les deux sens', function () {
-    $edition = openEdition();
+    $event = openEdition();
     foreach ([['Zoe', 'Zannou'], ['Ama', 'Adjo'], ['Kofi', 'Mensah']] as [$first, $last]) {
-        $p = $edition->participants()->create([
+        $p = $event->participants()->create([
             'first_name' => $first, 'last_name' => $last,
             'email' => strtolower($first).'@test.tg', 'role' => 'author',
         ]);
-        $edition->submissions()->create([
+        $event->submissions()->create([
             'participant_id' => $p->id, 'ref_code' => '26-'.substr($last, 0, 3),
             'title' => 'Comm '.$last, 'abstract' => 'x', 'track' => 'Sciences',
             'type' => 'oral', 'status' => 'submitted', 'authors' => [],
         ]);
     }
 
-    $order = function (array $query) use ($edition) {
+    $order = function (array $query) use ($event) {
         $html = $this->actingAs(adminStaff(), 'web')
-            ->get(route('admin.submissions.index', $query + ['edition_id' => $edition->id]))
+            ->get(route('admin.submissions.index', $query + ['event_id' => $event->id]))
             ->assertOk()->getContent();
 
         return collect(['Adjo', 'Mensah', 'Zannou'])
@@ -124,13 +124,13 @@ it('trie les soumissions par nom d’auteur dans les deux sens', function () {
 });
 
 it('garde une pagination correcte quand on trie par auteur (jointure)', function () {
-    $edition = openEdition();
+    $event = openEdition();
     foreach (range(1, 20) as $i) {
-        $p = $edition->participants()->create([
+        $p = $event->participants()->create([
             'first_name' => 'A'.$i, 'last_name' => 'Nom'.str_pad((string) $i, 2, '0', STR_PAD_LEFT),
             'email' => "a{$i}@test.tg", 'role' => 'author',
         ]);
-        $edition->submissions()->create([
+        $event->submissions()->create([
             'participant_id' => $p->id, 'ref_code' => '26-'.$i, 'title' => 'Comm '.$i,
             'abstract' => 'x', 'track' => 'Sciences', 'type' => 'oral', 'status' => 'submitted', 'authors' => [],
         ]);
@@ -138,7 +138,7 @@ it('garde une pagination correcte quand on trie par auteur (jointure)', function
 
     // La jointure ne doit ni dupliquer les lignes ni fausser le total.
     $this->actingAs(adminStaff(), 'web')
-        ->get(route('admin.submissions.index', ['edition_id' => $edition->id, 'sort' => 'author', 'dir' => 'asc']))
+        ->get(route('admin.submissions.index', ['event_id' => $event->id, 'sort' => 'author', 'dir' => 'asc']))
         ->assertOk()
         ->assertSee('Nom01')
         ->assertDontSee('Nom20'); // 20 lignes, 15 par page

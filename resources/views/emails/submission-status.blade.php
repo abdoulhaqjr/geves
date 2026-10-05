@@ -7,7 +7,7 @@
 
 - **{{ __('Référence :') }}** {{ $submission->ref_code }}
 - **{{ __('Titre :') }}** {{ $submission->title }}
-- **{{ __('Édition :') }}** {{ $submission->edition?->title }}
+- **{{ __('Événement :') }}** {{ $submission->event?->title }}
 
 @if ($note)
 <x-mail::panel>

@@ -7,22 +7,22 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
- * Images d'habillage d'une édition : **bandeau (hero)** et **bannière officielle**.
+ * Images d'habillage d'une événement : **bandeau (hero)** et **bannière officielle**.
  *
- * Les deux champs stockent une **URL**, parce qu'une partie des éditions pointe
+ * Les deux champs stockent une **URL**, parce qu'une partie des événements pointe
  * vers une image hébergée ailleurs (affiche du colloque, visuel d'un partenaire).
  * L'admin peut donc au choix **téléverser** un fichier ou **coller une URL** : le
  * téléversement l'emporte, puisqu'il est l'action la plus explicite.
  *
  * ⚠️ On ne supprime du disque que **nos** fichiers (`editions/`) : une URL
- * externe ne nous appartient pas, et l'ancien fichier d'une édition resterait
+ * externe ne nous appartient pas, et l'ancien fichier d'une événement resterait
  * servi publiquement si on l'oubliait.
  */
-class EditionArtwork
+class EventArtwork
 {
     private const DISK = 'public';
 
-    private const DIR = 'editions';
+    private const DIR = 'events';
 
     /**
      * Valeur à enregistrer pour une image d'habillage.

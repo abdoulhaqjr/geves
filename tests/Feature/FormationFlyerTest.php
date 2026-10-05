@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Storage;
 
 it('téléverse un flyer pour la formation (disque public)', function () {
     Storage::fake('public');
-    $edition = openEdition();
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'Avec flyer', 'fee' => 0, 'published' => true]);
+    $event = openEdition();
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'Avec flyer', 'fee' => 0, 'published' => true]);
 
     $this->actingAs(adminStaff(), 'web')->put(route('admin.formations.update', $formation), [
         'title' => 'Avec flyer', 'fee' => 0,
@@ -24,8 +24,8 @@ it('téléverse un flyer pour la formation (disque public)', function () {
 
 it('retire le flyer', function () {
     Storage::fake('public');
-    $edition = openEdition();
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'X', 'fee' => 0, 'published' => true, 'flyer_path' => 'formations/old.jpg']);
+    $event = openEdition();
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'X', 'fee' => 0, 'published' => true, 'flyer_path' => 'formations/old.jpg']);
     Storage::disk('public')->put('formations/old.jpg', 'x');
 
     $this->actingAs(adminStaff(), 'web')->put(route('admin.formations.update', $formation), [

@@ -15,7 +15,7 @@
 
     <div class="ukc-card">
         <div style="font-size:12px;color:var(--ukc-muted);text-transform:uppercase;letter-spacing:.04em;">
-            {{ $session->edition?->colloque?->name ?: __('Colloque') }} · {{ $session->edition?->title ?: $session->edition?->year }}
+            {{ $session->event?->series?->name ?: __('Colloque') }} · {{ $session->event?->title ?: $session->event?->year }}
         </div>
         <h3 style="margin:2px 0 4px;">{{ $session->label }}</h3>
         <div style="font-size:13px;color:var(--ukc-muted);">
@@ -51,7 +51,7 @@
             <p style="color:var(--ukc-muted);font-size:13px;margin:0 0 12px;display:flex;align-items:center;gap:6px;">
                 <x-ukc.icon name="lock" :size="16" />
                 {{ $frozen
-                    ? __('Cette édition est archivée : votre rapport reste consultable mais n’est plus modifiable.')
+                    ? __('Cette événement est archivée : votre rapport reste consultable mais n’est plus modifiable.')
                     : __('Ce rapport a été validé par le secrétariat. Il n’est plus modifiable.') }}
             </p>
             <div class="ukc-field">

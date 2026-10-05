@@ -16,7 +16,7 @@
                 </p>
             @else
                 <p style="color:var(--ukc-muted);line-height:1.6;">
-                    {!! __('Vous avez été cité(e) comme auteur de la communication <strong>« :titre »</strong> pour :edition.', ['titre' => $submission?->title, 'edition' => $submission?->edition?->title]) !!}
+                    {!! __('Vous avez été cité(e) comme auteur de la communication <strong>« :titre »</strong> pour :edition.', ['titre' => $submission?->title, 'event' => $submission?->event?->title]) !!}
                 </p>
                 <p style="color:var(--ukc-muted);line-height:1.6;">
                     {{ __('Si ce n’est pas vous, retirez cette association. Sinon, vous pouvez ignorer ce message ou créer votre compte pour retrouver la communication.') }}

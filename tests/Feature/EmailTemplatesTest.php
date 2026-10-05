@@ -20,13 +20,13 @@ it('applique une personnalisation avec placeholders sur une soumission', functio
         'submission_accepted' => [
             'subject' => 'Bravo {prenom} !',
             'heading' => 'Communication {ref} acceptée',
-            'intro' => 'Félicitations, « {titre} » est retenue pour {edition}.',
+            'intro' => 'Félicitations, « {titre} » est retenue pour {event}.',
         ],
     ]);
 
-    $edition = openEdition();
-    $p = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
-    $submission = $edition->submissions()->create([
+    $event = openEdition();
+    $p = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $submission = $event->submissions()->create([
         'participant_id' => $p->id, 'title' => 'Les colloques', 'status' => 'accepted', 'revision_of' => 0,
         'ref_code' => 'AA-001', 'access_token' => Str::random(64),
         'authors' => [['name' => 'Awa Kodjo', 'email' => 'awa@example.tg', 'corresponding' => true]],
@@ -44,9 +44,9 @@ it('propage le modèle personnalisé au Mailable de statut', function () {
         'submission_accepted' => ['subject' => 'Bravo {prenom} !', 'heading' => 'Youpi', 'intro' => 'Bien joué.'],
     ]);
 
-    $edition = openEdition();
-    $p = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
-    $submission = $edition->submissions()->create([
+    $event = openEdition();
+    $p = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $submission = $event->submissions()->create([
         'participant_id' => $p->id, 'title' => 'T', 'status' => 'accepted', 'revision_of' => 0,
         'ref_code' => 'AA-001', 'access_token' => Str::random(64),
         'authors' => [['name' => 'Awa Kodjo', 'email' => 'awa@example.tg', 'corresponding' => true]],
@@ -61,11 +61,11 @@ it('propage le modèle personnalisé au Mailable de statut', function () {
 
 it('personnalise l’invitation participant', function () {
     Settings::set('email_templates', [
-        'participant_invitation' => ['subject' => 'Bienvenue', 'heading' => 'Salut {prenom}', 'intro' => 'À bientôt à {edition}.'],
+        'participant_invitation' => ['subject' => 'Bienvenue', 'heading' => 'Salut {prenom}', 'intro' => 'À bientôt à {event}.'],
     ]);
 
-    $edition = openEdition();
-    $p = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $event = openEdition();
+    $p = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
 
     $mail = new ParticipantInvitationMail($p);
 
@@ -96,6 +96,6 @@ it('affiche la valeur courante du modèle dans l’onglet Modèles', function ()
         ->assertSee('Autre chose'); // objet courant listé dans l'onglet « Modèles »
 });
 
-it('refuse l’édition des modèles aux invités', function () {
+it('refuse l’événement des modèles aux invités', function () {
     $this->put(route('admin.emails.templates.update'))->assertRedirect(route('account.login'));
 });

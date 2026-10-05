@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\Concerns\ScopesEditionAccess;
 use App\Http\Controllers\Controller;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Support\SubmissionFormConfig;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 /**
- * Éditeur du formulaire de soumission d'une édition (contrôleur + Blade) :
+ * Éditeur du formulaire de soumission d'une événement (contrôleur + Blade) :
  * libellés/aides des champs standard, options requis/activé, limites du résumé,
  * et champs personnalisés (ajout/suppression/réordonnancement pilotés par
  * Alpine). Écrit dans settings.submission_form.
@@ -22,9 +22,9 @@ class SubmissionFormController extends Controller
 {
     use ScopesEditionAccess;
 
-    public function edit(Request $request, Edition $edition): View
+    public function edit(Request $request, Event $event): View
     {
-        $config = new SubmissionFormConfig($edition);
+        $config = new SubmissionFormConfig($event);
 
         $fields = [];
         foreach (array_keys(SubmissionFormConfig::STANDARD_DEFAULTS) as $key) {
@@ -50,11 +50,11 @@ class SubmissionFormController extends Controller
             ];
         }
 
-        return view('admin.editions.submission-form-editor', [
-            'edition' => $edition,
+        return view('admin.evenements.submission-form-editor', [
+            'event' => $event,
             // Sélecteur + sous-navigation communs au module Soumissions.
-            'editions' => $this->accessibleEditions($request, 'submissions_list'),
-            'edition_id' => (string) $edition->id,
+            'events' => $this->accessibleEditions($request, 'submissions_list'),
+            'event_id' => (string) $event->id,
             'fields' => $fields,
             'custom' => $custom,
             'customTypes' => SubmissionFormConfig::CUSTOM_TYPES,
@@ -62,7 +62,7 @@ class SubmissionFormController extends Controller
         ]);
     }
 
-    public function update(Request $request, Edition $edition): RedirectResponse|JsonResponse
+    public function update(Request $request, Event $event): RedirectResponse|JsonResponse
     {
         $request->validate([
             'fields.title.label' => ['required', 'string', 'max:120'],
@@ -110,16 +110,16 @@ class SubmissionFormController extends Controller
             ];
         }
 
-        $settings = $edition->settings ?? [];
+        $settings = $event->settings ?? [];
         $settings['submission_form'] = [
             'fields' => $fields,
             'custom' => $custom,
             // Les règles ne sont pas éditées ici : on conserve celles en place.
-            'rules' => (new SubmissionFormConfig($edition))->rules(),
+            'rules' => (new SubmissionFormConfig($event))->rules(),
         ];
-        $edition->update(['settings' => $settings]);
+        $event->update(['settings' => $settings]);
 
-        // Enregistrement automatique (réordonnancement / ajout / édition d'un champ
+        // Enregistrement automatique (réordonnancement / ajout / événement d'un champ
         // via l'éditeur Alpine) : réponse JSON, pas de rechargement de page.
         if ($request->wantsJson()) {
             return response()->json(['status' => 'ok', 'custom' => $custom]);
@@ -134,19 +134,19 @@ class SubmissionFormController extends Controller
      * champs personnalisés à partir de la requête, donc y poster les seules
      * règles les effacerait.
      */
-    public function updateRules(Request $request, Edition $edition): RedirectResponse
+    public function updateRules(Request $request, Event $event): RedirectResponse
     {
-        $config = new SubmissionFormConfig($edition);
+        $config = new SubmissionFormConfig($event);
 
-        $settings = $edition->settings ?? [];
+        $settings = $event->settings ?? [];
         $settings['submission_form'] = [
             'fields' => $settings['submission_form']['fields'] ?? [],
             'custom' => $settings['submission_form']['custom'] ?? [],
             'rules' => $this->rulesFrom($request),
         ];
-        $edition->update(['settings' => $settings]);
+        $event->update(['settings' => $settings]);
 
-        return redirect()->route('admin.submissions.options', ['edition_id' => $edition->id])
+        return redirect()->route('admin.submissions.options', ['event_id' => $event->id])
             ->with('ukc_status', 'Règles du formulaire enregistrées.');
     }
 

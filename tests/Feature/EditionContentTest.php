@@ -1,16 +1,16 @@
 <?php
 
-use App\Models\Colloque;
+use App\Models\EventSeries;
 
 // adminStaff() -> AdminSubmissionWorkflowTest
 
-it('enregistre comités, partenaires et FAQ depuis le formulaire d’édition', function () {
+it('enregistre comités, partenaires et FAQ depuis le formulaire d’événement', function () {
     $staff = adminStaff();
-    $colloque = Colloque::create(['name' => 'UK', 'slug' => 'uk']);
-    $edition = $colloque->editions()->create(['title' => 'UK 2026', 'status' => 'open', 'slug' => 'uk-2026']);
+    $series = EventSeries::create(['name' => 'UK', 'slug' => 'uk']);
+    $event = $series->events()->create(['title' => 'UK 2026', 'status' => 'open', 'slug' => 'uk-2026']);
 
-    $this->actingAs($staff, 'web')->put(route('admin.editions.update', $edition), [
-        'title' => $edition->title, 'status' => 'open', 'colloque_id' => $edition->colloque_id, 'max_communications' => 3,
+    $this->actingAs($staff, 'web')->put(route('admin.evenements.update', $event), [
+        'title' => $event->title, 'status' => 'open', 'event_series_id' => $event->event_series_id, 'max_communications' => 3,
         'committees' => [
             ['role' => 'scientifique', 'person_name' => 'Pr Ama Doe', 'person_title' => 'Professeure', 'institution' => 'UK', 'photo_url' => ''],
         ],
@@ -22,20 +22,20 @@ it('enregistre comités, partenaires et FAQ depuis le formulaire d’édition', 
         ],
     ])->assertSessionHasNoErrors();
 
-    $edition->refresh();
-    expect($edition->committeeMembers()->count())->toBe(1);
-    expect($edition->committeeMembers()->first()->person_name)->toBe('Pr Ama Doe');
-    expect($edition->settings['partners'][0]['name'])->toBe('UNESCO');
-    expect($edition->settings['faq'][0]['question'])->toBe('Comment soumettre ?');
+    $event->refresh();
+    expect($event->committeeMembers()->count())->toBe(1);
+    expect($event->committeeMembers()->first()->person_name)->toBe('Pr Ama Doe');
+    expect($event->settings['partners'][0]['name'])->toBe('UNESCO');
+    expect($event->settings['faq'][0]['question'])->toBe('Comment soumettre ?');
 });
 
 it('enregistre les comités par groupe (organisation / scientifique / supervision)', function () {
     $staff = adminStaff();
-    $colloque = Colloque::create(['name' => 'UK', 'slug' => 'uk']);
-    $edition = $colloque->editions()->create(['title' => 'UK 2026', 'status' => 'open', 'slug' => 'uk-2026']);
+    $series = EventSeries::create(['name' => 'UK', 'slug' => 'uk']);
+    $event = $series->events()->create(['title' => 'UK 2026', 'status' => 'open', 'slug' => 'uk-2026']);
 
-    $this->actingAs($staff, 'web')->put(route('admin.editions.update', $edition), [
-        'title' => $edition->title, 'status' => 'open', 'colloque_id' => $edition->colloque_id, 'max_communications' => 3,
+    $this->actingAs($staff, 'web')->put(route('admin.evenements.update', $event), [
+        'title' => $event->title, 'status' => 'open', 'event_series_id' => $event->event_series_id, 'max_communications' => 3,
         'committees_org' => [['person_name' => 'Pr Kadouza', 'person_title' => 'Président', 'institution' => 'UK']],
         'committees_sci' => [
             ['person_name' => 'Pr Lawson', 'person_title' => 'Président', 'institution' => 'UP'],
@@ -44,31 +44,31 @@ it('enregistre les comités par groupe (organisation / scientifique / supervisio
         'committees_sup' => [['person_name' => '', 'person_title' => '', 'institution' => '']], // vide → ignoré
     ])->assertSessionHasNoErrors();
 
-    $edition->refresh();
-    expect($edition->committeeMembers()->count())->toBe(3);
-    expect($edition->committeeMembers()->where('role', 'scientifique')->count())->toBe(2);
-    expect($edition->committeeMembers()->where('role', 'organisation')->first()->person_name)->toBe('Pr Kadouza');
-    expect($edition->committeeMembers()->where('role', 'supervision')->count())->toBe(0);
+    $event->refresh();
+    expect($event->committeeMembers()->count())->toBe(3);
+    expect($event->committeeMembers()->where('role', 'scientifique')->count())->toBe(2);
+    expect($event->committeeMembers()->where('role', 'organisation')->first()->person_name)->toBe('Pr Kadouza');
+    expect($event->committeeMembers()->where('role', 'supervision')->count())->toBe(0);
 });
 
 it('remplace les comités existants à l’enregistrement (sync)', function () {
     $staff = adminStaff();
-    $colloque = Colloque::create(['name' => 'UK', 'slug' => 'uk']);
-    $edition = $colloque->editions()->create(['title' => 'UK 2026', 'status' => 'open', 'slug' => 'uk-2026']);
-    $edition->committeeMembers()->create(['person_name' => 'Ancien membre', 'role' => 'organisation']);
+    $series = EventSeries::create(['name' => 'UK', 'slug' => 'uk']);
+    $event = $series->events()->create(['title' => 'UK 2026', 'status' => 'open', 'slug' => 'uk-2026']);
+    $event->committeeMembers()->create(['person_name' => 'Ancien membre', 'role' => 'organisation']);
 
-    $this->actingAs($staff, 'web')->put(route('admin.editions.update', $edition), [
-        'title' => $edition->title, 'status' => 'open', 'colloque_id' => $edition->colloque_id, 'max_communications' => 3,
+    $this->actingAs($staff, 'web')->put(route('admin.evenements.update', $event), [
+        'title' => $event->title, 'status' => 'open', 'event_series_id' => $event->event_series_id, 'max_communications' => 3,
         'committees' => [['role' => 'organisation', 'person_name' => 'Nouveau membre', 'person_title' => '', 'institution' => '', 'photo_url' => '']],
     ])->assertSessionHasNoErrors();
 
-    expect($edition->committeeMembers()->count())->toBe(1);
-    expect($edition->committeeMembers()->first()->person_name)->toBe('Nouveau membre');
+    expect($event->committeeMembers()->count())->toBe(1);
+    expect($event->committeeMembers()->first()->person_name)->toBe('Nouveau membre');
 });
 
 it('affiche comités, partenaires, FAQ et le compte à rebours sur la page publique', function () {
-    $colloque = Colloque::create(['name' => 'Colloque UK', 'slug' => 'uk']);
-    $edition = $colloque->editions()->create([
+    $series = EventSeries::create(['name' => 'EventSeries UK', 'slug' => 'uk']);
+    $event = $series->events()->create([
         'title' => 'UK 2026', 'status' => 'open', 'slug' => 'uk-2026',
         'date_start' => now()->addMonths(3),
         'settings' => [
@@ -76,9 +76,9 @@ it('affiche comités, partenaires, FAQ et le compte à rebours sur la page publi
             'faq' => [['question' => 'Où loger ?', 'answer' => 'À proximité du campus.']],
         ],
     ]);
-    $edition->committeeMembers()->create(['person_name' => 'Pr Ama Doe', 'role' => 'scientifique', 'person_title' => 'Professeure']);
+    $event->committeeMembers()->create(['person_name' => 'Pr Ama Doe', 'role' => 'scientifique', 'person_title' => 'Professeure']);
 
-    $this->get(route('public.colloque', $edition->slug))
+    $this->get(route('public.colloque', $event->slug))
         ->assertOk()
         ->assertSee('Comités')
         ->assertSee('Pr Ama Doe')
@@ -87,14 +87,14 @@ it('affiche comités, partenaires, FAQ et le compte à rebours sur la page publi
         ->assertSee('ukcCountdown', false); // compte à rebours (date future)
 });
 
-it('n’affiche pas le compte à rebours pour une édition passée', function () {
-    $colloque = Colloque::create(['name' => 'Colloque UK', 'slug' => 'uk']);
-    $edition = $colloque->editions()->create([
+it('n’affiche pas le compte à rebours pour une événement passée', function () {
+    $series = EventSeries::create(['name' => 'EventSeries UK', 'slug' => 'uk']);
+    $event = $series->events()->create([
         'title' => 'UK 2020', 'status' => 'archived', 'slug' => 'uk-2020',
         'date_start' => now()->subYears(2),
     ]);
 
-    $this->get(route('public.colloque', $edition->slug))
+    $this->get(route('public.colloque', $event->slug))
         ->assertOk()
         ->assertDontSee('ukcCountdown', false);
 });

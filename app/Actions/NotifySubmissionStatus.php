@@ -31,7 +31,7 @@ class NotifySubmissionStatus
         Mail::to($recipient)->send(new SubmissionStatusMail($submission, $statusKey, $note));
 
         Email::create([
-            'edition_id' => $submission->edition_id,
+            'event_id' => $submission->event_id,
             'participant_id' => $submission->participant_id,
             'template' => 'submission_'.$statusKey,
             'recipient' => $recipient,

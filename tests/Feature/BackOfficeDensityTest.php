@@ -29,9 +29,9 @@ it('pose la densité sur la racine de l’espace participant', function () {
 
 /** Le public, lui, reste à l'échelle du navigateur du visiteur. */
 it('laisse la page publique à son échelle', function () {
-    $edition = openEdition();
+    $event = openEdition();
 
-    $this->get(route('public.colloque', $edition->slug))
+    $this->get(route('public.colloque', $event->slug))
         ->assertOk()
         ->assertSee('<html lang="fr">', false)
         ->assertDontSee('ukc-dense');

@@ -10,12 +10,12 @@ use Illuminate\Support\Facades\Storage;
 /** @return array{0: User, 1: Submission} */
 function acceptedOwnedSubmission(string $status = 'accepted', string $ref = '26-CR'): array
 {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
-    $participant = $edition->participants()->create([
+    $participant = $event->participants()->create([
         'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
     ]);
-    $submission = $edition->submissions()->create([
+    $submission = $event->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => $ref, 'title' => 'Communication',
         'abstract' => 'Résumé.', 'track' => 'Sciences', 'type' => 'oral', 'status' => $status, 'authors' => [],
     ]);

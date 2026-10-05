@@ -8,7 +8,7 @@
  * Verrou de non-régression contre les 500 introduits par un changement de vue/contrôleur.
  */
 it('les pages publiques répondent sans erreur', function () {
-    $edition = openEdition(); // édition ouverte → page colloque publiée
+    $event = openEdition(); // événement ouverte → page colloque publiée
 
     $routes = [
         route('home'),
@@ -16,7 +16,7 @@ it('les pages publiques répondent sans erreur', function () {
         route('public.deroulement'),
         route('public.gesco'),
         route('attestation.verify.landing'),
-        route('public.colloque', $edition->slug),
+        route('public.colloque', $event->slug),
     ];
 
     foreach ($routes as $url) {
@@ -26,7 +26,7 @@ it('les pages publiques répondent sans erreur', function () {
 
 it('les pages du back-office répondent sans erreur (staff)', function () {
     $staff = adminStaff();
-    openEdition(); // au moins une édition pour les écrans qui en dépendent
+    openEdition(); // au moins une événement pour les écrans qui en dépendent
 
     $this->actingAs($staff, 'web');
 
@@ -40,8 +40,8 @@ it('les pages du back-office répondent sans erreur (staff)', function () {
         route('admin.payments.create'),
         route('admin.documents.attestations'),
         route('admin.documents.templates'),
-        route('admin.editions.index'),
-        route('admin.editions.create'),
+        route('admin.evenements.index'),
+        route('admin.evenements.create'),
         route('admin.emails.index'),
         route('admin.reports.index'),
         route('admin.users.index'),
@@ -57,11 +57,11 @@ it('les pages du back-office répondent sans erreur (staff)', function () {
     }
 });
 
-it('les documents générés d’une édition répondent sans erreur (staff)', function () {
+it('les documents générés d’une événement répondent sans erreur (staff)', function () {
     $staff = adminStaff();
-    $submission = seededSubmission('accepted'); // édition avec une communication acceptée
-    $edition = $submission->edition;
-    $edition->participants()->firstOrCreate(
+    $submission = seededSubmission('accepted'); // événement avec une communication acceptée
+    $event = $submission->event;
+    $event->participants()->firstOrCreate(
         ['email' => 'badge@example.tg'],
         ['first_name' => 'B', 'last_name' => 'Adge', 'role' => 'author']
     );
@@ -69,14 +69,14 @@ it('les documents générés d’une édition répondent sans erreur (staff)', f
     $this->actingAs($staff, 'web');
 
     foreach ([
-        route('admin.documents.livret', $edition),
-        route('admin.documents.livret', [$edition, 'format' => 'docx']),
-        route('admin.documents.badges', $edition),
-        route('admin.documents.sessions', $edition),
-        route('admin.reports.xlsx', $edition),
-        route('admin.reports.pdf', $edition),
-        route('admin.editions.edit', $edition),
-        route('admin.editions.form', $edition),
+        route('admin.documents.livret', $event),
+        route('admin.documents.livret', [$event, 'format' => 'docx']),
+        route('admin.documents.badges', $event),
+        route('admin.documents.sessions', $event),
+        route('admin.reports.xlsx', $event),
+        route('admin.reports.pdf', $event),
+        route('admin.evenements.edit', $event),
+        route('admin.evenements.form', $event),
     ] as $url) {
         $this->get($url)->assertOk();
     }

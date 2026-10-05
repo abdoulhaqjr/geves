@@ -137,7 +137,7 @@
                                       placeholder="Un grade par ligne">{{ $v('participant_types') }}</textarea>
                             <span class="hint" style="font-size:12px;color:var(--ukc-muted);">
                                 Un grade par ligne. C’est la <strong>liste unique</strong> proposée à l’inscription, au profil
-                                et pour les co-auteurs ; c’est aussi elle qu’on rattache aux catégories tarifaires d’une édition.
+                                et pour les co-auteurs ; c’est aussi elle qu’on rattache aux catégories tarifaires d’une événement.
                                 Renommer un grade déjà utilisé ne met pas à jour les comptes existants : ajoutez plutôt une ligne.
                             </span>
                         </div>
@@ -277,7 +277,7 @@
                 <div class="ukc-card">
                     <h2><span><x-ukc.icon name="sparkles" :size="20" /> Intelligence artificielle</span></h2>
                     <p class="desc">
-                        Utilisée pour le paramétrage assisté d’une édition et la génération de modèles (badges, attestations).
+                        Utilisée pour le paramétrage assisté d’une événement et la génération de modèles (badges, attestations).
                         Les clés sont facultatives ; renseignez au moins le fournisseur par défaut.
                     </p>
                     <div class="ukc-field" style="max-width:360px;">

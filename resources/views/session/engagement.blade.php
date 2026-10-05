@@ -24,7 +24,7 @@
         </div>
 
         <h1 style="font-size:1.5rem;margin:4px 0 2px;">{{ __('Échanges') }}</h1>
-        <p style="color:var(--ukc-muted);margin:0 0 20px;">{{ $session->label }}@if ($session->edition?->title) · {{ $session->edition->title }}@endif</p>
+        <p style="color:var(--ukc-muted);margin:0 0 20px;">{{ $session->label }}@if ($session->event?->title) · {{ $session->event->title }}@endif</p>
 
         {{-- ========================= Sondages ========================= --}}
         <div class="ukc-card" style="margin-bottom:18px;">

@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Account;
 
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Submission;
 use App\Support\SubmissionFormConfig;
 use Illuminate\Foundation\Http\FormRequest;
@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Auth;
 /**
  * Validation d'une resoumission (version corrigée). L'appartenance et le droit de
  * réviser sont vérifiés dans le contrôleur (route model binding) ; ici on ne
- * valide que le contenu, avec les limites de mots du résumé de l'édition.
+ * valide que le contenu, avec les limites de mots du résumé de l'événement.
  */
 class ResubmitSubmissionRequest extends FormRequest
 {
@@ -24,11 +24,11 @@ class ResubmitSubmissionRequest extends FormRequest
     public function rules(): array
     {
         $submission = $this->route('submission');
-        $edition = $submission instanceof Submission ? $submission->edition : null;
-        if (! $edition instanceof Edition) {
-            return [];  // édition absente (jamais en pratique) : aucune règle
+        $event = $submission instanceof Submission ? $submission->event : null;
+        if (! $event instanceof Event) {
+            return [];  // événement absente (jamais en pratique) : aucune règle
         }
-        $c = new SubmissionFormConfig($edition);
+        $c = new SubmissionFormConfig($event);
 
         return [
             'title' => ['required', 'string', 'max:500'],

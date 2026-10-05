@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Submission;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -19,7 +19,7 @@ class SubmissionFactory extends Factory
         $email = fake()->unique()->safeEmail();
 
         return [
-            'edition_id' => Edition::factory(),
+            'event_id' => Event::factory(),
             'participant_id' => Participant::factory(),
             'ref_code' => strtoupper(fake()->unique()->bothify('??-###')),
             'access_token' => Str::random(64),

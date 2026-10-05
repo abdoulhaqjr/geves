@@ -7,14 +7,14 @@ use App\Models\Submission;
 
 function acceptedSubmissionFor(string $locale): Submission
 {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
     $account->update(['locale' => $locale]);
-    $participant = $edition->participants()->create([
+    $participant = $event->participants()->create([
         'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
     ]);
 
-    return $edition->submissions()->create([
+    return $event->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => '26-1', 'title' => 'Ma communication',
         'abstract' => 'a', 'track' => 'Sciences', 'type' => 'oral', 'status' => 'accepted',
         'authors' => [['name' => 'Awa Kodjo', 'email' => $account->email, 'corresponding' => true]],

@@ -14,9 +14,9 @@
         'errorStep' => (int) session('submission_error_step', 1),
         'lookupUrl' => route('account.authors.check'),
         'suggestUrl' => route('account.affiliations'),
-        'coauthorsMax' => (int) ($edition->settings['coauthors_max'] ?? 8),
+        'coauthorsMax' => (int) ($event->settings['coauthors_max'] ?? 8),
         // Auteur correspondant : prérempli avec le compte connecté, éditable.
-        // Le grade saisi ici est enregistré POUR CE COLLOQUE (grade par édition).
+        // Le grade saisi ici est enregistré POUR CE COLLOQUE (grade par événement).
         'account' => [
             'name' => $account->full_name,
             'first_name' => $account->first_name,
@@ -68,19 +68,19 @@
                     <x-ukc.icon name="inbox" :size="18" /> {{ __('Mes communications') }}
                 </a>
                 @if ($remaining > 0)
-                    <a href="{{ route('account.submissions.create', $edition->slug) }}" class="ukc-btn ukc-btn--outline">
+                    <a href="{{ route('account.submissions.create', $event->slug) }}" class="ukc-btn ukc-btn--outline">
                         <x-ukc.icon name="plus" :size="18" /> {{ __('Soumettre une autre') }}
                     </a>
                 @endif
             </div>
         </div>
     @else
-        {{-- Contexte édition --}}
+        {{-- Contexte événement --}}
         <div class="ukc-card" style="margin-bottom:18px;">
             <div style="font-size:.8rem;font-weight:700;color:var(--ukc-muted);text-transform:uppercase;letter-spacing:.04em;">
-                {{ $edition->edition_label }}
+                {{ $event->event_label }}
             </div>
-            <div style="font-weight:800;font-size:1.1rem;margin-top:2px;">{{ $edition->title }}</div>
+            <div style="font-weight:800;font-size:1.1rem;margin-top:2px;">{{ $event->title }}</div>
             <div style="font-size:.85rem;color:var(--ukc-muted);margin-top:6px;">
                 {{ __(':count communication(s) restante(s) sur :max.', ['count' => $remaining, 'max' => $maxCommunications]) }}
             </div>
@@ -122,19 +122,19 @@
                     @endif
                 </div>
             </div>
-        @elseif (! $edition->submission_open)
+        @elseif (! $event->submission_open)
             <div class="ukc-alert ukc-alert--err">
                 <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
-                <div>{!! __('Les soumissions sont actuellement <strong>fermées</strong> pour cette édition.') !!}</div>
+                <div>{!! __('Les soumissions sont actuellement <strong>fermées</strong> pour cette événement.') !!}</div>
             </div>
         @elseif ($remaining <= 0)
             <div class="ukc-alert ukc-alert--info">
                 <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
-                <div>{{ __('Vous avez atteint le nombre maximum de communications pour cette édition.') }}</div>
+                <div>{{ __('Vous avez atteint le nombre maximum de communications pour cette événement.') }}</div>
             </div>
         @else
             {{-- Formulaire multi-étapes (wizard). L'étape « Fichiers » n'existe que si
-                 le dépôt de fichier est activé pour cette édition. --}}
+                 le dépôt de fichier est activé pour cette événement. --}}
             @php
                 $fileStep = $config->enabled('file');
                 $validationStep = $fileStep ? 5 : 4;
@@ -151,7 +151,7 @@
                     <div class="s" :class="{ active: step==={{ $validationStep }} }" @click="goTo({{ $validationStep }})"><span class="n">{{ $validationStep }}</span> {{ __('Validation') }}</div>
                 </div>
 
-                <form method="POST" action="{{ route('account.submissions.store', $edition->slug) }}" enctype="multipart/form-data" class="ukc-card">
+                <form method="POST" action="{{ route('account.submissions.store', $event->slug) }}" enctype="multipart/form-data" class="ukc-card">
                     @csrf
                     {{-- Étape 1 : Général --}}
                     <div class="step-panel" :class="{ active: step===1 }">
@@ -204,7 +204,7 @@
                         <h2><x-ukc.icon name="users" :size="20" /> {{ __('Auteur correspondant') }}</h2>
 
                         {{-- Auteur correspondant : prérempli avec le compte connecté ; le grade
-                             saisi vaut POUR CE COLLOQUE (il peut évoluer d'une édition à l'autre). --}}
+                             saisi vaut POUR CE COLLOQUE (il peut évoluer d'une événement à l'autre). --}}
                         <input type="hidden" name="corresponding[self]" :value="corr.self ? 1 : 0">
                         <label class="ukc-switch">
                             <input type="checkbox" x-model="corr.self" @change="onSelfToggle()">

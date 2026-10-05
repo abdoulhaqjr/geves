@@ -1,7 +1,7 @@
-<x-layouts.admin title="Éditions" subtitle="Colloques & conférences · Université de Kara">
+<x-layouts.admin title="Événements" subtitle="Colloques & conférences · Université de Kara">
     <x-slot:actions>
-        <a href="{{ route('admin.editions.create') }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">
-            <x-ukc.icon name="plus" :size="16" /> Nouvelle édition
+        <a href="{{ route('admin.evenements.create') }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">
+            <x-ukc.icon name="plus" :size="16" /> Nouvelle événement
         </a>
     </x-slot:actions>
 
@@ -23,15 +23,15 @@
 
         {{-- Indicateurs --}}
         <div class="ukc-stats">
-            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="calendar" :size="20" /></div><div class="lbl">Éditions</div><div class="val blue">{{ $stats['total'] }}</div></div>
-            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="calendar-check" :size="20" /></div><div class="lbl">Édition active</div><div class="val green">{{ $stats['activeYear'] ?? '-' }}</div></div>
+            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="calendar" :size="20" /></div><div class="lbl">Événements</div><div class="val blue">{{ $stats['total'] }}</div></div>
+            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="calendar-check" :size="20" /></div><div class="lbl">Événement active</div><div class="val green">{{ $stats['activeYear'] ?? '-' }}</div></div>
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="inbox" :size="20" /></div><div class="lbl">Soumissions (active)</div><div class="val">{{ $stats['activeSubmissions'] }}</div></div>
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="card" :size="20" /></div><div class="lbl">Participants payés</div><div class="val">{{ $stats['paidParticipants'] }}</div></div>
         </div>
 
         {{-- Barre d'outils : recherche + statut (GET, auto-submit) --}}
         <form method="GET" class="filter-bar" style="margin-bottom:16px;">
-            <input type="search" name="search" value="{{ $search }}" placeholder="Rechercher une édition…"
+            <input type="search" name="search" value="{{ $search }}" placeholder="Rechercher une événement…"
                    style="min-width:220px;" onkeydown="if(event.key==='Enter'){this.form.submit();}">
             <select name="status" onchange="this.form.submit()">
                 <option value="">Tous les statuts</option>
@@ -40,17 +40,17 @@
                 @endforeach
             </select>
             @if ($search !== '' || $status !== '')
-                <a href="{{ route('admin.editions.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
+                <a href="{{ route('admin.evenements.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
             @endif
         </form>
 
-        {{-- Cartes éditions --}}
-        <div data-ajax-root="editions">
-        @forelse ($editions as $e)
+        {{-- Cartes événements --}}
+        <div data-ajax-root="events">
+        @forelse ($events as $e)
             <div class="ed-card {{ $e->status === 'open' ? 'active-ed' : '' }}">
                 <div class="thumb" style="{{ $thumbStyle($e) }}"></div>
                 <div class="body">
-                    <h3>{{ $e->title ?: $e->colloque?->name }}
+                    <h3>{{ $e->title ?: $e->series?->name }}
                         <span class="ukc-pill ukc-pill--{{ $statusMeta[$e->status][1] ?? 'muted' }}">{{ $statusMeta[$e->status][0] ?? $e->status }}</span>
                         @if ($e->status !== 'draft')
                             <span class="ukc-pill ukc-pill--{{ $e->phase()->pill() }}" title="Phase du cycle de vie">{{ $e->phase()->label() }}</span>
@@ -64,20 +64,20 @@
                     </div>
                 </div>
                 <div class="ukc-actions">
-                    <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.editions.edit', $e) }}"><x-ukc.icon name="pen" :size="14" /> Éditer</a>
-                    <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.editions.export', $e) }}" title="Exporter cette édition (JSON)"><x-ukc.icon name="download" :size="14" /> Exporter</a>
+                    <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.evenements.edit', $e) }}"><x-ukc.icon name="pen" :size="14" /> Éditer</a>
+                    <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.evenements.export', $e) }}" title="Exporter cette événement (JSON)"><x-ukc.icon name="download" :size="14" /> Exporter</a>
                     @if ($e->status === 'open')
-                        <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="{{ route('admin.submissions.index', ['edition_id' => $e->id]) }}"><x-ukc.icon name="inbox" :size="14" /> Soumissions</a>
+                        <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="{{ route('admin.submissions.index', ['event_id' => $e->id]) }}"><x-ukc.icon name="inbox" :size="14" /> Soumissions</a>
                     @else
-                        <form method="POST" action="{{ route('admin.editions.activate', $e) }}"
-                              data-ajax data-ajax-target="editions" data-ajax-msg="Édition activée.">
+                        <form method="POST" action="{{ route('admin.evenements.activate', $e) }}"
+                              data-ajax data-ajax-target="events" data-ajax-msg="Événement activée.">
                             @csrf
                             <button type="submit" class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="check" :size="14" /> Activer</button>
                         </form>
                     @endif
-                    <form method="POST" action="{{ route('admin.editions.destroy', $e) }}"
-                          data-ajax data-ajax-target="editions" data-ajax-msg="Édition supprimée."
-                          data-confirm="Supprimer cette édition et tout son contenu ?">
+                    <form method="POST" action="{{ route('admin.evenements.destroy', $e) }}"
+                          data-ajax data-ajax-target="events" data-ajax-msg="Événement supprimée."
+                          data-confirm="Supprimer cette événement et tout son contenu ?">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="ukc-btn ukc-btn--danger ukc-btn--sm" title="Supprimer"><x-ukc.icon name="trash" :size="14" /></button>
@@ -85,10 +85,10 @@
                 </div>
             </div>
         @empty
-            <div class="ukc-card"><div class="ukc-empty"><h3>Aucune édition</h3><p>Créez votre première édition de colloque.</p><a href="{{ route('admin.editions.create') }}" class="ukc-btn ukc-btn--blue">Nouvelle édition</a></div></div>
+            <div class="ukc-card"><div class="ukc-empty"><h3>Aucune événement</h3><p>Créez votre première événement de colloque.</p><a href="{{ route('admin.evenements.create') }}" class="ukc-btn ukc-btn--blue">Nouvelle événement</a></div></div>
         @endforelse
         </div>
 
-        <div style="margin-top:12px;">{{ $editions->links() }}</div>
+        <div style="margin-top:12px;">{{ $events->links() }}</div>
     </div>
 </x-layouts.admin>

@@ -3,11 +3,11 @@
 namespace App\Documents;
 
 use App\AI\AiManager;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\EventSession;
 use App\Models\Slot;
 use App\Models\Submission;
-use App\Support\EditionSettings;
+use App\Support\EventSettings;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
@@ -70,7 +70,7 @@ class LivretDocx
      * @param  string  $style  style intégré : 'default' (UK/UP) ou 'fss' (Journées scientifiques)
      */
     public function __construct(
-        private readonly Edition $edition,
+        private readonly Event $event,
         private readonly Collection $groups,
         private readonly bool $harmonize = false,
         private readonly string $style = 'default',
@@ -103,8 +103,8 @@ class LivretDocx
 
         $doc = new PhpWord;
 
-        $doc->setDefaultFontName((string) EditionSettings::get($this->edition, 'livret.font_body', 'Times New Roman'));
-        $doc->setDefaultFontSize((int) EditionSettings::get($this->edition, 'livret.size_body', 11));
+        $doc->setDefaultFontName((string) EventSettings::get($this->event, 'livret.font_body', 'Times New Roman'));
+        $doc->setDefaultFontSize((int) EventSettings::get($this->event, 'livret.size_body', 11));
 
         // Les titres sont des paragraphes en gras (addText), PAS des addTitle : Word
         // ajoutait un numéro après chaque titre (style Titre indexé) et exigeait un TOC.
@@ -117,7 +117,7 @@ class LivretDocx
         ]);
 
         // Pied de page paginé (vide sur la page de garde). Réglage `livret.page_numbers`.
-        if ((bool) EditionSettings::get($this->edition, 'livret.page_numbers', true)) {
+        if ((bool) EventSettings::get($this->event, 'livret.page_numbers', true)) {
             $section->addFooter(Footer::FIRST); // couverture : sans numéro
             $footer = $section->addFooter();
             $footer->addPreserveText('{PAGE}', ['size' => 9, 'color' => self::MUTED], ['alignment' => 'center']);
@@ -136,22 +136,22 @@ class LivretDocx
         $this->addForeword($section);
         $this->addMessage(
             $section,
-            trim((string) EditionSettings::get($this->edition, 'livret.welcome_title', 'Mot de bienvenue')) ?: 'Mot de bienvenue',
-            (string) EditionSettings::get($this->edition, 'livret.welcome_text', ''),
-            (string) EditionSettings::get($this->edition, 'livret.welcome_signature', ''),
+            trim((string) EventSettings::get($this->event, 'livret.welcome_title', 'Mot de bienvenue')) ?: 'Mot de bienvenue',
+            (string) EventSettings::get($this->event, 'livret.welcome_text', ''),
+            (string) EventSettings::get($this->event, 'livret.welcome_signature', ''),
         );
         $this->addMessage(
             $section,
-            trim((string) EditionSettings::get($this->edition, 'livret.president_title', 'Mot du président')) ?: 'Mot du président',
-            (string) EditionSettings::get($this->edition, 'livret.president_text', ''),
-            (string) EditionSettings::get($this->edition, 'livret.president_signature', ''),
+            trim((string) EventSettings::get($this->event, 'livret.president_title', 'Mot du président')) ?: 'Mot du président',
+            (string) EventSettings::get($this->event, 'livret.president_text', ''),
+            (string) EventSettings::get($this->event, 'livret.president_signature', ''),
         );
         $this->addCommissionsProgramme($section);
         $this->isFss() ? $this->addProgrammeFss($section) : $this->addProgramme($section);
         $this->addBody($section);
 
         // Index des auteurs (renvoie au numéro de résumé). Réglage `livret.author_index`.
-        if ((bool) EditionSettings::get($this->edition, 'livret.author_index', true)) {
+        if ((bool) EventSettings::get($this->event, 'livret.author_index', true)) {
             $this->addAuthorIndex($section);
         }
 
@@ -167,7 +167,7 @@ class LivretDocx
      */
     public function inlineValues(): array
     {
-        $e = $this->edition;
+        $e = $this->event;
         $dates = '';
         if ($e->date_start) {
             $dates = $e->date_start->format('d/m/Y');
@@ -182,7 +182,7 @@ class LivretDocx
 
         return [
             '[[TITRE]]' => (string) $e->title,
-            '[[EDITION]]' => (string) ($e->edition_label ?? ''),
+            '[[EDITION]]' => (string) ($e->event_label ?? ''),
             '[[THEME]]' => (string) ($e->theme ?? ''),
             '[[DATES]]' => $dates,
             '[[LIEU]]' => (string) ($e->location ?? ''),
@@ -203,8 +203,8 @@ class LivretDocx
 
         Settings::setOutputEscapingEnabled(true);
         $doc = new PhpWord;
-        $doc->setDefaultFontName((string) EditionSettings::get($this->edition, 'livret.font_body', 'Times New Roman'));
-        $doc->setDefaultFontSize((int) EditionSettings::get($this->edition, 'livret.size_body', 11));
+        $doc->setDefaultFontName((string) EventSettings::get($this->event, 'livret.font_body', 'Times New Roman'));
+        $doc->setDefaultFontSize((int) EventSettings::get($this->event, 'livret.size_body', 11));
         $section = $doc->addSection();
 
         match ($tag) {
@@ -256,13 +256,13 @@ class LivretDocx
     /** Bloc Avant-propos (sans titre : le modèle fournit l'en-tête). */
     private function tplForeword(Section $section): void
     {
-        $text = trim((string) EditionSettings::get($this->edition, 'livret.foreword_text', ''));
+        $text = trim((string) EventSettings::get($this->event, 'livret.foreword_text', ''));
         foreach ($text !== '' ? (preg_split('/\R{2,}/', $text) ?: [$text]) : [] as $paragraph) {
             if (trim((string) $paragraph) !== '') {
                 $section->addText(trim((string) $paragraph), ['size' => 11], ['alignment' => 'both', 'spaceAfter' => 120]);
             }
         }
-        if ($signature = trim((string) EditionSettings::get($this->edition, 'livret.signature', ''))) {
+        if ($signature = trim((string) EventSettings::get($this->event, 'livret.signature', ''))) {
             $section->addText($signature, ['italic' => true, 'size' => 11, 'color' => self::MUTED], ['alignment' => 'right', 'spaceBefore' => 160]);
         }
     }
@@ -270,7 +270,7 @@ class LivretDocx
     /** Bloc Comités (libellés de rôle en gras, membres en dessous). */
     private function tplCommittees(Section $section): void
     {
-        $byRole = $this->edition->committeeMembers()->orderBy('ordre')->get()->groupBy('role');
+        $byRole = $this->event->committeeMembers()->orderBy('ordre')->get()->groupBy('role');
         foreach (self::COMMITTEE_ROLES as $role => $label) {
             $list = $byRole->get($role);
             if (! $list || $list->isEmpty()) {
@@ -305,14 +305,14 @@ class LivretDocx
     /** Bloc Résumés (axe en gras direct + résumés), réutilise addAbstract. */
     private function tplResumes(Section $section): void
     {
-        $sizeAxis = (int) EditionSettings::get($this->edition, 'livret.size_axis', 16);
-        $primary = self::hex((string) EditionSettings::get($this->edition, 'livret.color_primary', '#223ea4'), self::BLUE);
-        $fontHead = (string) EditionSettings::get($this->edition, 'livret.font_head', 'Jost');
-        $sizeAbstract = (int) EditionSettings::get($this->edition, 'livret.size_abstract', 12);
-        $sizeAuthors = (int) EditionSettings::get($this->edition, 'livret.size_authors', 10);
-        $sizeBody = (int) EditionSettings::get($this->edition, 'livret.size_body', 11);
-        $alignBody = EditionSettings::get($this->edition, 'livret.align_body', 'Justifié') === 'Gauche' ? 'left' : 'both';
-        $number = (bool) EditionSettings::get($this->edition, 'livret.number_abstracts', false);
+        $sizeAxis = (int) EventSettings::get($this->event, 'livret.size_axis', 16);
+        $primary = self::hex((string) EventSettings::get($this->event, 'livret.color_primary', '#223ea4'), self::BLUE);
+        $fontHead = (string) EventSettings::get($this->event, 'livret.font_head', 'Jost');
+        $sizeAbstract = (int) EventSettings::get($this->event, 'livret.size_abstract', 12);
+        $sizeAuthors = (int) EventSettings::get($this->event, 'livret.size_authors', 10);
+        $sizeBody = (int) EventSettings::get($this->event, 'livret.size_body', 11);
+        $alignBody = EventSettings::get($this->event, 'livret.align_body', 'Justifié') === 'Gauche' ? 'left' : 'both';
+        $number = (bool) EventSettings::get($this->event, 'livret.number_abstracts', false);
 
         $n = 0;
         foreach ($this->groups as $track => $submissions) {
@@ -327,17 +327,17 @@ class LivretDocx
     /** Page de garde : logo, bandeau, colloque, titre, thème, dates, « LIVRE DES RÉSUMÉS ». */
     private function addCover(Section $section): void
     {
-        $coverSize = (int) EditionSettings::get($this->edition, 'livret.size_cover', 24);
-        $showTheme = (bool) EditionSettings::get($this->edition, 'livret.show_theme', true);
-        $showDates = (bool) EditionSettings::get($this->edition, 'livret.show_dates', true);
+        $coverSize = (int) EventSettings::get($this->event, 'livret.size_cover', 24);
+        $showTheme = (bool) EventSettings::get($this->event, 'livret.show_theme', true);
+        $showDates = (bool) EventSettings::get($this->event, 'livret.show_dates', true);
 
         // En-tête : nom du colloque en majuscules.
-        if ($name = trim((string) $this->edition->colloque?->name)) {
+        if ($name = trim((string) $this->event->series?->name)) {
             $section->addText(mb_strtoupper($name, 'UTF-8'), ['bold' => true, 'size' => 12, 'color' => self::BLUE], ['alignment' => 'center', 'spaceAfter' => 80]);
         }
 
         // Logo(s) de couverture (réglage d'apparence), s'ils sont fournis et lisibles.
-        $logo = (string) EditionSettings::get($this->edition, 'livret.cover_logo', '');
+        $logo = (string) EventSettings::get($this->event, 'livret.cover_logo', '');
         if ($logo !== '' && Storage::disk('public')->exists($logo)) {
             try {
                 $section->addImage(Storage::disk('public')->path($logo), ['width' => 140, 'alignment' => 'center']);
@@ -350,33 +350,33 @@ class LivretDocx
         // Couverture SOBRE (sans bandeau tricolore) pour les deux styles.
         $section->addTextBreak(2);
 
-        if ($title = trim((string) $this->edition->title)) {
+        if ($title = trim((string) $this->event->title)) {
             $section->addText($title, ['bold' => true, 'size' => $coverSize, 'color' => '111827'], ['alignment' => 'center', 'spaceBefore' => 160, 'spaceAfter' => 40]);
         }
 
-        if ($label = trim((string) $this->edition->edition_label)) {
+        if ($label = trim((string) $this->event->event_label)) {
             $section->addText($label, ['size' => 13, 'color' => self::MUTED], ['alignment' => 'center', 'spaceAfter' => 20]);
         }
 
-        // Thème de l'édition (réglage d'apparence).
-        if ($showTheme && ($theme = trim((string) $this->edition->theme)) !== '') {
+        // Thème de l'événement (réglage d'apparence).
+        if ($showTheme && ($theme = trim((string) $this->event->theme)) !== '') {
             $section->addText('« '.$theme.' »', ['italic' => true, 'size' => 12, 'color' => self::BLUE], ['alignment' => 'center', 'spaceBefore' => 60]);
         }
 
         // Dates + lieu (réglage d'apparence).
-        if ($showDates && $this->edition->date_start) {
-            $dates = $this->edition->date_start->format('d/m/Y');
-            if ($this->edition->date_end) {
-                $dates .= ' – '.$this->edition->date_end->format('d/m/Y');
+        if ($showDates && $this->event->date_start) {
+            $dates = $this->event->date_start->format('d/m/Y');
+            if ($this->event->date_end) {
+                $dates .= ' – '.$this->event->date_end->format('d/m/Y');
             }
-            if ($location = trim((string) $this->edition->location)) {
+            if ($location = trim((string) $this->event->location)) {
                 $dates .= '   ·   '.$location;
             }
             $section->addText($dates, ['size' => 11, 'color' => self::MUTED], ['alignment' => 'center', 'spaceBefore' => 80]);
         }
 
         // Libellé de couverture (réglage `cover_mention`, défaut « LIVRE DES RÉSUMÉS »).
-        $coverLabel = trim((string) EditionSettings::get($this->edition, 'livret.cover_mention', '')) ?: 'LIVRE DES RÉSUMÉS';
+        $coverLabel = trim((string) EventSettings::get($this->event, 'livret.cover_mention', '')) ?: 'LIVRE DES RÉSUMÉS';
         $section->addText($coverLabel, ['bold' => true, 'size' => 13, 'color' => self::BLUE], ['alignment' => 'center', 'spaceBefore' => 240]);
 
         $section->addPageBreak();
@@ -387,9 +387,9 @@ class LivretDocx
     {
         $this->addMessage(
             $section,
-            trim((string) EditionSettings::get($this->edition, 'livret.foreword_title', 'Avant-propos')) ?: 'Avant-propos',
-            (string) EditionSettings::get($this->edition, 'livret.foreword_text', ''),
-            (string) EditionSettings::get($this->edition, 'livret.signature', ''),
+            trim((string) EventSettings::get($this->event, 'livret.foreword_title', 'Avant-propos')) ?: 'Avant-propos',
+            (string) EventSettings::get($this->event, 'livret.foreword_text', ''),
+            (string) EventSettings::get($this->event, 'livret.signature', ''),
         );
     }
 
@@ -427,7 +427,7 @@ class LivretDocx
      */
     private function addPatronage(Section $section): void
     {
-        $text = trim((string) EditionSettings::get($this->edition, 'livret.patronage', ''));
+        $text = trim((string) EventSettings::get($this->event, 'livret.patronage', ''));
         if ($text === '') {
             return;
         }
@@ -450,12 +450,12 @@ class LivretDocx
      */
     private function addAcknowledgements(Section $section): void
     {
-        $text = trim((string) EditionSettings::get($this->edition, 'livret.acknowledgements', ''));
+        $text = trim((string) EventSettings::get($this->event, 'livret.acknowledgements', ''));
         if ($text === '') {
             return;
         }
 
-        $title = trim((string) EditionSettings::get($this->edition, 'livret.ack_title', 'Remerciements')) ?: 'Remerciements';
+        $title = trim((string) EventSettings::get($this->event, 'livret.ack_title', 'Remerciements')) ?: 'Remerciements';
         $this->partTitle($section, $title);
 
         foreach (preg_split('/\R+/', $text) ?: [$text] as $line) {
@@ -482,7 +482,7 @@ class LivretDocx
      */
     private function addCommissionsProgramme(Section $section): void
     {
-        $byRole = $this->edition->committeeMembers()->orderBy('ordre')->get()->groupBy('role');
+        $byRole = $this->event->committeeMembers()->orderBy('ordre')->get()->groupBy('role');
         $committees = collect(self::COMMITTEE_ORDER)
             ->filter(fn ($label, $role) => ($byRole->get($role)?->isNotEmpty() ?? false));
 
@@ -491,7 +491,7 @@ class LivretDocx
         // Style par défaut UK/UP : « Différentes commissions… » + programme synthétique.
         $fss = $this->isFss();
 
-        $synthesis = $this->edition->settings['program_synthesis'] ?? null;
+        $synthesis = $this->event->settings['program_synthesis'] ?? null;
         $synDays = $fss ? collect() : (is_array($synthesis) ? collect($synthesis['days'] ?? []) : collect());
 
         if ($committees->isEmpty() && $synDays->isEmpty()) {
@@ -570,7 +570,7 @@ class LivretDocx
      */
     private function addProgrammeFss(Section $section): void
     {
-        $sessions = $this->edition->sessions()->with(['slots.submission'])->get()
+        $sessions = $this->event->sessions()->with(['slots.submission'])->get()
             ->filter(fn (EventSession $s) => $s->starts_at || $s->session_day)
             ->sortBy(fn (EventSession $s) => optional($s->starts_at ?: $s->session_day)->timestamp ?? PHP_INT_MAX)
             ->values();
@@ -665,7 +665,7 @@ class LivretDocx
      */
     private function programmeByDay(): Collection
     {
-        return $this->edition->slots()->with(['submission', 'session'])
+        return $this->event->slots()->with(['submission', 'session'])
             ->whereNotNull('starts_at')->orderBy('starts_at')->get()
             ->filter(fn (Slot $sl) => $sl->submission || trim((string) $sl->session_label) !== '')
             ->groupBy(fn (Slot $sl) => $sl->starts_at?->format('Y-m-d') ?? '')
@@ -756,14 +756,14 @@ class LivretDocx
             return;
         }
 
-        $sizeAbstract = (int) EditionSettings::get($this->edition, 'livret.size_abstract', 12);
-        $sizeAuthors = (int) EditionSettings::get($this->edition, 'livret.size_authors', 10);
-        $sizeBody = (int) EditionSettings::get($this->edition, 'livret.size_body', 11);
-        $alignBody = EditionSettings::get($this->edition, 'livret.align_body', 'Justifié') === 'Gauche' ? 'left' : 'both';
-        $number = (bool) EditionSettings::get($this->edition, 'livret.number_abstracts', false);
-        $sizeAxis = (int) EditionSettings::get($this->edition, 'livret.size_axis', 16);
-        $primary = self::hex((string) EditionSettings::get($this->edition, 'livret.color_primary', '#223ea4'), self::BLUE);
-        $fontHead = (string) EditionSettings::get($this->edition, 'livret.font_head', 'Jost');
+        $sizeAbstract = (int) EventSettings::get($this->event, 'livret.size_abstract', 12);
+        $sizeAuthors = (int) EventSettings::get($this->event, 'livret.size_authors', 10);
+        $sizeBody = (int) EventSettings::get($this->event, 'livret.size_body', 11);
+        $alignBody = EventSettings::get($this->event, 'livret.align_body', 'Justifié') === 'Gauche' ? 'left' : 'both';
+        $number = (bool) EventSettings::get($this->event, 'livret.number_abstracts', false);
+        $sizeAxis = (int) EventSettings::get($this->event, 'livret.size_axis', 16);
+        $primary = self::hex((string) EventSettings::get($this->event, 'livret.color_primary', '#223ea4'), self::BLUE);
+        $fontHead = (string) EventSettings::get($this->event, 'livret.font_head', 'Jost');
         $alignAxis = $this->align('livret.align_axis');
 
         $n = 0;
@@ -1074,7 +1074,7 @@ class LivretDocx
     /** Alignement OOXML d'après un réglage d'apparence (Centré/Gauche/Droite/Justifié). */
     private function align(string $key, string $default = 'Centré'): string
     {
-        return match ((string) EditionSettings::get($this->edition, $key, $default)) {
+        return match ((string) EventSettings::get($this->event, $key, $default)) {
             'Gauche' => 'left',
             'Droite' => 'right',
             'Justifié' => 'both',
@@ -1085,8 +1085,8 @@ class LivretDocx
     /** Titre de section (paragraphe gras, aligné selon `livret.align_titles`). */
     private function partTitle(Section $section, string $text): void
     {
-        $primary = self::hex((string) EditionSettings::get($this->edition, 'livret.color_primary', '#223ea4'), self::BLUE);
-        $fontHead = (string) EditionSettings::get($this->edition, 'livret.font_head', 'Jost');
+        $primary = self::hex((string) EventSettings::get($this->event, 'livret.color_primary', '#223ea4'), self::BLUE);
+        $fontHead = (string) EventSettings::get($this->event, 'livret.font_head', 'Jost');
         $section->addText($text, ['bold' => true, 'size' => 18, 'color' => $primary, 'name' => $fontHead],
             ['alignment' => $this->align('livret.align_titles'), 'spaceBefore' => 240, 'spaceAfter' => 160, 'keepNext' => true]);
     }

@@ -11,9 +11,9 @@ it('refuse l’accès à un invité pour une séance réservée aux participants
 });
 
 it('permet à un participant inscrit de poser une question', function () {
-    $edition = openEdition();
-    $session = sessionFor($edition);
-    $account = participantAccount($edition);
+    $event = openEdition();
+    $session = sessionFor($event);
+    $account = participantAccount($event);
 
     $this->actingAs($account, 'account')
         ->get(route('session.engagement', $session))->assertOk();
@@ -27,11 +27,11 @@ it('permet à un participant inscrit de poser une question', function () {
 });
 
 it('bascule le vote sur une question et compte les votes', function () {
-    $edition = openEdition();
-    $session = sessionFor($edition);
-    $account = participantAccount($edition);
+    $event = openEdition();
+    $session = sessionFor($event);
+    $account = participantAccount($event);
     $question = SessionQuestion::create([
-        'session_id' => $session->id, 'edition_id' => $edition->id,
+        'session_id' => $session->id, 'event_id' => $event->id,
         'user_id' => $account->id, 'author_name' => 'Awa Kodjo', 'body' => 'Q', 'status' => 'pending',
     ]);
 
@@ -43,11 +43,11 @@ it('bascule le vote sur une question et compte les votes', function () {
 });
 
 it('interdit la modération à un participant', function () {
-    $edition = openEdition();
-    $session = sessionFor($edition);
-    $account = participantAccount($edition);
+    $event = openEdition();
+    $session = sessionFor($event);
+    $account = participantAccount($event);
     $question = SessionQuestion::create([
-        'session_id' => $session->id, 'edition_id' => $edition->id,
+        'session_id' => $session->id, 'event_id' => $event->id,
         'user_id' => $account->id, 'author_name' => 'Awa Kodjo', 'body' => 'Q', 'status' => 'pending',
     ]);
 
@@ -58,11 +58,11 @@ it('interdit la modération à un participant', function () {
 });
 
 it('masque les questions cachées au public mais les garde pour le modérateur', function () {
-    $edition = openEdition();
-    $session = sessionFor($edition);
-    $account = participantAccount($edition);
+    $event = openEdition();
+    $session = sessionFor($event);
+    $account = participantAccount($event);
     SessionQuestion::create([
-        'session_id' => $session->id, 'edition_id' => $edition->id,
+        'session_id' => $session->id, 'event_id' => $event->id,
         'user_id' => $account->id, 'author_name' => 'Awa Kodjo', 'body' => 'Question sensible', 'status' => 'hidden',
     ]);
 
@@ -88,14 +88,14 @@ it('fait descendre les questions traitées sous celles qui attendent', function 
     // attendaient encore. L'animateur lit la file de haut en bas : ce qui est fait
     // doit descendre. Les masquées, que seul le modérateur voit, descendent plus
     // bas encore - ce sont des déchets, pas des archives.
-    $edition = openEdition();
-    $session = sessionFor($edition);
-    $account = participantAccount($edition);
+    $event = openEdition();
+    $session = sessionFor($event);
+    $account = participantAccount($event);
     $staff = adminStaff();
 
-    $faire = function (string $corps, string $statut) use ($session, $edition, $account) {
+    $faire = function (string $corps, string $statut) use ($session, $event, $account) {
         return SessionQuestion::create([
-            'session_id' => $session->id, 'edition_id' => $edition->id,
+            'session_id' => $session->id, 'event_id' => $event->id,
             'user_id' => $account->id, 'author_name' => 'Awa Kodjo',
             'body' => $corps, 'status' => $statut,
         ]);
@@ -117,12 +117,12 @@ it('fait descendre les questions traitées sous celles qui attendent', function 
 });
 
 it('classe par votes à l’intérieur de ce qui attend', function () {
-    $edition = openEdition();
-    $session = sessionFor($edition);
-    $account = participantAccount($edition);
+    $event = openEdition();
+    $session = sessionFor($event);
+    $account = participantAccount($event);
 
     $faire = fn (string $corps) => SessionQuestion::create([
-        'session_id' => $session->id, 'edition_id' => $edition->id,
+        'session_id' => $session->id, 'event_id' => $event->id,
         'user_id' => $account->id, 'author_name' => 'Awa Kodjo',
         'body' => $corps, 'status' => 'pending',
     ]);

@@ -1,11 +1,11 @@
-<x-layouts.admin title="Tableau de bord" :subtitle="'Vue d’ensemble'.($edition ? ' · '.($edition->title ?: $edition->colloque?->name) : '')">
+<x-layouts.admin title="Tableau de bord" :subtitle="'Vue d’ensemble'.($event ? ' · '.($event->title ?: $event->series?->name) : '')">
     <x-slot:actions>
         <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.dashboard') }}">
             <x-ukc.icon name="refresh" :size="14" /> Actualiser
         </a>
-        @if ($edition)
-            <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="{{ route('admin.editions.edit', $edition) }}">
-                <x-ukc.icon name="pen" :size="14" /> Édition active
+        @if ($event)
+            <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="{{ route('admin.evenements.edit', $event) }}">
+                <x-ukc.icon name="pen" :size="14" /> Événement active
             </a>
         @endif
     </x-slot:actions>
@@ -21,26 +21,26 @@
             $statusPills = \App\Models\Submission::statusPills();
         @endphp
 
-        {{-- Bannière édition active --}}
-        @if ($edition)
+        {{-- Bannière événement active --}}
+        @if ($event)
             <div class="edition-banner">
                 <div class="body">
-                    <h2>{{ $edition->title ?: $edition->colloque?->name }}
-                        @if ($edition->status === 'open')<span class="ukc-pill ukc-pill--open">Active</span>@endif
+                    <h2>{{ $event->title ?: $event->series?->name }}
+                        @if ($event->status === 'open')<span class="ukc-pill ukc-pill--open">Active</span>@endif
                     </h2>
-                    @if ($edition->theme)<p>{{ $edition->theme }}</p>@endif
+                    @if ($event->theme)<p>{{ $event->theme }}</p>@endif
                     <div class="meta">
-                        @if ($edition->date_start){{ $edition->date_start->translatedFormat('d M') }} – {{ $edition->date_end?->translatedFormat('d M Y') }} · @endif
-                        {{ $edition->location ?: 'Lieu à préciser' }}
-                        @if ($edition->submission_open)
-                            · Soumissions ouvertes @if ($edition->submission_deadline) jusqu’au {{ $edition->submission_deadline->translatedFormat('d/m') }} @endif
+                        @if ($event->date_start){{ $event->date_start->translatedFormat('d M') }} – {{ $event->date_end?->translatedFormat('d M Y') }} · @endif
+                        {{ $event->location ?: 'Lieu à préciser' }}
+                        @if ($event->submission_open)
+                            · Soumissions ouvertes @if ($event->submission_deadline) jusqu’au {{ $event->submission_deadline->translatedFormat('d/m') }} @endif
                         @endif
                     </div>
                 </div>
                 <div class="actions">
                     <a class="ukc-btn ukc-btn--solid ukc-btn--sm" href="{{ route('admin.submissions.index') }}">Soumissions</a>
-                    <a class="ukc-btn ukc-btn--sm" href="{{ route('admin.editions.edit', $edition) }}">Paramètres</a>
-                    <a class="ukc-btn ukc-btn--sm" href="{{ route('admin.editions.index') }}">Toutes les éditions</a>
+                    <a class="ukc-btn ukc-btn--sm" href="{{ route('admin.evenements.edit', $event) }}">Paramètres</a>
+                    <a class="ukc-btn ukc-btn--sm" href="{{ route('admin.evenements.index') }}">Toutes les événements</a>
                 </div>
             </div>
         @endif
@@ -82,7 +82,7 @@
             <div>
                 <div class="ukc-card">
                     <h2>Pipeline des soumissions <a href="{{ route('admin.submissions.index') }}" style="font-size:12.5px;font-weight:700;">Voir tout →</a></h2>
-                    <div class="desc">Répartition par statut - édition active</div>
+                    <div class="desc">Répartition par statut - événement active</div>
                     <div class="pipeline-grid">
                         <div>
                             <div class="status-row"><span>Soumises (nouvelles)</span><span class="count">{{ $pipeline['submitted'] }} <span class="ukc-pill ukc-pill--info">Nouvelles</span></span></div>
@@ -133,11 +133,11 @@
                     <h2>Accès rapides</h2>
                     <div class="quick-grid">
                         <a class="quick-link" href="{{ route('admin.submissions.index') }}">Soumissions<span>Liste &amp; relecture</span></a>
-                        <a class="quick-link" href="{{ $edition ? route('admin.editions.form', $edition) : route('admin.editions.index') }}">Formulaires<span>Champs &amp; règles</span></a>
+                        <a class="quick-link" href="{{ $event ? route('admin.evenements.form', $event) : route('admin.evenements.index') }}">Formulaires<span>Champs &amp; règles</span></a>
                         <a class="quick-link" href="{{ route('admin.payments.index') }}">Paiements<span>FedaPay / Mobile Money</span></a>
                         <a class="quick-link" href="{{ route('admin.documents.attestations') }}">Documents<span>Attestations, badges</span></a>
                         <a class="quick-link" href="{{ route('admin.emails.index') }}">E-mails<span>Modèles &amp; rappels</span></a>
-                        <a class="quick-link" href="{{ route('admin.editions.index') }}">Éditions<span>Colloques</span></a>
+                        <a class="quick-link" href="{{ route('admin.evenements.index') }}">Événements<span>Colloques</span></a>
                     </div>
                 </div>
 

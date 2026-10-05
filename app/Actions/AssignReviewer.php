@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 
 /**
  * Assigne un relecteur à une soumission : crée/retrouve le participant relecteur
- * (par e-mail sur l'édition), le relie à un compte (provisionné au besoin pour
+ * (par e-mail sur l'événement), le relie à un compte (provisionné au besoin pour
  * accéder à « Mes relectures »), crée la relecture et passe la soumission
  * « en relecture ».
  */
@@ -25,7 +25,7 @@ class AssignReviewer
     public function handle(Submission $submission, string $name, string $email, ?string $reason = null): Review
     {
         $reviewer = Participant::firstOrNew([
-            'edition_id' => $submission->edition_id,
+            'event_id' => $submission->event_id,
             'email' => mb_strtolower(trim($email)),
         ]);
 
@@ -57,8 +57,8 @@ class AssignReviewer
 
         $reviewer->save();
 
-        // Échéance : durée d'évaluation de l'édition, sinon la valeur par défaut.
-        $dueDays = ReviewGrid::dueDays($submission->edition);
+        // Échéance : durée d'évaluation de l'événement, sinon la valeur par défaut.
+        $dueDays = ReviewGrid::dueDays($submission->event);
 
         $review = Review::firstOrCreate(
             ['submission_id' => $submission->id, 'reviewer_id' => $reviewer->id],

@@ -9,8 +9,8 @@ use App\Documents\LayoutSanitizer;
 use App\Http\Controllers\Controller;
 use App\Models\Attestation;
 use App\Models\DocumentTemplate;
-use App\Models\Edition;
-use App\Support\EditionArtwork;
+use App\Models\Event;
+use App\Support\EventArtwork;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -35,7 +35,7 @@ class TemplateDesignerController extends Controller
         '{institution}' => 'Institution',
         '{type}' => 'Type d’attestation',
         '{org}' => 'Organisateur',
-        '{event}' => 'Édition',
+        '{event}' => 'Événement',
         '{year}' => 'Année',
         '{location}' => 'Lieu',
         '{date}' => 'Date d’émission',
@@ -66,19 +66,19 @@ class TemplateDesignerController extends Controller
 
     /**
      * Rend le concepteur de documents (attestation/badge). En mode `$preview`, la
-     * page s'ouvre verrouillée sur l'aperçu plein écran (chrome d'édition masqué).
+     * page s'ouvre verrouillée sur l'aperçu plein écran (chrome d'événement masqué).
      */
     private function renderDesigner(Request $request, bool $preview): View
     {
-        $editionId = (string) $request->query('edition_id', '');
+        $editionId = (string) $request->query('event_id', '');
         if ($editionId === '') {
-            $editionId = (string) (Edition::where('status', 'open')->latest('id')->value('id')
-                ?? Edition::latest('id')->value('id') ?? '');
+            $editionId = (string) (Event::where('status', 'open')->latest('id')->value('id')
+                ?? Event::latest('id')->value('id') ?? '');
         }
         [$kind, $type] = $this->kindType($request->query('kind'), $request->query('type'));
 
         $existing = $editionId !== ''
-            ? DocumentTemplate::where('edition_id', $editionId)->where('kind', $kind)->where('type', $type)->first()
+            ? DocumentTemplate::where('event_id', $editionId)->where('kind', $kind)->where('type', $type)->first()
             : null;
 
         $layout = $existing?->layout
@@ -86,8 +86,8 @@ class TemplateDesignerController extends Controller
             : LayoutSanitizer::default($kind, $type);
 
         return view($kind === 'badge' ? 'admin.documents.badge-designer' : 'admin.documents.template-designer', [
-            'editions' => Edition::latest('id')->get(),
-            'edition_id' => $editionId,
+            'events' => Event::latest('id')->get(),
+            'event_id' => $editionId,
             'kind' => $kind,
             'type' => $type,
             'preview' => $preview,
@@ -140,7 +140,7 @@ class TemplateDesignerController extends Controller
     public function create(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'edition_id' => ['required', 'exists:editions,id'],
+            'event_id' => ['required', 'exists:events,id'],
             'kind' => ['required', 'in:badge,attestation'],
             'type' => ['required', 'string', 'max:30'],
             'title' => ['nullable', 'string', 'max:150'],
@@ -158,12 +158,12 @@ class TemplateDesignerController extends Controller
             : null;
 
         DocumentTemplate::updateOrCreate(
-            ['edition_id' => $data['edition_id'], 'kind' => $kind, 'type' => $type],
+            ['event_id' => $data['event_id'], 'kind' => $kind, 'type' => $type],
             ['title' => trim((string) ($data['title'] ?? '')) ?: $defaultTitle, 'format' => $format],
         );
 
         return redirect()->route('admin.documents.templates', [
-            'edition_id' => $data['edition_id'], 'kind' => $kind, 'type' => $type,
+            'event_id' => $data['event_id'], 'kind' => $kind, 'type' => $type,
         ]);
     }
 
@@ -192,12 +192,12 @@ class TemplateDesignerController extends Controller
             ]);
         }
 
-        $editionId = $template->edition_id;
+        $editionId = $template->event_id;
         $kind = $template->kind;
         $template->delete();
 
         return redirect()->route('admin.documents.attestations', [
-            'edition_id' => $editionId,
+            'event_id' => $editionId,
             'tab' => $kind === 'badge' ? 'badges' : 'attestations',
             'stab' => 'modeles',
         ])->with('ukc_status', 'Modèle supprimé : la mise en page par défaut s’applique de nouveau.');
@@ -208,7 +208,7 @@ class TemplateDesignerController extends Controller
     {
         $request->validate([
             'prompt' => ['required', 'string', 'max:1000'],
-            'edition_id' => ['nullable'],
+            'event_id' => ['nullable'],
             'inspiration' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:8192'],
         ]);
 
@@ -230,16 +230,16 @@ class TemplateDesignerController extends Controller
 
         return response()->json([
             'layout' => $layout,
-            'vars' => $this->sampleVars((string) $request->input('edition_id', ''), $type),
+            'vars' => $this->sampleVars((string) $request->input('event_id', ''), $type),
         ]);
     }
 
     /** Persiste la mise en page produite par l'éditeur (sanitizée). */
     public function save(Request $request): JsonResponse
     {
-        $editionId = (string) $request->input('edition_id', '');
+        $editionId = (string) $request->input('event_id', '');
         if ($editionId === '') {
-            return response()->json(['ok' => false, 'error' => 'Choisissez une édition.'], 422);
+            return response()->json(['ok' => false, 'error' => 'Choisissez une événement.'], 422);
         }
 
         [$kind, $type] = $this->kindType($request->input('kind'), $request->input('type'));
@@ -256,7 +256,7 @@ class TemplateDesignerController extends Controller
         $title = $title !== '' ? mb_substr($title, 0, 150) : null;
 
         DocumentTemplate::updateOrCreate(
-            ['edition_id' => $editionId, 'kind' => $kind, 'type' => $type],
+            ['event_id' => $editionId, 'kind' => $kind, 'type' => $type],
             array_filter(
                 ['layout' => $layout, 'editor_state' => $editorState, 'title' => $title],
                 // Un nom vide ne doit pas EFFACER celui déjà enregistré.
@@ -281,7 +281,7 @@ class TemplateDesignerController extends Controller
     public function upload(Request $request): JsonResponse
     {
         $request->validate([
-            'file' => ['required', 'image', 'mimes:png,jpg,jpeg,webp,gif', 'max:'.EditionArtwork::maxUploadKb()],
+            'file' => ['required', 'image', 'mimes:png,jpg,jpeg,webp,gif', 'max:'.EventArtwork::maxUploadKb()],
         ]);
 
         $path = $request->file('file')->store('documents/templates', 'public');
@@ -303,13 +303,13 @@ class TemplateDesignerController extends Controller
     /** @return array<string, string|list<array{name?: string, src?: string}>> */
     private function sampleVars(string $editionId, string $type): array
     {
-        $edition = $editionId !== '' ? Edition::with('colloque')->find($editionId) : null;
+        $event = $editionId !== '' ? Event::with('series')->find($editionId) : null;
 
         return [
-            'org' => $edition?->colloque?->name ?? 'Colloque de l’Université de Kara',
-            'event' => $edition?->title ?? 'Édition 2026',
-            'year' => (string) ($edition?->year ?: date('Y')),
-            'location' => $edition?->location ?? 'Kara, Togo',
+            'org' => $event?->series?->name ?? 'Événement de l’Université de Kara',
+            'event' => $event?->title ?? 'Événement 2026',
+            'year' => (string) ($event?->year ?: date('Y')),
+            'location' => $event?->location ?? 'Kara, Togo',
             'name' => 'Awa Kodjo',
             'role' => 'Communicant',
             'institution' => 'Université de Kara',
@@ -317,8 +317,8 @@ class TemplateDesignerController extends Controller
             // ⚠️ Valeurs que la palette sait nommer ([edition.theme], [edition.dates]) :
             // sans elles, l'aperçu laissait un blanc après « Thème du colloque : »,
             // ce qui ressemblait à un jeton cassé.
-            'theme' => $edition?->theme ?: 'Innover pour un avenir durable',
-            'dates' => $edition?->dateRangeLabel() ?: 'du 06 au 10 octobre 2026',
+            'theme' => $event?->theme ?: 'Innover pour un avenir durable',
+            'dates' => $event?->dateRangeLabel() ?: 'du 06 au 10 octobre 2026',
             'signatory' => 'Pr. Padabo Kadouza',
             'signatory_role' => 'Président du comité d’organisation',
             'date' => now()->format('d/m/Y'),

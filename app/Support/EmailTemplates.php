@@ -14,7 +14,7 @@ use App\Models\Submission;
 class EmailTemplates
 {
     /** Placeholders disponibles (selon le contexte du modèle). */
-    public const PLACEHOLDERS = ['{prenom}', '{nom_complet}', '{ref}', '{titre}', '{edition}'];
+    public const PLACEHOLDERS = ['{prenom}', '{nom_complet}', '{ref}', '{titre}', '{event}'];
 
     /**
      * Modèles et leurs valeurs par défaut.
@@ -50,7 +50,7 @@ class EmailTemplates
             'label' => 'Soumission - refusée',
             'subject' => 'Décision concernant votre communication',
             'heading' => 'Communication non retenue',
-            'intro' => 'Après examen, votre communication n’a pas été retenue pour cette édition.',
+            'intro' => 'Après examen, votre communication n’a pas été retenue pour cette événement.',
         ],
         'participant_invitation' => [
             'label' => 'Invitation participant',
@@ -67,7 +67,7 @@ class EmailTemplates
         '{{badge_url}}', '{{login_url}}', '{{session_date}}', '{{session_room}}',
     ];
 
-    /** Options de déclencheur proposées à la création/édition d'un modèle. */
+    /** Options de déclencheur proposées à la création/événement d'un modèle. */
     public const TRIGGER_OPTIONS = [
         'Manuel / programmé', 'Paiement reçu', 'Soumission reçue', 'Correction demandée',
         'Résumé accepté', 'Résumé refusé', 'Envoi attestation', 'Badge disponible', 'Rappel (programmé)',
@@ -203,7 +203,7 @@ class EmailTemplates
             'nom_complet' => (string) ($submission->correspondingAuthorName() ?? ''),
             'ref' => (string) $submission->ref_code,
             'titre' => (string) $submission->title,
-            'edition' => (string) ($submission->edition?->title ?? ''),
+            'event' => (string) ($submission->event?->title ?? ''),
         ];
 
         return self::renderAll($tpl, $context);
@@ -221,7 +221,7 @@ class EmailTemplates
         $context = [
             'prenom' => (string) $participant->first_name,
             'nom_complet' => $participant->full_name,
-            'edition' => (string) ($participant->edition?->title ?? ''),
+            'event' => (string) ($participant->event?->title ?? ''),
         ];
 
         return self::renderAll($tpl, $context);

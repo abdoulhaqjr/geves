@@ -7,7 +7,7 @@
     // Durée d'un créneau selon le type de communication (réglages).
     $slotDuration = fn ($sub) => (int) (($sub && $sub->type === 'poster') ? $config['params']['poster_min'] : $config['params']['oral_min']);
     $atelierRoomName = fn ($atelier) => $atelierRooms[(string) $atelier->id] ?? ($atelier->sessions->firstWhere('room', '!=', null)?->room);
-    // Charge utile d'édition d'une session (modale), pour un jour donné.
+    // Charge utile d'événement d'une session (modale), pour un jour donné.
     $sessJsFor = fn ($s, $day) => [
         'id' => $s->id, 'type' => $s->atelier_id ? 'atelier' : 'plenary',
         'atelier_id' => (string) $s->atelier_id, 'label' => $s->label, 'day' => $day,
@@ -16,10 +16,10 @@
     ];
 @endphp
 
-<x-layouts.admin title="Programme" subtitle="Ateliers, sessions, créneaux et salles de l’édition">
-    @if ($edition)
+<x-layouts.admin title="Programme" subtitle="Ateliers, sessions, créneaux et salles de l’événement">
+    @if ($event)
         <x-slot:actions>
-            <a href="{{ route('public.colloque', $edition->slug) }}#programme" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+            <a href="{{ route('public.colloque', $event->slug) }}#programme" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
                 <x-ukc.icon name="external" :size="15" /> Aperçu public
             </a>
         </x-slot:actions>
@@ -45,22 +45,22 @@
          }"
          @keydown.escape.window="modal=null">
 
-        {{-- Filtres (GET) : sélecteur d'édition --}}
+        {{-- Filtres (GET) : sélecteur d'événement --}}
         <div class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px;">
             <div class="ukc-field" style="min-width:320px;max-width:460px;margin:0;">
-                <label for="edition_id">Édition</label>
-                <select id="edition_id" name="edition_id"
-                        onchange="window.location = '{{ route('admin.program.index') }}?edition_id=' + this.value + '&tab={{ $tab }}'">
+                <label for="event_id">Événement</label>
+                <select id="event_id" name="event_id"
+                        onchange="window.location = '{{ route('admin.program.index') }}?event_id=' + this.value + '&tab={{ $tab }}'">
                     <option value="">- Choisir -</option>
-                    @foreach ($editions as $ed)
-                        <option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>
+                    @foreach ($events as $ed)
+                        <option value="{{ $ed->id }}" @selected((string) $ed->id === $event_id)>{{ $ed->title ?: $ed->year }}</option>
                     @endforeach
                 </select>
             </div>
         </div>
 
-        @if ($edition_id === '')
-            <div class="ukc-empty"><h3>Choisissez une édition</h3></div>
+        @if ($event_id === '')
+            <div class="ukc-empty"><h3>Choisissez une événement</h3></div>
         @else
             @include('admin.program._nav', ['current' => $tab])
 
@@ -92,11 +92,11 @@
             <div @if ($tab !== 'apercu') style="display:none;" @endif>
                 <form method="POST" action="{{ route('admin.program.synthesis') }}" class="ukc-card" x-data="programSynthesis(@js($programSynthesis))">
                     @csrf
-                    <input type="hidden" name="edition_id" value="{{ $edition_id }}">
+                    <input type="hidden" name="event_id" value="{{ $event_id }}">
                     <h2>
                         <span><x-ukc.icon name="calendar" :size="18" /> Programme</span>
-                        @if ($edition)
-                            <a href="{{ route('public.colloque', $edition->slug) }}#programme" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+                        @if ($event)
+                            <a href="{{ route('public.colloque', $event->slug) }}#programme" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
                                 <x-ukc.icon name="external" :size="14" /> Voir sur la page publique
                             </a>
                         @endif
@@ -584,7 +584,7 @@
 
             {{-- ============================ ATELIERS ============================ --}}
             @php
-                // Options de filtres (dérivées des ateliers de l'édition).
+                // Options de filtres (dérivées des ateliers de l'événement).
                 $atelierRoomOpts = $ateliers->map(fn ($a) => $atelierRoomName($a))->filter()->unique()->sort()->values();
                 $atelierTrackOpts = $ateliers->flatMap(fn ($a) => $a->tracks ?: [])->filter()->unique()->sort()->values();
             @endphp
@@ -669,13 +669,13 @@
                     @endif
                 </div>
 
-                {{-- Lien avec le programme de l'édition (fidèle au mockup). --}}
-                @if ($edition)
+                {{-- Lien avec le programme de l'événement (fidèle au mockup). --}}
+                @if ($event)
                     <div class="ukc-card">
-                        <h2>Lien avec le programme de l’édition</h2>
+                        <h2>Lien avec le programme de l’événement</h2>
                         <div class="desc">
                             Le planning et les sessions s’appuient sur le programme défini dans
-                            <a href="{{ route('admin.editions.edit', $edition) }}?tab=programme" style="color:var(--ukc-blue);font-weight:600;">Édition → Programme</a>
+                            <a href="{{ route('admin.evenements.edit', $event) }}?tab=programme" style="color:var(--ukc-blue);font-weight:600;">Événement → Programme</a>
                             (jours, horaires, type Session / Atelier, intitulés).
                         </div>
                         <div class="settings-box">
@@ -684,7 +684,7 @@
                                 Le système lit les lignes du programme de type « Session » / « Atelier » dont l’axe ou l’intitulé correspond
                                 et génère les sessions (créneaux horaires) dans le planning. Les modérateurs et rapporteurs restent à compléter.
                             </p>
-                            <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.editions.edit', $edition) }}?tab=programme">Ouvrir le programme de l’édition</a>
+                            <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.evenements.edit', $event) }}?tab=programme">Ouvrir le programme de l’événement</a>
                         </div>
                         <p class="ukc-hint" style="font-size:12px;color:var(--ukc-light);margin-top:12px;">La gestion détaillée des salles (amphi, A/B/C, hall) se fait dans l’onglet <strong>Espaces</strong>.</p>
                     </div>
@@ -693,7 +693,7 @@
 
             {{-- ============================ SESSIONS ============================ --}}
             @php
-                // Options de filtres (dérivées des sessions de l'édition).
+                // Options de filtres (dérivées des sessions de l'événement).
                 $sessDays = $sessions->map(fn ($s) => optional($s->session_day ?? $s->starts_at)?->format('Y-m-d'))->filter()->unique()->sort()->values();
                 $sessAteliers = $sessions->map(fn ($s) => $s->atelier?->title)->filter()->unique()->sort()->values();
                 $sessRooms = $sessions->map(fn ($s) => $s->room)->filter()->unique()->sort()->values();
@@ -710,7 +710,7 @@
                          `tab` et le tri courant sont reportés pour rester sur l'onglet et
                          garder le tri quand on change un filtre. --}}
                     <form method="GET" action="{{ route('admin.program.index') }}" class="filter-bar filter-bar--inline" style="margin:4px 0 14px;">
-                        <input type="hidden" name="edition_id" value="{{ $edition_id }}">
+                        <input type="hidden" name="event_id" value="{{ $event_id }}">
                         <input type="hidden" name="tab" value="sessions">
                         <input type="hidden" name="s_sort" value="{{ $sessSort }}">
                         <input type="hidden" name="s_dir" value="{{ $sessDir }}">
@@ -739,7 +739,7 @@
                         <input type="search" name="s_q" value="{{ $sessFilters['q'] }}" placeholder="Session, modérateur, rapporteur…" style="min-width:190px;flex:1;"
                                onkeydown="if(event.key==='Enter'){this.form.submit();}">
                         @if ($sessActive)
-                            <a href="{{ route('admin.program.index', ['edition_id' => $edition_id, 'tab' => 'sessions']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
+                            <a href="{{ route('admin.program.index', ['event_id' => $event_id, 'tab' => 'sessions']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
                         @endif
                     </form>
                     <div style="font-size:12.5px;color:var(--ukc-muted);margin-bottom:8px;">
@@ -778,7 +778,7 @@
                                         <td class="num">{{ $sessionSlots->where('submission_id', '>', 0)->count() }}</td>
                                         <td style="text-align:right;">
                                             <div class="ukc-actions">
-                                                <a href="{{ route('admin.documents.sessions', $edition) }}" class="ukc-btn--icon" title="Fiches (modération / rapport)"><x-ukc.icon name="file" :size="15" /></a>
+                                                <a href="{{ route('admin.documents.sessions', $event) }}" class="ukc-btn--icon" title="Fiches (modération / rapport)"><x-ukc.icon name="file" :size="15" /></a>
                                                 <button type="button" class="ukc-btn--icon" title="Visioconférence"
                                                         @click="visio = ! visio" :class="{ 'active': visio }"><x-ukc.icon name="video" :size="15" /></button>
                                                 <button type="button" class="ukc-btn--icon" title="Modifier"
@@ -800,7 +800,7 @@
                             @empty
                                 <tbody>
                                     <tr><td colspan="9" style="text-align:center;color:var(--ukc-muted);padding:20px;">
-                                        @if ($sessActive)Aucune session ne correspond aux filtres. <a href="{{ route('admin.program.index', ['edition_id' => $edition_id, 'tab' => 'sessions']) }}" class="ukc-link">Réinitialiser</a>@else Aucune session.@endif
+                                        @if ($sessActive)Aucune session ne correspond aux filtres. <a href="{{ route('admin.program.index', ['event_id' => $event_id, 'tab' => 'sessions']) }}" class="ukc-link">Réinitialiser</a>@else Aucune session.@endif
                                     </td></tr>
                                 </tbody>
                             @endforelse
@@ -813,7 +813,7 @@
 
             {{-- ============================ CRÉNEAUX (liste) ============================ --}}
             @php
-                // Options de filtres (dérivées des créneaux de l'édition).
+                // Options de filtres (dérivées des créneaux de l'événement).
                 $slotDays = $creneaux->map(fn ($s) => $s->starts_at?->format('Y-m-d'))->filter()->unique()->sort()->values();
                 $slotAteliers = $creneaux->map(fn ($s) => $s->session?->atelier?->title)->filter()->unique()->sort()->values();
                 $slotRooms = $creneaux->map(fn ($s) => $s->room)->filter()->unique()->sort()->values();
@@ -827,7 +827,7 @@
 
                     {{-- Filtres serveur (GET, auto-submit) - même patron que admin/soumissions. --}}
                     <form method="GET" action="{{ route('admin.program.index') }}" class="filter-bar filter-bar--inline" style="margin:4px 0 14px;">
-                        <input type="hidden" name="edition_id" value="{{ $edition_id }}">
+                        <input type="hidden" name="event_id" value="{{ $event_id }}">
                         <input type="hidden" name="tab" value="creneaux">
                         <input type="hidden" name="c_sort" value="{{ $slotSort }}">
                         <input type="hidden" name="c_dir" value="{{ $slotDir }}">
@@ -856,7 +856,7 @@
                         <input type="search" name="c_q" value="{{ $slotFilters['q'] }}" placeholder="Intitulé, titre, code…" style="min-width:190px;flex:1;"
                                onkeydown="if(event.key==='Enter'){this.form.submit();}">
                         @if ($slotActive)
-                            <a href="{{ route('admin.program.index', ['edition_id' => $edition_id, 'tab' => 'creneaux']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
+                            <a href="{{ route('admin.program.index', ['event_id' => $event_id, 'tab' => 'creneaux']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
                         @endif
                     </form>
                     <div style="font-size:12.5px;color:var(--ukc-muted);margin-bottom:8px;">
@@ -916,7 +916,7 @@
                                     </tr>
                                 @empty
                                     <tr><td colspan="8" style="text-align:center;color:var(--ukc-muted);padding:20px;">
-                                        @if ($slotActive)Aucun créneau ne correspond aux filtres. <a href="{{ route('admin.program.index', ['edition_id' => $edition_id, 'tab' => 'creneaux']) }}" class="ukc-link">Réinitialiser</a>@else Aucun créneau.@endif
+                                        @if ($slotActive)Aucun créneau ne correspond aux filtres. <a href="{{ route('admin.program.index', ['event_id' => $event_id, 'tab' => 'creneaux']) }}" class="ukc-link">Réinitialiser</a>@else Aucun créneau.@endif
                                     </td></tr>
                                 @endforelse
                             </tbody>
@@ -954,7 +954,7 @@
                                 {{ implode(' · ', $bits) ?: '-' }}
                             </div>
                             <div class="ukc-actions row-actions">
-                                <form method="POST" action="{{ route('admin.program.spaces.destroy', $i) }}?edition_id={{ $edition_id }}" data-ajax data-ajax-target="prog-spaces" data-ajax-msg="Espace supprimé." data-confirm="Supprimer cet espace ?">
+                                <form method="POST" action="{{ route('admin.program.spaces.destroy', $i) }}?event_id={{ $event_id }}" data-ajax data-ajax-target="prog-spaces" data-ajax-msg="Espace supprimé." data-confirm="Supprimer cet espace ?">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="ukc-btn--icon danger" title="Supprimer l’espace"><x-ukc.icon name="trash" :size="15" /></button>
                                 </form>
@@ -1016,7 +1016,7 @@
                         sur un créneau libre de l'atelier correspondant à son axe.
                     </div>
 
-                    <form method="POST" action="{{ route('admin.program.config') }}?edition_id={{ $edition_id }}">
+                    <form method="POST" action="{{ route('admin.program.config') }}?event_id={{ $event_id }}">
                         @csrf
                         <div class="settings-box">
                             <h3>Règles</h3>
@@ -1053,7 +1053,7 @@
                         <p style="font-size:13px;color:var(--ukc-muted);margin-bottom:10px;line-height:1.45;">
                             Crée des créneaux libres à partir des sessions horodatées (découpage par la durée d'une communication orale, réglée dans « Paramètres créneaux »). Les sessions déjà pourvues sont ignorées.
                         </p>
-                        <form method="POST" action="{{ route('admin.program.slots.generate') }}?edition_id={{ $edition_id }}">
+                        <form method="POST" action="{{ route('admin.program.slots.generate') }}?event_id={{ $event_id }}">
                             @csrf
                             <button type="submit" class="ukc-btn ukc-btn--sm">
                                 <x-ukc.icon name="plus" :size="15" /> Générer les créneaux depuis les sessions
@@ -1063,7 +1063,7 @@
 
                     <div class="settings-box" style="margin-top:16px;">
                         <h3>Lancer une passe maintenant</h3>
-                        <form method="POST" action="{{ route('admin.program.slots.auto') }}?edition_id={{ $edition_id }}">
+                        <form method="POST" action="{{ route('admin.program.slots.auto') }}?event_id={{ $event_id }}">
                             @csrf
                             <input type="hidden" name="match_axis" value="1">
                             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
@@ -1082,7 +1082,7 @@
 
             {{-- ============================ PARAMÈTRES ============================ --}}
             <div @if ($tab !== 'options') style="display:none;" @endif>
-                <form method="POST" action="{{ route('admin.program.config') }}?edition_id={{ $edition_id }}" class="ukc-card" style="max-width:720px;">
+                <form method="POST" action="{{ route('admin.program.config') }}?event_id={{ $event_id }}" class="ukc-card" style="max-width:720px;">
                     @csrf
                     {{-- On renvoie aussi les règles auto pour ne pas les écraser --}}
                     <input type="hidden" name="auto_enabled" value="{{ $config['auto']['enabled'] ? 1 : 0 }}">
@@ -1149,7 +1149,7 @@
         @endif
 
         {{-- ============================ MODALES ============================ --}}
-        @if ($edition)
+        @if ($event)
             @include('admin.program._modals')
         @endif
     </div>

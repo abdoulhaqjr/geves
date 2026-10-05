@@ -13,9 +13,9 @@ it('affiche la page d’accueil publique', function () {
 });
 
 it('affiche la galerie du dernier colloque sur l’accueil', function () {
-    $edition = openEdition();
-    $edition->update(['status' => 'archived', 'date_start' => '2024-03-18', 'date_end' => '2024-03-20']);
-    $edition->media()->create(['type' => 'photo', 'url' => 'https://example.test/g1.jpg', 'title' => 'Ouverture', 'ordre' => 1]);
+    $event = openEdition();
+    $event->update(['status' => 'archived', 'date_start' => '2024-03-18', 'date_end' => '2024-03-20']);
+    $event->media()->create(['type' => 'photo', 'url' => 'https://example.test/g1.jpg', 'title' => 'Ouverture', 'ordre' => 1]);
 
     $this->get(route('home'))
         ->assertOk()
@@ -33,16 +33,16 @@ it('n’affiche pas la galerie sur l’accueil sans média passé', function () 
 });
 
 it('affiche la liste des archives', function () {
-    openEdition(); // édition publiée mais non passée → liste vide, page OK
+    openEdition(); // événement publiée mais non passée → liste vide, page OK
 
     $this->get(route('public.archives'))
         ->assertOk()
-        ->assertSee('Colloques passés');
+        ->assertSee('EventSeries passés');
 });
 
-it('liste une édition passée dans les archives', function () {
-    $edition = openEdition();
-    $edition->update(['status' => 'archived', 'date_start' => '2024-03-18', 'date_end' => '2024-03-20', 'location' => 'Kara']);
+it('liste une événement passée dans les archives', function () {
+    $event = openEdition();
+    $event->update(['status' => 'archived', 'date_start' => '2024-03-18', 'date_end' => '2024-03-20', 'location' => 'Kara']);
 
     $this->get(route('public.archives'))
         ->assertOk()
@@ -50,11 +50,11 @@ it('liste une édition passée dans les archives', function () {
         ->assertSee('Kara');
 });
 
-it('affiche le détail d’une édition avec sa galerie', function () {
-    $edition = openEdition();
-    $edition->media()->create(['type' => 'photo', 'url' => 'https://example.test/p1.jpg', 'title' => 'Plénière', 'ordre' => 1]);
+it('affiche le détail d’une événement avec sa galerie', function () {
+    $event = openEdition();
+    $event->media()->create(['type' => 'photo', 'url' => 'https://example.test/p1.jpg', 'title' => 'Plénière', 'ordre' => 1]);
 
-    $this->get(route('public.archive', $edition->slug))
+    $this->get(route('public.archive', $event->slug))
         ->assertOk()
         ->assertSee('UK 2026')
         ->assertSee('Axes thématiques')      // settings.tracks
@@ -69,15 +69,15 @@ it('affiche l’état vide du déroulement sans colloque en cours', function () 
 });
 
 it('affiche le déroulement d’un colloque en cours', function () {
-    $edition = openEdition();
-    $edition->update([
-        'title' => 'Colloque en direct',
+    $event = openEdition();
+    $event->update([
+        'title' => 'EventSeries en direct',
         'date_start' => now()->subDay(),
         'date_end' => now()->addDay(),
         'location' => 'Kara',
     ]);
-    $atelier = $edition->ateliers()->create(['title' => 'Atelier 1', 'ordre' => 1]);
-    $edition->sessions()->create([
+    $atelier = $event->ateliers()->create(['title' => 'Atelier 1', 'ordre' => 1]);
+    $event->sessions()->create([
         'atelier_id' => $atelier->id, 'type' => 'atelier', 'label' => 'Session en cours',
         'room' => 'Salle A', 'session_day' => now()->toDateString(),
         'starts_at' => now()->subHour(), 'ends_at' => now()->addHour(),
@@ -86,7 +86,7 @@ it('affiche le déroulement d’un colloque en cours', function () {
 
     $this->get(route('public.deroulement'))
         ->assertOk()
-        ->assertSee('Colloque en direct')
+        ->assertSee('EventSeries en direct')
         ->assertSee('En ce moment', false)
         ->assertSee('Session en cours');
 });
@@ -100,8 +100,8 @@ it('affiche la landing de vérification d’attestation', function () {
 /** Une attestation délivrée, pour les redirections de la page de saisie. */
 function attestationDelivree(): Attestation
 {
-    $edition = openEdition();
-    $p = $edition->participants()->create([
+    $event = openEdition();
+    $p = $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author',
     ]);
 
@@ -139,13 +139,13 @@ it('garde la saisie sur le formulaire quand le code est inconnu', function () {
         ->assertSee('11111111-2222-3333-4444-555555555555');
 });
 
-it('renvoie 404 pour une édition inconnue', function () {
+it('renvoie 404 pour une événement inconnue', function () {
     $this->get(route('public.archive', 'edition-inexistante'))->assertNotFound();
 });
 
-it('n’expose pas une édition en brouillon', function () {
-    $edition = openEdition();
-    $edition->update(['status' => 'draft']);
+it('n’expose pas une événement en brouillon', function () {
+    $event = openEdition();
+    $event->update(['status' => 'draft']);
 
-    $this->get(route('public.archive', $edition->slug))->assertNotFound();
+    $this->get(route('public.archive', $event->slug))->assertNotFound();
 });

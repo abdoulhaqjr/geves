@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\Attestation;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Models\User;
@@ -11,12 +11,12 @@ use Illuminate\Support\Str;
 
 function pdfAttestation(): Attestation
 {
-    $edition = Edition::factory()->create();
-    $participant = Participant::factory()->for($edition)->create();
+    $event = Event::factory()->create();
+    $participant = Participant::factory()->for($event)->create();
 
     return Attestation::create([
         'uuid' => (string) Str::uuid(),
-        'edition_id' => $edition->id,
+        'event_id' => $event->id,
         'participant_id' => $participant->id,
         'type' => 'participation',
         'recipient_name' => $participant->full_name,
@@ -38,9 +38,9 @@ it('génère un vrai PDF d’attestation (avec QR)', function () {
 
 it('génère un vrai PDF de reçu côté back-office', function () {
     $staff = adminStaff();
-    $edition = Edition::factory()->create();
-    $participant = Participant::factory()->for($edition)->create();
-    $payment = Payment::factory()->for($edition)->for($participant)->paid()->create();
+    $event = Event::factory()->create();
+    $participant = Participant::factory()->for($event)->create();
+    $payment = Payment::factory()->for($event)->for($participant)->paid()->create();
 
     $response = $this->actingAs($staff, 'web')
         ->get(route('admin.payments.receipt', ['payment' => $payment, 'pdf' => 1]));
@@ -52,9 +52,9 @@ it('génère un vrai PDF de reçu côté back-office', function () {
 
 it('sert le reçu en HTML sans le paramètre pdf', function () {
     $staff = adminStaff();
-    $edition = Edition::factory()->create();
-    $participant = Participant::factory()->for($edition)->create();
-    $payment = Payment::factory()->for($edition)->for($participant)->paid()->create();
+    $event = Event::factory()->create();
+    $participant = Participant::factory()->for($event)->create();
+    $payment = Payment::factory()->for($event)->for($participant)->paid()->create();
 
     $this->actingAs($staff, 'web')
         ->get(route('admin.payments.receipt', $payment))
@@ -64,9 +64,9 @@ it('sert le reçu en HTML sans le paramètre pdf', function () {
 
 it('génère le PDF de reçu du participant propriétaire', function () {
     $account = User::factory()->create();
-    $edition = Edition::factory()->create();
-    $participant = Participant::factory()->for($edition)->create(['user_id' => $account->id]);
-    $payment = Payment::factory()->for($edition)->for($participant)->paid()->create();
+    $event = Event::factory()->create();
+    $participant = Participant::factory()->for($event)->create(['user_id' => $account->id]);
+    $payment = Payment::factory()->for($event)->for($participant)->paid()->create();
 
     $response = $this->actingAs($account, 'account')
         ->get(route('account.receipt', ['payment' => $payment, 'pdf' => 1]));
@@ -77,9 +77,9 @@ it('génère le PDF de reçu du participant propriétaire', function () {
 
 it('refuse le reçu PDF d’un autre participant', function () {
     $account = User::factory()->create();
-    $edition = Edition::factory()->create();
-    $participant = Participant::factory()->for($edition)->create(); // sans account_id
-    $payment = Payment::factory()->for($edition)->for($participant)->paid()->create();
+    $event = Event::factory()->create();
+    $participant = Participant::factory()->for($event)->create(); // sans account_id
+    $payment = Payment::factory()->for($event)->for($participant)->paid()->create();
 
     $this->actingAs($account, 'account')
         ->get(route('account.receipt', ['payment' => $payment, 'pdf' => 1]))

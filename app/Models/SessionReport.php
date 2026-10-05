@@ -13,7 +13,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $validated_at
  * @property int|null $validated_by
  * @property EventSession|null $session
- * @property Edition|null $edition
+ * @property Event|null $event
  */
 class SessionReport extends Model
 {
@@ -41,9 +41,9 @@ class SessionReport extends Model
         return $this->belongsTo(EventSession::class, 'session_id');
     }
 
-    /** @return BelongsTo<Edition, $this> */
-    public function edition(): BelongsTo
+    /** @return BelongsTo<Event, $this> */
+    public function event(): BelongsTo
     {
-        return $this->belongsTo(Edition::class);
+        return $this->belongsTo(Event::class);
     }
 }

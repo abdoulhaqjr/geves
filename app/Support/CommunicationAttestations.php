@@ -3,7 +3,7 @@
 namespace App\Support;
 
 use App\Models\Attestation;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\EventSession;
 use App\Models\Participant;
 use App\Models\SessionAttendance;
@@ -23,11 +23,11 @@ use Illuminate\Support\Collection;
  *    l'ordre chronologique.
  *
  * Les co-auteurs ne sont éligibles que s'ils ont **payé** leurs frais (ils ont donc
- * déjà un Participant sur l'édition). L'auteur correspondant est le participant
+ * déjà un Participant sur l'événement). L'auteur correspondant est le participant
  * déposant, sans condition de paiement supplémentaire ici.
  *
  * ⚠️ **Deux chemins, deux moments.** {@see self::entitlements()} calcule le lot
- * complet d'une édition (émission en masse par le gestionnaire).
+ * complet d'une événement (émission en masse par le gestionnaire).
  * {@see self::forSubmission()} répond pour UNE communication, au moment où le
  * modérateur constate son passage. Les plafonds sont les mêmes, mais le second
  * ne voit pas l'avenir : il compte ce qui est **déjà émis** au lieu de classer
@@ -40,18 +40,18 @@ class CommunicationAttestations
     /**
      * @return Collection<int, array{participant: Participant, submission: Submission, corresponding: bool}>
      */
-    public static function entitlements(Edition $edition, bool $avecPresence = true): Collection
+    public static function entitlements(Event $event, bool $avecPresence = true): Collection
     {
-        $attestationMax = self::attestationMax($edition);
-        $coauthorsMax = self::coauthorsMax($edition);
+        $attestationMax = self::attestationMax($event);
+        $coauthorsMax = self::coauthorsMax($event);
 
-        $accepted = Submission::where('edition_id', $edition->id)
+        $accepted = Submission::where('event_id', $event->id)
             ->where('revision_of', 0)
             ->where('status', 'accepted')
             ->orderBy('id')
             ->get();
 
-        $paidByEmail = self::paidByEmail($edition);
+        $paidByEmail = self::paidByEmail($event);
 
         /** @var Collection<int, array{participant: Participant, submission: Submission, corresponding: bool}> $items */
         $items = collect();
@@ -77,7 +77,7 @@ class CommunicationAttestations
         // d'abord les absents laisse la place à une communication où la personne
         // était là, plutôt que de lui faire consommer son quota sur une séance
         // qu'elle a manquée.
-        if ($avecPresence && AttestationPolicy::requiresPresence($edition)) {
+        if ($avecPresence && AttestationPolicy::requiresPresence($event)) {
             $seances = self::sessionsOf($retenus->pluck('submission.id')->unique()->all());
             $presents = self::presentsOf($seances);
             $retenus = $retenus->filter(fn (array $i) => self::estPresent($i, $seances, $presents));
@@ -104,16 +104,16 @@ class CommunicationAttestations
      */
     public static function forSubmission(Submission $submission, ?EventSession $session = null): Collection
     {
-        $edition = $submission->edition;
+        $event = $submission->event;
 
-        if (! $edition) {
+        if (! $event) {
             return collect();
         }
 
-        $attestationMax = self::attestationMax($edition);
-        $retenus = collect(self::authorsOf($submission, self::paidByEmail($edition), self::coauthorsMax($edition)));
+        $attestationMax = self::attestationMax($event);
+        $retenus = collect(self::authorsOf($submission, self::paidByEmail($event), self::coauthorsMax($event)));
 
-        if (AttestationPolicy::requiresPresence($edition) && $session) {
+        if (AttestationPolicy::requiresPresence($event) && $session) {
             $presents = SessionAttendance::where('session_id', $session->id)
                 ->where('status', 'present')
                 ->pluck('participant_id')
@@ -125,7 +125,7 @@ class CommunicationAttestations
         // Déjà émises pour ces personnes, cette communication exclue : c'est elle
         // qu'on est en train d'ouvrir, et IssueAttestation est de toute façon
         // idempotent sur le couple (personne, communication).
-        $deja = Attestation::where('edition_id', $edition->id)
+        $deja = Attestation::where('event_id', $event->id)
             ->where('type', 'communication')
             ->whereIn('participant_id', $retenus->pluck('participant.id')->all())
             ->where(fn ($q) => $q->whereNull('submission_id')->orWhere('submission_id', '!=', $submission->id))
@@ -138,10 +138,10 @@ class CommunicationAttestations
             ->values();
     }
 
-    /** Nombre d'attestations de communication à émettre pour l'édition (aperçu). */
-    public static function count(Edition $edition): int
+    /** Nombre d'attestations de communication à émettre pour l'événement (aperçu). */
+    public static function count(Event $event): int
     {
-        return self::entitlements($edition)->count();
+        return self::entitlements($event)->count();
     }
 
     /**
@@ -154,21 +154,21 @@ class CommunicationAttestations
      *
      * @return array{retenus: int, ecartes: int}
      */
-    public static function preview(Edition $edition): array
+    public static function preview(Event $event): array
     {
-        $retenus = self::entitlements($edition)->count();
+        $retenus = self::entitlements($event)->count();
 
-        if (! AttestationPolicy::requiresPresence($edition)) {
+        if (! AttestationPolicy::requiresPresence($event)) {
             return ['retenus' => $retenus, 'ecartes' => 0];
         }
 
         // ⚠️ Le plafond par personne s'applique APRÈS le filtre de présence : le
         // total sans filtre n'est donc pas « retenus + absents » mais bien ce
-        // que l'édition émettrait si elle n'exigeait pas la présence. C'est cette
+        // que l'événement émettrait si elle n'exigeait pas la présence. C'est cette
         // différence-là qui intéresse le gestionnaire.
         return [
             'retenus' => $retenus,
-            'ecartes' => max(0, self::entitlements($edition, avecPresence: false)->count() - $retenus),
+            'ecartes' => max(0, self::entitlements($event, avecPresence: false)->count() - $retenus),
         ];
     }
 
@@ -213,10 +213,10 @@ class CommunicationAttestations
         return $out;
     }
 
-    /** Participants payés de l'édition, indexés par e-mail (pour matcher les co-auteurs). */
-    private static function paidByEmail(Edition $edition): Collection
+    /** Participants payés de l'événement, indexés par e-mail (pour matcher les co-auteurs). */
+    private static function paidByEmail(Event $event): Collection
     {
-        return Participant::where('edition_id', $edition->id)
+        return Participant::where('event_id', $event->id)
             ->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid'))
             ->get()
             ->keyBy(fn (Participant $p) => mb_strtolower(trim((string) $p->email)));
@@ -291,13 +291,13 @@ class CommunicationAttestations
         return in_array((int) $item['participant']->id, $presents[$sessionId] ?? [], true);
     }
 
-    private static function attestationMax(Edition $edition): int
+    private static function attestationMax(Event $event): int
     {
-        return (int) ($edition->settings['attestation_max'] ?? 5);
+        return (int) ($event->settings['attestation_max'] ?? 5);
     }
 
-    private static function coauthorsMax(Edition $edition): int
+    private static function coauthorsMax(Event $event): int
     {
-        return (int) ($edition->settings['coauthors_max'] ?? 8);
+        return (int) ($event->settings['coauthors_max'] ?? 8);
     }
 }

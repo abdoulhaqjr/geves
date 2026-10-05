@@ -6,7 +6,7 @@ use App\Actions\AskGesco;
 use App\Http\Controllers\Controller;
 use App\Models\Attestation;
 use App\Models\Claim;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Models\Submission;
@@ -98,16 +98,16 @@ class GescoController extends Controller
         $account = Auth::guard('account')->user();
         $personal = $account ? $this->personalContext($account) : null;
         $contact = $account ? ['name' => $account->full_name, 'email' => $account->email] : null;
-        $edition = $this->activeEdition();
+        $event = $this->activeEdition();
 
         $claimRef = null;
         try {
-            $result = $ask->handle($history, trim($data['question']), $edition, $personal, $contact);
+            $result = $ask->handle($history, trim($data['question']), $event, $personal, $contact);
             $answer = $result['answer'];
 
             // Gesco n'a pas pu résoudre → enregistrement d'une réclamation/incident.
             if ($result['claim'] !== null) {
-                $recorded = $this->recordClaim($result['claim'], $account, $edition, $data['conversation_id'] ?? null);
+                $recorded = $this->recordClaim($result['claim'], $account, $event, $data['conversation_id'] ?? null);
                 if ($recorded !== null) {
                     $claimRef = $recorded['reference'];
                     $answer .= $recorded['updated']
@@ -137,7 +137,7 @@ class GescoController extends Controller
      * @param  array<string, mixed>  $claim
      * @return array{reference: string, updated: bool}|null
      */
-    private function recordClaim(array $claim, ?User $account, ?Edition $edition, ?string $conversationId = null): ?array
+    private function recordClaim(array $claim, ?User $account, ?Event $event, ?string $conversationId = null): ?array
     {
         $email = $account?->email ?: (filled($claim['contactEmail'] ?? null) ? (string) $claim['contactEmail'] : null);
         if ($email === null) {
@@ -147,7 +147,7 @@ class GescoController extends Controller
         $conversationId = filled($conversationId) ? (string) $conversationId : null;
 
         $attributes = [
-            'edition_id' => $edition?->id,
+            'event_id' => $event?->id,
             'user_id' => $account?->id,
             'name' => $account?->full_name ?: ((string) ($claim['contactName'] ?? '') ?: null),
             'email' => $email,
@@ -211,10 +211,10 @@ class GescoController extends Controller
         }
 
         $subs = Submission::whereIn('participant_id', $participantIds)
-            ->where('revision_of', 0)->with('edition')->latest('id')->get();
+            ->where('revision_of', 0)->with('event')->latest('id')->get();
 
         $subLines = $subs->map(fn (Submission $s) => '- « '.Str::limit((string) $s->title, 70).' » ('
-            .($s->edition?->title ?: $s->edition?->year).') - statut : '.$s->statusLabel()
+            .($s->event?->title ?: $s->event?->year).') - statut : '.$s->statusLabel()
             .($s->track ? ' · axe '.$s->track : '').($s->ref_code ? ' · réf '.$s->ref_code : ''))->implode("\n");
 
         $accepted = $subs->where('status', 'accepted')->count();
@@ -239,8 +239,8 @@ class GescoController extends Controller
         ]));
     }
 
-    private function activeEdition(): ?Edition
+    private function activeEdition(): ?Event
     {
-        return Edition::with('colloque')->where('status', 'open')->latest('id')->first();
+        return Event::with('series')->where('status', 'open')->latest('id')->first();
     }
 }

@@ -1,11 +1,11 @@
-<x-layouts.app :title="$edition->tr('title')">
+<x-layouts.app :title="$event->tr('title')">
     <style>
         html { scroll-behavior: smooth; }
         section[id] { scroll-margin-top: 84px; }
         nav [data-spy].spy-active { background: var(--ukc-blue); color: #fff; }
     </style>
     @php
-        $e = $edition;
+        $e = $event;
         $dateLabel = $e->dateRangeLabel();
         // Le programme synthétique (onglet Programme du module) a-t-il du contenu ?
         $synHasContent = collect($programSynthesis['days'] ?? [])->contains(
@@ -114,7 +114,7 @@
             <div class="ukc-nav-bar-inner" x-data="ukcScrollspy()">
                 @php
                     $cfShort = $e->settings['short_name'] ?? null;
-                    $cfShort = $cfShort ?: ($e->tr('edition_label') ?: \Illuminate\Support\Str::limit($e->colloque?->name ?? 'Colloque', 22));
+                    $cfShort = $cfShort ?: ($e->tr('event_label') ?: \Illuminate\Support\Str::limit($e->series?->name ?? 'Colloque', 22));
                 @endphp
                 <a href="#top" class="ukc-nav-brand">
                     <span class="dot" aria-hidden="true"></span>
@@ -219,7 +219,7 @@
                     <div class="ukc-block-head">
                         <h2>{{ __('Dates clés') }}</h2>
                         <div class="ukc-accent"><i></i><i></i><i></i></div>
-                        <p>{{ __('Retenez les échéances importantes de cette édition.') }}</p>
+                        <p>{{ __('Retenez les échéances importantes de cette événement.') }}</p>
                     </div>
                     <div class="ukc-dates-grid">
                         @foreach ($keyDates as $d)
@@ -373,7 +373,7 @@
                  la grille montre déjà. Ne pas le réintroduire.
                  ⚠️ Rien de personnalisé ici (pas de « votre tarif » pour qui est
                  connecté) : la page reste la même pour tout le monde, donc
-                 cacheable en HTTP - cf. ColloqueController. --}}
+                 cacheable en HTTP - cf. EventSeriesController. --}}
             @if (count($fees))
                 {{-- ⚠️ Forme BLOC et non `@php(…)` inline : ce fichier contient plus bas
                      des blocs `@php … @endphp`, et Blade extrait les blocs de code AVANT
@@ -429,7 +429,7 @@
                         </a>
                         <p class="coauthor">
                             {{ __('Co-auteur d’une communication acceptée ?') }}
-                            <a href="{{ route('public.coauthor', $edition->slug) }}">{{ __('Réglez vos frais ici') }}</a>.
+                            <a href="{{ route('public.coauthor', $event->slug) }}">{{ __('Réglez vos frais ici') }}</a>.
                         </p>
                     </div>
                 </section>
@@ -577,7 +577,7 @@
                     <div class="ukc-block-head" style="margin-bottom:0;">
                         <h2>{{ __('Partenaires & Sponsors') }}</h2>
                         <div class="ukc-accent"><i></i><i></i><i></i></div>
-                        <p>{{ __('Ils soutiennent cette édition.') }}</p>
+                        <p>{{ __('Ils soutiennent cette événement.') }}</p>
                     </div>
                     <div class="ukc-marquee">
                         <div class="ukc-marquee-track">
@@ -614,11 +614,11 @@
                 </section>
             @endif
 
-            {{-- Éditions précédentes (fidèle au mockup : past-cards) --}}
+            {{-- Événements précédentes (fidèle au mockup : past-cards) --}}
             @if ($siblings->count())
-                <section id="editions" style="scroll-margin-top:72px;">
+                <section id="events" style="scroll-margin-top:72px;">
                     <div class="ukc-block-head">
-                        <h2>{{ __('Éditions précédentes') }}</h2>
+                        <h2>{{ __('Événements précédentes') }}</h2>
                         <div class="ukc-accent"><i></i><i></i><i></i></div>
                     </div>
                     <div class="ukc-editions">
@@ -627,9 +627,9 @@
                                 <div class="ukc-past-thumb" @if ($sib->banner_url) style="background-image:url('{{ $sib->banner_url }}')" @endif></div>
                                 <div class="ukc-past-body">
                                     <span class="ukc-past-year">{{ $sib->year ?: $sib->date_start?->format('Y') }}</span>
-                                    <h3>{{ \Illuminate\Support\Str::limit($sib->title ?: $sib->colloque?->name, 70) }}</h3>
+                                    <h3>{{ \Illuminate\Support\Str::limit($sib->title ?: $sib->series?->name, 70) }}</h3>
                                     @if ($sib->location)<p>{{ $sib->location }}</p>@endif
-                                    <span class="ukc-link">{{ __('Voir l’édition →') }}</span>
+                                    <span class="ukc-link">{{ __('Voir l’événement →') }}</span>
                                 </div>
                             </a>
                         @endforeach

@@ -1,16 +1,16 @@
-<x-layouts.admin title="Mise en page des documents de séance" :subtitle="$edition->title ?: (string) $edition->year">
+<x-layouts.admin title="Mise en page des documents de séance" :subtitle="$event->title ?: (string) $event->year">
     <x-slot:actions>
-        <a href="{{ route('admin.documents.sessions', $edition) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="file" :size="15" /> Aperçu fiches</a>
-        <a href="{{ route('admin.documents.session-pv', $edition) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="sheet" :size="15" /> Aperçu PV</a>
-        <a href="{{ route('admin.program.sessions') }}?edition_id={{ $edition->id }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="list" :size="15" /> Programme</a>
+        <a href="{{ route('admin.documents.sessions', $event) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="file" :size="15" /> Aperçu fiches</a>
+        <a href="{{ route('admin.documents.session-pv', $event) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="sheet" :size="15" /> Aperçu PV</a>
+        <a href="{{ route('admin.program.sessions') }}?event_id={{ $event->id }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="list" :size="15" /> Programme</a>
     </x-slot:actions>
 
     <div class="admin-page">
         <p style="color:var(--ukc-muted);font-size:13.5px;margin:0 0 16px;">
-            Choisissez les entêtes et les colonnes des <strong>fiches de session</strong> et des <strong>procès-verbaux</strong>, et renommez-les au besoin. Ces réglages s'appliquent à cette édition.
+            Choisissez les entêtes et les colonnes des <strong>fiches de session</strong> et des <strong>procès-verbaux</strong>, et renommez-les au besoin. Ces réglages s'appliquent à cette événement.
         </p>
 
-        <form method="POST" action="{{ route('admin.documents.session-layout.save', $edition) }}">
+        <form method="POST" action="{{ route('admin.documents.session-layout.save', $event) }}">
             @csrf
             @method('PUT')
 

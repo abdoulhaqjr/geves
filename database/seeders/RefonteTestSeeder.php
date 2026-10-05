@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -21,8 +21,8 @@ class RefonteTestSeeder extends Seeder
 {
     public function run(): void
     {
-        $edition = Edition::query()->where('status', 'open')->latest('id')->first()
-            ?? Edition::query()->latest('id')->first();
+        $event = Event::query()->where('status', 'open')->latest('id')->first()
+            ?? Event::query()->latest('id')->first();
 
         // 1) Super administrateur - toute la plateforme.
         User::updateOrCreate(
@@ -34,7 +34,7 @@ class RefonteTestSeeder extends Seeder
             ]
         );
 
-        // 2) Administrateur de colloque - peut créer un colloque (aucune édition
+        // 2) Administrateur de colloque - peut créer un colloque (aucune événement
         //    au départ, pour tester la création + la gérance automatique).
         User::updateOrCreate(
             ['email' => 'gerant@uk.tg'],
@@ -56,20 +56,20 @@ class RefonteTestSeeder extends Seeder
             ]
         );
 
-        if ($edition) {
+        if ($event) {
             Participant::updateOrCreate(
-                ['edition_id' => $edition->id, 'user_id' => $membre->id],
+                ['event_id' => $event->id, 'user_id' => $membre->id],
                 ['first_name' => 'Mia', 'last_name' => 'Membre', 'email' => 'membre@uk.tg', 'role' => 'author']
             );
 
-            $hasReception = DB::table('edition_user')
-                ->where('edition_id', $edition->id)->where('user_id', $membre->id)->where('role', 'reception')->exists();
+            $hasReception = DB::table('event_user')
+                ->where('event_id', $event->id)->where('user_id', $membre->id)->where('role', 'reception')->exists();
             if (! $hasReception) {
-                $edition->team()->attach($membre->id, ['role' => 'reception']);
+                $event->team()->attach($membre->id, ['role' => 'reception']);
             }
         }
 
         $this->command?->info('Comptes de test : super@uk.tg · gerant@uk.tg · membre@uk.tg (mot de passe : password)'
-            .($edition ? '' : ' - aucune édition trouvée, participant non rattaché.'));
+            .($event ? '' : ' - aucune événement trouvée, participant non rattaché.'));
     }
 }

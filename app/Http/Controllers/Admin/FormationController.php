@@ -9,8 +9,8 @@ use App\AI\AiManager;
 use App\Http\Controllers\Admin\Concerns\ScopesEditionAccess;
 use App\Http\Controllers\Controller;
 use App\Mail\CampaignMail;
-use App\Models\Edition;
 use App\Models\Email;
+use App\Models\Event;
 use App\Models\Formation;
 use App\Models\FormationTrainer;
 use App\Models\Participant;
@@ -25,7 +25,7 @@ use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 /**
- * Module Formations d'une édition (capacité `formation`). Activable par édition
+ * Module Formations d'une événement (capacité `formation`). Activable par événement
  * (`settings['formation']['enabled']`) ; plusieurs formations possibles, avec
  * formateurs, frais (0 = gratuite), lieu/salle, dates. Paiements, inscriptions,
  * page publique, e-mails, attestations et visio arrivent aux phases suivantes.
@@ -36,18 +36,18 @@ class FormationController extends Controller
 
     public function index(Request $request): View
     {
-        $edition = $this->currentEdition($request);
+        $event = $this->currentEdition($request);
 
         return view('admin.formations.index', [
-            'editions' => $this->accessibleEditions($request, 'formation'),
-            'edition' => $edition,
-            'edition_id' => $edition ? (string) $edition->id : '',
-            'moduleEnabled' => $edition ? $edition->formationEnabled() : false,
+            'events' => $this->accessibleEditions($request, 'formation'),
+            'event' => $event,
+            'event_id' => $event ? (string) $event->id : '',
+            'moduleEnabled' => $event ? $event->formationEnabled() : false,
             'aiAvailable' => app(AiManager::class)->resolve() !== null,
             // Liste compacte : identité, dates, lieu et état seulement. Le détail
             // (tarif, formateurs, inscrits, visio) est sur la page de la formation.
-            'formations' => $edition
-                ? Formation::where('edition_id', $edition->id)
+            'formations' => $event
+                ? Formation::where('event_id', $event->id)
                     ->orderByRaw('starts_at is null, starts_at')->orderBy('id')->get()
                 : collect(),
         ]);
@@ -55,21 +55,21 @@ class FormationController extends Controller
 
     /**
      * Page d'une formation : tout ce qui ne tient pas dans une ligne de liste
-     * (formateurs, inscrits nominatifs, visio, attestations, édition).
+     * (formateurs, inscrits nominatifs, visio, attestations, événement).
      */
     public function show(Formation $formation): View
     {
         $formation->load([
             'trainers.user',
             'enrollments' => fn ($q) => $q->with(['user', 'payment'])->latest('id'),
-            'edition',
+            'event',
         ]);
 
         $paid = $formation->enrollments->where('status', 'paid');
 
         return view('admin.formations.show', [
             'f' => $formation,
-            'edition' => $formation->edition,
+            'event' => $formation->event,
             'stats' => [
                 'enrolled' => $formation->enrollments->count(),
                 'paid' => $paid->count(),
@@ -79,10 +79,10 @@ class FormationController extends Controller
         ]);
     }
 
-    public function store(Request $request, Edition $edition): RedirectResponse
+    public function store(Request $request, Event $event): RedirectResponse
     {
         $data = $this->validated($request);
-        $data['edition_id'] = $edition->id;
+        $data['event_id'] = $event->id;
         $formation = Formation::create($data);
         $this->handleFlyer($request, $formation);
 
@@ -120,11 +120,11 @@ class FormationController extends Controller
 
     public function destroy(Formation $formation): RedirectResponse
     {
-        $editionId = $formation->edition_id;
+        $editionId = $formation->event_id;
         $formation->delete();
 
         // `back()` renverrait sur la page de la formation supprimée.
-        return redirect()->route('admin.formations', ['edition_id' => $editionId])
+        return redirect()->route('admin.formations', ['event_id' => $editionId])
             ->with('ukc_status', 'Formation supprimée.');
     }
 
@@ -240,7 +240,7 @@ class FormationController extends Controller
      */
     public function issueAttestations(Formation $formation, IssueAttestation $issue, UpsertParticipantForAccount $upsert): RedirectResponse
     {
-        $edition = $formation->edition;
+        $event = $formation->event;
         $count = 0;
 
         foreach ($formation->enrollments()->with('participant')->get() as $enrollment) {
@@ -254,7 +254,7 @@ class FormationController extends Controller
         }
 
         foreach ($formation->trainers as $trainer) {
-            $participant = $this->participantForTrainer($edition, $trainer, $upsert);
+            $participant = $this->participantForTrainer($event, $trainer, $upsert);
             $issue->handle($participant, 'formation_animation', null, $formation);
             $count++;
         }
@@ -263,15 +263,15 @@ class FormationController extends Controller
     }
 
     /** Participant support d'un formateur (compte lié si possible, sinon par e-mail/nom). */
-    private function participantForTrainer(Edition $edition, FormationTrainer $trainer, UpsertParticipantForAccount $upsert): Participant
+    private function participantForTrainer(Event $event, FormationTrainer $trainer, UpsertParticipantForAccount $upsert): Participant
     {
         if ($trainer->user_id && ($user = User::find($trainer->user_id))) {
-            return $upsert->handle($edition, $user, role: 'trainer');
+            return $upsert->handle($event, $user, role: 'trainer');
         }
 
         $key = filled($trainer->email)
-            ? ['edition_id' => $edition->id, 'email' => $trainer->email]
-            : ['edition_id' => $edition->id, 'first_name' => $trainer->name, 'last_name' => ''];
+            ? ['event_id' => $event->id, 'email' => $trainer->email]
+            : ['event_id' => $event->id, 'first_name' => $trainer->name, 'last_name' => ''];
 
         return Participant::firstOrCreate($key, [
             'first_name' => $trainer->name,
@@ -304,7 +304,7 @@ class FormationController extends Controller
                 continue;
             }
             Email::create([
-                'edition_id' => $formation->edition_id,
+                'event_id' => $formation->event_id,
                 'participant_id' => $enrollment->participant_id,
                 'template' => 'formation',
                 'audience' => $audience,
@@ -484,15 +484,15 @@ class FormationController extends Controller
         ]);
     }
 
-    private function currentEdition(Request $request): ?Edition
+    private function currentEdition(Request $request): ?Event
     {
-        $editions = $this->accessibleEditions($request, 'formation');
-        $id = (string) $request->query('edition_id', '');
+        $events = $this->accessibleEditions($request, 'formation');
+        $id = (string) $request->query('event_id', '');
 
         if ($id === '') {
-            return $editions->firstWhere('status', 'open') ?? $editions->first();
+            return $events->firstWhere('status', 'open') ?? $events->first();
         }
 
-        return $editions->firstWhere('id', (int) $id);
+        return $events->firstWhere('id', (int) $id);
     }
 }

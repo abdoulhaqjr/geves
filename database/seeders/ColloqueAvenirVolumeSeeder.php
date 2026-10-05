@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Atelier;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\EventSession;
 use App\Models\Participant;
 use App\Models\Payment;
@@ -22,7 +22,7 @@ use Illuminate\Support\Str;
 
 /**
  * Scénario « à l'échelle » du dernier colloque des seeders : le VIIIe colloque
- * conjoint Parakou-Kara (cf. {@see ColloqueAvenirSeeder}, qui crée l'édition,
+ * conjoint Parakou-Kara (cf. {@see ColloqueAvenirSeeder}, qui crée l'événement,
  * ses 6 ateliers et le direct).
  *
  * Ce seeder lui donne le VOLUME d'un vrai colloque : 200 communications, un
@@ -70,29 +70,29 @@ class ColloqueAvenirVolumeSeeder extends Seeder
 
     public function run(): void
     {
-        $edition = Edition::where('slug', 'avenir-durable-2025')->first()
-            ?? Edition::whereHas('colloque', fn ($q) => $q->where('slug', 'parakou-kara'))->latest('id')->first();
+        $event = Event::where('slug', 'avenir-durable-2025')->first()
+            ?? Event::whereHas('series', fn ($q) => $q->where('slug', 'parakou-kara'))->latest('id')->first();
 
-        if (! $edition) {
-            $this->command?->error('Édition introuvable : lancez d’abord ColloqueAvenirSeeder.');
+        if (! $event) {
+            $this->command?->error('Événement introuvable : lancez d’abord ColloqueAvenirSeeder.');
 
             return;
         }
 
-        $ateliers = $edition->ateliers()->orderBy('ordre')->get();
+        $ateliers = $event->ateliers()->orderBy('ordre')->get();
         if ($ateliers->isEmpty()) {
-            $this->command?->error('Aucun atelier sur l’édition : lancez d’abord ColloqueAvenirSeeder.');
+            $this->command?->error('Aucun atelier sur l’événement : lancez d’abord ColloqueAvenirSeeder.');
 
             return;
         }
 
-        $tracks = collect($edition->settings['tracks'] ?? [])->values();
+        $tracks = collect($event->settings['tracks'] ?? [])->values();
         $grades = ParticipantTypes::all();
         $recorder = User::where('email', 'admin@univkara.tg')->first();
 
         // Séances d'accueil des communications : une par atelier et par jour, afin
         // d'avoir assez de créneaux pour placer les communications acceptées.
-        $sessions = $this->buildSessions($edition, $ateliers);
+        $sessions = $this->buildSessions($event, $ateliers);
 
         // Tirage reproductible : relancer le seeder donne exactement le même jeu.
         mt_srand(20260928);
@@ -104,7 +104,7 @@ class ColloqueAvenirVolumeSeeder extends Seeder
         $created = 0;
 
         DB::transaction(function () use (
-            $edition, $tracks, $grades, $recorder, $sessions,
+            $event, $tracks, $grades, $recorder, $sessions,
             $statuses, $paidFlags, &$slotCursor, &$created
         ) {
             for ($i = 0; $i < self::TOTAL; $i++) {
@@ -136,7 +136,7 @@ class ColloqueAvenirVolumeSeeder extends Seeder
                 );
 
                 $participant = Participant::updateOrCreate(
-                    ['edition_id' => $edition->id, 'user_id' => $user->id],
+                    ['event_id' => $event->id, 'user_id' => $user->id],
                     [
                         'first_name' => $first,
                         'last_name' => $last,
@@ -149,7 +149,7 @@ class ColloqueAvenirVolumeSeeder extends Seeder
                 );
 
                 $submission = Submission::updateOrCreate(
-                    ['edition_id' => $edition->id, 'ref_code' => sprintf('AVD-%03d', $n)],
+                    ['event_id' => $event->id, 'ref_code' => sprintf('AVD-%03d', $n)],
                     [
                         'participant_id' => $participant->id,
                         'access_token' => Str::random(40),
@@ -167,34 +167,34 @@ class ColloqueAvenirVolumeSeeder extends Seeder
                 $created++;
 
                 if ($isPaid) {
-                    $this->payManually($edition, $participant, $recorder, $n);
+                    $this->payManually($event, $participant, $recorder, $n);
                 }
 
                 // Communication acceptée : on lui réserve un créneau.
                 if ($status === 'accepted') {
-                    $this->schedule($edition, $sessions, $participant, $submission, $slotCursor);
+                    $this->schedule($event, $sessions, $participant, $submission, $slotCursor);
                 }
 
                 // Communications en cours d'évaluation : relectures confiées.
                 if (in_array($status, ['under_review', 'revision'], true)) {
-                    $this->review($edition, $submission, $i);
+                    $this->review($event, $submission, $i);
                 }
             }
         });
 
-        // ⚠️ On compte les paiements DU SCÉNARIO : l'édition en portait déjà
+        // ⚠️ On compte les paiements DU SCÉNARIO : l'événement en portait déjà
         // quelques-uns (cf. ColloqueAvenirSeeder), et les additionner donnerait
         // un taux faussé.
-        $participantIds = Submission::where('edition_id', $edition->id)
+        $participantIds = Submission::where('event_id', $event->id)
             ->where('ref_code', 'like', 'AVD-%')->pluck('participant_id');
-        $paid = Payment::where('edition_id', $edition->id)
+        $paid = Payment::where('event_id', $event->id)
             ->whereIn('participant_id', $participantIds)
             ->where('gateway', 'manual')->where('status', 'paid')->count();
 
         $this->command?->info(sprintf(
             '%d communications sur « %s » · %d paiements validés manuellement (%.1f %%).',
             $created,
-            $edition->title,
+            $event->title,
             $paid,
             $created > 0 ? $paid / $created * 100 : 0,
         ));
@@ -241,20 +241,20 @@ class ColloqueAvenirVolumeSeeder extends Seeder
      * reçu numéroté et agent enregistreur - la forme exacte que produit
      * l'encaissement manuel du back-office.
      */
-    private function payManually(Edition $edition, Participant $participant, ?User $recorder, int $n): void
+    private function payManually(Event $event, Participant $participant, ?User $recorder, int $n): void
     {
         $methods = array_keys(Payment::MANUAL_METHODS);
 
         Payment::updateOrCreate(
-            ['edition_id' => $edition->id, 'participant_id' => $participant->id],
+            ['event_id' => $event->id, 'participant_id' => $participant->id],
             [
-                'amount' => Fees::resolveAmount($edition, $participant->title) ?? 0,
+                'amount' => Fees::resolveAmount($event, $participant->title) ?? 0,
                 'currency' => 'XOF',
                 'method' => $methods[$n % count($methods)],
                 'gateway' => 'manual',
                 'status' => 'paid',
                 'paid_at' => Carbon::now()->subDays(60 - ($n % 55)),
-                'receipt_no' => sprintf('REC-%s-%04d', $edition->year ?: date('Y'), $n),
+                'receipt_no' => sprintf('REC-%s-%04d', $event->year ?: date('Y'), $n),
                 'recorded_by' => $recorder?->id ?? 0,
                 'meta' => [
                     'note' => 'Encaissement au secrétariat (scénario de démonstration).',
@@ -280,13 +280,13 @@ class ColloqueAvenirVolumeSeeder extends Seeder
      * @param  Collection<int, Atelier>  $ateliers
      * @return Collection<int, EventSession>
      */
-    private function buildSessions(Edition $edition, $ateliers)
+    private function buildSessions(Event $event, $ateliers)
     {
-        $start = $edition->date_start ? Carbon::parse($edition->date_start) : Carbon::now()->startOfDay();
+        $start = $event->date_start ? Carbon::parse($event->date_start) : Carbon::now()->startOfDay();
         $sessions = collect();
 
         // [décalage en jours, h début, min début, h fin, min fin, visio]
-        // ⚠️ Un bloc par jour au moins : l'édition court du 2 au 8 octobre, et un
+        // ⚠️ Un bloc par jour au moins : l'événement court du 2 au 8 octobre, et un
         // jour sans rien au milieu du programme se lit comme un trou de données.
         // Le dernier jour (J+6) n'en porte pas : c'est la matinée de clôture.
         $blocks = [
@@ -306,7 +306,7 @@ class ColloqueAvenirVolumeSeeder extends Seeder
 
                 $sessions->push(EventSession::updateOrCreate(
                     [
-                        'edition_id' => $edition->id,
+                        'event_id' => $event->id,
                         'atelier_id' => $atelier->id,
                         'label' => sprintf('%s - séance %d', Str::before($atelier->title, ' -'), $b + 1),
                     ],
@@ -339,7 +339,7 @@ class ColloqueAvenirVolumeSeeder extends Seeder
      * @param  Collection<int, EventSession>  $sessions
      * @param  array<int, int>  $cursor
      */
-    private function schedule(Edition $edition, $sessions, Participant $participant, Submission $submission, array &$cursor): void
+    private function schedule(Event $event, $sessions, Participant $participant, Submission $submission, array &$cursor): void
     {
         if ($sessions->isEmpty()) {
             return;
@@ -354,7 +354,7 @@ class ColloqueAvenirVolumeSeeder extends Seeder
         Slot::updateOrCreate(
             ['session_id' => $session->id, 'submission_id' => $submission->id],
             [
-                'edition_id' => $edition->id,
+                'event_id' => $event->id,
                 'session_label' => $session->label,
                 'room' => $session->room,
                 'starts_at' => $starts,
@@ -369,9 +369,9 @@ class ColloqueAvenirVolumeSeeder extends Seeder
      * états variés (invitée / acceptée / rendue, dont quelques retards) pour
      * éprouver le cycle de vie côté comité comme côté relecteur.
      */
-    private function review(Edition $edition, Submission $submission, int $i): void
+    private function review(Event $event, Submission $submission, int $i): void
     {
-        $reviewers = Participant::where('edition_id', $edition->id)->where('role', 'reviewer')->orderBy('id')->get();
+        $reviewers = Participant::where('event_id', $event->id)->where('role', 'reviewer')->orderBy('id')->get();
         if ($reviewers->isEmpty()) {
             return;
         }

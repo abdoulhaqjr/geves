@@ -2,7 +2,7 @@
 
 namespace App\Observers;
 
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Submission;
 use Illuminate\Support\Str;
 
@@ -27,11 +27,11 @@ class SubmissionObserver
     /** Référence lisible `AA-NNN` (préfixe = 2 derniers chiffres de l'année). */
     protected function generateRefCode(Submission $submission): string
     {
-        $year = Edition::whereKey($submission->edition_id)->value('year');
+        $year = Event::whereKey($submission->event_id)->value('year');
         $prefix = $year ? substr((string) $year, -2) : 'XX';
 
         do {
-            $seq = Submission::where('edition_id', $submission->edition_id)->count() + 1;
+            $seq = Submission::where('event_id', $submission->event_id)->count() + 1;
             $code = sprintf('%s-%03d', $prefix, $seq);
             $exists = Submission::where('ref_code', $code)->exists();
             if ($exists) {

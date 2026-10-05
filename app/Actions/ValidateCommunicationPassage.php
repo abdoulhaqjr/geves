@@ -35,8 +35,8 @@ class ValidateCommunicationPassage
     public function handle(Slot $slot, ?User $par): array
     {
         $submission = $slot->submission;
-        $edition = $slot->edition ?? $submission?->edition;
-        $online = AttestationPolicy::issuesOnPassage($edition);
+        $event = $slot->event ?? $submission?->event;
+        $online = AttestationPolicy::issuesOnPassage($event);
 
         if ($slot->wasPresented()) {
             return ['already' => true, 'issued' => 0, 'online' => $online];

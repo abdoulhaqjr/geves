@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Actions\QueueEmailCampaign;
 use App\Actions\SendDueEmails;
 use App\Http\Controllers\Controller;
-use App\Models\Edition;
 use App\Models\Email;
+use App\Models\Event;
 use App\Support\EmailAudience;
 use App\Support\EmailTemplates;
 use App\Support\ListSort;
@@ -18,8 +18,8 @@ use Illuminate\View\View;
 
 /**
  * Campagnes d'e-mails ciblées (audiences) et rappels programmés, contrôleur +
- * Blade. Compose un message pour une audience d'une édition, l'envoie tout de
- * suite ou à une date planifiée, et affiche le journal des e-mails. L'édition
+ * Blade. Compose un message pour une audience d'une événement, l'envoie tout de
+ * suite ou à une date planifiée, et affiche le journal des e-mails. L'événement
  * et le statut filtrent journal/KPIs via query string ; le nombre de
  * destinataires par audience est pré-calculé et affiché côté client (Alpine).
  */
@@ -29,25 +29,25 @@ class EmailController extends Controller
 
     public function index(Request $request): View
     {
-        $editions = $this->accessibleEditions($request, 'emails');
-        $editionId = (string) $request->query('edition_id', '');
+        $events = $this->accessibleEditions($request, 'emails');
+        $editionId = (string) $request->query('event_id', '');
         if ($editionId === '') {
-            $editionId = (string) ($editions->firstWhere('status', 'open')?->id ?? $editions->first()?->id ?? '');
+            $editionId = (string) ($events->firstWhere('status', 'open')?->id ?? $events->first()?->id ?? '');
         }
         $status = (string) $request->query('status', '');
 
-        $edition = $editionId !== '' ? Edition::find($editionId) : null;
+        $event = $editionId !== '' ? Event::find($editionId) : null;
 
-        // Nombre de destinataires par audience pour l'édition sélectionnée.
+        // Nombre de destinataires par audience pour l'événement sélectionnée.
         $recipientCounts = [];
         foreach (array_keys(EmailAudience::AUDIENCES) as $key) {
-            $recipientCounts[$key] = $edition ? EmailAudience::count($edition, $key) : 0;
+            $recipientCounts[$key] = $event ? EmailAudience::count($event, $key) : 0;
         }
 
         // Journal détaillé (par destinataire) - conservé pour le filtrage/log.
         $journal = Email::query()
             ->with('participant')
-            ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId))
+            ->when($editionId !== '', fn ($q) => $q->where('event_id', $editionId))
             ->when($status !== '', fn ($q) => $q->where('status', $status))
             ->latest('id')
             ->paginate(15)
@@ -56,7 +56,7 @@ class EmailController extends Controller
         // Campagnes agrégées (fidèle au mockup « E-mails · Programmés ») : on
         // regroupe les e-mails par lot d'envoi (batch_id) ou par déclencheur auto.
         $campaigns = Email::query()
-            ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId))
+            ->when($editionId !== '', fn ($q) => $q->where('event_id', $editionId))
             ->when($status !== '', fn ($q) => $q->where('status', $status))
             ->orderByDesc('id')
             ->get()
@@ -114,7 +114,7 @@ class EmailController extends Controller
             ->values();
 
         $counts = Email::query()
-            ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId))
+            ->when($editionId !== '', fn ($q) => $q->where('event_id', $editionId))
             ->selectRaw('status, count(*) as c')
             ->groupBy('status')
             ->pluck('c', 'status');
@@ -139,9 +139,9 @@ class EmailController extends Controller
             ->values();
 
         return view('admin.emails.index', [
-            'editions' => $editions,
+            'events' => $events,
             'audiences' => EmailAudience::AUDIENCES,
-            'edition_id' => $editionId,
+            'event_id' => $editionId,
             'status' => $status,
             'recipientCounts' => $recipientCounts,
             'journal' => $journal,
@@ -163,7 +163,7 @@ class EmailController extends Controller
     public function send(Request $request, QueueEmailCampaign $action, SendDueEmails $sender): RedirectResponse
     {
         $data = $request->validate([
-            'edition_id' => ['required', 'exists:editions,id'],
+            'event_id' => ['required', 'exists:events,id'],
             'template' => ['required', 'string'],
             'audience' => ['required', 'in:'.implode(',', array_keys(EmailAudience::AUDIENCES))],
             'date' => ['nullable', 'date'],
@@ -175,7 +175,7 @@ class EmailController extends Controller
             return back()->withInput()->with('ukc_error', 'Modèle e-mail inconnu.');
         }
 
-        $edition = Edition::findOrFail($data['edition_id']);
+        $event = Event::findOrFail($data['event_id']);
         $subject = EmailTemplates::raw($data['template'])['subject'];
         $body = EmailTemplates::body($data['template']);
 
@@ -193,7 +193,7 @@ class EmailController extends Controller
             $testSent = true;
         }
 
-        $count = $action->handle($edition, $data['audience'], $subject, $body, $scheduled);
+        $count = $action->handle($event, $data['audience'], $subject, $body, $scheduled);
 
         if ($count === 0) {
             return back()->withInput()->with('ukc_error', 'Aucun destinataire pour cette audience.'.($testSent ? ' (E-mail test envoyé à l’admin.)' : ''));
@@ -234,13 +234,13 @@ class EmailController extends Controller
     {
         $batch = (string) $request->input('batch_id');
         $template = (string) $request->input('template');
-        $editionId = (string) $request->input('edition_id');
+        $editionId = (string) $request->input('event_id');
 
         $query = Email::where('status', 'failed');
         if ($batch !== '') {
             $query->where('batch_id', $batch);
         } elseif ($template !== '' && $editionId !== '') {
-            $query->where('template', $template)->where('edition_id', $editionId);
+            $query->where('template', $template)->where('event_id', $editionId);
         } else {
             return back()->with('ukc_error', 'Campagne introuvable pour la relance.');
         }

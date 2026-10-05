@@ -2,12 +2,12 @@
 
 namespace App\Support;
 
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Review;
 
 /**
  * Grille d'évaluation structurée des relectures : liste de critères notés (0–5),
- * dont on dérive une note globale /20. La grille est configurable par édition
+ * dont on dérive une note globale /20. La grille est configurable par événement
  * (réglage `review_criteria`), avec un jeu de critères académiques par défaut.
  *
  * Un critère : ['key' => string, 'label' => string].
@@ -17,7 +17,7 @@ class ReviewGrid
     /** Note maximale par critère (échelle 0–SCALE). */
     public const SCALE = 5;
 
-    /** Relecteurs visés par soumission, à défaut de réglage d'édition. */
+    /** Relecteurs visés par soumission, à défaut de réglage d'événement. */
     public const DEFAULT_TARGET = 2;
 
     /** Grille académique par défaut (originalité, rigueur, clarté, pertinence, contribution). */
@@ -31,52 +31,52 @@ class ReviewGrid
 
     /**
      * Nombre de relecteurs visé par soumission (1-5, défaut 2). Règle de
-     * l'édition, lue par l'attribution automatique.
+     * l'événement, lue par l'attribution automatique.
      *
      * ⚠️ Comme `review_criteria` et `review_due_days`, ce réglage vit à la
-     * RACINE de `edition.settings` - pas dans le sac « doc » d'EditionSettings.
+     * RACINE de `edition.settings` - pas dans le sac « doc » d'EventSettings.
      */
-    public static function target(?Edition $edition): int
+    public static function target(?Event $event): int
     {
-        $n = (int) ($edition?->settings['review_target'] ?? 0);
+        $n = (int) ($event?->settings['review_target'] ?? 0);
 
         return $n >= 1 && $n <= 5 ? $n : self::DEFAULT_TARGET;
     }
 
     /**
-     * Plafond de relectures par relecteur (0 = illimité). Règle de l'édition.
+     * Plafond de relectures par relecteur (0 = illimité). Règle de l'événement.
      */
-    public static function maxLoad(?Edition $edition): int
+    public static function maxLoad(?Event $event): int
     {
-        $n = (int) ($edition?->settings['review_max_load'] ?? 0);
+        $n = (int) ($event?->settings['review_max_load'] ?? 0);
 
         return $n >= 0 && $n <= 50 ? $n : 0;
     }
 
     /**
-     * Délai d'évaluation de l'édition, en jours (borné 1-180). Sert d'échéance à
+     * Délai d'évaluation de l'événement, en jours (borné 1-180). Sert d'échéance à
      * l'assignation (cf. App\Actions\AssignReviewer) ; à défaut, la durée
      * standard Review::DEFAULT_DUE_DAYS.
      *
      * ⚠️ Comme `review_criteria`, ce réglage vit à la RACINE de
-     * `edition.settings` - pas dans le sac « doc » d'EditionSettings, réservé
+     * `edition.settings` - pas dans le sac « doc » d'EventSettings, réservé
      * aux documents (attestations, badges, livret).
      */
-    public static function dueDays(?Edition $edition): int
+    public static function dueDays(?Event $event): int
     {
-        $days = (int) ($edition?->settings['review_due_days'] ?? 0);
+        $days = (int) ($event?->settings['review_due_days'] ?? 0);
 
         return $days >= 1 && $days <= 180 ? $days : Review::DEFAULT_DUE_DAYS;
     }
 
     /**
-     * Grille effective d'une édition (réglage propre à l'édition sinon défaut).
+     * Grille effective d'une événement (réglage propre à l'événement sinon défaut).
      *
      * @return list<array{key:string, label:string}>
      */
-    public static function criteria(?Edition $edition): array
+    public static function criteria(?Event $event): array
     {
-        $custom = $edition?->settings['review_criteria'] ?? null;
+        $custom = $event?->settings['review_criteria'] ?? null;
 
         return self::normalize(is_array($custom) ? $custom : null);
     }

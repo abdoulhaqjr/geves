@@ -2,7 +2,8 @@
 
 namespace App\Models;
 
-use App\Enums\EditionPhase;
+use App\Enums\EventPhase;
+use App\Enums\EventType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * Édition : une occurrence datée d'un colloque, avec son cycle de vie et son
+ * Événement : une occurrence datée d'un colloque, avec son cycle de vie et son
  * contenu public. Les réglages libres (frais, contenu enrichi…) sont en JSON.
  *
  * @property array<string, mixed>|null $settings réglages libres (frais, axes, contenu public…)
@@ -22,7 +23,7 @@ use Illuminate\Support\Carbon;
  * @property bool $submission_open
  * @property string $status
  */
-class Edition extends Model
+class Event extends Model
 {
     use HasFactory;
 
@@ -42,10 +43,21 @@ class Edition extends Model
         ];
     }
 
-    /** @return BelongsTo<Colloque, $this> */
-    public function colloque(): BelongsTo
+    /** @return BelongsTo<EventSeries, $this> */
+    public function series(): BelongsTo
     {
-        return $this->belongsTo(Colloque::class);
+        // FK explicite : le nom de méthode « series » ferait déduire « series_id »,
+        // or la colonne est « event_series_id ».
+        return $this->belongsTo(EventSeries::class, 'event_series_id');
+    }
+
+    /**
+     * Type de l'événement, hérité de sa série ({@see EventSeries}). Défaut : colloque
+     * (le type historique) quand la série est absente.
+     */
+    public function type(): EventType
+    {
+        return $this->series?->type ?? EventType::Colloque;
     }
 
     /** @return HasMany<Participant, $this> */
@@ -55,13 +67,13 @@ class Edition extends Model
     }
 
     /**
-     * Équipe staff affectée à cette édition (fonction dans le pivot).
+     * Équipe staff affectée à cette événement (fonction dans le pivot).
      *
      * @return BelongsToMany<User, $this>
      */
     public function team(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'edition_user')->withPivot('role')->withTimestamps();
+        return $this->belongsToMany(User::class, 'event_user')->withPivot('role')->withTimestamps();
     }
 
     /** @return HasMany<Submission, $this> */
@@ -123,14 +135,14 @@ class Edition extends Model
         return in_array($this->status, ['open', 'closed', 'archived'], true);
     }
 
-    /** Le module Formations est-il activé pour cette édition ? (réglage du formulaire d'édition). */
+    /** Le module Formations est-il activé pour cette événement ? (réglage du formulaire d'événement). */
     public function formationEnabled(): bool
     {
         return (bool) ($this->settings['formation_enabled'] ?? false);
     }
 
     /** Champs de contenu traduisibles (i18n) : attribut de base = version française. */
-    public const TRANSLATABLE = ['title', 'theme', 'edition_label', 'location'];
+    public const TRANSLATABLE = ['title', 'theme', 'event_label', 'location'];
 
     /**
      * Valeur d'un champ de contenu dans la langue courante (i18n) : renvoie la
@@ -197,14 +209,14 @@ class Edition extends Model
         return $start->translatedFormat('j F Y').' - '.$end->translatedFormat('j F Y');
     }
 
-    public function phase(): EditionPhase
+    public function phase(): EventPhase
     {
         if ($this->status === 'draft') {
-            return EditionPhase::Draft;
+            return EventPhase::Draft;
         }
         // Clôture explicite par l'admin.
         if ($this->status === 'archived' || $this->status === 'closed') {
-            return EditionPhase::Closed;
+            return EventPhase::Closed;
         }
 
         $today = Carbon::today();
@@ -213,22 +225,22 @@ class Edition extends Model
         // Déroulement : les dates de l'événement sont atteintes.
         if ($this->date_start && $this->date_end
             && $this->date_start->lte($today) && $this->date_end->gte($today)) {
-            return EditionPhase::Ongoing;
+            return EventPhase::Ongoing;
         }
         // Événement passé (date de fin dépassée).
         if ($this->date_end && $this->date_end->lt($today)) {
-            return EditionPhase::Closed;
+            return EventPhase::Closed;
         }
 
         // Pré-événement (futur ou sans dates) : phase selon l'appel à communications.
         if ($this->submission_open
             && (! $this->submission_deadline || $this->submission_deadline->gte($now))) {
-            return EditionPhase::CallOpen;
+            return EventPhase::CallOpen;
         }
         if ($this->submission_deadline && $this->submission_deadline->lt($now)) {
-            return EditionPhase::UnderReview; // soumissions closes → évaluation
+            return EventPhase::UnderReview; // soumissions closes → évaluation
         }
 
-        return EditionPhase::Registration; // pas d'appel actif, événement à venir → inscriptions
+        return EventPhase::Registration; // pas d'appel actif, événement à venir → inscriptions
     }
 }

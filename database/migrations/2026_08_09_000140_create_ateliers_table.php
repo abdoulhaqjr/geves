@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Ateliers : regroupent un ou plusieurs axes thématiques de l'édition et
+ * Ateliers : regroupent un ou plusieurs axes thématiques de l'événement et
  * contiennent une ou plusieurs sessions. `tracks` = liste JSON des axes.
  */
 return new class extends Migration
@@ -14,7 +14,7 @@ return new class extends Migration
     {
         Schema::create('ateliers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('edition_id')->constrained('editions')->cascadeOnDelete();
+            $table->foreignId('event_id')->constrained('events')->cascadeOnDelete();
             $table->string('title', 255)->default('');
             $table->json('tracks')->nullable();
             $table->integer('ordre')->default(0);

@@ -35,8 +35,8 @@ class ConflictOfInterest
         $isAuthor = false;
         // Une université qui organise son propre colloque a la plupart de ses
         // relecteurs ET de ses auteurs en interne : la règle « même institution »
-        // y signale tout le monde et devient du bruit. L'édition peut donc
-        // l'ignorer (onglet Options de la fiche d'édition).
+        // y signale tout le monde et devient du bruit. L'événement peut donc
+        // l'ignorer (onglet Options de la fiche d'événement).
         $sameInstitutionCounts = ! self::ignoresSameInstitution($submission);
 
         foreach (self::authorsOf($submission) as $a) {
@@ -74,13 +74,13 @@ class ConflictOfInterest
     }
 
     /**
-     * L'édition de cette soumission ignore-t-elle le conflit « même institution » ?
+     * L'événement de cette soumission ignore-t-elle le conflit « même institution » ?
      * Réglage `edition.settings['options']['coi_ignore_same_institution']`, coché
-     * dans l'onglet Options de la fiche d'édition.
+     * dans l'onglet Options de la fiche d'événement.
      */
     public static function ignoresSameInstitution(Submission $submission): bool
     {
-        return (bool) ($submission->edition?->settings['options']['coi_ignore_same_institution'] ?? false);
+        return (bool) ($submission->event?->settings['options']['coi_ignore_same_institution'] ?? false);
     }
 
     /**

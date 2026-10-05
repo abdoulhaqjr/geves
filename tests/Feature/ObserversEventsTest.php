@@ -2,19 +2,19 @@
 
 use App\Events\SubmissionStatusChanged;
 use App\Models\Attestation;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Submission;
-use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Event as EventFacade;
 
 // adminStaff() -> AdminSubmissionWorkflowTest
 
 it('génère ref_code et access_token à la création d’une communication', function () {
-    $edition = Edition::factory()->create(['year' => 2027]);
-    $participant = Participant::factory()->for($edition)->create();
+    $event = Event::factory()->create(['year' => 2027]);
+    $participant = Participant::factory()->for($event)->create();
 
     // Aucun ref_code / access_token fourni → l'observer les génère.
-    $submission = $edition->submissions()->create([
+    $submission = $event->submissions()->create([
         'participant_id' => $participant->id,
         'title' => 'Sans référence',
         'status' => 'submitted',
@@ -26,10 +26,10 @@ it('génère ref_code et access_token à la création d’une communication', fu
 });
 
 it('ne remplace pas un ref_code fourni explicitement', function () {
-    $edition = Edition::factory()->create();
-    $participant = Participant::factory()->for($edition)->create();
+    $event = Event::factory()->create();
+    $participant = Participant::factory()->for($event)->create();
 
-    $submission = $edition->submissions()->create([
+    $submission = $event->submissions()->create([
         'participant_id' => $participant->id,
         'title' => 'Avec réf',
         'ref_code' => 'ZZ-999',
@@ -41,9 +41,9 @@ it('ne remplace pas un ref_code fourni explicitement', function () {
 });
 
 it('génère l’access_token d’un participant à la création', function () {
-    $edition = Edition::factory()->create();
+    $event = Event::factory()->create();
 
-    $participant = $edition->participants()->create([
+    $participant = $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author',
     ]);
 
@@ -51,11 +51,11 @@ it('génère l’access_token d’un participant à la création', function () {
 });
 
 it('génère l’uuid d’une attestation à la création', function () {
-    $edition = Edition::factory()->create();
-    $participant = Participant::factory()->for($edition)->create();
+    $event = Event::factory()->create();
+    $participant = Participant::factory()->for($event)->create();
 
     $attestation = Attestation::create([
-        'edition_id' => $edition->id,
+        'event_id' => $event->id,
         'participant_id' => $participant->id,
         'type' => 'participation',
         'recipient_name' => $participant->full_name,
@@ -69,14 +69,14 @@ it('génère l’uuid d’une attestation à la création', function () {
 });
 
 it('émet SubmissionStatusChanged à l’application d’un statut', function () {
-    Event::fake([SubmissionStatusChanged::class]);
+    EventFacade::fake([SubmissionStatusChanged::class]);
     $staff = adminStaff();
-    $edition = Edition::factory()->create();
-    $participant = Participant::factory()->for($edition)->create();
-    $submission = Submission::factory()->for($edition)->for($participant)->create();
+    $event = Event::factory()->create();
+    $participant = Participant::factory()->for($event)->create();
+    $submission = Submission::factory()->for($event)->for($participant)->create();
 
     $this->actingAs($staff, 'web')
         ->post(route('admin.submissions.status', $submission), ['status' => 'accepted']);
 
-    Event::assertDispatched(SubmissionStatusChanged::class, fn ($e) => $e->status === 'accepted' && $e->submission->is($submission));
+    EventFacade::assertDispatched(SubmissionStatusChanged::class, fn ($e) => $e->status === 'accepted' && $e->submission->is($submission));
 });

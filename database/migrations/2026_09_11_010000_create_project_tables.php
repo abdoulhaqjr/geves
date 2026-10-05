@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Gestion de projet par édition : chaque édition est pilotée comme un projet
+ * Gestion de projet par événement : chaque événement est pilotée comme un projet
  * (tâches façon kanban + jalons du cycle de vie du colloque).
  */
 return new class extends Migration
@@ -14,7 +14,7 @@ return new class extends Migration
     {
         Schema::create('project_tasks', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('edition_id')->constrained('editions')->cascadeOnDelete();
+            $table->foreignId('event_id')->constrained('events')->cascadeOnDelete();
             $table->string('title');
             $table->text('description')->nullable();
             $table->string('status', 20)->default('todo');      // todo | doing | review | done
@@ -27,12 +27,12 @@ return new class extends Migration
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();
 
-            $table->index(['edition_id', 'status']);
+            $table->index(['event_id', 'status']);
         });
 
         Schema::create('project_milestones', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('edition_id')->constrained('editions')->cascadeOnDelete();
+            $table->foreignId('event_id')->constrained('events')->cascadeOnDelete();
             $table->string('title');
             $table->text('description')->nullable();
             $table->date('due_date')->nullable();
@@ -41,7 +41,7 @@ return new class extends Migration
             $table->timestamp('done_at')->nullable();
             $table->timestamps();
 
-            $table->index(['edition_id', 'due_date']);
+            $table->index(['event_id', 'due_date']);
         });
     }
 

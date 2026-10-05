@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Meetings\LiveKitRoom;
 use App\Models\EventSession;
 use App\Models\SessionAttendance;
-use App\Support\EditionMeetingConfig;
+use App\Support\EventMeetingConfig;
 use App\Support\SessionPresence;
 use App\Support\SessionRoster;
 use Illuminate\Http\JsonResponse;
@@ -30,8 +30,8 @@ class SessionPresenceApiController extends Controller
 
         // ⚠️ null ≠ salle vide : LiveKit peut être injoignable ou non configuré.
         // Le panneau doit pouvoir dire « on ne sait pas » plutôt que « personne ».
-        // Même serveur que celui où la salle est ouverte (cf. EditionMeetingConfig).
-        $connectes = EditionMeetingConfig::using($session->edition, fn () => $room->connectedParticipantIds($session));
+        // Même serveur que celui où la salle est ouverte (cf. EventMeetingConfig).
+        $connectes = EventMeetingConfig::using($session->event, fn () => $room->connectedParticipantIds($session));
 
         // Qui est DANS la salle est porté présent sans que le modérateur ait à le
         // faire - c'est la demande d'origine, et LiveKit permet enfin de la tenir

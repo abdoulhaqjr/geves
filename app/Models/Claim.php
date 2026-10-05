@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
  *
  * @property array<string, mixed>|null $meta
  * @property Carbon|null $resolved_at
- * @property Edition|null $edition
+ * @property Event|null $event
  * @property User|null $user
  * @property User|null $assignee
  */
@@ -58,7 +58,7 @@ class Claim extends Model
 
     public static function generateReference(Claim $claim): string
     {
-        $year = $claim->edition?->year ?: date('Y');
+        $year = $claim->event?->year ?: date('Y');
         $prefix = $claim->type === 'incident' ? 'INC' : 'REC';
 
         do {
@@ -100,10 +100,10 @@ class Claim extends Model
         return is_array($a) ? array_values($a) : [];
     }
 
-    /** @return BelongsTo<Edition, $this> */
-    public function edition(): BelongsTo
+    /** @return BelongsTo<Event, $this> */
+    public function event(): BelongsTo
     {
-        return $this->belongsTo(Edition::class);
+        return $this->belongsTo(Event::class);
     }
 
     /** @return BelongsTo<User, $this> */

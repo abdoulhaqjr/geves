@@ -7,11 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Modèle (mise en page JSON) d'un badge ou d'une attestation, par édition et type.
+ * Modèle (mise en page JSON) d'un badge ou d'une attestation, par événement et type.
  *
  * @property array<string, mixed>|null $layout
  * @property array<string, mixed>|null $editor_state
- * @property Edition|null $edition
+ * @property Event|null $event
  */
 class DocumentTemplate extends Model
 {
@@ -23,7 +23,7 @@ class DocumentTemplate extends Model
     }
 
     /**
-     * Modèle enregistré pour ce couple (édition, kind, type), créé au besoin à
+     * Modèle enregistré pour ce couple (événement, kind, type), créé au besoin à
      * partir de la mise en page standard.
      *
      * ⚠️ Il n'y a **plus de repli implicite** à la charte au moment du rendu :
@@ -33,7 +33,7 @@ class DocumentTemplate extends Model
      */
     public static function ensureFor(int $editionId, string $kind, string $type = 'default', ?string $title = null): self
     {
-        $template = self::firstOrNew(['edition_id' => $editionId, 'kind' => $kind, 'type' => $type]);
+        $template = self::firstOrNew(['event_id' => $editionId, 'kind' => $kind, 'type' => $type]);
 
         if (! $template->exists || blank($template->layout)) {
             $template->layout = LayoutSanitizer::default($kind, $type);
@@ -46,9 +46,9 @@ class DocumentTemplate extends Model
         return $template;
     }
 
-    /** @return BelongsTo<Edition, $this> */
-    public function edition(): BelongsTo
+    /** @return BelongsTo<Event, $this> */
+    public function event(): BelongsTo
     {
-        return $this->belongsTo(Edition::class);
+        return $this->belongsTo(Event::class);
     }
 }

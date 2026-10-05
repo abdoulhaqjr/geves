@@ -8,67 +8,67 @@ use App\Models\Payment;
 // openEdition()/verifiedAccount() -> tests/Pest.php
 
 /**
- * Formation publiée + module Formations activé sur son édition : c'est
+ * Formation publiée + module Formations activé sur son événement : c'est
  * l'invariant réel (une formation n'est proposée que si le module est activé
- * pour l'édition, cf. Formation::offeredIn).
+ * pour l'événement, cf. Formation::offeredIn).
  */
-function publishedFormation($edition, float $fee): Formation
+function publishedFormation($event, float $fee): Formation
 {
-    $edition->update(['settings' => array_merge($edition->settings ?? [], ['formation_enabled' => true])]);
+    $event->update(['settings' => array_merge($event->settings ?? [], ['formation_enabled' => true])]);
 
     return Formation::create([
-        'edition_id' => $edition->id,
+        'event_id' => $event->id,
         'title' => $fee > 0 ? 'Formation payante' : 'Formation gratuite',
         'fee' => $fee,
         'published' => true,
     ]);
 }
 
-it('affiche les formations de l’édition sélectionnée (formation payante) sans erreur', function () {
-    $edition = openEdition(['formation_enabled' => true]);
+it('affiche les formations de l’événement sélectionnée (formation payante) sans erreur', function () {
+    $event = openEdition(['formation_enabled' => true]);
     $user = verifiedAccount();
-    $edition->participants()->create([
+    $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'author', 'user_id' => $user->id,
     ]);
-    $formation = publishedFormation($edition, 10000);
+    $formation = publishedFormation($event, 10000);
 
     $this->actingAs($user, 'account')->get(route('account.formations'))
         ->assertOk()
         ->assertSee($formation->title);
 });
 
-it('n’expose pas la page Formations si le module est désactivé pour l’édition', function () {
-    $edition = openEdition();
+it('n’expose pas la page Formations si le module est désactivé pour l’événement', function () {
+    $event = openEdition();
     $user = verifiedAccount();
-    $edition->participants()->create([
+    $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'author', 'user_id' => $user->id,
     ]);
-    publishedFormation($edition, 0);
-    $edition->update(['settings' => array_merge($edition->settings ?? [], ['formation_enabled' => false])]);
+    publishedFormation($event, 0);
+    $event->update(['settings' => array_merge($event->settings ?? [], ['formation_enabled' => false])]);
 
     $this->actingAs($user, 'account')->get(route('account.formations'))->assertNotFound();
 });
 
-it('n’expose pas la page Formations si l’édition n’a aucune formation publiée', function () {
-    $edition = openEdition(['formation_enabled' => true]);
+it('n’expose pas la page Formations si l’événement n’a aucune formation publiée', function () {
+    $event = openEdition(['formation_enabled' => true]);
     $user = verifiedAccount();
-    $edition->participants()->create([
+    $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'author', 'user_id' => $user->id,
     ]);
-    publishedFormation($edition, 0)->update(['published' => false]);
+    publishedFormation($event, 0)->update(['published' => false]);
 
     $this->actingAs($user, 'account')->get(route('account.formations'))->assertNotFound();
 });
 
-it('ne liste pas les formations d’une autre édition que celle sélectionnée', function () {
-    $edition = openEdition(['formation_enabled' => true]);
+it('ne liste pas les formations d’une autre événement que celle sélectionnée', function () {
+    $event = openEdition(['formation_enabled' => true]);
     $other = openEdition(['formation_enabled' => true]);
     $user = verifiedAccount();
-    $edition->participants()->create([
+    $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'author', 'user_id' => $user->id,
     ]);
-    $mine = publishedFormation($edition, 0);
-    $foreign = Formation::create(['edition_id' => $other->id, 'title' => 'Formation d’ailleurs', 'fee' => 0, 'published' => true]);
+    $mine = publishedFormation($event, 0);
+    $foreign = Formation::create(['event_id' => $other->id, 'title' => 'Formation d’ailleurs', 'fee' => 0, 'published' => true]);
 
     $this->actingAs($user, 'account')->get(route('account.formations'))
         ->assertOk()
@@ -77,9 +77,9 @@ it('ne liste pas les formations d’une autre édition que celle sélectionnée'
 });
 
 it('inscrit directement à une formation gratuite (sans paiement)', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $user = verifiedAccount();
-    $formation = publishedFormation($edition, 0);
+    $formation = publishedFormation($event, 0);
 
     $this->actingAs($user, 'account')->post(route('account.formations.enroll', $formation));
 
@@ -90,9 +90,9 @@ it('inscrit directement à une formation gratuite (sans paiement)', function () 
 });
 
 it('crée un paiement de nature formation pour une formation payante, réglé après confirmation', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $user = verifiedAccount();
-    $formation = publishedFormation($edition, 10000);
+    $formation = publishedFormation($event, 10000);
 
     $this->actingAs($user, 'account')->post(route('account.formations.enroll', $formation), ['gateway' => 'manual']);
 
@@ -110,18 +110,18 @@ it('crée un paiement de nature formation pour une formation payante, réglé ap
 });
 
 it('n’est pas bloqué par la garde anti-double : participation payée + formation payée coexistent', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $user = verifiedAccount();
-    $participant = $edition->participants()->create([
+    $participant = $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author', 'user_id' => $user->id,
     ]);
     // Frais de participation déjà réglés.
     Payment::create([
-        'edition_id' => $edition->id, 'participant_id' => $participant->id, 'amount' => 20000,
+        'event_id' => $event->id, 'participant_id' => $participant->id, 'amount' => 20000,
         'status' => 'paid', 'gateway' => 'manual', 'method' => 'cash', 'paid_at' => now(),
     ]);
 
-    $formation = publishedFormation($edition, 10000);
+    $formation = publishedFormation($event, 10000);
     $this->actingAs($user, 'account')->post(route('account.formations.enroll', $formation), ['gateway' => 'manual']);
     $enr = FormationEnrollment::where('formation_id', $formation->id)->first();
     $payment = Payment::find($enr->payment_id);
@@ -133,16 +133,16 @@ it('n’est pas bloqué par la garde anti-double : participation payée + format
 });
 
 it('conserve la garde anti-double sur les frais de participation', function () {
-    $edition = openEdition();
-    $participant = $edition->participants()->create([
+    $event = openEdition();
+    $participant = $event->participants()->create([
         'first_name' => 'Ben', 'last_name' => 'Co', 'email' => 'ben@example.tg', 'role' => 'author',
     ]);
     Payment::create([
-        'edition_id' => $edition->id, 'participant_id' => $participant->id, 'amount' => 20000,
+        'event_id' => $event->id, 'participant_id' => $participant->id, 'amount' => 20000,
         'status' => 'paid', 'gateway' => 'manual', 'method' => 'cash', 'paid_at' => now(),
     ]);
     $second = Payment::create([
-        'edition_id' => $edition->id, 'participant_id' => $participant->id, 'amount' => 20000,
+        'event_id' => $event->id, 'participant_id' => $participant->id, 'amount' => 20000,
         'status' => 'pending', 'gateway' => 'manual', 'method' => 'cash',
     ]);
 

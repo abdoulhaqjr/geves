@@ -7,7 +7,7 @@ use App\Models\Participant;
 use App\Models\Slot;
 use App\Models\Submission;
 use App\Support\CalendarExport;
-use App\Support\CurrentColloque;
+use App\Support\CurrentEvent;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -37,10 +37,10 @@ class AgendaController extends Controller
     private function events(): array
     {
         $account = Auth::guard('account')->user();
-        $current = CurrentColloque::current($account);
+        $current = CurrentEvent::current($account);
 
         $participantIds = Participant::where('user_id', $account->id)
-            ->when($current, fn ($q) => $q->where('edition_id', $current->id))
+            ->when($current, fn ($q) => $q->where('event_id', $current->id))
             ->pluck('id');
 
         $submissionIds = Submission::whereIn('participant_id', $participantIds)
@@ -51,7 +51,7 @@ class AgendaController extends Controller
             ->where(fn ($q) => $q
                 ->whereIn('submission_id', $submissionIds)
                 ->orWhereIn('participant_id', $participantIds))
-            ->with(['submission', 'session', 'edition'])
+            ->with(['submission', 'session', 'event'])
             ->orderBy('starts_at')
             ->get();
 
@@ -73,7 +73,7 @@ class AgendaController extends Controller
             'start' => $slot->starts_at,
             'end' => $slot->ends_at,
             'location' => (string) ($slot->room ?: $slot->session?->room ?: ''),
-            'description' => trim(($slot->session_label ? $slot->session_label.' · ' : '').(string) ($slot->edition->title ?? '')),
+            'description' => trim(($slot->session_label ? $slot->session_label.' · ' : '').(string) ($slot->event->title ?? '')),
         ];
     }
 }

@@ -1,6 +1,6 @@
 <x-layouts.admin title="E-mails" subtitle="Campagnes programmées & modèles">
     @php
-        $edLabel = optional($editions->firstWhere('id', (int) $edition_id))->title;
+        $edLabel = optional($events->firstWhere('id', (int) $event_id))->title;
         $campStatus = [
             'queued' => ['Programmé', 'warn'],
             'sent' => ['Envoyé', 'ok'],
@@ -54,11 +54,11 @@
         {{-- ===================== PROGRAMMÉS ===================== --}}
         <div x-show="tab==='scheduled'">
             <div class="filter-bar">
-                <select onchange="window.location='{{ route('admin.emails.index') }}?edition_id='+this.value+'&status={{ $status }}'">
-                    <option value="">- Édition -</option>
-                    @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
+                <select onchange="window.location='{{ route('admin.emails.index') }}?event_id='+this.value+'&status={{ $status }}'">
+                    <option value="">- Événement -</option>
+                    @foreach ($events as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $event_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
                 </select>
-                <select onchange="window.location='{{ route('admin.emails.index') }}?edition_id={{ $edition_id }}&status='+this.value">
+                <select onchange="window.location='{{ route('admin.emails.index') }}?event_id={{ $event_id }}&status='+this.value">
                     <option value="">Tous les statuts</option>
                     <option value="queued" @selected($status === 'queued')>Programmé</option>
                     <option value="sent" @selected($status === 'sent')>Envoyé</option>
@@ -110,7 +110,7 @@
                                                     @csrf
                                                     <input type="hidden" name="batch_id" value="{{ $c['batch_id'] }}">
                                                     <input type="hidden" name="template" value="{{ $c['template'] }}">
-                                                    <input type="hidden" name="edition_id" value="{{ $edition_id }}">
+                                                    <input type="hidden" name="event_id" value="{{ $event_id }}">
                                                     <button type="submit" class="ukc-btn--icon" title="Relancer les échecs"><x-ukc.icon name="refresh" :size="16" /></button>
                                                 </form>
                                             @endif
@@ -211,7 +211,7 @@
                 <div class="box-body">
                     <form method="POST" action="{{ route('admin.emails.send') }}">
                         @csrf
-                        <input type="hidden" name="edition_id" value="{{ $edition_id }}">
+                        <input type="hidden" name="event_id" value="{{ $event_id }}">
                         <div class="ukc-form-row">
                             <label>Modèle e-mail</label>
                             <select name="template">
@@ -224,7 +224,7 @@
                             <select name="audience" x-model="audience">
                                 @foreach ($audiences as $key => $label)<option value="{{ $key }}">{{ $label }}</option>@endforeach
                             </select>
-                            <p class="ukc-hint"><x-ukc.icon name="users" :size="13" /> <span x-text="counts[audience] ?? 0"></span> destinataire(s) pour l’édition sélectionnée.</p>
+                            <p class="ukc-hint"><x-ukc.icon name="users" :size="13" /> <span x-text="counts[audience] ?? 0"></span> destinataire(s) pour l’événement sélectionnée.</p>
                         </div>
                         <div class="ukc-form-grid">
                             <div class="ukc-form-row">

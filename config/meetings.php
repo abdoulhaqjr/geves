@@ -23,8 +23,8 @@ return [
     | « sd » (640x360), « hd » (1280x720, défaut) ou « fhd » (1920x1080). C'est la
     | résolution de CAPTURE, donc la couche simulcast la plus haute : rien dans la
     | salle ne peut être plus net qu'elle. Les couches basses restent publiées pour
-    | les vignettes et les connexions faibles. Réglable par édition (onglet
-    | Visioconférence de la fiche d'édition) : le coût retombe sur la liaison
+    | les vignettes et les connexions faibles. Réglable par événement (onglet
+    | Visioconférence de la fiche d'événement) : le coût retombe sur la liaison
     | MONTANTE de celui qui diffuse.
     |
     */

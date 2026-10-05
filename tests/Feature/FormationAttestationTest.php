@@ -13,12 +13,12 @@ use Illuminate\Support\Facades\Storage;
 
 function enrolledFormation(Formation $formation, User $user, string $status): Participant
 {
-    $participant = $formation->edition->participants()->create([
+    $participant = $formation->event->participants()->create([
         'first_name' => $user->first_name ?: 'X', 'last_name' => $user->last_name ?: 'Y',
         'email' => $user->email, 'role' => 'trainee', 'user_id' => $user->id,
     ]);
     FormationEnrollment::create([
-        'formation_id' => $formation->id, 'edition_id' => $formation->edition_id,
+        'formation_id' => $formation->id, 'event_id' => $formation->event_id,
         'user_id' => $user->id, 'participant_id' => $participant->id, 'status' => $status, 'amount' => $formation->fee,
     ]);
 
@@ -26,8 +26,8 @@ function enrolledFormation(Formation $formation, User $user, string $status): Pa
 }
 
 it('émet participation aux inscrits réglés et animation aux formateurs, en nommant la formation', function () {
-    $edition = openEdition();
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'Rédaction scientifique', 'fee' => 10000, 'published' => true]);
+    $event = openEdition();
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'Rédaction scientifique', 'fee' => 10000, 'published' => true]);
 
     $participant = enrolledFormation($formation, verifiedAccount(), 'paid');
     $formation->trainers()->create(['name' => 'Pr. Ben Co', 'email' => 'ben@example.tg', 'is_moderator' => true]);
@@ -41,7 +41,7 @@ it('émet participation aux inscrits réglés et animation aux formateurs, en no
     expect($att->meta['formation_title'])->toBe('Rédaction scientifique');
 
     // Animation (formateur -> participant support créé par e-mail).
-    $trainerP = Participant::where('edition_id', $edition->id)->where('email', 'ben@example.tg')->first();
+    $trainerP = Participant::where('event_id', $event->id)->where('email', 'ben@example.tg')->first();
     expect($trainerP)->not->toBeNull();
     $anim = Attestation::where('type', 'formation_animation')->where('participant_id', $trainerP->id)->first();
     expect($anim)->not->toBeNull();
@@ -49,8 +49,8 @@ it('émet participation aux inscrits réglés et animation aux formateurs, en no
 });
 
 it('n’émet pas d’attestation à un inscrit non réglé d’une formation payante', function () {
-    $edition = openEdition();
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'Payante', 'fee' => 10000, 'published' => true]);
+    $event = openEdition();
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'Payante', 'fee' => 10000, 'published' => true]);
     $participant = enrolledFormation($formation, verifiedAccount(), 'registered');
 
     $this->actingAs(adminStaff(), 'web')->post(route('admin.formations.attestations', $formation));
@@ -59,8 +59,8 @@ it('n’émet pas d’attestation à un inscrit non réglé d’une formation pa
 });
 
 it('émet l’attestation à un inscrit d’une formation gratuite', function () {
-    $edition = openEdition();
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'Gratuite', 'fee' => 0, 'published' => true]);
+    $event = openEdition();
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'Gratuite', 'fee' => 0, 'published' => true]);
     $participant = enrolledFormation($formation, verifiedAccount(), 'registered');
 
     $this->actingAs(adminStaff(), 'web')->post(route('admin.formations.attestations', $formation));
@@ -74,8 +74,8 @@ it('expose le type d’attestation d’animation de formation', function () {
 
 it('téléverse la signature d’un formateur', function () {
     Storage::fake('public');
-    $edition = openEdition(['formation_enabled' => true]);
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'Atelier', 'fee' => 0, 'published' => true]);
+    $event = openEdition(['formation_enabled' => true]);
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'Atelier', 'fee' => 0, 'published' => true]);
     $trainer = $formation->trainers()->create(['name' => 'Awa Kodjo', 'title' => 'Pr.']);
 
     $res = $this->actingAs(adminStaff(), 'web')
@@ -91,9 +91,9 @@ it('téléverse la signature d’un formateur', function () {
 
 it('fige le thème et les signatures des formateurs sur l’attestation de formation', function () {
     Storage::fake('public');
-    $edition = openEdition(['formation_enabled' => true]);
+    $event = openEdition(['formation_enabled' => true]);
     $formation = Formation::create([
-        'edition_id' => $edition->id, 'title' => 'Rédaction scientifique',
+        'event_id' => $event->id, 'title' => 'Rédaction scientifique',
         'theme' => 'Publier dans une revue indexée', 'fee' => 0, 'published' => true,
     ]);
     $trainer = $formation->trainers()->create(['name' => 'Awa Kodjo', 'title' => 'Pr.']);

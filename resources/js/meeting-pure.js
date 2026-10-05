@@ -371,7 +371,7 @@ export function phraseConnectes(n) {
 }
 
 /**
- * Profil de capture vidéo, nommé par l'édition.
+ * Profil de capture vidéo, nommé par l'événement.
  *
  * ⚠️ C'est la résolution de CAPTURE, donc la couche simulcast la plus HAUTE :
  * rien dans la salle ne peut être plus net qu'elle, quelle que soit la caméra.
@@ -381,7 +381,7 @@ export function phraseConnectes(n) {
  * ⚠️ Les couches basses (180p, 360p) restent publiées à côté : ce sont elles que
  * reçoivent les petites vignettes et les connexions faibles, et c'est ce qui rend
  * une couche haute abordable. Monter le profil n'alourdit donc que la liaison
- * MONTANTE de celui qui diffuse - d'où un réglage par édition et non une valeur
+ * MONTANTE de celui qui diffuse - d'où un réglage par événement et non une valeur
  * unique pour toute la plateforme.
  *
  * ⚠️ Un nom inconnu retombe sur « md » : un réglage retiré du code ne doit pas

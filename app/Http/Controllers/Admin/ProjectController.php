@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\ProjectMilestone;
 use App\Models\ProjectTask;
 use App\Models\ProjectTaskComment;
@@ -19,7 +19,7 @@ use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Gestion de projet d'une édition : chaque édition est pilotée comme un projet
+ * Gestion de projet d'une événement : chaque événement est pilotée comme un projet
  * (tâches façon kanban + jalons du cycle de vie). Contrôleur + Blade, briques
  * Tailwise (cards, tabs, progress, slideover, tom-select, datepicker).
  */
@@ -38,24 +38,24 @@ class ProjectController extends Controller
         'emails' => 'E-mails',
         'program' => 'Programme',
         'reports' => 'Rapports',
-        'edition' => 'Fiche de l’édition',
+        'event' => 'Fiche de l’événement',
     ];
 
     public function index(Request $request): View
     {
-        $edition = $this->currentEdition($request);
+        $event = $this->currentEdition($request);
 
         // État initial pour le client (Alpine) - tout le CRUD et le calendrier
         // sont ensuite pilotés en direct depuis cet état (AJAX, sans rechargement).
-        $payload = $edition ? $this->editionPayload($edition) : ['tasks' => [], 'milestones' => []];
+        $payload = $event ? $this->editionPayload($event) : ['tasks' => [], 'milestones' => []];
 
         return view('admin.project.index', [
-            'editions' => $this->accessibleEditions($request, 'project'),
-            'edition' => $edition,
-            'edition_id' => $edition ? (string) $edition->id : '',
+            'events' => $this->accessibleEditions($request, 'project'),
+            'event' => $event,
+            'event_id' => $event ? (string) $event->id : '',
             'tasksPayload' => $payload['tasks'],
             'milestonesPayload' => $payload['milestones'],
-            'team' => $edition ? $this->assigneePool($edition) : collect(),
+            'team' => $event ? $this->assigneePool($event) : collect(),
             'statuses' => ProjectTask::STATUSES,
             'priorities' => ProjectTask::PRIORITIES,
             'linkTargets' => self::LINK_TARGETS,
@@ -65,17 +65,17 @@ class ProjectController extends Controller
 
     public function storeTask(Request $request): RedirectResponse|JsonResponse
     {
-        $edition = $this->currentEdition($request);
-        if (! $edition) {
+        $event = $this->currentEdition($request);
+        if (! $event) {
             return $request->expectsJson()
-                ? response()->json(['error' => 'Sélectionnez une édition.'], 422)
-                : back()->with('ukc_error', 'Sélectionnez une édition.');
+                ? response()->json(['error' => 'Sélectionnez une événement.'], 422)
+                : back()->with('ukc_error', 'Sélectionnez une événement.');
         }
 
-        $data = $this->validateTask($request, $edition);
-        $data['edition_id'] = $edition->id;
+        $data = $this->validateTask($request, $event);
+        $data['event_id'] = $event->id;
         $data['created_by'] = $request->user()?->id;
-        $data['position'] = (int) ProjectTask::where('edition_id', $edition->id)
+        $data['position'] = (int) ProjectTask::where('event_id', $event->id)
             ->where('status', $data['status'])->max('position') + 1;
         if ($data['status'] === 'done') {
             $data['completed_at'] = now();
@@ -85,7 +85,7 @@ class ProjectController extends Controller
         $this->notifyAssignment($task, null, $request);
 
         if ($request->expectsJson()) {
-            return response()->json(['task' => $this->taskCard($task->load('assignee'), $edition)]);
+            return response()->json(['task' => $this->taskCard($task->load('assignee'), $event)]);
         }
 
         return back()->with('ukc_status', 'Tâche ajoutée.');
@@ -93,16 +93,16 @@ class ProjectController extends Controller
 
     public function updateTask(Request $request, ProjectTask $task): RedirectResponse|JsonResponse
     {
-        $edition = $task->edition;
-        $data = $this->validateTask($request, $edition);
+        $event = $task->event;
+        $data = $this->validateTask($request, $event);
         $data['completed_at'] = $data['status'] === 'done' ? ($task->completed_at ?? now()) : null;
 
         $previousAssignee = $task->assignee_id;
         $task->update($data);
         $this->notifyAssignment($task, $previousAssignee, $request);
 
-        if ($request->expectsJson() && $edition) {
-            return response()->json(['task' => $this->taskCard($task->fresh()->load('assignee'), $edition)]);
+        if ($request->expectsJson() && $event) {
+            return response()->json(['task' => $this->taskCard($task->fresh()->load('assignee'), $event)]);
         }
 
         return back()->with('ukc_status', 'Tâche mise à jour.');
@@ -133,9 +133,9 @@ class ProjectController extends Controller
             'completed_at' => $validated['status'] === 'done' ? ($task->completed_at ?? now()) : null,
         ]);
 
-        // Réordonne la colonne cible d'après la liste d'ids reçue (bornée à l'édition).
+        // Réordonne la colonne cible d'après la liste d'ids reçue (bornée à l'événement).
         foreach (array_values($validated['order'] ?? []) as $i => $id) {
-            ProjectTask::where('edition_id', $task->edition_id)->where('id', $id)
+            ProjectTask::where('event_id', $task->event_id)->where('id', $id)
                 ->update(['position' => $i]);
         }
 
@@ -184,9 +184,9 @@ class ProjectController extends Controller
         $data = $request->validate(['due_date' => ['nullable', 'date']]);
         $task->update(['due_date' => $data['due_date'] ?? null]);
 
-        $edition = $task->edition;
+        $event = $task->event;
 
-        return response()->json($edition ? ['task' => $this->taskCard($task->fresh()->load('assignee'), $edition)] : ['ok' => true]);
+        return response()->json($event ? ['task' => $this->taskCard($task->fresh()->load('assignee'), $event)] : ['ok' => true]);
     }
 
     /** Re-planification depuis le calendrier (glisser-déposer) : échéance d'un jalon. */
@@ -200,16 +200,16 @@ class ProjectController extends Controller
 
     public function storeMilestone(Request $request): RedirectResponse|JsonResponse
     {
-        $edition = $this->currentEdition($request);
-        if (! $edition) {
+        $event = $this->currentEdition($request);
+        if (! $event) {
             return $request->expectsJson()
-                ? response()->json(['error' => 'Sélectionnez une édition.'], 422)
-                : back()->with('ukc_error', 'Sélectionnez une édition.');
+                ? response()->json(['error' => 'Sélectionnez une événement.'], 422)
+                : back()->with('ukc_error', 'Sélectionnez une événement.');
         }
 
         $data = $this->validateMilestone($request);
-        $data['edition_id'] = $edition->id;
-        $data['position'] = (int) ProjectMilestone::where('edition_id', $edition->id)->max('position') + 1;
+        $data['event_id'] = $event->id;
+        $data['position'] = (int) ProjectMilestone::where('event_id', $event->id)->max('position') + 1;
 
         $milestone = ProjectMilestone::create($data);
 
@@ -260,23 +260,23 @@ class ProjectController extends Controller
     /** Amorce le projet avec le cycle de vie type d'un colloque (idempotent). */
     public function seedTemplate(Request $request): RedirectResponse|JsonResponse
     {
-        $edition = $this->currentEdition($request);
-        if (! $edition) {
+        $event = $this->currentEdition($request);
+        if (! $event) {
             return $request->expectsJson()
-                ? response()->json(['error' => 'Sélectionnez une édition.'], 422)
-                : back()->with('ukc_error', 'Sélectionnez une édition.');
+                ? response()->json(['error' => 'Sélectionnez une événement.'], 422)
+                : back()->with('ukc_error', 'Sélectionnez une événement.');
         }
 
         // Sécurité : on n'amorce que si le projet est vierge.
-        if (ProjectTask::where('edition_id', $edition->id)->exists()
-            || ProjectMilestone::where('edition_id', $edition->id)->exists()) {
+        if (ProjectTask::where('event_id', $event->id)->exists()
+            || ProjectMilestone::where('event_id', $event->id)->exists()) {
             return $request->expectsJson()
                 ? response()->json(['error' => 'Le projet contient déjà des éléments.'], 422)
                 : back()->with('ukc_error', 'Le projet contient déjà des éléments - amorçage ignoré.');
         }
 
-        foreach ($this->templateMilestones($edition) as $i => $m) {
-            ProjectMilestone::create($m + ['edition_id' => $edition->id, 'position' => $i]);
+        foreach ($this->templateMilestones($event) as $i => $m) {
+            ProjectMilestone::create($m + ['event_id' => $event->id, 'position' => $i]);
         }
 
         $pos = [];
@@ -284,14 +284,14 @@ class ProjectController extends Controller
             $status = $t['status'] ?? 'todo';
             $pos[$status] = ($pos[$status] ?? -1) + 1;
             ProjectTask::create($t + [
-                'edition_id' => $edition->id,
+                'event_id' => $event->id,
                 'created_by' => $request->user()?->id,
                 'position' => $pos[$status],
             ]);
         }
 
         if ($request->expectsJson()) {
-            return response()->json($this->editionPayload($edition));
+            return response()->json($this->editionPayload($event));
         }
 
         return back()->with('ukc_status', 'Projet initialisé avec le cycle de vie type d’un colloque.');
@@ -300,12 +300,12 @@ class ProjectController extends Controller
     /** Export Excel du projet : deux feuilles (Tâches, Jalons). */
     public function exportXlsx(Request $request): Response|RedirectResponse
     {
-        $edition = $this->currentEdition($request);
-        if (! $edition) {
-            return back()->with('ukc_error', 'Sélectionnez une édition.');
+        $event = $this->currentEdition($request);
+        if (! $event) {
+            return back()->with('ukc_error', 'Sélectionnez une événement.');
         }
 
-        $tasks = ProjectTask::where('edition_id', $edition->id)->with('assignee')
+        $tasks = ProjectTask::where('event_id', $event->id)->with('assignee')
             ->orderBy('phase')->orderBy('status')->orderBy('position')->get();
 
         $taskRows = $tasks->map(fn (ProjectTask $t) => [
@@ -320,7 +320,7 @@ class ProjectController extends Controller
             $t->link_key ? (self::LINK_TARGETS[$t->link_key] ?? $t->link_key) : '-',
         ])->all();
 
-        $milestones = ProjectMilestone::where('edition_id', $edition->id)
+        $milestones = ProjectMilestone::where('event_id', $event->id)
             ->orderByRaw('due_date is null')->orderBy('due_date')->orderBy('position')->get();
 
         $msRows = $milestones->map(fn (ProjectMilestone $m) => [
@@ -333,20 +333,20 @@ class ProjectController extends Controller
         return (new XlsxWriter)
             ->sheet('Tâches', ['Tâche', 'Phase', 'Statut', 'Priorité', 'Responsable', 'Début', 'Échéance', 'Checklist', 'Lien'], $taskRows)
             ->sheet('Jalons', ['Jalon', 'Échéance', 'Statut', 'Description'], $msRows)
-            ->download('projet-'.($edition->slug ?: $edition->id).'.xlsx');
+            ->download('projet-'.($event->slug ?: $event->id).'.xlsx');
     }
 
     /** Rapport du projet (page imprimable → PDF) : synthèse d'avancement. */
     public function report(Request $request): View|RedirectResponse
     {
-        $edition = $this->currentEdition($request);
-        if (! $edition) {
-            return back()->with('ukc_error', 'Sélectionnez une édition.');
+        $event = $this->currentEdition($request);
+        if (! $event) {
+            return back()->with('ukc_error', 'Sélectionnez une événement.');
         }
 
-        $tasks = ProjectTask::where('edition_id', $edition->id)->with('assignee')
+        $tasks = ProjectTask::where('event_id', $event->id)->with('assignee')
             ->orderBy('position')->orderBy('id')->get();
-        $milestones = ProjectMilestone::where('edition_id', $edition->id)
+        $milestones = ProjectMilestone::where('event_id', $event->id)
             ->orderByRaw('due_date is null')->orderBy('due_date')->orderBy('position')->get();
 
         $total = $tasks->count();
@@ -361,7 +361,7 @@ class ProjectController extends Controller
             ->map(fn ($g) => ['total' => $g->count(), 'done' => $g->where('status', 'done')->count()]);
 
         return view('admin.project.report', [
-            'edition' => $edition,
+            'event' => $event,
             'tasks' => $tasks,
             'milestones' => $milestones,
             'total' => $total,
@@ -375,16 +375,16 @@ class ProjectController extends Controller
     }
 
     /**
-     * Jalons standard, datés à partir des dates clés de l'édition quand elles
+     * Jalons standard, datés à partir des dates clés de l'événement quand elles
      * existent (clôture des soumissions, ouverture/clôture, dates libres).
      *
      * @return array<int, array<string, mixed>>
      */
-    private function templateMilestones(Edition $edition): array
+    private function templateMilestones(Event $event): array
     {
-        $deadline = $edition->submission_deadline ? Carbon::parse($edition->submission_deadline)->toDateString() : null;
-        $start = $edition->date_start?->toDateString();
-        $end = $edition->date_end?->toDateString();
+        $deadline = $event->submission_deadline ? Carbon::parse($event->submission_deadline)->toDateString() : null;
+        $start = $event->date_start?->toDateString();
+        $end = $event->date_end?->toDateString();
 
         $milestones = [
             ['title' => 'Ouverture de l’appel à communications', 'due_date' => null],
@@ -397,8 +397,8 @@ class ProjectController extends Controller
             ['title' => 'Publication des actes', 'due_date' => null],
         ];
 
-        // Dates clés libres saisies sur l'édition (settings['keyDates']).
-        foreach ((array) ($edition->settings['keyDates'] ?? []) as $kd) {
+        // Dates clés libres saisies sur l'événement (settings['keyDates']).
+        foreach ((array) ($event->settings['keyDates'] ?? []) as $kd) {
             $label = trim((string) ($kd['label'] ?? ''));
             $date = trim((string) ($kd['date'] ?? ''));
             if ($label !== '') {
@@ -419,11 +419,11 @@ class ProjectController extends Controller
         $t = fn (string $phase, string $title, string $priority = 'normal', ?string $link_key = null) => compact('phase', 'title', 'priority', 'link_key');
 
         return [
-            $t('Cadrage', 'Définir le thème et les axes thématiques', 'high', 'edition'),
+            $t('Cadrage', 'Définir le thème et les axes thématiques', 'high', 'event'),
             $t('Cadrage', 'Constituer les comités (scientifique & organisation)', 'high', 'committees'),
             $t('Cadrage', 'Établir le budget prévisionnel'),
             $t('Appel à communications', 'Rédiger et diffuser l’appel à communications', 'high', 'emails'),
-            $t('Appel à communications', 'Mettre en ligne le site de l’édition', 'normal', 'edition'),
+            $t('Appel à communications', 'Mettre en ligne le site de l’événement', 'normal', 'event'),
             $t('Soumissions & relecture', 'Configurer le formulaire de soumission', 'normal', 'submissions'),
             $t('Soumissions & relecture', 'Recruter et affecter les relecteurs', 'normal', 'reviewers'),
             $t('Soumissions & relecture', 'Collecter les relectures et arrêter les décisions', 'normal', 'submissions'),
@@ -442,7 +442,7 @@ class ProjectController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function validateTask(Request $request, ?Edition $edition): array
+    private function validateTask(Request $request, ?Event $event): array
     {
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:200'],
@@ -457,9 +457,9 @@ class ProjectController extends Controller
             'checklist_json' => ['nullable', 'string'],
         ]);
 
-        // Le responsable doit appartenir à l'équipe de l'édition (sinon on ignore).
-        if (! empty($validated['assignee_id']) && $edition
-            && ! $this->assigneePool($edition)->contains('id', (int) $validated['assignee_id'])) {
+        // Le responsable doit appartenir à l'équipe de l'événement (sinon on ignore).
+        if (! empty($validated['assignee_id']) && $event
+            && ! $this->assigneePool($event)->contains('id', (int) $validated['assignee_id'])) {
             $validated['assignee_id'] = null;
         }
 
@@ -511,14 +511,14 @@ class ProjectController extends Controller
         ]);
     }
 
-    /** URL de la feature liée à une tâche, filtrée sur l'édition (ou null). */
-    private function linkUrl(?string $key, Edition $edition): ?string
+    /** URL de la feature liée à une tâche, filtrée sur l'événement (ou null). */
+    private function linkUrl(?string $key, Event $event): ?string
     {
         if ($key === null || $key === '') {
             return null;
         }
 
-        $q = ['edition_id' => $edition->id];
+        $q = ['event_id' => $event->id];
 
         return match ($key) {
             'submissions' => route('admin.submissions.index', $q),
@@ -529,8 +529,8 @@ class ProjectController extends Controller
             'program' => route('admin.program.slots', $q),
             'reports' => route('admin.reports.index', $q),
             'reviewers' => route('admin.submissions.reviewers', $q),
-            'committees' => route('admin.editions.edit', ['edition' => $edition, 'tab' => 'committees']),
-            'edition' => route('admin.editions.edit', ['edition' => $edition]),
+            'committees' => route('admin.evenements.edit', ['event' => $event, 'tab' => 'committees']),
+            'event' => route('admin.evenements.edit', ['event' => $event]),
             default => null,
         };
     }
@@ -540,7 +540,7 @@ class ProjectController extends Controller
      *
      * @return array<string, mixed>
      */
-    private function taskCard(ProjectTask $task, Edition $edition): array
+    private function taskCard(ProjectTask $task, Event $event): array
     {
         [$checkDone, $checkTotal] = $task->checklistProgress();
 
@@ -563,7 +563,7 @@ class ProjectController extends Controller
             'checkDone' => $checkDone,
             'checkTotal' => $checkTotal,
             'link_key' => (string) $task->link_key,
-            'linkUrl' => $this->linkUrl($task->link_key, $edition),
+            'linkUrl' => $this->linkUrl($task->link_key, $event),
             'linkLabel' => $task->link_key ? (self::LINK_TARGETS[$task->link_key] ?? null) : null,
         ];
     }
@@ -588,17 +588,17 @@ class ProjectController extends Controller
     }
 
     /**
-     * Tâches + jalons d'une édition, mis en forme pour l'état client.
+     * Tâches + jalons d'une événement, mis en forme pour l'état client.
      *
      * @return array{tasks: array<int, array<string, mixed>>, milestones: array<int, array<string, mixed>>}
      */
-    private function editionPayload(Edition $edition): array
+    private function editionPayload(Event $event): array
     {
-        $tasks = ProjectTask::where('edition_id', $edition->id)->with('assignee')
+        $tasks = ProjectTask::where('event_id', $event->id)->with('assignee')
             ->orderBy('position')->orderBy('id')->get()
-            ->map(fn (ProjectTask $t) => $this->taskCard($t, $edition))->all();
+            ->map(fn (ProjectTask $t) => $this->taskCard($t, $event))->all();
 
-        $milestones = ProjectMilestone::where('edition_id', $edition->id)
+        $milestones = ProjectMilestone::where('event_id', $event->id)
             ->orderByRaw('due_date is null')->orderBy('due_date')->orderBy('position')->get()
             ->map(fn (ProjectMilestone $m) => $this->milestoneData($m))->all();
 
@@ -622,27 +622,27 @@ class ProjectController extends Controller
             return;
         }
 
-        $edition = $task->edition;
+        $event = $task->event;
         Notifier::user(
             $assignee,
             kind: 'task_assigned',
             title: 'Une tâche vous a été assignée',
-            body: '« '.$task->title.' » - '.($edition?->title ?: 'colloque')
+            body: '« '.$task->title.' » - '.($event?->title ?: 'colloque')
                 .($task->due_date ? ' · échéance '.$task->due_date->format('d/m/Y') : ''),
-            url: $edition ? route('admin.project.index', ['edition_id' => $edition->id]) : null,
+            url: $event ? route('admin.project.index', ['event_id' => $event->id]) : null,
             icon: 'layers',
         );
     }
 
     /**
-     * Vivier des responsables assignables : l'équipe de l'édition + les
+     * Vivier des responsables assignables : l'équipe de l'événement + les
      * administrateurs (super / de colloque), qui peuvent tous accéder au projet.
      *
      * @return EloquentCollection<int, User>
      */
-    private function assigneePool(Edition $edition): EloquentCollection
+    private function assigneePool(Event $event): EloquentCollection
     {
-        $teamIds = $edition->team()->pluck('users.id')->all();
+        $teamIds = $event->team()->pluck('users.id')->all();
 
         return User::query()
             ->where(fn ($q) => $q
@@ -651,15 +651,15 @@ class ProjectController extends Controller
             ->orderBy('name')->get();
     }
 
-    private function currentEdition(Request $request): ?Edition
+    private function currentEdition(Request $request): ?Event
     {
-        $editions = $this->accessibleEditions($request, 'project');
-        $id = (string) $request->input('edition_id', '');
+        $events = $this->accessibleEditions($request, 'project');
+        $id = (string) $request->input('event_id', '');
 
         if ($id === '') {
-            return $editions->firstWhere('status', 'open') ?? $editions->first();
+            return $events->firstWhere('status', 'open') ?? $events->first();
         }
 
-        return $editions->firstWhere('id', (int) $id);
+        return $events->firstWhere('id', (int) $id);
     }
 }

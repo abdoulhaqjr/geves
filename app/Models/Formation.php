@@ -16,14 +16,14 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
- * Formation proposée dans le cadre d'une édition (module activable). Une édition
+ * Formation proposée dans le cadre d'une événement (module activable). Une événement
  * peut en proposer plusieurs ; chacune a ses formateurs, ses frais (0 = gratuite),
  * son lieu/salle, ses dates et, à terme, sa visio.
  *
  * @property array<string, mixed>|null $meta
  * @property Carbon|null $starts_at
  * @property Carbon|null $ends_at
- * @property Edition|null $edition
+ * @property Event|null $event
  */
 class Formation extends Model implements Meetable
 {
@@ -44,29 +44,29 @@ class Formation extends Model implements Meetable
     }
 
     /**
-     * Formations publiées d'une édition donnée. Une formation appartient toujours
-     * à une édition (= l'événement) : l'espace participant se scope sur l'édition
-     * sélectionnée globalement, jamais sur « toutes les éditions ».
+     * Formations publiées d'une événement donnée. Une formation appartient toujours
+     * à une événement (= l'événement) : l'espace participant se scope sur l'événement
+     * sélectionnée globalement, jamais sur « toutes les événements ».
      *
      * @param  Builder<Formation>  $query
      * @return Builder<Formation>
      */
-    public function scopePublishedIn(Builder $query, Edition $edition): Builder
+    public function scopePublishedIn(Builder $query, Event $event): Builder
     {
-        return $query->where('edition_id', $edition->id)->where('published', true);
+        return $query->where('event_id', $event->id)->where('published', true);
     }
 
     /**
-     * L'édition propose-t-elle des formations ? (module activé pour l'édition ET
+     * L'événement propose-t-elle des formations ? (module activé pour l'événement ET
      * au moins une formation publiée). Sert au lien du menu latéral participant
      * ET à la garde de la page : si c'est faux, le lien est masqué et la page
      * n'est pas accessible.
      */
-    public static function offeredIn(?Edition $edition): bool
+    public static function offeredIn(?Event $event): bool
     {
-        return $edition !== null
-            && $edition->formationEnabled()
-            && self::query()->publishedIn($edition)->exists();
+        return $event !== null
+            && $event->formationEnabled()
+            && self::query()->publishedIn($event)->exists();
     }
 
     /** Formation gratuite (aucun frais) : inscription sans paiement. */
@@ -113,7 +113,7 @@ class Formation extends Model implements Meetable
 
         $prefix = (string) config('meetings.jitsi.room_prefix', 'gesco');
 
-        return Str::slug($prefix.'-formation-'.$this->edition_id.'-'.$this->id);
+        return Str::slug($prefix.'-formation-'.$this->event_id.'-'.$this->id);
     }
 
     public function meetingUrl(): ?string
@@ -150,10 +150,10 @@ class Formation extends Model implements Meetable
      * ⚠️ Un inscrit d'une formation **payante** qui n'a pas réglé n'a **aucun**
      * accès à la visio (règle métier explicite).
      */
-    /** Édition qui porte les réglages de visio de cette salle (cf. Meetable). */
-    public function meetingEdition(): ?Edition
+    /** Événement qui porte les réglages de visio de cette salle (cf. Meetable). */
+    public function meetingEdition(): ?Event
     {
-        return $this->edition;
+        return $this->event;
     }
 
     public function meetingRoleFor(?User $account, bool $isStaff = false): MeetingRole
@@ -178,10 +178,10 @@ class Formation extends Model implements Meetable
         return $eligible ? MeetingRole::Attendee : MeetingRole::None;
     }
 
-    /** @return BelongsTo<Edition, $this> */
-    public function edition(): BelongsTo
+    /** @return BelongsTo<Event, $this> */
+    public function event(): BelongsTo
     {
-        return $this->belongsTo(Edition::class);
+        return $this->belongsTo(Event::class);
     }
 
     /** @return HasMany<FormationTrainer, $this> */

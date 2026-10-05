@@ -3,7 +3,7 @@
 namespace App\Documents;
 
 use App\Models\Attestation;
-use App\Support\EditionSettings;
+use App\Support\EventSettings;
 
 /**
  * Valeurs de rendu d'une attestation délivrée (aperçu HTML comme PDF).
@@ -17,18 +17,18 @@ class AttestationVars
     /** @return array<string, mixed> */
     public static function for(Attestation $attestation, string $verifyUrl): array
     {
-        $edition = $attestation->edition;
+        $event = $attestation->event;
         $meta = (array) ($attestation->meta ?? []);
 
         return [
-            'org' => $edition?->colloque?->name ?? '',
-            'event' => $edition?->title ?? '',
-            'year' => (string) ($edition?->year ?: ''),
-            'location' => $edition?->location ?? '',
+            'org' => $event?->series?->name ?? '',
+            'event' => $event?->title ?? '',
+            'year' => (string) ($event?->year ?: ''),
+            'location' => $event?->location ?? '',
             // Valeurs nommées par la palette du concepteur ([edition.theme],
             // [recipient.role]…) : sans elles, ses jetons restaient vides.
-            'theme' => (string) ($edition?->theme ?? ''),
-            'dates' => $edition?->dateRangeLabel() ?? '',
+            'theme' => (string) ($event?->theme ?? ''),
+            'dates' => $event?->dateRangeLabel() ?? '',
             'institution' => (string) ($attestation->participant?->institution ?? ''),
             'role' => (string) ($attestation->participant?->roleLabel() ?? ''),
             'name' => (string) $attestation->recipient_name,
@@ -36,12 +36,12 @@ class AttestationVars
             'date' => $attestation->issued_at?->format('d/m/Y') ?? '',
             'ref' => $attestation->uuid,
             'verify_url' => $verifyUrl,
-            // Signataire de l'édition : les modèles livrés portent [signatory.name]
+            // Signataire de l'événement : les modèles livrés portent [signatory.name]
             // sous la mention « Le Président du comité d'organisation ». Sans
             // valeur, la ligne sortait vide sur le document délivré alors que le
             // concepteur, lui, affichait un exemple.
-            'signatory' => (string) EditionSettings::get($edition, 'attestations.signatory', ''),
-            'signatory_role' => (string) EditionSettings::get($edition, 'attestations.signatory_role', ''),
+            'signatory' => (string) EventSettings::get($event, 'attestations.signatory', ''),
+            'signatory_role' => (string) EventSettings::get($event, 'attestations.signatory_role', ''),
             // Communication concernée (attestation de communication) - vide pour les autres types.
             'communication' => (string) ($meta['communication_title'] ?? ''),
             'communication_ref' => (string) ($meta['communication_ref'] ?? ''),

@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 /**
- * Participants d'une édition (Blade, fidèle au mockup) : rôle, paiement, invitation.
+ * Participants d'une événement (Blade, fidèle au mockup) : rôle, paiement, invitation.
  * Filtres par query string ; invitations (individuelle ou groupée aux payés non
  * invités) en POST. L'aperçu « Sa page » est une vue en lecture seule.
  */
@@ -29,17 +29,17 @@ class ParticipantController extends Controller
 
     public function index(Request $request): View
     {
-        $editions = $this->accessibleEditions($request, 'participants');
-        $editionId = (string) $request->query('edition_id', '');
+        $events = $this->accessibleEditions($request, 'participants');
+        $editionId = (string) $request->query('event_id', '');
         if ($editionId === '') {
-            $editionId = (string) ($editions->firstWhere('status', 'open')?->id ?? $editions->first()?->id ?? '');
+            $editionId = (string) ($events->firstWhere('status', 'open')?->id ?? $events->first()?->id ?? '');
         }
         $role = (string) $request->query('role', '');
         $search = trim((string) $request->query('search', ''));
         $paid = (string) $request->query('paid', '');
         $invited = (string) $request->query('invited', '');
 
-        $base = Participant::query()->where('edition_id', $editionId);
+        $base = Participant::query()->where('event_id', $editionId);
         $sort = ListSort::resolve($request, ['last_name', 'role', 'created_at'], 'last_name', 'asc');
 
         $participants = (clone $base)
@@ -64,12 +64,12 @@ class ParticipantController extends Controller
 
         $paidCount = (clone $base)->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid'))->count();
 
-        // Rôles d'organisation cumulés par personne sur CE colloque (edition_user),
+        // Rôles d'organisation cumulés par personne sur CE colloque (event_user),
         // pour montrer qu'un participant peut aussi porter une fonction d'équipe.
         $editionRoles = $editionId === ''
             ? collect()
-            : DB::table('edition_user')
-                ->where('edition_id', $editionId)->get()
+            : DB::table('event_user')
+                ->where('event_id', $editionId)->get()
                 ->groupBy('user_id')
                 ->map(fn ($rows) => $rows->pluck('role')->unique()->all());
 
@@ -84,12 +84,12 @@ class ParticipantController extends Controller
             'editionRoles' => $editionRoles,
             'sort' => $sort['sort'],
             'dir' => $sort['dir'],
-            'editions' => $editions,
+            'events' => $events,
             'paid' => $paid,
             'invited' => $invited,
             'participants' => $participants,
             'roles' => Participant::ROLES,
-            'edition_id' => $editionId,
+            'event_id' => $editionId,
             'role' => $role,
             'search' => $search,
             'stats' => [
@@ -104,7 +104,7 @@ class ParticipantController extends Controller
     /** « Sa page » - aperçu en lecture seule de l'espace d'un participant. */
     public function preview(Participant $participant): View
     {
-        $participant->load('edition', 'user');
+        $participant->load('event', 'user');
         $id = $participant->id;
 
         return view('admin.participants.preview', [
@@ -130,12 +130,12 @@ class ParticipantController extends Controller
     /** Invite les participants ayant payé mais pas encore invités. */
     public function inviteBulk(Request $request): RedirectResponse
     {
-        $editionId = (string) $request->input('edition_id', '');
+        $editionId = (string) $request->input('event_id', '');
         if ($editionId === '') {
             return back();
         }
 
-        $participants = Participant::where('edition_id', $editionId)
+        $participants = Participant::where('event_id', $editionId)
             ->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid'))
             ->get()
             ->filter(fn ($p) => ! $p->isInvited() && filled($p->email));
@@ -159,7 +159,7 @@ class ParticipantController extends Controller
             $participant->user,
             kind: 'invitation',
             title: 'Invitation au colloque',
-            body: 'Vous êtes invité(e) à '.($participant->edition?->title ?: 'l’édition').'.',
+            body: 'Vous êtes invité(e) à '.($participant->event?->title ?: 'l’événement').'.',
             url: route('account.dashboard'),
             icon: 'bell',
         );

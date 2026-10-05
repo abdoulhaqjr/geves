@@ -630,7 +630,7 @@ document.addEventListener('alpine:init', () => {
             if (t) { clearTimeout(t.timer); t.show = false; }
         },
     }));
-    // Gestion de projet d'une édition (kanban + liste + jalons), 100 % AJAX : un
+    // Gestion de projet d'une événement (kanban + liste + jalons), 100 % AJAX : un
     // seul composant porte l'état (tasks[]/milestones[]) ; tout le CRUD passe par
     // fetch et met à jour l'état en direct - aucun rechargement de page.
     window.Alpine.data('ukcProject', (config = {}) => ({
@@ -1214,7 +1214,7 @@ document.addEventListener('alpine:init', () => {
         decisionLog: Array.isArray(log) ? log : [],
         copiedIndex: null,
         showGrow: false,
-        // Discussion conservée pendant la session, cloisonnée par édition ET par
+        // Discussion conservée pendant la session, cloisonnée par événement ET par
         // utilisateur (un autre membre du staff ne voit jamais la discussion d'un autre).
         storagePrefix: 'gesco.copilot.v1.',
         scope: String(scope || '0'),
@@ -1227,7 +1227,7 @@ document.addEventListener('alpine:init', () => {
             this.$watch('messages', () => this.persist());
             this.scrollSoon();
         },
-        // Retire les discussions d'un autre utilisateur (changement de compte), toutes éditions confondues.
+        // Retire les discussions d'un autre utilisateur (changement de compte), toutes événements confondues.
         purgeForeignScopes() {
             try {
                 for (let i = sessionStorage.length - 1; i >= 0; i--) {
@@ -1311,7 +1311,7 @@ document.addEventListener('alpine:init', () => {
                 const res = await fetch(askUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this.csrf() },
-                    body: JSON.stringify({ question, history, edition_id: this.editionId || null }),
+                    body: JSON.stringify({ question, history, event_id: this.editionId || null }),
                 });
                 const data = await res.json().catch(() => ({}));
                 this.messages.push({
@@ -1355,7 +1355,7 @@ document.addEventListener('alpine:init', () => {
                 const res = await fetch(executeUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this.csrf() },
-                    body: JSON.stringify({ key: m.action.key, params: m.action.params || {}, edition_id: this.editionId || null }),
+                    body: JSON.stringify({ key: m.action.key, params: m.action.params || {}, event_id: this.editionId || null }),
                 });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) {
@@ -1867,7 +1867,7 @@ document.addEventListener('alpine:init', () => {
         },
     }));
 
-    // Listes répétables du formulaire d'édition (admin) : tarifs, comités,
+    // Listes répétables du formulaire d'événement (admin) : tarifs, comités,
     // partenaires, FAQ - ajout/suppression côté client.
     // ⚠️ Un répéteur qui se RÉORDONNE ne peut pas être repéré par sa position :
     // Alpine recycle les nœuds à clé égale, et le fichier déjà choisi dans un
@@ -1989,7 +1989,7 @@ document.addEventListener('alpine:init', () => {
         fmt(b) { return b > 1048576 ? (b / 1048576).toFixed(1) + ' Mo' : Math.max(1, Math.round(b / 1024)) + ' Ko'; },
     }));
 
-    // Ligne « formateur » (ajout ou édition) : rapprochement à la saisie d'un
+    // Ligne « formateur » (ajout ou événement) : rapprochement à la saisie d'un
     // identifiant fort (e-mail / téléphone) avec un compte existant, comme pour les
     // co-auteurs. Quand un compte correspond, on pré-remplit les autres champs et on
     // verrouille le nom (l'identité vient du compte ; le serveur la force de toute
@@ -2044,7 +2044,7 @@ document.addEventListener('alpine:init', () => {
     }));
 
     // Formateur d'une formation : upload de photo en AJAX (barre de progression sur
-    // l'avatar) + bascule d'édition en ligne des informations.
+    // l'avatar) + bascule d'événement en ligne des informations.
     window.Alpine.data('formationTrainer', (cfg = {}) => ({
         photo: cfg.photo || '',
         uploadUrl: cfg.uploadUrl || '',
@@ -2221,8 +2221,8 @@ document.addEventListener('alpine:init', () => {
     // Éditeur de champs personnalisés du formulaire de soumission (admin), sans
     // Livewire : ajout / suppression / réordonnancement côté client.
     // Éditeur du formulaire de soumission : état 100 % Alpine, enregistrement
-    // AUTOMATIQUE (réordonnancement, ajout, édition, suppression d'un champ). Plus
-    // de bouton « Enregistrer » : chaque changement est persité en AJAX. L'édition
+    // AUTOMATIQUE (réordonnancement, ajout, événement, suppression d'un champ). Plus
+    // de bouton « Enregistrer » : chaque changement est persité en AJAX. L'événement
     // d'un champ se fait dans un panneau latéral (comme « Nouvelle tâche » du projet).
     window.Alpine.data('formEditor', (cfg = {}) => ({
         standard: Array.isArray(cfg.standard) ? cfg.standard : [],
@@ -2230,7 +2230,7 @@ document.addEventListener('alpine:init', () => {
         saveUrl: cfg.saveUrl || '',
         csrf: cfg.csrf || '',
         saving: false,
-        // Panneau d'édition
+        // Panneau d'événement
         editOpen: false,
         editKind: 'custom', // 'standard' | 'custom'
         editIndex: null,
@@ -2573,7 +2573,7 @@ document.addEventListener('alpine:init', () => {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
                     },
                     body: JSON.stringify({
-                        edition_id: this.cfg.edition_id, kind: this.cfg.kind, type: this.cfg.type,
+                        event_id: this.cfg.event_id, kind: this.cfg.kind, type: this.cfg.type,
                         layout: JSON.parse(JSON.stringify(this.layout)),
                     }),
                 });
@@ -2723,7 +2723,7 @@ const ukcAiVeil = (() => {
     const DEFAULT_STEPS = [
         'Lecture de vos documents…',
         'Extraction des informations…',
-        'Recoupement avec l’édition en cours…',
+        'Recoupement avec l’événement en cours…',
         'Mise en forme du résultat…',
     ];
 

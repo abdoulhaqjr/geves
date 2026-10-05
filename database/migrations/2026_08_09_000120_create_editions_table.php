@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Éditions : une occurrence datée d'un colloque, avec son cycle de vie
+ * Événements : une occurrence datée d'un colloque, avec son cycle de vie
  * (brouillon → ouverte → clôturée → archivée), sa page publique, ses réglages
  * (frais, thématiques, contenu enrichi) stockés en JSON.
  */
@@ -13,11 +13,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('editions', function (Blueprint $table) {
+        Schema::create('events', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('colloque_id')->constrained('colloques')->cascadeOnDelete();
+            $table->foreignId('event_series_id')->constrained('event_series')->cascadeOnDelete();
             $table->string('title', 255)->default('');
-            $table->string('edition_label', 100)->default('');
+            $table->string('event_label', 100)->default('');
             $table->text('theme')->nullable();
             $table->string('subtitle', 255)->nullable();
             $table->smallInteger('year')->default(0)->index();
@@ -38,6 +38,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('editions');
+        Schema::dropIfExists('events');
     }
 };

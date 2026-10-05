@@ -21,11 +21,11 @@ class TestimonialController extends Controller
     {
         $account = Auth::guard('account')->user();
 
-        // Éditions auxquelles la personne a participé (contexte optionnel du témoignage).
-        $editions = Participant::where('user_id', $account->id)
-            ->with('edition')
+        // Événements auxquelles la personne a participé (contexte optionnel du témoignage).
+        $events = Participant::where('user_id', $account->id)
+            ->with('event')
             ->get()
-            ->pluck('edition')
+            ->pluck('event')
             ->filter()
             ->unique('id')
             ->values();
@@ -33,7 +33,7 @@ class TestimonialController extends Controller
         return view('account.testimonials.index', [
             'account' => $account,
             'mine' => Testimonial::where('user_id', $account->id)->orderByDesc('id')->get(),
-            'editions' => $editions,
+            'events' => $events,
             'pendingExists' => Testimonial::where('user_id', $account->id)->where('status', 'pending')->exists(),
         ]);
     }
@@ -51,24 +51,24 @@ class TestimonialController extends Controller
             'quote' => ['required', 'string', 'min:20', 'max:2000'],
             'author_role' => ['nullable', 'string', 'max:160'],
             'author_affiliation' => ['nullable', 'string', 'max:200'],
-            'edition_id' => ['nullable', 'integer'],
+            'event_id' => ['nullable', 'integer'],
             'rating' => ['nullable', 'integer', 'between:1,5'],
             'consent' => ['accepted'],
         ]);
 
-        // Le contexte d'édition doit être une édition de la personne (anti-forgerie).
+        // Le contexte d'événement doit être une événement de la personne (anti-forgerie).
         $editionId = null;
-        if (! empty($data['edition_id'])) {
+        if (! empty($data['event_id'])) {
             $editionId = Participant::where('user_id', $account->id)
-                ->where('edition_id', (int) $data['edition_id'])->exists()
-                ? (int) $data['edition_id'] : null;
+                ->where('event_id', (int) $data['event_id'])->exists()
+                ? (int) $data['event_id'] : null;
         }
 
         $name = trim($account->first_name.' '.$account->last_name) ?: (string) $account->name;
 
         Testimonial::create([
             'user_id' => $account->id,
-            'edition_id' => $editionId,
+            'event_id' => $editionId,
             'author_name' => $name,
             'author_role' => $data['author_role'] ?? $account->grade,
             'author_affiliation' => $data['author_affiliation'] ?? $account->affiliation,

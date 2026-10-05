@@ -16,15 +16,15 @@
     ];
 @endphp
 
-<x-layouts.app :title="__('Frais de co-auteur').' - '.($edition->tr('title') ?: config('app.name'))">
+<x-layouts.app :title="__('Frais de co-auteur').' - '.($event->tr('title') ?: config('app.name'))">
     @include('partials.public-header')
 
     <section class="page-hero">
         <div class="ukc-container">
-            <div class="eyebrow">{{ $edition->tr('title') ?: $edition->year }}</div>
+            <div class="eyebrow">{{ $event->tr('title') ?: $event->year }}</div>
             <h1>{{ __('Frais de co-auteur') }}</h1>
             <p>{{ __('Vous êtes cité(e) comme co-auteur d’une communication acceptée ? Retrouvez-la par votre e-mail, puis réglez vos frais depuis votre espace participant, au tarif de votre grade.') }}</p>
-            <a class="note" href="{{ route('public.colloque', $edition->slug) }}">
+            <a class="note" href="{{ route('public.colloque', $event->slug) }}">
                 <x-ukc.icon name="chevron" :size="14" /> {{ __('Revenir à la page du colloque') }}
             </a>
         </div>
@@ -43,7 +43,7 @@
             {{-- Recherche par e-mail (GET) --}}
             <div class="ukc-card">
                 <h2><x-ukc.icon name="search" :size="20" /> {{ __('Retrouver mes communications') }}</h2>
-                <form method="GET" action="{{ route('public.coauthor', $edition->slug) }}" class="coauthor-search">
+                <form method="GET" action="{{ route('public.coauthor', $event->slug) }}" class="coauthor-search">
                     <div class="ukc-field">
                         <label for="email">{{ __('Votre e-mail de co-auteur') }}</label>
                         <input type="email" id="email" name="email" value="{{ $email }}"
@@ -122,7 +122,7 @@
                     <div>
                         <span class="ico"><x-ukc.icon name="user-plus" :size="18" /></span>
                         <strong>{{ __('Un compte, un seul dossier') }}</strong>
-                        <p>{{ __('Vos communications, votre reçu et vos attestations se retrouvent au même endroit, d’une édition à l’autre.') }}</p>
+                        <p>{{ __('Vos communications, votre reçu et vos attestations se retrouvent au même endroit, d’une événement à l’autre.') }}</p>
                     </div>
                     <div>
                         <span class="ico"><x-ukc.icon name="diploma" :size="18" /></span>
@@ -134,5 +134,5 @@
         </div>
     </section>
 
-    @include('partials.colloque-footer', ['e' => $edition])
+    @include('partials.colloque-footer', ['e' => $event])
 </x-layouts.app>

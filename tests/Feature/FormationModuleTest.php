@@ -7,41 +7,41 @@ use App\Models\FormationTrainer;
 // adminStaff() -> AdminSubmissionWorkflowTest ; openEdition()/verifiedAccount() -> tests/Pest.php
 
 it('affiche la page Formations pour un membre du staff', function () {
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs(adminStaff(), 'web')
-        ->get(route('admin.formations').'?edition_id='.$edition->id)
+        ->get(route('admin.formations').'?event_id='.$event->id)
         ->assertOk()
         ->assertSee('Formations');
 });
 
-it('n’affiche les formations que si le module est activé dans les paramètres de l’édition', function () {
-    $edition = openEdition();
-    Formation::create(['edition_id' => $edition->id, 'title' => 'Atelier module', 'fee' => 0, 'published' => true]);
+it('n’affiche les formations que si le module est activé dans les paramètres de l’événement', function () {
+    $event = openEdition();
+    Formation::create(['event_id' => $event->id, 'title' => 'Atelier module', 'fee' => 0, 'published' => true]);
 
     // Désactivé par défaut : la liste n'apparaît pas.
-    $this->actingAs(adminStaff(), 'web')->get(route('admin.formations').'?edition_id='.$edition->id)
+    $this->actingAs(adminStaff(), 'web')->get(route('admin.formations').'?event_id='.$event->id)
         ->assertOk()->assertDontSee('Atelier module')->assertSee('désactivé');
 
-    // Activé via le réglage d'édition (case « Activer le Module Formations » du formulaire).
-    $edition->update(['settings' => array_merge($edition->settings ?? [], ['formation_enabled' => true])]);
-    expect($edition->fresh()->formationEnabled())->toBeTrue();
-    $this->actingAs(adminStaff(), 'web')->get(route('admin.formations').'?edition_id='.$edition->id)
+    // Activé via le réglage d'événement (case « Activer le Module Formations » du formulaire).
+    $event->update(['settings' => array_merge($event->settings ?? [], ['formation_enabled' => true])]);
+    expect($event->fresh()->formationEnabled())->toBeTrue();
+    $this->actingAs(adminStaff(), 'web')->get(route('admin.formations').'?event_id='.$event->id)
         ->assertOk()->assertSee('Atelier module');
 });
 
 it('crée, met à jour et supprime une formation', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $staff = adminStaff();
 
-    $this->actingAs($staff, 'web')->post(route('admin.formations.store', $edition), [
+    $this->actingAs($staff, 'web')->post(route('admin.formations.store', $event), [
         'title' => 'Rédaction scientifique',
         'fee' => 15000,
         'published' => '1',
         'public' => '1',
     ]);
 
-    $formation = Formation::where('edition_id', $edition->id)->first();
+    $formation = Formation::where('event_id', $event->id)->first();
     expect($formation)->not->toBeNull();
     expect($formation->title)->toBe('Rédaction scientifique');
     expect((float) $formation->fee)->toBe(15000.0);
@@ -62,9 +62,9 @@ it('crée, met à jour et supprime une formation', function () {
 });
 
 it('ajoute un formateur et le rattache au compte unifié si l’e-mail correspond', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount(); // e-mail awa@example.tg
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'Atelier stats', 'fee' => 0]);
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'Atelier stats', 'fee' => 0]);
 
     $this->actingAs(adminStaff(), 'web')->post(route('admin.formations.trainers.store', $formation), [
         'name' => 'Dr Awa Kodjo',
@@ -87,18 +87,18 @@ it('interdit l’accès aux Formations sans authentification staff', function ()
 });
 
 it('affiche la liste nominative des inscrits pour l’admin', function () {
-    $edition = openEdition();
-    $edition->update(['settings' => array_merge($edition->settings ?? [], ['formation_enabled' => true])]);
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'Atelier', 'fee' => 0, 'published' => true]);
+    $event = openEdition();
+    $event->update(['settings' => array_merge($event->settings ?? [], ['formation_enabled' => true])]);
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'Atelier', 'fee' => 0, 'published' => true]);
     $user = verifiedAccount(); // Awa Kodjo
-    $p = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'trainee', 'user_id' => $user->id]);
-    FormationEnrollment::create(['formation_id' => $formation->id, 'edition_id' => $edition->id, 'user_id' => $user->id, 'participant_id' => $p->id, 'status' => 'registered', 'amount' => 0]);
+    $p = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'trainee', 'user_id' => $user->id]);
+    FormationEnrollment::create(['formation_id' => $formation->id, 'event_id' => $event->id, 'user_id' => $user->id, 'participant_id' => $p->id, 'status' => 'registered', 'amount' => 0]);
 
     $admin = adminStaff();
 
     // La liste compacte annonce le nombre d'inscrits et renvoie vers la formation.
     $this->actingAs($admin, 'web')
-        ->get(route('admin.formations').'?edition_id='.$edition->id)
+        ->get(route('admin.formations').'?event_id='.$event->id)
         ->assertOk()
         ->assertSee('Atelier')
         ->assertSee(route('admin.formations.show', $formation), false);

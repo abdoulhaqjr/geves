@@ -7,9 +7,9 @@ use App\Support\ConflictOfInterest;
 
 function coiSubmission(array $authors, array $attrs = []): Submission
 {
-    $edition = openEdition();
+    $event = openEdition();
 
-    return $edition->submissions()->create(array_merge([
+    return $event->submissions()->create(array_merge([
         'title' => 'Étude sur la nutrition',
         'ref_code' => 'AA-'.random_int(100, 999),
         'status' => 'submitted',

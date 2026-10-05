@@ -5,54 +5,54 @@
         'statuses' => $statuses,
         'currentUserId' => $currentUserId,
         'routes' => [
-            'taskStore' => route('admin.project.tasks.store', ['edition_id' => $edition?->id]),
+            'taskStore' => route('admin.project.tasks.store', ['event_id' => $event?->id]),
             'taskUpdate' => route('admin.project.tasks.update', ':id'),
             'taskDelete' => route('admin.project.tasks.destroy', ':id'),
             'taskMove' => route('admin.project.tasks.move', ':id'),
             'taskComments' => route('admin.project.tasks.comments', ':id'),
             'taskComment' => route('admin.project.tasks.comment', ':id'),
             'taskReschedule' => route('admin.project.tasks.reschedule', ':id'),
-            'msStore' => route('admin.project.milestones.store', ['edition_id' => $edition?->id]),
+            'msStore' => route('admin.project.milestones.store', ['event_id' => $event?->id]),
             'msUpdate' => route('admin.project.milestones.update', ':id'),
             'msToggle' => route('admin.project.milestones.toggle', ':id'),
             'msDelete' => route('admin.project.milestones.destroy', ':id'),
             'msReschedule' => route('admin.project.milestones.reschedule', ':id'),
-            'seed' => route('admin.project.seed', ['edition_id' => $edition?->id]),
+            'seed' => route('admin.project.seed', ['event_id' => $event?->id]),
         ],
     ];
     $phases = ['Cadrage', 'Appel à communications', 'Soumissions & relecture', 'Programme', 'Logistique', 'Tenue', 'Après-colloque'];
     $prioClass = "{'ukc-pill--muted':t.priority==='low','ukc-pill--info':t.priority==='normal','ukc-pill--warn':t.priority==='high','ukc-pill--err':t.priority==='urgent'}";
 @endphp
 
-<x-layouts.admin title="Projet" :subtitle="$edition ? (($edition->title ?: $edition->year).' · piloté comme un projet') : 'Pilotez chaque édition comme un projet'">
-    @if ($edition)
+<x-layouts.admin title="Projet" :subtitle="$event ? (($event->title ?: $event->year).' · piloté comme un projet') : 'Pilotez chaque événement comme un projet'">
+    @if ($event)
         <x-slot:actions>
-            <a href="{{ route('admin.project.export', ['edition_id' => $edition->id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="sheet" :size="16" /> Export Excel</a>
-            <a href="{{ route('admin.project.report', ['edition_id' => $edition->id]) }}" target="_blank" class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="chart" :size="16" /> Rapport</a>
+            <a href="{{ route('admin.project.export', ['event_id' => $event->id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="sheet" :size="16" /> Export Excel</a>
+            <a href="{{ route('admin.project.report', ['event_id' => $event->id]) }}" target="_blank" class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="chart" :size="16" /> Rapport</a>
         </x-slot:actions>
     @endif
 
     <div class="admin-page admin-project" x-data="ukcProject({{ \Illuminate\Support\Js::from($projectConfig) }})">
 
-        {{-- Sélecteur d'édition (change = navigation) --}}
+        {{-- Sélecteur d'événement (change = navigation) --}}
         <div style="max-width:340px;margin-bottom:16px;">
             <div class="ukc-field" style="margin:0;">
-                <label>Édition</label>
-                <select onchange="window.location='{{ route('admin.project.index') }}?edition_id='+this.value">
+                <label>Événement</label>
+                <select onchange="window.location='{{ route('admin.project.index') }}?event_id='+this.value">
                     <option value="">- Choisir -</option>
-                    @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
+                    @foreach ($events as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $event_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
                 </select>
             </div>
         </div>
 
-        @if (! $edition)
-            <div class="ukc-empty"><h3>Choisissez une édition</h3><p>Sélectionnez une édition pour piloter son projet.</p></div>
+        @if (! $event)
+            <div class="ukc-empty"><h3>Choisissez une événement</h3><p>Sélectionnez une événement pour piloter son projet.</p></div>
         @else
             {{-- Projet vierge --}}
             <div class="ukc-empty" style="text-align:center;padding:40px 24px;" x-show="isEmpty()" x-cloak>
                 <x-ukc.icon name="layers" :size="34" />
                 <h3 style="margin-top:10px;">Ce projet est vierge</h3>
-                <p>Démarrez avec le cycle de vie type d’un colloque (jalons + tâches modèles), pré-rempli d’après les dates clés de l’édition - vous ajusterez ensuite.</p>
+                <p>Démarrez avec le cycle de vie type d’un colloque (jalons + tâches modèles), pré-rempli d’après les dates clés de l’événement - vous ajusterez ensuite.</p>
                 <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px;">
                     <button type="button" class="ukc-btn ukc-btn--blue" :disabled="saving" @click="seed()"><x-ukc.icon name="sparkles" :size="16" /> Initialiser le projet</button>
                     <button type="button" class="ukc-btn ukc-btn--ghost" @click="openNewTask()"><x-ukc.icon name="plus" :size="16" /> Créer une tâche vide</button>

@@ -2,7 +2,7 @@
 
 namespace App\Support;
 
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\EventSession;
 use Illuminate\Support\Carbon;
 
@@ -19,7 +19,7 @@ use Illuminate\Support\Carbon;
 class ProgramConflicts
 {
     /**
-     * Première session de l'édition qui rend le placement INTERDIT sur l'intervalle
+     * Première session de l'événement qui rend le placement INTERDIT sur l'intervalle
      * [$start, $end[, ou null s'il n'y a pas de conflit.
      *
      * @param  bool  $isPlenary  L'élément placé est-il lui-même une plénière ?
@@ -28,7 +28,7 @@ class ProgramConflicts
      * @param  int|null  $ignoreSessionId  Session à exclure (ré-enregistrement d'elle-même).
      */
     public static function blockingSession(
-        Edition $edition,
+        Event $event,
         ?Carbon $start,
         ?Carbon $end,
         bool $isPlenary,
@@ -38,7 +38,7 @@ class ProgramConflicts
             return null; // horaire incomplet ou invalide : rien à vérifier
         }
 
-        return $edition->sessions()
+        return $event->sessions()
             ->whereNotNull('starts_at')->whereNotNull('ends_at')
             ->when($ignoreSessionId !== null, fn ($q) => $q->where('id', '!=', $ignoreSessionId))
             // Un atelier/créneau n'est en conflit qu'avec une plénière ; une
@@ -56,18 +56,18 @@ class ProgramConflicts
      * La pause déjeuner est EXCLUSIVE (comme une plénière) : aucune activité ne
      * peut se tenir en même temps. Renvoie la fenêtre `['start','end']` (HH:MM) si
      * l'intervalle [$start, $end[ la chevauche, sinon null. La fenêtre est lue
-     * dans les paramètres de créneaux de l'édition (`settings.program.params`) et
+     * dans les paramètres de créneaux de l'événement (`settings.program.params`) et
      * calée sur le jour du début.
      *
      * @return array{start: string, end: string}|null
      */
-    public static function lunchClash(Edition $edition, ?Carbon $start, ?Carbon $end): ?array
+    public static function lunchClash(Event $event, ?Carbon $start, ?Carbon $end): ?array
     {
         if (! $start || ! $end || $end->lessThanOrEqualTo($start)) {
             return null;
         }
 
-        $params = $edition->settings['program']['params'] ?? [];
+        $params = $event->settings['program']['params'] ?? [];
         if (empty($params['lunch'])) {
             return null;
         }

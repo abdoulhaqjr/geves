@@ -6,12 +6,12 @@ use App\Models\ReviewerBid;
 use App\Models\SessionReport;
 use App\Models\Submission;
 use App\Models\User;
-use App\Support\EditionLock;
+use App\Support\EventLock;
 
 /**
- * Une édition **archivée** est en lecture seule pour les participants : plus de
+ * Une événement **archivée** est en lecture seule pour les participants : plus de
  * dépôt, plus de relecture, plus de rapport, plus de paiement. L'admin et les
- * gestionnaires gardent la main (back-office, RBAC par édition).
+ * gestionnaires gardent la main (back-office, RBAC par événement).
  *
  * ⚠️ Le déclencheur est le statut `archived`, pas `closed` : `closed` = dépôts
  * clos, c'est justement la période où les relecteurs travaillent.
@@ -19,7 +19,7 @@ use App\Support\EditionLock;
 
 // openEdition()/verifiedAccount()/adminStaff()/seededSubmission() -> tests/Pest.php
 
-/** Relecteur (participant + compte) sur l'édition d'une soumission. */
+/** Relecteur (participant + compte) sur l'événement d'une soumission. */
 function lockedReviewer(Submission $submission): Participant
 {
     $account = User::create([
@@ -30,32 +30,32 @@ function lockedReviewer(Submission $submission): Participant
     $account->markEmailAsVerified();
 
     return Participant::create([
-        'edition_id' => $submission->edition_id, 'user_id' => $account->id,
+        'event_id' => $submission->event_id, 'user_id' => $account->id,
         'first_name' => 'Kossi', 'last_name' => 'Adjo',
         'email' => $account->email, 'role' => 'reviewer',
     ]);
 }
 
-it('ne gèle que les éditions archivées', function () {
-    $edition = openEdition();
+it('ne gèle que les événements archivées', function () {
+    $event = openEdition();
 
     foreach (['draft', 'open', 'closed'] as $status) {
-        $edition->update(['status' => $status]);
-        expect(EditionLock::frozen($edition->fresh()))->toBeFalse();
+        $event->update(['status' => $status]);
+        expect(EventLock::frozen($event->fresh()))->toBeFalse();
     }
 
-    $edition->update(['status' => 'archived']);
-    expect(EditionLock::frozen($edition->fresh()))->toBeTrue();
-    expect(EditionLock::frozen(null))->toBeFalse();
+    $event->update(['status' => 'archived']);
+    expect(EventLock::frozen($event->fresh()))->toBeTrue();
+    expect(EventLock::frozen(null))->toBeFalse();
 });
 
-it('interdit au relecteur de rendre une évaluation sur une édition archivée', function () {
+it('interdit au relecteur de rendre une évaluation sur une événement archivée', function () {
     $submission = seededSubmission();
     $reviewer = lockedReviewer($submission);
     $review = Review::create([
         'submission_id' => $submission->id, 'reviewer_id' => $reviewer->id, 'status' => 'accepted',
     ]);
-    $submission->edition->update(['status' => 'archived']);
+    $submission->event->update(['status' => 'archived']);
 
     $this->actingAs($reviewer->user, 'account')
         ->post(route('account.reviews.submit', $review), ['recommendation' => 'accept'])
@@ -64,13 +64,13 @@ it('interdit au relecteur de rendre une évaluation sur une édition archivée',
     expect($review->fresh()->status)->toBe('accepted');
 });
 
-it('interdit au relecteur d’accepter ou de refuser sur une édition archivée', function () {
+it('interdit au relecteur d’accepter ou de refuser sur une événement archivée', function () {
     $submission = seededSubmission();
     $reviewer = lockedReviewer($submission);
     $review = Review::create([
         'submission_id' => $submission->id, 'reviewer_id' => $reviewer->id, 'status' => 'invited',
     ]);
-    $submission->edition->update(['status' => 'archived']);
+    $submission->event->update(['status' => 'archived']);
 
     $this->actingAs($reviewer->user, 'account')
         ->post(route('account.reviews.respond', $review), ['answer' => 'decline'])
@@ -79,14 +79,14 @@ it('interdit au relecteur d’accepter ou de refuser sur une édition archivée'
     expect($review->fresh()->status)->toBe('invited');
 });
 
-it('laisse le relecteur travailler sur une édition seulement clôturée', function () {
+it('laisse le relecteur travailler sur une événement seulement clôturée', function () {
     $submission = seededSubmission();
     $reviewer = lockedReviewer($submission);
     $review = Review::create([
         'submission_id' => $submission->id, 'reviewer_id' => $reviewer->id, 'status' => 'invited',
     ]);
     // Dépôts clos : c'est précisément le moment où l'on relit.
-    $submission->edition->update(['status' => 'closed']);
+    $submission->event->update(['status' => 'closed']);
 
     $this->actingAs($reviewer->user, 'account')
         ->post(route('account.reviews.respond', $review), ['answer' => 'accept'])
@@ -95,7 +95,7 @@ it('laisse le relecteur travailler sur une édition seulement clôturée', funct
     expect($review->fresh()->status)->toBe('accepted');
 });
 
-it('retire l’appel à candidatures d’une édition archivée', function () {
+it('retire l’appel à candidatures d’une événement archivée', function () {
     $submission = seededSubmission('submitted');
     $reviewer = lockedReviewer($submission);
 
@@ -104,7 +104,7 @@ it('retire l’appel à candidatures d’une édition archivée', function () {
         ->assertOk()
         ->assertSee($submission->ref_code);
 
-    $submission->edition->update(['status' => 'archived']);
+    $submission->event->update(['status' => 'archived']);
 
     $this->actingAs($reviewer->user, 'account')
         ->get(route('account.reviews', ['tab' => 'candidatures']))
@@ -112,10 +112,10 @@ it('retire l’appel à candidatures d’une édition archivée', function () {
         ->assertDontSee($submission->ref_code);
 });
 
-it('refuse une candidature envoyée malgré tout sur une édition archivée', function () {
+it('refuse une candidature envoyée malgré tout sur une événement archivée', function () {
     $submission = seededSubmission('submitted');
     $reviewer = lockedReviewer($submission);
-    $submission->edition->update(['status' => 'archived']);
+    $submission->event->update(['status' => 'archived']);
 
     $this->actingAs($reviewer->user, 'account')
         ->post(route('account.reviews.bids'), [
@@ -125,9 +125,9 @@ it('refuse une candidature envoyée malgré tout sur une édition archivée', fu
     expect(ReviewerBid::count())->toBe(0);
 });
 
-it('interdit à l’auteur de corriger sa communication sur une édition archivée', function () {
+it('interdit à l’auteur de corriger sa communication sur une événement archivée', function () {
     $submission = seededSubmission();
-    $submission->edition->update(['status' => 'archived']);
+    $submission->event->update(['status' => 'archived']);
     $author = $submission->participant->user;
 
     $this->actingAs($author, 'account')
@@ -140,28 +140,28 @@ it('interdit à l’auteur de corriger sa communication sur une édition archiv�
 });
 
 it('laisse consulter la page de paiement mais ferme le règlement', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
     Participant::create([
-        'edition_id' => $edition->id, 'user_id' => $account->id,
+        'event_id' => $event->id, 'user_id' => $account->id,
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email, 'role' => 'author',
     ]);
-    $edition->update(['status' => 'archived']);
+    $event->update(['status' => 'archived']);
 
     // Lecture conservée (tarifs, reçu éventuel), parcours de règlement clos.
     $this->actingAs($account, 'account')
-        ->get(route('account.payment', $edition))
+        ->get(route('account.payment', $event))
         ->assertOk()
         ->assertSee('archivée', false);
 
     $this->actingAs($account, 'account')
-        ->post(route('account.payment.pay', $edition), ['gateway' => 'manual'])
+        ->post(route('account.payment.pay', $event), ['gateway' => 'manual'])
         ->assertForbidden();
 });
 
-it('laisse l’admin intervenir sur une édition archivée', function () {
+it('laisse l’admin intervenir sur une événement archivée', function () {
     $submission = seededSubmission();
-    $submission->edition->update(['status' => 'archived']);
+    $submission->event->update(['status' => 'archived']);
 
     // Le gel ne concerne que l'espace participant : le back-office garde la main
     // (corriger une décision, émettre une attestation oubliée…).
@@ -186,7 +186,7 @@ it('laisse le relecteur consulter l’évaluation qu’il a rendue', function ()
         'status' => 'completed', 'recommendation' => 'minor', 'score' => 15,
         'comments' => 'Communication solide et pertinente.',
     ]);
-    $submission->edition->update(['status' => 'archived']);
+    $submission->event->update(['status' => 'archived']);
 
     // Le gel retire les actions, jamais la lecture de son propre travail.
     $this->actingAs($reviewer->user, 'account')
@@ -197,16 +197,16 @@ it('laisse le relecteur consulter l’évaluation qu’il a rendue', function ()
         ->assertSee('Archivée');
 });
 
-it('laisse le rapporteur relire son rapport sur une édition archivée', function () {
-    $edition = openEdition();
+it('laisse le rapporteur relire son rapport sur une événement archivée', function () {
+    $event = openEdition();
     $account = verifiedAccount();
-    $session = sessionFor($edition);
+    $session = sessionFor($event);
     $session->update(['rapporteur_email' => $account->email, 'starts_at' => now()->subDay()]);
     SessionReport::create([
-        'session_id' => $session->id, 'edition_id' => $edition->id,
+        'session_id' => $session->id, 'event_id' => $event->id,
         'summary' => 'Synthèse de la séance plénière.',
     ]);
-    $edition->update(['status' => 'archived']);
+    $event->update(['status' => 'archived']);
 
     $this->actingAs($account, 'account')
         ->get(route('account.reports.edit', $session))

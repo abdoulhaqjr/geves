@@ -6,7 +6,7 @@
     $revoked = (bool) $attestation->revoked;
     $signed = (bool) ($proof['signed'] ?? false);
     $signatureOk = (bool) ($proof['valid'] ?? false);
-    $issuer = $attestation->edition?->colloque;
+    $issuer = $attestation->event?->series;
     $pageUrl = route('attestation.document', $attestation->uuid);
     $monogram = fn (string $name) => collect(preg_split('/\s+/', trim($name)) ?: [])
         ->filter()->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode('');
@@ -26,7 +26,7 @@
     // « Ajouter au profil » de LinkedIn : paramètres publics documentés.
     $linkedIn = 'https://www.linkedin.com/profile/add?'.http_build_query(array_filter([
         'startTask' => 'CERTIFICATION_NAME',
-        'name' => $attestation->typeLabel().' - '.($attestation->edition?->title ?? ''),
+        'name' => $attestation->typeLabel().' - '.($attestation->event?->title ?? ''),
         'organizationName' => $issuer?->name ?? config('app.name'),
         'issueYear' => $attestation->issued_at?->format('Y'),
         'issueMonth' => $attestation->issued_at?->format('n'),
@@ -69,7 +69,7 @@
                  sans explication se lit comme un défaut du document. --}}
             <p class="ukc-cred-note no-print">
                 <strong>{{ __('SPÉCIMEN') }}</strong> -
-                {{ __('cette édition délivre ses attestations sur papier. Le document ci-dessous reproduit exactement celui qui vous sera remis - même mise en page, mêmes informations, même vérification - à la mention SPÉCIMEN près. Seul l’exemplaire imprimé par le secrétariat fait foi.') }}
+                {{ __('cette événement délivre ses attestations sur papier. Le document ci-dessous reproduit exactement celui qui vous sera remis - même mise en page, mêmes informations, même vérification - à la mention SPÉCIMEN près. Seul l’exemplaire imprimé par le secrétariat fait foi.') }}
             </p>
         @endif
         <section class="ukc-cred-stage">

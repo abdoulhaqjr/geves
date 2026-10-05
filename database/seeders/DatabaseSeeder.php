@@ -26,7 +26,7 @@ class DatabaseSeeder extends Seeder
 
         // Un SEUL colloque de démonstration, au volume d'un vrai événement :
         // le VIIIe colloque conjoint Parakou-Kara. L'Avenir crée le colloque,
-        // l'édition, les ateliers, le staff, les relecteurs et le direct ; le
+        // l'événement, les ateliers, le staff, les relecteurs et le direct ; le
         // Volume lui ajoute ses 200 communications et les paiements.
         $this->call([
             ColloqueAvenirSeeder::class,

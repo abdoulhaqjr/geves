@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Models\Submission;
@@ -18,14 +18,14 @@ class DemoDataSeeder extends Seeder
 {
     public function run(): void
     {
-        $edition = Edition::where('status', 'open')->latest('id')->first() ?? Edition::latest('id')->first();
-        if (! $edition) {
-            $this->command?->warn('Aucune édition - créez-en une d’abord.');
+        $event = Event::where('status', 'open')->latest('id')->first() ?? Event::latest('id')->first();
+        if (! $event) {
+            $this->command?->warn('Aucune événement - créez-en une d’abord.');
 
             return;
         }
 
-        $tracks = $edition->settings['tracks'] ?? ['Sciences et technologies', 'Sciences humaines et sociales', 'Santé et environnement'];
+        $tracks = $event->settings['tracks'] ?? ['Sciences et technologies', 'Sciences humaines et sociales', 'Santé et environnement'];
         $institutions = ['Université de Kara', 'Université de Lomé', 'Université de Parakou', 'Université d’Abomey-Calavi', 'Université Ouaga I'];
         $countries = ['Togo', 'Bénin', 'Burkina Faso', 'Côte d’Ivoire'];
         $titles = ['Enseignant / Chercheur', 'Doctorant', 'Maître-assistant', 'Étudiant en master'];
@@ -40,7 +40,7 @@ class DemoDataSeeder extends Seeder
         foreach ($people as $i => [$first, $last]) {
             $email = Str::lower($first.'.'.$last.'@demo.uk').'';
             $participant = Participant::firstOrCreate(
-                ['edition_id' => $edition->id, 'email' => $email],
+                ['event_id' => $event->id, 'email' => $email],
                 [
                     'first_name' => $first,
                     'last_name' => $last,
@@ -59,7 +59,7 @@ class DemoDataSeeder extends Seeder
                 $createdAt = now()->subDays(($i * 9 + $k * 20) % 170);
 
                 $sub = Submission::firstOrCreate(
-                    ['edition_id' => $edition->id, 'ref_code' => sprintf('%02d-%03d', $edition->year % 100, $i * 2 + $k + 1)],
+                    ['event_id' => $event->id, 'ref_code' => sprintf('%02d-%03d', $event->year % 100, $i * 2 + $k + 1)],
                     [
                         'participant_id' => $participant->id,
                         'access_token' => Str::random(64),
@@ -70,7 +70,7 @@ class DemoDataSeeder extends Seeder
                         'type' => $types[($i + $k) % count($types)],
                         'status' => $status,
                         'abstract' => '<p>Cette communication présente des travaux sur '.Str::lower($tracks[($i + $k) % count($tracks)])
-                            .'. Contexte, objectifs, méthodologie et résultats attendus sont exposés dans le cadre de l’édition '.$edition->year.'.</p>',
+                            .'. Contexte, objectifs, méthodologie et résultats attendus sont exposés dans le cadre de l’événement '.$event->year.'.</p>',
                     ]
                 );
                 $sub->forceFill(['created_at' => $createdAt, 'updated_at' => $createdAt])->save();
@@ -79,7 +79,7 @@ class DemoDataSeeder extends Seeder
             // Paiement pour ~2/3 des participants.
             if ($i % 3 !== 2) {
                 Payment::firstOrCreate(
-                    ['edition_id' => $edition->id, 'participant_id' => $participant->id],
+                    ['event_id' => $event->id, 'participant_id' => $participant->id],
                     [
                         'amount' => [15000, 25000, 30000][$i % 3],
                         'currency' => 'XOF',
@@ -92,6 +92,6 @@ class DemoDataSeeder extends Seeder
             }
         }
 
-        $this->command?->info('Démo : participants, communications et paiements créés pour « '.$edition->title.' ».');
+        $this->command?->info('Démo : participants, communications et paiements créés pour « '.$event->title.' ».');
     }
 }

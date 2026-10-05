@@ -5,7 +5,7 @@ namespace App\Actions;
 use App\Models\Payment;
 use App\Payments\Contracts\OnlineGateway;
 use App\Payments\GatewayRegistry;
-use App\Support\EditionPaymentConfig;
+use App\Support\EventPaymentConfig;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -42,7 +42,7 @@ class ReconcilePayments
             ->whereNotNull('gateway_ref')
             ->when($paymentId, fn ($q) => $q->where('id', $paymentId))
             ->when(! $paymentId, fn ($q) => $q->where('created_at', '>=', now()->subDays($days)))
-            ->with('edition')
+            ->with('event')
             ->get();
 
         foreach ($payments as $payment) {
@@ -54,7 +54,7 @@ class ReconcilePayments
             $report['checked']++;
 
             try {
-                $status = EditionPaymentConfig::using($payment->edition, fn () => $gw->verify($payment));
+                $status = EventPaymentConfig::using($payment->event, fn () => $gw->verify($payment));
             } catch (\Throwable $e) {
                 // Passerelle injoignable : on réessaiera au prochain passage.
                 $report['errors']++;

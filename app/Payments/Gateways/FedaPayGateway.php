@@ -96,7 +96,7 @@ class FedaPayGateway implements OnlineGateway
         }
 
         $body = [
-            'description' => 'Frais d\'inscription - '.($payment->edition?->title ?? 'Colloque'),
+            'description' => 'Frais d\'inscription - '.($payment->event?->title ?? 'Événement'),
             'amount' => (int) round((float) $payment->amount),
             'currency' => ['iso' => 'XOF'],
             'callback_url' => route('payment.return', ['gateway' => 'fedapay', 'payment' => $payment->id]),

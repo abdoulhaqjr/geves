@@ -170,8 +170,8 @@ it('n’enregistre pas de réclamation pour un visiteur anonyme sans e-mail', fu
 });
 
 it('liste les réclamations et protège la page par la capacité claims', function () {
-    $edition = openEdition();
-    seedClaim(['edition_id' => $edition->id, 'subject' => 'Badge introuvable']);
+    $event = openEdition();
+    seedClaim(['event_id' => $event->id, 'subject' => 'Badge introuvable']);
 
     $noAccess = User::create(['first_name' => 'No', 'last_name' => 'Access', 'email' => 'noacc@example.tg', 'password' => 'pass12345']);
     $this->actingAs($noAccess, 'web')->get(route('admin.claims.index'))->assertForbidden();

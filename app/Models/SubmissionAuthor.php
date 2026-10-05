@@ -11,7 +11,7 @@ use Illuminate\Support\Carbon;
  * compte utilisateur, quand ce dernier existe (ou est invité à s'inscrire).
  *
  * @property int $submission_id
- * @property int $edition_id
+ * @property int $event_id
  * @property int|null $user_id
  * @property string $role
  * @property string|null $email
@@ -50,9 +50,9 @@ class SubmissionAuthor extends Model
         return $this->belongsTo(User::class);
     }
 
-    /** @return BelongsTo<Edition, $this> */
-    public function edition(): BelongsTo
+    /** @return BelongsTo<Event, $this> */
+    public function event(): BelongsTo
     {
-        return $this->belongsTo(Edition::class);
+        return $this->belongsTo(Event::class);
     }
 }

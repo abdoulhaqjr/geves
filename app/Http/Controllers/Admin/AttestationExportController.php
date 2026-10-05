@@ -8,7 +8,7 @@ use App\Documents\LayoutSanitizer;
 use App\Http\Controllers\Controller;
 use App\Models\Attestation;
 use App\Models\DocumentTemplate;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Support\AttestationQuery;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
@@ -45,10 +45,10 @@ class AttestationExportController extends Controller
     /** Lot d'attestations prêt à imprimer, une par page. */
     public function pdf(Request $request): Response|RedirectResponse
     {
-        $edition = Edition::find($request->query('edition_id'));
+        $event = Event::find($request->query('event_id'));
 
-        if (! $edition) {
-            return back()->with('ukc_error', 'Sélectionnez une édition.');
+        if (! $event) {
+            return back()->with('ukc_error', 'Sélectionnez une événement.');
         }
 
         // ⚠️ Un seul type par fichier : la taille de page vient de la mise en page
@@ -62,8 +62,8 @@ class AttestationExportController extends Controller
 
         $lot = max(1, (int) $request->query('lot', 1));
 
-        $attestations = AttestationQuery::filtered($request, $edition)
-            ->with(['edition.colloque', 'participant'])
+        $attestations = AttestationQuery::filtered($request, $event)
+            ->with(['event.series', 'participant'])
             ->orderBy('recipient_name')
             ->orderBy('id')
             ->forPage($lot, self::LOT)
@@ -73,7 +73,7 @@ class AttestationExportController extends Controller
             return back()->with('ukc_error', 'Aucune attestation à exporter pour ce filtre.');
         }
 
-        $template = DocumentTemplate::ensureFor((int) $edition->id, 'attestation', $type);
+        $template = DocumentTemplate::ensureFor((int) $event->id, 'attestation', $type);
         $layout = LayoutSanitizer::sanitize((array) $template->layout, 'attestation', $type);
 
         $pages = $attestations->map(fn (Attestation $a) => LayoutRenderer::render(
@@ -101,13 +101,13 @@ class AttestationExportController extends Controller
      */
     public function emargement(Request $request): Response|RedirectResponse
     {
-        $edition = Edition::find($request->query('edition_id'));
+        $event = Event::find($request->query('event_id'));
 
-        if (! $edition) {
-            return back()->with('ukc_error', 'Sélectionnez une édition.');
+        if (! $event) {
+            return back()->with('ukc_error', 'Sélectionnez une événement.');
         }
 
-        $attestations = AttestationQuery::filtered($request, $edition)
+        $attestations = AttestationQuery::filtered($request, $event)
             ->with('participant')
             ->orderBy('recipient_name')
             ->orderBy('id')
@@ -118,7 +118,7 @@ class AttestationExportController extends Controller
         }
 
         return Pdf::loadView('pdf.attestations-emargement', [
-            'edition' => $edition,
+            'event' => $event,
             'attestations' => $attestations,
             'typeLabel' => Attestation::TYPES[(string) $request->query('type', '')] ?? 'Tous types',
         ])->setPaper('a4', 'portrait')->download('emargement-attestations.pdf');

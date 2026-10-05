@@ -30,7 +30,7 @@ class RegisterController extends Controller
         }
 
         return view('account.auth.register', [
-            // Civilités par défaut (surchargeable plus tard par la config d'édition).
+            // Civilités par défaut (surchargeable plus tard par la config d'événement).
             'civilities' => ['M.', 'Mme', 'Dr', 'Pr'],
             // ⚠️ Source UNIQUE des grades (cf. ParticipantTypes) : une liste propre
             // à ce formulaire produisait des valeurs (« Doctorant / étudiant »…) que

@@ -1,6 +1,6 @@
 <x-layouts.admin title="Formulaire de soumission" subtitle="Champs et ordre d’affichage">
     <x-slot:actions>
-        <a href="{{ route('account.submissions.create', $edition->slug) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+        <a href="{{ route('account.submissions.create', $event->slug) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
             <x-ukc.icon name="external" :size="15" /> Aperçu public
         </a>
     </x-slot:actions>
@@ -9,14 +9,14 @@
         $systemKeys = ['title', 'abstract', 'track'];
         $fieldMeta = [
             'title' => 'Texte court · obligatoire',
-            'track' => 'Liste · axes de l’édition',
+            'track' => 'Liste · axes de l’événement',
             'type' => 'Liste · Orale / Poster',
             'keywords' => 'Texte · '.$rules['keywords_min'].' à '.$rules['keywords_max'].' mots-clés',
             'abstract' => 'Zone de texte · '.$rules['word_min'].' à '.$rules['word_limit'].' mots · obligatoire',
             'file' => 'Upload · '.$rules['file_formats'].' · max '.$rules['file_max_mb'].' Mo',
         ];
 
-        // Liste ordonnée des champs standard, avec leurs contraintes d'édition.
+        // Liste ordonnée des champs standard, avec leurs contraintes d'événement.
         $standardList = [];
         foreach ($fields as $key => $conf) {
             $standardList[] = [
@@ -38,7 +38,7 @@
             'standard' => $standardList,
             'custom' => $custom,
             'customTypes' => $customTypes,
-            'saveUrl' => route('admin.editions.form.update', $edition),
+            'saveUrl' => route('admin.evenements.form.update', $event),
             'csrf' => csrf_token(),
         ];
     @endphp
@@ -46,9 +46,9 @@
     <div class="admin-page admin-submission-forms" x-data="formEditor(@js($editorConfig))">
         <div class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px;">
             <div class="ukc-field" style="min-width:320px;max-width:460px;margin:0;">
-                <label for="edition_id">Édition</label>
-                <select id="edition_id" name="edition_id" onchange="window.location = '{{ url('admin/editions') }}/' + this.value + '/formulaire'">
-                    @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
+                <label for="event_id">Événement</label>
+                <select id="event_id" name="event_id" onchange="window.location = '{{ url('admin/editions') }}/' + this.value + '/formulaire'">
+                    @foreach ($events as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $event_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
                 </select>
             </div>
         </div>
@@ -62,7 +62,7 @@
                 <h3 style="font-size:14px;font-weight:800;margin-bottom:6px;">Champs (ordre d’affichage)</h3>
                 <div class="desc" style="font-size:13px;color:var(--ukc-muted);margin-bottom:14px;">
                     L’identité de l’auteur (nom, e-mail, affiliation) provient du compte. Les champs système ne sont pas supprimables.
-                    Toute modification (édition, ajout, réordonnancement) est <strong>enregistrée automatiquement</strong>.
+                    Toute modification (événement, ajout, réordonnancement) est <strong>enregistrée automatiquement</strong>.
                 </div>
 
                 {{-- Champs standard --}}
@@ -119,7 +119,7 @@
             </div>
         </div>
 
-        {{-- ============= Panneau d'édition d'un champ (comme « Nouvelle tâche ») ============= --}}
+        {{-- ============= Panneau d'événement d'un champ (comme « Nouvelle tâche ») ============= --}}
         <x-ukc.slideover open="editOpen" onClose="editOpen = false" width="440px">
             <x-slot:header><span x-text="creating ? 'Nouveau champ' : 'Modifier le champ'"></span></x-slot:header>
 

@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Colloque;
+use App\Models\EventSeries;
 use App\Models\User;
 use App\Notifications\StaffVerifyEmail;
 use Database\Seeders\RolesAndAdminSeeder;
@@ -115,29 +115,29 @@ it('modifie la matrice d’accès : ajoute et retire des permissions par rôle',
     expect(Role::findByName('administrator', 'web')->hasPermissionTo('manage_colloques'))->toBeTrue();
 });
 
-it('applique l’étanchéité par édition (affectation → accès, modèle pur)', function () {
+it('applique l’étanchéité par événement (affectation → accès, modèle pur)', function () {
     usersAdmin(); // seed des rôles + permissions
-    $edition = openEdition();
-    $other = Colloque::create(['name' => 'Colloque C', 'slug' => 'colloque-c'])
-        ->editions()->create(['title' => 'C 2027', 'year' => 2027, 'status' => 'open', 'slug' => 'c-2027']);
+    $event = openEdition();
+    $other = EventSeries::create(['name' => 'EventSeries C', 'slug' => 'colloque-c'])
+        ->events()->create(['title' => 'C 2027', 'year' => 2027, 'status' => 'open', 'slug' => 'c-2027']);
 
-    // Comptable affecté à $edition : paiements de SON édition uniquement.
+    // Comptable affecté à $event : paiements de SON événement uniquement.
     $accountant = User::factory()->create();
-    $edition->team()->attach($accountant->id, ['role' => 'accounting']);
-    $this->actingAs($accountant, 'web')->get(route('admin.payments.index', ['edition_id' => $edition->id]))->assertOk();
-    $this->actingAs($accountant, 'web')->get(route('admin.payments.index', ['edition_id' => $other->id]))->assertForbidden();
-    $this->actingAs($accountant, 'web')->get(route('admin.payments.index'))->assertOk(); // liste scopée à ses éditions
+    $event->team()->attach($accountant->id, ['role' => 'accounting']);
+    $this->actingAs($accountant, 'web')->get(route('admin.payments.index', ['event_id' => $event->id]))->assertOk();
+    $this->actingAs($accountant, 'web')->get(route('admin.payments.index', ['event_id' => $other->id]))->assertForbidden();
+    $this->actingAs($accountant, 'web')->get(route('admin.payments.index'))->assertOk(); // liste scopée à ses événements
     $this->actingAs($accountant, 'web')->get(route('admin.submissions.index'))->assertForbidden(); // hors de sa fonction
     $this->actingAs($accountant, 'web')->get(route('admin.settings'))->assertForbidden(); // zone globale
     $this->actingAs($accountant, 'web')->get(route('admin.users.index'))->assertForbidden();
 
     // Secrétariat affecté : soumissions + participants, mais pas paiements.
     $secretary = User::factory()->create();
-    $edition->team()->attach($secretary->id, ['role' => 'secretariat']);
-    $this->actingAs($secretary, 'web')->get(route('admin.submissions.index', ['edition_id' => $edition->id]))->assertOk();
-    $this->actingAs($secretary, 'web')->get(route('admin.payments.index', ['edition_id' => $edition->id]))->assertForbidden();
+    $event->team()->attach($secretary->id, ['role' => 'secretariat']);
+    $this->actingAs($secretary, 'web')->get(route('admin.submissions.index', ['event_id' => $event->id]))->assertOk();
+    $this->actingAs($secretary, 'web')->get(route('admin.payments.index', ['event_id' => $event->id]))->assertForbidden();
 
-    // Staff sans affectation : shell OK, mais aucune zone par édition.
+    // Staff sans affectation : shell OK, mais aucune zone par événement.
     $orphan = User::factory()->create();
     $this->actingAs($orphan, 'web')->get(route('admin.dashboard'))->assertOk();
     $this->actingAs($orphan, 'web')->get(route('admin.payments.index'))->assertForbidden();

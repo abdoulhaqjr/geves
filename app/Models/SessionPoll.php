@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *
  * @property int $id
  * @property int $session_id
- * @property int $edition_id
+ * @property int $event_id
  * @property string $question
  * @property list<string> $options
  * @property string $status

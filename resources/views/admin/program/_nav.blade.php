@@ -2,7 +2,7 @@
      double, sur deux pages, en Alpine (donc non partageables par lien). Ils sont
      désormais pilotés par l'URL (`?tab=`), comme le module Soumissions.
      `$current` = clé de l'onglet actif. --}}
-@php $navEd = $edition_id ?? ''; @endphp
+@php $navEd = $event_id ?? ''; @endphp
 <div class="ukc-nav-docs">
     @foreach ([
         'apercu' => 'Programme',
@@ -20,7 +20,7 @@
                 @if ($key === 'creneaux' && ($stats['toPlan'] ?? 0) > 0)<span class="nav-count">{{ $stats['toPlan'] }}</span>@endif
             </button>
         @else
-            <a href="{{ route('admin.program.index', array_filter(['edition_id' => $navEd, 'tab' => $key])) }}">
+            <a href="{{ route('admin.program.index', array_filter(['event_id' => $navEd, 'tab' => $key])) }}">
                 {{ $label }}
                 @if ($key === 'creneaux' && ($stats['toPlan'] ?? 0) > 0)<span class="nav-count">{{ $stats['toPlan'] }}</span>@endif
             </a>

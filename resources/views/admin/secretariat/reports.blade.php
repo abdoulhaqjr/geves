@@ -4,17 +4,17 @@
     </x-slot:actions>
 
     <div class="admin-page admin-program">
-        {{-- Sélecteur d'édition, comme partout ailleurs. --}}
+        {{-- Sélecteur d'événement, comme partout ailleurs. --}}
         <div class="ukc-field" style="min-width:320px;max-width:460px;margin:0 0 14px;">
-            <label for="edition_id">Édition</label>
-            <select id="edition_id" name="edition_id" onchange="window.location = '{{ route('admin.secretariat.reports') }}?edition_id=' + this.value">
+            <label for="event_id">Événement</label>
+            <select id="event_id" name="event_id" onchange="window.location = '{{ route('admin.secretariat.reports') }}?event_id=' + this.value">
                 <option value="">- Choisir -</option>
-                @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
+                @foreach ($events as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $event_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
             </select>
         </div>
 
-        @if ($edition_id === '')
-            <div class="ukc-empty"><h3>Choisissez une édition</h3><p>Sélectionnez une édition pour consulter les rapports de séance.</p></div>
+        @if ($event_id === '')
+            <div class="ukc-empty"><h3>Choisissez une événement</h3><p>Sélectionnez une événement pour consulter les rapports de séance.</p></div>
         @else
             @php
                 $reportStats = [
@@ -111,7 +111,7 @@
                     </form>
                 </div>
             @empty
-                <div class="ukc-empty"><h3>Aucune séance</h3><p>Cette édition n'a pas encore de séance programmée.</p></div>
+                <div class="ukc-empty"><h3>Aucune séance</h3><p>Cette événement n'a pas encore de séance programmée.</p></div>
             @endforelse
 
         @endif

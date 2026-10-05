@@ -8,14 +8,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Account\ResubmitSubmissionRequest;
 use App\Http\Requests\Account\StoreSubmissionRequest;
 use App\Models\Attestation;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Slot;
 use App\Models\Submission;
 use App\Models\User;
 use App\Support\CalendarExport;
-use App\Support\CurrentColloque;
-use App\Support\EditionLock;
+use App\Support\CurrentEvent;
+use App\Support\EventLock;
 use App\Support\Html;
 use App\Support\ParticipantTypes;
 use App\Support\RorClient;
@@ -40,24 +40,24 @@ class SubmissionController extends Controller
     {
         $account = Auth::guard('account')->user();
 
-        // Colloque courant (sélecteur) : la liste se scope dessus.
-        $current = CurrentColloque::current($account);
+        // Événement courant (sélecteur) : la liste se scope dessus.
+        $current = CurrentEvent::current($account);
 
         // « Mes communications » = celles que j'ai déposées OU celles où je suis
         // rattaché comme auteur/co-auteur (liaison confirmée, non déclinée).
         $submissions = Submission::query()
             ->canonical()
-            ->with('edition')
+            ->with('event')
             ->where(function ($q) use ($account): void {
                 $q->whereHas('participant', fn ($p) => $p->where('user_id', $account->id))
                     ->orWhereHas('authorLinks', fn ($l) => $l->where('user_id', $account->id)->where('status', 'linked'));
             })
-            ->when($current, fn ($q) => $q->where('edition_id', $current->id))
+            ->when($current, fn ($q) => $q->where('event_id', $current->id))
             ->latest('id')
             ->get();
 
-        // Édition ouverte aux soumissions (pour « Nouvelle soumission ») + échéance.
-        $openEdition = Edition::where('status', 'open')->where('submission_open', true)
+        // Événement ouverte aux soumissions (pour « Nouvelle soumission ») + échéance.
+        $openEdition = Event::where('status', 'open')->where('submission_open', true)
             ->latest('id')->first();
 
         // On soumet dans le colloque sélectionné (repli sur l'appel ouvert pour un
@@ -66,8 +66,8 @@ class SubmissionController extends Controller
         $submitRemaining = $submitEdition ? Submission::remainingFor($submitEdition, $account) : 0;
 
         $deadlineEdition = $openEdition
-            ?? $submissions->first()?->edition
-            ?? Edition::latest('id')->first();
+            ?? $submissions->first()?->event
+            ?? Event::latest('id')->first();
 
         return view('account.submissions.index', [
             'submissions' => $submissions,
@@ -82,20 +82,20 @@ class SubmissionController extends Controller
     /** Formulaire de dépôt d'une communication (wizard). */
     public function create(string $slug): View
     {
-        $edition = Edition::where('slug', $slug)->first();
-        abort_unless($edition && $edition->isPublished(), 404);
+        $event = Event::where('slug', $slug)->first();
+        abort_unless($event && $event->isPublished(), 404);
 
         $account = Auth::guard('account')->user();
-        $config = new SubmissionFormConfig($edition);
+        $config = new SubmissionFormConfig($event);
 
         return view('account.submissions.create', [
-            'edition' => $edition,
+            'event' => $event,
             'config' => $config,
             'account' => $account,
-            'tracks' => $edition->settings['tracks'] ?? [],
+            'tracks' => $event->settings['tracks'] ?? [],
             'gradeOptions' => ParticipantTypes::all(),
-            'maxCommunications' => (int) ($edition->settings['max_communications'] ?? 3),
-            'remaining' => Submission::remainingFor($edition, $account),
+            'maxCommunications' => (int) ($event->settings['max_communications'] ?? 3),
+            'remaining' => Submission::remainingFor($event, $account),
             'successRef' => session('success_ref'),
         ]);
     }
@@ -142,13 +142,13 @@ class SubmissionController extends Controller
     /** Enregistre la communication déposée (validation : StoreSubmissionRequest). */
     public function store(StoreSubmissionRequest $request, CreateSubmission $action): RedirectResponse
     {
-        $edition = $request->edition();
-        EditionLock::guard($edition);
+        $event = $request->event();
+        EventLock::guard($event);
         $account = Auth::guard('account')->user();
 
-        $submission = $action->handle($edition, $account, $request->config(), $request->validated(), $request->file('file'));
+        $submission = $action->handle($event, $account, $request->config(), $request->validated(), $request->file('file'));
 
-        return redirect()->route('account.submissions.create', $edition->slug)
+        return redirect()->route('account.submissions.create', $event->slug)
             ->with('success_ref', $submission->ref_code);
     }
 
@@ -160,7 +160,7 @@ class SubmissionController extends Controller
 
         $soumissionAtt = $submission->participant_id
             ? Attestation::where('participant_id', $submission->participant_id)
-                ->where('edition_id', $submission->edition_id)
+                ->where('event_id', $submission->event_id)
                 ->where('type', 'soumission')->where('revoked', false)->first()
             : null;
 
@@ -174,8 +174,8 @@ class SubmissionController extends Controller
             'availableSlots' => $this->availableSlots($submission),
             'soumissionAtt' => $soumissionAtt,
             'isOwner' => $isOwner,
-            'abstractMin' => (new SubmissionFormConfig($submission->edition))->abstractMin(),
-            'abstractMax' => (new SubmissionFormConfig($submission->edition))->abstractMax(),
+            'abstractMin' => (new SubmissionFormConfig($submission->event))->abstractMin(),
+            'abstractMax' => (new SubmissionFormConfig($submission->event))->abstractMax(),
             'googleCal' => $slot && $slot->starts_at
                 ? app(CalendarExport::class)->googleUrl(AgendaController::slotEvent($slot))
                 : null,
@@ -212,7 +212,7 @@ class SubmissionController extends Controller
         abort_unless($submission->status === 'accepted', 403);
 
         $slot = Slot::where('id', (int) $request->input('slot_id'))
-            ->where('edition_id', $submission->edition_id)
+            ->where('event_id', $submission->event_id)
             ->where('submission_id', 0)
             ->first();
 
@@ -248,7 +248,7 @@ class SubmissionController extends Controller
             'file.required' => 'Joignez le fichier de la version définitive.',
         ]);
 
-        $path = $request->file('file')->store('submissions/'.$submission->edition_id.'/camera-ready', 'public');
+        $path = $request->file('file')->store('submissions/'.$submission->event_id.'/camera-ready', 'public');
 
         $meta = $submission->meta ?? [];
         $meta['camera_ready'] = [
@@ -272,7 +272,7 @@ class SubmissionController extends Controller
         $this->authorizeOwnership($submission);
         abort_unless($submission->isAuthorEditable(), 403);
 
-        $config = new SubmissionFormConfig($submission->edition);
+        $config = new SubmissionFormConfig($submission->event);
 
         $titleRule = ['required', 'string', 'max:'.$config->titleMax()];
         if ($config->titleMin() > 0) {
@@ -315,7 +315,7 @@ class SubmissionController extends Controller
 
         // Archive la version courante (revision_of = canonique).
         Submission::create([
-            'edition_id' => $submission->edition_id,
+            'event_id' => $submission->event_id,
             'participant_id' => $submission->participant_id,
             'ref_code' => $submission->ref_code,
             'access_token' => Str::random(64),
@@ -334,7 +334,7 @@ class SubmissionController extends Controller
         // Nouveau fichier éventuel.
         $fileUrl = $submission->file_url;
         if ($request->hasFile('file')) {
-            $path = $request->file('file')->store('submissions/'.$submission->edition_id, 'public');
+            $path = $request->file('file')->store('submissions/'.$submission->event_id, 'public');
             $fileUrl = Storage::disk('public')->url($path);
         }
 
@@ -358,14 +358,14 @@ class SubmissionController extends Controller
 
     /** La communication doit appartenir au compte connecté (version canonique). */
     /**
-     * Propriété du dépôt + édition non archivée. ⚠️ Cette garde est le point
+     * Propriété du dépôt + événement non archivée. ⚠️ Cette garde est le point
      * de passage des CINQ actions d'écriture sur une communication : y placer
      * le gel évite d'avoir à le répéter (et à l'oublier) dans chacune.
      */
     private function authorizeOwnership(Submission $submission): void
     {
         $account = Auth::guard('account')->user();
-        EditionLock::guard($submission->edition);
+        EventLock::guard($submission->event);
 
         abort_unless(
             (int) $submission->revision_of === 0
@@ -423,7 +423,7 @@ class SubmissionController extends Controller
             return collect();
         }
 
-        return Slot::where('edition_id', $submission->edition_id)
+        return Slot::where('event_id', $submission->event_id)
             ->where('submission_id', 0)
             ->orderBy('starts_at')
             ->get();

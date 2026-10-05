@@ -2,10 +2,10 @@
 
 namespace App\Support;
 
-use App\Models\Edition;
+use App\Models\Event;
 
 /**
- * **Comment les attestations sont délivrées** sur une édition : en ligne (envoi
+ * **Comment les attestations sont délivrées** sur une événement : en ligne (envoi
  * et téléchargement) ou sur papier (le gestionnaire imprime et remet).
  *
  * ⚠️ **Un seul endroit décide.** Trois écrans lisent ce choix - l'émission en
@@ -40,16 +40,16 @@ class AttestationPolicy
         self::SCOPE_PRESENT => 'Seulement les auteurs pointés présents à la séance',
     ];
 
-    public static function delivery(?Edition $edition): string
+    public static function delivery(?Event $event): string
     {
-        $mode = (string) EditionSettings::get($edition, 'attestations.delivery', self::DELIVERY_ONLINE);
+        $mode = (string) EventSettings::get($event, 'attestations.delivery', self::DELIVERY_ONLINE);
 
         return isset(self::DELIVERIES[$mode]) ? $mode : self::DELIVERY_ONLINE;
     }
 
-    public static function isPaper(?Edition $edition): bool
+    public static function isPaper(?Event $event): bool
     {
-        return self::delivery($edition) === self::DELIVERY_PAPER;
+        return self::delivery($event) === self::DELIVERY_PAPER;
     }
 
     /**
@@ -59,22 +59,22 @@ class AttestationPolicy
      * relit et l'imprime. Une émission au fil des passages lui ferait réimprimer
      * à chaque communication.
      */
-    public static function issuesOnPassage(?Edition $edition): bool
+    public static function issuesOnPassage(?Event $event): bool
     {
-        return ! self::isPaper($edition);
+        return ! self::isPaper($event);
     }
 
-    public static function communicationScope(?Edition $edition): string
+    public static function communicationScope(?Event $event): string
     {
-        $scope = (string) EditionSettings::get($edition, 'attestations.communication_scope', self::SCOPE_ALL);
+        $scope = (string) EventSettings::get($event, 'attestations.communication_scope', self::SCOPE_ALL);
 
         return isset(self::SCOPES[$scope]) ? $scope : self::SCOPE_ALL;
     }
 
     /** L'attestation de communication est-elle réservée aux présents de la séance ? */
-    public static function requiresPresence(?Edition $edition): bool
+    public static function requiresPresence(?Event $event): bool
     {
-        return self::communicationScope($edition) === self::SCOPE_PRESENT;
+        return self::communicationScope($event) === self::SCOPE_PRESENT;
     }
 
     /**
@@ -83,21 +83,21 @@ class AttestationPolicy
      * ⚠️ Jamais en mode papier - annoncer un document qu'on ne peut pas encore
      * retirer ne fait qu'amener la personne au secrétariat.
      */
-    public static function notifies(?Edition $edition): bool
+    public static function notifies(?Event $event): bool
     {
-        return ! self::isPaper($edition)
-            && (bool) EditionSettings::get($edition, 'attestations.notify', true);
+        return ! self::isPaper($event)
+            && (bool) EventSettings::get($event, 'attestations.notify', true);
     }
 
     /**
      * SMS à l'émission ?
      *
      * ⚠️ **Fermé par défaut, et volontairement.** Chaque SMS est facturé, et une
-     * édition de deux cents communications en enverrait autant sans que personne
+     * événement de deux cents communications en enverrait autant sans que personne
      * ne l'ait décidé.
      */
-    public static function sendsSms(?Edition $edition): bool
+    public static function sendsSms(?Event $event): bool
     {
-        return self::notifies($edition) && (bool) EditionSettings::get($edition, 'attestations.sms', false);
+        return self::notifies($event) && (bool) EventSettings::get($event, 'attestations.sms', false);
     }
 }

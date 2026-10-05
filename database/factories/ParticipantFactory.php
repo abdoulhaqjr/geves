@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Participant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -15,7 +15,7 @@ class ParticipantFactory extends Factory
     public function definition(): array
     {
         return [
-            'edition_id' => Edition::factory(),
+            'event_id' => Event::factory(),
             'first_name' => fake()->firstName(),
             'last_name' => fake()->lastName(),
             'email' => fake()->unique()->safeEmail(),

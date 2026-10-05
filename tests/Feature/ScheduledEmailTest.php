@@ -3,7 +3,7 @@
 use App\Actions\QueueEmailCampaign;
 use App\Actions\SendDueEmails;
 use App\Mail\CampaignMail;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Email;
 use App\Support\EmailAudience;
 use App\Support\Settings;
@@ -12,55 +12,55 @@ use Illuminate\Support\Str;
 
 // adminStaff() -> AdminSubmissionWorkflowTest ; openEdition() -> AccountSubmissionTest
 
-function audienceEdition(): Edition
+function audienceEdition(): Event
 {
-    $edition = openEdition();
+    $event = openEdition();
 
-    $paid = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Payé', 'email' => 'paid@example.tg', 'role' => 'author']);
-    $edition->payments()->create(['participant_id' => $paid->id, 'amount' => 15000, 'status' => 'paid']);
+    $paid = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Payé', 'email' => 'paid@example.tg', 'role' => 'author']);
+    $event->payments()->create(['participant_id' => $paid->id, 'amount' => 15000, 'status' => 'paid']);
 
-    $edition->participants()->create(['first_name' => 'Ben', 'last_name' => 'Impayé', 'email' => 'unpaid@example.tg', 'role' => 'attendee']);
+    $event->participants()->create(['first_name' => 'Ben', 'last_name' => 'Impayé', 'email' => 'unpaid@example.tg', 'role' => 'attendee']);
 
-    $reviewer = $edition->participants()->create(['first_name' => 'Rita', 'last_name' => 'Relecteur', 'email' => 'reviewer@example.tg', 'role' => 'reviewer']);
+    $reviewer = $event->participants()->create(['first_name' => 'Rita', 'last_name' => 'Relecteur', 'email' => 'reviewer@example.tg', 'role' => 'reviewer']);
 
-    $author = $edition->participants()->create(['first_name' => 'Coco', 'last_name' => 'Accepté', 'email' => 'accepted@example.tg', 'role' => 'author']);
-    $edition->submissions()->create(['participant_id' => $author->id, 'title' => 'Titre', 'status' => 'accepted', 'revision_of' => 0, 'ref_code' => 'AA-001', 'access_token' => Str::random(64)]);
+    $author = $event->participants()->create(['first_name' => 'Coco', 'last_name' => 'Accepté', 'email' => 'accepted@example.tg', 'role' => 'author']);
+    $event->submissions()->create(['participant_id' => $author->id, 'title' => 'Titre', 'status' => 'accepted', 'revision_of' => 0, 'ref_code' => 'AA-001', 'access_token' => Str::random(64)]);
 
     // Sans e-mail : jamais destinataire.
-    $edition->participants()->create(['first_name' => 'Sans', 'last_name' => 'Mail', 'email' => '', 'role' => 'attendee']);
+    $event->participants()->create(['first_name' => 'Sans', 'last_name' => 'Mail', 'email' => '', 'role' => 'attendee']);
 
-    return $edition;
+    return $event;
 }
 
 it('résout les audiences selon le profil', function () {
-    $edition = audienceEdition();
+    $event = audienceEdition();
 
-    expect(EmailAudience::resolve($edition, 'all')->pluck('email')->sort()->values()->all())
+    expect(EmailAudience::resolve($event, 'all')->pluck('email')->sort()->values()->all())
         ->toBe(['accepted@example.tg', 'paid@example.tg', 'reviewer@example.tg', 'unpaid@example.tg']);
-    expect(EmailAudience::resolve($edition, 'paid')->pluck('email')->all())->toBe(['paid@example.tg']);
-    expect(EmailAudience::resolve($edition, 'reviewers')->pluck('email')->all())->toBe(['reviewer@example.tg']);
-    expect(EmailAudience::resolve($edition, 'accepted')->pluck('email')->all())->toBe(['accepted@example.tg']);
-    expect(EmailAudience::resolve($edition, 'unpaid')->pluck('email')->sort()->values()->all())
+    expect(EmailAudience::resolve($event, 'paid')->pluck('email')->all())->toBe(['paid@example.tg']);
+    expect(EmailAudience::resolve($event, 'reviewers')->pluck('email')->all())->toBe(['reviewer@example.tg']);
+    expect(EmailAudience::resolve($event, 'accepted')->pluck('email')->all())->toBe(['accepted@example.tg']);
+    expect(EmailAudience::resolve($event, 'unpaid')->pluck('email')->sort()->values()->all())
         ->toBe(['accepted@example.tg', 'reviewer@example.tg', 'unpaid@example.tg']);
 });
 
 it('met une campagne immédiate en file et l’envoie tout de suite', function () {
     Mail::fake();
     $staff = adminStaff();
-    $edition = audienceEdition();
+    $event = audienceEdition();
 
     // Personnalise le modèle e-mail utilisé par la campagne.
     Settings::set('email_templates', [
         'participant_invitation' => [
             'subject' => 'Bonjour {prenom}',
-            'body' => 'Merci {nom_complet} pour {edition}.',
+            'body' => 'Merci {nom_complet} pour {event}.',
             'active' => true,
         ],
     ]);
 
     $this->actingAs($staff, 'web')
         ->post(route('admin.emails.send'), [
-            'edition_id' => (string) $edition->id,
+            'event_id' => (string) $event->id,
             'template' => 'participant_invitation',
             'audience' => 'paid',
         ])
@@ -77,10 +77,10 @@ it('met une campagne immédiate en file et l’envoie tout de suite', function (
 
 it('programme une campagne future sans l’envoyer avant l’échéance', function () {
     Mail::fake();
-    $edition = audienceEdition();
+    $event = audienceEdition();
 
     $count = app(QueueEmailCampaign::class)->handle(
-        $edition, 'reviewers', 'Rappel', 'Corps', now()->addDay()
+        $event, 'reviewers', 'Rappel', 'Corps', now()->addDay()
     );
 
     expect($count)->toBe(1);
@@ -95,9 +95,9 @@ it('programme une campagne future sans l’envoyer avant l’échéance', functi
 
 it('envoie les e-mails programmés une fois l’échéance passée', function () {
     Mail::fake();
-    $edition = audienceEdition();
+    $event = audienceEdition();
 
-    app(QueueEmailCampaign::class)->handle($edition, 'reviewers', 'Rappel', 'Corps', now()->subMinute());
+    app(QueueEmailCampaign::class)->handle($event, 'reviewers', 'Rappel', 'Corps', now()->subMinute());
 
     $report = app(SendDueEmails::class)->handle();
 
@@ -108,9 +108,9 @@ it('envoie les e-mails programmés une fois l’échéance passée', function ()
 
 it('n’envoie pas deux fois le même e-mail programmé (idempotence)', function () {
     Mail::fake();
-    $edition = audienceEdition();
+    $event = audienceEdition();
 
-    app(QueueEmailCampaign::class)->handle($edition, 'paid', 'Rappel', 'Corps', now()->subMinute());
+    app(QueueEmailCampaign::class)->handle($event, 'paid', 'Rappel', 'Corps', now()->subMinute());
     app(SendDueEmails::class)->handle();
     app(SendDueEmails::class)->handle();
 
@@ -119,8 +119,8 @@ it('n’envoie pas deux fois le même e-mail programmé (idempotence)', function
 
 it('la commande emails:send vide la file arrivée à échéance', function () {
     Mail::fake();
-    $edition = audienceEdition();
-    app(QueueEmailCampaign::class)->handle($edition, 'all', 'Rappel', 'Corps', now()->subMinute());
+    $event = audienceEdition();
+    app(QueueEmailCampaign::class)->handle($event, 'all', 'Rappel', 'Corps', now()->subMinute());
 
     $this->artisan('emails:send')->assertSuccessful();
 
@@ -130,8 +130,8 @@ it('la commande emails:send vide la file arrivée à échéance', function () {
 
 it('annule un e-mail encore en file', function () {
     $staff = adminStaff();
-    $edition = audienceEdition();
-    app(QueueEmailCampaign::class)->handle($edition, 'paid', 'Rappel', 'Corps', now()->addDay());
+    $event = audienceEdition();
+    app(QueueEmailCampaign::class)->handle($event, 'paid', 'Rappel', 'Corps', now()->addDay());
     $email = Email::first();
 
     $this->actingAs($staff, 'web')->delete(route('admin.emails.cancel', $email));
@@ -141,11 +141,11 @@ it('annule un e-mail encore en file', function () {
 
 it('refuse une audience sans destinataire', function () {
     $staff = adminStaff();
-    $edition = openEdition(); // aucune participation
+    $event = openEdition(); // aucune participation
 
     $this->actingAs($staff, 'web')
         ->post(route('admin.emails.send'), [
-            'edition_id' => (string) $edition->id,
+            'event_id' => (string) $event->id,
             'template' => 'participant_invitation',
             'audience' => 'paid',
         ]);
@@ -155,11 +155,11 @@ it('refuse une audience sans destinataire', function () {
 
 it('regroupe une campagne (batch_id + audience) et l’annule par lot', function () {
     $staff = adminStaff();
-    $edition = audienceEdition();
+    $event = audienceEdition();
 
     // Programme une campagne à l'audience « payés » → e-mails en file avec batch_id.
     $this->actingAs($staff, 'web')->post(route('admin.emails.send'), [
-        'edition_id' => (string) $edition->id,
+        'event_id' => (string) $event->id,
         'template' => 'participant_invitation',
         'audience' => 'all',
         'date' => now()->addDays(3)->toDateString(),

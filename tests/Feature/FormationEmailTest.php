@@ -12,9 +12,9 @@ use Illuminate\Support\Facades\Mail;
 
 it('envoie une confirmation d’inscription et notifie à l’inscription', function () {
     Mail::fake();
-    $edition = openEdition(['formation_enabled' => true]);
+    $event = openEdition(['formation_enabled' => true]);
     $user = verifiedAccount();
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'Atelier data', 'fee' => 0, 'published' => true]);
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'Atelier data', 'fee' => 0, 'published' => true]);
 
     $this->actingAs($user, 'account')->post(route('account.formations.enroll', $formation));
 
@@ -24,9 +24,9 @@ it('envoie une confirmation d’inscription et notifie à l’inscription', func
 
 it('ne renvoie pas la confirmation si déjà inscrit', function () {
     Mail::fake();
-    $edition = openEdition(['formation_enabled' => true]);
+    $event = openEdition(['formation_enabled' => true]);
     $user = verifiedAccount();
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'Atelier data', 'fee' => 0, 'published' => true]);
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'Atelier data', 'fee' => 0, 'published' => true]);
 
     $this->actingAs($user, 'account')->post(route('account.formations.enroll', $formation));
     $this->actingAs($user, 'account')->post(route('account.formations.enroll', $formation));
@@ -35,14 +35,14 @@ it('ne renvoie pas la confirmation si déjà inscrit', function () {
 });
 
 it('envoie un message admin aux inscrits et le journalise', function () {
-    $edition = openEdition(['formation_enabled' => true]);
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'Rédaction', 'fee' => 0, 'published' => true]);
+    $event = openEdition(['formation_enabled' => true]);
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'Rédaction', 'fee' => 0, 'published' => true]);
 
     $u1 = verifiedAccount();
     $u2 = User::create(['name' => 'Ben Co', 'first_name' => 'Ben', 'last_name' => 'Co', 'email' => 'ben@example.tg', 'password' => 'pass12345']);
     foreach ([$u1, $u2] as $u) {
-        $p = $edition->participants()->create(['first_name' => $u->first_name, 'last_name' => $u->last_name, 'email' => $u->email, 'role' => 'trainee', 'user_id' => $u->id]);
-        FormationEnrollment::create(['formation_id' => $formation->id, 'edition_id' => $edition->id, 'user_id' => $u->id, 'participant_id' => $p->id, 'status' => 'registered', 'amount' => 0]);
+        $p = $event->participants()->create(['first_name' => $u->first_name, 'last_name' => $u->last_name, 'email' => $u->email, 'role' => 'trainee', 'user_id' => $u->id]);
+        FormationEnrollment::create(['formation_id' => $formation->id, 'event_id' => $event->id, 'user_id' => $u->id, 'participant_id' => $p->id, 'status' => 'registered', 'amount' => 0]);
     }
 
     Mail::fake();
@@ -55,14 +55,14 @@ it('envoie un message admin aux inscrits et le journalise', function () {
 });
 
 it('cible uniquement les inscrits ayant réglé', function () {
-    $edition = openEdition(['formation_enabled' => true]);
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'Payante', 'fee' => 10000, 'published' => true]);
+    $event = openEdition(['formation_enabled' => true]);
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'Payante', 'fee' => 10000, 'published' => true]);
 
     $paid = verifiedAccount();
     $unpaid = User::create(['name' => 'Non Réglé', 'first_name' => 'Non', 'last_name' => 'Réglé', 'email' => 'unpaid@example.tg', 'password' => 'pass12345']);
     foreach ([['u' => $paid, 's' => 'paid'], ['u' => $unpaid, 's' => 'registered']] as $row) {
-        $p = $edition->participants()->create(['first_name' => 'X', 'last_name' => 'Y', 'email' => $row['u']->email, 'role' => 'trainee', 'user_id' => $row['u']->id]);
-        FormationEnrollment::create(['formation_id' => $formation->id, 'edition_id' => $edition->id, 'user_id' => $row['u']->id, 'participant_id' => $p->id, 'status' => $row['s'], 'amount' => 10000]);
+        $p = $event->participants()->create(['first_name' => 'X', 'last_name' => 'Y', 'email' => $row['u']->email, 'role' => 'trainee', 'user_id' => $row['u']->id]);
+        FormationEnrollment::create(['formation_id' => $formation->id, 'event_id' => $event->id, 'user_id' => $row['u']->id, 'participant_id' => $p->id, 'status' => $row['s'], 'amount' => 10000]);
     }
 
     Mail::fake();

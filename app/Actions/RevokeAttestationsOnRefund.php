@@ -58,7 +58,7 @@ class RevokeAttestationsOnRefund
         }
 
         return Attestation::where('participant_id', $participantId)
-            ->where('edition_id', $payment->edition_id)
+            ->where('event_id', $payment->event_id)
             ->where('formation_id', $formationId)
             ->where('type', 'formation')
             ->where('revoked', false)
@@ -82,7 +82,7 @@ class RevokeAttestationsOnRefund
         }
 
         return Attestation::where('participant_id', $participantId)
-            ->where('edition_id', $payment->edition_id)
+            ->where('event_id', $payment->event_id)
             ->whereIn('type', ['participation', 'communication'])
             ->where('revoked', false)
             ->update(['revoked' => true]);

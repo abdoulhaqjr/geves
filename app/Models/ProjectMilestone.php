@@ -8,18 +8,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * Jalon du projet d'une édition : une échéance clé du cycle de vie du colloque
+ * Jalon du projet d'une événement : une échéance clé du cycle de vie du colloque
  * (ouverture de l'appel, clôture des soumissions, notifications, tenue, actes…).
  *
  * @property int $id
- * @property int $edition_id
+ * @property int $event_id
  * @property string $title
  * @property string|null $description
  * @property Carbon|null $due_date
  * @property string $status
  * @property int $position
  * @property Carbon|null $done_at
- * @property Edition|null $edition
+ * @property Event|null $event
  */
 class ProjectMilestone extends Model
 {
@@ -52,9 +52,9 @@ class ProjectMilestone extends Model
         return $this->due_date !== null && ! $this->isDone() && $this->due_date->isPast();
     }
 
-    /** @return BelongsTo<Edition, $this> */
-    public function edition(): BelongsTo
+    /** @return BelongsTo<Event, $this> */
+    public function event(): BelongsTo
     {
-        return $this->belongsTo(Edition::class);
+        return $this->belongsTo(Event::class);
     }
 }

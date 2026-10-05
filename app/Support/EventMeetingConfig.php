@@ -2,18 +2,18 @@
 
 namespace App\Support;
 
-use App\Models\Edition;
+use App\Models\Event;
 use Illuminate\Support\Facades\Config;
 
 /**
  * Surcharge, au runtime, la configuration de visioconférence à partir des réglages
- * PROPRES à une édition (`settings.meetings`) : fournisseur par défaut, identifiants
+ * PROPRES à une événement (`settings.meetings`) : fournisseur par défaut, identifiants
  * LiveKit / Jitsi, et qualité vidéo. Les champs laissés VIDES retombent sur la
  * configuration globale (réglages plateforme). Même esprit - et mêmes pièges - que
- * {@see EditionPaymentConfig} : à appeler AVANT de résoudre ou d'utiliser un
- * fournisseur pour une salle rattachée à une édition.
+ * {@see EventPaymentConfig} : à appeler AVANT de résoudre ou d'utiliser un
+ * fournisseur pour une salle rattachée à une événement.
  */
-class EditionMeetingConfig
+class EventMeetingConfig
 {
     /** Clés d'identifiants par fournisseur (mêmes que la config globale). */
     public const LIVEKIT_KEYS = ['url', 'api_key', 'api_secret'];
@@ -30,7 +30,7 @@ class EditionMeetingConfig
      *
      * ⚠️ Le coût retombe sur la LIAISON MONTANTE de celui qui diffuse : monter la
      * qualité d'un colloque dont les communicants sont sur une connexion modeste
-     * dégraderait leur image au lieu de l'améliorer. D'où un réglage par édition,
+     * dégraderait leur image au lieu de l'améliorer. D'où un réglage par événement,
      * et non une valeur unique pour toute la plateforme.
      */
     public const QUALITIES = ['sd', 'md', 'hd', 'fhd'];
@@ -38,32 +38,32 @@ class EditionMeetingConfig
     public const QUALITY_DEFAULT = 'md';
 
     /**
-     * Réglages de visio propres à une édition, ou null.
+     * Réglages de visio propres à une événement, ou null.
      *
      * @return array<string, mixed>|null
      */
-    public static function settings(?Edition $edition): ?array
+    public static function settings(?Event $event): ?array
     {
-        $m = $edition?->settings['meetings'] ?? null;
+        $m = $event?->settings['meetings'] ?? null;
 
         return is_array($m) ? $m : null;
     }
 
-    /** L'édition définit-elle au moins un réglage de visio ? */
-    public static function configures(?Edition $edition): bool
+    /** L'événement définit-elle au moins un réglage de visio ? */
+    public static function configures(?Event $event): bool
     {
-        return filled(self::settings($edition));
+        return filled(self::settings($event));
     }
 
     /**
-     * Qualité vidéo retenue pour cette édition, sinon celle de la plateforme.
+     * Qualité vidéo retenue pour cette événement, sinon celle de la plateforme.
      *
      * ⚠️ Une valeur inconnue retombe sur le défaut : un réglage saisi hier et
      * retiré du code demain ne doit pas rendre la salle muette d'image.
      */
-    public static function quality(?Edition $edition): string
+    public static function quality(?Event $event): string
     {
-        $propre = self::settings($edition)['quality'] ?? null;
+        $propre = self::settings($event)['quality'] ?? null;
         $globale = config('meetings.quality', self::QUALITY_DEFAULT);
 
         foreach ([$propre, $globale] as $valeur) {
@@ -75,9 +75,9 @@ class EditionMeetingConfig
         return self::QUALITY_DEFAULT;
     }
 
-    public static function apply(?Edition $edition): void
+    public static function apply(?Event $event): void
     {
-        $m = self::settings($edition);
+        $m = self::settings($event);
         if (! $m) {
             return; // aucune config propre : on garde celle de la plateforme
         }
@@ -99,12 +99,12 @@ class EditionMeetingConfig
     }
 
     /**
-     * Exécute $fn avec la configuration de l'édition appliquée, puis RESTAURE la
+     * Exécute $fn avec la configuration de l'événement appliquée, puis RESTAURE la
      * précédente.
      *
-     * ⚠️ Indispensable dès qu'une même requête touche plusieurs éditions (une liste
+     * ⚠️ Indispensable dès qu'une même requête touche plusieurs événements (une liste
      * de séances, un tableau de bord) : `apply()` n'écrase que les champs remplis,
-     * donc sans restauration les identifiants d'une édition resteraient actifs pour
+     * donc sans restauration les identifiants d'une événement resteraient actifs pour
      * la suivante - et une salle s'ouvrirait sur le serveur d'un autre colloque.
      *
      * @template T
@@ -112,9 +112,9 @@ class EditionMeetingConfig
      * @param  callable(): T  $fn
      * @return T
      */
-    public static function using(?Edition $edition, callable $fn): mixed
+    public static function using(?Event $event, callable $fn): mixed
     {
-        if (! self::configures($edition)) {
+        if (! self::configures($event)) {
             return $fn(); // rien à poser, rien à restaurer
         }
 
@@ -125,7 +125,7 @@ class EditionMeetingConfig
         ];
 
         try {
-            self::apply($edition);
+            self::apply($event);
 
             return $fn();
         } finally {

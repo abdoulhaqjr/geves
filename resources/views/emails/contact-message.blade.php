@@ -1,7 +1,7 @@
 <x-mail::message>
 # Nouveau message de contact
 
-**Édition :** {{ $edition->title }}
+**Événement :** {{ $event->title }}
 **De :** {{ $senderName }} ({{ $senderEmail }})
 
 ---

@@ -2,12 +2,12 @@
 
 namespace App\Actions;
 
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Models\User;
 
 /**
- * Crée ou retrouve le participant d'un compte sur une édition donnée.
+ * Crée ou retrouve le participant d'un compte sur une événement donnée.
  *
  * Règles (alignées sur le plugin WordPress) :
  * - **Identité imposée par le compte** : nom/prénom proviennent du compte
@@ -25,12 +25,12 @@ class UpsertParticipantForAccount
      * @param  string|null  $grade  grade POUR CETTE ÉDITION (repli : grade du compte).
      *                              Permet à une même personne d'avoir des grades
      *                              différents au fil des colloques.
-     * @param  string|null  $affiliation  affiliation pour cette édition (repli : compte).
+     * @param  string|null  $affiliation  affiliation pour cette événement (repli : compte).
      */
-    public function handle(Edition $edition, User $account, string $role = 'author', ?string $grade = null, ?string $affiliation = null): Participant
+    public function handle(Event $event, User $account, string $role = 'author', ?string $grade = null, ?string $affiliation = null): Participant
     {
         $participant = Participant::firstOrNew([
-            'edition_id' => $edition->id,
+            'event_id' => $event->id,
             'user_id' => $account->id,
         ]);
 
@@ -40,7 +40,7 @@ class UpsertParticipantForAccount
         }
 
         // Identité + coordonnées depuis le compte (source de vérité). Le grade et
-        // l'affiliation sont propres à l'édition (repli sur le profil du compte).
+        // l'affiliation sont propres à l'événement (repli sur le profil du compte).
         $participant->first_name = $account->first_name;
         $participant->last_name = $account->last_name;
         $participant->email = $account->email;

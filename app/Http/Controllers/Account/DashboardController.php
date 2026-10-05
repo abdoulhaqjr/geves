@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attestation;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\EventSession;
 use App\Models\Participant;
 use App\Models\Payment;
@@ -12,7 +12,7 @@ use App\Models\Review;
 use App\Models\Slot;
 use App\Models\Submission;
 use App\Support\AccountActivity;
-use App\Support\CurrentColloque;
+use App\Support\CurrentEvent;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
@@ -29,20 +29,20 @@ class DashboardController extends Controller
     {
         $account = Auth::guard('account')->user();
 
-        // Colloque courant (sélecteur) : le tableau de bord se scope dessus.
-        $current = CurrentColloque::current($account);
+        // Événement courant (sélecteur) : le tableau de bord se scope dessus.
+        $current = CurrentEvent::current($account);
 
         $participantIds = Participant::where('user_id', $account->id)
-            ->when($current, fn ($q) => $q->where('edition_id', $current->id))
+            ->when($current, fn ($q) => $q->where('event_id', $current->id))
             ->pluck('id');
 
-        // Rôles et activité dérivés (inter-éditions, par rapprochement d'e-mail).
+        // Rôles et activité dérivés (inter-événements, par rapprochement d'e-mail).
         $activity = new AccountActivity($account);
 
         // Documents du colloque courant (médias + livret).
         $editionIds = $current
             ? collect([$current->id])
-            : Participant::where('user_id', $account->id)->pluck('edition_id')->unique()->filter();
+            : Participant::where('user_id', $account->id)->pluck('event_id')->unique()->filter();
 
         // Sessions en direct : uniquement les séances EN COURS aujourd'hui qui le
         // concernent - soit il y présente une communication, soit elles portent sur
@@ -64,8 +64,8 @@ class DashboardController extends Controller
 
         $now = Carbon::now();
         $liveSessions = EventSession::query()->live()
-            ->whereIn('edition_id', $editionIds)
-            ->with(['edition', 'atelier'])
+            ->whereIn('event_id', $editionIds)
+            ->with(['event', 'atelier'])
             ->get()
             ->filter(function (EventSession $s) use ($now, $account, $mySessionIds, $myTracks) {
                 // En cours maintenant (fenêtre horaire de la séance).
@@ -85,12 +85,12 @@ class DashboardController extends Controller
             })
             ->values();
 
-        $editionDocuments = Edition::whereIn('id', $editionIds)
+        $editionDocuments = Event::whereIn('id', $editionIds)
             ->with(['media' => fn ($q) => $q->orderBy('ordre')->orderBy('id')])
             ->latest('id')
             ->get()
-            ->map(fn (Edition $e) => [
-                'edition' => $e,
+            ->map(fn (Event $e) => [
+                'event' => $e,
                 'media' => $e->media,
                 'hasBooklet' => $e->submissions()
                     ->where('revision_of', 0)->where('status', 'accepted')->exists(),
@@ -98,14 +98,14 @@ class DashboardController extends Controller
             ->filter(fn ($d) => $d['media']->isNotEmpty() || $d['hasBooklet'])
             ->values();
 
-        // Édition où une communication est acceptée et les frais non encore réglés.
+        // Événement où une communication est acceptée et les frais non encore réglés.
         $payable = Participant::whereIn('id', $participantIds)
             ->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted'))
             ->whereDoesntHave('participationPayments', fn ($q) => $q->where('status', 'paid'))
-            ->with('edition')
+            ->with('event')
             ->first();
 
-        $openEdition = Edition::where('status', 'open')
+        $openEdition = Event::where('status', 'open')
             ->where('submission_open', true)
             ->latest('id')
             ->first();
@@ -124,23 +124,23 @@ class DashboardController extends Controller
         // même participant mais ne vaut pas inscription à l'événement.
         $hasPaid = Payment::whereIn('participant_id', $participantIds)
             ->forParticipation()->where('status', 'paid')->exists();
-        $deadlineEdition = $payable?->edition ?? $openEdition;
+        $deadlineEdition = $payable?->event ?? $openEdition;
         $deadline = $deadlineEdition?->submission_deadline;
         $daysRemaining = $deadline && $deadline->isFuture()
             ? (int) ceil(now()->diffInDays($deadline, false))
             : null;
 
-        // Édition de contexte (pour le bandeau d'accueil : dates & lieu du colloque)
+        // Événement de contexte (pour le bandeau d'accueil : dates & lieu du colloque)
         // = colloque courant sélectionné, avec replis.
-        $contextEdition = $current ?? $payable?->edition ?? $openEdition
-            ?? Edition::whereIn('id', $editionIds)->latest('id')->first();
+        $contextEdition = $current ?? $payable?->event ?? $openEdition
+            ?? Event::whereIn('id', $editionIds)->latest('id')->first();
 
         return view('account.dashboard', [
             'account' => $account,
             'openEdition' => $openEdition,
             'submitEdition' => $submitEdition,
             'submitRemaining' => $submitRemaining,
-            'payableEdition' => $payable?->edition,
+            'payableEdition' => $payable?->event,
             'contextEdition' => $contextEdition,
             'kpi' => [
                 'communications' => $commsCount,
@@ -152,11 +152,11 @@ class DashboardController extends Controller
                 'deadline' => $deadline,
             ],
             'submissions' => Submission::whereIn('participant_id', $participantIds)
-                ->where('revision_of', 0)->with('edition')->latest('id')->limit(5)->get(),
+                ->where('revision_of', 0)->with('event')->latest('id')->limit(5)->get(),
             'payments' => Payment::whereIn('participant_id', $participantIds)
-                ->forParticipation()->where('status', 'paid')->with('edition')->latest('id')->get(),
+                ->forParticipation()->where('status', 'paid')->with('event')->latest('id')->get(),
             'attestations' => Attestation::whereIn('participant_id', $participantIds)
-                ->where('revoked', false)->with('edition')->latest('id')->get(),
+                ->where('revoked', false)->with('event')->latest('id')->get(),
             'editionDocuments' => $editionDocuments,
             'liveSessions' => $liveSessions,
             'hasAgenda' => $hasAgenda,

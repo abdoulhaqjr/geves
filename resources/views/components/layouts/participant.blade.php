@@ -3,21 +3,21 @@
 
     // Colloque courant (sélection en session, sinon défaut) + liste des colloques
     // du compte pour le sélecteur. Toutes les pages personnelles s'y scopent.
-    $myColloques = $account ? \App\Support\CurrentColloque::editions($account) : collect();
+    $myColloques = $account ? \App\Support\CurrentEvent::events($account) : collect();
     // Appels à communications ouverts (colloques en cours / à venir) auxquels le
     // compte ne participe pas encore : sélectionnables pour soumettre.
-    $openCalls = $account ? \App\Support\CurrentColloque::openCalls($account) : collect();
-    // Édition réellement sélectionnée (null si le compte n'a rien de sélectionnable).
-    $currentEdition = $account ? \App\Support\CurrentColloque::current($account) : null;
+    $openCalls = $account ? \App\Support\CurrentEvent::openCalls($account) : collect();
+    // Événement réellement sélectionnée (null si le compte n'a rien de sélectionnable).
+    $currentEdition = $account ? \App\Support\CurrentEvent::current($account) : null;
 
     // Repli pour les liens publics si le compte ne participe encore à rien.
     $colloqueEdition = $currentEdition
-        ?? \App\Models\Edition::where('status', 'open')->latest('id')->first();
+        ?? \App\Models\Event::where('status', 'open')->latest('id')->first();
 
-    // Paiement : l'édition courante si elle est à régler, sinon la première à régler.
+    // Paiement : l'événement courante si elle est à régler, sinon la première à régler.
     $payEditionId = ($colloqueEdition
         && \App\Models\Participant::where('user_id', $account?->id)
-            ->where('edition_id', $colloqueEdition->id)
+            ->where('event_id', $colloqueEdition->id)
             ->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted'))
             ->whereDoesntHave('participationPayments', fn ($q) => $q->where('status', 'paid'))
             ->exists())
@@ -25,7 +25,7 @@
         : \App\Models\Participant::where('user_id', $account?->id)
             ->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted'))
             ->whereDoesntHave('participationPayments', fn ($q) => $q->where('status', 'paid'))
-            ->latest('id')->value('edition_id');
+            ->latest('id')->value('event_id');
 
     // Lien « Formations » : uniquement si l'ÉDITION SÉLECTIONNÉE propose des
     // formations (module activé pour elle + au moins une formation publiée).
@@ -55,7 +55,7 @@
                     <div class="ukc-colloque-switch" x-data="{ open: false }" @click.outside="open = false">
                         <button type="button" class="switch-btn" @click="open = !open" :aria-expanded="open">
                             <span class="lbl">
-                                <span class="cur">{{ $colloqueEdition?->colloque?->name ?: 'Évènement' }}</span>
+                                <span class="cur">{{ $colloqueEdition?->series?->name ?: 'Évènement' }}</span>
                                 <span class="ed">{{ $colloqueEdition?->title }}</span>
                             </span>
                             <x-ukc.icon name="chevron" :size="16" />
@@ -66,11 +66,11 @@
                                 @foreach ($openCalls as $ed)
                                     <form method="POST" action="{{ route('account.colloque.switch') }}">
                                         @csrf
-                                        <input type="hidden" name="edition_id" value="{{ $ed->id }}">
+                                        <input type="hidden" name="event_id" value="{{ $ed->id }}">
                                         <button type="submit" @class(['item', 'active' => $colloqueEdition?->id === $ed->id])>
                                             <span class="tick">@if ($colloqueEdition?->id === $ed->id)<x-ukc.icon name="check" :size="14" />@endif</span>
                                             <span class="txt">
-                                                <span class="c">{{ $ed->colloque?->name ?: 'Évènement' }}</span>
+                                                <span class="c">{{ $ed->series?->name ?: 'Évènement' }}</span>
                                                 <span class="e">{{ $ed->title }} · {{ $ed->year }}</span>
                                             </span>
                                         </button>
@@ -82,11 +82,11 @@
                                 @foreach ($myColloques as $ed)
                                     <form method="POST" action="{{ route('account.colloque.switch') }}">
                                         @csrf
-                                        <input type="hidden" name="edition_id" value="{{ $ed->id }}">
+                                        <input type="hidden" name="event_id" value="{{ $ed->id }}">
                                         <button type="submit" @class(['item', 'active' => $colloqueEdition?->id === $ed->id])>
                                             <span class="tick">@if ($colloqueEdition?->id === $ed->id)<x-ukc.icon name="check" :size="14" />@endif</span>
                                             <span class="txt">
-                                                <span class="c">{{ $ed->colloque?->name ?: 'Évènement' }}</span>
+                                                <span class="c">{{ $ed->series?->name ?: 'Évènement' }}</span>
                                                 <span class="e">{{ $ed->title }} · {{ $ed->year }}</span>
                                             </span>
                                         </button>

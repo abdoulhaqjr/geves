@@ -13,7 +13,7 @@ use Illuminate\Support\Carbon;
  *
  * @property int $id
  * @property int $session_id
- * @property int $edition_id
+ * @property int $event_id
  * @property int|null $account_id
  * @property int|null $user_id
  * @property string $author_name

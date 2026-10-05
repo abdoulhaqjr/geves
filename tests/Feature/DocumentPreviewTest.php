@@ -6,10 +6,10 @@ use App\Models\User;
 
 it('ouvre l’aperçu d’attestation sur le concepteur verrouillé (canevas exact + valeurs d’exemple)', function () {
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
 
     $res = $this->actingAs($staff, 'web')->get(route('admin.documents.templates.preview', [
-        'edition_id' => $edition->id, 'kind' => 'attestation', 'type' => 'participation',
+        'event_id' => $event->id, 'kind' => 'attestation', 'type' => 'participation',
     ]));
 
     $res->assertOk();
@@ -20,10 +20,10 @@ it('ouvre l’aperçu d’attestation sur le concepteur verrouillé (canevas exa
 
 it('ouvre l’aperçu de badge sur le concepteur verrouillé', function () {
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
 
     $res = $this->actingAs($staff, 'web')->get(route('admin.documents.templates.preview', [
-        'edition_id' => $edition->id, 'kind' => 'badge',
+        'event_id' => $event->id, 'kind' => 'badge',
     ]));
 
     $res->assertOk();
@@ -32,9 +32,9 @@ it('ouvre l’aperçu de badge sur le concepteur verrouillé', function () {
 
 it('affiche un aperçu de reçu avec des valeurs d’exemple', function () {
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
 
-    $res = $this->actingAs($staff, 'web')->get(route('admin.payments.receipt.sample', ['edition_id' => $edition->id]));
+    $res = $this->actingAs($staff, 'web')->get(route('admin.payments.receipt.sample', ['event_id' => $event->id]));
 
     $res->assertOk();
     expect($res->getContent())
@@ -49,7 +49,7 @@ it('affiche l’aperçu du livret en PDF inline (rendu final)', function () {
     $submission = seededSubmission('accepted');
 
     $res = $this->actingAs($staff, 'web')->get(
-        route('admin.documents.livret', ['edition' => $submission->edition, 'format' => 'pdf', 'inline' => 1])
+        route('admin.documents.livret', ['event' => $submission->event, 'format' => 'pdf', 'inline' => 1])
     );
 
     $res->assertOk();
@@ -58,10 +58,10 @@ it('affiche l’aperçu du livret en PDF inline (rendu final)', function () {
 });
 
 it('protège les aperçus derrière la capacité documents', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $user = User::factory()->create();
 
     $this->actingAs($user, 'web')
-        ->get(route('admin.documents.templates.preview', ['edition_id' => $edition->id, 'kind' => 'attestation', 'type' => 'participation']))
+        ->get(route('admin.documents.templates.preview', ['event_id' => $event->id, 'kind' => 'attestation', 'type' => 'participation']))
         ->assertForbidden();
 });

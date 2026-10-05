@@ -35,11 +35,11 @@ it('rend le texte simple en échappant et en gardant les sauts de ligne', functi
 });
 
 it('stocke un résumé enrichi assaini', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
 
     $this->actingAs($account, 'account')
-        ->post(route('account.submissions.store', $edition->slug), [
+        ->post(route('account.submissions.store', $event->slug), [
             'title' => 'Ma communication enrichie',
             'track' => 'Santé',
             'abstract' => '<p onclick="x">Contexte <strong>et</strong> objectifs détaillés du travail scientifique présenté ici.</p><script>alert(1)</script>',
@@ -54,11 +54,11 @@ it('stocke un résumé enrichi assaini', function () {
 
 it('refuse un résumé trop court même en comptant hors balises', function () {
     // Minimum de mots configuré → un résumé de 2 mots (hors balises) est refusé.
-    $edition = openEdition(['submission_form' => ['rules' => ['word_min' => 20]]]);
+    $event = openEdition(['submission_form' => ['rules' => ['word_min' => 20]]]);
     $account = verifiedAccount();
 
     $this->actingAs($account, 'account')
-        ->post(route('account.submissions.store', $edition->slug), [
+        ->post(route('account.submissions.store', $event->slug), [
             'title' => 'Court',
             'track' => 'Santé',
             'abstract' => '<p><strong>Trop court</strong></p>',

@@ -8,7 +8,7 @@ use App\Support\ParticipantTypes;
 it('rend la page publique sans planter quand une entrée fees est malformée', function () {
     // Grille mêlant des tarifs valides et une entrée scalaire (non-tableau) :
     // reproduit le bug 500 « Trying to access array offset on int ».
-    $edition = openEdition([
+    $event = openEdition([
         'fees' => [
             ['label' => 'Doctorant', 'amount' => 15000],
             25000, // entrée malformée -> doit être ignorée, pas casser la page
@@ -16,7 +16,7 @@ it('rend la page publique sans planter quand une entrée fees est malformée', f
         ],
     ]);
 
-    $this->get(route('public.colloque', $edition->slug))
+    $this->get(route('public.colloque', $event->slug))
         ->assertOk()
         ->assertSee('Frais de participation')
         ->assertSee('Doctorant')
@@ -28,12 +28,12 @@ it('rend la page publique sans planter quand une entrée fees est malformée', f
 it('rend la page publique quand toute la grille fees est au format legacy associatif', function () {
     // Format legacy « grade => montant » (cf. données de dev cip-uk-2023) :
     // chaque valeur est un entier, donc toutes les entrées sont malformées.
-    $edition = openEdition([
+    $event = openEdition([
         'fees' => ['Enseignant-chercheur' => 30000, 'Doctorant' => 15000],
     ]);
 
     // Pas de 500 ; la section tarifs est simplement masquée faute d'entrée valide.
-    $this->get(route('public.colloque', $edition->slug))
+    $this->get(route('public.colloque', $event->slug))
         ->assertOk()
         ->assertDontSee('ukc-pricing', false);
 });
@@ -58,32 +58,32 @@ it('normalise la grille tarifaire en ignorant les entrées invalides', function 
 
 it('retrouve le tarif par le grade rattaché, pas par l’intitulé', function () {
     // Cas réel : l'intitulé est rédigé librement et ne correspond à aucun grade.
-    $edition = openEdition(['fees' => [
+    $event = openEdition(['fees' => [
         ['label' => 'Enseignants et chercheurs', 'amount' => 35000, 'grades' => ['Enseignant / Chercheur']],
         ['label' => 'Doctorants et assimilés', 'amount' => 15000, 'grades' => ['Doctorant']],
         ['label' => 'Autres participants', 'amount' => 50000, 'grades' => [], 'default' => true],
     ]]);
 
-    expect(Fees::resolveAmount($edition, 'Doctorant'))->toBe(15000.0);
-    expect(Fees::resolveAmount($edition, 'Enseignant / Chercheur'))->toBe(35000.0);
+    expect(Fees::resolveAmount($event, 'Doctorant'))->toBe(15000.0);
+    expect(Fees::resolveAmount($event, 'Enseignant / Chercheur'))->toBe(35000.0);
     // Grade non couvert → catégorie par défaut.
-    expect(Fees::resolveAmount($edition, 'Autre participant'))->toBe(50000.0);
-    expect(Fees::resolveAmount($edition, null))->toBe(50000.0);
+    expect(Fees::resolveAmount($event, 'Autre participant'))->toBe(50000.0);
+    expect(Fees::resolveAmount($event, null))->toBe(50000.0);
 });
 
 it('reste compatible avec une grille sans rattachement (intitulé = grade)', function () {
-    $edition = openEdition(['fees' => [
+    $event = openEdition(['fees' => [
         ['label' => 'Doctorant', 'amount' => 15000],
         ['label' => 'Enseignant / Chercheur', 'amount' => 35000],
     ]]);
 
-    expect(Fees::resolveAmount($edition, 'doctorant'))->toBe(15000.0);
+    expect(Fees::resolveAmount($event, 'doctorant'))->toBe(15000.0);
     // Sans catégorie par défaut, un grade inconnu ne donne aucun montant.
-    expect(Fees::resolveAmount($edition, 'Autre participant'))->toBeNull();
+    expect(Fees::resolveAmount($event, 'Autre participant'))->toBeNull();
 });
 
 it('le grade choisi à l’inscription permet de résoudre le tarif', function () {
-    $edition = openEdition(['fees' => [
+    $event = openEdition(['fees' => [
         ['label' => 'Enseignants et chercheurs', 'amount' => 35000, 'grades' => ['Enseignant / Chercheur']],
         ['label' => 'Doctorants et assimilés', 'amount' => 15000, 'grades' => ['Doctorant']],
         ['label' => 'Autres participants', 'amount' => 50000, 'grades' => ['Autre participant'], 'default' => true],
@@ -96,7 +96,7 @@ it('le grade choisi à l’inscription permet de résoudre le tarif', function (
 
     // Chaque grade proposé a bien un tarif : c'est la garantie recherchée.
     foreach (ParticipantTypes::all() as $grade) {
-        expect(Fees::resolveAmount($edition, $grade))
+        expect(Fees::resolveAmount($event, $grade))
             ->not->toBeNull("aucun tarif pour le grade « {$grade} »");
     }
 });
@@ -108,13 +108,13 @@ it('le grade choisi à l’inscription permet de résoudre le tarif', function (
  * logiciel et invitaient à prendre la moins chère.
  */
 it('la grille publique renseigne au lieu de faire choisir', function () {
-    $edition = openEdition(['fees' => [
+    $event = openEdition(['fees' => [
         ['label' => 'Enseignants et chercheurs', 'amount' => 35000, 'grades' => ['Enseignant / Chercheur', 'Professeur']],
         ['label' => 'Doctorants et assimilés', 'amount' => 15000, 'grades' => ['Doctorant']],
         ['label' => 'Autres participants', 'amount' => 50000, 'grades' => [], 'default' => true],
     ]]);
 
-    $page = $this->get(route('public.colloque', $edition->slug))->assertOk();
+    $page = $this->get(route('public.colloque', $event->slug))->assertOk();
 
     // La règle se lit dans les cartes elles-mêmes : le bandeau qui la répétait
     // au-dessus de la grille doublait ce qu'elles montrent déjà.
@@ -131,11 +131,11 @@ it('la grille publique renseigne au lieu de faire choisir', function () {
  * la sienne : on le lui dit plutôt que de le laisser deviner devant trois prix.
  */
 it('annonce que le tarif sera confirmé quand aucun grade n’est rattaché', function () {
-    $edition = openEdition(['fees' => [
+    $event = openEdition(['fees' => [
         ['label' => 'Enseignants et chercheurs', 'amount' => 35000],
         ['label' => 'Doctorants et assimilés', 'amount' => 15000],
     ]]);
 
-    $this->get(route('public.colloque', $edition->slug))->assertOk()
+    $this->get(route('public.colloque', $event->slug))->assertOk()
         ->assertSee('confirmé au moment de l’inscription', false);
 });

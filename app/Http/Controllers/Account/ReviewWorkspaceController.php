@@ -7,7 +7,7 @@ use App\Models\Participant;
 use App\Models\Review;
 use App\Models\ReviewerBid;
 use App\Models\Submission;
-use App\Support\EditionLock;
+use App\Support\EventLock;
 use App\Support\Html;
 use App\Support\Notifier;
 use App\Support\ReviewGrid;
@@ -21,7 +21,7 @@ use Illuminate\View\View;
 /**
  * Espace relecteur (côté participant) : « Mes relectures ». Regroupe les
  * relectures confiées à l'utilisateur au titre de ses inscriptions « relecteur »
- * (par édition) et l'évaluation se fait EN PLACE (panneau latéral, sans changer
+ * (par événement) et l'évaluation se fait EN PLACE (panneau latéral, sans changer
  * de page), en aveugle. Un appel à candidatures (préférences + conflits) est
  * proposé pour les communications encore ouvertes. Remplace l'ancien portail à
  * jeton public.
@@ -31,10 +31,10 @@ class ReviewWorkspaceController extends Controller
     public function index(Request $request): View
     {
         $reviewerParticipants = $this->reviewerParticipants();
-        $editionIds = $reviewerParticipants->pluck('edition_id')->unique()->values();
+        $editionIds = $reviewerParticipants->pluck('event_id')->unique()->values();
 
         $reviews = Review::whereIn('reviewer_id', $reviewerParticipants->pluck('id'))
-            ->with('submission.edition')
+            ->with('submission.event')
             ->latest('id')
             ->get();
 
@@ -44,11 +44,11 @@ class ReviewWorkspaceController extends Controller
         // sinon « 2 en retard » deviendrait faux dès qu'on filtre.
         $tab = $request->query('tab') === 'candidatures' ? 'candidatures' : 'relectures';
         $status = (string) $request->query('status', '');
-        $editionFilter = (string) $request->query('edition_id', '');
+        $editionFilter = (string) $request->query('event_id', '');
         $track = (string) $request->query('track', '');
         $search = trim((string) $request->query('search', ''));
 
-        $editions = $reviewerParticipants->pluck('edition')->filter()->unique('id')->values();
+        $events = $reviewerParticipants->pluck('event')->filter()->unique('id')->values();
         // Axes réellement présents dans MES relectures : un filtre ne doit pas
         // proposer une valeur qui ne renverrait jamais rien.
         $tracks = $reviews->map(fn (Review $r) => (string) $r->submission?->track)
@@ -57,7 +57,7 @@ class ReviewWorkspaceController extends Controller
         $shown = $reviews
             ->when($status !== '', fn ($c) => $c->where('status', $status))
             ->when($editionFilter !== '', fn ($c) => $c->filter(
-                fn (Review $r) => (string) $r->submission?->edition_id === $editionFilter
+                fn (Review $r) => (string) $r->submission?->event_id === $editionFilter
             ))
             ->when($track !== '', fn ($c) => $c->filter(
                 fn (Review $r) => (string) $r->submission?->track === $track
@@ -69,10 +69,10 @@ class ReviewWorkspaceController extends Controller
             }))
             ->values();
 
-        // Données JSON pour l'évaluation en place (grille par édition incluse).
+        // Données JSON pour l'évaluation en place (grille par événement incluse).
         $reviewsData = $shown->map(function (Review $r) {
             $sub = $r->submission;
-            $criteria = ReviewGrid::criteria($sub?->edition);
+            $criteria = ReviewGrid::criteria($sub?->event);
 
             return [
                 'id' => (int) $r->id,
@@ -83,7 +83,7 @@ class ReviewWorkspaceController extends Controller
                 'abstract' => Html::render($sub?->abstract),
                 'keywords' => $sub?->keywords,
                 'fileUrl' => $sub?->file_url,
-                'edition' => $sub?->edition?->title ?: (string) $sub?->edition?->year,
+                'event' => $sub?->event?->title ?: (string) $sub?->event?->year,
                 'completed' => $r->isCompleted(),
                 'status' => $r->status,
                 'statusLabel' => $r->statusLabel(),
@@ -95,8 +95,8 @@ class ReviewWorkspaceController extends Controller
                 'daysLate' => $r->daysLate(),
                 'declineReason' => $r->decline_reason,
                 'respondUrl' => route('account.reviews.respond', $r),
-                // Édition archivée : lecture seule (cf. EditionLock).
-                'frozen' => EditionLock::frozen($sub?->edition),
+                // Événement archivée : lecture seule (cf. EventLock).
+                'frozen' => EventLock::frozen($sub?->event),
                 'recommendation' => $r->recommendation,
                 'comments' => $r->comments,
                 'comments_private' => $r->comments_private,
@@ -107,12 +107,12 @@ class ReviewWorkspaceController extends Controller
             ];
         })->values();
 
-        // Appel à candidatures : soumissions des éditions du relecteur, en aveugle,
+        // Appel à candidatures : soumissions des événements du relecteur, en aveugle,
         // encore ouvertes et non déjà confiées à ce relecteur.
         $reviewerIds = $reviewerParticipants->pluck('id');
-        $biddable = Submission::whereIn('edition_id', $editionIds)
-            // Une édition archivée est close : plus de candidature possible.
-            ->whereHas('edition', fn ($q) => $q->where('status', '!=', 'archived'))
+        $biddable = Submission::whereIn('event_id', $editionIds)
+            // Une événement archivée est close : plus de candidature possible.
+            ->whereHas('event', fn ($q) => $q->where('status', '!=', 'archived'))
             ->where('revision_of', 0)
             ->whereIn('status', ['submitted', 'under_review'])
             ->whereDoesntHave('reviews', fn ($q) => $q->whereIn('reviewer_id', $reviewerIds))
@@ -138,9 +138,9 @@ class ReviewWorkspaceController extends Controller
             'lateAccepted' => $reviews->where('status', 'accepted')->filter(fn (Review $r) => $r->isLate())->count(),
             'tab' => $tab,
             'statuses' => Review::STATUSES,
-            'editions' => $editions,
+            'events' => $events,
             'status' => $status,
-            'edition_id' => $editionFilter,
+            'event_id' => $editionFilter,
             'tracks' => $tracks,
             'track' => $track,
             'search' => $search,
@@ -160,8 +160,8 @@ class ReviewWorkspaceController extends Controller
     public function respond(Request $request, Review $review): RedirectResponse
     {
         $this->authorizeReview($review);
-        $review->loadMissing('submission.edition');
-        EditionLock::guard($review->submission?->edition);
+        $review->loadMissing('submission.event');
+        EventLock::guard($review->submission?->event);
 
         $data = $request->validate([
             'answer' => ['required', 'in:accept,decline'],
@@ -205,10 +205,10 @@ class ReviewWorkspaceController extends Controller
     public function submit(Request $request, Review $review): JsonResponse|RedirectResponse
     {
         $this->authorizeReview($review);
-        EditionLock::guard($review->submission?->edition);
+        EventLock::guard($review->submission?->event);
         abort_if(in_array($review->status, ['declined', 'cancelled'], true), 422);
-        $review->load('submission.edition');
-        $criteria = ReviewGrid::criteria($review->submission?->edition);
+        $review->load('submission.event');
+        $criteria = ReviewGrid::criteria($review->submission?->event);
 
         $rules = [
             'recommendation' => ['required', 'in:'.implode(',', array_keys(Review::RECOMMENDATIONS))],
@@ -265,19 +265,19 @@ class ReviewWorkspaceController extends Controller
             'bids.*.conflict' => ['nullable', 'boolean'],
         ]);
 
-        // Regroupe (soumission autorisée => inscription relecteur de la bonne édition).
-        $editionByReviewer = $reviewerParticipants->pluck('edition_id', 'id');
-        $allowed = Submission::whereIn('edition_id', $editionByReviewer->values()->unique())
-            ->whereHas('edition', fn ($q) => $q->where('status', '!=', 'archived'))
+        // Regroupe (soumission autorisée => inscription relecteur de la bonne événement).
+        $editionByReviewer = $reviewerParticipants->pluck('event_id', 'id');
+        $allowed = Submission::whereIn('event_id', $editionByReviewer->values()->unique())
+            ->whereHas('event', fn ($q) => $q->where('status', '!=', 'archived'))
             ->where('revision_of', 0)
-            ->pluck('edition_id', 'id');
+            ->pluck('event_id', 'id');
 
         foreach ($data['bids'] ?? [] as $submissionId => $bid) {
             $editionId = $allowed->get((int) $submissionId);
             if ($editionId === null) {
                 continue;
             }
-            $reviewerId = $reviewerParticipants->firstWhere('edition_id', $editionId)?->id;
+            $reviewerId = $reviewerParticipants->firstWhere('event_id', $editionId)?->id;
             if ($reviewerId === null) {
                 continue;
             }
@@ -295,7 +295,7 @@ class ReviewWorkspaceController extends Controller
     }
 
     /**
-     * Inscriptions « relecteur » de l'utilisateur connecté (une par édition).
+     * Inscriptions « relecteur » de l'utilisateur connecté (une par événement).
      *
      * @return Collection<int, Participant>
      */
@@ -305,7 +305,7 @@ class ReviewWorkspaceController extends Controller
 
         return Participant::where('user_id', $user->id)
             ->where('role', 'reviewer')
-            ->with('edition.colloque')
+            ->with('event.series')
             ->get();
     }
 

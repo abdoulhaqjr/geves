@@ -8,23 +8,23 @@ use App\Support\Settings;
 it('n’émet l’attestation de participation qu’aux présents quand l’option est active', function () {
     Settings::set('attestations.require_presence', true);
 
-    $edition = openEdition();
+    $event = openEdition();
 
     // Réglé ET présent (pointé à l'accueil) → éligible.
-    $present = $edition->participants()->create([
+    $present = $event->participants()->create([
         'first_name' => 'A', 'last_name' => 'Présent', 'email' => 'a@example.tg',
         'role' => 'author', 'checked_in_at' => now(),
     ]);
-    $edition->payments()->create(['participant_id' => $present->id, 'amount' => 15000, 'status' => 'paid']);
+    $event->payments()->create(['participant_id' => $present->id, 'amount' => 15000, 'status' => 'paid']);
 
     // Réglé mais absent → exclu.
-    $absent = $edition->participants()->create([
+    $absent = $event->participants()->create([
         'first_name' => 'B', 'last_name' => 'Absent', 'email' => 'b@example.tg', 'role' => 'author',
     ]);
-    $edition->payments()->create(['participant_id' => $absent->id, 'amount' => 15000, 'status' => 'paid']);
+    $event->payments()->create(['participant_id' => $absent->id, 'amount' => 15000, 'status' => 'paid']);
 
     $this->actingAs(adminStaff(), 'web')->post(route('admin.documents.attestations.issue'), [
-        'edition_id' => (string) $edition->id,
+        'event_id' => (string) $event->id,
         'type' => 'participation',
     ]);
 
@@ -35,14 +35,14 @@ it('n’émet l’attestation de participation qu’aux présents quand l’opti
 it('émet à tous les réglés quand l’option présence est désactivée (défaut)', function () {
     Settings::set('attestations.require_presence', false);
 
-    $edition = openEdition();
-    $paid = $edition->participants()->create([
+    $event = openEdition();
+    $paid = $event->participants()->create([
         'first_name' => 'A', 'last_name' => 'Payé', 'email' => 'a@example.tg', 'role' => 'author',
     ]);
-    $edition->payments()->create(['participant_id' => $paid->id, 'amount' => 15000, 'status' => 'paid']);
+    $event->payments()->create(['participant_id' => $paid->id, 'amount' => 15000, 'status' => 'paid']);
 
     $this->actingAs(adminStaff(), 'web')->post(route('admin.documents.attestations.issue'), [
-        'edition_id' => (string) $edition->id,
+        'event_id' => (string) $event->id,
         'type' => 'participation',
     ]);
 

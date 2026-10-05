@@ -11,7 +11,7 @@ use App\Http\Controllers\Admin\Concerns\ScopesEditionAccess;
 use App\Http\Controllers\Controller;
 use App\Mail\AuthorLinkedMail;
 use App\Mail\ReviewerInvitationMail;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Review;
 use App\Models\Submission;
@@ -70,11 +70,11 @@ class SubmissionController extends Controller
         $scoped = $this->scopedEditionIds($request, 'submissions_list');
         $accessible = $this->accessibleEditions($request, 'submissions_list');
 
-        // Édition sélectionnée : si le paramètre est absent (1er accès), on cible le
+        // Événement sélectionnée : si le paramètre est absent (1er accès), on cible le
         // colloque courant par défaut ; s'il est présent mais vide, l'utilisateur a
-        // explicitement choisi « Toutes les éditions ».
-        $editionId = $request->has('edition_id')
-            ? (string) $request->query('edition_id', '')
+        // explicitement choisi « Toutes les événements ».
+        $editionId = $request->has('event_id')
+            ? (string) $request->query('event_id', '')
             : $this->currentEditionId($accessible);
 
         // « author » est une colonne VIRTUELLE : le nom vient du participant lié,
@@ -84,13 +84,13 @@ class SubmissionController extends Controller
 
         $submissions = Submission::query()
             // `reviews` : colonne d'avancement de la relecture (Review::progressOf).
-            ->with(['edition', 'participant', 'reviews'])
+            ->with(['event', 'participant', 'reviews'])
             ->withCount(['authorLinks as unlinked_authors_count' => $unlinkedScope])
             // ⚠️ Colonnes qualifiées : le tri par auteur joint `participants`, qui
-            // porte aussi `edition_id` - sans préfixe, la requête est ambiguë.
+            // porte aussi `event_id` - sans préfixe, la requête est ambiguë.
             ->where('submissions.revision_of', 0)
-            ->when($scoped !== null, fn ($q) => $q->whereIn('submissions.edition_id', $scoped))
-            ->when($editionId !== '', fn ($q) => $q->where('submissions.edition_id', $editionId))
+            ->when($scoped !== null, fn ($q) => $q->whereIn('submissions.event_id', $scoped))
+            ->when($editionId !== '', fn ($q) => $q->where('submissions.event_id', $editionId))
             ->when($status !== '', fn ($q) => $q->where('submissions.status', $status))
             ->when($type !== '', fn ($q) => $q->where('submissions.type', $type))
             ->when($track !== '', fn ($q) => $q->where('submissions.track', $track))
@@ -115,17 +115,17 @@ class SubmissionController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        // Indicateurs par statut (sur l'édition filtrée), indépendants des autres filtres.
+        // Indicateurs par statut (sur l'événement filtrée), indépendants des autres filtres.
         $counts = Submission::query()->where('revision_of', 0)
-            ->when($scoped !== null, fn ($q) => $q->whereIn('edition_id', $scoped))
-            ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId))
+            ->when($scoped !== null, fn ($q) => $q->whereIn('event_id', $scoped))
+            ->when($editionId !== '', fn ($q) => $q->where('event_id', $editionId))
             ->selectRaw('status, count(*) as c')->groupBy('status')->pluck('c', 'status');
         $c = fn (string $s): int => (int) ($counts[$s] ?? 0);
 
         // Tendance des dépôts : 7 derniers jours vs les 7 précédents (même périmètre).
         $trendBase = fn () => Submission::query()->where('revision_of', 0)
-            ->when($scoped !== null, fn ($q) => $q->whereIn('edition_id', $scoped))
-            ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId));
+            ->when($scoped !== null, fn ($q) => $q->whereIn('event_id', $scoped))
+            ->when($editionId !== '', fn ($q) => $q->where('event_id', $editionId));
         $trendTotal = Trend::of(
             (int) $trendBase()->whereBetween('created_at', [now()->subDays(7), now()])->count(),
             (int) $trendBase()->whereBetween('created_at', [now()->subDays(14), now()->subDays(7)])->count(),
@@ -138,16 +138,16 @@ class SubmissionController extends Controller
             'submissions' => $submissions,
             'search' => $search,
             'status' => $status,
-            'edition_id' => $editionId,
+            'event_id' => $editionId,
             'type' => $type,
             'track' => $track,
             'unlinked' => $unlinked,
-            'editions' => $accessible,
+            'events' => $accessible,
             'statuses' => Submission::statuses(),
             'statusPills' => Submission::statusPills(),
             'tracks' => Submission::query()->where('revision_of', 0)
-                ->when($scoped !== null, fn ($q) => $q->whereIn('edition_id', $scoped))
-                ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId))
+                ->when($scoped !== null, fn ($q) => $q->whereIn('event_id', $scoped))
+                ->when($editionId !== '', fn ($q) => $q->where('event_id', $editionId))
                 ->whereNotNull('track')->where('track', '!=', '')->distinct()->orderBy('track')->pluck('track'),
             'stats' => [
                 'total' => (int) $counts->sum(),
@@ -164,18 +164,18 @@ class SubmissionController extends Controller
     {
         $search = trim((string) $request->query('search', ''));
         $status = (string) $request->query('status', '');
-        $editionId = (string) $request->query('edition_id', '');
+        $editionId = (string) $request->query('event_id', '');
         $type = (string) $request->query('type', '');
         $track = (string) $request->query('track', '');
         $scoped = $this->scopedEditionIds($request, 'submissions_list');
 
         $rows = Submission::query()
-            ->with(['edition', 'participant'])
+            ->with(['event', 'participant'])
             // ⚠️ Colonnes qualifiées : le tri par auteur joint `participants`, qui
-            // porte aussi `edition_id` - sans préfixe, la requête est ambiguë.
+            // porte aussi `event_id` - sans préfixe, la requête est ambiguë.
             ->where('submissions.revision_of', 0)
-            ->when($scoped !== null, fn ($q) => $q->whereIn('submissions.edition_id', $scoped))
-            ->when($editionId !== '', fn ($q) => $q->where('submissions.edition_id', $editionId))
+            ->when($scoped !== null, fn ($q) => $q->whereIn('submissions.event_id', $scoped))
+            ->when($editionId !== '', fn ($q) => $q->where('submissions.event_id', $editionId))
             ->when($status !== '', fn ($q) => $q->where('submissions.status', $status))
             ->when($type !== '', fn ($q) => $q->where('submissions.type', $type))
             ->when($track !== '', fn ($q) => $q->where('submissions.track', $track))
@@ -196,7 +196,7 @@ class SubmissionController extends Controller
         return response()->streamDownload(function () use ($rows, $statuses) {
             $out = fopen('php://output', 'w');
             fprintf($out, "\xEF\xBB\xBF"); // BOM UTF-8 pour Excel
-            fputcsv($out, ['Référence', 'Titre', 'Auteur correspondant', 'Type', 'Axe', 'Statut', 'Déposée le', 'Édition']);
+            fputcsv($out, ['Référence', 'Titre', 'Auteur correspondant', 'Type', 'Axe', 'Statut', 'Déposée le', 'Événement']);
             foreach ($rows as $s) {
                 fputcsv($out, [
                     $s->ref_code,
@@ -206,32 +206,32 @@ class SubmissionController extends Controller
                     (string) $s->track,
                     $statuses[$s->status] ?? $s->status,
                     $s->created_at?->format('d/m/Y H:i'),
-                    $s->edition?->title ?: $s->edition?->year,
+                    $s->event?->title ?: $s->event?->year,
                 ]);
             }
             fclose($out);
         }, 'soumissions-'.now()->format('Ymd-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
-    /** Export bibliographique (actes) des communications ACCEPTÉES d'une édition. */
+    /** Export bibliographique (actes) des communications ACCEPTÉES d'une événement. */
     public function bibliography(Request $request, string $format, BibliographyExporter $exporter): StreamedResponse
     {
         abort_unless(in_array($format, ['bibtex', 'ris'], true), 404);
 
-        $editions = $this->accessibleEditions($request, 'submissions_list');
-        $editionId = (string) $request->query('edition_id', '');
-        $edition = $editionId !== '' ? $editions->firstWhere('id', (int) $editionId) : null;
-        $edition ??= $editions->first();
-        abort_if($edition === null, 404);
+        $events = $this->accessibleEditions($request, 'submissions_list');
+        $editionId = (string) $request->query('event_id', '');
+        $event = $editionId !== '' ? $events->firstWhere('id', (int) $editionId) : null;
+        $event ??= $events->first();
+        abort_if($event === null, 404);
 
-        $submissions = Submission::where('edition_id', $edition->id)
+        $submissions = Submission::where('event_id', $event->id)
             ->where('revision_of', 0)->where('status', 'accepted')
             ->with('participant')->orderBy('ref_code')->get();
 
-        $content = $format === 'bibtex' ? $exporter->bibtex($submissions, $edition) : $exporter->ris($submissions, $edition);
+        $content = $format === 'bibtex' ? $exporter->bibtex($submissions, $event) : $exporter->ris($submissions, $event);
         $ext = $format === 'bibtex' ? 'bib' : 'ris';
         $mime = $format === 'bibtex' ? 'application/x-bibtex' : 'application/x-research-info-systems';
-        $name = 'actes-'.($edition->slug ?: $edition->id).'-'.($edition->year ?: date('Y')).'.'.$ext;
+        $name = 'actes-'.($event->slug ?: $event->id).'-'.($event->year ?: date('Y')).'.'.$ext;
 
         return response()->streamDownload(function () use ($content) {
             echo $content;
@@ -240,19 +240,19 @@ class SubmissionController extends Controller
 
     public function show(Request $request, Submission $submission, SimilarityChecker $similarity, PlagiarismRegistry $plagiarism): View
     {
-        $submission->load(['edition', 'participant']);
+        $submission->load(['event', 'participant']);
 
         $reviews = $submission->reviews()->with('reviewer')->get();
         $completed = $reviews->where('status', 'completed');
 
         // Similarité interne (gratuite) : autres soumissions les plus proches,
-        // restreintes aux éditions accessibles au membre du staff.
+        // restreintes aux événements accessibles au membre du staff.
         $scoped = $this->scopedEditionIds($request, 'submissions_list');
         $corpus = Submission::query()
             ->whereKeyNot($submission->id)
             ->where('revision_of', 0)
-            ->when($scoped !== null, fn ($q) => $q->whereIn('edition_id', $scoped))
-            ->get(['id', 'ref_code', 'title', 'abstract', 'edition_id']);
+            ->when($scoped !== null, fn ($q) => $q->whereIn('event_id', $scoped))
+            ->get(['id', 'ref_code', 'title', 'abstract', 'event_id']);
         $corpusById = $corpus->keyBy('id');
         $similar = collect($similarity->against(
             (string) $submission->abstract,
@@ -265,7 +265,7 @@ class SubmissionController extends Controller
             'percent' => (int) round($m['score'] * 100),
         ])->all();
 
-        $existingReviewers = Participant::where('edition_id', $submission->edition_id)
+        $existingReviewers = Participant::where('event_id', $submission->event_id)
             ->where('role', 'reviewer')->orderBy('last_name')->get();
 
         // Détection de conflits d'intérêts (indicative).
@@ -299,7 +299,7 @@ class SubmissionController extends Controller
             'similar' => $similar,
             'webPlagProvider' => $plagiarism->active(),
             'webPlag' => $submission->meta['web_plagiarism'] ?? null,
-            'reviewCriteria' => ReviewGrid::criteria($submission->edition),
+            'reviewCriteria' => ReviewGrid::criteria($submission->event),
             'reviewScale' => ReviewGrid::SCALE,
         ]);
     }
@@ -319,8 +319,8 @@ class SubmissionController extends Controller
             return back()->with('ukc_error', 'Aucun compte ne correspond à cet e-mail.');
         }
 
-        $edition = $submission->edition;
-        $upsert->handle($edition, $user, $link->role === 'corresponding' ? 'author' : 'coauthor');
+        $event = $submission->event;
+        $upsert->handle($event, $user, $link->role === 'corresponding' ? 'author' : 'coauthor');
 
         $link->update(['user_id' => $user->id, 'status' => 'linked', 'match_type' => 'manual', 'notified_at' => now()]);
 
@@ -328,7 +328,7 @@ class SubmissionController extends Controller
             $user,
             'authorship',
             __('Vous êtes associé(e) à une communication'),
-            '« '.$submission->title.' » - '.($edition->title ?? ''),
+            '« '.$submission->title.' » - '.($event->title ?? ''),
             route('account.submissions.show', $submission),
             'inbox',
         );
@@ -505,26 +505,26 @@ class SubmissionController extends Controller
     }
 
     /**
-     * Attribution automatique des relecteurs (aperçu) : sélectionne une édition,
+     * Attribution automatique des relecteurs (aperçu) : sélectionne une événement,
      * règle la cible et le plafond, propose un plan (matching axe + COI + charge).
      * L'expertise des relecteurs se règle dans l'onglet « Relecteurs » de la fiche
-     * d'édition.
+     * d'événement.
      */
     public function autoAssign(Request $request, AutoAssignReviewers $engine): View
     {
-        $editions = $this->accessibleEditions($request, 'submissions_list');
-        $editionId = $request->has('edition_id')
-            ? (string) $request->query('edition_id', '')
-            : $this->currentEditionId($editions);
-        $edition = $editionId !== '' ? $editions->firstWhere('id', (int) $editionId) : null;
+        $events = $this->accessibleEditions($request, 'submissions_list');
+        $editionId = $request->has('event_id')
+            ? (string) $request->query('event_id', '')
+            : $this->currentEditionId($events);
+        $event = $editionId !== '' ? $events->firstWhere('id', (int) $editionId) : null;
 
-        // ⚠️ Les paramètres du moteur sont des RÈGLES de l'édition (onglet
+        // ⚠️ Les paramètres du moteur sont des RÈGLES de l'événement (onglet
         // Évaluation), plus des paramètres d'URL : le plan proposé ne dépend donc
         // pas de la façon dont on est arrivé sur la page.
-        $target = ReviewGrid::target($edition);
-        $maxLoad = ReviewGrid::maxLoad($edition);
+        $target = ReviewGrid::target($event);
+        $maxLoad = ReviewGrid::maxLoad($event);
 
-        $preview = $edition ? $engine->preview($edition, $target, $maxLoad) : null;
+        $preview = $event ? $engine->preview($event, $target, $maxLoad) : null;
 
         // Plan proposé = tableau trié + paginé CÔTÉ SERVEUR (comme les autres
         // listes du back-office). ⚠️ « Appliquer » ne soumet que la page affichée :
@@ -553,9 +553,9 @@ class SubmissionController extends Controller
         }
 
         return view('admin.submissions.auto-assign', [
-            'editions' => $editions,
-            'edition' => $edition,
-            'edition_id' => $editionId,
+            'events' => $events,
+            'event' => $event,
+            'event_id' => $editionId,
             'target' => $target,
             'maxLoad' => $maxLoad,
             'preview' => $preview,
@@ -567,20 +567,20 @@ class SubmissionController extends Controller
 
     /**
      * Onglet « Relecteurs & expertise » : la matrice des axes que chaque
-     * relecteur peut évaluer, et sa charge. Elle vivait dans la fiche d'édition,
+     * relecteur peut évaluer, et sa charge. Elle vivait dans la fiche d'événement,
      * loin du moteur qui la consomme et de la page où l'on constate qu'un axe
      * n'est couvert par personne.
      */
     public function reviewers(Request $request): View
     {
-        $editions = $this->accessibleEditions($request, 'submissions_list');
-        $editionId = $request->has('edition_id')
-            ? (string) $request->query('edition_id', '')
-            : $this->currentEditionId($editions);
-        $edition = $editionId !== '' ? $editions->firstWhere('id', (int) $editionId) : null;
+        $events = $this->accessibleEditions($request, 'submissions_list');
+        $editionId = $request->has('event_id')
+            ? (string) $request->query('event_id', '')
+            : $this->currentEditionId($events);
+        $event = $editionId !== '' ? $events->firstWhere('id', (int) $editionId) : null;
 
-        $reviewers = ReviewerExpertise::forEdition($edition);
-        $axes = ReviewerExpertise::axes($edition);
+        $reviewers = ReviewerExpertise::forEdition($event);
+        $axes = ReviewerExpertise::axes($event);
 
         // Couverture : un axe que personne ne peut évaluer est le vrai signal de
         // cette page - sans lui, l'attribution retombera sur « hors axe ».
@@ -592,43 +592,43 @@ class SubmissionController extends Controller
         ));
 
         return view('admin.submissions.reviewers', [
-            'editions' => $editions,
-            'edition' => $edition,
-            'edition_id' => $editionId,
+            'events' => $events,
+            'event' => $event,
+            'event_id' => $editionId,
             'reviewers' => $reviewers,
             'reviewerAxes' => $axes,
             'uncoveredAxes' => $uncovered,
             'avgLoad' => $reviewers->isEmpty() ? 0.0 : round($reviewers->avg('load'), 1),
-            'canWrite' => $this->canWriteEdition($edition),
+            'canWrite' => $this->canWriteEdition($event),
         ]);
     }
 
     /**
      * Onglet « Options » : toutes les RÈGLES du module Soumissions pour cette
-     * édition - dépôt (limites du formulaire), attribution (relecteurs visés,
+     * événement - dépôt (limites du formulaire), attribution (relecteurs visés,
      * plafond de charge) et évaluation (grille, délai). Elles étaient éclatées
-     * entre la page d'attribution (en paramètres d'URL), la fiche d'édition et
+     * entre la page d'attribution (en paramètres d'URL), la fiche d'événement et
      * l'éditeur de formulaire.
      */
     public function options(Request $request): View
     {
-        $editions = $this->accessibleEditions($request, 'submissions_list');
-        $editionId = $request->has('edition_id')
-            ? (string) $request->query('edition_id', '')
-            : $this->currentEditionId($editions);
-        $edition = $editionId !== '' ? $editions->firstWhere('id', (int) $editionId) : null;
+        $events = $this->accessibleEditions($request, 'submissions_list');
+        $editionId = $request->has('event_id')
+            ? (string) $request->query('event_id', '')
+            : $this->currentEditionId($events);
+        $event = $editionId !== '' ? $events->firstWhere('id', (int) $editionId) : null;
 
         return view('admin.submissions.options', [
-            'editions' => $editions,
-            'edition' => $edition,
-            'edition_id' => $editionId,
-            'reviewCriteria' => ReviewGrid::criteria($edition),
+            'events' => $events,
+            'event' => $event,
+            'event_id' => $editionId,
+            'reviewCriteria' => ReviewGrid::criteria($event),
             'reviewScale' => ReviewGrid::SCALE,
-            'reviewDueDays' => ReviewGrid::dueDays($edition),
-            'target' => ReviewGrid::target($edition),
-            'maxLoad' => ReviewGrid::maxLoad($edition),
-            'formRules' => (new SubmissionFormConfig($edition ?? new Edition))->rules(),
-            'canWrite' => $this->canWriteEdition($edition),
+            'reviewDueDays' => ReviewGrid::dueDays($event),
+            'target' => ReviewGrid::target($event),
+            'maxLoad' => ReviewGrid::maxLoad($event),
+            'formRules' => (new SubmissionFormConfig($event ?? new Event))->rules(),
+            'canWrite' => $this->canWriteEdition($event),
         ]);
     }
 
@@ -637,10 +637,10 @@ class SubmissionController extends Controller
      * `submissions_list`) mais écrivent dans les réglages de l'ÉDITION : sans ce
      * contrôle, on afficherait des formulaires qui finiraient en 403.
      */
-    private function canWriteEdition(?Edition $edition): bool
+    private function canWriteEdition(?Event $event): bool
     {
-        return $edition !== null && in_array(
-            $edition->id,
+        return $event !== null && in_array(
+            $event->id,
             Auth::guard('web')->user()?->accessibleEditionIds('editions_write') ?? [],
             true,
         );
@@ -650,7 +650,7 @@ class SubmissionController extends Controller
     public function autoAssignApply(Request $request, AutoAssignReviewers $engine): RedirectResponse
     {
         $data = $request->validate([
-            'edition_id' => ['required', 'exists:editions,id'],
+            'event_id' => ['required', 'exists:events,id'],
             'pairs' => ['required', 'array', 'min:1'],
             'pairs.*' => ['string'],
             // Justification proposée par le moteur, archivée sur la relecture.
@@ -658,7 +658,7 @@ class SubmissionController extends Controller
             'reasons.*' => ['nullable', 'string', 'max:200'],
         ]);
 
-        $edition = Edition::findOrFail($data['edition_id']);
+        $event = Event::findOrFail($data['event_id']);
 
         $pairs = [];
         foreach ($data['pairs'] as $token) {
@@ -673,10 +673,10 @@ class SubmissionController extends Controller
             }
         }
 
-        $created = $engine->apply($edition, $pairs);
+        $created = $engine->apply($event, $pairs);
 
         return redirect()
-            ->route('admin.submissions.auto-assign', ['edition_id' => $edition->id])
+            ->route('admin.submissions.auto-assign', ['event_id' => $event->id])
             ->with('ukc_status', $created > 0
                 ? $created.' relecteur(s) assigné(s) et invité(s) par e-mail.'
                 : 'Aucune nouvelle assignation (déjà en place ou conflit d’intérêt).');
@@ -711,7 +711,7 @@ class SubmissionController extends Controller
         return collect($events)->sortBy(fn (array $e) => $e['when']?->getTimestamp() ?? 0)->values()->all();
     }
 
-    /** L'auteur correspondant (participant lié) a-t-il un paiement réglé sur l'édition ? */
+    /** L'auteur correspondant (participant lié) a-t-il un paiement réglé sur l'événement ? */
     private function authorHasPaid(Submission $submission): bool
     {
         return $submission->participant?->participationPayments()->where('status', 'paid')->exists() ?? false;

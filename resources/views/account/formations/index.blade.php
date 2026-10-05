@@ -26,7 +26,7 @@
             <h1 style="margin:0;">{{ __('Formations') }}</h1>
             <p style="color:var(--ukc-muted);margin:4px 0 0;font-size:14px;">
                 {{ __('Formations proposées par') }}
-                <strong>{{ $edition->colloque?->name ?: $edition->title }}</strong>@if ($edition->year) · {{ $edition->year }}@endif.
+                <strong>{{ $event->series?->name ?: $event->title }}</strong>@if ($event->year) · {{ $event->year }}@endif.
             </p>
         </div>
 

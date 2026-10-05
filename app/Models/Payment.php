@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 
 /**
  * Paiement des frais d'inscription (mobile money, carte via passerelle, ou
- * encaissement manuel). Un règlement par participant et par édition.
+ * encaissement manuel). Un règlement par participant et par événement.
  * Statuts : {@see PaymentStatus}.
  *
  * @property string|null $reference
@@ -76,7 +76,7 @@ class Payment extends Model
     /** Référence unique de la forme PAY-<année>-<6 car.>. */
     public static function generateReference(Payment $payment): string
     {
-        $year = $payment->edition?->year ?: date('Y');
+        $year = $payment->event?->year ?: date('Y');
 
         do {
             $ref = 'PAY-'.$year.'-'.Str::upper(Str::random(6));
@@ -210,10 +210,10 @@ class Payment extends Model
         ];
     }
 
-    /** @return BelongsTo<Edition, $this> */
-    public function edition(): BelongsTo
+    /** @return BelongsTo<Event, $this> */
+    public function event(): BelongsTo
     {
-        return $this->belongsTo(Edition::class);
+        return $this->belongsTo(Event::class);
     }
 
     /** @return BelongsTo<Participant, $this> */
@@ -248,7 +248,7 @@ class Payment extends Model
 
     /**
      * Coordonnées du payeur transmises à la passerelle pour **pré-remplir sa page**
-     * (mobile money / carte). On lit le participant de l'édition, avec repli sur le
+     * (mobile money / carte). On lit le participant de l'événement, avec repli sur le
      * **compte unifié** lié : le participant peut avoir été créé sans téléphone
      * alors que le compte le porte (profil).
      *

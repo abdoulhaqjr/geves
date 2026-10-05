@@ -3,7 +3,7 @@
 namespace App\Actions;
 
 use App\Mail\ReviewerInvitationMail;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Review;
 use App\Models\ReviewerBid;
@@ -14,7 +14,7 @@ use App\Support\ReviewerAssignmentPlanner;
 use Illuminate\Support\Facades\Mail;
 
 /**
- * Attribution automatique des relecteurs sur une édition : prépare les données
+ * Attribution automatique des relecteurs sur une événement : prépare les données
  * réelles (soumissions à couvrir, relecteurs + expertise + charge, conflits
  * d'intérêts), délègue le choix au {@see ReviewerAssignmentPlanner}, et sait
  * appliquer un plan validé en réutilisant {@see AssignReviewer} (idempotent).
@@ -39,22 +39,22 @@ class AutoAssignReviewers
      *   uncovered: int
      * }
      */
-    public function preview(Edition $edition, int $target, int $maxLoad): array
+    public function preview(Event $event, int $target, int $maxLoad): array
     {
-        $reviewers = Participant::where('edition_id', $edition->id)
+        $reviewers = Participant::where('event_id', $event->id)
             ->where('role', 'reviewer')->orderBy('last_name')->get();
 
-        $submissions = Submission::where('edition_id', $edition->id)
+        $submissions = Submission::where('event_id', $event->id)
             ->where('revision_of', 0)
             ->whereIn('status', self::OPEN_STATUSES)
             ->with('reviews')
             ->orderBy('id')->get();
 
-        // Charge courante par relecteur (relectures actives sur l'édition).
+        // Charge courante par relecteur (relectures actives sur l'événement).
         $load = Review::query()
             ->whereIn('reviewer_id', $reviewers->pluck('id'))
             ->whereIn('status', Review::ACTIVE_STATUSES)
-            ->whereHas('submission', fn ($q) => $q->where('edition_id', $edition->id))
+            ->whereHas('submission', fn ($q) => $q->where('event_id', $event->id))
             ->selectRaw('reviewer_id, count(*) as c')->groupBy('reviewer_id')->pluck('c', 'reviewer_id');
 
         $reviewerDto = $reviewers->map(fn (Participant $r) => [
@@ -140,18 +140,18 @@ class AutoAssignReviewers
 
     /**
      * Applique un plan validé (paires soumission→relecteur), en re-vérifiant
-     * l'appartenance à l'édition et l'absence de conflit d'intérêt élevé.
+     * l'appartenance à l'événement et l'absence de conflit d'intérêt élevé.
      *
      * @param  list<array{submission_id:int, reviewer_id:int, reason?:string|null}>  $pairs
      * @return int nombre de relectures effectivement créées
      */
-    public function apply(Edition $edition, array $pairs): int
+    public function apply(Event $event, array $pairs): int
     {
         $created = 0;
 
         foreach ($pairs as $pair) {
-            $submission = Submission::where('edition_id', $edition->id)->find($pair['submission_id']);
-            $reviewer = Participant::where('edition_id', $edition->id)
+            $submission = Submission::where('event_id', $event->id)->find($pair['submission_id']);
+            $reviewer = Participant::where('event_id', $event->id)
                 ->where('role', 'reviewer')->find($pair['reviewer_id']);
 
             if (! $submission || ! $reviewer) {

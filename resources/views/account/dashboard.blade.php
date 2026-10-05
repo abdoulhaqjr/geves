@@ -101,7 +101,7 @@
                 <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--ukc-border);">
                     <div style="min-width:0;">
                         <div style="font-weight:700;">{{ $s->label }}</div>
-                        <div style="font-size:.82rem;color:var(--ukc-muted);">{{ $s->edition?->title }}</div>
+                        <div style="font-size:.82rem;color:var(--ukc-muted);">{{ $s->event?->title }}</div>
                     </div>
                     <a href="{{ route('session.meeting', $s) }}" class="ukc-btn ukc-btn--green ukc-btn--sm" style="flex-shrink:0;">
                         <x-ukc.icon name="video" :size="15" /> {{ __('Rejoindre') }}
@@ -165,7 +165,7 @@
         </div>
     </div>
 
-    {{-- Mes rôles & activité (dérivés inter-éditions) --}}
+    {{-- Mes rôles & activité (dérivés inter-événements) --}}
     @if (count($roles) || $moderatedSessions->isNotEmpty() || $reportedSessions->isNotEmpty() || $committees->isNotEmpty() || $isReviewer)
         <div class="ukc-card" style="margin-bottom:18px;">
             <h3><x-ukc.icon name="role" :size="20" /> {{ __('Mes rôles & activité') }}</h3>
@@ -175,7 +175,7 @@
                         <span class="ukc-pill ukc-pill--info">{{ $role }}</span>
                     @endforeach
                 </div>
-                <p class="ukc-muted" style="font-size:.8rem;margin:0 0 8px;">{{ __('Rôles dérivés de votre activité sur l’ensemble des éditions.') }}</p>
+                <p class="ukc-muted" style="font-size:.8rem;margin:0 0 8px;">{{ __('Rôles dérivés de votre activité sur l’ensemble des événements.') }}</p>
             @endif
 
             @if ($moderatedSessions->isNotEmpty() || $reportedSessions->isNotEmpty())
@@ -183,14 +183,14 @@
                     @foreach ($moderatedSessions as $s)
                         <div style="padding:6px 0;font-size:.9rem;border-top:1px solid var(--ukc-border);">
                             <span class="ukc-pill ukc-pill--muted">{{ __('Modérateur') }}</span>
-                            {{ $s->label ?: __('Session') }} <span class="ukc-muted">- {{ $s->edition?->title }}</span>
+                            {{ $s->label ?: __('Session') }} <span class="ukc-muted">- {{ $s->event?->title }}</span>
                         </div>
                     @endforeach
                     @foreach ($reportedSessions as $s)
                         @php($rep = $s->report)
                         <div style="padding:6px 0;font-size:.9rem;border-top:1px solid var(--ukc-border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                             <span class="ukc-pill ukc-pill--muted">{{ __('Rapporteur') }}</span>
-                            {{ $s->label ?: __('Session') }} <span class="ukc-muted">- {{ $s->edition?->title }}</span>
+                            {{ $s->label ?: __('Session') }} <span class="ukc-muted">- {{ $s->event?->title }}</span>
                             @if ($rep && $rep->isSubmitted())
                                 <span class="ukc-pill ukc-pill--ok">{{ __('Rapport soumis') }}</span>
                             @elseif ($rep)
@@ -221,7 +221,7 @@
                     @foreach ($committees as $c)
                         <div style="padding:6px 0;font-size:.9rem;border-top:1px solid var(--ukc-border);">
                             <span class="ukc-pill ukc-pill--muted">{{ __('Comité') }}</span>
-                            {{ $c->person_title ?: __('Membre') }} <span class="ukc-muted">- {{ $c->edition?->title }}</span>
+                            {{ $c->person_title ?: __('Membre') }} <span class="ukc-muted">- {{ $c->event?->title }}</span>
                         </div>
                     @endforeach
                 </div>
@@ -285,7 +285,7 @@
                         <div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--ukc-border);align-items:center;">
                             <span style="font-size:.88rem;">
                                 <strong>{{ number_format((float) $p->amount, 0, ',', ' ') }} {{ $p->currency }}</strong>
-                                <span style="color:var(--ukc-muted);"> · {{ $p->edition?->year }}</span>
+                                <span style="color:var(--ukc-muted);"> · {{ $p->event?->year }}</span>
                             </span>
                             <a href="{{ route('account.receipt', $p) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
                                 <x-ukc.icon name="download" :size="14" /> {{ __('Reçu') }}
@@ -301,7 +301,7 @@
                     @forelse ($attestations as $a)
                         <div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--ukc-border);align-items:center;">
                             <span style="font-size:.88rem;">{{ $a->typeLabel() }}
-                                <span style="color:var(--ukc-muted);"> · {{ $a->edition?->year }}</span>
+                                <span style="color:var(--ukc-muted);"> · {{ $a->event?->year }}</span>
                             </span>
                             <a href="{{ route('attestation.document', $a->uuid) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
                                 <x-ukc.icon name="diploma" :size="14" /> {{ __('Télécharger') }}
@@ -322,16 +322,16 @@
         </div>
     @endif
 
-    {{-- Documents de mes éditions --}}
+    {{-- Documents de mes événements --}}
     @if ($editionDocuments->isNotEmpty())
         <div class="ukc-card" style="margin-top:18px;">
-            <h3><x-ukc.icon name="folder" :size="20" /> {{ __('Documents de mes éditions') }}</h3>
+            <h3><x-ukc.icon name="folder" :size="20" /> {{ __('Documents de mes événements') }}</h3>
             @foreach ($editionDocuments as $doc)
                 <div style="padding:12px 0;border-top:1px solid var(--ukc-border);">
-                    <div style="font-weight:700;margin-bottom:8px;">{{ $doc['edition']->title ?: $doc['edition']->year }}</div>
+                    <div style="font-weight:700;margin-bottom:8px;">{{ $doc['event']->title ?: $doc['event']->year }}</div>
                     <div style="display:flex;flex-wrap:wrap;gap:8px;">
                         @if ($doc['hasBooklet'])
-                            <a href="{{ route('account.documents.livret', $doc['edition']) }}" target="_blank"
+                            <a href="{{ route('account.documents.livret', $doc['event']) }}" target="_blank"
                                class="ukc-btn ukc-btn--outline ukc-btn--sm">
                                 <x-ukc.icon name="book" :size="14" /> {{ __('Livret des résumés') }}
                             </a>

@@ -2,7 +2,7 @@
 
 namespace App\Providers;
 
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\User;
 use App\Support\Settings;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -72,32 +72,32 @@ class AppServiceProvider extends ServiceProvider
             );
         });
 
-        // En-tête public : alimente les liens « Édition en cours » et
-        // « Déroulement » (mockup index.html) avec l'édition à la une -
+        // En-tête public : alimente les liens « Événement en cours » et
+        // « Déroulement » (mockup index.html) avec l'événement à la une -
         // celle en cours, sinon la prochaine, sinon la dernière publiée.
         View::composer('partials.public-header', function ($view) {
-            $edition = null;
+            $event = null;
             $hasLive = false;
 
             try {
-                $published = Edition::query()
+                $published = Event::query()
                     ->whereIn('status', ['open', 'closed', 'archived'])
                     ->orderByDesc('date_start')
                     ->get();
 
-                $ongoing = $published->first(fn (Edition $e) => $e->phase()->isOngoing());
+                $ongoing = $published->first(fn (Event $e) => $e->phase()->isOngoing());
                 $upcoming = $published
-                    ->filter(fn (Edition $e) => $e->phase()->publicView() === 'upcoming')
+                    ->filter(fn (Event $e) => $e->phase()->publicView() === 'upcoming')
                     ->sortBy('date_start')
                     ->first();
 
-                $edition = $ongoing ?? $upcoming ?? $published->first();
+                $event = $ongoing ?? $upcoming ?? $published->first();
                 $hasLive = (bool) $ongoing;
             } catch (\Throwable) {
                 // Table absente (migrations/installation) : header sans ces liens.
             }
 
-            $view->with('navEdition', $edition)->with('navHasLive', $hasLive);
+            $view->with('navEdition', $event)->with('navHasLive', $hasLive);
         });
     }
 

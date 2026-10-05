@@ -6,27 +6,27 @@ use App\Models\User;
 
 function scheduledEdition(): array
 {
-    $submission = seededSubmission('accepted'); // édition ouverte « uk-2026 », comm. « Innovation durable »
-    $edition = $submission->edition;
+    $submission = seededSubmission('accepted'); // événement ouverte « uk-2026 », comm. « Innovation durable »
+    $event = $submission->event;
 
-    $plenary = $edition->sessions()->create(['type' => 'plenary', 'label' => 'Cérémonie d’ouverture', 'ordre' => 0, 'room' => 'Amphi A']);
-    $atelier = $edition->ateliers()->create(['title' => 'Atelier Santé', 'tracks' => ['Santé'], 'ordre' => 0]);
-    $aSession = $edition->sessions()->create(['type' => 'atelier', 'atelier_id' => $atelier->id, 'label' => 'Session parallèle 1', 'ordre' => 1]);
-    $edition->slots()->create([
+    $plenary = $event->sessions()->create(['type' => 'plenary', 'label' => 'Cérémonie d’ouverture', 'ordre' => 0, 'room' => 'Amphi A']);
+    $atelier = $event->ateliers()->create(['title' => 'Atelier Santé', 'tracks' => ['Santé'], 'ordre' => 0]);
+    $aSession = $event->sessions()->create(['type' => 'atelier', 'atelier_id' => $atelier->id, 'label' => 'Session parallèle 1', 'ordre' => 1]);
+    $event->slots()->create([
         'session_id' => $aSession->id,
         'submission_id' => $submission->id,
         'participant_id' => $submission->participant_id,
     ]);
 
-    return [$edition, $submission];
+    return [$event, $submission];
 }
 
 it('affiche le programme synthétique saisi (et pas le détail des communications)', function () {
-    [$edition, $submission] = scheduledEdition();
+    [$event, $submission] = scheduledEdition();
 
     // Le programme public vient du contenu SAISI dans l'onglet « Programme »
     // (settings.program_synthesis), pas d'un agenda auto des sessions.
-    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+    $event->update(['settings' => array_merge($event->settings ?? [], [
         'program_synthesis' => [
             'title' => 'Programme synthétique du colloque',
             'days' => [
@@ -38,7 +38,7 @@ it('affiche le programme synthétique saisi (et pas le détail des communication
         ],
     ])]);
 
-    $this->get(route('public.colloque', $edition->slug))
+    $this->get(route('public.colloque', $event->slug))
         ->assertOk()
         ->assertSee('Programme synthétique du colloque')
         ->assertSee('Matin')
@@ -50,11 +50,11 @@ it('affiche le programme synthétique saisi (et pas le détail des communication
 });
 
 it('n’affiche pas de programme quand aucun contenu n’est saisi', function () {
-    // Une édition avec des sessions mais SANS programme synthétique saisi : la
+    // Une événement avec des sessions mais SANS programme synthétique saisi : la
     // section publique reste masquée (elle ne dépend plus des sessions).
-    [$edition] = scheduledEdition();
+    [$event] = scheduledEdition();
 
-    $this->get(route('public.colloque', $edition->slug))
+    $this->get(route('public.colloque', $event->slug))
         ->assertOk()
         ->assertDontSee('>Programme<', false);
 });
@@ -62,11 +62,11 @@ it('n’affiche pas de programme quand aucun contenu n’est saisi', function ()
 it('enregistre le programme synthétique saisi et le publie', function () {
     $staff = adminStaff();
     $submission = seededSubmission('accepted');
-    $edition = $submission->edition;
+    $event = $submission->event;
 
     $this->actingAs($staff, 'web')
         ->post(route('admin.program.synthesis'), [
-            'edition_id' => $edition->id,
+            'event_id' => $event->id,
             'title' => 'Programme du colloque',
             'days' => [
                 ['date' => '2026-09-27', 'heading' => 'Jour 1 : Matin', 'rows' => [
@@ -78,7 +78,7 @@ it('enregistre le programme synthétique saisi et le publie', function () {
         ])
         ->assertRedirect();
 
-    $syn = $edition->fresh()->settings['program_synthesis'];
+    $syn = $event->fresh()->settings['program_synthesis'];
     expect($syn['title'])->toBe('Programme du colloque');
     expect($syn['days'])->toHaveCount(1);
     expect($syn['days'][0]['rows'])->toHaveCount(1);
@@ -86,7 +86,7 @@ it('enregistre le programme synthétique saisi et le publie', function () {
     expect($syn['days'][0]['rows'][0]['start'])->toBe('09:00');
 
     // Publié tel quel sur la page du colloque.
-    $this->get(route('public.colloque', $edition->slug))
+    $this->get(route('public.colloque', $event->slug))
         ->assertOk()
         ->assertSee('Programme du colloque')
         ->assertSee('Jour 1 : Matin')
@@ -96,12 +96,12 @@ it('enregistre le programme synthétique saisi et le publie', function () {
 it('génère les sessions et créneaux depuis le programme (et régénère sans doublonner)', function () {
     $staff = adminStaff();
     $submission = seededSubmission('accepted');
-    $edition = $submission->edition;
-    $edition->ateliers()->create(['title' => 'Atelier Santé', 'tracks' => ['Santé'], 'ordre' => 0]);
-    $ateliersCount = $edition->ateliers()->count();
+    $event = $submission->event;
+    $event->ateliers()->create(['title' => 'Atelier Santé', 'tracks' => ['Santé'], 'ordre' => 0]);
+    $ateliersCount = $event->ateliers()->count();
 
     $payload = [
-        'edition_id' => $edition->id,
+        'event_id' => $event->id,
         'title' => 'Programme',
         'days' => [
             ['date' => '2026-09-27', 'heading' => 'Matin', 'rows' => [
@@ -115,23 +115,23 @@ it('génère les sessions et créneaux depuis le programme (et régénère sans 
     $this->actingAs($staff, 'web')->post(route('admin.program.synthesis.generate'), $payload)->assertRedirect();
 
     // 1 plénière + 1 session par atelier ; la pause ne crée rien.
-    expect($edition->sessions()->where('type', 'plenary')->count())->toBe(1);
-    expect($edition->sessions()->where('type', 'atelier')->count())->toBe($ateliersCount);
+    expect($event->sessions()->where('type', 'plenary')->count())->toBe(1);
+    expect($event->sessions()->where('type', 'atelier')->count())->toBe($ateliersCount);
     // La session d'atelier (11:00-12:00) est découpée en créneaux libres.
-    expect($edition->slots()->count())->toBeGreaterThan(0);
+    expect($event->slots()->count())->toBeGreaterThan(0);
 
-    $sessionsAfterFirst = $edition->sessions()->count();
+    $sessionsAfterFirst = $event->sessions()->count();
 
     // Régénérer remplace (pas de doublon).
     $this->actingAs($staff, 'web')->post(route('admin.program.synthesis.generate'), $payload)->assertRedirect();
-    expect($edition->sessions()->count())->toBe($sessionsAfterFirst);
+    expect($event->sessions()->count())->toBe($sessionsAfterFirst);
 });
 
 it('génère les fiches de session imprimables', function () {
     $staff = adminStaff();
-    [$edition, $submission] = scheduledEdition();
+    [$event, $submission] = scheduledEdition();
 
-    $this->actingAs($staff, 'web')->get(route('admin.documents.sessions', $edition))
+    $this->actingAs($staff, 'web')->get(route('admin.documents.sessions', $event))
         ->assertOk()
         ->assertSee('Fiches de session')
         ->assertSee('Session parallèle 1')
@@ -140,10 +140,10 @@ it('génère les fiches de session imprimables', function () {
 });
 
 it('protège les fiches de session sans permission', function () {
-    [$edition] = scheduledEdition();
+    [$event] = scheduledEdition();
     $user = User::factory()->create();
 
-    $this->actingAs($user, 'web')->get(route('admin.documents.sessions', $edition))->assertForbidden();
+    $this->actingAs($user, 'web')->get(route('admin.documents.sessions', $event))->assertForbidden();
 });
 
 /**
@@ -154,9 +154,9 @@ it('protège les fiches de session sans permission', function () {
  * donc DANS l'onglet de leur jour, en intertitres.
  */
 it('range les blocs d’une même journée sous un seul onglet de jour', function () {
-    [$edition] = scheduledEdition();
+    [$event] = scheduledEdition();
 
-    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+    $event->update(['settings' => array_merge($event->settings ?? [], [
         'program_synthesis' => [
             'title' => 'Programme',
             'days' => [
@@ -173,7 +173,7 @@ it('range les blocs d’une même journée sous un seul onglet de jour', functio
         ],
     ])]);
 
-    $html = $this->get(route('public.colloque', $edition->slug))->assertOk()->getContent();
+    $html = $this->get(route('public.colloque', $event->slug))->assertOk()->getContent();
 
     // Deux jours saisis en trois blocs : deux onglets, pas trois.
     expect(substr_count($html, 'ukc-tab--day'))->toBe(2);
@@ -188,9 +188,9 @@ it('range les blocs d’une même journée sous un seul onglet de jour', functio
  * appartient, et le coller au précédent inventerait une information.
  */
 it('laisse son propre onglet à un bloc sans date', function () {
-    [$edition] = scheduledEdition();
+    [$event] = scheduledEdition();
 
-    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+    $event->update(['settings' => array_merge($event->settings ?? [], [
         'program_synthesis' => [
             'title' => 'Programme',
             'days' => [
@@ -204,7 +204,7 @@ it('laisse son propre onglet à un bloc sans date', function () {
         ],
     ])]);
 
-    $html = $this->get(route('public.colloque', $edition->slug))->assertOk()->getContent();
+    $html = $this->get(route('public.colloque', $event->slug))->assertOk()->getContent();
 
     expect(substr_count($html, 'ukc-tab--day'))->toBe(2);
     expect($html)->toContain('Visites libres');

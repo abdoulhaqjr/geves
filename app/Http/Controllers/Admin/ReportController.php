@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Actions\GenerateReport;
 use App\Http\Controllers\Controller;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Payment;
 use App\Models\Submission;
-use App\Support\EditionReport;
+use App\Support\EventReport;
 use App\Support\Settings;
 use App\Support\XlsxWriter;
 use Illuminate\Contracts\View\View;
@@ -19,9 +19,9 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Rapports d'une édition (contrôleur + Blade) : synthèse chiffrée + graphiques
+ * Rapports d'une événement (contrôleur + Blade) : synthèse chiffrée + graphiques
  * à l'écran, exports Excel/PDF, et « Export personnalisé » assisté par IA
- * (brief + exemple optionnel → brouillon, décision humaine). L'édition est
+ * (brief + exemple optionnel → brouillon, décision humaine). L'événement est
  * choisie via query string ; les graphiques se réinitialisent au rechargement.
  */
 class ReportController extends Controller
@@ -30,29 +30,29 @@ class ReportController extends Controller
 
     public function index(Request $request): View
     {
-        $editions = $this->accessibleEditions($request, 'view_dashboard');
-        $editionId = (string) $request->query('edition_id', '');
+        $events = $this->accessibleEditions($request, 'view_dashboard');
+        $editionId = (string) $request->query('event_id', '');
         if ($editionId === '') {
-            $editionId = (string) ($editions->firstWhere('status', 'open')?->id ?? $editions->first()?->id ?? '');
+            $editionId = (string) ($events->firstWhere('status', 'open')?->id ?? $events->first()?->id ?? '');
         }
 
-        $edition = $editionId !== '' ? $editions->firstWhere('id', (int) $editionId) : null;
-        $report = $edition ? new EditionReport($edition) : null;
+        $event = $editionId !== '' ? $events->firstWhere('id', (int) $editionId) : null;
+        $report = $event ? new EventReport($event) : null;
 
-        // Historique des exports IA (persisté), filtré sur l'édition courante.
+        // Historique des exports IA (persisté), filtré sur l'événement courante.
         $aiHistory = collect((array) Settings::get('report_ai_history', []))
-            ->filter(fn ($h) => (string) ($h['edition_id'] ?? '') === $editionId)
+            ->filter(fn ($h) => (string) ($h['event_id'] ?? '') === $editionId)
             ->take(12)
             ->values()
             ->all();
 
         return view('admin.reports.index', [
-            'editions' => $editions,
-            'edition' => $edition,
-            'edition_id' => $editionId,
+            'events' => $events,
+            'event' => $event,
+            'event_id' => $editionId,
             'summary' => $report?->summary(),
             'statuses' => Submission::statuses(),
-            'chartData' => $edition ? $this->chartData($edition->id) : null,
+            'chartData' => $event ? $this->chartData($event->id) : null,
             'report' => $report,
             'counts' => $report?->counts(),
             'aiHistory' => $aiHistory,
@@ -60,15 +60,15 @@ class ReportController extends Controller
     }
 
     /**
-     * Export d'un jeu de données de l'édition en CSV ou Excel (onglet
-     * « Exports prêts »). Réutilise les lignes d'EditionReport.
+     * Export d'un jeu de données de l'événement en CSV ou Excel (onglet
+     * « Exports prêts »). Réutilise les lignes d'EventReport.
      */
-    public function export(Edition $edition, string $dataset, string $format): Response
+    public function export(Event $event, string $dataset, string $format): Response
     {
         abort_unless(in_array($dataset, ['submissions', 'participants', 'payments', 'attestations', 'accounting'], true), 404);
         abort_unless(in_array($format, ['csv', 'xlsx'], true), 404);
 
-        $report = new EditionReport($edition);
+        $report = new EventReport($event);
         [$sheet, $headers, $rows] = match ($dataset) {
             'submissions' => ['Communications', $report->submissionHeaders(), $report->submissionRows()],
             'participants' => ['Participants', $report->participantHeaders(), $report->participantRows()],
@@ -90,15 +90,15 @@ class ReportController extends Controller
      * Télécharge un rapport IA de l'historique dans son format d'origine.
      * Le brouillon (narratif) est stocké ; les données réelles sont réagrégées.
      */
-    public function aiDownload(Edition $edition, string $id): Response
+    public function aiDownload(Event $event, string $id): Response
     {
         $entry = collect((array) Settings::get('report_ai_history', []))
             ->firstWhere('id', $id);
         abort_if($entry === null, 404);
 
         $format = (string) ($entry['format'] ?? 'pdf');
-        $scope = (string) ($entry['scope'] ?? 'edition');
-        $report = new EditionReport($edition);
+        $scope = (string) ($entry['scope'] ?? 'event');
+        $report = new EventReport($event);
         $base = 'rapport-ia-'.Str::slug((string) ($entry['title'] ?? 'rapport')).'-'.$id;
 
         $datasets = $this->datasets($report, $scope);
@@ -137,7 +137,7 @@ class ReportController extends Controller
 
         // pdf / docx → vue imprimable (le docx s'ouvre dans Word via l'en-tête).
         $view = view('reports.ai', [
-            'edition' => $edition,
+            'event' => $event,
             'entry' => $entry,
             'table' => $table,
             // Les données brutes ne sont jointes QUE si l'IA n'a pas produit le
@@ -162,7 +162,7 @@ class ReportController extends Controller
      *
      * @return array<int, array{0: string, 1: list<string>, 2: array<int, array<int, string|float|int>>}>
      */
-    protected function datasets(EditionReport $report, string $scope): array
+    protected function datasets(EventReport $report, string $scope): array
     {
         return match ($scope) {
             'subs' => [['Communications', $report->submissionHeaders(), $report->submissionRows()]],
@@ -194,19 +194,19 @@ class ReportController extends Controller
     public function generate(Request $request, GenerateReport $action): RedirectResponse
     {
         $data = $request->validate([
-            'edition_id' => ['required', 'exists:editions,id'],
+            'event_id' => ['required', 'exists:events,id'],
             'mode' => ['nullable', 'in:describe,template'],
             'aiBrief' => ['nullable', 'string', 'max:2000'],
             'aiNotes' => ['nullable', 'string', 'max:2000'],
             'aiExample' => ['nullable', 'file', 'mimes:pdf,txt,doc,docx,xls,xlsx,csv', 'max:10240'],
             'format' => ['nullable', 'in:xlsx,csv,pdf,docx'],
-            'scope' => ['nullable', 'in:edition,subs,part,pay,all'],
+            'scope' => ['nullable', 'in:event,subs,part,pay,all'],
             'aiProvider' => ['nullable', 'in:default,claude,openai,gemini,grok'],
         ]);
 
         $mode = $data['mode'] ?? 'describe';
         $format = $data['format'] ?? 'xlsx';
-        $scope = $data['scope'] ?? 'edition';
+        $scope = $data['scope'] ?? 'event';
 
         // En mode « description » le brief est requis ; en mode « modèle » le fichier l'est.
         if ($mode === 'describe' && Str::length(trim((string) ($data['aiBrief'] ?? ''))) < 5) {
@@ -216,7 +216,7 @@ class ReportController extends Controller
             return back()->withInput()->withErrors(['aiExample' => 'Joignez un modèle de rapport (PDF, Word, Excel).']);
         }
 
-        $edition = Edition::findOrFail($data['edition_id']);
+        $event = Event::findOrFail($data['event_id']);
 
         $files = [];
         if ($request->hasFile('aiExample')) {
@@ -242,18 +242,18 @@ class ReportController extends Controller
 
         try {
             $report = $action->handle(
-                $edition,
+                $event,
                 $brief,
                 $files,
                 $data['aiProvider'] ?? null,
                 'report',
-                $this->datasets(new EditionReport($edition), $scope),
+                $this->datasets(new EventReport($event), $scope),
                 $output,
             );
 
             $entry = [
                 'id' => (string) Str::uuid(),
-                'edition_id' => (string) $edition->id,
+                'event_id' => (string) $event->id,
                 'title' => $report['title'],
                 'sections' => $report['sections'],
                 'table' => $report['table'],
@@ -278,13 +278,13 @@ class ReportController extends Controller
         Settings::set('report_ai_history', array_slice($history, 0, 30));
     }
 
-    public function xlsx(Edition $edition): Response
+    public function xlsx(Event $event): Response
     {
-        $report = new EditionReport($edition);
+        $report = new EventReport($event);
         $summary = $report->summary();
 
         $synthese = [
-            ['Édition', $edition->title ?: (string) $edition->year],
+            ['Événement', $event->title ?: (string) $event->year],
             ['Participants', $summary['participants']],
             ['Communications', $summary['submissions']],
         ];
@@ -304,12 +304,12 @@ class ReportController extends Controller
         return $xlsx->download($report->filenameBase().'.xlsx');
     }
 
-    public function pdf(Edition $edition): View
+    public function pdf(Event $event): View
     {
-        $report = new EditionReport($edition);
+        $report = new EventReport($event);
 
         return view('reports.edition', [
-            'edition' => $edition,
+            'event' => $event,
             'summary' => $report->summary(),
             'participantHeaders' => $report->participantHeaders(),
             'participantRows' => $report->participantRows(),
@@ -323,14 +323,14 @@ class ReportController extends Controller
 
     /**
      * Données des 4 graphiques (statuts, soumissions/mois, paiements cumulés,
-     * axes) pour l'édition donnée - mêmes clés/canvas que le tableau de bord.
+     * axes) pour l'événement donnée - mêmes clés/canvas que le tableau de bord.
      *
      * @return array<string, mixed>
      */
     protected function chartData(int $edId): array
     {
-        $subs = fn () => Submission::query()->where('revision_of', 0)->where('edition_id', $edId);
-        $pay = fn () => Payment::query()->where('edition_id', $edId);
+        $subs = fn () => Submission::query()->where('revision_of', 0)->where('event_id', $edId);
+        $pay = fn () => Payment::query()->where('event_id', $edId);
 
         $byStatus = $subs()->selectRaw('status, count(*) as c')->groupBy('status')->pluck('c', 'status');
         $n = fn (string $s): int => (int) ($byStatus[$s] ?? 0);

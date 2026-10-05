@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::create('claims', function (Blueprint $table) {
             $table->id();
             $table->string('reference')->unique();
-            $table->foreignId('edition_id')->nullable()->constrained('editions')->nullOnDelete();
+            $table->foreignId('event_id')->nullable()->constrained('events')->nullOnDelete();
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('name')->nullable();       // contact (nom)
             $table->string('email')->nullable();      // contact (e-mail)

@@ -32,27 +32,27 @@ it('normalise une grille personnalisée et retombe sur le défaut si vide', func
     expect(ReviewGrid::normalize(null))->toBe(ReviewGrid::DEFAULTS);
 });
 
-it('lit la grille personnalisée d’une édition', function () {
-    $edition = openEdition();
-    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+it('lit la grille personnalisée d’une événement', function () {
+    $event = openEdition();
+    $event->update(['settings' => array_merge($event->settings ?? [], [
         'review_criteria' => [['key' => 'x', 'label' => 'Critère X']],
     ])]);
 
-    $criteria = ReviewGrid::criteria($edition->fresh());
+    $criteria = ReviewGrid::criteria($event->fresh());
     expect($criteria)->toHaveCount(1);
     expect($criteria[0]['label'])->toBe('Critère X');
 });
 
-it('enregistre la grille de l’édition depuis le back-office', function () {
-    $edition = openEdition();
+it('enregistre la grille de l’événement depuis le back-office', function () {
+    $event = openEdition();
 
     $this->actingAs(adminStaff(), 'web')
-        ->post(route('admin.editions.reviewers.criteria', $edition), [
+        ->post(route('admin.evenements.reviewers.criteria', $event), [
             'criteria' => ['Originalité', 'Clarté', ''],
         ])
         ->assertRedirect();
 
-    $criteria = ReviewGrid::criteria($edition->fresh());
+    $criteria = ReviewGrid::criteria($event->fresh());
     expect($criteria)->toHaveCount(2);
     expect(collect($criteria)->pluck('label')->all())->toBe(['Originalité', 'Clarté']);
 });

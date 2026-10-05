@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Mail\ContactMessageMail;
-use App\Models\Edition;
 use App\Models\Email;
+use App\Models\Event;
 use App\Support\Notifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,17 +14,17 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
 /**
- * Formulaire de contact public d'une édition (Blade + POST classique, sans
+ * Formulaire de contact public d'une événement (Blade + POST classique, sans
  * Livewire). Anti-spam conservé :
  * - honeypot (champ « website » invisible qui doit rester vide) ;
  * - délai minimal de remplissage (rejette les envois quasi-instantanés) ;
  * - throttle par IP (RateLimiter).
- * Envoie le message à l'adresse de contact de l'édition (repli sur l'expéditeur
+ * Envoie le message à l'adresse de contact de l'événement (repli sur l'expéditeur
  * applicatif) et le journalise dans la table emails.
  */
 class ContactController extends Controller
 {
-    public function send(Request $request, Edition $edition): RedirectResponse
+    public function send(Request $request, Event $event): RedirectResponse
     {
         // Honeypot rempli ou envoi trop rapide (< 3 s) : on ignore silencieusement
         // en affichant tout de même l'accusé (ne pas renseigner les robots).
@@ -46,18 +46,18 @@ class ContactController extends Controller
         }
         RateLimiter::hit($key, 3600);
 
-        $recipient = $edition->settings['contact']['email'] ?? config('mail.from.address');
+        $recipient = $event->settings['contact']['email'] ?? config('mail.from.address');
 
         Mail::to($recipient)->send(
-            new ContactMessageMail($edition, $data['name'], $data['email'], $data['message'])
+            new ContactMessageMail($event, $data['name'], $data['email'], $data['message'])
         );
 
         Email::create([
-            'edition_id' => $edition->id,
+            'event_id' => $event->id,
             'participant_id' => null,
             'template' => 'contact',
             'recipient' => (string) $recipient,
-            'subject' => 'Contact - '.($edition->title ?: 'Colloque'),
+            'subject' => 'Contact - '.($event->title ?: 'Événement'),
             'body' => $data['message'],
             'sent_at' => now(),
             'status' => 'sent',

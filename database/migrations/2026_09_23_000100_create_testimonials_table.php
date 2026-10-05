@@ -18,8 +18,8 @@ return new class extends Migration
             $table->id();
             // Auteur (compte). Nullable : l'admin peut saisir un témoignage pour un tiers.
             $table->foreignId('user_id')->nullable()->index();
-            // Contexte optionnel : à propos de quel colloque/édition.
-            $table->foreignId('edition_id')->nullable()->index();
+            // Contexte optionnel : à propos de quel colloque/événement.
+            $table->foreignId('event_id')->nullable()->index();
             $table->string('author_name', 160);
             $table->string('author_role', 160)->nullable();
             $table->string('author_affiliation', 200)->nullable();

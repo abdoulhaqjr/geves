@@ -7,7 +7,7 @@ use App\Meetings\MeetableRegistry;
 use App\Models\EventSession;
 use App\Models\SessionAttendance;
 use App\Models\SessionReport;
-use App\Support\EditionLock;
+use App\Support\EventLock;
 use App\Support\SessionRoster;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,7 +21,7 @@ use Illuminate\View\View;
  * partout.
  *
  * ⚠️ On ne pointe que les **auteurs des communications de la séance**
- * ({@see SessionRoster}), jamais l'effectif de l'édition : un modérateur constate
+ * ({@see SessionRoster}), jamais l'effectif de l'événement : un modérateur constate
  * ce qu'il a sous les yeux, et une liste de plusieurs centaines d'inscrits lui
  * demanderait de se prononcer sur des gens absents de sa salle.
  *
@@ -35,7 +35,7 @@ class SessionAttendanceController extends Controller
     {
         $this->authorizeSessionOfficer($session);
 
-        $session->load('edition.colloque', 'atelier');
+        $session->load('event.series', 'atelier');
         $report = SessionReport::where('session_id', $session->id)->first();
 
         return view('account.attendance.edit', [
@@ -62,7 +62,7 @@ class SessionAttendanceController extends Controller
             'counts' => $session->presenceCounts(),
             'canWrite' => $this->canWrite($session, $report),
             'notStarted' => ! $session->hasStarted(),
-            'frozen' => EditionLock::frozen($session->edition),
+            'frozen' => EventLock::frozen($session->event),
             'validated' => $report?->isValidated() ?? false,
         ]);
     }
@@ -79,7 +79,7 @@ class SessionAttendanceController extends Controller
     {
         $this->authorizeSessionOfficer($session);
 
-        EditionLock::guard($session->edition);
+        EventLock::guard($session->event);
         abort_unless($session->hasStarted(), 403, 'Le pointage ouvrira au début de la séance.');
 
         $report = SessionReport::where('session_id', $session->id)->first();
@@ -95,7 +95,7 @@ class SessionAttendanceController extends Controller
         ]);
 
         // ⚠️ Un identifiant posté n'est pas une autorisation. La garde est la
-        // liste de la SÉANCE, pas celle de l'édition : un modérateur n'a pas à
+        // liste de la SÉANCE, pas celle de l'événement : un modérateur n'a pas à
         // pouvoir se prononcer sur quelqu'un qui ne passe pas chez lui.
         $permis = SessionRoster::participantIds($session)
             ->intersect(array_map('intval', array_keys($data['presence'] ?? [])));
@@ -145,7 +145,7 @@ class SessionAttendanceController extends Controller
     {
         return $session->hasStarted()
             && ! ($report?->isValidated() ?? false)
-            && ! EditionLock::frozen($session->edition);
+            && ! EventLock::frozen($session->event);
     }
 
     /**

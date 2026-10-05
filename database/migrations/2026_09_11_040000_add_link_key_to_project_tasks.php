@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Lien contextuel d'une tâche vers la feature concernée du back-office
- * (Soumissions, Participants, Documents, Programme…), filtrée sur l'édition.
+ * (Soumissions, Participants, Documents, Programme…), filtrée sur l'événement.
  */
 return new class extends Migration
 {

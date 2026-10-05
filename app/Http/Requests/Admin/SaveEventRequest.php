@@ -2,17 +2,17 @@
 
 namespace App\Http\Requests\Admin;
 
-use App\Support\EditionArtwork;
+use App\Support\EventArtwork;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
 /**
- * Validation de la fiche d'édition (création/mise à jour). En cas d'échec, on
- * réactive l'onglet du hub d'édition contenant la première erreur (flash
+ * Validation de la fiche d'événement (création/mise à jour). En cas d'échec, on
+ * réactive l'onglet du hub d'événement contenant la première erreur (flash
  * `edition_tab`). L'accès est gouverné par le middleware du back-office.
  */
-class SaveEditionRequest extends FormRequest
+class SaveEventRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -23,10 +23,10 @@ class SaveEditionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'colloque_id' => ['nullable', 'exists:colloques,id'],
+            'event_series_id' => ['nullable', 'exists:event_series,id'],
             'new_colloque' => ['nullable', 'string', 'max:200'],
             'title' => ['required', 'string', 'max:255'],
-            'edition_label' => ['nullable', 'string', 'max:100'],
+            'event_label' => ['nullable', 'string', 'max:100'],
             'subtitle' => ['nullable', 'string', 'max:255'],
             'theme' => ['nullable', 'string', 'max:2000'],
             'year' => ['nullable', 'integer', 'min:2000', 'max:2100'],
@@ -109,7 +109,7 @@ class SaveEditionRequest extends FormRequest
             'partners.*.logo_url' => ['nullable', 'string', 'max:500'],
             // Logo téléversé, ligne par ligne. ⚠️ Pas de SVG : il serait servi
             // depuis notre domaine et peut porter du script.
-            'partners.*.logo_file' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:'.min(2048, EditionArtwork::maxUploadKb())],
+            'partners.*.logo_file' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:'.min(2048, EventArtwork::maxUploadKb())],
             'partners.*.level' => ['nullable', 'string', 'max:40'],
             'faq' => ['array'],
             'faq.*.question' => ['nullable', 'string', 'max:300'],
@@ -117,11 +117,11 @@ class SaveEditionRequest extends FormRequest
             'hero_image' => ['nullable', 'string', 'max:500'],
             'banner_image' => ['nullable', 'string', 'max:500'],
             // Habillage téléversé : c'est le fichier qui l'emporte sur l'URL saisie.
-            'hero_image_file' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:'.min(3072, EditionArtwork::maxUploadKb())],
-            'banner_image_file' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:'.min(3072, EditionArtwork::maxUploadKb())],
+            'hero_image_file' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:'.min(3072, EventArtwork::maxUploadKb())],
+            'banner_image_file' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:'.min(3072, EventArtwork::maxUploadKb())],
             // ⚠️ Plafond = celui du serveur : au-delà, PHP coupe la requête avant
             // la validation et l'admin n'obtiendrait aucun message.
-            'hero_video_file' => ['nullable', 'file', 'mimetypes:video/mp4,video/webm', 'max:'.EditionArtwork::maxUploadKb()],
+            'hero_video_file' => ['nullable', 'file', 'mimetypes:video/mp4,video/webm', 'max:'.EventArtwork::maxUploadKb()],
             'hero_video' => ['nullable', 'string', 'max:500'],
             'contact_email' => ['nullable', 'email', 'max:200'],
             'contact_phone' => ['nullable', 'string', 'max:60'],
@@ -141,8 +141,8 @@ class SaveEditionRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $v): void {
-            if (! $this->filled('colloque_id') && trim((string) $this->input('new_colloque')) === '') {
-                $v->errors()->add('colloque_id', 'Choisissez un colloque existant ou saisissez-en un nouveau.');
+            if (! $this->filled('event_series_id') && trim((string) $this->input('new_colloque')) === '') {
+                $v->errors()->add('event_series_id', 'Choisissez un colloque existant ou saisissez-en un nouveau.');
             }
         });
     }
@@ -157,7 +157,7 @@ class SaveEditionRequest extends FormRequest
         );
     }
 
-    /** Associe un champ à l'onglet du hub d'édition qui le contient. */
+    /** Associe un champ à l'onglet du hub d'événement qui le contient. */
     private function tabForField(string $field): string
     {
         return match (true) {

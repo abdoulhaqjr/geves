@@ -2,14 +2,14 @@
      produit un « &amp;amp; » visible. Mettre le caractère tel quel. --}}
 <x-layouts.admin title="Attribution automatique" subtitle="Relecteurs - matching par axe, conflits d’intérêts & charge">
     <div class="admin-page">
-        {{-- Sélecteur d'édition en tête, AVANT les onglets (convention des pages
+        {{-- Sélecteur d'événement en tête, AVANT les onglets (convention des pages
              Documents, Participants, Paiements et Soumissions). --}}
         <div style="max-width:340px;margin-bottom:16px;">
             <div class="ukc-field" style="margin:0;">
-                <label>Édition</label>
-                <select onchange="window.location='{{ route('admin.submissions.auto-assign') }}?edition_id='+this.value">
+                <label>Événement</label>
+                <select onchange="window.location='{{ route('admin.submissions.auto-assign') }}?event_id='+this.value">
                     <option value="">- Choisir -</option>
-                    @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
+                    @foreach ($events as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $event_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
                 </select>
             </div>
         </div>
@@ -17,20 +17,20 @@
         @include('admin.submissions._nav', ['current' => 'attribution'])
 
         {{-- Règles appliquées (elles se changent dans l'onglet Évaluation : ce sont
-             des réglages de l'édition, pas des paramètres de cette page). --}}
-        @if ($edition)
+             des réglages de l'événement, pas des paramètres de cette page). --}}
+        @if ($event)
             <p style="margin:-4px 0 16px;font-size:13px;color:var(--ukc-muted);">
                 Règles appliquées : <strong>{{ $target }}</strong> relecteur(s) par soumission ·
                 charge max <strong>{{ $maxLoad > 0 ? $maxLoad : 'illimitée' }}</strong> ·
-                <a href="{{ route('admin.submissions.options', ['edition_id' => $edition_id]) }}"
+                <a href="{{ route('admin.submissions.options', ['event_id' => $event_id]) }}"
                    style="color:var(--ukc-blue);font-weight:600;">modifier</a>
             </p>
         @endif
-        @if (! $edition)
-            <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);">Sélectionnez une édition pour lancer l’attribution.</p></div>
+        @if (! $event)
+            <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);">Sélectionnez une événement pour lancer l’attribution.</p></div>
         @elseif (empty($preview['reviewers']))
             <div class="ukc-card">
-                <p style="margin:0;color:var(--ukc-muted);">Aucun relecteur sur cette édition. Assignez d’abord un relecteur depuis une soumission,
+                <p style="margin:0;color:var(--ukc-muted);">Aucun relecteur sur cette événement. Assignez d’abord un relecteur depuis une soumission,
                     ou invitez des relecteurs, puis revenez ici.</p>
             </div>
         @else
@@ -59,7 +59,7 @@
                         <form method="POST" action="{{ route('admin.submissions.auto-assign.apply') }}"
                               x-data="{ n: {{ $proposalsPage->count() }} }">
                             @csrf
-                            <input type="hidden" name="edition_id" value="{{ $edition->id }}">
+                            <input type="hidden" name="event_id" value="{{ $event->id }}">
                             <div class="ukc-table-wrap">
                                 <table class="ukc-table">
                                     <thead>
@@ -117,7 +117,7 @@
                 <div class="ukc-card" style="padding:0;">
                     <div style="padding:14px 18px;border-bottom:1px solid var(--ukc-border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
                         <div><strong>Charge des relecteurs</strong> <span style="color:var(--ukc-muted);font-size:13px;">- la charge ne compte que les relectures en cours ou rendues.</span></div>
-                        <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.submissions.reviewers', ['edition_id' => $edition_id]) }}">Gérer l’expertise</a>
+                        <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.submissions.reviewers', ['event_id' => $event_id]) }}">Gérer l’expertise</a>
                     </div>
                     <div class="ukc-table-wrap">
                         <table class="ukc-table">

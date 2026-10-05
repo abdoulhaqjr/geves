@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Participants : présence d'une personne sur une édition donnée (auteur,
+ * Participants : présence d'une personne sur une événement donnée (auteur,
  * congressiste/auditeur, relecteur, membre de comité…). Reliée au compte global
  * (`account_id`) quand la personne s'est connectée. Le rôle « fort » n'est pas
  * rétrogradé lors des upserts.
@@ -16,7 +16,7 @@ return new class extends Migration
     {
         Schema::create('participants', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('edition_id')->constrained('editions')->cascadeOnDelete();
+            $table->foreignId('event_id')->constrained('events')->cascadeOnDelete();
             $table->foreignId('account_id')->nullable()->index();
             $table->string('first_name', 150)->default('');
             $table->string('last_name', 150)->default('');

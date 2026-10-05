@@ -37,7 +37,7 @@ class ParticipantInvitationMail extends Mailable implements ShouldQueue
         $meta = $this->meta();
         $subject = $meta['subject'] !== '' ? $meta['subject'] : __('Invitation');
 
-        return new Envelope(subject: $subject.' - '.($this->participant->edition?->title ?? __('Colloque')));
+        return new Envelope(subject: $subject.' - '.($this->participant->event?->title ?? __('Événement')));
     }
 
     public function content(): Content

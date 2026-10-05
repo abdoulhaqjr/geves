@@ -10,14 +10,14 @@ use App\Documents\LivretTemplate;
 use App\Http\Controllers\Controller;
 use App\Models\Attestation;
 use App\Models\DocumentTemplate;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Formation;
 use App\Models\Participant;
 use App\Models\Submission;
 use App\Support\AttestationPolicy;
 use App\Support\AttestationQuery;
 use App\Support\CommunicationAttestations;
-use App\Support\EditionSettings;
+use App\Support\EventSettings;
 use App\Support\ListSort;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
@@ -27,7 +27,7 @@ use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Hub Documents d'une édition (contrôleur + Blade, fidèle au mockup
+ * Hub Documents d'une événement (contrôleur + Blade, fidèle au mockup
  * admin-documents) : trois volets - Attestations (émission par type + options),
  * Badges (génération + options) et Livre des résumés (avant-propos, apparence).
  * Options persistées dans les réglages. Volets/onglets pilotés par Alpine.
@@ -38,10 +38,10 @@ class DocumentHubController extends Controller
 
     public function index(Request $request): View
     {
-        $edition = $this->currentEdition($request);
+        $event = $this->currentEdition($request);
 
-        $attestations = $edition
-            ? Attestation::where('edition_id', $edition->id)->latest('id')->get()
+        $attestations = $event
+            ? Attestation::where('event_id', $event->id)->latest('id')->get()
             : collect();
 
         // Ordre & libellés fidèles au mockup admin-documents (6 types).
@@ -59,16 +59,16 @@ class DocumentHubController extends Controller
         ];
 
         $rows = [];
-        if ($edition) {
-            $formationCounts = $this->formationTargetCounts($edition);
+        if ($event) {
+            $formationCounts = $this->formationTargetCounts($event);
             // Chaque type a un modèle ENREGISTRÉ (créé ici au besoin à partir de la
             // mise en page standard) : il n'y a plus de repli implicite, donc tous
             // sont visibles, modifiables et supprimables de la même façon.
             foreach (array_keys($typeMeta) as $key) {
-                DocumentTemplate::ensureFor((int) $edition->id, 'attestation', $key, $typeMeta[$key]['title']);
+                DocumentTemplate::ensureFor((int) $event->id, 'attestation', $key, $typeMeta[$key]['title']);
             }
 
-            $templates = DocumentTemplate::where('edition_id', $edition->id)
+            $templates = DocumentTemplate::where('event_id', $event->id)
                 ->where('kind', 'attestation')
                 ->get()->keyBy('type');
             $customTitles = $templates->map(fn (DocumentTemplate $t) => $t->title);
@@ -78,11 +78,11 @@ class DocumentHubController extends Controller
                 // engageait un lot sans jamais dire ce qu'il contenait. Avec la
                 // réserve aux présents, un nombre qui baisse sans explication se lit
                 // comme une panne - et on réimprime pour rien.
-                $apercu = $key === 'communication' ? CommunicationAttestations::preview($edition) : null;
+                $apercu = $key === 'communication' ? CommunicationAttestations::preview($event) : null;
                 $eligible = match ($key) {
                     'communication' => $apercu['retenus'],
                     'formation', 'formation_animation' => $formationCounts[$key],
-                    default => $this->targetsFor($edition, $key)->count(),
+                    default => $this->targetsFor($event, $key)->count(),
                 };
                 $rows[$key] = [
                     'label' => Attestation::TYPES[$key],
@@ -97,9 +97,9 @@ class DocumentHubController extends Controller
                     // qu'il a des destinataires éligibles. Le libellé le dit.
                     'status' => $eligible > 0 ? 'Actif' : 'Sans destinataire',
                     // Émission déportée : ces attestations s'émettent depuis la page
-                    // de chaque formation, pas globalement pour l'édition.
+                    // de chaque formation, pas globalement pour l'événement.
                     'issueFrom' => in_array($key, ['formation', 'formation_animation'], true)
-                        ? route('admin.formations', ['edition_id' => $edition->id])
+                        ? route('admin.formations', ['event_id' => $event->id])
                         : null,
                     // Modèle réellement enregistré (sinon c'est le défaut à la charte,
                     // qui n'a rien à supprimer).
@@ -108,12 +108,12 @@ class DocumentHubController extends Controller
             }
         }
 
-        $counts = $edition ? [
-            'participants' => Participant::where('edition_id', $edition->id)->count(),
-            'accepted' => Submission::where('edition_id', $edition->id)->where('revision_of', 0)->where('status', 'accepted')->count(),
+        $counts = $event ? [
+            'participants' => Participant::where('event_id', $event->id)->count(),
+            'accepted' => Submission::where('event_id', $event->id)->where('revision_of', 0)->where('status', 'accepted')->count(),
             'issued' => $attestations->where('revoked', false)->count(),
-            'sessions' => $edition->sessions()->count(),
-            'axes' => count($edition->settings['tracks'] ?? []),
+            'sessions' => $event->sessions()->count(),
+            'axes' => count($event->settings['tracks'] ?? []),
         ] : ['participants' => 0, 'accepted' => 0, 'issued' => 0, 'sessions' => 0, 'axes' => 0];
 
         // Onglet et sous-onglet portés par l'URL (?tab=&stab=) pour que chaque
@@ -130,103 +130,103 @@ class DocumentHubController extends Controller
         $stab = in_array($stab, $allowed, true) ? $stab : 'modeles';
 
         return view('admin.documents.attestations', [
-            'editions' => $this->accessibleEditions($request, 'documents'),
-            'edition' => $edition,
-            'edition_id' => $edition ? (string) $edition->id : '',
+            'events' => $this->accessibleEditions($request, 'documents'),
+            'event' => $event,
+            'event_id' => $event ? (string) $event->id : '',
             'types' => Attestation::TYPES,
             'attestations' => $attestations,
             'rows' => $rows,
             'counts' => $counts,
             'tab' => $tab,
             'stab' => $stab,
-            ...($tab === 'attestations' && $stab === 'delivrees' ? $this->issuedList($request, $edition) : []),
-            ...($tab === 'badges' && $stab === 'prets' ? $this->badgeReadyList($request, $edition) : []),
+            ...($tab === 'attestations' && $stab === 'delivrees' ? $this->issuedList($request, $event) : []),
+            ...($tab === 'badges' && $stab === 'prets' ? $this->badgeReadyList($request, $event) : []),
             // ⚠️ La page qui ÉMET doit dire ce que l'émission déclenche : en ligne,
             // chaque attestation part par e-mail ; sur papier, rien ne part.
-            'attDelivery' => AttestationPolicy::delivery($edition),
-            'attDeliveryLabel' => AttestationPolicy::DELIVERIES[AttestationPolicy::delivery($edition)],
-            'attPaper' => AttestationPolicy::isPaper($edition),
-            'attScopeLabel' => AttestationPolicy::SCOPES[AttestationPolicy::communicationScope($edition)],
+            'attDelivery' => AttestationPolicy::delivery($event),
+            'attDeliveryLabel' => AttestationPolicy::DELIVERIES[AttestationPolicy::delivery($event)],
+            'attPaper' => AttestationPolicy::isPaper($event),
+            'attScopeLabel' => AttestationPolicy::SCOPES[AttestationPolicy::communicationScope($event)],
             'opts' => [
-                'attPrefix' => (string) EditionSettings::get($edition, 'attestations.prefix', 'UKC-ATT-2026-'),
+                'attPrefix' => (string) EventSettings::get($event, 'attestations.prefix', 'UKC-ATT-2026-'),
                 // Signataire porté par les jetons [signatory.name] / [signatory.role]
                 // des modèles : sans lui, la ligne de signature sortait vide.
-                'attSignatory' => (string) EditionSettings::get($edition, 'attestations.signatory', ''),
-                'attSignatoryRole' => (string) EditionSettings::get($edition, 'attestations.signatory_role', 'Président du comité d’organisation'),
-                'attAuto' => (bool) EditionSettings::get($edition, 'attestations.auto', true),
-                'attNotify' => (bool) EditionSettings::get($edition, 'attestations.notify', true),
-                'attRequirePresence' => (bool) EditionSettings::get($edition, 'attestations.require_presence', false),
-                // Comment l'édition délivre : en ligne (envoi + téléchargement) ou
+                'attSignatory' => (string) EventSettings::get($event, 'attestations.signatory', ''),
+                'attSignatoryRole' => (string) EventSettings::get($event, 'attestations.signatory_role', 'Président du comité d’organisation'),
+                'attAuto' => (bool) EventSettings::get($event, 'attestations.auto', true),
+                'attNotify' => (bool) EventSettings::get($event, 'attestations.notify', true),
+                'attRequirePresence' => (bool) EventSettings::get($event, 'attestations.require_presence', false),
+                // Comment l'événement délivre : en ligne (envoi + téléchargement) ou
                 // sur papier (le secrétariat imprime et remet).
-                'attDelivery' => AttestationPolicy::delivery($edition),
+                'attDelivery' => AttestationPolicy::delivery($event),
                 'attDeliveries' => AttestationPolicy::DELIVERIES,
-                'attCommunicationScope' => AttestationPolicy::communicationScope($edition),
+                'attCommunicationScope' => AttestationPolicy::communicationScope($event),
                 'attScopes' => AttestationPolicy::SCOPES,
-                'attSms' => (bool) EditionSettings::get($edition, 'attestations.sms', false),
-                'attIncludeQr' => (bool) EditionSettings::get($edition, 'attestations.include_qr', true),
-                'attAllowBeforeValidation' => (bool) EditionSettings::get($edition, 'attestations.allow_before_validation', false),
+                'attSms' => (bool) EventSettings::get($event, 'attestations.sms', false),
+                'attIncludeQr' => (bool) EventSettings::get($event, 'attestations.include_qr', true),
+                'attAllowBeforeValidation' => (bool) EventSettings::get($event, 'attestations.allow_before_validation', false),
                 // Identité vérifiable (DIDs) - signature EdDSA / VC-JWT effective.
-                'attDidIssuer' => (string) EditionSettings::get($edition, 'attestations.did_issuer', 'did:web:univkara.tg:colloques'),
-                'attDidMethod' => (string) EditionSettings::get($edition, 'attestations.did_method', 'did:web:univkara.tg:colloques#key-ed25519-1'),
-                'attCryptoSuite' => (string) EditionSettings::get($edition, 'attestations.crypto_suite', 'EdDSA (VC-JWT)'),
+                'attDidIssuer' => (string) EventSettings::get($event, 'attestations.did_issuer', 'did:web:univkara.tg:colloques'),
+                'attDidMethod' => (string) EventSettings::get($event, 'attestations.did_method', 'did:web:univkara.tg:colloques#key-ed25519-1'),
+                'attCryptoSuite' => (string) EventSettings::get($event, 'attestations.crypto_suite', 'EdDSA (VC-JWT)'),
                 'attCertEnabled' => app(AttestationCertifier::class)->enabled(),
-                'badgePrefix' => (string) EditionSettings::get($edition, 'badges.prefix', 'UKC-2026-'),
-                'badgeFormat' => (string) EditionSettings::get($edition, 'badges.format', 'A6 Portrait'),
-                'badgePhotoRequired' => (bool) EditionSettings::get($edition, 'badges.photo_required', true),
-                'badgeQrAccess' => (bool) EditionSettings::get($edition, 'badges.qr_access', true),
-                'badgeGenerateAfterPayment' => (bool) EditionSettings::get($edition, 'badges.generate_after_payment', true),
-                'badgeBatchPrint' => (bool) EditionSettings::get($edition, 'badges.batch_print', false),
-                'forewordTitle' => (string) EditionSettings::get($edition, 'livret.foreword_title', 'Avant-propos'),
-                'forewordText' => (string) EditionSettings::get($edition, 'livret.foreword_text', ''),
-                'forewordSignature' => (string) EditionSettings::get($edition, 'livret.signature', ''),
+                'badgePrefix' => (string) EventSettings::get($event, 'badges.prefix', 'UKC-2026-'),
+                'badgeFormat' => (string) EventSettings::get($event, 'badges.format', 'A6 Portrait'),
+                'badgePhotoRequired' => (bool) EventSettings::get($event, 'badges.photo_required', true),
+                'badgeQrAccess' => (bool) EventSettings::get($event, 'badges.qr_access', true),
+                'badgeGenerateAfterPayment' => (bool) EventSettings::get($event, 'badges.generate_after_payment', true),
+                'badgeBatchPrint' => (bool) EventSettings::get($event, 'badges.batch_print', false),
+                'forewordTitle' => (string) EventSettings::get($event, 'livret.foreword_title', 'Avant-propos'),
+                'forewordText' => (string) EventSettings::get($event, 'livret.foreword_text', ''),
+                'forewordSignature' => (string) EventSettings::get($event, 'livret.signature', ''),
                 // Sections de tête génériques du livret (masquées si vides).
-                'livretPatronage' => (string) EditionSettings::get($edition, 'livret.patronage', ''),
-                'livretAckTitle' => (string) EditionSettings::get($edition, 'livret.ack_title', 'Remerciements'),
-                'livretAcknowledgements' => (string) EditionSettings::get($edition, 'livret.acknowledgements', ''),
-                'livretWelcomeTitle' => (string) EditionSettings::get($edition, 'livret.welcome_title', 'Mot de bienvenue'),
-                'livretWelcomeText' => (string) EditionSettings::get($edition, 'livret.welcome_text', ''),
-                'livretWelcomeSignature' => (string) EditionSettings::get($edition, 'livret.welcome_signature', ''),
-                'livretPresidentTitle' => (string) EditionSettings::get($edition, 'livret.president_title', 'Mot du président'),
-                'livretPresidentText' => (string) EditionSettings::get($edition, 'livret.president_text', ''),
-                'livretPresidentSignature' => (string) EditionSettings::get($edition, 'livret.president_signature', ''),
-                'livretShowTheme' => (bool) EditionSettings::get($edition, 'livret.show_theme', true),
-                'livretShowDates' => (bool) EditionSettings::get($edition, 'livret.show_dates', true),
-                'livretNumber' => (bool) EditionSettings::get($edition, 'livret.number_abstracts', false),
-                'livretAuthorIndex' => (bool) EditionSettings::get($edition, 'livret.author_index', true),
-                'livretPageNumbers' => (bool) EditionSettings::get($edition, 'livret.page_numbers', true),
+                'livretPatronage' => (string) EventSettings::get($event, 'livret.patronage', ''),
+                'livretAckTitle' => (string) EventSettings::get($event, 'livret.ack_title', 'Remerciements'),
+                'livretAcknowledgements' => (string) EventSettings::get($event, 'livret.acknowledgements', ''),
+                'livretWelcomeTitle' => (string) EventSettings::get($event, 'livret.welcome_title', 'Mot de bienvenue'),
+                'livretWelcomeText' => (string) EventSettings::get($event, 'livret.welcome_text', ''),
+                'livretWelcomeSignature' => (string) EventSettings::get($event, 'livret.welcome_signature', ''),
+                'livretPresidentTitle' => (string) EventSettings::get($event, 'livret.president_title', 'Mot du président'),
+                'livretPresidentText' => (string) EventSettings::get($event, 'livret.president_text', ''),
+                'livretPresidentSignature' => (string) EventSettings::get($event, 'livret.president_signature', ''),
+                'livretShowTheme' => (bool) EventSettings::get($event, 'livret.show_theme', true),
+                'livretShowDates' => (bool) EventSettings::get($event, 'livret.show_dates', true),
+                'livretNumber' => (bool) EventSettings::get($event, 'livret.number_abstracts', false),
+                'livretAuthorIndex' => (bool) EventSettings::get($event, 'livret.author_index', true),
+                'livretPageNumbers' => (bool) EventSettings::get($event, 'livret.page_numbers', true),
                 // Apparence du livre (modèle par défaut) - mockup admin-documents.
-                'livretFontBody' => (string) EditionSettings::get($edition, 'livret.font_body', 'Times New Roman'),
-                'livretFontHead' => (string) EditionSettings::get($edition, 'livret.font_head', 'Jost'),
-                'livretSizeBody' => (int) EditionSettings::get($edition, 'livret.size_body', 11),
-                'livretSizeCover' => (int) EditionSettings::get($edition, 'livret.size_cover', 24),
-                'livretSizeAxis' => (int) EditionSettings::get($edition, 'livret.size_axis', 16),
-                'livretSizeAbstract' => (int) EditionSettings::get($edition, 'livret.size_abstract', 12),
-                'livretSizeAuthors' => (int) EditionSettings::get($edition, 'livret.size_authors', 10),
-                'livretLineHeight' => (string) EditionSettings::get($edition, 'livret.line_height', '1.15'),
-                'livretColorPrimary' => (string) EditionSettings::get($edition, 'livret.color_primary', '#223ea4'),
-                'livretColorSecondary' => (string) EditionSettings::get($edition, 'livret.color_secondary', '#009933'),
-                'livretAlignTitles' => (string) EditionSettings::get($edition, 'livret.align_titles', 'Centré'),
-                'livretAlignAxis' => (string) EditionSettings::get($edition, 'livret.align_axis', 'Centré'),
-                'livretAlignAuthors' => (string) EditionSettings::get($edition, 'livret.align_authors', 'Centré'),
-                'livretAlignBody' => (string) EditionSettings::get($edition, 'livret.align_body', 'Justifié'),
-                'livretCoverMention' => (string) EditionSettings::get($edition, 'livret.cover_mention', ''),
-                'livretCoverLogo' => (string) EditionSettings::get($edition, 'livret.cover_logo', ''),
-                'livretTemplate' => (string) EditionSettings::get($edition, 'livret.template', 'default'),
+                'livretFontBody' => (string) EventSettings::get($event, 'livret.font_body', 'Times New Roman'),
+                'livretFontHead' => (string) EventSettings::get($event, 'livret.font_head', 'Jost'),
+                'livretSizeBody' => (int) EventSettings::get($event, 'livret.size_body', 11),
+                'livretSizeCover' => (int) EventSettings::get($event, 'livret.size_cover', 24),
+                'livretSizeAxis' => (int) EventSettings::get($event, 'livret.size_axis', 16),
+                'livretSizeAbstract' => (int) EventSettings::get($event, 'livret.size_abstract', 12),
+                'livretSizeAuthors' => (int) EventSettings::get($event, 'livret.size_authors', 10),
+                'livretLineHeight' => (string) EventSettings::get($event, 'livret.line_height', '1.15'),
+                'livretColorPrimary' => (string) EventSettings::get($event, 'livret.color_primary', '#223ea4'),
+                'livretColorSecondary' => (string) EventSettings::get($event, 'livret.color_secondary', '#009933'),
+                'livretAlignTitles' => (string) EventSettings::get($event, 'livret.align_titles', 'Centré'),
+                'livretAlignAxis' => (string) EventSettings::get($event, 'livret.align_axis', 'Centré'),
+                'livretAlignAuthors' => (string) EventSettings::get($event, 'livret.align_authors', 'Centré'),
+                'livretAlignBody' => (string) EventSettings::get($event, 'livret.align_body', 'Justifié'),
+                'livretCoverMention' => (string) EventSettings::get($event, 'livret.cover_mention', ''),
+                'livretCoverLogo' => (string) EventSettings::get($event, 'livret.cover_logo', ''),
+                'livretTemplate' => (string) EventSettings::get($event, 'livret.template', 'default'),
             ],
-            'templates' => is_array(EditionSettings::get($edition, 'livret.templates')) ? EditionSettings::get($edition, 'livret.templates') : [],
+            'templates' => is_array(EventSettings::get($event, 'livret.templates')) ? EventSettings::get($event, 'livret.templates') : [],
             // Données du livre préparées côté contrôleur (la vue mélange des @php
             // en ligne : y ajouter un bloc @php casse la compilation Blade).
-            ...$this->livretViewExtras($edition),
+            ...$this->livretViewExtras($event),
             // Badges : 4 types fidèles au mockup, destinataires réels.
-            'badgeRows' => $edition ? [
+            'badgeRows' => $event ? [
                 ['type' => 'Participant', 'title' => 'Badge participant', 'sub' => 'Bandeau bleu UK', 'format' => 'A6 Portrait', 'count' => $counts['participants'], 'status' => 'Actif'],
                 ['type' => 'Communicant', 'title' => 'Badge communicant', 'sub' => 'Bandeau vert', 'format' => 'A6 Portrait', 'count' => $counts['accepted'], 'status' => 'Actif'],
-                ['type' => 'Staff', 'title' => 'Badge organisation', 'sub' => 'Staff / orga', 'format' => 'A6 Portrait', 'count' => Participant::where('edition_id', $edition->id)->whereIn('role', ['committee', 'staff', 'moderator', 'rapporteur'])->count(), 'status' => 'Actif'],
+                ['type' => 'Staff', 'title' => 'Badge organisation', 'sub' => 'Staff / orga', 'format' => 'A6 Portrait', 'count' => Participant::where('event_id', $event->id)->whereIn('role', ['committee', 'staff', 'moderator', 'rapporteur'])->count(), 'status' => 'Actif'],
                 ['type' => 'Carte', 'title' => 'Badge carte CR80', 'sub' => '85,6 × 54 mm', 'format' => 'CR80', 'count' => 0, 'status' => 'Sans destinataire'],
             ] : [],
             'livreState' => [
-                'lastGen' => EditionSettings::get($edition, 'livret.last_generated_at'),
-                'file' => (string) EditionSettings::get($edition, 'livret.last_file', ''),
+                'lastGen' => EventSettings::get($event, 'livret.last_generated_at'),
+                'file' => (string) EventSettings::get($event, 'livret.last_file', ''),
             ],
             'aiAvailable' => app(AiManager::class)->available() !== [],
         ]);
@@ -240,17 +240,17 @@ class DocumentHubController extends Controller
      *
      * @return array<string, mixed>
      */
-    private function livretViewExtras(?Edition $edition): array
+    private function livretViewExtras(?Event $event): array
     {
-        $active = (string) EditionSettings::get($edition, 'livret.template', 'default');
+        $active = (string) EventSettings::get($event, 'livret.template', 'default');
         $activeLabel = LivretDocx::STYLES[$active] ?? ($active === 'base' ? 'Modèle de base' : $active);
 
         $sections = [
-            'Avant-propos' => trim((string) EditionSettings::get($edition, 'livret.foreword_text', '')) !== '',
-            'Haut patronage' => trim((string) EditionSettings::get($edition, 'livret.patronage', '')) !== '',
-            'Remerciements' => trim((string) EditionSettings::get($edition, 'livret.acknowledgements', '')) !== '',
-            'Mot de bienvenue' => trim((string) EditionSettings::get($edition, 'livret.welcome_text', '')) !== '',
-            'Mot du président' => trim((string) EditionSettings::get($edition, 'livret.president_text', '')) !== '',
+            'Avant-propos' => trim((string) EventSettings::get($event, 'livret.foreword_text', '')) !== '',
+            'Haut patronage' => trim((string) EventSettings::get($event, 'livret.patronage', '')) !== '',
+            'Remerciements' => trim((string) EventSettings::get($event, 'livret.acknowledgements', '')) !== '',
+            'Mot de bienvenue' => trim((string) EventSettings::get($event, 'livret.welcome_text', '')) !== '',
+            'Mot du président' => trim((string) EventSettings::get($event, 'livret.president_text', '')) !== '',
         ];
 
         return [
@@ -268,10 +268,10 @@ class DocumentHubController extends Controller
     /** Émet les attestations d'un type pour son audience éligible (idempotent). */
     public function issueType(Request $request, IssueAttestation $action): RedirectResponse
     {
-        $edition = Edition::find($request->input('edition_id'));
+        $event = Event::find($request->input('event_id'));
         $type = (string) $request->input('type');
 
-        if (! $edition || ! isset(Attestation::TYPES[$type])) {
+        if (! $event || ! isset(Attestation::TYPES[$type])) {
             return back();
         }
 
@@ -280,12 +280,12 @@ class DocumentHubController extends Controller
             // Par communication : auteur correspondant + co-auteurs payés, dans la
             // limite des plafonds (coauthors_max, attestation_max - priorité auteur
             // correspondant). Une attestation à leur nom par communication associée.
-            foreach (CommunicationAttestations::entitlements($edition) as $ent) {
+            foreach (CommunicationAttestations::entitlements($event) as $ent) {
                 $action->handle($ent['participant'], 'communication', $ent['submission']);
                 $count++;
             }
         } else {
-            foreach ($this->targetsFor($edition, $type) as $participant) {
+            foreach ($this->targetsFor($event, $type) as $participant) {
                 $action->handle($participant, $type);
                 $count++;
             }
@@ -299,7 +299,7 @@ class DocumentHubController extends Controller
         // la liste d'émargement attendent.
         if ((string) $request->input('mode') === 'zip') {
             return redirect()->route('admin.documents.attestations', [
-                'edition_id' => $edition->id, 'tab' => 'attestations', 'stab' => 'delivrees',
+                'event_id' => $event->id, 'tab' => 'attestations', 'stab' => 'delivrees',
                 'type' => $type, 'state' => 'valid',
             ])->with('ukc_status', $message.' Choisissez un lot à imprimer ci-dessous.');
         }
@@ -323,12 +323,12 @@ class DocumentHubController extends Controller
 
     public function saveAttestationOptions(Request $request): RedirectResponse
     {
-        $edition = $this->currentEdition($request);
-        if (! $edition) {
-            return back()->with('ukc_error', 'Sélectionnez une édition.');
+        $event = $this->currentEdition($request);
+        if (! $event) {
+            return back()->with('ukc_error', 'Sélectionnez une événement.');
         }
 
-        EditionSettings::setMany($edition, [
+        EventSettings::setMany($event, [
             'attestations.prefix' => (string) $request->input('attPrefix'),
             'attestations.signatory' => (string) $request->input('attSignatory'),
             'attestations.signatory_role' => (string) $request->input('attSignatoryRole'),
@@ -350,12 +350,12 @@ class DocumentHubController extends Controller
 
     public function saveBadgeOptions(Request $request): RedirectResponse
     {
-        $edition = $this->currentEdition($request);
-        if (! $edition) {
-            return back()->with('ukc_error', 'Sélectionnez une édition.');
+        $event = $this->currentEdition($request);
+        if (! $event) {
+            return back()->with('ukc_error', 'Sélectionnez une événement.');
         }
 
-        EditionSettings::setMany($edition, [
+        EventSettings::setMany($event, [
             'badges.prefix' => (string) $request->input('badgePrefix'),
             'badges.format' => (string) $request->input('badgeFormat'),
             'badges.photo_required' => $request->boolean('badgePhotoRequired'),
@@ -369,12 +369,12 @@ class DocumentHubController extends Controller
 
     public function saveLivretOptions(Request $request): RedirectResponse
     {
-        $edition = $this->currentEdition($request);
-        if (! $edition) {
-            return back()->with('ukc_error', 'Sélectionnez une édition.');
+        $event = $this->currentEdition($request);
+        if (! $event) {
+            return back()->with('ukc_error', 'Sélectionnez une événement.');
         }
 
-        EditionSettings::setMany($edition, [
+        EventSettings::setMany($event, [
             'livret.foreword_title' => trim((string) $request->input('forewordTitle')),
             'livret.foreword_text' => trim((string) $request->input('forewordText')),
             'livret.signature' => trim((string) $request->input('forewordSignature')),
@@ -397,33 +397,33 @@ class DocumentHubController extends Controller
     }
 
     /**
-     * Génère l'avant-propos du livret par IA à partir des métadonnées de l'édition
+     * Génère l'avant-propos du livret par IA à partir des métadonnées de l'événement
      * (logique du projet uk-colloques), et le persiste dans les réglages `livret.*`.
      */
     public function generateForewordAi(Request $request, AiManager $ai): RedirectResponse
     {
-        $edition = $this->currentEdition($request);
+        $event = $this->currentEdition($request);
 
-        if (! $edition) {
-            return back()->with('ukc_error', 'Sélectionnez une édition.');
+        if (! $event) {
+            return back()->with('ukc_error', 'Sélectionnez une événement.');
         }
         if (! $ai->resolve()) {
             return back()->with('ukc_error', 'Aucun fournisseur IA configuré (Réglages → Intelligence artificielle).');
         }
 
-        $nbAccepted = $edition->submissions()->where('revision_of', 0)->where('status', 'accepted')->count();
-        $tracks = is_array($edition->settings['tracks'] ?? null) ? $edition->settings['tracks'] : [];
+        $nbAccepted = $event->submissions()->where('revision_of', 0)->where('status', 'accepted')->count();
+        $tracks = is_array($event->settings['tracks'] ?? null) ? $event->settings['tracks'] : [];
 
         $facts = array_filter([
-            'Colloque : '.($edition->colloque?->name ?: $edition->title),
-            $edition->title ? 'Édition : '.$edition->title : null,
-            $edition->edition_label ? 'Libellé : '.$edition->edition_label : null,
-            $edition->theme ? 'Thème : '.$edition->theme : null,
-            $edition->date_start ? 'Dates : '.$edition->date_start->format('d/m/Y').($edition->date_end ? ' – '.$edition->date_end->format('d/m/Y') : '') : null,
-            $edition->location ? 'Lieu : '.$edition->location : null,
+            'Événement : '.($event->series?->name ?: $event->title),
+            $event->title ? 'Événement : '.$event->title : null,
+            $event->event_label ? 'Libellé : '.$event->event_label : null,
+            $event->theme ? 'Thème : '.$event->theme : null,
+            $event->date_start ? 'Dates : '.$event->date_start->format('d/m/Y').($event->date_end ? ' – '.$event->date_end->format('d/m/Y') : '') : null,
+            $event->location ? 'Lieu : '.$event->location : null,
             $tracks ? 'Axes thématiques : '.implode(' ; ', $tracks) : null,
             'Nombre de résumés retenus : '.$nbAccepted,
-            trim((string) EditionSettings::get($edition, 'livret.signature', '')) ? 'Signataire : '.EditionSettings::get($edition, 'livret.signature') : null,
+            trim((string) EventSettings::get($event, 'livret.signature', '')) ? 'Signataire : '.EventSettings::get($event, 'livret.signature') : null,
         ]);
 
         $instruction = "Tu es un rédacteur académique francophone. Tu écris l'avant-propos (préface) d'un livre des résumés "
@@ -448,9 +448,9 @@ class DocumentHubController extends Controller
             return back()->with('ukc_error', 'L’IA n’a pas renvoyé d’avant-propos exploitable.');
         }
 
-        EditionSettings::setMany($edition, [
+        EventSettings::setMany($event, [
             'livret.foreword_text' => $text,
-            'livret.foreword_title' => trim((string) EditionSettings::get($edition, 'livret.foreword_title', 'Avant-propos')) ?: 'Avant-propos',
+            'livret.foreword_title' => trim((string) EventSettings::get($event, 'livret.foreword_title', 'Avant-propos')) ?: 'Avant-propos',
         ]);
 
         return back()->with('ukc_status', 'Avant-propos généré par IA - vérifiez puis enregistrez.');
@@ -459,12 +459,12 @@ class DocumentHubController extends Controller
     /** Apparence du livre (typographie, couleurs, page de garde) → modèle par défaut. */
     public function saveLivretApparence(Request $request): RedirectResponse
     {
-        $edition = $this->currentEdition($request);
-        if (! $edition) {
-            return back()->with('ukc_error', 'Sélectionnez une édition.');
+        $event = $this->currentEdition($request);
+        if (! $event) {
+            return back()->with('ukc_error', 'Sélectionnez une événement.');
         }
 
-        EditionSettings::setMany($edition, [
+        EventSettings::setMany($event, [
             'livret.font_body' => (string) $request->input('livretFontBody', 'Times New Roman'),
             'livret.font_head' => (string) $request->input('livretFontHead', 'Jost'),
             'livret.size_body' => (int) $request->input('livretSizeBody', 11),
@@ -490,7 +490,7 @@ class DocumentHubController extends Controller
         // Logo(s) de la page de garde (optionnel).
         if ($request->hasFile('livretCoverLogo')) {
             $request->validate(['livretCoverLogo' => ['image', 'mimes:png,jpg,jpeg,webp,svg', 'max:4096']]);
-            EditionSettings::set($edition, 'livret.cover_logo', $request->file('livretCoverLogo')->store('livret', 'public'));
+            EventSettings::set($event, 'livret.cover_logo', $request->file('livretCoverLogo')->store('livret', 'public'));
         }
 
         return back()->with('ukc_status', 'Apparence du livre enregistrée.');
@@ -499,9 +499,9 @@ class DocumentHubController extends Controller
     /** Modèle actif + import optionnel d'un modèle .docx personnalisé. */
     public function saveLivretTemplate(Request $request): RedirectResponse
     {
-        $edition = $this->currentEdition($request);
-        if (! $edition) {
-            return back()->with('ukc_error', 'Sélectionnez une édition.');
+        $event = $this->currentEdition($request);
+        if (! $event) {
+            return back()->with('ukc_error', 'Sélectionnez une événement.');
         }
 
         $request->validate([
@@ -509,7 +509,7 @@ class DocumentHubController extends Controller
             'templateFile' => ['nullable', 'file', 'mimes:doc,docx', 'max:5120'],
         ]);
 
-        $templates = is_array(EditionSettings::get($edition, 'livret.templates')) ? EditionSettings::get($edition, 'livret.templates') : [];
+        $templates = is_array(EventSettings::get($event, 'livret.templates')) ? EventSettings::get($event, 'livret.templates') : [];
 
         if ($request->hasFile('templateFile')) {
             $file = $request->file('templateFile');
@@ -520,11 +520,11 @@ class DocumentHubController extends Controller
                 'size' => $file->getSize(),
                 'date' => now()->format('d/m/Y'),
             ];
-            EditionSettings::set($edition, 'livret.templates', array_values($templates));
+            EventSettings::set($event, 'livret.templates', array_values($templates));
         }
 
         if ($request->filled('livretTemplate')) {
-            EditionSettings::set($edition, 'livret.template', (string) $request->input('livretTemplate'));
+            EventSettings::set($event, 'livret.template', (string) $request->input('livretTemplate'));
         }
 
         return back()->with('ukc_status', 'Modèle du livre enregistré.');
@@ -536,13 +536,13 @@ class DocumentHubController extends Controller
      */
     public function deleteLivretTemplate(Request $request): RedirectResponse
     {
-        $edition = $this->currentEdition($request);
-        if (! $edition) {
-            return back()->with('ukc_error', 'Sélectionnez une édition.');
+        $event = $this->currentEdition($request);
+        if (! $event) {
+            return back()->with('ukc_error', 'Sélectionnez une événement.');
         }
 
         $name = (string) $request->input('name');
-        $templates = is_array(EditionSettings::get($edition, 'livret.templates')) ? EditionSettings::get($edition, 'livret.templates') : [];
+        $templates = is_array(EventSettings::get($event, 'livret.templates')) ? EventSettings::get($event, 'livret.templates') : [];
 
         $kept = [];
         foreach ($templates as $tpl) {
@@ -555,11 +555,11 @@ class DocumentHubController extends Controller
             }
             $kept[] = $tpl;
         }
-        EditionSettings::set($edition, 'livret.templates', $kept);
+        EventSettings::set($event, 'livret.templates', $kept);
 
         // Le modèle supprimé était actif → repli sur le modèle par défaut.
-        if ((string) EditionSettings::get($edition, 'livret.template', 'default') === $name) {
-            EditionSettings::set($edition, 'livret.template', 'default');
+        if ((string) EventSettings::get($event, 'livret.template', 'default') === $name) {
+            EventSettings::set($event, 'livret.template', 'default');
         }
 
         return back()->with('ukc_status', 'Modèle personnalisé supprimé.');
@@ -567,7 +567,7 @@ class DocumentHubController extends Controller
 
     /**
      * Page dédiée « Attestations délivrées » : liste des attestations émises pour
-     * l'édition (bénéficiaire, type, date, état) avec révocation / rétablissement.
+     * l'événement (bénéficiaire, type, date, état) avec révocation / rétablissement.
      * L'émission et les templates restent gérés dans le hub Documents.
      */
     /**
@@ -576,12 +576,12 @@ class DocumentHubController extends Controller
      *
      * @return array<string, mixed>
      */
-    private function issuedList(Request $request, ?Edition $edition): array
+    private function issuedList(Request $request, ?Event $event): array
     {
         // ⚠️ Les filtres viennent d'AttestationQuery, partagés avec les exports :
         // on imprime ce qu'on regarde. Deux constructions de requête finiraient
         // par diverger, et le lot ne correspondrait plus à la liste.
-        $query = AttestationQuery::filtered($request, $edition);
+        $query = AttestationQuery::filtered($request, $event);
 
         $type = (string) $request->query('type', '');
         $state = (string) $request->query('state', '');
@@ -601,15 +601,15 @@ class DocumentHubController extends Controller
             ->orderBy('id', 'desc')
             ->paginate(20)->withQueryString();
 
-        $stats = $edition ? [
-            'total' => Attestation::where('edition_id', $edition->id)->count(),
-            'valid' => Attestation::where('edition_id', $edition->id)->where('revoked', false)->count(),
-            'revoked' => Attestation::where('edition_id', $edition->id)->where('revoked', true)->count(),
+        $stats = $event ? [
+            'total' => Attestation::where('event_id', $event->id)->count(),
+            'valid' => Attestation::where('event_id', $event->id)->where('revoked', false)->count(),
+            'revoked' => Attestation::where('event_id', $event->id)->where('revoked', true)->count(),
             // Délivrance papier : « ce qui reste à remettre » est la question du
             // guichet, et elle n'a de sens que sur les attestations valides.
-            'delivered' => Attestation::where('edition_id', $edition->id)->whereNotNull('delivered_at')->count(),
-            'pending' => Attestation::where('edition_id', $edition->id)->where('revoked', false)->whereNull('delivered_at')->count(),
-            'byType' => Attestation::where('edition_id', $edition->id)->where('revoked', false)
+            'delivered' => Attestation::where('event_id', $event->id)->whereNotNull('delivered_at')->count(),
+            'pending' => Attestation::where('event_id', $event->id)->where('revoked', false)->whereNull('delivered_at')->count(),
+            'byType' => Attestation::where('event_id', $event->id)->where('revoked', false)
                 ->selectRaw('type, count(*) as c')->groupBy('type')->pluck('c', 'type'),
         ] : ['total' => 0, 'valid' => 0, 'revoked' => 0, 'delivered' => 0, 'pending' => 0, 'byType' => collect()];
 
@@ -643,16 +643,16 @@ class DocumentHubController extends Controller
     }
 
     /**
-     * Sous-onglet « Badges prêts » : les participants de l'édition dont le badge
+     * Sous-onglet « Badges prêts » : les participants de l'événement dont le badge
      * peut être imprimé. Un badge n'est pas stocké (il est rendu à la demande à
      * partir du modèle) : « prêt » signifie donc « participant éligible ».
      *
      * @return array<string, mixed>
      */
-    private function badgeReadyList(Request $request, ?Edition $edition): array
+    private function badgeReadyList(Request $request, ?Event $event): array
     {
-        $query = $edition
-            ? Participant::where('edition_id', $edition->id)
+        $query = $event
+            ? Participant::where('event_id', $event->id)
             : Participant::query()->whereRaw('1 = 0');
 
         // Par défaut on ne montre que les inscriptions réglées : ce sont elles dont
@@ -675,25 +675,25 @@ class DocumentHubController extends Controller
                 ->paginate(20)->withQueryString(),
             'badgePaidOnly' => $paidOnly,
             'badgeSearch' => $badgeSearch,
-            'badgeTemplate' => $edition
-                ? DocumentTemplate::where('edition_id', $edition->id)->where('kind', 'badge')->first()
+            'badgeTemplate' => $event
+                ? DocumentTemplate::where('event_id', $event->id)->where('kind', 'badge')->first()
                 : null,
         ];
     }
 
     /**
      * Destinataires potentiels des attestations du module Formation, toutes
-     * formations de l'édition confondues : inscrits éligibles (réglés, ou
+     * formations de l'événement confondues : inscrits éligibles (réglés, ou
      * inscrits si la formation est gratuite) et formateurs.
      *
      * @return array{formation: int, formation_animation: int}
      */
-    private function formationTargetCounts(Edition $edition): array
+    private function formationTargetCounts(Event $event): array
     {
         $trainees = 0;
         $trainers = 0;
 
-        foreach (Formation::where('edition_id', $edition->id)->get() as $formation) {
+        foreach (Formation::where('event_id', $event->id)->get() as $formation) {
             $trainees += $formation->enrollments()
                 ->where(fn ($q) => $q->where('status', 'paid')
                     ->when($formation->isFree(), fn ($q2) => $q2->orWhere('status', 'registered')))
@@ -709,19 +709,19 @@ class DocumentHubController extends Controller
      *
      * @return Collection<int, Participant>
      */
-    private function targetsFor(Edition $edition, string $type): Collection
+    private function targetsFor(Event $event, string $type): Collection
     {
-        $base = fn () => Participant::where('edition_id', $edition->id);
+        $base = fn () => Participant::where('event_id', $event->id);
 
         return match ($type) {
             'soumission' => $base()->whereHas('submissions', fn ($q) => $q->where('revision_of', 0))->get(),
-            'acceptation' => $this->acceptedCorrespondingTargets($edition),
+            'acceptation' => $this->acceptedCorrespondingTargets($event),
             // 'communication' est géré à part (par communication) via CommunicationAttestations.
             'moderation' => $base()->where('role', 'moderator')->get(),
             'rapporteur' => $base()->where('role', 'rapporteur')->get(),
             // 'formation' et 'formation_animation' sont gérées par formation
             // (émission depuis la page Formations, cf. Admin\FormationController).
-            'participation' => $this->participationTargets($edition),
+            'participation' => $this->participationTargets($event),
             default => $base()->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid'))->get(),
         };
     }
@@ -731,17 +731,17 @@ class DocumentHubController extends Controller
      * l'option « présence requise » est active - effectivement présents (pointés
      * à l'accueil ou à au moins une séance).
      */
-    private function participationTargets(Edition $edition): Collection
+    private function participationTargets(Event $event): Collection
     {
-        $regles = Participant::where('edition_id', $edition->id)
+        $regles = Participant::where('event_id', $event->id)
             ->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid'));
 
-        if (! (bool) EditionSettings::get($edition, 'attestations.require_presence', false)) {
+        if (! (bool) EventSettings::get($event, 'attestations.require_presence', false)) {
             return $regles->get();
         }
 
         // ⚠️ Même règle que `Participant::wasPresent()`, mais en SQL : filtrer la
-        // collection appelait un `exists()` par participant (une édition en compte
+        // collection appelait un `exists()` par participant (une événement en compte
         // des centaines).
         return $regles->where(fn ($q) => $q->whereNotNull('checked_in_at')
             ->orWhereHas('sessionAttendances', fn ($a) => $a->where('status', 'present')))
@@ -749,26 +749,26 @@ class DocumentHubController extends Controller
     }
 
     /** Auteurs correspondants d'une communication acceptée (lettre d'acceptation). */
-    private function acceptedCorrespondingTargets(Edition $edition): Collection
+    private function acceptedCorrespondingTargets(Event $event): Collection
     {
-        $accepted = Submission::where('edition_id', $edition->id)
+        $accepted = Submission::where('event_id', $event->id)
             ->where('revision_of', 0)->where('status', 'accepted')->get();
 
-        return Participant::where('edition_id', $edition->id)
+        return Participant::where('event_id', $event->id)
             ->whereIn('id', $accepted->pluck('participant_id')->filter()->unique())->get();
     }
 
-    private function currentEdition(Request $request): ?Edition
+    private function currentEdition(Request $request): ?Event
     {
-        $editions = $this->accessibleEditions($request, 'documents');
-        // `input` (et non `query`) pour résoudre aussi l'edition_id posté en POST
-        // par les formulaires d'options (réglages documents scopés par édition).
-        $id = (string) $request->input('edition_id', '');
+        $events = $this->accessibleEditions($request, 'documents');
+        // `input` (et non `query`) pour résoudre aussi l'event_id posté en POST
+        // par les formulaires d'options (réglages documents scopés par événement).
+        $id = (string) $request->input('event_id', '');
 
         if ($id === '') {
-            return $editions->firstWhere('status', 'open') ?? $editions->first();
+            return $events->firstWhere('status', 'open') ?? $events->first();
         }
 
-        return $editions->firstWhere('id', (int) $id);
+        return $events->firstWhere('id', (int) $id);
     }
 }

@@ -29,7 +29,7 @@ use Illuminate\Support\Str;
  * @property Carbon|null $ends_at
  * @property Carbon|null $session_day
  * @property Atelier|null $atelier
- * @property Edition|null $edition
+ * @property Event|null $event
  */
 class EventSession extends Model implements Meetable
 {
@@ -98,7 +98,7 @@ class EventSession extends Model implements Meetable
 
     /**
      * Nom de salle. Utilise `meeting_room` si fourni, sinon un nom déterministe
-     * et stable dérivé de l'édition et de la session (préfixe configurable).
+     * et stable dérivé de l'événement et de la session (préfixe configurable).
      */
     public function meetingRoom(): string
     {
@@ -108,7 +108,7 @@ class EventSession extends Model implements Meetable
 
         $prefix = (string) config('meetings.jitsi.room_prefix', 'gesco');
 
-        return Str::slug($prefix.'-'.$this->edition_id.'-'.$this->id);
+        return Str::slug($prefix.'-'.$this->event_id.'-'.$this->id);
     }
 
     /** Lien externe (fournisseur « custom »), pour le contrat Meetable. */
@@ -171,10 +171,10 @@ class EventSession extends Model implements Meetable
             && mb_strtolower((string) $this->moderator_email) === mb_strtolower((string) $account->email);
     }
 
-    /** Édition qui porte les réglages de visio de cette salle (cf. Meetable). */
-    public function meetingEdition(): ?Edition
+    /** Événement qui porte les réglages de visio de cette salle (cf. Meetable). */
+    public function meetingEdition(): ?Event
     {
-        return $this->edition;
+        return $this->event;
     }
 
     public function meetingRoleFor(?User $account, bool $isStaff = false): MeetingRole
@@ -197,7 +197,7 @@ class EventSession extends Model implements Meetable
             return MeetingRole::Presenter;
         }
 
-        $isParticipant = Participant::where('edition_id', $this->edition_id)
+        $isParticipant = Participant::where('event_id', $this->event_id)
             ->where('user_id', $account->id)
             ->exists();
 
@@ -263,10 +263,10 @@ class EventSession extends Model implements Meetable
         return $query->where('meeting_status', MeetingStatus::Live->value);
     }
 
-    /** @return BelongsTo<Edition, $this> */
-    public function edition(): BelongsTo
+    /** @return BelongsTo<Event, $this> */
+    public function event(): BelongsTo
     {
-        return $this->belongsTo(Edition::class);
+        return $this->belongsTo(Event::class);
     }
 
     /** @return BelongsTo<Atelier, $this> */
@@ -299,7 +299,7 @@ class EventSession extends Model implements Meetable
      * Comptage par verdict, plus les non pointés.
      *
      * ⚠️ L'effectif attendu est celui des **auteurs des communications de la
-     * séance** (`SessionRoster`), pas celui de l'édition : « 12 présents » sur
+     * séance** (`SessionRoster`), pas celui de l'événement : « 12 présents » sur
      * 215 inscrits ne voudrait rien dire pour une salle qui en attend 14.
      *
      * @return array{present: int, absent: int, unmarked: int, expected: int}
@@ -331,7 +331,7 @@ class EventSession extends Model implements Meetable
     }
 
     /**
-     * Inscription de ce compte sur l'édition de la séance, portée dans l'identité
+     * Inscription de ce compte sur l'événement de la séance, portée dans l'identité
      * LiveKit : c'est elle qui permet de reconnaître un connecté dans la salle.
      */
     protected function meetingParticipantId(?User $account): ?int
@@ -340,7 +340,7 @@ class EventSession extends Model implements Meetable
             return null;
         }
 
-        $id = Participant::where('edition_id', $this->edition_id)
+        $id = Participant::where('event_id', $this->event_id)
             ->where(fn ($q) => $q->where('user_id', $account->id)
                 ->orWhereRaw('LOWER(email) = ?', [mb_strtolower((string) $account->email)]))
             ->value('id');

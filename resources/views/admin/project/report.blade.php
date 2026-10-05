@@ -1,9 +1,9 @@
-<x-layouts.app :title="'Rapport projet - ' . ($edition->title ?: $edition->year)">
+<x-layouts.app :title="'Rapport projet - ' . ($event->title ?: $event->year)">
     <div style="max-width:1000px;margin:0 auto;padding:28px 20px;">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;" class="no-print">
-            <a href="{{ route('admin.project.index', ['edition_id' => $edition->id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">← Projet</a>
+            <a href="{{ route('admin.project.index', ['event_id' => $event->id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">← Projet</a>
             <div style="display:flex;gap:8px;">
-                <a href="{{ route('admin.project.export', ['edition_id' => $edition->id]) }}" class="ukc-btn ukc-btn--green ukc-btn--sm"><x-ukc.icon name="sheet" :size="16" /> Excel (.xlsx)</a>
+                <a href="{{ route('admin.project.export', ['event_id' => $event->id]) }}" class="ukc-btn ukc-btn--green ukc-btn--sm"><x-ukc.icon name="sheet" :size="16" /> Excel (.xlsx)</a>
                 <button onclick="window.print()" class="ukc-btn ukc-btn--blue ukc-btn--sm"><x-ukc.icon name="download" :size="16" /> Imprimer / PDF</button>
             </div>
         </div>
@@ -17,7 +17,7 @@
 
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
                 <div>
-                    <div style="font-weight:900;color:var(--ukc-blue);font-size:1.2rem;">{{ $edition->title ?: $edition->year }}</div>
+                    <div style="font-weight:900;color:var(--ukc-blue);font-size:1.2rem;">{{ $event->title ?: $event->year }}</div>
                     <div style="font-size:.85rem;color:var(--ukc-muted);">Université de Kara - Rapport de projet</div>
                 </div>
                 <div style="text-align:right;font-size:.8rem;color:var(--ukc-muted);">Généré le {{ now()->format('d/m/Y H:i') }}</div>

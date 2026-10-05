@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create('session_questions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('session_id')->constrained('event_sessions')->cascadeOnDelete();
-            $table->foreignId('edition_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('event_id')->constrained()->cascadeOnDelete();
             $table->foreignId('account_id')->nullable()->constrained()->nullOnDelete();
             $table->string('author_name', 150)->default('');
             $table->text('body');

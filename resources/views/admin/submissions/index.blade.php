@@ -1,29 +1,29 @@
 <x-layouts.admin title="Soumissions" subtitle="Communications & résumés">
     <x-slot:actions>
         <a class="ukc-btn ukc-btn--ghost ukc-btn--sm"
-           href="{{ route('admin.submissions.export', request()->only('edition_id', 'status', 'type', 'track', 'search')) }}">
+           href="{{ route('admin.submissions.export', request()->only('event_id', 'status', 'type', 'track', 'search')) }}">
             <x-ukc.icon name="download" :size="14" /> CSV
         </a>
         <a class="ukc-btn ukc-btn--ghost ukc-btn--sm"
-           href="{{ route('admin.submissions.bibliography', ['format' => 'bibtex'] + request()->only('edition_id')) }}"
+           href="{{ route('admin.submissions.bibliography', ['format' => 'bibtex'] + request()->only('event_id')) }}"
            title="Actes des communications acceptées (BibTeX)">
             <x-ukc.icon name="book" :size="14" /> BibTeX
         </a>
         <a class="ukc-btn ukc-btn--ghost ukc-btn--sm"
-           href="{{ route('admin.submissions.bibliography', ['format' => 'ris'] + request()->only('edition_id')) }}"
+           href="{{ route('admin.submissions.bibliography', ['format' => 'ris'] + request()->only('event_id')) }}"
            title="Actes des communications acceptées (RIS)">
             <x-ukc.icon name="book" :size="14" /> RIS
         </a>
     </x-slot:actions>
 
     <div class="admin-page admin-submissions" x-data="{ pv: null }" @keydown.escape.window="pv = null">
-        {{-- Sélecteur d'édition en tête, comme les pages Paiements et Participants. --}}
+        {{-- Sélecteur d'événement en tête, comme les pages Paiements et Participants. --}}
         <div style="max-width:340px;margin-bottom:16px;">
             <div class="ukc-field" style="margin:0;">
-                <label>Édition</label>
-                <select onchange="window.location='{{ route('admin.submissions.index') }}?edition_id='+this.value">
-                    <option value="">Toutes les éditions</option>
-                    @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
+                <label>Événement</label>
+                <select onchange="window.location='{{ route('admin.submissions.index') }}?event_id='+this.value">
+                    <option value="">Toutes les événements</option>
+                    @foreach ($events as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $event_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
                 </select>
             </div>
         </div>
@@ -40,10 +40,10 @@
         </div>
 
         {{-- Filtres (GET, auto-submit) --}}
-        {{-- Filtres sur une seule ligne ; l'édition est reportée en champ caché pour
+        {{-- Filtres sur une seule ligne ; l'événement est reportée en champ caché pour
              qu'un filtre ne réélargisse pas le périmètre. --}}
         <form method="GET" class="filter-bar filter-bar--inline">
-            <input type="hidden" name="edition_id" value="{{ $edition_id }}">
+            <input type="hidden" name="event_id" value="{{ $event_id }}">
             <select name="status" onchange="this.form.submit()">
                 <option value="">Tous les statuts</option>
                 @foreach ($statuses as $key => $label)<option value="{{ $key }}" @selected($status === $key)>{{ $label }}</option>@endforeach
@@ -65,7 +65,7 @@
                 <input type="checkbox" name="unlinked" value="1" @checked($unlinked) onchange="this.form.submit()"> Co-auteurs non rattachés
             </label>
             @if ($search !== '' || $status !== '' || $type !== '' || $track !== '' || $unlinked)
-                <a href="{{ route('admin.submissions.index', ['edition_id' => $edition_id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
+                <a href="{{ route('admin.submissions.index', ['event_id' => $event_id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
             @endif
         </form>
 

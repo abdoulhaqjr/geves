@@ -29,9 +29,9 @@ it('protège les espaces de fonction derrière le guard account', function () {
 });
 
 it('liste au modérateur ses séances à animer', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $mod = eventActor('mod@example.tg');
-    $edition->sessions()->create([
+    $event->sessions()->create([
         'label' => 'Session - Atelier 1', 'type' => 'atelier', 'room' => 'Salle 1',
         'moderator_email' => 'mod@example.tg', 'moderator_name' => 'Test Acteur',
     ]);
@@ -44,9 +44,9 @@ it('liste au modérateur ses séances à animer', function () {
 });
 
 it('propose au modérateur un accès à son espace depuis le tableau de bord', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $mod = eventActor('moddash@example.tg');
-    $edition->sessions()->create([
+    $event->sessions()->create([
         'label' => 'Session - Atelier 9', 'type' => 'atelier',
         'moderator_email' => 'moddash@example.tg', 'moderator_name' => 'Test Acteur',
     ]);
@@ -70,9 +70,9 @@ it('ferme la page de modération à un compte sans séance confiée', function (
 });
 
 it('permet au rapporteur de rédiger et soumettre un rapport de séance commencée', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $rap = eventActor('rap@example.tg');
-    $session = $edition->sessions()->create([
+    $session = $event->sessions()->create([
         'label' => 'Session - Atelier 2', 'type' => 'atelier',
         'starts_at' => now()->subHour(), // séance déjà commencée
         'rapporteur_email' => 'rap@example.tg', 'rapporteur_name' => 'Test Acteur',
@@ -106,9 +106,9 @@ it('permet au rapporteur de rédiger et soumettre un rapport de séance commenc�
 });
 
 it('empêche le rapporteur de rédiger avant le début de la séance', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $rap = eventActor('rapfutur@example.tg');
-    $session = $edition->sessions()->create([
+    $session = $event->sessions()->create([
         'label' => 'Session future', 'type' => 'atelier',
         'starts_at' => now()->addDay(), // pas encore commencée
         'rapporteur_email' => 'rapfutur@example.tg',
@@ -125,15 +125,15 @@ it('empêche le rapporteur de rédiger avant le début de la séance', function 
 });
 
 it('verrouille le rapport pour le rapporteur une fois validé par le secrétariat', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $rap = eventActor('rapval@example.tg');
-    $session = $edition->sessions()->create([
+    $session = $event->sessions()->create([
         'label' => 'Session validée', 'type' => 'atelier',
         'starts_at' => now()->subHour(),
         'rapporteur_email' => 'rapval@example.tg',
     ]);
     SessionReport::create([
-        'session_id' => $session->id, 'edition_id' => $edition->id,
+        'session_id' => $session->id, 'event_id' => $event->id,
         'summary' => 'Rapport rédigé.', 'status' => 'validated',
         'submitted_at' => now()->subHour(), 'validated_at' => now(),
     ]);
@@ -154,20 +154,20 @@ it('verrouille le rapport pour le rapporteur une fois validé par le secrétaria
     expect(SessionReport::where('session_id', $session->id)->value('summary'))->toBe('Rapport rédigé.');
 });
 
-it('affiche au secrétariat sa file de rapports à valider (scopée à ses éditions)', function () {
-    $edition = openEdition();
-    $session = $edition->sessions()->create([
+it('affiche au secrétariat sa file de rapports à valider (scopée à ses événements)', function () {
+    $event = openEdition();
+    $session = $event->sessions()->create([
         'label' => 'Séance à valider', 'type' => 'atelier',
         'starts_at' => now()->subHour(), 'rapporteur_email' => 'rap@example.tg', 'rapporteur_name' => 'Rita R.',
     ]);
     SessionReport::create([
-        'session_id' => $session->id, 'edition_id' => $edition->id,
+        'session_id' => $session->id, 'event_id' => $event->id,
         'summary' => 'Brouillon rapporteur.', 'status' => 'submitted', 'submitted_at' => now(),
     ]);
 
-    // Staff « secrétariat » rattaché à l'édition (non super-admin).
+    // Staff « secrétariat » rattaché à l'événement (non super-admin).
     $staff = User::create(['first_name' => 'Sara', 'last_name' => 'Secrétaire', 'email' => 'sec@example.tg', 'password' => 'pass12345']);
-    $staff->assignedEditions()->attach($edition->id, ['role' => 'secretariat']);
+    $staff->assignedEditions()->attach($event->id, ['role' => 'secretariat']);
 
     $this->actingAs($staff, 'web')
         ->get(route('admin.secretariat'))
@@ -178,12 +178,12 @@ it('affiche au secrétariat sa file de rapports à valider (scopée à ses édit
 });
 
 it('limite les onglets des Rapports à la fonction (comptable → Paiements)', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $staff = User::create(['first_name' => 'Carine', 'last_name' => 'Comptable', 'email' => 'compta@example.tg', 'password' => 'pass12345']);
-    $staff->assignedEditions()->attach($edition->id, ['role' => 'accounting']);
+    $staff->assignedEditions()->attach($event->id, ['role' => 'accounting']);
 
     $html = $this->actingAs($staff, 'web')
-        ->get(route('admin.reports.index', ['edition_id' => $edition->id]))
+        ->get(route('admin.reports.index', ['event_id' => $event->id]))
         ->assertOk()
         ->assertSee('Rapport paiements')     // panneau Paiements rendu
         ->assertDontSee('Rapport soumissions')
@@ -196,9 +196,9 @@ it('limite les onglets des Rapports à la fonction (comptable → Paiements)', f
 });
 
 it('supprime un paiement en attente ou échoué, jamais un paiement réglé', function () {
-    $edition = openEdition();
-    $pending = Payment::create(['edition_id' => $edition->id, 'amount' => 1000, 'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'pending']);
-    $paid = Payment::create(['edition_id' => $edition->id, 'amount' => 2000, 'method' => 'cash', 'gateway' => 'manual', 'status' => 'paid']);
+    $event = openEdition();
+    $pending = Payment::create(['event_id' => $event->id, 'amount' => 1000, 'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'pending']);
+    $paid = Payment::create(['event_id' => $event->id, 'amount' => 2000, 'method' => 'cash', 'gateway' => 'manual', 'status' => 'paid']);
 
     $this->actingAs(adminStaff(), 'web')->delete(route('admin.payments.destroy', $pending))->assertRedirect();
     expect(Payment::find($pending->id))->toBeNull();
@@ -216,12 +216,12 @@ it('n’affiche plus les relances de paiement sur la page Paiements', function (
 });
 
 it('valide un rapport en un clic sans écraser son contenu', function () {
-    $edition = openEdition();
-    $session = $edition->sessions()->create([
+    $event = openEdition();
+    $session = $event->sessions()->create([
         'label' => 'Séance', 'type' => 'atelier', 'starts_at' => now()->subHour(), 'rapporteur_email' => 'rap@example.tg',
     ]);
     SessionReport::create([
-        'session_id' => $session->id, 'edition_id' => $edition->id,
+        'session_id' => $session->id, 'event_id' => $event->id,
         'summary' => 'Contenu rédigé par le rapporteur.', 'status' => 'submitted', 'submitted_at' => now(),
     ]);
 
@@ -236,13 +236,13 @@ it('valide un rapport en un clic sans écraser son contenu', function () {
 });
 
 it('permet au secrétariat de valider un rapport (et de le rouvrir)', function () {
-    $edition = openEdition();
-    $session = $edition->sessions()->create([
+    $event = openEdition();
+    $session = $event->sessions()->create([
         'label' => 'Session à valider', 'type' => 'atelier',
         'starts_at' => now()->subHour(), 'rapporteur_email' => 'rap@example.tg',
     ]);
     SessionReport::create([
-        'session_id' => $session->id, 'edition_id' => $edition->id,
+        'session_id' => $session->id, 'event_id' => $event->id,
         'summary' => 'Brouillon rapporteur.', 'status' => 'submitted', 'submitted_at' => now(),
     ]);
 
@@ -265,9 +265,9 @@ it('permet au secrétariat de valider un rapport (et de le rouvrir)', function (
 });
 
 it('refuse le rapport d’une séance à un non-rapporteur', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $intrus = eventActor('intrus@example.tg');
-    $session = $edition->sessions()->create([
+    $session = $event->sessions()->create([
         'label' => 'Session - Atelier 3', 'type' => 'atelier',
         'rapporteur_email' => 'quelquun-dautre@example.tg',
     ]);
@@ -282,20 +282,20 @@ it('refuse le rapport d’une séance à un non-rapporteur', function () {
 });
 
 it('affiche au comité les rapports de séance soumis (vue admin)', function () {
-    $edition = openEdition();
-    $session = $edition->sessions()->create([
+    $event = openEdition();
+    $session = $event->sessions()->create([
         'label' => 'Session - Atelier 4', 'type' => 'atelier',
         'rapporteur_email' => 'rap@example.tg', 'rapporteur_name' => 'Rita Rapporteuse',
     ]);
     SessionReport::create([
-        'session_id' => $session->id, 'edition_id' => $edition->id,
+        'session_id' => $session->id, 'event_id' => $event->id,
         'summary' => 'Synthèse détaillée de la séance.',
         'highlights' => 'Publier les actes.', 'attendance' => 42,
         'status' => 'submitted', 'submitted_at' => now(),
     ]);
 
     $this->actingAs(adminStaff(), 'web')
-        ->get(route('admin.secretariat.reports', ['edition_id' => $edition->id]))
+        ->get(route('admin.secretariat.reports', ['event_id' => $event->id]))
         ->assertOk()
         ->assertSee('Session - Atelier 4')
         ->assertSee('Rita Rapporteuse')
@@ -305,12 +305,12 @@ it('affiche au comité les rapports de séance soumis (vue admin)', function () 
 });
 
 it('notifie le modérateur et le rapporteur à leur désignation sur une séance', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $mod = eventActor('newmod@example.tg');
     $rap = eventActor('newrap@example.tg');
 
     $this->actingAs(adminStaff(), 'web')->post(route('admin.program.sessions.store'), [
-        'edition_id' => (string) $edition->id,
+        'event_id' => (string) $event->id,
         'sType' => 'plenary',
         'sLabel' => 'Séance inaugurale',
         'sDay' => '', 'sStart' => '', 'sEnd' => '', 'sRoom' => '',
@@ -325,9 +325,9 @@ it('notifie le modérateur et le rapporteur à leur désignation sur une séance
 });
 
 it('ne renotifie pas un modérateur inchangé lors d’une mise à jour de séance', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $mod = eventActor('stable@example.tg');
-    $session = $edition->sessions()->create([
+    $session = $event->sessions()->create([
         'label' => 'Séance', 'type' => 'plenary',
         'moderator_email' => 'stable@example.tg', 'moderator_name' => 'Test Acteur',
     ]);
@@ -342,16 +342,16 @@ it('ne renotifie pas un modérateur inchangé lors d’une mise à jour de séan
 });
 
 it('liste au relecteur ses relectures confiées', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $rev = eventActor('rev@example.tg');
-    $reviewer = $edition->participants()->create([
+    $reviewer = $event->participants()->create([
         'user_id' => $rev->id, 'first_name' => 'Test', 'last_name' => 'Acteur',
         'email' => 'rev@example.tg', 'role' => 'reviewer', 'access_token' => Str::random(64),
     ]);
-    $participant = $edition->participants()->create([
+    $participant = $event->participants()->create([
         'user_id' => null, 'first_name' => 'Auteur', 'last_name' => 'X', 'email' => 'auteur@example.tg',
     ]);
-    $submission = $edition->submissions()->create([
+    $submission = $event->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => '26-777', 'title' => 'Étude sur la durabilité',
         'abstract' => 'Résumé.', 'track' => 'Sciences', 'type' => 'oral', 'status' => 'under_review',
         'authors' => [['name' => 'Auteur X', 'corresponding' => true]],
@@ -367,16 +367,16 @@ it('liste au relecteur ses relectures confiées', function () {
 });
 
 it('enregistre une évaluation de relecteur en place (AJAX)', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $rev = eventActor('rev2@example.tg');
-    $reviewer = $edition->participants()->create([
+    $reviewer = $event->participants()->create([
         'user_id' => $rev->id, 'first_name' => 'Test', 'last_name' => 'Acteur',
         'email' => 'rev2@example.tg', 'role' => 'reviewer', 'access_token' => Str::random(64),
     ]);
-    $participant = $edition->participants()->create([
+    $participant = $event->participants()->create([
         'user_id' => null, 'first_name' => 'Auteur', 'last_name' => 'Z', 'email' => 'auteurz@example.tg',
     ]);
-    $submission = $edition->submissions()->create([
+    $submission = $event->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => '26-778', 'title' => 'Autre étude',
         'abstract' => 'Résumé.', 'track' => 'Sciences', 'type' => 'oral', 'status' => 'under_review',
         'authors' => [],
@@ -399,14 +399,14 @@ it('enregistre une évaluation de relecteur en place (AJAX)', function () {
 });
 
 it('refuse une évaluation sur une relecture qui n’est pas la sienne', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $intrus = eventActor('intrus2@example.tg');
-    $reviewer = $edition->participants()->create([
+    $reviewer = $event->participants()->create([
         'user_id' => null, 'first_name' => 'Autre', 'last_name' => 'Relecteur',
         'email' => 'autre@example.tg', 'role' => 'reviewer', 'access_token' => Str::random(64),
     ]);
-    $participant = $edition->participants()->create(['user_id' => null, 'first_name' => 'A', 'last_name' => 'B', 'email' => 'ab@example.tg']);
-    $submission = $edition->submissions()->create([
+    $participant = $event->participants()->create(['user_id' => null, 'first_name' => 'A', 'last_name' => 'B', 'email' => 'ab@example.tg']);
+    $submission = $event->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => '26-779', 'title' => 'X',
         'abstract' => 'x', 'track' => 'Sciences', 'type' => 'oral', 'status' => 'under_review', 'authors' => [],
     ]);
@@ -418,25 +418,25 @@ it('refuse une évaluation sur une relecture qui n’est pas la sienne', functio
 });
 
 it('filtre les participants par paiement et par invitation', function () {
-    $edition = openEdition(['formation_enabled' => true]);
+    $event = openEdition(['formation_enabled' => true]);
 
-    $payeur = $edition->participants()->create(['first_name' => 'Paul', 'last_name' => 'Payeur', 'email' => 'paul@test.tg', 'role' => 'author']);
-    Payment::create(['edition_id' => $edition->id, 'participant_id' => $payeur->id, 'amount' => 25000, 'method' => 'cash', 'gateway' => 'manual', 'status' => 'paid']);
+    $payeur = $event->participants()->create(['first_name' => 'Paul', 'last_name' => 'Payeur', 'email' => 'paul@test.tg', 'role' => 'author']);
+    Payment::create(['event_id' => $event->id, 'participant_id' => $payeur->id, 'amount' => 25000, 'method' => 'cash', 'gateway' => 'manual', 'status' => 'paid']);
 
     // Ne règle QU'UNE formation : ne doit pas ressortir dans « Ont payé ».
-    $stagiaire = $edition->participants()->create(['first_name' => 'Sara', 'last_name' => 'Stagiaire', 'email' => 'sara@test.tg', 'role' => 'trainee']);
+    $stagiaire = $event->participants()->create(['first_name' => 'Sara', 'last_name' => 'Stagiaire', 'email' => 'sara@test.tg', 'role' => 'trainee']);
     Payment::create([
-        'edition_id' => $edition->id, 'participant_id' => $stagiaire->id, 'amount' => 5000,
+        'event_id' => $event->id, 'participant_id' => $stagiaire->id, 'amount' => 5000,
         'method' => 'cash', 'gateway' => 'manual', 'status' => 'paid', 'meta' => ['flow' => 'formation', 'formation_id' => 1],
     ]);
 
-    $invite = $edition->participants()->create([
+    $invite = $event->participants()->create([
         'first_name' => 'Ines', 'last_name' => 'Invitee', 'email' => 'ines@test.tg', 'role' => 'author',
         'meta' => ['invited_at' => now()->toDateTimeString()],
     ]);
 
     $admin = adminStaff();
-    $url = fn (array $q) => route('admin.participants.index', $q + ['edition_id' => $edition->id]);
+    $url = fn (array $q) => route('admin.participants.index', $q + ['event_id' => $event->id]);
 
     $this->actingAs($admin, 'web')->get($url(['paid' => '1']))
         ->assertOk()->assertSee('Paul Payeur')->assertDontSee('Sara Stagiaire');
@@ -452,12 +452,12 @@ it('filtre les participants par paiement et par invitation', function () {
 });
 
 it('n’expose plus « En tant que » dans la liste des participants', function () {
-    $edition = openEdition();
-    $edition->participants()->create(['first_name' => 'Paul', 'last_name' => 'Payeur', 'email' => 'paul@test.tg', 'role' => 'author']);
+    $event = openEdition();
+    $event->participants()->create(['first_name' => 'Paul', 'last_name' => 'Payeur', 'email' => 'paul@test.tg', 'role' => 'author']);
 
     // L'impersonation reste accessible depuis « Sa page », pas depuis la liste.
     $this->actingAs(adminStaff(), 'web')
-        ->get(route('admin.participants.index', ['edition_id' => $edition->id]))
+        ->get(route('admin.participants.index', ['event_id' => $event->id]))
         ->assertOk()
         ->assertSee('Sa page')
         ->assertDontSee('En tant que');

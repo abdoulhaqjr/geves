@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Média d'une édition : photo de galerie, vidéo, livret ou document.
+ * Média d'une événement : photo de galerie, vidéo, livret ou document.
  */
 class Media extends Model
 {
@@ -14,7 +14,7 @@ class Media extends Model
 
     protected $guarded = ['id'];
 
-    /** Types de média d'une édition (documents exposés aux participants). */
+    /** Types de média d'une événement (documents exposés aux participants). */
     public const TYPES = [
         'document' => 'Document',
         'livret' => 'Livret',
@@ -28,9 +28,9 @@ class Media extends Model
         return self::TYPES[$this->type] ?? ucfirst((string) $this->type);
     }
 
-    /** @return BelongsTo<Edition, $this> */
-    public function edition(): BelongsTo
+    /** @return BelongsTo<Event, $this> */
+    public function event(): BelongsTo
     {
-        return $this->belongsTo(Edition::class);
+        return $this->belongsTo(Event::class);
     }
 }

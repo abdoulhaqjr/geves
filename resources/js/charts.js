@@ -15,7 +15,7 @@ export async function startDashboardCharts() {
     Chart.register(...registerables);
 
     // Idempotent : détruit une instance existante sur ces canvas avant de recréer
-    // (la page Rapports rafraîchit les graphiques au changement d'édition).
+    // (la page Rapports rafraîchit les graphiques au changement d'événement).
     ['chartStatus', 'chartSubsMonth', 'chartPayments', 'chartAxes'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) {

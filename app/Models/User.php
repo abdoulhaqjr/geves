@@ -85,14 +85,14 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Affectations du staff à des éditions (fonction : organisation, secrétariat,
-     * comptabilité…). Un utilisateur peut cumuler plusieurs fonctions par édition.
+     * Affectations du staff à des événements (fonction : organisation, secrétariat,
+     * comptabilité…). Un utilisateur peut cumuler plusieurs fonctions par événement.
      *
-     * @return BelongsToMany<Edition, $this>
+     * @return BelongsToMany<Event, $this>
      */
     public function assignedEditions(): BelongsToMany
     {
-        return $this->belongsToMany(Edition::class, 'edition_user')->withPivot('role')->withTimestamps();
+        return $this->belongsToMany(Event::class, 'event_user')->withPivot('role')->withTimestamps();
     }
 
     /** Niveaux d'accès globaux (refonte Phase 3). */
@@ -130,60 +130,60 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->isColloqueSuperAdmin() || $this->access_level === self::ACCESS_COLLOQUE_ADMIN;
     }
 
-    /** Peut créer un nouveau colloque / une nouvelle édition (super-admin ou admin de colloque). */
+    /** Peut créer un nouveau colloque / une nouvelle événement (super-admin ou admin de colloque). */
     public function canCreateColloque(): bool
     {
         return $this->isColloqueAdmin();
     }
 
     /**
-     * Fonctions du staff sur une édition donnée.
+     * Fonctions du staff sur une événement donnée.
      *
      * @return list<string>
      */
-    public function rolesOnEdition(Edition|int $edition): array
+    public function rolesOnEdition(Event|int $event): array
     {
-        $id = $edition instanceof Edition ? (int) $edition->id : (int) $edition;
+        $id = $event instanceof Event ? (int) $event->id : (int) $event;
 
-        return $this->assignedEditions()->where('editions.id', $id)->get()
+        return $this->assignedEditions()->where('events.id', $id)->get()
             ->pluck('pivot.role')->unique()->values()->all();
     }
 
-    /** L'utilisateur peut-il accéder à cette édition (admin global, ou affecté) ? */
-    public function canAccessEdition(Edition|int $edition): bool
+    /** L'utilisateur peut-il accéder à cette événement (admin global, ou affecté) ? */
+    public function canAccessEdition(Event|int $event): bool
     {
-        return $this->isColloqueSuperAdmin() || $this->rolesOnEdition($edition) !== [];
+        return $this->isColloqueSuperAdmin() || $this->rolesOnEdition($event) !== [];
     }
 
     /**
-     * Capacités effectives de l'utilisateur SUR une édition (union des matrices
+     * Capacités effectives de l'utilisateur SUR une événement (union des matrices
      * de ses fonctions ; toutes les capacités pour un super-admin).
      *
      * @return list<string>
      */
-    public function capabilitiesOnEdition(Edition|int $edition): array
+    public function capabilitiesOnEdition(Event|int $event): array
     {
         if ($this->isColloqueSuperAdmin()) {
             return array_keys(StaffRoles::PERMISSIONS);
         }
 
         $caps = [];
-        foreach ($this->rolesOnEdition($edition) as $role) {
+        foreach ($this->rolesOnEdition($event) as $role) {
             $caps = array_merge($caps, StaffRoles::permissionsFor($role));
         }
 
         return array_values(array_unique($caps));
     }
 
-    /** L'utilisateur a-t-il la capacité `$capability` sur cette édition ? */
-    public function canOnEdition(string $capability, Edition|int $edition): bool
+    /** L'utilisateur a-t-il la capacité `$capability` sur cette événement ? */
+    public function canOnEdition(string $capability, Event|int $event): bool
     {
         return $this->isColloqueSuperAdmin()
-            || in_array($capability, $this->capabilitiesOnEdition($edition), true);
+            || in_array($capability, $this->capabilitiesOnEdition($event), true);
     }
 
     /**
-     * Identifiants des éditions accessibles à l'utilisateur (toutes s'il est
+     * Identifiants des événements accessibles à l'utilisateur (toutes s'il est
      * super-admin ; sinon celles où il est affecté - filtrées par capacité si
      * fournie).
      *
@@ -192,13 +192,13 @@ class User extends Authenticatable implements MustVerifyEmail
     public function accessibleEditionIds(?string $capability = null): array
     {
         if ($this->isColloqueSuperAdmin()) {
-            return Edition::query()->pluck('id')->map(fn ($id) => (int) $id)->all();
+            return Event::query()->pluck('id')->map(fn ($id) => (int) $id)->all();
         }
 
         $ids = [];
-        foreach (DB::table('edition_user')->where('user_id', $this->id)->get(['edition_id', 'role']) as $row) {
+        foreach (DB::table('event_user')->where('user_id', $this->id)->get(['event_id', 'role']) as $row) {
             if ($capability === null || in_array($capability, StaffRoles::permissionsFor((string) $row->role), true)) {
-                $ids[(int) $row->edition_id] = true;
+                $ids[(int) $row->event_id] = true;
             }
         }
 
@@ -206,18 +206,18 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Éditions accessibles à l'utilisateur (pour les listes déroulantes du
+     * Événements accessibles à l'utilisateur (pour les listes déroulantes du
      * back-office), filtrées par capacité si fournie.
      *
-     * @return Collection<int, Edition>
+     * @return Collection<int, Event>
      */
     public function accessibleEditions(?string $capability = null): Collection
     {
-        return Edition::whereIn('id', $this->accessibleEditionIds($capability))->latest('id')->get();
+        return Event::whereIn('id', $this->accessibleEditionIds($capability))->latest('id')->get();
     }
 
     /**
-     * L'utilisateur a-t-il la capacité sur AU MOINS une édition (pilote la
+     * L'utilisateur a-t-il la capacité sur AU MOINS une événement (pilote la
      * visibilité des sections du menu) ? Sans capacité : au moins une affectation.
      */
     public function canAnyEdition(?string $capability = null): bool
@@ -250,7 +250,7 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Inscriptions « relecteur » de cet utilisateur (par édition, jeton de portail).
+     * Inscriptions « relecteur » de cet utilisateur (par événement, jeton de portail).
      *
      * @return Builder<Participant>
      */

@@ -1456,7 +1456,7 @@
     fetch(cfg.saveUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': cfg.csrf || '', 'Accept': 'application/json' },
-      body: JSON.stringify({ edition_id: cfg.editionId || '', kind: cfg.kind || 'attestation', type: cfg.type || 'participation', title: (document.getElementById('tplName') || {}).value || '', layout: serializeLayout(), editor_state: snapshot() })
+      body: JSON.stringify({ event_id: cfg.editionId || '', kind: cfg.kind || 'attestation', type: cfg.type || 'participation', title: (document.getElementById('tplName') || {}).value || '', layout: serializeLayout(), editor_state: snapshot() })
     }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
       .then(function (res) {
         if (res.ok && res.j && res.j.ok) toast('Template « ' + document.getElementById('tplName').value + ' » enregistré');

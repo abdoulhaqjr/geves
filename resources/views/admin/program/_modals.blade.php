@@ -13,7 +13,7 @@
     <form method="POST" id="atelierForm" :action="form.id ? '{{ url('admin/programme/ateliers') }}/'+form.id : '{{ route('admin.program.ateliers.store') }}'">
         @csrf
         <template x-if="form.id"><input type="hidden" name="_method" value="PUT"></template>
-        <input type="hidden" name="edition_id" value="{{ $edition_id }}">
+        <input type="hidden" name="event_id" value="{{ $event_id }}">
         <div class="ukc-form-row">
             <label>Intitulé de l’atelier</label>
             <input type="text" name="atelierTitle" x-model="form.title" required placeholder="Ex. Atelier Formation &amp; pédagogie">
@@ -23,7 +23,7 @@
             @forelse ($tracks as $t)
                 <label class="ukc-check"><input type="checkbox" name="atelierTracks[]" value="{{ $t }}" x-model="form.tracks"> {{ $t }}</label>
             @empty
-                <p class="ukc-hint">Aucun axe défini pour cette édition (réglés dans le formulaire d’édition).</p>
+                <p class="ukc-hint">Aucun axe défini pour cette événement (réglés dans le formulaire d’événement).</p>
             @endforelse
         </div>
         <div class="ukc-form-row" x-show="form.id" x-cloak>
@@ -46,7 +46,7 @@
     <form method="POST" id="sessionForm" :action="form.id ? '{{ url('admin/programme/sessions') }}/'+form.id : '{{ route('admin.program.sessions.store') }}'">
         @csrf
         <template x-if="form.id"><input type="hidden" name="_method" value="PUT"></template>
-        <input type="hidden" name="edition_id" value="{{ $edition_id }}">
+        <input type="hidden" name="event_id" value="{{ $event_id }}">
         <div class="ukc-form-row">
             <label>Type</label>
             <select name="sType" x-model="form.type">
@@ -93,7 +93,7 @@
     <form method="POST" id="slotForm" :action="form.id ? '{{ url('admin/programme/creneaux') }}/'+form.id : '{{ route('admin.program.slots.store') }}'">
         @csrf
         <template x-if="form.id"><input type="hidden" name="_method" value="PUT"></template>
-        <input type="hidden" name="edition_id" value="{{ $edition_id }}">
+        <input type="hidden" name="event_id" value="{{ $event_id }}">
         <div class="ukc-form-row">
             <label>Session</label>
             <select name="slSessionId" x-model="form.session_id">
@@ -133,7 +133,7 @@
 
     <form method="POST" id="roomForm" :action="'{{ url('admin/programme/ateliers') }}/'+form.id+'/salle'">
         @csrf
-        <input type="hidden" name="edition_id" value="{{ $edition_id }}">
+        <input type="hidden" name="event_id" value="{{ $event_id }}">
         <div class="ukc-form-row">
             <label>Salle associée</label>
             <select name="atelierRoom" x-model="form.room">
@@ -160,7 +160,7 @@
 <x-ukc.slideover open="modal==='space'" onClose="modal=null" width="420px">
     <x-slot:header><span x-text="form.id ? 'Modifier l’espace' : 'Ajouter un espace'"></span></x-slot:header>
 
-    <form method="POST" id="spaceForm" action="{{ route('admin.program.spaces.store') }}?edition_id={{ $edition_id }}">
+    <form method="POST" id="spaceForm" action="{{ route('admin.program.spaces.store') }}?event_id={{ $event_id }}">
         @csrf
         <div class="ukc-form-row"><label>Nom de l’espace</label><input type="text" name="spaceName" x-model="form.name" required placeholder="Ex. Amphithéâtre principal"></div>
         <div class="ukc-form-grid">

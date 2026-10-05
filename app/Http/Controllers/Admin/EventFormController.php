@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Actions\ExtractEditionFromDocuments;
-use App\Actions\SaveEdition;
+use App\Actions\ExtractEventFromDocuments;
+use App\Actions\SaveEvent;
 use App\AI\AiManager;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\SaveEditionRequest;
-use App\Models\Colloque;
-use App\Models\Edition;
+use App\Http\Requests\Admin\SaveEventRequest;
+use App\Models\Event;
+use App\Models\EventSeries;
 use App\Models\Participant;
 use App\Models\Review;
 use App\Models\User;
-use App\Support\EditionMeetingConfig;
-use App\Support\EditionPaymentConfig;
+use App\Support\EventMeetingConfig;
+use App\Support\EventPaymentConfig;
 use App\Support\Locales;
 use App\Support\ReviewerExpertise;
 use App\Support\ReviewGrid;
@@ -26,14 +26,14 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 /**
- * Création / édition d'une édition de colloque (contrôleur + Blade) : champs
+ * Création / événement d'une événement de colloque (contrôleur + Blade) : champs
  * cœur + réglages (introduction, axes, tarifs, comités, partenaires, FAQ,
  * apparence, contact, promo, infos pratiques). Onglets pilotés par Alpine ; les
  * listes répétables (tarifs/comités/partenaires/FAQ) aussi. Le paramétrage
  * assisté par IA analyse des documents puis pré-remplit le formulaire (redirige
  * avec les valeurs extraites, révisables avant enregistrement).
  */
-class EditionFormController extends Controller
+class EventFormController extends Controller
 {
     private const COMMITTEE_ROLES = [
         'organisation' => 'Comité d’organisation',
@@ -46,43 +46,43 @@ class EditionFormController extends Controller
         return $this->form(null);
     }
 
-    public function edit(Edition $edition): View
+    public function edit(Event $event): View
     {
-        return $this->form($edition);
+        return $this->form($event);
     }
 
-    public function store(SaveEditionRequest $request, SaveEdition $action): RedirectResponse
+    public function store(SaveEventRequest $request, SaveEvent $action): RedirectResponse
     {
-        $edition = $action->handle($request, null);
+        $event = $action->handle($request, null);
 
-        // L'administrateur de colloque qui crée l'édition en devient gestionnaire
-        // (fonction pleine sur cette édition) afin de pouvoir la gérer. Le
+        // L'administrateur de colloque qui crée l'événement en devient gestionnaire
+        // (fonction pleine sur cette événement) afin de pouvoir la gérer. Le
         // super-admin voit déjà tout : pas besoin de l'affecter.
         $creator = $request->user();
         if ($creator instanceof User && ! $creator->isColloqueSuperAdmin()) {
-            $already = DB::table('edition_user')
-                ->where('edition_id', $edition->id)->where('user_id', $creator->id)->exists();
+            $already = DB::table('event_user')
+                ->where('event_id', $event->id)->where('user_id', $creator->id)->exists();
             if (! $already) {
-                $edition->team()->attach($creator->id, ['role' => 'gerant']);
+                $event->team()->attach($creator->id, ['role' => 'gerant']);
             }
         }
 
-        return redirect()->route('admin.editions.edit', $edition)
-            ->with('ukc_status', 'Édition créée.')
+        return redirect()->route('admin.evenements.edit', $event)
+            ->with('ukc_status', 'Événement créée.')
             ->with('edition_tab', $request->input('active_tab', 'general'));
     }
 
-    public function update(SaveEditionRequest $request, Edition $edition, SaveEdition $action): RedirectResponse
+    public function update(SaveEventRequest $request, Event $event, SaveEvent $action): RedirectResponse
     {
-        $saved = $action->handle($request, $edition);
+        $saved = $action->handle($request, $event);
 
-        return redirect()->route('admin.editions.edit', $saved)
-            ->with('ukc_status', 'Édition mise à jour.')
+        return redirect()->route('admin.evenements.edit', $saved)
+            ->with('ukc_status', 'Événement mise à jour.')
             ->with('edition_tab', $request->input('active_tab', 'general'));
     }
 
     /** Analyse les documents et pré-remplit les champs trouvés (révisable). */
-    public function aiAssist(Request $request, ExtractEditionFromDocuments $action): RedirectResponse
+    public function aiAssist(Request $request, ExtractEventFromDocuments $action): RedirectResponse
     {
         $request->validate([
             'aiFiles' => ['required', 'array', 'min:1', 'max:6'],
@@ -116,7 +116,7 @@ class EditionFormController extends Controller
      * (flux « Analyser → suggestions → Appliquer » du mockup). Accepte des fichiers
      * et/ou une consigne textuelle.
      */
-    public function aiAssistJson(Request $request, ExtractEditionFromDocuments $action): JsonResponse
+    public function aiAssistJson(Request $request, ExtractEventFromDocuments $action): JsonResponse
     {
         $request->validate([
             'aiFiles' => ['nullable', 'array', 'max:6'],
@@ -157,12 +157,12 @@ class EditionFormController extends Controller
 
     // --- Rendu ----------------------------------------------------------------
 
-    private function form(?Edition $edition): View
+    private function form(?Event $event): View
     {
-        $init = $this->initValues($edition);
+        $init = $this->initValues($event);
 
-        return view('admin.editions.form', [
-            'edition' => $edition,
+        return view('admin.evenements.form', [
+            'event' => $event,
             'init' => $init['scalars'],
             'fees' => $init['fees'],
             'committees' => $init['committees'],
@@ -178,34 +178,34 @@ class EditionFormController extends Controller
             'stats' => $init['stats'],
             'languages' => $init['languages'],
             'refAxes' => $init['refAxes'],
-            'colloques' => Colloque::orderBy('name')->get(),
+            'seriesList' => EventSeries::orderBy('name')->get(),
             'committeeRoles' => self::COMMITTEE_ROLES,
             'aiAvailable' => app(AiManager::class)->available() !== [],
-            'reviewCriteria' => ReviewGrid::criteria($edition),
+            'reviewCriteria' => ReviewGrid::criteria($event),
             'reviewScale' => ReviewGrid::SCALE,
-            'reviewDueDays' => ReviewGrid::dueDays($edition),
-            'team' => $this->teamFor($edition),
-            'assignableUsers' => $edition ? User::orderBy('name')->get(['id', 'name', 'email']) : collect(),
+            'reviewDueDays' => ReviewGrid::dueDays($event),
+            'team' => $this->teamFor($event),
+            'assignableUsers' => $event ? User::orderBy('name')->get(['id', 'name', 'email']) : collect(),
             'teamRoles' => StaffRoles::teamRoles(),
         ]);
     }
 
     /**
-     * Équipe staff de l'édition (une entrée par fonction) pour l'onglet « Équipe ».
+     * Équipe staff de l'événement (une entrée par fonction) pour l'onglet « Équipe ».
      *
      * @return Collection<int, array{user_id:int, name:string, email:string, role:string, role_label:string, pill:string, caps:string}>
      */
-    private function teamFor(?Edition $edition): Collection
+    private function teamFor(?Event $event): Collection
     {
-        if (! $edition) {
+        if (! $event) {
             return collect();
         }
 
-        return DB::table('edition_user')
-            ->join('users', 'users.id', '=', 'edition_user.user_id')
-            ->where('edition_user.edition_id', $edition->id)
+        return DB::table('event_user')
+            ->join('users', 'users.id', '=', 'event_user.user_id')
+            ->where('event_user.event_id', $event->id)
             ->orderBy('users.name')
-            ->get(['users.id as user_id', 'users.name', 'users.email', 'edition_user.role'])
+            ->get(['users.id as user_id', 'users.name', 'users.email', 'event_user.role'])
             ->map(fn ($r) => [
                 'user_id' => (int) $r->user_id,
                 'name' => (string) $r->name,
@@ -219,8 +219,8 @@ class EditionFormController extends Controller
             ])->values();
     }
 
-    /** Ajoute un membre du staff à l'équipe de l'édition avec une fonction. */
-    public function attachTeamMember(Request $request, Edition $edition): RedirectResponse
+    /** Ajoute un membre du staff à l'équipe de l'événement avec une fonction. */
+    public function attachTeamMember(Request $request, Event $event): RedirectResponse
     {
         $data = $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
@@ -229,38 +229,38 @@ class EditionFormController extends Controller
 
         abort_unless(StaffRoles::isTeamRole($data['role']), 422);
 
-        $exists = DB::table('edition_user')
-            ->where('edition_id', $edition->id)->where('user_id', $data['user_id'])->where('role', $data['role'])
+        $exists = DB::table('event_user')
+            ->where('event_id', $event->id)->where('user_id', $data['user_id'])->where('role', $data['role'])
             ->exists();
 
         if (! $exists) {
-            $edition->team()->attach($data['user_id'], ['role' => $data['role']]);
+            $event->team()->attach($data['user_id'], ['role' => $data['role']]);
         }
 
-        return redirect()->route('admin.editions.edit', $edition)
+        return redirect()->route('admin.evenements.edit', $event)
             ->with('ukc_status', 'Membre ajouté à l’équipe.')
             ->with('edition_tab', 'team');
     }
 
-    /** Retire une fonction d'un membre du staff sur l'édition. */
-    public function detachTeamMember(Request $request, Edition $edition): RedirectResponse
+    /** Retire une fonction d'un membre du staff sur l'événement. */
+    public function detachTeamMember(Request $request, Event $event): RedirectResponse
     {
         $data = $request->validate([
             'user_id' => ['required', 'integer'],
             'role' => ['required', 'string'],
         ]);
 
-        DB::table('edition_user')
-            ->where('edition_id', $edition->id)->where('user_id', $data['user_id'])->where('role', $data['role'])
+        DB::table('event_user')
+            ->where('event_id', $event->id)->where('user_id', $data['user_id'])->where('role', $data['role'])
             ->delete();
 
-        return redirect()->route('admin.editions.edit', $edition)
+        return redirect()->route('admin.evenements.edit', $event)
             ->with('ukc_status', 'Membre retiré de l’équipe.')
             ->with('edition_tab', 'team');
     }
 
-    /** Enregistre l'expertise (axes) des relecteurs de l'édition (onglet Relecteurs). */
-    public function saveReviewerExpertise(Request $request, Edition $edition): RedirectResponse
+    /** Enregistre l'expertise (axes) des relecteurs de l'événement (onglet Relecteurs). */
+    public function saveReviewerExpertise(Request $request, Event $event): RedirectResponse
     {
         $data = $request->validate([
             'reviewer_ids' => ['array'],
@@ -270,7 +270,7 @@ class EditionFormController extends Controller
             'expertise.*.*' => ['string', 'max:200'],
         ]);
 
-        $reviewers = Participant::where('edition_id', $edition->id)
+        $reviewers = Participant::where('event_id', $event->id)
             ->where('role', 'reviewer')->get()->keyBy('id');
 
         foreach ($data['reviewer_ids'] ?? [] as $id) {
@@ -278,10 +278,10 @@ class EditionFormController extends Controller
             if (! $reviewer) {
                 continue;
             }
-            // On stocke le libellé CANONIQUE de l'édition : sans cela, l'expertise
+            // On stocke le libellé CANONIQUE de l'événement : sans cela, l'expertise
             // conserve une vieille orthographe de l'axe et cesse de correspondre
             // dès que l'axe est renommé (cf. ReviewerExpertise::axisKey).
-            $axes = ReviewerExpertise::axes($edition);
+            $axes = ReviewerExpertise::axes($event);
             $tracks = collect((array) ($data['expertise'][$id] ?? []))
                 ->map(function ($t) use ($axes) {
                     $key = ReviewerExpertise::axisKey((string) $t);
@@ -301,12 +301,12 @@ class EditionFormController extends Controller
         }
 
         // L'expertise a son propre onglet dans le module Soumissions : on y revient.
-        return redirect()->route('admin.submissions.reviewers', ['edition_id' => $edition->id])
+        return redirect()->route('admin.submissions.reviewers', ['event_id' => $event->id])
             ->with('ukc_status', 'Expertise des relecteurs mise à jour.');
     }
 
     /** Enregistre les traductions de contenu (i18n) d'une locale non par défaut. */
-    public function saveTranslations(Request $request, Edition $edition): RedirectResponse
+    public function saveTranslations(Request $request, Event $event): RedirectResponse
     {
         $locale = (string) $request->input('locale');
         abort_unless(Locales::supported($locale) && $locale !== config('app.fallback_locale'), 404);
@@ -317,28 +317,28 @@ class EditionFormController extends Controller
         ]);
 
         $translations = [];
-        foreach (Edition::TRANSLATABLE as $field) {
+        foreach (Event::TRANSLATABLE as $field) {
             $value = trim((string) ($data['tr'][$field] ?? ''));
             if ($value !== '') {
                 $translations[$field] = $value;
             }
         }
 
-        $settings = $edition->settings ?? [];
+        $settings = $event->settings ?? [];
         $i18n = is_array($settings['i18n'] ?? null) ? $settings['i18n'] : [];
         $i18n[$locale] = $translations;      // remplace la locale (les champs vidés disparaissent)
         $settings['i18n'] = array_filter($i18n, fn ($v) => $v !== []);
-        $edition->update(['settings' => $settings]);
+        $event->update(['settings' => $settings]);
 
-        return redirect()->route('admin.editions.edit', $edition)
+        return redirect()->route('admin.evenements.edit', $event)
             ->with('ukc_status', 'Traductions enregistrées ('.mb_strtoupper($locale).').')
             // Les traductions vivent dans l'onglet Apparence : les deux faces de ce
             // que le visiteur voit du site public.
             ->with('edition_tab', 'appearance');
     }
 
-    /** Enregistre la grille d'évaluation (critères notés) de l'édition. */
-    public function saveReviewGrid(Request $request, Edition $edition): RedirectResponse
+    /** Enregistre la grille d'évaluation (critères notés) de l'événement. */
+    public function saveReviewGrid(Request $request, Event $event): RedirectResponse
     {
         $data = $request->validate([
             'criteria' => ['array'],
@@ -353,7 +353,7 @@ class EditionFormController extends Controller
         );
 
         // On persiste tel quel ; la valeur par défaut n'est pas stockée (repli automatique).
-        $settings = $edition->settings ?? [];
+        $settings = $event->settings ?? [];
         $settings['review_criteria'] = $criteria;
         // Délai d'évaluation : sert d'échéance à l'assignation (cf. AssignReviewer).
         // Vide = on retire la clé pour retomber sur Review::DEFAULT_DUE_DAYS.
@@ -370,18 +370,18 @@ class EditionFormController extends Controller
                 unset($settings[$key]);
             }
         }
-        $edition->update(['settings' => $settings]);
+        $event->update(['settings' => $settings]);
 
-        return redirect()->route('admin.submissions.options', ['edition_id' => $edition->id])
+        return redirect()->route('admin.submissions.options', ['event_id' => $event->id])
             ->with('ukc_status', 'Règles d’évaluation mises à jour.');
     }
 
     /**
-     * Passerelle de paiement PROPRE à l'édition (identifiants FedaPay / CashPay).
+     * Passerelle de paiement PROPRE à l'événement (identifiants FedaPay / CashPay).
      * Les champs laissés vides retombent sur la configuration globale de la
-     * plateforme (cf. {@see EditionPaymentConfig}).
+     * plateforme (cf. {@see EventPaymentConfig}).
      */
-    public function savePayment(Request $request, Edition $edition): RedirectResponse
+    public function savePayment(Request $request, Event $event): RedirectResponse
     {
         $data = $request->validate([
             'gateway' => ['nullable', 'in:manual,cashpay,fedapay'],
@@ -406,34 +406,34 @@ class EditionFormController extends Controller
             'cashpay' => $clean($data['cashpay'] ?? []),
         ], fn ($v) => filled($v));
 
-        $settings = $edition->settings ?? [];
+        $settings = $event->settings ?? [];
         if ($payment === []) {
             unset($settings['payment']);
         } else {
             $settings['payment'] = $payment;
         }
-        $edition->update(['settings' => $settings]);
+        $event->update(['settings' => $settings]);
 
-        return redirect()->route('admin.editions.edit', $edition)
-            ->with('ukc_status', 'Passerelle de paiement de l’édition mise à jour.')
+        return redirect()->route('admin.evenements.edit', $event)
+            ->with('ukc_status', 'Passerelle de paiement de l’événement mise à jour.')
             // Paiement et visioconférence partagent l'onglet « Intégrations » :
-            // ce sont les deux branchements de l'édition sur un service extérieur.
+            // ce sont les deux branchements de l'événement sur un service extérieur.
             ->with('edition_tab', 'integrations');
     }
 
     /**
-     * Réglages de visioconférence propres à l'édition : fournisseur, identifiants
+     * Réglages de visioconférence propres à l'événement : fournisseur, identifiants
      * du serveur, qualité vidéo.
      *
      * ⚠️ Même règle que le paiement : on ne conserve QUE les champs remplis, et un
      * champ vide retombe sur la configuration de la plateforme. Enregistrer une
-     * chaîne vide figerait l'édition sur « rien », ce qui n'est pas « par défaut ».
+     * chaîne vide figerait l'événement sur « rien », ce qui n'est pas « par défaut ».
      */
-    public function saveMeetings(Request $request, Edition $edition): RedirectResponse
+    public function saveMeetings(Request $request, Event $event): RedirectResponse
     {
         $data = $request->validate([
             'provider' => ['nullable', 'in:livekit,jitsi,custom'],
-            'quality' => ['nullable', 'in:'.implode(',', EditionMeetingConfig::QUALITIES)],
+            'quality' => ['nullable', 'in:'.implode(',', EventMeetingConfig::QUALITIES)],
             'livekit' => ['array'],
             'livekit.url' => ['nullable', 'string', 'max:255'],
             'livekit.api_key' => ['nullable', 'string', 'max:255'],
@@ -453,50 +453,50 @@ class EditionFormController extends Controller
             'jitsi' => $clean($data['jitsi'] ?? []),
         ], fn ($v) => filled($v));
 
-        $settings = $edition->settings ?? [];
+        $settings = $event->settings ?? [];
         if ($meetings === []) {
             unset($settings['meetings']);
         } else {
             $settings['meetings'] = $meetings;
         }
-        $edition->update(['settings' => $settings]);
+        $event->update(['settings' => $settings]);
 
-        return redirect()->route('admin.editions.edit', $edition)
-            ->with('ukc_status', 'Visioconférence de l’édition mise à jour.')
+        return redirect()->route('admin.evenements.edit', $event)
+            ->with('ukc_status', 'Visioconférence de l’événement mise à jour.')
             ->with('edition_tab', 'integrations');
     }
 
     /**
-     * Valeurs initiales du formulaire : édition existante, écrasée par les
+     * Valeurs initiales du formulaire : événement existante, écrasée par les
      * valeurs extraites par IA (flash) le cas échéant.
      *
      * @return array<string, mixed>
      */
-    private function initValues(?Edition $edition): array
+    private function initValues(?Event $event): array
     {
-        $s = $edition?->settings ?? [];
+        $s = $event?->settings ?? [];
 
         $scalars = [
-            'colloque_id' => $edition?->colloque_id,
-            'title' => (string) ($edition?->title ?? ''),
-            'edition_label' => (string) ($edition?->edition_label ?? ''),
-            'subtitle' => (string) ($edition?->subtitle ?? ''),
-            'theme' => (string) ($edition?->theme ?? ''),
-            'year' => (int) ($edition?->year ?: date('Y')),
-            'date_start' => $edition?->date_start?->format('Y-m-d') ?? '',
-            'date_end' => $edition?->date_end?->format('Y-m-d') ?? '',
-            'location' => (string) ($edition?->location ?? ''),
-            'status' => (string) ($edition?->status ?? 'draft'),
-            'slug' => (string) ($edition?->slug ?? ''),
-            'submission_open' => (bool) ($edition?->submission_open ?? false),
-            'submission_deadline' => $edition?->submission_deadline?->format('Y-m-d\TH:i') ?? '',
+            'event_series_id' => $event?->event_series_id,
+            'title' => (string) ($event?->title ?? ''),
+            'event_label' => (string) ($event?->event_label ?? ''),
+            'subtitle' => (string) ($event?->subtitle ?? ''),
+            'theme' => (string) ($event?->theme ?? ''),
+            'year' => (int) ($event?->year ?: date('Y')),
+            'date_start' => $event?->date_start?->format('Y-m-d') ?? '',
+            'date_end' => $event?->date_end?->format('Y-m-d') ?? '',
+            'location' => (string) ($event?->location ?? ''),
+            'status' => (string) ($event?->status ?? 'draft'),
+            'slug' => (string) ($event?->slug ?? ''),
+            'submission_open' => (bool) ($event?->submission_open ?? false),
+            'submission_deadline' => $event?->submission_deadline?->format('Y-m-d\TH:i') ?? '',
             'max_communications' => (int) ($s['max_communications'] ?? 3),
             'intro' => (string) ($s['intro'] ?? ''),
             'tracks' => implode("\n", $s['tracks'] ?? []),
             'hero_image' => (string) ($s['hero_image'] ?? ''),
             // La bannière vit en colonne, pas dans `settings` : c'est une image de
-            // l'édition elle-même, reprise jusque dans la liste des éditions passées.
-            'banner_image' => (string) ($edition?->banner_url ?? ''),
+            // l'événement elle-même, reprise jusque dans la liste des événements passées.
+            'banner_image' => (string) ($event?->banner_url ?? ''),
             'hero_video' => (string) ($s['hero_video'] ?? ''),
             'contact_email' => (string) ($s['contact']['email'] ?? ''),
             'contact_phone' => (string) ($s['contact']['phone'] ?? ''),
@@ -541,8 +541,8 @@ class EditionFormController extends Controller
             'opt_coi_ignore_institution' => (bool) ($s['options']['coi_ignore_same_institution'] ?? false),
         ];
 
-        $committees = $edition
-            ? $edition->committeeMembers()->orderBy('ordre')
+        $committees = $event
+            ? $event->committeeMembers()->orderBy('ordre')
                 ->get(['role', 'person_name', 'person_title', 'institution', 'photo_url'])
                 ->map(fn ($m) => $m->only(['role', 'person_name', 'person_title', 'institution', 'photo_url']))->all()
             : [];
@@ -602,7 +602,7 @@ class EditionFormController extends Controller
         $out = [];
         $summary = [];
 
-        $text = ['title' => 'Titre', 'edition_label' => 'Libellé', 'subtitle' => 'Sous-titre',
+        $text = ['title' => 'Titre', 'event_label' => 'Libellé', 'subtitle' => 'Sous-titre',
             'theme' => 'Thème', 'location' => 'Lieu', 'intro' => 'Présentation'];
         foreach ($text as $k => $label) {
             if (filled($d[$k] ?? null)) {

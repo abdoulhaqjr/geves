@@ -28,8 +28,8 @@
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="check" :size="20" /></div><div class="lbl">Rapports validés</div><div class="val green">{{ $stats['validated'] }}</div></div>
         </div>
 
-        @if ($editions->isEmpty())
-            <div class="ukc-empty"><h3>Aucune édition accessible</h3><p>Vous n'êtes rattaché à aucune édition pour le moment.</p></div>
+        @if ($events->isEmpty())
+            <div class="ukc-empty"><h3>Aucune événement accessible</h3><p>Vous n'êtes rattaché à aucune événement pour le moment.</p></div>
         @else
             {{-- ===== Rapports à valider ===== --}}
             <div class="ukc-card" style="padding:0;margin-bottom:18px;">
@@ -46,13 +46,13 @@
                                     <tr>
                                         <td class="title">
                                             {{ $s->label }}
-                                            <div style="font-size:12px;color:var(--ukc-muted);">{{ $s->edition?->title ?: $s->edition?->year }}@if ($s->room) · {{ $s->room }}@endif</div>
+                                            <div style="font-size:12px;color:var(--ukc-muted);">{{ $s->event?->title ?: $s->event?->year }}@if ($s->room) · {{ $s->room }}@endif</div>
                                         </td>
                                         <td>{{ $s->rapporteur_name ?: $s->rapporteur_email }}</td>
                                         <td>{{ $s->report?->submitted_at?->translatedFormat('d/m/Y H:i') ?: '-' }}</td>
                                         <td style="text-align:right;">
                                             <div style="display:inline-flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
-                                                <a href="{{ route('admin.secretariat.reports') }}?edition_id={{ $s->edition_id }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="eye" :size="15" /> Lire / améliorer</a>
+                                                <a href="{{ route('admin.secretariat.reports') }}?event_id={{ $s->event_id }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="eye" :size="15" /> Lire / améliorer</a>
                                                 <form method="POST" action="{{ route('admin.program.reports.save', $s) }}" onsubmit="return confirm('Valider ce rapport ? Le rapporteur ne pourra plus le modifier.')">
                                                     @csrf
                                                     <button type="submit" class="ukc-btn ukc-btn--green ukc-btn--sm"><x-ukc.icon name="check" :size="15" /> Valider</button>
@@ -112,7 +112,7 @@
         {{-- ===== Secrétariat assisté ===== --}}
         <div x-show="tab==='assist'" x-cloak>
             @if ($docEditions->isEmpty())
-                <div class="ukc-empty"><h3>Aucune édition</h3><p>Vous n'avez accès aux documents d'aucune édition.</p></div>
+                <div class="ukc-empty"><h3>Aucune événement</h3><p>Vous n'avez accès aux documents d'aucune événement.</p></div>
             @else
                 {{-- Bloc rafraîchi après génération : le document produit et
                      l'historique changent d'un coup. --}}
@@ -126,18 +126,18 @@
                             pick(k){ const p=this.presets[k]; if(!p) return; this.preset=k; this.prompt=p.prompt; this.format=p.format; this.dataset=p.dataset; }
                          }">
                         <h3><x-ukc.icon name="sparkles" :size="18" /> Générer un document</h3>
-                        <p style="font-size:13px;color:var(--ukc-muted);margin:4px 0 12px;">Choisissez un modèle, décrivez le document ou joignez un exemple. L'IA produit un <strong>brouillon</strong> à partir des données réelles de l'édition (participants, programme) - à relire avant diffusion.</p>
+                        <p style="font-size:13px;color:var(--ukc-muted);margin:4px 0 12px;">Choisissez un modèle, décrivez le document ou joignez un exemple. L'IA produit un <strong>brouillon</strong> à partir des données réelles de l'événement (participants, programme) - à relire avant diffusion.</p>
 
                         <form method="POST" action="{{ route('admin.secretariat.assist') }}" enctype="multipart/form-data"
                               data-ajax data-ajax-target="sec-doc" data-ajax-msg="Document généré."
                               data-ai data-ai-title="Rédaction du document…"
-                              data-ai-steps="Lecture de votre consigne…|Collecte des données de l’édition…|Rédaction du brouillon…|Mise en forme du document…">
+                              data-ai-steps="Lecture de votre consigne…|Collecte des données de l’événement…|Rédaction du brouillon…|Mise en forme du document…">
                             @csrf
                             <div class="ukc-field">
                                 <label>Colloque</label>
-                                <select name="edition_id">
+                                <select name="event_id">
                                     @foreach ($docEditions as $ed)
-                                        <option value="{{ $ed->id }}" @selected((string) $ed->id === (string) $currentDocEditionId)>{{ $ed->colloque?->name ? $ed->colloque->name.' - ' : '' }}{{ $ed->title ?: $ed->year }}</option>
+                                        <option value="{{ $ed->id }}" @selected((string) $ed->id === (string) $currentDocEditionId)>{{ $ed->series?->name ? $ed->series->name.' - ' : '' }}{{ $ed->title ?: $ed->year }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -205,7 +205,7 @@
                                     @if (! empty($section['heading']))<h5 style="font-weight:800;margin:10px 0 4px;">{{ $section['heading'] }}</h5>@endif
                                     <div style="white-space:pre-line;line-height:1.6;">{{ $section['body'] }}</div>
                                 @endforeach
-                                <a href="{{ route('admin.secretariat.assist.download', [$doc['edition_id'], $doc['id']]) }}" @if ($doc['format'] === 'pdf') target="_blank" @endif class="ukc-btn ukc-btn--green ukc-btn--sm" style="margin-top:12px;"><x-ukc.icon name="download" :size="15" /> Télécharger ({{ strtoupper($doc['format']) }})</a>
+                                <a href="{{ route('admin.secretariat.assist.download', [$doc['event_id'], $doc['id']]) }}" @if ($doc['format'] === 'pdf') target="_blank" @endif class="ukc-btn ukc-btn--green ukc-btn--sm" style="margin-top:12px;"><x-ukc.icon name="download" :size="15" /> Télécharger ({{ strtoupper($doc['format']) }})</a>
                             </div>
                         @endif
                     </div>
@@ -219,7 +219,7 @@
                                     <div style="font-weight:600;font-size:.9rem;">{{ $h['title'] }}</div>
                                     <div style="font-size:12px;color:var(--ukc-muted);">{{ strtoupper($h['format'] ?? 'pdf') }} · {{ $h['created_at'] ?? '' }}</div>
                                 </div>
-                                <a href="{{ route('admin.secretariat.assist.download', [$h['edition_id'], $h['id']]) }}" @if (($h['format'] ?? '') === 'pdf') target="_blank" @endif class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="download" :size="15" /></a>
+                                <a href="{{ route('admin.secretariat.assist.download', [$h['event_id'], $h['id']]) }}" @if (($h['format'] ?? '') === 'pdf') target="_blank" @endif class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="download" :size="15" /></a>
                             </div>
                         @empty
                             <p style="font-size:.9rem;color:var(--ukc-muted);">Aucun document généré pour l'instant.</p>

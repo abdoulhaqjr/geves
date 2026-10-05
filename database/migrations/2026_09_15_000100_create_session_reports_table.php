@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::create('session_reports', function (Blueprint $table) {
             $table->id();
             $table->foreignId('session_id')->unique()->constrained('event_sessions')->cascadeOnDelete();
-            $table->foreignId('edition_id')->constrained('editions')->cascadeOnDelete();
+            $table->foreignId('event_id')->constrained('events')->cascadeOnDelete();
             $table->foreignId('reported_by')->nullable()->constrained('users')->nullOnDelete();
             $table->longText('summary')->nullable();
             $table->text('highlights')->nullable();

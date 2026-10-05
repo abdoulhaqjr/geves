@@ -3,7 +3,7 @@
 namespace App\Actions;
 
 use App\Http\Requests\Account\StoreSubmissionRequest;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Submission;
 use App\Models\User;
 use App\Support\Html;
@@ -31,12 +31,12 @@ class CreateSubmission
     /**
      * @param  array<string, mixed>  $data  données validées
      */
-    public function handle(Edition $edition, User $account, SubmissionFormConfig $config, array $data, ?UploadedFile $file): Submission
+    public function handle(Event $event, User $account, SubmissionFormConfig $config, array $data, ?UploadedFile $file): Submission
     {
         // Téléversement du fichier (I/O) hors transaction.
         $fileUrl = null;
         if ($config->enabled('file') && $file) {
-            $path = $file->store('submissions/'.$edition->id, 'public');
+            $path = $file->store('submissions/'.$event->id, 'public');
             $fileUrl = Storage::disk('public')->url($path);
         }
 
@@ -94,17 +94,17 @@ class CreateSubmission
 
         // Grade/affiliation POUR CE COLLOQUE : quand le déposant est l'auteur
         // correspondant, ce qu'il a saisi ici est enregistré sur son participant de
-        // cette édition (grades différents possibles d'un colloque à l'autre).
+        // cette événement (grades différents possibles d'un colloque à l'autre).
         $editionGrade = $isSelf ? $corrGrade : null;
         $editionAffiliation = $isSelf ? $corrAffiliation : null;
 
         // Création atomique : le participant (upsert) et la communication ensemble.
-        $submission = DB::transaction(function () use ($account, $edition, $data, $authors, $fileUrl, $customMeta, $editionGrade, $editionAffiliation): Submission {
-            $participant = $this->upsert->handle($edition, $account, 'author', $editionGrade, $editionAffiliation);
+        $submission = DB::transaction(function () use ($account, $event, $data, $authors, $fileUrl, $customMeta, $editionGrade, $editionAffiliation): Submission {
+            $participant = $this->upsert->handle($event, $account, 'author', $editionGrade, $editionAffiliation);
 
             // ref_code + access_token sont générés par SubmissionObserver.
             return Submission::create([
-                'edition_id' => $edition->id,
+                'event_id' => $event->id,
                 'participant_id' => $participant->id,
                 'title' => $data['title'],
                 'authors' => $authors,

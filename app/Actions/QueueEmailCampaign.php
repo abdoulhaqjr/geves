@@ -2,8 +2,8 @@
 
 namespace App\Actions;
 
-use App\Models\Edition;
 use App\Models\Email;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Support\EmailAudience;
 use Illuminate\Support\Carbon;
@@ -20,20 +20,20 @@ class QueueEmailCampaign
      * @return int Nombre d'e-mails mis en file.
      */
     public function handle(
-        Edition $edition,
+        Event $event,
         string $audience,
         string $subject,
         string $body,
         ?Carbon $scheduledAt = null,
     ): int {
-        $recipients = EmailAudience::resolve($edition, $audience);
+        $recipients = EmailAudience::resolve($event, $audience);
         $when = $scheduledAt ?? now();
         $batchId = (string) Str::uuid();
         $count = 0;
 
         foreach ($recipients as $participant) {
             Email::create([
-                'edition_id' => $edition->id,
+                'event_id' => $event->id,
                 'participant_id' => $participant->id,
                 'template' => 'campaign',
                 'audience' => $audience,
@@ -56,9 +56,9 @@ class QueueEmailCampaign
      */
     protected function fill(string $text, Participant $participant): string
     {
-        $edition = $participant->edition;
-        $dates = $edition && $edition->date_start
-            ? trim($edition->date_start->format('d/m/Y').($edition->date_end ? ' – '.$edition->date_end->format('d/m/Y') : ''))
+        $event = $participant->event;
+        $dates = $event && $event->date_start
+            ? trim($event->date_start->format('d/m/Y').($event->date_end ? ' – '.$event->date_end->format('d/m/Y') : ''))
             : '';
 
         return strtr($text, [
@@ -66,11 +66,11 @@ class QueueEmailCampaign
             '{prenom}' => (string) $participant->first_name,
             '{nom}' => (string) $participant->last_name,
             '{nom_complet}' => $participant->full_name,
-            '{edition}' => (string) ($edition?->title ?? ''),
+            '{event}' => (string) ($event?->title ?? ''),
             // Balises de fusion (mockup admin-emails).
             '{{participant_name}}' => $participant->full_name,
             '{{participant_email}}' => (string) $participant->email,
-            '{{edition_name}}' => (string) ($edition?->title ?? ''),
+            '{{edition_name}}' => (string) ($event?->title ?? ''),
             '{{edition_dates}}' => $dates,
             '{{login_url}}' => url('/mon-espace'),
             '{{communication_title}}' => '',

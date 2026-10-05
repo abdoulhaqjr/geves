@@ -4,7 +4,7 @@
     @include('documents._fonts')
 @endpush
 <div class="account-documents">
-    @if (! $edition)
+    @if (! $event)
         <div class="ukc-empty">
             <span class="ico"><x-ukc.icon name="folder" :size="28" /></span>
             <h3>{{ __('Aucun document pour le moment') }}</h3>
@@ -12,7 +12,7 @@
         </div>
     @else
         @php
-            $qrPayload = 'verifier?ref='.$badgeRef.'&pid='.$participant->id.'&ed='.$edition->id.'&role='.\Illuminate\Support\Str::slug($participant->roleLabel());
+            $qrPayload = 'verifier?ref='.$badgeRef.'&pid='.$participant->id.'&ed='.$event->id.'&role='.\Illuminate\Support\Str::slug($participant->roleLabel());
         @endphp
 
         {{-- ============ Mon badge participant ============ --}}
@@ -57,9 +57,9 @@
                                     <dt>{{ __('Référence') }}</dt><dd><strong>{{ $badgeRef }}</strong></dd>
                                     <dt>{{ __('Participant') }}</dt><dd>{{ $account->first_name }} {{ $account->last_name }} · {{ __('ID compte') }} #{{ $participant->id }}</dd>
                                     <dt>{{ __('DID émetteur') }}</dt><dd style="font-family:var(--ukc-mono);font-size:12px;">{{ $didIssuer }}</dd>
-                                    <dt>{{ __('Édition') }}</dt><dd>{{ $edition->title ?: $edition->year }}</dd>
+                                    <dt>{{ __('Événement') }}</dt><dd>{{ $event->title ?: $event->year }}</dd>
                                     <dt>{{ __('Type d’accès') }}</dt><dd>{{ $participant->roleLabel() }} · {{ __('Sessions plénières + ateliers') }}</dd>
-                                    <dt>{{ __('Validité') }}</dt><dd>{{ $edition->date_start?->translatedFormat('j') }} – {{ $edition->date_end?->translatedFormat('j F Y') ?? $edition->year }}</dd>
+                                    <dt>{{ __('Validité') }}</dt><dd>{{ $event->date_start?->translatedFormat('j') }} – {{ $event->date_end?->translatedFormat('j F Y') ?? $event->year }}</dd>
                                     <dt>{{ __('Payload / URL scan') }}</dt><dd><div class="payload">{{ $qrPayload }}</div></dd>
                                 </dl>
                                 <p class="note">
@@ -70,7 +70,7 @@
                             <div class="locked-msg">
                                 {!! __('Finalisez votre <strong>inscription et paiement</strong> pour débloquer l’aperçu de votre badge et le QR code d’accès (impression gérée par l’organisation).') !!}
                             </div>
-                            <a href="{{ route('account.payment', $edition) }}" class="ukc-btn ukc-btn--green ukc-btn--sm">
+                            <a href="{{ route('account.payment', $event) }}" class="ukc-btn ukc-btn--green ukc-btn--sm">
                                 <x-ukc.icon name="card" :size="16" /> {{ __('Payer mes frais') }}
                             </a>
                         @endif
@@ -91,7 +91,7 @@
                  au secrétariat. --}}
             @if ($papier)
                 <div class="ukc-note" style="margin-bottom:14px;padding:12px 14px;border:1px solid #f3d7a0;background:#fffaf0;border-radius:12px;font-size:13px;line-height:1.55;color:#7a5a12;">
-                    {{ __('Cette édition délivre ses attestations sur papier : votre exemplaire officiel vous est remis par le secrétariat. Vous pouvez consulter et vérifier chacune d’elles ici — le document affiché en est un spécimen.') }}
+                    {{ __('Cette événement délivre ses attestations sur papier : votre exemplaire officiel vous est remis par le secrétariat. Vous pouvez consulter et vérifier chacune d’elles ici — le document affiché en est un spécimen.') }}
                 </div>
             @endif
 
@@ -132,7 +132,7 @@
                  montrait qu'une seule, sans dire laquelle. Quelqu'un qui a suivi trois
                  ateliers n'en voyait qu'un, et pouvait croire les autres perdus.
                  L'animation d'une formation y figure aussi : le formateur est, lui
-                 aussi, attestataire de cette édition. --}}
+                 aussi, attestataire de cette événement. --}}
             @if ($attsFormation->isNotEmpty())
                 <div class="ukc-doc-section">{{ __('Formations') }}</div>
                 <ul class="ukc-doc-list">
@@ -169,8 +169,8 @@
                     @include('account._doc-row', [
                         'name' => __('Livret des résumés'),
                         'sub' => __('Compilation des résumés acceptés'),
-                        'links' => '<a href="'.route('account.documents.livret', $edition).'" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">'.__('Livret (imprimable)').'</a>'
-                            .'<a href="'.route('account.documents.livret', [$edition, 'format' => 'docx']).'" class="ukc-btn ukc-btn--ghost ukc-btn--sm">'.__('Livret (Word)').'</a>',
+                        'links' => '<a href="'.route('account.documents.livret', $event).'" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">'.__('Livret (imprimable)').'</a>'
+                            .'<a href="'.route('account.documents.livret', [$event, 'format' => 'docx']).'" class="ukc-btn ukc-btn--ghost ukc-btn--sm">'.__('Livret (Word)').'</a>',
                     ])
                 @endif
                 @foreach ($media as $m)

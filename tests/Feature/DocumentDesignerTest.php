@@ -5,7 +5,7 @@ use App\AI\AiManager;
 use App\AI\Contracts\AiProvider;
 use App\Documents\LayoutRenderer;
 use App\Documents\LayoutSanitizer;
-use App\Models\Colloque;
+use App\Models\EventSeries;
 use App\Models\DocumentTemplate;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -67,10 +67,10 @@ function fakeLayoutManager(string $text): AiManager
 it('génère une mise en page par IA dans l’éditeur', function () {
     $this->app->instance(AiManager::class, fakeLayoutManager('GEN {name}'));
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
 
     $resp = $this->actingAs($staff, 'web')->postJson(route('admin.documents.templates.generate'), [
-        'edition_id' => (string) $edition->id,
+        'event_id' => (string) $event->id,
         'kind' => 'badge',
         'type' => 'default',
         'prompt' => 'sobre, bleu UK',
@@ -81,24 +81,24 @@ it('génère une mise en page par IA dans l’éditeur', function () {
 
 it('enregistre le modèle', function () {
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs($staff, 'web')->postJson(route('admin.documents.templates.save'), [
-        'edition_id' => (string) $edition->id,
+        'event_id' => (string) $event->id,
         'kind' => 'attestation',
         'type' => 'communication',
         'layout' => ['width' => 320, 'height' => 440, 'bg' => '#ffffff', 'accent' => '#223ea4', 'elements' => []],
     ])->assertOk()->assertJsonPath('ok', true);
 
-    expect(DocumentTemplate::where('edition_id', $edition->id)->where('kind', 'attestation')->where('type', 'communication')->exists())->toBeTrue();
+    expect(DocumentTemplate::where('event_id', $event->id)->where('kind', 'attestation')->where('type', 'communication')->exists())->toBeTrue();
 });
 
 it('enregistre la mise en page de l’éditeur visuel (sanitisée)', function () {
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs($staff, 'web')->postJson(route('admin.documents.templates.save'), [
-        'edition_id' => (string) $edition->id,
+        'event_id' => (string) $event->id,
         'kind' => 'badge',
         'layout' => [
             'width' => 320, 'height' => 440, 'bg' => '#ffffff', 'accent' => '#223ea4',
@@ -109,7 +109,7 @@ it('enregistre la mise en page de l’éditeur visuel (sanitisée)', function ()
         ],
     ])->assertOk();
 
-    $tpl = DocumentTemplate::where('edition_id', $edition->id)->where('kind', 'badge')->where('type', 'default')->first();
+    $tpl = DocumentTemplate::where('event_id', $event->id)->where('kind', 'badge')->where('type', 'default')->first();
 
     expect($tpl)->not->toBeNull();
     // Coordonnée bornée par le sanitizer (x ≤ largeur), type inconnu écarté.
@@ -126,13 +126,13 @@ it('protège l’éditeur de modèles sans permission', function () {
 
 /* ------------------------- Branchement du rendu --------------------------- */
 
-it('rend l’attestation via le modèle de l’édition si présent', function () {
-    $edition = openEdition();
-    $p = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+it('rend l’attestation via le modèle de l’événement si présent', function () {
+    $event = openEdition();
+    $p = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
     $att = (new IssueAttestation)->handle($p, 'participation');
 
     DocumentTemplate::create([
-        'edition_id' => $edition->id, 'kind' => 'attestation', 'type' => 'participation',
+        'event_id' => $event->id, 'kind' => 'attestation', 'type' => 'participation',
         'layout' => ['width' => 900, 'height' => 636, 'bg' => '#fff', 'accent' => '#223ea4',
             'elements' => [
                 ['type' => 'text', 'x' => 50, 'y' => 50, 'w' => 800, 'h' => 40, 'text' => 'CERTIF {name}'],
@@ -148,17 +148,17 @@ it('rend l’attestation via le modèle de l’édition si présent', function (
 
 it('rend la planche de badges via le modèle si présent', function () {
     $staff = adminStaff();
-    $colloque = Colloque::create(['name' => 'UK', 'slug' => 'uk']);
-    $edition = $colloque->editions()->create(['title' => 'UK 2026', 'status' => 'open', 'slug' => 'uk-2026']);
-    $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $series = EventSeries::create(['name' => 'UK', 'slug' => 'uk']);
+    $event = $series->events()->create(['title' => 'UK 2026', 'status' => 'open', 'slug' => 'uk-2026']);
+    $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
 
     DocumentTemplate::create([
-        'edition_id' => $edition->id, 'kind' => 'badge', 'type' => 'default',
+        'event_id' => $event->id, 'kind' => 'badge', 'type' => 'default',
         'layout' => ['width' => 320, 'height' => 440, 'bg' => '#fff', 'accent' => '#223ea4',
             'elements' => [['type' => 'text', 'x' => 10, 'y' => 200, 'w' => 300, 'h' => 30, 'text' => 'CARTE {name}']]],
     ]);
 
-    $this->actingAs($staff, 'web')->get(route('admin.documents.badges', $edition))
+    $this->actingAs($staff, 'web')->get(route('admin.documents.badges', $event))
         ->assertOk()
         ->assertSee('CARTE Awa Kodjo');
 });
@@ -167,11 +167,11 @@ it('enregistre le nom saisi dans le concepteur', function () {
     // ⚠️ Le nom était affiché et modifiable dans l'en-tête, mais ni transmis ni
     // enregistré : renommer n'avait aucun effet, alors que le message de
     // confirmation citait le nouveau nom.
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs(adminStaff(), 'web')
         ->postJson(route('admin.documents.templates.save'), [
-            'edition_id' => (string) $edition->id,
+            'event_id' => (string) $event->id,
             'kind' => 'attestation',
             'type' => 'participation',
             'title' => 'Attestation de présence effective',
@@ -182,12 +182,12 @@ it('enregistre le nom saisi dans le concepteur', function () {
         ->assertOk()
         ->assertJson(['ok' => true]);
 
-    $tpl = DocumentTemplate::where('edition_id', $edition->id)->where('type', 'participation')->first();
+    $tpl = DocumentTemplate::where('event_id', $event->id)->where('type', 'participation')->first();
     expect($tpl->title)->toBe('Attestation de présence effective');
 
     // Le concepteur rouvre sur le nom enregistré, pas sur le libellé du type.
     $this->actingAs(adminStaff(), 'web')
-        ->get(route('admin.documents.templates', ['edition_id' => $edition->id, 'kind' => 'attestation', 'type' => 'participation']))
+        ->get(route('admin.documents.templates', ['event_id' => $event->id, 'kind' => 'attestation', 'type' => 'participation']))
         ->assertOk()
         ->assertSee('Attestation de présence effective', false);
 });
@@ -195,9 +195,9 @@ it('enregistre le nom saisi dans le concepteur', function () {
 it('ne vide pas le nom quand l’enregistrement n’en porte pas', function () {
     // Un enregistrement automatique sans champ nom (ou un nom effacé par mégarde)
     // ne doit pas effacer le libellé déjà choisi.
-    $edition = openEdition();
+    $event = openEdition();
     $base = [
-        'edition_id' => (string) $edition->id, 'kind' => 'attestation', 'type' => 'participation',
+        'event_id' => (string) $event->id, 'kind' => 'attestation', 'type' => 'participation',
         'layout' => ['width' => 900, 'height' => 636, 'elements' => [
             ['type' => 'text', 'x' => 10, 'y' => 10, 'w' => 200, 'h' => 30, 'text' => '{name}'],
         ]],
@@ -206,7 +206,7 @@ it('ne vide pas le nom quand l’enregistrement n’en porte pas', function () {
     $this->actingAs(adminStaff(), 'web')->postJson(route('admin.documents.templates.save'), $base + ['title' => 'Mon modèle']);
     $this->actingAs(adminStaff(), 'web')->postJson(route('admin.documents.templates.save'), $base + ['title' => '  ']);
 
-    $tpl = DocumentTemplate::where('edition_id', $edition->id)->where('type', 'participation')->first();
+    $tpl = DocumentTemplate::where('event_id', $event->id)->where('type', 'participation')->first();
     expect($tpl->title)->toBe('Mon modèle');
 });
 
@@ -230,11 +230,11 @@ it('téléverse une image du concepteur et n’enregistre que son adresse', func
 });
 
 it('conserve les images et le fond de page à l’enregistrement', function () {
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs(adminStaff(), 'web')
         ->postJson(route('admin.documents.templates.save'), [
-            'edition_id' => $edition->id,
+            'event_id' => $event->id,
             'kind' => 'attestation',
             'type' => 'participation',
             'layout' => [
@@ -250,7 +250,7 @@ it('conserve les images et le fond de page à l’enregistrement', function () {
         ])
         ->assertOk();
 
-    $layout = (array) DocumentTemplate::where('edition_id', $edition->id)->where('type', 'participation')->value('layout');
+    $layout = (array) DocumentTemplate::where('event_id', $event->id)->where('type', 'participation')->value('layout');
 
     expect($layout['bg_image'])->toBe('/storage/documents/templates/fond.png')
         ->and(collect($layout['elements'])->where('type', 'image')->pluck('src')->all())

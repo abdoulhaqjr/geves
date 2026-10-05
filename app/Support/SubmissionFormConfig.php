@@ -2,10 +2,10 @@
 
 namespace App\Support;
 
-use App\Models\Edition;
+use App\Models\Event;
 
 /**
- * Configuration du formulaire de soumission d'une édition (paramétrable par
+ * Configuration du formulaire de soumission d'une événement (paramétrable par
  * l'admin, stockée dans settings.submission_form). Résout les libellés, aides,
  * options requis/activé et les champs personnalisés, avec des valeurs par
  * défaut alignées sur le formulaire historique.
@@ -53,7 +53,7 @@ class SubmissionFormConfig
         'captcha' => false,
     ];
 
-    public function __construct(public Edition $edition) {}
+    public function __construct(public Event $event) {}
 
     /** Compte les mots d'un texte (balises HTML retirées). Utilisé pour les limites du résumé. */
     public static function wordCount(string $value): int
@@ -76,7 +76,7 @@ class SubmissionFormConfig
     /** @return array<string, mixed> */
     protected function raw(): array
     {
-        return $this->edition->settings['submission_form'] ?? [];
+        return $this->event->settings['submission_form'] ?? [];
     }
 
     /** @return array<string, mixed> */

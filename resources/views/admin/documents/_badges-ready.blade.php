@@ -1,17 +1,17 @@
 {{-- Sous-onglet « Badges prêts » (?tab=badges&stab=prets). Un badge n'est pas
      stocké : il est rendu à la demande depuis le modèle, « prêt » = participant
      éligible à l'impression. --}}
-@php($bAll = ['edition_id' => $edition_id, 'tab' => 'badges', 'stab' => 'prets'])
+@php($bAll = ['event_id' => $event_id, 'tab' => 'badges', 'stab' => 'prets'])
 
 @unless ($badgeTemplate)
     <div class="ukc-alert ukc-alert--warn" style="margin-bottom:14px;">
         <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
-        <div>Aucun modèle de badge n’est encore conçu pour cette édition : l’impression utilisera la mise en page par défaut.</div>
+        <div>Aucun modèle de badge n’est encore conçu pour cette événement : l’impression utilisera la mise en page par défaut.</div>
     </div>
 @endunless
 
 <form method="GET" class="filter-bar">
-    <input type="hidden" name="edition_id" value="{{ $edition_id }}">
+    <input type="hidden" name="event_id" value="{{ $event_id }}">
     <input type="hidden" name="tab" value="badges">
     <input type="hidden" name="stab" value="prets">
     <select name="paid" onchange="this.form.submit()">
@@ -24,7 +24,7 @@
         <a href="{{ route('admin.documents.attestations', $bAll) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
     @endif
     <span style="flex:1;"></span>
-    <a href="{{ route('admin.documents.badges', ['edition' => $edition_id, 'paid' => $badgePaidOnly ? 1 : 0]) }}"
+    <a href="{{ route('admin.documents.badges', ['event' => $event_id, 'paid' => $badgePaidOnly ? 1 : 0]) }}"
        target="_blank" rel="noopener" class="ukc-btn ukc-btn--blue ukc-btn--sm">
         <x-ukc.icon name="download" :size="16" /> Planche à imprimer
     </a>

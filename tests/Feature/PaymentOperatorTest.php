@@ -26,9 +26,9 @@ it('propose des opérateurs mobile money ciblables', function () {
 });
 
 it('mémorise l’opérateur choisi sur le paiement et l’oublie si vidé', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $payment = Payment::create([
-        'edition_id' => $edition->id, 'amount' => 5000, 'method' => 'fedapay', 'gateway' => 'fedapay',
+        'event_id' => $event->id, 'amount' => 5000, 'method' => 'fedapay', 'gateway' => 'fedapay',
         'meta' => ['flow' => 'formation'],
     ]);
 
@@ -42,16 +42,16 @@ it('mémorise l’opérateur choisi sur le paiement et l’oublie si vidé', fun
 });
 
 it('distingue la nature des paiements et nomme la formation concernée', function () {
-    $edition = openEdition(['formation_enabled' => true]);
-    $formation = publishedFormation($edition, 10000);
+    $event = openEdition(['formation_enabled' => true]);
+    $formation = publishedFormation($event, 10000);
 
-    $participation = Payment::create(['edition_id' => $edition->id, 'amount' => 1, 'method' => 'cash', 'gateway' => 'manual']);
+    $participation = Payment::create(['event_id' => $event->id, 'amount' => 1, 'method' => 'cash', 'gateway' => 'manual']);
     $forma = Payment::create([
-        'edition_id' => $edition->id, 'amount' => 2, 'method' => 'fedapay', 'gateway' => 'fedapay',
+        'event_id' => $event->id, 'amount' => 2, 'method' => 'fedapay', 'gateway' => 'fedapay',
         'meta' => ['flow' => 'formation', 'formation_id' => $formation->id],
     ]);
     $co = Payment::create([
-        'edition_id' => $edition->id, 'amount' => 3, 'method' => 'fedapay', 'gateway' => 'fedapay',
+        'event_id' => $event->id, 'amount' => 3, 'method' => 'fedapay', 'gateway' => 'fedapay',
         'meta' => ['flow' => 'coauthor'],
     ]);
 
@@ -70,47 +70,47 @@ it('distingue la nature des paiements et nomme la formation concernée', functio
 });
 
 it('range les paiements de co-auteur avec la participation dans le filtre admin', function () {
-    $edition = openEdition(['formation_enabled' => true]);
-    $formation = publishedFormation($edition, 10000);
+    $event = openEdition(['formation_enabled' => true]);
+    $formation = publishedFormation($event, 10000);
     Payment::create([
-        'edition_id' => $edition->id, 'amount' => 333, 'method' => 'fedapay', 'gateway' => 'fedapay',
+        'event_id' => $event->id, 'amount' => 333, 'method' => 'fedapay', 'gateway' => 'fedapay',
         'meta' => ['flow' => 'coauthor'],
     ]);
     Payment::create([
-        'edition_id' => $edition->id, 'amount' => 444, 'method' => 'fedapay', 'gateway' => 'fedapay',
+        'event_id' => $event->id, 'amount' => 444, 'method' => 'fedapay', 'gateway' => 'fedapay',
         'meta' => ['flow' => 'formation', 'formation_id' => $formation->id],
     ]);
 
     $this->actingAs(adminStaff(), 'web')
-        ->get(route('admin.payments.index', ['edition_id' => $edition->id, 'flow' => 'participation']))
+        ->get(route('admin.payments.index', ['event_id' => $event->id, 'flow' => 'participation']))
         ->assertOk()->assertSee('333')->assertDontSee('444');
 });
 
 it('filtre les paiements par nature sur la page admin', function () {
-    $edition = openEdition(['formation_enabled' => true]);
-    $formation = publishedFormation($edition, 10000);
-    Payment::create(['edition_id' => $edition->id, 'amount' => 111, 'method' => 'cash', 'gateway' => 'manual']);
+    $event = openEdition(['formation_enabled' => true]);
+    $formation = publishedFormation($event, 10000);
+    Payment::create(['event_id' => $event->id, 'amount' => 111, 'method' => 'cash', 'gateway' => 'manual']);
     Payment::create([
-        'edition_id' => $edition->id, 'amount' => 222, 'method' => 'fedapay', 'gateway' => 'fedapay',
+        'event_id' => $event->id, 'amount' => 222, 'method' => 'fedapay', 'gateway' => 'fedapay',
         'meta' => ['flow' => 'formation', 'formation_id' => $formation->id],
     ]);
 
     $admin = adminStaff();
 
-    $this->actingAs($admin, 'web')->get(route('admin.payments.index', ['edition_id' => $edition->id, 'flow' => 'formation']))
+    $this->actingAs($admin, 'web')->get(route('admin.payments.index', ['event_id' => $event->id, 'flow' => 'formation']))
         ->assertOk()->assertSee('222')->assertDontSee('111');
 
-    $this->actingAs($admin, 'web')->get(route('admin.payments.index', ['edition_id' => $edition->id, 'flow' => 'participation']))
+    $this->actingAs($admin, 'web')->get(route('admin.payments.index', ['event_id' => $event->id, 'flow' => 'participation']))
         ->assertOk()->assertSee('111')->assertDontSee('222');
 });
 
 it('enregistre l’opérateur choisi lors de l’inscription payante à une formation', function () {
-    $edition = openEdition(['formation_enabled' => true]);
+    $event = openEdition(['formation_enabled' => true]);
     $user = verifiedAccount();
-    $edition->participants()->create([
+    $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'trainee', 'user_id' => $user->id,
     ]);
-    $formation = publishedFormation($edition, 10000);
+    $formation = publishedFormation($event, 10000);
 
     $this->actingAs($user, 'account')->post(route('account.formations.enroll', $formation), [
         'gateway' => 'manual', 'operator' => 'moov_tg',
@@ -119,16 +119,16 @@ it('enregistre l’opérateur choisi lors de l’inscription payante à une form
     expect(Payment::first()->meta['operator'])->toBe('moov_tg');
 });
 
-it('garde l’édition sélectionnée quand on change un filtre sur la page Paiements', function () {
-    $edition = openEdition();
+it('garde l’événement sélectionnée quand on change un filtre sur la page Paiements', function () {
+    $event = openEdition();
     $other = openEdition();
-    Payment::create(['edition_id' => $edition->id, 'amount' => 111, 'method' => 'cash', 'gateway' => 'manual', 'status' => 'pending']);
-    Payment::create(['edition_id' => $other->id, 'amount' => 222, 'method' => 'cash', 'gateway' => 'manual', 'status' => 'pending']);
+    Payment::create(['event_id' => $event->id, 'amount' => 111, 'method' => 'cash', 'gateway' => 'manual', 'status' => 'pending']);
+    Payment::create(['event_id' => $other->id, 'amount' => 222, 'method' => 'cash', 'gateway' => 'manual', 'status' => 'pending']);
 
-    // Le sélecteur d'édition est en tête, et le formulaire de filtres le reporte
+    // Le sélecteur d'événement est en tête, et le formulaire de filtres le reporte
     // (champ caché) : filtrer par statut ne doit pas élargir le périmètre.
     $this->actingAs(adminStaff(), 'web')
-        ->get(route('admin.payments.index', ['edition_id' => $edition->id, 'status' => 'pending']))
+        ->get(route('admin.payments.index', ['event_id' => $event->id, 'status' => 'pending']))
         ->assertOk()
         ->assertSee('111')
         ->assertDontSee('222');

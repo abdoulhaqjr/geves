@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Formations d'une édition : module activable, plusieurs formations par édition
+ * Formations d'une événement : module activable, plusieurs formations par événement
  * (titre/thème, objectif, lieu/salle, frais — 0 = gratuite, dates), avec visio
  * optionnelle (couche App\Meetings, comme les sessions du programme).
  */
@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::create('formations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('edition_id')->constrained('editions')->cascadeOnDelete();
+            $table->foreignId('event_id')->constrained('events')->cascadeOnDelete();
             $table->string('title', 200);
             $table->string('theme', 255)->nullable();
             $table->text('objective')->nullable();
@@ -35,7 +35,7 @@ return new class extends Migration
             $table->string('meeting_visibility', 20)->default('participants');
             $table->json('meta')->nullable();
             $table->timestamps();
-            $table->index('edition_id');
+            $table->index('event_id');
         });
     }
 

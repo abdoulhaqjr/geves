@@ -2,7 +2,7 @@
 
 use App\Meetings\LiveKitRoom;
 use App\Meetings\MeetableRegistry;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\EventSession;
 use App\Models\Participant;
 use App\Models\SessionAttendance;
@@ -21,7 +21,7 @@ use Illuminate\Support\Str;
  * présence réelle, et elle conditionne l'attestation de participation.
  *
  * ⚠️ On ne pointe que les AUTEURS des communications de la séance : un modérateur
- * constate ce qu'il a sous les yeux, pas l'effectif de l'édition.
+ * constate ce qu'il a sous les yeux, pas l'effectif de l'événement.
  */
 
 /** Compte participant vérifié portant un e-mail donné. */
@@ -40,12 +40,12 @@ function officier(string $email): User
  * Une séance commencée, avec UNE communication programmée : Awa (auteur
  * correspondant) et Kofi (co-auteur inscrit).
  *
- * @return array{0: Edition, 1: EventSession, 2: Participant, 3: Participant}
+ * @return array{0: Event, 1: EventSession, 2: Participant, 3: Participant}
  */
 function seanceAPointer(string $moderateur = '', string $rapporteur = ''): array
 {
-    $edition = openEdition();
-    $session = $edition->sessions()->create([
+    $event = openEdition();
+    $session = $event->sessions()->create([
         'label' => 'Séance - Atelier 3', 'type' => 'atelier', 'room' => 'Salle 3',
         'starts_at' => now()->subHour(),
         'moderator_email' => $moderateur ?: null,
@@ -53,16 +53,16 @@ function seanceAPointer(string $moderateur = '', string $rapporteur = ''): array
     ]);
 
     $awa = Participant::create([
-        'edition_id' => $edition->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo',
+        'event_id' => $event->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo',
         'email' => 'awa@example.tg', 'role' => 'author', 'institution' => 'Université de Kara',
     ]);
     $kofi = Participant::create([
-        'edition_id' => $edition->id, 'first_name' => 'Kofi', 'last_name' => 'Mensah',
+        'event_id' => $event->id, 'first_name' => 'Kofi', 'last_name' => 'Mensah',
         'email' => 'kofi@example.tg', 'role' => 'attendee',
     ]);
 
     $submission = Submission::create([
-        'edition_id' => $edition->id, 'participant_id' => $awa->id,
+        'event_id' => $event->id, 'participant_id' => $awa->id,
         'ref_code' => 'UK-TEST-001', 'access_token' => Str::random(40),
         'title' => 'Les universités africaines face au climat',
         'authors' => [
@@ -73,12 +73,12 @@ function seanceAPointer(string $moderateur = '', string $rapporteur = ''): array
     ]);
 
     Slot::create([
-        'edition_id' => $edition->id, 'session_id' => $session->id,
+        'event_id' => $event->id, 'session_id' => $session->id,
         'submission_id' => $submission->id, 'participant_id' => $awa->id,
         'starts_at' => $session->starts_at, 'ends_at' => $session->starts_at->copy()->addMinutes(30),
     ]);
 
-    return [$edition, $session, $awa, $kofi];
+    return [$event, $session, $awa, $kofi];
 }
 
 it('protège le pointage derrière le guard account', function () {
@@ -88,10 +88,10 @@ it('protège le pointage derrière le guard account', function () {
 });
 
 it('n’ouvre le pointage ni à un tiers ni à un simple inscrit', function () {
-    [$edition, $session] = seanceAPointer('mod@example.tg');
+    [$event, $session] = seanceAPointer('mod@example.tg');
     $intrus = officier('intrus@example.tg');
     Participant::create([
-        'edition_id' => $edition->id, 'first_name' => 'In', 'last_name' => 'Trus',
+        'event_id' => $event->id, 'first_name' => 'In', 'last_name' => 'Trus',
         'email' => 'intrus@example.tg', 'role' => 'attendee', 'user_id' => $intrus->id,
     ]);
 
@@ -106,16 +106,16 @@ it('n’ouvre le pointage ni à un tiers ni à un simple inscrit', function () {
 
 /**
  * ⚠️ Le cadrage demandé : la liste est celle des auteurs de la séance. Afficher
- * les centaines d'inscrits de l'édition demandait au modérateur de se prononcer
+ * les centaines d'inscrits de l'événement demandait au modérateur de se prononcer
  * sur des gens qui n'ont rien à faire dans sa salle.
  */
 it('ne liste que les auteurs des communications de la séance', function () {
-    [$edition, $session, , $kofi] = seanceAPointer('mod@example.tg');
+    [$event, $session, , $kofi] = seanceAPointer('mod@example.tg');
     $mod = officier('mod@example.tg');
 
-    // Un inscrit de l'édition, étranger à cette séance.
+    // Un inscrit de l'événement, étranger à cette séance.
     Participant::create([
-        'edition_id' => $edition->id, 'first_name' => 'Sans', 'last_name' => 'Rapport',
+        'event_id' => $event->id, 'first_name' => 'Sans', 'last_name' => 'Rapport',
         'email' => 'ailleurs@example.tg', 'role' => 'attendee',
     ]);
 
@@ -245,11 +245,11 @@ it('revient à « non pointé » sur un verdict vide', function () {
 });
 
 /** ⚠️ Un identifiant posté n'est pas une autorisation : la garde est la SÉANCE. */
-it('refuse un inscrit de l’édition étranger à la séance', function () {
-    [$edition, $session] = seanceAPointer('mod@example.tg');
+it('refuse un inscrit de l’événement étranger à la séance', function () {
+    [$event, $session] = seanceAPointer('mod@example.tg');
     $mod = officier('mod@example.tg');
     $etranger = Participant::create([
-        'edition_id' => $edition->id, 'first_name' => 'Sans', 'last_name' => 'Rapport',
+        'event_id' => $event->id, 'first_name' => 'Sans', 'last_name' => 'Rapport',
         'email' => 'ailleurs@example.tg', 'role' => 'attendee',
     ]);
 
@@ -260,7 +260,7 @@ it('refuse un inscrit de l’édition étranger à la séance', function () {
 });
 
 /**
- * Un co-auteur qui n'est pas inscrit sur l'édition reste VISIBLE - sinon la liste
+ * Un co-auteur qui n'est pas inscrit sur l'événement reste VISIBLE - sinon la liste
  * des auteurs paraîtrait tronquée - mais il n'y a aucune inscription à laquelle
  * rattacher une présence.
  */
@@ -284,13 +284,13 @@ it('montre un co-auteur non inscrit sans permettre de le pointer', function () {
 });
 
 it('le dit quand la séance n’a aucune communication programmée', function () {
-    $edition = openEdition();
-    $session = $edition->sessions()->create([
+    $event = openEdition();
+    $session = $event->sessions()->create([
         'label' => 'Séance plénière', 'type' => 'plenary',
         'starts_at' => now()->subHour(), 'moderator_email' => 'modp@example.tg',
     ]);
     Participant::create([
-        'edition_id' => $edition->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo',
+        'event_id' => $event->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo',
         'email' => 'awa@example.tg', 'role' => 'author',
     ]);
 
@@ -317,10 +317,10 @@ it('n’ouvre pas le pointage avant le début de la séance', function () {
 });
 
 it('fige la présence quand le secrétariat a validé le rapport', function () {
-    [$edition, $session, $awa] = seanceAPointer('modv@example.tg');
+    [$event, $session, $awa] = seanceAPointer('modv@example.tg');
     $mod = officier('modv@example.tg');
     SessionReport::create([
-        'session_id' => $session->id, 'edition_id' => $edition->id,
+        'session_id' => $session->id, 'event_id' => $event->id,
         'summary' => 'Rapport validé.', 'status' => 'validated',
         'submitted_at' => now()->subHour(), 'validated_at' => now(),
     ]);
@@ -336,10 +336,10 @@ it('fige la présence quand le secrétariat a validé le rapport', function () {
         ->assertForbidden();
 });
 
-it('fige la présence d’une édition archivée', function () {
-    [$edition, $session, $awa] = seanceAPointer('moda@example.tg');
+it('fige la présence d’une événement archivée', function () {
+    [$event, $session, $awa] = seanceAPointer('moda@example.tg');
     $mod = officier('moda@example.tg');
-    $edition->update(['status' => 'archived']);
+    $event->update(['status' => 'archived']);
 
     $this->actingAs($mod, 'account')
         ->get(route('account.attendance.edit', $session))->assertOk();
@@ -376,7 +376,7 @@ it('vaut présence réelle pour l’attestation de participation', function () {
  * main quelqu'un qui est déjà dans la salle.
  */
 it('porte présent automatiquement qui entre dans la visio', function () {
-    [$edition, $session, $awa] = seanceAPointer('modvisio@example.tg');
+    [$event, $session, $awa] = seanceAPointer('modvisio@example.tg');
     // Pas de fournisseur imposé : le registre résout celui qui est configuré.
     $session->update(['meeting_status' => 'live']);
 
@@ -392,7 +392,7 @@ it('porte présent automatiquement qui entre dans la visio', function () {
     expect($ligne)->not->toBeNull();
     expect($ligne->status)->toBe('present');
     expect($ligne->isAutomatic())->toBeTrue();
-    expect($edition->fresh()->exists)->toBeTrue();
+    expect($event->fresh()->exists)->toBeTrue();
 });
 
 /** Le pointage automatique se voit : le modérateur endosse ces chiffres. */
@@ -433,12 +433,12 @@ it('n’écrase pas un verdict déjà posé par le modérateur', function () {
 
 /** La visio ne pointe que des attendus : un visiteur de passage n'a pas de ligne. */
 it('ne porte pas présent un inscrit étranger à la séance', function () {
-    [$edition, $session] = seanceAPointer('modx@example.tg');
+    [$event, $session] = seanceAPointer('modx@example.tg');
     $session->update(['meeting_status' => 'live']);
 
     $compte = officier('curieux@example.tg');
     $curieux = Participant::create([
-        'edition_id' => $edition->id, 'first_name' => 'Cu', 'last_name' => 'Rieux',
+        'event_id' => $event->id, 'first_name' => 'Cu', 'last_name' => 'Rieux',
         'email' => 'curieux@example.tg', 'role' => 'attendee', 'user_id' => $compte->id,
     ]);
 
@@ -449,12 +449,12 @@ it('ne porte pas présent un inscrit étranger à la séance', function () {
 
 /** Une séance figée ne bouge plus, même par la visio. */
 it('ne pointe pas par la visio quand le rapport est validé', function () {
-    [$edition, $session, $awa] = seanceAPointer('mody@example.tg');
+    [$event, $session, $awa] = seanceAPointer('mody@example.tg');
     $session->update(['meeting_status' => 'live']);
     $compte = officier('awa@example.tg');
     $awa->update(['user_id' => $compte->id]);
     SessionReport::create([
-        'session_id' => $session->id, 'edition_id' => $edition->id,
+        'session_id' => $session->id, 'event_id' => $event->id,
         'summary' => 'Rapport validé.', 'status' => 'validated',
         'submitted_at' => now()->subHour(), 'validated_at' => now(),
     ]);
@@ -540,10 +540,10 @@ it('confirme un pointage de la visio sans changer le verdict', function () {
 });
 
 it('n’ouvre le panneau de la salle ni à un tiers ni sur un étranger à la séance', function () {
-    [$edition, $session, $awa] = seanceAPointer('modapi3@example.tg');
+    [$event, $session, $awa] = seanceAPointer('modapi3@example.tg');
     $session->update(['meeting_status' => 'live']);
     $etranger = Participant::create([
-        'edition_id' => $edition->id, 'first_name' => 'Sans', 'last_name' => 'Rapport',
+        'event_id' => $event->id, 'first_name' => 'Sans', 'last_name' => 'Rapport',
         'email' => 'ailleurs@example.tg', 'role' => 'attendee',
     ]);
 

@@ -3,7 +3,7 @@
 namespace App\Documents;
 
 use App\Models\Attestation;
-use App\Support\EditionSettings;
+use App\Support\EventSettings;
 use App\Support\Settings;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
@@ -34,7 +34,7 @@ class AttestationCertifier
     /** Type d'en-tête JOSE pour un Verifiable Credential porté par un JWS. */
     private const HEADER_TYP = 'vc+jwt';
 
-    /** Émetteur DID par défaut (repli des réglages d'édition). */
+    /** Émetteur DID par défaut (repli des réglages d'événement). */
     public const DEFAULT_ISSUER = 'did:web:univkara.tg:colloques';
 
     /** La certification est-elle activée (clé de signature configurée et valide) ? */
@@ -121,7 +121,7 @@ class AttestationCertifier
      */
     public function buildCredential(Attestation $attestation): array
     {
-        $edition = $attestation->edition;
+        $event = $attestation->event;
         $issuer = $this->issuerFor($attestation);
         $issued = $attestation->issued_at ?? $attestation->freshTimestamp();
         $meta = $attestation->meta ?? [];
@@ -131,10 +131,10 @@ class AttestationCertifier
             'attestationType' => (string) $attestation->type,
             'attestationLabel' => $attestation->typeLabel(),
             'event' => array_filter([
-                'title' => (string) $edition->title,
-                'year' => $edition->year ? (string) $edition->year : '',
-                'organization' => (string) $edition->colloque->name,
-                'location' => (string) $edition->location,
+                'title' => (string) $event->title,
+                'year' => $event->year ? (string) $event->year : '',
+                'organization' => (string) $event->series->name,
+                'location' => (string) $event->location,
             ], fn ($v) => $v !== ''),
         ], fn ($v) => $v !== '' && $v !== []);
 
@@ -313,10 +313,10 @@ class AttestationCertifier
         return null;
     }
 
-    /** Émetteur DID d'une attestation (réglage d'édition, repli global). */
+    /** Émetteur DID d'une attestation (réglage d'événement, repli global). */
     private function issuerFor(Attestation $attestation): string
     {
-        return (string) EditionSettings::get($attestation->edition, 'attestations.did_issuer', $this->defaultIssuer());
+        return (string) EventSettings::get($attestation->event, 'attestations.did_issuer', $this->defaultIssuer());
     }
 
     /** Émetteur DID par défaut (réglage global, puis constante). */

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Submission;
 use Illuminate\Http\RedirectResponse;
@@ -24,7 +24,7 @@ use Illuminate\View\View;
  * `LinkPendingAuthorships`). Les deux créaient leur propre participant : l'un par
  * e-mail sans `user_id`, l'autre par `user_id`, et aucune contrainte d'unicité ne
  * les rapprochait. **Mesuré** : payer ici puis créer son compte laissait **deux
- * participants** pour la même personne sur la même édition - chiffres faussés, et
+ * participants** pour la même personne sur la même événement - chiffres faussés, et
  * surtout l'attestation émise sur le participant sans compte, donc
  * **introuvable dans l'espace de l'intéressé**.
  *
@@ -37,20 +37,20 @@ class CoauthorController extends Controller
 {
     public function show(Request $request, string $slug): View|RedirectResponse
     {
-        $edition = $this->edition($slug);
+        $event = $this->event($slug);
         $email = trim((string) $request->query('email', ''));
 
         // Déjà connecté : on ne lui redemande rien, il règle dans son espace -
         // où sa communication l'attend déjà.
         if (Auth::guard('account')->check()) {
-            return redirect()->route('account.payment', $edition);
+            return redirect()->route('account.payment', $event);
         }
 
-        $ctx = $email !== '' ? $this->resolve($edition, $email) : null;
+        $ctx = $email !== '' ? $this->resolve($event, $email) : null;
         $participant = $ctx['participant'] ?? null;
 
         return view('public.coauthor', [
-            'edition' => $edition,
+            'event' => $event,
             'email' => $email,
             'searched' => $email !== '',
             'foundSubmissions' => $ctx['found'] ?? [],
@@ -63,12 +63,12 @@ class CoauthorController extends Controller
         ]);
     }
 
-    private function edition(string $slug): Edition
+    private function event(string $slug): Event
     {
-        $edition = Edition::where('slug', $slug)->first();
-        abort_unless($edition && $edition->isPublished(), 404);
+        $event = Event::where('slug', $slug)->first();
+        abort_unless($event && $event->isPublished(), 404);
 
-        return $edition;
+        return $event;
     }
 
     /**
@@ -77,18 +77,18 @@ class CoauthorController extends Controller
      *
      * @return array{found: list<array{ref: string, title: string}>, participant: ?Participant}
      */
-    private function resolve(Edition $edition, string $email): array
+    private function resolve(Event $event, string $email): array
     {
         $email = mb_strtolower(trim($email));
 
-        $accepted = Submission::where('edition_id', $edition->id)
+        $accepted = Submission::where('event_id', $event->id)
             ->where('revision_of', 0)->where('status', 'accepted')->get();
 
         $mine = $accepted->filter(fn (Submission $s) => $this->isCoauthor($s, $email))->values();
 
         return [
             'found' => $mine->map(fn (Submission $s) => ['ref' => (string) $s->ref_code, 'title' => (string) $s->title])->all(),
-            'participant' => Participant::where('edition_id', $edition->id)
+            'participant' => Participant::where('event_id', $event->id)
                 ->whereRaw('LOWER(email) = ?', [$email])->first(),
         ];
     }

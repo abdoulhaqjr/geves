@@ -9,11 +9,11 @@ use App\Models\User;
  * vide mais ouverte. Ces cas figent la règle - on y entre parce qu'on a une séance
  * à modérer, pas parce qu'on a un compte.
  */
-function sessionConfiee(User $moderateur, $edition = null)
+function sessionConfiee(User $moderateur, $event = null)
 {
-    $edition ??= openEdition();
+    $event ??= openEdition();
 
-    return $edition->sessions()->create([
+    return $event->sessions()->create([
         'type' => 'plenary',
         'label' => 'Séance 3 - Agronomie',
         'moderator_email' => $moderateur->email,
@@ -62,14 +62,14 @@ it('garde l’ancienne adresse en redirection', function () {
 });
 
 it('ne montre que les séances de l’autre modérateur à personne d’autre', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $moi = verifiedAccount();
     $autre = User::create([
         'name' => 'Moussa Mensah', 'first_name' => 'Moussa', 'last_name' => 'Mensah',
         'email' => 'moussa@example.tg', 'password' => 'pass12345', 'phone' => '+22890000001',
     ]);
-    sessionConfiee($moi, $edition);
-    $edition->sessions()->create([
+    sessionConfiee($moi, $event);
+    $event->sessions()->create([
         'type' => 'plenary', 'label' => 'Séance de Moussa',
         'moderator_email' => $autre->email, 'meeting_status' => 'scheduled',
     ]);
@@ -95,9 +95,9 @@ it('ramène le modérateur à ses séances quand il quitte la visio', function (
 it('ne détourne pas les autres participants vers l’espace du modérateur', function () {
     // ⚠️ Et surtout pas le staff : il est modérateur DANS la salle, mais n'a
     // aucune séance à lui - il atterrirait sur un 403.
-    $edition = openEdition();
+    $event = openEdition();
     $compte = verifiedAccount();
-    $seance = $edition->sessions()->create([
+    $seance = $event->sessions()->create([
         'type' => 'plenary', 'label' => 'Cérémonie', 'meeting_status' => 'live',
         'meeting_visibility' => 'public',
     ]);

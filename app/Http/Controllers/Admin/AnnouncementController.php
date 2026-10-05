@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\Concerns\ScopesEditionAccess;
 use App\Http\Controllers\Controller;
-use App\Models\Edition;
+use App\Models\Event;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -13,7 +13,7 @@ use Illuminate\View\View;
 /**
  * Annonces du déroulement (page publique « Déroulement » → onglet Annonces).
  * Gérées depuis le back-office par l'administrateur, le gestionnaire et le
- * secrétariat (capacité `announcements`). Stockées dans les réglages de l'édition
+ * secrétariat (capacité `announcements`). Stockées dans les réglages de l'événement
  * (`settings['announcements']`), du plus récent au plus ancien.
  */
 class AnnouncementController extends Controller
@@ -22,17 +22,17 @@ class AnnouncementController extends Controller
 
     public function index(Request $request): View
     {
-        $edition = $this->currentEdition($request);
+        $event = $this->currentEdition($request);
 
         return view('admin.announcements.index', [
-            'editions' => $this->accessibleEditions($request, 'announcements'),
-            'edition' => $edition,
-            'edition_id' => $edition ? (string) $edition->id : '',
-            'announcements' => $edition ? $this->normalized($edition) : [],
+            'events' => $this->accessibleEditions($request, 'announcements'),
+            'event' => $event,
+            'event_id' => $event ? (string) $event->id : '',
+            'announcements' => $event ? $this->normalized($event) : [],
         ]);
     }
 
-    public function store(Request $request, Edition $edition): RedirectResponse
+    public function store(Request $request, Event $event): RedirectResponse
     {
         $data = $request->validate([
             'title' => ['required', 'string', 'max:160'],
@@ -40,7 +40,7 @@ class AnnouncementController extends Controller
             'urgent' => ['nullable', 'boolean'],
         ]);
 
-        $settings = (array) $edition->settings;
+        $settings = (array) $event->settings;
         $list = $this->listOf($settings);
 
         array_unshift($list, [
@@ -53,19 +53,19 @@ class AnnouncementController extends Controller
         ]);
 
         $settings['announcements'] = array_slice($list, 0, 100);
-        $edition->update(['settings' => $settings]);
+        $event->update(['settings' => $settings]);
 
         return back()->with('ukc_status', 'Annonce publiée.');
     }
 
-    public function destroy(Edition $edition, string $announcement): RedirectResponse
+    public function destroy(Event $event, string $announcement): RedirectResponse
     {
-        $settings = (array) $edition->settings;
+        $settings = (array) $event->settings;
         $settings['announcements'] = array_values(array_filter(
             $this->listOf($settings),
             fn ($a) => (string) ($a['id'] ?? '') !== $announcement,
         ));
-        $edition->update(['settings' => $settings]);
+        $event->update(['settings' => $settings]);
 
         return back()->with('ukc_status', 'Annonce retirée.');
     }
@@ -87,9 +87,9 @@ class AnnouncementController extends Controller
      *
      * @return list<array<string, mixed>>
      */
-    private function normalized(Edition $edition): array
+    private function normalized(Event $event): array
     {
-        $settings = (array) $edition->settings;
+        $settings = (array) $event->settings;
         $list = $this->listOf($settings);
         $changed = false;
 
@@ -102,24 +102,24 @@ class AnnouncementController extends Controller
 
         if ($changed) {
             $settings['announcements'] = $list;
-            $edition->update(['settings' => $settings]);
+            $event->update(['settings' => $settings]);
         }
 
         return $list;
     }
 
-    private function currentEdition(Request $request): ?Edition
+    private function currentEdition(Request $request): ?Event
     {
-        $editions = $this->accessibleEditions($request, 'announcements');
-        $id = (string) $request->query('edition_id', '');
+        $events = $this->accessibleEditions($request, 'announcements');
+        $id = (string) $request->query('event_id', '');
 
         if ($id === '') {
             // Priorité au colloque en cours (déroulement), sinon ouvert, sinon le plus récent.
-            return $editions->first(fn (Edition $e) => $e->phase()->isOngoing())
-                ?? $editions->firstWhere('status', 'open')
-                ?? $editions->first();
+            return $events->first(fn (Event $e) => $e->phase()->isOngoing())
+                ?? $events->firstWhere('status', 'open')
+                ?? $events->first();
         }
 
-        return $editions->firstWhere('id', (int) $id);
+        return $events->firstWhere('id', (int) $id);
     }
 }

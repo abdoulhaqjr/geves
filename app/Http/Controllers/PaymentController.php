@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Actions\ReconcilePayments;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Payment;
 use App\Payments\Contracts\OnlineGateway;
 use App\Payments\GatewayRegistry;
-use App\Support\EditionPaymentConfig;
+use App\Support\EventPaymentConfig;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -35,9 +35,9 @@ class PaymentController extends Controller
             return redirect()->route('account.dashboard');
         }
 
-        // Vérifier avec les identifiants de l'édition (repli global) - mêmes que
+        // Vérifier avec les identifiants de l'événement (repli global) - mêmes que
         // ceux utilisés à l'initiation du paiement.
-        EditionPaymentConfig::apply($payment->edition);
+        EventPaymentConfig::apply($payment->event);
 
         $this->settle($payment, $gw->verify($payment));
 
@@ -46,9 +46,9 @@ class PaymentController extends Controller
             : ['ukc_error' => 'Paiement non confirmé pour le moment. Il le sera dès réception de la confirmation.'];
 
         // Parcours co-auteur (sans compte) : retour sur la page publique dédiée.
-        if (($payment->meta['flow'] ?? null) === 'coauthor' && $payment->edition?->slug) {
+        if (($payment->meta['flow'] ?? null) === 'coauthor' && $payment->event?->slug) {
             return redirect()->route('public.coauthor', [
-                'slug' => $payment->edition->slug,
+                'slug' => $payment->event->slug,
                 'email' => $payment->participant?->email,
             ])->with($flash);
         }
@@ -58,23 +58,23 @@ class PaymentController extends Controller
             return redirect()->route('account.formations')->with($flash);
         }
 
-        return redirect()->route('account.payment', $payment->edition_id)->with($flash);
+        return redirect()->route('account.payment', $payment->event_id)->with($flash);
     }
 
     /**
      * Notification serveur-à-serveur (webhook), signature vérifiée.
      *
-     * La signature doit être vérifiée AVANT de savoir à quelle édition le paiement
-     * se rattache : on essaie donc la config globale puis chaque édition ayant ses
+     * La signature doit être vérifiée AVANT de savoir à quelle événement le paiement
+     * se rattache : on essaie donc la config globale puis chaque événement ayant ses
      * propres identifiants pour cette passerelle (chaque essai est isolé, cf.
-     * `EditionPaymentConfig::using`). Si l'URL porte déjà l'édition (URL dédiée
+     * `EventPaymentConfig::using`). Si l'URL porte déjà l'événement (URL dédiée
      * déclarée chez le marchand), on n'essaie que celle-là.
      *
      * Reste **fail-closed** : sans signature valide, rien n'est confirmé. Tous les
      * rejets sont journalisés (canal `payments`) pour pouvoir diagnostiquer un
      * « j'ai payé mais le système dit non ».
      */
-    public function webhook(Request $request, string $gateway, ?Edition $edition = null): Response
+    public function webhook(Request $request, string $gateway, ?Event $event = null): Response
     {
         $gw = $this->registry->get($gateway);
 
@@ -84,10 +84,10 @@ class PaymentController extends Controller
             return response('OK', 200);
         }
 
-        $candidates = $edition ? [$edition] : EditionPaymentConfig::candidates($gateway);
+        $candidates = $event ? [$event] : EventPaymentConfig::candidates($gateway);
 
         foreach ($candidates as $candidate) {
-            $event = EditionPaymentConfig::using($candidate, fn () => $gw->parseWebhook($request));
+            $event = EventPaymentConfig::using($candidate, fn () => $gw->parseWebhook($request));
             if (! $event) {
                 continue; // signature invalide pour cette configuration : on essaie la suivante
             }
@@ -105,14 +105,14 @@ class PaymentController extends Controller
                 return response('OK', 200);
             }
 
-            // Étanchéité : le marchand d'une édition ne peut confirmer que SES
-            // paiements (la config globale, elle, couvre toutes les éditions).
-            if ($candidate && $payment->edition_id !== $candidate->id) {
-                Log::channel('payments')->warning('Webhook paiement : édition signataire ≠ édition du paiement (ignoré).', [
+            // Étanchéité : le marchand d'une événement ne peut confirmer que SES
+            // paiements (la config globale, elle, couvre toutes les événements).
+            if ($candidate && $payment->event_id !== $candidate->id) {
+                Log::channel('payments')->warning('Webhook paiement : événement signataire ≠ événement du paiement (ignoré).', [
                     'gateway' => $gateway,
                     'payment' => $payment->id,
                     'signataire' => $candidate->id,
-                    'paiement_edition' => $payment->edition_id,
+                    'paiement_edition' => $payment->event_id,
                 ]);
 
                 return response('OK', 200);
@@ -132,7 +132,7 @@ class PaymentController extends Controller
 
         Log::channel('payments')->warning('Webhook paiement : signature non vérifiée (aucune configuration ne correspond).', [
             'gateway' => $gateway,
-            'edition' => $edition?->id,
+            'event' => $event?->id,
             'configurations_essayees' => count($candidates),
         ]);
 

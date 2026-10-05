@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Colloque;
-use App\Models\Edition;
+use App\Models\EventSeries;
+use App\Models\Event;
 use App\Models\User;
 use Illuminate\Http\Testing\File;
 use Spatie\Permission\Models\Permission;
@@ -22,75 +22,75 @@ it('redirige les invités du back-office vers la connexion admin', function () {
     $this->get('/admin')->assertRedirect(route('account.login'));
 });
 
-it('limite un staff sans affectation aux zones par édition (shell accessible)', function () {
+it('limite un staff sans affectation aux zones par événement (shell accessible)', function () {
     $user = User::factory()->create();
 
     // Le tableau de bord (shell) reste accessible à tout staff connecté…
     $this->actingAs($user, 'web')->get('/admin')->assertOk();
-    // …mais aucune zone par édition sans affectation (modèle « pur »).
-    $this->actingAs($user, 'web')->get(route('admin.editions.index'))->assertForbidden();
+    // …mais aucune zone par événement sans affectation (modèle « pur »).
+    $this->actingAs($user, 'web')->get(route('admin.evenements.index'))->assertForbidden();
     $this->actingAs($user, 'web')->get(route('admin.payments.index'))->assertForbidden();
 });
 
-it('autorise le staff habilité à voir la liste des éditions', function () {
+it('autorise le staff habilité à voir la liste des événements', function () {
     $user = staffWithPermission();
 
-    $this->actingAs($user, 'web')->get(route('admin.editions.index'))->assertOk();
+    $this->actingAs($user, 'web')->get(route('admin.evenements.index'))->assertOk();
 });
 
-it('liste les éditions de la plus récente à la plus ancienne (par année)', function () {
+it('liste les événements de la plus récente à la plus ancienne (par année)', function () {
     $user = staffWithPermission();
-    $colloque = Colloque::create(['name' => 'C', 'slug' => 'c']);
-    $colloque->editions()->create(['title' => 'E 2024', 'status' => 'open', 'slug' => 'e-2024', 'year' => 2024]);
-    $colloque->editions()->create(['title' => 'E 2026', 'status' => 'open', 'slug' => 'e-2026', 'year' => 2026]);
-    $colloque->editions()->create(['title' => 'E 2025', 'status' => 'open', 'slug' => 'e-2025', 'year' => 2025]);
+    $series = EventSeries::create(['name' => 'C', 'slug' => 'c']);
+    $series->events()->create(['title' => 'E 2024', 'status' => 'open', 'slug' => 'e-2024', 'year' => 2024]);
+    $series->events()->create(['title' => 'E 2026', 'status' => 'open', 'slug' => 'e-2026', 'year' => 2026]);
+    $series->events()->create(['title' => 'E 2025', 'status' => 'open', 'slug' => 'e-2025', 'year' => 2025]);
 
-    $this->actingAs($user, 'web')->get(route('admin.editions.index'))
+    $this->actingAs($user, 'web')->get(route('admin.evenements.index'))
         ->assertOk()
         ->assertSeeInOrder(['E 2026', 'E 2025', 'E 2024']);
 });
 
-it('exporte une édition donnée en JSON', function () {
+it('exporte une événement donnée en JSON', function () {
     $user = staffWithPermission();
-    $colloque = Colloque::create(['name' => 'UK', 'slug' => 'uk']);
-    $edition = $colloque->editions()->create(['title' => 'UK 2026', 'status' => 'open', 'slug' => 'uk-2026', 'year' => 2026, 'settings' => ['tracks' => ['A']]]);
+    $series = EventSeries::create(['name' => 'UK', 'slug' => 'uk']);
+    $event = $series->events()->create(['title' => 'UK 2026', 'status' => 'open', 'slug' => 'uk-2026', 'year' => 2026, 'settings' => ['tracks' => ['A']]]);
 
-    $res = $this->actingAs($user, 'web')->get(route('admin.editions.export', $edition));
+    $res = $this->actingAs($user, 'web')->get(route('admin.evenements.export', $event));
     $res->assertOk();
     $res->assertHeader('content-type', 'application/json');
     $json = json_decode($res->streamedContent(), true);
-    expect($json['editions'])->toHaveCount(1);
-    expect($json['editions'][0]['title'])->toBe('UK 2026');
-    expect($json['editions'][0]['settings']['tracks'])->toBe(['A']);
+    expect($json['events'])->toHaveCount(1);
+    expect($json['events'][0]['title'])->toBe('UK 2026');
+    expect($json['events'][0]['settings']['tracks'])->toBe(['A']);
 });
 
-it('importe une configuration dans l’édition courante (identité conservée)', function () {
+it('importe une configuration dans l’événement courante (identité conservée)', function () {
     $user = staffWithPermission();
-    $colloque = Colloque::create(['name' => 'UK', 'slug' => 'uk']);
-    $edition = $colloque->editions()->create(['title' => 'Ancien titre', 'status' => 'draft', 'slug' => 'uk-2026', 'year' => 2026]);
+    $series = EventSeries::create(['name' => 'UK', 'slug' => 'uk']);
+    $event = $series->events()->create(['title' => 'Ancien titre', 'status' => 'draft', 'slug' => 'uk-2026', 'year' => 2026]);
 
-    $payload = json_encode(['editions' => [
+    $payload = json_encode(['events' => [
         ['title' => 'Config importée', 'slug' => 'autre-slug', 'year' => 2027, 'status' => 'open', 'settings' => ['tracks' => ['X', 'Y']]],
     ]]);
     $file = File::createWithContent('edition.json', $payload);
 
-    $this->actingAs($user, 'web')->post(route('admin.editions.import', $edition), ['file' => $file])
+    $this->actingAs($user, 'web')->post(route('admin.evenements.import', $event), ['file' => $file])
         ->assertSessionHasNoErrors();
 
-    $edition->refresh();
-    expect($edition->title)->toBe('Config importée');
-    expect($edition->settings['tracks'])->toBe(['X', 'Y']);
-    expect($edition->status)->toBe('open');
-    // Identité conservée : le slug de l'édition n'est PAS écrasé par le fichier.
-    expect($edition->slug)->toBe('uk-2026');
+    $event->refresh();
+    expect($event->title)->toBe('Config importée');
+    expect($event->settings['tracks'])->toBe(['X', 'Y']);
+    expect($event->status)->toBe('open');
+    // Identité conservée : le slug de l'événement n'est PAS écrasé par le fichier.
+    expect($event->slug)->toBe('uk-2026');
 });
 
-it('crée une édition avec un nouveau colloque via le formulaire', function () {
+it('crée une événement avec un nouveau colloque via le formulaire', function () {
     $user = staffWithPermission();
 
-    $response = $this->actingAs($user, 'web')->post(route('admin.editions.store'), [
-        'new_colloque' => 'Colloque test',
-        'title' => 'Édition inaugurale 2026',
+    $response = $this->actingAs($user, 'web')->post(route('admin.evenements.store'), [
+        'new_colloque' => 'EventSeries test',
+        'title' => 'Événement inaugurale 2026',
         'status' => 'open',
         'submission_open' => '1',
         'max_communications' => 3,
@@ -99,24 +99,24 @@ it('crée une édition avec un nouveau colloque via le formulaire', function () 
     ]);
     $response->assertSessionHasNoErrors();
 
-    $edition = Edition::firstWhere('title', 'Édition inaugurale 2026');
-    expect($edition)->not->toBeNull();
-    // Après enregistrement, on reste sur la fiche de l'édition (pas de retour à la liste).
-    $response->assertRedirect(route('admin.editions.edit', $edition));
-    expect($edition->slug)->toBe('edition-inaugurale-2026');
-    expect($edition->settings['tracks'])->toBe(['Axe A', 'Axe B']);
-    expect((float) $edition->settings['fees'][0]['amount'])->toBe(15000.0);
-    expect(Colloque::where('name', 'Colloque test')->exists())->toBeTrue();
+    $event = Event::firstWhere('title', 'Événement inaugurale 2026');
+    expect($event)->not->toBeNull();
+    // Après enregistrement, on reste sur la fiche de l'événement (pas de retour à la liste).
+    $response->assertRedirect(route('admin.evenements.edit', $event));
+    expect($event->slug)->toBe('edition-inaugurale-2026');
+    expect($event->settings['tracks'])->toBe(['Axe A', 'Axe B']);
+    expect((float) $event->settings['fees'][0]['amount'])->toBe(15000.0);
+    expect(EventSeries::where('name', 'EventSeries test')->exists())->toBeTrue();
 });
 
 it('affiche un toast de confirmation après enregistrement (reste sur la fiche)', function () {
     $user = staffWithPermission();
-    $colloque = Colloque::create(['name' => 'C', 'slug' => 'c']);
-    $edition = $colloque->editions()->create(['title' => 'Ed', 'status' => 'draft', 'slug' => 'ed']);
+    $series = EventSeries::create(['name' => 'C', 'slug' => 'c']);
+    $event = $series->events()->create(['title' => 'Ed', 'status' => 'draft', 'slug' => 'ed']);
 
     $this->actingAs($user, 'web')->followingRedirects()
-        ->put(route('admin.editions.update', $edition), [
-            'title' => 'Ed', 'status' => 'draft', 'colloque_id' => $edition->colloque_id, 'max_communications' => 3,
+        ->put(route('admin.evenements.update', $event), [
+            'title' => 'Ed', 'status' => 'draft', 'event_series_id' => $event->event_series_id, 'max_communications' => 3,
             'active_tab' => 'programme',
         ])
         ->assertOk()
@@ -124,31 +124,31 @@ it('affiche un toast de confirmation après enregistrement (reste sur la fiche)'
         ->assertSee("tab: 'programme'", false); // onglet actif restauré
 });
 
-it('modifie une édition existante', function () {
+it('modifie une événement existante', function () {
     $user = staffWithPermission();
-    $colloque = Colloque::create(['name' => 'C', 'slug' => 'c']);
-    $edition = $colloque->editions()->create(['title' => 'Ancien titre', 'status' => 'draft', 'slug' => 'ancien']);
+    $series = EventSeries::create(['name' => 'C', 'slug' => 'c']);
+    $event = $series->events()->create(['title' => 'Ancien titre', 'status' => 'draft', 'slug' => 'ancien']);
 
-    $this->actingAs($user, 'web')->put(route('admin.editions.update', $edition), [
+    $this->actingAs($user, 'web')->put(route('admin.evenements.update', $event), [
         'title' => 'Nouveau titre',
         'status' => 'draft',
-        'colloque_id' => $edition->colloque_id,
+        'event_series_id' => $event->event_series_id,
         'max_communications' => 3,
     ])->assertSessionHasNoErrors();
 
-    expect($edition->fresh()->title)->toBe('Nouveau titre');
+    expect($event->fresh()->title)->toBe('Nouveau titre');
 });
 
 it('enregistre tous les champs du mockup (programme, langues, apparence, options…)', function () {
     $user = staffWithPermission();
-    $colloque = Colloque::create(['name' => 'C', 'slug' => 'c']);
-    $edition = $colloque->editions()->create([
-        'title' => 'Édition', 'status' => 'open', 'slug' => 'ed',
+    $series = EventSeries::create(['name' => 'C', 'slug' => 'c']);
+    $event = $series->events()->create([
+        'title' => 'Événement', 'status' => 'open', 'slug' => 'ed',
         'settings' => ['practical' => ['venue' => 'Campus Sud']],
     ]);
 
-    $this->actingAs($user, 'web')->put(route('admin.editions.update', $edition), [
-        'title' => 'Édition', 'status' => 'open', 'colloque_id' => $edition->colloque_id, 'max_communications' => 3,
+    $this->actingAs($user, 'web')->put(route('admin.evenements.update', $event), [
+        'title' => 'Événement', 'status' => 'open', 'event_series_id' => $event->event_series_id, 'max_communications' => 3,
         'format' => 'Présentiel & hybride',
         'short_name' => 'CSIUK 2026',
         'languages' => ['Français', 'Anglais'],
@@ -168,7 +168,7 @@ it('enregistre tous les champs du mockup (programme, langues, apparence, options
         'opt_livret' => '1',
     ])->assertSessionHasNoErrors();
 
-    $s = $edition->fresh()->settings;
+    $s = $event->fresh()->settings;
     expect($s['format'])->toBe('Présentiel & hybride');
     expect($s['short_name'])->toBe('CSIUK 2026');
     expect($s['languages'])->toBe(['Français', 'Anglais']);
@@ -194,31 +194,31 @@ it('enregistre tous les champs du mockup (programme, langues, apparence, options
 
 it('préserve submission_form et enregistre hero/contact au save', function () {
     $user = staffWithPermission();
-    $colloque = Colloque::create(['name' => 'C', 'slug' => 'c']);
-    $edition = $colloque->editions()->create([
-        'title' => 'Édition', 'status' => 'open', 'slug' => 'ed',
+    $series = EventSeries::create(['name' => 'C', 'slug' => 'c']);
+    $event = $series->events()->create([
+        'title' => 'Événement', 'status' => 'open', 'slug' => 'ed',
         'settings' => ['submission_form' => ['fields' => ['title' => ['label' => 'Intitulé']], 'custom' => []]],
     ]);
 
-    $this->actingAs($user, 'web')->put(route('admin.editions.update', $edition), [
-        'title' => $edition->title,
+    $this->actingAs($user, 'web')->put(route('admin.evenements.update', $event), [
+        'title' => $event->title,
         'status' => 'open',
-        'colloque_id' => $edition->colloque_id,
+        'event_series_id' => $event->event_series_id,
         'max_communications' => 3,
         'contact_email' => 'colloque@univkara.tg',
         'hero_image' => 'https://example.tg/banniere.jpg',
     ])->assertSessionHasNoErrors();
 
-    $settings = $edition->fresh()->settings;
-    // La config du formulaire (gérée ailleurs) survit au save de l'édition.
+    $settings = $event->fresh()->settings;
+    // La config du formulaire (gérée ailleurs) survit au save de l'événement.
     expect($settings['submission_form']['fields']['title']['label'])->toBe('Intitulé');
     expect($settings['contact']['email'])->toBe('colloque@univkara.tg');
     expect($settings['hero_image'])->toBe('https://example.tg/banniere.jpg');
 });
 
-it('affiche la page publique d’une édition publiée', function () {
-    $colloque = Colloque::create(['name' => 'Colloque UK', 'slug' => 'uk']);
-    $colloque->editions()->create([
+it('affiche la page publique d’une événement publiée', function () {
+    $series = EventSeries::create(['name' => 'EventSeries UK', 'slug' => 'uk']);
+    $series->events()->create([
         'title' => 'UK 2026', 'status' => 'open', 'slug' => 'uk-2026',
         'settings' => ['tracks' => ['Sciences'], 'fees' => []],
     ]);
@@ -229,18 +229,18 @@ it('affiche la page publique d’une édition publiée', function () {
         ->assertSee('Ateliers disciplinaires');
 });
 
-it('renvoie 404 pour une édition en brouillon', function () {
-    $colloque = Colloque::create(['name' => 'Colloque UK', 'slug' => 'uk']);
-    $colloque->editions()->create(['title' => 'Brouillon', 'status' => 'draft', 'slug' => 'brouillon']);
+it('renvoie 404 pour une événement en brouillon', function () {
+    $series = EventSeries::create(['name' => 'EventSeries UK', 'slug' => 'uk']);
+    $series->events()->create(['title' => 'Brouillon', 'status' => 'draft', 'slug' => 'brouillon']);
 
     $this->get(route('public.colloque', 'brouillon'))->assertNotFound();
 });
 
 /**
- * **Réorganisation des onglets de l'édition.**
+ * **Réorganisation des onglets de l'événement.**
  *
  * ⚠️ « Intégrations » réunit paiement et visioconférence - deux formulaires de
- * même nature (brancher l'édition sur un service extérieur), chacun gardant sa
+ * même nature (brancher l'événement sur un service extérieur), chacun gardant sa
  * sauvegarde. Les traductions rejoignent l'apparence : les deux faces de ce que
  * le visiteur voit du site public.
  *
@@ -250,11 +250,11 @@ it('renvoie 404 pour une édition en brouillon', function () {
  */
 it('réunit paiement et visio dans Intégrations, et les traductions dans Apparence', function () {
     $user = staffWithPermission();
-    $colloque = Colloque::create(['name' => 'C', 'slug' => 'c-onglets']);
-    $edition = $colloque->editions()->create(['title' => 'Ed', 'status' => 'draft', 'slug' => 'ed-onglets']);
+    $series = EventSeries::create(['name' => 'C', 'slug' => 'c-onglets']);
+    $event = $series->events()->create(['title' => 'Ed', 'status' => 'draft', 'slug' => 'ed-onglets']);
 
     $reponse = $this->actingAs($user, 'web')
-        ->get(route('admin.editions.edit', $edition))
+        ->get(route('admin.evenements.edit', $event))
         ->assertOk();
 
     $reponse->assertSee('tab=integrations', false);
@@ -266,8 +266,8 @@ it('réunit paiement et visio dans Intégrations, et les traductions dans Appare
     $reponse->assertDontSee('tab=translations', false);
 
     // Mais leur contenu est toujours là, sur les onglets qui les ont repris.
-    $reponse->assertSee('Passerelle de paiement de cette édition');
-    $reponse->assertSee('Visioconférence de cette édition');
+    $reponse->assertSee('Passerelle de paiement de cette événement');
+    $reponse->assertSee('Visioconférence de cette événement');
     $reponse->assertSee('Traductions du contenu');
 });
 
@@ -278,15 +278,15 @@ it('réunit paiement et visio dans Intégrations, et les traductions dans Appare
  */
 it('ramène sur Intégrations après avoir enregistré paiement ou visio', function () {
     $user = staffWithPermission();
-    $colloque = Colloque::create(['name' => 'C', 'slug' => 'c-retour']);
-    $edition = $colloque->editions()->create(['title' => 'Ed', 'status' => 'draft', 'slug' => 'ed-retour']);
+    $series = EventSeries::create(['name' => 'C', 'slug' => 'c-retour']);
+    $event = $series->events()->create(['title' => 'Ed', 'status' => 'draft', 'slug' => 'ed-retour']);
 
     $this->actingAs($user, 'web')
-        ->post(route('admin.editions.payment', $edition), ['gateway' => ''])
+        ->post(route('admin.evenements.payment', $event), ['gateway' => ''])
         ->assertSessionHas('edition_tab', 'integrations');
 
     $this->actingAs($user, 'web')
-        ->post(route('admin.editions.meetings', $edition), ['provider' => ''])
+        ->post(route('admin.evenements.meetings', $event), ['provider' => ''])
         ->assertSessionHas('edition_tab', 'integrations');
 });
 
@@ -298,19 +298,19 @@ it('ramène sur Intégrations après avoir enregistré paiement ou visio', funct
  */
 it('ouvre les anciens liens d’onglets sur l’onglet qui les a repris', function () {
     $user = staffWithPermission();
-    $colloque = Colloque::create(['name' => 'C', 'slug' => 'c-vieux-liens']);
-    $edition = $colloque->editions()->create(['title' => 'Ed', 'status' => 'draft', 'slug' => 'ed-vieux-liens']);
+    $series = EventSeries::create(['name' => 'C', 'slug' => 'c-vieux-liens']);
+    $event = $series->events()->create(['title' => 'Ed', 'status' => 'draft', 'slug' => 'ed-vieux-liens']);
 
     foreach (['payment' => 'integrations', 'meetings' => 'integrations', 'translations' => 'appearance'] as $ancien => $repris) {
         $this->actingAs($user, 'web')
-            ->get(route('admin.editions.edit', ['edition' => $edition, 'tab' => $ancien]))
+            ->get(route('admin.evenements.edit', ['event' => $event, 'tab' => $ancien]))
             ->assertOk()
             ->assertSee("tab: '".$repris."'", false);
     }
 
     // Un onglet toujours valide n'est pas touché.
     $this->actingAs($user, 'web')
-        ->get(route('admin.editions.edit', ['edition' => $edition, 'tab' => 'committees']))
+        ->get(route('admin.evenements.edit', ['event' => $event, 'tab' => 'committees']))
         ->assertOk()
         ->assertSee("tab: 'committees'", false);
 });
