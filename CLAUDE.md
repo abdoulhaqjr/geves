@@ -80,6 +80,39 @@ rapide fiable.
 
 ## Conventions qui comptent
 
+### Vocabulaire : ÉVÉNEMENT / SÉRIE / TYPE (ex-édition / ex-colloque)
+
+Depuis la refonte « événements typés », le modèle a **deux niveaux** :
+
+- **`App\Models\EventSeries`** (table `event_series`, ex-`Colloque`) = la **série
+  récurrente**. Elle **porte le TYPE** : colonne `type` + enum **`App\Enums\EventType`**
+  (`colloque` / `seminaire` / `journees_scientifiques` / `autre`, défaut `colloque`).
+- **`App\Models\Event`** (table `events`, FK `event_id`, ex-`Edition`) = l'**« événement »**
+  daté, le hub opérationnel (participants, soumissions, paiements, programme, documents…).
+  Relation **`Event::series()`** (FK **explicite** `event_series_id` - le nom de méthode
+  « series » ferait sinon déduire `series_id`) ; inverse **`EventSeries::events()`**.
+  L'**accesseur `Event::type()`** renvoie le type hérité de la série (défaut `colloque`).
+
+- **Le type se choisit dans la fiche de l'événement**, bloc *Série de rattachement*
+  (onglet Général) : sélecteur **`series_type`** (`admin/evenements/form.blade.php`),
+  persisté par `SaveEvent` (création d'une série OU mise à jour de la série choisie).
+  Toutes les éditions d'une série héritent du type. ⚠️ Pas encore d'écran dédié de
+  gestion des séries (phase 2 possible).
+- ⚠️ **Classes support / contrôleurs / factories / vues renommés** : `Edition*`→`Event*`,
+  `Colloque*`→`EventSeries*`, `CurrentColloque`→`CurrentEvent`, dossier de vues
+  `admin/evenements`, noms de routes `admin.evenements.*`. UI en français : « événement »,
+  « série », « type ».
+- ⚠️ **Exceptions ASSUMÉES qui gardent « edition/colloque » (NE PAS renommer)** : la
+  couche RBAC par édition - capacités **`editions_read`/`editions_write`**, alias
+  middleware **`edition.cap`**, **`EnsureEditionAccess`**, **`ScopesEditionAccess`**,
+  **`User::canAnyEdition()`/`canOnEdition()`**, super-capacité **`manage_colloques`** ; la
+  **route publique `/colloque/{slug}`** (`public.colloque`) et le mot « colloque » comme
+  **libellé d'affichage / valeur de type** ; les **jetons du concepteur** `[edition.name]`
+  / `[edition.theme]` / `[edition.dates]` (`DocumentVars`) ; le champ de merge e-mail
+  `{{edition_name}}`. Ce sont des clés/identifiants, pas de l'affichage « édition ».
+- ⚠️ **Relations imbriquées** : charger via `event.series` et `submission.event` (jamais
+  `edition.colloque` / `submission.edition`, qui n'existent plus).
+
 ### Nom de la plateforme = dynamique
 
 Ne **jamais** écrire un littéral « Gesco »/« GEVES » dans l'UI. Le nom d'affichage est
