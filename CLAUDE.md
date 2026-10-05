@@ -575,10 +575,15 @@ paiement (`pay`), inscription à une formation.
   DemoScenario, DemoStaff) ont été **supprimés** : ce colloque est la référence unique.
   - **Module Formations** semé (`ColloqueAvenirSeeder::buildFormation()`) :
     `settings['formation_enabled'] = true` + **une formation publiée** (« Méthodologie
-    de la recherche… », gratuite, jeu. 08/10 14h-17h, visio `scheduled`), **deux
-    formateurs** (`formateur1@test.tg` modérateur, `formateur2@test.tg`) et **6 inscrits**
-    pris parmi les auteurs (`registered`). Idempotent. De quoi exercer l'espace
-    Formations admin/participant et la page publique `#formations`.
+    de la recherche… », **payante 10 000 FCFA**, jeu. 08/10 14h-17h, visio `scheduled`),
+    **deux formateurs** (`formateur1@test.tg` modérateur, `formateur2@test.tg`) et
+    **6 inscrits** pris parmi les auteurs - **4 réglés** (paiement manuel de nature
+    `formation`, reçu `REC-FORM-…`) et **2 inscrits non réglés**. Idempotent. De quoi
+    exercer l'espace Formations admin/participant et la page publique `#formations`.
+  - ⚠️ **La grille tarifaire du seed LIE les grades aux catégories** (`fees[].grades`)
+    et marque « Autres participants » **par défaut** : sans cela `Fees::resolveAmount()`
+    renvoyait `null` et les 200 paiements de participation étaient semés **à 0 F**. Les
+    montants sortent donc par grade (15 000 / 35 000 / 50 000 FCFA).
   - **Programme du seed = ateliers + plénières SANS conflit** (l'exclusivité des
     plénières est respectée dans les données de démo). Les **ateliers** de volume
     occupent « Salle 1 » à « Salle 6 » (6 en parallèle) par blocs matin **08:30-11:30**

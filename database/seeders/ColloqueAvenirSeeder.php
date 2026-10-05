@@ -97,10 +97,17 @@ class ColloqueAvenirSeeder extends Seeder
                     'languages' => ['Français', 'Anglais'],
                     'format' => 'Présentiel',
                     'tracks' => self::ATELIERS,
+                    // ⚠️ Chaque catégorie tarifaire COUVRE des grades (sinon elle
+                    // n'est jamais appliquée automatiquement et le montant reste 0) ;
+                    // « Autres participants » est la catégorie par DÉFAUT (repli pour
+                    // un grade non couvert). Grades = App\Support\ParticipantTypes.
                     'fees' => [
-                        ['label' => 'Enseignants et chercheurs', 'amount' => 35000],
-                        ['label' => 'Doctorants et assimilés', 'amount' => 15000],
-                        ['label' => 'Autres participants', 'amount' => 50000],
+                        ['label' => 'Enseignants et chercheurs', 'amount' => 35000,
+                            'grades' => ['Professeur', 'Maître de conférences', 'Maître-assistant', 'Enseignant / Chercheur', 'Enseignant']],
+                        ['label' => 'Doctorants et assimilés', 'amount' => 15000,
+                            'grades' => ['Doctorant', 'Étudiant en master']],
+                        ['label' => 'Autres participants', 'amount' => 50000,
+                            'grades' => ['Autre participant'], 'default' => true],
                     ],
                     'max_communications' => 3,
                     'coauthors_max' => 8,
@@ -508,7 +515,7 @@ class ColloqueAvenirSeeder extends Seeder
                     .'le choix d’une revue et la valorisation de leurs résultats.',
                 'location' => 'Campus universitaire de Parakou (Bénin)',
                 'room' => 'Salle de formation C',
-                'fee' => 0, // gratuite : inscription sans paiement
+                'fee' => 10000, // formation payante (FCFA)
                 'starts_at' => (clone $day)->setTime(14, 0),
                 'ends_at' => (clone $day)->setTime(17, 0),
                 'capacity' => 40,
@@ -536,26 +543,50 @@ class ColloqueAvenirSeeder extends Seeder
             );
         }
 
-        // Inscrits : une poignée d'auteurs déjà inscrits à l'événement.
+        // Inscrits : une poignée d'auteurs déjà inscrits à l'événement. Formation
+        // PAYANTE : les 4 premiers ont réglé (paiement manuel, nature `formation`),
+        // les 2 derniers sont inscrits mais pas encore réglés (pour montrer les deux
+        // états). ⚠️ Le règlement d'une formation est un paiement distinct de la
+        // participation (`meta.flow = 'formation'`), repéré par son propre reçu.
+        $fee = (float) $formation->fee;
         $inscrits = Participant::where('event_id', $event->id)
             ->where('role', 'author')
             ->whereNotNull('user_id')
             ->orderBy('id')
             ->limit(6)
             ->get();
-        foreach ($inscrits as $p) {
-            FormationEnrollment::updateOrCreate(
+        foreach ($inscrits as $i => $p) {
+            $paid = $i < 4;
+            $enrollment = FormationEnrollment::updateOrCreate(
                 ['formation_id' => $formation->id, 'user_id' => $p->user_id],
                 [
                     'event_id' => $event->id,
                     'participant_id' => $p->id,
-                    'status' => 'registered',
-                    'amount' => 0,
+                    'status' => $paid ? 'paid' : 'registered',
+                    'amount' => $fee,
                 ]
             );
+
+            if ($paid) {
+                $payment = Payment::updateOrCreate(
+                    ['receipt_no' => sprintf('REC-FORM-%s-%04d', $event->year ?: date('Y'), $p->id)],
+                    [
+                        'event_id' => $event->id,
+                        'participant_id' => $p->id,
+                        'amount' => $fee,
+                        'currency' => 'XOF',
+                        'method' => 'cash',
+                        'gateway' => 'manual',
+                        'status' => 'paid',
+                        'paid_at' => Carbon::now()->subDays(30),
+                        'meta' => ['flow' => 'formation', 'formation_id' => $formation->id, 'enrollment_id' => $enrollment->id],
+                    ]
+                );
+                $enrollment->update(['payment_id' => $payment->id]);
+            }
         }
 
-        $this->command?->info('Formation : '.$formation->title.' - 2 formateurs, '.$inscrits->count().' inscrits (gratuite).');
+        $this->command?->info('Formation : '.$formation->title.' - 2 formateurs, '.$inscrits->count().' inscrits (payante, 4 réglés).');
     }
 
     /**
