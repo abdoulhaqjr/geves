@@ -18,6 +18,16 @@
         @if ($events->isEmpty())
             <div class="ukc-empty"><h3>Aucun événement accessible</h3><p>Vous n'êtes rattaché à aucun événement pour le moment.</p></div>
         @else
+            {{-- Sélecteur d'événement (recharge la page sur le choix), comme l'onglet Documents. --}}
+            <form method="GET" class="ukc-field" style="max-width:520px;margin-bottom:18px;">
+                <label>Événement</label>
+                <select name="event_id" onchange="this.form.submit()">
+                    @foreach ($events as $ed)
+                        <option value="{{ $ed->id }}" @selected((string) $ed->id === $event_id)>{{ $ed->series?->name ? $ed->series->name.' - ' : '' }}{{ $ed->title ?: $ed->year }}</option>
+                    @endforeach
+                </select>
+            </form>
+
             <div x-data="{
                 f: {{ $stats['to_validate'] > 0 ? "'to_validate'" : "'all'" }},
                 counts: {
@@ -109,7 +119,7 @@
                                     <tr x-show="visible('{{ $row->status }}')">
                                         <td class="title">
                                             {{ $s->label }}
-                                            <div style="font-size:12px;color:var(--ukc-muted);">{{ $s->event?->title ?: $s->event?->year }}@if ($s->room) · {{ $s->room }}@endif</div>
+                                            @if ($s->room)<div style="font-size:12px;color:var(--ukc-muted);">{{ $s->room }}</div>@endif
                                         </td>
                                         <td>
                                             {{ $s->rapporteur_name ?: ($s->rapporteur_email ?: '-') }}

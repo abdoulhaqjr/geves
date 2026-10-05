@@ -5,6 +5,16 @@
         @if ($docEditions->isEmpty())
             <div class="ukc-empty"><h3>Aucun événement</h3><p>Vous n'avez accès aux documents d'aucun événement.</p></div>
         @else
+            {{-- Sélecteur d'événement (recharge la page sur le choix), comme l'onglet Documents. --}}
+            <form method="GET" class="ukc-field" style="max-width:520px;margin-bottom:18px;">
+                <label>Événement</label>
+                <select name="assist_event" onchange="this.form.submit()">
+                    @foreach ($docEditions as $ed)
+                        <option value="{{ $ed->id }}" @selected((string) $ed->id === (string) $currentDocEditionId)>{{ $ed->series?->name ? $ed->series->name.' - ' : '' }}{{ $ed->title ?: $ed->year }}</option>
+                    @endforeach
+                </select>
+            </form>
+
             {{-- Bloc rafraîchi après génération : le document produit et
                  l'historique changent d'un coup. --}}
             <div class="ukc-grid-2" style="align-items:start;" data-ajax-root="sec-doc">
@@ -30,14 +40,7 @@
                           data-ai-steps="Lecture de votre consigne…|Collecte des données de l’événement…|Rédaction du brouillon…|Mise en forme du document…"
                           style="display:flex;flex-direction:column;gap:16px;">
                         @csrf
-                        <div class="ukc-field">
-                            <label>Colloque</label>
-                            <select name="event_id">
-                                @foreach ($docEditions as $ed)
-                                    <option value="{{ $ed->id }}" @selected((string) $ed->id === (string) $currentDocEditionId)>{{ $ed->series?->name ? $ed->series->name.' - ' : '' }}{{ $ed->title ?: $ed->year }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+                        <input type="hidden" name="event_id" value="{{ $currentDocEditionId }}">
 
                         <div class="ukc-field">
                             <label>Modèle de départ (optionnel)</label>

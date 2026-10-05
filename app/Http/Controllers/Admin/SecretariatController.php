@@ -87,14 +87,16 @@ class SecretariatController extends Controller
 
     public function index(Request $request): View
     {
-        $user = $request->user();
-        $events = $user->accessibleEditions('editions_read');
-        $editionIds = $events->pluck('id');
+        $events = $this->accessibleEditions($request, 'editions_read');
+        $editionId = $request->has('event_id')
+            ? (string) $request->query('event_id', '')
+            : $this->currentEditionId($events);
+        $event = $editionId !== '' ? $events->firstWhere('id', (int) $editionId) : null;
 
         /** @var Collection<int, EventSession> $sessions */
-        $sessions = $editionIds->isEmpty()
+        $sessions = $event === null
             ? collect()
-            : EventSession::whereIn('event_id', $editionIds)
+            : EventSession::where('event_id', $event->id)
                 ->whereNotNull('rapporteur_email')->where('rapporteur_email', '!=', '')
                 ->with(['event.series', 'atelier', 'report'])
                 ->orderBy('starts_at')->orderBy('id')->get();
@@ -134,6 +136,7 @@ class SecretariatController extends Controller
 
         return view('admin.secretariat', [
             'events' => $events,
+            'event_id' => $event ? (string) $event->id : '',
             'rows' => $rows,
             'stats' => [
                 'to_validate' => $rows->where('status', 'to_validate')->count(),
@@ -152,11 +155,14 @@ class SecretariatController extends Controller
     public function assistIndex(Request $request): View
     {
         $docEditions = $request->user()->accessibleEditions('documents');
-        $currentDoc = $docEditions->firstWhere('status', 'open') ?? $docEditions->first();
+        $selectedId = $request->has('assist_event')
+            ? (string) $request->query('assist_event', '')
+            : $this->currentEditionId($docEditions);
+        $current = $selectedId !== '' ? $docEditions->firstWhere('id', (int) $selectedId) : null;
 
         return view('admin.secretariat.assistant', [
             'docEditions' => $docEditions,
-            'currentDocEditionId' => $currentDoc?->id,
+            'currentDocEditionId' => $current?->id,
             'presets' => self::PRESETS,
             'assistHistory' => array_slice((array) Settings::get('secretariat_ai_history', []), 0, 12),
         ]);

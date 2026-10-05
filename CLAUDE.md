@@ -2433,12 +2433,17 @@ Côté public (page colloque + Déroulement), les ateliers simultanés portent u
 `['current' => …]`) :
 
 - **Rapports de séance** (`admin.secretariat`, vue `admin/secretariat.blade.php`) =
-  **poste de travail unifié** (un seul écran, toutes éditions accessibles). Quatre
-  cartes KPI **cliquables = filtres** (`à valider` / `en attente` / `validés` / `toutes`)
-  sur **un tableau unique** (séance · rapporteur · statut · date · action), filtré côté
-  client (Alpine). Statut calculé une fois dans `index()` (`to_validate` → `awaiting` →
-  `scheduled` → `validated`, rang de priorité). ⚠️ **Cliquer « Validés » montre TOUS les
-  rapports validés** (il n'y a plus de « 6 récents » ni de second écran).
+  **poste de travail unifié**, **scopé par événement** (sélecteur « Événement » en tête,
+  `?event_id=`, défaut `currentEditionId()` - comme les onglets Documents et Assisté).
+  Quatre cartes KPI **cliquables = filtres** (`à valider` / `en attente` / `validés` /
+  `toutes`) sur **un tableau unique** (séance · rapporteur · statut · date · action),
+  filtré côté client (Alpine). Statut calculé une fois dans `index()` (`to_validate` →
+  `awaiting` → `scheduled` → `validated`, rang de priorité). ⚠️ **Cliquer « Validés »
+  montre TOUS les rapports validés de l'événement** (il n'y a plus de « 6 récents » ni de
+  second écran).
+  - ⚠️ **Les trois onglets du Secrétariat portent le même sélecteur d'événement en tête**
+    (Rapports `?event_id=`, Documents `?doc_event=`, Assisté `?assist_event=`) : le
+    vocabulaire est « Événement », jamais « Colloque » (le modèle est typé).
   - ⚠️ **Lecture / amélioration / VALIDATION se font SUR PLACE**, dans un **panneau
     latéral** (`<x-ukc.slideover>`, état `{ open, cur }`, `show(row)` pose `cur` via
     `@js($rowData)` et `open=true`). Le panneau édite synthèse/points/affluence
