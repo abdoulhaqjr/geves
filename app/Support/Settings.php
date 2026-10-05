@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 /**
  * Accès aux réglages éditables (clé/valeur), avec cache. Les clés sont plates
@@ -17,15 +18,25 @@ class Settings
     /** @return array<string, mixed> */
     public static function all(): array
     {
-        if (! Schema::hasTable('settings')) {
+        // ⚠️ Lu AU BOOT (AppServiceProvider::applySettingsToConfig). La base peut
+        // ne pas exister encore - `composer install` lance `package:discover`
+        // avant la création du fichier SQLite en CI, et `Schema::hasTable()` lui-
+        // même lève alors une QueryException (fichier absent, pas juste la table).
+        // Sans base joignable, on repart des valeurs de config/.env : pas de
+        // surcharge, jamais une page ni une commande qui tombe.
+        try {
+            if (! Schema::hasTable('settings')) {
+                return [];
+            }
+
+            return Cache::rememberForever(self::CACHE_KEY, function () {
+                return Setting::all()
+                    ->mapWithKeys(fn (Setting $s) => [$s->key => json_decode((string) $s->value, true)])
+                    ->all();
+            });
+        } catch (Throwable) {
             return [];
         }
-
-        return Cache::rememberForever(self::CACHE_KEY, function () {
-            return Setting::all()
-                ->mapWithKeys(fn (Setting $s) => [$s->key => json_decode((string) $s->value, true)])
-                ->all();
-        });
     }
 
     public static function get(string $key, mixed $default = null): mixed
