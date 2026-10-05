@@ -76,11 +76,13 @@ class ConflictOfInterest
     /**
      * L'événement de cette soumission ignore-t-elle le conflit « même institution » ?
      * Réglage `edition.settings['options']['coi_ignore_same_institution']`, coché
-     * dans l'onglet Options de la fiche d'événement.
+     * dans l'onglet Options de la fiche d'événement. ⚠️ Défaut IGNORÉ (true) :
+     * la plateforme sert une université unique, où presque toutes les paires
+     * partagent l'institution - la règle n'a de sens que si on l'active.
      */
     public static function ignoresSameInstitution(Submission $submission): bool
     {
-        return (bool) ($submission->event?->settings['options']['coi_ignore_same_institution'] ?? false);
+        return (bool) ($submission->event?->settings['options']['coi_ignore_same_institution'] ?? true);
     }
 
     /**

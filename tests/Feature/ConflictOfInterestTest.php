@@ -8,6 +8,11 @@ use App\Support\ConflictOfInterest;
 function coiSubmission(array $authors, array $attrs = []): Submission
 {
     $event = openEdition();
+    // Ce fichier teste la DÉTECTION « même institution » ; le défaut de la
+    // plateforme est de l'ignorer (université unique), on l'active donc ici.
+    $event->update(['settings' => array_replace_recursive($event->settings ?? [], [
+        'options' => ['coi_ignore_same_institution' => false],
+    ])]);
 
     return $event->submissions()->create(array_merge([
         'title' => 'Étude sur la nutrition',

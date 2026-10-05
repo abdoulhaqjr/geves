@@ -519,7 +519,7 @@ class EventFormController extends Controller
             'main_language' => (string) ($s['main_language'] ?? 'Français'),
             // Soumissions : préfixe des références + attestations
             'ref_prefix_mode' => (string) ($s['ref_prefix_mode'] ?? 'global'),
-            'ref_prefix' => (string) ($s['ref_prefix'] ?? 'UKC-S-'),
+            'ref_prefix' => (string) ($s['ref_prefix'] ?? 'R-'),
             'attestation_max' => (int) ($s['attestation_max'] ?? 5),
             'coauthors_max' => (int) ($s['coauthors_max'] ?? 8),
             'gen_participation' => (bool) ($s['gen_participation'] ?? true),
@@ -538,7 +538,7 @@ class EventFormController extends Controller
             'opt_hybrid' => (bool) ($s['options']['hybrid'] ?? true),
             'opt_livret' => (bool) ($s['options']['livret'] ?? true),
             'opt_badges' => (bool) ($s['options']['badges'] ?? true),
-            'opt_coi_ignore_institution' => (bool) ($s['options']['coi_ignore_same_institution'] ?? false),
+            'opt_coi_ignore_institution' => (bool) ($s['options']['coi_ignore_same_institution'] ?? true),
         ];
 
         $committees = $event

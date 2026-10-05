@@ -160,7 +160,7 @@
                             </div>
                             <div class="ukc-form-grid">
                                 <div class="ukc-form-row">
-                                    <label for="event_label">Libellé d’événement</label>
+                                    <label for="event_label">Libellé de l’événement</label>
                                     <input type="text" id="event_label" name="event_label" x-model="f.event_label" placeholder="3e événement">
                                 </div>
                                 {{-- ⚠️ SANS L'ANNÉE : la barre collante de la page publique
@@ -173,13 +173,13 @@
                                 <div class="ukc-form-row">
                                     <label for="short_name">Nom court <span class="ukc-hint" style="display:inline;">(en-têtes, badges)</span></label>
                                     <input type="text" id="short_name" name="short_name" x-model="f.short_name" placeholder="Colloque Avenir durable">
-                                    <span class="ukc-hint" x-show="f.short_name" x-cloak>
+                                    <div class="ukc-hint" x-show="f.short_name" x-cloak>
                                         Sur la page publique : <strong x-text="f.short_name + (f.year ? ' · ' + f.year : '')"></strong>
-                                    </span>
-                                    <span class="ukc-hint" style="color:#b45309;" x-cloak
-                                          x-show="f.short_name && /(^|\s)(19|20)\d{2}\s*$/.test(f.short_name)">
+                                    </div>
+                                    <div class="ukc-hint" style="color:#b45309;" x-cloak
+                                         x-show="f.short_name && /(^|\s)(19|20)\d{2}\s*$/.test(f.short_name)">
                                         Le nom court finit déjà par une année : la barre du colloque en affichera deux.
-                                    </span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="ukc-form-row">
@@ -384,7 +384,7 @@
 
                         <div class="ukc-card">
                             <h2>Préfixe des références</h2>
-                            <div class="desc">Identifiants des soumissions (ex. UKC-S-0142).</div>
+                            <div class="desc">Identifiants des soumissions (ex. R-0142).</div>
                             <div class="ukc-form-row">
                                 <label for="ref_prefix_mode">Mode</label>
                                 <select id="ref_prefix_mode" name="ref_prefix_mode" x-model="refMode">
@@ -394,7 +394,7 @@
                             </div>
                             <div class="ukc-form-row" x-show="refMode==='global'">
                                 <label for="ref_prefix">Préfixe global</label>
-                                <input type="text" id="ref_prefix" name="ref_prefix" value="{{ $v('ref_prefix') }}" placeholder="UKC-S-">
+                                <input type="text" id="ref_prefix" name="ref_prefix" value="{{ $v('ref_prefix') }}" placeholder="R-">
                             </div>
                             <div x-show="refMode==='axis'" style="display:none;">
                                 <template x-for="(a, i) in axes" :key="i">
@@ -1182,9 +1182,16 @@
                 ...window.__editionArrays(cfg.arrays),
                 statusLabel() { return { draft:'Brouillon', open:'Soumissions ouvertes', closed:'Clôturée', archived:'Archivée' }[this.f.status] || '-'; },
                 statusLive() { return this.f.status === 'open'; },
+                fmtDate(d) {
+                    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || '');
+                    if (!m) return d || '';
+                    const mois = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+                    return (+m[3]) + ' ' + mois[(+m[2]) - 1] + ' ' + m[1];
+                },
                 datesLabel() {
-                    if (this.f.date_start && this.f.date_end) return this.f.date_start + ' → ' + this.f.date_end;
-                    return this.f.date_start || this.f.date_end || '-';
+                    const a = this.fmtDate(this.f.date_start), b = this.fmtDate(this.f.date_end);
+                    if (a && b) return a + ' → ' + b;
+                    return a || b || '-';
                 },
                 statsLabel() {
                     const s = (this.stats || []).filter(x => x.label || x.value);

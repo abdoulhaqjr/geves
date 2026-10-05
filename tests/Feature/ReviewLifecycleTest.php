@@ -268,29 +268,14 @@ it('enregistre le délai d’évaluation depuis l’onglet Évaluation', functio
     expect(ReviewGrid::dueDays($event->fresh()))->toBe(Review::DEFAULT_DUE_DAYS);
 });
 
-it('signale le conflit « même institution » par défaut', function () {
+it('ignore le conflit « même institution » par défaut', function () {
     $submission = seededSubmission();
     $submission->update(['authors' => [
         ['name' => 'Awa Kodjo', 'email' => 'awa@example.tg', 'affiliation' => 'Université de Kara', 'corresponding' => true],
     ]]);
 
-    $conflicts = ConflictOfInterest::check(
-        $submission->fresh(), 'Kossi Adjo', 'kossi@example.tg', 'Université de Kara'
-    );
-
-    expect(collect($conflicts)->pluck('label'))->toContain('Même institution');
-});
-
-it('ignore le conflit « même institution » quand l’événement le demande', function () {
-    $submission = seededSubmission();
-    $submission->update(['authors' => [
-        ['name' => 'Awa Kodjo', 'email' => 'awa@example.tg', 'affiliation' => 'Université de Kara', 'corresponding' => true],
-    ]]);
-    $event = $submission->event;
-    $event->update(['settings' => array_merge($event->settings ?? [], [
-        'options' => ['coi_ignore_same_institution' => true],
-    ])]);
-
+    // Défaut de la plateforme (université unique) : la règle « même
+    // institution » est ignorée tant qu'on ne l'active pas explicitement.
     $conflicts = ConflictOfInterest::check(
         $submission->fresh(), 'Kossi Adjo', 'kossi@example.tg', 'Université de Kara'
     );
@@ -302,6 +287,23 @@ it('ignore le conflit « même institution » quand l’événement le demande',
         $submission->fresh(), 'Awa Kodjo', 'awa@example.tg', 'Université de Kara'
     );
     expect(collect($asAuthor)->pluck('label'))->toContain('Auteur de la communication');
+});
+
+it('signale le conflit « même institution » quand l’événement le réactive', function () {
+    $submission = seededSubmission();
+    $submission->update(['authors' => [
+        ['name' => 'Awa Kodjo', 'email' => 'awa@example.tg', 'affiliation' => 'Université de Kara', 'corresponding' => true],
+    ]]);
+    $event = $submission->event;
+    $event->update(['settings' => array_replace_recursive($event->settings ?? [], [
+        'options' => ['coi_ignore_same_institution' => false],
+    ])]);
+
+    $conflicts = ConflictOfInterest::check(
+        $submission->fresh(), 'Kossi Adjo', 'kossi@example.tg', 'Université de Kara'
+    );
+
+    expect(collect($conflicts)->pluck('label'))->toContain('Même institution');
 });
 
 it('enregistre l’option depuis l’onglet Options de l’événement', function () {

@@ -357,11 +357,16 @@ Une relecture n'est plus un simple « assignée / rendue » : `Review::STATUSES`
   **disjoints** (à confirmer + à évaluer + évaluées + refusées = total) et barre
   de filtres identique aux listes admin. L'**e-mail d'invitation** annonce
   l'échéance et la possibilité de refuser.
-- **Conflit d'intérêts « même institution » désactivable** : case dans l'onglet
-  **Options** de la fiche d'édition (`settings['options']['coi_ignore_same_institution']`,
-  lue par `ConflictOfInterest::ignoresSameInstitution()`). Utile quand
-  l'événement est porté par une seule université - sinon la règle signale
-  presque toutes les paires. Les autres règles restent actives.
+- **Conflit d'intérêts « même institution » : IGNORÉ par défaut** (case cochée
+  dans l'onglet **Options** de la fiche d'édition,
+  `settings['options']['coi_ignore_same_institution']`, lue par
+  `ConflictOfInterest::ignoresSameInstitution()` - **défaut `true`**). La
+  plateforme sert une université unique : la règle signalerait presque toutes
+  les paires, elle n'a de sens que si on la **réactive** (décocher). Les autres
+  règles restent actives. ⚠️ Défaut à `true` **côté moteur ET côté formulaire** :
+  les deux doivent rester d'accord. Les tests qui veulent EXERCER la détection
+  « même institution » posent explicitement `coi_ignore_same_institution => false`
+  (cf. `ConflictOfInterestTest`, `ReviewLifecycleTest`).
 - **Kit Tailwise = les DEUX back-offices** : les cartes KPI (`.ukc-stats`,
   `.ukc-stat-card`, `.lbl`/`.val`/`.hint`), la barre de filtres (`.filter-bar`)
   et la taille compacte `.ukc-btn--sm` étaient scopées à `.admin-page` ; elles le
