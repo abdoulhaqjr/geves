@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Enums\EventType;
 use App\Http\Requests\Admin\SaveEventRequest;
 use App\Models\Event;
 use App\Models\EventSeries;
@@ -22,14 +23,20 @@ class SaveEvent
     {
         $data = $request->validated();
 
-        // Série de rattachement (existant ou nouveau).
+        // Série de rattachement (existant ou nouveau) et son TYPE (colloque,
+        // séminaire, journées scientifiques…). Le type est porté par la série.
+        $seriesType = $request->input('series_type') ?: EventType::Colloque->value;
         $colloqueId = $request->input('event_series_id') ?: null;
         if (trim((string) $request->input('new_colloque')) !== '') {
             $series = EventSeries::create([
                 'name' => $request->input('new_colloque'),
                 'slug' => $this->uniqueColloqueSlug(Str::slug((string) $request->input('new_colloque'))),
+                'type' => $seriesType,
             ]);
             $colloqueId = $series->id;
+        } elseif ($colloqueId && $request->filled('series_type')) {
+            // Série existante : on autorise la mise à jour de son type depuis la fiche.
+            EventSeries::whereKey($colloqueId)->update(['type' => $seriesType]);
         }
 
         // Axes : liste répétable (mockup) → tableau de chaînes, avec repli sur l'ancien textarea.

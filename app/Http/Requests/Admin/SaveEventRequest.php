@@ -2,10 +2,12 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Enums\EventType;
 use App\Support\EventArtwork;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Validation\Rule;
 
 /**
  * Validation de la fiche d'événement (création/mise à jour). En cas d'échec, on
@@ -25,6 +27,8 @@ class SaveEventRequest extends FormRequest
         return [
             'event_series_id' => ['nullable', 'exists:event_series,id'],
             'new_colloque' => ['nullable', 'string', 'max:200'],
+            // Type de la série (colloque, séminaire, journées scientifiques…).
+            'series_type' => ['nullable', Rule::enum(EventType::class)],
             'title' => ['required', 'string', 'max:255'],
             'event_label' => ['nullable', 'string', 'max:100'],
             'subtitle' => ['nullable', 'string', 'max:255'],

@@ -114,10 +114,10 @@
                     {{-- ===== GÉNÉRAL ===== --}}
                     <div class="ukc-panel" :class="{ active: tab==='general' }">
                         <div class="ukc-card">
-                            <h2>Colloque de rattachement</h2>
+                            <h2>Série de rattachement</h2>
                             <div class="ukc-form-grid">
                                 <div class="ukc-form-row">
-                                    <label for="event_series_id">Colloque existant</label>
+                                    <label for="event_series_id">Série existante</label>
                                     <select id="event_series_id" name="event_series_id">
                                         <option value="">- Choisir -</option>
                                         @foreach ($seriesList as $c)
@@ -127,9 +127,19 @@
                                     @error('event_series_id') <span class="error">{{ $message }}</span> @enderror
                                 </div>
                                 <div class="ukc-form-row">
-                                    <label for="new_colloque">…ou nouveau colloque</label>
+                                    <label for="new_colloque">…ou nouvelle série</label>
                                     <input type="text" id="new_colloque" name="new_colloque" value="{{ old('new_colloque') }}" placeholder="Nom de la nouvelle série">
                                     <p class="ukc-hint">Renseignez ceci uniquement pour créer une nouvelle série.</p>
+                                </div>
+                                <div class="ukc-form-row">
+                                    <label for="series_type">Type d’événement</label>
+                                    <select id="series_type" name="series_type">
+                                        @foreach (\App\Enums\EventType::options() as $value => $label)
+                                            <option value="{{ $value }}" @selected(old('series_type', $event?->series?->type?->value ?? 'colloque') === $value)>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                    <p class="ukc-hint">Porté par la série : colloque, séminaire, journées scientifiques… Toutes ses éditions en héritent.</p>
+                                    @error('series_type') <span class="error">{{ $message }}</span> @enderror
                                 </div>
                             </div>
                         </div>

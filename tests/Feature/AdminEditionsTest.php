@@ -103,7 +103,7 @@ it('crée une événement avec un nouveau colloque via le formulaire', function 
     expect($event)->not->toBeNull();
     // Après enregistrement, on reste sur la fiche de l'événement (pas de retour à la liste).
     $response->assertRedirect(route('admin.evenements.edit', $event));
-    expect($event->slug)->toBe('edition-inaugurale-2026');
+    expect($event->slug)->toBe('evenement-inaugurale-2026');
     expect($event->settings['tracks'])->toBe(['Axe A', 'Axe B']);
     expect((float) $event->settings['fees'][0]['amount'])->toBe(15000.0);
     expect(EventSeries::where('name', 'EventSeries test')->exists())->toBeTrue();
