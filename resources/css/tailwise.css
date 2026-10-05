@@ -373,6 +373,14 @@
     box-shadow: inset 0 0 0 1px var(--ukc-blue), 0 6px 18px rgba(34, 62, 164, .12);
 }
 
+/* Cartes de l'onglet Documents : l'icône est une pastille INLINE (icône + libellé
+   côte à côte), pas le badge d'angle des cartes stat. ⚠️ `tw-stat__icon` est en
+   `position: absolute` (top/right) ; sans position statique ici, l'icône s'échappe
+   de sa carte (non positionnée) et se pose dans le coin HAUT-DROIT de la page,
+   par-dessus l'avatar. La remettre dans le flux. */
+.ukc-shell .sec-doc-card { position: relative; }
+.ukc-shell .sec-doc-card .tw-stat__icon { position: static; top: auto; right: auto; }
+
 /* Puce de tendance ▲/▼ (variation vs période précédente). */
 .ukc-shell .tw-stat__trend {
     display: inline-flex; align-items: center; gap: 5px;

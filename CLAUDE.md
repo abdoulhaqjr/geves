@@ -2480,6 +2480,13 @@ Côté public (page colloque + Déroulement), les ateliers simultanés portent u
   - ⚠️ **La barre de `secretariat/print/_layout` est au bleu de la charte** (dégradé
     `--navy #14205a → --blue #223ea4`, comme les héros), pas l'ardoise. Bouton Imprimer
     en or charte.
+  - ⚠️ **`tw-stat__icon` est en `position: absolute`** (badge d'angle des cartes stat :
+    `top/right`). Dans une carte qui n'est **pas** `position: relative` (ici
+    `.sec-doc-card`), l'icône s'échappe vers le **coin haut-droit de la page** et se pose
+    par-dessus l'avatar - c'était le « carré gris » signalé. Toute carte réutilisant
+    `tw-stat__icon` en icône **inline** doit la repasser en `position: static` (cf. règle
+    `.sec-doc-card .tw-stat__icon` dans `tailwise.css`), ou poser `position: relative` sur
+    la carte.
 - **Secrétariat assisté** (`admin.secretariat.assistant` GET + `admin.secretariat.assist`
   POST, vue `admin/secretariat/assistant.blade.php`) = génération **IA** sur mesure
   (prompt/modèle joint), conservée pour les documents non standard. Presets
