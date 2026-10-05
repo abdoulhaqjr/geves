@@ -3,7 +3,9 @@
         <a href="{{ route('admin.secretariat') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">← Secrétariat</a>
     </x-slot:actions>
 
-    <div class="admin-page admin-program">
+    <div class="admin-page admin-program" x-data="{ open: false, cur: {} }">
+        @include('admin.secretariat._nav', ['current' => 'dashboard'])
+
         {{-- Sélecteur d'événement, comme partout ailleurs. --}}
         <div class="ukc-field" style="min-width:320px;max-width:460px;margin:0 0 14px;">
             <label for="event_id">Événement</label>
@@ -32,7 +34,7 @@
 
             @forelse ($sessions as $session)
                 @php($report = $session->report)
-                <div class="ukc-card" style="margin-bottom:14px;" x-data="{ edit: false }">
+                <div class="ukc-card" style="margin-bottom:14px;">
                     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
                         <div>
                             <h3 style="margin:0 0 4px;">{{ $session->label }}</h3>
@@ -58,7 +60,7 @@
                     </div>
 
                     @if ($report && (filled($report->summary) || filled($report->highlights) || $report->attendance !== null))
-                        <div x-show="!edit" style="margin-top:12px;border-top:1px solid var(--ukc-border);padding-top:12px;display:flex;flex-direction:column;gap:12px;">
+                        <div style="margin-top:12px;border-top:1px solid var(--ukc-border);padding-top:12px;display:flex;flex-direction:column;gap:12px;">
                             @if (filled($report->summary))
                                 <div>
                                     <div style="font-size:12px;font-weight:600;color:var(--ukc-muted);margin-bottom:4px;">Synthèse</div>
@@ -77,43 +79,58 @@
                         </div>
                     @endif
 
-                    {{-- Secrétariat : améliorer + valider (verrouille le rapporteur), ou rouvrir. --}}
+                    {{-- Secrétariat : améliorer + valider (panneau latéral), ou rouvrir. --}}
                     <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
-                        <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="edit = !edit">
-                            <x-ukc.icon name="pen" :size="15" /> <span x-text="edit ? 'Fermer' : '{{ $report && $report->isValidated() ? 'Améliorer' : 'Améliorer / valider' }}'"></span>
+                        <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm"
+                                @click="cur = {
+                                    action: '{{ route('admin.program.reports.save', $session) }}',
+                                    label: @js($session->label),
+                                    summary: @js((string) $report?->summary),
+                                    highlights: @js((string) $report?->highlights),
+                                    attendance: @js($report?->attendance),
+                                    validated: {{ $report && $report->isValidated() ? 'true' : 'false' }}
+                                }; open = true">
+                            <x-ukc.icon name="pen" :size="15" /> {{ $report && $report->isValidated() ? 'Améliorer' : 'Améliorer / valider' }}
                         </button>
                         @if ($report && $report->isValidated())
-                            <form method="POST" action="{{ route('admin.program.reports.reopen', $session) }}" onsubmit="return confirm('Rouvrir ce rapport au rapporteur ?')">
+                            <form method="POST" action="{{ route('admin.program.reports.reopen', $session) }}" data-confirm="Rouvrir ce rapport au rapporteur ?">
                                 @csrf
                                 <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="refresh" :size="15" /> Rouvrir au rapporteur</button>
                             </form>
                         @endif
                     </div>
-
-                    <form method="POST" action="{{ route('admin.program.reports.save', $session) }}" x-show="edit" x-cloak style="margin-top:12px;border-top:1px solid var(--ukc-border);padding-top:12px;display:flex;flex-direction:column;gap:12px;">
-                        @csrf
-                        <div class="ukc-field">
-                            <label>Synthèse de la séance</label>
-                            <textarea name="summary" rows="8">{{ $report?->summary }}</textarea>
-                        </div>
-                        <div class="ukc-field">
-                            <label>Points saillants & recommandations</label>
-                            <textarea name="highlights" rows="4">{{ $report?->highlights }}</textarea>
-                        </div>
-                        <div class="ukc-field" style="max-width:240px;">
-                            <label>Affluence estimée</label>
-                            <input type="number" name="attendance" min="0" value="{{ $report?->attendance }}">
-                        </div>
-                        <p style="font-size:12.5px;color:var(--ukc-muted);margin:0;">La validation enregistre vos modifications et <strong>verrouille</strong> le rapport : le rapporteur ne pourra plus le modifier.</p>
-                        <div>
-                            <button type="submit" class="ukc-btn ukc-btn--green"><x-ukc.icon name="check" :size="16" /> Valider le rapport</button>
-                        </div>
-                    </form>
                 </div>
             @empty
                 <div class="ukc-empty"><h3>Aucune séance</h3><p>Cet événement n'a pas encore de séance programmée.</p></div>
             @endforelse
 
+            {{-- ===== Panneau latéral : améliorer / valider un rapport ===== --}}
+            <x-ukc.slideover open="open" onClose="open=false" width="520px">
+                <x-slot:header><span x-text="cur.validated ? 'Améliorer le rapport' : 'Améliorer / valider le rapport'"></span></x-slot:header>
+
+                <form method="POST" :action="cur.action" id="reportForm" @submit="open=false" style="display:flex;flex-direction:column;gap:14px;">
+                    @csrf
+                    <div style="font-weight:700;" x-text="cur.label"></div>
+                    <div class="ukc-field">
+                        <label>Synthèse de la séance</label>
+                        <textarea name="summary" rows="10" x-model="cur.summary"></textarea>
+                    </div>
+                    <div class="ukc-field">
+                        <label>Points saillants & recommandations</label>
+                        <textarea name="highlights" rows="5" x-model="cur.highlights"></textarea>
+                    </div>
+                    <div class="ukc-field" style="max-width:220px;">
+                        <label>Affluence estimée</label>
+                        <input type="number" name="attendance" min="0" x-model="cur.attendance">
+                    </div>
+                    <p style="font-size:12.5px;color:var(--ukc-muted);margin:0;">La validation enregistre vos modifications et <strong>verrouille</strong> le rapport : le rapporteur ne pourra plus le modifier.</p>
+                </form>
+
+                <x-slot:footer>
+                    <button type="button" class="ukc-btn ukc-btn--ghost" @click="open=false">Annuler</button>
+                    <button type="submit" form="reportForm" class="ukc-btn ukc-btn--green"><x-ukc.icon name="check" :size="16" /> Valider le rapport</button>
+                </x-slot:footer>
+            </x-ukc.slideover>
         @endif
     </div>
 </x-layouts.admin>

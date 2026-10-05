@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\Concerns\ScopesEditionAccess;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\EventSession;
+use App\Models\Participant;
 use App\Support\EventReport;
 use App\Support\Settings;
 use App\Support\XlsxWriter;
@@ -63,6 +64,21 @@ class SecretariatController extends Controller
         ],
     ];
 
+    /**
+     * Documents logistiques standard de l'onglet « Documents », rendus en pages
+     * imprimables à partir des données réelles (sans IA). Chaque type a sa vue
+     * `secretariat/print/{type}` et quelques paramètres.
+     *
+     * @var array<string, array{label: string, icon: string, hint: string}>
+     */
+    public const PRINT_TYPES = [
+        'presence' => ['label' => 'Liste de présence', 'icon' => 'users', 'hint' => 'Participants de l’événement, avec colonne d’émargement.'],
+        'emargement' => ['label' => 'Feuille d’émargement', 'icon' => 'pen', 'hint' => 'Feuille à signer, en-tête séance/date à compléter.'],
+        'affiche' => ['label' => 'Affiche directionnelle', 'icon' => 'pin', 'hint' => 'Panneaux « Atelier → Salle » par salle, en gros.'],
+        'ordre_jour' => ['label' => 'Ordre du jour', 'icon' => 'calendar', 'hint' => 'Déroulé d’une journée : séances, horaires, salles, rôles.'],
+        'chevalets' => ['label' => 'Chevalets nominatifs', 'icon' => 'card', 'hint' => 'Cartes pliables nom + fonction (modérateurs, rapporteurs).'],
+    ];
+
     public function index(Request $request): View
     {
         $user = $request->user();
@@ -82,10 +98,6 @@ class SecretariatController extends Controller
             && (! $s->report || $s->report->status === 'draft'));
         $validated = $sessions->filter(fn (EventSession $s) => $s->report && $s->report->isValidated());
 
-        // Secrétariat assisté : événements où l'utilisateur peut produire des documents.
-        $docEditions = $user->accessibleEditions('documents');
-        $currentDoc = $docEditions->firstWhere('status', 'open') ?? $docEditions->first();
-
         return view('admin.secretariat', [
             'events' => $events,
             'toValidate' => $toValidate->values(),
@@ -96,10 +108,67 @@ class SecretariatController extends Controller
                 'validated' => $validated->count(),
                 'awaiting' => $awaiting->count(),
             ],
+        ]);
+    }
+
+    /**
+     * Onglet « Secrétariat assisté » (IA) : écran de génération de documents sur
+     * mesure à partir d'un prompt ou d'un modèle joint.
+     */
+    public function assistIndex(Request $request): View
+    {
+        $docEditions = $request->user()->accessibleEditions('documents');
+        $currentDoc = $docEditions->firstWhere('status', 'open') ?? $docEditions->first();
+
+        return view('admin.secretariat.assistant', [
             'docEditions' => $docEditions,
             'currentDocEditionId' => $currentDoc?->id,
             'presets' => self::PRESETS,
             'assistHistory' => array_slice((array) Settings::get('secretariat_ai_history', []), 0, 12),
+        ]);
+    }
+
+    /**
+     * Onglet « Documents » : documents logistiques standard (liste de présence,
+     * feuille d'émargement, affiche directionnelle, ordre du jour, chevalets),
+     * remplis à partir des données réelles de l'événement et imprimables - sans
+     * IA, en renseignant quelques paramètres (cf. {@see printDocument()}).
+     */
+    public function documents(Request $request): View
+    {
+        $events = $this->accessibleEditions($request, 'documents');
+        $eventId = $request->has('doc_event')
+            ? (string) $request->query('doc_event', '')
+            : $this->currentEditionId($events);
+        $event = $eventId !== '' ? $events->firstWhere('id', (int) $eventId) : null;
+
+        $sessions = $event
+            ? $event->sessions()->orderBy('starts_at')->orderBy('id')->get()
+            : collect();
+
+        return view('admin.secretariat.documents', [
+            'events' => $events,
+            'event' => $event,
+            'sessions' => $sessions,
+            'days' => $this->sessionDays($sessions),
+            'rooms' => $sessions->map(fn (EventSession $s) => trim((string) $s->room))->filter()->unique()->sort()->values(),
+            'types' => self::PRINT_TYPES,
+        ]);
+    }
+
+    /**
+     * Rendu imprimable d'un document logistique standard (nouvel onglet). Les
+     * paramètres (séance, jour, portée…) arrivent en query ; les données viennent
+     * de l'événement réel. La vue est autonome et déclenche l'impression.
+     */
+    public function printDocument(Request $request, Event $event, string $type): View
+    {
+        abort_unless($request->user()->canOnEdition('documents', $event), 403);
+        abort_unless(isset(self::PRINT_TYPES[$type]), 404);
+
+        return view('secretariat.print.'.$type, $this->printData($request, $event, $type) + [
+            'event' => $event,
+            'docTitle' => self::PRINT_TYPES[$type]['label'],
         ]);
     }
 
@@ -259,6 +328,84 @@ class SecretariatController extends Controller
         $history = (array) Settings::get('secretariat_ai_history', []);
         array_unshift($history, $entry);
         Settings::set('secretariat_ai_history', array_slice($history, 0, 30));
+    }
+
+    /**
+     * Jours distincts (dates ISO) couverts par les séances.
+     *
+     * @param  Collection<int, EventSession>  $sessions
+     * @return Collection<int, string>
+     */
+    protected function sessionDays(Collection $sessions): Collection
+    {
+        return $sessions
+            ->map(fn (EventSession $s) => $s->starts_at?->toDateString())
+            ->filter(fn (?string $d) => $d !== null)
+            ->unique()->sort()->values();
+    }
+
+    /**
+     * Données d'un document imprimable selon son type (sans IA, données réelles).
+     *
+     * @return array<string, mixed>
+     */
+    protected function printData(Request $request, Event $event, string $type): array
+    {
+        $sessions = $event->sessions()->orderBy('starts_at')->orderBy('id')->get();
+
+        if ($type === 'presence' || $type === 'emargement') {
+            return [
+                'participants' => Participant::where('event_id', $event->id)
+                    ->orderBy('last_name')->orderBy('first_name')->get(),
+                'note' => trim((string) $request->query('note', '')),
+                'extraRows' => max(0, min(40, (int) $request->query('extra', $type === 'emargement' ? '8' : '0'))),
+            ];
+        }
+
+        if ($type === 'ordre_jour') {
+            $days = $this->sessionDays($sessions);
+            $day = (string) $request->query('day', (string) $days->first());
+
+            return [
+                'day' => $day,
+                'sessions' => $sessions
+                    ->filter(fn (EventSession $s) => $s->starts_at && $s->starts_at->toDateString() === $day)
+                    ->values(),
+            ];
+        }
+
+        if ($type === 'affiche') {
+            $day = trim((string) $request->query('day', ''));
+            $scoped = $day !== ''
+                ? $sessions->filter(fn (EventSession $s) => $s->starts_at && $s->starts_at->toDateString() === $day)
+                : $sessions;
+
+            return [
+                'day' => $day,
+                'byRoom' => $scoped->filter(fn (EventSession $s) => trim((string) $s->room) !== '')
+                    ->groupBy(fn (EventSession $s) => trim((string) $s->room)),
+            ];
+        }
+
+        // chevalets
+        $who = in_array($request->query('who'), ['moderators', 'rapporteurs', 'both'], true)
+            ? (string) $request->query('who')
+            : 'both';
+
+        $people = collect();
+        foreach ($sessions as $s) {
+            if ($who !== 'rapporteurs' && filled($s->moderator_name)) {
+                $people->push(['name' => (string) $s->moderator_name, 'role' => 'Modérateur']);
+            }
+            if ($who !== 'moderators' && filled($s->rapporteur_name)) {
+                $people->push(['name' => (string) $s->rapporteur_name, 'role' => 'Rapporteur']);
+            }
+        }
+
+        return [
+            'who' => $who,
+            'people' => $people->unique(fn (array $p) => mb_strtolower($p['name']).'|'.$p['role'])->values(),
+        ];
     }
 
     /** Résumé texte du programme réel de l'événement (pour ancrer les documents). */

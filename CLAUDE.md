@@ -2426,6 +2426,39 @@ ateliers simultanés mais **jamais un même auteur sur deux créneaux qui se che
 Côté public (page colloque + Déroulement), les ateliers simultanés portent un badge
 **« En parallèle »**. Tests : `ProgramPlenaryExclusivityTest`.
 
+### Secrétariat = TROIS onglets portés par l'URL
+
+`SecretariatController` + `admin/secretariat/_nav.blade.php` (pilules `.ukc-nav-docs`,
+`['current' => …]`) :
+
+- **Rapports de séance** (`admin.secretariat`, vue `admin/secretariat.blade.php`) =
+  tableau de bord : file des rapports **à valider**, séances **en attente de rédaction**,
+  **récemment validés**.
+- **Documents** (`admin.secretariat.documents`, vue `admin/secretariat/documents.blade.php`)
+  = cinq documents logistiques **sans IA**, remplis depuis les données réelles et
+  **imprimables** : liste de présence, feuille d'émargement, affiche directionnelle,
+  ordre du jour, chevalets nominatifs. Sélecteur d'événement (`?doc_event=`), une carte
+  par document ouvrant un **slideover** de paramètres (quelques champs : séance/jour,
+  en-tête libre, lignes vierges, « pour qui »…). Le slideover est un `<form method="GET"
+  target="_blank">` vers **`admin.secretariat.documents.print` (`/…/{event}/{type}/imprimer`)**
+  qui rend une page autonome `secretariat/print/{type}.blade.php` (layout partagé
+  `_layout`, barre Imprimer/Fermer `window.print()`, `@media print`). Données par type :
+  `SecretariatController::printData()` (participants, séances du jour, salles groupées,
+  modérateurs/rapporteurs distincts). Types + libellés : `SecretariatController::PRINT_TYPES`.
+  ⚠️ Ces documents sont des **pages HTML imprimables** (pas de dompdf) : rapides,
+  déterministes. Tests : `SecretariatDocumentsTest`.
+- **Secrétariat assisté** (`admin.secretariat.assistant` GET + `admin.secretariat.assist`
+  POST, vue `admin/secretariat/assistant.blade.php`) = génération **IA** sur mesure
+  (prompt/modèle joint), conservée pour les documents non standard. Presets
+  `SecretariatController::PRESETS`.
+- **`/secretariat/rapports`** (`admin.secretariat.reports`) : lecture / amélioration /
+  validation d'un rapport. ⚠️ Le formulaire « Améliorer / valider » s'ouvre dans un
+  **slideover latéral** (comme « Nouvelle tâche » du Projet) : état Alpine
+  `{ open, cur }` au niveau de la page, chaque carte pose `cur` (action + valeurs) et
+  `open=true` ; un seul `<x-ukc.slideover>` avec un `<form :action="cur.action">`
+  (bouton *Valider* dans le pied via `form=`). Ne pas revenir au formulaire déplié en
+  ligne. La validation reste `admin.program.reports.save` (verrouille le rapporteur).
+
 ### Architecture & sécurité
 
 - **RBAC à deux niveaux** : staff `User` global (spatie/permission) vs `Participant`

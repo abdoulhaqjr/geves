@@ -304,6 +304,11 @@ Route::prefix('admin')->group(function () {
         Route::get('/secretariat', [SecretariatController::class, 'index'])->name('admin.secretariat');
         // Rapports de séance : lecture, amélioration et validation - métier du secrétariat.
         Route::get('/secretariat/rapports', [SecretariatController::class, 'reports'])->name('admin.secretariat.reports');
+        // Onglet Documents : formulaires + impression des documents logistiques.
+        Route::get('/secretariat/documents', [SecretariatController::class, 'documents'])->name('admin.secretariat.documents');
+        Route::get('/secretariat/documents/{event}/{type}/imprimer', [SecretariatController::class, 'printDocument'])->name('admin.secretariat.documents.print');
+        // Onglet Secrétariat assisté (IA) : écran de génération.
+        Route::get('/secretariat/assistant', [SecretariatController::class, 'assistIndex'])->name('admin.secretariat.assistant');
         Route::get('/reclamations', [ClaimController::class, 'index'])->name('admin.claims.index');
         Route::get('/reclamations/{claim}', [ClaimController::class, 'show'])->name('admin.claims.show');
         Route::post('/reclamations/{claim}/statut', [ClaimController::class, 'updateStatus'])->name('admin.claims.status');
