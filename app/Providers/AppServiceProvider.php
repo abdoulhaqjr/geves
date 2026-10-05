@@ -30,7 +30,6 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->applySettingsToConfig();
         $this->limiteLeFilDeVisio();
-        $this->limiteLeSuiviDesAttestations();
 
         // Pagination sur la charte graphique (composant UKC/Tailwise) partout.
         Paginator::defaultView('vendor.pagination.ukc');
@@ -134,22 +133,6 @@ class AppServiceProvider extends ServiceProvider
 
         // Réagir : le geste est plus léger, et se pose puis se retire.
         RateLimiter::for('visio-reaction', fn (Request $request) => Limit::perMinute(60)->by('vreac:'.$qui($request)));
-    }
-
-    /**
-     * Débit des gestes déclarés par la page d'une attestation.
-     *
-     * ⚠️ **Ici la clé EST l'adresse IP**, à l'inverse du fil de visio : il n'y a
-     * pas de compte derrière un lien d'attestation partagé à un recruteur, et
-     * c'est justement le visiteur anonyme qu'on borne. Une poignée de gestes
-     * suffit à un titulaire qui partage son document ; au-delà, quelqu'un gonfle
-     * les compteurs d'une attestation nominative, et ce que lit le gestionnaire
-     * ne vaudrait plus rien.
-     */
-    private function limiteLeSuiviDesAttestations(): void
-    {
-        RateLimiter::for('attestation-trail', fn (Request $request) => Limit::perMinute(20)
-            ->by('atrail:'.(string) $request->ip()));
     }
 
     private function applySettingsToConfig(): void

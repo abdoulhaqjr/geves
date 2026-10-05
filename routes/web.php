@@ -156,11 +156,6 @@ Route::post('/association/{token}', [AuthorLinkController::class, 'decline'])->n
 // s'y écrit via « verification.json »). « /verifier » n'est qu'une saisie de code.
 Route::get('/attestation/{uuid}', [AttestationController::class, 'document'])->name('attestation.document');
 Route::get('/attestation/{uuid}/pdf', [AttestationController::class, 'pdf'])->name('attestation.pdf');
-// Gestes posés DANS la page (partage abouti, lien copié, départ vers LinkedIn) :
-// le serveur ne peut pas les voir, la page les déclare. ⚠️ Débit limité : adresse
-// publique sur un document nominatif (cf. AppServiceProvider).
-Route::post('/attestation/{uuid}/trace', [AttestationController::class, 'trace'])
-    ->middleware('throttle:attestation-trail')->name('attestation.trace');
 Route::get('/attestation/{uuid}/credential.json', [AttestationController::class, 'credential'])->name('attestation.credential');
 Route::get('/attestation/{uuid}/verification.json', [AttestationController::class, 'verifyJson'])->name('attestation.verify.json');
 Route::get('/verifier', [AttestationController::class, 'verifyLanding'])->name('attestation.verify.landing');

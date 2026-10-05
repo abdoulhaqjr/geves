@@ -6,7 +6,6 @@ use App\Observers\AttestationObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -19,13 +18,6 @@ use Illuminate\Support\Carbon;
  * @property string|null $credential
  * @property string|null $key_id
  * @property Carbon|null $signed_at
- * @property Carbon|null $acknowledged_at
- * @property Carbon|null $first_viewed_at
- * @property Carbon|null $last_viewed_at
- * @property int $views_count
- * @property Carbon|null $shared_at
- * @property int $shares_count
- * @property Carbon|null $linkedin_at
  */
 #[ObservedBy([AttestationObserver::class])]
 class Attestation extends Model
@@ -79,24 +71,6 @@ class Attestation extends Model
             ?: (string) $this->formation?->title;
     }
 
-    /**
-     * Le TITULAIRE a-t-il accusé réception ?
-     *
-     * ⚠️ Pas « quelqu'un l'a ouverte » : le lien d'une attestation circule, et
-     * l'ouverture d'un recruteur n'est pas une réception. Seul le titulaire
-     * connecté à son espace pose cet accusé (cf. RecordAttestationEvent).
-     */
-    public function isAcknowledged(): bool
-    {
-        return $this->acknowledged_at !== null;
-    }
-
-    /** L'attestation a-t-elle été ouverte en ligne, par qui que ce soit hors staff ? */
-    public function wasOpened(): bool
-    {
-        return $this->first_viewed_at !== null;
-    }
-
     /** L'attestation porte-t-elle une signature cryptographique ? */
     public function isSigned(): bool
     {
@@ -111,11 +85,6 @@ class Attestation extends Model
             'issued_at' => 'datetime',
             'delivered_at' => 'datetime',
             'signed_at' => 'datetime',
-            'acknowledged_at' => 'datetime',
-            'first_viewed_at' => 'datetime',
-            'last_viewed_at' => 'datetime',
-            'shared_at' => 'datetime',
-            'linkedin_at' => 'datetime',
         ];
     }
 
@@ -136,16 +105,6 @@ class Attestation extends Model
     public function submission(): BelongsTo
     {
         return $this->belongsTo(Submission::class);
-    }
-
-    /**
-     * Journal de vie de l'attestation : ouvertures, partages, départ LinkedIn.
-     *
-     * @return HasMany<AttestationEvent, $this>
-     */
-    public function events(): HasMany
-    {
-        return $this->hasMany(AttestationEvent::class);
     }
 
     /** Formation concernée (attestations de formation / animation ; sinon null). */

@@ -586,15 +586,12 @@ class DocumentHubController extends Controller
         $type = (string) $request->query('type', '');
         $state = (string) $request->query('state', '');
         $delivery = (string) $request->query('delivery', '');
-        $trail = (string) $request->query('trail', '');
         $search = trim((string) $request->query('search', ''));
         $from = (string) $request->query('from', '');
         $to = (string) $request->query('to', '');
         $sort = ListSort::resolve(
             $request,
-            // ⚠️ `last_viewed_at` est triable : « les dernières ouvertes » et
-            // « celles qui dorment » sont les deux bouts de la même liste.
-            ['recipient_name', 'type', 'uuid', 'issued_at', 'revoked', 'delivered_at', 'last_viewed_at'],
+            ['recipient_name', 'type', 'uuid', 'issued_at', 'revoked', 'delivered_at'],
             'issued_at',
             'desc'
         );
@@ -612,16 +609,9 @@ class DocumentHubController extends Controller
             // guichet, et elle n'a de sens que sur les attestations valides.
             'delivered' => Attestation::where('edition_id', $edition->id)->whereNotNull('delivered_at')->count(),
             'pending' => Attestation::where('edition_id', $edition->id)->where('revoked', false)->whereNull('delivered_at')->count(),
-            // ⚠️ **Délivrer n'est pas être reçu.** Une attestation en ligne émise,
-            // notifiée et jamais ouverte était indiscernable d'une attestation
-            // lue et partagée : « jamais ouverte » est le compteur qui déclenche
-            // une relance, et il ne vaut que sur les attestations valides.
-            'unopened' => Attestation::where('edition_id', $edition->id)->where('revoked', false)->whereNull('first_viewed_at')->count(),
-            'acknowledged' => Attestation::where('edition_id', $edition->id)->where('revoked', false)->whereNotNull('acknowledged_at')->count(),
             'byType' => Attestation::where('edition_id', $edition->id)->where('revoked', false)
                 ->selectRaw('type, count(*) as c')->groupBy('type')->pluck('c', 'type'),
-        ] : ['total' => 0, 'valid' => 0, 'revoked' => 0, 'delivered' => 0, 'pending' => 0,
-            'unopened' => 0, 'acknowledged' => 0, 'byType' => collect()];
+        ] : ['total' => 0, 'valid' => 0, 'revoked' => 0, 'delivered' => 0, 'pending' => 0, 'byType' => collect()];
 
         return [
             'issued' => $issued,
@@ -629,7 +619,6 @@ class DocumentHubController extends Controller
             'type' => $type,
             'state' => $state,
             'delivery' => $delivery,
-            'trail' => $trail,
             // Reportés tels quels sur les liens d'export : ils doivent porter sur
             // le même ensemble que la liste affichée.
             'exportParams' => AttestationQuery::params($request),
