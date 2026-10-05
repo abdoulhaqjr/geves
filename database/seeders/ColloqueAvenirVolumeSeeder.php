@@ -10,6 +10,7 @@ use App\Models\Payment;
 use App\Models\Review;
 use App\Models\Slot;
 use App\Models\Submission;
+use App\Models\SubmissionAuthor;
 use App\Models\User;
 use App\Support\Fees;
 use App\Support\ParticipantTypes;
@@ -43,6 +44,20 @@ class ColloqueAvenirVolumeSeeder extends Seeder
 
     /** Part des communications dont les frais sont encaissés ET validés. */
     private const PAID_RATIO = 0.93;
+
+    /**
+     * Communications attendues au MINIMUM dans chaque séance d'atelier.
+     *
+     * ⚠️ C'est ce nombre qui dicte le nombre de blocs, pas l'inverse : une séance
+     * de 3 h tient 6 communications de 30 min, et 130 communications acceptées
+     * réparties sur plus de 26 séances en laisseraient à 3 ou 4. Une séance à
+     * trois communications ne démontre ni la modération, ni le rapportage, ni le
+     * passage en salle - elle se vide avant d'avoir commencé.
+     */
+    private const MIN_PAR_SEANCE = 5;
+
+    /** Co-auteurs inscrits ajoutés à chaque communication. */
+    private const COAUTEURS = [37, 83];
 
     /** Répartition des statuts (le reste bascule en « accepted »). */
     private const STATUS_MIX = [
@@ -102,10 +117,15 @@ class ColloqueAvenirVolumeSeeder extends Seeder
 
         $slotCursor = [];
         $created = 0;
+        // Rang de planification : il tourne sur les séances pour que la charge se
+        // répartisse à l'unité près (cf. schedule()).
+        $place = 0;
+        /** @var array<int, array<string, mixed>> $roster */
+        $roster = [];
 
         DB::transaction(function () use (
             $edition, $tracks, $grades, $recorder, $sessions,
-            $statuses, $paidFlags, &$slotCursor, &$created
+            $statuses, $paidFlags, &$slotCursor, &$created, &$place, &$roster
         ) {
             for ($i = 0; $i < self::TOTAL; $i++) {
                 $n = $i + 1;
@@ -119,6 +139,15 @@ class ColloqueAvenirVolumeSeeder extends Seeder
                 $institution = self::INSTITUTIONS[$i % count(self::INSTITUTIONS)];
                 $track = $tracks[$i % max(1, $tracks->count())] ?? '';
 
+                // ⚠️ `users.phone` est UNIQUE, et un compte semé peut avoir été
+                // renommé à la main en base de développement : il garde alors ce
+                // numéro, et l'insertion du compte attendu échoue sur la
+                // contrainte. Tout le scénario étant dans une transaction, c'est
+                // 200 communications qui ne seraient PAS semées, pour un numéro de
+                // téléphone fictif. On sème donc le compte sans numéro.
+                $phone = sprintf('+2289%06d', 100000 + $n);
+                $phonePris = User::where('phone', $phone)->where('email', '!=', $email)->exists();
+
                 $user = User::updateOrCreate(
                     ['email' => $email],
                     [
@@ -130,8 +159,7 @@ class ColloqueAvenirVolumeSeeder extends Seeder
                         'access_level' => User::ACCESS_USER,
                         'affiliation' => $institution,
                         'grade' => $grade,
-                        // ⚠️ `users.phone` est unique : un numéro par auteur.
-                        'phone' => sprintf('+2289%06d', 100000 + $n),
+                        'phone' => $phonePris ? null : $phone,
                     ]
                 );
 
@@ -165,6 +193,10 @@ class ColloqueAvenirVolumeSeeder extends Seeder
                     ]
                 );
                 $created++;
+                $roster[$i] = [
+                    'user' => $user, 'submission' => $submission,
+                    'name' => $first.' '.$last, 'email' => $email, 'affiliation' => $institution,
+                ];
 
                 if ($isPaid) {
                     $this->payManually($edition, $participant, $recorder, $n);
@@ -172,7 +204,7 @@ class ColloqueAvenirVolumeSeeder extends Seeder
 
                 // Communication acceptée : on lui réserve un créneau.
                 if ($status === 'accepted') {
-                    $this->schedule($edition, $sessions, $participant, $submission, $slotCursor);
+                    $this->schedule($edition, $sessions, $participant, $submission, $slotCursor, $place);
                 }
 
                 // Communications en cours d'évaluation : relectures confiées.
@@ -181,6 +213,10 @@ class ColloqueAvenirVolumeSeeder extends Seeder
                 }
             }
         });
+
+        // Co-auteurs : en SECONDE PASSE, une fois les 200 comptes créés - une
+        // communication ne peut citer que des gens qui existent déjà.
+        $liens = $this->attachCoauthors($edition, $roster);
 
         // ⚠️ On compte les paiements DU SCÉNARIO : l'édition en portait déjà
         // quelques-uns (cf. ColloqueAvenirSeeder), et les additionner donnerait
@@ -192,11 +228,26 @@ class ColloqueAvenirVolumeSeeder extends Seeder
             ->where('gateway', 'manual')->where('status', 'paid')->count();
 
         $this->command?->info(sprintf(
-            '%d communications sur « %s » · %d paiements validés manuellement (%.1f %%).',
+            '%d communications sur « %s » · %d paiements validés manuellement (%.1f %%) · %d liens d’auteurs.',
             $created,
             $edition->title,
             $paid,
             $created > 0 ? $paid / $created * 100 : 0,
+            $liens,
+        ));
+
+        // ⚠️ On DIT ce qu'on a produit : la règle « %d communications minimum par
+        // séance » est une demande explicite, et un plan qui dérive doit se voir
+        // au moment du seed, pas trois écrans plus loin.
+        $parSeance = $sessions->map(fn (EventSession $seance) => Slot::where('session_id', $seance->id)
+            ->where('submission_id', '>', 0)->count());
+
+        $this->command?->info(sprintf(
+            '%d séances d’atelier, toutes en visioconférence · %d à %d communications par séance (minimum visé : %d).',
+            $sessions->count(),
+            $parSeance->min() ?? 0,
+            $parSeance->max() ?? 0,
+            self::MIN_PAR_SEANCE,
         ));
     }
 
@@ -268,14 +319,20 @@ class ColloqueAvenirVolumeSeeder extends Seeder
      * Séances d'accueil des communications : 6 ateliers (une salle chacun, en
      * parallèle) sur une série de blocs matin/après-midi. Les blocs sont calés
      * HORS des fenêtres des plénières (cf. {@see ColloqueAvenirSeeder::buildPlenaries()} :
-     * inauguration ven. 02/10 matin, table ronde lun. 05/10 matin, formation
-     * mar. 06/10 après-midi, clôture jeu. 08/10 matin), afin que l'exclusivité des
-     * plénières soit respectée et qu'aucun conflit de salle n'apparaisse. Sept
-     * blocs × 6 ateliers = 42 séances de 3 h : largement assez de créneaux de
-     * 30 min pour les communications acceptées.
+     * inauguration lun. 05/10 matin, table ronde mer. 07/10 matin, formation
+     * jeu. 08/10 après-midi, clôture ven. 09/10 matin), afin que l'exclusivité des
+     * plénières soit respectée et qu'aucun conflit de salle n'apparaisse.
      *
-     * Deux de ces blocs se tiennent **à distance** (visio programmée) : c'est là
-     * que se trouve le volume de créneaux en visioconférence.
+     * ⚠️ **Le NOMBRE de blocs se déduit du minimum par séance, pas du calendrier.**
+     * 130 communications acceptées sur 7 blocs × 6 ateliers = 42 séances en
+     * laissaient 3 par séance : une séance à trois communications ne démontre ni
+     * la modération, ni le rapportage, ni le passage en salle. À 4 blocs × 6 =
+     * **24 séances**, chacune en porte 5 ou 6 - et 6 × 30 min remplit exactement
+     * le bloc de 3 h. Ajouter un cinquième bloc redescendrait à 4 par séance.
+     *
+     * ⚠️ **Toutes les séances ont la visioconférence** (`scheduled`) : une
+     * édition où seuls deux blocs l'ouvraient ne permettait pas de vérifier la
+     * salle depuis n'importe quelle communication du programme.
      *
      * @param  Collection<int, Atelier>  $ateliers
      * @return Collection<int, EventSession>
@@ -285,22 +342,20 @@ class ColloqueAvenirVolumeSeeder extends Seeder
         $start = $edition->date_start ? Carbon::parse($edition->date_start) : Carbon::now()->startOfDay();
         $sessions = collect();
 
-        // [décalage en jours, h début, min début, h fin, min fin, visio]
-        // ⚠️ Un bloc par jour au moins : l'édition court du 2 au 8 octobre, et un
-        // jour sans rien au milieu du programme se lit comme un trou de données.
-        // Le dernier jour (J+6) n'en porte pas : c'est la matinée de clôture.
+        // [décalage en jours, h début, min début, h fin, min fin]
+        // ⚠️ Un bloc par jour : l'édition court du 5 au 9 octobre, et un jour sans
+        // rien au milieu du programme se lit comme un trou de données. Le dernier
+        // jour (J+4) n'en porte pas : c'est la matinée de clôture, et la plénière
+        // l'occupe - aucun jour ne reste vide pour autant.
         $blocks = [
-            [0, 14, 0, 17, 0, false],  // ven. 02/10 : après-midi (matin = inauguration)
-            [1, 8, 30, 11, 30, false], // sam. 03/10 : matin
-            [1, 14, 0, 17, 0, true],   // sam. 03/10 : après-midi - séances à distance
-            [2, 8, 30, 11, 30, false], // dim. 04/10 : matin
-            [3, 14, 0, 17, 0, true],   // lun. 05/10 : après-midi (matin = table ronde)
-            [4, 8, 30, 11, 30, false], // mar. 06/10 : matin (après-midi = formation)
-            [5, 8, 30, 11, 30, false], // mer. 07/10 : matin
+            [0, 14, 0, 17, 0],  // lun. 05/10 : après-midi (matin = séance inaugurale)
+            [1, 8, 30, 11, 30], // mar. 06/10 : matin
+            [2, 14, 0, 17, 0],  // mer. 07/10 : après-midi (matin = table ronde)
+            [3, 8, 30, 11, 30], // jeu. 08/10 : matin (après-midi = formation)
         ];
 
         foreach ($ateliers as $a => $atelier) {
-            foreach ($blocks as $b => [$day, $sh, $sm, $eh, $em, $visio]) {
+            foreach ($blocks as $b => [$day, $sh, $sm, $eh, $em]) {
                 $begin = (clone $start)->addDays($day)->setTime($sh, $sm);
                 $finish = (clone $start)->addDays($day)->setTime($eh, $em);
 
@@ -317,44 +372,172 @@ class ColloqueAvenirVolumeSeeder extends Seeder
                         'ends_at' => $finish,
                         'room' => 'Salle '.($a + 1),
                         'ordre' => $a * 10 + $b,
-                        // Deux blocs entiers se tiennent à distance : ce sont eux qui
-                        // portent le VOLUME de créneaux en visio (les communications
-                        // y sont planifiées comme ailleurs, cf. schedule()).
+                        // ⚠️ **Toutes les séances ouvrent une salle.** Deux blocs
+                        // seulement la portaient : on ne pouvait pas vérifier la visio
+                        // depuis une communication prise au hasard du programme.
                         // ⚠️ Fournisseur NON forcé : il suit `meetings.default`.
                         'meeting_provider' => null,
-                        'meeting_status' => $visio ? 'scheduled' : 'none',
+                        'meeting_status' => 'scheduled',
                         'meeting_visibility' => 'participants',
                     ]
                 ));
             }
         }
 
+        // ⚠️ **Le plan peut RÉTRÉCIR** (il est passé de 7 blocs à 4). `updateOrCreate`
+        // ne sait que créer ou mettre à jour : rejoué sur une base déjà semée, il
+        // laisserait en place les séances des blocs disparus. Les communications
+        // resteraient étalées sur 42 séances, la règle « 5 au minimum » serait
+        // fausse, et rien ne le signalerait. On retire donc les séances d'atelier
+        // de CE seeder qui ne sont plus au plan, et leurs créneaux avec elles -
+        // `slots.session_id` n'a pas de clé étrangère, ils survivraient orphelins.
+        $perimees = EventSession::where('edition_id', $edition->id)
+            ->where('label', 'like', '% - séance %')
+            ->whereNotIn('id', $sessions->pluck('id'))
+            ->pluck('id');
+
+        if ($perimees->isNotEmpty()) {
+            Slot::whereIn('session_id', $perimees)->delete();
+            EventSession::whereIn('id', $perimees)->delete();
+        }
+
         return $sessions;
     }
 
     /**
-     * Place la communication sur le prochain créneau libre de la séance de son
-     * atelier (30 min par communication, à la suite).
+     * **Co-auteurs des communications.**
+     *
+     * ⚠️ **Le scénario n'en portait AUCUN** : 200 communications, un seul auteur
+     * chacune. Rien n'éprouvait la liaison auteurs ↔ comptes, « Mes
+     * communications » chez quelqu'un qui n'a rien déposé, les plafonds de
+     * co-auteurs attestés (`coauthors_max`), ni la porte d'entrée des co-auteurs.
+     * Une communication scientifique sans co-auteur est l'exception, pas la règle.
+     *
+     * ⚠️ **On n'appelle PAS `LinkSubmissionAuthors`** : cette action NOTIFIE - un
+     * e-mail et un SMS par co-auteur rapproché. Six cents envois pour un seed. Un
+     * seeder pose l'ÉTAT FINAL, il ne rejoue pas le processus ; les lignes
+     * produites ici ont exactement la forme que l'action leur aurait donnée.
+     *
+     * Deux co-auteurs INSCRITS (pris parmi les autres auteurs du scénario) et,
+     * une communication sur trois, un co-auteur NON inscrit resté « invité » :
+     * c'est lui qui donne de la matière à l'association différée
+     * (`LinkPendingAuthorships`, au moment où la personne crée son compte).
+     *
+     * @param  array<int, array<string, mixed>>  $roster
+     */
+    private function attachCoauthors(Edition $edition, array $roster): int
+    {
+        $total = count($roster);
+
+        if ($total === 0) {
+            return 0;
+        }
+
+        $liens = 0;
+
+        foreach ($roster as $i => $ligne) {
+            /** @var Submission $submission */
+            $submission = $ligne['submission'];
+
+            $auteurs = [[
+                'name' => $ligne['name'],
+                'email' => $ligne['email'],
+                'affiliation' => $ligne['affiliation'],
+                'corresponding' => true,
+            ]];
+            $etats = [['role' => 'corresponding', 'user' => $ligne['user']->id, 'match' => 'self', 'status' => 'linked']];
+
+            // ⚠️ 37 et 83 sont premiers avec 200 : chaque auteur se retrouve
+            // co-auteur de deux AUTRES communications, sans grappe ni doublon, et
+            // jamais co-auteur de la sienne.
+            foreach (self::COAUTEURS as $pas) {
+                $co = $roster[($i + $pas) % $total];
+                $auteurs[] = [
+                    'name' => $co['name'],
+                    'email' => $co['email'],
+                    'affiliation' => $co['affiliation'],
+                    'corresponding' => false,
+                ];
+                $etats[] = ['role' => 'coauthor', 'user' => $co['user']->id, 'match' => 'email', 'status' => 'linked'];
+            }
+
+            // Une communication sur trois cite quelqu'un qui n'a pas de compte.
+            if (($i + 1) % 3 === 0) {
+                $auteurs[] = [
+                    'name' => self::FIRST_NAMES[($i + 5) % count(self::FIRST_NAMES)]
+                        .' '.self::LAST_NAMES[($i + 3) % count(self::LAST_NAMES)],
+                    'email' => sprintf('coauteur-externe%03d@example.org', $i + 1),
+                    'affiliation' => 'Laboratoire associé (hors plateforme)',
+                    'corresponding' => false,
+                ];
+                $etats[] = ['role' => 'coauthor', 'user' => null, 'match' => null, 'status' => 'invited'];
+            }
+
+            $submission->update(['authors' => $auteurs]);
+
+            foreach ($etats as $index => $etat) {
+                SubmissionAuthor::updateOrCreate(
+                    ['submission_id' => $submission->id, 'author_index' => $index],
+                    [
+                        'edition_id' => $edition->id,
+                        'user_id' => $etat['user'],
+                        'role' => $etat['role'],
+                        'name' => $auteurs[$index]['name'],
+                        'email' => $auteurs[$index]['email'],
+                        'affiliation' => $auteurs[$index]['affiliation'],
+                        'match_type' => $etat['match'],
+                        'status' => $etat['status'],
+                        'notified_at' => $etat['status'] === 'linked' && $etat['match'] !== 'self' ? now() : null,
+                        'invited_at' => $etat['status'] === 'invited' ? now() : null,
+                        // ⚠️ Jeton DÉTERMINISTE : il porte le lien de déclinaison, et
+                        // un `Str::random()` le changerait à chaque rejeu - les liens
+                        // déjà envoyés en démonstration tomberaient en 404.
+                        'token' => substr(hash('sha256', 'avd-auteur:'.$submission->id.':'.$index), 0, 48),
+                    ]
+                );
+                $liens++;
+            }
+        }
+
+        return $liens;
+    }
+
+    /**
+     * Place la communication sur le prochain créneau libre de la séance suivante
+     * (30 min par communication, à la suite).
+     *
+     * ⚠️ **La séance se choisit au TOUR DE RÔLE, pas par `id % n`.** Le modulo de
+     * l'identifiant répartissait les communications ACCEPTÉES - une sur trois,
+     * aux identifiants non contigus - et laissait des séances à 3 quand d'autres
+     * en avaient 8. Un rang qui tourne garantit l'écart d'une unité au plus entre
+     * la séance la plus chargée et la moins chargée : c'est ce qui fait tenir
+     * `MIN_PAR_SEANCE`.
+     *
+     * ⚠️ **Le créneau est identifié par sa COMMUNICATION**, pas par le couple
+     * séance + communication : une communication se présente une fois. Avec
+     * l'ancienne clé, un plan modifié créait un SECOND créneau au lieu de
+     * déplacer le premier, et la communication apparaissait dans deux séances.
      *
      * @param  Collection<int, EventSession>  $sessions
      * @param  array<int, int>  $cursor
      */
-    private function schedule(Edition $edition, $sessions, Participant $participant, Submission $submission, array &$cursor): void
+    private function schedule(Edition $edition, $sessions, Participant $participant, Submission $submission, array &$cursor, int &$place): void
     {
         if ($sessions->isEmpty()) {
             return;
         }
 
-        $session = $sessions[$submission->id % $sessions->count()];
+        $session = $sessions[$place % $sessions->count()];
+        $place++;
         $rank = $cursor[$session->id] ?? 0;
         $cursor[$session->id] = $rank + 1;
 
         $starts = $session->starts_at ? (clone $session->starts_at)->addMinutes(30 * $rank) : null;
 
         Slot::updateOrCreate(
-            ['session_id' => $session->id, 'submission_id' => $submission->id],
+            ['edition_id' => $edition->id, 'submission_id' => $submission->id],
             [
-                'edition_id' => $edition->id,
+                'session_id' => $session->id,
                 'session_label' => $session->label,
                 'room' => $session->room,
                 'starts_at' => $starts,

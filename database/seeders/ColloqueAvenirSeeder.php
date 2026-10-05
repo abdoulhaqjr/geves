@@ -15,6 +15,7 @@ use App\Models\SessionQuestion;
 use App\Models\SessionReport;
 use App\Models\Slot;
 use App\Models\Submission;
+use App\Models\SubmissionAuthor;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -23,11 +24,12 @@ use Illuminate\Support\Str;
 
 /**
  * Colloque de test « Innover pour un avenir durable » (VIIIe colloque conjoint
- * Parakou-Kara). Dates calées AUTOUR D'AUJOURD'HUI (colloque « en cours » de
- * 4 jours, hier → +2 j) pour tester le déroulement en direct : la 1re session
- * est marquée « live ». Crée l'édition, ses 6 ateliers et sessions, des
- * modérateurs et rapporteurs de test, et des communicants avec des
- * communications acceptées planifiées. Idempotent.
+ * Parakou-Kara). Dates FIXES : du **5 au 9 octobre 2026** (lundi → vendredi).
+ * ⚠️ Seules les deux séances de démonstration du direct (en cours / terminée)
+ * sont calées sur l'HORLOGE : une séance « en direct » posée à une date fixe ne
+ * serait en direct qu'un jour par an. Crée l'édition, ses 6 ateliers et
+ * sessions, des modérateurs et rapporteurs de test, et des communicants avec
+ * des communications acceptées, planifiées et co-signées. Idempotent.
  *
  *   php artisan db:seed --class=ColloqueAvenirSeeder
  *
@@ -46,17 +48,20 @@ class ColloqueAvenirSeeder extends Seeder
 
     public function run(): void
     {
-        // Dates FIXES de l'événement : le colloque se tient du 2 au 8 octobre 2026
-        // (vendredi → jeudi). Il reste « en cours » tant qu'on est dans cette
+        // Dates FIXES de l'événement : le colloque se tient du 5 au 9 octobre 2026
+        // (lundi → vendredi). Il reste « en cours » tant qu'on est dans cette
         // fenêtre, ce qui alimente la page « déroulement » et les sessions en direct.
         //
         // ⚠️ Tout le reste se CALE SUR `$start` par décalage en jours (plénières,
         // programme synthétique, et jusqu'aux séances du seeder de volume, qui
         // relit `date_start`). Déplacer le colloque = changer ces deux lignes, pas
-        // des dates écrites en dur ailleurs. Les décalages vont de J+0 à J+6 :
-        // tenir la fenêtre à 7 jours, sinon la clôture sortirait de l'édition.
-        $start = Carbon::create(2026, 10, 2)->startOfDay();
-        $end = Carbon::create(2026, 10, 8)->startOfDay();
+        // des dates écrites en dur ailleurs. ⚠️ **Les décalages vont de J+0 à J+4** :
+        // tenir la fenêtre à 5 jours, sinon la clôture sortirait de l'édition. En
+        // passant de 7 à 5 jours il a fallu REPLIER le programme (table ronde J+3 →
+        // J+2, formation J+4 → J+3, clôture J+6 → J+4) : changer les deux lignes
+        // seules aurait posé la clôture au 11 octobre, hors de l'édition.
+        $start = Carbon::create(2026, 10, 5)->startOfDay();
+        $end = Carbon::create(2026, 10, 9)->startOfDay();
         $deadline = Carbon::now()->subMonths(3); // clôture des soumissions (passée)
 
         $colloque = Colloque::updateOrCreate(
@@ -112,37 +117,38 @@ class ColloqueAvenirSeeder extends Seeder
                     // page du colloque (onglets jour par jour) et source de génération.
                     'program_synthesis' => [
                         'title' => 'Programme synthétique du colloque',
+                        // ⚠️ **Replié sur 5 jours** (lun. 05 → ven. 09/10). Il DOIT
+                        // décrire ce que les séances tiennent vraiment : les blocs
+                        // d'ateliers du seeder de volume sont calés aux mêmes heures,
+                        // hors des fenêtres de plénière. Un programme publié qui
+                        // annonce des communications là où aucune séance n'existe se
+                        // lit comme une panne, pas comme une démonstration.
                         'days' => [
                             ['date' => $start->toDateString(), 'heading' => 'Matin', 'rows' => [
                                 ['type' => 'other', 'start' => '08:00', 'end' => '09:00', 'label' => 'Arrivée, distribution des badges et installation des participants', 'highlight' => false],
                                 ['type' => 'plenary', 'start' => '09:00', 'end' => '10:30', 'label' => 'Séance inaugurale', 'highlight' => true],
                                 ['type' => 'break', 'start' => '10:30', 'end' => '11:00', 'label' => 'Pause-café', 'highlight' => false],
                             ]],
-                            ['date' => $start->toDateString(), 'heading' => 'Début des ateliers', 'rows' => [
-                                ['type' => 'atelier', 'start' => '11:30', 'end' => '12:30', 'label' => 'Communications en ateliers', 'highlight' => false],
+                            ['date' => $start->toDateString(), 'heading' => 'Après-midi', 'rows' => [
                                 ['type' => 'break', 'start' => '12:30', 'end' => '14:00', 'label' => 'Pause déjeuner', 'highlight' => false],
                                 ['type' => 'atelier', 'start' => '14:00', 'end' => '17:00', 'label' => 'Communications en ateliers', 'highlight' => false],
                             ]],
                             ['date' => (clone $start)->addDays(1)->toDateString(), 'heading' => 'Journée d’ateliers', 'rows' => [
                                 ['type' => 'atelier', 'start' => '08:30', 'end' => '11:30', 'label' => 'Communications en ateliers', 'highlight' => false],
                                 ['type' => 'break', 'start' => '12:30', 'end' => '14:00', 'label' => 'Pause déjeuner', 'highlight' => false],
-                                ['type' => 'atelier', 'start' => '14:00', 'end' => '17:00', 'label' => 'Communications en ateliers (dont séances à distance)', 'highlight' => false],
                             ]],
                             ['date' => (clone $start)->addDays(2)->toDateString(), 'heading' => 'Matin', 'rows' => [
-                                ['type' => 'atelier', 'start' => '08:30', 'end' => '11:30', 'label' => 'Communications en ateliers', 'highlight' => false],
-                            ]],
-                            ['date' => (clone $start)->addDays(3)->toDateString(), 'heading' => 'Matin', 'rows' => [
                                 ['type' => 'plenary', 'start' => '08:00', 'end' => '10:00', 'label' => 'Table ronde (diffusée en ligne)', 'highlight' => true],
                                 ['type' => 'break', 'start' => '10:00', 'end' => '10:30', 'label' => 'Pause-café', 'highlight' => false],
+                            ]],
+                            ['date' => (clone $start)->addDays(2)->toDateString(), 'heading' => 'Après-midi', 'rows' => [
                                 ['type' => 'atelier', 'start' => '14:00', 'end' => '17:00', 'label' => 'Communications en ateliers', 'highlight' => false],
                             ]],
-                            ['date' => (clone $start)->addDays(4)->toDateString(), 'heading' => 'Après-midi', 'rows' => [
+                            ['date' => (clone $start)->addDays(3)->toDateString(), 'heading' => 'Journée', 'rows' => [
+                                ['type' => 'atelier', 'start' => '08:30', 'end' => '11:30', 'label' => 'Communications en ateliers', 'highlight' => false],
                                 ['type' => 'other', 'start' => '14:00', 'end' => '17:00', 'label' => 'Formation', 'highlight' => true],
                             ]],
-                            ['date' => (clone $start)->addDays(5)->toDateString(), 'heading' => 'Matin', 'rows' => [
-                                ['type' => 'atelier', 'start' => '08:30', 'end' => '11:30', 'label' => 'Communications en ateliers', 'highlight' => false],
-                            ]],
-                            ['date' => (clone $start)->addDays(6)->toDateString(), 'heading' => 'Clôture', 'rows' => [
+                            ['date' => (clone $start)->addDays(4)->toDateString(), 'heading' => 'Clôture', 'rows' => [
                                 ['type' => 'plenary', 'start' => '11:00', 'end' => '12:30', 'label' => 'Cérémonie de clôture', 'highlight' => true],
                             ]],
                         ],
@@ -186,6 +192,10 @@ class ColloqueAvenirSeeder extends Seeder
         // --- Ateliers + sessions + communications acceptées et planifiées ---
         /** @var list<Submission> $submissions */
         $submissions = [];
+        // Registre des communicants : les co-auteurs se posent APRÈS la boucle,
+        // une communication ne pouvant citer que des comptes déjà créés.
+        /** @var list<array{user: User, submission: Submission}> $signataires */
+        $signataires = [];
         foreach (self::ATELIERS as $i => $title) {
             $atelier = Atelier::updateOrCreate(
                 ['edition_id' => $edition->id, 'title' => $title],
@@ -271,6 +281,7 @@ class ColloqueAvenirSeeder extends Seeder
                 ]
             );
             $submissions[] = $submission;
+            $signataires[] = ['user' => $comm, 'submission' => $submission];
 
             Slot::updateOrCreate(
                 ['session_id' => $session->id, 'submission_id' => $submission->id],
@@ -349,6 +360,9 @@ class ColloqueAvenirSeeder extends Seeder
                 );
             }
         }
+
+        // Co-auteurs des communications de démonstration (seconde passe).
+        $this->attachDemoCoauthors($edition, $signataires);
 
         // --- Relecteurs de test + relectures ---
         $reviewers = [
@@ -485,11 +499,14 @@ class ColloqueAvenirSeeder extends Seeder
     private function buildPlenaries(Edition $edition, array $moderators, Carbon $start): void
     {
         // [libellé, décalage en jours, h début, min début, h fin, min fin, animateur, visio, visibilité]
+        // ⚠️ Décalages REPLIÉS sur la fenêtre de 5 jours (J+0 → J+4). À 7 jours la
+        // clôture était en J+6 : laissée telle quelle, elle serait tombée le
+        // 11 octobre, deux jours APRÈS la fin de l'édition.
         $plenaries = [
             ['Séance inaugurale', 0, 9, 0, 10, 30, 'Comité d’organisation', 'scheduled', 'public'],
-            ['Table ronde : universités africaines et développement durable', 3, 8, 0, 10, 0, $moderators[0]->name, 'scheduled', 'public'],
-            ['Formation : méthodologie de la recherche et valorisation scientifique', 4, 14, 0, 17, 0, 'Équipe de formation', 'scheduled', 'participants'],
-            ['Séance de clôture et recommandations', 6, 11, 0, 12, 30, 'Comité scientifique', 'scheduled', 'public'],
+            ['Table ronde : universités africaines et développement durable', 2, 8, 0, 10, 0, $moderators[0]->name, 'scheduled', 'public'],
+            ['Formation : méthodologie de la recherche et valorisation scientifique', 3, 14, 0, 17, 0, 'Équipe de formation', 'scheduled', 'participants'],
+            ['Séance de clôture et recommandations', 4, 11, 0, 12, 30, 'Comité scientifique', 'scheduled', 'public'],
         ];
 
         foreach ($plenaries as [$label, $day, $sh, $sm, $eh, $em, $animator, $meeting, $visibility]) {
@@ -514,6 +531,90 @@ class ColloqueAvenirSeeder extends Seeder
                     'moderator_name' => $animator,
                 ]
             );
+        }
+    }
+
+    /**
+     * **Co-auteurs des communications de démonstration.**
+     *
+     * ⚠️ Chaque communication n'avait qu'un auteur, et les six comptes
+     * `commN@test.tg` ne voyaient donc QUE leur propre dépôt. Impossible de
+     * vérifier « Mes communications » chez un co-auteur, le rattachement à
+     * l'inscription, ni l'attestation de communication d'un co-auteur payé - qui
+     * est pourtant le cas le plus fréquent d'un colloque.
+     *
+     * Chaque communication cite les DEUX communicants suivants (en rond) : tout
+     * compte de démonstration a ainsi un dépôt à lui et deux co-signatures. La
+     * première porte en plus un co-auteur NON inscrit, resté « invité » : c'est
+     * lui qui montre l'association différée à la création du compte.
+     *
+     * ⚠️ **Sans passer par `LinkSubmissionAuthors`**, qui notifierait par e-mail
+     * et par SMS à chaque rapprochement : un seeder pose l'état final.
+     *
+     * @param  list<array{user: User, submission: Submission}>  $signataires
+     */
+    private function attachDemoCoauthors(Edition $edition, array $signataires): void
+    {
+        $total = count($signataires);
+
+        if ($total === 0) {
+            return;
+        }
+
+        foreach ($signataires as $i => $ligne) {
+            $submission = $ligne['submission'];
+
+            $auteurs = [[
+                'name' => $ligne['user']->name,
+                'email' => $ligne['user']->email,
+                'affiliation' => 'Université de Kara',
+                'corresponding' => true,
+            ]];
+            $etats = [['role' => 'corresponding', 'user' => $ligne['user']->id, 'match' => 'self', 'status' => 'linked']];
+
+            foreach ([1, 2] as $pas) {
+                $co = $signataires[($i + $pas) % $total];
+                $auteurs[] = [
+                    'name' => $co['user']->name,
+                    'email' => $co['user']->email,
+                    'affiliation' => 'Université de Kara',
+                    'corresponding' => false,
+                ];
+                $etats[] = ['role' => 'coauthor', 'user' => $co['user']->id, 'match' => 'email', 'status' => 'linked'];
+            }
+
+            if ($i === 0) {
+                $auteurs[] = [
+                    'name' => 'Pauline Invitée',
+                    'email' => 'coauteur-invite@example.org',
+                    'affiliation' => 'Université partenaire',
+                    'corresponding' => false,
+                ];
+                $etats[] = ['role' => 'coauthor', 'user' => null, 'match' => null, 'status' => 'invited'];
+            }
+
+            $submission->update(['authors' => $auteurs]);
+
+            foreach ($etats as $index => $etat) {
+                SubmissionAuthor::updateOrCreate(
+                    ['submission_id' => $submission->id, 'author_index' => $index],
+                    [
+                        'edition_id' => $edition->id,
+                        'user_id' => $etat['user'],
+                        'role' => $etat['role'],
+                        'name' => $auteurs[$index]['name'],
+                        'email' => $auteurs[$index]['email'],
+                        'affiliation' => $auteurs[$index]['affiliation'],
+                        'match_type' => $etat['match'],
+                        'status' => $etat['status'],
+                        'notified_at' => $etat['status'] === 'linked' && $etat['match'] !== 'self' ? now() : null,
+                        'invited_at' => $etat['status'] === 'invited' ? now() : null,
+                        // ⚠️ Jeton DÉTERMINISTE : il porte le lien de déclinaison, et
+                        // un jeton tiré au hasard changerait à chaque rejeu.
+                        'token' => substr(hash('sha256', 'uk-auteur:'.$submission->id.':'.$index), 0, 48),
+                    ]
+                );
+            }
         }
     }
 
