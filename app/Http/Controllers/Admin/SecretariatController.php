@@ -9,6 +9,7 @@ use App\Models\Event;
 use App\Models\EventSession;
 use App\Models\Participant;
 use App\Support\EventReport;
+use App\Support\EventSettings;
 use App\Support\Settings;
 use App\Support\XlsxWriter;
 use Illuminate\Http\RedirectResponse;
@@ -181,7 +182,52 @@ class SecretariatController extends Controller
             'days' => $this->sessionDays($sessions),
             'rooms' => $sessions->map(fn (EventSession $s) => trim((string) $s->room))->filter()->unique()->sort()->values(),
             'types' => self::PRINT_TYPES,
+            'header' => $event ? $this->docHeader($event) : $this->docHeaderDefaults(),
         ]);
+    }
+
+    /**
+     * Enregistre l'en-tête des documents imprimables du secrétariat pour un
+     * événement (surtitre/organisation, mention, logo, alignement). Conçu une
+     * fois, il coiffe tous les documents logistiques.
+     */
+    public function saveDocHeader(Request $request, Event $event): RedirectResponse
+    {
+        abort_unless($request->user()->canOnEdition('documents', $event), 403);
+
+        EventSettings::setMany($event, [
+            'secretariat.doc_org' => trim((string) $request->input('doc_org')),
+            'secretariat.doc_subtitle' => trim((string) $request->input('doc_subtitle')),
+            'secretariat.doc_logo' => $request->boolean('doc_logo'),
+            'secretariat.doc_align' => $request->input('doc_align') === 'center' ? 'center' : 'left',
+        ]);
+
+        return redirect()
+            ->route('admin.secretariat.documents', ['doc_event' => $event->id])
+            ->with('ukc_status', 'En-tête des documents enregistré.');
+    }
+
+    /**
+     * En-tête résolu (réglages de l'événement + repli) pour coiffer les documents.
+     *
+     * @return array{org: string, subtitle: string, logo: bool, align: string}
+     */
+    protected function docHeader(Event $event): array
+    {
+        $org = trim((string) EventSettings::get($event, 'secretariat.doc_org', ''));
+
+        return [
+            'org' => $org !== '' ? $org : (string) config('app.name'),
+            'subtitle' => trim((string) EventSettings::get($event, 'secretariat.doc_subtitle', '')),
+            'logo' => (bool) EventSettings::get($event, 'secretariat.doc_logo', false),
+            'align' => EventSettings::get($event, 'secretariat.doc_align', 'left') === 'center' ? 'center' : 'left',
+        ];
+    }
+
+    /** @return array{org: string, subtitle: string, logo: bool, align: string} */
+    protected function docHeaderDefaults(): array
+    {
+        return ['org' => (string) config('app.name'), 'subtitle' => '', 'logo' => false, 'align' => 'left'];
     }
 
     /**
@@ -197,6 +243,7 @@ class SecretariatController extends Controller
         return view('secretariat.print.'.$type, $this->printData($request, $event, $type) + [
             'event' => $event,
             'docTitle' => self::PRINT_TYPES[$type]['label'],
+            'header' => $this->docHeader($event),
         ]);
     }
 
@@ -382,11 +429,24 @@ class SecretariatController extends Controller
         $sessions = $event->sessions()->orderBy('starts_at')->orderBy('id')->get();
 
         if ($type === 'presence' || $type === 'emargement') {
+            // Liste vierge = aucune donnée pré-remplie, uniquement des lignes
+            // numérotées à compléter à la main (nombre réglé par « rows »).
+            $blank = $request->boolean('blank');
+            if ($blank) {
+                return [
+                    'participants' => collect(),
+                    'note' => trim((string) $request->query('note', '')),
+                    'extraRows' => max(1, min(80, (int) $request->query('rows', '25'))),
+                    'blank' => true,
+                ];
+            }
+
             return [
                 'participants' => Participant::where('event_id', $event->id)
                     ->orderBy('last_name')->orderBy('first_name')->get(),
                 'note' => trim((string) $request->query('note', '')),
                 'extraRows' => max(0, min(40, (int) $request->query('extra', $type === 'emargement' ? '8' : '0'))),
+                'blank' => false,
             ];
         }
 

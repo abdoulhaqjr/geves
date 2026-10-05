@@ -2447,6 +2447,23 @@ Côté public (page colloque + Déroulement), les ateliers simultanés portent u
   modérateurs/rapporteurs distincts). Types + libellés : `SecretariatController::PRINT_TYPES`.
   ⚠️ Ces documents sont des **pages HTML imprimables** (pas de dompdf) : rapides,
   déterministes. Tests : `SecretariatDocumentsTest`.
+  - **En-tête des documents conçu une fois, PAR ÉVÉNEMENT** : carte « En-tête des
+    documents » en tête de l'onglet (slideover `panel==='header'`, POST
+    `admin.secretariat.documents.header` → `saveDocHeader`). Réglages
+    `secretariat.doc_org` (surtitre/organisation, repli `config('app.name')`),
+    `doc_subtitle` (mention), `doc_logo` (bool, `Branding::mark()`), `doc_align`
+    (left/center), via `EventSettings`. Résolus par `SecretariatController::docHeader()`
+    et rendus par le **partial partagé `secretariat/print/_head.blade.php`** (inclus par
+    presence/emargement/ordre_jour avec `title`+`sub`). ⚠️ Ne pas réécrire un en-tête en
+    dur « {app} · {type} » dans une vue d'impression : passer par `_head`.
+  - **Liste de présence / émargement : case « Liste vierge »** (`blank=1` + `rows`) =
+    aucun participant pré-rempli, uniquement des lignes numérotées vides à remplir à la
+    main. Sinon participants triés par nom (émargement garde ses `extra` lignes en plus).
+    Lu par `printData()` ; `extraRows` sert aussi bien aux lignes vierges qu'au mode
+    pré-rempli.
+  - ⚠️ **La barre de `secretariat/print/_layout` est au bleu de la charte** (dégradé
+    `--navy #14205a → --blue #223ea4`, comme les héros), pas l'ardoise. Bouton Imprimer
+    en or charte.
 - **Secrétariat assisté** (`admin.secretariat.assistant` GET + `admin.secretariat.assist`
   POST, vue `admin/secretariat/assistant.blade.php`) = génération **IA** sur mesure
   (prompt/modèle joint), conservée pour les documents non standard. Presets

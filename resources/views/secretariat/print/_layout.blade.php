@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', $docTitle) - {{ $event->title ?: $event->year }}</title>
     <style>
-        :root { --ink:#1e293b; --muted:#64748b; --line:#cbd5e1; --blue:#223ea4; }
+        :root { --ink:#1e293b; --muted:#64748b; --line:#cbd5e1; --blue:#223ea4; --navy:#14205a; }
         * { box-sizing: border-box; }
         html, body { margin: 0; padding: 0; }
         body { font-family: "Public Sans", "Jost", system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: var(--ink); background: #eef1f6; }
         @page { size: A4; margin: 16mm; }
 
         .toolbar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 14px;
-            padding: 10px 16px; background: #1e293b; color: #fff; }
+            padding: 10px 16px; background: linear-gradient(100deg, var(--navy), var(--blue)); color: #fff; }
         .toolbar strong { font-size: 14px; }
         .toolbar .sub { color: #cbd5e1; font-size: 12.5px; }
         .toolbar .sp { flex: 1; }

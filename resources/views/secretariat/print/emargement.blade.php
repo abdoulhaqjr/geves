@@ -2,12 +2,10 @@
 
 @section('body')
     <main class="sheet">
-        <div class="doc-head">
-            <div class="app">{{ config('app.name') }} · Feuille d'émargement</div>
-            <h1>Feuille d'émargement</h1>
-            <div class="ev">{{ $event->title ?: $event->year }}</div>
-            <div class="note-line">{{ $note !== '' ? $note : 'Séance : ______________________     Date : ___________' }}</div>
-        </div>
+        @include('secretariat.print._head', [
+            'title' => "Feuille d'émargement",
+            'sub' => $note !== '' ? $note : 'Séance : ______________________     Date : ___________',
+        ])
 
         <table class="grid">
             <thead>

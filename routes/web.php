@@ -306,6 +306,7 @@ Route::prefix('admin')->group(function () {
         Route::get('/secretariat/rapports', [SecretariatController::class, 'reports'])->name('admin.secretariat.reports');
         // Onglet Documents : formulaires + impression des documents logistiques.
         Route::get('/secretariat/documents', [SecretariatController::class, 'documents'])->name('admin.secretariat.documents');
+        Route::post('/secretariat/documents/{event}/entete', [SecretariatController::class, 'saveDocHeader'])->name('admin.secretariat.documents.header');
         Route::get('/secretariat/documents/{event}/{type}/imprimer', [SecretariatController::class, 'printDocument'])->name('admin.secretariat.documents.print');
         // Onglet Secrétariat assisté (IA) : écran de génération.
         Route::get('/secretariat/assistant', [SecretariatController::class, 'assistIndex'])->name('admin.secretariat.assistant');

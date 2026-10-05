@@ -82,6 +82,38 @@ it('imprime l’ordre du jour et les chevalets depuis le programme réel', funct
         ->assertOk()->assertSee('Awa Kodjo')->assertSee('Kofi Mensah');
 });
 
+it('imprime une liste de présence vierge (sans les participants)', function () {
+    $staff = adminStaff();
+    $event = secretariatEvent();
+
+    $this->actingAs($staff, 'web')
+        ->get(route('admin.secretariat.documents.print', ['event' => $event, 'type' => 'presence', 'blank' => 1, 'rows' => 5]))
+        ->assertOk()
+        ->assertSee('Liste de présence')
+        ->assertSee('Émargement')
+        ->assertDontSee('Kodjo Awa');
+});
+
+it('enregistre l’en-tête des documents et le reporte sur l’impression', function () {
+    $staff = adminStaff();
+    $event = secretariatEvent();
+
+    $this->actingAs($staff, 'web')
+        ->post(route('admin.secretariat.documents.header', ['event' => $event]), [
+            'doc_org' => 'Université de Kara - DRI',
+            'doc_subtitle' => 'Comité d’organisation',
+            'doc_align' => 'center',
+            'doc_logo' => '1',
+        ])
+        ->assertRedirect(route('admin.secretariat.documents', ['doc_event' => $event->id]));
+
+    $this->actingAs($staff, 'web')
+        ->get(route('admin.secretariat.documents.print', ['event' => $event, 'type' => 'presence']))
+        ->assertOk()
+        ->assertSee('Université de Kara - DRI')
+        ->assertSee('Comité d’organisation');
+});
+
 it('refuse un type de document inconnu', function () {
     $staff = adminStaff();
     $event = secretariatEvent();

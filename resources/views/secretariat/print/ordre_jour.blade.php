@@ -2,12 +2,10 @@
 
 @section('body')
     <main class="sheet">
-        <div class="doc-head">
-            <div class="app">{{ config('app.name') }} · Ordre du jour</div>
-            <h1>Ordre du jour</h1>
-            <div class="ev">{{ $event->title ?: $event->year }}</div>
-            @if ($day !== '')<div class="meta">{{ \Illuminate\Support\Carbon::parse($day)->translatedFormat('l j F Y') }}</div>@endif
-        </div>
+        @include('secretariat.print._head', [
+            'title' => 'Ordre du jour',
+            'sub' => $day !== '' ? \Illuminate\Support\Carbon::parse($day)->translatedFormat('l j F Y') : '',
+        ])
 
         @if ($sessions->isEmpty())
             <p class="empty">Aucune séance programmée pour ce jour.</p>

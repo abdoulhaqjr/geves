@@ -2,14 +2,9 @@
 
 @section('body')
     <main class="sheet">
-        <div class="doc-head">
-            <div class="app">{{ config('app.name') }} · Liste de présence</div>
-            <h1>Liste de présence</h1>
-            <div class="ev">{{ $event->title ?: $event->year }}</div>
-            @if ($note !== '')<div class="note-line">{{ $note }}</div>@endif
-        </div>
+        @include('secretariat.print._head', ['title' => 'Liste de présence', 'sub' => $note])
 
-        @if ($participants->isEmpty())
+        @if ($participants->isEmpty() && $extraRows === 0)
             <p class="empty">Aucun participant inscrit pour cet événement.</p>
         @else
             <table class="grid">
@@ -26,6 +21,9 @@
                             <td class="sign"></td>
                         </tr>
                     @endforeach
+                    @for ($r = 0; $r < $extraRows; $r++)
+                        <tr><td class="num">{{ $participants->count() + $r + 1 }}</td><td></td><td></td><td></td><td class="sign"></td></tr>
+                    @endfor
                 </tbody>
             </table>
         @endif

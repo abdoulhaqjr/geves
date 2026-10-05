@@ -20,6 +20,21 @@
             @else
                 <p style="font-size:13px;color:var(--ukc-muted);margin:-6px 0 14px;">Chaque document s'ouvre dans un nouvel onglet, prêt à imprimer (ou à enregistrer en PDF). Renseignez quelques paramètres pour l'adapter à votre besoin.</p>
 
+                {{-- En-tête commun des documents : conçu une fois, il coiffe les documents imprimables. --}}
+                <div class="ukc-card" style="margin-bottom:16px;display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+                    <div>
+                        <h3 style="margin:0 0 4px;">En-tête des documents</h3>
+                        <p style="font-size:12.5px;color:var(--ukc-muted);margin:0;max-width:580px;">Coiffe les documents imprimables de cet événement (liste de présence, feuille d'émargement, ordre du jour) : organisation, mention et logo. Conçu une fois.</p>
+                        <div style="margin-top:10px;font-size:13px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            @if ($header['logo'])<img src="{{ \App\Support\Branding::mark() }}" alt="" style="height:24px;width:auto;">@endif
+                            <strong>{{ $header['org'] }}</strong>
+                            @if ($header['subtitle'])<span style="color:var(--ukc-muted);">· {{ $header['subtitle'] }}</span>@endif
+                            <span class="ukc-pill ukc-pill--muted">{{ $header['align'] === 'center' ? 'centré' : 'aligné à gauche' }}</span>
+                        </div>
+                    </div>
+                    <button type="button" class="ukc-btn ukc-btn--outline ukc-btn--sm" @click="panel='header'"><x-ukc.icon name="pen" :size="15" /> Personnaliser</button>
+                </div>
+
                 <div class="ukc-stats" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr));">
                     @foreach ($types as $key => $meta)
                         <button type="button" class="ukc-card sec-doc-card" @click="panel='{{ $key }}'" style="text-align:left;cursor:pointer;border:1px solid var(--ukc-border);">
@@ -34,13 +49,53 @@
 
                 @php($pr = fn ($type) => route('admin.secretariat.documents.print', ['event' => $event, 'type' => $type]))
 
+                {{-- ===== En-tête des documents (conception) ===== --}}
+                <x-ukc.slideover open="panel==='header'" onClose="panel=null" title="En-tête des documents">
+                    <form method="POST" action="{{ route('admin.secretariat.documents.header', ['event' => $event]) }}" id="docHeaderForm">
+                        @csrf
+                        <p style="font-size:13px;color:var(--ukc-muted);margin:0 0 12px;">Cet en-tête apparaît en haut de chaque document imprimable de l'événement.</p>
+                        <div class="ukc-field">
+                            <label>Organisation (surtitre)</label>
+                            <input type="text" name="doc_org" maxlength="160" value="{{ $header['org'] }}" placeholder="{{ config('app.name') }}">
+                            <p class="ukc-hint">Petite ligne au-dessus du titre. Ex. : Université de Kara - Direction de la Recherche et de l'Innovation.</p>
+                        </div>
+                        <div class="ukc-field">
+                            <label>Mention (optionnel)</label>
+                            <input type="text" name="doc_subtitle" maxlength="160" value="{{ $header['subtitle'] }}" placeholder="Ex. : Comité d'organisation">
+                        </div>
+                        <div class="ukc-field">
+                            <label>Alignement</label>
+                            <select name="doc_align">
+                                <option value="left" @selected($header['align'] === 'left')>Aligné à gauche</option>
+                                <option value="center" @selected($header['align'] === 'center')>Centré</option>
+                            </select>
+                        </div>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;margin-top:4px;">
+                            <input type="checkbox" name="doc_logo" value="1" @checked($header['logo']) style="width:16px;height:16px;flex:none;">
+                            Afficher le logo de la plateforme en haut
+                        </label>
+                    </form>
+                    <x-slot:footer>
+                        <button type="button" class="ukc-btn ukc-btn--ghost" @click="panel=null">Annuler</button>
+                        <button type="submit" form="docHeaderForm" class="ukc-btn ukc-btn--green"><x-ukc.icon name="check" :size="16" /> Enregistrer</button>
+                    </x-slot:footer>
+                </x-ukc.slideover>
+
                 {{-- ===== Liste de présence ===== --}}
                 <x-ukc.slideover open="panel==='presence'" onClose="panel=null" title="Liste de présence">
-                    <form method="GET" target="_blank" action="{{ $pr('presence') }}" id="docPresence" @submit="panel=null">
-                        <p style="font-size:13px;color:var(--ukc-muted);margin:0 0 12px;">Tous les participants de l'événement, triés par nom, avec une colonne d'émargement à signer.</p>
+                    <form method="GET" target="_blank" action="{{ $pr('presence') }}" id="docPresence" @submit="panel=null" x-data="{ blank: false }">
+                        <p style="font-size:13px;color:var(--ukc-muted);margin:0 0 12px;">Participants de l'événement, triés par nom, avec une colonne d'émargement à signer.</p>
                         <div class="ukc-field">
                             <label>En-tête libre (optionnel)</label>
                             <input type="text" name="note" maxlength="140" placeholder="Ex. : Séance d'ouverture - 5 octobre 2026">
+                        </div>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;margin:2px 0 10px;">
+                            <input type="checkbox" name="blank" value="1" x-model="blank" style="width:16px;height:16px;flex:none;">
+                            Liste vierge (colonnes à remplir à la main, sans pré-remplir les participants)
+                        </label>
+                        <div class="ukc-field" x-show="blank">
+                            <label>Nombre de lignes</label>
+                            <input type="number" name="rows" min="1" max="80" value="25">
                         </div>
                     </form>
                     <x-slot:footer>
@@ -51,16 +106,24 @@
 
                 {{-- ===== Feuille d'émargement ===== --}}
                 <x-ukc.slideover open="panel==='emargement'" onClose="panel=null" title="Feuille d'émargement">
-                    <form method="GET" target="_blank" action="{{ $pr('emargement') }}" id="docEmargement" @submit="panel=null">
+                    <form method="GET" target="_blank" action="{{ $pr('emargement') }}" id="docEmargement" @submit="panel=null" x-data="{ blank: false }">
                         <p style="font-size:13px;color:var(--ukc-muted);margin:0 0 12px;">Feuille à signer : en-tête à compléter à la main et colonne Signature.</p>
                         <div class="ukc-field">
                             <label>En-tête libre (séance / date)</label>
                             <input type="text" name="note" maxlength="140" placeholder="Séance : _______  Date : _______">
                         </div>
-                        <div class="ukc-field">
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;margin:2px 0 10px;">
+                            <input type="checkbox" name="blank" value="1" x-model="blank" style="width:16px;height:16px;flex:none;">
+                            Liste vierge (sans pré-remplir les participants)
+                        </label>
+                        <div class="ukc-field" x-show="! blank">
                             <label>Lignes vierges supplémentaires</label>
                             <input type="number" name="extra" min="0" max="40" value="8">
-                            <p class="ukc-hint">Pour les personnes non inscrites qui se présentent.</p>
+                            <p class="ukc-hint">Ajoutées sous les participants inscrits, pour les personnes qui se présentent.</p>
+                        </div>
+                        <div class="ukc-field" x-show="blank">
+                            <label>Nombre de lignes</label>
+                            <input type="number" name="rows" min="1" max="80" value="25">
                         </div>
                     </form>
                     <x-slot:footer>
