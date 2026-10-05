@@ -143,7 +143,10 @@
                                                         <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="show(@js($rowData))"><x-ukc.icon name="pen" :size="15" /> Rédiger / valider</button>
                                                     @endif
                                                     @if (filled($s->rapporteur_email))
-                                                        <a href="mailto:{{ $s->rapporteur_email }}?subject={{ rawurlencode('Rapport de séance : '.$s->label) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="mail" :size="15" /> Relancer</a>
+                                                        <form method="POST" action="{{ route('admin.secretariat.remind', $s) }}">
+                                                            @csrf
+                                                            <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="bell" :size="15" /> Relancer</button>
+                                                        </form>
                                                     @endif
                                                     @if ($row->status === 'scheduled' && blank($s->rapporteur_email))
                                                         <span style="font-size:12.5px;color:var(--ukc-muted);">-</span>

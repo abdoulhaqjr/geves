@@ -5,16 +5,21 @@ namespace App\Http\Controllers\Admin;
 use App\Actions\GenerateReport;
 use App\Http\Controllers\Admin\Concerns\ScopesEditionAccess;
 use App\Http\Controllers\Controller;
+use App\Mail\CampaignMail;
 use App\Models\Event;
 use App\Models\EventSession;
 use App\Models\Participant;
+use App\Models\User;
+use App\Support\EmailTemplates;
 use App\Support\EventReport;
 use App\Support\EventSettings;
+use App\Support\Notifier;
 use App\Support\Settings;
 use App\Support\XlsxWriter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
@@ -257,6 +262,50 @@ class SecretariatController extends Controller
     public function reports(Request $request): RedirectResponse
     {
         return redirect()->route('admin.secretariat');
+    }
+
+    /**
+     * Relance le rapporteur d'une séance SILENCIEUSEMENT au clic : une
+     * notification in-app à son compte (s'il en a un) et, selon sa préférence
+     * e-mail, un e-mail rendu depuis le MODÈLE éditable `report_reminder`
+     * (personnalisable parmi les modèles de mails). Aucun `mailto` à composer.
+     *
+     * ⚠️ Le type `report_reminder` est déclaré `hasMail` dans {@see NotificationKinds} :
+     * la notification n'envoie donc PAS son e-mail générique - c'est le modèle
+     * qui porte l'e-mail (pas de doublon).
+     */
+    public function remind(Request $request, EventSession $session): RedirectResponse
+    {
+        $event = $session->event;
+        abort_unless($event && $request->user()->canOnEdition('editions_read', $event), 403);
+
+        $email = filled($session->rapporteur_email) ? mb_strtolower(trim((string) $session->rapporteur_email)) : null;
+        if ($email === null) {
+            return back()->with('ukc_error', 'Aucun rapporteur désigné pour cette séance.');
+        }
+
+        $label = $session->label ?: 'une séance';
+        $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
+
+        // Notification in-app (silencieuse) au compte du rapporteur, s'il existe.
+        Notifier::account(
+            $user,
+            kind: 'report_reminder',
+            title: 'Rapport de séance à rédiger',
+            body: 'Merci de rédiger puis de soumettre le rapport de « '.$label.' ».',
+            url: route('account.reports'),
+            icon: 'sheet',
+        );
+
+        // E-mail de relance, rendu depuis le modèle éditable, envoyé en silence
+        // (gaté par la préférence e-mail ; un destinataire sans compte le reçoit).
+        if (Notifier::emailAllowed($user, 'report_reminder')) {
+            $tpl = EmailTemplates::forReportReminder($session);
+            $body = trim(($tpl['heading'] !== '' ? $tpl['heading']."\n\n" : '').$tpl['intro']);
+            Mail::to($email)->send(new CampaignMail($tpl['subject'], $body));
+        }
+
+        return back()->with('ukc_status', 'Relance envoyée à '.($session->rapporteur_name ?: $email).'.');
     }
 
     public function generate(Request $request, GenerateReport $action): RedirectResponse

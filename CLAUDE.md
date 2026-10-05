@@ -2450,6 +2450,15 @@ Côté public (page colloque + Déroulement), les ateliers simultanés portent u
     `admin.secretariat.reports` **redirige** vers `admin.secretariat` (anciens liens,
     signets, e-mails, et redirection de `admin.program.reports`). Ne pas la recréer en
     page. Vue `admin/secretariat/reports.blade.php` **supprimée**.
+  - ⚠️ **« Relancer » = notification SILENCIEUSE, pas un `mailto`** (POST
+    `admin.secretariat.remind` → `SecretariatController::remind`). Au clic : une
+    notification in-app au compte du rapporteur (`Notifier::account`, kind
+    **`report_reminder`**) + un e-mail rendu depuis le **modèle éditable**
+    `report_reminder` (`EmailTemplates::forReportReminder`, `CampaignMail`), gaté par la
+    préférence e-mail. ⚠️ Le kind est déclaré **`hasMail => true`** dans
+    `NotificationKinds` pour que la notification n'envoie PAS son e-mail générique (sinon
+    doublon avec le modèle). Le modèle de relance se personnalise **parmi les modèles de
+    mails** (onglet E-mails). Ne pas revenir à un `mailto:` que l'admin composerait.
 - **Documents** (`admin.secretariat.documents`, vue `admin/secretariat/documents.blade.php`)
   = cinq documents logistiques **sans IA**, remplis depuis les données réelles et
   **imprimables** : liste de présence, feuille d'émargement, affiche directionnelle,

@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\EventSession;
 use App\Models\Participant;
 use App\Models\Submission;
 
@@ -58,6 +59,12 @@ class EmailTemplates
             'heading' => 'Vous êtes invité(e) 🎓',
             'intro' => 'Nous avons le plaisir de vous convier à cet événement.',
         ],
+        'report_reminder' => [
+            'label' => 'Rapport de séance - relance au rapporteur',
+            'subject' => 'Rappel : rapport de séance à rédiger',
+            'heading' => 'Rapport de séance attendu',
+            'intro' => 'Bonjour {prenom}, le rapport de la séance « {titre} » ({event}) est attendu. Merci de le rédiger puis de le soumettre depuis votre espace.',
+        ],
     ];
 
     /** Balises de fusion proposées dans l'éditeur de modèle (puces cliquables). */
@@ -81,6 +88,7 @@ class EmailTemplates
         'submission_accepted' => 'Résumé accepté',
         'submission_rejected' => 'Résumé refusé',
         'participant_invitation' => 'Invitation (manuel)',
+        'report_reminder' => 'Relance rapport (manuel)',
     ];
 
     /** Modèles personnalisés créés depuis le back-office (hors modèles intégrés). */
@@ -222,6 +230,26 @@ class EmailTemplates
             'prenom' => (string) $participant->first_name,
             'nom_complet' => $participant->full_name,
             'event' => (string) ($participant->event?->title ?? ''),
+        ];
+
+        return self::renderAll($tpl, $context);
+    }
+
+    /**
+     * Modèle rendu pour la relance d'un rapport de séance (au rapporteur).
+     *
+     * @return array{subject:string, heading:string, intro:string}
+     */
+    public static function forReportReminder(EventSession $session): array
+    {
+        $tpl = self::raw('report_reminder');
+        $name = (string) ($session->rapporteur_name ?? '');
+
+        $context = [
+            'prenom' => self::firstName($name),
+            'nom_complet' => $name,
+            'titre' => (string) $session->label,
+            'event' => (string) (optional($session->event)->title ?? ''),
         ];
 
         return self::renderAll($tpl, $context);

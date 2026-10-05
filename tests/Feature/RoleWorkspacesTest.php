@@ -1,5 +1,6 @@
 <?php
 
+use App\Mail\CampaignMail;
 use App\Models\Payment;
 use App\Models\Review;
 use App\Models\SessionReport;
@@ -329,6 +330,36 @@ it('notifie le modérateur et le rapporteur à leur désignation sur une séance
     expect($rap->notifications()->count())->toBe(1);
     expect($mod->notifications()->first()->data['title'])->toBe('Vous animez une séance');
     expect($rap->notifications()->first()->data['title'])->toBe('Vous rapportez une séance');
+});
+
+it('relance le rapporteur par notification silencieuse et e-mail du modèle', function () {
+    Mail::fake();
+    $event = openEdition();
+    $rap = eventActor('raprelance@example.tg');
+    $session = $event->sessions()->create([
+        'label' => 'Séance à rapporter', 'type' => 'atelier',
+        'starts_at' => now()->subHour(),
+        'rapporteur_email' => 'raprelance@example.tg', 'rapporteur_name' => 'Rita R.',
+    ]);
+
+    $this->actingAs(adminStaff(), 'web')
+        ->post(route('admin.secretariat.remind', $session))
+        ->assertRedirect();
+
+    // Notification in-app (silencieuse) au rapporteur + e-mail du modèle.
+    expect($rap->notifications()->where('type', SystemNotification::class)->count())->toBe(1);
+    expect($rap->notifications()->first()->data['title'])->toBe('Rapport de séance à rédiger');
+    Mail::assertSent(CampaignMail::class);
+});
+
+it('refuse la relance sans rapporteur désigné', function () {
+    $event = openEdition();
+    $session = $event->sessions()->create(['label' => 'Séance sans rapporteur', 'type' => 'plenary']);
+
+    $this->actingAs(adminStaff(), 'web')
+        ->post(route('admin.secretariat.remind', $session))
+        ->assertRedirect();
+    expect(session('ukc_error'))->not->toBeNull();
 });
 
 it('ne renotifie pas un modérateur inchangé lors d’une mise à jour de séance', function () {

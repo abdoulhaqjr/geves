@@ -304,6 +304,7 @@ Route::prefix('admin')->group(function () {
         Route::get('/secretariat', [SecretariatController::class, 'index'])->name('admin.secretariat');
         // Rapports de séance : lecture, amélioration et validation - métier du secrétariat.
         Route::get('/secretariat/rapports', [SecretariatController::class, 'reports'])->name('admin.secretariat.reports');
+        Route::post('/secretariat/rapports/{session}/relancer', [SecretariatController::class, 'remind'])->name('admin.secretariat.remind');
         // Onglet Documents : formulaires + impression des documents logistiques.
         Route::get('/secretariat/documents', [SecretariatController::class, 'documents'])->name('admin.secretariat.documents');
         Route::post('/secretariat/documents/{event}/entete', [SecretariatController::class, 'saveDocHeader'])->name('admin.secretariat.documents.header');
