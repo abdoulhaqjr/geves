@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
 
 /**
  * Bascule du colloque courant dans l'espace participant. Le compte peut participer
- * à plusieurs colloques : cette action mémorise en session l'événement choisie (si le
+ * à plusieurs colloques : cette action mémorise en session l'événement choisi (si le
  * compte y participe), puis renvoie à la page précédente.
  */
 class EventContextController extends Controller

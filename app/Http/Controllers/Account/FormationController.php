@@ -19,10 +19,10 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 /**
- * Espace participant : formations de l'**événement sélectionnée** (une formation
+ * Espace participant : formations de l'**événement sélectionné** (une formation
  * appartient toujours à un événement = l'événement), avec inscription. Gratuite →
  * inscription directe ; payante → paiement via la couche Payment
- * (`meta.flow = 'formation'`). Si l'événement courante ne propose pas de formation
+ * (`meta.flow = 'formation'`). Si l'événement courant ne propose pas de formation
  * (module désactivé ou aucune formation publiée), la page n'existe pas (404) et
  * le lien du menu est masqué.
  */

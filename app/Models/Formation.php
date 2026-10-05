@@ -46,7 +46,7 @@ class Formation extends Model implements Meetable
     /**
      * Formations publiées d'un événement donné. Une formation appartient toujours
      * à un événement (= l'événement) : l'espace participant se scope sur l'événement
-     * sélectionnée globalement, jamais sur « toutes les événements ».
+     * sélectionnée globalement, jamais sur « tous les événements ».
      *
      * @param  Builder<Formation>  $query
      * @return Builder<Formation>

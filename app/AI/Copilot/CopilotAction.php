@@ -10,7 +10,7 @@ use App\Models\User;
  * lui-même : le copilote la propose, l'utilisateur l'autorise explicitement, et
  * c'est seulement alors que le serveur l'exécute, sous l'autorité (et la
  * capacité RBAC) de cet utilisateur. Chaque action est cadrée par une capacité
- * et par l'événement courante.
+ * et par l'événement courant.
  */
 interface CopilotAction
 {

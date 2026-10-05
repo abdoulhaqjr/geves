@@ -224,7 +224,7 @@
                             <select name="audience" x-model="audience">
                                 @foreach ($audiences as $key => $label)<option value="{{ $key }}">{{ $label }}</option>@endforeach
                             </select>
-                            <p class="ukc-hint"><x-ukc.icon name="users" :size="13" /> <span x-text="counts[audience] ?? 0"></span> destinataire(s) pour l’événement sélectionnée.</p>
+                            <p class="ukc-hint"><x-ukc.icon name="users" :size="13" /> <span x-text="counts[audience] ?? 0"></span> destinataire(s) pour l’événement sélectionné.</p>
                         </div>
                         <div class="ukc-form-grid">
                             <div class="ukc-form-row">

@@ -24,7 +24,7 @@ function publishedFormation($event, float $fee): Formation
     ]);
 }
 
-it('affiche les formations de l’événement sélectionnée (formation payante) sans erreur', function () {
+it('affiche les formations de l’événement sélectionné (formation payante) sans erreur', function () {
     $event = openEdition(['formation_enabled' => true]);
     $user = verifiedAccount();
     $event->participants()->create([

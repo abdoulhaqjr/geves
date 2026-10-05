@@ -119,7 +119,7 @@ it('enregistre l’opérateur choisi lors de l’inscription payante à une form
     expect(Payment::first()->meta['operator'])->toBe('moov_tg');
 });
 
-it('garde l’événement sélectionnée quand on change un filtre sur la page Paiements', function () {
+it('garde l’événement sélectionné quand on change un filtre sur la page Paiements', function () {
     $event = openEdition();
     $other = openEdition();
     Payment::create(['event_id' => $event->id, 'amount' => 111, 'method' => 'cash', 'gateway' => 'manual', 'status' => 'pending']);

@@ -152,7 +152,7 @@ it('attribue une référence unique à chaque paiement dès la création (avant 
     expect($p2->methodLabel())->toBe('En ligne · Mobile money / carte');
 });
 
-it('la page paiements se cale par défaut sur le colloque courant (pas toutes les événements)', function () {
+it('la page paiements se cale par défaut sur le colloque courant (pas tous les événements)', function () {
     $c = EventSeries::create(['name' => 'UK', 'slug' => 'uk-x']);
     $old = $c->events()->create(['title' => 'UK 2025', 'year' => 2025, 'status' => 'closed', 'slug' => 'uk-2025']);
     $new = $c->events()->create(['title' => 'UK 2026', 'year' => 2026, 'status' => 'open', 'slug' => 'uk-2026']);

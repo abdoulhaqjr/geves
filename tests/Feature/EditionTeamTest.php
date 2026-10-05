@@ -39,7 +39,7 @@ it('cumule les capacités de plusieurs fonctions sur une même événement', fun
         ->and($user->canOnEdition('emails', $event))->toBeTrue();
 });
 
-it('donne au super-administrateur l’accès à toutes les événements', function () {
+it('donne au super-administrateur l’accès à tous les événements', function () {
     $admin = adminStaff(); // porte manage_colloques
     $event = openEdition();
 

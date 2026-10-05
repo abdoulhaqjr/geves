@@ -115,7 +115,7 @@ class AccountActivity
     }
 
     /**
-     * Rôles dérivés (libellés), agrégés sur toutes les événements.
+     * Rôles dérivés (libellés), agrégés sur tous les événements.
      *
      * @return list<string>
      */

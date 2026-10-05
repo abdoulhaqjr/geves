@@ -1227,7 +1227,7 @@ document.addEventListener('alpine:init', () => {
             this.$watch('messages', () => this.persist());
             this.scrollSoon();
         },
-        // Retire les discussions d'un autre utilisateur (changement de compte), toutes événements confondues.
+        // Retire les discussions d'un autre utilisateur (changement de compte), tous événements confondues.
         purgeForeignScopes() {
             try {
                 for (let i = sessionStorage.length - 1; i >= 0; i--) {

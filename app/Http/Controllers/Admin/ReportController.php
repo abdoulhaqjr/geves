@@ -39,7 +39,7 @@ class ReportController extends Controller
         $event = $editionId !== '' ? $events->firstWhere('id', (int) $editionId) : null;
         $report = $event ? new EventReport($event) : null;
 
-        // Historique des exports IA (persisté), filtré sur l'événement courante.
+        // Historique des exports IA (persisté), filtré sur l'événement courant.
         $aiHistory = collect((array) Settings::get('report_ai_history', []))
             ->filter(fn ($h) => (string) ($h['event_id'] ?? '') === $editionId)
             ->take(12)

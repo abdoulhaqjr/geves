@@ -64,7 +64,7 @@ it('exporte un événement donné en JSON', function () {
     expect($json['events'][0]['settings']['tracks'])->toBe(['A']);
 });
 
-it('importe une configuration dans l’événement courante (identité conservée)', function () {
+it('importe une configuration dans l’événement courant (identité conservée)', function () {
     $user = staffWithPermission();
     $series = EventSeries::create(['name' => 'UK', 'slug' => 'uk']);
     $event = $series->events()->create(['title' => 'Ancien titre', 'status' => 'draft', 'slug' => 'uk-2026', 'year' => 2026]);

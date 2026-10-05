@@ -35,7 +35,7 @@
                 </div>
                 @if (count($derivedRoles))
                     <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;">
-                        <span class="ukc-muted" style="font-size:.8rem;">Rôles (toutes événements) :</span>
+                        <span class="ukc-muted" style="font-size:.8rem;">Rôles (tous événements) :</span>
                         @foreach ($derivedRoles as $r)<span class="ukc-pill ukc-pill--muted">{{ $r }}</span>@endforeach
                     </div>
                 @endif

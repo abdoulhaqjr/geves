@@ -573,6 +573,12 @@ paiement (`pay`), inscription à une formation.
   le seed prend ~45 s (200 comptes). Un test de garde vérifie les 200 et les 93 %.
   ⚠️ Les anciens seeders de colloques de démo (Showcase, Live, DemoColloque,
   DemoScenario, DemoStaff) ont été **supprimés** : ce colloque est la référence unique.
+  - **Module Formations** semé (`ColloqueAvenirSeeder::buildFormation()`) :
+    `settings['formation_enabled'] = true` + **une formation publiée** (« Méthodologie
+    de la recherche… », gratuite, jeu. 08/10 14h-17h, visio `scheduled`), **deux
+    formateurs** (`formateur1@test.tg` modérateur, `formateur2@test.tg`) et **6 inscrits**
+    pris parmi les auteurs (`registered`). Idempotent. De quoi exercer l'espace
+    Formations admin/participant et la page publique `#formations`.
   - **Programme du seed = ateliers + plénières SANS conflit** (l'exclusivité des
     plénières est respectée dans les données de démo). Les **ateliers** de volume
     occupent « Salle 1 » à « Salle 6 » (6 en parallèle) par blocs matin **08:30-11:30**

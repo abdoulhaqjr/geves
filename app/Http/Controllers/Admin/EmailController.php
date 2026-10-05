@@ -38,7 +38,7 @@ class EmailController extends Controller
 
         $event = $editionId !== '' ? Event::find($editionId) : null;
 
-        // Nombre de destinataires par audience pour l'événement sélectionnée.
+        // Nombre de destinataires par audience pour l'événement sélectionné.
         $recipientCounts = [];
         foreach (array_keys(EmailAudience::AUDIENCES) as $key) {
             $recipientCounts[$key] = $event ? EmailAudience::count($event, $key) : 0;

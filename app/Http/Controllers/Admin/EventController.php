@@ -95,7 +95,7 @@ class EventController extends Controller
 
     /**
      * Importe la configuration d'un fichier JSON (produit par {@see export()})
-     * DANS l'événement courante : titre, thème, dates, statut et paramètres sont
+     * DANS l'événement courant : titre, thème, dates, statut et paramètres sont
      * restaurés. L'identité (slug, colloque de rattachement) de l'événement est
      * conservée pour éviter les collisions.
      */

@@ -14,7 +14,7 @@
     $colloqueEdition = $currentEdition
         ?? \App\Models\Event::where('status', 'open')->latest('id')->first();
 
-    // Paiement : l'événement courante si elle est à régler, sinon la première à régler.
+    // Paiement : l'événement courant si elle est à régler, sinon la première à régler.
     $payEditionId = ($colloqueEdition
         && \App\Models\Participant::where('user_id', $account?->id)
             ->where('event_id', $colloqueEdition->id)

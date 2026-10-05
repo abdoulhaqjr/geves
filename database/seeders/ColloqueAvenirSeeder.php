@@ -7,6 +7,9 @@ use App\Models\Claim;
 use App\Models\Event;
 use App\Models\EventSeries;
 use App\Models\EventSession;
+use App\Models\Formation;
+use App\Models\FormationEnrollment;
+use App\Models\FormationTrainer;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Models\Review;
@@ -102,6 +105,10 @@ class ColloqueAvenirSeeder extends Seeder
                     'max_communications' => 3,
                     'coauthors_max' => 8,
                     'attestation_max' => 5,
+                    // Module Formations activé : une formation de démonstration est
+                    // créée plus bas (cf. buildFormation), avec deux formateurs et
+                    // des inscrits.
+                    'formation_enabled' => true,
                     'key_dates' => [
                         ['date' => Carbon::now()->subMonths(6)->toDateString(), 'label' => 'Lancement de l’appel'],
                         ['date' => Carbon::now()->subMonths(3)->toDateString(), 'label' => 'Date limite de réception des résumés'],
@@ -468,6 +475,9 @@ class ColloqueAvenirSeeder extends Seeder
             ]
         );
 
+        // Module Formations : une formation publiée, deux formateurs, des inscrits.
+        $this->buildFormation($event, $start);
+
         $this->command?->info('Colloque de test « Avenir durable 2025 » créé (événement open, 6 ateliers).');
         $this->command?->info('Modérateurs : moderateur1@test.tg · moderateur2@test.tg');
         $this->command?->info('Rapporteurs : rapporteur1@test.tg · rapporteur2@test.tg');
@@ -478,6 +488,74 @@ class ColloqueAvenirSeeder extends Seeder
         foreach ($reviewers as $r) {
             $this->command?->info('Relecteur : '.$r->email.' - mot de passe : password (relectures dans « Mes relectures »)');
         }
+    }
+
+    /**
+     * Module Formations : une formation publiée (méthodologie de la recherche),
+     * avec DEUX formateurs (dont un modérateur de la visio) et une poignée
+     * d'inscrits pris parmi les auteurs déjà présents. Gratuite -> inscription
+     * « registered » sans paiement. Idempotente (updateOrCreate).
+     */
+    private function buildFormation(Event $event, Carbon $start): void
+    {
+        $day = (clone $start)->addDays(3); // jeu. 08/10, après-midi
+
+        $formation = Formation::updateOrCreate(
+            ['event_id' => $event->id, 'title' => 'Méthodologie de la recherche et valorisation scientifique'],
+            [
+                'theme' => 'Rédaction, publication et valorisation des travaux',
+                'objective' => 'Outiller doctorants et jeunes chercheurs sur la structuration d’un article, '
+                    .'le choix d’une revue et la valorisation de leurs résultats.',
+                'location' => 'Campus universitaire de Parakou (Bénin)',
+                'room' => 'Salle de formation C',
+                'fee' => 0, // gratuite : inscription sans paiement
+                'starts_at' => (clone $day)->setTime(14, 0),
+                'ends_at' => (clone $day)->setTime(17, 0),
+                'capacity' => 40,
+                'published' => true,
+                'public' => true,
+                'meeting_status' => 'scheduled',
+                'meeting_visibility' => 'participants',
+            ]
+        );
+
+        // Deux formateurs (comptes unifiés). Le premier modère la visio.
+        $formateurs = [
+            [$this->user('formateur1@test.tg', 'Félix', 'Formateur'), true],
+            [$this->user('formateur2@test.tg', 'Fatou', 'Formatrice'), false],
+        ];
+        foreach ($formateurs as [$u, $isModerator]) {
+            FormationTrainer::updateOrCreate(
+                ['formation_id' => $formation->id, 'user_id' => $u->id],
+                [
+                    'name' => $u->name,
+                    'email' => $u->email,
+                    'affiliation' => 'Université de Kara',
+                    'is_moderator' => $isModerator,
+                ]
+            );
+        }
+
+        // Inscrits : une poignée d'auteurs déjà inscrits à l'événement.
+        $inscrits = Participant::where('event_id', $event->id)
+            ->where('role', 'author')
+            ->whereNotNull('user_id')
+            ->orderBy('id')
+            ->limit(6)
+            ->get();
+        foreach ($inscrits as $p) {
+            FormationEnrollment::updateOrCreate(
+                ['formation_id' => $formation->id, 'user_id' => $p->user_id],
+                [
+                    'event_id' => $event->id,
+                    'participant_id' => $p->id,
+                    'status' => 'registered',
+                    'amount' => 0,
+                ]
+            );
+        }
+
+        $this->command?->info('Formation : '.$formation->title.' - 2 formateurs, '.$inscrits->count().' inscrits (gratuite).');
     }
 
     /**

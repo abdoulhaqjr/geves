@@ -42,7 +42,7 @@ class PaymentController extends Controller
         $events = $this->accessibleEditions($request, 'payments');
 
         // Par défaut (aucun filtre explicite), on se cale sur le colloque courant
-        // (ouvert le plus récent, sinon le plus récent) - pas « toutes les événements ».
+        // (ouvert le plus récent, sinon le plus récent) - pas « tous les événements ».
         if ($request->has('event_id')) {
             $editionId = (string) $request->query('event_id', '');
         } else {

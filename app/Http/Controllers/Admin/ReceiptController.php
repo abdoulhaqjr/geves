@@ -18,7 +18,7 @@ class ReceiptController extends Controller
 {
     /**
      * Aperçu du reçu avec des valeurs d'exemple (sans paiement réel) : montre le
-     * rendu final du reçu pour l'événement courante. Utile avant tout encaissement.
+     * rendu final du reçu pour l'événement courant. Utile avant tout encaissement.
      */
     public function sample(Request $request): View
     {
