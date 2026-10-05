@@ -57,6 +57,48 @@ it('émet en masse les attestations aux participants ayant payé', function () {
     expect(Attestation::first()->participant_id)->toBe($paid->id);
 });
 
+it('émet UNE attestation de modération par personne qui a modéré au moins une séance', function () {
+    $staff = adminStaff();
+    $event = openEdition();
+
+    // Une personne modère DEUX séances (dédoublonnée), une autre a le rôle
+    // « modérateur » mais n'est assignée à aucune séance (donc non éligible).
+    $mod = $event->participants()->create(['first_name' => 'Moussa', 'last_name' => 'Modérateur', 'email' => 'moussa@uk.tg', 'role' => 'moderator']);
+    $event->participants()->create(['first_name' => 'Sans', 'last_name' => 'Séance', 'email' => 'sans@uk.tg', 'role' => 'moderator']);
+    $event->sessions()->create(['type' => 'atelier', 'label' => 'S1', 'moderator_email' => 'moussa@uk.tg']);
+    $event->sessions()->create(['type' => 'atelier', 'label' => 'S2', 'moderator_email' => 'MOUSSA@UK.TG']); // casse différente
+
+    $this->actingAs($staff, 'web')->post(route('admin.documents.attestations.issue'), [
+        'event_id' => (string) $event->id, 'type' => 'moderation',
+    ]);
+
+    $atts = Attestation::where('event_id', $event->id)->where('type', 'moderation')->where('revoked', false)->get();
+    expect($atts)->toHaveCount(1);
+    expect($atts->first()->participant_id)->toBe($mod->id);
+
+    // Idempotent : réémettre ne crée pas de doublon.
+    $this->actingAs($staff, 'web')->post(route('admin.documents.attestations.issue'), [
+        'event_id' => (string) $event->id, 'type' => 'moderation',
+    ]);
+    expect(Attestation::where('event_id', $event->id)->where('type', 'moderation')->where('revoked', false)->count())->toBe(1);
+});
+
+it('ne propose plus les attestations de soumission et d’acceptation par défaut', function () {
+    $staff = adminStaff();
+    $event = openEdition();
+
+    $this->actingAs($staff, 'web')
+        ->get(route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'attestations', 'stab' => 'modeles']))
+        ->assertOk()
+        ->assertDontSee('Attestation de soumission')
+        ->assertDontSee('Lettre d’acceptation');
+
+    foreach (['soumission', 'acceptation'] as $type) {
+        expect(DocumentTemplate::where('event_id', $event->id)->where('kind', 'attestation')->where('type', $type)->exists())
+            ->toBeFalse("un modèle « {$type} » ne devrait plus être créé par défaut");
+    }
+});
+
 it('vérifie publiquement une attestation valide, révoquée ou inconnue', function () {
     $event = openEdition();
     $p = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
@@ -597,7 +639,8 @@ it('provisionne un modèle enregistré pour chaque type sur l’onglet Modèles'
         ->assertOk();
 
     // Tous les types listés ont un modèle : la suppression est proposée partout.
-    foreach (['soumission', 'acceptation', 'communication', 'participation', 'moderation', 'rapporteur', 'formation', 'formation_animation'] as $type) {
+    // ⚠️ « soumission » et « acceptation » ne sont plus proposés par défaut.
+    foreach (['communication', 'participation', 'moderation', 'rapporteur', 'formation', 'formation_animation'] as $type) {
         expect(DocumentTemplate::where('event_id', $event->id)->where('kind', 'attestation')->where('type', $type)->exists())
             ->toBeTrue("modèle manquant pour {$type}");
     }

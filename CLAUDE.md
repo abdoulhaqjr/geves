@@ -2057,6 +2057,20 @@ ajoutée par la vue, elle ne se saisit pas.
 - **Limite de communications** (`settings.max_communications`) : compte **seulement** les
   communications où le compte est **auteur correspondant** (participant déposant,
   `Submission::usedCountFor()`). Illimité en tant que **co-auteur**.
+- **Types d'attestation proposés PAR DÉFAUT** (hub Documents, `DocumentHubController::$typeMeta`) :
+  communication, participation, modération, rapporteur, formation, animation de
+  formation. ⚠️ **« soumission » et « acceptation » ne sont PLUS offerts d'office** -
+  ils restent dans `Attestation::TYPES` (données existantes) mais ne sont ni créés
+  (`DocumentTemplate::ensureFor`) ni listés. Ne pas les réintroduire dans `$typeMeta`
+  sans demande.
+- **Modération / rapporteur = UNE attestation par PERSONNE et par événement** : le
+  bénéficiaire est une personne qui a **modéré** (resp. **rapporté**) **au moins une
+  séance**, dédoublonnée. Éligibilité via `DocumentHubController::sessionRoleTargets()`
+  (rapprochement par e-mail sur `event_sessions.moderator_email` / `rapporteur_email`,
+  pas sur `participant.role`), émission idempotente par (événement, participant, type).
+  ⚠️ Ce n'est PAS « par séance » : quelqu'un qui modère trois séances n'a qu'une
+  attestation. Test : `DocumentsTest` (« émet UNE attestation de modération par
+  personne… »).
 - **Attestation de communication = par communication ET par personne** : sur chaque
   communication acceptée, l'auteur correspondant **et** chaque co-auteur **payé** ont une
   attestation à leur nom, liée à la communication (`attestations.submission_id`). Deux

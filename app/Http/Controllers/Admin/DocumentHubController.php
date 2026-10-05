@@ -44,14 +44,17 @@ class DocumentHubController extends Controller
             ? Attestation::where('event_id', $event->id)->latest('id')->get()
             : collect();
 
-        // Ordre & libellés fidèles au mockup admin-documents (6 types).
+        // Types proposés PAR DÉFAUT. ⚠️ « soumission » et « acceptation » ne sont
+        // plus offerts d'office (ils restent définis dans Attestation::TYPES pour
+        // les données existantes, mais ne sont ni créés ni listés ici).
+        // ⚠️ Modération / rapporteur = UNE par personne et par événement : le
+        // bénéficiaire est une personne qui a modéré (resp. rapporté) AU MOINS une
+        // séance, pas une attestation par séance (cf. targetsFor + idempotence).
         $typeMeta = [
-            'soumission' => ['title' => 'Attestation de soumission', 'sub' => 'Par communication', 'scope' => 'Par communication'],
-            'acceptation' => ['title' => 'Lettre d’acceptation', 'sub' => 'Par communication', 'scope' => 'Par communication'],
             'communication' => ['title' => 'Attestation de communication', 'sub' => 'Orale / poster', 'scope' => 'Par communication'],
             'participation' => ['title' => 'Attestation de participation', 'sub' => 'Une par participant', 'scope' => 'Participant'],
-            'moderation' => ['title' => 'Attestation de modération', 'sub' => 'Sessions', 'scope' => 'Par session'],
-            'rapporteur' => ['title' => 'Attestation de rapporteur', 'sub' => 'Sessions', 'scope' => 'Par session'],
+            'moderation' => ['title' => 'Attestation de modération', 'sub' => 'Modérateurs de séance', 'scope' => 'Une par personne'],
+            'rapporteur' => ['title' => 'Attestation de rapporteur', 'sub' => 'Rapporteurs de séance', 'scope' => 'Une par personne'],
             // Module Formation : les modèles se conçoivent ici, mais l'émission se
             // fait formation par formation (cf. Admin\FormationController).
             'formation' => ['title' => 'Attestation de formation', 'sub' => 'Inscrits aux formations', 'scope' => 'Par formation'],
@@ -716,13 +719,41 @@ class DocumentHubController extends Controller
             'soumission' => $base()->whereHas('submissions', fn ($q) => $q->where('revision_of', 0))->get(),
             'acceptation' => $this->acceptedCorrespondingTargets($event),
             // 'communication' est géré à part (par communication) via CommunicationAttestations.
-            'moderation' => $base()->where('role', 'moderator')->get(),
-            'rapporteur' => $base()->where('role', 'rapporteur')->get(),
+            // ⚠️ UNE par personne : le bénéficiaire a modéré (resp. rapporté) au
+            // moins une séance, et l'émission est idempotente par (événement,
+            // participant, type) - pas une attestation par séance.
+            'moderation' => $this->sessionRoleTargets($event, 'moderator_email'),
+            'rapporteur' => $this->sessionRoleTargets($event, 'rapporteur_email'),
             // 'formation' et 'formation_animation' sont gérées par formation
             // (émission depuis la page Formations, cf. Admin\FormationController).
             'participation' => $this->participationTargets($event),
             default => $base()->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid'))->get(),
         };
+    }
+
+    /**
+     * Bénéficiaires d'une attestation de modération / rapporteur : les personnes
+     * (participants) qui ont modéré (resp. rapporté) AU MOINS une séance de
+     * l'événement. Rapprochement par e-mail (comme les espaces de fonction),
+     * dédoublonné : une personne qui modère trois séances n'a qu'une attestation.
+     */
+    private function sessionRoleTargets(Event $event, string $column): Collection
+    {
+        $emails = $event->sessions()
+            ->whereNotNull($column)->where($column, '!=', '')
+            ->pluck($column)
+            ->map(fn ($e) => mb_strtolower(trim((string) $e)))
+            ->filter()->unique()->values();
+
+        if ($emails->isEmpty()) {
+            return new Collection;
+        }
+
+        $placeholders = implode(',', array_fill(0, $emails->count(), '?'));
+
+        return Participant::where('event_id', $event->id)
+            ->whereRaw("LOWER(email) IN ($placeholders)", $emails->all())
+            ->get();
     }
 
     /**
