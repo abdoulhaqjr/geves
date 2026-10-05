@@ -146,7 +146,6 @@ class DocumentHubController extends Controller
             'attDelivery' => AttestationPolicy::delivery($event),
             'attDeliveryLabel' => AttestationPolicy::DELIVERIES[AttestationPolicy::delivery($event)],
             'attPaper' => AttestationPolicy::isPaper($event),
-            'attScopeLabel' => AttestationPolicy::SCOPES[AttestationPolicy::communicationScope($event)],
             'opts' => [
                 'attPrefix' => (string) EventSettings::get($event, 'attestations.prefix', 'UKC-ATT-2026-'),
                 // Signataire porté par les jetons [signatory.name] / [signatory.role]

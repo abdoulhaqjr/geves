@@ -65,7 +65,7 @@
                                 (lot PDF + liste d’émargement). L’attestation reste consultable dans l’espace du participant.
                             @else
                                 Chaque attestation émise part chez son bénéficiaire (par e-mail)
-                                et apparaît dans son espace. Les attestations de communication s’émettent aussi
+                                et apparaît dans son espace ; celles de communication s’émettent aussi
                                 <strong>au fil des passages</strong>, quand le modérateur les valide en séance.
                             @endif
                         </div>
