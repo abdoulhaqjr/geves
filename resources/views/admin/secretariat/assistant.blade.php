@@ -58,7 +58,7 @@
                             <textarea name="prompt" rows="5" x-model="prompt" placeholder="Ex. : Note de service pour les chefs d'atelier, ton formel, une page."></textarea>
                         </div>
 
-                        <div class="ukc-form-grid">
+                        <div class="ukc-form-grid-3">
                             <div class="ukc-field"><label>Format</label>
                                 <select name="format" x-model="format">
                                     <option value="pdf">PDF (imprimable)</option>
@@ -73,16 +73,7 @@
                                     <option value="presence">Liste des participants (présence)</option>
                                 </select>
                             </div>
-                        </div>
-
-                        <div class="ukc-form-grid">
-                            <div class="ukc-field">
-                                <label>Modèle d'exemple (optionnel)</label>
-                                <input type="file" name="example" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt">
-                                <p class="ukc-hint">L'IA en reproduira la structure.</p>
-                            </div>
-                            <div class="ukc-field">
-                                <label>Fournisseur IA</label>
+                            <div class="ukc-field"><label>Fournisseur IA</label>
                                 <select name="aiProvider">
                                     <option value="default">Par défaut (réglages)</option>
                                     <option value="claude">Claude</option>
@@ -91,6 +82,12 @@
                                     <option value="grok">Grok</option>
                                 </select>
                             </div>
+                        </div>
+
+                        <div class="ukc-field">
+                            <label>Modèle d'exemple (optionnel)</label>
+                            <x-ukc.filedrop name="example" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" hint="PDF, Word, Excel, CSV ou TXT" />
+                            <p class="ukc-hint">Joignez un document type : l'IA en reproduira la structure.</p>
                         </div>
 
                         <div>
