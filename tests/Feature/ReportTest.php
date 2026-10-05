@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Event;
+use App\Models\SessionReport;
 use App\Support\EventReport;
 use App\Support\XlsxWriter;
 use Illuminate\Support\Str;
@@ -116,6 +117,29 @@ it('affiche le rapport PDF imprimable', function () {
         ->assertSee('Rapport d’événement', false)
         ->assertSee('AA-001')
         ->assertSee('Awa');
+});
+
+it('exporte les rapports de séance (Exports prêts)', function () {
+    $staff = adminStaff();
+    $event = reportEdition();
+    $session = $event->sessions()->create([
+        'label' => 'Atelier Rapport', 'type' => 'atelier',
+        'starts_at' => now()->subHour(),
+        'rapporteur_email' => 'rap@example.tg', 'rapporteur_name' => 'Rita R.',
+    ]);
+    SessionReport::create([
+        'session_id' => $session->id, 'event_id' => $event->id,
+        'summary' => 'Belle séance.', 'highlights' => 'Publier les actes.',
+        'attendance' => 42, 'status' => 'validated', 'submitted_at' => now(), 'validated_at' => now(),
+    ]);
+
+    $xlsx = $this->actingAs($staff, 'web')->get(route('admin.reports.export', [$event, 'session_reports', 'xlsx']));
+    $xlsx->assertOk();
+    expect(substr($xlsx->getContent(), 0, 2))->toBe('PK');
+
+    $csv = $this->actingAs($staff, 'web')->get(route('admin.reports.export', [$event, 'session_reports', 'csv']));
+    $csv->assertOk();
+    expect($csv->streamedContent())->toContain('Atelier Rapport')->toContain('Rita R.')->toContain('Belle séance.');
 });
 
 it('refuse l’accès aux invités', function () {

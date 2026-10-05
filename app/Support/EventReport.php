@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Attestation;
 use App\Models\Event;
+use App\Models\EventSession;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Models\Review;
@@ -215,10 +216,50 @@ class EventReport
         return $rows;
     }
 
+    /** @return list<string> */
+    public function sessionReportHeaders(): array
+    {
+        return ['Séance', 'Salle', 'Date', 'Rapporteur', 'Statut', 'Affluence estimée', 'Synthèse', 'Points saillants & recommandations', 'Validé le'];
+    }
+
+    /**
+     * Rapports de séance : une ligne par séance ayant un rapporteur désigné, avec
+     * l'état et le contenu du rapport (pour l'export et la lecture par l'IA).
+     *
+     * @return array<int, array<int, string|int>>
+     */
+    public function sessionReportRows(): array
+    {
+        return EventSession::where('event_id', $this->event->id)
+            ->whereNotNull('rapporteur_email')->where('rapporteur_email', '!=', '')
+            ->with('report')
+            ->orderBy('starts_at')->orderBy('id')
+            ->get()
+            ->map(function (EventSession $s) {
+                $r = $s->report;
+                $status = $r
+                    ? ($r->isValidated() ? 'Validé' : ($r->isSubmitted() ? 'Soumis' : 'Brouillon'))
+                    : ($s->hasStarted() ? 'À rédiger' : 'Programmée');
+
+                return [
+                    (string) $s->label,
+                    (string) ($s->room ?: ''),
+                    $s->starts_at?->format('Y-m-d H:i') ?? '',
+                    (string) ($s->rapporteur_name ?: $s->rapporteur_email ?: ''),
+                    $status,
+                    $r && $r->attendance !== null ? (int) $r->attendance : '',
+                    (string) (optional($r)->summary ?? ''),
+                    (string) (optional($r)->highlights ?? ''),
+                    optional($r)->validated_at?->format('Y-m-d H:i') ?? '',
+                ];
+            })
+            ->all();
+    }
+
     /**
      * Nombre de lignes par jeu de données (pour l'affichage des cartes d'export).
      *
-     * @return array{submissions:int, participants:int, payments:int, attestations:int}
+     * @return array{submissions:int, participants:int, payments:int, attestations:int, session_reports:int}
      */
     public function counts(): array
     {
@@ -229,6 +270,8 @@ class EventReport
             'participants' => Participant::where('event_id', $editionId)->count(),
             'payments' => Payment::where('event_id', $editionId)->count(),
             'attestations' => Attestation::where('event_id', $editionId)->count(),
+            'session_reports' => EventSession::where('event_id', $editionId)
+                ->whereNotNull('rapporteur_email')->where('rapporteur_email', '!=', '')->count(),
         ];
     }
 

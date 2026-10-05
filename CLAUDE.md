@@ -2430,7 +2430,9 @@ Côté public (page colloque + Déroulement), les ateliers simultanés portent u
 ### Secrétariat = TROIS onglets portés par l'URL
 
 `SecretariatController` + `admin/secretariat/_nav.blade.php` (pilules `.ukc-nav-docs`,
-`['current' => …]`) :
+`['current' => …]`). **Ordre des onglets : Documents · Secrétariat assisté · Rapports de
+séance** (le défaut `admin.secretariat` reste le tableau de bord des rapports, même s'il
+est listé en dernier) :
 
 - **Rapports de séance** (`admin.secretariat`, vue `admin/secretariat.blade.php`) =
   **poste de travail unifié**, **scopé par événement** (sélecteur « Événement » en tête,
@@ -2464,6 +2466,12 @@ Côté public (page colloque + Déroulement), les ateliers simultanés portent u
     `NotificationKinds` pour que la notification n'envoie PAS son e-mail générique (sinon
     doublon avec le modèle). Le modèle de relance se personnalise **parmi les modèles de
     mails** (onglet E-mails). Ne pas revenir à un `mailto:` que l'admin composerait.
+  - ⚠️ **Les rapports de séance s'EXPORTENT depuis le module Rapports** (`/admin/rapports`) :
+    dataset **`session_reports`** dans « Exports prêts » (CSV/XLSX, `ReportController::export`)
+    et périmètre **`reports`** de l'« Export personnalisé (IA) » (lu par l'IA, inclus aussi
+    dans le périmètre « Événement »). Lignes/en-têtes dans
+    `EventReport::sessionReportRows()`/`sessionReportHeaders()` (une ligne par séance avec
+    rapporteur : état, affluence, synthèse, points saillants).
 - **Documents** (`admin.secretariat.documents`, vue `admin/secretariat/documents.blade.php`)
   = cinq documents logistiques **sans IA**, remplis depuis les données réelles et
   **imprimables** : liste de présence, feuille d'émargement, affiche directionnelle,

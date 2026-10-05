@@ -65,7 +65,7 @@ class ReportController extends Controller
      */
     public function export(Event $event, string $dataset, string $format): Response
     {
-        abort_unless(in_array($dataset, ['submissions', 'participants', 'payments', 'attestations', 'accounting'], true), 404);
+        abort_unless(in_array($dataset, ['submissions', 'participants', 'payments', 'attestations', 'accounting', 'session_reports'], true), 404);
         abort_unless(in_array($format, ['csv', 'xlsx'], true), 404);
 
         $report = new EventReport($event);
@@ -75,6 +75,7 @@ class ReportController extends Controller
             'payments' => ['Paiements', $report->paymentHeaders(), $report->paymentRows()],
             'attestations' => ['Attestations', $report->attestationHeaders(), $report->attestationRows()],
             'accounting' => ['Comptabilité', $report->accountingHeaders(), $report->accountingRows()],
+            'session_reports' => ['Rapports de séance', $report->sessionReportHeaders(), $report->sessionReportRows()],
         };
 
         $filename = $report->filenameBase().'-'.$dataset;
@@ -168,10 +169,12 @@ class ReportController extends Controller
             'subs' => [['Communications', $report->submissionHeaders(), $report->submissionRows()]],
             'part' => [['Participants', $report->participantHeaders(), $report->participantRows()]],
             'pay' => [['Paiements', $report->paymentHeaders(), $report->paymentRows()]],
+            'reports' => [['Rapports de séance', $report->sessionReportHeaders(), $report->sessionReportRows()]],
             default => [
                 ['Participants', $report->participantHeaders(), $report->participantRows()],
                 ['Communications', $report->submissionHeaders(), $report->submissionRows()],
                 ['Paiements', $report->paymentHeaders(), $report->paymentRows()],
+                ['Rapports de séance', $report->sessionReportHeaders(), $report->sessionReportRows()],
             ],
         };
     }
@@ -200,7 +203,7 @@ class ReportController extends Controller
             'aiNotes' => ['nullable', 'string', 'max:2000'],
             'aiExample' => ['nullable', 'file', 'mimes:pdf,txt,doc,docx,xls,xlsx,csv', 'max:10240'],
             'format' => ['nullable', 'in:xlsx,csv,pdf,docx'],
-            'scope' => ['nullable', 'in:event,subs,part,pay,all'],
+            'scope' => ['nullable', 'in:event,subs,part,pay,reports,all'],
             'aiProvider' => ['nullable', 'in:default,claude,openai,gemini,grok'],
         ]);
 

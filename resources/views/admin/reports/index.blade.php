@@ -369,6 +369,15 @@
                                 <a href="{{ route('admin.reports.export', [$event, 'accounting', 'xlsx']) }}" class="ukc-btn ukc-btn--sm">Excel</a>
                             </div>
                         </div>
+                        <div class="report-item">
+                            <h3>Rapports de séance</h3>
+                            <p>Synthèses des séances rédigées par les rapporteurs : état, affluence, points saillants.</p>
+                            <div class="meta">CSV · XLSX · ~{{ $counts['session_reports'] }} lignes</div>
+                            <div class="dl">
+                                <a href="{{ route('admin.reports.export', [$event, 'session_reports', 'csv']) }}" class="ukc-btn ukc-btn--sm">CSV</a>
+                                <a href="{{ route('admin.reports.export', [$event, 'session_reports', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
+                            </div>
+                        </div>
                     </div>
                     <p class="ukc-hint" style="margin-top:14px;">Le classeur Excel « complet » (toutes les feuilles) reste disponible via <a href="{{ route('admin.reports.xlsx', $event) }}">Excel (.xlsx)</a> en haut de page.</p>
                 </div>
@@ -454,10 +463,11 @@
                             <div class="ukc-form-row">
                                 <label for="aiScope">Périmètre des données</label>
                                 <select id="aiScope" name="scope">
-                                    <option value="event" @selected(old('scope')==='event')>Événement (participants + communications + paiements)</option>
+                                    <option value="event" @selected(old('scope')==='event')>Événement (participants + communications + paiements + rapports de séance)</option>
                                     <option value="subs" @selected(old('scope')==='subs')>Soumissions uniquement</option>
                                     <option value="part" @selected(old('scope')==='part')>Participants uniquement</option>
                                     <option value="pay" @selected(old('scope')==='pay')>Paiements uniquement</option>
+                                    <option value="reports" @selected(old('scope')==='reports')>Rapports de séance uniquement</option>
                                 </select>
                                 <span class="ukc-hint">Les lignes de ce périmètre sont <strong>transmises au fournisseur d’IA</strong> choisi, pour qu’il réponde sur des données réelles. Choisissez le plus étroit qui suffise.</span>
                             </div>
