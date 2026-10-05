@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\EventSeries;
 use App\Models\Event;
+use App\Models\EventSeries;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 

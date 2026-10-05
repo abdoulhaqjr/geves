@@ -3,8 +3,8 @@
 use App\Actions\QueueEmailCampaign;
 use App\Actions\SendDueEmails;
 use App\Mail\CampaignMail;
-use App\Models\Event;
 use App\Models\Email;
+use App\Models\Event;
 use App\Support\EmailAudience;
 use App\Support\Settings;
 use Illuminate\Support\Facades\Mail;

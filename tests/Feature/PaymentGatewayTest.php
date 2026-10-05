@@ -1,8 +1,8 @@
 <?php
 
 use App\Actions\ReconcilePayments;
-use App\Models\EventSeries;
 use App\Models\Event;
+use App\Models\EventSeries;
 use App\Models\Payment;
 use App\Models\User;
 use App\Payments\Gateways\CashpayGateway;

@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\EventSeries;
 use App\Models\Event;
+use App\Models\EventSeries;
 use App\Models\User;
 use Illuminate\Http\Testing\File;
 use Spatie\Permission\Models\Permission;

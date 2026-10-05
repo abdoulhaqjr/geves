@@ -37,7 +37,7 @@ it('affiche la liste des archives', function () {
 
     $this->get(route('public.archives'))
         ->assertOk()
-        ->assertSee('EventSeries passés');
+        ->assertSee('Colloques passés');
 });
 
 it('liste une événement passée dans les archives', function () {

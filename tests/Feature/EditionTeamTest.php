@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\EventSeries;
 use App\Models\Event;
+use App\Models\EventSeries;
 use App\Models\User;
 
 // adminStaff() et openEdition() sont définis dans tests/Pest.php.

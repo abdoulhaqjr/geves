@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\EventSeries;
 use App\Models\Event;
+use App\Models\EventSeries;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 

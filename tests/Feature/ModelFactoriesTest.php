@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\EventSeries;
 use App\Models\Event;
+use App\Models\EventSeries;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Models\Submission;

@@ -2,8 +2,8 @@
 
 use App\Actions\ConfirmPayment;
 use App\Mail\PaymentReceiptMail;
-use App\Models\EventSeries;
 use App\Models\Event;
+use App\Models\EventSeries;
 use App\Models\Payment;
 use App\Models\User;
 use App\Support\Fees;

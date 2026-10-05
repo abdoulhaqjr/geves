@@ -1,8 +1,8 @@
 <?php
 
 use App\Enums\EventPhase;
-use App\Models\EventSeries;
 use App\Models\Event;
+use App\Models\EventSeries;
 
 // openEdition() -> AccountSubmissionTest
 
@@ -99,6 +99,6 @@ it('l’accueil range un appel ouvert dans « à venir »', function () {
 
     $this->get(route('home'))
         ->assertOk()
-        ->assertSee('EventSeries à venir')
+        ->assertSee('Colloques à venir')
         ->assertSee('Appel Ouvert 2027');
 });

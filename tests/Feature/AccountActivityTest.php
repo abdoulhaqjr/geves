@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\EventSeries;
 use App\Models\Event;
+use App\Models\EventSeries;
 use App\Models\User;
 use App\Support\AccountActivity;
 use Illuminate\Support\Str;

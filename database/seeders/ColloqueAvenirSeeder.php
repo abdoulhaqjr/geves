@@ -4,8 +4,8 @@ namespace Database\Seeders;
 
 use App\Models\Atelier;
 use App\Models\Claim;
-use App\Models\EventSeries;
 use App\Models\Event;
+use App\Models\EventSeries;
 use App\Models\EventSession;
 use App\Models\Participant;
 use App\Models\Payment;

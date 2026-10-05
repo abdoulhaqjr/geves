@@ -1,8 +1,8 @@
 <?php
 
 use App\Models\Account;
-use App\Models\EventSeries;
 use App\Models\Event;
+use App\Models\EventSeries;
 use App\Models\EventSession;
 use App\Models\Participant;
 use App\Models\Submission;

@@ -1,8 +1,8 @@
 <?php
 
 use App\Actions\AutoAssignReviewers;
-use App\Models\EventSeries;
 use App\Models\Event;
+use App\Models\EventSeries;
 use App\Models\Participant;
 use App\Models\ReviewerBid;
 use App\Models\User;

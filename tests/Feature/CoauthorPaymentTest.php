@@ -3,8 +3,8 @@
 use App\Actions\NotifyCoauthorsForPayment;
 use App\Mail\CoauthorPaymentInvitationMail;
 use App\Models\Attestation;
-use App\Models\Event;
 use App\Models\Email;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Submission;
 use App\Models\SubmissionAuthor;
