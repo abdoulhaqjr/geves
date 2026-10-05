@@ -64,12 +64,10 @@
                                 <a href="{{ route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'attestations', 'stab' => 'delivrees']) }}">Attestations délivrées</a>
                                 (lot PDF + liste d’émargement). L’attestation reste consultable dans l’espace du participant.
                             @else
-                                Chaque attestation émise part chez son bénéficiaire (notification, e-mail, SMS si activé)
+                                Chaque attestation émise part chez son bénéficiaire (par e-mail)
                                 et apparaît dans son espace. Les attestations de communication s’émettent aussi
                                 <strong>au fil des passages</strong>, quand le modérateur les valide en séance.
                             @endif
-                            <br>Attestation de communication : {{ \Illuminate\Support\Str::lower($attScopeLabel) }}.
-                            <a href="{{ route('admin.documents.attestations', ['event_id' => $event->id, 'tab' => 'attestations', 'stab' => 'options']) }}">Changer</a>
                         </div>
                     </div>
 
