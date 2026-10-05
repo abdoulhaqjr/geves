@@ -1443,7 +1443,7 @@
     // ⚠️ L'image de fond n'était pas sérialisée : une attestation dessinée sur
     // un fond illustré ressortait sur du blanc.
     var bgEl = document.getElementById('pageBg');
-    var bgUrl = bgEl ? (getComputedStyle(bgEl).backgroundImage || '').match(/url\((['"]?)(.*?)\)/) : null;
+    var bgUrl = bgEl ? (getComputedStyle(bgEl).backgroundImage || '').match(/url\((['"]?)(.*?)\1\)/) : null;
     return { width: W, height: H, bg: pageBg, bg_image: bgUrl ? bgUrl[2] : '', accent: '#223ea4', elements: elements };
   }
   document.getElementById('btnSave').addEventListener('click', function () {
