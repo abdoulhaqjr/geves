@@ -358,6 +358,21 @@
 .ukc-shell .tw-stat .lbl { padding-right: 48px; }
 .ukc-shell .tw-stat .val { margin-top: 2px; }
 
+/* Cartes KPI cliquables = filtres (poste de travail du Secrétariat). Un <button>
+   habillé en carte de statistique : on filtre le tableau en cliquant. */
+.ukc-shell .sec-filters { align-items: stretch; }
+.ukc-shell .sec-filter {
+    appearance: none; font: inherit; color: inherit; text-align: left;
+    width: 100%; cursor: pointer;
+    transition: border-color .12s ease, box-shadow .12s ease, transform .12s ease;
+}
+.ukc-shell .sec-filter:hover { border-color: var(--ukc-blue); transform: translateY(-1px); }
+.ukc-shell .sec-filter:focus-visible { outline: 2px solid var(--ukc-blue); outline-offset: 2px; }
+.ukc-shell .sec-filter.is-active {
+    border-color: var(--ukc-blue);
+    box-shadow: inset 0 0 0 1px var(--ukc-blue), 0 6px 18px rgba(34, 62, 164, .12);
+}
+
 /* Puce de tendance ▲/▼ (variation vs période précédente). */
 .ukc-shell .tw-stat__trend {
     display: inline-flex; align-items: center; gap: 5px;

@@ -93,20 +93,48 @@ class SecretariatController extends Controller
                 ->with(['event.series', 'atelier', 'report'])
                 ->orderBy('starts_at')->orderBy('id')->get();
 
-        $toValidate = $sessions->filter(fn (EventSession $s) => $s->report && $s->report->isSubmitted());
-        $awaiting = $sessions->filter(fn (EventSession $s) => $s->hasStarted()
-            && (! $s->report || $s->report->status === 'draft'));
-        $validated = $sessions->filter(fn (EventSession $s) => $s->report && $s->report->isValidated());
+        // Statut de chaque séance (une seule classification, lue par les filtres
+        // et les compteurs) : à valider → en attente de rédaction → programmée →
+        // validée. Un rang de priorité garde les séances actionnables en tête.
+        $priority = ['to_validate' => 0, 'awaiting' => 1, 'scheduled' => 2, 'validated' => 3];
+
+        $rows = $sessions->map(function (EventSession $s) {
+            $report = $s->report;
+            if ($report && $report->isValidated()) {
+                $status = 'validated';
+            } elseif ($report && $report->isSubmitted()) {
+                $status = 'to_validate';
+            } elseif ($s->hasStarted()) {
+                $status = 'awaiting';
+            } else {
+                $status = 'scheduled';
+            }
+
+            return (object) ['s' => $s, 'status' => $status];
+        })->sort(function ($a, $b) use ($priority) {
+            // Priorité d'abord ; au sein d'un statut, les validées les plus
+            // récentes en tête, les autres par date de séance.
+            $pa = $priority[$a->status];
+            $pb = $priority[$b->status];
+            if ($pa !== $pb) {
+                return $pa <=> $pb;
+            }
+            if ($a->status === 'validated') {
+                return ($b->s->report?->validated_at?->getTimestamp() ?? 0) <=> ($a->s->report?->validated_at?->getTimestamp() ?? 0);
+            }
+
+            return ($a->s->starts_at?->getTimestamp() ?? 0) <=> ($b->s->starts_at?->getTimestamp() ?? 0);
+        })->values();
 
         return view('admin.secretariat', [
             'events' => $events,
-            'toValidate' => $toValidate->values(),
-            'awaiting' => $awaiting->values(),
-            'validated' => $validated->sortByDesc(fn (EventSession $s) => $s->report?->validated_at)->take(6)->values(),
+            'rows' => $rows,
             'stats' => [
-                'to_validate' => $toValidate->count(),
-                'validated' => $validated->count(),
-                'awaiting' => $awaiting->count(),
+                'to_validate' => $rows->where('status', 'to_validate')->count(),
+                'awaiting' => $rows->where('status', 'awaiting')->count(),
+                'scheduled' => $rows->where('status', 'scheduled')->count(),
+                'validated' => $rows->where('status', 'validated')->count(),
+                'total' => $rows->count(),
             ],
         ]);
     }
