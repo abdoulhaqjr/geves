@@ -1,8 +1,8 @@
 <?php
 
 use App\Models\Account;
-use App\Models\Colloque;
-use App\Models\Edition;
+use App\Models\Event;
+use App\Models\EventSeries;
 use App\Models\EventSession;
 use App\Models\Participant;
 use App\Models\Submission;
@@ -64,13 +64,13 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function openEdition(array $settings = []): Edition
+function openEdition(array $settings = []): Event
 {
-    $colloque = Colloque::create(['name' => 'Colloque UK', 'slug' => 'uk']);
+    $series = EventSeries::create(['name' => 'EventSeries UK', 'slug' => 'uk']);
 
-    return $colloque->editions()->create([
+    return $series->events()->create([
         'title' => 'UK 2026',
-        'edition_label' => '3e édition',
+        'event_label' => '3e événement',
         'year' => 2026,
         'status' => 'open',
         'slug' => 'uk-2026',
@@ -111,13 +111,13 @@ function adminStaff(): User
 
 function seededSubmission(string $status = 'submitted'): Submission
 {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
-    $participant = $edition->participants()->create([
+    $participant = $event->participants()->create([
         'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
     ]);
 
-    return $edition->submissions()->create([
+    return $event->submissions()->create([
         'participant_id' => $participant->id,
         'ref_code' => '26-001',
         'title' => 'Innovation durable',
@@ -129,19 +129,19 @@ function seededSubmission(string $status = 'submitted'): Submission
     ]);
 }
 
-function sessionFor(Edition $edition): EventSession
+function sessionFor(Event $event): EventSession
 {
     return EventSession::create([
-        'edition_id' => $edition->id, 'label' => 'Séance plénière',
+        'event_id' => $event->id, 'label' => 'Séance plénière',
         'session_day' => '2026-09-03', 'starts_at' => '2026-09-03 09:00', 'ends_at' => '2026-09-03 11:00',
     ]);
 }
 
-function participantAccount(Edition $edition): User
+function participantAccount(Event $event): User
 {
     $account = verifiedAccount();
     Participant::create([
-        'edition_id' => $edition->id, 'user_id' => $account->id,
+        'event_id' => $event->id, 'user_id' => $account->id,
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email, 'role' => 'author',
     ]);
 

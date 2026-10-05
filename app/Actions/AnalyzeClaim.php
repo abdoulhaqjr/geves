@@ -4,7 +4,7 @@ namespace App\Actions;
 
 use App\AI\AiManager;
 use App\Models\Claim;
-use App\Support\ColloqueKnowledge;
+use App\Support\EventKnowledge;
 use Illuminate\Support\Str;
 
 /**
@@ -36,11 +36,11 @@ class AnalyzeClaim
 
     protected function instruction(Claim $claim): string
     {
-        $knowledge = ColloqueKnowledge::brief($claim->edition);
-        $context = $knowledge !== '' ? $knowledge : 'Aucune information d’édition disponible.';
+        $knowledge = EventKnowledge::brief($claim->event);
+        $context = $knowledge !== '' ? $knowledge : 'Aucune information d’événement disponible.';
 
         $type = $claim->typeLabel();
-        $edition = $claim->edition?->title ?: ($claim->edition?->year ? (string) $claim->edition->year : 'non précisée');
+        $event = $claim->event?->title ?: ($claim->event?->year ? (string) $claim->event->year : 'non précisée');
         $category = $claim->category ?: 'non précisée';
         $subject = $claim->subject;
         $message = Str::limit((string) $claim->message, 4000, '');
@@ -57,7 +57,7 @@ class AnalyzeClaim
         ============================================================
 
         {$type} à traiter :
-        - Édition : {$edition}
+        - Événement : {$event}
         - Catégorie : {$category}
         - Déclarant : {$who}
         - Objet : {$subject}

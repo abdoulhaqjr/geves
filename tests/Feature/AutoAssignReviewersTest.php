@@ -7,17 +7,17 @@ use Illuminate\Support\Facades\Mail;
 
 // adminStaff() et seededSubmission() sont définis dans tests/Pest.php.
 
-it('affiche l’aperçu d’attribution avec les relecteurs de l’édition', function () {
+it('affiche l’aperçu d’attribution avec les relecteurs de l’événement', function () {
     $staff = adminStaff();
     $submission = seededSubmission('submitted'); // axe « Sciences »
-    $edition = $submission->edition;
-    $edition->participants()->create([
+    $event = $submission->event;
+    $event->participants()->create([
         'first_name' => 'Kofi', 'last_name' => 'Mensah', 'email' => 'kofi@rev.tg',
         'role' => 'reviewer', 'meta' => ['review_tracks' => ['Sciences']],
     ]);
 
     $this->actingAs($staff, 'web')
-        ->get(route('admin.submissions.auto-assign', ['edition_id' => $edition->id, 'target' => 1]))
+        ->get(route('admin.submissions.auto-assign', ['event_id' => $event->id, 'target' => 1]))
         ->assertOk()
         ->assertSee('Kofi Mensah')
         ->assertSee('Expertise sur l’axe');
@@ -27,15 +27,15 @@ it('applique un plan validé et met la soumission en relecture', function () {
     Mail::fake();
     $staff = adminStaff();
     $submission = seededSubmission('submitted');
-    $edition = $submission->edition;
-    $reviewer = $edition->participants()->create([
+    $event = $submission->event;
+    $reviewer = $event->participants()->create([
         'first_name' => 'Kofi', 'last_name' => 'Mensah', 'email' => 'kofi@rev.tg',
         'role' => 'reviewer', 'meta' => ['review_tracks' => ['Sciences']],
     ]);
 
     $this->actingAs($staff, 'web')
         ->post(route('admin.submissions.auto-assign.apply'), [
-            'edition_id' => $edition->id,
+            'event_id' => $event->id,
             'pairs' => [$submission->id.':'.$reviewer->id],
         ])
         ->assertRedirect();
@@ -48,15 +48,15 @@ it('n’applique jamais un conflit d’intérêt élevé (même e-mail que l’a
     Mail::fake();
     $staff = adminStaff();
     $submission = seededSubmission('submitted'); // auteur awa@example.tg
-    $edition = $submission->edition;
-    $conflicted = $edition->participants()->create([
+    $event = $submission->event;
+    $conflicted = $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', // = auteur → COI élevé
         'role' => 'reviewer',
     ]);
 
     $this->actingAs($staff, 'web')
         ->post(route('admin.submissions.auto-assign.apply'), [
-            'edition_id' => $edition->id,
+            'event_id' => $event->id,
             'pairs' => [$submission->id.':'.$conflicted->id],
         ])
         ->assertRedirect();
@@ -64,16 +64,16 @@ it('n’applique jamais un conflit d’intérêt élevé (même e-mail que l’a
     expect(Review::where('reviewer_id', $conflicted->id)->exists())->toBeFalse();
 });
 
-it('met à jour l’expertise des relecteurs depuis l’onglet de l’édition', function () {
+it('met à jour l’expertise des relecteurs depuis l’onglet de l’événement', function () {
     $staff = adminStaff();
     $submission = seededSubmission('submitted');
-    $edition = $submission->edition;
-    $reviewer = $edition->participants()->create([
+    $event = $submission->event;
+    $reviewer = $event->participants()->create([
         'first_name' => 'Ama', 'last_name' => 'Sow', 'email' => 'ama@rev.tg', 'role' => 'reviewer',
     ]);
 
     $this->actingAs($staff, 'web')
-        ->post(route('admin.editions.reviewers.expertise', $edition), [
+        ->post(route('admin.evenements.reviewers.expertise', $event), [
             'reviewer_ids' => [$reviewer->id],
             'expertise' => [$reviewer->id => ['Santé', 'Sciences']],
         ])
@@ -82,14 +82,14 @@ it('met à jour l’expertise des relecteurs depuis l’onglet de l’édition',
     expect($reviewer->fresh()->meta['review_tracks'])->toContain('Santé')->toContain('Sciences');
 });
 
-it('ignore les identifiants qui ne sont pas des relecteurs de l’édition', function () {
+it('ignore les identifiants qui ne sont pas des relecteurs de l’événement', function () {
     $staff = adminStaff();
     $submission = seededSubmission('submitted');
-    $edition = $submission->edition;
+    $event = $submission->event;
     $author = $submission->participant; // rôle auteur, pas relecteur
 
     $this->actingAs($staff, 'web')
-        ->post(route('admin.editions.reviewers.expertise', $edition), [
+        ->post(route('admin.evenements.reviewers.expertise', $event), [
             'reviewer_ids' => [$author->id],
             'expertise' => [$author->id => ['Sciences']],
         ])
@@ -98,25 +98,25 @@ it('ignore les identifiants qui ne sont pas des relecteurs de l’édition', fun
     expect($author->fresh()->meta['review_tracks'] ?? null)->toBeNull();
 });
 
-it('règle l’expertise depuis son onglet, plus depuis la fiche d’édition', function () {
+it('règle l’expertise depuis son onglet, plus depuis la fiche d’événement', function () {
     $staff = adminStaff();
     $submission = seededSubmission('submitted');
-    $edition = $submission->edition;
-    $edition->participants()->create([
+    $event = $submission->event;
+    $event->participants()->create([
         'first_name' => 'Ama', 'last_name' => 'Sow', 'email' => 'ama@rev.tg', 'role' => 'reviewer',
     ]);
 
     // La matrice a son onglet dans le module Soumissions.
     $this->actingAs($staff, 'web')
-        ->get(route('admin.submissions.reviewers', ['edition_id' => $edition->id]))
+        ->get(route('admin.submissions.reviewers', ['event_id' => $event->id]))
         ->assertOk()
         ->assertSee('Relecteurs &amp; expertise', false)
         ->assertSee('Ama Sow')
         ->assertSee('Enregistrer les expertises');
 
-    // La fiche d'édition n'a plus d'onglet Évaluation ni de matrice.
+    // La fiche d'événement n'a plus d'onglet Évaluation ni de matrice.
     $this->actingAs($staff, 'web')
-        ->get(route('admin.editions.edit', $edition))
+        ->get(route('admin.evenements.edit', $event))
         ->assertOk()
         ->assertDontSee('Enregistrer les expertises')
         ->assertDontSee('Grille de notation');
@@ -125,10 +125,10 @@ it('règle l’expertise depuis son onglet, plus depuis la fiche d’édition', 
 it('regroupe les règles d’évaluation sur leur onglet', function () {
     $staff = adminStaff();
     $submission = seededSubmission('submitted');
-    $edition = $submission->edition;
+    $event = $submission->event;
 
     $this->actingAs($staff, 'web')
-        ->get(route('admin.submissions.options', ['edition_id' => $edition->id]))
+        ->get(route('admin.submissions.options', ['event_id' => $event->id]))
         ->assertOk()
         ->assertSee('Relecteurs par soumission')
         ->assertSee('Charge maximale par relecteur')
@@ -139,30 +139,30 @@ it('regroupe les règles d’évaluation sur leur onglet', function () {
 it('enregistre les règles du moteur avec la grille', function () {
     $staff = adminStaff();
     $submission = seededSubmission('submitted');
-    $edition = $submission->edition;
+    $event = $submission->event;
 
     $this->actingAs($staff, 'web')
-        ->post(route('admin.editions.reviewers.criteria', $edition), [
+        ->post(route('admin.evenements.reviewers.criteria', $event), [
             'review_target' => 3,
             'review_max_load' => 8,
             'review_due_days' => 12,
         ])
-        ->assertRedirect(route('admin.submissions.options', ['edition_id' => $edition->id]));
+        ->assertRedirect(route('admin.submissions.options', ['event_id' => $event->id]));
 
-    $edition->refresh();
-    expect(ReviewGrid::target($edition))->toBe(3);
-    expect(ReviewGrid::maxLoad($edition))->toBe(8);
-    expect(ReviewGrid::dueDays($edition))->toBe(12);
+    $event->refresh();
+    expect(ReviewGrid::target($event))->toBe(3);
+    expect(ReviewGrid::maxLoad($event))->toBe(8);
+    expect(ReviewGrid::dueDays($event))->toBe(12);
 });
 
-it('applique les règles de l’édition au plan proposé, sans paramètre d’URL', function () {
+it('applique les règles de l’événement au plan proposé, sans paramètre d’URL', function () {
     $staff = adminStaff();
     $submission = seededSubmission('submitted');
-    $edition = $submission->edition;
-    $edition->update(['settings' => array_merge($edition->settings ?? [], ['review_target' => 4])]);
+    $event = $submission->event;
+    $event->update(['settings' => array_merge($event->settings ?? [], ['review_target' => 4])]);
 
     $this->actingAs($staff, 'web')
-        ->get(route('admin.submissions.auto-assign', ['edition_id' => $edition->id]))
+        ->get(route('admin.submissions.auto-assign', ['event_id' => $event->id]))
         ->assertOk()
         ->assertSee('4</strong> relecteur(s) par soumission', false);
 });
@@ -170,17 +170,17 @@ it('applique les règles de l’édition au plan proposé, sans paramètre d’U
 it('revient sur l’onglet Relecteurs après avoir enregistré l’expertise', function () {
     $staff = adminStaff();
     $submission = seededSubmission('submitted');
-    $edition = $submission->edition;
-    $reviewer = $edition->participants()->create([
+    $event = $submission->event;
+    $reviewer = $event->participants()->create([
         'first_name' => 'Ama', 'last_name' => 'Sow', 'email' => 'ama@rev.tg', 'role' => 'reviewer',
     ]);
 
     $this->actingAs($staff, 'web')
-        ->post(route('admin.editions.reviewers.expertise', $edition), [
+        ->post(route('admin.evenements.reviewers.expertise', $event), [
             'reviewer_ids' => [$reviewer->id],
             'expertise' => [$reviewer->id => ['Sciences']],
         ])
-        ->assertRedirect(route('admin.submissions.reviewers', ['edition_id' => $edition->id]));
+        ->assertRedirect(route('admin.submissions.reviewers', ['event_id' => $event->id]));
 });
 
 it('apparie un axe malgré un tiret ou une casse différents', function () {
@@ -200,20 +200,20 @@ it('apparie un axe malgré un tiret ou une casse différents', function () {
     expect(ReviewerExpertise::covers(['Atelier 2'], ''))->toBeFalse();
 });
 
-it('recanonise l’axe enregistré sur le libellé de l’édition', function () {
+it('recanonise l’axe enregistré sur le libellé de l’événement', function () {
     $staff = adminStaff();
     $submission = seededSubmission('submitted');
-    $edition = $submission->edition; // axes : Sciences, Santé
-    $reviewer = $edition->participants()->create([
+    $event = $submission->event; // axes : Sciences, Santé
+    $reviewer = $event->participants()->create([
         'first_name' => 'Ama', 'last_name' => 'Sow', 'email' => 'ama@rev.tg', 'role' => 'reviewer',
     ]);
 
     $this->actingAs($staff, 'web')
-        ->post(route('admin.editions.reviewers.expertise', $edition), [
+        ->post(route('admin.evenements.reviewers.expertise', $event), [
             'reviewer_ids' => [$reviewer->id],
             'expertise' => [$reviewer->id => ['  sciences  ']],
         ])->assertRedirect();
 
-    // Stocké tel que l'édition l'écrit, pas tel que le formulaire l'a reçu.
+    // Stocké tel que l'événement l'écrit, pas tel que le formulaire l'a reçu.
     expect($reviewer->fresh()->meta['review_tracks'])->toBe(['Sciences']);
 });

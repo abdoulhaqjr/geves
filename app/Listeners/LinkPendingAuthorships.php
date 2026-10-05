@@ -13,7 +13,7 @@ use Illuminate\Auth\Events\Registered;
  * À la création d'un compte, rattache automatiquement les communications où la
  * personne était citée (auteur/co-auteur) mais pas encore inscrite : on retrouve
  * les liaisons « en attente » par e-mail / téléphone (fort) ou nom + affiliation
- * (déclinable), sur les éditions non clôturées, puis on lie + notifie.
+ * (déclinable), sur les événements non clôturées, puis on lie + notifie.
  * Auto-découvert par Laravel (pas d'enregistrement manuel).
  */
 class LinkPendingAuthorships
@@ -46,13 +46,13 @@ class LinkPendingAuthorships
                     $q->orWhere('name', 'like', '%'.$lastToken.'%');
                 }
             })
-            ->with('submission.edition')
+            ->with('submission.event')
             ->limit(200)
             ->get();
 
         foreach ($rows as $row) {
-            $edition = $row->submission?->edition;
-            if (! $edition || $edition->status === 'closed') {
+            $event = $row->submission?->event;
+            if (! $event || $event->status === 'closed') {
                 continue; // uniquement les événements en cours ou à venir
             }
 
@@ -61,7 +61,7 @@ class LinkPendingAuthorships
                 continue;
             }
 
-            $this->upsert->handle($edition, $user, $row->role === 'corresponding' ? 'author' : 'coauthor');
+            $this->upsert->handle($event, $user, $row->role === 'corresponding' ? 'author' : 'coauthor');
 
             $row->update([
                 'user_id' => $user->id,
@@ -74,7 +74,7 @@ class LinkPendingAuthorships
                 $user,
                 'authorship',
                 __('Une communication vous a été rattachée'),
-                '« '.$row->submission->title.' » - '.$edition->title,
+                '« '.$row->submission->title.' » - '.$event->title,
                 route('account.submissions.show', $row->submission),
                 'inbox',
             );

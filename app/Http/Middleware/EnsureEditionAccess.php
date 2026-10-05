@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\User;
 use Closure;
 use Illuminate\Database\Eloquent\Model;
@@ -10,15 +10,15 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Étanchéité d'accès par édition (modèle « pur ») : un membre du staff n'agit
- * sur une édition que s'il y est affecté avec une fonction couvrant la capacité
+ * Étanchéité d'accès par événement (modèle « pur ») : un membre du staff n'agit
+ * sur un événement que s'il y est affecté avec une fonction couvrant la capacité
  * demandée. L'administrateur (super-capacité `manage_colloques`) passe partout.
  *
- * Résolution de l'édition en contexte : paramètre de route {edition}, sinon
- * modèle enfant lié (via edition_id / relation edition), sinon `edition_id` de
- * la requête. Sur une page de liste (aucune édition en contexte), l'accès est
- * accordé s'il reste au moins une édition sur laquelle l'utilisateur a la
- * capacité ; le contrôleur restreint alors les résultats à ces éditions.
+ * Résolution de l'événement en contexte : paramètre de route {event}, sinon
+ * modèle enfant lié (via event_id / relation edition), sinon `event_id` de
+ * la requête. Sur une page de liste (aucun événement en contexte), l'accès est
+ * accordé s'il reste au moins un événement sur laquelle l'utilisateur a la
+ * capacité ; le contrôleur restreint alors les résultats à ces événements.
  *
  * Usage : ->middleware('edition.cap:payments')
  */
@@ -44,57 +44,57 @@ class EnsureEditionAccess
                 continue;
             }
             $hasModelParam = true;
-            $edition = $this->editionOf($param);
-            if ($edition !== null) {
-                abort_unless($user->canOnEdition($capability, $edition), 403);
+            $event = $this->editionOf($param);
+            if ($event !== null) {
+                abort_unless($user->canOnEdition($capability, $event), 403);
 
                 return $next($request);
             }
         }
 
-        // Édition fournie explicitement (pages filtrées par edition_id).
-        $id = $request->input('edition_id');
-        if (is_numeric($id) && ($edition = Edition::find((int) $id)) !== null) {
-            abort_unless($user->canOnEdition($capability, $edition), 403);
+        // Événement fournie explicitement (pages filtrées par event_id).
+        $id = $request->input('event_id');
+        if (is_numeric($id) && ($event = Event::find((int) $id)) !== null) {
+            abort_unless($user->canOnEdition($capability, $event), 403);
 
             return $next($request);
         }
 
         // Une ressource précise était visée mais on n'a pas pu la rattacher à une
-        // édition : on refuse par prudence (pas de fuite inter-colloques).
+        // événement : on refuse par prudence (pas de fuite inter-colloques).
         if ($hasModelParam) {
             abort(403);
         }
 
-        // Création d'un colloque (aucune édition en contexte) : réservée aux
+        // Création d'un colloque (aucun événement en contexte) : réservée aux
         // administrateurs de colloque (Phase 3).
         if ($capability === 'editions_write' && $user->canCreateColloque()) {
             return $next($request);
         }
 
         // Page de liste : accès si l'utilisateur a la capacité sur au moins une
-        // édition (le contrôleur restreint ensuite aux éditions accessibles).
+        // événement (le contrôleur restreint ensuite aux événements accessibles).
         abort_if($user->accessibleEditionIds($capability) === [], 403);
 
         return $next($request);
     }
 
-    /** Édition rattachée à un modèle enfant (via edition_id ou relation edition). */
-    private function editionOf(Model $model): ?Edition
+    /** Événement rattachée à un modèle enfant (via event_id ou relation edition). */
+    private function editionOf(Model $model): ?Event
     {
-        if ($model instanceof Edition) {
+        if ($model instanceof Event) {
             return $model;
         }
 
-        $editionId = $model->getAttribute('edition_id');
+        $editionId = $model->getAttribute('event_id');
         if (is_numeric($editionId)) {
-            return Edition::find((int) $editionId);
+            return Event::find((int) $editionId);
         }
 
-        if (method_exists($model, 'edition')) {
-            $related = $model->getAttribute('edition');
+        if (method_exists($model, 'event')) {
+            $related = $model->getAttribute('event');
 
-            return $related instanceof Edition ? $related : null;
+            return $related instanceof Event ? $related : null;
         }
 
         return null;

@@ -5,10 +5,10 @@
 it('signale un résumé quasi-dupliqué sur la fiche soumission', function () {
     $staff = adminStaff();
     $submission = seededSubmission('submitted');
-    $edition = $submission->edition;
+    $event = $submission->event;
 
-    // Un autre résumé très proche dans la même édition.
-    $dupe = $edition->submissions()->create([
+    // Un autre résumé très proche dans la même événement.
+    $dupe = $event->submissions()->create([
         'participant_id' => $submission->participant_id,
         'ref_code' => '26-777',
         'title' => 'Innovation durable (variante)',
@@ -29,7 +29,7 @@ it('signale un résumé quasi-dupliqué sur la fiche soumission', function () {
 it('n’affiche pas de similarité quand aucun résumé n’est proche', function () {
     $staff = adminStaff();
     $submission = seededSubmission('submitted');
-    $submission->edition->submissions()->create([
+    $submission->event->submissions()->create([
         'participant_id' => $submission->participant_id,
         'ref_code' => '26-888',
         'title' => 'Sujet sans rapport',

@@ -55,7 +55,7 @@
                         <div style="font-size:13px;color:var(--ukc-muted);margin-bottom:10px;">
                             <strong>{{ $t->author_name }}</strong>
                             {{ collect([$t->author_role, $t->author_affiliation])->filter()->implode(' · ') }}
-                            @if ($t->edition) · <span>{{ $t->edition->title }}</span> @endif
+                            @if ($t->event) · <span>{{ $t->event->title }}</span> @endif
                         </div>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;">
                             <form method="POST" action="{{ route('admin.testimonials.approve', $t) }}">@csrf

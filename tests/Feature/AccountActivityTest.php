@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Colloque;
-use App\Models\Edition;
+use App\Models\Event;
+use App\Models\EventSeries;
 use App\Models\User;
 use App\Support\AccountActivity;
 use Illuminate\Support\Str;
@@ -20,28 +20,28 @@ function accountWith(string $email = 'pro@uk.tg'): User
     return $account;
 }
 
-function otherEdition(string $slug = 'uk-2027'): Edition
+function otherEdition(string $slug = 'uk-2027'): Event
 {
-    $colloque = Colloque::create(['name' => 'Colloque UK', 'slug' => 'uk-'.Str::random(4)]);
+    $series = EventSeries::create(['name' => 'EventSeries UK', 'slug' => 'uk-'.Str::random(4)]);
 
-    return $colloque->editions()->create(['title' => 'UK 2027', 'status' => 'open', 'slug' => $slug]);
+    return $series->events()->create(['title' => 'UK 2027', 'status' => 'open', 'slug' => $slug]);
 }
 
 it('dérive « Communicant » depuis une communication de l’auteur', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = accountWith();
-    $p = $edition->participants()->create(['user_id' => $account->id, 'first_name' => 'Pro', 'last_name' => 'Fesseur', 'email' => 'pro@uk.tg', 'role' => 'author']);
-    $edition->submissions()->create(['participant_id' => $p->id, 'title' => 'T', 'status' => 'submitted', 'revision_of' => 0, 'ref_code' => 'AA-001', 'access_token' => Str::random(64), 'authors' => [['name' => 'Pro Fesseur', 'email' => 'pro@uk.tg', 'corresponding' => true]]]);
+    $p = $event->participants()->create(['user_id' => $account->id, 'first_name' => 'Pro', 'last_name' => 'Fesseur', 'email' => 'pro@uk.tg', 'role' => 'author']);
+    $event->submissions()->create(['participant_id' => $p->id, 'title' => 'T', 'status' => 'submitted', 'revision_of' => 0, 'ref_code' => 'AA-001', 'access_token' => Str::random(64), 'authors' => [['name' => 'Pro Fesseur', 'email' => 'pro@uk.tg', 'corresponding' => true]]]);
 
     expect((new AccountActivity($account))->roles())->toContain('Communicant');
 });
 
 it('dérive « Communicant » depuis une communication en co-auteur (par e-mail)', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = accountWith();
     // Communication déposée par quelqu'un d'autre, avec le compte en co-auteur.
-    $other = $edition->participants()->create(['first_name' => 'X', 'last_name' => 'Y', 'email' => 'x@uk.tg', 'role' => 'author']);
-    $edition->submissions()->create(['participant_id' => $other->id, 'title' => 'Co', 'status' => 'accepted', 'revision_of' => 0, 'ref_code' => 'AA-002', 'access_token' => Str::random(64), 'authors' => [
+    $other = $event->participants()->create(['first_name' => 'X', 'last_name' => 'Y', 'email' => 'x@uk.tg', 'role' => 'author']);
+    $event->submissions()->create(['participant_id' => $other->id, 'title' => 'Co', 'status' => 'accepted', 'revision_of' => 0, 'ref_code' => 'AA-002', 'access_token' => Str::random(64), 'authors' => [
         ['name' => 'X Y', 'email' => 'x@uk.tg', 'corresponding' => true],
         ['name' => 'Pro Fesseur', 'email' => 'pro@uk.tg', 'corresponding' => false],
     ]]);
@@ -51,7 +51,7 @@ it('dérive « Communicant » depuis une communication en co-auteur (par e-mail)
     expect($activity->communications()->first()['corresponding'])->toBeFalse();
 });
 
-it('dérive modérateur, rapporteur et comité par e-mail sur d’autres éditions', function () {
+it('dérive modérateur, rapporteur et comité par e-mail sur d’autres événements', function () {
     $account = accountWith();
 
     $e1 = otherEdition('uk-a');
@@ -79,17 +79,17 @@ it('rapproche un membre de comité sans e-mail par le nom complet', function () 
 });
 
 it('dérive « Relecteur » d’une participation relecteur', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = accountWith();
-    $edition->participants()->create(['user_id' => $account->id, 'first_name' => 'Pro', 'last_name' => 'Fesseur', 'email' => 'pro@uk.tg', 'role' => 'reviewer']);
+    $event->participants()->create(['user_id' => $account->id, 'first_name' => 'Pro', 'last_name' => 'Fesseur', 'email' => 'pro@uk.tg', 'role' => 'reviewer']);
 
     expect((new AccountActivity($account))->roles())->toContain('Relecteur');
 });
 
 it('retombe sur « Auditeur » pour une simple participation sans rôle fort', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = accountWith();
-    $edition->participants()->create(['user_id' => $account->id, 'first_name' => 'Pro', 'last_name' => 'Fesseur', 'email' => 'pro@uk.tg', 'role' => 'attendee']);
+    $event->participants()->create(['user_id' => $account->id, 'first_name' => 'Pro', 'last_name' => 'Fesseur', 'email' => 'pro@uk.tg', 'role' => 'attendee']);
 
     expect((new AccountActivity($account))->roles())->toBe(['Auditeur']);
 });

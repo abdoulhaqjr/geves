@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Edition;
 use App\Models\Email;
+use App\Models\Event;
 use App\Models\Payment;
 use App\Models\Submission;
 use App\Support\Trend;
@@ -14,7 +14,7 @@ use Illuminate\View\View;
 
 /**
  * Tableau de bord du back-office (Blade, fidèle au mockup admin-dashboard.html) :
- * bannière de l'édition active, indicateurs, pipeline des soumissions, graphiques
+ * bannière de l'événement actif, indicateurs, pipeline des soumissions, graphiques
  * (Chart.js), dernières soumissions, actions prioritaires et activité récente.
  * Données agrégées en temps réel - vue en lecture seule, sans état (donc Blade).
  */
@@ -22,13 +22,13 @@ class DashboardController extends Controller
 {
     public function __invoke(): View
     {
-        $edition = Edition::with('colloque')->where('status', 'open')->latest('id')->first()
-            ?? Edition::with('colloque')->latest('id')->first();
-        $edId = $edition?->id;
+        $event = Event::with('series')->where('status', 'open')->latest('id')->first()
+            ?? Event::with('series')->latest('id')->first();
+        $edId = $event?->id;
 
         $subs = fn () => Submission::query()->where('revision_of', 0)
-            ->when($edId, fn ($q) => $q->where('edition_id', $edId));
-        $pay = fn () => Payment::query()->when($edId, fn ($q) => $q->where('edition_id', $edId));
+            ->when($edId, fn ($q) => $q->where('event_id', $edId));
+        $pay = fn () => Payment::query()->when($edId, fn ($q) => $q->where('event_id', $edId));
 
         $byStatus = $subs()->selectRaw('status, count(*) as c')->groupBy('status')->pluck('c', 'status');
         $n = fn (string $s): int => (int) ($byStatus[$s] ?? 0);
@@ -64,8 +64,8 @@ class DashboardController extends Controller
         $pay7 = $pay()->where('status', 'paid')->whereBetween('created_at', $cur)->count();
         $subsPrev7 = $subs()->whereBetween('created_at', $prev)->count();
         $payPrev7 = $pay()->where('status', 'paid')->whereBetween('created_at', $prev)->count();
-        $emails7 = Email::when($edId, fn ($q) => $q->where('edition_id', $edId))->whereBetween('created_at', $cur)->count();
-        $emailsPrev7 = Email::when($edId, fn ($q) => $q->where('edition_id', $edId))->whereBetween('created_at', $prev)->count();
+        $emails7 = Email::when($edId, fn ($q) => $q->where('event_id', $edId))->whereBetween('created_at', $cur)->count();
+        $emailsPrev7 = Email::when($edId, fn ($q) => $q->where('event_id', $edId))->whereBetween('created_at', $prev)->count();
         $paidPart7 = $pay()->where('status', 'paid')->whereBetween('created_at', $cur)->distinct('participant_id')->count('participant_id');
         $paidPartPrev7 = $pay()->where('status', 'paid')->whereBetween('created_at', $prev)->distinct('participant_id')->count('participant_id');
 
@@ -76,16 +76,16 @@ class DashboardController extends Controller
             'emails' => Trend::of($emails7, $emailsPrev7),
         ];
 
-        // Calendrier clé : jalons datés de l'édition (réels, masqués si absents).
-        $s = $edition?->settings ?? [];
+        // Calendrier clé : jalons datés de l'événement (réels, masqués si absents).
+        $s = $event?->settings ?? [];
         $calendar = collect([
-            ['Clôture soumissions', $edition?->submission_deadline],
+            ['Clôture soumissions', $event?->submission_deadline],
             ["Notifications d'acceptation", isset($s['notification_date']) ? Carbon::parse($s['notification_date']) : null],
             ['Fin des inscriptions', isset($s['registration_end']) ? Carbon::parse($s['registration_end']) : null],
-            ['Colloque', $edition?->date_start],
-        ])->filter(fn ($r) => $r[1] instanceof Carbon)->map(function ($r) use ($edition) {
-            $val = $r[0] === 'Colloque' && $edition?->date_end
-                ? $edition->date_start->format('d/m').'–'.$edition->date_end->format('d/m/Y')
+            ['Événement', $event?->date_start],
+        ])->filter(fn ($r) => $r[1] instanceof Carbon)->map(function ($r) use ($event) {
+            $val = $r[0] === 'Événement' && $event?->date_end
+                ? $event->date_start->format('d/m').'–'.$event->date_end->format('d/m/Y')
                 : $r[1]->format('d/m/Y');
 
             return ['label' => $r[0], 'value' => $val];
@@ -125,7 +125,7 @@ class DashboardController extends Controller
         ];
 
         return view('admin.dashboard', [
-            'edition' => $edition,
+            'event' => $event,
             'stats' => [
                 'submissions' => $subs()->count(),
                 'underReview' => $n('under_review'),

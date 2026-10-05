@@ -20,7 +20,7 @@ class ReceiptController extends Controller
     {
         $accountId = Auth::guard('account')->id();
 
-        $payment->load(['participant', 'edition.colloque']);
+        $payment->load(['participant', 'event.series']);
 
         abort_unless(
             $payment->status === 'paid'

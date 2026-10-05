@@ -26,7 +26,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | Fragment identifiant la clé active dans le document DID (verificationMethod).
-    | Combiné à l'issuer DID des réglages d'édition pour former le `kid` du JWS
+    | Combiné à l'issuer DID des réglages d'événement pour former le `kid` du JWS
     | (ex. « did:web:univkara.tg:colloques#key-ed25519-1 »). En cas de rotation,
     | changez ce fragment et conservez les anciennes clés publiques ci-dessous.
     |

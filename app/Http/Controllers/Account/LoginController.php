@@ -205,7 +205,7 @@ class LoginController extends Controller
 
     /**
      * L'utilisateur a-t-il un accès back-office (super-admin, admin de colloque
-     * ou une fonction d'organisation sur au moins une édition) ? Détermine s'il
+     * ou une fonction d'organisation sur au moins un événement) ? Détermine s'il
      * est orienté vers le back-office plutôt que l'espace participant.
      */
     private function hasBackOfficeAccess(User $user): bool

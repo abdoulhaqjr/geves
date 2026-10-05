@@ -4,7 +4,7 @@ namespace App\Meetings\Contracts;
 
 use App\Enums\MeetingRole;
 use App\Enums\MeetingStatus;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\User;
 
 /**
@@ -41,13 +41,13 @@ interface Meetable
     public function meetingDisplayName(?User $account, bool $isStaff, ?string $displayName): string;
 
     /**
-     * Édition à laquelle cette salle appartient.
+     * Événement à laquelle cette salle appartient.
      *
      * ⚠️ C'est elle qui porte les réglages de visio (serveur, identifiants,
      * qualité) : sans ce point d'accès, le socle commun ne saurait pas de quelle
      * configuration relève la salle qu'il est en train d'ouvrir.
      */
-    public function meetingEdition(): ?Edition;
+    public function meetingEdition(): ?Event;
 
     /** URL de connexion à la salle, ou null si refusé/absente. */
     public function joinUrl(?User $account, bool $isStaff = false, ?string $displayName = null): ?string;

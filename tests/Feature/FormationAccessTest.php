@@ -7,29 +7,29 @@ use App\Models\Payment;
 
 // openEdition()/verifiedAccount() -> tests/Pest.php ; publishedFormation() -> FormationEnrollmentTest
 
-/** Formation payante, en direct, dans une édition où le compte participe. */
-function livePaidFormation($edition): Formation
+/** Formation payante, en direct, dans un événement où le compte participe. */
+function livePaidFormation($event): Formation
 {
-    $f = publishedFormation($edition, 10000);
+    $f = publishedFormation($event, 10000);
     $f->update(['meeting_status' => 'live', 'meeting_provider' => 'jitsi']);
 
     return $f;
 }
 
-function participantOf($edition, $user): void
+function participantOf($event, $user): void
 {
-    $edition->participants()->create([
+    $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'trainee', 'user_id' => $user->id,
     ]);
 }
 
 it('un inscrit non réglé ne voit pas le bouton visio et n’accède pas à la salle', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $user = verifiedAccount();
-    participantOf($edition, $user);
-    $f = livePaidFormation($edition);
+    participantOf($event, $user);
+    $f = livePaidFormation($event);
     FormationEnrollment::create([
-        'formation_id' => $f->id, 'edition_id' => $edition->id, 'user_id' => $user->id, 'status' => 'registered', 'amount' => 10000,
+        'formation_id' => $f->id, 'event_id' => $event->id, 'user_id' => $user->id, 'status' => 'registered', 'amount' => 10000,
     ]);
 
     $this->actingAs($user, 'account')->get(route('account.formations'))
@@ -43,12 +43,12 @@ it('un inscrit non réglé ne voit pas le bouton visio et n’accède pas à la 
 });
 
 it('un inscrit réglé voit le bouton visio', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $user = verifiedAccount();
-    participantOf($edition, $user);
-    $f = livePaidFormation($edition);
+    participantOf($event, $user);
+    $f = livePaidFormation($event);
     FormationEnrollment::create([
-        'formation_id' => $f->id, 'edition_id' => $edition->id, 'user_id' => $user->id, 'status' => 'paid', 'amount' => 10000,
+        'formation_id' => $f->id, 'event_id' => $event->id, 'user_id' => $user->id, 'status' => 'paid', 'amount' => 10000,
     ]);
 
     $this->actingAs($user, 'account')->get(route('account.formations'))
@@ -57,10 +57,10 @@ it('un inscrit réglé voit le bouton visio', function () {
 });
 
 it('un formateur rejoint sans payer et ne se voit pas proposer de régler', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $user = verifiedAccount();
-    participantOf($edition, $user);
-    $f = livePaidFormation($edition);
+    participantOf($event, $user);
+    $f = livePaidFormation($event);
     $f->trainers()->create(['name' => 'Awa Kodjo', 'email' => $user->email, 'user_id' => $user->id]);
 
     expect($f->isTrainer($user))->toBeTrue();
@@ -78,11 +78,11 @@ it('un formateur rejoint sans payer et ne se voit pas proposer de régler', func
 });
 
 it('refuse le paiement d’une formation tant que le profil est incomplet', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $user = verifiedAccount();
     $user->update(['phone' => null]); // profil incomplet
-    participantOf($edition, $user);
-    $f = publishedFormation($edition, 10000);
+    participantOf($event, $user);
+    $f = publishedFormation($event, 10000);
 
     expect($user->fresh()->profileComplete())->toBeFalse();
     expect($user->fresh()->missingProfileFields())->toContain('Téléphone');
@@ -95,11 +95,11 @@ it('refuse le paiement d’une formation tant que le profil est incomplet', func
 });
 
 it('laisse s’inscrire à une formation gratuite même avec un profil incomplet', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $user = verifiedAccount();
     $user->update(['phone' => null, 'affiliation' => null]);
-    participantOf($edition, $user);
-    $f = publishedFormation($edition, 0);
+    participantOf($event, $user);
+    $f = publishedFormation($event, 0);
 
     $this->actingAs($user->fresh(), 'account')->post(route('account.formations.enroll', $f));
 
@@ -107,15 +107,15 @@ it('laisse s’inscrire à une formation gratuite même avec un profil incomplet
 });
 
 it('transmet le téléphone du payeur à la passerelle, avec repli sur le compte', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $user = verifiedAccount();
     // Participant sans téléphone : la donnée doit venir du compte unifié.
-    $participant = $edition->participants()->create([
+    $participant = $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'trainee', 'user_id' => $user->id,
     ]);
 
     $payment = Payment::create([
-        'edition_id' => $edition->id, 'participant_id' => $participant->id,
+        'event_id' => $event->id, 'participant_id' => $participant->id,
         'amount' => 10000, 'method' => 'manual', 'gateway' => 'manual',
     ]);
 
@@ -124,16 +124,16 @@ it('transmet le téléphone du payeur à la passerelle, avec repli sur le compte
 });
 
 it('un paiement de formation n’ouvre aucun droit de participation', function () {
-    $edition = openEdition(['formation_enabled' => true]);
+    $event = openEdition(['formation_enabled' => true]);
     $user = verifiedAccount();
-    $participant = $edition->participants()->create([
+    $participant = $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'trainee', 'user_id' => $user->id,
     ]);
-    $formation = publishedFormation($edition, 10000);
+    $formation = publishedFormation($event, 10000);
 
     // Formation réglée, rattachée au MÊME participant.
     Payment::create([
-        'edition_id' => $edition->id, 'participant_id' => $participant->id,
+        'event_id' => $event->id, 'participant_id' => $participant->id,
         'amount' => 10000, 'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'paid',
         'meta' => ['flow' => 'formation', 'formation_id' => $formation->id],
     ]);
@@ -150,14 +150,14 @@ it('un paiement de formation n’ouvre aucun droit de participation', function (
 });
 
 it('un paiement de participation ouvre bien les droits', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $user = verifiedAccount();
-    $participant = $edition->participants()->create([
+    $participant = $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'author', 'user_id' => $user->id,
     ]);
 
     Payment::create([
-        'edition_id' => $edition->id, 'participant_id' => $participant->id,
+        'event_id' => $event->id, 'participant_id' => $participant->id,
         'amount' => 25000, 'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'paid',
     ]);
 
@@ -165,14 +165,14 @@ it('un paiement de participation ouvre bien les droits', function () {
 });
 
 it('un paiement de co-auteur ouvre les droits (il règle pour participer)', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $user = verifiedAccount();
-    $participant = $edition->participants()->create([
+    $participant = $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'author', 'user_id' => $user->id,
     ]);
 
     Payment::create([
-        'edition_id' => $edition->id, 'participant_id' => $participant->id,
+        'event_id' => $event->id, 'participant_id' => $participant->id,
         'amount' => 15000, 'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'paid',
         'meta' => ['flow' => 'coauthor'],
     ]);
@@ -181,20 +181,20 @@ it('un paiement de co-auteur ouvre les droits (il règle pour participer)', func
 });
 
 it('la page Participants ne marque pas « payé » sur un simple paiement de formation', function () {
-    $edition = openEdition(['formation_enabled' => true]);
+    $event = openEdition(['formation_enabled' => true]);
     $user = verifiedAccount();
-    $participant = $edition->participants()->create([
+    $participant = $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'trainee', 'user_id' => $user->id,
     ]);
-    $formation = publishedFormation($edition, 10000);
+    $formation = publishedFormation($event, 10000);
     Payment::create([
-        'edition_id' => $edition->id, 'participant_id' => $participant->id,
+        'event_id' => $event->id, 'participant_id' => $participant->id,
         'amount' => 10000, 'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'paid',
         'meta' => ['flow' => 'formation', 'formation_id' => $formation->id],
     ]);
 
     $this->actingAs(adminStaff(), 'web')
-        ->get(route('admin.participants.index', ['edition_id' => $edition->id]))
+        ->get(route('admin.participants.index', ['event_id' => $event->id]))
         ->assertOk()
         ->assertSee('Awa Kodjo')
         // Colonne Paiement : « Non » et non « Réglé ».
@@ -202,19 +202,19 @@ it('la page Participants ne marque pas « payé » sur un simple paiement de for
 });
 
 it('rembourser une formation retire l’inscription réglée et l’accès visio', function () {
-    $edition = openEdition(['formation_enabled' => true]);
+    $event = openEdition(['formation_enabled' => true]);
     $user = verifiedAccount();
-    $participant = $edition->participants()->create([
+    $participant = $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'trainee', 'user_id' => $user->id,
     ]);
-    $formation = livePaidFormation($edition);
+    $formation = livePaidFormation($event);
 
     $payment = Payment::create([
-        'edition_id' => $edition->id, 'participant_id' => $participant->id,
+        'event_id' => $event->id, 'participant_id' => $participant->id,
         'amount' => 10000, 'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'pending',
     ]);
     $enrollment = FormationEnrollment::create([
-        'formation_id' => $formation->id, 'edition_id' => $edition->id, 'user_id' => $user->id,
+        'formation_id' => $formation->id, 'event_id' => $event->id, 'user_id' => $user->id,
         'participant_id' => $participant->id, 'status' => 'registered', 'amount' => 10000, 'payment_id' => $payment->id,
     ]);
     $payment->update(['meta' => ['flow' => 'formation', 'formation_id' => $formation->id, 'enrollment_id' => $enrollment->id]]);

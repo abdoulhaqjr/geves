@@ -4,15 +4,15 @@ namespace App\Actions;
 
 use App\AI\AiManager;
 use App\AI\AiRouter;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Support\AiAgents;
-use App\Support\ColloqueKnowledge;
+use App\Support\EventKnowledge;
 use Illuminate\Support\Str;
 
 /**
  * Répond à une question de participant via l'assistante Gesco. Utilise la
  * configuration de l'agent « gesco » (persona + instructions POSITIVES /
- * NÉGATIVES, cf. {@see AiAgents}) et le contexte de l'édition active. Gesco
+ * NÉGATIVES, cf. {@see AiAgents}) et le contexte de l'événement actif. Gesco
  * informe et oriente : elle ne réalise aucune action à la place de l'utilisateur.
  *
  * @phpstan-type ChatTurn array{role: string, text: string}
@@ -27,7 +27,7 @@ class AskGesco
      * @param  array{name: ?string, email: ?string}|null  $contact  identité de l'utilisateur connecté (pour une éventuelle réclamation)
      * @return array{answer: string, claim: array<string, mixed>|null}
      */
-    public function handle(array $history, string $question, ?Edition $edition = null, ?string $personal = null, ?array $contact = null): array
+    public function handle(array $history, string $question, ?Event $event = null, ?string $personal = null, ?array $contact = null): array
     {
         if (! $this->manager->resolve(false)) {
             throw new \RuntimeException('L’assistance Gesco est momentanément indisponible.');
@@ -37,7 +37,7 @@ class AskGesco
         $tier = $this->router->tier('chat_public', $question, historyTurns: count($history));
 
         // Bascule automatique entre fournisseurs configurés en cas d'échec.
-        $raw = $this->manager->extract($this->instruction($history, $question, $edition, $personal, $contact), [], $tier);
+        $raw = $this->manager->extract($this->instruction($history, $question, $event, $personal, $contact), [], $tier);
 
         $answer = trim((string) ($raw['answer'] ?? ''));
 
@@ -80,14 +80,14 @@ class AskGesco
      * @param  list<ChatTurn>  $history
      * @param  array{name: ?string, email: ?string}|null  $contact
      */
-    protected function instruction(array $history, string $question, ?Edition $edition, ?string $personal = null, ?array $contact = null): string
+    protected function instruction(array $history, string $question, ?Event $event, ?string $personal = null, ?array $contact = null): string
     {
         $agent = AiAgents::find('gesco') ?? AiAgents::defaults()[0];
 
         // Base de connaissance factuelle (tarifs, axes, échéances, règles, FAQ…) :
         // c'est la source prioritaire pour répondre avec précision.
-        $knowledge = ColloqueKnowledge::brief($edition);
-        $context = $knowledge !== '' ? $knowledge : 'Aucune édition active pour le moment.';
+        $knowledge = EventKnowledge::brief($event);
+        $context = $knowledge !== '' ? $knowledge : 'Aucun événement actif pour le moment.';
 
         // Derniers tours de conversation (bornés).
         $convo = collect($history)

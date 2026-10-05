@@ -1,12 +1,12 @@
 <x-layouts.app :title="__('Déroulement en direct - :app', ['app' => config('app.name')])">
     @include('partials.public-header')
 
-    @if (! $edition)
+    @if (! $event)
         <section class="ukc-section">
             <div class="ukc-container">
                 <div class="ukc-empty">
                     <h3>{{ __('Aucun colloque en cours actuellement') }}</h3>
-                    <p>{{ __('Le déroulement en direct s’affichera ici pendant les journées d’un colloque. Consultez les éditions à venir ou passées.') }}</p>
+                    <p>{{ __('Le déroulement en direct s’affichera ici pendant les journées d’un colloque. Consultez les événements à venir ou passées.') }}</p>
                     <a href="{{ route('home') }}#a-venir" class="ukc-btn ukc-btn--blue">{{ __('Colloques à venir') }}</a>
                     <a href="{{ route('public.archives') }}" class="ukc-btn ukc-btn--outline" style="margin-left:8px;">{{ __('Archives') }}</a>
                 </div>
@@ -15,8 +15,8 @@
         @include('partials.public-footer')
     @else
         @php
-            $dates = $edition->dateRangeLabel() ?? (string) $edition->year;
-            $dayNo = $edition->date_start ? (int) floor($edition->date_start->diffInDays($now)) + 1 : null;
+            $dates = $event->dateRangeLabel() ?? (string) $event->year;
+            $dayNo = $event->date_start ? (int) floor($event->date_start->diffInDays($now)) + 1 : null;
             $iconPin = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg>';
             $iconCal = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z"/></svg>';
             $iconClock = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg>';
@@ -24,22 +24,22 @@
 
         <div class="deroulement" x-data="{ modal: null }" @keydown.escape.window="modal = null">
             {{-- ===== Hero live ===== --}}
-            <section class="live-hero {{ $edition->banner_url ? 'has-bg' : '' }}"
-                     @if ($edition->banner_url) style="--x:0" @endif>
-                @if ($edition->banner_url)
-                    <style>.deroulement .live-hero.has-bg::before{background-image:url('{{ $edition->banner_url }}');}</style>
+            <section class="live-hero {{ $event->banner_url ? 'has-bg' : '' }}"
+                     @if ($event->banner_url) style="--x:0" @endif>
+                @if ($event->banner_url)
+                    <style>.deroulement .live-hero.has-bg::before{background-image:url('{{ $event->banner_url }}');}</style>
                 @endif
                 <div class="ukc-container">
                     <div class="top">
                         <span class="ukc-pill ukc-pill--live">● {{ __('En cours') }}</span>
-                        @if ($edition->edition_label)
-                            <span class="ukc-pill" style="background:rgba(255,255,255,.15);color:#fff;">{{ $edition->edition_label }}</span>
+                        @if ($event->event_label)
+                            <span class="ukc-pill" style="background:rgba(255,255,255,.15);color:#fff;">{{ $event->event_label }}</span>
                         @endif
                     </div>
-                    <h1>{{ $edition->title ?: $edition->colloque?->name }}</h1>
-                    @if ($edition->theme)<p class="sub">{{ $edition->tr('theme') }} - {{ __('suivez le programme, les ateliers en cours et les annonces.') }}</p>@endif
+                    <h1>{{ $event->title ?: $event->series?->name }}</h1>
+                    @if ($event->theme)<p class="sub">{{ $event->tr('theme') }} - {{ __('suivez le programme, les ateliers en cours et les annonces.') }}</p>@endif
                     <div class="live-meta">
-                        @if ($edition->location)<div>{!! $iconPin !!} {{ $edition->tr('location') }}</div>@endif
+                        @if ($event->location)<div>{!! $iconPin !!} {{ $event->tr('location') }}</div>@endif
                         <div>{!! $iconCal !!} {{ $dates }}</div>
                         @if ($dayNo && $dayNo >= 1)<div>{!! $iconClock !!} {{ __('Jour :n · en direct', ['n' => $dayNo]) }}</div>@endif
                     </div>
@@ -139,7 +139,7 @@
             <div class="modal-overlay" x-cloak x-show="modal === 'programme'" x-transition @click.self="modal = null">
                 <div class="modal modal--lg" x-data="{ day: {{ $currentDayIndex }} }">
                     <div class="modal-head">
-                        <div><h2>{{ __('Programme du colloque') }}</h2><div class="sub">{{ $edition->title ?: $edition->colloque?->name }} · {{ $dates }}</div></div>
+                        <div><h2>{{ __('Programme du colloque') }}</h2><div class="sub">{{ $event->title ?: $event->series?->name }} · {{ $dates }}</div></div>
                         <button type="button" class="modal-close" @click="modal = null">×</button>
                     </div>
                     <div class="modal-body">
@@ -184,16 +184,16 @@
             <div class="modal-overlay" x-cloak x-show="modal === 'infos'" x-transition @click.self="modal = null">
                 <div class="modal">
                     <div class="modal-head">
-                        <div><h2>{{ __('Informations du colloque') }}</h2><div class="sub">{{ $edition->title ?: $edition->colloque?->name }}</div></div>
+                        <div><h2>{{ __('Informations du colloque') }}</h2><div class="sub">{{ $event->title ?: $event->series?->name }}</div></div>
                         <button type="button" class="modal-close" @click="modal = null">×</button>
                     </div>
                     <div class="modal-body">
-                        @php($set = $edition->settings ?? [])
+                        @php($set = $event->settings ?? [])
                         <div class="info-grid">
-                            @if ($edition->theme)<div class="info-item"><strong>{{ __('Thème') }}</strong>{{ $edition->tr('theme') }}</div>@endif
+                            @if ($event->theme)<div class="info-item"><strong>{{ __('Thème') }}</strong>{{ $event->tr('theme') }}</div>@endif
                             <div class="info-item"><strong>{{ __('Dates') }}</strong>{{ $dates }}</div>
-                            @if ($edition->location)<div class="info-item"><strong>{{ __('Lieu') }}</strong>{{ $edition->tr('location') }}</div>@endif
-                            <div class="info-item"><strong>{{ __('Organisateurs') }}</strong>{{ $set['organisers'] ?? ($edition->colloque?->name.' · DRI · Université de Kara') }}</div>
+                            @if ($event->location)<div class="info-item"><strong>{{ __('Lieu') }}</strong>{{ $event->tr('location') }}</div>@endif
+                            <div class="info-item"><strong>{{ __('Organisateurs') }}</strong>{{ $set['organisers'] ?? ($event->series?->name.' · DRI · Université de Kara') }}</div>
                             @if (! empty($set['formats']))<div class="info-item"><strong>{{ __('Formats') }}</strong>{{ $set['formats'] }}</div>@endif
                             @if (! empty($set['visio']))<div class="info-item"><strong>{{ __('Visio') }}</strong>{{ $set['visio'] }}</div>@endif
                         </div>
@@ -201,7 +201,7 @@
                             {{ $set['infos_note'] ?? __('Les participants disposent d’un badge et de documents dans l’espace participant. Les communicateurs rejoignent la salle de leur atelier pour présenter lorsque la visio est activée.') }}
                         </p>
                         <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;">
-                            @if ($edition->slug)<a href="{{ route('public.colloque', $edition->slug) }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">{{ __('Page officielle') }}</a>@endif
+                            @if ($event->slug)<a href="{{ route('public.colloque', $event->slug) }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">{{ __('Page officielle') }}</a>@endif
                             <a href="{{ route('account.dashboard') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">{{ __('Espace participant') }}</a>
                         </div>
                     </div>
@@ -216,10 +216,10 @@
                         <button type="button" class="modal-close" @click="modal = null">×</button>
                     </div>
                     <div class="modal-body">
-                        @php($guide = $edition->settings['venue_guide'] ?? [])
+                        @php($guide = $event->settings['venue_guide'] ?? [])
                         @if (! empty($guide))
                             <p style="font-size:13.5px;color:var(--ukc-muted);margin-bottom:14px;line-height:1.5;">
-                                {{ $edition->settings['venue_intro'] ?? __('Plan de repérage sur le campus. En cas de changement de salle, une annonce est publiée en temps réel.') }}
+                                {{ $event->settings['venue_intro'] ?? __('Plan de repérage sur le campus. En cas de changement de salle, une annonce est publiée en temps réel.') }}
                             </p>
                             <div style="overflow-x:auto;">
                                 <table class="ind-table">
@@ -237,7 +237,7 @@
                                 </table>
                             </div>
                             <p style="margin-top:14px;font-size:12.5px;color:var(--ukc-muted);">
-                                {{ $edition->settings['venue_note'] ?? __('Les sessions en visioconférence indiquent « Visio ON » sur la carte atelier ; le lieu présentiel reste la salle listée ci-dessus.') }}
+                                {{ $event->settings['venue_note'] ?? __('Les sessions en visioconférence indiquent « Visio ON » sur la carte atelier ; le lieu présentiel reste la salle listée ci-dessus.') }}
                             </p>
                         @elseif ($rooms->isEmpty())
                             <p style="color:var(--ukc-muted);">{{ __('Les salles seront précisées avec le programme.') }}</p>
@@ -277,7 +277,7 @@
                                 <span class="desc">{{ $a['text'] ?? '' }}</span>
                             </div>
                         @empty
-                            <p style="color:var(--ukc-muted);margin:0;">{{ __('Aucune annonce publiée pour cette édition.') }}</p>
+                            <p style="color:var(--ukc-muted);margin:0;">{{ __('Aucune annonce publiée pour cet événement.') }}</p>
                         @endforelse
                     </div>
                 </div>

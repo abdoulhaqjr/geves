@@ -2,7 +2,7 @@
 
 namespace App\Mail;
 
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Support\Locales;
 use Illuminate\Bus\Queueable;
@@ -23,7 +23,7 @@ class PaymentReminderMail extends Mailable implements ShouldQueue
 
     public function __construct(
         public Participant $participant,
-        public Edition $edition,
+        public Event $event,
         public string $payUrl,
         public ?float $amount = null,
     ) {
@@ -32,7 +32,7 @@ class PaymentReminderMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: __('Rappel : frais d’inscription à régler').' - '.($this->edition->title ?? __('Colloque')));
+        return new Envelope(subject: __('Rappel : frais d’inscription à régler').' - '.($this->event->title ?? __('Événement')));
     }
 
     public function content(): Content

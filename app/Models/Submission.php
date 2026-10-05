@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *
  * @property array<int, array<string, mixed>>|null $authors
  * @property array<string, mixed>|null $meta
- * @property Edition|null $edition
+ * @property Event|null $event
  * @property Participant|null $participant
  * @property float|null $reviews_avg_score agrégat withAvg('reviews', 'score')
  */
@@ -95,21 +95,21 @@ class Submission extends Model
         return SubmissionStatus::pills();
     }
 
-    /** Communications originales (non révisions) déjà déposées par un compte sur une édition. */
-    public static function usedCountFor(Edition $edition, User $account): int
+    /** Communications originales (non révisions) déjà déposées par un compte sur un événement. */
+    public static function usedCountFor(Event $event, User $account): int
     {
-        return self::where('edition_id', $edition->id)
+        return self::where('event_id', $event->id)
             ->where('revision_of', 0)
             ->whereHas('participant', fn ($q) => $q->where('user_id', $account->id))
             ->count();
     }
 
-    /** Communications encore déposables par ce compte sur cette édition (0 = quota atteint). */
-    public static function remainingFor(Edition $edition, User $account): int
+    /** Communications encore déposables par ce compte sur cet événement (0 = quota atteint). */
+    public static function remainingFor(Event $event, User $account): int
     {
-        $max = (int) ($edition->settings['max_communications'] ?? 3);
+        $max = (int) ($event->settings['max_communications'] ?? 3);
 
-        return max(0, $max - self::usedCountFor($edition, $account));
+        return max(0, $max - self::usedCountFor($event, $account));
     }
 
     protected function casts(): array
@@ -150,10 +150,10 @@ class Submission extends Model
         return $this->authors[0]['email'] ?? $this->participant?->email;
     }
 
-    /** @return BelongsTo<Edition, $this> */
-    public function edition(): BelongsTo
+    /** @return BelongsTo<Event, $this> */
+    public function event(): BelongsTo
     {
-        return $this->belongsTo(Edition::class);
+        return $this->belongsTo(Event::class);
     }
 
     /** @return BelongsTo<Participant, $this> */

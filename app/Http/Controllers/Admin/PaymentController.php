@@ -21,9 +21,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Encaissements du back-office (Blade, fidèle au mockup admin-payments.html) :
- * liste par édition, totaux, filtres (query string) et actions (marquer réglé,
+ * liste par événement, totaux, filtres (query string) et actions (marquer réglé,
  * rembourser) en POST. L'enregistrement manuel est un formulaire Blade dont le
- * filtrage édition→participant et le pré-remplissage du montant sont pilotés
+ * filtrage événement→participant et le pré-remplissage du montant sont pilotés
  * côté client (Alpine).
  */
 class PaymentController extends Controller
@@ -39,25 +39,25 @@ class PaymentController extends Controller
         $from = (string) $request->query('from', '');
         $to = (string) $request->query('to', '');
         $scoped = $this->scopedEditionIds($request, 'payments');
-        $editions = $this->accessibleEditions($request, 'payments');
+        $events = $this->accessibleEditions($request, 'payments');
 
         // Par défaut (aucun filtre explicite), on se cale sur le colloque courant
-        // (ouvert le plus récent, sinon le plus récent) - pas « toutes les éditions ».
-        if ($request->has('edition_id')) {
-            $editionId = (string) $request->query('edition_id', '');
+        // (ouvert le plus récent, sinon le plus récent) - pas « tous les événements ».
+        if ($request->has('event_id')) {
+            $editionId = (string) $request->query('event_id', '');
         } else {
-            // La page est gardée par edition.cap:payments → au moins une édition accessible.
-            $default = $editions->firstWhere('status', 'open') ?? $editions->first();
+            // La page est gardée par edition.cap:payments → au moins un événement accessible.
+            $default = $events->firstWhere('status', 'open') ?? $events->first();
             $editionId = $default !== null ? (string) $default->id : '';
         }
 
         $base = Payment::query()
-            ->when($scoped !== null, fn ($q) => $q->whereIn('edition_id', $scoped))
-            ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId));
+            ->when($scoped !== null, fn ($q) => $q->whereIn('event_id', $scoped))
+            ->when($editionId !== '', fn ($q) => $q->where('event_id', $editionId));
 
         $sort = ListSort::resolve($request, ['reference', 'receipt_no', 'amount', 'created_at', 'status', 'method'], 'created_at', 'desc');
         $payments = $this->applyFilters(clone $base, $status, $method, $search, $from, $to, $flow)
-            ->with(['participant', 'edition'])
+            ->with(['participant', 'event'])
             ->orderBy($sort['sort'], $sort['dir'])
             ->orderBy('id', 'desc')
             ->paginate(15)
@@ -78,7 +78,7 @@ class PaymentController extends Controller
             'sort' => $sort['sort'],
             'dir' => $sort['dir'],
             'payments' => $payments,
-            'editions' => $editions,
+            'events' => $events,
             'statuses' => Payment::statuses(),
             'methods' => Payment::methodLabels(),
             'methodGroups' => Payment::methodGroups(),
@@ -86,7 +86,7 @@ class PaymentController extends Controller
             'flow' => $flow,
             'search' => $search,
             'status' => $status,
-            'edition_id' => $editionId,
+            'event_id' => $editionId,
             'method' => $method,
             'from' => $from,
             'to' => $to,
@@ -138,11 +138,11 @@ class PaymentController extends Controller
     /** Export CSV des paiements filtrés (mêmes filtres que la liste). */
     public function export(Request $request): StreamedResponse
     {
-        $editionId = (string) $request->query('edition_id', '');
+        $editionId = (string) $request->query('event_id', '');
         $scoped = $this->scopedEditionIds($request, 'payments');
         $base = Payment::query()
-            ->when($scoped !== null, fn ($q) => $q->whereIn('edition_id', $scoped))
-            ->when($editionId !== '', fn ($q) => $q->where('edition_id', $editionId));
+            ->when($scoped !== null, fn ($q) => $q->whereIn('event_id', $scoped))
+            ->when($editionId !== '', fn ($q) => $q->where('event_id', $editionId));
 
         $rows = $this->applyFilters(
             $base,
@@ -152,12 +152,12 @@ class PaymentController extends Controller
             (string) $request->query('from', ''),
             (string) $request->query('to', ''),
             (string) $request->query('flow', ''),
-        )->with(['participant', 'edition'])->latest('id')->get();
+        )->with(['participant', 'event'])->latest('id')->get();
 
         return response()->streamDownload(function () use ($rows) {
             $out = fopen('php://output', 'w');
             fprintf($out, "\xEF\xBB\xBF");
-            fputcsv($out, ['Référence', 'Reçu', 'Participant', 'E-mail', 'Nature', 'Objet', 'Catégorie', 'Montant', 'Devise', 'Moyen', 'Statut', 'Date', 'Édition']);
+            fputcsv($out, ['Référence', 'Reçu', 'Participant', 'E-mail', 'Nature', 'Objet', 'Catégorie', 'Montant', 'Devise', 'Moyen', 'Statut', 'Date', 'Événement']);
             foreach ($rows as $p) {
                 fputcsv($out, [
                     $p->reference,
@@ -172,7 +172,7 @@ class PaymentController extends Controller
                     $p->methodLabel(),
                     $p->statusLabel(),
                     $p->created_at?->format('d/m/Y H:i'),
-                    $p->edition?->title ?: $p->edition?->year,
+                    $p->event?->title ?: $p->event?->year,
                 ]);
             }
             fclose($out);
@@ -182,22 +182,22 @@ class PaymentController extends Controller
     /** Formulaire d'enregistrement manuel d'un encaissement. */
     public function create(Request $request): View
     {
-        $editions = $this->accessibleEditions($request, 'payments');
+        $events = $this->accessibleEditions($request, 'payments');
         $scoped = $this->scopedEditionIds($request, 'payments');
-        $defaultEdition = (string) ($editions->firstWhere('status', 'open')?->id ?? $editions->first()?->id ?? '');
+        $defaultEdition = (string) ($events->firstWhere('status', 'open')?->id ?? $events->first()?->id ?? '');
 
-        $participants = Participant::with('edition')
-            ->when($scoped !== null, fn ($q) => $q->whereIn('edition_id', $scoped))
+        $participants = Participant::with('event')
+            ->when($scoped !== null, fn ($q) => $q->whereIn('event_id', $scoped))
             ->orderBy('last_name')->get()->map(fn ($p) => [
                 'id' => (string) $p->id,
                 'name' => $p->full_name,
                 'email' => $p->email,
-                'edition_id' => (string) $p->edition_id,
-                'amount' => $p->edition ? Fees::resolveAmount($p->edition, $p->title) : null,
+                'event_id' => (string) $p->event_id,
+                'amount' => $p->event ? Fees::resolveAmount($p->event, $p->title) : null,
             ])->values();
 
         return view('admin.payments.record', [
-            'editions' => $editions,
+            'events' => $events,
             'participants' => $participants,
             'methods' => Payment::MANUAL_METHODS,
             'defaultEdition' => $defaultEdition,
@@ -208,7 +208,7 @@ class PaymentController extends Controller
     public function store(Request $request, ConfirmPayment $confirm): RedirectResponse
     {
         $data = $request->validate([
-            'edition_id' => ['required', 'exists:editions,id'],
+            'event_id' => ['required', 'exists:events,id'],
             'participant_id' => ['nullable', 'exists:participants,id'],
             'first_name' => ['nullable', 'string', 'max:150'],
             'last_name' => ['nullable', 'string', 'max:150'],
@@ -226,7 +226,7 @@ class PaymentController extends Controller
                 return back()->withInput()->withErrors(['last_name' => 'Choisissez un participant existant ou renseignez nom + e-mail.']);
             }
             $participant = Participant::firstOrCreate(
-                ['edition_id' => $data['edition_id'], 'email' => mb_strtolower((string) $data['email'])],
+                ['event_id' => $data['event_id'], 'email' => mb_strtolower((string) $data['email'])],
                 ['first_name' => $data['first_name'] ?? '', 'last_name' => $data['last_name'], 'role' => 'attendee']
             );
         }
@@ -237,7 +237,7 @@ class PaymentController extends Controller
         }
 
         $payment = Payment::create([
-            'edition_id' => $participant->edition_id,
+            'event_id' => $participant->event_id,
             'participant_id' => $participant->id,
             'amount' => $data['amount'],
             'currency' => 'XOF',
@@ -295,7 +295,7 @@ class PaymentController extends Controller
     /**
      * Revérifie un paiement en ligne auprès de la passerelle (cas « le participant
      * dit avoir payé ») : interroge le serveur du marchand avec les identifiants de
-     * l'édition et confirme si le paiement est réellement abouti.
+     * l'événement et confirme si le paiement est réellement abouti.
      */
     public function recheck(Payment $payment, ReconcilePayments $reconciler): RedirectResponse
     {

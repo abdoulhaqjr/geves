@@ -42,7 +42,7 @@
                                     <td><span class="ukc-pill ukc-pill--{{ $c->type === 'incident' ? 'warn' : 'info' }}">{{ $c->typeLabel() }}</span></td>
                                     <td class="title">
                                         {{ \Illuminate\Support\Str::limit($c->subject, 60) }}
-                                        <div style="font-size:12px;color:var(--ukc-muted);">{{ $c->edition?->title ?: ($c->edition?->year ?: 'Général') }}@if ($c->category) · {{ $c->category }}@endif</div>
+                                        <div style="font-size:12px;color:var(--ukc-muted);">{{ $c->event?->title ?: ($c->event?->year ?: 'Général') }}@if ($c->category) · {{ $c->category }}@endif</div>
                                     </td>
                                     <td>{{ $c->name ?: '-' }}<div style="font-size:12px;color:var(--ukc-muted);">{{ $c->email }}</div></td>
                                     <td><span class="ukc-pill ukc-pill--{{ $c->statusPill() }}">{{ $c->statusLabel() }}</span></td>

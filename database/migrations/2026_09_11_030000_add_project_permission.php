@@ -7,7 +7,7 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
- * Capacité dédiée « project » (gestion de projet de l'édition), auparavant
+ * Capacité dédiée « project » (gestion de projet de l'événement), auparavant
  * portée par « view_dashboard ». Crée la permission (guard web) et l'attribue,
  * de façon additive, aux rôles qui la possèdent dans App\Support\StaffRoles.
  */

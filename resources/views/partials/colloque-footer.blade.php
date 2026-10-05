@@ -1,5 +1,5 @@
 {{-- Pied de page PROPRE À UN COLLOQUE (barre d'info), distinct du footer plateforme.
-     Attend $e (l'édition courante). Data-driven depuis $e->settings. --}}
+     Attend $e (l'événement courant). Data-driven depuis $e->settings. --}}
 @php
     $cfSettings = $e->settings ?? [];
     $cfContact = is_array($cfSettings['contact'] ?? null) ? $cfSettings['contact'] : [];
@@ -71,7 +71,7 @@
                     </div>
                 @endif
             </div>
-            <div>© {{ now()->year }} {{ $e->colloque?->name ?? 'Université de Kara' }} - {{ $e->title }}</div>
+            <div>© {{ now()->year }} {{ $e->series?->name ?? 'Université de Kara' }} - {{ $e->title }}</div>
         </div>
     </div>
 </div>

@@ -14,15 +14,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $institution
  * @property string|null $photo_url
  * @property int $ordre
- * @property Edition|null $edition
+ * @property Event|null $event
  */
 class CommitteeMember extends Model
 {
     protected $guarded = ['id'];
 
-    /** @return BelongsTo<Edition, $this> */
-    public function edition(): BelongsTo
+    /** @return BelongsTo<Event, $this> */
+    public function event(): BelongsTo
     {
-        return $this->belongsTo(Edition::class);
+        return $this->belongsTo(Event::class);
     }
 }

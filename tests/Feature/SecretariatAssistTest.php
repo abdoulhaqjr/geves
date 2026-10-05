@@ -10,10 +10,10 @@ it('génère un document du secrétariat via IA et le rend téléchargeable', fu
         'sections' => [['heading' => 'Participants', 'body' => 'Colonnes : Nom, Institution, Signature.']],
     ]));
 
-    $edition = openEdition();
+    $event = openEdition();
 
     $response = $this->actingAs(adminStaff(), 'web')->post(route('admin.secretariat.assist'), [
-        'edition_id' => $edition->id,
+        'event_id' => $event->id,
         'preset' => 'presence',
         'prompt' => 'Génère une liste de présence.',
         'format' => 'pdf',
@@ -25,15 +25,15 @@ it('génère un document du secrétariat via IA et le rend téléchargeable', fu
     expect($doc['title'])->toBe('Liste de présence');
 
     $this->actingAs(adminStaff(), 'web')
-        ->get(route('admin.secretariat.assist.download', [$edition->id, $doc['id']]))
+        ->get(route('admin.secretariat.assist.download', [$event->id, $doc['id']]))
         ->assertOk();
 });
 
-it('refuse la génération sans la capacité documents sur l’édition', function () {
-    $edition = openEdition();
+it('refuse la génération sans la capacité documents sur l’événement', function () {
+    $event = openEdition();
     $staff = User::create(['first_name' => 'Sans', 'last_name' => 'Accès', 'email' => 'sansacces@example.tg', 'password' => 'pass12345']);
 
     $this->actingAs($staff, 'web')
-        ->post(route('admin.secretariat.assist'), ['edition_id' => $edition->id, 'prompt' => 'x'])
+        ->post(route('admin.secretariat.assist'), ['event_id' => $event->id, 'prompt' => 'x'])
         ->assertForbidden();
 });

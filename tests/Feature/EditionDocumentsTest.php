@@ -7,10 +7,10 @@ use Illuminate\Support\Str;
 
 // adminStaff() -> AdminSubmissionWorkflowTest ; openEdition()/verifiedAccount() -> AccountSubmissionTest
 
-/** Rattache le compte à l'édition en tant que participant. */
-function participantFor(User $account, $edition, string $role = 'author'): Participant
+/** Rattache le compte à l'événement en tant que participant. */
+function participantFor(User $account, $event, string $role = 'author'): Participant
 {
-    return $edition->participants()->create([
+    return $event->participants()->create([
         'user_id' => $account->id,
         'first_name' => $account->first_name,
         'last_name' => $account->last_name,
@@ -19,33 +19,33 @@ function participantFor(User $account, $edition, string $role = 'author'): Parti
     ]);
 }
 
-it('permet à l’admin d’ajouter et retirer un document d’édition', function () {
+it('permet à l’admin d’ajouter et retirer un document d’événement', function () {
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs($staff, 'web')
-        ->post(route('admin.editions.documents.store', $edition), [
+        ->post(route('admin.evenements.documents.store', $event), [
             'type' => 'document',
             'title' => 'Programme définitif',
             'url' => 'https://example.tg/programme.pdf',
         ])
         ->assertSessionHasNoErrors();
 
-    $media = Media::where('edition_id', $edition->id)->first();
+    $media = Media::where('event_id', $event->id)->first();
     expect($media)->not->toBeNull();
     expect($media->title)->toBe('Programme définitif');
 
     $this->actingAs($staff, 'web')
-        ->delete(route('admin.editions.documents.destroy', [$edition, $media]));
+        ->delete(route('admin.evenements.documents.destroy', [$event, $media]));
     expect(Media::find($media->id))->toBeNull();
 });
 
 it('valide l’URL du document', function () {
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs($staff, 'web')
-        ->post(route('admin.editions.documents.store', $edition), [
+        ->post(route('admin.evenements.documents.store', $event), [
             'type' => 'document',
             'title' => 'X',
             'url' => 'pas-une-url',
@@ -53,28 +53,28 @@ it('valide l’URL du document', function () {
         ->assertSessionHasErrors('url');
 });
 
-it('expose les documents de l’édition sur le tableau de bord participant', function () {
-    $edition = openEdition();
+it('expose les documents de l’événement sur le tableau de bord participant', function () {
+    $event = openEdition();
     $account = verifiedAccount();
-    $participant = participantFor($account, $edition);
+    $participant = participantFor($account, $event);
 
     // Communication acceptée → livret disponible.
-    $edition->submissions()->create(['participant_id' => $participant->id, 'title' => 'T', 'status' => 'accepted', 'revision_of' => 0, 'ref_code' => 'AA-001', 'access_token' => Str::random(64)]);
-    Media::create(['edition_id' => $edition->id, 'type' => 'document', 'title' => 'Programme', 'url' => 'https://example.tg/prog.pdf', 'ordre' => 1]);
+    $event->submissions()->create(['participant_id' => $participant->id, 'title' => 'T', 'status' => 'accepted', 'revision_of' => 0, 'ref_code' => 'AA-001', 'access_token' => Str::random(64)]);
+    Media::create(['event_id' => $event->id, 'type' => 'document', 'title' => 'Programme', 'url' => 'https://example.tg/prog.pdf', 'ordre' => 1]);
 
     $this->actingAs($account, 'account')
         ->get(route('account.dashboard'))
         ->assertOk()
-        ->assertSee('Documents de mes éditions')
+        ->assertSee('Documents de mes événements')
         ->assertSee('Programme')
         ->assertSee('Livret des résumés');
 });
 
 it('ne montre pas le livret sans communication acceptée', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
-    participantFor($account, $edition);
-    Media::create(['edition_id' => $edition->id, 'type' => 'document', 'title' => 'Programme', 'url' => 'https://example.tg/prog.pdf', 'ordre' => 1]);
+    participantFor($account, $event);
+    Media::create(['event_id' => $event->id, 'type' => 'document', 'title' => 'Programme', 'url' => 'https://example.tg/prog.pdf', 'ordre' => 1]);
 
     $this->actingAs($account, 'account')
         ->get(route('account.dashboard'))
@@ -83,29 +83,29 @@ it('ne montre pas le livret sans communication acceptée', function () {
         ->assertDontSee('Livret des résumés');
 });
 
-it('donne accès au livret d’une édition à laquelle le participant a participé', function () {
-    $edition = openEdition();
+it('donne accès au livret d’un événement à laquelle le participant a participé', function () {
+    $event = openEdition();
     $account = verifiedAccount();
-    $participant = participantFor($account, $edition);
-    $edition->submissions()->create(['participant_id' => $participant->id, 'title' => 'Ma communication', 'status' => 'accepted', 'revision_of' => 0, 'ref_code' => 'AA-001', 'access_token' => Str::random(64)]);
+    $participant = participantFor($account, $event);
+    $event->submissions()->create(['participant_id' => $participant->id, 'title' => 'Ma communication', 'status' => 'accepted', 'revision_of' => 0, 'ref_code' => 'AA-001', 'access_token' => Str::random(64)]);
 
     $this->actingAs($account, 'account')
-        ->get(route('account.documents.livret', $edition))
+        ->get(route('account.documents.livret', $event))
         ->assertOk()
         ->assertSee('Ma communication');
 });
 
 it('refuse le livret à un compte non participant', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
-    // Aucun participant rattaché à ce compte pour l'édition.
+    // Aucun participant rattaché à ce compte pour l'événement.
 
     $this->actingAs($account, 'account')
-        ->get(route('account.documents.livret', $edition))
+        ->get(route('account.documents.livret', $event))
         ->assertForbidden();
 });
 
 it('refuse la gestion des documents aux invités', function () {
-    $edition = openEdition();
-    $this->get(route('admin.editions.documents', $edition))->assertRedirect(route('account.login'));
+    $event = openEdition();
+    $this->get(route('admin.evenements.documents', $event))->assertRedirect(route('account.login'));
 });

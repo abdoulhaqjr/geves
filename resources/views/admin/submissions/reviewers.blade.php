@@ -3,22 +3,22 @@
 
         <div class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px;">
             <div class="ukc-field" style="min-width:320px;max-width:460px;margin:0;">
-                <label for="edition_id">Édition</label>
-                <select id="edition_id" name="edition_id" onchange="window.location = '{{ route('admin.submissions.reviewers') }}?edition_id=' + this.value">
+                <label for="event_id">Événement</label>
+                <select id="event_id" name="event_id" onchange="window.location = '{{ route('admin.submissions.reviewers') }}?event_id=' + this.value">
                     <option value="">- Choisir -</option>
-                    @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
+                    @foreach ($events as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $event_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
                 </select>
             </div>
         </div>
 
         @include('admin.submissions._nav', ['current' => 'relecteurs'])
 
-        @if (! $edition)
-            <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);">Sélectionnez une édition pour gérer l’expertise des relecteurs.</p></div>
+        @if (! $event)
+            <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);">Sélectionnez un événement pour gérer l’expertise des relecteurs.</p></div>
         @else
             <div class="ukc-stats">
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="mic" :size="20" /></div><div class="lbl">Relecteurs</div><div class="val blue">{{ $reviewers->count() }}</div></div>
-                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="tag" :size="20" /></div><div class="lbl">Axes de l’édition</div><div class="val">{{ count($reviewerAxes) }}</div></div>
+                <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="tag" :size="20" /></div><div class="lbl">Axes de l’événement</div><div class="val">{{ count($reviewerAxes) }}</div></div>
                 <div class="ukc-stat-card tw-stat">
                     <div class="tw-stat__icon tw-stat__icon--{{ count($uncoveredAxes) ? 'red' : 'green' }}"><x-ukc.icon name="shield" :size="20" /></div>
                     <div class="lbl">Axes sans relecteur</div>
@@ -41,7 +41,7 @@
                     </div>
                 </div>
             @endif
-            <form method="POST" action="{{ route('admin.editions.reviewers.expertise', $edition) }}">
+            <form method="POST" action="{{ route('admin.evenements.reviewers.expertise', $event) }}">
                 @csrf
                 <div class="ukc-card" style="padding:0;">
                     <div style="padding:14px 18px;border-bottom:1px solid var(--ukc-border);">
@@ -51,14 +51,14 @@
 
                     @if (empty($reviewerAxes))
                         <div style="padding:22px;color:var(--ukc-muted);">
-                            Aucun axe thématique défini pour cette édition. Renseignez les axes dans l’onglet
+                            Aucun axe thématique défini pour cet événement. Renseignez les axes dans l’onglet
                             <strong>Appel &amp; contenu</strong> de la
-                            <a href="{{ route('admin.editions.edit', $edition) }}" style="color:var(--ukc-blue);font-weight:600;">fiche d’édition</a>,
+                            <a href="{{ route('admin.evenements.edit', $event) }}" style="color:var(--ukc-blue);font-weight:600;">fiche d’événement</a>,
                             puis revenez ici.
                         </div>
                     @elseif ($reviewers->isEmpty())
                         <div style="padding:22px;color:var(--ukc-muted);">
-                            Aucun relecteur sur cette édition. Assignez un relecteur depuis une soumission
+                            Aucun relecteur sur cet événement. Assignez un relecteur depuis une soumission
                             (ou depuis la page d’attribution), il apparaîtra ici.
                         </div>
                     @else
@@ -105,7 +105,7 @@
                     </div>
                 @elseif (! $canWrite)
                     <p class="hint" style="margin-top:10px;font-size:12.5px;color:var(--ukc-muted);">
-                        Lecture seule : modifier l’expertise demande le droit d’écriture sur l’édition.
+                        Lecture seule : modifier l’expertise demande le droit d’écriture sur l’événement.
                     </p>
                 @endif
             </form>

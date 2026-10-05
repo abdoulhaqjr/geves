@@ -18,7 +18,7 @@ return new class extends Migration
     {
         Schema::create('event_sessions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('edition_id')->constrained('editions')->cascadeOnDelete();
+            $table->foreignId('event_id')->constrained('events')->cascadeOnDelete();
             $table->foreignId('atelier_id')->nullable()->index();
             $table->string('type', 20)->default('atelier'); // atelier | plenary
             $table->string('label', 255)->default('');

@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Hash;
 /**
  * Capacités « participant » d'une identité : profil (nom, initiales, ORCID),
  * double authentification (TOTP / OTP SMS / codes de secours) et inscriptions
- * aux éditions. Partagé par {@see Account} (guard historique) et
+ * aux événements. Partagé par {@see Account} (guard historique) et
  * {@see User} (identité unifiée - refonte comptes & rôles), pour
  * que l'utilisateur puisse porter la connexion participant sans duplication.
  *
@@ -150,7 +150,7 @@ trait ParticipantIdentity
     }
 
     /**
-     * Inscriptions de cette identité aux différentes éditions (fiche participant).
+     * Inscriptions de cette identité aux différentes événements (fiche participant).
      *
      * @return HasMany<Participant, $this>
      */

@@ -1,10 +1,10 @@
 <x-layouts.app :title="__(':app - Université de Kara', ['app' => config('app.name')])">
     @php
-        // Style de bannière d'une édition : image si disponible, sinon dégradé UK.
-        $bannerStyle = function ($edition) {
+        // Style de bannière d'un événement : image si disponible, sinon dégradé UK.
+        $bannerStyle = function ($event) {
             $fallback = 'background:linear-gradient(120deg,#0f1a33,#1a3080 55%,#0a7a2f);';
-            if ($edition && $edition->banner_url) {
-                return "background-image:linear-gradient(120deg,rgba(15,26,51,.55),rgba(34,62,164,.4)),url('".e($edition->banner_url)."');";
+            if ($event && $event->banner_url) {
+                return "background-image:linear-gradient(120deg,rgba(15,26,51,.55),rgba(34,62,164,.4)),url('".e($event->banner_url)."');";
             }
             return $fallback;
         };
@@ -36,7 +36,7 @@
                                 <span class="ukc-pill ukc-pill--info">{{ __('À venir') }}</span>
                             @endif
                         </h3>
-                        <div class="event-title">{{ $featured->tr('title') ?: $featured->colloque?->name }}</div>
+                        <div class="event-title">{{ $featured->tr('title') ?: $featured->series?->name }}</div>
                         <div class="meta">
                             @if ($featured->theme)<div><strong>{{ __('Thème') }}</strong> - {{ $featured->tr('theme') }}</div>@endif
                             <div><strong>{{ __('Dates') }}</strong> -
@@ -55,7 +55,7 @@
                         </div>
                     @else
                         <h3>{{ __('À la une') }}</h3>
-                        <div class="event-title">{{ __('Prochaine édition à venir') }}</div>
+                        <div class="event-title">{{ __('Prochaine événement à venir') }}</div>
                         <div class="meta"><div>{{ __('Les appels à communications seront publiés ici dès leur ouverture.') }}</div></div>
                         <a href="{{ route('account.register') }}" class="ukc-btn ukc-btn--primary ukc-btn--sm">{{ __('Créer un compte') }}</a>
                     @endif
@@ -69,8 +69,8 @@
         <div class="stats">
             <div class="stat">
                 <div class="ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z"/></svg></div>
-                <div class="num">{{ $stats['colloques'] }}</div>
-                <div class="lbl">{{ __('Éditions organisées') }}</div>
+                <div class="num">{{ $stats['event_series'] }}</div>
+                <div class="lbl">{{ __('Événements organisées') }}</div>
             </div>
             <div class="stat">
                 <div class="ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9h-4v4h-2v-4H9V9h4V5h2v4h4v2z"/></svg></div>
@@ -104,7 +104,7 @@
                     </div>
                     <div class="body">
                         <span class="ukc-pill ukc-pill--live">{{ __('Sessions en cours') }}</span>
-                        <h3>{{ $ongoing->tr('title') ?: $ongoing->colloque?->name }}</h3>
+                        <h3>{{ $ongoing->tr('title') ?: $ongoing->series?->name }}</h3>
                         <div class="meta">
                             @if ($ongoing->theme)<div>{{ __('Thème :') }} {{ $ongoing->tr('theme') }}</div>@endif
                             @if ($ongoing->location)<div>{{ __('Lieu :') }} {{ $ongoing->tr('location') }}</div>@endif
@@ -126,7 +126,7 @@
             <div class="ukc-container">
                 <div class="block-head">
                     <h2>{{ __('Colloques à venir') }}</h2>
-                    <p>{!! __('Éditions dont l’<strong>appel est lancé</strong> (soumission, évaluation, inscription…) - la date du colloque n’est pas encore atteinte.') !!}</p>
+                    <p>{!! __('Événements dont l’<strong>appel est lancé</strong> (soumission, évaluation, inscription…) - la date du colloque n’est pas encore atteinte.') !!}</p>
                 </div>
                 <div class="colloque-grid">
                     @foreach ($upcoming as $e)
@@ -139,7 +139,7 @@
                                 @endif
                             </div>
                             <div class="body">
-                                <h3>{{ $e->tr('title') ?: $e->colloque?->name }}</h3>
+                                <h3>{{ $e->tr('title') ?: $e->series?->name }}</h3>
                                 <div class="info">
                                     @if ($e->theme)<div>{{ __('Thème :') }} {{ $e->tr('theme') }}</div>@endif
                                     <div>{{ $e->location ? $e->tr('location').' · ' : '' }}{{ $e->date_start?->translatedFormat('F Y') ?? $e->year }}</div>
@@ -165,7 +165,7 @@
             <div class="ukc-container">
                 <div class="block-head">
                     <h2>{{ __('Colloques passés') }}</h2>
-                    <p>{{ __('Mémoire des éditions précédentes - programmes, galeries et documents publics.') }}</p>
+                    <p>{{ __('Mémoire des événements précédentes - programmes, galeries et documents publics.') }}</p>
                 </div>
                 <div class="colloque-grid">
                     @foreach ($past as $e)
@@ -174,7 +174,7 @@
                                 <span class="ukc-pill ukc-pill--closed">{{ __('Clôturé') }}</span>
                             </div>
                             <div class="body">
-                                <h3>{{ $e->tr('title') ?: $e->colloque?->name }}</h3>
+                                <h3>{{ $e->tr('title') ?: $e->series?->name }}</h3>
                                 <div class="info">
                                     <div>{{ $e->year }}{{ $e->location ? ' · '.$e->tr('location') : '' }}</div>
                                     @if ($e->theme)<div>{{ $e->tr('theme') }}</div>@endif
@@ -215,7 +215,7 @@
                     <h3>{{ __('Direction de la Recherche et de l’Innovation') }}</h3>
                     <p>{{ __('La DRI pilote la politique scientifique de l’Université de Kara et coordonne les colloques, séminaires et journées scientifiques organisés sur le campus et avec les partenaires.') }}</p>
                     <ul>
-                        <li><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>{{ __('Coordination des éditions et comités') }}</li>
+                        <li><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>{{ __('Coordination des événements et comités') }}</li>
                         <li><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>{{ __('Suivi des soumissions et évaluations') }}</li>
                         <li><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>{{ __('Valorisation et mémoire scientifique') }}</li>
                     </ul>
@@ -409,7 +409,7 @@
             <div class="cta-band">
                 <div>
                     <h2>{{ __('Prêt à participer au prochain colloque ?') }}</h2>
-                    <p>{{ __('Créez votre espace, déposez un résumé ou consultez le programme de l’édition en cours. Un accompagnement est disponible via l’assistante Gesco.') }}</p>
+                    <p>{{ __('Créez votre espace, déposez un résumé ou consultez le programme de l’événement en cours. Un accompagnement est disponible via l’assistante Gesco.') }}</p>
                 </div>
                 <div style="display:flex;flex-wrap:wrap;gap:10px;">
                     @guest('account')
@@ -419,7 +419,7 @@
                         <a href="{{ route('account.dashboard') }}" class="ukc-btn ukc-btn--primary">{{ __('Mon espace participant') }}</a>
                     @endguest
                     @if ($featured)
-                        <a href="{{ $colloqueUrl($featured) }}" class="ukc-btn ukc-btn--ghost">{{ __('Édition en cours') }}</a>
+                        <a href="{{ $colloqueUrl($featured) }}" class="ukc-btn ukc-btn--ghost">{{ __('Événement en cours') }}</a>
                     @endif
                 </div>
             </div>

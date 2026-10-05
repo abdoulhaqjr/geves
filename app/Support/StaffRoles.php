@@ -14,8 +14,8 @@ class StaffRoles
     /** Permissions (clé technique → libellé lisible), dans l'ordre de la matrice. */
     public const PERMISSIONS = [
         'view_dashboard' => 'Tableau de bord',
-        'editions_read' => 'Éditions (lecture)',
-        'editions_write' => 'Éditions (écriture)',
+        'editions_read' => 'Événements (lecture)',
+        'editions_write' => 'Événements (écriture)',
         'submissions_list' => 'Soumissions - liste',
         'assign_reviewers' => 'Assigner relecteurs',
         'evaluate' => 'Évaluer (relectures)',
@@ -43,7 +43,7 @@ class StaffRoles
         'administrator' => [
             'label' => 'Administrateur colloque',
             'category' => 'Système', 'pill' => 'ok', 'abbr' => 'Admin',
-            'description' => 'Accès complet : éditions, soumissions, décisions, documents, paiements, e-mails, réglages.',
+            'description' => 'Accès complet : événements, soumissions, décisions, documents, paiements, e-mails, réglages.',
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
                 'evaluate', 'final_decision', 'participants', 'payments', 'documents', 'formation', 'emails', 'project',
@@ -143,10 +143,10 @@ class StaffRoles
     }
 
     /**
-     * Fonctions assignables à une équipe d'édition (staff ↔ édition). On exclut :
+     * Fonctions assignables à une équipe d'événement (staff ↔ événement). On exclut :
      *  - `administrator` : capacité globale (transverse à tous les colloques) ;
      *  - `reviewer` : la relecture scientifique passe par le Participant relecteur
-     *    (par édition, portail à jeton) - pas par un rôle staff global.
+     *    (par événement, portail à jeton) - pas par un rôle staff global.
      *
      * @return array<string, string> nom => libellé
      */
@@ -158,7 +158,7 @@ class StaffRoles
             ->all();
     }
 
-    /** Vrai si la fonction peut être affectée à une équipe d'édition. */
+    /** Vrai si la fonction peut être affectée à une équipe d'événement. */
     public static function isTeamRole(string $role): bool
     {
         return array_key_exists($role, self::teamRoles());

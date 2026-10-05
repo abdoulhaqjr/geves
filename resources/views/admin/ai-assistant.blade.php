@@ -12,12 +12,12 @@
 
     <div class="admin-page admin-ai"
          x-data="adminCopilot(@js($seed), '{{ route('admin.ai.ask') }}', '{{ route('admin.ai.decide') }}', '{{ route('admin.ai.execute') }}', @js($decisionLog), @js($agentName), @js((string) $currentEditionId), @js((string) (auth('web')->id() ?? '0')))">
-        @if ($editions->isNotEmpty())
+        @if ($events->isNotEmpty())
             <div style="display:flex;flex-wrap:wrap;margin-bottom:16px;">
                 <div class="ukc-field" style="min-width:220px;margin:0;">
                     <select x-model="editionId">
-                        @foreach ($editions as $ed)
-                            <option value="{{ $ed->id }}">{{ $ed->colloque?->name ? $ed->colloque->name.' - ' : '' }}{{ $ed->title ?: $ed->year }}</option>
+                        @foreach ($events as $ed)
+                            <option value="{{ $ed->id }}">{{ $ed->series?->name ? $ed->series->name.' - ' : '' }}{{ $ed->title ?: $ed->year }}</option>
                         @endforeach
                     </select>
                 </div>

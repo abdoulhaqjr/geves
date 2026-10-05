@@ -2,7 +2,7 @@
 
 use App\Actions\IssueAttestation;
 use App\Documents\AttestationCertifier;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Models\User;
 
@@ -17,7 +17,7 @@ function enableAttestationCertification(): void
     config()->set('attestations.retired_public_keys', []);
 }
 
-function certParticipant(Edition $edition, string $email = 'awa@example.tg'): Participant
+function certParticipant(Event $event, string $email = 'awa@example.tg'): Participant
 {
     $user = User::create([
         'name' => 'Awa Kodjo',
@@ -28,7 +28,7 @@ function certParticipant(Edition $edition, string $email = 'awa@example.tg'): Pa
     $user->markEmailAsVerified();
 
     return Participant::create([
-        'edition_id' => $edition->id,
+        'event_id' => $event->id,
         'user_id' => $user->id,
         'first_name' => 'Awa',
         'last_name' => 'Kodjo',
@@ -75,9 +75,9 @@ it('rejette une signature altérée', function () {
 
 it('rejette une signature valide portant sur une autre attestation (anti-substitution)', function () {
     enableAttestationCertification();
-    $edition = openEdition();
-    $a = app(IssueAttestation::class)->handle(certParticipant($edition, 'a@example.tg'), 'participation');
-    $b = app(IssueAttestation::class)->handle(certParticipant($edition, 'b@example.tg'), 'participation');
+    $event = openEdition();
+    $a = app(IssueAttestation::class)->handle(certParticipant($event, 'a@example.tg'), 'participation');
+    $b = app(IssueAttestation::class)->handle(certParticipant($event, 'b@example.tg'), 'participation');
 
     // On recolle la preuve de A sur B (uuid différent).
     $b->credential = $a->credential;

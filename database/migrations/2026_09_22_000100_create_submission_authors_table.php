@@ -18,7 +18,7 @@ return new class extends Migration
         Schema::create('submission_authors', function (Blueprint $table) {
             $table->id();
             $table->foreignId('submission_id')->constrained('submissions')->cascadeOnDelete();
-            $table->foreignId('edition_id')->constrained('editions')->cascadeOnDelete();
+            $table->foreignId('event_id')->constrained('events')->cascadeOnDelete();
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('role', 20)->default('coauthor');          // corresponding | coauthor
             $table->unsignedTinyInteger('author_index')->default(0);   // position dans authors JSON

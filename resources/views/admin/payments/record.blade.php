@@ -7,10 +7,10 @@
     <form method="POST" action="{{ route('admin.payments.store') }}" class="ukc-card" style="max-width:720px;"
           x-data="{
               participants: @js($participants),
-              editionId: '{{ old('edition_id', $defaultEdition) }}',
+              editionId: '{{ old('event_id', $defaultEdition) }}',
               participantId: '{{ old('participant_id', '') }}',
               amount: '{{ old('amount', '') }}',
-              get filtered() { return this.participants.filter(p => String(p.edition_id) === String(this.editionId)); },
+              get filtered() { return this.participants.filter(p => String(p.event_id) === String(this.editionId)); },
               onParticipant() {
                   const p = this.participants.find(x => String(x.id) === String(this.participantId));
                   if (p && p.amount != null) this.amount = String(p.amount);
@@ -21,14 +21,14 @@
 
         <div class="ukc-form-grid">
             <div class="ukc-field full">
-                <label for="edition_id">Édition <span class="req">*</span></label>
-                <select id="edition_id" name="edition_id" x-model="editionId" @change="participantId=''">
+                <label for="event_id">Événement <span class="req">*</span></label>
+                <select id="event_id" name="event_id" x-model="editionId" @change="participantId=''">
                     <option value="">- Choisir -</option>
-                    @foreach ($editions as $ed)
+                    @foreach ($events as $ed)
                         <option value="{{ $ed->id }}">{{ $ed->title ?: $ed->year }}</option>
                     @endforeach
                 </select>
-                @error('edition_id') <span class="error">{{ $message }}</span> @enderror
+                @error('event_id') <span class="error">{{ $message }}</span> @enderror
             </div>
 
             <div class="ukc-field full">

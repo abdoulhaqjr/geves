@@ -2,34 +2,41 @@
 
 namespace App\Actions;
 
-use App\Http\Requests\Admin\SaveEditionRequest;
-use App\Models\Colloque;
-use App\Models\Edition;
-use App\Support\EditionArtwork;
+use App\Enums\EventType;
+use App\Http\Requests\Admin\SaveEventRequest;
+use App\Models\Event;
+use App\Models\EventSeries;
+use App\Support\EventArtwork;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * Crée ou met à jour une édition depuis la fiche back-office : rattachement au
+ * Crée ou met à jour un événement depuis la fiche back-office : rattachement au
  * colloque (existant ou nouveau), composition du bloc `settings` (contenu public,
  * tarifs, apparence, options…), synchronisation des comités et slug unique, le
  * tout de façon atomique. La validation est faite en amont par
- * {@see SaveEditionRequest}.
+ * {@see SaveEventRequest}.
  */
-class SaveEdition
+class SaveEvent
 {
-    public function handle(SaveEditionRequest $request, ?Edition $edition): Edition
+    public function handle(SaveEventRequest $request, ?Event $event): Event
     {
         $data = $request->validated();
 
-        // Colloque de rattachement (existant ou nouveau).
-        $colloqueId = $request->input('colloque_id') ?: null;
+        // Série de rattachement (existant ou nouveau) et son TYPE (colloque,
+        // séminaire, journées scientifiques…). Le type est porté par la série.
+        $seriesType = $request->input('series_type') ?: EventType::Colloque->value;
+        $colloqueId = $request->input('event_series_id') ?: null;
         if (trim((string) $request->input('new_colloque')) !== '') {
-            $colloque = Colloque::create([
+            $series = EventSeries::create([
                 'name' => $request->input('new_colloque'),
                 'slug' => $this->uniqueColloqueSlug(Str::slug((string) $request->input('new_colloque'))),
+                'type' => $seriesType,
             ]);
-            $colloqueId = $colloque->id;
+            $colloqueId = $series->id;
+        } elseif ($colloqueId && $request->filled('series_type')) {
+            // Série existante : on autorise la mise à jour de son type depuis la fiche.
+            EventSeries::whereKey($colloqueId)->update(['type' => $seriesType]);
         }
 
         // Axes : liste répétable (mockup) → tableau de chaînes, avec repli sur l'ancien textarea.
@@ -53,13 +60,13 @@ class SaveEdition
             ])->values()->all();
 
         // Logo d'un partenaire : téléversé OU collé, par le même chemin que
-        // l'habillage de l'édition - le fichier l'emporte sur l'URL.
+        // l'habillage de l'événement - le fichier l'emporte sur l'URL.
         // ⚠️ Chaque ligne porte l'URL qu'elle avait, et on ne rapproche JAMAIS
         // l'ancienne liste de la nouvelle par l'index : le répéteur se réordonne
         // et se vide, l'index ne désigne plus la même entrée. Le ménage des
         // fichiers devenus orphelins se fait après coup, sur les deux listes
         // entières.
-        $logosAvant = collect($edition ? ($edition->settings['partners'] ?? []) : [])
+        $logosAvant = collect($event ? ($event->settings['partners'] ?? []) : [])
             ->map(fn ($p) => (string) ($p['logo_url'] ?? ''))->all();
 
         $partners = collect($data['partners'] ?? [])
@@ -67,7 +74,7 @@ class SaveEdition
             ->map(fn ($p, $i) => [
                 'name' => $p['name'],
                 'url' => $p['url'] ?? null,
-                'logo_url' => EditionArtwork::resolve(
+                'logo_url' => EventArtwork::resolve(
                     $request->file('partners.'.$i.'.logo_file'),
                     (string) ($p['logo_url'] ?? ''),
                     null,
@@ -75,7 +82,7 @@ class SaveEdition
                 'level' => $p['level'] ?? null,
             ])->values()->all();
 
-        EditionArtwork::forgetMissing($logosAvant, array_column($partners, 'logo_url'));
+        EventArtwork::forgetMissing($logosAvant, array_column($partners, 'logo_url'));
 
         $faq = collect($data['faq'] ?? [])
             ->filter(fn ($f) => trim((string) ($f['question'] ?? '')) !== '')
@@ -100,37 +107,37 @@ class SaveEdition
         $languages = collect($data['languages'] ?? [])->map(fn ($l) => trim((string) $l))->filter()->values()->all();
         $refAxes = collect($data['ref_axes'] ?? [])->map(fn ($r) => trim((string) $r))->values()->all();
 
-        $existingSettings = $edition ? ($edition->settings ?? []) : [];
+        $existingSettings = $event ? ($event->settings ?? []) : [];
 
         // Habillage public : téléversement ou URL, pour le bandeau comme pour la
         // bannière. Résolu AVANT le payload, car l'ancien fichier est supprimé au
-        // passage (cf. EditionArtwork).
-        $heroImage = EditionArtwork::resolve(
+        // passage (cf. EventArtwork).
+        $heroImage = EventArtwork::resolve(
             $request->file('hero_image_file'),
             $data['hero_image'] ?? null,
             $existingSettings['hero_image'] ?? null,
             $request->boolean('hero_image_remove'),
         );
 
-        $heroVideo = EditionArtwork::resolve(
+        $heroVideo = EventArtwork::resolve(
             $request->file('hero_video_file'),
             $data['hero_video'] ?? null,
             $existingSettings['hero_video'] ?? null,
             $request->boolean('hero_video_remove'),
         );
 
-        $bannerUrl = EditionArtwork::resolve(
+        $bannerUrl = EventArtwork::resolve(
             $request->file('banner_image_file'),
             $data['banner_image'] ?? null,
-            $edition?->banner_url,
+            $event?->banner_url,
             $request->boolean('banner_image_remove'),
         );
 
         $payload = [
             'banner_url' => $bannerUrl,
-            'colloque_id' => $colloqueId,
+            'event_series_id' => $colloqueId,
             'title' => $data['title'],
-            'edition_label' => $data['edition_label'] ?? '',
+            'event_label' => $data['event_label'] ?? '',
             'subtitle' => ($data['subtitle'] ?? null) ?: null,
             'theme' => ($data['theme'] ?? null) ?: null,
             'year' => ($data['year'] ?? null) ?: 0,
@@ -138,7 +145,7 @@ class SaveEdition
             'date_end' => ($data['date_end'] ?? null) ?: null,
             'location' => ($data['location'] ?? null) ?: null,
             'status' => $data['status'],
-            'slug' => $this->resolveSlug((string) ($data['slug'] ?? ''), $data['title'], $edition),
+            'slug' => $this->resolveSlug((string) ($data['slug'] ?? ''), $data['title'], $event),
             'submission_open' => $request->boolean('submission_open'),
             'submission_deadline' => ($data['submission_deadline'] ?? null) ?: null,
             'settings' => array_merge($existingSettings, [
@@ -215,23 +222,23 @@ class SaveEdition
             $committees = collect($data['committees'])->map(fn ($r) => (array) $r)->all();
         }
 
-        return DB::transaction(function () use ($payload, $edition, $committees): Edition {
-            $model = $edition ? tap($edition)->update($payload) : Edition::create($payload);
+        return DB::transaction(function () use ($payload, $event, $committees): Event {
+            $model = $event ? tap($event)->update($payload) : Event::create($payload);
             $this->syncCommittees($model, $committees);
 
             return $model;
         });
     }
 
-    /** Remplace les membres de comité de l'édition par ceux du formulaire. */
-    private function syncCommittees(Edition $edition, array $committees): void
+    /** Remplace les membres de comité de l'événement par ceux du formulaire. */
+    private function syncCommittees(Event $event, array $committees): void
     {
-        $edition->committeeMembers()->delete();
+        $event->committeeMembers()->delete();
 
         $rows = collect($committees)->filter(fn ($c) => trim((string) ($c['person_name'] ?? '')) !== '')->values();
 
         foreach ($rows as $i => $c) {
-            $edition->committeeMembers()->create([
+            $event->committeeMembers()->create([
                 'role' => $c['role'] ?? 'organisation',
                 'person_name' => $c['person_name'],
                 'person_title' => $c['person_title'] ?? null,
@@ -242,12 +249,12 @@ class SaveEdition
         }
     }
 
-    private function resolveSlug(string $slug, string $title, ?Edition $edition): string
+    private function resolveSlug(string $slug, string $title, ?Event $event): string
     {
-        $base = Str::slug($slug ?: $title) ?: 'edition';
+        $base = Str::slug($slug ?: $title) ?: 'event';
         $result = $base;
         $i = 2;
-        while (Edition::where('slug', $result)->when($edition, fn ($q) => $q->whereKeyNot($edition->id))->exists()) {
+        while (Event::where('slug', $result)->when($event, fn ($q) => $q->whereKeyNot($event->id))->exists()) {
             $result = $base.'-'.$i++;
         }
 
@@ -259,7 +266,7 @@ class SaveEdition
         $base = $base ?: 'colloque';
         $slug = $base;
         $i = 2;
-        while (Colloque::where('slug', $slug)->exists()) {
+        while (EventSeries::where('slug', $slug)->exists()) {
             $slug = $base.'-'.$i++;
         }
 

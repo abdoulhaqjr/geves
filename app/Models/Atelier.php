@@ -7,11 +7,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Atelier : regroupe un ou plusieurs axes thématiques d'une édition et contient
+ * Atelier : regroupe un ou plusieurs axes thématiques d'un événement et contient
  * une ou plusieurs sessions.
  *
  * @property array<int, string>|null $tracks
- * @property Edition|null $edition
+ * @property Event|null $event
  */
 class Atelier extends Model
 {
@@ -22,10 +22,10 @@ class Atelier extends Model
         return ['tracks' => 'array'];
     }
 
-    /** @return BelongsTo<Edition, $this> */
-    public function edition(): BelongsTo
+    /** @return BelongsTo<Event, $this> */
+    public function event(): BelongsTo
     {
-        return $this->belongsTo(Edition::class);
+        return $this->belongsTo(Event::class);
     }
 
     /** @return HasMany<EventSession, $this> */

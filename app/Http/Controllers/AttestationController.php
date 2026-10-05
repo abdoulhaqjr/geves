@@ -33,7 +33,7 @@ class AttestationController extends Controller
      */
     public function document(string $uuid, AttestationCertifier $certifier): View
     {
-        $attestation = Attestation::with(['edition.colloque', 'participant'])
+        $attestation = Attestation::with(['event.series', 'participant'])
             ->where('uuid', $uuid)->firstOrFail();
 
         // ⚠️ Le QR du document encode cette adresse. Il menait à une page de
@@ -44,7 +44,7 @@ class AttestationController extends Controller
 
         // Tout document vient d'un modèle ENREGISTRÉ (créé au besoin) : plus de
         // repli implicite à la charte, que l'admin ne pouvait ni voir ni modifier.
-        $template = DocumentTemplate::ensureFor((int) $attestation->edition_id, 'attestation', (string) $attestation->type);
+        $template = DocumentTemplate::ensureFor((int) $attestation->event_id, 'attestation', (string) $attestation->type);
 
         $layout = LayoutSanitizer::sanitize((array) $template->layout, 'attestation', $attestation->type);
         $canvas = LayoutRenderer::render($layout, AttestationVars::for($attestation, $verifyUrl));
@@ -57,7 +57,7 @@ class AttestationController extends Controller
             // l'attestation certifie et se vérifie, mais il ne se télécharge ni ne
             // se partage comme l'original. Sans la marque, deux documents
             // identiques circuleraient, dont un que l'émetteur n'a jamais remis.
-            'papier' => AttestationPolicy::isPaper($attestation->edition),
+            'papier' => AttestationPolicy::isPaper($attestation->event),
             'width' => $layout['width'],
             // Même preuve que la page de vérification : les deux doivent dire la
             // même chose d'une même attestation.
@@ -74,15 +74,15 @@ class AttestationController extends Controller
      */
     private function documentFacts(Attestation $attestation): array
     {
-        $edition = $attestation->edition;
+        $event = $attestation->event;
         $meta = (array) ($attestation->meta ?? []);
 
         return array_filter([
             'Type' => $attestation->typeLabel(),
-            'Événement' => (string) ($edition?->title ?? ''),
-            'Thème' => (string) ($edition?->theme ?? ''),
-            'Dates' => (string) ($edition?->dateRangeLabel() ?? ''),
-            'Lieu' => (string) ($edition?->location ?? ''),
+            'Événement' => (string) ($event?->title ?? ''),
+            'Thème' => (string) ($event?->theme ?? ''),
+            'Dates' => (string) ($event?->dateRangeLabel() ?? ''),
+            'Lieu' => (string) ($event?->location ?? ''),
             'Communication' => (string) ($meta['communication_title'] ?? ''),
             'Formation' => (string) ($meta['formation_title'] ?? ''),
         ], fn (string $v) => $v !== '');
@@ -91,7 +91,7 @@ class AttestationController extends Controller
     /** Attestation en vrai PDF serveur (téléchargement, format A4 paysage). */
     public function pdf(string $uuid): Response
     {
-        $attestation = Attestation::with(['edition.colloque', 'participant'])
+        $attestation = Attestation::with(['event.series', 'participant'])
             ->where('uuid', $uuid)->firstOrFail();
 
         // ⚠️ En délivrance physique, le PDF n'est pas public : l'original est
@@ -102,7 +102,7 @@ class AttestationController extends Controller
         // d'AttestationExportController). Lui fermer la porte reviendrait à
         // interdire la délivrance qu'on vient de choisir.
         abort_if(
-            AttestationPolicy::isPaper($attestation->edition) && ! Auth::guard('web')->check(),
+            AttestationPolicy::isPaper($attestation->event) && ! Auth::guard('web')->check(),
             403,
             'Cette attestation est délivrée sur papier : son exemplaire officiel est remis par le secrétariat.',
         );
@@ -114,7 +114,7 @@ class AttestationController extends Controller
         $verifyUrl = route('attestation.document', $attestation->uuid);
 
         // Même règle que l'aperçu : le PDF rend toujours un modèle enregistré.
-        $template = DocumentTemplate::ensureFor((int) $attestation->edition_id, 'attestation', (string) $attestation->type);
+        $template = DocumentTemplate::ensureFor((int) $attestation->event_id, 'attestation', (string) $attestation->type);
 
         $layout = LayoutSanitizer::sanitize((array) $template->layout, 'attestation', $attestation->type);
         $canvas = LayoutRenderer::render($layout, AttestationVars::for($attestation, $verifyUrl), pdf: true);
@@ -140,7 +140,7 @@ class AttestationController extends Controller
      */
     public function verifyJson(string $uuid, AttestationCertifier $certifier): JsonResponse
     {
-        $attestation = Attestation::with(['edition.colloque'])->where('uuid', $uuid)->first();
+        $attestation = Attestation::with(['event.series'])->where('uuid', $uuid)->first();
 
         if (! $attestation) {
             return response()->json([
@@ -173,7 +173,7 @@ class AttestationController extends Controller
             'facts' => array_filter([
                 __('Bénéficiaire') => (string) $attestation->recipient_name,
                 __('Type') => $attestation->typeLabel(),
-                __('Émetteur') => (string) ($attestation->edition?->colloque?->name ?? ''),
+                __('Émetteur') => (string) ($attestation->event?->series?->name ?? ''),
                 __('Émise le') => $attestation->issued_at?->translatedFormat('j F Y') ?? '',
                 __('Identifiant') => $attestation->uuid,
                 __('Signée par') => $valid ? (string) ($proof['payload']['iss'] ?? '') : '',
@@ -188,7 +188,7 @@ class AttestationController extends Controller
      */
     public function credential(string $uuid, AttestationCertifier $certifier): JsonResponse
     {
-        $attestation = Attestation::with(['edition.colloque'])
+        $attestation = Attestation::with(['event.series'])
             ->where('uuid', $uuid)->firstOrFail();
 
         abort_unless($attestation->isSigned(), 404);

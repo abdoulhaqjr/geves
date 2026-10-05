@@ -38,8 +38,8 @@ class LinkSubmissionAuthors
             return;
         }
 
-        $edition = $submission->edition;
-        if (! $edition) {
+        $event = $submission->event;
+        if (! $event) {
             return;
         }
 
@@ -48,7 +48,7 @@ class LinkSubmissionAuthors
 
             $link = new SubmissionAuthor([
                 'submission_id' => $submission->id,
-                'edition_id' => $edition->id,
+                'event_id' => $event->id,
                 'role' => $role,
                 'author_index' => (int) $index,
                 'name' => (string) ($author['name'] ?? ''),
@@ -73,7 +73,7 @@ class LinkSubmissionAuthors
             $user = $match['user'];
 
             if ($user && $user->id !== $submitter->id) {
-                $this->linkUser($submission, $edition, $link, $user, $role, (string) $match['type']);
+                $this->linkUser($submission, $event, $link, $user, $role, (string) $match['type']);
             } elseif ($user && $user->id === $submitter->id) {
                 // Un « co-auteur » qui est en fait le déposant : déjà propriétaire.
                 $link->user_id = $submitter->id;
@@ -81,7 +81,7 @@ class LinkSubmissionAuthors
                 $link->status = 'linked';
                 $link->save();
             } elseif ($link->email) {
-                $this->invite($submission, $edition, $link, $role);
+                $this->invite($submission, $event, $link, $role);
             } else {
                 $link->save(); // status unmatched, aucun contact fiable
             }
@@ -89,9 +89,9 @@ class LinkSubmissionAuthors
     }
 
     /** Lie un compte existant : participant + notification + e-mail (+ SMS). */
-    protected function linkUser(Submission $submission, $edition, SubmissionAuthor $link, User $user, string $role, string $type): void
+    protected function linkUser(Submission $submission, $event, SubmissionAuthor $link, User $user, string $role, string $type): void
     {
-        $this->upsert->handle($edition, $user, $role === 'corresponding' ? 'author' : 'coauthor');
+        $this->upsert->handle($event, $user, $role === 'corresponding' ? 'author' : 'coauthor');
 
         $link->user_id = $user->id;
         $link->match_type = $type;
@@ -107,7 +107,7 @@ class LinkSubmissionAuthors
             $user,
             'authorship',
             __('Vous êtes associé(e) à une communication'),
-            '« '.$submission->title.' » - '.($edition->title ?? ''),
+            '« '.$submission->title.' » - '.($event->title ?? ''),
             $url,
             'inbox',
         );
@@ -116,11 +116,11 @@ class LinkSubmissionAuthors
             Mail::to($user->email)->send(new AuthorLinkedMail($submission, $user->full_name ?: (string) $user->name, $roleLabel, $url, $declineUrl));
         }
 
-        $this->maybeSms($link->phone ?: $user->phone, __('Vous êtes associé(e) à la communication « :t » pour :e. Détails dans votre espace.', ['t' => Str::limit($submission->title, 60), 'e' => $edition->title ?? '']));
+        $this->maybeSms($link->phone ?: $user->phone, __('Vous êtes associé(e) à la communication « :t » pour :e. Détails dans votre espace.', ['t' => Str::limit($submission->title, 60), 'e' => $event->title ?? '']));
     }
 
     /** Personne non inscrite : e-mail (+ SMS) d'invitation à créer son compte. */
-    protected function invite(Submission $submission, $edition, SubmissionAuthor $link, string $role): void
+    protected function invite(Submission $submission, $event, SubmissionAuthor $link, string $role): void
     {
         $link->status = 'invited';
         $link->invited_at = now();
@@ -131,7 +131,7 @@ class LinkSubmissionAuthors
 
         Mail::to($link->email)->send(new AuthorInviteMail($submission, $link->name, self::roleLabel($role), $registerUrl, $declineUrl));
 
-        $this->maybeSms($link->phone, __('Vous êtes cité(e) comme auteur d’une communication pour :e. Créez votre compte pour la retrouver : :u', ['e' => $edition->title ?? '', 'u' => $registerUrl]));
+        $this->maybeSms($link->phone, __('Vous êtes cité(e) comme auteur d’une communication pour :e. Créez votre compte pour la retrouver : :u', ['e' => $event->title ?? '', 'u' => $registerUrl]));
     }
 
     /** Envoi SMS best-effort : seulement si un numéro est fourni ET une passerelle configurée. */

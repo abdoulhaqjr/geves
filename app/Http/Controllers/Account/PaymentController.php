@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Payments\GatewayRegistry;
-use App\Support\EditionLock;
-use App\Support\EditionPaymentConfig;
+use App\Support\EventLock;
+use App\Support\EventPaymentConfig;
 use App\Support\Fees;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,23 +22,23 @@ use Illuminate\View\View;
  */
 class PaymentController extends Controller
 {
-    public function show(Edition $edition): View
+    public function show(Event $event): View
     {
         // ⚠️ Pas de garde ici : la page reste CONSULTABLE (un participant doit
         // pouvoir relire ce qu'il a payé). Seul `pay()` est bloqué, et la vue
         // remplace le parcours de règlement par une explication.
-        EditionPaymentConfig::apply($edition); // passerelle propre à l'édition (repli global)
+        EventPaymentConfig::apply($event); // passerelle propre à l'événement (repli global)
         $account = Auth::guard('account')->user();
-        $participant = Participant::where('edition_id', $edition->id)
+        $participant = Participant::where('event_id', $event->id)
             ->where('user_id', $account->id)
             ->first();
 
-        $applicable = $participant ? Fees::resolveAmount($edition, $participant->title) : null;
-        $amount = $applicable ?? ($participant ? Fees::highestAmount($edition) : null);
+        $applicable = $participant ? Fees::resolveAmount($event, $participant->title) : null;
+        $amount = $applicable ?? ($participant ? Fees::highestAmount($event) : null);
 
         // Libellé du tarif applicable (rapproché du grade du participant).
         $applicableLabel = null;
-        foreach (Fees::grid($edition) as $tier) {
+        foreach (Fees::grid($event) as $tier) {
             if ((float) ($tier['amount'] ?? 0) === (float) $amount) {
                 $applicableLabel = $tier['label'] ?? null;
                 break;
@@ -46,11 +46,11 @@ class PaymentController extends Controller
         }
 
         return view('account.payment.pay', [
-            'edition' => $edition,
-            'frozen' => EditionLock::frozen($edition),
+            'event' => $event,
+            'frozen' => EventLock::frozen($event),
             'participant' => $participant,
             'amount' => $amount,
-            'tiers' => Fees::grid($edition),
+            'tiers' => Fees::grid($event),
             'applicableLabel' => $applicableLabel,
             'eligible' => $participant && $participant->hasAcceptedSubmission(),
             'paid' => $participant && $participant->hasPaid(),
@@ -59,17 +59,17 @@ class PaymentController extends Controller
         ]);
     }
 
-    public function pay(Request $request, Edition $edition, GatewayRegistry $registry): RedirectResponse
+    public function pay(Request $request, Event $event, GatewayRegistry $registry): RedirectResponse
     {
-        EditionLock::guard($edition);
-        EditionPaymentConfig::apply($edition); // passerelle propre à l'édition (repli global)
+        EventLock::guard($event);
+        EventPaymentConfig::apply($event); // passerelle propre à l'événement (repli global)
         $account = Auth::guard('account')->user();
-        $participant = Participant::where('edition_id', $edition->id)
+        $participant = Participant::where('event_id', $event->id)
             ->where('user_id', $account->id)
             ->first();
 
         $amount = $participant
-            ? (Fees::resolveAmount($edition, $participant->title) ?? Fees::highestAmount($edition))
+            ? (Fees::resolveAmount($event, $participant->title) ?? Fees::highestAmount($event))
             : null;
 
         if (! $participant || ! $participant->hasAcceptedSubmission() || $participant->hasPaid() || ! $amount) {
@@ -84,7 +84,7 @@ class PaymentController extends Controller
         // Réutilise un paiement en attente existant plutôt que d'en créer un doublon.
         $payment = Payment::firstOrCreate(
             [
-                'edition_id' => $edition->id,
+                'event_id' => $event->id,
                 'participant_id' => $participant->id,
                 'status' => 'pending',
             ],

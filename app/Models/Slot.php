@@ -11,7 +11,7 @@ use Illuminate\Support\Carbon;
  * communication acceptée.
  *
  * @property int $id
- * @property int $edition_id
+ * @property int $event_id
  * @property int $submission_id
  * @property int $participant_id
  * @property int|null $session_id
@@ -50,10 +50,10 @@ class Slot extends Model
         return $this->presented_at !== null;
     }
 
-    /** @return BelongsTo<Edition, $this> */
-    public function edition(): BelongsTo
+    /** @return BelongsTo<Event, $this> */
+    public function event(): BelongsTo
     {
-        return $this->belongsTo(Edition::class);
+        return $this->belongsTo(Event::class);
     }
 
     /** @return BelongsTo<EventSession, $this> */

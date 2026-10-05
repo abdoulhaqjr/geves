@@ -1,6 +1,6 @@
 {{-- Pointage de la présence d'une séance, par son modérateur ou son rapporteur.
      ⚠️ La liste est celle des AUTEURS des communications programmées dans la
-     séance - pas l'effectif de l'édition. Elle tient donc sur un écran, sans
+     séance - pas l'effectif de l'événement. Elle tient donc sur un écran, sans
      recherche ni pagination : on appelle des gens, on ne fouille pas un annuaire. --}}
 <x-layouts.participant :title="__('Présence de la séance')" :subtitle="$session->label">
 <div class="account-attendance" style="display:grid;grid-template-columns:minmax(0,1fr);gap:16px;">
@@ -22,13 +22,13 @@
         @if ($validated)
             <span class="ukc-pill ukc-pill--ok">{{ __('Rapport validé · présence figée') }}</span>
         @elseif ($frozen)
-            <span class="ukc-pill ukc-pill--muted">{{ __('Édition archivée · lecture seule') }}</span>
+            <span class="ukc-pill ukc-pill--muted">{{ __('Événement archivée · lecture seule') }}</span>
         @endif
     </div>
 
     <div class="ukc-card">
         <div style="font-size:12px;color:var(--ukc-muted);text-transform:uppercase;letter-spacing:.04em;">
-            {{ $session->edition?->colloque?->name ?: __('Colloque') }} · {{ $session->edition?->title ?: $session->edition?->year }}
+            {{ $session->event?->series?->name ?: __('Colloque') }} · {{ $session->event?->title ?: $session->event?->year }}
         </div>
         <h3 style="margin:2px 0 4px;">{{ $session->label }}</h3>
         <div style="font-size:13px;color:var(--ukc-muted);">
@@ -49,7 +49,7 @@
 
     @if (! $roster)
         {{-- Pas de communication programmée : il n'y a personne à appeler. Le dire,
-             plutôt que de retomber sur la liste des inscrits de l'édition. --}}
+             plutôt que de retomber sur la liste des inscrits de l'événement. --}}
         <div class="ukc-card" style="text-align:center;">
             <span class="ico" style="color:var(--ukc-muted);"><x-ukc.icon name="users" :size="28" /></span>
             <h3 style="justify-content:center;">{{ __('Aucune communication programmée') }}</h3>
@@ -74,7 +74,7 @@
                 <p style="color:var(--ukc-muted);font-size:13px;margin:0 0 12px;display:flex;align-items:center;gap:6px;">
                     <x-ukc.icon name="lock" :size="16" />
                     {{ $frozen
-                        ? __('Cette édition est archivée : la présence reste consultable mais n’est plus modifiable.')
+                        ? __('Cet événement est archivée : la présence reste consultable mais n’est plus modifiable.')
                         : __('Le rapport de séance a été validé par le secrétariat : la présence est figée avec lui.') }}
                 </p>
             @endif
@@ -128,12 +128,12 @@
                                             @endforeach
                                         </div>
                                     @else
-                                        {{-- ⚠️ Co-auteur sans inscription sur l'édition : il
+                                        {{-- ⚠️ Co-auteur sans inscription sur l'événement : il
                                              est bien auteur de la communication (le cacher
                                              ferait croire à une liste d'auteurs tronquée),
                                              mais il n'y a aucune inscription à laquelle
                                              rattacher une présence. --}}
-                                        <span class="ukc-pill ukc-pill--muted" title="{{ __('Cette personne n’a pas d’inscription sur cette édition.') }}">
+                                        <span class="ukc-pill ukc-pill--muted" title="{{ __('Cette personne n’a pas d’inscription sur cet événement.') }}">
                                             {{ __('Non inscrit') }}
                                         </span>
                                     @endif

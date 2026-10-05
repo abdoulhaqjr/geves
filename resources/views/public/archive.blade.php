@@ -1,4 +1,4 @@
-<x-layouts.app :title="($edition->title ?: 'Édition') . ' - Archives '.config('app.name')">
+<x-layouts.app :title="($event->title ?: 'Événement') . ' - Archives '.config('app.name')">
     @php
         // Un axe thématique peut être une chaîne ou un objet { name/title/label }.
         $axeLabel = function ($a) {
@@ -13,17 +13,17 @@
 
     <div class="archive-detail">
         <section class="detail-hero">
-            @if ($edition->banner_url)
-                <div class="bg" style="background-image:url('{{ $edition->banner_url }}');"></div>
+            @if ($event->banner_url)
+                <div class="bg" style="background-image:url('{{ $event->banner_url }}');"></div>
             @endif
             <div class="ukc-container">
                 <div class="chips">
-                    @if ($edition->edition_label)<span class="chip">{{ $edition->edition_label }}</span>@endif
-                    <span class="chip">{{ $edition->year ?: $edition->date_start?->format('Y') }}</span>
+                    @if ($event->event_label)<span class="chip">{{ $event->event_label }}</span>@endif
+                    <span class="chip">{{ $event->year ?: $event->date_start?->format('Y') }}</span>
                     <span class="chip">Clôturé</span>
                 </div>
-                <h1>{{ $edition->title ?: $edition->colloque?->name }}</h1>
-                @if ($edition->theme)<p class="theme-line">{{ $edition->theme }}</p>@endif
+                <h1>{{ $event->title ?: $event->series?->name }}</h1>
+                @if ($event->theme)<p class="theme-line">{{ $event->theme }}</p>@endif
             </div>
         </section>
 
@@ -38,7 +38,7 @@
 
                     <div class="card" style="margin-bottom:18px;">
                         <h2>Présentation</h2>
-                        <p>{{ $description ?: 'Édition clôturée de l’Université de Kara, sous la coordination de la Direction de la Recherche et de l’Innovation (DRI).' }}</p>
+                        <p>{{ $description ?: 'Événement clôturée de l’Université de Kara, sous la coordination de la Direction de la Recherche et de l’Innovation (DRI).' }}</p>
                         @if (! empty($highlights))
                             <ul>
                                 @foreach ($highlights as $h)<li>{{ is_array($h) ? ($h['text'] ?? reset($h)) : $h }}</li>@endforeach
@@ -66,16 +66,16 @@
                 <aside class="side">
                     <div class="card">
                         <h2>Informations</h2>
-                        @if ($edition->theme)<div class="row"><span>Thème</span><strong>{{ $edition->theme }}</strong></div>@endif
-                        @if ($edition->location)<div class="row"><span>Lieu</span><strong>{{ $edition->location }}</strong></div>@endif
+                        @if ($event->theme)<div class="row"><span>Thème</span><strong>{{ $event->theme }}</strong></div>@endif
+                        @if ($event->location)<div class="row"><span>Lieu</span><strong>{{ $event->location }}</strong></div>@endif
                         <div class="row"><span>Dates</span><strong>
-                            @if ($edition->date_start)
-                                {{ $edition->dateRangeLabel() }}
+                            @if ($event->date_start)
+                                {{ $event->dateRangeLabel() }}
                             @else
-                                {{ $edition->year }}
+                                {{ $event->year }}
                             @endif
                         </strong></div>
-                        <div class="row"><span>Type</span><strong>{{ $edition->colloque?->name ?: 'Colloque' }}</strong></div>
+                        <div class="row"><span>Type</span><strong>{{ $event->series?->name ?: 'Colloque' }}</strong></div>
                         <div class="row"><span>Organisateur</span><strong>DRI · Université de Kara</strong></div>
                     </div>
 
@@ -84,13 +84,13 @@
                         @forelse ($documents as $doc)
                             <a href="{{ $doc['url'] }}" target="_blank" rel="noopener">{{ $doc['label'] }} <span>↓</span></a>
                         @empty
-                            <p style="font-size:13.5px;color:var(--ukc-muted);margin:0;">Aucun document public pour cette édition.</p>
+                            <p style="font-size:13.5px;color:var(--ukc-muted);margin:0;">Aucun document public pour cet événement.</p>
                         @endforelse
                         <a href="mailto:dri@univkara.tg">Demander un document <span>→</span></a>
                     </div>
 
                     <div class="card">
-                        <a href="{{ route('public.archives') }}" class="ukc-btn ukc-btn--outline" style="width:100%;">← Toutes les éditions</a>
+                        <a href="{{ route('public.archives') }}" class="ukc-btn ukc-btn--outline" style="width:100%;">← Toutes les événements</a>
                     </div>
                 </aside>
             </div>

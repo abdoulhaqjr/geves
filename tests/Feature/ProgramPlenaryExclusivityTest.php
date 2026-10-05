@@ -12,7 +12,7 @@ use Illuminate\Support\Carbon;
 function makeSession(int $editionId, string $type, string $day, string $start, string $end): EventSession
 {
     return EventSession::create([
-        'edition_id' => $editionId,
+        'event_id' => $editionId,
         'type' => $type,
         'atelier_id' => 0,
         'label' => ucfirst($type).' '.$start,
@@ -24,13 +24,13 @@ function makeSession(int $editionId, string $type, string $day, string $start, s
 
 it('bloque une session d’atelier qui chevauche une plénière', function () {
     $staff = adminStaff();
-    $edition = openEdition();
-    makeSession($edition->id, 'plenary', '2026-09-27', '09:00', '10:00');
+    $event = openEdition();
+    makeSession($event->id, 'plenary', '2026-09-27', '09:00', '10:00');
 
     $this->from(route('admin.program.index'))
         ->actingAs($staff, 'web')
         ->post(route('admin.program.sessions.store'), [
-            'edition_id' => (string) $edition->id,
+            'event_id' => (string) $event->id,
             'sType' => 'atelier',
             'sLabel' => 'Atelier concurrent',
             'sDay' => '2026-09-27',
@@ -43,13 +43,13 @@ it('bloque une session d’atelier qui chevauche une plénière', function () {
 
 it('bloque une plénière qui chevauche un atelier existant', function () {
     $staff = adminStaff();
-    $edition = openEdition();
-    makeSession($edition->id, 'atelier', '2026-09-27', '14:00', '15:30');
+    $event = openEdition();
+    makeSession($event->id, 'atelier', '2026-09-27', '14:00', '15:30');
 
     $this->from(route('admin.program.index'))
         ->actingAs($staff, 'web')
         ->post(route('admin.program.sessions.store'), [
-            'edition_id' => (string) $edition->id,
+            'event_id' => (string) $event->id,
             'sType' => 'plenary',
             'sLabel' => 'Plénière tardive',
             'sDay' => '2026-09-27',
@@ -62,13 +62,13 @@ it('bloque une plénière qui chevauche un atelier existant', function () {
 
 it('autorise deux ateliers simultanés (sessions parallèles)', function () {
     $staff = adminStaff();
-    $edition = openEdition();
-    makeSession($edition->id, 'atelier', '2026-09-27', '14:00', '15:30');
+    $event = openEdition();
+    makeSession($event->id, 'atelier', '2026-09-27', '14:00', '15:30');
 
     $this->from(route('admin.program.index'))
         ->actingAs($staff, 'web')
         ->post(route('admin.program.sessions.store'), [
-            'edition_id' => (string) $edition->id,
+            'event_id' => (string) $event->id,
             'sType' => 'atelier',
             'sLabel' => 'Atelier parallèle',
             'sDay' => '2026-09-27',
@@ -81,13 +81,13 @@ it('autorise deux ateliers simultanés (sessions parallèles)', function () {
 
 it('autorise une session qui touche une plénière sans la chevaucher', function () {
     $staff = adminStaff();
-    $edition = openEdition();
-    makeSession($edition->id, 'plenary', '2026-09-27', '09:00', '10:00');
+    $event = openEdition();
+    makeSession($event->id, 'plenary', '2026-09-27', '09:00', '10:00');
 
     $this->from(route('admin.program.index'))
         ->actingAs($staff, 'web')
         ->post(route('admin.program.sessions.store'), [
-            'edition_id' => (string) $edition->id,
+            'event_id' => (string) $event->id,
             'sType' => 'atelier',
             'sLabel' => 'Atelier juste après',
             'sDay' => '2026-09-27',
@@ -100,13 +100,13 @@ it('autorise une session qui touche une plénière sans la chevaucher', function
 
 it('bloque un créneau qui tombe dans une plénière', function () {
     $staff = adminStaff();
-    $edition = openEdition();
-    makeSession($edition->id, 'plenary', '2026-09-27', '09:00', '10:00');
+    $event = openEdition();
+    makeSession($event->id, 'plenary', '2026-09-27', '09:00', '10:00');
 
     $this->from(route('admin.program.index'))
         ->actingAs($staff, 'web')
         ->post(route('admin.program.slots.store'), [
-            'edition_id' => (string) $edition->id,
+            'event_id' => (string) $event->id,
             'slRoom' => 'Salle A',
             'slDay' => '2026-09-27',
             'slStart' => '09:30',
@@ -117,15 +117,15 @@ it('bloque un créneau qui tombe dans une plénière', function () {
 
 it('bloque une session qui tombe sur la pause déjeuner (exclusive comme une plénière)', function () {
     $staff = adminStaff();
-    $edition = openEdition();
-    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+    $event = openEdition();
+    $event->update(['settings' => array_merge($event->settings ?? [], [
         'program' => ['params' => ['lunch' => true, 'lunch_start' => '12:30', 'lunch_end' => '14:00']],
     ])]);
 
     $this->from(route('admin.program.index'))
         ->actingAs($staff, 'web')
         ->post(route('admin.program.sessions.store'), [
-            'edition_id' => (string) $edition->id,
+            'event_id' => (string) $event->id,
             'sType' => 'atelier',
             'sLabel' => 'Atelier pendant le déjeuner',
             'sDay' => '2026-09-27',
@@ -138,15 +138,15 @@ it('bloque une session qui tombe sur la pause déjeuner (exclusive comme une pl�
 
 it('autorise une session qui touche la pause déjeuner sans la chevaucher', function () {
     $staff = adminStaff();
-    $edition = openEdition();
-    $edition->update(['settings' => array_merge($edition->settings ?? [], [
+    $event = openEdition();
+    $event->update(['settings' => array_merge($event->settings ?? [], [
         'program' => ['params' => ['lunch' => true, 'lunch_start' => '12:30', 'lunch_end' => '14:00']],
     ])]);
 
     $this->from(route('admin.program.index'))
         ->actingAs($staff, 'web')
         ->post(route('admin.program.sessions.store'), [
-            'edition_id' => (string) $edition->id,
+            'event_id' => (string) $event->id,
             'sType' => 'atelier',
             'sLabel' => 'Atelier avant déjeuner',
             'sDay' => '2026-09-27',
@@ -159,8 +159,8 @@ it('autorise une session qui touche la pause déjeuner sans la chevaucher', func
 
 it('permet de ré-enregistrer une plénière avec ses propres horaires (pas de conflit avec elle-même)', function () {
     $staff = adminStaff();
-    $edition = openEdition();
-    $plenary = makeSession($edition->id, 'plenary', '2026-09-27', '09:00', '10:00');
+    $event = openEdition();
+    $plenary = makeSession($event->id, 'plenary', '2026-09-27', '09:00', '10:00');
 
     $this->from(route('admin.program.index'))
         ->actingAs($staff, 'web')
@@ -176,13 +176,13 @@ it('permet de ré-enregistrer une plénière avec ses propres horaires (pas de c
 });
 
 it('helper : détecte le conflit uniquement quand une plénière est impliquée', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $day = '2026-09-27';
-    makeSession($edition->id, 'plenary', $day, '09:00', '10:00');
-    makeSession($edition->id, 'atelier', $day, '14:00', '15:00');
+    makeSession($event->id, 'plenary', $day, '09:00', '10:00');
+    makeSession($event->id, 'atelier', $day, '14:00', '15:00');
 
     $c = fn (string $s, string $e, bool $plenary) => ProgramConflicts::blockingSession(
-        $edition->fresh(), Carbon::parse("$day $s"), Carbon::parse("$day $e"), $plenary
+        $event->fresh(), Carbon::parse("$day $s"), Carbon::parse("$day $e"), $plenary
     );
 
     // Atelier pendant la plénière -> conflit ; atelier // atelier -> pas de conflit.
@@ -195,32 +195,32 @@ it('helper : détecte le conflit uniquement quand une plénière est impliquée'
 it('affectation auto : un même auteur n’est pas placé sur deux créneaux simultanés', function () {
     $staff = adminStaff();
     $sub1 = seededSubmission('accepted');
-    $edition = $sub1->edition;
+    $event = $sub1->event;
     $participant = $sub1->participant;
 
     // 2e communication acceptée du MÊME participant.
-    $sub2 = $edition->submissions()->create([
+    $sub2 = $event->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => '26-002', 'title' => 'Second travail',
         'abstract' => str_repeat('Contexte. ', 10), 'track' => 'Sciences', 'type' => 'oral', 'status' => 'accepted',
         'authors' => [['name' => 'Awa Kodjo', 'email' => 'awa@example.tg', 'corresponding' => true]],
     ]);
 
     // Deux créneaux libres SIMULTANÉS (deux ateliers en parallèle, salles différentes).
-    Slot::create(['edition_id' => $edition->id, 'room' => 'Salle A', 'submission_id' => 0, 'participant_id' => 0, 'starts_at' => '2026-09-27 14:00:00', 'ends_at' => '2026-09-27 14:20:00']);
-    Slot::create(['edition_id' => $edition->id, 'room' => 'Salle B', 'submission_id' => 0, 'participant_id' => 0, 'starts_at' => '2026-09-27 14:00:00', 'ends_at' => '2026-09-27 14:20:00']);
+    Slot::create(['event_id' => $event->id, 'room' => 'Salle A', 'submission_id' => 0, 'participant_id' => 0, 'starts_at' => '2026-09-27 14:00:00', 'ends_at' => '2026-09-27 14:20:00']);
+    Slot::create(['event_id' => $event->id, 'room' => 'Salle B', 'submission_id' => 0, 'participant_id' => 0, 'starts_at' => '2026-09-27 14:00:00', 'ends_at' => '2026-09-27 14:20:00']);
 
     $this->from(route('admin.program.index'))->actingAs($staff, 'web')
-        ->post(route('admin.program.slots.auto').'?edition_id='.$edition->id, ['match_axis' => '0'])
+        ->post(route('admin.program.slots.auto').'?event_id='.$event->id, ['match_axis' => '0'])
         ->assertSessionHasNoErrors();
 
     // Une seule des deux communications de cet auteur est placée (créneaux en conflit).
-    expect($edition->slots()->where('participant_id', $participant->id)->count())->toBe(1);
+    expect($event->slots()->where('participant_id', $participant->id)->count())->toBe(1);
 });
 
 it('affectation auto : deux auteurs différents peuvent être placés en parallèle', function () {
     $staff = adminStaff();
     $sub1 = seededSubmission('accepted');
-    $edition = $sub1->edition;
+    $event = $sub1->event;
 
     // 2e communication d'un AUTRE participant (email/téléphone distincts).
     $account2 = User::create([
@@ -229,19 +229,19 @@ it('affectation auto : deux auteurs différents peuvent être placés en parall�
         'grade' => 'Doctorant', 'affiliation' => 'Université de Parakou', 'phone' => '+22891000000',
     ]);
     $account2->markEmailAsVerified();
-    $p2 = $edition->participants()->create(['user_id' => $account2->id, 'first_name' => 'Kofi', 'last_name' => 'Mensah', 'email' => $account2->email]);
-    $edition->submissions()->create([
+    $p2 = $event->participants()->create(['user_id' => $account2->id, 'first_name' => 'Kofi', 'last_name' => 'Mensah', 'email' => $account2->email]);
+    $event->submissions()->create([
         'participant_id' => $p2->id, 'ref_code' => '26-003', 'title' => 'Travail de Kofi',
         'abstract' => str_repeat('Contexte. ', 10), 'track' => 'Sciences', 'type' => 'oral', 'status' => 'accepted',
         'authors' => [['name' => 'Kofi Mensah', 'email' => $account2->email, 'corresponding' => true]],
     ]);
 
-    Slot::create(['edition_id' => $edition->id, 'room' => 'Salle A', 'submission_id' => 0, 'participant_id' => 0, 'starts_at' => '2026-09-27 14:00:00', 'ends_at' => '2026-09-27 14:20:00']);
-    Slot::create(['edition_id' => $edition->id, 'room' => 'Salle B', 'submission_id' => 0, 'participant_id' => 0, 'starts_at' => '2026-09-27 14:00:00', 'ends_at' => '2026-09-27 14:20:00']);
+    Slot::create(['event_id' => $event->id, 'room' => 'Salle A', 'submission_id' => 0, 'participant_id' => 0, 'starts_at' => '2026-09-27 14:00:00', 'ends_at' => '2026-09-27 14:20:00']);
+    Slot::create(['event_id' => $event->id, 'room' => 'Salle B', 'submission_id' => 0, 'participant_id' => 0, 'starts_at' => '2026-09-27 14:00:00', 'ends_at' => '2026-09-27 14:20:00']);
 
     $this->from(route('admin.program.index'))->actingAs($staff, 'web')
-        ->post(route('admin.program.slots.auto').'?edition_id='.$edition->id, ['match_axis' => '0']);
+        ->post(route('admin.program.slots.auto').'?event_id='.$event->id, ['match_axis' => '0']);
 
     // Les deux (auteurs distincts) sont placés malgré des créneaux simultanés.
-    expect($edition->slots()->where('submission_id', '>', 0)->count())->toBe(2);
+    expect($event->slots()->where('submission_id', '>', 0)->count())->toBe(2);
 });

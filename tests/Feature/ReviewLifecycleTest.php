@@ -6,12 +6,12 @@ use App\Models\Review;
 use App\Models\Submission;
 use App\Models\User;
 use App\Support\ConflictOfInterest;
-use App\Support\EditionReport;
+use App\Support\EventReport;
 use App\Support\ReviewGrid;
 
 // openEdition()/verifiedAccount()/adminStaff()/seededSubmission() -> tests/Pest.php
 
-/** Relecteur inscrit sur l'édition d'une soumission, relié à un compte. */
+/** Relecteur inscrit sur l'événement d'une soumission, relié à un compte. */
 function reviewerFor(Submission $submission, string $email = 'relecteur@example.tg'): Participant
 {
     $account = User::create([
@@ -24,7 +24,7 @@ function reviewerFor(Submission $submission, string $email = 'relecteur@example.
     $account->markEmailAsVerified();
 
     return Participant::create([
-        'edition_id' => $submission->edition_id, 'user_id' => $account->id,
+        'event_id' => $submission->event_id, 'user_id' => $account->id,
         'first_name' => 'Kossi', 'last_name' => 'Adjo', 'email' => $email, 'role' => 'reviewer',
     ]);
 }
@@ -47,9 +47,9 @@ it('crée une relecture « invitée » avec échéance, auteur de l’attributio
     expect($submission->fresh()->status)->toBe('under_review');
 });
 
-it('applique le délai d’évaluation réglé sur l’édition', function () {
+it('applique le délai d’évaluation réglé sur l’événement', function () {
     $submission = seededSubmission();
-    $submission->edition->update(['settings' => array_merge($submission->edition->settings ?? [], ['review_due_days' => 7])]);
+    $submission->event->update(['settings' => array_merge($submission->event->settings ?? [], ['review_due_days' => 7])]);
 
     $review = app(AssignReviewer::class)->handle($submission->fresh(), 'Kossi Adjo', 'kossi@example.tg');
 
@@ -173,7 +173,7 @@ it('résume l’état des relectures pour le comité', function () {
     expect(Review::summarize(collect()))->toBe('Aucun relecteur assigné.');
 });
 
-it('compte le retard réel dans le rapport d’édition', function () {
+it('compte le retard réel dans le rapport d’événement', function () {
     $submission = seededSubmission();
     $r1 = reviewerFor($submission, 'r1@example.tg');
     $r2 = reviewerFor($submission, 'r2@example.tg');
@@ -184,7 +184,7 @@ it('compte le retard réel dans le rapport d’édition', function () {
     Review::create(['submission_id' => $submission->id, 'reviewer_id' => $r2->id, 'status' => 'accepted', 'due_at' => now()->subDays(2)]);
     Review::create(['submission_id' => $submission->id, 'reviewer_id' => $r3->id, 'status' => 'declined', 'due_at' => now()->subDays(9)]);
 
-    $stats = (new EditionReport($submission->edition))->reviewStats();
+    $stats = (new EventReport($submission->event))->reviewStats();
 
     expect($stats['late'])->toBe(1);
     expect($stats['pending'])->toBe(2);
@@ -192,7 +192,7 @@ it('compte le retard réel dans le rapport d’édition', function () {
     expect($stats['done'])->toBe(0);
 
     // Charge par relecteur : un refus ne pèse pas sur la complétion.
-    $byReviewer = collect((new EditionReport($submission->edition))->reviewsByReviewer())->keyBy('name');
+    $byReviewer = collect((new EventReport($submission->event))->reviewsByReviewer())->keyBy('name');
     expect($byReviewer->firstWhere('declined', 1)['assigned'])->toBe(0);
 });
 
@@ -243,54 +243,39 @@ it('propose accepter / refuser sur la page « Mes relectures »', function () {
 });
 
 it('expose le délai d’évaluation dans l’onglet Évaluation', function () {
-    $edition = openEdition(['review_due_days' => 14]);
+    $event = openEdition(['review_due_days' => 14]);
 
     $this->actingAs(adminStaff(), 'web')
-        ->get(route('admin.submissions.options', ['edition_id' => $edition->id]))
+        ->get(route('admin.submissions.options', ['event_id' => $event->id]))
         ->assertOk()
         ->assertSee('Délai d’évaluation (jours)', false)
         ->assertSee('value="14"', false);
 });
 
 it('enregistre le délai d’évaluation depuis l’onglet Évaluation', function () {
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs(adminStaff(), 'web')
-        ->post(route('admin.editions.reviewers.criteria', $edition), ['review_due_days' => 10])
+        ->post(route('admin.evenements.reviewers.criteria', $event), ['review_due_days' => 10])
         ->assertRedirect();
 
-    expect(ReviewGrid::dueDays($edition->fresh()))->toBe(10);
+    expect(ReviewGrid::dueDays($event->fresh()))->toBe(10);
 
     // Vide = on retombe sur la durée standard.
     $this->actingAs(adminStaff(), 'web')
-        ->post(route('admin.editions.reviewers.criteria', $edition), ['review_due_days' => '']);
+        ->post(route('admin.evenements.reviewers.criteria', $event), ['review_due_days' => '']);
 
-    expect(ReviewGrid::dueDays($edition->fresh()))->toBe(Review::DEFAULT_DUE_DAYS);
+    expect(ReviewGrid::dueDays($event->fresh()))->toBe(Review::DEFAULT_DUE_DAYS);
 });
 
-it('signale le conflit « même institution » par défaut', function () {
+it('ignore le conflit « même institution » par défaut', function () {
     $submission = seededSubmission();
     $submission->update(['authors' => [
         ['name' => 'Awa Kodjo', 'email' => 'awa@example.tg', 'affiliation' => 'Université de Kara', 'corresponding' => true],
     ]]);
 
-    $conflicts = ConflictOfInterest::check(
-        $submission->fresh(), 'Kossi Adjo', 'kossi@example.tg', 'Université de Kara'
-    );
-
-    expect(collect($conflicts)->pluck('label'))->toContain('Même institution');
-});
-
-it('ignore le conflit « même institution » quand l’édition le demande', function () {
-    $submission = seededSubmission();
-    $submission->update(['authors' => [
-        ['name' => 'Awa Kodjo', 'email' => 'awa@example.tg', 'affiliation' => 'Université de Kara', 'corresponding' => true],
-    ]]);
-    $edition = $submission->edition;
-    $edition->update(['settings' => array_merge($edition->settings ?? [], [
-        'options' => ['coi_ignore_same_institution' => true],
-    ])]);
-
+    // Défaut de la plateforme (université unique) : la règle « même
+    // institution » est ignorée tant qu'on ne l'active pas explicitement.
     $conflicts = ConflictOfInterest::check(
         $submission->fresh(), 'Kossi Adjo', 'kossi@example.tg', 'Université de Kara'
     );
@@ -304,29 +289,46 @@ it('ignore le conflit « même institution » quand l’édition le demande', fu
     expect(collect($asAuthor)->pluck('label'))->toContain('Auteur de la communication');
 });
 
-it('enregistre l’option depuis l’onglet Options de l’édition', function () {
-    $edition = openEdition();
+it('signale le conflit « même institution » quand l’événement le réactive', function () {
+    $submission = seededSubmission();
+    $submission->update(['authors' => [
+        ['name' => 'Awa Kodjo', 'email' => 'awa@example.tg', 'affiliation' => 'Université de Kara', 'corresponding' => true],
+    ]]);
+    $event = $submission->event;
+    $event->update(['settings' => array_replace_recursive($event->settings ?? [], [
+        'options' => ['coi_ignore_same_institution' => false],
+    ])]);
+
+    $conflicts = ConflictOfInterest::check(
+        $submission->fresh(), 'Kossi Adjo', 'kossi@example.tg', 'Université de Kara'
+    );
+
+    expect(collect($conflicts)->pluck('label'))->toContain('Même institution');
+});
+
+it('enregistre l’option depuis l’onglet Options de l’événement', function () {
+    $event = openEdition();
     $admin = adminStaff();
 
     $this->actingAs($admin, 'web')
-        ->get(route('admin.editions.edit', $edition))
+        ->get(route('admin.evenements.edit', $event))
         ->assertOk()
         ->assertSee('opt_coi_ignore_institution', false);
 
-    $this->actingAs($admin, 'web')->put(route('admin.editions.update', $edition), [
-        'colloque_id' => $edition->colloque_id,
-        'title' => $edition->title,
-        'status' => $edition->status,
+    $this->actingAs($admin, 'web')->put(route('admin.evenements.update', $event), [
+        'event_series_id' => $event->event_series_id,
+        'title' => $event->title,
+        'status' => $event->status,
         'max_communications' => 3,
         'opt_coi_ignore_institution' => '1',
     ])->assertRedirect();
 
-    expect($edition->fresh()->settings['options']['coi_ignore_same_institution'])->toBeTrue();
+    expect($event->fresh()->settings['options']['coi_ignore_same_institution'])->toBeTrue();
 });
 
 it('filtre la liste des relectures sans fausser les compteurs', function () {
     $submission = seededSubmission();
-    $other = $submission->edition->submissions()->create([
+    $other = $submission->event->submissions()->create([
         'participant_id' => $submission->participant_id,
         'ref_code' => '26-002',
         'title' => 'Seconde communication',
@@ -363,7 +365,7 @@ it('filtre la liste des relectures sans fausser les compteurs', function () {
  * Depuis l'introduction du cycle de vie, un `status != 'completed'` compte aussi
  * les relectures REFUSÉES et ANNULÉES - le relecteur garde alors un badge pour
  * un travail qu'il n'a plus à faire, et le comité voit une charge fantôme. Le
- * motif a déjà été écrit à trois endroits (rapports d'édition, tableau de bord
+ * motif a déjà été écrit à trois endroits (rapports d'événement, tableau de bord
  * participant, compteurs de l'espace relecteur), d'où ce garde-fou.
  *
  * La règle : passer par `Review::PENDING_STATUSES` / `isPending()` (encore dû),

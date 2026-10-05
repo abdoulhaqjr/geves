@@ -23,14 +23,14 @@ return new class extends Migration
             $table->timestamp('delivered_at')->nullable()->after('issued_at');
             $table->foreignId('delivered_by')->nullable()->after('delivered_at');
             // « Ce qui reste à remettre » est LA requête du guichet.
-            $table->index(['edition_id', 'delivered_at']);
+            $table->index(['event_id', 'delivered_at']);
         });
     }
 
     public function down(): void
     {
         Schema::table('attestations', function (Blueprint $table) {
-            $table->dropIndex(['edition_id', 'delivered_at']);
+            $table->dropIndex(['event_id', 'delivered_at']);
             $table->dropColumn(['delivered_at', 'delivered_by']);
         });
     }

@@ -2,7 +2,7 @@
 
 namespace App\Documents;
 
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Submission;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
@@ -38,7 +38,7 @@ class LivretTemplate
      * @param  Collection<int|string, \Illuminate\Database\Eloquent\Collection<int, Submission>>  $groups
      */
     public function __construct(
-        private readonly Edition $edition,
+        private readonly Event $event,
         private readonly Collection $groups,
         private readonly string $templatePath,
         private readonly bool $harmonize = false,
@@ -76,7 +76,7 @@ class LivretTemplate
             throw new \RuntimeException('Modèle .docx invalide (word/document.xml manquant).');
         }
 
-        $livret = new LivretDocx($this->edition, $this->groups, $this->harmonize);
+        $livret = new LivretDocx($this->event, $this->groups, $this->harmonize);
         $inline = $livret->inlineValues();
 
         $dom = new \DOMDocument;

@@ -5,7 +5,7 @@ namespace App\Support;
 /**
  * Détection de similarité interne (gratuite, sans I/O, sans base externe) :
  * compare un texte à un corpus de textes et renvoie les plus proches. Vise le
- * cas fréquent en colloque - résumés dupliqués, recyclés d'une édition à
+ * cas fréquent en colloque - résumés dupliqués, recyclés d'un événement à
  * l'autre, copiés entre soumissions - sans envoyer aucune donnée à l'extérieur.
  *
  * Méthode : sac de mots pondéré (TF), similarité cosinus sur unigrammes +

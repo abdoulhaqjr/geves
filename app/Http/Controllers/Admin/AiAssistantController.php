@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Actions\AskAdmin;
 use App\AI\Copilot\CopilotActions;
 use App\Http\Controllers\Controller;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Support\AiAgents;
 use App\Support\Settings;
 use Illuminate\Http\JsonResponse;
@@ -16,7 +16,7 @@ use Illuminate\View\View;
 /**
  * Copilote d'administration (chat), contrôleur + Blade + endpoints JSON. Assiste
  * le staff par des synthèses et brouillons à partir des chiffres réels de
- * l'édition active, et peut EXÉCUTER une action ({@see CopilotActions}) une fois
+ * l'événement actif, et peut EXÉCUTER une action ({@see CopilotActions}) une fois
  * celle-ci explicitement autorisée par l'utilisateur (endpoint execute, capacité
  * RBAC revérifiée). Chaque décision/exécution est journalisée. Consomme l'agent
  * « admin » via {@see AskAdmin}.
@@ -36,17 +36,17 @@ class AiAssistantController extends Controller
         $agent = AiAgents::find('admin') ?? AiAgents::defaults()[1];
         $avatarUrl = filled($agent['avatar']) ? '/storage/'.ltrim((string) $agent['avatar'], '/') : null;
 
-        // Colloques accessibles à l'utilisateur : l'assistant répond selon sa/ses
+        // Événements accessibles à l'utilisateur : l'assistant répond selon sa/ses
         // fonction(s) DANS le colloque sélectionné.
         $editionIds = $request->user()->accessibleEditionIds('view_dashboard');
-        $editions = Edition::with('colloque')->whereIn('id', $editionIds)->latest('id')->get();
-        $current = $editions->firstWhere('status', 'open') ?? $editions->first();
+        $events = Event::with('series')->whereIn('id', $editionIds)->latest('id')->get();
+        $current = $events->firstWhere('status', 'open') ?? $events->first();
 
         return view('admin.ai-assistant', [
             'agentName' => $agent['name'] ?: 'Assistant',
             'agentAvatar' => $avatarUrl,
             'decisionLog' => array_slice((array) Settings::get('ai_decision_log', []), 0, 20),
-            'editions' => $editions,
+            'events' => $events,
             'currentEditionId' => $current?->id,
         ]);
     }
@@ -55,7 +55,7 @@ class AiAssistantController extends Controller
     {
         $data = $request->validate([
             'question' => ['required', 'string', 'max:1500'],
-            'edition_id' => ['nullable', 'integer'],
+            'event_id' => ['nullable', 'integer'],
             'history' => ['array'],
             'history.*.role' => ['string'],
             'history.*.text' => ['string'],
@@ -68,7 +68,7 @@ class AiAssistantController extends Controller
             ->all();
 
         try {
-            $result = $ask->handle($history, trim($data['question']), $this->activeEdition($request, $data['edition_id'] ?? null), $request->user());
+            $result = $ask->handle($history, trim($data['question']), $this->activeEdition($request, $data['event_id'] ?? null), $request->user());
 
             return response()->json($result);
         } catch (\Throwable $e) {
@@ -79,27 +79,27 @@ class AiAssistantController extends Controller
     /**
      * Exécute une action du copilote APRÈS autorisation explicite de l'utilisateur.
      * C'est le serveur qui exécute, sous l'autorité de l'utilisateur : la capacité
-     * RBAC sur l'édition est revérifiée ici (garde-fou indépendant de l'IA), puis
+     * RBAC sur l'événement est revérifiée ici (garde-fou indépendant de l'IA), puis
      * l'exécution est journalisée.
      */
     public function execute(Request $request, CopilotActions $registry): JsonResponse
     {
         $data = $request->validate([
             'key' => ['required', 'string', 'max:64'],
-            'edition_id' => ['nullable', 'integer'],
+            'event_id' => ['nullable', 'integer'],
             'params' => ['array'],
         ]);
 
-        $edition = $this->activeEdition($request, $data['edition_id'] ?? null);
+        $event = $this->activeEdition($request, $data['event_id'] ?? null);
         $user = $request->user();
 
-        $action = $registry->resolveFor($user, $edition, $data['key']);
-        if ($action === null || $edition === null) {
+        $action = $registry->resolveFor($user, $event, $data['key']);
+        if ($action === null || $event === null) {
             return response()->json(['message' => 'Action non autorisée ou indisponible pour votre fonction.'], 403);
         }
 
         try {
-            $message = $action->execute($data['params'] ?? [], $edition, $user);
+            $message = $action->execute($data['params'] ?? [], $event, $user);
         } catch (\Throwable $e) {
             report($e);
 
@@ -146,24 +146,24 @@ class AiAssistantController extends Controller
     }
 
     /**
-     * Édition de contexte = le colloque SÉLECTIONNÉ (s'il est accessible à
-     * l'utilisateur), sinon le colloque ouvert le plus récent parmi ses éditions
+     * Événement de contexte = le colloque SÉLECTIONNÉ (s'il est accessible à
+     * l'utilisateur), sinon le colloque ouvert le plus récent parmi ses événements
      * accessibles. Garantit que l'assistant raisonne (et cadre la fonction) sur
      * le bon colloque.
      */
-    private function activeEdition(Request $request, ?int $editionId = null): ?Edition
+    private function activeEdition(Request $request, ?int $editionId = null): ?Event
     {
         $accessible = $request->user()->accessibleEditions('view_dashboard');
 
         if ($editionId !== null) {
             $picked = $accessible->firstWhere('id', $editionId);
             if ($picked !== null) {
-                return $picked->loadMissing('colloque');
+                return $picked->loadMissing('series');
             }
         }
 
         $current = $accessible->firstWhere('status', 'open') ?? $accessible->first();
 
-        return $current?->loadMissing('colloque');
+        return $current?->loadMissing('series');
     }
 }

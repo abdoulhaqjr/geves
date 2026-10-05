@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::create('slots', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('edition_id')->constrained('editions')->cascadeOnDelete();
+            $table->foreignId('event_id')->constrained('events')->cascadeOnDelete();
             $table->foreignId('session_id')->nullable()->index();
             $table->string('session_label', 255)->nullable();
             $table->string('room', 150)->nullable();

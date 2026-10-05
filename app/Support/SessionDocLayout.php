@@ -2,14 +2,14 @@
 
 namespace App\Support;
 
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\EventSession;
 use App\Models\Slot;
 
 /**
  * Mise en page (entêtes + colonnes) des documents de séance - fiches de session
  * et PV (procès-verbal / rapport de séance) - configurable PAR ÉDITION via
- * {@see EditionSettings}. Catalogue de champs/colonnes disponibles + résolution
+ * {@see EventSettings}. Catalogue de champs/colonnes disponibles + résolution
  * de la sélection (avec libellés personnalisables et repli sur les valeurs par
  * défaut). Éditable par l'admin ou le secrétariat.
  */
@@ -59,49 +59,49 @@ class SessionDocLayout
     public const PV_DEFAULT_SECTIONS = ['synthese', 'points_saillants', 'presents'];
 
     /** @return list<array{key: string, label: string}> */
-    public static function sheetColumns(?Edition $edition): array
+    public static function sheetColumns(?Event $event): array
     {
-        return self::resolve($edition, 'session_sheets.columns', self::COLUMNS, self::SHEET_DEFAULT_COLUMNS);
+        return self::resolve($event, 'session_sheets.columns', self::COLUMNS, self::SHEET_DEFAULT_COLUMNS);
     }
 
     /** @return list<array{key: string, label: string}> */
-    public static function sheetHeader(?Edition $edition): array
+    public static function sheetHeader(?Event $event): array
     {
-        return self::resolve($edition, 'session_sheets.header', self::HEADER_FIELDS, self::SHEET_DEFAULT_HEADER);
+        return self::resolve($event, 'session_sheets.header', self::HEADER_FIELDS, self::SHEET_DEFAULT_HEADER);
     }
 
     /** @return list<array{key: string, label: string}> */
-    public static function pvColumns(?Edition $edition): array
+    public static function pvColumns(?Event $event): array
     {
-        return self::resolve($edition, 'session_pv.columns', self::COLUMNS, self::PV_DEFAULT_COLUMNS);
+        return self::resolve($event, 'session_pv.columns', self::COLUMNS, self::PV_DEFAULT_COLUMNS);
     }
 
     /** @return list<array{key: string, label: string}> */
-    public static function pvHeader(?Edition $edition): array
+    public static function pvHeader(?Event $event): array
     {
-        return self::resolve($edition, 'session_pv.header', self::HEADER_FIELDS, self::PV_DEFAULT_HEADER);
+        return self::resolve($event, 'session_pv.header', self::HEADER_FIELDS, self::PV_DEFAULT_HEADER);
     }
 
     /** @return list<array{key: string, label: string}> */
-    public static function pvSections(?Edition $edition): array
+    public static function pvSections(?Event $event): array
     {
-        return self::resolve($edition, 'session_pv.sections', self::PV_SECTIONS, self::PV_DEFAULT_SECTIONS);
+        return self::resolve($event, 'session_pv.sections', self::PV_SECTIONS, self::PV_DEFAULT_SECTIONS);
     }
 
     /**
      * Résout une sélection ordonnée de clés (+ libellés personnalisés) depuis les
-     * réglages de l'édition, avec repli sur le catalogue et la sélection par défaut.
+     * réglages de l'événement, avec repli sur le catalogue et la sélection par défaut.
      *
      * @param  array<string, string>  $catalog
      * @param  list<string>  $default
      * @return list<array{key: string, label: string}>
      */
-    private static function resolve(?Edition $edition, string $key, array $catalog, array $default): array
+    private static function resolve(?Event $event, string $key, array $catalog, array $default): array
     {
-        $selected = EditionSettings::get($edition, $key, null);
+        $selected = EventSettings::get($event, $key, null);
         $selected = is_array($selected) && $selected !== [] ? $selected : $default;
 
-        $labels = (array) EditionSettings::get($edition, $key.'_labels', []);
+        $labels = (array) EventSettings::get($event, $key.'_labels', []);
 
         $out = [];
         foreach ($selected as $k) {

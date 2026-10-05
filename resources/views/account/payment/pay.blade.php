@@ -6,7 +6,7 @@
 
     {{-- Statut d'inscription --}}
     <div class="ukc-card" style="margin-bottom:20px;">
-        <h3>Statut d’inscription - {{ $edition->title ?: $edition->year }}</h3>
+        <h3>Statut d’inscription - {{ $event->title ?: $event->year }}</h3>
         <div class="ukc-steps">
             <div class="ukc-step done">Profil</div>
             <div @class(['ukc-step', 'done' => $step > 2, 'active' => $step === 2])>Choix du tarif</div>
@@ -48,7 +48,7 @@
 
     {{-- Paiement --}}
     @if (! $participant)
-        <div class="ukc-alert ukc-alert--info"><span class="ico"><x-ukc.icon name="info" :size="18" /></span><div>Aucune participation trouvée pour cette édition.</div></div>
+        <div class="ukc-alert ukc-alert--info"><span class="ico"><x-ukc.icon name="info" :size="18" /></span><div>Aucune participation trouvée pour cet événement.</div></div>
     @elseif ($paid)
         <div class="ukc-card" style="text-align:center;">
             <div style="width:56px;height:56px;border-radius:50%;margin:0 auto 14px;background:#dcfce7;color:#166534;display:flex;align-items:center;justify-content:center;">
@@ -59,11 +59,11 @@
             @if ($paidReceipt)<p style="margin-top:8px;font-size:.9rem;">Reçu n° <strong style="font-family:var(--ukc-mono);">{{ $paidReceipt->receipt_no }}</strong> - disponible dans <a href="{{ route('account.documents') }}" style="color:var(--ukc-blue);font-weight:700;">Documents</a>.</p>@endif
         </div>
     @elseif ($frozen)
-        {{-- Édition archivée : la page reste consultable (tarifs, reçu) mais le
+        {{-- Événement archivée : la page reste consultable (tarifs, reçu) mais le
              parcours de règlement est clos. --}}
         <div class="ukc-alert ukc-alert--info">
             <span class="ico"><x-ukc.icon name="lock" :size="18" /></span>
-            <div>Cette édition est <strong>archivée</strong> : le règlement en ligne est clos. Rapprochez-vous du secrétariat si un paiement reste à régulariser.</div>
+            <div>Cet événement est <strong>archivée</strong> : le règlement en ligne est clos. Rapprochez-vous du secrétariat si un paiement reste à régulariser.</div>
         </div>
     @elseif (! $eligible)
         <div class="ukc-alert ukc-alert--warn"><span class="ico"><x-ukc.icon name="lock" :size="18" /></span><div>Le paiement s’ouvrira dès qu’au moins une de vos communications sera <strong>acceptée</strong>.</div></div>
@@ -92,7 +92,7 @@
                 <div class="ukc-alert ukc-alert--warn" style="margin:0;"><span class="ico"><x-ukc.icon name="info" :size="18" /></span><div>Le montant n’a pas pu être déterminé automatiquement. Contactez l’organisation.</div></div>
             @else
                 <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--ukc-text);">Choisir un moyen de paiement</div>
-                <form method="POST" action="{{ route('account.payment.pay', $edition) }}">
+                <form method="POST" action="{{ route('account.payment.pay', $event) }}">
                     @csrf
                     <input type="hidden" name="gateway" :value="gw">
                     <div class="ukc-mm-methods">

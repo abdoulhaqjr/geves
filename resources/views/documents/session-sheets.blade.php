@@ -1,7 +1,7 @@
-<x-layouts.app :title="'Fiches de session - ' . $edition->title">
+<x-layouts.app :title="'Fiches de session - ' . $event->title">
     <div style="max-width:820px;margin:0 auto;padding:24px 16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;" class="no-print">
-            <h1 style="font-size:1.2rem;font-weight:800;">Fiches de session - {{ $edition->title }}</h1>
+            <h1 style="font-size:1.2rem;font-weight:800;">Fiches de session - {{ $event->title }}</h1>
             <button onclick="window.print()" class="ukc-btn ukc-btn--blue ukc-btn--sm">
                 <x-ukc.icon name="download" :size="16" /> Imprimer / PDF
             </button>
@@ -22,7 +22,7 @@
                 </div>
                 <h2 style="font-size:1.4rem;font-weight:900;margin:4px 0 10px;">{{ $session->label }}</h2>
 
-                @php($headerFields = \App\Support\SessionDocLayout::sheetHeader($edition))
+                @php($headerFields = \App\Support\SessionDocLayout::sheetHeader($event))
                 @if ($headerFields)
                     <div style="display:flex;flex-wrap:wrap;gap:16px;font-size:.9rem;color:var(--ukc-text);margin-bottom:18px;">
                         @foreach ($headerFields as $f)
@@ -31,7 +31,7 @@
                     </div>
                 @endif
 
-                @php($cols = \App\Support\SessionDocLayout::sheetColumns($edition))
+                @php($cols = \App\Support\SessionDocLayout::sheetColumns($event))
                 <table style="width:100%;border-collapse:collapse;font-size:.9rem;">
                     <thead>
                         <tr style="border-bottom:2px solid var(--ukc-border);">
@@ -52,7 +52,7 @@
                 </table>
             </div>
         @empty
-            <div class="ukc-empty"><h3>Aucune session</h3><p>Créez des sessions dans le programme de l’édition.</p></div>
+            <div class="ukc-empty"><h3>Aucune session</h3><p>Créez des sessions dans le programme de l’événement.</p></div>
         @endforelse
     </div>
 

@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Models\Review;
@@ -12,12 +12,12 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
- * Communications de TEST pour le colloque en cours (édition ouverte) : un éventail
+ * Communications de TEST pour le colloque en cours (événement ouvert) : un éventail
  * réaliste de soumissions (nouvelles, en revue, corrections, acceptées, refusées)
- * réparties sur les axes de l'édition, avec avis de relecture et paiements - pour
+ * réparties sur les axes de l'événement, avec avis de relecture et paiements - pour
  * pouvoir tester le back-office (pipeline, documents, livret, badges, paiements).
  *
- * Idempotent : ne fait rien si l'édition a déjà des soumissions.
+ * Idempotent : ne fait rien si l'événement a déjà des soumissions.
  * Lancement : php artisan db:seed --class=ColloqueTestSubmissionsSeeder
  */
 class ColloqueTestSubmissionsSeeder extends Seeder
@@ -36,28 +36,28 @@ class ColloqueTestSubmissionsSeeder extends Seeder
 
     public function run(): void
     {
-        $edition = Edition::where('slug', 'edition-2026')->first()
-            ?? Edition::where('status', 'open')->latest('id')->first()
-            ?? Edition::latest('id')->first();
+        $event = Event::where('slug', 'edition-2026')->first()
+            ?? Event::where('status', 'open')->latest('id')->first()
+            ?? Event::latest('id')->first();
 
-        if (! $edition) {
-            $this->command?->warn('Aucune édition ouverte trouvée.');
-
-            return;
-        }
-
-        if ($edition->submissions()->where('revision_of', 0)->exists()) {
-            $this->command?->warn("L'édition #{$edition->id} a déjà des soumissions - seeder ignoré.");
+        if (! $event) {
+            $this->command?->warn('Aucun événement ouvert trouvée.');
 
             return;
         }
 
-        $tracks = is_array($edition->settings['tracks'] ?? null) && $edition->settings['tracks'] !== []
-            ? $edition->settings['tracks']
+        if ($event->submissions()->where('revision_of', 0)->exists()) {
+            $this->command?->warn("L'événement #{$event->id} a déjà des soumissions - seeder ignoré.");
+
+            return;
+        }
+
+        $tracks = is_array($event->settings['tracks'] ?? null) && $event->settings['tracks'] !== []
+            ? $event->settings['tracks']
             : ['Axe thématique'];
 
         // Quelques relecteurs pour les avis en aveugle.
-        $reviewers = collect(range(1, 4))->map(fn ($i) => $this->makeParticipant($edition, $i + 900, 'reviewer', 'Enseignant / Chercheur'))->all();
+        $reviewers = collect(range(1, 4))->map(fn ($i) => $this->makeParticipant($event, $i + 900, 'reviewer', 'Enseignant / Chercheur'))->all();
 
         // Éventail de statuts d'un colloque EN COURS (soumissions encore ouvertes).
         $statuses = array_merge(
@@ -76,13 +76,13 @@ class ColloqueTestSubmissionsSeeder extends Seeder
         foreach ($statuses as $status) {
             $seq++;
             $grade = $gradeKeys[array_rand($gradeKeys)];
-            $participant = $this->makeParticipant($edition, $seq, 'author', $grade);
+            $participant = $this->makeParticipant($event, $seq, 'author', $grade);
             $track = $tracks[array_rand($tracks)];
             $type = random_int(0, 3) === 0 ? 'poster' : 'oral';
             $createdAt = Carbon::now()->subDays(random_int(0, 40))->subHours(random_int(0, 23));
 
             $submission = Submission::create([
-                'edition_id' => $edition->id,
+                'event_id' => $event->id,
                 'participant_id' => $participant->id,
                 'ref_code' => sprintf('UKC-S-%04d', $seq),
                 'access_token' => Str::random(64),
@@ -109,20 +109,20 @@ class ColloqueTestSubmissionsSeeder extends Seeder
             if ($status === 'accepted') {
                 $paidSeq++;
                 Payment::create([
-                    'edition_id' => $edition->id,
+                    'event_id' => $event->id,
                     'participant_id' => $participant->id,
                     'submission_id' => $submission->id,
                     'amount' => $this->grades[$grade],
                     'currency' => 'XOF',
                     'method' => ['cash', 'mobile_money', 'card'][array_rand(['cash', 'mobile_money', 'card'])],
                     'status' => 'paid',
-                    'receipt_no' => sprintf('REC-%d-%04d', (int) ($edition->year ?: date('Y')), $paidSeq),
+                    'receipt_no' => sprintf('REC-%d-%04d', (int) ($event->year ?: date('Y')), $paidSeq),
                     'paid_at' => Carbon::now()->subDays(random_int(1, 20)),
                 ]);
             } elseif ($pendingBudget > 0 && in_array($status, ['under_review', 'revision'], true)) {
                 $pendingBudget--;
                 Payment::create([
-                    'edition_id' => $edition->id,
+                    'event_id' => $event->id,
                     'participant_id' => $participant->id,
                     'submission_id' => $submission->id,
                     'amount' => $this->grades[$grade],
@@ -133,16 +133,16 @@ class ColloqueTestSubmissionsSeeder extends Seeder
             }
         }
 
-        $this->command?->info("Communications de test ajoutées à l'édition #{$edition->id} : {$seq} soumissions.");
+        $this->command?->info("Communications de test ajoutées à l'événement #{$event->id} : {$seq} soumissions.");
     }
 
-    private function makeParticipant(Edition $edition, int $n, string $role, string $grade): Participant
+    private function makeParticipant(Event $event, int $n, string $role, string $grade): Participant
     {
         $first = $this->firstNames[($n * 7) % count($this->firstNames)];
         $last = $this->lastNames[($n * 3) % count($this->lastNames)];
 
         return Participant::create([
-            'edition_id' => $edition->id,
+            'event_id' => $event->id,
             'first_name' => $first,
             'last_name' => $last,
             'email' => Str::lower($first.'.'.$last.'.'.$n).'@example.tg',

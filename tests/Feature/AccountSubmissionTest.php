@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Colloque;
+use App\Models\EventSeries;
 use App\Models\Participant;
 use App\Models\Submission;
 use App\Models\User;
@@ -8,15 +8,15 @@ use App\Models\User;
 // openEdition() et verifiedAccount() sont définis dans tests/Pest.php (fabriques partagées).
 
 it('redirige les invités du formulaire de soumission vers la connexion', function () {
-    $edition = openEdition();
+    $event = openEdition();
 
-    $this->get(route('account.submissions.create', $edition->slug))
+    $this->get(route('account.submissions.create', $event->slug))
         ->assertRedirect(route('account.login'));
 });
 
-it('renvoie 404 pour une édition non publiée', function () {
-    $colloque = Colloque::create(['name' => 'C', 'slug' => 'c']);
-    $draft = $colloque->editions()->create(['title' => 'Brouillon', 'status' => 'draft', 'slug' => 'draft']);
+it('renvoie 404 pour un événement non publiée', function () {
+    $series = EventSeries::create(['name' => 'C', 'slug' => 'c']);
+    $draft = $series->events()->create(['title' => 'Brouillon', 'status' => 'draft', 'slug' => 'draft']);
     $account = verifiedAccount();
 
     $this->actingAs($account, 'account')
@@ -25,13 +25,13 @@ it('renvoie 404 pour une édition non publiée', function () {
 });
 
 it('bloque la soumission si le profil est incomplet', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = User::create([
         'first_name' => 'Kofi', 'last_name' => 'M', 'email' => 'kofi@example.tg', 'password' => 'pass12345',
     ]); // ni vérifié ni affilié
 
     $this->actingAs($account, 'account')
-        ->post(route('account.submissions.store', $edition->slug), [
+        ->post(route('account.submissions.store', $event->slug), [
             'title' => 'Titre',
             'abstract' => str_repeat('a', 60),
         ])
@@ -41,11 +41,11 @@ it('bloque la soumission si le profil est incomplet', function () {
 });
 
 it('crée une communication reliée au compte avec co-auteur', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
 
     $this->actingAs($account, 'account')
-        ->post(route('account.submissions.store', $edition->slug), [
+        ->post(route('account.submissions.store', $event->slug), [
             'title' => 'Innovation et développement durable',
             'track' => 'Santé',
             'type' => 'oral',
@@ -53,7 +53,7 @@ it('crée une communication reliée au compte avec co-auteur', function () {
             'abstract' => str_repeat('Contexte et objectifs. ', 5),
             'coauthors' => [['first_name' => 'Yao', 'last_name' => 'Doe', 'email' => 'yao@example.tg', 'affiliation' => 'UL', 'grade' => 'Dr']],
         ])
-        ->assertRedirect(route('account.submissions.create', $edition->slug))
+        ->assertRedirect(route('account.submissions.create', $event->slug))
         ->assertSessionHas('success_ref');
 
     $submission = Submission::first();
@@ -73,11 +73,11 @@ it('crée une communication reliée au compte avec co-auteur', function () {
 });
 
 it('refuse un co-auteur identique à l’auteur correspondant (même e-mail)', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount(); // e-mail awa@example.tg (auteur correspondant « self »)
 
     $this->actingAs($account, 'account')
-        ->post(route('account.submissions.store', $edition->slug), [
+        ->post(route('account.submissions.store', $event->slug), [
             'title' => 'Doublon auteur',
             'track' => 'Sciences',
             'abstract' => str_repeat('a', 60),
@@ -89,12 +89,12 @@ it('refuse un co-auteur identique à l’auteur correspondant (même e-mail)', f
 });
 
 it('exige nom, e-mail et affiliation pour un co-auteur', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
 
     // Nom + e-mail mais affiliation manquante → refusé.
     $this->actingAs($account, 'account')
-        ->post(route('account.submissions.store', $edition->slug), [
+        ->post(route('account.submissions.store', $event->slug), [
             'title' => 'Co-auteur incomplet',
             'track' => 'Sciences',
             'abstract' => str_repeat('a', 60),
@@ -106,11 +106,11 @@ it('exige nom, e-mail et affiliation pour un co-auteur', function () {
 });
 
 it('refuse deux co-auteurs avec le même e-mail', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
 
     $this->actingAs($account, 'account')
-        ->post(route('account.submissions.store', $edition->slug), [
+        ->post(route('account.submissions.store', $event->slug), [
             'title' => 'Doublon co-auteur',
             'track' => 'Sciences',
             'abstract' => str_repeat('a', 60),
@@ -125,11 +125,11 @@ it('refuse deux co-auteurs avec le même e-mail', function () {
 });
 
 it('refuse de dépasser le nombre maximum de co-auteurs', function () {
-    $edition = openEdition(['coauthors_max' => 1]);
+    $event = openEdition(['coauthors_max' => 1]);
     $account = verifiedAccount();
 
     $this->actingAs($account, 'account')
-        ->post(route('account.submissions.store', $edition->slug), [
+        ->post(route('account.submissions.store', $event->slug), [
             'title' => 'Trop de co-auteurs',
             'track' => 'Sciences',
             'abstract' => str_repeat('a', 60),
@@ -144,12 +144,12 @@ it('refuse de dépasser le nombre maximum de co-auteurs', function () {
 });
 
 it('applique le garde-fou du nombre max de communications', function () {
-    $edition = openEdition(['max_communications' => 1]);
+    $event = openEdition(['max_communications' => 1]);
     $account = verifiedAccount();
 
     // 1re soumission : OK
     $this->actingAs($account, 'account')
-        ->post(route('account.submissions.store', $edition->slug), [
+        ->post(route('account.submissions.store', $event->slug), [
             'title' => 'Première',
             'track' => 'Sciences',
             'abstract' => str_repeat('a', 60),
@@ -160,7 +160,7 @@ it('applique le garde-fou du nombre max de communications', function () {
 
     // 2e tentative : bloquée (limite atteinte)
     $this->actingAs($account, 'account')
-        ->post(route('account.submissions.store', $edition->slug), [
+        ->post(route('account.submissions.store', $event->slug), [
             'title' => 'Seconde',
             'track' => 'Sciences',
             'abstract' => str_repeat('a', 60),
@@ -171,12 +171,12 @@ it('applique le garde-fou du nombre max de communications', function () {
 });
 
 it('liste les communications du compte', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
-    $participant = $edition->participants()->create([
+    $participant = $event->participants()->create([
         'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
     ]);
-    $edition->submissions()->create([
+    $event->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => '26-001', 'title' => 'Ma comm', 'status' => 'accepted',
     ]);
 

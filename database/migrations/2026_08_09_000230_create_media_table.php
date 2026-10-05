@@ -5,8 +5,8 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Médias d'une édition : galerie photo, vidéos, livret, documents. Rendus sur la
- * page publique (surtout pour les éditions archivées).
+ * Médias d'un événement : galerie photo, vidéos, livret, documents. Rendus sur la
+ * page publique (surtout pour les événements archivées).
  */
 return new class extends Migration
 {
@@ -14,7 +14,7 @@ return new class extends Migration
     {
         Schema::create('media', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('edition_id')->constrained('editions')->cascadeOnDelete();
+            $table->foreignId('event_id')->constrained('events')->cascadeOnDelete();
             $table->string('type', 30)->default('photo');
             $table->string('url', 500)->default('');
             $table->string('title', 255)->nullable();

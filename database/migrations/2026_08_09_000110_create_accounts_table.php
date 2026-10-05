@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Comptes participants : authentification propre à la plateforme, distincte des
  * utilisateurs du back-office (table `users`). Un compte global par personne,
- * valable pour toutes les éditions. Adopte les conventions Laravel
+ * valable pour tous les événements. Adopte les conventions Laravel
  * (password, email_verified_at, remember_token) plutôt que les hachages WP.
  */
 return new class extends Migration

@@ -77,11 +77,11 @@ it('génère et assainit un rapport (section vide filtrée)', function () {
 
 it('affiche le brouillon IA dans les rapports', function () {
     bindFakeAi(fakeAiProvider(['title' => 'Rapport de test', 'sections' => [['heading' => 'Contexte', 'body' => 'Texte.']]]));
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs(adminStaff(), 'web')
         ->post(route('admin.reports.generate'), [
-            'edition_id' => (string) $edition->id,
+            'event_id' => (string) $event->id,
             'aiBrief' => 'Rapport pour le conseil scientifique.',
             'format' => 'pdf', // document rédigé : des sections suffisent
         ])
@@ -98,11 +98,11 @@ it('produit un VRAI tableau quand le format demandé est un tableur', function (
         ],
         'sections' => [],
     ]));
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs(adminStaff(), 'web')
         ->post(route('admin.reports.generate'), [
-            'edition_id' => (string) $edition->id,
+            'event_id' => (string) $event->id,
             'aiBrief' => 'Liste des communications acceptées, colonnes Réf., Titre, Axe.',
             'format' => 'xlsx',
             'scope' => 'subs',
@@ -114,7 +114,7 @@ it('produit un VRAI tableau quand le format demandé est un tableur', function (
     // Le fichier produit contient ce tableau, et non un déversement de la base.
     $entry = collect((array) Settings::get('report_ai_history', []))->first();
     $xlsx = $this->actingAs(adminStaff(), 'web')
-        ->get(route('admin.reports.ai-download', [$edition, $entry['id']]));
+        ->get(route('admin.reports.ai-download', [$event, $entry['id']]));
 
     $xlsx->assertOk();
     expect($xlsx->headers->get('content-type'))->toContain('spreadsheetml');
@@ -124,11 +124,11 @@ it('refuse de livrer un tableur rempli de paragraphes', function () {
     // ⚠️ Le défaut d'origine : une demande d'export Excel renvoyait de la prose,
     // et le fichier était complété par un déversement générique de la base.
     bindFakeAi(fakeAiProvider(['title' => 'Bilan', 'sections' => [['heading' => 'Analyse', 'body' => 'Texte.']]]));
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs(adminStaff(), 'web')
         ->post(route('admin.reports.generate'), [
-            'edition_id' => (string) $edition->id,
+            'event_id' => (string) $event->id,
             'aiBrief' => 'Liste des participants payés.',
             'format' => 'xlsx',
         ])
@@ -144,11 +144,11 @@ it('aligne les lignes du tableau sur ses colonnes', function () {
             'rows' => [['1'], ['1', '2', '3', '4'], ['', '', '']],
         ],
     ]));
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs(adminStaff(), 'web')
         ->post(route('admin.reports.generate'), [
-            'edition_id' => (string) $edition->id,
+            'event_id' => (string) $event->id,
             'aiBrief' => 'Peu importe.',
             'format' => 'csv',
         ])
@@ -161,11 +161,11 @@ it('aligne les lignes du tableau sur ses colonnes', function () {
 });
 
 it('exige un brief pour générer', function () {
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs(adminStaff(), 'web')
         ->post(route('admin.reports.generate'), [
-            'edition_id' => (string) $edition->id,
+            'event_id' => (string) $event->id,
             'aiBrief' => '',
         ])
         ->assertSessionHasErrors('aiBrief');
@@ -173,11 +173,11 @@ it('exige un brief pour générer', function () {
 
 it('signale l’absence de fournisseur IA', function () {
     bindFakeAi(null);
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs(adminStaff(), 'web')
         ->post(route('admin.reports.generate'), [
-            'edition_id' => (string) $edition->id,
+            'event_id' => (string) $event->id,
             'aiBrief' => 'Un rapport de synthèse.',
         ])
         ->assertSessionHas('ai_error');

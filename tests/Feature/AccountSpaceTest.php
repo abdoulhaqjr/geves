@@ -7,20 +7,20 @@ use App\Models\User;
 
 function participantWithActivity(): array
 {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
-    $participant = $edition->participants()->create([
+    $participant = $event->participants()->create([
         'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
     ]);
-    $submission = $edition->submissions()->create([
+    $submission = $event->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => '26-007', 'title' => 'Innovation locale', 'status' => 'accepted',
     ]);
-    $payment = $edition->payments()->create([
+    $payment = $event->payments()->create([
         'participant_id' => $participant->id, 'amount' => 15000, 'status' => 'paid', 'receipt_no' => 'REC-2026-0007', 'paid_at' => now(),
     ]);
     $attestation = (new IssueAttestation)->handle($participant, 'participation');
 
-    return compact('edition', 'account', 'participant', 'submission', 'payment', 'attestation');
+    return compact('event', 'account', 'participant', 'submission', 'payment', 'attestation');
 }
 
 it('affiche les blocs personnels sur le tableau de bord', function () {
@@ -55,10 +55,10 @@ it('interdit le reçu d’un autre participant', function () {
 });
 
 it('refuse le reçu d’un paiement non réglé', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
-    $participant = $edition->participants()->create(['user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'K', 'email' => $account->email]);
-    $pending = $edition->payments()->create(['participant_id' => $participant->id, 'amount' => 15000, 'status' => 'pending']);
+    $participant = $event->participants()->create(['user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'K', 'email' => $account->email]);
+    $pending = $event->payments()->create(['participant_id' => $participant->id, 'amount' => 15000, 'status' => 'pending']);
 
     $this->actingAs($account, 'account')->get(route('account.receipt', $pending))->assertNotFound();
 });

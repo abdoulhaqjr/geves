@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::create('submissions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('edition_id')->constrained('editions')->cascadeOnDelete();
+            $table->foreignId('event_id')->constrained('events')->cascadeOnDelete();
             $table->foreignId('participant_id')->nullable()->index();
             $table->string('ref_code', 40)->default('')->index();
             $table->string('access_token', 64)->default('')->index();

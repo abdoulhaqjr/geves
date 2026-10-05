@@ -1,9 +1,9 @@
 <x-layouts.admin title="Paiements" subtitle="Encaissements - participation, formations et co-auteurs">
     <x-slot:actions>
-        <a href="{{ route('admin.payments.receipt.sample', ['edition_id' => $edition_id]) }}" target="_blank" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
+        <a href="{{ route('admin.payments.receipt.sample', ['event_id' => $event_id]) }}" target="_blank" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
             <x-ukc.icon name="receipt" :size="16" /> Aperçu du reçu
         </a>
-        <a href="{{ route('admin.payments.export', array_merge(request()->only('status', 'method', 'flow', 'search', 'from', 'to'), ['edition_id' => $edition_id])) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
+        <a href="{{ route('admin.payments.export', array_merge(request()->only('status', 'method', 'flow', 'search', 'from', 'to'), ['event_id' => $event_id])) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
             <x-ukc.icon name="download" :size="16" /> Exporter CSV
         </a>
         <a href="{{ route('admin.payments.create') }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">
@@ -12,13 +12,13 @@
     </x-slot:actions>
 
     <div class="admin-page admin-payments">
-        {{-- Sélecteur d'édition en tête, comme la page Projet. --}}
+        {{-- Sélecteur d'événement en tête, comme la page Projet. --}}
         <div style="max-width:340px;margin-bottom:16px;">
             <div class="ukc-field" style="margin:0;">
-                <label>Édition</label>
-                <select onchange="window.location='{{ route('admin.payments.index') }}?edition_id='+this.value">
-                    <option value="">Toutes les éditions</option>
-                    @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
+                <label>Événement</label>
+                <select onchange="window.location='{{ route('admin.payments.index') }}?event_id='+this.value">
+                    <option value="">Toutes les événements</option>
+                    @foreach ($events as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $event_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
                 </select>
             </div>
         </div>
@@ -32,7 +32,7 @@
 
         {{-- Filtres (GET) - une seule ligne, qui défile plutôt que de se replier. --}}
         <form method="GET" class="filter-bar filter-bar--inline">
-            <input type="hidden" name="edition_id" value="{{ $edition_id }}">
+            <input type="hidden" name="event_id" value="{{ $event_id }}">
             <select name="status" onchange="this.form.submit()">
                 <option value="">Tous les statuts</option>
                 @foreach ($statuses as $key => $label)<option value="{{ $key }}" @selected($status === $key)>{{ $label }}</option>@endforeach
@@ -54,7 +54,7 @@
             <input type="date" name="from" value="{{ $from }}" title="Émis à partir du" onchange="this.form.submit()">
             <input type="date" name="to" value="{{ $to }}" title="Émis jusqu’au" onchange="this.form.submit()">
             @if ($search !== '' || $status !== '' || $method !== '' || $flow !== '' || $from !== '' || $to !== '')
-                <a href="{{ route('admin.payments.index', ['edition_id' => $edition_id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
+                <a href="{{ route('admin.payments.index', ['event_id' => $event_id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
             @endif
         </form>
 

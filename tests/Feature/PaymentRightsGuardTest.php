@@ -34,7 +34,7 @@ function paymentGuardFiles(): array
 it('n’interroge jamais les paiements « payés » sans filtrer la participation', function () {
     // Agrégats financiers : ils DOIVENT compter les formations (c'est du chiffre).
     $allowed = [
-        'app/Support/EditionReport.php' => [
+        'app/Support/EventReport.php' => [
             '$collected = (float) Payment::where',      // recette encaissée
             "'paidCount' => Payment::where",            // nombre de paiements encaissés
         ],

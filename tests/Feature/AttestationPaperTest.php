@@ -1,10 +1,10 @@
 <?php
 
 use App\Models\Attestation;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Support\AttestationPolicy;
-use App\Support\EditionSettings;
+use App\Support\EventSettings;
 use Illuminate\Support\Str;
 
 // adminStaff() -> AdminSubmissionWorkflowTest
@@ -16,19 +16,19 @@ use Illuminate\Support\Str;
  * par une à leur adresse de vérification : deux cents communications, deux cents
  * onglets. Le mode papier existait sans le geste qui le rend tenable.
  *
- * @return array{0: Edition, 1: Attestation, 2: Attestation}
+ * @return array{0: Event, 1: Attestation, 2: Attestation}
  */
 function editionPapier(): array
 {
-    $edition = Edition::factory()->create();
-    EditionSettings::set($edition, 'attestations.delivery', AttestationPolicy::DELIVERY_PAPER);
+    $event = Event::factory()->create();
+    EventSettings::set($event, 'attestations.delivery', AttestationPolicy::DELIVERY_PAPER);
 
-    $faire = function (string $nom, string $type) use ($edition) {
-        $participant = Participant::factory()->for($edition)->create(['first_name' => $nom]);
+    $faire = function (string $nom, string $type) use ($event) {
+        $participant = Participant::factory()->for($event)->create(['first_name' => $nom]);
 
         return Attestation::create([
             'uuid' => (string) Str::uuid(),
-            'edition_id' => $edition->id,
+            'event_id' => $event->id,
             'participant_id' => $participant->id,
             'type' => $type,
             'recipient_name' => $nom.' Test',
@@ -38,14 +38,14 @@ function editionPapier(): array
         ]);
     };
 
-    return [$edition, $faire('Awa', 'participation'), $faire('Kofi', 'participation')];
+    return [$event, $faire('Awa', 'participation'), $faire('Kofi', 'participation')];
 }
 
 it('sort un lot PDF imprimable pour le filtre affiché', function () {
-    [$edition] = editionPapier();
+    [$event] = editionPapier();
 
     $reponse = $this->actingAs(adminStaff(), 'web')->get(route('admin.documents.attestations.lot', [
-        'edition_id' => $edition->id, 'type' => 'participation',
+        'event_id' => $event->id, 'type' => 'participation',
     ]));
 
     $reponse->assertOk();
@@ -59,25 +59,25 @@ it('sort un lot PDF imprimable pour le filtre affiché', function () {
  * dire plutôt que de produire ce lot-là.
  */
 it('refuse un lot sans type, qui mêlerait plusieurs tailles de page', function () {
-    [$edition] = editionPapier();
+    [$event] = editionPapier();
 
     $this->actingAs(adminStaff(), 'web')
-        ->get(route('admin.documents.attestations.lot', ['edition_id' => $edition->id]))
+        ->get(route('admin.documents.attestations.lot', ['event_id' => $event->id]))
         ->assertRedirect();
 
     // Et un filtre qui ne ramène personne le dit, au lieu de rendre un PDF vide.
     $this->actingAs(adminStaff(), 'web')
         ->get(route('admin.documents.attestations.lot', [
-            'edition_id' => $edition->id, 'type' => 'moderation',
+            'event_id' => $event->id, 'type' => 'moderation',
         ]))
         ->assertRedirect();
 });
 
 it('sort la liste d’émargement avec ses bénéficiaires', function () {
-    [$edition] = editionPapier();
+    [$event] = editionPapier();
 
     $reponse = $this->actingAs(adminStaff(), 'web')->get(route('admin.documents.attestations.emargement', [
-        'edition_id' => $edition->id, 'type' => 'participation',
+        'event_id' => $event->id, 'type' => 'participation',
     ]));
 
     $reponse->assertOk();
@@ -114,11 +114,11 @@ it('marque une attestation remise, et sait revenir en arrière', function () {
 
 /** « Ce qui reste à remettre » est la question du guichet : elle a son filtre. */
 it('filtre la liste sur ce qui reste à remettre', function () {
-    [$edition, $awa, $kofi] = editionPapier();
+    [$event, $awa, $kofi] = editionPapier();
     $awa->forceFill(['delivered_at' => now()])->save();
 
     $reponse = $this->actingAs(adminStaff(), 'web')->get(route('admin.documents.attestations', [
-        'edition_id' => $edition->id, 'tab' => 'attestations', 'stab' => 'delivrees', 'delivery' => 'pending',
+        'event_id' => $event->id, 'tab' => 'attestations', 'stab' => 'delivrees', 'delivery' => 'pending',
     ]));
 
     $reponse->assertOk();
@@ -132,11 +132,11 @@ it('filtre la liste sur ce qui reste à remettre', function () {
  * attestation part chez son bénéficiaire ; sur papier, rien ne part.
  */
 it('annonce le mode de délivrance sur la page qui émet', function () {
-    [$edition] = editionPapier();
+    [$event] = editionPapier();
 
     $this->actingAs(adminStaff(), 'web')
         ->get(route('admin.documents.attestations', [
-            'edition_id' => $edition->id, 'tab' => 'attestations', 'stab' => 'modeles',
+            'event_id' => $event->id, 'tab' => 'attestations', 'stab' => 'modeles',
         ]))
         ->assertOk()
         ->assertSee(AttestationPolicy::DELIVERIES[AttestationPolicy::DELIVERY_PAPER])
@@ -149,8 +149,8 @@ it('annonce le mode de délivrance sur la page qui émet', function () {
  * au lieu de produire un lot qui mêlerait plusieurs tailles de page.
  */
 it('pose les lots à imprimer sur la liste délivrée', function () {
-    [$edition] = editionPapier();
-    $base = ['edition_id' => $edition->id, 'tab' => 'attestations', 'stab' => 'delivrees'];
+    [$event] = editionPapier();
+    $base = ['event_id' => $event->id, 'tab' => 'attestations', 'stab' => 'delivrees'];
 
     $this->actingAs(adminStaff(), 'web')
         ->get(route('admin.documents.attestations', $base + ['type' => 'participation']))

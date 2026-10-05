@@ -1,32 +1,32 @@
-<x-layouts.admin title="Options" subtitle="Règles de l’édition : dépôt, attribution, évaluation">
+<x-layouts.admin title="Options" subtitle="Règles de l’événement : dépôt, attribution, évaluation">
     <div class="admin-page admin-submissions">
 
         <div class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px;">
             <div class="ukc-field" style="min-width:320px;max-width:460px;margin:0;">
-                <label for="edition_id">Édition</label>
-                <select id="edition_id" name="edition_id" onchange="window.location = '{{ route('admin.submissions.options') }}?edition_id=' + this.value">
+                <label for="event_id">Événement</label>
+                <select id="event_id" name="event_id" onchange="window.location = '{{ route('admin.submissions.options') }}?event_id=' + this.value">
                     <option value="">- Choisir -</option>
-                    @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
+                    @foreach ($events as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $event_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
                 </select>
             </div>
         </div>
 
         @include('admin.submissions._nav', ['current' => 'options'])
 
-        @if (! $edition)
-            <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);">Sélectionnez une édition pour régler ses règles d’évaluation.</p></div>
+        @if (! $event)
+            <div class="ukc-card"><p style="margin:0;color:var(--ukc-muted);">Sélectionnez un événement pour régler ses règles d’évaluation.</p></div>
         @else
             {{-- Dépôt : limites du formulaire public. Elles étaient dans un onglet
                  de l'éditeur de formulaire ; ce sont des règles, elles rejoignent
                  les autres. L'éditeur ne garde que la composition des champs. --}}
-            <form method="POST" action="{{ route('admin.editions.form.rules', $edition) }}" style="margin-bottom:18px;">
+            <form method="POST" action="{{ route('admin.evenements.form.rules', $event) }}" style="margin-bottom:18px;">
                 @csrf
                 @method('PUT')
                 <div class="ukc-card">
                     <h2><span><x-ukc.icon name="list" :size="18" /> Dépôt : règles &amp; limites</span></h2>
                     <p class="desc">
-                        Appliquées au <a href="{{ route('admin.editions.form', $edition) }}"
-                        style="color:var(--ukc-blue);font-weight:600;">formulaire de soumission</a> de cette édition.
+                        Appliquées au <a href="{{ route('admin.evenements.form', $event) }}"
+                        style="color:var(--ukc-blue);font-weight:600;">formulaire de soumission</a> de cet événement.
                     </p>
 
                     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;">
@@ -84,15 +84,15 @@
             </form>
             {{-- Un seul formulaire : les quatre règles se lisent et s'enregistrent
                  ensemble (elles étaient éclatées entre paramètres d'URL de la page
-                 d'attribution et fiche d'édition). --}}
-            <form method="POST" action="{{ route('admin.editions.reviewers.criteria', $edition) }}"
+                 d'attribution et fiche d'événement). --}}
+            <form method="POST" action="{{ route('admin.evenements.reviewers.criteria', $event) }}"
                   x-data="{ criteria: {{ Illuminate\Support\Js::from(collect($reviewCriteria)->pluck('label')->values()) }} }">
                 @csrf
 
                 <div class="ukc-card">
                     <h2><span><x-ukc.icon name="refresh" :size="18" /> Attribution des relectures</span></h2>
                     <p class="desc">
-                        Règles utilisées par l’<a href="{{ route('admin.submissions.auto-assign', ['edition_id' => $edition_id]) }}"
+                        Règles utilisées par l’<a href="{{ route('admin.submissions.auto-assign', ['event_id' => $event_id]) }}"
                         style="color:var(--ukc-blue);font-weight:600;">attribution automatique</a> pour proposer un plan.
                     </p>
                     <div class="ukc-opts-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;">
@@ -115,7 +115,7 @@
                     <h2><span><x-ukc.icon name="award" :size="18" /> Grille de notation &amp; délai</span></h2>
                     <p class="desc">
                         Critères notés de 0 à {{ $reviewScale }} par les relecteurs ; la note globale /20 en est
-                        dérivée (moyenne). Laissez la grille par défaut ou personnalisez-la pour cette édition.
+                        dérivée (moyenne). Laissez la grille par défaut ou personnalisez-la pour cet événement.
                     </p>
 
                     <div class="ukc-field" style="max-width:320px;margin-bottom:16px;">
@@ -156,7 +156,7 @@
                     </div>
                 @else
                     <p class="hint" style="margin-top:10px;font-size:12.5px;color:var(--ukc-muted);">
-                        Lecture seule : modifier ces règles demande le droit d’écriture sur l’édition.
+                        Lecture seule : modifier ces règles demande le droit d’écriture sur l’événement.
                     </p>
                 @endif
             </form>

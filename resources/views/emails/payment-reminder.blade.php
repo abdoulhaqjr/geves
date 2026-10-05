@@ -3,7 +3,7 @@
 
 {{ __('Bonjour') }} {{ $participant->full_name }},
 
-{!! __('Votre communication a été **acceptée** pour « :edition ». Pour finaliser votre participation, il reste à régler vos frais d’inscription.', ['edition' => $edition->title ?: (string) $edition->year]) !!}
+{!! __('Votre communication a été **acceptée** pour « :edition ». Pour finaliser votre participation, il reste à régler vos frais d’inscription.', ['event' => $event->title ?: (string) $event->year]) !!}
 
 @if ($amount)
 {{ __('Montant applicable :') }} **{{ number_format($amount, 0, ',', ' ') }} FCFA**

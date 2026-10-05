@@ -2,60 +2,60 @@
 
 namespace App\Support;
 
-use App\Enums\EditionPhase;
-use App\Models\Edition;
+use App\Enums\EventPhase;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Models\User;
 use Illuminate\Support\Collection;
 
 /**
  * Contexte « colloque courant » de l'espace participant. Un compte peut participer
- * à plusieurs colloques/éditions : ce helper résout l'édition active (sélection en
+ * à plusieurs colloques/événements : ce helper résout l'événement actif (sélection en
  * session, sinon défaut), liste les colloques du compte pour le sélecteur, et
  * bascule d'un colloque à l'autre. Les pages personnelles (tableau de bord,
- * soumissions, documents, paiement) se scopent sur cette édition.
+ * soumissions, documents, paiement) se scopent sur cet événement.
  */
-class CurrentColloque
+class CurrentEvent
 {
     private const SESSION_KEY = 'account.current_edition_id';
 
     /**
-     * Éditions auxquelles le compte participe, la plus récente d'abord, avec leur
+     * Événements auxquelles le compte participe, la plus récente d'abord, avec leur
      * colloque (pour l'affichage du sélecteur).
      *
-     * @return Collection<int, Edition>
+     * @return Collection<int, Event>
      */
-    public static function editions(User $account): Collection
+    public static function events(User $account): Collection
     {
         $ids = Participant::where('user_id', $account->id)
-            ->pluck('edition_id')->unique()->filter();
+            ->pluck('event_id')->unique()->filter();
 
         if ($ids->isEmpty()) {
             return collect();
         }
 
-        return Edition::whereIn('id', $ids)->with('colloque')->orderByDesc('id')->get();
+        return Event::whereIn('id', $ids)->with('series')->orderByDesc('id')->get();
     }
 
     /**
-     * Colloques dont l'appel à communications est OUVERT (colloque vivant : en cours
+     * Événement dont l'appel à communications est OUVERT (colloque vivant : en cours
      * ou à venir) auxquels le compte ne participe pas encore. On peut les sélectionner
      * pour y soumettre un résumé (la soumission crée la participation).
      *
-     * @return Collection<int, Edition>
+     * @return Collection<int, Event>
      */
     public static function openCalls(User $account): Collection
     {
-        $participatedIds = self::editions($account)->pluck('id')->all();
+        $participatedIds = self::events($account)->pluck('id')->all();
 
-        return Edition::query()
+        return Event::query()
             ->where('status', 'open')
             ->where('submission_open', true)
             ->whereNotIn('id', $participatedIds)
-            ->with('colloque')
+            ->with('series')
             ->get()
-            ->reject(fn (Edition $e) => in_array($e->phase(), [EditionPhase::Draft, EditionPhase::Closed], true))
-            ->sortBy(fn (Edition $e) => optional($e->date_start)->timestamp ?? PHP_INT_MAX)
+            ->reject(fn (Event $e) => in_array($e->phase(), [EventPhase::Draft, EventPhase::Closed], true))
+            ->sortBy(fn (Event $e) => optional($e->date_start)->timestamp ?? PHP_INT_MAX)
             ->values();
     }
 
@@ -63,11 +63,11 @@ class CurrentColloque
      * Ensemble des colloques sélectionnables : ceux du compte + les appels ouverts
      * (en cours / à venir) auxquels il peut soumettre.
      *
-     * @return Collection<int, Edition>
+     * @return Collection<int, Event>
      */
     public static function selectable(User $account): Collection
     {
-        return self::editions($account)->concat(self::openCalls($account))->values();
+        return self::events($account)->concat(self::openCalls($account))->values();
     }
 
     /** Plus d'un colloque sélectionnable → afficher le sélecteur de colloque. */
@@ -77,11 +77,11 @@ class CurrentColloque
     }
 
     /**
-     * Édition « courante » : la sélection en session si elle est sélectionnable
-     * (colloque du compte OU appel ouvert), sinon l'édition par défaut. Null si
+     * Événement « courante » : la sélection en session si elle est sélectionnable
+     * (colloque du compte OU appel ouvert), sinon l'événement par défaut. Null si
      * aucun colloque sélectionnable.
      */
-    public static function current(User $account): ?Edition
+    public static function current(User $account): ?Event
     {
         $selectable = self::selectable($account);
         if ($selectable->isEmpty()) {
@@ -89,13 +89,13 @@ class CurrentColloque
         }
 
         $selected = session(self::SESSION_KEY);
-        if ($selected && ($edition = $selectable->firstWhere('id', (int) $selected))) {
-            return $edition;
+        if ($selected && ($event = $selectable->firstWhere('id', (int) $selected))) {
+            return $event;
         }
 
         // Défaut : parmi les colloques du compte (comportement inchangé) ; pour un
         // compte sans participation, le premier appel ouvert (pour pouvoir soumettre).
-        $participated = self::editions($account);
+        $participated = self::events($account);
 
         return $participated->isNotEmpty()
             ? self::default($account, $participated)
@@ -103,8 +103,8 @@ class CurrentColloque
     }
 
     /**
-     * Bascule le contexte vers une édition donnée. Ne fait rien (et retourne false)
-     * si l'édition n'est pas sélectionnable (ni participation, ni appel ouvert).
+     * Bascule le contexte vers un événement donné. Ne fait rien (et retourne false)
+     * si l'événement n'est pas sélectionnable (ni participation, ni appel ouvert).
      */
     public static function switchTo(User $account, int $editionId): bool
     {
@@ -118,39 +118,39 @@ class CurrentColloque
     }
 
     /**
-     * Défaut du colloque courant, parmi les éditions du compte :
+     * Défaut du colloque courant, parmi les événements du compte :
      *   1. un colloque EN COURS (l'événement se déroule actuellement) ;
      *   2. sinon le PROCHAIN colloque à venir (date de début future la plus proche) ;
      *   3. sinon le DERNIER colloque auquel l'utilisateur a participé (le plus récent).
      *
-     * @param  Collection<int, Edition>  $editions
+     * @param  Collection<int, Event>  $events
      */
-    private static function default(User $account, Collection $editions): Edition
+    private static function default(User $account, Collection $events): Event
     {
         // Un colloque « vivant » = ni brouillon ni clôturé (appel ouvert, inscriptions,
         // évaluation ou événement en déroulement).
-        $isLive = fn (Edition $e) => ! in_array($e->phase(), [EditionPhase::Draft, EditionPhase::Closed], true);
+        $isLive = fn (Event $e) => ! in_array($e->phase(), [EventPhase::Draft, EventPhase::Closed], true);
 
         // 1. Un colloque EN COURS (l'événement se déroule actuellement).
-        $ongoing = $editions->first(fn (Edition $e) => $e->phase() === EditionPhase::Ongoing);
+        $ongoing = $events->first(fn (Event $e) => $e->phase() === EventPhase::Ongoing);
         if ($ongoing !== null) {
             return $ongoing;
         }
 
         // 2. Le PROCHAIN colloque qui arrive : un colloque vivant, au début le plus proche
         //    (ceux sans date passent en dernier).
-        $upcoming = $editions
+        $upcoming = $events
             ->filter($isLive)
-            ->sortBy(fn (Edition $e) => optional($e->date_start)->timestamp ?? PHP_INT_MAX)
+            ->sortBy(fn (Event $e) => optional($e->date_start)->timestamp ?? PHP_INT_MAX)
             ->first();
         if ($upcoming !== null) {
             return $upcoming;
         }
 
         // 3. Sinon le DERNIER colloque auquel l'utilisateur a participé (le plus récent).
-        return $editions
-            ->sortByDesc(fn (Edition $e) => optional($e->date_start)->timestamp ?? 0)
+        return $events
+            ->sortByDesc(fn (Event $e) => optional($e->date_start)->timestamp ?? 0)
             ->first()
-            ?? $editions->first();
+            ?? $events->first();
     }
 }

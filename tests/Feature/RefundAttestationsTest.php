@@ -8,19 +8,19 @@ use App\Models\Payment;
 // openEdition()/verifiedAccount()/adminStaff() -> tests/Pest.php
 
 /** Participant + paiement réglé d'une nature donnée. */
-function paidPayment($edition, $participant, array $meta = [], float $amount = 10000): Payment
+function paidPayment($event, $participant, array $meta = [], float $amount = 10000): Payment
 {
     return Payment::create([
-        'edition_id' => $edition->id, 'participant_id' => $participant->id,
+        'event_id' => $event->id, 'participant_id' => $participant->id,
         'amount' => $amount, 'method' => 'fedapay', 'gateway' => 'fedapay', 'status' => 'paid',
         'meta' => $meta ?: null,
     ]);
 }
 
-function refundParticipant($edition): array
+function refundParticipant($event): array
 {
     $user = verifiedAccount();
-    $participant = $edition->participants()->create([
+    $participant = $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $user->email, 'role' => 'author', 'user_id' => $user->id,
     ]);
 
@@ -28,14 +28,14 @@ function refundParticipant($edition): array
 }
 
 it('révoque participation et communications au remboursement des frais d’inscription', function () {
-    $edition = openEdition();
-    [$user, $participant] = refundParticipant($edition);
-    $submission = $edition->submissions()->create([
+    $event = openEdition();
+    [$user, $participant] = refundParticipant($event);
+    $submission = $event->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => '26-500', 'title' => 'Comm',
         'abstract' => 'x', 'track' => 'Sciences', 'type' => 'oral', 'status' => 'accepted', 'authors' => [],
     ]);
 
-    $payment = paidPayment($edition, $participant);
+    $payment = paidPayment($event, $participant);
     app(IssueAttestation::class)->handle($participant, 'participation');
     app(IssueAttestation::class)->handle($participant, 'communication', $submission);
 
@@ -48,11 +48,11 @@ it('révoque participation et communications au remboursement des frais d’insc
 });
 
 it('conserve les attestations s’il reste un paiement de participation réglé', function () {
-    $edition = openEdition();
-    [$user, $participant] = refundParticipant($edition);
+    $event = openEdition();
+    [$user, $participant] = refundParticipant($event);
 
-    $first = paidPayment($edition, $participant);
-    paidPayment($edition, $participant); // second règlement (ex. encaissement manuel)
+    $first = paidPayment($event, $participant);
+    paidPayment($event, $participant); // second règlement (ex. encaissement manuel)
     app(IssueAttestation::class)->handle($participant, 'participation');
 
     $this->actingAs(adminStaff(), 'web')->post(route('admin.payments.refund', $first))->assertRedirect();
@@ -61,11 +61,11 @@ it('conserve les attestations s’il reste un paiement de participation réglé'
 });
 
 it('révoque l’attestation de formation au remboursement de cette formation', function () {
-    $edition = openEdition(['formation_enabled' => true]);
-    [$user, $participant] = refundParticipant($edition);
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'Atelier', 'fee' => 10000, 'published' => true]);
+    $event = openEdition(['formation_enabled' => true]);
+    [$user, $participant] = refundParticipant($event);
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'Atelier', 'fee' => 10000, 'published' => true]);
 
-    $payment = paidPayment($edition, $participant, ['flow' => 'formation', 'formation_id' => $formation->id]);
+    $payment = paidPayment($event, $participant, ['flow' => 'formation', 'formation_id' => $formation->id]);
     app(IssueAttestation::class)->handle($participant, 'formation', null, $formation);
 
     $this->actingAs(adminStaff(), 'web')->post(route('admin.payments.refund', $payment))->assertRedirect();
@@ -74,13 +74,13 @@ it('révoque l’attestation de formation au remboursement de cette formation', 
 });
 
 it('ne touche pas à l’attestation d’une AUTRE formation encore réglée', function () {
-    $edition = openEdition(['formation_enabled' => true]);
-    [$user, $participant] = refundParticipant($edition);
-    $a = Formation::create(['edition_id' => $edition->id, 'title' => 'Atelier A', 'fee' => 10000, 'published' => true]);
-    $b = Formation::create(['edition_id' => $edition->id, 'title' => 'Atelier B', 'fee' => 8000, 'published' => true]);
+    $event = openEdition(['formation_enabled' => true]);
+    [$user, $participant] = refundParticipant($event);
+    $a = Formation::create(['event_id' => $event->id, 'title' => 'Atelier A', 'fee' => 10000, 'published' => true]);
+    $b = Formation::create(['event_id' => $event->id, 'title' => 'Atelier B', 'fee' => 8000, 'published' => true]);
 
-    $payA = paidPayment($edition, $participant, ['flow' => 'formation', 'formation_id' => $a->id]);
-    paidPayment($edition, $participant, ['flow' => 'formation', 'formation_id' => $b->id], 8000);
+    $payA = paidPayment($event, $participant, ['flow' => 'formation', 'formation_id' => $a->id]);
+    paidPayment($event, $participant, ['flow' => 'formation', 'formation_id' => $b->id], 8000);
     app(IssueAttestation::class)->handle($participant, 'formation', null, $a);
     app(IssueAttestation::class)->handle($participant, 'formation', null, $b);
 
@@ -91,12 +91,12 @@ it('ne touche pas à l’attestation d’une AUTRE formation encore réglée', f
 });
 
 it('un remboursement de formation ne touche pas la participation, et inversement', function () {
-    $edition = openEdition(['formation_enabled' => true]);
-    [$user, $participant] = refundParticipant($edition);
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'Atelier', 'fee' => 10000, 'published' => true]);
+    $event = openEdition(['formation_enabled' => true]);
+    [$user, $participant] = refundParticipant($event);
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'Atelier', 'fee' => 10000, 'published' => true]);
 
-    $formationPay = paidPayment($edition, $participant, ['flow' => 'formation', 'formation_id' => $formation->id]);
-    paidPayment($edition, $participant, [], 25000); // frais de participation, toujours réglés
+    $formationPay = paidPayment($event, $participant, ['flow' => 'formation', 'formation_id' => $formation->id]);
+    paidPayment($event, $participant, [], 25000); // frais de participation, toujours réglés
     app(IssueAttestation::class)->handle($participant, 'participation');
     app(IssueAttestation::class)->handle($participant, 'formation', null, $formation);
 
@@ -107,11 +107,11 @@ it('un remboursement de formation ne touche pas la participation, et inversement
 });
 
 it('ne révoque pas l’attestation d’animation d’un formateur (il ne paie pas)', function () {
-    $edition = openEdition(['formation_enabled' => true]);
-    [$user, $participant] = refundParticipant($edition);
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'Atelier', 'fee' => 10000, 'published' => true]);
+    $event = openEdition(['formation_enabled' => true]);
+    [$user, $participant] = refundParticipant($event);
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'Atelier', 'fee' => 10000, 'published' => true]);
 
-    $payment = paidPayment($edition, $participant, ['flow' => 'formation', 'formation_id' => $formation->id]);
+    $payment = paidPayment($event, $participant, ['flow' => 'formation', 'formation_id' => $formation->id]);
     app(IssueAttestation::class)->handle($participant, 'formation_animation', null, $formation);
 
     $this->actingAs(adminStaff(), 'web')->post(route('admin.payments.refund', $payment))->assertRedirect();

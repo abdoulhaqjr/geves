@@ -16,7 +16,7 @@ use Illuminate\View\View;
 /**
  * Réclamations & incidents (back-office). Traitement par l'admin, les
  * gestionnaires ou toute personne à qui la capacité `claims` a été déléguée sur
- * une édition. À la demande, l'IA propose une analyse de traitement.
+ * un événement. À la demande, l'IA propose une analyse de traitement.
  */
 class ClaimController extends Controller
 {
@@ -30,9 +30,9 @@ class ClaimController extends Controller
         $search = trim((string) $request->query('search', ''));
 
         $query = Claim::query()
-            ->with(['edition', 'user', 'assignee'])
+            ->with(['event', 'user', 'assignee'])
             ->when(! $user->isColloqueSuperAdmin(), fn ($q) => $q->where(function ($w) use ($user) {
-                $w->whereNull('edition_id')->orWhereIn('edition_id', $user->accessibleEditionIds('claims'));
+                $w->whereNull('event_id')->orWhereIn('event_id', $user->accessibleEditionIds('claims'));
             }))
             ->when($status !== '', fn ($q) => $q->where('status', $status))
             ->when($type !== '', fn ($q) => $q->where('type', $type))
@@ -63,7 +63,7 @@ class ClaimController extends Controller
     public function show(Request $request, Claim $claim): View
     {
         $this->authorizeClaim($request, $claim);
-        $claim->load(['edition.colloque', 'user', 'assignee']);
+        $claim->load(['event.series', 'user', 'assignee']);
 
         return view('admin.claims.show', [
             'claim' => $claim,
@@ -125,7 +125,7 @@ class ClaimController extends Controller
     }
 
     /**
-     * Vivier d'affectation : super-admins + membres du staff affectés à l'édition
+     * Vivier d'affectation : super-admins + membres du staff affectés à l'événement
      * de la réclamation avec la capacité `claims`.
      *
      * @return Collection<int, User>
@@ -134,11 +134,11 @@ class ClaimController extends Controller
     {
         $ids = User::query()->where('access_level', User::ACCESS_SUPER_ADMIN)->pluck('id');
 
-        if ($claim->edition_id !== null) {
+        if ($claim->event_id !== null) {
             $rolesWithClaims = collect(StaffRoles::ROLES)
                 ->filter(fn ($r) => in_array('claims', $r['permissions'], true))->keys();
-            $assigned = DB::table('edition_user')
-                ->where('edition_id', $claim->edition_id)
+            $assigned = DB::table('event_user')
+                ->where('event_id', $claim->event_id)
                 ->whereIn('role', $rolesWithClaims)
                 ->pluck('user_id');
             $ids = $ids->merge($assigned);
@@ -152,8 +152,8 @@ class ClaimController extends Controller
     {
         $user = $request->user();
         $ok = $user->isColloqueSuperAdmin()
-            || $claim->edition_id === null && $user->canAnyEdition('claims')
-            || ($claim->edition_id !== null && $user->canOnEdition('claims', $claim->edition_id));
+            || $claim->event_id === null && $user->canAnyEdition('claims')
+            || ($claim->event_id !== null && $user->canOnEdition('claims', $claim->event_id));
 
         abort_unless($ok, 403);
     }

@@ -1,25 +1,25 @@
 <?php
 
-use App\Models\Colloque;
+use App\Models\EventSeries;
 use App\Models\EventSession;
 use App\Models\User;
 
-it('crée un colloque avec une édition et ses entités liées', function () {
-    $colloque = Colloque::create(['name' => 'Colloque de Kara', 'slug' => 'kara']);
+it('crée un colloque avec un événement et ses entités liées', function () {
+    $series = EventSeries::create(['name' => 'EventSeries de Kara', 'slug' => 'kara']);
 
-    $edition = $colloque->editions()->create([
-        'title' => 'Édition 2026',
-        'edition_label' => '1re édition',
+    $event = $series->events()->create([
+        'title' => 'Événement 2026',
+        'event_label' => '1re événement',
         'year' => 2026,
         'status' => 'open',
         'settings' => ['fees' => ['doctorant' => 10000]],
     ]);
 
-    $participant = $edition->participants()->create([
+    $participant = $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author',
     ]);
 
-    $submission = $edition->submissions()->create([
+    $submission = $event->submissions()->create([
         'participant_id' => $participant->id,
         'title' => 'Résumé test',
         'authors' => [['name' => 'Awa Kodjo']],
@@ -27,21 +27,21 @@ it('crée un colloque avec une édition et ses entités liées', function () {
     ]);
 
     $submission->reviews()->create(['recommendation' => 'accept', 'score' => 16.5]);
-    $edition->payments()->create(['participant_id' => $participant->id, 'amount' => 10000, 'status' => 'paid']);
-    $atelier = $edition->ateliers()->create(['title' => 'Atelier A', 'tracks' => ['axe1', 'axe2']]);
-    $session = $edition->sessions()->create(['atelier_id' => $atelier->id, 'type' => 'atelier', 'label' => 'Session 1']);
-    $edition->slots()->create(['session_id' => $session->id, 'submission_id' => $submission->id]);
-    $edition->attestations()->create(['uuid' => 'uuid-1', 'type' => 'participation', 'participant_id' => $participant->id]);
-    $edition->committeeMembers()->create(['person_name' => 'Pr. Doe', 'role' => 'scientifique']);
-    $edition->media()->create(['type' => 'photo', 'url' => 'https://example.tg/p.jpg']);
+    $event->payments()->create(['participant_id' => $participant->id, 'amount' => 10000, 'status' => 'paid']);
+    $atelier = $event->ateliers()->create(['title' => 'Atelier A', 'tracks' => ['axe1', 'axe2']]);
+    $session = $event->sessions()->create(['atelier_id' => $atelier->id, 'type' => 'atelier', 'label' => 'Session 1']);
+    $event->slots()->create(['session_id' => $session->id, 'submission_id' => $submission->id]);
+    $event->attestations()->create(['uuid' => 'uuid-1', 'type' => 'participation', 'participant_id' => $participant->id]);
+    $event->committeeMembers()->create(['person_name' => 'Pr. Doe', 'role' => 'scientifique']);
+    $event->media()->create(['type' => 'photo', 'url' => 'https://example.tg/p.jpg']);
 
     // Casts JSON
-    expect($edition->fresh()->settings)->toBe(['fees' => ['doctorant' => 10000]]);
+    expect($event->fresh()->settings)->toBe(['fees' => ['doctorant' => 10000]]);
     expect($atelier->fresh()->tracks)->toBe(['axe1', 'axe2']);
     expect($submission->fresh()->authors)->toBe([['name' => 'Awa Kodjo']]);
 
     // Relations inverses / traversée
-    expect($edition->colloque->name)->toBe('Colloque de Kara');
+    expect($event->series->name)->toBe('EventSeries de Kara');
     expect($session->slots()->count())->toBe(1);
     expect($participant->submissions()->count())->toBe(1);
     expect($submission->reviews->first()->score)->toBe('16.50');

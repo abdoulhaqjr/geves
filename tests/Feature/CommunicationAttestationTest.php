@@ -3,27 +3,27 @@
 use App\Actions\IssueAttestation;
 use App\Models\Attestation;
 use App\Models\DocumentTemplate;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Models\SessionAttendance;
 use App\Models\Slot;
 use App\Models\Submission;
 use App\Support\AttestationPolicy;
 use App\Support\CommunicationAttestations;
-use App\Support\EditionSettings;
+use App\Support\EventSettings;
 use Illuminate\Support\Str;
 
 // adminStaff() -> AdminSubmissionWorkflowTest ; openEdition() -> tests/Pest.php
 
 /** Crée une communication acceptée avec un auteur correspondant + des co-auteurs. */
-function acceptedComm(Edition $edition, Participant $author, string $ref, array $coauthors = []): Submission
+function acceptedComm(Event $event, Participant $author, string $ref, array $coauthors = []): Submission
 {
     $authors = [['name' => $author->full_name, 'email' => $author->email, 'corresponding' => true]];
     foreach ($coauthors as $co) {
         $authors[] = ['name' => $co->full_name, 'email' => $co->email, 'corresponding' => false];
     }
 
-    return $edition->submissions()->create([
+    return $event->submissions()->create([
         'participant_id' => $author->id,
         'title' => 'Communication '.$ref,
         'status' => 'accepted',
@@ -36,24 +36,24 @@ function acceptedComm(Edition $edition, Participant $author, string $ref, array 
     ]);
 }
 
-function payParticipant(Edition $edition, Participant $p): void
+function payParticipant(Event $event, Participant $p): void
 {
-    $edition->payments()->create([
+    $event->payments()->create([
         'participant_id' => $p->id, 'amount' => 20000, 'status' => 'paid',
         'gateway' => 'manual', 'method' => 'cash', 'paid_at' => now(),
     ]);
 }
 
 it('émet une attestation de communication par personne ET par communication (au nom de chacun)', function () {
-    $edition = openEdition();
-    $author = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
-    $co = $edition->participants()->create(['first_name' => 'Ben', 'last_name' => 'Co', 'email' => 'ben@example.tg', 'role' => 'coauthor']);
-    payParticipant($edition, $co);
+    $event = openEdition();
+    $author = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $co = $event->participants()->create(['first_name' => 'Ben', 'last_name' => 'Co', 'email' => 'ben@example.tg', 'role' => 'coauthor']);
+    payParticipant($event, $co);
 
-    $sub = acceptedComm($edition, $author, 'AA-001', [$co]);
+    $sub = acceptedComm($event, $author, 'AA-001', [$co]);
 
     $this->actingAs(adminStaff(), 'web')->post(route('admin.documents.attestations.issue'), [
-        'edition_id' => (string) $edition->id, 'type' => 'communication',
+        'event_id' => (string) $event->id, 'type' => 'communication',
     ]);
 
     // Auteur correspondant + co-auteur payé, chacun à son nom, liés à la communication.
@@ -70,14 +70,14 @@ it('émet une attestation de communication par personne ET par communication (au
 });
 
 it('ne donne pas d’attestation à un co-auteur non payé', function () {
-    $edition = openEdition();
-    $author = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
-    $co = $edition->participants()->create(['first_name' => 'Ben', 'last_name' => 'Co', 'email' => 'ben@example.tg', 'role' => 'coauthor']);
+    $event = openEdition();
+    $author = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $co = $event->participants()->create(['first_name' => 'Ben', 'last_name' => 'Co', 'email' => 'ben@example.tg', 'role' => 'coauthor']);
 
-    acceptedComm($edition, $author, 'AA-001', [$co]);
+    acceptedComm($event, $author, 'AA-001', [$co]);
 
     $this->actingAs(adminStaff(), 'web')->post(route('admin.documents.attestations.issue'), [
-        'edition_id' => (string) $edition->id, 'type' => 'communication',
+        'event_id' => (string) $event->id, 'type' => 'communication',
     ]);
 
     expect(Attestation::where('participant_id', $co->id)->exists())->toBeFalse();
@@ -85,17 +85,17 @@ it('ne donne pas d’attestation à un co-auteur non payé', function () {
 });
 
 it('plafonne le nombre de co-auteurs attestés par communication (coauthors_max)', function () {
-    $edition = openEdition(['coauthors_max' => 1]);
-    $author = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
-    $co1 = $edition->participants()->create(['first_name' => 'Ben', 'last_name' => 'Un', 'email' => 'co1@example.tg', 'role' => 'coauthor']);
-    $co2 = $edition->participants()->create(['first_name' => 'Cid', 'last_name' => 'Deux', 'email' => 'co2@example.tg', 'role' => 'coauthor']);
-    payParticipant($edition, $co1);
-    payParticipant($edition, $co2);
+    $event = openEdition(['coauthors_max' => 1]);
+    $author = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $co1 = $event->participants()->create(['first_name' => 'Ben', 'last_name' => 'Un', 'email' => 'co1@example.tg', 'role' => 'coauthor']);
+    $co2 = $event->participants()->create(['first_name' => 'Cid', 'last_name' => 'Deux', 'email' => 'co2@example.tg', 'role' => 'coauthor']);
+    payParticipant($event, $co1);
+    payParticipant($event, $co2);
 
-    acceptedComm($edition, $author, 'AA-001', [$co1, $co2]);
+    acceptedComm($event, $author, 'AA-001', [$co1, $co2]);
 
     $this->actingAs(adminStaff(), 'web')->post(route('admin.documents.attestations.issue'), [
-        'edition_id' => (string) $edition->id, 'type' => 'communication',
+        'event_id' => (string) $event->id, 'type' => 'communication',
     ]);
 
     // Seul le 1er co-auteur (ordre de la liste) est attesté.
@@ -104,18 +104,18 @@ it('plafonne le nombre de co-auteurs attestés par communication (coauthors_max)
 });
 
 it('plafonne par personne et privilégie l’auteur correspondant (attestation_max)', function () {
-    $edition = openEdition(['attestation_max' => 1]);
+    $event = openEdition(['attestation_max' => 1]);
 
     // La personne P est auteur correspondant de A et co-auteur (payé) de B.
-    $p = $edition->participants()->create(['first_name' => 'Pia', 'last_name' => 'Prime', 'email' => 'p@example.tg', 'role' => 'author']);
-    payParticipant($edition, $p);
-    $q = $edition->participants()->create(['first_name' => 'Qua', 'last_name' => 'Autre', 'email' => 'q@example.tg', 'role' => 'author']);
+    $p = $event->participants()->create(['first_name' => 'Pia', 'last_name' => 'Prime', 'email' => 'p@example.tg', 'role' => 'author']);
+    payParticipant($event, $p);
+    $q = $event->participants()->create(['first_name' => 'Qua', 'last_name' => 'Autre', 'email' => 'q@example.tg', 'role' => 'author']);
 
-    $subA = acceptedComm($edition, $p, 'AA-001');           // P = correspondant
-    acceptedComm($edition, $q, 'AA-002', [$p]);             // P = co-auteur payé
+    $subA = acceptedComm($event, $p, 'AA-001');           // P = correspondant
+    acceptedComm($event, $q, 'AA-002', [$p]);             // P = co-auteur payé
 
     $this->actingAs(adminStaff(), 'web')->post(route('admin.documents.attestations.issue'), [
-        'edition_id' => (string) $edition->id, 'type' => 'communication',
+        'event_id' => (string) $event->id, 'type' => 'communication',
     ]);
 
     $pAtts = Attestation::where('participant_id', $p->id)->where('type', 'communication')->get();
@@ -125,13 +125,13 @@ it('plafonne par personne et privilégie l’auteur correspondant (attestation_m
 });
 
 it('nomme la communication dans un modèle personnalisé via {communication}', function () {
-    $edition = openEdition();
-    $author = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
-    $sub = acceptedComm($edition, $author, 'CI-042');
+    $event = openEdition();
+    $author = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $sub = acceptedComm($event, $author, 'CI-042');
 
     // Modèle personnalisé d'attestation de communication utilisant {communication}.
     DocumentTemplate::create([
-        'edition_id' => $edition->id,
+        'event_id' => $event->id,
         'kind' => 'attestation',
         'type' => 'communication',
         'layout' => ['width' => 600, 'height' => 400, 'bg' => '#ffffff', 'accent' => '#223ea4', 'elements' => [
@@ -153,18 +153,18 @@ it('nomme la communication dans un modèle personnalisé via {communication}', f
  * programmée. Deux chemins qui en décideraient chacun de leur côté enverraient
  * des attestations différentes selon le bouton utilisé.
  */
-it('réserve l’émission en masse aux présents quand l’édition le demande', function () {
-    $edition = openEdition();
-    EditionSettings::set($edition, 'attestations.communication_scope', AttestationPolicy::SCOPE_PRESENT);
+it('réserve l’émission en masse aux présents quand l’événement le demande', function () {
+    $event = openEdition();
+    EventSettings::set($event, 'attestations.communication_scope', AttestationPolicy::SCOPE_PRESENT);
 
-    $auteur = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
-    $co = $edition->participants()->create(['first_name' => 'Ben', 'last_name' => 'Co', 'email' => 'ben@example.tg', 'role' => 'coauthor']);
-    payParticipant($edition, $co);
-    $sub = acceptedComm($edition, $auteur, 'AA-010', [$co]);
+    $auteur = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $co = $event->participants()->create(['first_name' => 'Ben', 'last_name' => 'Co', 'email' => 'ben@example.tg', 'role' => 'coauthor']);
+    payParticipant($event, $co);
+    $sub = acceptedComm($event, $auteur, 'AA-010', [$co]);
 
-    $session = $edition->sessions()->create(['label' => 'Séance', 'type' => 'atelier', 'starts_at' => now()->subHour()]);
+    $session = $event->sessions()->create(['label' => 'Séance', 'type' => 'atelier', 'starts_at' => now()->subHour()]);
     Slot::create([
-        'edition_id' => $edition->id, 'session_id' => $session->id,
+        'event_id' => $event->id, 'session_id' => $session->id,
         'submission_id' => $sub->id, 'participant_id' => $auteur->id,
         'starts_at' => $session->starts_at, 'ends_at' => $session->starts_at->copy()->addMinutes(20),
     ]);
@@ -174,7 +174,7 @@ it('réserve l’émission en masse aux présents quand l’édition le demande'
     ]);
 
     $this->actingAs(adminStaff(), 'web')->post(route('admin.documents.attestations.issue'), [
-        'edition_id' => (string) $edition->id, 'type' => 'communication',
+        'event_id' => (string) $event->id, 'type' => 'communication',
     ]);
 
     expect(Attestation::where('participant_id', $auteur->id)->where('type', 'communication')->exists())->toBeTrue();
@@ -187,14 +187,14 @@ it('réserve l’émission en masse aux présents quand l’édition le demande'
  * quelque chose, pas à l'auteur.
  */
 it('n’écarte pas une communication sans séance au programme', function () {
-    $edition = openEdition();
-    EditionSettings::set($edition, 'attestations.communication_scope', AttestationPolicy::SCOPE_PRESENT);
+    $event = openEdition();
+    EventSettings::set($event, 'attestations.communication_scope', AttestationPolicy::SCOPE_PRESENT);
 
-    $auteur = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
-    acceptedComm($edition, $auteur, 'AA-011');
+    $auteur = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    acceptedComm($event, $auteur, 'AA-011');
 
     $this->actingAs(adminStaff(), 'web')->post(route('admin.documents.attestations.issue'), [
-        'edition_id' => (string) $edition->id, 'type' => 'communication',
+        'event_id' => (string) $event->id, 'type' => 'communication',
     ]);
 
     expect(Attestation::where('participant_id', $auteur->id)->where('type', 'communication')->exists())->toBeTrue();
@@ -202,18 +202,18 @@ it('n’écarte pas une communication sans séance au programme', function () {
 
 /** Les options de délivrance font l'aller-retour par le formulaire du hub. */
 it('enregistre le mode de délivrance depuis les options générales', function () {
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs(adminStaff(), 'web')->post(route('admin.documents.attestations.options'), [
-        'edition_id' => (string) $edition->id,
+        'event_id' => (string) $event->id,
         'attDelivery' => AttestationPolicy::DELIVERY_PAPER,
         'attCommunicationScope' => AttestationPolicy::SCOPE_PRESENT,
         'attSms' => '1',
     ])->assertRedirect();
 
-    $edition->refresh();
-    expect(AttestationPolicy::isPaper($edition))->toBeTrue();
-    expect(AttestationPolicy::requiresPresence($edition))->toBeTrue();
+    $event->refresh();
+    expect(AttestationPolicy::isPaper($event))->toBeTrue();
+    expect(AttestationPolicy::requiresPresence($event))->toBeTrue();
 });
 
 /**
@@ -223,17 +223,17 @@ it('enregistre le mode de délivrance depuis les options générales', function 
  * partent ET combien sont écartés.
  */
 it('annonce les destinataires écartés faute de présence avant d’émettre', function () {
-    $edition = openEdition();
-    EditionSettings::set($edition, 'attestations.communication_scope', AttestationPolicy::SCOPE_PRESENT);
+    $event = openEdition();
+    EventSettings::set($event, 'attestations.communication_scope', AttestationPolicy::SCOPE_PRESENT);
 
-    $auteur = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
-    $co = $edition->participants()->create(['first_name' => 'Ben', 'last_name' => 'Co', 'email' => 'ben@example.tg', 'role' => 'coauthor']);
-    payParticipant($edition, $co);
-    $sub = acceptedComm($edition, $auteur, 'AA-020', [$co]);
+    $auteur = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $co = $event->participants()->create(['first_name' => 'Ben', 'last_name' => 'Co', 'email' => 'ben@example.tg', 'role' => 'coauthor']);
+    payParticipant($event, $co);
+    $sub = acceptedComm($event, $auteur, 'AA-020', [$co]);
 
-    $session = $edition->sessions()->create(['label' => 'Séance', 'type' => 'atelier', 'starts_at' => now()->subHour()]);
+    $session = $event->sessions()->create(['label' => 'Séance', 'type' => 'atelier', 'starts_at' => now()->subHour()]);
     Slot::create([
-        'edition_id' => $edition->id, 'session_id' => $session->id,
+        'event_id' => $event->id, 'session_id' => $session->id,
         'submission_id' => $sub->id, 'participant_id' => $auteur->id,
         'starts_at' => $session->starts_at, 'ends_at' => $session->starts_at->copy()->addMinutes(20),
     ]);
@@ -243,11 +243,11 @@ it('annonce les destinataires écartés faute de présence avant d’émettre', 
     ]);
 
     // Un retenu (présent), un écarté (le co-auteur, non pointé).
-    expect(CommunicationAttestations::preview($edition))->toBe(['retenus' => 1, 'ecartes' => 1]);
+    expect(CommunicationAttestations::preview($event))->toBe(['retenus' => 1, 'ecartes' => 1]);
 
     $this->actingAs(adminStaff(), 'web')
         ->get(route('admin.documents.attestations', [
-            'edition_id' => $edition->id, 'tab' => 'attestations', 'stab' => 'modeles',
+            'event_id' => $event->id, 'tab' => 'attestations', 'stab' => 'modeles',
         ]))
         ->assertOk()
         ->assertSee('écarté(s) · absents');
@@ -255,9 +255,9 @@ it('annonce les destinataires écartés faute de présence avant d’émettre', 
 
 /** Sans réserve de présence, rien n'est écarté : le compteur reste muet. */
 it('n’annonce aucun écart quand l’attestation va à tous les auteurs', function () {
-    $edition = openEdition();
-    $auteur = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
-    acceptedComm($edition, $auteur, 'AA-021');
+    $event = openEdition();
+    $auteur = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    acceptedComm($event, $auteur, 'AA-021');
 
-    expect(CommunicationAttestations::preview($edition))->toBe(['retenus' => 1, 'ecartes' => 0]);
+    expect(CommunicationAttestations::preview($event))->toBe(['retenus' => 1, 'ecartes' => 0]);
 });

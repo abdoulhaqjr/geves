@@ -9,9 +9,9 @@ use App\Models\Formation;
 use App\Models\FormationEnrollment;
 use App\Models\Payment;
 use App\Payments\GatewayRegistry;
-use App\Support\CurrentColloque;
-use App\Support\EditionLock;
-use App\Support\EditionPaymentConfig;
+use App\Support\CurrentEvent;
+use App\Support\EventLock;
+use App\Support\EventPaymentConfig;
 use App\Support\Notifier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,10 +19,10 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 /**
- * Espace participant : formations de l'**édition sélectionnée** (une formation
- * appartient toujours à une édition = l'événement), avec inscription. Gratuite →
+ * Espace participant : formations de l'**événement sélectionné** (une formation
+ * appartient toujours à un événement = l'événement), avec inscription. Gratuite →
  * inscription directe ; payante → paiement via la couche Payment
- * (`meta.flow = 'formation'`). Si l'édition courante ne propose pas de formation
+ * (`meta.flow = 'formation'`). Si l'événement courant ne propose pas de formation
  * (module désactivé ou aucune formation publiée), la page n'existe pas (404) et
  * le lien du menu est masqué.
  */
@@ -31,11 +31,11 @@ class FormationController extends Controller
     public function index(Request $request, GatewayRegistry $registry): View
     {
         $user = $request->user();
-        $edition = CurrentColloque::current($user);
-        abort_unless(Formation::offeredIn($edition), 404);
+        $event = CurrentEvent::current($user);
+        abort_unless(Formation::offeredIn($event), 404);
 
         $formations = Formation::with('trainers')
-            ->publishedIn($edition)
+            ->publishedIn($event)
             ->orderByRaw('starts_at is null, starts_at')
             ->get();
 
@@ -44,7 +44,7 @@ class FormationController extends Controller
             ->get()->keyBy('formation_id');
 
         return view('account.formations.index', [
-            'edition' => $edition,
+            'event' => $event,
             'formations' => $formations,
             'enrollments' => $enrollments,
             'gateways' => $registry->available(),
@@ -53,9 +53,9 @@ class FormationController extends Controller
 
     public function enroll(Request $request, Formation $formation, UpsertParticipantForAccount $upsert, GatewayRegistry $registry): RedirectResponse
     {
-        abort_unless($formation->published && (bool) $formation->edition?->formationEnabled(), 404);
-        EditionLock::guard($formation->edition);
-        EditionPaymentConfig::apply($formation->edition); // passerelle propre à l'édition
+        abort_unless($formation->published && (bool) $formation->event?->formationEnabled(), 404);
+        EventLock::guard($formation->event);
+        EventPaymentConfig::apply($formation->event); // passerelle propre à l'événement
         $user = $request->user();
         $back = redirect()->route('account.formations');
 
@@ -74,13 +74,13 @@ class FormationController extends Controller
             );
         }
 
-        // Participant de l'édition (compte unifié ; ne rétrograde pas un rôle fort).
-        $participant = $upsert->handle($formation->edition, $user, role: 'trainee');
+        // Participant de l'événement (compte unifié ; ne rétrograde pas un rôle fort).
+        $participant = $upsert->handle($formation->event, $user, role: 'trainee');
 
         $enrollment = FormationEnrollment::firstOrCreate(
             ['formation_id' => $formation->id, 'user_id' => $user->id],
             [
-                'edition_id' => $formation->edition_id,
+                'event_id' => $formation->event_id,
                 'participant_id' => $participant->id,
                 'amount' => (float) $formation->fee,
                 'status' => 'registered',
@@ -119,7 +119,7 @@ class FormationController extends Controller
         }
 
         $payment = Payment::create([
-            'edition_id' => $formation->edition_id,
+            'event_id' => $formation->event_id,
             'participant_id' => $participant->id,
             'amount' => (float) $formation->fee,
             'method' => $gateway->key(),

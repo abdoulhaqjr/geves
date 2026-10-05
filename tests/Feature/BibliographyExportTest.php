@@ -5,10 +5,10 @@
 it('exporte les communications acceptées en BibTeX', function () {
     $staff = adminStaff();
     $submission = seededSubmission('accepted');
-    $edition = $submission->edition;
+    $event = $submission->event;
 
     $res = $this->actingAs($staff, 'web')
-        ->get(route('admin.submissions.bibliography', ['format' => 'bibtex', 'edition_id' => $edition->id]));
+        ->get(route('admin.submissions.bibliography', ['format' => 'bibtex', 'event_id' => $event->id]));
 
     $res->assertOk();
     expect($res->headers->get('content-type'))->toContain('application/x-bibtex')
@@ -19,10 +19,10 @@ it('exporte les communications acceptées en BibTeX', function () {
 it('exporte les communications acceptées en RIS', function () {
     $staff = adminStaff();
     $submission = seededSubmission('accepted');
-    $edition = $submission->edition;
+    $event = $submission->event;
 
     $res = $this->actingAs($staff, 'web')
-        ->get(route('admin.submissions.bibliography', ['format' => 'ris', 'edition_id' => $edition->id]));
+        ->get(route('admin.submissions.bibliography', ['format' => 'ris', 'event_id' => $event->id]));
 
     $res->assertOk();
     expect($res->streamedContent())->toContain('TY  - CPAPER')
@@ -32,10 +32,10 @@ it('exporte les communications acceptées en RIS', function () {
 it('n’inclut pas les communications non acceptées', function () {
     $staff = adminStaff();
     $submission = seededSubmission('under_review'); // pas acceptée
-    $edition = $submission->edition;
+    $event = $submission->event;
 
     $res = $this->actingAs($staff, 'web')
-        ->get(route('admin.submissions.bibliography', ['format' => 'bibtex', 'edition_id' => $edition->id]));
+        ->get(route('admin.submissions.bibliography', ['format' => 'bibtex', 'event_id' => $event->id]));
 
     $res->assertOk();
     expect($res->streamedContent())->not->toContain('Innovation durable');

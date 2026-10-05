@@ -12,7 +12,7 @@ use App\Models\EventSession;
 use App\Models\Formation;
 use App\Models\MeetingMessage;
 use App\Support\AttestationPolicy;
-use App\Support\EditionMeetingConfig;
+use App\Support\EventMeetingConfig;
 use App\Support\SessionPresence;
 use App\Support\Settings;
 use Illuminate\Contracts\View\View;
@@ -50,8 +50,8 @@ class MeetingController extends Controller
         if ($role->canJoin()) {
             $extra = [
                 'communications' => $session->scheduledCommunications(),
-                'canRecord' => $role === MeetingRole::Moderator && EditionMeetingConfig::using(
-                    $session->edition,
+                'canRecord' => $role === MeetingRole::Moderator && EventMeetingConfig::using(
+                    $session->event,
                     fn () => app(LiveKitEgress::class)->isConfigured(),
                 ),
                 // ⚠️ Présence TENUE DANS LA SALLE : l'aller-retour vers la page de
@@ -71,7 +71,7 @@ class MeetingController extends Controller
                     ? route('session.passage', [$session, 'SLOT'])
                     : null,
                 // Mode de délivrance : la salle doit dire ce que le clic déclenche.
-                'attestationsEnLigne' => AttestationPolicy::issuesOnPassage($session->edition),
+                'attestationsEnLigne' => AttestationPolicy::issuesOnPassage($session->event),
                 'egress' => [
                     'start' => route('session.egress.start', $session),
                     'stop' => route('session.egress.stop', $session),
@@ -98,7 +98,7 @@ class MeetingController extends Controller
 
         return $this->room($session, [
             'label' => (string) $session->label,
-            'editionTitle' => (string) ($session->edition->title ?? ''),
+            'editionTitle' => (string) ($session->event->title ?? ''),
             'startsAt' => $session->starts_at,
             'recordingUrl' => $session->hasRecording() ? (string) $session->recording_url : null,
             // ⚠️ « Quitter » ramène le modérateur à SES séances, et non à la page
@@ -122,7 +122,7 @@ class MeetingController extends Controller
     {
         return $this->room($formation, [
             'label' => (string) $formation->title,
-            'editionTitle' => (string) ($formation->edition->title ?? ''),
+            'editionTitle' => (string) ($formation->event->title ?? ''),
             'startsAt' => $formation->starts_at,
             'recordingUrl' => null,
             'backUrl' => route('account.formations'),

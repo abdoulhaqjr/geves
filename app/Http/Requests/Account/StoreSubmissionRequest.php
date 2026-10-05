@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Account;
 
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Submission;
 use App\Support\SubmissionFormConfig;
 use Illuminate\Contracts\Validation\Validator;
@@ -13,14 +13,14 @@ use Illuminate\Validation\Rule;
 
 /**
  * Validation du dépôt d'une communication (wizard). Les règles sont dérivées de
- * la configuration du formulaire de l'édition ({@see SubmissionFormConfig}). Les
+ * la configuration du formulaire de l'événement ({@see SubmissionFormConfig}). Les
  * garde-fous métier (profil complet, soumissions ouvertes, quota) sont exprimés
  * comme erreurs sur « abstract ». En cas d'échec, on renvoie le wizard vers
  * l'étape contenant la première erreur (flash `submission_error_step`).
  */
 class StoreSubmissionRequest extends FormRequest
 {
-    private ?Edition $editionModel = null;
+    private ?Event $editionModel = null;
 
     private ?SubmissionFormConfig $configModel = null;
 
@@ -29,13 +29,13 @@ class StoreSubmissionRequest extends FormRequest
         return Auth::guard('account')->check();
     }
 
-    /** Édition ciblée (404 si absente ou non publiée). */
-    public function edition(): Edition
+    /** Événement ciblée (404 si absente ou non publiée). */
+    public function event(): Event
     {
         if (! $this->editionModel) {
-            $edition = Edition::where('slug', $this->route('slug'))->first();
-            abort_unless($edition && $edition->isPublished(), 404);
-            $this->editionModel = $edition;
+            $event = Event::where('slug', $this->route('slug'))->first();
+            abort_unless($event && $event->isPublished(), 404);
+            $this->editionModel = $event;
         }
 
         return $this->editionModel;
@@ -43,13 +43,13 @@ class StoreSubmissionRequest extends FormRequest
 
     public function config(): SubmissionFormConfig
     {
-        return $this->configModel ??= new SubmissionFormConfig($this->edition());
+        return $this->configModel ??= new SubmissionFormConfig($this->event());
     }
 
     /** @return array<int, string> */
     private function tracks(): array
     {
-        return $this->edition()->settings['tracks'] ?? [];
+        return $this->event()->settings['tracks'] ?? [];
     }
 
     /** Valeurs par défaut envoyées par le wizard : type « oral » et premier axe. */
@@ -191,14 +191,14 @@ class StoreSubmissionRequest extends FormRequest
     {
         $validator->after(function (Validator $v): void {
             $account = Auth::guard('account')->user();
-            $edition = $this->edition();
+            $event = $this->event();
 
             if (! $account->canSubmit()) {
                 $v->errors()->add('abstract', 'Votre e-mail doit être vérifié et votre profil complété (affiliation).');
-            } elseif (! $edition->submission_open) {
-                $v->errors()->add('abstract', 'Les soumissions sont fermées pour cette édition.');
-            } elseif (Submission::remainingFor($edition, $account) <= 0) {
-                $v->errors()->add('abstract', 'Vous avez atteint le nombre maximum de communications pour cette édition.');
+            } elseif (! $event->submission_open) {
+                $v->errors()->add('abstract', 'Les soumissions sont fermées pour cet événement.');
+            } elseif (Submission::remainingFor($event, $account) <= 0) {
+                $v->errors()->add('abstract', 'Vous avez atteint le nombre maximum de communications pour cet événement.');
             }
 
             // Co-auteurs : nom + e-mail + affiliation obligatoires (pour toute ligne
@@ -239,7 +239,7 @@ class StoreSubmissionRequest extends FormRequest
             }
 
             // Plafond du nombre de co-auteurs (réglage `coauthors_max`, défaut 8).
-            $coauthorsMax = (int) ($edition->settings['coauthors_max'] ?? 8);
+            $coauthorsMax = (int) ($event->settings['coauthors_max'] ?? 8);
             if (count($seen) > $coauthorsMax) {
                 $v->errors()->add('coauthors', 'Nombre maximum de co-auteurs atteint ('.$coauthorsMax.').');
             }

@@ -2,11 +2,11 @@
 
 namespace App\Support;
 
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Media;
 
 /**
- * Construit la galerie publique d'une édition (photos + vidéos ordonnées) au
+ * Construit la galerie publique d'un événement (photos + vidéos ordonnées) au
  * format attendu par le partiel `partials.gallery` / le lightbox (public.js).
  * Partagé entre l'accueil (galerie du dernier colloque) et l'archive-détail.
  */
@@ -15,13 +15,13 @@ class Gallery
     /**
      * @return array<int, array{type: string, src: string, caption: string, thumb: ?string}>
      */
-    public static function for(?Edition $edition): array
+    public static function for(?Event $event): array
     {
-        if (! $edition) {
+        if (! $event) {
             return [];
         }
 
-        return $edition->media()
+        return $event->media()
             ->whereIn('type', ['photo', 'video'])
             ->orderBy('ordre')
             ->get()

@@ -1,6 +1,6 @@
 <?php
 
-use App\Actions\ExtractEditionFromDocuments;
+use App\Actions\ExtractEventFromDocuments;
 use App\AI\AiManager;
 use App\AI\Contracts\AiProvider;
 use App\AI\Providers\AnthropicProvider;
@@ -36,7 +36,7 @@ function fakeAiManager(): AiManager
         public function extract(string $instruction, array $files = [], ?string $tier = null): array
         {
             return [
-                'title' => 'Colloque IA 2027',
+                'title' => 'EventSeries IA 2027',
                 'year' => 2027,
                 'date_start' => '2027-11-10',
                 'date_end' => '2027-11-12',
@@ -89,12 +89,12 @@ it('appelle l’API Anthropic et décode le JSON', function () {
     config(['services.anthropic.key' => 'sk-ant-key', 'services.anthropic.model' => 'claude-test']);
 
     Http::fake([
-        '*/v1/messages' => Http::response(['content' => [['type' => 'text', 'text' => '{"title":"Colloque 2027","year":2027}']]]),
+        '*/v1/messages' => Http::response(['content' => [['type' => 'text', 'text' => '{"title":"EventSeries 2027","year":2027}']]]),
     ]);
 
     $result = (new AnthropicProvider)->extract('Extrais…', [['mime' => 'application/pdf', 'data' => base64_encode('pdf')]]);
 
-    expect($result['title'])->toBe('Colloque 2027');
+    expect($result['title'])->toBe('EventSeries 2027');
 
     Http::assertSent(fn ($req) => str_contains($req->url(), '/v1/messages')
         && $req['model'] === 'claude-test'
@@ -106,9 +106,9 @@ it('appelle l’API Anthropic et décode le JSON', function () {
 it('normalise les métadonnées extraites', function () {
     $this->app->instance(AiManager::class, fakeAiManager());
 
-    $out = app(ExtractEditionFromDocuments::class)->handle([['mime' => 'application/pdf', 'data' => 'x']]);
+    $out = app(ExtractEventFromDocuments::class)->handle([['mime' => 'application/pdf', 'data' => 'x']]);
 
-    expect($out['title'])->toBe('Colloque IA 2027');
+    expect($out['title'])->toBe('EventSeries IA 2027');
     expect($out['year'])->toBe(2027);
     expect($out['date_start'])->toBe('2027-11-10');
     expect($out['tracks'])->toBe(['Axe 1', 'Axe 2']);
@@ -118,17 +118,17 @@ it('normalise les métadonnées extraites', function () {
 
 /* --------------------------- Form (pré-remplissage) ----------------------- */
 
-it('pré-remplit le formulaire d’édition depuis l’assistant IA', function () {
+it('pré-remplit le formulaire d’événement depuis l’assistant IA', function () {
     $this->app->instance(AiManager::class, fakeAiManager());
     $staff = adminStaff();
 
-    $this->actingAs($staff, 'web')->post(route('admin.editions.ai-assist'), [
+    $this->actingAs($staff, 'web')->post(route('admin.evenements.ai-assist'), [
         'aiFiles' => [UploadedFile::fake()->create('appel.pdf', 50, 'application/pdf')],
     ])->assertSessionHasNoErrors()->assertSessionHas('ai_extracted');
 
     // Les valeurs extraites sont flashées puis pré-remplies au rechargement du formulaire.
     $d = session('ai_extracted');
-    expect($d['title'])->toBe('Colloque IA 2027');
+    expect($d['title'])->toBe('EventSeries IA 2027');
     expect($d['year'])->toBe(2027);
     expect($d['location'])->toBe('Kara, Togo');
     expect($d['tracks'])->toBe("Axe 1\nAxe 2");

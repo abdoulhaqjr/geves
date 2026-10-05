@@ -16,14 +16,14 @@
 @php($ongletsFondus = ['payment' => 'integrations', 'meetings' => 'integrations', 'translations' => 'appearance'])
 @php($ongletActif = (string) session('edition_tab', request('tab', 'general')))
 @php($ongletActif = $ongletsFondus[$ongletActif] ?? $ongletActif)
-<x-layouts.admin :title="$edition ? 'Modifier l’édition' : 'Nouvelle édition'" subtitle="Paramètres, contenu, tarifs, apparence & documents">
+<x-layouts.admin :title="$event ? 'Modifier l’événement' : 'Nouvel événement'" subtitle="Paramètres, contenu, tarifs, apparence & documents">
     <div class="admin-page admin-edition-detail"
          x-data="editionForm({
             tab: @js($ongletActif),
-            aiUrl: '{{ route('admin.editions.ai-assist-json') }}',
+            aiUrl: '{{ route('admin.evenements.ai-assist-json') }}',
             csrf: @js(csrf_token()),
             f: {
-                title: @js($v('title')), edition_label: @js($v('edition_label')), subtitle: @js($v('subtitle')),
+                title: @js($v('title')), event_label: @js($v('event_label')), subtitle: @js($v('subtitle')),
                 theme: @js($v('theme')), year: @js($v('year')), date_start: @js($v('date_start')), date_end: @js($v('date_end')),
                 submission_deadline: @js($v('submission_deadline')), location: @js($v('location')), slug: @js($v('slug')),
                 status: @js($v('status')), intro: @js($v('intro')), short_name: @js($v('short_name')), short_desc: @js($v('short_desc')),
@@ -37,28 +37,28 @@
         <header class="ukc-admin-head" style="background:transparent;border:none;padding:0;margin-bottom:16px;flex-wrap:nowrap;align-items:flex-start;">
             <div style="flex:1;min-width:0;">
                 <div style="font-size:12px;margin-bottom:4px;color:var(--ukc-light);">
-                    <a href="{{ route('admin.editions.index') }}" style="color:var(--ukc-blue);font-weight:600;">Éditions</a>
-                    <span> / </span><span style="color:var(--ukc-muted);">{{ $edition ? 'Modifier' : 'Nouvelle' }}</span>
+                    <a href="{{ route('admin.evenements.index') }}" style="color:var(--ukc-blue);font-weight:600;">Événements</a>
+                    <span> / </span><span style="color:var(--ukc-muted);">{{ $event ? 'Modifier' : 'Nouvelle' }}</span>
                     <span> · </span><code x-text="f.year || '-'"></code>
                 </div>
-                <h1 style="font-size:1.2rem;font-weight:800;" x-text="f.title || '{{ $edition ? 'Édition' : 'Nouvelle édition' }}'"></h1>
+                <h1 style="font-size:1.2rem;font-weight:800;" x-text="f.title || '{{ $event ? 'Événement' : 'Nouvel événement' }}'"></h1>
                 <div class="sub" style="font-size:13px;color:var(--ukc-muted);margin-top:4px;">
                     <span class="ukc-pill" :class="statusLive() ? 'ukc-pill--live' : 'ukc-pill--muted'" x-text="statusLabel()"></span>
                     &nbsp; Paramétrage complet · assisté IA
                 </div>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0;" x-data="{}">
-                <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.editions.index') }}">← Liste</a>
-                @if ($edition)
-                    {{-- Importer la configuration dans cette édition (fichier JSON) --}}
-                    <form method="POST" action="{{ route('admin.editions.import', $edition) }}" enctype="multipart/form-data" x-ref="importForm" style="display:none;">
+                <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.evenements.index') }}">← Liste</a>
+                @if ($event)
+                    {{-- Importer la configuration dans cet événement (fichier JSON) --}}
+                    <form method="POST" action="{{ route('admin.evenements.import', $event) }}" enctype="multipart/form-data" x-ref="importForm" style="display:none;">
                         @csrf
                         <input type="file" name="file" accept=".json,application/json" x-ref="importFile" @change="$refs.importForm.submit()">
                     </form>
-                    <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="$refs.importFile.click()" title="Importer une configuration (JSON) dans cette édition">
+                    <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="$refs.importFile.click()" title="Importer une configuration (JSON) dans cet événement">
                         <x-ukc.icon name="upload" :size="15" /> Importer
                     </button>
-                    <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.editions.export', $edition) }}" title="Exporter cette édition (JSON)">
+                    <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.evenements.export', $event) }}" title="Exporter cet événement (JSON)">
                         <x-ukc.icon name="download" :size="15" /> Exporter
                     </a>
                 @endif
@@ -82,7 +82,7 @@
                         'content' => 'Appel & contenu',
                         'submissions' => 'Soumissions & tarifs',
                         'committees' => 'Comités',
-                        {{-- ⚠️ « Intégrations » réunit ce qui branche l'édition sur un
+                        {{-- ⚠️ « Intégrations » réunit ce qui branche l'événement sur un
                              service EXTÉRIEUR - passerelle de paiement, serveur de visio.
                              Deux onglets pour deux formulaires de même nature, chacun avec
                              sa propre sauvegarde, faisaient chercher au même endroit deux
@@ -95,9 +95,9 @@
                         'appearance' => 'Apparence',
                         'options' => 'Options',
                     ] as $key => $label)
-                        {{-- Les onglets d'une édition existante n'ont pas de sens à la création. --}}
-                        @if ($edition || ! in_array($key, ['integrations', 'team', 'options'], true))
-                            <a href="{{ $edition ? route('admin.editions.edit', ['edition' => $edition, 'tab' => $key]) : route('admin.editions.create', ['tab' => $key]) }}"
+                        {{-- Les onglets d'un événement existant n'ont pas de sens à la création. --}}
+                        @if ($event || ! in_array($key, ['integrations', 'team', 'options'], true))
+                            <a href="{{ $event ? route('admin.evenements.edit', ['event' => $event, 'tab' => $key]) : route('admin.evenements.create', ['tab' => $key]) }}"
                                :class="{ active: tab==='{{ $key }}' }"
                                @click.prevent="goTab('{{ $key }}')">{{ $label }}</a>
                         @endif
@@ -106,30 +106,40 @@
 
                 {{-- multipart : l'onglet Apparence téléverse le bandeau et la bannière. --}}
                 <form id="editionForm" method="POST" enctype="multipart/form-data"
-                      action="{{ $edition ? route('admin.editions.update', $edition) : route('admin.editions.store') }}">
+                      action="{{ $event ? route('admin.evenements.update', $event) : route('admin.evenements.store') }}">
                     @csrf
-                    @if ($edition) @method('PUT') @endif
+                    @if ($event) @method('PUT') @endif
                     <input type="hidden" name="active_tab" :value="tab">
 
                     {{-- ===== GÉNÉRAL ===== --}}
                     <div class="ukc-panel" :class="{ active: tab==='general' }">
                         <div class="ukc-card">
-                            <h2>Colloque de rattachement</h2>
+                            <h2>Série de rattachement</h2>
                             <div class="ukc-form-grid">
                                 <div class="ukc-form-row">
-                                    <label for="colloque_id">Colloque existant</label>
-                                    <select id="colloque_id" name="colloque_id">
+                                    <label for="event_series_id">Série existante</label>
+                                    <select id="event_series_id" name="event_series_id">
                                         <option value="">- Choisir -</option>
-                                        @foreach ($colloques as $c)
-                                            <option value="{{ $c->id }}" @selected((int) $v('colloque_id') === $c->id)>{{ $c->name }}</option>
+                                        @foreach ($seriesList as $c)
+                                            <option value="{{ $c->id }}" @selected((int) $v('event_series_id') === $c->id)>{{ $c->name }}</option>
                                         @endforeach
                                     </select>
-                                    @error('colloque_id') <span class="error">{{ $message }}</span> @enderror
+                                    @error('event_series_id') <span class="error">{{ $message }}</span> @enderror
                                 </div>
                                 <div class="ukc-form-row">
-                                    <label for="new_colloque">…ou nouveau colloque</label>
+                                    <label for="new_colloque">…ou nouvelle série</label>
                                     <input type="text" id="new_colloque" name="new_colloque" value="{{ old('new_colloque') }}" placeholder="Nom de la nouvelle série">
                                     <p class="ukc-hint">Renseignez ceci uniquement pour créer une nouvelle série.</p>
+                                </div>
+                                <div class="ukc-form-row">
+                                    <label for="series_type">Type d’événement</label>
+                                    <select id="series_type" name="series_type">
+                                        @foreach (\App\Enums\EventType::options() as $value => $label)
+                                            <option value="{{ $value }}" @selected(old('series_type', $event?->series?->type?->value ?? 'colloque') === $value)>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                    <p class="ukc-hint">Porté par la série : colloque, séminaire, journées scientifiques… Toutes ses éditions en héritent.</p>
+                                    @error('series_type') <span class="error">{{ $message }}</span> @enderror
                                 </div>
                             </div>
                         </div>
@@ -138,7 +148,7 @@
                             <h2>Informations générales</h2>
                             <div class="ukc-form-grid">
                                 <div class="ukc-form-row">
-                                    <label for="title">Nom de l’édition <span class="req">*</span></label>
+                                    <label for="title">Nom de l’événement <span class="req">*</span></label>
                                     <input type="text" id="title" name="title" x-model="f.title" placeholder="Colloque international de l’Université de Kara - 2026">
                                     @error('title') <span class="error">{{ $message }}</span> @enderror
                                 </div>
@@ -150,26 +160,26 @@
                             </div>
                             <div class="ukc-form-grid">
                                 <div class="ukc-form-row">
-                                    <label for="edition_label">Libellé d’édition</label>
-                                    <input type="text" id="edition_label" name="edition_label" x-model="f.edition_label" placeholder="3e édition">
+                                    <label for="event_label">Libellé de l’événement</label>
+                                    <input type="text" id="event_label" name="event_label" x-model="f.event_label" placeholder="3e événement">
                                 </div>
                                 {{-- ⚠️ SANS L'ANNÉE : la barre collante de la page publique
                                      l'ajoute elle-même (« nom court · année »). L'exemple
                                      proposé ici était « CSIUK 2026 », ce qui poussait à la
-                                     saisir - une édition s'est retrouvée annoncée
+                                     saisir - un événement s'est retrouvée annoncée
                                      « Colloque Avenir durable 2025 · 2026 », deux années
                                      contradictoires sur la même ligne. L'aperçu ci-dessous
                                      montre la ligne telle qu'elle sortira. --}}
                                 <div class="ukc-form-row">
                                     <label for="short_name">Nom court <span class="ukc-hint" style="display:inline;">(en-têtes, badges)</span></label>
                                     <input type="text" id="short_name" name="short_name" x-model="f.short_name" placeholder="Colloque Avenir durable">
-                                    <span class="ukc-hint" x-show="f.short_name" x-cloak>
+                                    <div class="ukc-hint" x-show="f.short_name" x-cloak>
                                         Sur la page publique : <strong x-text="f.short_name + (f.year ? ' · ' + f.year : '')"></strong>
-                                    </span>
-                                    <span class="ukc-hint" style="color:#b45309;" x-cloak
-                                          x-show="f.short_name && /(^|\s)(19|20)\d{2}\s*$/.test(f.short_name)">
+                                    </div>
+                                    <div class="ukc-hint" style="color:#b45309;" x-cloak
+                                         x-show="f.short_name && /(^|\s)(19|20)\d{2}\s*$/.test(f.short_name)">
                                         Le nom court finit déjà par une année : la barre du colloque en affichera deux.
-                                    </span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="ukc-form-row">
@@ -374,7 +384,7 @@
 
                         <div class="ukc-card">
                             <h2>Préfixe des références</h2>
-                            <div class="desc">Identifiants des soumissions (ex. UKC-S-0142).</div>
+                            <div class="desc">Identifiants des soumissions (ex. R-0142).</div>
                             <div class="ukc-form-row">
                                 <label for="ref_prefix_mode">Mode</label>
                                 <select id="ref_prefix_mode" name="ref_prefix_mode" x-model="refMode">
@@ -384,7 +394,7 @@
                             </div>
                             <div class="ukc-form-row" x-show="refMode==='global'">
                                 <label for="ref_prefix">Préfixe global</label>
-                                <input type="text" id="ref_prefix" name="ref_prefix" value="{{ $v('ref_prefix') }}" placeholder="UKC-S-">
+                                <input type="text" id="ref_prefix" name="ref_prefix" value="{{ $v('ref_prefix') }}" placeholder="R-">
                             </div>
                             <div x-show="refMode==='axis'" style="display:none;">
                                 <template x-for="(a, i) in axes" :key="i">
@@ -398,7 +408,7 @@
 
                         <div class="ukc-card">
                             <h2>Frais d’inscription</h2>
-                            <div class="desc">Catégories tarifaires liées à cette édition (FCFA).</div>
+                            <div class="desc">Catégories tarifaires liées à cet événement (FCFA).</div>
                             <div class="tarif-row" style="font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--ukc-light);">
                                 <span>Catégorie</span><span>Montant</span><span></span>
                             </div>
@@ -518,7 +528,7 @@
                                          téléverser un fichier, ou coller une URL. C'est l'aperçu qui
                                          dit si l'adresse pointe bien sur une image - un logo absent
                                          du bandeau public est sinon découvert après publication.
-                                         Le fichier l'emporte à l'enregistrement (EditionArtwork).
+                                         Le fichier l'emporte à l'enregistrement (EventArtwork).
                                          ⚠️ Le cadre n'imite plus le rendu public (le nom à défaut de
                                          logo) : il est devenu le BOUTON de téléversement, et doit
                                          donc dire ce que le clic va faire.
@@ -636,7 +646,7 @@
                                     </select>
                                 </div>
                             </div>
-                            @php($maxUpload = round(\App\Support\EditionArtwork::maxUploadKb() / 1024, 1).' Mo')
+                            @php($maxUpload = round(\App\Support\EventArtwork::maxUploadKb() / 1024, 1).' Mo')
                             {{-- Les habillages du site public : image du bandeau,
                                  puis la bannière officielle juste sous le hero. Chacune se
                                  téléverse OU s'indique par URL (affiche hébergée ailleurs) ;
@@ -754,11 +764,11 @@
                         </div>
                     </div>
 
-                    {{-- ===== OPTIONS (mode édition) ===== --}}
-                    @if ($edition)
+                    {{-- ===== OPTIONS (mode événement) ===== --}}
+                    @if ($event)
                         <div class="ukc-panel" :class="{ active: tab==='options' }">
                             <div class="ukc-card">
-                                <h2>Options de l’édition</h2>
+                                <h2>Options de l’événement</h2>
                                 <label class="ukc-check"><input type="checkbox" name="opt_show_public" value="1" @checked($v('opt_show_public'))> Afficher sur le site public</label>
                                 <label class="ukc-check"><input type="checkbox" name="opt_hybrid" value="1" @checked($v('opt_hybrid'))> Sessions hybrides</label>
                                 <label class="ukc-check"><input type="checkbox" name="opt_livret" value="1" @checked($v('opt_livret'))> Livre des résumés activé</label>
@@ -768,16 +778,16 @@
 
                                 <h3>Liens rapides</h3>
                                 <div class="quick-links">
-                                    <a href="{{ route('admin.editions.form', $edition) }}" class="ql"><x-ukc.icon name="list" :size="18" /> Formulaire de soumission</a>
-                                    <a href="{{ route('admin.editions.documents', $edition) }}" class="ql"><x-ukc.icon name="folder" :size="18" /> Documents & ressources</a>
+                                    <a href="{{ route('admin.evenements.form', $event) }}" class="ql"><x-ukc.icon name="list" :size="18" /> Formulaire de soumission</a>
+                                    <a href="{{ route('admin.evenements.documents', $event) }}" class="ql"><x-ukc.icon name="folder" :size="18" /> Documents & ressources</a>
                                     <a href="{{ route('admin.submissions.index') }}" class="ql"><x-ukc.icon name="inbox" :size="18" /> Soumissions</a>
                                     <a href="{{ route('admin.participants.index') }}" class="ql"><x-ukc.icon name="users" :size="18" /> Participants</a>
                                     <a href="{{ route('admin.payments.index') }}" class="ql"><x-ukc.icon name="card" :size="18" /> Paiements</a>
                                     <a href="{{ route('admin.emails.index') }}" class="ql"><x-ukc.icon name="mail" :size="18" /> E-mails</a>
                                     <a href="{{ route('admin.reports.index') }}" class="ql"><x-ukc.icon name="chart" :size="18" /> Rapports</a>
-                                    <a href="{{ route('admin.documents.livret', $edition) }}" target="_blank" class="ql"><x-ukc.icon name="book" :size="18" /> Livre des résumés</a>
-                                    <a href="{{ route('admin.documents.badges', $edition) }}" target="_blank" class="ql"><x-ukc.icon name="card" :size="18" /> Badges</a>
-                                    <a href="{{ route('admin.program.slots') }}?edition_id={{ $edition->id }}" class="ql"><x-ukc.icon name="calendar" :size="18" /> Programme & créneaux</a>
+                                    <a href="{{ route('admin.documents.livret', $event) }}" target="_blank" class="ql"><x-ukc.icon name="book" :size="18" /> Livre des résumés</a>
+                                    <a href="{{ route('admin.documents.badges', $event) }}" target="_blank" class="ql"><x-ukc.icon name="card" :size="18" /> Badges</a>
+                                    <a href="{{ route('admin.program.slots') }}?event_id={{ $event->id }}" class="ql"><x-ukc.icon name="calendar" :size="18" /> Programme & créneaux</a>
                                 </div>
                             </div>
                         </div>
@@ -793,24 +803,24 @@
                     <div class="ukc-form-actions" style="margin-top:4px;border-top:none;padding-top:0;"
                          x-show="!['integrations','team'].includes(tab)">
                         <button type="submit" class="ukc-btn ukc-btn--blue">Enregistrer</button>
-                        <a href="{{ route('admin.editions.index') }}" class="ukc-btn ukc-btn--ghost">Annuler</a>
+                        <a href="{{ route('admin.evenements.index') }}" class="ukc-btn ukc-btn--ghost">Annuler</a>
                     </div>
                 </form>
 
                 {{-- ===== INTÉGRATIONS · PAIEMENT (sauvegarde dédiée) ===== --}}
-                @if ($edition)
-                    @php($pay = $edition->settings['payment'] ?? [])
+                @if ($event)
+                    @php($pay = $event->settings['payment'] ?? [])
                     <div class="ukc-panel" :class="{ active: tab==='integrations' }">
                         <div class="ukc-card">
-                            <h2>Passerelle de paiement de cette édition</h2>
+                            <h2>Passerelle de paiement de cet événement</h2>
                             <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 12px;">
-                                Renseignez ici les identifiants propres à cette édition. <strong>Tout champ laissé vide utilise la configuration
-                                par défaut de la plateforme</strong> (réglages globaux). Utile pour encaisser sur un compte marchand dédié à l’édition.
+                                Renseignez ici les identifiants propres à cet événement. <strong>Tout champ laissé vide utilise la configuration
+                                par défaut de la plateforme</strong> (réglages globaux). Utile pour encaisser sur un compte marchand dédié à l’événement.
                             </p>
-                            <form method="POST" action="{{ route('admin.editions.payment', $edition) }}" class="ukc-form-grid">
+                            <form method="POST" action="{{ route('admin.evenements.payment', $event) }}" class="ukc-form-grid">
                                 @csrf
                                 <div class="ukc-field full">
-                                    <label for="pay-gateway">Passerelle par défaut de l’édition</label>
+                                    <label for="pay-gateway">Passerelle par défaut de l’événement</label>
                                     <select id="pay-gateway" name="gateway">
                                         <option value="">- Utiliser la passerelle par défaut de la plateforme -</option>
                                         <option value="manual" @selected(($pay['gateway'] ?? '') === 'manual')>Paiement manuel (hors ligne)</option>
@@ -837,7 +847,7 @@
                                     <input type="text" id="fp-wh" name="fedapay[webhook_secret]" value="{{ $pay['fedapay']['webhook_secret'] ?? '' }}" autocomplete="off" placeholder="wh_… (laisser vide = défaut)">
                                     <p class="ukc-hint">Copié depuis le tableau de bord FedaPay (section Webhooks). <strong>Indispensable</strong> : sans lui, une notification de paiement ne peut pas être authentifiée et le règlement resterait « en attente ».</p>
                                 </div>
-                                <x-ukc.webhook-url :url="route('payment.webhook.edition', ['gateway' => 'fedapay', 'edition' => $edition])"
+                                <x-ukc.webhook-url :url="route('payment.webhook.edition', ['gateway' => 'fedapay', 'event' => $event])"
                                                    label="URL du webhook FedaPay à déclarer" />
 
                                 <div class="ukc-field full"><h3 style="font-size:14px;font-weight:800;margin:6px 0 0;">CashPay (SEMOA)</h3></div>
@@ -865,7 +875,7 @@
                                     <label for="cp-api">Clé API (callback)</label>
                                     <input type="text" id="cp-api" name="cashpay[api_key]" value="{{ $pay['cashpay']['api_key'] ?? '' }}" autocomplete="off">
                                 </div>
-                                <x-ukc.webhook-url :url="route('payment.webhook.edition', ['gateway' => 'cashpay', 'edition' => $edition])"
+                                <x-ukc.webhook-url :url="route('payment.webhook.edition', ['gateway' => 'cashpay', 'event' => $event])"
                                                    label="URL du callback CashPay à déclarer" />
 
                                 <div class="ukc-form-actions full">
@@ -881,19 +891,19 @@
                      formulaire et leur propre bouton, parce qu'ils enregistrent des
                      réglages distincts. Les fondre en un seul ferait d'une correction
                      de clé d'API une réécriture des deux configurations. --}}
-                @if ($edition)
-                    @php($vis = $edition->settings['meetings'] ?? [])
+                @if ($event)
+                    @php($vis = $event->settings['meetings'] ?? [])
                     <div class="ukc-panel" :class="{ active: tab==='integrations' }">
                         <div class="ukc-card">
-                            <h2>Visioconférence de cette édition</h2>
+                            <h2>Visioconférence de cet événement</h2>
                             <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 12px;">
                                 Comme pour le paiement : <strong>tout champ laissé vide utilise la configuration par défaut de
                                 la plateforme</strong>. Utile pour un colloque qui dispose de son propre serveur de visio.
                             </p>
-                            <form method="POST" action="{{ route('admin.editions.meetings', $edition) }}" class="ukc-form-grid">
+                            <form method="POST" action="{{ route('admin.evenements.meetings', $event) }}" class="ukc-form-grid">
                                 @csrf
                                 <div class="ukc-field full">
-                                    <label for="vis-provider">Fournisseur par défaut de l’édition</label>
+                                    <label for="vis-provider">Fournisseur par défaut de l’événement</label>
                                     <select id="vis-provider" name="provider">
                                         <option value="">- Utiliser le fournisseur par défaut de la plateforme -</option>
                                         <option value="livekit" @selected(($vis['provider'] ?? '') === 'livekit')>LiveKit (salle intégrée à GEVES)</option>
@@ -934,7 +944,7 @@
                                 <div class="ukc-field">
                                     <label for="lk-secret">Secret d’API</label>
                                     <input type="text" id="lk-secret" name="livekit[api_secret]" value="{{ $vis['livekit']['api_secret'] ?? '' }}" autocomplete="off">
-                                    <p class="ukc-hint">Les trois vont ensemble : s’il en manque un, l’édition retombe sur le serveur de la plateforme.</p>
+                                    <p class="ukc-hint">Les trois vont ensemble : s’il en manque un, l’événement retombe sur le serveur de la plateforme.</p>
                                 </div>
 
                                 <div class="ukc-field full"><h3 style="font-size:14px;font-weight:800;margin:6px 0 0;">Jitsi</h3></div>
@@ -964,8 +974,8 @@
                     </div>
                 @endif
 
-                @if ($edition)
-                    {{-- ===== ÉQUIPE (staff affecté à CETTE édition) ===== --}}
+                @if ($event)
+                    {{-- ===== ÉQUIPE (staff affecté à CETTE événement) ===== --}}
                     <div class="ukc-panel" :class="{ active: tab==='team' }">
                         <div class="ukc-card">
                             <h2>Équipe du colloque</h2>
@@ -975,7 +985,7 @@
                                 Chaque colloque a sa propre équipe. La relecture scientifique se gère dans l’onglet <strong>Relecteurs</strong>.
                             </p>
 
-                            <form method="POST" action="{{ route('admin.editions.team.attach', $edition) }}" class="team-add">
+                            <form method="POST" action="{{ route('admin.evenements.team.attach', $event) }}" class="team-add">
                                 @csrf
                                 <select name="user_id" required data-tom data-placeholder="Rechercher un membre du staff…">
                                     <option value="">- Choisir un membre du staff -</option>
@@ -994,7 +1004,7 @@
 
                             @if ($team->isEmpty())
                                 <div class="ukc-empty" style="padding:24px 0;">
-                                    <p style="margin:0;">Aucun membre affecté à cette édition pour l’instant.</p>
+                                    <p style="margin:0;">Aucun membre affecté à cet événement pour l’instant.</p>
                                 </div>
                             @else
                                 <div class="ukc-table-wrap" style="margin-top:16px;">
@@ -1009,8 +1019,8 @@
                                                         @if (! empty($m['caps']))<div style="font-size:11.5px;color:var(--ukc-muted);margin-top:4px;">{{ $m['caps'] }}</div>@endif
                                                     </td>
                                                     <td style="text-align:right;">
-                                                        <form method="POST" action="{{ route('admin.editions.team.detach', $edition) }}"
-                                                              onsubmit="return confirm('Retirer {{ $m['name'] }} ({{ $m['role_label'] }}) de cette édition ?')" style="display:inline;">
+                                                        <form method="POST" action="{{ route('admin.evenements.team.detach', $event) }}"
+                                                              onsubmit="return confirm('Retirer {{ $m['name'] }} ({{ $m['role_label'] }}) de cet événement ?')" style="display:inline;">
                                                             @csrf @method('DELETE')
                                                             <input type="hidden" name="user_id" value="{{ $m['user_id'] }}">
                                                             <input type="hidden" name="role" value="{{ $m['role'] }}">
@@ -1034,7 +1044,7 @@
                          s'allument sur le même onglet. --}}
                     <div class="ukc-panel" :class="{ active: tab==='appearance' }">
                         @php($fallback = config('app.fallback_locale'))
-                        @php($fieldLabels = ['title' => 'Titre', 'theme' => 'Thème', 'edition_label' => 'Libellé de l’édition', 'location' => 'Lieu'])
+                        @php($fieldLabels = ['title' => 'Titre', 'theme' => 'Thème', 'event_label' => 'Libellé de l’événement', 'location' => 'Lieu'])
                         <div class="ukc-card">
                             <h2>Traductions du contenu</h2>
                             <p style="color:var(--ukc-muted);font-size:14px;margin:-4px 0 10px;">
@@ -1047,7 +1057,7 @@
                             </p>
                             @foreach (\App\Support\Locales::available() as $code => $label)
                                 @continue($code === $fallback)
-                                <form method="POST" action="{{ route('admin.editions.translations', $edition) }}"
+                                <form method="POST" action="{{ route('admin.evenements.translations', $event) }}"
                                       style="margin-bottom:18px;padding:14px;border:1px solid var(--ukc-border);border-radius:12px;">
                                     @csrf
                                     <input type="hidden" name="locale" value="{{ $code }}">
@@ -1055,10 +1065,10 @@
                                     @foreach ($fieldLabels as $field => $flabel)
                                         <div class="ukc-form-row">
                                             <label>{{ $flabel }}
-                                                <span class="ukc-hint" style="display:inline;">- FR : {{ \Illuminate\Support\Str::limit((string) ($edition->{$field} ?? '-'), 60) }}</span>
+                                                <span class="ukc-hint" style="display:inline;">- FR : {{ \Illuminate\Support\Str::limit((string) ($event->{$field} ?? '-'), 60) }}</span>
                                             </label>
                                             <input type="text" name="tr[{{ $field }}]" maxlength="500"
-                                                   value="{{ $edition->translations($code)[$field] ?? '' }}"
+                                                   value="{{ $event->translations($code)[$field] ?? '' }}"
                                                    placeholder="{{ $flabel }} en {{ $label }}">
                                         </div>
                                     @endforeach
@@ -1078,7 +1088,7 @@
                 @if ($aiAvailable)
                     <div class="ai-panel">
                         <h2><span>✨</span> Paramétrage assisté (IA)</h2>
-                        <div class="desc">Remplir automatiquement les champs à partir de documents (appel, affiche, programme…) ou en décrivant l’édition.</div>
+                        <div class="desc">Remplir automatiquement les champs à partir de documents (appel, affiche, programme…) ou en décrivant l’événement.</div>
                         <div class="ai-drop" :class="{ 'is-over': aiOver }"
                              @click="$refs.aiFile.click()"
                              @dragover.prevent="aiOver = true" @dragleave.prevent="aiOver = false"
@@ -1105,7 +1115,7 @@
                         </div>
                         {{-- ⚠️ Le piège du panneau : « Appliquer » ne fait que remplir les
                              champs. Sans ce rappel, l'admin quittait la fiche en croyant
-                             l'édition enregistrée. --}}
+                             l'événement enregistrée. --}}
                         <div class="ai-unsaved" x-show="aiApplied" x-cloak>
                             Champs remplis. <strong>Rien n’est encore enregistré</strong> : relisez les onglets, puis cliquez sur <em>Enregistrer</em>.
                         </div>
@@ -1123,7 +1133,7 @@
                     <h2 style="font-size:14px;">Résumé</h2>
                     <div class="side-summary">
                         <div><span class="k">Statut</span><br><span class="ukc-pill" :class="statusLive() ? 'ukc-pill--live' : 'ukc-pill--muted'" x-text="statusLabel()"></span></div>
-                        <div><span class="k">Édition</span><br><strong x-text="f.title || '-'"></strong></div>
+                        <div><span class="k">Événement</span><br><strong x-text="f.title || '-'"></strong></div>
                         <div><span class="k">Thème</span><br><span x-text="f.theme || '-'"></span></div>
                         <div><span class="k">Dates</span><br><strong x-text="datesLabel()"></strong></div>
                         <div><span class="k">Lieu</span><br><span x-text="(f.location || '-').split('\n')[0]"></span></div>
@@ -1172,9 +1182,16 @@
                 ...window.__editionArrays(cfg.arrays),
                 statusLabel() { return { draft:'Brouillon', open:'Soumissions ouvertes', closed:'Clôturée', archived:'Archivée' }[this.f.status] || '-'; },
                 statusLive() { return this.f.status === 'open'; },
+                fmtDate(d) {
+                    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || '');
+                    if (!m) return d || '';
+                    const mois = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+                    return (+m[3]) + ' ' + mois[(+m[2]) - 1] + ' ' + m[1];
+                },
                 datesLabel() {
-                    if (this.f.date_start && this.f.date_end) return this.f.date_start + ' → ' + this.f.date_end;
-                    return this.f.date_start || this.f.date_end || '-';
+                    const a = this.fmtDate(this.f.date_start), b = this.fmtDate(this.f.date_end);
+                    if (a && b) return a + ' → ' + b;
+                    return a || b || '-';
                 },
                 statsLabel() {
                     const s = (this.stats || []).filter(x => x.label || x.value);
@@ -1238,7 +1255,7 @@
                 },
                 applyAi() {
                     const s = this.aiSuggestions || {};
-                    ['title','edition_label','subtitle','theme','year','date_start','date_end','submission_deadline','location','intro'].forEach(k => { if (s[k] !== undefined && s[k] !== '') this.f[k] = s[k]; });
+                    ['title','event_label','subtitle','theme','year','date_start','date_end','submission_deadline','location','intro'].forEach(k => { if (s[k] !== undefined && s[k] !== '') this.f[k] = s[k]; });
                     if (Array.isArray(s.tracks)) this.axes = s.tracks.map(t => ({ label: t }));
                     if (Array.isArray(s.fees)) this.fees = s.fees.map(x => ({ label:x.label||'', amount:x.amount||'', grades:Array.isArray(x.grades)?x.grades:[], default:!!x.default }));
                     if (Array.isArray(s.committees)) {

@@ -1,34 +1,34 @@
 <?php
 
-use App\Models\Edition;
-use App\Support\EditionReport;
+use App\Models\Event;
+use App\Support\EventReport;
 use App\Support\XlsxWriter;
 use Illuminate\Support\Str;
 
 // adminStaff() -> AdminSubmissionWorkflowTest ; openEdition() -> AccountSubmissionTest
 
-function reportEdition(): Edition
+function reportEdition(): Event
 {
-    $edition = openEdition(); // titre défini par le helper
+    $event = openEdition(); // titre défini par le helper
 
-    $p1 = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author', 'title' => 'Docteur']);
-    $p2 = $edition->participants()->create(['first_name' => 'Ben', 'last_name' => 'Adjo', 'email' => 'ben@example.tg', 'role' => 'attendee']);
+    $p1 = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author', 'title' => 'Docteur']);
+    $p2 = $event->participants()->create(['first_name' => 'Ben', 'last_name' => 'Adjo', 'email' => 'ben@example.tg', 'role' => 'attendee']);
 
-    $edition->payments()->create(['participant_id' => $p1->id, 'amount' => 15000, 'currency' => 'XOF', 'status' => 'paid', 'gateway' => 'manual', 'method' => 'cash', 'receipt_no' => 'REC-2026-001', 'paid_at' => now()]);
-    $edition->payments()->create(['participant_id' => $p2->id, 'amount' => 10000, 'currency' => 'XOF', 'status' => 'pending', 'gateway' => 'manual', 'method' => 'transfer']);
+    $event->payments()->create(['participant_id' => $p1->id, 'amount' => 15000, 'currency' => 'XOF', 'status' => 'paid', 'gateway' => 'manual', 'method' => 'cash', 'receipt_no' => 'REC-2026-001', 'paid_at' => now()]);
+    $event->payments()->create(['participant_id' => $p2->id, 'amount' => 10000, 'currency' => 'XOF', 'status' => 'pending', 'gateway' => 'manual', 'method' => 'transfer']);
 
-    $s = $edition->submissions()->create(['participant_id' => $p1->id, 'title' => 'Sur les colloques', 'status' => 'accepted', 'revision_of' => 0, 'ref_code' => 'AA-001', 'access_token' => Str::random(64), 'track' => 'Axe 1', 'type' => 'oral', 'authors' => [['name' => 'Awa Kodjo', 'email' => 'awa@example.tg']]]);
+    $s = $event->submissions()->create(['participant_id' => $p1->id, 'title' => 'Sur les colloques', 'status' => 'accepted', 'revision_of' => 0, 'ref_code' => 'AA-001', 'access_token' => Str::random(64), 'track' => 'Axe 1', 'type' => 'oral', 'authors' => [['name' => 'Awa Kodjo', 'email' => 'awa@example.tg']]]);
     $s->reviews()->create(['recommendation' => 'accept', 'score' => 16, 'status' => 'submitted']);
     $s->reviews()->create(['recommendation' => 'accept', 'score' => 18, 'status' => 'submitted']);
 
-    $edition->submissions()->create(['participant_id' => $p2->id, 'title' => 'Refusée', 'status' => 'rejected', 'revision_of' => 0, 'ref_code' => 'AA-002', 'access_token' => Str::random(64), 'track' => 'Axe 2', 'type' => 'poster']);
+    $event->submissions()->create(['participant_id' => $p2->id, 'title' => 'Refusée', 'status' => 'rejected', 'revision_of' => 0, 'ref_code' => 'AA-002', 'access_token' => Str::random(64), 'track' => 'Axe 2', 'type' => 'poster']);
 
-    return $edition;
+    return $event;
 }
 
-it('calcule la synthèse d’une édition', function () {
-    $edition = reportEdition();
-    $summary = (new EditionReport($edition))->summary();
+it('calcule la synthèse d’un événement', function () {
+    $event = reportEdition();
+    $summary = (new EventReport($event))->summary();
 
     expect($summary['participants'])->toBe(2);
     expect($summary['submissions'])->toBe(2);
@@ -40,8 +40,8 @@ it('calcule la synthèse d’une édition', function () {
 });
 
 it('produit les lignes avec note moyenne des relectures', function () {
-    $edition = reportEdition();
-    $report = new EditionReport($edition);
+    $event = reportEdition();
+    $report = new EventReport($event);
 
     $rows = collect($report->submissionRows());
     $accepted = $rows->firstWhere(0, 'AA-001');
@@ -98,9 +98,9 @@ it('échappe le XML et supporte les colonnes au-delà de Z', function () {
 
 it('exporte le classeur Excel depuis le back-office', function () {
     $staff = adminStaff();
-    $edition = reportEdition();
+    $event = reportEdition();
 
-    $response = $this->actingAs($staff, 'web')->get(route('admin.reports.xlsx', $edition));
+    $response = $this->actingAs($staff, 'web')->get(route('admin.reports.xlsx', $event));
 
     $response->assertOk();
     $response->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -109,16 +109,16 @@ it('exporte le classeur Excel depuis le back-office', function () {
 
 it('affiche le rapport PDF imprimable', function () {
     $staff = adminStaff();
-    $edition = reportEdition();
+    $event = reportEdition();
 
-    $this->actingAs($staff, 'web')->get(route('admin.reports.pdf', $edition))
+    $this->actingAs($staff, 'web')->get(route('admin.reports.pdf', $event))
         ->assertOk()
-        ->assertSee('Rapport d’édition', false)
+        ->assertSee('Rapport d’événement', false)
         ->assertSee('AA-001')
         ->assertSee('Awa');
 });
 
 it('refuse l’accès aux invités', function () {
-    $edition = reportEdition();
-    $this->get(route('admin.reports.xlsx', $edition))->assertRedirect(route('account.login'));
+    $event = reportEdition();
+    $this->get(route('admin.reports.xlsx', $event))->assertRedirect(route('account.login'));
 });

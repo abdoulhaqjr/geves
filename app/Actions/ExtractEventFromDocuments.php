@@ -6,12 +6,12 @@ use App\AI\AiManager;
 use Illuminate\Support\Carbon;
 
 /**
- * Paramétrage assisté par IA : extrait les métadonnées d'une édition depuis des
+ * Paramétrage assisté par IA : extrait les métadonnées d'un événement depuis des
  * documents (appel à communications, affiche…) et les normalise pour
  * pré-remplir le formulaire. N'invente rien ; seules les valeurs trouvées sont
  * renvoyées.
  */
-class ExtractEditionFromDocuments
+class ExtractEventFromDocuments
 {
     public function __construct(protected AiManager $manager) {}
 
@@ -43,8 +43,8 @@ class ExtractEditionFromDocuments
 
         Schéma attendu :
         {
-          "title": string,               // titre de l'édition
-          "edition_label": string,       // ex. "3e édition"
+          "title": string,               // titre de l'événement
+          "event_label": string,       // ex. "3e événement"
           "subtitle": string,
           "theme": string,
           "year": number,
@@ -67,7 +67,7 @@ class ExtractEditionFromDocuments
     {
         $out = [];
 
-        foreach (['title', 'edition_label', 'subtitle', 'theme', 'location', 'intro'] as $k) {
+        foreach (['title', 'event_label', 'subtitle', 'theme', 'location', 'intro'] as $k) {
             if (filled($raw[$k] ?? null)) {
                 $out[$k] = (string) $raw[$k];
             }

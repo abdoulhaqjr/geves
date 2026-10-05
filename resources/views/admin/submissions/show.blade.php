@@ -38,7 +38,7 @@
                         <span><strong>Type :</strong> {{ $s->type === 'poster' ? 'Poster' : 'Orale' }}</span>
                         @if ($s->track)<span><strong>Axe :</strong> {{ $s->track }}</span>@endif
                         <span><strong>Déposée :</strong> {{ $s->created_at?->format('d/m/Y') }}</span>
-                        <span><strong>Édition :</strong> {{ $s->edition?->title }}</span>
+                        <span><strong>Événement :</strong> {{ $s->event?->title }}</span>
                     </div>
 
                     <h3>Auteurs</h3>
@@ -122,7 +122,7 @@
                     <div class="ukc-card" x-data="simCompare(@js($selfPlain))">
                         <h2><span><x-ukc.icon name="shield" :size="18" /> Similarité interne</span></h2>
                         <p style="color:var(--ukc-muted);font-size:13px;margin:-4px 0 12px;">
-                            Comparé aux autres résumés de la plateforme (éditions accessibles). Un score élevé peut signaler un doublon,
+                            Comparé aux autres résumés de la plateforme (événements accessibles). Un score élevé peut signaler un doublon,
                             un résumé recyclé ou un auto-plagiat - <strong>cliquez pour comparer côte à côte</strong>.
                         </p>
                         <div style="display:flex;flex-direction:column;gap:8px;">
@@ -338,7 +338,7 @@
                     @php($coiIgnoresInstitution = \App\Support\ConflictOfInterest::ignoresSameInstitution($s))
                     <p class="hint" style="margin-top:10px;font-size:12px;color:var(--ukc-light);">
                         Règles : {{ $coiIgnoresInstitution ? '' : 'même institution · ' }}co-auteur &lt; 5 ans · homonymie (lien familial possible) → vérification manuelle.
-                        {{ $coiIgnoresInstitution ? 'La règle « même institution » est ignorée pour cette édition (onglet Options).' : '' }}
+                        {{ $coiIgnoresInstitution ? 'La règle « même institution » est ignorée pour cet événement (onglet Options).' : '' }}
                     </p>
                 </div>
 
@@ -487,7 +487,7 @@
                     <h2>Informations</h2>
                     <div class="info-list">
                         <div><span class="k">Référence</span><br><code>{{ $s->ref_code }}</code></div>
-                        <div><span class="k">Édition</span><br>{{ $s->edition?->title ?? '-' }}</div>
+                        <div><span class="k">Événement</span><br>{{ $s->event?->title ?? '-' }}</div>
                         <div>
                             <span class="k">Statut paiement auteur</span><br>
                             @if ($authorPaid)

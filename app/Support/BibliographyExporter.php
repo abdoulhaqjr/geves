@@ -2,12 +2,12 @@
 
 namespace App\Support;
 
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Submission;
 use Illuminate\Support\Str;
 
 /**
- * Export bibliographique des communications d'une édition aux formats citables
+ * Export bibliographique des communications d'un événement aux formats citables
  * BibTeX (.bib) et RIS (.ris) - gratuit, sans dépendance. Chaque communication
  * devient une entrée « conference paper », prête à importer dans Zotero,
  * Mendeley, EndNote, un gestionnaire LaTeX, etc.
@@ -17,10 +17,10 @@ class BibliographyExporter
     /**
      * @param  iterable<Submission>  $submissions
      */
-    public function bibtex(iterable $submissions, Edition $edition): string
+    public function bibtex(iterable $submissions, Event $event): string
     {
-        $booktitle = $this->booktitle($edition);
-        $year = $this->year($edition);
+        $booktitle = $this->booktitle($event);
+        $year = $this->year($event);
         $out = [];
 
         foreach ($submissions as $s) {
@@ -29,7 +29,7 @@ class BibliographyExporter
                 'title' => (string) $s->title,
                 'booktitle' => $booktitle,
                 'year' => $year,
-                'address' => (string) ($edition->location ?? ''),
+                'address' => (string) ($event->location ?? ''),
                 'keywords' => $this->keywords($s),
                 'abstract' => trim(strip_tags((string) $s->abstract)),
             ];
@@ -50,10 +50,10 @@ class BibliographyExporter
     /**
      * @param  iterable<Submission>  $submissions
      */
-    public function ris(iterable $submissions, Edition $edition): string
+    public function ris(iterable $submissions, Event $event): string
     {
-        $booktitle = $this->booktitle($edition);
-        $year = $this->year($edition);
+        $booktitle = $this->booktitle($event);
+        $year = $this->year($event);
         $records = [];
 
         foreach ($submissions as $s) {
@@ -66,7 +66,7 @@ class BibliographyExporter
                 $lines[] = 'PY  - '.$year;
             }
             $lines[] = 'T2  - '.$booktitle;
-            if (($loc = (string) ($edition->location ?? '')) !== '') {
+            if (($loc = (string) ($event->location ?? '')) !== '') {
                 $lines[] = 'CY  - '.$loc;
             }
             foreach ($this->keywordList($s) as $kw) {
@@ -137,14 +137,14 @@ class BibliographyExporter
             ->map(fn ($k) => trim($k))->filter()->values()->all();
     }
 
-    private function booktitle(Edition $edition): string
+    private function booktitle(Event $event): string
     {
-        return (string) ($edition->title ?: $edition->colloque?->name ?: 'Colloque');
+        return (string) ($event->title ?: $event->series?->name ?: 'Événement');
     }
 
-    private function year(Edition $edition): string
+    private function year(Event $event): string
     {
-        return (string) ($edition->year ?: $edition->date_start?->format('Y') ?: '');
+        return (string) ($event->year ?: $event->date_start?->format('Y') ?: '');
     }
 
     /** Échappe le minimum pour BibTeX (caractères réservés). */

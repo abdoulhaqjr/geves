@@ -1,6 +1,6 @@
 {{-- Sous-onglet « Attestations délivrées » (?tab=attestations&stab=delivrees).
      Filtres, tri et pagination restent sur cette URL. --}}
-@php($base = ['edition_id' => $edition_id, 'tab' => 'attestations', 'stab' => 'delivrees'])
+@php($base = ['event_id' => $event_id, 'tab' => 'attestations', 'stab' => 'delivrees'])
 
 <div class="ukc-stats">
     <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="diploma" :size="20" /></div><div class="lbl">Délivrées</div><div class="val blue">{{ $issuedStats['total'] }}</div></div>
@@ -13,7 +13,7 @@
 </div>
 
 <form method="GET" class="filter-bar">
-    <input type="hidden" name="edition_id" value="{{ $edition_id }}">
+    <input type="hidden" name="event_id" value="{{ $event_id }}">
     <input type="hidden" name="tab" value="attestations">
     <input type="hidden" name="stab" value="delivrees">
     <select name="type" onchange="this.form.submit()">
@@ -62,14 +62,14 @@
              du rendu. Un lot borné échoue vite, ou réussit vite. --}}
         @for ($l = 1; $l <= $lots; $l++)
             <a class="ukc-btn ukc-btn--outline ukc-btn--sm"
-               href="{{ route('admin.documents.attestations.lot', $exportParams + ['edition_id' => $edition_id, 'lot' => $l]) }}">
+               href="{{ route('admin.documents.attestations.lot', $exportParams + ['event_id' => $event_id, 'lot' => $l]) }}">
                 <x-ukc.icon name="diploma" :size="14" />
                 {{ $lots > 1 ? 'Lot '.$l.' · '.(($l - 1) * $exportLot + 1).'-'.min($l * $exportLot, $issued->total()) : 'Lot PDF à imprimer' }}
             </a>
         @endfor
     @endif
     <a class="ukc-btn ukc-btn--ghost ukc-btn--sm"
-       href="{{ route('admin.documents.attestations.emargement', $exportParams + ['edition_id' => $edition_id]) }}">
+       href="{{ route('admin.documents.attestations.emargement', $exportParams + ['event_id' => $event_id]) }}">
         <x-ukc.icon name="check-circle" :size="14" /> Liste d’émargement
     </a>
 </div>
@@ -131,7 +131,7 @@
                 @empty
                     <tr><td colspan="7" style="padding:28px;text-align:center;color:var(--ukc-muted);">
                         Aucune attestation délivrée pour ce filtre. Émettez-en depuis l’onglet
-                        <a href="{{ route('admin.documents.attestations', ['edition_id' => $edition_id, 'tab' => 'attestations', 'stab' => 'modeles']) }}">Modèles</a>.
+                        <a href="{{ route('admin.documents.attestations', ['event_id' => $event_id, 'tab' => 'attestations', 'stab' => 'modeles']) }}">Modèles</a>.
                     </td></tr>
                 @endforelse
             </tbody>

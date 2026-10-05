@@ -37,7 +37,7 @@ class AttestationSignCommand extends Command
         $signed = 0;
         $failed = 0;
 
-        $query->with(['edition.colloque'])->chunkById(200, function ($attestations) use ($certifier, &$signed, &$failed) {
+        $query->with(['event.series'])->chunkById(200, function ($attestations) use ($certifier, &$signed, &$failed) {
             foreach ($attestations as $attestation) {
                 try {
                     $result = $certifier->sign($attestation);

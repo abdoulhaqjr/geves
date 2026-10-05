@@ -7,7 +7,7 @@ use App\Meetings\MeetingProviderRegistry;
 use App\Meetings\Providers\JitsiProvider;
 use App\Meetings\Providers\LiveKitProvider;
 use App\Models\User;
-use App\Support\EditionMeetingConfig;
+use App\Support\EventMeetingConfig;
 
 /**
  * Socle d'accès/embarquement commun à tout objet `Meetable` (session du programme,
@@ -26,7 +26,7 @@ trait JoinsMeetings
      * la plateforme, puis les retire.
      *
      * ⚠️ Toutes les portes d'entrée du socle passent par ici. Sans cela, une
-     * édition pourvue de son propre serveur LiveKit ouvrirait quand même ses salles
+     * événement pourvue de son propre serveur LiveKit ouvrirait quand même ses salles
      * sur celui de la plateforme - et la configuration saisie dans sa fiche ne
      * servirait à rien.
      *
@@ -37,7 +37,7 @@ trait JoinsMeetings
      */
     protected function avecReglagesVisio(callable $fn): mixed
     {
-        return EditionMeetingConfig::using($this->meetingEdition(), $fn);
+        return EventMeetingConfig::using($this->meetingEdition(), $fn);
     }
 
     /** Cet utilisateur peut-il rejoindre la visio ? */
@@ -123,8 +123,8 @@ trait JoinsMeetings
                 // Même vocabulaire que la métadonnée du jeton (cf. MeetingRole::roomRole).
                 'role' => $role->roomRole(),
                 'roomName' => $this->meetingRoom(),
-                // Qualité de capture décidée par l'édition (cf. EditionMeetingConfig).
-                'quality' => EditionMeetingConfig::quality($this->meetingEdition()),
+                // Qualité de capture décidée par l'événement (cf. EventMeetingConfig).
+                'quality' => EventMeetingConfig::quality($this->meetingEdition()),
             ];
         });
     }

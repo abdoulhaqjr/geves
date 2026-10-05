@@ -8,7 +8,7 @@
 
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
         <div>
-            <div style="font-weight:900;color:var(--ukc-blue);font-size:1.1rem;">{{ $payment->edition?->colloque?->name }}</div>
+            <div style="font-weight:900;color:var(--ukc-blue);font-size:1.1rem;">{{ $payment->event?->series?->name }}</div>
             <div style="font-size:.85rem;color:var(--ukc-muted);">Université de Kara</div>
         </div>
         <div style="text-align:right;">
@@ -24,8 +24,8 @@
             <td style="padding:8px 0;text-align:right;font-weight:700;">{{ $payment->participant?->full_name }}</td></tr>
         <tr><td style="padding:8px 0;color:var(--ukc-muted);">E-mail</td>
             <td style="padding:8px 0;text-align:right;">{{ $payment->participant?->email }}</td></tr>
-        <tr><td style="padding:8px 0;color:var(--ukc-muted);">Édition</td>
-            <td style="padding:8px 0;text-align:right;">{{ $payment->edition?->title }}</td></tr>
+        <tr><td style="padding:8px 0;color:var(--ukc-muted);">Événement</td>
+            <td style="padding:8px 0;text-align:right;">{{ $payment->event?->title }}</td></tr>
         <tr><td style="padding:8px 0;color:var(--ukc-muted);">Moyen de paiement</td>
             <td style="padding:8px 0;text-align:right;">{{ $payment->methodLabel() }}</td></tr>
         <tr><td style="padding:8px 0;color:var(--ukc-muted);">Date</td>
@@ -41,6 +41,6 @@
     </div>
 
     <p style="margin-top:24px;font-size:.8rem;color:var(--ukc-light);text-align:center;">
-        Reçu généré le {{ now()->format('d/m/Y') }} - {{ $payment->edition?->colloque?->name }}.
+        Reçu généré le {{ now()->format('d/m/Y') }} - {{ $payment->event?->series?->name }}.
     </p>
 </div>

@@ -24,7 +24,7 @@
 <body>
     <h1>Liste d’émargement · Attestations</h1>
     <div class="meta">
-        {{ $edition->colloque?->name }} · {{ $edition->title ?: $edition->year }} —
+        {{ $event->series?->name }} · {{ $event->title ?: $event->year }} —
         {{ $typeLabel }} · {{ $attestations->count() }} bénéficiaire(s) ·
         éditée le {{ now()->format('d/m/Y à H:i') }}
     </div>

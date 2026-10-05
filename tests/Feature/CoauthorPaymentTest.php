@@ -3,8 +3,8 @@
 use App\Actions\NotifyCoauthorsForPayment;
 use App\Mail\CoauthorPaymentInvitationMail;
 use App\Models\Attestation;
-use App\Models\Edition;
 use App\Models\Email;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Submission;
 use App\Models\SubmissionAuthor;
@@ -15,7 +15,7 @@ use Illuminate\Support\Str;
 
 // adminStaff() -> AdminSubmissionWorkflowTest ; openEdition() -> AccountSubmissionTest
 
-function coauthorEdition(): Edition
+function coauthorEdition(): Event
 {
     return openEdition(['fees' => [
         ['label' => 'Doctorant', 'amount' => 10000],
@@ -23,11 +23,11 @@ function coauthorEdition(): Edition
     ]]);
 }
 
-function acceptedWithCoauthor(Edition $edition, string $coEmail = 'co@example.tg', string $coGrade = 'Docteur', string $status = 'accepted'): Submission
+function acceptedWithCoauthor(Event $event, string $coEmail = 'co@example.tg', string $coGrade = 'Docteur', string $status = 'accepted'): Submission
 {
-    $author = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $author = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
 
-    return $edition->submissions()->create([
+    return $event->submissions()->create([
         'participant_id' => $author->id,
         'title' => 'Sur les colloques',
         'status' => $status,
@@ -51,10 +51,10 @@ function acceptedWithCoauthor(Edition $edition, string $coEmail = 'co@example.tg
  * puis l'envoie créer son compte ou s'y connecter.
  */
 it('retrouve les communications du co-auteur et l’oriente vers son espace', function () {
-    $edition = coauthorEdition();
-    acceptedWithCoauthor($edition);
+    $event = coauthorEdition();
+    acceptedWithCoauthor($event);
 
-    $page = $this->get(route('public.coauthor', $edition->slug).'?email=co@example.tg')
+    $page = $this->get(route('public.coauthor', $event->slug).'?email=co@example.tg')
         ->assertOk()
         ->assertSee('AA-001')
         ->assertSee('votre espace participant', false)
@@ -71,12 +71,12 @@ it('retrouve les communications du co-auteur et l’oriente vers son espace', fu
 
 /** Déjà connecté : on ne lui redemande rien, il règle dans son espace. */
 it('renvoie un visiteur connecté vers le règlement de son espace', function () {
-    $edition = coauthorEdition();
-    acceptedWithCoauthor($edition);
+    $event = coauthorEdition();
+    acceptedWithCoauthor($event);
 
     $this->actingAs(verifiedAccount(), 'account')
-        ->get(route('public.coauthor', $edition->slug).'?email=co@example.tg')
-        ->assertRedirect(route('account.payment', $edition));
+        ->get(route('public.coauthor', $event->slug).'?email=co@example.tg')
+        ->assertRedirect(route('account.payment', $event));
 });
 
 /** ⚠️ La route de paiement sans compte n'existe plus : elle était la cause du doublon. */
@@ -85,10 +85,10 @@ it('n’expose plus de paiement sans compte', function () {
 });
 
 it('n’associe rien à un e-mail inconnu', function () {
-    $edition = coauthorEdition();
-    acceptedWithCoauthor($edition);
+    $event = coauthorEdition();
+    acceptedWithCoauthor($event);
 
-    $this->get(route('public.coauthor', $edition->slug).'?email=personne@example.tg')
+    $this->get(route('public.coauthor', $event->slug).'?email=personne@example.tg')
         ->assertSee('Aucune communication');
 });
 
@@ -98,20 +98,20 @@ it('n’associe rien à un e-mail inconnu', function () {
  * page, et doit y trouver sa confirmation et son reçu.
  */
 it('affiche l’état « déjà réglé » pour un co-auteur ayant payé', function () {
-    $edition = coauthorEdition();
-    acceptedWithCoauthor($edition);
+    $event = coauthorEdition();
+    acceptedWithCoauthor($event);
 
-    $co = $edition->participants()->create(['first_name' => 'Ben', 'last_name' => 'Co', 'email' => 'co@example.tg', 'role' => 'coauthor', 'title' => 'Docteur']);
-    $edition->payments()->create(['participant_id' => $co->id, 'amount' => 20000, 'status' => 'paid', 'gateway' => 'manual', 'method' => 'cash', 'receipt_no' => 'REC-2026-001', 'paid_at' => now()]);
+    $co = $event->participants()->create(['first_name' => 'Ben', 'last_name' => 'Co', 'email' => 'co@example.tg', 'role' => 'coauthor', 'title' => 'Docteur']);
+    $event->payments()->create(['participant_id' => $co->id, 'amount' => 20000, 'status' => 'paid', 'gateway' => 'manual', 'method' => 'cash', 'receipt_no' => 'REC-2026-001', 'paid_at' => now()]);
 
-    $this->get(route('public.coauthor', $edition->slug).'?email=co@example.tg')
+    $this->get(route('public.coauthor', $event->slug).'?email=co@example.tg')
         ->assertSee('Frais déjà réglés');
 });
 
 it('notifie les co-auteurs d’une communication acceptée et journalise', function () {
     Mail::fake();
-    $edition = coauthorEdition();
-    $submission = acceptedWithCoauthor($edition);
+    $event = coauthorEdition();
+    $submission = acceptedWithCoauthor($event);
 
     $count = app(NotifyCoauthorsForPayment::class)->handle($submission);
 
@@ -122,8 +122,8 @@ it('notifie les co-auteurs d’une communication acceptée et journalise', funct
 
 it('ne notifie pas les co-auteurs si la communication n’est pas acceptée', function () {
     Mail::fake();
-    $edition = coauthorEdition();
-    $submission = acceptedWithCoauthor($edition, status: 'submitted');
+    $event = coauthorEdition();
+    $submission = acceptedWithCoauthor($event, status: 'submitted');
 
     expect(app(NotifyCoauthorsForPayment::class)->handle($submission))->toBe(0);
     Mail::assertNothingQueued();
@@ -131,8 +131,8 @@ it('ne notifie pas les co-auteurs si la communication n’est pas acceptée', fu
 
 it('déclenche la notification des co-auteurs depuis l’acceptation admin', function () {
     Mail::fake();
-    $edition = coauthorEdition();
-    $submission = acceptedWithCoauthor($edition, status: 'submitted');
+    $event = coauthorEdition();
+    $submission = acceptedWithCoauthor($event, status: 'submitted');
 
     $this->actingAs(adminStaff(), 'web')
         ->post(route('admin.submissions.status', $submission), ['status' => 'accepted']);
@@ -141,14 +141,14 @@ it('déclenche la notification des co-auteurs depuis l’acceptation admin', fun
 });
 
 it('rend un co-auteur payé éligible à l’attestation de communication', function () {
-    $edition = coauthorEdition();
-    acceptedWithCoauthor($edition);
+    $event = coauthorEdition();
+    acceptedWithCoauthor($event);
 
-    $co = $edition->participants()->create(['first_name' => 'Ben', 'last_name' => 'Co', 'email' => 'co@example.tg', 'role' => 'coauthor', 'title' => 'Docteur']);
-    $edition->payments()->create(['participant_id' => $co->id, 'amount' => 20000, 'status' => 'paid', 'gateway' => 'manual', 'method' => 'cash', 'paid_at' => now()]);
+    $co = $event->participants()->create(['first_name' => 'Ben', 'last_name' => 'Co', 'email' => 'co@example.tg', 'role' => 'coauthor', 'title' => 'Docteur']);
+    $event->payments()->create(['participant_id' => $co->id, 'amount' => 20000, 'status' => 'paid', 'gateway' => 'manual', 'method' => 'cash', 'paid_at' => now()]);
 
     $this->actingAs(adminStaff(), 'web')->post(route('admin.documents.attestations.issue'), [
-        'edition_id' => (string) $edition->id,
+        'event_id' => (string) $event->id,
         'type' => 'communication',
     ]);
 
@@ -156,13 +156,13 @@ it('rend un co-auteur payé éligible à l’attestation de communication', func
 });
 
 it('n’associe pas un co-auteur non payé à l’attestation de communication', function () {
-    $edition = coauthorEdition();
-    acceptedWithCoauthor($edition);
+    $event = coauthorEdition();
+    acceptedWithCoauthor($event);
 
-    $co = $edition->participants()->create(['first_name' => 'Ben', 'last_name' => 'Co', 'email' => 'co@example.tg', 'role' => 'coauthor', 'title' => 'Docteur']);
+    $co = $event->participants()->create(['first_name' => 'Ben', 'last_name' => 'Co', 'email' => 'co@example.tg', 'role' => 'coauthor', 'title' => 'Docteur']);
 
     $this->actingAs(adminStaff(), 'web')->post(route('admin.documents.attestations.issue'), [
-        'edition_id' => (string) $edition->id,
+        'event_id' => (string) $event->id,
         'type' => 'communication',
     ]);
 
@@ -176,12 +176,12 @@ it('n’associe pas un co-auteur non payé à l’attestation de communication',
  * espace lui propose le montant de son grade.
  */
 it('mène le co-auteur de la porte d’entrée au règlement dans son espace', function () {
-    $edition = coauthorEdition();
-    $submission = acceptedWithCoauthor($edition);
+    $event = coauthorEdition();
+    $submission = acceptedWithCoauthor($event);
 
     // Liaison « invitée », telle que LinkSubmissionAuthors la pose pour un non-inscrit.
     SubmissionAuthor::create([
-        'submission_id' => $submission->id, 'edition_id' => $edition->id, 'role' => 'coauthor',
+        'submission_id' => $submission->id, 'event_id' => $event->id, 'role' => 'coauthor',
         'author_index' => 1, 'name' => 'Ben Co', 'email' => 'co@example.tg',
         'token' => Str::random(48), 'status' => 'invited', 'invited_at' => now(),
     ]);
@@ -196,7 +196,7 @@ it('mène le co-auteur de la porte d’entrée au règlement dans son espace', f
 
     // ⚠️ UN SEUL participant : c'est tout l'objet du retrait du paiement sans
     // compte, qui en créait un second sans `user_id`.
-    $participants = Participant::where('edition_id', $edition->id)
+    $participants = Participant::where('event_id', $event->id)
         ->whereRaw('LOWER(email) = ?', ['co@example.tg'])->get();
 
     expect($participants)->toHaveCount(1);
@@ -204,7 +204,7 @@ it('mène le co-auteur de la porte d’entrée au règlement dans son espace', f
 
     // Et son espace lui propose bien le tarif de son grade.
     $this->actingAs($compte, 'account')
-        ->get(route('account.payment', $edition))
+        ->get(route('account.payment', $event))
         ->assertOk()
         ->assertSee('20 000');
 });
@@ -216,14 +216,14 @@ it('mène le co-auteur de la porte d’entrée au règlement dans son espace', f
  * comment en sortir - le bloc centré sans contexte qu'elle était ne le disait pas.
  */
 it('porte la présentation des autres pages publiques', function () {
-    $edition = coauthorEdition();
+    $event = coauthorEdition();
 
-    $page = $this->get(route('public.coauthor', $edition->slug))->assertOk();
+    $page = $this->get(route('public.coauthor', $event->slug))->assertOk();
 
     $page->assertSee('site-header', false)   // en-tête public commun
         ->assertSee('page-hero', false)      // hero des pages secondaires
         ->assertSee('ukc-step', false)       // barre d'étapes du projet
         ->assertSee('ukc-info-bar', false)   // pied de page DU COLLOQUE
-        ->assertSee($edition->title)         // de quel colloque il s'agit
-        ->assertSee(route('public.colloque', $edition->slug), false); // comment en sortir
+        ->assertSee($event->title)         // de quel colloque il s'agit
+        ->assertSee(route('public.colloque', $event->slug), false); // comment en sortir
 });

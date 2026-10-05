@@ -16,10 +16,10 @@
         <div class="ukc-container">
             <div class="toolbar-filter">
                 <div>
-                    <h2>{{ __('Éditions archivées') }}</h2>
-                    <p>{{ __('Cliquez sur une carte pour consulter le détail de l’édition.') }}</p>
+                    <h2>{{ __('Événements archivées') }}</h2>
+                    <p>{{ __('Cliquez sur une carte pour consulter le détail de l’événement.') }}</p>
                 </div>
-                @if ($editions->count() > 1)
+                @if ($events->count() > 1)
                     <div class="filters" id="filters">
                         <button type="button" class="active" data-filter="all">{{ __('Toutes') }}</button>
                         <button type="button" data-filter="colloque">{{ __('Colloques') }}</button>
@@ -28,24 +28,24 @@
                 @endif
             </div>
 
-            @if ($editions->isEmpty())
+            @if ($events->isEmpty())
                 <div class="ukc-empty">
-                    <h3>{{ __('Aucune édition archivée pour le moment') }}</h3>
-                    <p>{{ __('Les éditions clôturées apparaîtront ici avec leurs programmes, galeries et documents.') }}</p>
+                    <h3>{{ __('Aucun événement archivé pour le moment') }}</h3>
+                    <p>{{ __('Les événements clôturées apparaîtront ici avec leurs programmes, galeries et documents.') }}</p>
                 </div>
             @else
                 <div class="editions-grid" id="editionsGrid">
-                    @foreach ($editions as $e)
+                    @foreach ($events as $e)
                         <a class="edition-card" href="{{ route('public.archive', $e->slug) }}" data-type="{{ ArchiveController::kind($e) }}">
                             <div class="cover {{ $e->banner_url ? '' : 'no-img' }}">
                                 @if ($e->banner_url)<img src="{{ $e->banner_url }}" alt="{{ $e->title }}" loading="lazy">@endif
-                                @if ($e->edition_label)<span class="badge">{{ $e->edition_label }}</span>@endif
+                                @if ($e->event_label)<span class="badge">{{ $e->event_label }}</span>@endif
                             </div>
                             <div class="body">
                                 <div class="year-line">
                                     <span class="ukc-pill ukc-pill--closed">{{ __('Clôturé') }}</span>
                                 </div>
-                                <h3>{{ $e->title ?: $e->colloque?->name }}</h3>
+                                <h3>{{ $e->title ?: $e->series?->name }}</h3>
                                 @if ($e->theme)<p class="theme">{{ $e->theme }}</p>@endif
                                 <div class="meta">
                                     <div class="meta-row">

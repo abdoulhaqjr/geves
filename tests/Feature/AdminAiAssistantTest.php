@@ -6,7 +6,7 @@ use App\Models\User;
 // fakeAiProvider(), bindFakeAi() -> GenerateReportTest ; adminStaff(), openEdition() -> helpers
 
 it('le copilote admin répond au staff', function () {
-    bindFakeAi(fakeAiProvider(['answer' => 'Voici une synthèse de l’édition active.']));
+    bindFakeAi(fakeAiProvider(['answer' => 'Voici une synthèse de l’événement actif.']));
 
     $this->actingAs(adminStaff(), 'web')
         ->get(route('admin.ai'))
@@ -14,9 +14,9 @@ it('le copilote admin répond au staff', function () {
         ->assertSee('copilote', false);
 
     $this->actingAs(adminStaff(), 'web')
-        ->postJson(route('admin.ai.ask'), ['question' => 'Résume l’édition active.'])
+        ->postJson(route('admin.ai.ask'), ['question' => 'Résume l’événement actif.'])
         ->assertOk()
-        ->assertJsonPath('answer', 'Voici une synthèse de l’édition active.');
+        ->assertJsonPath('answer', 'Voici une synthèse de l’événement actif.');
 });
 
 it('exige une saisie', function () {
@@ -61,12 +61,12 @@ it('cadre le copilote sur la fonction dans le colloque sélectionné', function 
         }
     });
 
-    $edition = openEdition();
+    $event = openEdition();
     $staff = User::create(['first_name' => 'Carine', 'last_name' => 'Comptable', 'email' => 'compta@example.tg', 'password' => 'pass12345']);
-    $staff->assignedEditions()->attach($edition->id, ['role' => 'accounting']);
+    $staff->assignedEditions()->attach($event->id, ['role' => 'accounting']);
 
     $this->actingAs($staff, 'web')
-        ->postJson(route('admin.ai.ask'), ['question' => 'Où en sont les inscriptions ?', 'edition_id' => $edition->id])
+        ->postJson(route('admin.ai.ask'), ['question' => 'Où en sont les inscriptions ?', 'event_id' => $event->id])
         ->assertOk();
 
     // Le prompt décrit la fonction (Comptabilité) et le périmètre (Paiements).

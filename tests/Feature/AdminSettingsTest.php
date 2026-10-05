@@ -60,7 +60,7 @@ it('enregistre les réglages', function () {
     $staff = adminStaff();
 
     $this->actingAs($staff, 'web')->post(route('admin.settings.update'), [
-        'from_name' => 'Colloques UK',
+        'from_name' => 'EventSeries UK',
         'from_address' => 'colloques@univkara.tg',
         'payments_default' => 'cashpay',
         'mail_host' => 'smtp.univkara.tg',
@@ -74,7 +74,7 @@ it('enregistre les réglages', function () {
         'sms_default' => 'log',
     ])->assertSessionHasNoErrors();
 
-    expect(Settings::get('mail.from_name'))->toBe('Colloques UK');
+    expect(Settings::get('mail.from_name'))->toBe('EventSeries UK');
     expect(Settings::get('payments.default'))->toBe('cashpay');
     expect(Settings::get('mail.host'))->toBe('smtp.univkara.tg');
     expect(Settings::get('ai.default'))->toBe('grok');

@@ -2,35 +2,35 @@
 
 namespace App\Support;
 
-use App\Models\Edition;
+use App\Models\Event;
 use Illuminate\Support\Facades\Config;
 
 /**
  * Surcharge, au runtime, la configuration de paiement à partir des réglages
- * PROPRES à une édition (`settings.payment`) : passerelle par défaut + identifiants
+ * PROPRES à un événement (`settings.payment`) : passerelle par défaut + identifiants
  * FedaPay / CashPay. Les champs laissés VIDES retombent sur la configuration
  * globale (réglages plateforme). À appeler avant de résoudre/utiliser une
- * passerelle pour un paiement rattaché à une édition.
+ * passerelle pour un paiement rattaché à un événement.
  */
-class EditionPaymentConfig
+class EventPaymentConfig
 {
     /** Clés d'identifiants par passerelle (mêmes que la config globale). */
     public const FEDAPAY_KEYS = ['secret', 'mode', 'webhook_secret'];
 
     public const CASHPAY_KEYS = ['base_url', 'username', 'password', 'client_id', 'client_secret', 'api_key'];
 
-    /** Réglages de paiement propres à une édition, ou null. @return array<string, mixed>|null */
-    public static function settings(?Edition $edition): ?array
+    /** Réglages de paiement propres à un événement, ou null. @return array<string, mixed>|null */
+    public static function settings(?Event $event): ?array
     {
-        $p = $edition?->settings['payment'] ?? null;
+        $p = $event?->settings['payment'] ?? null;
 
         return is_array($p) ? $p : null;
     }
 
-    /** L'édition définit-elle au moins un identifiant pour cette passerelle ? */
-    public static function configures(Edition $edition, string $gateway): bool
+    /** L'événement définit-elle au moins un identifiant pour cette passerelle ? */
+    public static function configures(Event $event, string $gateway): bool
     {
-        $creds = self::settings($edition)[$gateway] ?? null;
+        $creds = self::settings($event)[$gateway] ?? null;
         if (! is_array($creds)) {
             return false;
         }
@@ -46,29 +46,29 @@ class EditionPaymentConfig
 
     /**
      * Configurations à essayer pour authentifier un webhook entrant : la config
-     * globale (null) d'abord, puis chaque édition ayant ses propres identifiants
+     * globale (null) d'abord, puis chaque événement ayant ses propres identifiants
      * pour cette passerelle. Nécessaire car la signature doit être vérifiée AVANT
-     * de savoir à quelle édition le paiement se rattache (un marchand par édition
+     * de savoir à quelle événement le paiement se rattache (un marchand par événement
      * signe avec SON secret).
      *
-     * @return list<Edition|null>
+     * @return list<Event|null>
      */
     public static function candidates(string $gateway): array
     {
-        $editions = Edition::query()
+        $events = Event::query()
             ->where('settings', 'like', '%"payment"%')
             ->latest('id')
             ->get()
-            ->filter(fn (Edition $e) => self::configures($e, $gateway))
+            ->filter(fn (Event $e) => self::configures($e, $gateway))
             ->values()
             ->all();
 
-        return array_merge([null], $editions);
+        return array_merge([null], $events);
     }
 
-    public static function apply(?Edition $edition): void
+    public static function apply(?Event $event): void
     {
-        $p = self::settings($edition);
+        $p = self::settings($event);
         if (! $p) {
             return; // aucune config propre : on garde la config globale
         }
@@ -90,8 +90,8 @@ class EditionPaymentConfig
     }
 
     /**
-     * Exécute $fn avec la configuration de l'édition appliquée, puis RESTAURE la
-     * configuration précédente. Indispensable quand on essaie plusieurs éditions
+     * Exécute $fn avec la configuration de l'événement appliquée, puis RESTAURE la
+     * configuration précédente. Indispensable quand on essaie plusieurs événements
      * à la suite (webhook) : sans restauration, les identifiants d'un candidat
      * resteraient actifs pour le suivant (`apply` n'écrase que les champs remplis).
      *
@@ -100,7 +100,7 @@ class EditionPaymentConfig
      * @param  callable(): T  $fn
      * @return T
      */
-    public static function using(?Edition $edition, callable $fn): mixed
+    public static function using(?Event $event, callable $fn): mixed
     {
         $snapshot = [
             'payments.default' => config('payments.default'),
@@ -109,7 +109,7 @@ class EditionPaymentConfig
         ];
 
         try {
-            self::apply($edition);
+            self::apply($event);
 
             return $fn();
         } finally {

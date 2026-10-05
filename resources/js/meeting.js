@@ -2278,7 +2278,7 @@ export async function startFromConfig() {
     // ---- Connexion ----
     async function connect() {
         setStatus('Connexion à la salle…'); setConnPill('warn', 'Connexion…');
-        // Qualité décidée par l'édition (onglet Visioconférence de sa fiche).
+        // Qualité décidée par l'événement (onglet Visioconférence de sa fiche).
         const video = profilVideo(cfg.quality);
         room = new LK.Room({
             adaptiveStream: true, dynacast: true,

@@ -1,17 +1,17 @@
 <?php
 
-use App\Enums\EditionPhase;
-use App\Models\Colloque;
-use App\Models\Edition;
+use App\Enums\EventPhase;
+use App\Models\Event;
+use App\Models\EventSeries;
 
 // openEdition() -> AccountSubmissionTest
 
-function phaseEdition(array $attrs = []): Edition
+function phaseEdition(array $attrs = []): Event
 {
-    $colloque = Colloque::firstOrCreate(['slug' => 'ph'], ['name' => 'Phase']);
+    $series = EventSeries::firstOrCreate(['slug' => 'ph'], ['name' => 'Phase']);
 
-    return $colloque->editions()->create(array_merge([
-        'title' => 'Édition test',
+    return $series->events()->create(array_merge([
+        'title' => 'Événement test',
         'slug' => 'ph-'.uniqid(),
         'status' => 'open',
         'year' => 2026,
@@ -21,7 +21,7 @@ function phaseEdition(array $attrs = []): Edition
 it('brouillon → phase Draft (aucune vue publique)', function () {
     $e = phaseEdition(['status' => 'draft']);
 
-    expect($e->phase())->toBe(EditionPhase::Draft);
+    expect($e->phase())->toBe(EventPhase::Draft);
     expect($e->phase()->publicView())->toBeNull();
 });
 
@@ -33,7 +33,7 @@ it('appel ouvert avec dates futures = « à venir », pas « en cours » (piège
         'date_end' => now()->addMonths(3)->addDays(2),
     ]);
 
-    expect($e->phase())->toBe(EditionPhase::CallOpen);
+    expect($e->phase())->toBe(EventPhase::CallOpen);
     expect($e->phase()->publicView())->toBe('upcoming');
     expect($e->phase()->isOngoing())->toBeFalse();
 });
@@ -46,7 +46,7 @@ it('soumissions closes avant l’événement → Évaluation (under_review)', fu
         'date_end' => now()->addMonth()->addDays(2),
     ]);
 
-    expect($e->phase())->toBe(EditionPhase::UnderReview);
+    expect($e->phase())->toBe(EventPhase::UnderReview);
     expect($e->phase()->publicView())->toBe('upcoming');
 });
 
@@ -58,7 +58,7 @@ it('pas d’appel actif avant l’événement → Inscriptions (registration)', 
         'date_end' => now()->addMonth()->addDays(2),
     ]);
 
-    expect($e->phase())->toBe(EditionPhase::Registration);
+    expect($e->phase())->toBe(EventPhase::Registration);
     expect($e->phase()->publicView())->toBe('upcoming');
 });
 
@@ -68,7 +68,7 @@ it('dates de l’événement atteintes → Ongoing (en cours)', function () {
         'date_end' => now()->addDay(),
     ]);
 
-    expect($e->phase())->toBe(EditionPhase::Ongoing);
+    expect($e->phase())->toBe(EventPhase::Ongoing);
     expect($e->phase()->publicView())->toBe('ongoing');
 });
 
@@ -78,14 +78,14 @@ it('date de fin dépassée → Closed (passé)', function () {
         'date_end' => now()->subMonth()->addDays(2),
     ]);
 
-    expect($e->phase())->toBe(EditionPhase::Closed);
+    expect($e->phase())->toBe(EventPhase::Closed);
     expect($e->phase()->publicView())->toBe('past');
 });
 
 it('statut archivé → Closed même sans dates', function () {
     $e = phaseEdition(['status' => 'archived', 'date_start' => null, 'date_end' => null]);
 
-    expect($e->phase())->toBe(EditionPhase::Closed);
+    expect($e->phase())->toBe(EventPhase::Closed);
 });
 
 it('l’accueil range un appel ouvert dans « à venir »', function () {

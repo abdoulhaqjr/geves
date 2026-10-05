@@ -8,13 +8,13 @@ use App\Documents\LivretDocx;
 use App\Http\Controllers\Controller;
 use App\Models\Attestation;
 use App\Models\DocumentTemplate;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Models\Submission;
 use App\Support\AttestationPolicy;
-use App\Support\CurrentColloque;
-use App\Support\EditionSettings;
+use App\Support\CurrentEvent;
+use App\Support\EventSettings;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,35 +23,35 @@ use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Documents de l'édition accessibles au participant connecté : livret des
- * résumés d'une édition à laquelle il a participé (contrôle de propriété).
+ * Documents de l'événement accessibles au participant connecté : livret des
+ * résumés d'un événement à laquelle il a participé (contrôle de propriété).
  */
 class DocumentController extends Controller
 {
     /**
      * « Mes documents » (Blade, fidèle au mockup) : espace consolidé - attestations
-     * vérifiables, reçus de paiement, et documents des éditions du participant
+     * vérifiables, reçus de paiement, et documents des événements du participant
      * (ressources + livret des résumés). Lecture seule → Blade.
      */
     public function index(): View
     {
         $account = Auth::guard('account')->user();
 
-        $participants = Participant::where('user_id', $account->id)->with('edition')->get();
+        $participants = Participant::where('user_id', $account->id)->with('event')->get();
         $participantIds = $participants->pluck('id');
 
-        // Édition de contexte = colloque courant sélectionné (repli : participation
+        // Événement de contexte = colloque courant sélectionné (repli : participation
         // la plus récente).
-        $current = CurrentColloque::current($account);
-        $participant = ($current ? $participants->firstWhere('edition_id', $current->id) : null)
-            ?? $participants->sortByDesc('edition_id')->first();
-        $edition = $participant?->edition;
+        $current = CurrentEvent::current($account);
+        $participant = ($current ? $participants->firstWhere('event_id', $current->id) : null)
+            ?? $participants->sortByDesc('event_id')->first();
+        $event = $participant?->event;
 
-        if (! $edition) {
-            return view('account.documents', ['edition' => null]);
+        if (! $event) {
+            return view('account.documents', ['event' => null]);
         }
 
-        $edParticipantIds = $participants->where('edition_id', $edition->id)->pluck('id');
+        $edParticipantIds = $participants->where('event_id', $event->id)->pluck('id');
 
         // ⚠️ Seuls les paiements de PARTICIPATION ouvrent le badge et les documents :
         // une formation réglée est rattachée au même participant mais ne donne
@@ -61,13 +61,13 @@ class DocumentController extends Controller
         $payment = Payment::whereIn('participant_id', $edParticipantIds)
             ->forParticipation()->where('status', 'paid')->latest('id')->first();
 
-        $submissions = Submission::where('edition_id', $edition->id)
+        $submissions = Submission::where('event_id', $event->id)
             ->whereIn('participant_id', $edParticipantIds)
             ->where('revision_of', 0)->latest('id')->get();
 
-        // Attestations émises et valides de cette édition.
+        // Attestations émises et valides de cet événement.
         $attestations = Attestation::whereIn('participant_id', $edParticipantIds)
-            ->where('edition_id', $edition->id)->where('revoked', false)
+            ->where('event_id', $event->id)->where('revoked', false)
             ->with('formation')
             ->orderBy('id')
             ->get();
@@ -88,27 +88,27 @@ class DocumentController extends Controller
             ->sortBy(fn (Attestation $a) => $a->type.'-'.$a->formationTitle())
             ->values();
 
-        $hasBooklet = $edition->submissions()
+        $hasBooklet = $event->submissions()
             ->where('revision_of', 0)->where('status', 'accepted')->exists();
 
-        // Média « appel à communications » de l'édition (le plus pertinent) + tous les médias.
-        $edition->loadMissing(['media' => fn ($q) => $q->orderBy('ordre')->orderBy('id')]);
+        // Média « appel à communications » de l'événement (le plus pertinent) + tous les médias.
+        $event->loadMissing(['media' => fn ($q) => $q->orderBy('ordre')->orderBy('id')]);
 
         // Référence de badge + rôle (débloqué après paiement).
-        $prefix = (string) EditionSettings::get($edition, 'badges.prefix', 'UKC-'.$edition->year.'-');
+        $prefix = (string) EventSettings::get($event, 'badges.prefix', 'UKC-'.$event->year.'-');
         $badgeRef = $prefix.Str::upper($account->initials).'-'.str_pad((string) $participant->id, 4, '0', STR_PAD_LEFT);
         $grade = $participant->title ?: (string) $account->grade;
         $role = trim(($grade !== '' ? $grade.' · ' : '').$participant->roleLabel());
         $badgeRole = $role ?: 'Participant';
-        $didIssuer = (string) EditionSettings::get($edition, 'attestations.did_issuer', 'did:web:univkara.tg:colloques');
+        $didIssuer = (string) EventSettings::get($event, 'attestations.did_issuer', 'did:web:univkara.tg:colloques');
 
         // Aperçu du badge rendu à partir du MODÈLE conçu dans l'admin (même mise en
         // page que l'éditeur), peuplé des données réelles du participant.
-        $badge = $this->renderBadge($edition, $account, $participant, $badgeRef, $badgeRole);
+        $badge = $this->renderBadge($event, $account, $participant, $badgeRef, $badgeRole);
 
         return view('account.documents', [
             'account' => $account,
-            'edition' => $edition,
+            'event' => $event,
             'participant' => $participant,
             'paid' => $paid,
             'payment' => $payment,
@@ -118,9 +118,9 @@ class DocumentController extends Controller
             'attsFormation' => $attsFormation,
             // Délivrance physique : le participant VOIT son attestation et peut la
             // vérifier, mais l'exemplaire qui fait foi lui est remis en main propre.
-            'papier' => AttestationPolicy::isPaper($edition),
+            'papier' => AttestationPolicy::isPaper($event),
             'hasBooklet' => $hasBooklet,
-            'media' => $edition->media,
+            'media' => $event->media,
             'badgeRef' => $badgeRef,
             'badgeRole' => $badgeRole,
             'didIssuer' => $didIssuer,
@@ -131,22 +131,22 @@ class DocumentController extends Controller
     }
 
     /**
-     * Rend l'aperçu du badge à partir du modèle enregistré pour l'édition (kind
+     * Rend l'aperçu du badge à partir du modèle enregistré pour l'événement (kind
      * « badge »), ou du modèle par défaut, avec les vraies données du participant.
      * Retourne le HTML positionné + les dimensions natives (pour la mise à l'échelle).
      *
      * @return array{html: string, w: int, h: int}
      */
-    private function renderBadge(Edition $edition, $account, Participant $participant, string $badgeRef, string $badgeRole): array
+    private function renderBadge(Event $event, $account, Participant $participant, string $badgeRef, string $badgeRole): array
     {
         // Modèle enregistré (créé au besoin) : le badge du participant et la planche
         // admin rendent ainsi strictement la même mise en page.
-        $template = DocumentTemplate::ensureFor((int) $edition->id, 'badge');
+        $template = DocumentTemplate::ensureFor((int) $event->id, 'badge');
 
         $layout = LayoutSanitizer::sanitize((array) $template->layout, 'badge', 'default');
 
         $photoSrc = $account->photo_path ? Storage::url($account->photo_path) : '';
-        $verifyUrl = url('/verifier?ref='.urlencode($badgeRef).'&pid='.$participant->id.'&ed='.$edition->id);
+        $verifyUrl = url('/verifier?ref='.urlencode($badgeRef).'&pid='.$participant->id.'&ed='.$event->id);
 
         // Le modèle range la photo comme un texte « Photo »/[recipient.photo] et le
         // QR avec une URL générique : on les remplace par les données réelles.
@@ -168,8 +168,8 @@ class DocumentController extends Controller
             return $el;
         }, (array) ($layout['elements'] ?? []));
 
-        $dates = $edition->date_start
-            ? $edition->date_start->translatedFormat('d/m/Y').($edition->date_end ? ' – '.$edition->date_end->translatedFormat('d/m/Y') : '')
+        $dates = $event->date_start
+            ? $event->date_start->translatedFormat('d/m/Y').($event->date_end ? ' – '.$event->date_end->translatedFormat('d/m/Y') : '')
             : '';
         $institution = $account->affiliation ?: (string) $participant->institution;
 
@@ -180,14 +180,14 @@ class DocumentController extends Controller
             'recipient.institution' => $institution,
             'recipient.photo' => $photoSrc,
             'badge.ref' => $badgeRef,
-            'edition.name' => $edition->title ?: (string) $edition->colloque?->name,
+            'edition.name' => $event->title ?: (string) $event->series?->name,
             'edition.dates' => $dates,
-            'edition.theme' => (string) $edition->theme,
+            'edition.theme' => (string) $event->theme,
             // Schéma attestation (accolades) pour compatibilité.
             'name' => $account->full_name,
             'role' => $badgeRole,
-            'org' => (string) $edition->colloque?->name,
-            'event' => (string) $edition->title,
+            'org' => (string) $event->series?->name,
+            'event' => (string) $event->title,
             'ref' => $badgeRef,
             'verify_url' => $verifyUrl,
             'initials' => $account->initials,
@@ -200,17 +200,17 @@ class DocumentController extends Controller
         ];
     }
 
-    public function livret(Edition $edition, Request $request): View|Response
+    public function livret(Event $event, Request $request): View|Response
     {
         $account = Auth::guard('account')->user();
 
-        $participates = Participant::where('edition_id', $edition->id)
+        $participates = Participant::where('event_id', $event->id)
             ->where('user_id', $account->id)
             ->exists();
 
         abort_unless($participates, 403);
 
-        $groups = $edition->submissions()
+        $groups = $event->submissions()
             ->where('revision_of', 0)
             ->where('status', 'accepted')
             ->orderBy('track')
@@ -218,12 +218,12 @@ class DocumentController extends Controller
             ->groupBy(fn ($s) => $s->track ?: 'Autres');
 
         if ($request->query('format') === 'docx') {
-            return (new LivretDocx($edition, $groups))
-                ->download('livret-'.($edition->slug ?: 'edition-'.$edition->id).'.docx');
+            return (new LivretDocx($event, $groups))
+                ->download('livret-'.($event->slug ?: 'edition-'.$event->id).'.docx');
         }
 
         return view('documents.livret', [
-            'edition' => $edition,
+            'event' => $event,
             'groups' => $groups,
         ]);
     }

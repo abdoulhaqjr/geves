@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\Storage;
 
 it('ajoute un formateur avec grade, spécialité et photo', function () {
     Storage::fake('public');
-    $edition = openEdition();
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'F', 'fee' => 0, 'published' => true]);
+    $event = openEdition();
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'F', 'fee' => 0, 'published' => true]);
 
     $this->actingAs(adminStaff(), 'web')->post(route('admin.formations.trainers.store', $formation), [
         'title' => 'Pr.', 'name' => 'Awa Kodjo', 'specialty' => 'Méthodologie', 'email' => 'awa@example.tg',
@@ -27,8 +27,8 @@ it('ajoute un formateur avec grade, spécialité et photo', function () {
 
 it('change la photo d’un formateur (clic avatar)', function () {
     Storage::fake('public');
-    $edition = openEdition();
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'F', 'fee' => 0, 'published' => true]);
+    $event = openEdition();
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'F', 'fee' => 0, 'published' => true]);
     $t = $formation->trainers()->create(['name' => 'Ben Co']);
 
     $this->actingAs(adminStaff(), 'web')->post(route('admin.formations.trainers.photo', [$formation, $t]), [
@@ -40,8 +40,8 @@ it('change la photo d’un formateur (clic avatar)', function () {
 
 it('change la photo par AJAX et renvoie l’URL en JSON', function () {
     Storage::fake('public');
-    $edition = openEdition();
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'F', 'fee' => 0, 'published' => true]);
+    $event = openEdition();
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'F', 'fee' => 0, 'published' => true]);
     $t = $formation->trainers()->create(['name' => 'Ben Co']);
 
     $res = $this->actingAs(adminStaff(), 'web')
@@ -55,8 +55,8 @@ it('change la photo par AJAX et renvoie l’URL en JSON', function () {
 });
 
 it('modifie les informations d’un formateur', function () {
-    $edition = openEdition();
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'F', 'fee' => 0, 'published' => true]);
+    $event = openEdition();
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'F', 'fee' => 0, 'published' => true]);
     $t = $formation->trainers()->create(['name' => 'Ancien Nom']);
 
     $this->actingAs(adminStaff(), 'web')->put(route('admin.formations.trainers.update', [$formation, $t]), [
@@ -72,8 +72,8 @@ it('modifie les informations d’un formateur', function () {
 });
 
 it('modifie un formateur en AJAX et renvoie l’affichage en JSON', function () {
-    $edition = openEdition();
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'F', 'fee' => 0, 'published' => true]);
+    $event = openEdition();
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'F', 'fee' => 0, 'published' => true]);
     $t = $formation->trainers()->create(['name' => 'Ancien']);
 
     $res = $this->actingAs(adminStaff(), 'web')
@@ -90,8 +90,8 @@ it('modifie un formateur en AJAX et renvoie l’affichage en JSON', function () 
 });
 
 it('relie le formateur au compte quand l’e-mail modifié correspond', function () {
-    $edition = openEdition();
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'F', 'fee' => 0, 'published' => true]);
+    $event = openEdition();
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'F', 'fee' => 0, 'published' => true]);
     $user = verifiedAccount();
     $t = $formation->trainers()->create(['name' => 'Sans compte']);
 
@@ -103,8 +103,8 @@ it('relie le formateur au compte quand l’e-mail modifié correspond', function
 });
 
 it('rapproche un formateur d’un compte par e-mail et force l’identité du compte', function () {
-    $edition = openEdition();
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'F', 'fee' => 0, 'published' => true]);
+    $event = openEdition();
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'F', 'fee' => 0, 'published' => true]);
     $user = verifiedAccount(); // Awa Kodjo / awa@example.tg / +22890000000
 
     // Nom volontairement faux : le serveur doit imposer l'identité du compte.
@@ -119,8 +119,8 @@ it('rapproche un formateur d’un compte par e-mail et force l’identité du co
 });
 
 it('rapproche un formateur d’un compte par téléphone', function () {
-    $edition = openEdition();
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'F', 'fee' => 0, 'published' => true]);
+    $event = openEdition();
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'F', 'fee' => 0, 'published' => true]);
     $user = verifiedAccount();
 
     $this->actingAs(adminStaff(), 'web')->post(route('admin.formations.trainers.store', $formation), [
@@ -134,8 +134,8 @@ it('rapproche un formateur d’un compte par téléphone', function () {
 });
 
 it('laisse la saisie libre quand aucun compte ne correspond', function () {
-    $edition = openEdition();
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'F', 'fee' => 0, 'published' => true]);
+    $event = openEdition();
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'F', 'fee' => 0, 'published' => true]);
 
     $this->actingAs(adminStaff(), 'web')->post(route('admin.formations.trainers.store', $formation), [
         'name' => 'Invité Externe', 'email' => 'externe@example.tg', 'phone' => '+22899999999',
@@ -162,8 +162,8 @@ it('l’endpoint de rapprochement renvoie le profil du compte trouvé', function
 });
 
 it('utilise la photo du compte lié à défaut de photo propre', function () {
-    $edition = openEdition();
-    $formation = Formation::create(['edition_id' => $edition->id, 'title' => 'F', 'fee' => 0, 'published' => true]);
+    $event = openEdition();
+    $formation = Formation::create(['event_id' => $event->id, 'title' => 'F', 'fee' => 0, 'published' => true]);
     $user = verifiedAccount();
     $user->update(['photo_path' => 'photos/awa.jpg']);
 

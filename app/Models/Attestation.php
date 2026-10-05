@@ -88,10 +88,10 @@ class Attestation extends Model
         ];
     }
 
-    /** @return BelongsTo<Edition, $this> */
-    public function edition(): BelongsTo
+    /** @return BelongsTo<Event, $this> */
+    public function event(): BelongsTo
     {
-        return $this->belongsTo(Edition::class);
+        return $this->belongsTo(Event::class);
     }
 
     /** @return BelongsTo<Participant, $this> */

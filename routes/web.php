@@ -2,9 +2,9 @@
 
 use App\Http\Controllers\Account\AgendaController;
 use App\Http\Controllers\Account\AuthorLookupController;
-use App\Http\Controllers\Account\ColloqueContextController;
 use App\Http\Controllers\Account\DashboardController;
 use App\Http\Controllers\Account\EmailVerificationController;
+use App\Http\Controllers\Account\EventContextController;
 use App\Http\Controllers\Account\FormationController as AccountFormationController;
 use App\Http\Controllers\Account\LoginController;
 use App\Http\Controllers\Account\LogoutController;
@@ -29,11 +29,11 @@ use App\Http\Controllers\Admin\AttestationExportController;
 use App\Http\Controllers\Admin\ClaimController;
 use App\Http\Controllers\Admin\DocumentController;
 use App\Http\Controllers\Admin\DocumentHubController;
-use App\Http\Controllers\Admin\EditionController;
-use App\Http\Controllers\Admin\EditionFormController;
-use App\Http\Controllers\Admin\EditionMediaController;
 use App\Http\Controllers\Admin\EmailController;
 use App\Http\Controllers\Admin\EmailTemplateController;
+use App\Http\Controllers\Admin\EventController;
+use App\Http\Controllers\Admin\EventFormController;
+use App\Http\Controllers\Admin\EventMediaController;
 use App\Http\Controllers\Admin\FormationController;
 use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\LoginController as AdminLoginController;
@@ -62,9 +62,9 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Public\ArchiveController;
 use App\Http\Controllers\Public\CoauthorController;
-use App\Http\Controllers\Public\ColloqueController;
 use App\Http\Controllers\Public\ContactController;
 use App\Http\Controllers\Public\DeroulementController;
+use App\Http\Controllers\Public\EventSeriesController;
 use App\Http\Controllers\Public\GescoController;
 use App\Http\Controllers\SessionEngagementController;
 use App\Http\Controllers\SessionPresenceApiController;
@@ -73,7 +73,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
 
-// Page publique d'une édition de colloque.
+// Page publique d'un événement de colloque.
 Route::get('/deroulement', DeroulementController::class)->name('public.deroulement');
 Route::get('/assistante', [GescoController::class, 'page'])->name('public.gesco');
 Route::post('/gesco/demander', [GescoController::class, 'ask'])->name('gesco.ask');
@@ -81,8 +81,8 @@ Route::post('/gesco/demander', [GescoController::class, 'ask'])->name('gesco.ask
 Route::get('/colloques-passes', [ArchiveController::class, 'index'])->name('public.archives');
 Route::get('/colloques-passes/{slug}', [ArchiveController::class, 'show'])->name('public.archive');
 
-Route::get('/colloque/{slug}', ColloqueController::class)->name('public.colloque');
-Route::post('/colloque/{edition}/contact', [ContactController::class, 'send'])->name('public.contact');
+Route::get('/colloque/{slug}', EventSeriesController::class)->name('public.colloque');
+Route::post('/colloque/{event}/contact', [ContactController::class, 'send'])->name('public.contact');
 
 // Notifications (participant ou staff - l'un ou l'autre guard).
 Route::middleware('auth:account,web')->group(function () {
@@ -169,9 +169,9 @@ Route::get('/.well-known/jwks.json', [AttestationController::class, 'jwks'])->na
 // Paiement en ligne : retour navigateur + webhook serveur-à-serveur.
 Route::get('/paiement/retour/{gateway}', [PaymentController::class, 'return'])->name('payment.return');
 Route::post('/webhooks/paiement/{gateway}', [PaymentController::class, 'webhook'])->name('payment.webhook');
-// Variante dédiée à une édition : à déclarer chez le marchand quand l'édition
+// Variante dédiée à un événement : à déclarer chez le marchand quand l'événement
 // utilise son PROPRE compte passerelle (évite d'essayer toutes les signatures).
-Route::post('/webhooks/paiement/{gateway}/{edition}', [PaymentController::class, 'webhook'])->name('payment.webhook.edition');
+Route::post('/webhooks/paiement/{gateway}/{event}', [PaymentController::class, 'webhook'])->name('payment.webhook.edition');
 
 /*
 |--------------------------------------------------------------------------
@@ -202,7 +202,7 @@ Route::permanentRedirect('/notifications', '/compte/notifications');
 Route::middleware(['auth:account', StampAccountSession::class])->group(function () {
     Route::get('/compte', DashboardController::class)->name('account.dashboard');
     Route::get('/compte/agenda.ics', [AgendaController::class, 'ics'])->name('account.agenda.ics');
-    Route::post('/compte/colloque', [ColloqueContextController::class, 'switch'])->name('account.colloque.switch');
+    Route::post('/compte/colloque', [EventContextController::class, 'switch'])->name('account.colloque.switch');
     Route::get('/compte/profil', [ProfileController::class, 'edit'])->name('account.profile');
     Route::put('/compte/profil', [ProfileController::class, 'update'])->name('account.profile.update');
     Route::get('/compte/profil/affiliations', [ProfileController::class, 'affiliations'])->name('account.profile.affiliations');
@@ -260,15 +260,15 @@ Route::middleware(['auth:account', StampAccountSession::class])->group(function 
     Route::post('/relectures/{review}', [ReviewWorkspaceController::class, 'submit'])->name('account.reviews.submit');
 
     // Paiement des frais
-    Route::get('/compte/paiement/{edition}', [AccountPaymentController::class, 'show'])->name('account.payment');
-    Route::post('/compte/paiement/{edition}', [AccountPaymentController::class, 'pay'])->name('account.payment.pay');
+    Route::get('/compte/paiement/{event}', [AccountPaymentController::class, 'show'])->name('account.payment');
+    Route::post('/compte/paiement/{event}', [AccountPaymentController::class, 'pay'])->name('account.payment.pay');
     Route::get('/formations', [AccountFormationController::class, 'index'])->name('account.formations');
     Route::post('/formations/{formation}/inscription', [AccountFormationController::class, 'enroll'])->name('account.formations.enroll');
     // Visio d'une formation : page du module visio (MeetingController), la même
     // que pour les sessions du programme (lecteur inline, rôles, arrière-plans).
     Route::get('/formations/{formation}/visio', [MeetingController::class, 'joinFormation'])->name('account.formations.visio');
     Route::get('/compte/recu/{payment}', App\Http\Controllers\Account\ReceiptController::class)->name('account.receipt');
-    Route::get('/compte/edition/{edition}/livret', [App\Http\Controllers\Account\DocumentController::class, 'livret'])->name('account.documents.livret');
+    Route::get('/compte/edition/{event}/livret', [App\Http\Controllers\Account\DocumentController::class, 'livret'])->name('account.documents.livret');
 
     // Vérification d'e-mail
     Route::get('/verification-email', [VerifyEmailController::class, 'notice'])->name('account.verification.notice');
@@ -299,7 +299,7 @@ Route::prefix('admin')->group(function () {
 
     Route::middleware('auth:web')->group(function () {
         // Accès de base au back-office : ouvert à tout membre du staff connecté
-        // (le contenu est ensuite restreint aux éditions accessibles).
+        // (le contenu est ensuite restreint aux événements accessibles).
         Route::get('/', App\Http\Controllers\Admin\DashboardController::class)->name('admin.dashboard');
         Route::get('/secretariat', [SecretariatController::class, 'index'])->name('admin.secretariat');
         // Rapports de séance : lecture, amélioration et validation - métier du secrétariat.
@@ -310,7 +310,7 @@ Route::prefix('admin')->group(function () {
         Route::post('/reclamations/{claim}/assigner', [ClaimController::class, 'assign'])->name('admin.claims.assign');
         Route::post('/reclamations/{claim}/analyser', [ClaimController::class, 'analyze'])->name('admin.claims.analyze');
         Route::post('/secretariat/assistant', [SecretariatController::class, 'generate'])->name('admin.secretariat.assist');
-        Route::get('/secretariat/assistant/{edition}/{id}/telecharger', [SecretariatController::class, 'download'])->name('admin.secretariat.assist.download');
+        Route::get('/secretariat/assistant/{event}/{id}/telecharger', [SecretariatController::class, 'download'])->name('admin.secretariat.assist.download');
         Route::get('/notifications', [NotificationController::class, 'index'])->name('admin.notifications');
         Route::post('/deconnexion', AdminLogoutController::class)->name('admin.logout');
 
@@ -327,33 +327,33 @@ Route::prefix('admin')->group(function () {
         Route::post('/profil/2fa/codes', [App\Http\Controllers\Admin\ProfileController::class, 'regenerateRecovery'])->name('admin.profile.2fa.recovery');
         Route::delete('/profil/2fa', [App\Http\Controllers\Admin\ProfileController::class, 'disableTwoFactor'])->name('admin.profile.2fa.disable');
 
-        // Éditions : lecture / écriture (étanchéité par édition).
-        Route::get('/editions', [EditionController::class, 'index'])->middleware('edition.cap:editions_read')->name('admin.editions.index');
-        Route::get('/editions/{edition}/exporter', [EditionController::class, 'export'])->middleware('edition.cap:editions_read')->name('admin.editions.export');
+        // Événements : lecture / écriture (étanchéité par événement).
+        Route::get('/editions', [EventController::class, 'index'])->middleware('edition.cap:editions_read')->name('admin.evenements.index');
+        Route::get('/editions/{event}/exporter', [EventController::class, 'export'])->middleware('edition.cap:editions_read')->name('admin.evenements.export');
         Route::middleware('edition.cap:editions_write')->group(function () {
-            Route::post('/editions/{edition}/importer', [EditionController::class, 'import'])->name('admin.editions.import');
-            Route::post('/editions/{edition}/activer', [EditionController::class, 'activate'])->name('admin.editions.activate');
-            Route::delete('/editions/{edition}', [EditionController::class, 'destroy'])->name('admin.editions.destroy');
-            Route::get('/editions/creer', [EditionFormController::class, 'create'])->name('admin.editions.create');
-            Route::post('/editions/creer', [EditionFormController::class, 'store'])->name('admin.editions.store');
-            Route::post('/editions/ia-assist', [EditionFormController::class, 'aiAssist'])->name('admin.editions.ai-assist');
-            Route::post('/editions/ia-assist-json', [EditionFormController::class, 'aiAssistJson'])->name('admin.editions.ai-assist-json');
-            Route::get('/editions/{edition}/modifier', [EditionFormController::class, 'edit'])->name('admin.editions.edit');
-            Route::put('/editions/{edition}/modifier', [EditionFormController::class, 'update'])->name('admin.editions.update');
-            Route::post('/editions/{edition}/relecteurs/expertise', [EditionFormController::class, 'saveReviewerExpertise'])->name('admin.editions.reviewers.expertise');
-            Route::post('/editions/{edition}/relecteurs/grille', [EditionFormController::class, 'saveReviewGrid'])->name('admin.editions.reviewers.criteria');
-            Route::post('/editions/{edition}/paiement', [EditionFormController::class, 'savePayment'])->name('admin.editions.payment');
-            Route::post('/editions/{edition}/visio', [EditionFormController::class, 'saveMeetings'])->name('admin.editions.meetings');
-            Route::post('/editions/{edition}/traductions', [EditionFormController::class, 'saveTranslations'])->name('admin.editions.translations');
-            Route::post('/editions/{edition}/equipe', [EditionFormController::class, 'attachTeamMember'])->name('admin.editions.team.attach');
-            Route::delete('/editions/{edition}/equipe', [EditionFormController::class, 'detachTeamMember'])->name('admin.editions.team.detach');
-            Route::get('/editions/{edition}/formulaire', [SubmissionFormController::class, 'edit'])->name('admin.editions.form');
-            Route::put('/editions/{edition}/formulaire', [SubmissionFormController::class, 'update'])->name('admin.editions.form.update');
+            Route::post('/editions/{event}/importer', [EventController::class, 'import'])->name('admin.evenements.import');
+            Route::post('/editions/{event}/activer', [EventController::class, 'activate'])->name('admin.evenements.activate');
+            Route::delete('/editions/{event}', [EventController::class, 'destroy'])->name('admin.evenements.destroy');
+            Route::get('/editions/creer', [EventFormController::class, 'create'])->name('admin.evenements.create');
+            Route::post('/editions/creer', [EventFormController::class, 'store'])->name('admin.evenements.store');
+            Route::post('/editions/ia-assist', [EventFormController::class, 'aiAssist'])->name('admin.evenements.ai-assist');
+            Route::post('/editions/ia-assist-json', [EventFormController::class, 'aiAssistJson'])->name('admin.evenements.ai-assist-json');
+            Route::get('/editions/{event}/modifier', [EventFormController::class, 'edit'])->name('admin.evenements.edit');
+            Route::put('/editions/{event}/modifier', [EventFormController::class, 'update'])->name('admin.evenements.update');
+            Route::post('/editions/{event}/relecteurs/expertise', [EventFormController::class, 'saveReviewerExpertise'])->name('admin.evenements.reviewers.expertise');
+            Route::post('/editions/{event}/relecteurs/grille', [EventFormController::class, 'saveReviewGrid'])->name('admin.evenements.reviewers.criteria');
+            Route::post('/editions/{event}/paiement', [EventFormController::class, 'savePayment'])->name('admin.evenements.payment');
+            Route::post('/editions/{event}/visio', [EventFormController::class, 'saveMeetings'])->name('admin.evenements.meetings');
+            Route::post('/editions/{event}/traductions', [EventFormController::class, 'saveTranslations'])->name('admin.evenements.translations');
+            Route::post('/editions/{event}/equipe', [EventFormController::class, 'attachTeamMember'])->name('admin.evenements.team.attach');
+            Route::delete('/editions/{event}/equipe', [EventFormController::class, 'detachTeamMember'])->name('admin.evenements.team.detach');
+            Route::get('/editions/{event}/formulaire', [SubmissionFormController::class, 'edit'])->name('admin.evenements.form');
+            Route::put('/editions/{event}/formulaire', [SubmissionFormController::class, 'update'])->name('admin.evenements.form.update');
             // Règles & limites seules : elles vivent dans l'onglet Options du module Soumissions.
-            Route::put('/editions/{edition}/formulaire/regles', [SubmissionFormController::class, 'updateRules'])->name('admin.editions.form.rules');
-            Route::get('/editions/{edition}/documents', [EditionMediaController::class, 'index'])->name('admin.editions.documents');
-            Route::post('/editions/{edition}/documents', [EditionMediaController::class, 'store'])->name('admin.editions.documents.store');
-            Route::delete('/editions/{edition}/documents/{medium}', [EditionMediaController::class, 'destroy'])->name('admin.editions.documents.destroy');
+            Route::put('/editions/{event}/formulaire/regles', [SubmissionFormController::class, 'updateRules'])->name('admin.evenements.form.rules');
+            Route::get('/editions/{event}/documents', [EventMediaController::class, 'index'])->name('admin.evenements.documents');
+            Route::post('/editions/{event}/documents', [EventMediaController::class, 'store'])->name('admin.evenements.documents.store');
+            Route::delete('/editions/{event}/documents/{medium}', [EventMediaController::class, 'destroy'])->name('admin.evenements.documents.destroy');
         });
 
         // Soumissions.
@@ -428,17 +428,17 @@ Route::prefix('admin')->group(function () {
             Route::delete('/emails/modeles/{key}', [EmailTemplateController::class, 'destroy'])->name('admin.emails.templates.destroy');
         });
 
-        // Rapports (par édition).
+        // Rapports (par événement).
         Route::middleware('edition.cap:view_dashboard')->group(function () {
             Route::get('/rapports', [ReportController::class, 'index'])->name('admin.reports.index');
             Route::post('/rapports/generer', [ReportController::class, 'generate'])->name('admin.reports.generate');
-            Route::get('/rapports/{edition}/excel', [ReportController::class, 'xlsx'])->name('admin.reports.xlsx');
-            Route::get('/rapports/{edition}/pdf', [ReportController::class, 'pdf'])->name('admin.reports.pdf');
-            Route::get('/rapports/{edition}/export/{dataset}/{format}', [ReportController::class, 'export'])->name('admin.reports.export');
-            Route::get('/rapports/{edition}/ia/{id}/telecharger', [ReportController::class, 'aiDownload'])->name('admin.reports.ai-download');
+            Route::get('/rapports/{event}/excel', [ReportController::class, 'xlsx'])->name('admin.reports.xlsx');
+            Route::get('/rapports/{event}/pdf', [ReportController::class, 'pdf'])->name('admin.reports.pdf');
+            Route::get('/rapports/{event}/export/{dataset}/{format}', [ReportController::class, 'export'])->name('admin.reports.export');
+            Route::get('/rapports/{event}/ia/{id}/telecharger', [ReportController::class, 'aiDownload'])->name('admin.reports.ai-download');
         });
 
-        // Gestion de projet de l'édition (l'édition pilotée comme un projet) -
+        // Gestion de projet de l'événement (l'événement pilotée comme un projet) -
         // capacité dédiée « project ».
         Route::middleware('edition.cap:project')->group(function () {
             Route::get('/projet', [ProjectController::class, 'index'])->name('admin.project.index');
@@ -459,7 +459,7 @@ Route::prefix('admin')->group(function () {
             Route::delete('/projet/jalons/{milestone}', [ProjectController::class, 'destroyMilestone'])->name('admin.project.milestones.destroy');
         });
 
-        // Programme / créneaux (structure de l'édition).
+        // Programme / créneaux (structure de l'événement).
         Route::middleware('edition.cap:editions_read')->group(function () {
             // Module Programme : une page, un onglet par `?tab=`.
             Route::get('/programme', [ProgramController::class, 'index'])->name('admin.program.index');
@@ -495,14 +495,14 @@ Route::prefix('admin')->group(function () {
         // Annonces du déroulement (admin, gestionnaire, secrétariat).
         Route::middleware('edition.cap:announcements')->group(function () {
             Route::get('/annonces', [AnnouncementController::class, 'index'])->name('admin.announcements');
-            Route::post('/editions/{edition}/annonces', [AnnouncementController::class, 'store'])->name('admin.announcements.store');
-            Route::delete('/editions/{edition}/annonces/{announcement}', [AnnouncementController::class, 'destroy'])->name('admin.announcements.destroy');
+            Route::post('/editions/{event}/annonces', [AnnouncementController::class, 'store'])->name('admin.announcements.store');
+            Route::delete('/editions/{event}/annonces/{announcement}', [AnnouncementController::class, 'destroy'])->name('admin.announcements.destroy');
         });
 
-        // Formations (module activable par édition).
+        // Formations (module activable par événement).
         Route::middleware('edition.cap:formation')->group(function () {
             Route::get('/formations', [FormationController::class, 'index'])->name('admin.formations');
-            Route::post('/editions/{edition}/formations', [FormationController::class, 'store'])->name('admin.formations.store');
+            Route::post('/editions/{event}/formations', [FormationController::class, 'store'])->name('admin.formations.store');
             Route::post('/formations/ia', [FormationController::class, 'aiAssist'])->name('admin.formations.ai');
             Route::get('/formations/{formation}', [FormationController::class, 'show'])->name('admin.formations.show');
             Route::put('/formations/{formation}', [FormationController::class, 'update'])->name('admin.formations.update');
@@ -545,12 +545,12 @@ Route::prefix('admin')->group(function () {
             Route::post('/modeles/generer', [TemplateDesignerController::class, 'generate'])->name('admin.documents.templates.generate');
             Route::post('/modeles/enregistrer', [TemplateDesignerController::class, 'save'])->name('admin.documents.templates.save');
             Route::post('/modeles/image', [TemplateDesignerController::class, 'upload'])->name('admin.documents.templates.upload');
-            Route::get('/editions/{edition}/livret', [DocumentController::class, 'livret'])->name('admin.documents.livret');
-            Route::get('/editions/{edition}/badges', [DocumentController::class, 'badges'])->name('admin.documents.badges');
-            Route::get('/editions/{edition}/fiches-session', [DocumentController::class, 'sessionSheets'])->name('admin.documents.sessions');
-            Route::get('/editions/{edition}/pv-seances', [DocumentController::class, 'sessionPv'])->name('admin.documents.session-pv');
-            Route::get('/editions/{edition}/mise-en-page-seances', [DocumentController::class, 'sessionLayout'])->name('admin.documents.session-layout');
-            Route::put('/editions/{edition}/mise-en-page-seances', [DocumentController::class, 'saveSessionLayout'])->name('admin.documents.session-layout.save');
+            Route::get('/editions/{event}/livret', [DocumentController::class, 'livret'])->name('admin.documents.livret');
+            Route::get('/editions/{event}/badges', [DocumentController::class, 'badges'])->name('admin.documents.badges');
+            Route::get('/editions/{event}/fiches-session', [DocumentController::class, 'sessionSheets'])->name('admin.documents.sessions');
+            Route::get('/editions/{event}/pv-seances', [DocumentController::class, 'sessionPv'])->name('admin.documents.session-pv');
+            Route::get('/editions/{event}/mise-en-page-seances', [DocumentController::class, 'sessionLayout'])->name('admin.documents.session-layout');
+            Route::put('/editions/{event}/mise-en-page-seances', [DocumentController::class, 'saveSessionLayout'])->name('admin.documents.session-layout.save');
         });
 
         // Réglages (dont agents IA).

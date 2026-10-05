@@ -13,10 +13,10 @@ use Illuminate\Support\Facades\Mail;
 // helpers globaux : openEdition()/verifiedAccount() -> AccountSubmissionTest ;
 // adminStaff()/seededSubmission() -> AdminSubmissionWorkflowTest
 
-/** Participant lié à un compte sur une édition. */
-function notifiedParticipant($edition, $account, array $attrs = [])
+/** Participant lié à un compte sur un événement. */
+function notifiedParticipant($event, $account, array $attrs = [])
 {
-    return $edition->participants()->create(array_merge([
+    return $event->participants()->create(array_merge([
         'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo',
         'email' => $account->email, 'role' => 'author',
     ], $attrs));
@@ -35,10 +35,10 @@ it('notifie le compte auteur d’une décision de soumission', function () {
 
 it('notifie le participant et le staff à la confirmation d’un paiement', function () {
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
-    $participant = notifiedParticipant($edition, $account);
-    $payment = $edition->payments()->create([
+    $participant = notifiedParticipant($event, $account);
+    $payment = $event->payments()->create([
         'participant_id' => $participant->id, 'amount' => 15000, 'currency' => 'FCFA', 'status' => 'pending',
     ]);
 
@@ -49,9 +49,9 @@ it('notifie le participant et le staff à la confirmation d’un paiement', func
 });
 
 it('notifie le participant à l’émission d’une attestation', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
-    $participant = notifiedParticipant($edition, $account);
+    $participant = notifiedParticipant($event, $account);
 
     (new IssueAttestation)->handle($participant, 'participation');
 
@@ -62,11 +62,11 @@ it('notifie le participant à l’émission d’une attestation', function () {
 
 it('notifie le staff d’une nouvelle communication', function () {
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
 
     $this->actingAs($account, 'account')
-        ->post(route('account.submissions.store', $edition->slug), [
+        ->post(route('account.submissions.store', $event->slug), [
             'title' => 'Innovation durable',
             'track' => 'Santé',
             'type' => 'oral',
@@ -79,9 +79,9 @@ it('notifie le staff d’une nouvelle communication', function () {
 
 it('notifie le staff d’un message de contact', function () {
     $staff = adminStaff();
-    $edition = openEdition();
+    $event = openEdition();
 
-    $this->post(route('public.contact', $edition->id), [
+    $this->post(route('public.contact', $event->id), [
         'loaded_at' => time() - 10,
         'name' => 'Jean Dupont',
         'email' => 'jean@example.tg',
@@ -137,12 +137,12 @@ it('la page Notifications est protégée par le guard account', function () {
 
 it('notifie le compte du relecteur à l’assignation', function () {
     $submission = seededSubmission('submitted');
-    $edition = $submission->edition;
+    $event = $submission->event;
 
     $reviewerAccount = User::create([
         'first_name' => 'Rel', 'last_name' => 'Ecteur', 'email' => 'rev@example.tg', 'password' => 'pass12345',
     ]);
-    $edition->participants()->create([
+    $event->participants()->create([
         'user_id' => $reviewerAccount->id, 'first_name' => 'Rel', 'last_name' => 'Ecteur',
         'email' => 'rev@example.tg', 'role' => 'author',
     ]);
@@ -164,10 +164,10 @@ it('résout les canaux selon les défauts du registre', function () {
 });
 
 it('ne crée pas de notification en base quand l’in-app est désactivé', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
     $account->saveNotificationPreferences(['attestation' => ['inapp' => false, 'email' => false]], 'account');
-    $participant = notifiedParticipant($edition, $account);
+    $participant = notifiedParticipant($event, $account);
 
     (new IssueAttestation)->handle($participant, 'participation');
 

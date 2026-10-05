@@ -3,7 +3,7 @@
 namespace App\Support;
 
 use App\Models\Attestation;
-use App\Models\Edition;
+use App\Models\Event;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
@@ -19,12 +19,12 @@ use Illuminate\Http\Request;
 class AttestationQuery
 {
     /** @return Builder<Attestation> */
-    public static function filtered(Request $request, ?Edition $edition): Builder
+    public static function filtered(Request $request, ?Event $event): Builder
     {
-        // Pas d'édition = rien. Mieux vaut une liste vide qu'un export de toutes
-        // les éditions de la plateforme.
-        $query = $edition
-            ? Attestation::where('edition_id', $edition->id)
+        // Pas d'événement = rien. Mieux vaut une liste vide qu'un export de toutes
+        // les événements de la plateforme.
+        $query = $event
+            ? Attestation::where('event_id', $event->id)
             : Attestation::query()->whereRaw('1 = 0');
 
         if (($type = (string) $request->query('type', '')) !== '' && array_key_exists($type, Attestation::TYPES)) {

@@ -2,14 +2,14 @@
 
 namespace Database\Factories;
 
-use App\Models\Colloque;
+use App\Models\EventSeries;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
- * @extends Factory<Colloque>
+ * @extends Factory<EventSeries>
  */
-class ColloqueFactory extends Factory
+class EventSeriesFactory extends Factory
 {
     public function definition(): array
     {

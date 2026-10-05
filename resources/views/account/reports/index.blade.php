@@ -7,7 +7,7 @@
         <div class="ukc-card" style="margin-bottom:14px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
             <div>
                 <div style="font-size:12px;color:var(--ukc-muted);text-transform:uppercase;letter-spacing:.04em;">
-                    {{ $session->edition?->colloque?->name ?: __('Colloque') }} · {{ $session->edition?->title ?: $session->edition?->year }}
+                    {{ $session->event?->series?->name ?: __('Colloque') }} · {{ $session->event?->title ?: $session->event?->year }}
                 </div>
                 <h3 style="margin:2px 0 4px;">{{ $session->label }}</h3>
                 <div style="font-size:13px;color:var(--ukc-muted);">

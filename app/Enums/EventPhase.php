@@ -3,15 +3,15 @@
 namespace App\Enums;
 
 use App\Enums\Concerns\HasLabels;
-use App\Models\Edition;
+use App\Models\Event;
 
 /**
- * Phase du cycle de vie d'une édition (guide §2.2), dérivée des signaux existants
+ * Phase du cycle de vie d'un événement (guide §2.2), dérivée des signaux existants
  * (publication, dates de l'événement, ouverture/clôture des soumissions).
  *
  * ⚠️ Piège métier : un simple appel à communications ouvert n'est PAS « en cours »
- * - l'édition n'est « en cours » que lorsque le déroulement a commencé (dates de
- * l'événement atteintes). {@see Edition::phase()}.
+ * - l'événement n'est « en cours » que lorsque le déroulement a commencé (dates de
+ * l'événement atteintes). {@see Event::phase()}.
  *
  * Correspondance avec les 3 vues publiques ({@see publicView()}) :
  *  - à venir  ← call_open · under_review · registration
@@ -19,7 +19,7 @@ use App\Models\Edition;
  *  - passé    ← closed
  *  - (brouillon : non publié, invisible)
  */
-enum EditionPhase: string
+enum EventPhase: string
 {
     use HasLabels;
 
@@ -37,8 +37,8 @@ enum EditionPhase: string
             self::CallOpen => 'Appel à communications',
             self::UnderReview => 'Évaluation en cours',
             self::Registration => 'Inscriptions ouvertes',
-            self::Ongoing => 'Colloque en cours',
-            self::Closed => 'Colloque passé',
+            self::Ongoing => 'Événement en cours',
+            self::Closed => 'Événement passé',
         };
     }
 
@@ -69,7 +69,7 @@ enum EditionPhase: string
         };
     }
 
-    /** Est-ce une édition passée (archives) ? */
+    /** Est-ce un événement passé (archives) ? */
     public function isPast(): bool
     {
         return $this === self::Closed;

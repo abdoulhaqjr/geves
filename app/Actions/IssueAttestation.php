@@ -13,8 +13,8 @@ use App\Support\Notifier;
 
 /**
  * Émet une attestation vérifiable pour un participant et un type donnés.
- * Idempotent : une seule attestation par (édition, participant, type) - et, pour
- * une attestation de communication, par (édition, participant, type, communication)
+ * Idempotent : une seule attestation par (événement, participant, type) - et, pour
+ * une attestation de communication, par (événement, participant, type, communication)
  * puisqu'une personne a une attestation par communication associée.
  *
  * À l'émission, l'attestation est scellée par une signature cryptographique de
@@ -30,7 +30,7 @@ class IssueAttestation
 
     public function handle(Participant $participant, string $type, ?Submission $submission = null, ?Formation $formation = null): Attestation
     {
-        $existing = Attestation::where('edition_id', $participant->edition_id)
+        $existing = Attestation::where('event_id', $participant->event_id)
             ->where('participant_id', $participant->id)
             ->where('type', $type)
             ->where('submission_id', $submission?->id)
@@ -61,7 +61,7 @@ class IssueAttestation
 
         // uuid généré par AttestationObserver.
         $attestation = Attestation::create([
-            'edition_id' => $participant->edition_id,
+            'event_id' => $participant->event_id,
             'type' => $type,
             'participant_id' => $participant->id,
             'submission_id' => $submission?->id,
@@ -80,7 +80,7 @@ class IssueAttestation
     }
 
     /**
-     * Prévient le bénéficiaire - si l'édition délivre en ligne.
+     * Prévient le bénéficiaire - si l'événement délivre en ligne.
      *
      * ⚠️ **Rien en mode papier.** L'exemplaire qui fait foi est celui qu'on remet
      * en main propre : annoncer un document qu'on ne peut pas encore retirer ne
@@ -89,9 +89,9 @@ class IssueAttestation
      */
     private function announce(Attestation $attestation, Participant $participant): void
     {
-        $edition = $attestation->edition;
+        $event = $attestation->event;
 
-        if (! AttestationPolicy::notifies($edition)) {
+        if (! AttestationPolicy::notifies($event)) {
             return;
         }
 
@@ -105,7 +105,7 @@ class IssueAttestation
             icon: 'award',
         );
 
-        if (! AttestationPolicy::sendsSms($edition)) {
+        if (! AttestationPolicy::sendsSms($event)) {
             return;
         }
 

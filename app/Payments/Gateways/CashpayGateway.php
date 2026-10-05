@@ -83,7 +83,7 @@ class CashpayGateway implements OnlineGateway
                 'amount' => (int) round((float) $payment->amount),
                 'currency' => 'XOF',
                 'merchant_reference' => 'GESCO-'.$payment->id,
-                'description' => 'Frais d\'inscription - '.($payment->edition?->title ?? 'Colloque'),
+                'description' => 'Frais d\'inscription - '.($payment->event?->title ?? 'Événement'),
                 'callback_url' => route('payment.webhook', ['gateway' => 'cashpay']),
                 'redirect_url' => route('payment.return', ['gateway' => 'cashpay', 'payment' => $payment->id]),
                 // Pré-remplit la page CashPay (repli sur le compte lié si le

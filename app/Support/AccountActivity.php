@@ -11,7 +11,7 @@ use Illuminate\Support\Collection;
 
 /**
  * Rôles et activité d'un compte **dérivés** (jamais stockés) à travers toutes
- * les éditions, par rapprochement d'e-mail (insensible à la casse) :
+ * les événements, par rapprochement d'e-mail (insensible à la casse) :
  * communications (auteur/co-auteur), sessions modérées/rapportées, comités.
  * Le rôle affiché n'est donc pas figé par participation mais reflète l'ensemble
  * de l'activité de la personne.
@@ -46,7 +46,7 @@ class AccountActivity
                 $q->whereIn('participant_id', $ids)
                     ->orWhere('authors', 'like', '%'.$email.'%');
             })
-            ->with('edition')
+            ->with('event')
             ->latest('id')
             ->get()
             ->filter(fn (Submission $s) => $ids->contains($s->participant_id) || $this->emailInAuthors($s, $email))
@@ -74,14 +74,14 @@ class AccountActivity
     public function moderatedSessions(): Collection
     {
         return EventSession::whereRaw('LOWER(moderator_email) = ?', [$this->email()])
-            ->with('edition')->latest('id')->get();
+            ->with('event')->latest('id')->get();
     }
 
     /** @return Collection<int, EventSession> */
     public function reportedSessions(): Collection
     {
         return EventSession::whereRaw('LOWER(rapporteur_email) = ?', [$this->email()])
-            ->with(['edition', 'report'])->latest('id')->get();
+            ->with(['event', 'report'])->latest('id')->get();
     }
 
     /** @return Collection<int, CommitteeMember> */
@@ -98,7 +98,7 @@ class AccountActivity
                         ->whereRaw('LOWER(person_name) = ?', [$fullName]);
                 });
             }
-        })->with('edition')->latest('id')->get();
+        })->with('event')->latest('id')->get();
     }
 
     /** Le compte a-t-il au moins une participation en tant que relecteur ? */
@@ -115,7 +115,7 @@ class AccountActivity
     }
 
     /**
-     * Rôles dérivés (libellés), agrégés sur toutes les éditions.
+     * Rôles dérivés (libellés), agrégés sur tous les événements.
      *
      * @return list<string>
      */

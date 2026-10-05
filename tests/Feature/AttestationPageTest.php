@@ -7,7 +7,7 @@ use App\Documents\LayoutSanitizer;
 use App\Models\Attestation;
 use App\Models\DocumentTemplate;
 use App\Support\AttestationPolicy;
-use App\Support\EditionSettings;
+use App\Support\EventSettings;
 
 /**
  * Page publique d'une attestation : c'est l'adresse que porte le QR code et que
@@ -15,11 +15,11 @@ use App\Support\EditionSettings;
  * qui l'a délivrée, ce qu'elle certifie et comment la vérifier.
  */
 it('présente l’attestation, son émetteur et ce qu’elle certifie', function () {
-    $edition = openEdition();
-    $edition->colloque->update(['description' => 'Rendez-vous annuel des universités partenaires.']);
-    $edition->update(['theme' => 'Innover pour un avenir durable']);
+    $event = openEdition();
+    $event->series->update(['description' => 'Rendez-vous annuel des universités partenaires.']);
+    $event->update(['theme' => 'Innover pour un avenir durable']);
 
-    $p = $edition->participants()->create([
+    $p = $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author',
     ]);
     $att = (new IssueAttestation)->handle($p, 'participation');
@@ -27,7 +27,7 @@ it('présente l’attestation, son émetteur et ce qu’elle certifie', function
     $this->get(route('attestation.document', $att->uuid))
         ->assertOk()
         ->assertSee('Awa Kodjo')
-        ->assertSee($edition->colloque->name)
+        ->assertSee($event->series->name)
         ->assertSee('Rendez-vous annuel des universités partenaires.')
         ->assertSee('Innover pour un avenir durable')
         ->assertSee($att->uuid)
@@ -42,8 +42,8 @@ it('présente l’attestation, son émetteur et ce qu’elle certifie', function
 });
 
 it('vérifie l’attestation sur place, sans quitter la page', function () {
-    $edition = openEdition();
-    $p = $edition->participants()->create([
+    $event = openEdition();
+    $p = $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author',
     ]);
     $att = (new IssueAttestation)->handle($p, 'participation');
@@ -65,8 +65,8 @@ it('vérifie l’attestation sur place, sans quitter la page', function () {
 });
 
 it('dit qu’une attestation révoquée ne vaut plus preuve', function () {
-    $edition = openEdition();
-    $p = $edition->participants()->create([
+    $event = openEdition();
+    $p = $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author',
     ]);
     $att = (new IssueAttestation)->handle($p, 'participation');
@@ -79,12 +79,12 @@ it('dit qu’une attestation révoquée ne vaut plus preuve', function () {
 });
 
 it('n’affiche pas d’intitulé sans valeur', function () {
-    $edition = openEdition();
+    $event = openEdition();
     // Ni thème ni lieu : les lignes correspondantes ne doivent pas apparaître
     // vides - un intitulé sans valeur donne l'impression d'un gabarit cassé.
-    $edition->update(['theme' => null, 'location' => null]);
+    $event->update(['theme' => null, 'location' => null]);
 
-    $p = $edition->participants()->create([
+    $p = $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author',
     ]);
     $att = (new IssueAttestation)->handle($p, 'participation');
@@ -95,20 +95,20 @@ it('n’affiche pas d’intitulé sans valeur', function () {
         ->assertDontSee('<dt>Lieu</dt>', false);
 });
 
-it('remplace [signatory.name] par le signataire réglé pour l’édition', function () {
-    $edition = openEdition();
-    EditionSettings::setMany($edition, [
+it('remplace [signatory.name] par le signataire réglé pour l’événement', function () {
+    $event = openEdition();
+    EventSettings::setMany($event, [
         'attestations.signatory' => 'Pr. Padabo KADOUZA',
         'attestations.signatory_role' => 'Président du comité d’organisation',
     ]);
 
-    $p = $edition->participants()->create([
+    $p = $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author',
     ]);
     $att = (new IssueAttestation)->handle($p, 'participation');
 
     // Le modèle livré porte le jeton ; sans valeur réglée, la ligne sortait vide.
-    $tpl = DocumentTemplate::ensureFor((int) $edition->id, 'attestation', 'participation');
+    $tpl = DocumentTemplate::ensureFor((int) $event->id, 'attestation', 'participation');
     $layout = (array) $tpl->layout;
     $layout['elements'][] = ['type' => 'text', 'x' => 10, 'y' => 10, 'w' => 400, 'h' => 30, 'text' => '[signatory.name]'];
     $tpl->forceFill(['layout' => $layout])->save();
@@ -123,8 +123,8 @@ it('remplace [signatory.name] par le signataire réglé pour l’édition', func
 it('fait pointer le QR du document vers la page de l’attestation', function () {
     // ⚠️ Le QR menait à la page de vérification seule : on scannait une
     // attestation pour atterrir sur un verdict, sans le document.
-    $edition = openEdition();
-    $p = $edition->participants()->create([
+    $event = openEdition();
+    $p = $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author',
     ]);
     $att = (new IssueAttestation)->handle($p, 'participation');
@@ -136,11 +136,11 @@ it('fait pointer le QR du document vers la page de l’attestation', function ()
 
 // adminStaff() -> AdminSubmissionWorkflowTest
 
-/** Une attestation de participation, sur une édition neuve. */
+/** Une attestation de participation, sur un événement neuf. */
 function attestationPublique(): Attestation
 {
-    $edition = openEdition();
-    $p = $edition->participants()->create([
+    $event = openEdition();
+    $p = $event->participants()->create([
         'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa-pub@example.tg', 'role' => 'author',
     ]);
 
@@ -155,8 +155,8 @@ function attestationPublique(): Attestation
  */
 it('marque le document SPÉCIMEN et retire les gestes en délivrance papier', function () {
     $attestation = attestationPublique();
-    EditionSettings::set(
-        $attestation->edition,
+    EventSettings::set(
+        $attestation->event,
         'attestations.delivery',
         AttestationPolicy::DELIVERY_PAPER,
     );
@@ -204,7 +204,7 @@ it('rend le spécimen avec la géométrie exacte du document imprimé', function
     $attestation = attestationPublique();
 
     $template = DocumentTemplate::ensureFor(
-        (int) $attestation->edition_id, 'attestation', (string) $attestation->type,
+        (int) $attestation->event_id, 'attestation', (string) $attestation->type,
     );
     $layout = LayoutSanitizer::sanitize((array) $template->layout, 'attestation', $attestation->type);
     $vars = AttestationVars::for($attestation, route('attestation.document', $attestation->uuid));

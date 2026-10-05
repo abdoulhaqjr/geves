@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::create('attestations', function (Blueprint $table) {
             $table->id();
             $table->string('uuid', 64)->unique();
-            $table->foreignId('edition_id')->constrained('editions')->cascadeOnDelete();
+            $table->foreignId('event_id')->constrained('events')->cascadeOnDelete();
             $table->string('type', 30)->default('');
             $table->foreignId('participant_id')->nullable()->index();
             $table->string('recipient_name', 200)->nullable();

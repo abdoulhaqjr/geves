@@ -23,7 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Langue de la requête (i18n) : compte → session → navigateur → défaut.
         $middleware->web(append: SetLocale::class);
 
-        // Étanchéité d'accès par édition (staff affecté à un colloque).
+        // Étanchéité d'accès par événement (staff affecté à un colloque).
         $middleware->alias(['edition.cap' => EnsureEditionAccess::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

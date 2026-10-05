@@ -14,9 +14,9 @@ use Illuminate\Support\Facades\Http;
 // openEdition() -> AccountSubmissionTest
 
 /** Session de visio prête (statut live, visibilité donnée). */
-function liveSession($edition, string $visibility = 'participants', array $attrs = [])
+function liveSession($event, string $visibility = 'participants', array $attrs = [])
 {
-    return $edition->sessions()->create(array_merge([
+    return $event->sessions()->create(array_merge([
         'type' => 'plenary', 'label' => 'Séance', 'meeting_status' => 'live', 'meeting_visibility' => $visibility,
     ], $attrs));
 }
@@ -42,8 +42,8 @@ it('construit une URL Jitsi publique avec le nom d’affichage', function () {
     config()->set('meetings.jitsi.domain', 'meet.jit.si');
     config()->set('meetings.jitsi.app_secret', null);
 
-    $edition = openEdition();
-    $session = liveSession($edition, 'public', ['meeting_room' => 'salle-plenary']);
+    $event = openEdition();
+    $session = liveSession($event, 'public', ['meeting_room' => 'salle-plenary']);
 
     $url = (new JitsiProvider)->joinUrl($session, MeetingRole::Attendee, 'Awa Kodjo');
 
@@ -55,8 +55,8 @@ it('émet un JWT Jitsi quand un secret self-host est configuré', function () {
     config()->set('meetings.jitsi.app_id', 'gesco');
     config()->set('meetings.jitsi.app_secret', str_repeat('k', 40));
 
-    $edition = openEdition();
-    $session = liveSession($edition, 'public', ['meeting_room' => 'salle-1']);
+    $event = openEdition();
+    $session = liveSession($event, 'public', ['meeting_room' => 'salle-1']);
     $provider = new JitsiProvider;
 
     expect($provider->usesJwt())->toBeTrue();
@@ -73,22 +73,22 @@ it('émet un JWT Jitsi quand un secret self-host est configuré', function () {
 // --- EventSession : état & salle -------------------------------------------
 
 it('reflète l’état de la visio', function () {
-    $edition = openEdition();
+    $event = openEdition();
 
-    $none = $edition->sessions()->create(['type' => 'plenary', 'label' => 'Sans visio']);
+    $none = $event->sessions()->create(['type' => 'plenary', 'label' => 'Sans visio']);
     expect($none->hasMeeting())->toBeFalse();
     expect($none->isLive())->toBeFalse();
 
-    $live = liveSession($edition);
+    $live = liveSession($event);
     expect($live->hasMeeting())->toBeTrue();
     expect($live->isLive())->toBeTrue();
     expect($live->meetingRoom())->not->toBeEmpty(); // auto-généré
 });
 
 it('le scope live ne retourne que les sessions en direct', function () {
-    $edition = openEdition();
-    liveSession($edition);
-    $edition->sessions()->create(['type' => 'plenary', 'label' => 'B', 'meeting_status' => 'scheduled']);
+    $event = openEdition();
+    liveSession($event);
+    $event->sessions()->create(['type' => 'plenary', 'label' => 'B', 'meeting_status' => 'scheduled']);
 
     expect(EventSession::query()->live()->count())->toBe(1);
 });
@@ -96,35 +96,35 @@ it('le scope live ne retourne que les sessions en direct', function () {
 // --- Rôles & accès ----------------------------------------------------------
 
 it('donne le rôle modérateur au staff et au modérateur assigné', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $modo = User::create(['first_name' => 'Mo', 'last_name' => 'Do', 'email' => 'modo@example.tg', 'password' => 'pass12345']);
-    $session = liveSession($edition, 'participants', ['moderator_email' => 'modo@example.tg']);
+    $session = liveSession($event, 'participants', ['moderator_email' => 'modo@example.tg']);
 
     expect($session->meetingRoleFor(null, isStaff: true))->toBe(MeetingRole::Moderator);
     expect($session->meetingRoleFor($modo))->toBe(MeetingRole::Moderator);
 });
 
 it('donne le rôle présentateur au communicant programmé dans la session', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = User::create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'password' => 'pass12345']);
-    $participant = $edition->participants()->create(['user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
-    $submission = $edition->submissions()->create([
+    $participant = $event->participants()->create(['user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $submission = $event->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => '26-001', 'title' => 'Com', 'abstract' => 'x',
         'status' => 'accepted', 'authors' => [['name' => 'Awa Kodjo', 'corresponding' => true]],
     ]);
-    $session = liveSession($edition);
-    $session->slots()->create(['edition_id' => $edition->id, 'submission_id' => $submission->id, 'participant_id' => 0]);
+    $session = liveSession($event);
+    $session->slots()->create(['event_id' => $event->id, 'submission_id' => $submission->id, 'participant_id' => 0]);
 
     expect($session->presenterAccountIds())->toContain($account->id);
     expect($session->meetingRoleFor($account))->toBe(MeetingRole::Presenter);
 });
 
 it('réserve la visio « participants » aux inscrits et fournit une URL de connexion', function () {
-    $edition = openEdition();
-    $session = liveSession($edition, 'participants');
+    $event = openEdition();
+    $session = liveSession($event, 'participants');
 
     $inscrit = User::create(['first_name' => 'In', 'last_name' => 'Scrit', 'email' => 'in@example.tg', 'password' => 'pass12345']);
-    $edition->participants()->create(['user_id' => $inscrit->id, 'first_name' => 'In', 'last_name' => 'Scrit', 'email' => 'in@example.tg', 'role' => 'author']);
+    $event->participants()->create(['user_id' => $inscrit->id, 'first_name' => 'In', 'last_name' => 'Scrit', 'email' => 'in@example.tg', 'role' => 'author']);
     $etranger = User::create(['first_name' => 'Et', 'last_name' => 'Ranger', 'email' => 'et@example.tg', 'password' => 'pass12345']);
 
     expect($session->meetingRoleFor($inscrit))->toBe(MeetingRole::Attendee);
@@ -137,8 +137,8 @@ it('réserve la visio « participants » aux inscrits et fournit une URL de conn
 });
 
 it('autorise tout le monde sur une visio publique', function () {
-    $edition = openEdition();
-    $session = liveSession($edition, 'public');
+    $event = openEdition();
+    $session = liveSession($event, 'public');
 
     expect($session->meetingRoleFor(null))->toBe(MeetingRole::Attendee);
     expect($session->canJoin(null))->toBeTrue();
@@ -148,8 +148,8 @@ it('autorise tout le monde sur une visio publique', function () {
 
 it('le staff pilote l’état et la visibilité de la visio', function () {
     $staff = adminStaff();
-    $edition = openEdition();
-    $session = $edition->sessions()->create(['type' => 'plenary', 'label' => 'X']);
+    $event = openEdition();
+    $session = $event->sessions()->create(['type' => 'plenary', 'label' => 'X']);
 
     $this->actingAs($staff, 'web')->post(route('admin.program.sessions.meeting-status', $session), ['status' => 'live']);
     $this->actingAs($staff, 'web')->post(route('admin.program.sessions.meeting-visibility', $session), ['visibility' => 'public']);
@@ -160,10 +160,10 @@ it('le staff pilote l’état et la visibilité de la visio', function () {
 });
 
 it('la page visio embarque la salle pour un inscrit', function () {
-    $edition = openEdition();
-    $session = liveSession($edition, 'participants');
+    $event = openEdition();
+    $session = liveSession($event, 'participants');
     $account = User::create(['first_name' => 'In', 'last_name' => 'S', 'email' => 'in@example.tg', 'password' => 'pass12345']);
-    $edition->participants()->create(['user_id' => $account->id, 'first_name' => 'In', 'last_name' => 'S', 'email' => 'in@example.tg', 'role' => 'author']);
+    $event->participants()->create(['user_id' => $account->id, 'first_name' => 'In', 'last_name' => 'S', 'email' => 'in@example.tg', 'role' => 'author']);
 
     $this->actingAs($account, 'account')->get(route('session.meeting', $session))
         ->assertOk()
@@ -172,8 +172,8 @@ it('la page visio embarque la salle pour un inscrit', function () {
 });
 
 it('la page visio refuse un non-inscrit', function () {
-    $edition = openEdition();
-    $session = liveSession($edition, 'participants');
+    $event = openEdition();
+    $session = liveSession($event, 'participants');
     $etranger = User::create(['first_name' => 'Et', 'last_name' => 'R', 'email' => 'et@example.tg', 'password' => 'pass12345']);
 
     $this->actingAs($etranger, 'account')->get(route('session.meeting', $session))
@@ -183,8 +183,8 @@ it('la page visio refuse un non-inscrit', function () {
 });
 
 it('la page visio est ouverte à tous pour une session publique', function () {
-    $edition = openEdition();
-    $session = liveSession($edition, 'public');
+    $event = openEdition();
+    $session = liveSession($event, 'public');
 
     $this->get(route('session.meeting', $session))
         ->assertOk()
@@ -192,8 +192,8 @@ it('la page visio est ouverte à tous pour une session publique', function () {
 });
 
 it('la page visio indique quand la visio n’est pas en cours', function () {
-    $edition = openEdition();
-    $session = $edition->sessions()->create(['type' => 'plenary', 'label' => 'X', 'meeting_status' => 'scheduled', 'meeting_visibility' => 'public']);
+    $event = openEdition();
+    $session = $event->sessions()->create(['type' => 'plenary', 'label' => 'X', 'meeting_status' => 'scheduled', 'meeting_visibility' => 'public']);
 
     $this->get(route('session.meeting', $session))
         ->assertOk()
@@ -214,8 +214,8 @@ function configureLiveKit(): void
 
 it('génère un token LiveKit avec les droits dérivés du rôle', function () {
     configureLiveKit();
-    $edition = openEdition();
-    $session = liveSession($edition, 'public', ['meeting_room' => 'salle-lk']);
+    $event = openEdition();
+    $session = liveSession($event, 'public', ['meeting_room' => 'salle-lk']);
     $provider = new LiveKitProvider;
 
     expect($provider->isAvailable())->toBeTrue();
@@ -239,8 +239,8 @@ it('génère un token LiveKit avec les droits dérivés du rôle', function () {
 
 it('construit l’URL LiveKit Meet avec serveur et token', function () {
     configureLiveKit();
-    $edition = openEdition();
-    $session = liveSession($edition, 'public');
+    $event = openEdition();
+    $session = liveSession($event, 'public');
 
     $url = (new LiveKitProvider)->joinUrl($session, MeetingRole::Attendee, 'A');
 
@@ -250,8 +250,8 @@ it('construit l’URL LiveKit Meet avec serveur et token', function () {
 });
 
 it('résout LiveKit quand configuré, retombe sur Jitsi sinon', function () {
-    $edition = openEdition();
-    $session = liveSession($edition, 'public', ['meeting_provider' => 'livekit']);
+    $event = openEdition();
+    $session = liveSession($event, 'public', ['meeting_provider' => 'livekit']);
 
     // Sans identifiants → repli Jitsi (pas de salle cassée).
     config()->set('meetings.livekit.url', null);
@@ -265,8 +265,8 @@ it('résout LiveKit quand configuré, retombe sur Jitsi sinon', function () {
 
 it('la page visio embarque le lecteur LiveKit inline', function () {
     configureLiveKit();
-    $edition = openEdition();
-    $session = liveSession($edition, 'public', ['meeting_provider' => 'livekit']);
+    $event = openEdition();
+    $session = liveSession($event, 'public', ['meeting_provider' => 'livekit']);
 
     $this->get(route('session.meeting', $session))
         ->assertOk()
@@ -279,8 +279,8 @@ it('la page visio embarque le lecteur LiveKit inline', function () {
 
 it('le staff peut choisir LiveKit pour une session', function () {
     $staff = adminStaff();
-    $edition = openEdition();
-    $session = $edition->sessions()->create(['type' => 'plenary', 'label' => 'X']);
+    $event = openEdition();
+    $session = $event->sessions()->create(['type' => 'plenary', 'label' => 'X']);
 
     $this->actingAs($staff, 'web')->post(route('admin.program.sessions.meeting', $session), [
         'mProvider' => 'livekit', 'mRoom' => 'salle-lk',
@@ -292,15 +292,15 @@ it('le staff peut choisir LiveKit pour une session', function () {
 });
 
 it('liste les communications programmées de la session pour la salle', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = User::create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'password' => 'pass12345']);
-    $participant = $edition->participants()->create(['user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
-    $sub = $edition->submissions()->create([
+    $participant = $event->participants()->create(['user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'awa@example.tg', 'role' => 'author']);
+    $sub = $event->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => '26-001', 'title' => 'Ma communication', 'abstract' => 'x',
         'status' => 'accepted', 'authors' => [['name' => 'Awa Kodjo', 'corresponding' => true]],
     ]);
-    $session = liveSession($edition);
-    $session->slots()->create(['edition_id' => $edition->id, 'submission_id' => $sub->id, 'participant_id' => 0]);
+    $session = liveSession($event);
+    $session->slots()->create(['event_id' => $event->id, 'submission_id' => $sub->id, 'participant_id' => 0]);
 
     $comms = $session->scheduledCommunications();
     expect($comms)->toHaveCount(1);
@@ -312,15 +312,15 @@ it('liste les communications programmées de la session pour la salle', function
 });
 
 it('donne la durée prévue du créneau, pour le temps de parole en salle', function () {
-    $edition = openEdition();
-    $participant = $edition->participants()->create(['first_name' => 'Moussa', 'last_name' => 'Mensah', 'email' => 'mm@example.tg', 'role' => 'author']);
-    $sub = $edition->submissions()->create([
+    $event = openEdition();
+    $participant = $event->participants()->create(['first_name' => 'Moussa', 'last_name' => 'Mensah', 'email' => 'mm@example.tg', 'role' => 'author']);
+    $sub = $event->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => '26-002', 'title' => 'Sols et agronomie', 'abstract' => 'x',
         'status' => 'accepted', 'authors' => [['name' => 'Moussa Mensah', 'corresponding' => true]],
     ]);
-    $session = liveSession($edition);
+    $session = liveSession($event);
     $session->slots()->create([
-        'edition_id' => $edition->id, 'submission_id' => $sub->id, 'participant_id' => 0,
+        'event_id' => $event->id, 'submission_id' => $sub->id, 'participant_id' => 0,
         'starts_at' => now()->setTime(9, 0), 'ends_at' => now()->setTime(9, 15),
     ]);
 
@@ -330,15 +330,15 @@ it('donne la durée prévue du créneau, pour le temps de parole en salle', func
 it('ne retient pas une durée de créneau nulle ou négative', function () {
     // ⚠️ Un créneau mal saisi donnerait « 0 min », et la salle afficherait un
     // dépassement dès la première seconde de parole.
-    $edition = openEdition();
-    $participant = $edition->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'ak@example.tg', 'role' => 'author']);
-    $sub = $edition->submissions()->create([
+    $event = openEdition();
+    $participant = $event->participants()->create(['first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => 'ak@example.tg', 'role' => 'author']);
+    $sub = $event->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => '26-003', 'title' => 'Créneau vide', 'abstract' => 'x',
         'status' => 'accepted', 'authors' => [['name' => 'Awa Kodjo', 'corresponding' => true]],
     ]);
-    $session = liveSession($edition);
+    $session = liveSession($event);
     $session->slots()->create([
-        'edition_id' => $edition->id, 'submission_id' => $sub->id, 'participant_id' => 0,
+        'event_id' => $event->id, 'submission_id' => $sub->id, 'participant_id' => 0,
         'starts_at' => now()->setTime(9, 0), 'ends_at' => now()->setTime(9, 0),
     ]);
 
@@ -347,8 +347,8 @@ it('ne retient pas une durée de créneau nulle ou négative', function () {
 
 it('la config LiveKit porte le rôle et le nom de salle', function () {
     configureLiveKit();
-    $edition = openEdition();
-    $session = liveSession($edition, 'public', ['meeting_provider' => 'livekit']);
+    $event = openEdition();
+    $session = liveSession($event, 'public', ['meeting_provider' => 'livekit']);
 
     $cfg = $session->liveKitEmbedConfig(null, false);
     expect($cfg['role'])->toBe('audience');       // anonyme sur session publique
@@ -385,8 +385,8 @@ it('le modérateur démarre puis arrête l’enregistrement Egress', function ()
     ]);
 
     $staff = adminStaff();
-    $edition = openEdition();
-    $session = liveSession($edition, 'public', ['meeting_provider' => 'livekit', 'meeting_room' => 'salle-lk']);
+    $event = openEdition();
+    $session = liveSession($event, 'public', ['meeting_provider' => 'livekit', 'meeting_room' => 'salle-lk']);
 
     $this->actingAs($staff, 'web')
         ->postJson(route('session.egress.start', $session))
@@ -410,8 +410,8 @@ it('refuse l’enregistrement à un non-modérateur', function () {
     configureEgress();
     Http::fake();
 
-    $edition = openEdition();
-    $session = liveSession($edition, 'public', ['meeting_provider' => 'livekit']);
+    $event = openEdition();
+    $session = liveSession($event, 'public', ['meeting_provider' => 'livekit']);
 
     $this->postJson(route('session.egress.start', $session))->assertStatus(403);
     Http::assertNothingSent();
@@ -423,8 +423,8 @@ it('signale un stockage d’enregistrement non configuré', function () {
     Http::fake();
 
     $staff = adminStaff();
-    $edition = openEdition();
-    $session = liveSession($edition, 'public', ['meeting_provider' => 'livekit']);
+    $event = openEdition();
+    $session = liveSession($event, 'public', ['meeting_provider' => 'livekit']);
 
     $this->actingAs($staff, 'web')
         ->postJson(route('session.egress.start', $session))
@@ -435,8 +435,8 @@ it('signale un stockage d’enregistrement non configuré', function () {
 // --- Salle / lien custom ----------------------------------------------------
 
 it('utilise le lien externe quand le fournisseur custom est configuré', function () {
-    $edition = openEdition();
-    $session = liveSession($edition, 'public', ['meeting_provider' => 'custom', 'meeting_url' => 'https://zoom.us/j/123']);
+    $event = openEdition();
+    $session = liveSession($event, 'public', ['meeting_provider' => 'custom', 'meeting_url' => 'https://zoom.us/j/123']);
 
     expect($session->meetingEmbeddable())->toBeFalse();
     expect($session->joinUrl(null))->toBe('https://zoom.us/j/123');
@@ -444,8 +444,8 @@ it('utilise le lien externe quand le fournisseur custom est configuré', functio
 
 it('le staff personnalise fournisseur, salle et lien', function () {
     $staff = adminStaff();
-    $edition = openEdition();
-    $session = $edition->sessions()->create(['type' => 'plenary', 'label' => 'X']);
+    $event = openEdition();
+    $session = $event->sessions()->create(['type' => 'plenary', 'label' => 'X']);
 
     $this->actingAs($staff, 'web')->post(route('admin.program.sessions.meeting', $session), [
         'mProvider' => 'jitsi', 'mRoom' => 'ma-salle',
@@ -463,8 +463,8 @@ it('le staff personnalise fournisseur, salle et lien', function () {
 
 it('exige un lien pour le fournisseur externe', function () {
     $staff = adminStaff();
-    $edition = openEdition();
-    $session = $edition->sessions()->create(['type' => 'plenary', 'label' => 'X']);
+    $event = openEdition();
+    $session = $event->sessions()->create(['type' => 'plenary', 'label' => 'X']);
 
     $this->actingAs($staff, 'web')->post(route('admin.program.sessions.meeting', $session), [
         'mProvider' => 'custom', 'mUrl' => '',
@@ -472,8 +472,8 @@ it('exige un lien pour le fournisseur externe', function () {
 });
 
 it('la page visio propose un nouvel onglet pour un lien externe', function () {
-    $edition = openEdition();
-    $session = liveSession($edition, 'public', ['meeting_provider' => 'custom', 'meeting_url' => 'https://zoom.us/j/999']);
+    $event = openEdition();
+    $session = liveSession($event, 'public', ['meeting_provider' => 'custom', 'meeting_url' => 'https://zoom.us/j/999']);
 
     $this->get(route('session.meeting', $session))
         ->assertOk()
@@ -493,8 +493,8 @@ it('affiche dans la salle le logo réglé de la plateforme', function () {
     config()->set('meetings.livekit.api_key', 'cle');
     config()->set('meetings.livekit.api_secret', str_repeat('s', 40)); // HS256 exige une clé longue
 
-    $edition = openEdition();
-    $session = liveSession($edition, 'public');
+    $event = openEdition();
+    $session = liveSession($event, 'public');
 
     $this->get(route('session.meeting', $session))
         ->assertOk()
@@ -515,8 +515,8 @@ it('porte dans la salle les commandes de la version téléphone', function () {
     config()->set('meetings.livekit.api_key', 'cle');
     config()->set('meetings.livekit.api_secret', str_repeat('s', 40));
 
-    $edition = openEdition();
-    $session = liveSession($edition, 'public');
+    $event = openEdition();
+    $session = liveSession($event, 'public');
 
     $this->get(route('session.meeting', $session))
         ->assertOk()
@@ -545,8 +545,8 @@ it('annonce le rôle de chacun dans la métadonnée du jeton LiveKit', function 
     config()->set('meetings.livekit.api_key', 'cle');
     config()->set('meetings.livekit.api_secret', str_repeat('s', 40));
 
-    $edition = openEdition();
-    $session = liveSession($edition, 'public');
+    $event = openEdition();
+    $session = liveSession($event, 'public');
 
     $jeton = app(LiveKitProvider::class)->token($session, $role, 'Quelqu’un');
     $claims = json_decode(base64_decode(explode('.', $jeton)[1]), true);
@@ -570,8 +570,8 @@ it('tient les échanges DANS la salle, et non derrière un lien qui en sort', fu
     // tient pas une file de questions ET des sondages. Ils ont désormais leur
     // surface (#ech) et leur bouton (#btnEch) - d'où le changement de repères ici.
     configureLiveKit();
-    $edition = openEdition();
-    $session = liveSession($edition, 'public', ['meeting_provider' => 'livekit']);
+    $event = openEdition();
+    $session = liveSession($event, 'public', ['meeting_provider' => 'livekit']);
 
     $this->get(route('session.meeting', $session))
         ->assertOk()
@@ -591,8 +591,8 @@ it('ne donne pas les adresses des échanges à qui ne peut pas entrer', function
     // ⚠️ Même porte que la salle : une séance réservée ne laisse pas un anonyme
     // lire la file des questions, fût-ce par l'adresse JSON.
     configureLiveKit();
-    $edition = openEdition();
-    $session = liveSession($edition, 'participants', ['meeting_provider' => 'livekit']);
+    $event = openEdition();
+    $session = liveSession($event, 'participants', ['meeting_provider' => 'livekit']);
 
     $this->get(route('session.meeting', $session))
         ->assertOk()

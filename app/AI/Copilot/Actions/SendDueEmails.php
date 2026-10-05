@@ -4,8 +4,8 @@ namespace App\AI\Copilot\Actions;
 
 use App\Actions\SendDueEmails as SendDueEmailsAction;
 use App\AI\Copilot\CopilotAction;
-use App\Models\Edition;
 use App\Models\Email;
+use App\Models\Event;
 use App\Models\User;
 
 /**
@@ -37,17 +37,17 @@ class SendDueEmails implements CopilotAction
             .'e-mails planifiés en attente.';
     }
 
-    public function summary(array $params, Edition $edition): string
+    public function summary(array $params, Event $event): string
     {
         return 'Envoyer maintenant '.$this->dueCount().' e-mail(s) programmé(s) arrivé(s) à échéance.';
     }
 
-    public function context(Edition $edition): ?string
+    public function context(Event $event): ?string
     {
         return $this->dueCount().' e-mail(s) programmé(s) arrivé(s) à échéance, prêt(s) à être envoyés.';
     }
 
-    public function execute(array $params, Edition $edition, User $user): string
+    public function execute(array $params, Event $event, User $user): string
     {
         $report = app(SendDueEmailsAction::class)->handle();
 

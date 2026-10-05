@@ -14,7 +14,7 @@ use Lab404\Impersonate\Models\Impersonate;
 /**
  * Compte participant : authentification propre à la plateforme (guard
  * « account »), distincte du back-office (guard « web » / {@see User}). Un
- * compte global par personne, valable pour toutes les éditions. Peut être
+ * compte global par personne, valable pour tous les événements. Peut être
  * impersonifié par le staff (assistance).
  *
  * @property string|null $two_factor_secret secret TOTP (chiffré)

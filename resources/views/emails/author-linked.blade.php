@@ -3,7 +3,7 @@
 
 {{ __('Bonjour') }} {{ $recipientName ?: '' }},
 
-{{ __('Vous avez été associé(e) en tant que :role à la communication « :titre » (:ref) pour :edition.', ['role' => mb_strtolower($roleLabel), 'titre' => $submission->title, 'ref' => $submission->ref_code, 'edition' => $submission->edition?->title]) }}
+{{ __('Vous avez été associé(e) en tant que :role à la communication « :titre » (:ref) pour :edition.', ['role' => mb_strtolower($roleLabel), 'titre' => $submission->title, 'ref' => $submission->ref_code, 'event' => $submission->event?->title]) }}
 
 {{ __('Elle apparaît désormais dans votre espace, dans « Mes communications ».') }}
 

@@ -15,7 +15,7 @@ use Illuminate\Support\Carbon;
  *
  * @property int $id
  * @property int|null $user_id
- * @property int|null $edition_id
+ * @property int|null $event_id
  * @property string $author_name
  * @property string|null $author_role
  * @property string|null $author_affiliation
@@ -76,9 +76,9 @@ class Testimonial extends Model
         return $this->belongsTo(User::class);
     }
 
-    /** @return BelongsTo<Edition, $this> */
-    public function edition(): BelongsTo
+    /** @return BelongsTo<Event, $this> */
+    public function event(): BelongsTo
     {
-        return $this->belongsTo(Edition::class);
+        return $this->belongsTo(Event::class);
     }
 }

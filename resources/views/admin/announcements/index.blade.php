@@ -2,28 +2,28 @@
     <div class="admin-page admin-announcements">
         <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
             <div class="ukc-field" style="max-width:340px;margin:0;">
-                <label>Édition</label>
-                <select onchange="window.location='{{ route('admin.announcements') }}?edition_id='+this.value">
+                <label>Événement</label>
+                <select onchange="window.location='{{ route('admin.announcements') }}?event_id='+this.value">
                     <option value="">- Choisir -</option>
-                    @foreach ($editions as $ed)
-                        <option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>
+                    @foreach ($events as $ed)
+                        <option value="{{ $ed->id }}" @selected((string) $ed->id === $event_id)>{{ $ed->title ?: $ed->year }}</option>
                     @endforeach
                 </select>
             </div>
-            @if ($edition && $edition->phase()->isOngoing())
+            @if ($event && $event->phase()->isOngoing())
                 <span class="ukc-pill ukc-pill--ok"><x-ukc.icon name="dot" :size="12" /> Colloque en cours</span>
             @endif
         </div>
 
-        @if ($edition_id === '' || ! $edition)
-            <div class="ukc-empty"><h3>Choisissez une édition</h3><p>Sélectionnez une édition pour gérer ses annonces.</p></div>
+        @if ($event_id === '' || ! $event)
+            <div class="ukc-empty"><h3>Choisissez un événement</h3><p>Sélectionnez un événement pour gérer ses annonces.</p></div>
         @else
             <div class="ukc-grid-2" style="align-items:start;gap:18px;">
                 {{-- Nouvelle annonce --}}
                 <div class="ukc-card">
                     <h2>Nouvelle annonce</h2>
                     <p style="font-size:13px;color:var(--ukc-muted);margin-bottom:14px;">Elle apparaît aussitôt en tête des annonces du déroulement, horodatée.</p>
-                    <form method="POST" action="{{ route('admin.announcements.store', $edition) }}">
+                    <form method="POST" action="{{ route('admin.announcements.store', $event) }}">
                         @csrf
                         <div class="ukc-field">
                             <label for="title">Titre <span class="req">*</span></label>
@@ -62,7 +62,7 @@
                                     <p class="ann-row__text">{{ $a['text'] }}</p>
                                 @endif
                             </div>
-                            <form method="POST" action="{{ route('admin.announcements.destroy', [$edition, $a['id'] ?? '']) }}"
+                            <form method="POST" action="{{ route('admin.announcements.destroy', [$event, $a['id'] ?? '']) }}"
                                   onsubmit="return confirm('Retirer cette annonce ?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="ukc-btn--icon" title="Retirer" aria-label="Retirer l’annonce">

@@ -17,7 +17,7 @@ return new class extends Migration
         Schema::create('formation_enrollments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('formation_id')->constrained('formations')->cascadeOnDelete();
-            $table->foreignId('edition_id')->constrained('editions')->cascadeOnDelete();
+            $table->foreignId('event_id')->constrained('events')->cascadeOnDelete();
             $table->foreignId('user_id')->index(); // compte unifié (users)
             $table->foreignId('participant_id')->nullable()->index();
             $table->string('status', 20)->default('registered')->index();

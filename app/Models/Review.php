@@ -53,7 +53,7 @@ class Review extends Model
      */
     public const PENDING_STATUSES = ['invited', 'accepted'];
 
-    /** Durée d'évaluation par défaut, à défaut de réglage de l'édition (jours). */
+    /** Durée d'évaluation par défaut, à défaut de réglage de l'événement (jours). */
     public const DEFAULT_DUE_DAYS = 21;
 
     protected function casts(): array

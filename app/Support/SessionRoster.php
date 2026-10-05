@@ -11,12 +11,12 @@ use Illuminate\Support\Collection;
  * Qui est attendu à une séance : les **auteurs et co-auteurs des communications
  * qui y sont programmées**, et eux seuls.
  *
- * ⚠️ Ce n'est PAS l'effectif de l'édition. Un modérateur ne constate que ce qu'il
+ * ⚠️ Ce n'est PAS l'effectif de l'événement. Un modérateur ne constate que ce qu'il
  * a sous les yeux : la liste des inscrits (plusieurs centaines) ne se pointe pas,
  * et elle lui demanderait de se prononcer sur des gens qui n'ont rien à faire
  * dans sa salle.
  *
- * ⚠️ Un co-auteur n'a pas forcément d'inscription sur l'édition (il n'est pas
+ * ⚠️ Un co-auteur n'a pas forcément d'inscription sur l'événement (il n'est pas
  * venu, ou pas encore réglé). Il figure quand même dans la liste - c'est bien un
  * auteur de la communication - mais sans inscription il n'y a rien à quoi
  * rattacher une présence : la ligne est alors **non pointable**, et le dit.
@@ -46,9 +46,9 @@ class SessionRoster
             return [];
         }
 
-        // Inscrits de l'édition indexés par e-mail : un seul accès en base pour
+        // Inscrits de l'événement indexés par e-mail : un seul accès en base pour
         // rattacher les co-auteurs, comme le fait déjà CommunicationAttestations.
-        $parEmail = Participant::where('edition_id', $session->edition_id)
+        $parEmail = Participant::where('event_id', $session->event_id)
             ->get()
             ->keyBy(fn (Participant $p) => self::key($p->email));
 

@@ -9,12 +9,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * Tâche du projet d'une édition (colonne kanban : à faire / en cours / en
- * revue / terminé). Reliée à l'édition et, éventuellement, à un responsable
+ * Tâche du projet d'un événement (colonne kanban : à faire / en cours / en
+ * revue / terminé). Reliée à l'événement et, éventuellement, à un responsable
  * (membre de l'équipe) et à une phase du cycle de vie du colloque.
  *
  * @property int $id
- * @property int $edition_id
+ * @property int $event_id
  * @property string $title
  * @property string|null $description
  * @property array<int, array{text: string, done: bool}>|null $checklist
@@ -28,7 +28,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $due_date
  * @property int $position
  * @property Carbon|null $completed_at
- * @property Edition|null $edition
+ * @property Event|null $event
  * @property User|null $assignee
  */
 class ProjectTask extends Model
@@ -98,10 +98,10 @@ class ProjectTask extends Model
         return $this->due_date !== null && ! $this->isDone() && $this->due_date->isPast();
     }
 
-    /** @return BelongsTo<Edition, $this> */
-    public function edition(): BelongsTo
+    /** @return BelongsTo<Event, $this> */
+    public function event(): BelongsTo
     {
-        return $this->belongsTo(Edition::class);
+        return $this->belongsTo(Event::class);
     }
 
     /** @return BelongsTo<User, $this> */

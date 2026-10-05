@@ -2,18 +2,18 @@
 
 namespace App\Support;
 
-use App\Models\Edition;
+use App\Models\Event;
 
 /**
- * Résolution des frais d'inscription d'une édition (grille tarifaire par profil,
+ * Résolution des frais d'inscription d'un événement (grille tarifaire par profil,
  * stockée dans settings.fees).
  */
 class Fees
 {
     /** Grille tarifaire : liste de ['label' => string, 'amount' => float]. */
-    public static function grid(Edition $edition): array
+    public static function grid(Event $event): array
     {
-        return self::normalize($edition->settings['fees'] ?? null);
+        return self::normalize($event->settings['fees'] ?? null);
     }
 
     /**
@@ -56,10 +56,10 @@ class Fees
      * Retourne null si rien ne correspond : l'appelant décide alors quoi faire
      * (montant à préciser par l'organisation).
      */
-    public static function resolveAmount(Edition $edition, ?string $grade): ?float
+    public static function resolveAmount(Event $event, ?string $grade): ?float
     {
         $grade = trim(mb_strtolower((string) $grade));
-        $grid = self::grid($edition);
+        $grid = self::grid($event);
 
         if ($grade !== '') {
             foreach ($grid as $fee) {
@@ -87,9 +87,9 @@ class Fees
     }
 
     /** Montant le plus élevé de la grille (repli quand le grade est inconnu). */
-    public static function highestAmount(Edition $edition): ?float
+    public static function highestAmount(Event $event): ?float
     {
-        $amounts = array_map(fn ($f) => (float) ($f['amount'] ?? 0), self::grid($edition));
+        $amounts = array_map(fn ($f) => (float) ($f['amount'] ?? 0), self::grid($event));
 
         return $amounts ? max($amounts) : null;
     }

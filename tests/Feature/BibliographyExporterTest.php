@@ -1,12 +1,12 @@
 <?php
 
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Submission;
 use App\Support\BibliographyExporter;
 
-function bibEdition(): Edition
+function bibEdition(): Event
 {
-    return new Edition(['title' => 'Colloque UK 2026', 'year' => 2026, 'location' => 'Kara', 'slug' => 'uk-2026']);
+    return new Event(['title' => 'EventSeries UK 2026', 'year' => 2026, 'location' => 'Kara', 'slug' => 'uk-2026']);
 }
 
 function bibSubmission(array $over = []): Submission
@@ -27,7 +27,7 @@ it('génère une entrée BibTeX conforme et échappée', function () {
     expect($out)->toContain('@inproceedings{UKC-S-0001,')
         ->and($out)->toContain('author = {Awa Kodjo and Kofi Mensah}')
         ->and($out)->toContain('title = {IA \& durabilité}') // & échappé
-        ->and($out)->toContain('booktitle = {Colloque UK 2026}')
+        ->and($out)->toContain('booktitle = {EventSeries UK 2026}')
         ->and($out)->toContain('year = {2026}')
         ->and($out)->toContain('keywords = {IA, durabilité}');
 });
@@ -40,7 +40,7 @@ it('génère un enregistrement RIS conforme', function () {
         ->and($out)->toContain('AU  - Kofi Mensah')
         ->and($out)->toContain('TI  - IA & durabilité')
         ->and($out)->toContain('PY  - 2026')
-        ->and($out)->toContain('T2  - Colloque UK 2026')
+        ->and($out)->toContain('T2  - EventSeries UK 2026')
         ->and($out)->toContain('ER  -');
 });
 

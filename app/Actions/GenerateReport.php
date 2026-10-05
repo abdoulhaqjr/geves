@@ -3,8 +3,8 @@
 namespace App\Actions;
 
 use App\AI\AiManager;
-use App\Models\Edition;
-use App\Support\EditionReport;
+use App\Models\Event;
+use App\Support\EventReport;
 use Illuminate\Support\Str;
 
 /**
@@ -44,7 +44,7 @@ class GenerateReport
      * @return array{title: string, sections: list<ReportSection>, table: ReportTable|null}
      */
     public function handle(
-        Edition $edition,
+        Event $event,
         string $brief,
         array $files = [],
         ?string $providerKey = null,
@@ -61,7 +61,7 @@ class GenerateReport
         // Génération de document/rapport : palier qualité (rédaction et structure soignées).
         // Le fournisseur choisi est tenté en premier, avec bascule automatique en cas d'échec.
         $raw = $this->manager->extract(
-            $this->instruction($edition, $brief, $files !== [], $style, $datasets, $output),
+            $this->instruction($event, $brief, $files !== [], $style, $datasets, $output),
             $files,
             'deep',
             $providerKey,
@@ -75,18 +75,18 @@ class GenerateReport
      * @param  'table'|'document'  $output
      */
     protected function instruction(
-        Edition $edition,
+        Event $event,
         string $brief,
         bool $hasExample,
         string $style = 'report',
         array $datasets = [],
         string $output = 'document',
     ): string {
-        $title = $edition->title ?: ('Édition '.$edition->year);
+        $title = $event->title ?: ('Événement '.$event->year);
 
         $intro = $style === 'document'
-            ? $this->documentIntro($title, $edition->year, $hasExample)
-            : $this->reportIntro($edition, $title, $hasExample);
+            ? $this->documentIntro($title, $event->year, $hasExample)
+            : $this->reportIntro($event, $title, $hasExample);
 
         $data = $this->datasetBlock($datasets);
         $shape = $this->outputRules($output);
@@ -199,10 +199,10 @@ class GenerateReport
         TXT;
     }
 
-    /** Cadrage « rapport factuel » (analyses/bilans d'édition). */
-    protected function reportIntro(Edition $edition, string $title, bool $hasExample): string
+    /** Cadrage « rapport factuel » (analyses/bilans d'événement). */
+    protected function reportIntro(Event $event, string $title, bool $hasExample): string
     {
-        $s = (new EditionReport($edition))->summary();
+        $s = (new EventReport($event))->summary();
         $cur = $s['currency'];
 
         $data = implode("\n", [
@@ -226,8 +226,8 @@ class GenerateReport
         Réponds en français, à partir des DONNÉES RÉELLES ci-dessous. N'invente AUCUN chiffre ni fait :
         n'utilise que ces données (et l'exemple joint le cas échéant).
 
-        Édition : {$title} ({$edition->year})
-        Totaux de l'édition :
+        Événement : {$title} ({$event->year})
+        Totaux de l'événement :
         {$data}
 
         {$example}

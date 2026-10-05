@@ -2,37 +2,37 @@
 
 namespace App\Support;
 
-use App\Models\Edition;
+use App\Models\Event;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
- * Base de connaissance factuelle d'une édition, destinée aux agents IA (Gesco et
+ * Base de connaissance factuelle d'un événement, destinée aux agents IA (Gesco et
  * copilote admin). Rassemble en un texte compact les informations officielles
  * réellement configurées (identité, axes, échéances, règles de soumission,
  * tarifs, infos pratiques, contact, FAQ) pour que l'assistant réponde avec
  * précision au lieu d'approximer. Toutes les sources sont optionnelles : seules
  * les informations réellement renseignées sont incluses.
  */
-class ColloqueKnowledge
+class EventKnowledge
 {
     /**
-     * Brief factuel de l'édition (sections non vides uniquement). Retourne une
-     * chaîne vide si l'édition est nulle.
+     * Brief factuel de l'événement (sections non vides uniquement). Retourne une
+     * chaîne vide si l'événement est nulle.
      */
-    public static function brief(?Edition $edition): string
+    public static function brief(?Event $event): string
     {
-        if (! $edition) {
+        if (! $event) {
             return '';
         }
 
-        $s = (array) ($edition->settings ?? []);
+        $s = (array) ($event->settings ?? []);
         $sections = array_filter([
-            self::identity($edition, $s),
+            self::identity($event, $s),
             self::tracks($s),
-            self::deadlines($edition, $s),
-            self::submissionRules($edition, $s),
-            self::fees($edition, $s),
+            self::deadlines($event, $s),
+            self::submissionRules($event, $s),
+            self::fees($event, $s),
             self::practical($s),
             self::contact($s),
             self::faq($s),
@@ -42,21 +42,21 @@ class ColloqueKnowledge
     }
 
     /** @param array<string,mixed> $s */
-    private static function identity(Edition $edition, array $s): string
+    private static function identity(Event $event, array $s): string
     {
-        $name = $edition->title ?: $edition->colloque?->name ?: 'Colloque';
+        $name = $event->title ?: $event->series?->name ?: 'Événement';
         $lines = ['IDENTITÉ'];
-        $lines[] = '- Colloque : '.$name.($edition->year ? ' ('.$edition->year.')' : '');
-        if (filled($edition->theme ?? null)) {
-            $lines[] = '- Thème : '.$edition->theme;
+        $lines[] = '- Événement : '.$name.($event->year ? ' ('.$event->year.')' : '');
+        if (filled($event->theme ?? null)) {
+            $lines[] = '- Thème : '.$event->theme;
         }
-        if ($edition->date_start) {
-            $dates = $edition->date_start->translatedFormat('d/m/Y')
-                .($edition->date_end ? ' – '.$edition->date_end->translatedFormat('d/m/Y') : '');
+        if ($event->date_start) {
+            $dates = $event->date_start->translatedFormat('d/m/Y')
+                .($event->date_end ? ' – '.$event->date_end->translatedFormat('d/m/Y') : '');
             $lines[] = '- Dates : '.$dates;
         }
-        if (filled($edition->location ?? null)) {
-            $lines[] = '- Lieu : '.$edition->location;
+        if (filled($event->location ?? null)) {
+            $lines[] = '- Lieu : '.$event->location;
         }
         $intro = trim((string) ($s['intro'] ?? ''));
         if ($intro !== '') {
@@ -81,22 +81,22 @@ class ColloqueKnowledge
     }
 
     /** @param array<string,mixed> $s */
-    private static function deadlines(Edition $edition, array $s): string
+    private static function deadlines(Event $event, array $s): string
     {
         $lines = ['ÉCHÉANCES & DATES CLÉS'];
 
         // État réel des soumissions : « ouvertes » seulement si le délai n'est pas dépassé.
-        $open = $edition->submission_open
-            && (! $edition->submission_deadline || $edition->submission_deadline->isFuture());
+        $open = $event->submission_open
+            && (! $event->submission_deadline || $event->submission_deadline->isFuture());
         $lines[] = $open
-            ? '- Soumissions : OUVERTES'.($edition->submission_deadline
-                ? ' jusqu’au '.$edition->submission_deadline->translatedFormat('d/m/Y à H\hi')
+            ? '- Soumissions : OUVERTES'.($event->submission_deadline
+                ? ' jusqu’au '.$event->submission_deadline->translatedFormat('d/m/Y à H\hi')
                 : '')
-            : '- Soumissions : FERMÉES'.($edition->submission_deadline
-                ? ' (délai dépassé le '.$edition->submission_deadline->translatedFormat('d/m/Y').')'
+            : '- Soumissions : FERMÉES'.($event->submission_deadline
+                ? ' (délai dépassé le '.$event->submission_deadline->translatedFormat('d/m/Y').')'
                 : '');
 
-        // Jalons de la fiche d'édition (appel, notifications, inscriptions…).
+        // Jalons de la fiche d'événement (appel, notifications, inscriptions…).
         foreach ((array) ($s['key_dates'] ?? $s['program'] ?? []) as $row) {
             $label = trim((string) ($row['label'] ?? ''));
             if ($label === '') {
@@ -118,9 +118,9 @@ class ColloqueKnowledge
     }
 
     /** @param array<string,mixed> $s */
-    private static function submissionRules(Edition $edition, array $s): string
+    private static function submissionRules(Event $event, array $s): string
     {
-        $cfg = new SubmissionFormConfig($edition);
+        $cfg = new SubmissionFormConfig($event);
         $rules = $cfg->rules();
 
         $lines = ['RÈGLES DE SOUMISSION'];
@@ -142,9 +142,9 @@ class ColloqueKnowledge
     }
 
     /** @param array<string,mixed> $s */
-    private static function fees(Edition $edition, array $s): string
+    private static function fees(Event $event, array $s): string
     {
-        $grid = Fees::grid($edition);
+        $grid = Fees::grid($event);
         if ($grid === []) {
             return '';
         }

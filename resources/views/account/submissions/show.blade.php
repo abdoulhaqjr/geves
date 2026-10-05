@@ -53,7 +53,7 @@
                 @if ($s->status === 'accepted')
                     {!! __('Communication <strong>acceptée</strong>. Finalisez votre inscription et choisissez votre créneau.') !!}
                 @elseif ($s->status === 'rejected')
-                    {{ __('Après examen, votre communication n’a pas été retenue pour cette édition.') }}
+                    {{ __('Après examen, votre communication n’a pas été retenue pour cet événement.') }}
                 @elseif ($s->status === 'revision')
                     {!! __('Une <strong>correction</strong> est demandée : modifiez puis renvoyez votre communication.') !!}
                 @else
@@ -365,7 +365,7 @@
                     <h2>{{ __('Documents liés') }}</h2>
                     <div style="display:flex;flex-direction:column;gap:8px;">
                         <a href="{{ route('account.documents') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm" style="justify-content:flex-start;">{{ __('Attestations & reçus') }}</a>
-                        <a href="{{ route('account.payment', $s->edition) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm" style="justify-content:flex-start;">{{ __('Inscription & paiement') }}</a>
+                        <a href="{{ route('account.payment', $s->event) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm" style="justify-content:flex-start;">{{ __('Inscription & paiement') }}</a>
                     </div>
                 </div>
             </div>

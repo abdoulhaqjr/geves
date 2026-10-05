@@ -22,6 +22,6 @@
             </table>
         </div>
     @else
-        <div class="ukc-empty" style="padding:28px;"><p style="margin:0;">Aucune donnée pour cette édition.</p></div>
+        <div class="ukc-empty" style="padding:28px;"><p style="margin:0;">Aucune donnée pour cet événement.</p></div>
     @endif
 </div>

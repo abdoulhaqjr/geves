@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Payment;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -15,7 +15,7 @@ class PaymentFactory extends Factory
     public function definition(): array
     {
         return [
-            'edition_id' => Edition::factory(),
+            'event_id' => Event::factory(),
             'participant_id' => Participant::factory(),
             'amount' => fake()->randomElement([10000, 15000, 20000]),
             'currency' => 'XOF',

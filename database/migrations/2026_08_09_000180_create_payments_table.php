@@ -15,7 +15,7 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('edition_id')->constrained('editions')->cascadeOnDelete();
+            $table->foreignId('event_id')->constrained('events')->cascadeOnDelete();
             $table->foreignId('participant_id')->nullable()->index();
             $table->unsignedBigInteger('submission_id')->default(0);
             $table->decimal('amount', 12, 2)->default(0);

@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Account;
 use App\Http\Controllers\Controller;
 use App\Models\EventSession;
 use App\Models\SessionReport;
-use App\Support\EditionLock;
+use App\Support\EventLock;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,7 +23,7 @@ class SessionReportController extends Controller
         $user = Auth::guard('account')->user();
 
         $sessions = $user->sessionsAsRapporteur()
-            ->with(['edition.colloque', 'atelier', 'report'])
+            ->with(['event.series', 'atelier', 'report'])
             ->orderBy('starts_at')
             ->orderBy('id')
             ->get();
@@ -37,19 +37,19 @@ class SessionReportController extends Controller
     {
         $this->authorizeRapporteur($session);
 
-        $session->load('edition.colloque', 'atelier');
+        $session->load('event.series', 'atelier');
         $report = SessionReport::firstOrNew(['session_id' => $session->id]);
 
         return view('account.reports.edit', [
             'session' => $session,
             'report' => $report,
             'communications' => $session->scheduledCommunications(),
-            // ⚠️ Le rapporteur garde TOUJOURS accès à son rapport : une édition
+            // ⚠️ Le rapporteur garde TOUJOURS accès à son rapport : un événement
             // archivée le rend simplement non modifiable (branche « verrouillé »
             // de la vue, qui en affiche le contenu).
-            'canWrite' => $session->hasStarted() && ! $report->isValidated() && ! EditionLock::frozen($session->edition),
-            'locked' => $report->isValidated() || EditionLock::frozen($session->edition),
-            'frozen' => EditionLock::frozen($session->edition),
+            'canWrite' => $session->hasStarted() && ! $report->isValidated() && ! EventLock::frozen($session->event),
+            'locked' => $report->isValidated() || EventLock::frozen($session->event),
+            'frozen' => EventLock::frozen($session->event),
             'notStarted' => ! $session->hasStarted(),
             // Présence pointée en séance : elle remplace l'affluence estimée dès
             // qu'elle existe - un comptage vaut mieux qu'un chiffre de mémoire.
@@ -64,7 +64,7 @@ class SessionReportController extends Controller
         // Fenêtre de rédaction : seulement une fois la séance commencée, et tant
         // que le secrétariat n'a pas validé/verrouillé le rapport.
         $report = SessionReport::firstOrNew(['session_id' => $session->id]);
-        EditionLock::guard($session->edition);
+        EventLock::guard($session->event);
         abort_unless($session->hasStarted(), 403, 'La rédaction du rapport ouvrira au début de la séance.');
         abort_if($report->isValidated(), 403, 'Le rapport a été validé par le secrétariat et n’est plus modifiable.');
 
@@ -78,7 +78,7 @@ class SessionReportController extends Controller
         $user = Auth::guard('account')->user();
         $submit = $data['action'] === 'submit';
 
-        $report->edition_id = $session->edition_id;
+        $report->event_id = $session->event_id;
         $report->reported_by = $user->id;
         $report->summary = ($data['summary'] ?? null) ?: null;
         $report->highlights = ($data['highlights'] ?? null) ?: null;

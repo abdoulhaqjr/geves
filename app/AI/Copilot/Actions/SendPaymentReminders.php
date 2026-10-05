@@ -4,7 +4,7 @@ namespace App\AI\Copilot\Actions;
 
 use App\AI\Copilot\CopilotAction;
 use App\Mail\PaymentReminderMail;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Models\User;
 use App\Support\Fees;
@@ -13,7 +13,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Mail;
 
 /**
- * Relance de paiement en masse : envoie un rappel aux inscrits de l'édition dont
+ * Relance de paiement en masse : envoie un rappel aux inscrits de l'événement dont
  * une communication est acceptée mais dont les frais ne sont pas réglés. Même
  * ciblage et même effet que le bouton « Relancer » de la page Paiements.
  */
@@ -36,28 +36,28 @@ class SendPaymentReminders implements CopilotAction
 
     public function description(): string
     {
-        return "Envoie un e-mail de relance à tous les inscrits de l'édition ayant une communication "
+        return "Envoie un e-mail de relance à tous les inscrits de l'événement ayant une communication "
             ."acceptée mais des frais d'inscription non réglés. À proposer si l'utilisateur veut relancer "
             .'les paiements en attente / retards de paiement.';
     }
 
-    public function summary(array $params, Edition $edition): string
+    public function summary(array $params, Event $event): string
     {
-        return 'Envoyer une relance de paiement à '.$this->targets($edition)->count()
-            .' inscrit(s) en attente de règlement pour « '.($edition->title ?: $edition->year).' ».';
+        return 'Envoyer une relance de paiement à '.$this->targets($event)->count()
+            .' inscrit(s) en attente de règlement pour « '.($event->title ?: $event->year).' ».';
     }
 
-    public function context(Edition $edition): ?string
+    public function context(Event $event): ?string
     {
-        return $this->targets($edition)->count().' inscrit(s) actuellement concerné(s) par une relance '
+        return $this->targets($event)->count().' inscrit(s) actuellement concerné(s) par une relance '
             .'(communication acceptée ET frais non réglés). Attention : ce nombre peut différer des '
             .'« paiements en attente » du tableau de bord, qui ne comptent que les paiements déjà initiés '
             .'(un inscrit accepté qui n’a jamais lancé de paiement est concerné mais n’apparaît pas en « attente »).';
     }
 
-    public function execute(array $params, Edition $edition, User $user): string
+    public function execute(array $params, Event $event, User $user): string
     {
-        $targets = $this->targets($edition);
+        $targets = $this->targets($event);
         $sent = 0;
 
         foreach ($targets as $participant) {
@@ -65,10 +65,10 @@ class SendPaymentReminders implements CopilotAction
                 continue;
             }
 
-            $amount = Fees::resolveAmount($edition, $participant->title) ?? Fees::highestAmount($edition);
-            $payUrl = route('account.payment', $edition);
+            $amount = Fees::resolveAmount($event, $participant->title) ?? Fees::highestAmount($event);
+            $payUrl = route('account.payment', $event);
 
-            Mail::to($participant->email)->send(new PaymentReminderMail($participant, $edition, $payUrl, $amount));
+            Mail::to($participant->email)->send(new PaymentReminderMail($participant, $event, $payUrl, $amount));
 
             Notifier::account(
                 $participant->user,
@@ -96,9 +96,9 @@ class SendPaymentReminders implements CopilotAction
      *
      * @return Collection<int, Participant>
      */
-    private function targets(Edition $edition): Collection
+    private function targets(Event $event): Collection
     {
-        return Participant::where('edition_id', $edition->id)
+        return Participant::where('event_id', $event->id)
             ->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted'))
             ->whereDoesntHave('participationPayments', fn ($q) => $q->where('status', 'paid'))
             ->with('user')

@@ -30,7 +30,7 @@ class SessionEngagementController extends Controller
         abort_unless($role->canJoin(), 403);
 
         return view('session.engagement', [
-            'session' => $session->load('edition'),
+            'session' => $session->load('event'),
             'canModerate' => $role->isModerator() || $isStaff,
             'canPost' => $account !== null,
             'isGuest' => ! $account && ! $isStaff,
@@ -95,7 +95,7 @@ class SessionEngagementController extends Controller
 
         SessionQuestion::create([
             'session_id' => $session->id,
-            'edition_id' => $session->edition_id,
+            'event_id' => $session->event_id,
             'user_id' => $account->id,
             'author_name' => $account->full_name,
             'body' => trim($data['body']),
@@ -210,7 +210,7 @@ class SessionEngagementController extends Controller
 
         SessionPoll::create([
             'session_id' => $session->id,
-            'edition_id' => $session->edition_id,
+            'event_id' => $session->event_id,
             'question' => trim($data['question']),
             'options' => $options,
             'status' => 'open',

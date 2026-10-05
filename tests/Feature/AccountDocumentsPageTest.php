@@ -5,7 +5,7 @@ use App\Models\DocumentTemplate;
 use App\Models\Formation;
 use App\Models\User;
 use App\Support\AttestationPolicy;
-use App\Support\EditionSettings;
+use App\Support\EventSettings;
 
 // openEdition() / verifiedAccount() -> AccountSubmissionTest
 
@@ -26,20 +26,20 @@ it('affiche l’état vide quand le compte n’a aucun document', function () {
 });
 
 it('liste attestations, reçus et livret sur la page Mes documents', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
-    $participant = $edition->participants()->create([
+    $participant = $event->participants()->create([
         'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
     ]);
 
     // Une communication acceptée -> livret (HTML + Word) disponible.
-    $edition->submissions()->create([
+    $event->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => '26-001', 'title' => 'Innovation durable',
         'abstract' => 'Résumé.', 'track' => 'Sciences', 'type' => 'oral', 'status' => 'accepted',
         'authors' => [['name' => 'Awa Kodjo', 'corresponding' => true]],
     ]);
     // Un paiement réglé -> reçu.
-    $edition->payments()->create([
+    $event->payments()->create([
         'participant_id' => $participant->id, 'amount' => 15000, 'status' => 'paid', 'receipt_no' => 'REC-2026-1',
     ]);
     // Une attestation.
@@ -57,15 +57,15 @@ it('liste attestations, reçus et livret sur la page Mes documents', function ()
 });
 
 it('rend l’aperçu du badge à partir du modèle admin, avec les vraies données', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
-    $edition->participants()->create([
+    $event->participants()->create([
         'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email, 'role' => 'author',
     ]);
 
     // Modèle de badge conçu dans l'admin (schéma [namespace.key] de l'éditeur).
     DocumentTemplate::create([
-        'edition_id' => $edition->id, 'kind' => 'badge', 'type' => 'default',
+        'event_id' => $event->id, 'kind' => 'badge', 'type' => 'default',
         'layout' => [
             'width' => 320, 'height' => 440, 'bg' => '#ffffff', 'accent' => '#223ea4',
             'elements' => [
@@ -94,20 +94,20 @@ it('rend l’aperçu du badge à partir du modèle admin, avec les vraies donné
  * ⚠️ La page n'affichait **qu'une** attestation de formation, sans dire laquelle :
  * quelqu'un qui a suivi trois ateliers n'en voyait qu'un, et pouvait croire les
  * autres perdus. L'animation y figure aussi - le formateur est, lui aussi,
- * attestataire de cette édition.
+ * attestataire de cet événement.
  */
 it('liste chaque attestation de formation et d’animation, avec son intitulé', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
-    $participant = $edition->participants()->create([
+    $participant = $event->participants()->create([
         'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
     ]);
 
     $suivie = Formation::create([
-        'edition_id' => $edition->id, 'title' => 'Atelier statistiques appliquées', 'slug' => 'stats-'.$edition->id,
+        'event_id' => $event->id, 'title' => 'Atelier statistiques appliquées', 'slug' => 'stats-'.$event->id,
     ]);
     $animee = Formation::create([
-        'edition_id' => $edition->id, 'title' => 'Atelier rédaction scientifique', 'slug' => 'redac-'.$edition->id,
+        'event_id' => $event->id, 'title' => 'Atelier rédaction scientifique', 'slug' => 'redac-'.$event->id,
     ]);
 
     (new IssueAttestation)->handle($participant, 'formation', null, $suivie);
@@ -129,13 +129,13 @@ it('liste chaque attestation de formation et d’animation, avec son intitulé',
  * communications renvoyaient au même document.
  */
 it('rattache chaque attestation de communication à SA communication', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
-    $participant = $edition->participants()->create([
+    $participant = $event->participants()->create([
         'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
     ]);
 
-    $faire = fn (string $ref, string $titre) => $edition->submissions()->create([
+    $faire = fn (string $ref, string $titre) => $event->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => $ref, 'title' => $titre,
         'abstract' => 'Résumé.', 'track' => 'Sciences', 'type' => 'oral', 'status' => 'accepted',
         'authors' => [['name' => 'Awa Kodjo', 'corresponding' => true]],
@@ -159,10 +159,10 @@ it('rattache chaque attestation de communication à SA communication', function 
  * téléchargement viderait le choix de son sens.
  */
 it('montre l’attestation sans la laisser télécharger en délivrance papier', function () {
-    $edition = openEdition();
-    EditionSettings::set($edition, 'attestations.delivery', AttestationPolicy::DELIVERY_PAPER);
+    $event = openEdition();
+    EventSettings::set($event, 'attestations.delivery', AttestationPolicy::DELIVERY_PAPER);
     $account = verifiedAccount();
-    $participant = $edition->participants()->create([
+    $participant = $event->participants()->create([
         'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo', 'email' => $account->email,
     ]);
     (new IssueAttestation)->handle($participant, 'participation');

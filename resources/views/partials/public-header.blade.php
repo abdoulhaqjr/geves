@@ -17,7 +17,7 @@
             <a href="{{ route('home') }}#a-venir">{{ __('À venir') }}</a>
             <a href="{{ route('public.archives') }}">{{ __('Passés') }}</a>
             @if ($navEdition ?? null)
-                <a href="{{ route('public.colloque', $navEdition->slug) }}">{{ __('Édition en cours') }}</a>
+                <a href="{{ route('public.colloque', $navEdition->slug) }}">{{ __('Événement en cours') }}</a>
             @endif
             @if ($navHasLive ?? false)
                 <a href="{{ route('public.deroulement') }}">{{ __('Déroulement') }}</a>

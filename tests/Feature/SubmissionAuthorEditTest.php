@@ -9,13 +9,13 @@ use App\Models\User;
 /** Communication canonique appartenant au compte donné. */
 function ownedSubmission(User $account, string $status = 'submitted'): Submission
 {
-    $edition = openEdition();
-    $participant = $edition->participants()->create([
+    $event = openEdition();
+    $participant = $event->participants()->create([
         'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo',
         'email' => $account->email, 'title' => 'Doctorante',
     ]);
 
-    return $edition->submissions()->create([
+    return $event->submissions()->create([
         'participant_id' => $participant->id, 'ref_code' => '26-777',
         'title' => 'Titre initial', 'abstract' => str_repeat('Mot ', 20),
         'track' => 'Sciences', 'type' => 'oral', 'status' => $status,
@@ -25,11 +25,11 @@ function ownedSubmission(User $account, string $status = 'submitted'): Submissio
 // --- Auteur correspondant & grade par colloque -------------------------------
 
 it('enregistre le grade saisi POUR CE COLLOQUE sur le participant', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount(); // grade global : Doctorante
 
     $this->actingAs($account, 'account')
-        ->post(route('account.submissions.store', $edition->slug), [
+        ->post(route('account.submissions.store', $event->slug), [
             'title' => 'Étude X',
             'track' => 'Sciences',
             'abstract' => str_repeat('a', 60),
@@ -45,16 +45,16 @@ it('enregistre le grade saisi POUR CE COLLOQUE sur le participant', function () 
     expect($sub->authors[0]['grade'])->toBe('Professeur titulaire');
     expect($sub->authors[0]['is_submitter'])->toBeTrue();
 
-    // Le profil global du compte n'est PAS modifié (grade propre à l'édition).
+    // Le profil global du compte n'est PAS modifié (grade propre à l'événement).
     expect($account->fresh()->grade)->toBe('Doctorante');
 });
 
 it('permet de désigner un autre auteur correspondant sans changer le déposant', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
 
     $this->actingAs($account, 'account')
-        ->post(route('account.submissions.store', $edition->slug), [
+        ->post(route('account.submissions.store', $event->slug), [
             'title' => 'Étude Y',
             'track' => 'Sciences',
             'abstract' => str_repeat('a', 60),
@@ -67,18 +67,18 @@ it('permet de désigner un autre auteur correspondant sans changer le déposant'
     expect($sub->authors[0]['email'])->toBe('kossi@example.tg');
     expect($sub->authors[0]['is_submitter'])->toBeFalse();
 
-    // Le déposant reste le compte connecté ; son grade d'édition n'est pas écrasé.
+    // Le déposant reste le compte connecté ; son grade d'événement n'est pas écrasé.
     $participant = Participant::first();
     expect($participant->user_id)->toBe($account->id);
     expect($participant->title)->toBe('Doctorante');
 });
 
 it('force l’identité du compte quand l’utilisateur se déclare auteur correspondant', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $account = verifiedAccount();
 
     $this->actingAs($account, 'account')
-        ->post(route('account.submissions.store', $edition->slug), [
+        ->post(route('account.submissions.store', $event->slug), [
             'title' => 'Étude Z',
             'track' => 'Sciences',
             'abstract' => str_repeat('a', 60),

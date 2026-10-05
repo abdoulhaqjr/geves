@@ -6,7 +6,7 @@ use App\Enums\MeetingStatus;
 use App\Enums\MeetingVisibility;
 use App\Http\Controllers\Controller;
 use App\Models\Atelier;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\EventSession;
 use App\Models\SessionReport;
 use App\Models\Slot;
@@ -25,10 +25,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 /**
- * Programme d'une édition (contrôleur + Blade) : ateliers (regroupant des axes),
+ * Programme d'un événement (contrôleur + Blade) : ateliers (regroupant des axes),
  * sessions (plénières ou d'atelier, avec modérateur/rapporteur), contrôles de
  * visio par session, et créneaux de passage (assignation des communications
- * acceptées). L'édition est choisie via query string.
+ * acceptées). L'événement est choisie via query string.
  */
 class ProgramController extends Controller
 {
@@ -46,7 +46,7 @@ class ProgramController extends Controller
     public function sessions(Request $request): RedirectResponse
     {
         return redirect()->route('admin.program.index', array_filter([
-            'edition_id' => $request->query('edition_id'),
+            'event_id' => $request->query('event_id'),
             'tab' => 'sessions',
         ]));
     }
@@ -54,7 +54,7 @@ class ProgramController extends Controller
     public function slots(Request $request): RedirectResponse
     {
         return redirect()->route('admin.program.index', array_filter([
-            'edition_id' => $request->query('edition_id'),
+            'event_id' => $request->query('event_id'),
             'tab' => $request->query('tab', 'planning'),
         ]));
     }
@@ -72,7 +72,7 @@ class ProgramController extends Controller
     public function reports(Request $request): RedirectResponse
     {
         return redirect()->route('admin.secretariat', array_filter([
-            'edition_id' => $request->query('edition_id'),
+            'event_id' => $request->query('event_id'),
         ]));
     }
 
@@ -89,7 +89,7 @@ class ProgramController extends Controller
         ]);
 
         $report = SessionReport::firstOrNew(['session_id' => $session->id]);
-        $report->edition_id = $session->edition_id;
+        $report->event_id = $session->event_id;
         // Ne touche au contenu que si les champs sont fournis : un POST « nu »
         // (validation en un clic) verrouille sans écraser le rapport du rapporteur.
         if ($request->has('summary')) {
@@ -165,17 +165,17 @@ class ProgramController extends Controller
     public function storeAtelier(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'edition_id' => ['required', 'exists:editions,id'],
+            'event_id' => ['required', 'exists:events,id'],
             'atelierTitle' => ['required', 'string', 'max:255'],
             'atelierTracks' => ['array'],
             'atelierTracks.*' => ['string'],
         ]);
 
         Atelier::create([
-            'edition_id' => $data['edition_id'],
+            'event_id' => $data['event_id'],
             'title' => $data['atelierTitle'],
             'tracks' => array_values($data['atelierTracks'] ?? []),
-            'ordre' => Atelier::where('edition_id', $data['edition_id'])->count(),
+            'ordre' => Atelier::where('event_id', $data['event_id'])->count(),
         ]);
 
         return back()->with('ukc_status', 'Atelier ajouté.');
@@ -192,7 +192,7 @@ class ProgramController extends Controller
     public function storeSession(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'edition_id' => ['required', 'exists:editions,id'],
+            'event_id' => ['required', 'exists:events,id'],
             'sType' => ['required', 'in:plenary,atelier'],
             'sAtelierId' => ['nullable'],
             'sLabel' => ['required', 'string', 'max:255'],
@@ -210,18 +210,18 @@ class ProgramController extends Controller
         $end = $this->composeDateTime($data['sDay'] ?? null, $data['sEnd'] ?? null);
 
         // Exclusivité des plénières : bloque une session en conflit horaire.
-        $edition = Edition::find($data['edition_id']);
-        if ($edition && ($conflict = ProgramConflicts::blockingSession(
-            $edition, $start ? Carbon::parse($start) : null, $end ? Carbon::parse($end) : null, $data['sType'] === 'plenary'
+        $event = Event::find($data['event_id']);
+        if ($event && ($conflict = ProgramConflicts::blockingSession(
+            $event, $start ? Carbon::parse($start) : null, $end ? Carbon::parse($end) : null, $data['sType'] === 'plenary'
         ))) {
             return back()->withInput()->with('ukc_error', ProgramConflicts::message($conflict));
         }
-        if ($edition && ($break = ProgramConflicts::lunchClash($edition, $start ? Carbon::parse($start) : null, $end ? Carbon::parse($end) : null))) {
+        if ($event && ($break = ProgramConflicts::lunchClash($event, $start ? Carbon::parse($start) : null, $end ? Carbon::parse($end) : null))) {
             return back()->withInput()->with('ukc_error', ProgramConflicts::breakMessage($break));
         }
 
         $session = EventSession::create([
-            'edition_id' => $data['edition_id'],
+            'event_id' => $data['event_id'],
             'atelier_id' => $data['sType'] === 'atelier' && ! empty($data['sAtelierId']) ? (int) $data['sAtelierId'] : 0,
             'type' => $data['sType'],
             'label' => $data['sLabel'],
@@ -233,7 +233,7 @@ class ProgramController extends Controller
             'moderator_email' => ($data['sModeratorEmail'] ?? null) ?: null,
             'rapporteur_name' => ($data['sRapporteur'] ?? null) ?: null,
             'rapporteur_email' => ($data['sRapporteurEmail'] ?? null) ?: null,
-            'ordre' => EventSession::where('edition_id', $data['edition_id'])->count(),
+            'ordre' => EventSession::where('event_id', $data['event_id'])->count(),
         ]);
 
         $this->notifyRoleAssignment($session, 'moderator', $session->moderator_email, null);
@@ -297,12 +297,12 @@ class ProgramController extends Controller
      */
     public function index(Request $request): View
     {
-        $edition = $this->currentEdition($request);
+        $event = $this->currentEdition($request);
 
-        $ateliers = $edition ? $edition->ateliers()->with(['sessions' => fn ($q) => $q->orderBy('starts_at')->orderBy('ordre')])->orderBy('ordre')->get() : collect();
-        $sessions = $edition ? $edition->sessions()->with('atelier')->orderBy('starts_at')->orderBy('ordre')->get() : collect();
-        $slots = $edition ? $edition->slots()->with(['submission', 'session.atelier'])->orderBy('starts_at')->get() : collect();
-        $accepted = $edition ? $edition->submissions()->where('revision_of', 0)->where('status', 'accepted')
+        $ateliers = $event ? $event->ateliers()->with(['sessions' => fn ($q) => $q->orderBy('starts_at')->orderBy('ordre')])->orderBy('ordre')->get() : collect();
+        $sessions = $event ? $event->sessions()->with('atelier')->orderBy('starts_at')->orderBy('ordre')->get() : collect();
+        $slots = $event ? $event->slots()->with(['submission', 'session.atelier'])->orderBy('starts_at')->get() : collect();
+        $accepted = $event ? $event->submissions()->where('revision_of', 0)->where('status', 'accepted')
             ->with('participant.payments')->get() : collect();
 
         // Communications acceptées non encore placées sur un créneau.
@@ -316,7 +316,7 @@ class ProgramController extends Controller
 
         // Configuration du programme (affectation auto, paramètres, espaces),
         // persistée dans edition->settings['program'].
-        $config = $this->programConfig($edition);
+        $config = $this->programConfig($event);
 
         // Salles physiquement utilisées (dérivées des sessions/créneaux).
         $usedRooms = $sessions->pluck('room')->merge($slots->pluck('room'))
@@ -330,20 +330,20 @@ class ProgramController extends Controller
         //    restent pour le board Planning ; ici on filtre/trie/pagine en mémoire.
         //    Paramètres préfixés (s_*/c_*) pour que les deux tableaux soient
         //    indépendants sur la même page.
-        $oralMin = $edition ? $this->oralMinutes($edition) : 20;
+        $oralMin = $event ? $this->oralMinutes($event) : 20;
         $sessionsView = $this->sessionsTable($request, $sessions);
         $slotsView = $this->slotsTable($request, $slots, $oralMin);
 
         return view('admin.program.index', [
             'tab' => $tab,
             // Programme synthétique (onglet « Programme ») : saisi ici, publié tel quel.
-            'programSynthesis' => $edition
-                ? array_merge(['title' => '', 'days' => []], $edition->settings['program_synthesis'] ?? [])
+            'programSynthesis' => $event
+                ? array_merge(['title' => '', 'days' => []], $event->settings['program_synthesis'] ?? [])
                 : ['title' => '', 'days' => []],
             'plenaries' => $sessions->where('type', 'plenary')->values(),
-            'editions' => $this->accessibleEditions($request, 'editions_read'),
-            'edition' => $edition,
-            'edition_id' => $edition ? (string) $edition->id : '',
+            'events' => $this->accessibleEditions($request, 'editions_read'),
+            'event' => $event,
+            'event_id' => $event ? (string) $event->id : '',
             'ateliers' => $ateliers,
             'sessions' => $sessions,
             'creneaux' => $slots,
@@ -361,7 +361,7 @@ class ProgramController extends Controller
             'accepted' => $accepted,
             'unplaced' => $unplaced,
             'days' => $days,
-            'tracks' => $edition ? ($edition->settings['tracks'] ?? []) : [],
+            'tracks' => $event ? ($event->settings['tracks'] ?? []) : [],
             'config' => $config,
             'spaces' => $config['spaces'],
             'atelierRooms' => $config['atelier_rooms'],
@@ -488,7 +488,7 @@ class ProgramController extends Controller
     }
 
     /** Valeurs par défaut de la config programme, fusionnées avec settings['program']. */
-    private function programConfig(?Edition $edition): array
+    private function programConfig(?Event $event): array
     {
         $defaults = [
             'auto' => [
@@ -507,7 +507,7 @@ class ProgramController extends Controller
             'atelier_rooms' => [],
         ];
 
-        $saved = $edition->settings['program'] ?? [];
+        $saved = $event->settings['program'] ?? [];
 
         return [
             'auto' => array_merge($defaults['auto'], $saved['auto'] ?? []),
@@ -518,9 +518,9 @@ class ProgramController extends Controller
     }
 
     /** Écrit la config programme dans settings['program'] en préservant le reste. */
-    private function writeProgramConfig(Edition $edition, array $patch): void
+    private function writeProgramConfig(Event $event, array $patch): void
     {
-        $current = $this->programConfig($edition);
+        $current = $this->programConfig($event);
 
         // auto/params : fusion clé à clé ; spaces/atelier_rooms : remplacement en bloc.
         $program = [
@@ -534,9 +534,9 @@ class ProgramController extends Controller
                 : $current['atelier_rooms'],
         ];
 
-        $settings = $edition->settings ?? [];
+        $settings = $event->settings ?? [];
         $settings['program'] = $program;
-        $edition->update(['settings' => $settings]);
+        $event->update(['settings' => $settings]);
     }
 
     /**
@@ -547,26 +547,26 @@ class ProgramController extends Controller
      */
     public function autoAssignSlots(Request $request): RedirectResponse
     {
-        $edition = $this->currentEdition($request);
-        if (! $edition) {
+        $event = $this->currentEdition($request);
+        if (! $event) {
             return back();
         }
 
         $matchAxis = $request->boolean('match_axis');
 
-        $freeSlots = $edition->slots()->where('submission_id', 0)
+        $freeSlots = $event->slots()->where('submission_id', 0)
             ->with('session.atelier')->orderBy('starts_at')->get();
 
-        $placedIds = $edition->slots()->where('submission_id', '>', 0)->pluck('submission_id');
-        $unplaced = $edition->submissions()->where('revision_of', 0)->where('status', 'accepted')
+        $placedIds = $event->slots()->where('submission_id', '>', 0)->pluck('submission_id');
+        $unplaced = $event->submissions()->where('revision_of', 0)->where('status', 'accepted')
             ->get()->reject(fn (Submission $s) => $placedIds->contains($s->id))->values();
 
-        $oralMin = $this->oralMinutes($edition);
+        $oralMin = $this->oralMinutes($event);
 
         // Ateliers simultanés autorisés, MAIS un même auteur ne peut pas être placé
         // sur deux créneaux qui se chevauchent. On mémorise les créneaux déjà pris
         // par participant (y compris ceux déjà planifiés) pour éviter le télescopage.
-        $busy = $edition->slots()->where('participant_id', '>', 0)->whereNotNull('starts_at')
+        $busy = $event->slots()->where('participant_id', '>', 0)->whereNotNull('starts_at')
             ->get()->groupBy('participant_id')
             ->map(fn ($slots) => $slots->map(fn (Slot $s) => [$s->starts_at, $s->ends_at ?? $s->starts_at?->copy()->addMinutes($oralMin)])->all())
             ->all();
@@ -642,24 +642,24 @@ class ProgramController extends Controller
      */
     public function generateSlots(Request $request): RedirectResponse
     {
-        $edition = $this->currentEdition($request);
-        if (! $edition) {
+        $event = $this->currentEdition($request);
+        if (! $event) {
             return back();
         }
 
         // Paramètres de créneaux (onglet Options), appliqués par sliceSessionSlots().
-        $params = $this->programConfig($edition)['params'];
+        $params = $this->programConfig($event)['params'];
         $created = 0;
 
         // Les sessions plénières sont EXCLUSIVES et ne reçoivent pas de communications
         // orales : on ne génère de créneaux que pour les sessions d'atelier.
-        $sessions = $edition->sessions()->where('type', '!=', 'plenary')
+        $sessions = $event->sessions()->where('type', '!=', 'plenary')
             ->whereNotNull('starts_at')->whereNotNull('ends_at')->get();
         foreach ($sessions as $session) {
-            if ($edition->slots()->where('session_id', $session->id)->exists()) {
+            if ($event->slots()->where('session_id', $session->id)->exists()) {
                 continue; // déjà pourvue
             }
-            $created += count($this->sliceSessionSlots($edition, $session, $params));
+            $created += count($this->sliceSessionSlots($event, $session, $params));
         }
 
         return back()->with('ukc_status', $created > 0
@@ -673,7 +673,7 @@ class ProgramController extends Controller
      *
      * @return array<int, int> ids des créneaux créés
      */
-    private function sliceSessionSlots(Edition $edition, EventSession $session, array $params): array
+    private function sliceSessionSlots(Event $event, EventSession $session, array $params): array
     {
         if (! $session->starts_at || ! $session->ends_at) {
             return [];
@@ -705,7 +705,7 @@ class ProgramController extends Controller
 
                 continue;
             }
-            $slot = $edition->slots()->create([
+            $slot = $event->slots()->create([
                 'session_id' => $session->id,
                 'session_label' => $session->label,
                 'room' => $session->room ?: '',
@@ -736,7 +736,7 @@ class ProgramController extends Controller
         $data = $request->validate(['atelierRoom' => ['nullable', 'string', 'max:150']]);
         $room = ($data['atelierRoom'] ?? null) ?: null;
 
-        $this->writeProgramConfig($atelier->edition, [
+        $this->writeProgramConfig($atelier->event, [
             'atelier_rooms' => [(string) $atelier->id => $room],
         ]);
 
@@ -744,7 +744,7 @@ class ProgramController extends Controller
             $sessionIds = $atelier->sessions()->pluck('id');
             $atelier->sessions()->update(['room' => $room]);
             if ($sessionIds->isNotEmpty()) {
-                $atelier->edition->slots()->whereIn('session_id', $sessionIds)->update(['room' => $room]);
+                $atelier->event->slots()->whereIn('session_id', $sessionIds)->update(['room' => $room]);
             }
         }
 
@@ -756,7 +756,7 @@ class ProgramController extends Controller
     public function storeSlot(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'edition_id' => ['required', 'exists:editions,id'],
+            'event_id' => ['required', 'exists:events,id'],
             'slSessionId' => ['nullable'],
             'slRoom' => ['nullable', 'string', 'max:150'],
             'slDay' => ['nullable', 'date'],
@@ -768,36 +768,36 @@ class ProgramController extends Controller
         $session = ! empty($data['slSessionId']) ? EventSession::find($data['slSessionId']) : null;
 
         // Exclusivité des plénières : un créneau ne peut pas tomber dans une plénière.
-        $edition = Edition::find($data['edition_id']);
+        $event = Event::find($data['event_id']);
         $start = (! empty($data['slDay']) && ! empty($data['slStart'])) ? Carbon::parse($data['slDay'].' '.$data['slStart']) : null;
-        if ($edition && $start && ($conflict = ProgramConflicts::blockingSession(
-            $edition, $start, $start->copy()->addMinutes($this->oralMinutes($edition)), false
+        if ($event && $start && ($conflict = ProgramConflicts::blockingSession(
+            $event, $start, $start->copy()->addMinutes($this->oralMinutes($event)), false
         ))) {
             return back()->withInput()->with('ukc_error', ProgramConflicts::message($conflict));
         }
-        if ($edition && $start && ($break = ProgramConflicts::lunchClash($edition, $start, $start->copy()->addMinutes($this->oralMinutes($edition))))) {
+        if ($event && $start && ($break = ProgramConflicts::lunchClash($event, $start, $start->copy()->addMinutes($this->oralMinutes($event))))) {
             return back()->withInput()->with('ukc_error', ProgramConflicts::breakMessage($break));
         }
 
         // Communication optionnelle (place directement l'auteur sur le créneau créé).
         $submission = ! empty($data['submission_id']) ? Submission::find($data['submission_id']) : null;
-        if ($submission && (int) $submission->edition_id !== (int) $data['edition_id']) {
+        if ($submission && (int) $submission->event_id !== (int) $data['event_id']) {
             $submission = null;
         }
         if ($submission) {
-            Slot::where('edition_id', $data['edition_id'])->where('submission_id', $submission->id)
+            Slot::where('event_id', $data['event_id'])->where('submission_id', $submission->id)
                 ->update(['submission_id' => 0, 'participant_id' => 0]);
         }
 
         Slot::create([
-            'edition_id' => $data['edition_id'],
+            'event_id' => $data['event_id'],
             'session_id' => $session?->id ?? 0,
             'session_label' => ($data['slTitle'] ?? null) ?: $session?->label,
             'room' => ($data['slRoom'] ?? null) ?: $session?->room,
             'starts_at' => $start?->toDateTimeString(),
             // L'heure de fin découle de la durée présumée (orale/poster) : on la
             // fige à la création pour que la liste des créneaux l'affiche.
-            'ends_at' => ($edition && $start) ? $start->copy()->addMinutes($this->slotMinutes($edition, $submission))->toDateTimeString() : null,
+            'ends_at' => ($event && $start) ? $start->copy()->addMinutes($this->slotMinutes($event, $submission))->toDateTimeString() : null,
             'submission_id' => $submission?->id ?? 0,
             'participant_id' => $submission?->participant_id ?? 0,
         ]);
@@ -823,12 +823,12 @@ class ProgramController extends Controller
         }
 
         $submission = Submission::find($submissionId);
-        if (! $submission || $submission->edition_id !== $slot->edition_id) {
+        if (! $submission || $submission->event_id !== $slot->event_id) {
             return back();
         }
 
         // Libère un éventuel autre créneau de cette communication.
-        Slot::where('edition_id', $slot->edition_id)
+        Slot::where('event_id', $slot->event_id)
             ->where('submission_id', $submission->id)
             ->whereKeyNot($slot->id)
             ->update(['submission_id' => 0, 'participant_id' => 0]);
@@ -842,7 +842,7 @@ class ProgramController extends Controller
         return back()->with('ukc_status', 'Communication assignée.');
     }
 
-    /** Édition d'un atelier (intitulé, axes, salle associée). */
+    /** Événement d'un atelier (intitulé, axes, salle associée). */
     public function updateAtelier(Request $request, Atelier $atelier): RedirectResponse
     {
         $data = $request->validate([
@@ -858,14 +858,14 @@ class ProgramController extends Controller
         ]);
 
         // Salle associée : stockée dans la config programme (pas de colonne dédiée).
-        $this->writeProgramConfig($atelier->edition, [
+        $this->writeProgramConfig($atelier->event, [
             'atelier_rooms' => [(string) $atelier->id => ($data['atelierRoom'] ?? null) ?: null],
         ]);
 
         return back()->with('ukc_status', 'Atelier mis à jour.');
     }
 
-    /** Édition d'une session (intitulé, atelier, jour/horaires, salle, rôles). */
+    /** Événement d'une session (intitulé, atelier, jour/horaires, salle, rôles). */
     public function updateSession(Request $request, EventSession $session): RedirectResponse
     {
         $data = $request->validate([
@@ -889,13 +889,13 @@ class ProgramController extends Controller
         $end = $this->composeDateTime($data['sDay'] ?? null, $data['sEnd'] ?? null);
 
         // Exclusivité des plénières : bloque un horaire en conflit (hors elle-même).
-        if ($session->edition && ($conflict = ProgramConflicts::blockingSession(
-            $session->edition, $start ? Carbon::parse($start) : null, $end ? Carbon::parse($end) : null,
+        if ($session->event && ($conflict = ProgramConflicts::blockingSession(
+            $session->event, $start ? Carbon::parse($start) : null, $end ? Carbon::parse($end) : null,
             $data['sType'] === 'plenary', $session->id
         ))) {
             return back()->withInput()->with('ukc_error', ProgramConflicts::message($conflict));
         }
-        if ($session->edition && ($break = ProgramConflicts::lunchClash($session->edition, $start ? Carbon::parse($start) : null, $end ? Carbon::parse($end) : null))) {
+        if ($session->event && ($break = ProgramConflicts::lunchClash($session->event, $start ? Carbon::parse($start) : null, $end ? Carbon::parse($end) : null))) {
             return back()->withInput()->with('ukc_error', ProgramConflicts::breakMessage($break));
         }
 
@@ -919,7 +919,7 @@ class ProgramController extends Controller
         return back()->with('ukc_status', 'Session mise à jour.');
     }
 
-    /** Édition d'un créneau (session, jour/heure, salle, communication assignée). */
+    /** Événement d'un créneau (session, jour/heure, salle, communication assignée). */
     public function updateSlot(Request $request, Slot $slot): RedirectResponse
     {
         $data = $request->validate([
@@ -937,22 +937,22 @@ class ProgramController extends Controller
         $newStart = (! empty($data['slDay']) && ! empty($data['slStart']))
             ? Carbon::parse($data['slDay'].' '.$data['slStart'])
             : $slot->starts_at;
-        if ($slot->edition && $newStart && ($conflict = ProgramConflicts::blockingSession(
-            $slot->edition, $newStart, $newStart->copy()->addMinutes($this->oralMinutes($slot->edition)), false
+        if ($slot->event && $newStart && ($conflict = ProgramConflicts::blockingSession(
+            $slot->event, $newStart, $newStart->copy()->addMinutes($this->oralMinutes($slot->event)), false
         ))) {
             return back()->withInput()->with('ukc_error', ProgramConflicts::message($conflict));
         }
-        if ($slot->edition && $newStart && ($break = ProgramConflicts::lunchClash($slot->edition, $newStart, $newStart->copy()->addMinutes($this->oralMinutes($slot->edition))))) {
+        if ($slot->event && $newStart && ($break = ProgramConflicts::lunchClash($slot->event, $newStart, $newStart->copy()->addMinutes($this->oralMinutes($slot->event))))) {
             return back()->withInput()->with('ukc_error', ProgramConflicts::breakMessage($break));
         }
 
         $submission = ! empty($data['submission_id']) ? Submission::find($data['submission_id']) : null;
-        if ($submission && $submission->edition_id !== $slot->edition_id) {
+        if ($submission && $submission->event_id !== $slot->event_id) {
             $submission = null;
         }
         if ($submission) {
             // Une communication ne peut occuper qu'un seul créneau.
-            Slot::where('edition_id', $slot->edition_id)->where('submission_id', $submission->id)
+            Slot::where('event_id', $slot->event_id)->where('submission_id', $submission->id)
                 ->whereKeyNot($slot->id)->update(['submission_id' => 0, 'participant_id' => 0]);
         }
 
@@ -962,7 +962,7 @@ class ProgramController extends Controller
             'room' => ($data['slRoom'] ?? null) ?: $session?->room,
             'starts_at' => $newStart?->toDateTimeString(),
             // Recalcul de l'heure de fin sur la nouvelle durée présumée.
-            'ends_at' => ($slot->edition && $newStart) ? $newStart->copy()->addMinutes($this->slotMinutes($slot->edition, $submission))->toDateTimeString() : $slot->ends_at,
+            'ends_at' => ($slot->event && $newStart) ? $newStart->copy()->addMinutes($this->slotMinutes($slot->event, $submission))->toDateTimeString() : $slot->ends_at,
             'submission_id' => $submission?->id ?? 0,
             'participant_id' => $submission?->participant_id ?? 0,
         ]);
@@ -973,12 +973,12 @@ class ProgramController extends Controller
     /** Sauvegarde des réglages « Affectation auto » et « Paramètres créneaux ». */
     public function saveProgramConfig(Request $request): RedirectResponse
     {
-        $edition = $this->currentEdition($request);
-        if (! $edition) {
+        $event = $this->currentEdition($request);
+        if (! $event) {
             return back();
         }
 
-        $this->writeProgramConfig($edition, [
+        $this->writeProgramConfig($event, [
             'auto' => [
                 'enabled' => $request->boolean('auto_enabled'),
                 'only_paid' => $request->boolean('auto_only_paid'),
@@ -1025,25 +1025,25 @@ class ProgramController extends Controller
      */
     public function saveSynthesis(Request $request): RedirectResponse
     {
-        $edition = $this->synthesisEdition($request);
-        if (! $edition) {
+        $event = $this->synthesisEdition($request);
+        if (! $event) {
             return back();
         }
 
-        $this->persistSynthesis($request, $edition);
+        $this->persistSynthesis($request, $event);
 
         return back()->with('ukc_status', 'Programme synthétique enregistré.');
     }
 
-    /** Édition ciblée par le formulaire du programme synthétique (id dans le corps). */
-    private function synthesisEdition(Request $request): ?Edition
+    /** Événement ciblée par le formulaire du programme synthétique (id dans le corps). */
+    private function synthesisEdition(Request $request): ?Event
     {
         return $this->accessibleEditions($request, 'editions_read')
-            ->firstWhere('id', (int) $request->input('edition_id'));
+            ->firstWhere('id', (int) $request->input('event_id'));
     }
 
     /** Valide, nettoie et écrit le programme synthétique ; retourne la structure propre. */
-    private function persistSynthesis(Request $request, Edition $edition): array
+    private function persistSynthesis(Request $request, Event $event): array
     {
         $data = $request->validate([
             'title' => ['nullable', 'string', 'max:200'],
@@ -1079,9 +1079,9 @@ class ProgramController extends Controller
 
         $synthesis = ['title' => trim((string) ($data['title'] ?? '')), 'days' => $days];
 
-        $settings = $edition->settings ?? [];
+        $settings = $event->settings ?? [];
         $settings['program_synthesis'] = $synthesis;
-        $edition->update(['settings' => $settings]);
+        $event->update(['settings' => $settings]);
 
         return $synthesis;
     }
@@ -1089,7 +1089,7 @@ class ProgramController extends Controller
     /**
      * Enregistre le programme PUIS génère les sessions et créneaux à partir de lui.
      * - une ligne « Plénière »/« Autre » horodatée → une session plénière ;
-     * - une ligne « Ateliers en parallèle » → une session par atelier de l'édition
+     * - une ligne « Ateliers en parallèle » → une session par atelier de l'événement
      *   (en parallèle, dans des salles distinctes), découpée en créneaux libres ;
      * - les lignes « Pause » sont ignorées.
      * ⚠️ Ne remplace QUE les sessions/créneaux déjà issus du programme (mémorisés) ;
@@ -1097,31 +1097,31 @@ class ProgramController extends Controller
      */
     public function generateFromSynthesis(Request $request): RedirectResponse
     {
-        $edition = $this->synthesisEdition($request);
-        if (! $edition) {
+        $event = $this->synthesisEdition($request);
+        if (! $event) {
             return back();
         }
 
-        $synthesis = $this->persistSynthesis($request, $edition);
-        $params = $this->programConfig($edition)['params'];
+        $synthesis = $this->persistSynthesis($request, $event);
+        $params = $this->programConfig($event)['params'];
 
         // Salles d'atelier : mapping enregistré, repli « Salle N ».
-        $ateliers = $edition->ateliers()->orderBy('ordre')->get();
-        $atelierRooms = $this->programConfig($edition)['atelier_rooms'];
+        $ateliers = $event->ateliers()->orderBy('ordre')->get();
+        $atelierRooms = $this->programConfig($event)['atelier_rooms'];
         $roomFor = function (Atelier $a, int $i) use ($atelierRooms): string {
             $room = $atelierRooms[(string) $a->id] ?? '';
 
             return $room !== '' ? $room : 'Salle '.($i + 1);
         };
 
-        return DB::transaction(function () use ($edition, $synthesis, $params, $ateliers, $roomFor) {
+        return DB::transaction(function () use ($event, $synthesis, $params, $ateliers, $roomFor) {
             // 1) Purge de ce qui avait déjà été généré depuis le programme.
-            $prev = $edition->settings['program_synthesis_generated'] ?? ['sessions' => [], 'slots' => []];
+            $prev = $event->settings['program_synthesis_generated'] ?? ['sessions' => [], 'slots' => []];
             if (! empty($prev['slots'])) {
-                $edition->slots()->whereIn('id', $prev['slots'])->delete();
+                $event->slots()->whereIn('id', $prev['slots'])->delete();
             }
             if (! empty($prev['sessions'])) {
-                $edition->sessions()->whereIn('id', $prev['sessions'])->delete();
+                $event->sessions()->whereIn('id', $prev['sessions'])->delete();
             }
 
             $sessionIds = [];
@@ -1148,7 +1148,7 @@ class ProgramController extends Controller
                     if ($type === 'atelier') {
                         // Une session par atelier, en parallèle, salles distinctes.
                         foreach ($ateliers as $i => $atelier) {
-                            $session = $edition->sessions()->create([
+                            $session = $event->sessions()->create([
                                 'type' => 'atelier',
                                 'atelier_id' => $atelier->id,
                                 'label' => $atelier->title,
@@ -1159,11 +1159,11 @@ class ProgramController extends Controller
                                 'ordre' => $sessionCount++,
                             ]);
                             $sessionIds[] = $session->id;
-                            $slotIds = array_merge($slotIds, $this->sliceSessionSlots($edition, $session, $params));
+                            $slotIds = array_merge($slotIds, $this->sliceSessionSlots($event, $session, $params));
                         }
                     } else {
                         // Plénière / Autre : session exclusive, sans créneau oral.
-                        $session = $edition->sessions()->create([
+                        $session = $event->sessions()->create([
                             'type' => 'plenary',
                             'label' => $label,
                             'session_day' => $startsAt->toDateString(),
@@ -1176,9 +1176,9 @@ class ProgramController extends Controller
                 }
             }
 
-            $settings = $edition->settings ?? [];
+            $settings = $event->settings ?? [];
             $settings['program_synthesis_generated'] = ['sessions' => $sessionIds, 'slots' => $slotIds];
-            $edition->update(['settings' => $settings]);
+            $event->update(['settings' => $settings]);
 
             return back()->with('ukc_status', count($sessionIds) > 0
                 ? count($sessionIds).' session(s) et '.count($slotIds).' créneau(x) générés depuis le programme.'
@@ -1189,8 +1189,8 @@ class ProgramController extends Controller
     /** Ajoute un espace (salle/amphi/hall) à la config programme. */
     public function storeSpace(Request $request): RedirectResponse
     {
-        $edition = $this->currentEdition($request);
-        if (! $edition) {
+        $event = $this->currentEdition($request);
+        if (! $event) {
             return back();
         }
 
@@ -1201,7 +1201,7 @@ class ProgramController extends Controller
             'spaceNote' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $spaces = $this->programConfig($edition)['spaces'];
+        $spaces = $this->programConfig($event)['spaces'];
         $spaces[] = [
             'name' => $data['spaceName'],
             'capacity' => $data['spaceCapacity'] ?? null,
@@ -1209,7 +1209,7 @@ class ProgramController extends Controller
             'note' => $data['spaceNote'] ?? null,
         ];
 
-        $this->writeProgramConfig($edition, ['spaces' => array_values($spaces)]);
+        $this->writeProgramConfig($event, ['spaces' => array_values($spaces)]);
 
         return back()->with('ukc_status', 'Espace ajouté.');
     }
@@ -1217,29 +1217,29 @@ class ProgramController extends Controller
     /** Retire un espace de la config programme (par index). */
     public function deleteSpace(Request $request, int $index): RedirectResponse
     {
-        $edition = $this->currentEdition($request);
-        if (! $edition) {
+        $event = $this->currentEdition($request);
+        if (! $event) {
             return back();
         }
 
-        $spaces = $this->programConfig($edition)['spaces'];
+        $spaces = $this->programConfig($event)['spaces'];
         unset($spaces[$index]);
 
-        $this->writeProgramConfig($edition, ['spaces' => array_values($spaces)]);
+        $this->writeProgramConfig($event, ['spaces' => array_values($spaces)]);
 
         return back()->with('ukc_status', 'Espace supprimé.');
     }
 
-    private function currentEdition(Request $request): ?Edition
+    private function currentEdition(Request $request): ?Event
     {
-        $editions = $this->accessibleEditions($request, 'editions_read');
-        $id = (string) $request->query('edition_id', '');
+        $events = $this->accessibleEditions($request, 'editions_read');
+        $id = (string) $request->query('event_id', '');
 
         if ($id === '') {
-            return $editions->firstWhere('status', 'open') ?? $editions->first();
+            return $events->firstWhere('status', 'open') ?? $events->first();
         }
 
-        return $editions->firstWhere('id', (int) $id);
+        return $events->firstWhere('id', (int) $id);
     }
 
     private function composeDateTime(?string $day, ?string $time): ?string
@@ -1248,18 +1248,18 @@ class ProgramController extends Controller
     }
 
     /** Durée d'une communication orale (= durée présumée d'un créneau), en minutes. */
-    private function oralMinutes(Edition $edition): int
+    private function oralMinutes(Event $event): int
     {
-        return max(5, (int) ($this->programConfig($edition)['params']['oral_min'] ?? 20));
+        return max(5, (int) ($this->programConfig($event)['params']['oral_min'] ?? 20));
     }
 
     /**
      * Durée présumée d'un créneau selon la nature de la communication placée :
      * un poster occupe `poster_min`, une orale (ou un créneau libre) `oral_min`.
      */
-    private function slotMinutes(Edition $edition, ?Submission $submission): int
+    private function slotMinutes(Event $event, ?Submission $submission): int
     {
-        $params = $this->programConfig($edition)['params'];
+        $params = $this->programConfig($event)['params'];
         if ($submission && $submission->type === 'poster') {
             return max(5, (int) ($params['poster_min'] ?? 90));
         }

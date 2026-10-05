@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
 use App\Support\AttestationPolicy;
-use App\Support\CurrentColloque;
-use App\Support\EditionLock;
+use App\Support\CurrentEvent;
+use App\Support\EventLock;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -25,21 +25,21 @@ class ModerationController extends Controller
         // et avec elle l'idée qu'il y a là des outils qui ne le regardent pas.
         abort_unless($user !== null && $user->isModeratorSomewhere(), 403);
 
-        $edition = CurrentColloque::current($user);
-        $aModererIci = $edition !== null
-            && $user->sessionsAsModerator()->where('edition_id', $edition->id)->exists();
+        $event = CurrentEvent::current($user);
+        $aModererIci = $event !== null
+            && $user->sessionsAsModerator()->where('event_id', $event->id)->exists();
 
         // Comme toutes les pages personnelles, le contenu suit le colloque
         // sélectionné.
         //
         // ⚠️ Sauf quand la sélection ne veut rien dire ici : un modérateur est
-        // rapproché par E-MAIL et n'est pas forcément INSCRIT à l'édition qu'il
+        // rapproché par E-MAIL et n'est pas forcément INSCRIT à l'événement qu'il
         // anime - le sélecteur de colloque ne la lui proposerait donc jamais, et la
         // page resterait vide à jamais. Dans ce cas on montre tout ce qu'il modère,
         // chaque carte portant déjà le nom de son colloque.
         $sessions = $user->sessionsAsModerator()
-            ->when($aModererIci, fn ($q) => $q->where('edition_id', $edition->id))
-            ->with(['edition.colloque', 'atelier'])
+            ->when($aModererIci, fn ($q) => $q->where('event_id', $event->id))
+            ->with(['event.series', 'atelier'])
             ->orderBy('starts_at')
             ->orderBy('id')
             ->get();
@@ -52,12 +52,12 @@ class ModerationController extends Controller
             'sessions' => $sessions,
             // Ce que déclenche « Valider le passage » sur chaque séance : la page
             // doit l'annoncer avant le clic, pas après. Calculé ici pour ne pas
-            // relire les réglages de l'édition à chaque communication affichée.
+            // relire les réglages de l'événement à chaque communication affichée.
             'passageEmet' => $sessions->mapWithKeys(fn ($s) => [
-                $s->id => AttestationPolicy::issuesOnPassage($s->edition) && ! EditionLock::frozen($s->edition),
+                $s->id => AttestationPolicy::issuesOnPassage($s->event) && ! EventLock::frozen($s->event),
             ])->all(),
             'passageOuvert' => $sessions->mapWithKeys(fn ($s) => [
-                $s->id => $s->hasStarted() && ! EditionLock::frozen($s->edition),
+                $s->id => $s->hasStarted() && ! EventLock::frozen($s->event),
             ])->all(),
         ]);
     }

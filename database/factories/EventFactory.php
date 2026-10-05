@@ -2,15 +2,15 @@
 
 namespace Database\Factories;
 
-use App\Models\Colloque;
-use App\Models\Edition;
+use App\Models\Event;
+use App\Models\EventSeries;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
- * @extends Factory<Edition>
+ * @extends Factory<Event>
  */
-class EditionFactory extends Factory
+class EventFactory extends Factory
 {
     public function definition(): array
     {
@@ -18,9 +18,9 @@ class EditionFactory extends Factory
         $title = "UK {$year}";
 
         return [
-            'colloque_id' => Colloque::factory(),
+            'event_series_id' => EventSeries::factory(),
             'title' => $title,
-            'edition_label' => fake()->numberBetween(1, 12).'e édition',
+            'event_label' => fake()->numberBetween(1, 12).'e événement',
             'year' => $year,
             'status' => 'open',
             'slug' => Str::slug($title).'-'.Str::lower(Str::random(4)),

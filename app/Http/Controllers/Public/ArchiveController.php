@@ -3,69 +3,69 @@
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Support\Gallery;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Str;
 
 /**
- * Archives publiques des colloques : liste des éditions passées et détail d'une
- * édition (thème, présentation, axes, galerie, documents). Vues statiques
+ * Archives publiques des colloques : liste des événements passées et détail d'une
+ * événement (thème, présentation, axes, galerie, documents). Vues statiques
  * rendues par contrôleur + Blade (cacheables) ; la galerie/lightbox est du JS
- * client (public.js), alimenté par les médias réels de l'édition.
+ * client (public.js), alimenté par les médias réels de l'événement.
  */
 class ArchiveController extends Controller
 {
-    /** Liste des éditions passées (phase « Colloque passé », cf. §2.2). */
+    /** Liste des événements passées (phase « Événement passé », cf. §2.2). */
     public function index(): View
     {
-        $editions = Edition::query()
-            ->with('colloque')
+        $events = Event::query()
+            ->with('series')
             ->whereIn('status', ['open', 'closed', 'archived'])
             ->get()
-            ->filter(fn (Edition $e) => $e->phase()->isPast())
+            ->filter(fn (Event $e) => $e->phase()->isPast())
             ->sortByDesc('year')
             ->values();
 
-        return view('public.archives', ['editions' => $editions]);
+        return view('public.archives', ['events' => $events]);
     }
 
-    /** Détail d'une édition passée. */
+    /** Détail d'un événement passé. */
     public function show(string $slug): View
     {
-        $edition = Edition::with('colloque')->where('slug', $slug)->first();
+        $event = Event::with('series')->where('slug', $slug)->first();
 
-        abort_unless($edition && $edition->isPublished(), 404);
+        abort_unless($event && $event->isPublished(), 404);
 
-        $settings = $edition->settings ?? [];
+        $settings = $event->settings ?? [];
 
         $documents = [];
-        if ($edition->booklet_url) {
-            $documents[] = ['label' => 'Livre de résumés', 'url' => $edition->booklet_url];
+        if ($event->booklet_url) {
+            $documents[] = ['label' => 'Livre de résumés', 'url' => $event->booklet_url];
         }
-        foreach ($edition->media()->whereIn('type', ['document', 'livret', 'link'])->orderBy('ordre')->get() as $m) {
+        foreach ($event->media()->whereIn('type', ['document', 'livret', 'link'])->orderBy('ordre')->get() as $m) {
             $documents[] = ['label' => $m->title ?: $m->typeLabel(), 'url' => $m->url];
         }
 
         return view('public.archive', [
-            'edition' => $edition,
-            'description' => $settings['intro'] ?? $edition->subtitle,
+            'event' => $event,
+            'description' => $settings['intro'] ?? $event->subtitle,
             'highlights' => $settings['highlights'] ?? [],
             'axes' => $settings['tracks'] ?? [],
             'documents' => $documents,
-            'gallery' => Gallery::for($edition),
+            'gallery' => Gallery::for($event),
             'stats' => [
-                'communications' => $edition->submissions()->where('status', 'accepted')->count(),
-                'participants' => $edition->participants()->count(),
-                'sessions' => $edition->sessions()->count(),
+                'communications' => $event->submissions()->where('status', 'accepted')->count(),
+                'participants' => $event->participants()->count(),
+                'sessions' => $event->sessions()->count(),
             ],
         ]);
     }
 
     /** Nature de la manifestation (heuristique pour le filtre de la liste). */
-    public static function kind(Edition $edition): string
+    public static function kind(Event $event): string
     {
-        $haystack = Str::lower($edition->colloque->name.' '.$edition->title);
+        $haystack = Str::lower($event->series->name.' '.$event->title);
 
         return Str::contains($haystack, ['journée', 'journee', 'séminaire', 'seminaire']) ? 'journee' : 'colloque';
     }

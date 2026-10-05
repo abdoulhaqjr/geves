@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create('session_polls', function (Blueprint $table) {
             $table->id();
             $table->foreignId('session_id')->constrained('event_sessions')->cascadeOnDelete();
-            $table->foreignId('edition_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('event_id')->constrained()->cascadeOnDelete();
             $table->string('question', 300);
             $table->json('options'); // list<string>
             $table->string('status', 20)->default('open'); // open | closed

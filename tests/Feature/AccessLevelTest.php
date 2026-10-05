@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\User;
 use App\Support\StaffRoles;
 
@@ -27,11 +27,11 @@ it('résout les trois niveaux d’accès', function () {
 it('un administrateur de colloque crée un colloque et en devient gérant', function () {
     $admin = User::factory()->create(['access_level' => User::ACCESS_COLLOQUE_ADMIN]);
 
-    $this->actingAs($admin, 'web')->get(route('admin.editions.create'))->assertOk();
+    $this->actingAs($admin, 'web')->get(route('admin.evenements.create'))->assertOk();
 
-    $response = $this->actingAs($admin, 'web')->post(route('admin.editions.store'), [
-        'new_colloque' => 'Colloque de l’admin',
-        'title' => 'Édition 2026',
+    $response = $this->actingAs($admin, 'web')->post(route('admin.evenements.store'), [
+        'new_colloque' => 'EventSeries de l’admin',
+        'title' => 'Événement 2026',
         'status' => 'open',
         'submission_open' => '1',
         'max_communications' => 3,
@@ -40,17 +40,17 @@ it('un administrateur de colloque crée un colloque et en devient gérant', func
     ]);
     $response->assertSessionHasNoErrors();
 
-    $edition = Edition::firstWhere('title', 'Édition 2026');
-    expect($edition)->not->toBeNull();
-    expect($admin->rolesOnEdition($edition))->toContain('gerant');
-    expect($admin->fresh()->canOnEdition('editions_write', $edition))->toBeTrue();
+    $event = Event::firstWhere('title', 'Événement 2026');
+    expect($event)->not->toBeNull();
+    expect($admin->rolesOnEdition($event))->toContain('gerant');
+    expect($admin->fresh()->canOnEdition('editions_write', $event))->toBeTrue();
 });
 
 it('un utilisateur simple ne peut pas créer de colloque', function () {
     $user = User::factory()->create(['access_level' => User::ACCESS_USER]);
 
-    $this->actingAs($user, 'web')->get(route('admin.editions.create'))->assertForbidden();
-    $this->actingAs($user, 'web')->post(route('admin.editions.store'), [
+    $this->actingAs($user, 'web')->get(route('admin.evenements.create'))->assertForbidden();
+    $this->actingAs($user, 'web')->post(route('admin.evenements.store'), [
         'new_colloque' => 'X', 'title' => 'Y', 'status' => 'open',
     ])->assertForbidden();
 });
@@ -69,10 +69,10 @@ it('propose gérant, co-gérant et les deux comités comme rôles de colloque', 
 });
 
 it('un co-gérant peut gérer le colloque', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $cogerant = User::factory()->create(['access_level' => User::ACCESS_USER]);
-    $edition->team()->attach($cogerant->id, ['role' => 'co_gerant']);
+    $event->team()->attach($cogerant->id, ['role' => 'co_gerant']);
 
-    expect($cogerant->canOnEdition('editions_write', $edition))->toBeTrue();
-    expect($cogerant->canOnEdition('payments', $edition))->toBeTrue();
+    expect($cogerant->canOnEdition('editions_write', $event))->toBeTrue();
+    expect($cogerant->canOnEdition('payments', $event))->toBeTrue();
 });

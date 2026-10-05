@@ -1,6 +1,6 @@
 <x-layouts.admin :title="$f->title" subtitle="Formation - formateurs, inscrits, visio et attestations.">
     <x-slot:actions>
-        <a href="{{ route('admin.formations', ['edition_id' => $f->edition_id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
+        <a href="{{ route('admin.formations', ['event_id' => $f->event_id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
             <x-ukc.icon name="chevron" :size="16" style="transform:rotate(180deg);" /> Toutes les formations
         </a>
     </x-slot:actions>

@@ -11,12 +11,12 @@ use Illuminate\Support\Str;
 // fakeAiProvider() / bindFakeAi() : GenerateReportTest.
 
 /** Inscrit avec communication acceptée et frais non réglés (cible d'une relance). */
-function unpaidAcceptedParticipant($edition): Participant
+function unpaidAcceptedParticipant($event): Participant
 {
-    $p = $edition->participants()->create([
+    $p = $event->participants()->create([
         'first_name' => 'Ama', 'last_name' => 'Dette', 'email' => 'ama.dette@example.tg', 'role' => 'author',
     ]);
-    $edition->submissions()->create([
+    $event->submissions()->create([
         'participant_id' => $p->id, 'title' => 'Communication', 'status' => 'accepted', 'revision_of' => 0,
         'ref_code' => 'CP-1', 'access_token' => Str::random(64),
         'authors' => [['name' => 'Ama Dette', 'email' => 'ama.dette@example.tg', 'corresponding' => true]],
@@ -27,11 +27,11 @@ function unpaidAcceptedParticipant($edition): Participant
 
 it('exécute l’action de relance de paiement après autorisation', function () {
     Mail::fake();
-    $edition = openEdition();
-    $p = unpaidAcceptedParticipant($edition);
+    $event = openEdition();
+    $p = unpaidAcceptedParticipant($event);
 
     $this->actingAs(adminStaff(), 'web')
-        ->postJson(route('admin.ai.execute'), ['key' => 'send_payment_reminders', 'edition_id' => $edition->id])
+        ->postJson(route('admin.ai.execute'), ['key' => 'send_payment_reminders', 'event_id' => $event->id])
         ->assertOk()
         ->assertJsonPath('entry.label', 'Exécutée');
 
@@ -40,20 +40,20 @@ it('exécute l’action de relance de paiement après autorisation', function ()
 });
 
 it('refuse d’exécuter une action hors de la capacité de l’utilisateur', function () {
-    $edition = openEdition();
+    $event = openEdition();
     $staff = User::create(['first_name' => 'Sam', 'last_name' => 'Support', 'email' => 'sam@example.tg', 'password' => 'pass12345']);
-    $staff->assignedEditions()->attach($edition->id, ['role' => 'support']); // pas de capacité « payments »
+    $staff->assignedEditions()->attach($event->id, ['role' => 'support']); // pas de capacité « payments »
 
     $this->actingAs($staff, 'web')
-        ->postJson(route('admin.ai.execute'), ['key' => 'send_payment_reminders', 'edition_id' => $edition->id])
+        ->postJson(route('admin.ai.execute'), ['key' => 'send_payment_reminders', 'event_id' => $event->id])
         ->assertStatus(403);
 });
 
 it('rejette une clé d’action inconnue', function () {
-    $edition = openEdition();
+    $event = openEdition();
 
     $this->actingAs(adminStaff(), 'web')
-        ->postJson(route('admin.ai.execute'), ['key' => 'rm_-rf', 'edition_id' => $edition->id])
+        ->postJson(route('admin.ai.execute'), ['key' => 'rm_-rf', 'event_id' => $event->id])
         ->assertStatus(403);
 });
 
@@ -63,16 +63,16 @@ it('ne retient l’action proposée par l’IA que si l’utilisateur peut l’e
         'action' => ['key' => 'send_payment_reminders', 'params' => []],
     ]));
 
-    $edition = openEdition();
+    $event = openEdition();
 
     // Utilisateur capable (super-admin) → action retenue.
-    $ok = app(AskAdmin::class)->handle([], 'Relance les paiements', $edition, adminStaff());
+    $ok = app(AskAdmin::class)->handle([], 'Relance les paiements', $event, adminStaff());
     expect($ok['action'])->not->toBeNull();
     expect($ok['action']['key'])->toBe('send_payment_reminders');
 
     // Utilisateur sans la capacité → action ignorée (garde-fou côté serveur).
     $support = User::create(['first_name' => 'Sam', 'last_name' => 'Sup', 'email' => 'sup@example.tg', 'password' => 'pass12345']);
-    $support->assignedEditions()->attach($edition->id, ['role' => 'support']);
-    $ko = app(AskAdmin::class)->handle([], 'Relance les paiements', $edition, $support);
+    $support->assignedEditions()->attach($event->id, ['role' => 'support']);
+    $ko = app(AskAdmin::class)->handle([], 'Relance les paiements', $event, $support);
     expect($ko['action'])->toBeNull();
 });

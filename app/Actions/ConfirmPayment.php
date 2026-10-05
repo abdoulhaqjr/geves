@@ -28,11 +28,11 @@ class ConfirmPayment
         DB::transaction(function () use ($payment) {
             // Garde anti-double-paiement : UNIQUEMENT pour les frais de
             // participation (un seul règlement de participation par participant
-            // et par édition). Les autres natures (formation, co-auteur)
+            // et par événement). Les autres natures (formation, co-auteur)
             // coexistent — leur unicité est portée ailleurs (inscription unique
             // par formation/personne, dédoublonnage co-auteur).
             if ($payment->flow() === 'participation') {
-                $already = Payment::where('edition_id', $payment->edition_id)
+                $already = Payment::where('event_id', $payment->event_id)
                     ->where('participant_id', $payment->participant_id)
                     ->where('status', 'paid')
                     ->whereKeyNot($payment->id)
@@ -92,10 +92,10 @@ class ConfirmPayment
 
     protected function generateReceiptNo(Payment $payment): string
     {
-        $year = $payment->edition?->year ?: date('Y');
+        $year = $payment->event?->year ?: date('Y');
 
         do {
-            $seq = Payment::where('edition_id', $payment->edition_id)
+            $seq = Payment::where('event_id', $payment->event_id)
                 ->whereNotNull('receipt_no')->count() + 1;
             $no = sprintf('REC-%s-%04d', $year, $seq);
             $exists = Payment::where('receipt_no', $no)->exists();

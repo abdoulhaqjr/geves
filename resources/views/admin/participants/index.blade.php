@@ -1,11 +1,11 @@
 <x-layouts.admin title="Participants" subtitle="Inscrits, rôles, paiements & invitations">
     <x-slot:actions>
-        @if ($edition_id !== '')
+        @if ($event_id !== '')
             <form method="POST" action="{{ route('admin.participants.invite-bulk') }}"
                   data-ajax data-ajax-target="participants" data-ajax-msg="Invitations envoyées."
                   data-confirm="Envoyer une invitation à tous les payés non encore invités ?">
                 @csrf
-                <input type="hidden" name="edition_id" value="{{ $edition_id }}">
+                <input type="hidden" name="event_id" value="{{ $event_id }}">
                 <button type="submit" class="ukc-btn ukc-btn--blue ukc-btn--sm">
                     <x-ukc.icon name="mail" :size="16" /> Inviter les payés non invités
                 </button>
@@ -14,13 +14,13 @@
     </x-slot:actions>
 
     <div class="admin-page admin-participants">
-        {{-- Sélecteur d'édition en tête, AVANT les indicateurs (comme la page Projet). --}}
+        {{-- Sélecteur d'événement en tête, AVANT les indicateurs (comme la page Projet). --}}
         <div style="max-width:340px;margin-bottom:16px;">
             <div class="ukc-field" style="margin:0;">
-                <label>Édition</label>
-                <select onchange="window.location='{{ route('admin.participants.index') }}?edition_id='+this.value">
+                <label>Événement</label>
+                <select onchange="window.location='{{ route('admin.participants.index') }}?event_id='+this.value">
                     <option value="">- Choisir -</option>
-                    @foreach ($editions as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
+                    @foreach ($events as $ed)<option value="{{ $ed->id }}" @selected((string) $ed->id === $event_id)>{{ $ed->title ?: $ed->year }}</option>@endforeach
                 </select>
             </div>
         </div>
@@ -32,10 +32,10 @@
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="pen" :size="20" /></div><div class="lbl">Auteurs</div><div class="val">{{ $stats['authors'] }}</div></div>
         </div>
 
-        {{-- Filtres (GET) - une seule ligne ; l'édition est reportée en champ caché
+        {{-- Filtres (GET) - une seule ligne ; l'événement est reportée en champ caché
              pour qu'un filtre ne réélargisse pas le périmètre. --}}
         <form method="GET" class="filter-bar filter-bar--inline">
-            <input type="hidden" name="edition_id" value="{{ $edition_id }}">
+            <input type="hidden" name="event_id" value="{{ $event_id }}">
             <select name="role" onchange="this.form.submit()">
                 <option value="">Tous les rôles</option>
                 @foreach ($roles as $key => $label)<option value="{{ $key }}" @selected($role === $key)>{{ $label }}</option>@endforeach
@@ -53,7 +53,7 @@
             <input type="search" name="search" value="{{ $search }}" placeholder="Nom ou e-mail…" style="min-width:200px;flex:1;"
                    onkeydown="if(event.key==='Enter'){this.form.submit();}">
             @if ($search !== '' || $role !== '' || $paid !== '' || $invited !== '')
-                <a href="{{ route('admin.participants.index', ['edition_id' => $edition_id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
+                <a href="{{ route('admin.participants.index', ['event_id' => $event_id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
             @endif
         </form>
 
@@ -119,7 +119,7 @@
                     @if ($participants->hasPages())<div>{{ $participants->links() }}</div>@endif
                 </div>
             @else
-                <div class="ukc-empty"><h3>Aucun participant</h3><p>Sélectionnez une édition ou ajustez les filtres.</p></div>
+                <div class="ukc-empty"><h3>Aucun participant</h3><p>Sélectionnez un événement ou ajustez les filtres.</p></div>
             @endif
         </div>
     </div>

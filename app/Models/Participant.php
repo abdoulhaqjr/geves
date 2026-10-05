@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
- * Participant : présence d'une personne sur une édition (auteur, auditeur,
+ * Participant : présence d'une personne sur un événement (auteur, auditeur,
  * relecteur, membre de comité, co-auteur…). Reliée au compte global quand
  * connue.
  *
@@ -19,7 +19,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $user_id
  * @property Carbon|null $checked_in_at
  * @property array<string, mixed>|null $meta
- * @property Edition|null $edition
+ * @property Event|null $event
  * @property User|null $user
  */
 #[ObservedBy([ParticipantObserver::class])]
@@ -88,10 +88,10 @@ class Participant extends Model
         $this->update(['meta' => $meta]);
     }
 
-    /** @return BelongsTo<Edition, $this> */
-    public function edition(): BelongsTo
+    /** @return BelongsTo<Event, $this> */
+    public function event(): BelongsTo
     {
-        return $this->belongsTo(Edition::class);
+        return $this->belongsTo(Event::class);
     }
 
     /**
@@ -140,7 +140,7 @@ class Participant extends Model
         return trim($this->first_name.' '.$this->last_name);
     }
 
-    /** Au moins une communication acceptée (canonique) sur l'édition. */
+    /** Au moins une communication acceptée (canonique) sur l'événement. */
     public function hasAcceptedSubmission(): bool
     {
         return $this->submissions()

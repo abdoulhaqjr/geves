@@ -1,6 +1,6 @@
-<x-layouts.admin title="Rapports" subtitle="Statistiques, exports et bilans par édition">
+<x-layouts.admin title="Rapports" subtitle="Statistiques, exports et bilans par événement">
     @php
-        // Onglets visibles selon la fonction du membre du staff (capacités par édition).
+        // Onglets visibles selon la fonction du membre du staff (capacités par événement).
         $rStaff = auth('web')->user();
         $rCan = fn ($c) => $rStaff?->canAnyEdition($c) ?? false;
         $cManage = $rCan('submissions_list') || $rCan('participants');
@@ -24,30 +24,30 @@
             dropFile(e) { const dt = e.dataTransfer; if (dt && dt.files && dt.files[0]) { this.$refs.aiFile.files = dt.files; this.aiFileName = dt.files[0].name; this.aiMode = 'template'; } },
             clearFile() { this.$refs.aiFile.value = ''; this.aiFileName = ''; }
          }">
-        {{-- Barre : sélecteur d'édition + exports globaux --}}
+        {{-- Barre : sélecteur d'événement + exports globaux --}}
         <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
             <div class="ukc-field" style="min-width:220px;margin:0;">
-                <select onchange="window.location='{{ route('admin.reports.index') }}?edition_id='+this.value">
-                    <option value="">- Édition -</option>
-                    @foreach ($editions as $ed)
-                        <option value="{{ $ed->id }}" @selected((string) $ed->id === $edition_id)>{{ $ed->title ?: $ed->year }}</option>
+                <select onchange="window.location='{{ route('admin.reports.index') }}?event_id='+this.value">
+                    <option value="">- Événement -</option>
+                    @foreach ($events as $ed)
+                        <option value="{{ $ed->id }}" @selected((string) $ed->id === $event_id)>{{ $ed->title ?: $ed->year }}</option>
                     @endforeach
                 </select>
             </div>
 
-            @if ($edition && ($rStaff?->canAnyEdition('submissions_list') || $rStaff?->canAnyEdition('participants')))
+            @if ($event && ($rStaff?->canAnyEdition('submissions_list') || $rStaff?->canAnyEdition('participants')))
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <a href="{{ route('admin.reports.xlsx', $edition) }}" class="ukc-btn ukc-btn--green ukc-btn--sm">
+                    <a href="{{ route('admin.reports.xlsx', $event) }}" class="ukc-btn ukc-btn--green ukc-btn--sm">
                         <x-ukc.icon name="sheet" :size="16" /> Excel (.xlsx)
                     </a>
-                    <a href="{{ route('admin.reports.pdf', $edition) }}" target="_blank" class="ukc-btn ukc-btn--blue ukc-btn--sm">
+                    <a href="{{ route('admin.reports.pdf', $event) }}" target="_blank" class="ukc-btn ukc-btn--blue ukc-btn--sm">
                         <x-ukc.icon name="file" :size="16" /> Rapport PDF
                     </a>
                 </div>
             @endif
         </div>
 
-        @if ($summary && $edition)
+        @if ($summary && $event)
             {{-- Données des graphiques (lues par charts.js) --}}
             <script type="application/json" id="dashboardData">@json($chartData)</script>
 
@@ -111,8 +111,8 @@
                 <div class="ukc-card">
                     <h2>Rapport soumissions
                         <span class="card-actions">
-                            <a href="{{ route('admin.reports.export', [$edition, 'submissions', 'csv']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">CSV</a>
-                            <a href="{{ route('admin.reports.export', [$edition, 'submissions', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
+                            <a href="{{ route('admin.reports.export', [$event, 'submissions', 'csv']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">CSV</a>
+                            <a href="{{ route('admin.reports.export', [$event, 'submissions', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
                         </span>
                     </h2>
                     <p class="desc">Synthèse par statut, type de communication et axe.</p>
@@ -167,8 +167,8 @@
                 <div class="ukc-card">
                     <h2>Rapport participants
                         <span class="card-actions">
-                            <a href="{{ route('admin.reports.export', [$edition, 'participants', 'csv']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">CSV</a>
-                            <a href="{{ route('admin.reports.export', [$edition, 'participants', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
+                            <a href="{{ route('admin.reports.export', [$event, 'participants', 'csv']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">CSV</a>
+                            <a href="{{ route('admin.reports.export', [$event, 'participants', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
                         </span>
                     </h2>
                     <p class="desc">Inscriptions, catégories et provenance.</p>
@@ -221,8 +221,8 @@
                 <div class="ukc-card">
                     <h2>Rapport paiements
                         <span class="card-actions">
-                            <a href="{{ route('admin.reports.export', [$edition, 'payments', 'csv']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">CSV</a>
-                            <a href="{{ route('admin.reports.export', [$edition, 'payments', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
+                            <a href="{{ route('admin.reports.export', [$event, 'payments', 'csv']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">CSV</a>
+                            <a href="{{ route('admin.reports.export', [$event, 'payments', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
                         </span>
                     </h2>
                     <p class="desc">Recettes, passerelles et statut des transactions.</p>
@@ -315,7 +315,7 @@
             <div class="ukc-panel" :class="{ active: tab==='exports' }">
                 <div class="ukc-card">
                     <h2>Exports prêts à télécharger</h2>
-                    <p class="desc">Fichiers générés à la demande à partir des données réelles de l’édition. Formats CSV, Excel et PDF.</p>
+                    <p class="desc">Fichiers générés à la demande à partir des données réelles de l’événement. Formats CSV, Excel et PDF.</p>
 
                     <div class="report-list">
                         <div class="report-item">
@@ -323,8 +323,8 @@
                             <p>Référence, titre, auteur correspondant, axe, type, statut, note moyenne.</p>
                             <div class="meta">CSV · XLSX · ~{{ $counts['submissions'] }} lignes</div>
                             <div class="dl">
-                                <a href="{{ route('admin.reports.export', [$edition, 'submissions', 'csv']) }}" class="ukc-btn ukc-btn--sm">CSV</a>
-                                <a href="{{ route('admin.reports.export', [$edition, 'submissions', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
+                                <a href="{{ route('admin.reports.export', [$event, 'submissions', 'csv']) }}" class="ukc-btn ukc-btn--sm">CSV</a>
+                                <a href="{{ route('admin.reports.export', [$event, 'submissions', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
                             </div>
                         </div>
                         <div class="report-item">
@@ -332,8 +332,8 @@
                             <p>Identité, catégorie, institution, pays, paiement, montant, invité.</p>
                             <div class="meta">CSV · XLSX · ~{{ $counts['participants'] }} lignes</div>
                             <div class="dl">
-                                <a href="{{ route('admin.reports.export', [$edition, 'participants', 'csv']) }}" class="ukc-btn ukc-btn--sm">CSV</a>
-                                <a href="{{ route('admin.reports.export', [$edition, 'participants', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
+                                <a href="{{ route('admin.reports.export', [$event, 'participants', 'csv']) }}" class="ukc-btn ukc-btn--sm">CSV</a>
+                                <a href="{{ route('admin.reports.export', [$event, 'participants', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
                             </div>
                         </div>
                         <div class="report-item">
@@ -341,16 +341,16 @@
                             <p>Transactions FedaPay / CashPay : reçu, montant, passerelle, statut, date.</p>
                             <div class="meta">CSV · XLSX · ~{{ $counts['payments'] }} lignes</div>
                             <div class="dl">
-                                <a href="{{ route('admin.reports.export', [$edition, 'payments', 'csv']) }}" class="ukc-btn ukc-btn--sm">CSV</a>
-                                <a href="{{ route('admin.reports.export', [$edition, 'payments', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
+                                <a href="{{ route('admin.reports.export', [$event, 'payments', 'csv']) }}" class="ukc-btn ukc-btn--sm">CSV</a>
+                                <a href="{{ route('admin.reports.export', [$event, 'payments', 'xlsx']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Excel</a>
                             </div>
                         </div>
                         <div class="report-item">
                             <h3>Bilan scientifique (PDF)</h3>
                             <p>Synthèse : participants, communications, taux d’acceptation, paiements.</p>
-                            <div class="meta">PDF · {{ $edition->title ?: $edition->year }}</div>
+                            <div class="meta">PDF · {{ $event->title ?: $event->year }}</div>
                             <div class="dl">
-                                <a href="{{ route('admin.reports.pdf', $edition) }}" target="_blank" class="ukc-btn ukc-btn--sm">Télécharger PDF</a>
+                                <a href="{{ route('admin.reports.pdf', $event) }}" target="_blank" class="ukc-btn ukc-btn--sm">Télécharger PDF</a>
                             </div>
                         </div>
                         <div class="report-item">
@@ -358,7 +358,7 @@
                             <p>Attestations générées avec UUID de vérification publique et statut.</p>
                             <div class="meta">CSV · ~{{ $counts['attestations'] }} lignes</div>
                             <div class="dl">
-                                <a href="{{ route('admin.reports.export', [$edition, 'attestations', 'csv']) }}" class="ukc-btn ukc-btn--sm">CSV</a>
+                                <a href="{{ route('admin.reports.export', [$event, 'attestations', 'csv']) }}" class="ukc-btn ukc-btn--sm">CSV</a>
                             </div>
                         </div>
                         <div class="report-item">
@@ -366,11 +366,11 @@
                             <p>Récapitulatif des recettes réglées par passerelle, avec total.</p>
                             <div class="meta">XLSX · {{ $summary['currency'] }}</div>
                             <div class="dl">
-                                <a href="{{ route('admin.reports.export', [$edition, 'accounting', 'xlsx']) }}" class="ukc-btn ukc-btn--sm">Excel</a>
+                                <a href="{{ route('admin.reports.export', [$event, 'accounting', 'xlsx']) }}" class="ukc-btn ukc-btn--sm">Excel</a>
                             </div>
                         </div>
                     </div>
-                    <p class="ukc-hint" style="margin-top:14px;">Le classeur Excel « complet » (toutes les feuilles) reste disponible via <a href="{{ route('admin.reports.xlsx', $edition) }}">Excel (.xlsx)</a> en haut de page.</p>
+                    <p class="ukc-hint" style="margin-top:14px;">Le classeur Excel « complet » (toutes les feuilles) reste disponible via <a href="{{ route('admin.reports.xlsx', $event) }}">Excel (.xlsx)</a> en haut de page.</p>
                 </div>
             </div>
 
@@ -393,9 +393,9 @@
                           data-ajax data-ajax-target="ai-report" data-ajax-msg="Rapport généré."
                           data-ai data-ai-title="Rédaction du rapport…"
                           data-ai-note="Jusqu’à deux minutes pour une longue liste. Le résultat est conservé dans l’historique."
-                          data-ai-steps="Lecture de vos instructions…|Collecte des données de l’édition…|Rédaction du brouillon…|Mise en forme du document…">
+                          data-ai-steps="Lecture de vos instructions…|Collecte des données de l’événement…|Rédaction du brouillon…|Mise en forme du document…">
                         @csrf
-                        <input type="hidden" name="edition_id" value="{{ $edition->id }}">
+                        <input type="hidden" name="event_id" value="{{ $event->id }}">
                         <input type="hidden" name="mode" :value="aiMode">
 
                         <div class="ai-mode-tabs">
@@ -436,7 +436,7 @@
                             <div class="ukc-form-row">
                                 <label for="aiNotes">Instructions complémentaires (optionnel)</label>
                                 <textarea id="aiNotes" name="aiNotes" rows="4"
-                                          placeholder="Ex. : Reprendre la structure et les en-têtes du modèle, remplacer les données par celles de l’édition.">{{ old('aiNotes') }}</textarea>
+                                          placeholder="Ex. : Reprendre la structure et les en-têtes du modèle, remplacer les données par celles de l’événement.">{{ old('aiNotes') }}</textarea>
                             </div>
                         </div>
 
@@ -454,7 +454,7 @@
                             <div class="ukc-form-row">
                                 <label for="aiScope">Périmètre des données</label>
                                 <select id="aiScope" name="scope">
-                                    <option value="edition" @selected(old('scope')==='edition')>Édition (participants + communications + paiements)</option>
+                                    <option value="event" @selected(old('scope')==='event')>Événement (participants + communications + paiements)</option>
                                     <option value="subs" @selected(old('scope')==='subs')>Soumissions uniquement</option>
                                     <option value="part" @selected(old('scope')==='part')>Participants uniquement</option>
                                     <option value="pay" @selected(old('scope')==='pay')>Paiements uniquement</option>
@@ -496,11 +496,11 @@
                         <div class="ai-result">
                             <h3>Rapport généré</h3>
                             <p style="font-size:13px;color:#166534;margin-bottom:10px;">
-                                Brouillon produit selon vos instructions et les données réelles de l’édition -
+                                Brouillon produit selon vos instructions et les données réelles de l’événement -
                                 à relire avant diffusion. Format : <strong>{{ strtoupper($aiReport['format'] ?? 'xlsx') }}</strong>.
                             </p>
                             <div class="actions" style="display:flex;gap:8px;flex-wrap:wrap;">
-                                <a href="{{ route('admin.reports.ai-download', [$edition, $aiReport['id']]) }}" @if(in_array(($aiReport['format'] ?? ''), ['pdf'], true)) target="_blank" @endif class="ukc-btn ukc-btn--sm">Télécharger</a>
+                                <a href="{{ route('admin.reports.ai-download', [$event, $aiReport['id']]) }}" @if(in_array(($aiReport['format'] ?? ''), ['pdf'], true)) target="_blank" @endif class="ukc-btn ukc-btn--sm">Télécharger</a>
                             </div>
                             <div style="margin-top:14px;border-top:1px solid #bbf7d0;padding-top:12px;">
                                 <h4 style="font-size:1.1rem;font-weight:900;margin-bottom:10px;color:var(--ukc-text);">{{ $aiReport['title'] }}</h4>
@@ -541,7 +541,7 @@
                 {{-- Historique des exports IA --}}
                 <div class="ukc-card">
                     <h2>Historique des exports IA</h2>
-                    <p class="desc">Dernières générations pour cette édition (stockées côté serveur).</p>
+                    <p class="desc">Dernières générations pour cet événement (stockées côté serveur).</p>
                     @forelse ($aiHistory as $h)
                         <div class="ai-history-item">
                             <div>
@@ -549,7 +549,7 @@
                                 <div class="meta">{{ strtoupper($h['format'] ?? 'xlsx') }} · {{ $h['created_at'] ?? '' }} ·
                                     {{ ['describe' => 'Description libre', 'template' => 'À partir d’un modèle'][$h['mode'] ?? 'describe'] ?? 'Description libre' }}</div>
                             </div>
-                            <a href="{{ route('admin.reports.ai-download', [$edition, $h['id']]) }}" @if(($h['format'] ?? '')==='pdf') target="_blank" @endif class="ukc-btn ukc-btn--ghost ukc-btn--sm">Télécharger</a>
+                            <a href="{{ route('admin.reports.ai-download', [$event, $h['id']]) }}" @if(($h['format'] ?? '')==='pdf') target="_blank" @endif class="ukc-btn ukc-btn--ghost ukc-btn--sm">Télécharger</a>
                         </div>
                     @empty
                         <p class="ukc-hint">Aucune génération pour l’instant. Décrivez un rapport ci-dessus pour commencer.</p>
@@ -559,7 +559,7 @@
             </div>
             @endif
         @else
-            <div class="ukc-empty"><h3>Aucune édition</h3><p>Sélectionnez une édition pour générer ses rapports.</p></div>
+            <div class="ukc-empty"><h3>Aucun événement</h3><p>Sélectionnez un événement pour générer ses rapports.</p></div>
         @endif
     </div>
 </x-layouts.admin>

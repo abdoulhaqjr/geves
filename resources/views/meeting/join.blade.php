@@ -1576,7 +1576,7 @@
                             <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--blue" style="margin-top:14px;"><x-ukc.icon name="login" :size="16" /> Se connecter</a>
                         @else
                             <h3 style="margin-bottom:6px;">Accès réservé</h3>
-                            <p style="color:var(--ukc-muted);">Cette visio est réservée aux participants inscrits de cette édition.</p>
+                            <p style="color:var(--ukc-muted);">Cette visio est réservée aux participants inscrits de cet événement.</p>
                         @endif
                     </div>
                 </div>

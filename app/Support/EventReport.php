@@ -3,7 +3,7 @@
 namespace App\Support;
 
 use App\Models\Attestation;
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Payment;
 use App\Models\Review;
@@ -12,13 +12,13 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
 /**
- * Agrège les données de reporting d'une édition : synthèse chiffrée et jeux de
+ * Agrège les données de reporting d'un événement : synthèse chiffrée et jeux de
  * lignes (participants, communications, paiements) prêts à l'export Excel/PDF.
  * Source unique pour le classeur .xlsx, le rapport PDF et les tuiles Livewire.
  */
-class EditionReport
+class EventReport
 {
-    public function __construct(public Edition $edition) {}
+    public function __construct(public Event $event) {}
 
     /**
      * Indicateurs de synthèse.
@@ -36,28 +36,28 @@ class EditionReport
      */
     public function summary(): array
     {
-        $editionId = $this->edition->id;
+        $editionId = $this->event->id;
 
         $submissionsByStatus = [];
         foreach (array_keys(Submission::statuses()) as $status) {
-            $submissionsByStatus[$status] = Submission::where('edition_id', $editionId)
+            $submissionsByStatus[$status] = Submission::where('event_id', $editionId)
                 ->where('revision_of', 0)
                 ->where('status', $status)
                 ->count();
         }
 
-        $collected = (float) Payment::where('edition_id', $editionId)->where('status', 'paid')->sum('amount');
-        $pending = (float) Payment::where('edition_id', $editionId)->where('status', 'pending')->sum('amount');
+        $collected = (float) Payment::where('event_id', $editionId)->where('status', 'paid')->sum('amount');
+        $pending = (float) Payment::where('event_id', $editionId)->where('status', 'pending')->sum('amount');
 
         return [
-            'participants' => Participant::where('edition_id', $editionId)->count(),
-            'submissions' => Submission::where('edition_id', $editionId)->where('revision_of', 0)->count(),
+            'participants' => Participant::where('event_id', $editionId)->count(),
+            'submissions' => Submission::where('event_id', $editionId)->where('revision_of', 0)->count(),
             'submissionsByStatus' => $submissionsByStatus,
             'accepted' => $submissionsByStatus['accepted'] ?? 0,
-            'paidCount' => Payment::where('edition_id', $editionId)->where('status', 'paid')->count(),
+            'paidCount' => Payment::where('event_id', $editionId)->where('status', 'paid')->count(),
             'collected' => $collected,
             'pending' => $pending,
-            'currency' => (string) (Payment::where('edition_id', $editionId)->value('currency') ?: 'XOF'),
+            'currency' => (string) (Payment::where('event_id', $editionId)->value('currency') ?: 'XOF'),
         ];
     }
 
@@ -70,7 +70,7 @@ class EditionReport
     /** @return array<int, array<int, string|float>> */
     public function participantRows(): array
     {
-        return Participant::where('edition_id', $this->edition->id)
+        return Participant::where('event_id', $this->event->id)
             ->with('participationPayments')
             ->orderBy('last_name')
             ->get()
@@ -103,7 +103,7 @@ class EditionReport
     /** @return array<int, array<int, string|float|int>> */
     public function submissionRows(): array
     {
-        return Submission::where('edition_id', $this->edition->id)
+        return Submission::where('event_id', $this->event->id)
             ->where('revision_of', 0)
             ->with('participant')
             ->withAvg('reviews', 'score')
@@ -132,7 +132,7 @@ class EditionReport
     /** @return array<int, array<int, string|float>> */
     public function paymentRows(): array
     {
-        return Payment::where('edition_id', $this->edition->id)
+        return Payment::where('event_id', $this->event->id)
             ->with('participant')
             ->latest('id')
             ->get()
@@ -159,7 +159,7 @@ class EditionReport
     /** @return array<int, array<int, string>> */
     public function attestationRows(): array
     {
-        return Attestation::where('edition_id', $this->edition->id)
+        return Attestation::where('event_id', $this->event->id)
             ->with('participant')
             ->latest('id')
             ->get()
@@ -190,7 +190,7 @@ class EditionReport
     {
         $currency = $this->summary()['currency'];
 
-        $rows = Payment::where('edition_id', $this->edition->id)
+        $rows = Payment::where('event_id', $this->event->id)
             ->where('status', 'paid')
             ->selectRaw('gateway, count(*) as c, sum(amount) as total')
             ->groupBy('gateway')
@@ -222,13 +222,13 @@ class EditionReport
      */
     public function counts(): array
     {
-        $editionId = $this->edition->id;
+        $editionId = $this->event->id;
 
         return [
-            'submissions' => Submission::where('edition_id', $editionId)->where('revision_of', 0)->count(),
-            'participants' => Participant::where('edition_id', $editionId)->count(),
-            'payments' => Payment::where('edition_id', $editionId)->count(),
-            'attestations' => Attestation::where('edition_id', $editionId)->count(),
+            'submissions' => Submission::where('event_id', $editionId)->where('revision_of', 0)->count(),
+            'participants' => Participant::where('event_id', $editionId)->count(),
+            'payments' => Payment::where('event_id', $editionId)->count(),
+            'attestations' => Attestation::where('event_id', $editionId)->count(),
         ];
     }
 
@@ -239,13 +239,13 @@ class EditionReport
     /** @return Builder<Submission> */
     protected function subs()
     {
-        return Submission::query()->where('edition_id', $this->edition->id)->where('revision_of', 0);
+        return Submission::query()->where('event_id', $this->event->id)->where('revision_of', 0);
     }
 
     /** @return Builder<Payment> */
     protected function pay()
     {
-        return Payment::query()->where('edition_id', $this->edition->id);
+        return Payment::query()->where('event_id', $this->event->id);
     }
 
     /**
@@ -312,7 +312,7 @@ class EditionReport
      */
     public function participantsByRole(): array
     {
-        return Participant::where('edition_id', $this->edition->id)
+        return Participant::where('event_id', $this->event->id)
             ->with('participationPayments')
             ->get()
             ->groupBy('role')
@@ -333,9 +333,9 @@ class EditionReport
      */
     public function participantsByCountry(): array
     {
-        $grand = max(1, Participant::where('edition_id', $this->edition->id)->count());
+        $grand = max(1, Participant::where('event_id', $this->event->id)->count());
 
-        $byCountry = Participant::where('edition_id', $this->edition->id)
+        $byCountry = Participant::where('event_id', $this->event->id)
             ->selectRaw("COALESCE(NULLIF(country, ''), 'Non précisé') as country, count(*) as c")
             ->groupBy('country')
             ->orderByDesc('c')
@@ -403,7 +403,7 @@ class EditionReport
      */
     public function reviewStats(): array
     {
-        $reviews = Review::whereHas('submission', fn ($q) => $q->where('edition_id', $this->edition->id))->get();
+        $reviews = Review::whereHas('submission', fn ($q) => $q->where('event_id', $this->event->id))->get();
 
         $completed = $reviews->where('status', 'completed');
         $avgDays = $completed->isNotEmpty()
@@ -430,7 +430,7 @@ class EditionReport
      */
     public function reviewsByReviewer(): array
     {
-        return Review::whereHas('submission', fn ($q) => $q->where('edition_id', $this->edition->id))
+        return Review::whereHas('submission', fn ($q) => $q->where('event_id', $this->event->id))
             ->with('reviewer')
             ->get()
             ->groupBy('reviewer_id')
@@ -456,7 +456,7 @@ class EditionReport
 
     public function filenameBase(): string
     {
-        $slug = Str::slug($this->edition->title ?: ('edition-'.$this->edition->id)) ?: 'edition';
+        $slug = Str::slug($this->event->title ?: ('edition-'.$this->event->id)) ?: 'event';
 
         return 'rapport-'.$slug;
     }

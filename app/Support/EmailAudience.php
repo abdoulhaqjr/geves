@@ -2,13 +2,13 @@
 
 namespace App\Support;
 
-use App\Models\Edition;
+use App\Models\Event;
 use App\Models\Participant;
 use Illuminate\Support\Collection;
 
 /**
  * Résout la liste des destinataires d'une campagne d'e-mails selon une
- * audience ciblée sur une édition. Ne retient que les participants ayant une
+ * audience ciblée sur un événement. Ne retient que les participants ayant une
  * adresse e-mail, dédoublonnés par e-mail (insensible à la casse).
  */
 class EmailAudience
@@ -36,13 +36,13 @@ class EmailAudience
     /**
      * @return Collection<int, Participant>
      */
-    public static function resolve(Edition $edition, string $audience): Collection
+    public static function resolve(Event $event, string $audience): Collection
     {
         $query = Participant::query()
-            ->where('edition_id', $edition->id)
+            ->where('event_id', $event->id)
             ->whereNotNull('email')
             ->where('email', '!=', '')
-            ->with('edition');
+            ->with('event');
 
         match ($audience) {
             'paid' => $query->whereHas('participationPayments', fn ($q) => $q->where('status', 'paid')),
@@ -63,8 +63,8 @@ class EmailAudience
         return $participants;
     }
 
-    public static function count(Edition $edition, string $audience): int
+    public static function count(Event $event, string $audience): int
     {
-        return self::resolve($edition, $audience)->count();
+        return self::resolve($event, $audience)->count();
     }
 }
