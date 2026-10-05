@@ -415,7 +415,7 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .ukc-nav-docs button, .ukc-nav-docs a {
   background: #fff; border: 1px solid var(--ukc-border); border-radius: 10px;
   padding: 10px 16px; font-weight: 700; font-size: 13.5px; color: var(--ukc-muted);
-  cursor: pointer; text-decoration: none; display: inline-flex; align-items: center;
+  cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 7px;
 }
 .ukc-nav-docs button:hover, .ukc-nav-docs a:hover { border-color: var(--ukc-blue); color: var(--ukc-blue); }
 .ukc-nav-docs button.active, .ukc-nav-docs a.active { background: var(--ukc-blue); border-color: var(--ukc-blue); color: #fff; }
