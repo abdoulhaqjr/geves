@@ -543,10 +543,11 @@ paiement (`pay`), inscription à une formation.
     créneaux » l'onglet **Options**, et l'**Agenda** (FullCalendar) se déplie
     dans **Planning**.
   - ⚠️ **Les rapports de séance appartiennent au SECRÉTARIAT**
-    (`admin.secretariat.reports`) : il les lit, les améliore et les **valide**
-    (la validation verrouille le rapport côté rapporteur). Le module Programme
-    n'en porte **aucune copie** - deux écrans pour le même objet, c'est deux
-    endroits où chercher. `admin.program.reports` redirige vers le Secrétariat.
+    (`admin.secretariat`, poste de travail unifié : lecture / amélioration /
+    validation dans un panneau latéral ; la validation verrouille le rapport côté
+    rapporteur). Le module Programme n'en porte **aucune copie** - deux écrans pour
+    le même objet, c'est deux endroits où chercher. `admin.program.reports` redirige
+    vers le Secrétariat.
   - Chaque page de sélecteur d'édition utilise **`currentEditionId()`** du trait
     `ScopesEditionAccess` (il était privé à un seul contrôleur).
 - **Fiche d'édition : plus d'onglet « Programme »** (2026-09-28). **Dates clés**
@@ -2432,8 +2433,23 @@ Côté public (page colloque + Déroulement), les ateliers simultanés portent u
 `['current' => …]`) :
 
 - **Rapports de séance** (`admin.secretariat`, vue `admin/secretariat.blade.php`) =
-  tableau de bord : file des rapports **à valider**, séances **en attente de rédaction**,
-  **récemment validés**.
+  **poste de travail unifié** (un seul écran, toutes éditions accessibles). Quatre
+  cartes KPI **cliquables = filtres** (`à valider` / `en attente` / `validés` / `toutes`)
+  sur **un tableau unique** (séance · rapporteur · statut · date · action), filtré côté
+  client (Alpine). Statut calculé une fois dans `index()` (`to_validate` → `awaiting` →
+  `scheduled` → `validated`, rang de priorité). ⚠️ **Cliquer « Validés » montre TOUS les
+  rapports validés** (il n'y a plus de « 6 récents » ni de second écran).
+  - ⚠️ **Lecture / amélioration / VALIDATION se font SUR PLACE**, dans un **panneau
+    latéral** (`<x-ukc.slideover>`, état `{ open, cur }`, `show(row)` pose `cur` via
+    `@js($rowData)` et `open=true`). Le panneau édite synthèse/points/affluence
+    (`<form :action="cur.action">` → `admin.program.reports.save`) et, pour un rapport
+    validé, propose **Rouvrir au rapporteur** (`cur.reopen` → `admin.program.reports.reopen`,
+    `data-confirm`). Mêmes endpoints de mutation qu'avant (dans `ProgramController`).
+  - ⚠️ **Il n'y a plus de page `/secretariat/rapports` par événement** : elle doublait
+    ce tableau de bord (deux écrans « Rapports de séance » avec cartes + liste). La route
+    `admin.secretariat.reports` **redirige** vers `admin.secretariat` (anciens liens,
+    signets, e-mails, et redirection de `admin.program.reports`). Ne pas la recréer en
+    page. Vue `admin/secretariat/reports.blade.php` **supprimée**.
 - **Documents** (`admin.secretariat.documents`, vue `admin/secretariat/documents.blade.php`)
   = cinq documents logistiques **sans IA**, remplis depuis les données réelles et
   **imprimables** : liste de présence, feuille d'émargement, affiche directionnelle,
@@ -2468,13 +2484,6 @@ Côté public (page colloque + Déroulement), les ateliers simultanés portent u
   POST, vue `admin/secretariat/assistant.blade.php`) = génération **IA** sur mesure
   (prompt/modèle joint), conservée pour les documents non standard. Presets
   `SecretariatController::PRESETS`.
-- **`/secretariat/rapports`** (`admin.secretariat.reports`) : lecture / amélioration /
-  validation d'un rapport. ⚠️ Le formulaire « Améliorer / valider » s'ouvre dans un
-  **slideover latéral** (comme « Nouvelle tâche » du Projet) : état Alpine
-  `{ open, cur }` au niveau de la page, chaque carte pose `cur` (action + valeurs) et
-  `open=true` ; un seul `<x-ukc.slideover>` avec un `<form :action="cur.action">`
-  (bouton *Valider* dans le pied via `form=`). Ne pas revenir au formulaire déplié en
-  ligne. La validation reste `admin.program.reports.save` (verrouille le rapporteur).
 
 ### Architecture & sécurité
 

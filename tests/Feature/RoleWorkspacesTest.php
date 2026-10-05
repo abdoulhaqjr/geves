@@ -294,14 +294,21 @@ it('affiche au comité les rapports de séance soumis (vue admin)', function () 
         'status' => 'submitted', 'submitted_at' => now(),
     ]);
 
+    // Fusionné dans le tableau de bord : le rapport soumis y figure (à valider),
+    // son contenu étant chargé dans le panneau latéral de validation.
     $this->actingAs(adminStaff(), 'web')
-        ->get(route('admin.secretariat.reports', ['event_id' => $event->id]))
+        ->get(route('admin.secretariat'))
         ->assertOk()
         ->assertSee('Session - Atelier 4')
         ->assertSee('Rita Rapporteuse')
-        ->assertSee('Synthèse détaillée de la séance.')
         ->assertSee('Publier les actes.')
-        ->assertSee('Soumis');
+        ->assertSee('À valider');
+});
+
+it('redirige l’ancienne page /secretariat/rapports vers le tableau de bord', function () {
+    $this->actingAs(adminStaff(), 'web')
+        ->get(route('admin.secretariat.reports', ['event_id' => 1]))
+        ->assertRedirect(route('admin.secretariat'));
 });
 
 it('notifie le modérateur et le rapporteur à leur désignation sur une séance', function () {

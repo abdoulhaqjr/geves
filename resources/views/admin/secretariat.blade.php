@@ -29,6 +29,9 @@
                 },
                 get shown() { return this.f === 'all' ? this.counts.all : this.counts[this.f]; },
                 visible(status) { return this.f === 'all' || this.f === status; },
+                open: false,
+                cur: {},
+                show(row) { this.cur = row; this.open = true; },
             }">
                 {{-- Cartes KPI = filtres cliquables. Cliquer « Validés » affiche TOUS les rapports validés. --}}
                 <div class="ukc-stats sec-filters" style="margin-bottom:18px;">
@@ -61,9 +64,9 @@
                                 all: 'Toutes les séances',
                             })[f]"></h3>
                             <p style="font-size:13px;color:var(--ukc-muted);margin:4px 0 0;" x-text="({
-                                to_validate: 'Rapports soumis par les rapporteurs. La validation verrouille le rapport.',
+                                to_validate: 'Rapports soumis par les rapporteurs. Ouvrez pour lire, améliorer et valider.',
                                 awaiting: 'Séances commencées dont le rapport n\'est pas encore soumis.',
-                                validated: 'Rapports validés et verrouillés. Le rapporteur ne peut plus les modifier.',
+                                validated: 'Rapports validés et verrouillés. Ouvrez pour consulter ou rouvrir au rapporteur.',
                                 scheduled: 'Séances à venir avec un rapporteur désigné.',
                                 all: 'Toutes les séances avec un rapporteur, tous statuts confondus.',
                             })[f]"></p>
@@ -85,6 +88,24 @@
                             <tbody>
                                 @foreach ($rows as $row)
                                     @php($s = $row->s)
+                                    @php($report = $s->report)
+                                    @php($meta = collect([
+                                        $s->starts_at?->translatedFormat('l j F · H:i'),
+                                        $s->room ?: null,
+                                        (filled($s->rapporteur_name) || filled($s->rapporteur_email)) ? 'Rapporteur : '.($s->rapporteur_name ?: $s->rapporteur_email) : null,
+                                    ])->filter()->implode(' · '))
+                                    @php($rowData = [
+                                        'action' => route('admin.program.reports.save', $s),
+                                        'reopen' => route('admin.program.reports.reopen', $s),
+                                        'label' => (string) $s->label,
+                                        'event' => (string) ($s->event?->title ?: $s->event?->year),
+                                        'meta' => $meta,
+                                        'summary' => (string) ($report?->summary),
+                                        'highlights' => (string) ($report?->highlights),
+                                        'attendance' => $report?->attendance,
+                                        'validated' => (bool) ($report && $report->isValidated()),
+                                        'hasReport' => (bool) ($report && (filled($report->summary) || filled($report->highlights) || $report->attendance !== null)),
+                                    ])
                                     <tr x-show="visible('{{ $row->status }}')">
                                         <td class="title">
                                             {{ $s->label }}
@@ -114,17 +135,19 @@
                                         <td style="text-align:right;">
                                             <div style="display:inline-flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
                                                 @if ($row->status === 'to_validate')
-                                                    <a href="{{ route('admin.secretariat.reports') }}?event_id={{ $s->event_id }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="eye" :size="15" /> Lire / améliorer</a>
-                                                    <form method="POST" action="{{ route('admin.program.reports.save', $s) }}" data-confirm="Valider ce rapport ? Le rapporteur ne pourra plus le modifier.">
-                                                        @csrf
-                                                        <button type="submit" class="ukc-btn ukc-btn--green ukc-btn--sm"><x-ukc.icon name="check" :size="15" /> Valider</button>
-                                                    </form>
+                                                    <button type="button" class="ukc-btn ukc-btn--green ukc-btn--sm" @click="show(@js($rowData))"><x-ukc.icon name="pen" :size="15" /> Améliorer / valider</button>
                                                 @elseif ($row->status === 'validated')
-                                                    <a href="{{ route('admin.secretariat.reports') }}?event_id={{ $s->event_id }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm"><x-ukc.icon name="eye" :size="15" /> Consulter</a>
-                                                @elseif (filled($s->rapporteur_email))
-                                                    <a href="mailto:{{ $s->rapporteur_email }}?subject={{ rawurlencode('Rapport de séance : '.$s->label) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="mail" :size="15" /> Relancer</a>
+                                                    <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="show(@js($rowData))"><x-ukc.icon name="eye" :size="15" /> Consulter</button>
                                                 @else
-                                                    <span style="font-size:12.5px;color:var(--ukc-muted);">-</span>
+                                                    @if ($row->status === 'awaiting')
+                                                        <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="show(@js($rowData))"><x-ukc.icon name="pen" :size="15" /> Rédiger / valider</button>
+                                                    @endif
+                                                    @if (filled($s->rapporteur_email))
+                                                        <a href="mailto:{{ $s->rapporteur_email }}?subject={{ rawurlencode('Rapport de séance : '.$s->label) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="mail" :size="15" /> Relancer</a>
+                                                    @endif
+                                                    @if ($row->status === 'scheduled' && blank($s->rapporteur_email))
+                                                        <span style="font-size:12.5px;color:var(--ukc-muted);">-</span>
+                                                    @endif
                                                 @endif
                                             </div>
                                         </td>
@@ -147,6 +170,52 @@
                         </p>
                     </div>
                 </div>
+
+                {{-- ===== Panneau latéral : lire / améliorer / valider un rapport ===== --}}
+                <x-ukc.slideover open="open" onClose="open=false" width="560px">
+                    <x-slot:header><span x-text="cur.validated ? 'Rapport validé' : 'Améliorer / valider le rapport'"></span></x-slot:header>
+
+                    <div style="display:flex;flex-direction:column;gap:14px;">
+                        <div>
+                            <div style="font-weight:700;" x-text="cur.label"></div>
+                            <div style="font-size:12.5px;color:var(--ukc-muted);margin-top:2px;" x-text="cur.event"></div>
+                            <div style="font-size:12.5px;color:var(--ukc-muted);margin-top:2px;" x-text="cur.meta"></div>
+                        </div>
+
+                        <div x-show="cur.validated" class="ukc-alert ukc-alert--ok" style="margin:0;">
+                            <div class="ico"><x-ukc.icon name="check" :size="16" /></div>
+                            <div>Ce rapport est validé et verrouillé : le rapporteur ne peut plus le modifier. Vous pouvez l'améliorer puis revalider, ou le rouvrir au rapporteur.</div>
+                        </div>
+
+                        <form method="POST" :action="cur.action" id="reportForm" @submit="open=false" style="display:flex;flex-direction:column;gap:14px;">
+                            @csrf
+                            <div class="ukc-field">
+                                <label>Synthèse de la séance</label>
+                                <textarea name="summary" rows="10" x-model="cur.summary"></textarea>
+                            </div>
+                            <div class="ukc-field">
+                                <label>Points saillants & recommandations</label>
+                                <textarea name="highlights" rows="5" x-model="cur.highlights"></textarea>
+                            </div>
+                            <div class="ukc-field" style="max-width:220px;">
+                                <label>Affluence estimée</label>
+                                <input type="number" name="attendance" min="0" x-model="cur.attendance">
+                            </div>
+                            <p style="font-size:12.5px;color:var(--ukc-muted);margin:0;">La validation enregistre vos modifications et <strong>verrouille</strong> le rapport : le rapporteur ne pourra plus le modifier.</p>
+                        </form>
+
+                        {{-- Formulaire distinct pour la réouverture (bouton dans le pied). --}}
+                        <form method="POST" :action="cur.reopen" id="reopenForm" data-confirm="Rouvrir ce rapport au rapporteur ? Il pourra de nouveau le modifier.">
+                            @csrf
+                        </form>
+                    </div>
+
+                    <x-slot:footer>
+                        <button type="button" class="ukc-btn ukc-btn--ghost" @click="open=false">Annuler</button>
+                        <button type="submit" form="reopenForm" class="ukc-btn ukc-btn--outline" x-show="cur.validated"><x-ukc.icon name="refresh" :size="16" /> Rouvrir au rapporteur</button>
+                        <button type="submit" form="reportForm" class="ukc-btn ukc-btn--green"><x-ukc.icon name="check" :size="16" /> Valider le rapport</button>
+                    </x-slot:footer>
+                </x-ukc.slideover>
             </div>
         @endif
     </div>

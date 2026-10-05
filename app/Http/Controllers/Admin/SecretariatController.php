@@ -247,30 +247,16 @@ class SecretariatController extends Controller
         ]);
     }
 
-    /** Génère un document du secrétariat via IA (prompt ou modèle joint). */
     /**
-     * Rapports de séance d'un événement : lecture et amélioration par le
-     * secrétariat, avant validation.
-     *
-     * ⚠️ Les rapports relèvent du secrétariat et de lui seul - le module
-     * Programme n'en porte plus de copie : deux écrans pour le même objet, c'est
-     * deux endroits où chercher et un risque d'états divergents.
+     * ⚠️ Ancienne page « Rapports de séance » par événement : fusionnée dans le
+     * tableau de bord du secrétariat ({@see index()}), où lecture, amélioration
+     * et validation se font sur place dans un panneau latéral. On ne garde ici
+     * qu'une REDIRECTION pour les anciens liens, signets et e-mails. Deux écrans
+     * pour le même objet, c'était deux endroits où chercher.
      */
-    public function reports(Request $request): View
+    public function reports(Request $request): RedirectResponse
     {
-        $events = $this->accessibleEditions($request, 'editions_read');
-        $editionId = $request->has('event_id')
-            ? (string) $request->query('event_id', '')
-            : $this->currentEditionId($events);
-        $event = $editionId !== '' ? $events->firstWhere('id', (int) $editionId) : null;
-
-        return view('admin.secretariat.reports', [
-            'events' => $events,
-            'event_id' => $event ? (string) $event->id : '',
-            'sessions' => $event
-                ? $event->sessions()->with(['atelier', 'report'])->orderBy('starts_at')->orderBy('id')->get()
-                : collect(),
-        ]);
+        return redirect()->route('admin.secretariat');
     }
 
     public function generate(Request $request, GenerateReport $action): RedirectResponse
