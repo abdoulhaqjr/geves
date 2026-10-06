@@ -486,6 +486,9 @@ Route::prefix('admin')->group(function () {
             Route::post('/programme/sessions/{session}/visio/statut', [ProgramController::class, 'setMeetingStatus'])->name('admin.program.sessions.meeting-status');
             Route::post('/programme/sessions/{session}/visio/acces', [ProgramController::class, 'setMeetingVisibility'])->name('admin.program.sessions.meeting-visibility');
             Route::post('/programme/sessions/{session}/visio', [ProgramController::class, 'saveMeeting'])->name('admin.program.sessions.meeting');
+            // Auto-complétion des personnes (modérateur/rapporteur) : rattache la
+            // séance à un COMPTE existant par e-mail (sinon la liaison se perd).
+            Route::get('/programme/personnes', [ProgramController::class, 'people'])->name('admin.program.people');
             // Fils de discussion des visios (onglet « Discussions ») : consultables
             // après la visio ET après l'événement (lecture directe de l'archive).
             Route::get('/programme/discussions/{session}', [ProgramController::class, 'discussion'])->name('admin.program.discussions.show');

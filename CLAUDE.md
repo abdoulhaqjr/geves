@@ -528,11 +528,28 @@ paiement (`pay`), inscription à une formation.
   doublon rattachait donc une communication au mauvais compte, en silence.
   Diagnostic : **`php artisan users:phones`** (rapport, `--fix` pour normaliser).
   Tests : `tests/Feature/UserPhoneUniquenessTest.php`.
-- **Module Programme = un seul écran, huit onglets** : *Programme · Planning ·
-  Ateliers · Sessions · Créneaux · Espaces · Affectation auto · Options*,
+- **Module Programme = un seul écran, neuf onglets** : *Programme · Planning ·
+  Ateliers · Sessions · Créneaux · Espaces · Discussions · Affectation auto · Options*,
   pilotés par l'URL (`?tab=`) et définis **une seule fois** dans
   `resources/views/admin/program/_nav.blade.php`. Route canonique
   **`admin.program.index`** (`/admin/programme`). Onglet par défaut = **`apercu`**.
+- ⚠️ **Modérateur / rapporteur d'une session = rattachés à un COMPTE par e-mail**
+  (`event_sessions.moderator_email` / `rapporteur_email`) : c'est l'e-mail qui ouvre
+  les espaces `/moderation` et `/rapports` de la personne. Le formulaire de session
+  (`_modals.blade.php`) ne postait QUE le nom (`sModerator`/`sRapporteur`) : à chaque
+  modification, `moderator_email` repassait à null et **le lien au compte était coupé**
+  (le seed le posait pourtant). Désormais ces deux champs sont une **auto-complétion**
+  (Alpine `searchPeople`/`pickPerson` dans le `x-data` de `admin/program/index.blade.php`,
+  endpoint **`admin.program.people`** qui cherche les comptes par prénom/nom/e-mail) :
+  choisir une personne fixe le nom ET envoie son e-mail dans un **champ caché**
+  (`sModeratorEmail`/`sRapporteurEmail`, déjà lus par `storeSession`/`updateSession`).
+  Un indice « Lié à … » / « Choisissez une personne… » dit si le lien est effectif.
+  ⚠️ **Les TROIS payloads `openSession(...)` doivent porter `moderator_email`/
+  `rapporteur_email`** (`$sessJsFor`, `$sessJs`, et l'inline du bouton « Modifier » de la
+  table) : sinon le panneau rouvre « non lié » alors que la base a l'e-mail. Taper un nom
+  à la main **sans** choisir une suggestion **ne lie personne** (l'e-mail est vidé à la
+  saisie). Styles combobox : `.ukc-combo-menu` (en flux, pas absolu : le corps du
+  slideover a `overflow-y:auto`). Tests : `ProgramPeoplePickerTest`.
   - **Onglet « Programme » (`?tab=apercu`, par défaut) = ÉDITEUR du programme
     synthétique** : un **titre** + des **jours** (`date` + intitulé libre) contenant des
     **lignes** typées (`type` = plénière/atelier/pause/autre, `start`, `end`, `label`,

@@ -491,6 +491,21 @@
 }
 .ukc-shell .ukc-slideover__close:hover { background: rgba(148, 163, 184, .12); color: var(--tw-ink-strong); }
 .ukc-shell .ukc-slideover__body { flex: 1; overflow-y: auto; padding: 18px; }
+
+/* Auto-complétion « personne » (modérateur/rapporteur du Programme). Le menu est
+   EN FLUX (pas en position absolue) : le corps du slideover a overflow-y:auto et
+   clipperait un menu absolu ; en flux, il étend simplement le formulaire (ces
+   champs sont les derniers), et le corps défile si besoin. */
+.ukc-shell .ukc-combo-menu {
+    margin-top: 4px; list-style: none; padding: 4px;
+    background: #fff; border: 1px solid var(--tw-line); border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0,0,0,.08); max-height: 210px; overflow-y: auto;
+}
+.ukc-shell .ukc-combo-menu li { padding: 6px 8px; border-radius: 6px; cursor: pointer; }
+.ukc-shell .ukc-combo-menu li:hover { background: rgba(148, 163, 184, .14); }
+.ukc-shell .ukc-combo-menu li strong { display: block; font-size: 13px; }
+.ukc-shell .ukc-combo-menu li span { font-size: 11.5px; color: var(--ukc-muted); }
+.ukc-shell .ukc-combo-hint { font-size: 11.5px; margin-top: 3px; min-height: 1.1em; display: flex; align-items: center; gap: 4px; }
 .ukc-shell .ukc-slideover__foot {
     padding: 14px 18px; border-top: 1px solid var(--tw-line); flex-shrink: 0;
     display: flex; gap: 8px; justify-content: flex-end;

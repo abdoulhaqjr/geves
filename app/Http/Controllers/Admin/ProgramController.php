@@ -18,6 +18,7 @@ use App\Support\ListSort;
 use App\Support\MeetingTranscript;
 use App\Support\Notifier;
 use App\Support\ProgramConflicts;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -1334,6 +1335,45 @@ class ProgramController extends Controller
         $scoped = $this->scopedEditionIds($request, 'editions_read');
 
         abort_unless($scoped === null || in_array((int) $session->event_id, $scoped, true), 403);
+    }
+
+    /**
+     * Suggestions de personnes (comptes utilisateur) pour désigner le modérateur /
+     * rapporteur d'une séance. ⚠️ Le rôle est rattaché par **e-mail** à un compte :
+     * l'auto-complétion fait choisir un compte EXISTANT, pour que la liaison soit
+     * effective (et ne se perde pas à la modification). Recherche par prénom, nom,
+     * nom complet ou e-mail ; chaque terme doit matcher un champ (DB-agnostique).
+     */
+    public function people(Request $request): JsonResponse
+    {
+        $q = trim((string) $request->query('q', ''));
+        if (mb_strlen($q) < 2) {
+            return response()->json(['people' => []]);
+        }
+
+        $terms = preg_split('/\s+/', $q) ?: [$q];
+
+        $users = User::query()
+            ->whereNotNull('email')->where('email', '!=', '')
+            ->where(function ($w) use ($terms) {
+                foreach ($terms as $term) {
+                    $like = '%'.$term.'%';
+                    $w->where(fn ($x) => $x->where('first_name', 'like', $like)
+                        ->orWhere('last_name', 'like', $like)
+                        ->orWhere('name', 'like', $like)
+                        ->orWhere('email', 'like', $like));
+                }
+            })
+            ->orderBy('first_name')->orderBy('last_name')
+            ->limit(10)
+            ->get();
+
+        return response()->json([
+            'people' => $users->map(fn (User $u) => [
+                'name' => $u->full_name ?: (string) ($u->name ?: $u->email),
+                'email' => (string) $u->email,
+            ])->values(),
+        ]);
     }
 
     private function currentEdition(Request $request): ?Event

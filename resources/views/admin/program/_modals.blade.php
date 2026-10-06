@@ -73,9 +73,39 @@
             <div class="ukc-form-row"><label>Début</label><input type="time" name="sStart" x-model="form.start"></div>
             <div class="ukc-form-row"><label>Fin</label><input type="time" name="sEnd" x-model="form.end"></div>
         </div>
+        {{-- ⚠️ Modérateur / rapporteur sont rattachés à un COMPTE par e-mail (c'est
+             ce qui ouvre leurs espaces /moderation et /rapports). D'où une
+             auto-complétion : on choisit une personne existante, et son e-mail (le
+             lien) part dans un champ caché. Taper un nom à la main ne lie personne. --}}
         <div class="ukc-form-grid">
-            <div class="ukc-form-row"><label>Modérateur</label><input type="text" name="sModerator" x-model="form.moderator"></div>
-            <div class="ukc-form-row"><label>Rapporteur</label><input type="text" name="sRapporteur" x-model="form.rapporteur"></div>
+            @foreach (['moderator' => 'Modérateur', 'rapporteur' => 'Rapporteur'] as $field => $labelRole)
+                <div class="ukc-form-row">
+                    <label>{{ $labelRole }}</label>
+                    <div class="ukc-combo" style="position:relative;" @click.outside="if (peopleField==='{{ $field }}') peopleField=null">
+                        <input type="text" name="s{{ ucfirst($field) }}" x-model="form.{{ $field }}" autocomplete="off"
+                               placeholder="Nom ou e-mail du compte"
+                               @focus="searchPeople('{{ $field }}')"
+                               @input.debounce.250ms="onPersonInput('{{ $field }}')">
+                        <input type="hidden" name="s{{ ucfirst($field) }}Email" x-model="form.{{ $field }}_email">
+                        <ul class="ukc-combo-menu" x-show="peopleField==='{{ $field }}' && peopleResults.length" x-cloak>
+                            <template x-for="p in peopleResults" :key="p.email">
+                                <li @mousedown.prevent="pickPerson('{{ $field }}', p)">
+                                    <strong x-text="p.name"></strong>
+                                    <span x-text="p.email"></span>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                    <div class="ukc-combo-hint" x-cloak>
+                        <span x-show="form.{{ $field }}_email" style="color:var(--ukc-green);">
+                            <x-ukc.icon name="check" :size="12" /> Lié à <span x-text="form.{{ $field }}_email"></span>
+                        </span>
+                        <span x-show="form.{{ $field }} && !form.{{ $field }}_email" style="color:#b45309;">
+                            Choisissez une personne dans la liste pour la lier à son compte.
+                        </span>
+                    </div>
+                </div>
+            @endforeach
         </div>
     </form>
 

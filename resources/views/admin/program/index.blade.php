@@ -12,7 +12,9 @@
         'id' => $s->id, 'type' => $s->atelier_id ? 'atelier' : 'plenary',
         'atelier_id' => (string) $s->atelier_id, 'label' => $s->label, 'day' => $day,
         'start' => $s->starts_at?->format('H:i') ?? '', 'end' => $s->ends_at?->format('H:i') ?? '',
-        'room' => $s->room ?? '', 'moderator' => $s->moderator_name ?? '', 'rapporteur' => $s->rapporteur_name ?? '',
+        'room' => $s->room ?? '',
+        'moderator' => $s->moderator_name ?? '', 'moderator_email' => $s->moderator_email ?? '',
+        'rapporteur' => $s->rapporteur_name ?? '', 'rapporteur_email' => $s->rapporteur_email ?? '',
     ];
 @endphp
 
@@ -37,8 +39,33 @@
             restorePlanView() { try { this.pview = localStorage.getItem('ukcPlanView') || this.pview; } catch (e) {} },
             modal: null,
             form: {},
+            // Auto-complétion « personne » (modérateur/rapporteur) : on lie la séance
+            // à un COMPTE par e-mail, sinon la liaison se perd à la modification.
+            peopleUrl: '{{ route('admin.program.people') }}',
+            peopleField: null,
+            peopleResults: [],
+            searchPeople(field) {
+                this.peopleField = field;
+                const q = (this.form[field] || '').trim();
+                if (q.length < 2) { this.peopleResults = []; return; }
+                fetch(this.peopleUrl + '?q=' + encodeURIComponent(q), { headers: { Accept: 'application/json' } })
+                    .then(r => r.json()).then(d => { this.peopleResults = (d && d.people) || []; })
+                    .catch(() => { this.peopleResults = []; });
+            },
+            onPersonInput(field) {
+                // La saisie manuelle casse le lien tant qu'une suggestion n'est pas
+                // choisie : un nom tapé à la main ne désigne aucun compte.
+                this.form[field + '_email'] = '';
+                this.searchPeople(field);
+            },
+            pickPerson(field, p) {
+                this.form[field] = p.name;
+                this.form[field + '_email'] = p.email;
+                this.peopleField = null;
+                this.peopleResults = [];
+            },
             openAtelier(a) { this.form = a ? {...a} : { id:'', title:'', tracks:[], room:'' }; this.modal='atelier'; },
-            openSession(s) { this.form = s ? {...s} : { id:'', type:'atelier', atelier_id:'', label:'', day:'', start:'', end:'', room:'', moderator:'', rapporteur:'' }; this.modal='session'; },
+            openSession(s) { this.form = s ? { moderator_email:'', rapporteur_email:'', ...s } : { id:'', type:'atelier', atelier_id:'', label:'', day:'', start:'', end:'', room:'', moderator:'', moderator_email:'', rapporteur:'', rapporteur_email:'' }; this.peopleField=null; this.peopleResults=[]; this.modal='session'; },
             openSlot(s) { this.form = s ? {...s} : { id:'', session_id:'', day:'', start:'', room:'', submission_id:'', title:'' }; this.modal='slot'; },
             openSpace() { this.form = { name:'', capacity:'', building:'', note:'' }; this.modal='space'; },
             openRoom(a) { this.form = { ...a }; this.modal='room'; },
@@ -257,7 +284,9 @@
                                             'id' => $s->id, 'type' => $s->atelier_id ? 'atelier' : 'plenary',
                                             'atelier_id' => (string) $s->atelier_id, 'label' => $s->label, 'day' => $d,
                                             'start' => $s->starts_at?->format('H:i') ?? '', 'end' => $s->ends_at?->format('H:i') ?? '',
-                                            'room' => $s->room ?? '', 'moderator' => $s->moderator_name ?? '', 'rapporteur' => $s->rapporteur_name ?? '',
+                                            'room' => $s->room ?? '',
+                                            'moderator' => $s->moderator_name ?? '', 'moderator_email' => $s->moderator_email ?? '',
+                                            'rapporteur' => $s->rapporteur_name ?? '', 'rapporteur_email' => $s->rapporteur_email ?? '',
                                         ];
 
                                         // Conflits d'auteur : un même auteur correspondant placé sur deux
@@ -782,7 +811,7 @@
                                                 <button type="button" class="ukc-btn--icon" title="Visioconférence"
                                                         @click="visio = ! visio" :class="{ 'active': visio }"><x-ukc.icon name="video" :size="15" /></button>
                                                 <button type="button" class="ukc-btn--icon" title="Modifier"
-                                                        @click="openSession({ id:{{ $session->id }}, type:@js($session->atelier_id ? 'atelier' : 'plenary'), atelier_id:@js((string) $session->atelier_id), label:@js($session->label), day:@js($sDay?->format('Y-m-d') ?? ''), start:@js($session->starts_at?->format('H:i') ?? ''), end:@js($session->ends_at?->format('H:i') ?? ''), room:@js($session->room ?? ''), moderator:@js($session->moderator_name ?? ''), rapporteur:@js($session->rapporteur_name ?? '') })"><x-ukc.icon name="pen" :size="15" /></button>
+                                                        @click="openSession({ id:{{ $session->id }}, type:@js($session->atelier_id ? 'atelier' : 'plenary'), atelier_id:@js((string) $session->atelier_id), label:@js($session->label), day:@js($sDay?->format('Y-m-d') ?? ''), start:@js($session->starts_at?->format('H:i') ?? ''), end:@js($session->ends_at?->format('H:i') ?? ''), room:@js($session->room ?? ''), moderator:@js($session->moderator_name ?? ''), moderator_email:@js($session->moderator_email ?? ''), rapporteur:@js($session->rapporteur_name ?? ''), rapporteur_email:@js($session->rapporteur_email ?? '') })"><x-ukc.icon name="pen" :size="15" /></button>
                                                 <form method="POST" action="{{ route('admin.program.sessions.destroy', $session) }}" data-ajax data-ajax-target="prog-sessions" data-ajax-msg="Session supprimée." data-confirm="Supprimer cette session ?">
                                                     @csrf @method('DELETE')
                                                     <button type="submit" class="ukc-btn--icon danger" title="Supprimer"><x-ukc.icon name="trash" :size="15" /></button>
