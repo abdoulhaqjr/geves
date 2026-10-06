@@ -184,17 +184,18 @@ html { scrollbar-gutter: stable; }
    prudent (on passe à la mise en page étroite avec de la place en trop). */
 html.ukc-dense { zoom: .9; }
 
-/* Scrollbar discret du back-office ET de l'espace participant (tous deux en
-   `ukc-dense` + `.ukc-shell`) : fin, piste transparente, pouce effacé qui se
-   fond dans le décor (ni gros scrollbar natif, ni bande contrastée). Le public
-   n'a ni `ukc-dense` ni `.ukc-shell` → il garde le scrollbar natif du
-   navigateur. `html.ukc-dense` = la fenêtre ; `.ukc-shell *` = les conteneurs
-   qui défilent à l'intérieur (barre latérale, contenu, panneaux). */
+/* Scrollbar du back-office ET de l'espace participant (tous deux en `ukc-dense`
+   + `.ukc-shell`), repris du style « Perfect Scrollbar » de l'admin bizzcart :
+   un fin rail en overlay, piste transparente, pouce arrondi noir translucide
+   (`rgba(0,0,0,.2)`, 6px, rayon 6px) qui fonce au survol. Le public n'a ni
+   `ukc-dense` ni `.ukc-shell` → il garde le scrollbar natif du navigateur.
+   `html.ukc-dense` = la fenêtre ; `.ukc-shell *` = les conteneurs qui défilent
+   à l'intérieur (barre latérale, contenu, panneaux). */
 html.ukc-dense,
 .ukc-shell,
 .ukc-shell * {
     scrollbar-width: thin;
-    scrollbar-color: rgba(148, 163, 184, .45) transparent; /* pouce (slate-400), piste */
+    scrollbar-color: rgba(0, 0, 0, .2) transparent; /* pouce, piste (bizzcart) */
 }
 html.ukc-dense::-webkit-scrollbar,
 .ukc-shell ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -202,14 +203,14 @@ html.ukc-dense::-webkit-scrollbar-track,
 .ukc-shell ::-webkit-scrollbar-track { background: transparent; }
 html.ukc-dense::-webkit-scrollbar-thumb,
 .ukc-shell ::-webkit-scrollbar-thumb {
-    background: rgba(148, 163, 184, .45);
-    border-radius: 9px;
-    border: 3px solid transparent;
+    background: rgba(0, 0, 0, .2);
+    border-radius: 6px;
+    border: 2px solid transparent; /* pouce ~6px, comme Perfect Scrollbar */
     background-clip: content-box;
 }
 html.ukc-dense::-webkit-scrollbar-thumb:hover,
 .ukc-shell ::-webkit-scrollbar-thumb:hover {
-    background: rgba(100, 116, 139, .65);
+    background: rgba(0, 0, 0, .35);
     background-clip: content-box;
 }
 html.ukc-dense::-webkit-scrollbar-corner,
