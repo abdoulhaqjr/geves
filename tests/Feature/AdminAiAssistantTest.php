@@ -94,3 +94,51 @@ it('cadre le copilote sur la fonction dans le colloque sélectionné', function 
     expect($captured->prompt)->toContain('Paiements');
     expect($captured->prompt)->toContain('PÉRIMÈTRE');
 });
+
+it('cadre le copilote sur la cohérence des nombres (pas de sous-découpage inventé)', function () {
+    // Capture le prompt transmis au fournisseur.
+    $captured = new stdClass;
+    $captured->prompt = '';
+    bindFakeAi(new class($captured) implements AiProvider
+    {
+        public function __construct(private object $c) {}
+
+        public function key(): string
+        {
+            return 'fake';
+        }
+
+        public function label(): string
+        {
+            return 'Fake';
+        }
+
+        public function isAvailable(): bool
+        {
+            return true;
+        }
+
+        public function supportsPdf(): bool
+        {
+            return true;
+        }
+
+        public function extract(string $instruction, array $files = [], ?string $tier = null): array
+        {
+            $this->c->prompt = $instruction;
+
+            return ['answer' => 'ok'];
+        }
+    });
+
+    $event = openEdition();
+
+    $this->actingAs(adminStaff(), 'web')
+        ->postJson(route('admin.ai.ask'), ['question' => 'Relance les paiements', 'event_id' => $event->id])
+        ->assertOk();
+
+    // Le garde-fou « cohérence des nombres » est bien injecté : le chiffre qui fait
+    // foi est le compte réel de l'action, et Marc ne doit pas fabriquer de sous-découpage.
+    expect($captured->prompt)->toContain('COHÉRENCE DES NOMBRES');
+    expect($captured->prompt)->toContain('CHIFFRE QUI FAIT');
+});

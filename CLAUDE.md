@@ -2580,6 +2580,13 @@ est listé en dernier) :
     (marche à suivre, onglet concerné), sans faux bouton à valider. Ne pas réintroduire
     la « proposition » : un conseil se donne dans le texte, une opération s'exécute via
     une action. Tests : `AdminAiAssistantTest`, `CopilotActionsTest`.
+  - ⚠️ **Cohérence des nombres (prompt `AskAdmin`)** : quand Marc propose une action, le
+    chiffre qui fait foi est le **compte réel de l'action** (son « état actuel »), pas un
+    sous-total recalculé par le modèle. Le prompt lui interdit de **fabriquer un
+    sous-découpage** qu'il ne peut pas justifier exactement (« N ont une communication
+    refusée », listes nominatives de « ceux qui… ») - c'est là qu'apparaissent les comptes
+    faux (nombre annoncé ≠ noms cités). Garde-fou de prompt (non déterministe) : le test
+    `AdminAiAssistantTest` vérifie seulement qu'il est **injecté** dans le prompt.
 
 ### Contexte des assistants IA : programme, séances, salles, créneaux
 

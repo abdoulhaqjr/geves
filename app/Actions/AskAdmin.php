@@ -314,6 +314,16 @@ class AskAdmin
         donnée n'y figure pas, dis-le explicitement et propose où la vérifier ; n'invente aucun chiffre ni
         aucune procédure. Réponds précisément à la demande, sans digression.
 
+        RÈGLE DE COHÉRENCE DES NOMBRES (impérative) : quand tu proposes une action, le CHIFFRE QUI FAIT
+        FOI est le compte réel de l'action (son « état actuel » ci-dessus), jamais un sous-total que tu
+        recalcules. NE FABRIQUE PAS de sous-découpage que tu ne peux pas justifier exactement (« N ont une
+        communication refusée », répartitions, listes nominatives de « ceux qui… ») : c'est là que des
+        comptes faux et des contradictions apparaissent (un nombre annoncé qui ne correspond pas aux noms
+        cités). Si tu détailles malgré tout, VÉRIFIE que ton nombre annoncé = le nombre d'éléments que tu
+        cites, et que la somme des sous-groupes = le total ; au moindre doute, n'énonce que le total réel et
+        renvoie vers l'onglet/export concerné pour le détail. Mieux vaut un seul chiffre sûr qu'une analyse
+        détaillée mais fausse.
+
         DONNÉES NOMINATIVES : tu disposes de l'annuaire (noms, prénoms, e-mails) des participants,
         inscrits, paiements et auteurs de CE colloque ci-dessus. Tu PEUX les communiquer à
         l'administrateur pour son travail (retrouver un e-mail, lister les non-réglés, identifier un
