@@ -52,11 +52,14 @@
                             <label style="font-size:13px;font-weight:700;display:block;margin-bottom:8px;">Avatar de l’agent <span style="font-weight:500;color:var(--ukc-muted);">· choisissez un visage</span></label>
                             <div style="display:flex;gap:10px;flex-wrap:wrap;">
                                 <template x-for="g in gallery" :key="g.path">
+                                    {{-- ⚠️ Tout le style tient dans `:style` : Alpine REMPLACE le
+                                         `style` statique par la chaîne `:style` (il ne la fusionne
+                                         pas), donc un `style="width:52px"` séparé serait perdu et
+                                         l'image s'afficherait pleine largeur. --}}
                                     <button type="button" @click="pickAvatar(i, g.path)"
                                             :title="g.group === 'marc' ? 'Visage (homme)' : 'Visage (femme)'"
-                                            style="width:52px;height:52px;border-radius:50%;overflow:hidden;cursor:pointer;padding:0;background:none;transition:transform .12s;"
-                                            :style="agent.avatar === g.path ? 'border:3px solid var(--ukc-blue);box-shadow:0 0 0 2px #fff inset;transform:scale(1.05);' : 'border:2px solid var(--ukc-border);'">
-                                        <img :src="g.url" alt="" style="width:100%;height:100%;object-fit:cover;">
+                                            :style="'width:52px;height:52px;border-radius:50%;overflow:hidden;cursor:pointer;padding:0;background:none;transition:transform .12s;flex:0 0 auto;' + (agent.avatar === g.path ? 'border:3px solid var(--ukc-blue);box-shadow:0 0 0 2px #fff inset;transform:scale(1.05);' : 'border:2px solid var(--ukc-border);')">
+                                        <img :src="g.url" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">
                                     </button>
                                 </template>
                             </div>
