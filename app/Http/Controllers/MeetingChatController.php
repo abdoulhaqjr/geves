@@ -263,11 +263,11 @@ class MeetingChatController extends Controller
         $salle = MeetableRegistry::find($type, $id);
         abort_if($salle === null, 404);
 
-        // Clôture paresseuse : une séance dont l'horaire est passé n'est plus « en
-        // direct », donc on n'y écrit plus (la lecture du fil archivé reste permise
-        // à qui peut encore entrer).
+        // Réconciliation paresseuse : une séance dont l'horaire est passé n'est plus
+        // « en direct », donc on n'y écrit plus (la lecture du fil archivé reste
+        // permise à qui peut encore entrer).
         if ($salle instanceof EventSession) {
-            $salle->closeMeetingIfExpired();
+            $salle->syncMeetingStatus();
         }
 
         // Le fil suit l'accès à la salle : qui ne peut pas entrer ne lit pas ce

@@ -33,15 +33,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Clôture automatique d'une visio passée
+    | Réconciliation automatique du statut d'une visio
     |--------------------------------------------------------------------------
     |
-    | Une visio « en direct » dont l'horaire de fin est dépassé de cette marge
-    | (en minutes) passe automatiquement « terminée » : l'accès est coupé et le
-    | statut se met à jour. Marge pour tolérer les débordements de séance. Voir
-    | la commande `meetings:close-ended` et EventSession::closeMeetingIfExpired().
+    | Le statut d'une visio suit l'horloge, sans intervention manuelle :
+    |  - OUVERTURE : une visio « programmée » passe « en direct » dès
+    |    `starts_at - auto_live_lead_minutes` (défaut 30 min avant le début) ;
+    |  - CLÔTURE : une visio « programmée » ou « en direct » dont l'horaire de fin
+    |    est dépassé de `auto_close_grace_minutes` passe « terminée » (accès coupé),
+    |    la marge tolérant les débordements de séance.
+    | Voir la commande `meetings:sync` et EventSession::syncMeetingStatus().
     |
     */
+
+    'auto_live_lead_minutes' => (int) env('MEETING_AUTO_LIVE_LEAD', 30),
 
     'auto_close_grace_minutes' => (int) env('MEETING_AUTO_CLOSE_GRACE', 120),
 

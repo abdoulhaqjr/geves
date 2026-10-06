@@ -42,9 +42,10 @@ class ModerationController extends Controller
             ->orderBy('id')
             ->get();
 
-        // Clôture paresseuse : une séance « en direct » dont l'horaire est passé
-        // affiche « terminée » ici aussi, sans attendre la commande planifiée.
-        $sessions->each(fn ($s) => $s->closeMeetingIfExpired());
+        // Réconciliation paresseuse : le statut de chaque séance suit l'horloge ici
+        // aussi (programmée → en direct → terminée), sans attendre la commande
+        // planifiée - la pastille de la carte est donc à jour.
+        $sessions->each(fn ($s) => $s->syncMeetingStatus());
 
         // ⚠️ La liste n'est jamais vide : la garde ci-dessus exige au moins une
         // séance confiée, et le repli montre tout ce que la personne modère. L'état

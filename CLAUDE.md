@@ -1063,18 +1063,37 @@ aligné sur **modérer** ; `/animation` reste en **redirection** (signets, courr
 
 ### Visio : clôture automatique, isolation des salles, historique des fils
 
-- **Clôture automatique d'une visio passée** (`live → ended`). ⚠️ `EventSession::isLive()`
-  lit une colonne **stockée** `meeting_status` : rien ne la faisait évoluer avec le temps,
-  donc une séance de la veille restait joignable et affichait « En direct ». Désormais
-  `EventSession::meetingWindowOver()` (fin effective = `ends_at` ?? fin de journée de
-  `session_day`/`starts_at`, + marge `meetings.auto_close_grace_minutes`, défaut **120 min**)
-  et `closeMeetingIfExpired()` (bascule `live → ended`, `saveQuietly`). Deux déclencheurs :
-  la **commande planifiée** `meetings:close-ended` (`routes/console.php`, toutes les 5 min)
-  **et** l'**auto-réparation à l'accès** (`MeetingController::join`/`token`,
-  `MeetingChatController` chemin écriture, `ModerationController`, onglet Discussions) - pour
-  que l'accès soit coupé même sans planificateur (ex. en dev). ⚠️ `isLive()` **n'est pas**
-  modifié : c'est la fermeture du statut qui coupe l'accès (`canJoin`/token/chat-write → 403).
-  Une séance **sans horaire** n'est jamais fermée. Tests : `MeetingAutoCloseTest`.
+- **Statut de visio réconcilié sur l'HORLOGE** (`programmée → en direct → terminée`),
+  sans intervention manuelle. ⚠️ `EventSession::isLive()` lit une colonne **stockée**
+  `meeting_status` : rien ne la faisait évoluer avec le temps, donc une séance restait
+  « Programmée » jusqu'à ce qu'on la bascule à la main, et une séance de la veille restait
+  joignable en « En direct ». Source unique : **`EventSession::syncMeetingStatus()`**, qui
+  s'appuie sur deux fenêtres :
+  - **Ouverture** (`meetingLiveDue()`) : une visio **programmée** passe « en direct » dès
+    `starts_at - meetings.auto_live_lead_minutes` (défaut **30 min** avant le début ; repli
+    début de journée si l'heure manque).
+  - **Clôture** (`meetingWindowOver()`) : une visio **programmée ou en direct** dont la fin
+    effective (`ends_at` ?? fin de journée de `session_day`/`starts_at` ?? `starts_at+2h`) est
+    dépassée de `meetings.auto_close_grace_minutes` (défaut **120 min**) passe « terminée »,
+    ce qui coupe l'accès (`canJoin`/token/chat-write → 403).
+  ⚠️ **N'avance jamais à rebours** : on ne redescend pas « en direct » → « programmée » (le
+  staff peut ouvrir une salle en avance), et on ne touche ni à « aucune » (pas de visio) ni à
+  « terminée ». Une séance **sans horaire** n'est ni ouverte ni fermée. Deux déclencheurs : la
+  **commande planifiée** `meetings:sync` (`routes/console.php`, toutes les 5 min) **et**
+  l'**auto-réparation à l'accès** (`MeetingController::join`/`token`, `MeetingChatController`
+  chemin écriture, `ModerationController`, onglet Programme **Sessions** et **Discussions**) -
+  pour que l'état suive l'horloge même sans planificateur (ex. en dev). ⚠️ `isLive()` **n'est
+  pas** modifié : c'est le statut stocké, désormais tenu à jour, qui décide. Tests :
+  `MeetingAutoCloseTest`.
+- ⚠️ **Accès à la visio d'une séance = PUBLIC par défaut.** `EventSession::meetingVisibilityEnum()`
+  retombe sur `MeetingVisibility::Public` (et la colonne `event_sessions.meeting_visibility`
+  naît à `public`, migration `2026_10_06_000200`) : tant que le gestionnaire n'a pas restreint
+  l'accès « Participants inscrits » (onglet VISIO du programme, `admin.program.sessions.meeting-visibility`),
+  la salle est ouverte à tous. ⚠️ **La FORMATION, elle, reste réservée aux inscrits** par
+  nature (`Formation::meetingVisibilityEnum()` défaut `Participants`, et sa visio n'a pas de
+  mode public) - ne pas aligner les deux. Un test qui veut exercer l'accès restreint d'une
+  séance doit poser `meeting_visibility => 'participants'` explicitement (cf. `SessionQaTest`,
+  `MeetingTest`). Tests : `MeetingTest`.
 - ⚠️ **Nom de salle TOUJOURS unique par séance** (`EventSession::meetingRoom()` /
   `Formation::meetingRoom()`). `meeting_room` n'est qu'une **étiquette** : s'il était employé
   tel quel comme nom de salle LiveKit/Jitsi, deux séances portant la même (« Salle 3 »

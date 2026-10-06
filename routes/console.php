@@ -15,9 +15,10 @@ Schedule::command('emails:send')->everyMinute()->withoutOverlapping();
 // les paiements restés « en attente » (webhook jamais arrivé ou tardif).
 Schedule::command('payments:reconcile')->everyTenMinutes()->withoutOverlapping();
 
-// Clôture des visios passées : une séance « en direct » dont l'horaire de fin
-// est dépassé (+ marge) passe « terminée », ce qui coupe l'accès à la salle.
-Schedule::command('meetings:close-ended')->everyFiveMinutes()->withoutOverlapping();
+// Statut des visios suivi sur l'horloge : une séance « programmée » passe « en
+// direct » à l'approche de son horaire, et une séance passée (+ marge) passe
+// « terminée » (ce qui coupe l'accès à la salle) - sans intervention manuelle.
+Schedule::command('meetings:sync')->everyFiveMinutes()->withoutOverlapping();
 
 // Sauvegardes automatiques (BDD + fichiers) via spatie/laravel-backup.
 Schedule::command('backup:clean')->daily()->at('01:00');

@@ -306,6 +306,10 @@ class ProgramController extends Controller
 
         $ateliers = $event ? $event->ateliers()->with(['sessions' => fn ($q) => $q->orderBy('starts_at')->orderBy('ordre')])->orderBy('ordre')->get() : collect();
         $sessions = $event ? $event->sessions()->with('atelier')->orderBy('starts_at')->orderBy('ordre')->get() : collect();
+        // Statut visio suivi sur l'horloge (programmée → en direct → terminée) : la
+        // pastille VISIO de l'onglet Sessions est à jour sans attendre la commande
+        // planifiée. L'écriture n'a lieu que si une bascule est due (sinon no-op).
+        $sessions->each(fn (EventSession $s) => $s->syncMeetingStatus());
         $slots = $event ? $event->slots()->with(['submission', 'session.atelier'])->orderBy('starts_at')->get() : collect();
         $accepted = $event ? $event->submissions()->where('revision_of', 0)->where('status', 'accepted')
             ->with('participant.payments')->get() : collect();
@@ -1267,9 +1271,9 @@ class ProgramController extends Controller
             ->get()
             ->keyBy('meetable_id');
 
-        // Clôture paresseuse de l'affichage : une séance encore « en direct » dont
-        // l'horaire est passé apparaît « terminée » ici aussi.
-        $sessions->each(fn (EventSession $s) => $s->closeMeetingIfExpired());
+        // Réconciliation paresseuse de l'affichage : le statut de chaque séance
+        // suit l'horloge ici aussi (programmée → en direct → terminée).
+        $sessions->each(fn (EventSession $s) => $s->syncMeetingStatus());
 
         $rows = [];
         foreach ($sessions as $s) {

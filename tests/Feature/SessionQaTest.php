@@ -5,7 +5,10 @@ use App\Models\SessionQuestion;
 // sessionFor() / participantAccount() / openEdition() / adminStaff() : tests/Pest.php.
 
 it('refuse l’accès à un invité pour une séance réservée aux participants', function () {
+    // ⚠️ L'accès à une séance est PUBLIC par défaut : on exerce ici le cas où le
+    // gestionnaire a restreint aux inscrits (sinon un invité y aurait accès).
     $session = sessionFor(openEdition());
+    $session->update(['meeting_visibility' => 'participants']);
 
     $this->get(route('session.engagement', $session))->assertForbidden();
 });

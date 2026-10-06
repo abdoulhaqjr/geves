@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Console\Commands\CloseEndedMeetings;
+use App\Console\Commands\SyncMeetingStatuses;
 use App\Enums\MeetingRole;
 use App\Enums\MeetingStatus;
 use App\Enums\MeetingVisibility;
@@ -112,21 +112,60 @@ class EventSession extends Model implements Meetable
     }
 
     /**
-     * Clôture la visio si elle est « en direct » mais que sa fenêtre est passée :
-     * `live → ended`. Renvoie vrai si le statut a changé.
-     *
-     * ⚠️ Appelé par la commande planifiée {@see CloseEndedMeetings}
-     * ET en auto-réparation sur les chemins d'accès (join/token/chat) pour couper
-     * l'accès même sans planificateur (ex. en développement). Écriture silencieuse :
-     * ce n'est pas une modification métier à tracer.
+     * L'heure d'OUVERTURE automatique est-elle atteinte ? Une visio programmée
+     * passe « en direct » dès `starts_at - marge` (réglage
+     * `meetings.auto_live_lead_minutes`, défaut 30 min), sans attendre qu'on la
+     * bascule à la main. Repli sur le début de journée si l'heure n'est pas
+     * renseignée ; faux sans aucune date (on ne sait pas quand ouvrir).
      */
-    public function closeMeetingIfExpired(): bool
+    public function meetingLiveDue(): bool
     {
-        if ($this->meetingStatusEnum() !== MeetingStatus::Live || ! $this->meetingWindowOver()) {
+        if ($this->starts_at !== null) {
+            $lead = (int) config('meetings.auto_live_lead_minutes', 30);
+
+            return $this->starts_at->copy()->subMinutes($lead)->lte(now());
+        }
+
+        if ($this->session_day !== null) {
+            return $this->session_day->copy()->startOfDay()->lte(now());
+        }
+
+        return false;
+    }
+
+    /**
+     * Réconcilie le statut de la visio avec le temps, sans intervention manuelle :
+     * une visio **programmée** passe « en direct » à l'approche de l'horaire
+     * ({@see meetingLiveDue()}), et toute visio **programmée ou en direct** dont la
+     * fenêtre est passée ({@see meetingWindowOver()}) passe « terminée ». Renvoie
+     * vrai si le statut a changé.
+     *
+     * ⚠️ N'avance JAMAIS à rebours : on ne redescend pas « en direct » vers
+     * « programmée » (le staff peut ouvrir une salle en avance), et on ne touche ni
+     * à « aucune » (pas de visio) ni à « terminée » (état terminal que seul le staff
+     * relance). Appelée par la commande planifiée {@see SyncMeetingStatuses} ET en
+     * auto-réparation sur les chemins d'accès (join/token/chat, modération,
+     * programme) pour que l'état suive l'horloge même sans planificateur (ex. en
+     * développement). Écriture silencieuse : ce n'est pas une modification métier à
+     * tracer.
+     */
+    public function syncMeetingStatus(): bool
+    {
+        $status = $this->meetingStatusEnum();
+
+        if (! in_array($status, [MeetingStatus::Scheduled, MeetingStatus::Live], true)) {
             return false;
         }
 
-        $this->forceFill(['meeting_status' => MeetingStatus::Ended->value])->saveQuietly();
+        if ($this->meetingWindowOver()) {
+            $target = MeetingStatus::Ended;
+        } elseif ($status === MeetingStatus::Scheduled && $this->meetingLiveDue()) {
+            $target = MeetingStatus::Live;
+        } else {
+            return false;
+        }
+
+        $this->forceFill(['meeting_status' => $target->value])->saveQuietly();
 
         return true;
     }
@@ -136,9 +175,14 @@ class EventSession extends Model implements Meetable
         return MeetingStatus::tryFrom((string) $this->meeting_status) ?? MeetingStatus::None;
     }
 
+    /**
+     * Qui peut rejoindre la visio. ⚠️ Défaut = PUBLIC : tant que le gestionnaire
+     * n'a pas restreint l'accès « Participants inscrits », la visio est ouverte à
+     * tous. (La formation, elle, reste réservée aux inscrits - cf. Formation.)
+     */
     public function meetingVisibilityEnum(): MeetingVisibility
     {
-        return MeetingVisibility::tryFrom((string) $this->meeting_visibility) ?? MeetingVisibility::Participants;
+        return MeetingVisibility::tryFrom((string) $this->meeting_visibility) ?? MeetingVisibility::Public;
     }
 
     /**
