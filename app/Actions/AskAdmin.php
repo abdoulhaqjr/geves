@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Support\AiAgents;
 use App\Support\EventKnowledge;
 use App\Support\EventReport;
+use App\Support\ProgramKnowledge;
 use App\Support\StaffRoles;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -179,6 +180,14 @@ class AskAdmin
             ]));
 
             $knowledge = EventKnowledge::brief($event);
+
+            // Planning DÉTAILLÉ des créneaux de communication (horaire, salle, titre,
+            // réf, auteur, reprogrammations). La vue d'ensemble des séances vient déjà
+            // de la base de connaissance ci-dessus ; ceci ajoute le niveau opérationnel.
+            $planning = ProgramKnowledge::planning($event);
+            if ($planning !== '') {
+                $context .= "\n\n".$planning;
+            }
         }
 
         $convo = collect($history)->slice(-8)

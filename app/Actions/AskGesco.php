@@ -99,7 +99,9 @@ class AskGesco
         $personalBlock = $personal !== null && trim($personal) !== ''
             ? "DONNÉES PERSONNELLES DE L'UTILISATEUR CONNECTÉ (réelles, à jour) :\n{$personal}\n\n"
                 ."Tu PEUX répondre aux questions personnelles de l'utilisateur (ses soumissions, son paiement, "
-                ."son badge, ses attestations, ses échéances) en t'appuyant UNIQUEMENT sur ces données ci-dessus. "
+                .'son badge, ses attestations, ses échéances, et son PROGRAMME PERSONNEL : quand et où il '
+                .'présente ses communications, et si un créneau a été reprogrammé, ce qui a changé et le nouvel '
+                ."horaire) en t'appuyant UNIQUEMENT sur ces données ci-dessus. "
                 ."Si l'information demandée n'y figure pas, dis-le et oriente vers la page concernée ou la DRI. "
                 ."Ne divulgue JAMAIS les données d'un autre participant.\n\n"
             : "L'utilisateur n'est pas connecté : tu ne disposes d'aucune donnée personnelle. Pour toute question "

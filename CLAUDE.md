@@ -2535,6 +2535,40 @@ est listé en dernier) :
   `AiRouter` = routage fast/deep). Le copilote back-office exécute de vraies actions
   (`App\AI\Copilot`) **après autorisation explicite** + capacité RBAC revérifiée.
 
+### Contexte des assistants IA : programme, séances, salles, créneaux
+
+Ce que chaque assistant « sait » vient de blocs de contexte injectés dans son prompt.
+Sources, pour ne pas les redéclarer à chaque fois :
+
+- **`App\Support\EventKnowledge::brief($event)`** = base de connaissance **publique**
+  partagée (identité, axes, échéances, règles, tarifs, pratique, **programme**, contact,
+  FAQ). Lue par l'assistante **Gesco** (`AskGesco`) ET le **copilote admin** (`AskAdmin`).
+- **`App\Support\ProgramKnowledge`** (⚠️ même namespace `App\Support`) :
+  - **`overview($event)`** = vue d'ensemble PUBLIQUE des séances (par jour : type,
+    libellé, horaire, salle, modérateur/rapporteur, nb de communications). **Incluse dans
+    `EventKnowledge::brief`** → les deux assistants l'ont.
+  - **`planning($event, $max=80)`** = planning DÉTAILLÉ des créneaux de communication
+    (horaire, salle, titre + réf + auteur, drapeaux REPROGRAMMÉ / passage constaté).
+    **Réservé au copilote admin** (`AskAdmin` l'ajoute aux « CHIFFRES RÉELS ») - ce sont
+    des données de travail, pas de l'info publique. Borné pour tenir dans le budget de
+    contexte. ⚠️ Nommer les auteurs via `data_get($slot,'submission.participant.user.full_name')`
+    (relations traitées non-nulles par Larastan → pas de `?->` à gauche d'un `??`).
+- **Assistante publique - programme PERSONNEL** (`GescoController::personalContext`) :
+  pour un participant CONNECTÉ, ses créneaux de passage (« quand/où je communique »,
+  séance, salle, horaire), + le passage constaté, + **la reprogrammation** (avant →
+  après, et quand). Le prompt de Gesco l'autorise explicitement à répondre là-dessus.
+  ⚠️ Jamais les créneaux d'un AUTRE participant (filtré sur ses `participant_id`).
+- **Historique de reprogrammation = `slots.schedule_log`** (JSON, migration
+  `2026_10_06_000100`). Capturé **automatiquement** par l'évènement `Slot::updated` :
+  dès qu'un créneau portant une communication (`submission_id > 0`) et **déjà horodaté**
+  voit son horaire, sa salle ou sa séance changer, une entrée `{at, from, to}` est
+  ajoutée (écriture `saveQuietly`, 10 max). ⚠️ Un **placement initial** (pas d'horaire
+  précédent) n'est PAS une reprogrammation. ⚠️ Capture dans le **modèle**, pas dans les
+  contrôleurs → toute modif (manuelle, glisser-déposer, affectation auto) est tracée ;
+  une mise à jour en **masse** par le query builder (`whereIn()->update()`) ne déclenche
+  pas l'évènement (cas marginal : attribution de salle en lot). Helpers
+  `Slot::wasRescheduled()` / `lastReschedule()`. Tests : `ProgramKnowledgeTest`.
+
 ### Tests
 
 - `RefreshDatabase` global (base `:memory:`). Fabriques partagées dans `tests/Pest.php`

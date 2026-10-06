@@ -34,6 +34,9 @@ class EventKnowledge
             self::submissionRules($event, $s),
             self::fees($event, $s),
             self::practical($s),
+            // Vue d'ensemble du programme (séances datées, salles, horaires) : info
+            // publique, utile aussi bien au participant qu'au copilote admin.
+            ProgramKnowledge::overview($event),
             self::contact($s),
             self::faq($s),
         ], fn ($block) => trim((string) $block) !== '');

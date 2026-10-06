@@ -9,12 +9,15 @@ use App\Models\Claim;
 use App\Models\Event;
 use App\Models\Participant;
 use App\Models\Payment;
+use App\Models\Slot;
 use App\Models\Submission;
 use App\Models\User;
 use App\Support\AiAgents;
 use App\Support\Notifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -232,11 +235,102 @@ class GescoController extends Controller
             $head,
             'Communications ('.$subs->count().') :',
             $subs->isEmpty() ? '- aucune soumission déposée' : $subLines,
+            $this->scheduleContext($participantIds),
             $paymentLine,
             'Badge participant : '.($paidCount > 0 ? 'disponible (généré après paiement), non téléchargeable ici - imprimé par l’organisation.' : 'sera disponible après confirmation du paiement.'),
             'Attestations : '.($att->isNotEmpty() ? $att->map->typeLabel()->unique()->implode(', ') : 'aucune émise pour l’instant').'.',
             $account->hasVerifiedEmail() ? 'E-mail vérifié.' : 'E-mail NON vérifié (à confirmer pour soumettre).',
         ]));
+    }
+
+    /**
+     * Programme PERSONNEL : quand et où le participant présente ses communications,
+     * et - le cas échéant - comment un créneau a été reprogrammé (avant / après).
+     * C'est ce qui permet à l'assistante de répondre « quand est-ce que je
+     * communique ? » et « mon créneau a-t-il changé ? ».
+     *
+     * @param  Collection<int, int>  $participantIds
+     */
+    private function scheduleContext($participantIds): string
+    {
+        if ($participantIds->isEmpty()) {
+            return '';
+        }
+
+        $slots = Slot::whereIn('participant_id', $participantIds)
+            ->where('submission_id', '>', 0)
+            ->whereNotNull('starts_at')
+            ->with(['submission', 'session.atelier'])
+            ->orderBy('starts_at')->get();
+
+        if ($slots->isEmpty()) {
+            return 'Programme personnel : aucune de vos communications n’est encore programmée (créneau non fixé). '
+                .'Le créneau de passage s’affichera ici dès qu’il sera planifié.';
+        }
+
+        $lines = ['Programme personnel (vos créneaux de passage) :'];
+        foreach ($slots as $sl) {
+            $title = Str::limit((string) (data_get($sl, 'submission.title') ?? 'Communication'), 70);
+            $day = $sl->starts_at?->locale('fr')->translatedFormat('l j F Y');
+            $hours = $sl->starts_at?->format('H\hi')
+                .($sl->ends_at ? ' à '.$sl->ends_at->format('H\hi') : '');
+            $room = filled($sl->room) ? (string) $sl->room : (filled($sl->session?->room) ? (string) $sl->session->room : null);
+            $sessionName = $sl->session?->atelier?->title ?: $sl->session?->label ?: $sl->session_label;
+
+            $meta = array_filter([
+                $day ? 'le '.$day : null,
+                $hours ? 'de '.$hours : null,
+                $room ? 'salle '.$room : null,
+                filled($sessionName) ? 'séance « '.Str::limit((string) $sessionName, 60).' »' : null,
+            ]);
+            $line = '- « '.$title.' » : '.($meta !== [] ? implode(', ', $meta) : 'créneau à préciser').'.';
+
+            if ($sl->wasPresented()) {
+                $line .= ' Passage déjà constaté.';
+            }
+
+            // Reprogrammation : « ce qui s'est passé » + « à quand on l'a reprogrammé ».
+            if ($change = $sl->lastReschedule()) {
+                $line .= ' '.$this->rescheduleSentence($change);
+            }
+
+            $lines[] = $line;
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Phrase lisible d'une reprogrammation (avant → après).
+     *
+     * @param  array<string, mixed>  $change
+     */
+    private function rescheduleSentence(array $change): string
+    {
+        $fmt = function (?string $iso): ?string {
+            if (! $iso) {
+                return null;
+            }
+            try {
+                return Carbon::parse($iso)->locale('fr')->translatedFormat('l j F à H\hi');
+            } catch (\Throwable) {
+                return null;
+            }
+        };
+
+        $from = is_array($change['from'] ?? null) ? $change['from'] : [];
+        $to = is_array($change['to'] ?? null) ? $change['to'] : [];
+        $when = $fmt($change['at'] ?? null);
+
+        $before = array_filter([$fmt($from['starts_at'] ?? null), filled($from['room'] ?? null) ? 'salle '.$from['room'] : null]);
+        $after = array_filter([$fmt($to['starts_at'] ?? null), filled($to['room'] ?? null) ? 'salle '.$to['room'] : null]);
+
+        $sentence = '⚠ Ce créneau a été reprogrammé';
+        $sentence .= $when ? ' (modifié le '.$when.')' : '';
+        $sentence .= ' : auparavant '.($before !== [] ? implode(', ', $before) : 'non précisé');
+        $sentence .= ', désormais '.($after !== [] ? implode(', ', $after) : 'non précisé').'.';
+
+        return $sentence;
     }
 
     private function activeEdition(): ?Event
