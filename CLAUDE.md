@@ -283,6 +283,25 @@ les guards **`web`** (back-office) et **`account`** (espace participant) résolv
 est **legacy et mort**. Toute nouvelle table liée à un participant référence **`user_id`**
 (users), jamais `account_id`. `Participant` (par édition) porte `user_id`.
 
+### Impersonation (« se connecter en tant que »)
+
+`lab404/laravel-impersonate`, cross-guard (`web` → `account`), via
+`Admin\ImpersonationController` (`take`/`leave`). La bannière + le bouton « Quitter »
+vivent dans `components/layouts/participant.blade.php`.
+
+- ⚠️ **Qui peut impersonifier : UNIQUEMENT admin de colloque + super-admin**
+  (`User::canImpersonate()` = **`isColloqueAdmin()`**). Un gestionnaire ou le secrétariat,
+  même avec la capacité `participants`, ne le peut pas. Le bouton « Se connecter en tant
+  que » (fiche `admin/participants/preview`) est **gardé par `canImpersonate()`**, pas
+  seulement par la présence d'un compte lié.
+- ⚠️ **En impersonation, « se déconnecter » QUITTE l'impersonation, il ne déconnecte
+  PAS.** Staff et compte impersonifié partagent la même session : `session()->invalidate()`
+  déconnecterait aussi l'admin. `Account\LogoutController` détecte l'impersonation
+  (`app('impersonate')->isImpersonating()`) et appelle `leaveImpersonation()` au lieu de
+  vider la session (filet de sécurité couvrant tout chemin de déconnexion). Le bouton de
+  la barre participant pointe en plus directement sur `impersonation.leave` dans ce cas.
+- Tests : `tests/Feature/ImpersonationTest.php`.
+
 ### Module Formation (en cours, par phases)
 
 Module **activable par édition** (`settings['doc']['formation.enabled']`, via `EditionSettings`),

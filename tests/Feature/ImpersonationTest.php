@@ -47,6 +47,29 @@ it('quitte l’impersonation et rend la main au staff', function () {
     expect(Auth::guard('web')->id())->toBe($staff->id);
 });
 
+it('la déconnexion en impersonation QUITTE l’impersonation sans déconnecter l’admin', function () {
+    $staff = staffWithPermission();
+    $account = User::factory()->create();
+    $participant = Participant::factory()->create(['user_id' => $account->id]);
+
+    $this->actingAs($staff, 'web')->post(route('admin.participants.impersonate', $participant));
+    expect(app('impersonate')->isImpersonating())->toBeTrue();
+
+    // Le bouton de déconnexion de l'espace participant poste sur account.logout :
+    // en impersonation, on quitte seulement, on ne vide pas la session de l'admin.
+    $this->post(route('account.logout'))
+        ->assertRedirect(route('admin.participants.index'));
+
+    expect(app('impersonate')->isImpersonating())->toBeFalse();
+    expect(Auth::guard('web')->id())->toBe($staff->id);
+});
+
+it('n’autorise que l’admin de colloque et le super-admin à impersonifier', function () {
+    expect(User::factory()->create(['access_level' => User::ACCESS_SUPER_ADMIN])->canImpersonate())->toBeTrue()
+        ->and(User::factory()->create(['access_level' => User::ACCESS_COLLOQUE_ADMIN])->canImpersonate())->toBeTrue()
+        ->and(User::factory()->create(['access_level' => User::ACCESS_USER])->canImpersonate())->toBeFalse();
+});
+
 it('refuse l’impersonation d’un participant sans compte lié', function () {
     $staff = staffWithPermission();
     $participant = Participant::factory()->create(); // pas de account_id

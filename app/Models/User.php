@@ -78,10 +78,15 @@ class User extends Authenticatable implements MustVerifyEmail
         });
     }
 
-    /** Seul le staff habilité peut impersonifier. */
+    /**
+     * Qui peut impersonifier un compte : UNIQUEMENT l'administrateur de colloque
+     * et le super-administrateur ({@see isColloqueAdmin}). Un gestionnaire ou un
+     * membre du secrétariat, même avec la capacité « participants », ne le peut pas -
+     * « se connecter en tant que » donne accès à tout l'espace de la personne.
+     */
     public function canImpersonate(): bool
     {
-        return $this->can('manage_colloques');
+        return $this->isColloqueAdmin();
     }
 
     /**

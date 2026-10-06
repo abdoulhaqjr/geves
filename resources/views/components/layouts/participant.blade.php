@@ -196,12 +196,24 @@
                         <div class="name">{{ $account?->full_name }}</div>
                         <div class="role">{{ $account?->grade ?: 'Participant' }}</div>
                     </div>
-                    <form method="POST" action="{{ route('account.logout') }}">
-                        @csrf
-                        <button type="submit" class="logout" aria-label="Se déconnecter">
-                            <x-ukc.icon name="logout" :size="18" />
-                        </button>
-                    </form>
+                    {{-- En impersonation, le bouton de déconnexion QUITTE l'impersonation
+                         (il ne déconnecte pas l'admin de sa propre session). Le contrôleur
+                         de déconnexion applique de toute façon la même règle en filet. --}}
+                    @if (app('impersonate')->isImpersonating())
+                        <form method="POST" action="{{ route('impersonation.leave') }}">
+                            @csrf
+                            <button type="submit" class="logout" aria-label="Quitter l’impersonation" title="Quitter l’impersonation">
+                                <x-ukc.icon name="logout" :size="18" />
+                            </button>
+                        </form>
+                    @else
+                        <form method="POST" action="{{ route('account.logout') }}">
+                            @csrf
+                            <button type="submit" class="logout" aria-label="Se déconnecter">
+                                <x-ukc.icon name="logout" :size="18" />
+                            </button>
+                        </form>
+                    @endif
                 </div>
             </div>
         </aside>
