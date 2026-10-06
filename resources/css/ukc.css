@@ -216,6 +216,34 @@ html.ukc-dense::-webkit-scrollbar-thumb:hover,
 html.ukc-dense::-webkit-scrollbar-corner,
 .ukc-shell ::-webkit-scrollbar-corner { background: transparent; }
 
+/* Perfect Scrollbar (lib JS, `app.js initPerfectScrollbars`) : overlay en fondu
+   au survol / pendant le défilement, comme la barre latérale de l'admin bizzcart.
+   Attaché à `.ukc-sidebar-nav` et à tout conteneur `[data-ps]`. Le fondu (rail à
+   `opacity:0`, remonté au survol/défilement) vient de `perfect-scrollbar.css` ;
+   on ne recolore et ne dimensionne ici que le pouce et le rail.
+   ⚠️ La barre latérale GEVES est SOMBRE → un pouce noir bizzcart y serait
+   invisible : on y met un pouce CLAIR translucide. Le noir bizzcart reste pour
+   les `[data-ps]` sur fond clair. Nos sélecteurs portent `.ukc-shell` (2 classes)
+   → ils l'emportent sur ceux de la lib (`.ps__thumb-y`, 1 classe), quel que soit
+   l'ordre de chargement des feuilles. */
+.ukc-shell .ps__rail-y { width: 11px; background: transparent; }
+.ukc-shell .ps__rail-y:hover,
+.ukc-shell .ps--clicking .ps__rail-y { background: transparent; }
+.ukc-shell .ps__rail-y > .ps__thumb-y {
+    width: 6px; right: 2px;
+    background: rgba(0, 0, 0, .2); border-radius: 6px; /* fond clair (bizzcart) */
+}
+.ukc-shell .ps__rail-y:hover > .ps__thumb-y,
+.ukc-shell .ps--clicking .ps__thumb-y { width: 6px; background: rgba(0, 0, 0, .35); }
+/* Barre latérale sombre : pouce clair pour rester lisible. */
+.ukc-shell .ukc-sidebar-nav .ps__rail-y > .ps__thumb-y { background: rgba(255, 255, 255, .28); }
+.ukc-shell .ukc-sidebar-nav .ps__rail-y:hover > .ps__thumb-y,
+.ukc-shell .ukc-sidebar-nav.ps--clicking .ps__thumb-y { background: rgba(255, 255, 255, .45); }
+/* PS gère le défilement en interne (il masque l'overflow) : pas de rail horizontal
+   parasite sur la nav latérale, et le conteneur garde sa position pour le calcul. */
+.ukc-shell .ps { position: relative; }
+.ukc-shell .ukc-sidebar-nav .ps__rail-x { display: none; }
+
 .ukc-shell { display: flex; min-height: 100vh; }
 .ukc-sidebar {
   width: var(--ukc-sidebar); flex-shrink: 0;

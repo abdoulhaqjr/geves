@@ -3,6 +3,8 @@ import TomSelect from 'tom-select';
 import 'tom-select/dist/css/tom-select.css';
 import intlTelInput from 'intl-tel-input/intlTelInputWithUtils';
 import 'intl-tel-input/styles';
+import PerfectScrollbar from 'perfect-scrollbar';
+import 'perfect-scrollbar/css/perfect-scrollbar.css';
 
 // Alpine est désormais une dépendance autonome (Livewire retiré du projet).
 window.Alpine = Alpine;
@@ -155,6 +157,43 @@ async function initAbstractEditors(root = document) {
 document.addEventListener('DOMContentLoaded', () => { initTomSelects(); initPhoneInputs(); initAbstractEditors(); });
 window.initTomSelects = initTomSelects;
 window.initPhoneInputs = initPhoneInputs;
+
+// Perfect Scrollbar (overlay qui apparaît en fondu au survol / pendant le défilement,
+// comme la barre latérale de l'admin bizzcart). On l'attache à la navigation latérale
+// du back-office et de l'espace participant - et, de façon extensible, à tout conteneur
+// défilant portant `data-ps`. ⚠️ Pas sur la fenêtre : PS ne gère que des conteneurs à
+// hauteur bornée et `overflow` masqué (il le pose lui-même) ; le défilement de page
+// garde le scrollbar natif stylé (`ukc.css`). Chaque instance est mémorisée sur l'élément
+// (`__ps`) pour être mise à jour quand sa taille change, et détruite proprement avant une
+// ré-initialisation (ex. conteneur ré-injecté par un swap AJAX).
+function initPerfectScrollbars(root = document) {
+    // Un pointeur grossier (tactile) a déjà un scrollbar overlay natif et pas de survol :
+    // PS y masquerait le défilement par inertie sans rien apporter. On s'abstient.
+    if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return;
+
+    const targets = root.querySelectorAll('.ukc-sidebar-nav, [data-ps]');
+    targets.forEach((el) => {
+        if (el.__ps) { el.__ps.update(); return; }
+        try {
+            el.__ps = new PerfectScrollbar(el, {
+                suppressScrollX: true,       // la nav latérale ne défile qu'en vertical
+                wheelPropagation: false,
+            });
+            // La hauteur du conteneur ou de son contenu peut changer (menu déplié,
+            // fenêtre redimensionnée) : on recalcule le rail en conséquence.
+            if (window.ResizeObserver) {
+                const ro = new ResizeObserver(() => el.__ps && el.__ps.update());
+                ro.observe(el);
+                Array.from(el.children).forEach((c) => ro.observe(c));
+            }
+        } catch (e) {
+            /* PS indisponible : on retombe sur le scrollbar natif stylé. */
+        }
+    });
+}
+document.addEventListener('DOMContentLoaded', () => initPerfectScrollbars());
+window.addEventListener('resize', () => initPerfectScrollbars());
+window.initPerfectScrollbars = initPerfectScrollbars;
 
 // Champs « nom de famille » en MAJUSCULES : dès la frappe, la valeur saisie est
 // mise en capitales (accents inclus). Cible tout champ last_name (y compris les

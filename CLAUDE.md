@@ -2714,3 +2714,28 @@ connecté est redirigé droit sur `account.payment`.
 - Le **public** garde l'échelle du navigateur du visiteur.
 - **Pint** applique un style projet-wide (concat sans espaces `'a'.$b`) - lancer `pint`
   avant de commiter.
+
+### Scrollbar du back-office = Perfect Scrollbar (overlay façon bizzcart)
+
+Deux mécanismes, complémentaires :
+
+- **Perfect Scrollbar** (lib JS, `app.js` → `initPerfectScrollbars`) pour les
+  **conteneurs défilants à hauteur bornée** : la **navigation latérale**
+  (`.ukc-sidebar-nav`) du back-office **et** de l'espace participant, plus tout
+  élément portant **`data-ps`**. C'est lui qui donne l'overlay fin qui
+  **apparaît en fondu au survol / pendant le défilement** (comportement identique
+  à la barre latérale de l'admin bizzcart). Instance mémorisée sur l'élément
+  (`el.__ps`), mise à jour via un `ResizeObserver` + au `resize` fenêtre, et PS
+  est **désactivé sur pointeur grossier** (`pointer: coarse`) où le défilement
+  tactile natif suffit. Thème dans `ukc.css` (bloc « Perfect Scrollbar ») : rail
+  transparent, pouce 6px arrondi - **clair** `rgba(255,255,255,.28/.45)` sur la
+  nav sombre (un pouce noir bizzcart y serait invisible), **noir** `rgba(0,0,0,.2/.35)`
+  pour les `[data-ps]` sur fond clair. ⚠️ Nos sélecteurs portent `.ukc-shell`
+  (2 classes) → ils priment sur ceux de la lib (`.ps__thumb-y`, 1 classe) quel que
+  soit l'ordre des feuilles. ⚠️ **Jamais sur la fenêtre** : PS ne gère que des
+  conteneurs à `overflow` masqué qu'il pose lui-même.
+- **Scrollbar natif stylé** (CSS pur, `ukc.css`, `html.ukc-dense` + `.ukc-shell *`)
+  pour tout le reste, **le défilement de page compris** (que PS ne peut pas
+  prendre) : même palette bizzcart (pouce `rgba(0,0,0,.2)`, rayon 6px, piste
+  transparente). C'est le repli quand PS ne s'applique pas (public = scrollbar
+  natif du navigateur, ni `ukc-dense` ni `.ukc-shell`).
