@@ -2,7 +2,11 @@
 
 use App\AI\AiManager;
 use App\AI\Contracts\AiProvider;
+use App\Models\Claim;
 use App\Models\EventSession;
+use App\Models\Formation;
+use App\Models\FormationEnrollment;
+use App\Models\Review;
 use App\Models\Slot;
 use App\Notifications\SystemNotification;
 use App\Support\ProgramKnowledge;
@@ -201,4 +205,71 @@ it('informe le participant d’une reprogrammation (avant / après)', function (
     $prompt = implode("\n", $captured);
     expect($prompt)->toContain('reprogrammé')
         ->and($prompt)->toContain('Salle 5');   // la nouvelle salle
+});
+
+it('donne à Gesco les engagements du participant (formation, rôle, réclamation)', function () {
+    $captured = [];
+    capturingAi($captured);
+
+    $sub = seededSubmission('accepted');
+    $event = $sub->event;
+    $account = $sub->participant->user;
+
+    // Formation suivie (réglée).
+    $formation = Formation::create([
+        'event_id' => $event->id, 'title' => 'Méthodologie de la recherche',
+        'starts_at' => '2026-10-08 14:00', 'status' => 'published', 'fee' => 10000,
+    ]);
+    FormationEnrollment::create([
+        'formation_id' => $formation->id, 'event_id' => $event->id, 'user_id' => $account->id,
+        'participant_id' => $sub->participant_id, 'status' => 'paid',
+    ]);
+
+    // Rôle : rapporteur d'une séance (rapproché par e-mail).
+    EventSession::create([
+        'event_id' => $event->id, 'type' => 'atelier', 'label' => 'Atelier Santé',
+        'rapporteur_email' => $account->email,
+    ]);
+
+    // Réclamation déposée.
+    Claim::create([
+        'event_id' => $event->id, 'user_id' => $account->id, 'type' => 'reclamation',
+        'subject' => 'Problème de badge', 'message' => 'Mon badge est illisible.', 'status' => 'open',
+    ]);
+
+    $this->actingAs($account, 'account')
+        ->postJson(route('gesco.ask'), ['question' => 'Quels sont mes engagements ?'])
+        ->assertOk();
+
+    $prompt = implode("\n", $captured);
+    expect($prompt)->toContain('Méthodologie de la recherche')
+        ->and($prompt)->toContain('RAPPORTEZ')
+        ->and($prompt)->toContain('Atelier Santé')
+        ->and($prompt)->toContain('réclamations');
+});
+
+it('donne au copilote admin les relectures, formations et réclamations', function () {
+    $captured = [];
+    capturingAi($captured);
+
+    $sub = seededSubmission('accepted');
+    $event = $sub->event;
+
+    // Une relecture confiée (en attente).
+    Review::create([
+        'submission_id' => $sub->id, 'reviewer_id' => $sub->participant_id, 'status' => 'invited',
+    ]);
+
+    // Une réclamation ouverte.
+    Claim::create([
+        'event_id' => $event->id, 'type' => 'incident', 'subject' => 'Panne', 'message' => 'x', 'status' => 'open',
+    ]);
+
+    $this->actingAs(adminStaff(), 'web')
+        ->postJson(route('admin.ai.ask'), ['question' => 'Fais-moi un point', 'event_id' => $event->id])
+        ->assertOk();
+
+    $prompt = implode("\n", $captured);
+    expect($prompt)->toContain('Relectures :')
+        ->and($prompt)->toContain('Réclamations/incidents en cours');
 });

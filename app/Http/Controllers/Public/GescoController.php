@@ -7,8 +7,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Attestation;
 use App\Models\Claim;
 use App\Models\Event;
+use App\Models\EventSession;
+use App\Models\FormationEnrollment;
 use App\Models\Participant;
 use App\Models\Payment;
+use App\Models\Review;
 use App\Models\Slot;
 use App\Models\Submission;
 use App\Models\User;
@@ -236,11 +239,75 @@ class GescoController extends Controller
             'Communications ('.$subs->count().') :',
             $subs->isEmpty() ? '- aucune soumission déposée' : $subLines,
             $this->scheduleContext($participantIds),
+            $this->engagementContext($account, $participantIds),
             $paymentLine,
             'Badge participant : '.($paidCount > 0 ? 'disponible (généré après paiement), non téléchargeable ici - imprimé par l’organisation.' : 'sera disponible après confirmation du paiement.'),
             'Attestations : '.($att->isNotEmpty() ? $att->map->typeLabel()->unique()->implode(', ') : 'aucune émise pour l’instant').'.',
             $account->hasVerifiedEmail() ? 'E-mail vérifié.' : 'E-mail NON vérifié (à confirmer pour soumettre).',
         ]));
+    }
+
+    /**
+     * Engagements PERSONNELS complémentaires : formations suivies, rôles de séance
+     * (modérateur / rapporteur), relectures confiées, réclamations déposées. De quoi
+     * répondre « suis-je inscrit à la formation X ? », « quelles séances je modère ? »,
+     * « où en est ma réclamation ? » - toujours sur les SEULES données de l'utilisateur.
+     *
+     * @param  Collection<int, int>  $participantIds
+     */
+    private function engagementContext(User $account, $participantIds): string
+    {
+        $lines = [];
+
+        // Formations suivies (inscription par compte).
+        $enrollments = FormationEnrollment::where('user_id', $account->id)
+            ->with('formation')->latest('id')->get();
+        if ($enrollments->isNotEmpty()) {
+            $f = $enrollments->map(function (FormationEnrollment $e) {
+                $title = Str::limit((string) (data_get($e, 'formation.title') ?? 'Formation'), 60);
+                $when = $e->formation?->starts_at?->locale('fr')->translatedFormat('j F Y à H\hi');
+                $status = $e->isPaid() ? 'inscription réglée' : 'inscrit (règlement en attente)';
+
+                return '- « '.$title.' » : '.$status.($when ? ' · le '.$when : '');
+            })->implode("\n");
+            $lines[] = 'Formations ('.$enrollments->count().') :'."\n".$f;
+        }
+
+        // Rôles de séance (rapprochés par e-mail, comme toute la plateforme).
+        $email = mb_strtolower((string) $account->email);
+        $moderates = EventSession::whereRaw('LOWER(moderator_email) = ?', [$email])->get();
+        $reports = EventSession::whereRaw('LOWER(rapporteur_email) = ?', [$email])->get();
+        if ($moderates->isNotEmpty()) {
+            $lines[] = 'Vous MODÉREZ '.$moderates->count().' séance(s) : '
+                .$moderates->map(fn (EventSession $s) => '« '.Str::limit($s->label ?: 'séance', 50).' »')->implode(', ').'.';
+        }
+        if ($reports->isNotEmpty()) {
+            $lines[] = 'Vous RAPPORTEZ '.$reports->count().' séance(s) : '
+                .$reports->map(fn (EventSession $s) => '« '.Str::limit($s->label ?: 'séance', 50).' »')->implode(', ')
+                .'. (Rédaction du rapport dans « Mes séances à rapporter ».)';
+        }
+
+        // Relectures confiées (reviewer_id = identifiant Participant).
+        if ($participantIds->isNotEmpty()) {
+            $reviews = Review::whereIn('reviewer_id', $participantIds)->get();
+            if ($reviews->isNotEmpty()) {
+                $pending = $reviews->filter(fn (Review $r) => $r->isPending())->count();
+                $late = $reviews->filter(fn (Review $r) => $r->isLate())->count();
+                $lines[] = 'Relectures : '.$pending.' à rendre'.($late > 0 ? ' (dont '.$late.' en retard)' : '')
+                    .' sur '.$reviews->count().' confiée(s). (Espace « Mes relectures ».)';
+            }
+        }
+
+        // Réclamations / incidents déposés par l'utilisateur.
+        $claims = Claim::where('user_id', $account->id)->latest('id')->get();
+        if ($claims->isNotEmpty()) {
+            $open = $claims->whereNotIn('status', ['resolved', 'closed'])->count();
+            $recent = $claims->take(3)
+                ->map(fn (Claim $c) => $c->reference.' ('.$c->statusLabel().')')->implode(', ');
+            $lines[] = 'Vos réclamations/incidents ('.$claims->count().' au total, '.$open.' en cours) : '.$recent.'.';
+        }
+
+        return $lines === [] ? '' : implode("\n", $lines);
     }
 
     /**

@@ -2553,11 +2553,24 @@ Sources, pour ne pas les redéclarer à chaque fois :
     des données de travail, pas de l'info publique. Borné pour tenir dans le budget de
     contexte. ⚠️ Nommer les auteurs via `data_get($slot,'submission.participant.user.full_name')`
     (relations traitées non-nulles par Larastan → pas de `?->` à gauche d'un `??`).
-- **Assistante publique - programme PERSONNEL** (`GescoController::personalContext`) :
+- **Assistante publique - programme PERSONNEL** (`GescoController::scheduleContext`) :
   pour un participant CONNECTÉ, ses créneaux de passage (« quand/où je communique »,
   séance, salle, horaire), + le passage constaté, + **la reprogrammation** (avant →
   après, et quand). Le prompt de Gesco l'autorise explicitement à répondre là-dessus.
   ⚠️ Jamais les créneaux d'un AUTRE participant (filtré sur ses `participant_id`).
+- **Assistante publique - ENGAGEMENTS personnels** (`GescoController::engagementContext`) :
+  toujours pour le participant CONNECTÉ, ses **formations** suivies (titre, date, réglée
+  ou non), ses **rôles de séance** (modérateur / rapporteur, rapprochés par e-mail), ses
+  **relectures** confiées (à rendre / en retard, `reviewer_id` = id Participant), ses
+  **réclamations / incidents** déposés (référence + état). Même garde d'étanchéité : ne
+  lit QUE les données du compte (par `user_id` / e-mail / ses `participant_id`).
+- **Copilote admin - pilotage élargi** (`AskAdmin`, bloc « CHIFFRES RÉELS ») : en plus des
+  soumissions/paiements/recettes, il reçoit les **relectures** (`EventReport::reviewStats`),
+  les **rapports de séance** (validés / attendus, `SessionReport` + `counts()`), les
+  **formations** (si `Formation::offeredIn`, inscriptions réglées) et les **réclamations
+  ouvertes**. Le prompt cadre déjà la réponse sur la FONCTION de l'utilisateur (un
+  comptable reste sur les finances) : enrichir le contexte ne contourne pas ce périmètre.
+  ⚠️ Réutiliser `EventReport` (source unique des agrégats), ne pas recompter à la main.
 - **Historique de reprogrammation = `slots.schedule_log`** (JSON, migration
   `2026_10_06_000100`). Capturé **automatiquement** par l'évènement `Slot::updated` :
   dès qu'un créneau portant une communication (`submission_id > 0`) et **déjà horodaté**

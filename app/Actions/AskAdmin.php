@@ -5,7 +5,11 @@ namespace App\Actions;
 use App\AI\AiManager;
 use App\AI\AiRouter;
 use App\AI\Copilot\CopilotActions;
+use App\Models\Claim;
 use App\Models\Event;
+use App\Models\Formation;
+use App\Models\FormationEnrollment;
+use App\Models\SessionReport;
 use App\Models\Submission;
 use App\Models\User;
 use App\Support\AiAgents;
@@ -168,15 +172,53 @@ class AskAdmin
                 ->map(fn ($a) => $a['axe'].' ('.$a['total'].', acceptées '.$a['accepted'].')')
                 ->implode(', ');
 
+            // Relectures : charge et avancement (comité scientifique).
+            $rv = $report->reviewStats();
+            $reviewLine = ($rv['done'] + $rv['pending'] + $rv['late'] + $rv['declined']) > 0
+                ? 'Relectures : '.$rv['done'].' rendues, '.$rv['pending'].' en attente, '.$rv['late'].' en retard, '
+                    .$rv['declined'].' refusées ('.$rv['reviewers'].' relecteurs'
+                    .($rv['avgDays'] > 0 ? ', délai moyen '.$rv['avgDays'].' j' : '').')'
+                : null;
+
+            // Rapports de séance : validés / attendus (secrétariat).
+            $cnt = $report->counts();
+            $reportsExpected = (int) $cnt['session_reports'];
+            $reportsValidated = $reportsExpected > 0
+                ? SessionReport::where('event_id', $event->id)->where('status', 'validated')->count()
+                : 0;
+            $reportLine = $reportsExpected > 0
+                ? 'Rapports de séance : '.$reportsValidated.' validé(s) sur '.$reportsExpected.' séance(s) avec rapporteur'
+                : null;
+
+            // Formations (si le module est proposé sur l'événement).
+            $formationLine = null;
+            if (Formation::offeredIn($event)) {
+                $enr = FormationEnrollment::whereHas('formation', fn ($q) => $q->where('event_id', $event->id))->get();
+                if ($enr->isNotEmpty()) {
+                    $paid = $enr->where('status', 'paid')->count();
+                    $formationLine = 'Formations : '.Formation::where('event_id', $event->id)->count()
+                        .' proposée(s), '.$enr->count().' inscription(s) ('.$paid.' réglée(s))';
+                }
+            }
+
+            // Réclamations / incidents ouverts (support).
+            $openClaims = Claim::where('event_id', $event->id)
+                ->whereNotIn('status', ['resolved', 'closed'])->count();
+            $claimLine = $openClaims > 0 ? 'Réclamations/incidents en cours : '.$openClaims : null;
+
             $context = implode("\n", array_filter([
                 'Événement : '.($event->title ?: 'Événement').' ('.$event->year.') · statut '.$event->status
                     .($event->submission_deadline ? ' · clôture soumissions le '.$event->submission_deadline->translatedFormat('d/m/Y') : ''),
                 'Participants : '.$s['participants'],
                 'Communications : '.$s['submissions'].' (acceptées : '.$s['accepted'].')'.($byStatus ? ' - '.$byStatus : ''),
                 $axes ? 'Axes principaux : '.$axes : null,
+                $reviewLine,
                 'Paiements : '.$pay['ok'].' réglés, '.$pay['pending'].' en attente, '.$pay['failed'].' échoués/annulés',
                 'Recettes : '.number_format($s['collected'], 0, ',', ' ').' '.$s['currency'].' encaissés · '
                     .number_format($s['pending'], 0, ',', ' ').' '.$s['currency'].' en attente',
+                $formationLine,
+                $reportLine,
+                $claimLine,
             ]));
 
             $knowledge = EventKnowledge::brief($event);
