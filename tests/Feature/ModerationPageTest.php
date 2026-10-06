@@ -80,6 +80,26 @@ it('ne montre que les séances de l’autre modérateur à personne d’autre', 
         ->assertDontSee('Séance de Moussa');
 });
 
+it('n’affiche plus l’espace d’échange sur les cartes de modération', function () {
+    $compte = verifiedAccount();
+    sessionConfiee($compte);
+
+    $this->actingAs($compte, 'account')->get('/moderation')
+        ->assertOk()
+        ->assertDontSee('Espace d’échange');
+});
+
+it('propose la validation de passage sur une séance commencée avec communications', function () {
+    // seancePassage() (CommunicationPassageTest) : séance commencée, un créneau,
+    // modérateur « modpass@example.tg ».
+    [, $session] = seancePassage();
+
+    $this->actingAs(officier('modpass@example.tg'), 'account')->get('/moderation')
+        ->assertOk()
+        ->assertSee('Validation de passage')
+        ->assertSee(route('account.passage.edit', $session));
+});
+
 // --- Retour de visio --------------------------------------------------------
 
 it('ramène le modérateur à ses séances quand il quitte la visio', function () {

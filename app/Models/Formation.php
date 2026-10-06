@@ -105,13 +105,16 @@ class Formation extends Model implements Meetable
         return $this->meetingStatusEnum() === MeetingStatus::Live;
     }
 
+    /**
+     * Nom technique de la salle, TOUJOURS UNIQUE PAR FORMATION (cf. la note sur
+     * {@see EventSession::meetingRoom()}) : `meeting_room` n'est qu'une étiquette,
+     * suffixée par l'événement + la formation pour éviter toute collision de salle.
+     */
     public function meetingRoom(): string
     {
-        if (filled($this->meeting_room)) {
-            return (string) $this->meeting_room;
-        }
-
-        $prefix = (string) config('meetings.jitsi.room_prefix', 'gesco');
+        $prefix = filled($this->meeting_room)
+            ? (string) $this->meeting_room
+            : (string) config('meetings.jitsi.room_prefix', 'gesco');
 
         return Str::slug($prefix.'-formation-'.$this->event_id.'-'.$this->id);
     }

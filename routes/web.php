@@ -254,6 +254,10 @@ Route::middleware(['auth:account', StampAccountSession::class])->group(function 
     // a la salle sous les yeux) - d'où une adresse qui ne dit ni l'un ni l'autre.
     Route::get('/seances/{session}/presence', [SessionAttendanceController::class, 'edit'])->name('account.attendance.edit');
     Route::post('/seances/{session}/presence', [SessionAttendanceController::class, 'update'])->name('account.attendance.update');
+    // Validation du passage des communications, hors visio (page dédiée, comme la
+    // présence) : modérateur OU rapporteur. Le constat lui-même passe par la route
+    // partagée session.passage (même garde horaire).
+    Route::get('/seances/{session}/passage', [SessionPassageController::class, 'edit'])->name('account.passage.edit');
     Route::get('/relectures', [ReviewWorkspaceController::class, 'index'])->name('account.reviews');
     Route::post('/relectures/candidatures', [ReviewWorkspaceController::class, 'saveBids'])->name('account.reviews.bids');
     Route::post('/relectures/{review}/reponse', [ReviewWorkspaceController::class, 'respond'])->name('account.reviews.respond');
@@ -482,6 +486,10 @@ Route::prefix('admin')->group(function () {
             Route::post('/programme/sessions/{session}/visio/statut', [ProgramController::class, 'setMeetingStatus'])->name('admin.program.sessions.meeting-status');
             Route::post('/programme/sessions/{session}/visio/acces', [ProgramController::class, 'setMeetingVisibility'])->name('admin.program.sessions.meeting-visibility');
             Route::post('/programme/sessions/{session}/visio', [ProgramController::class, 'saveMeeting'])->name('admin.program.sessions.meeting');
+            // Fils de discussion des visios (onglet « Discussions ») : consultables
+            // après la visio ET après l'événement (lecture directe de l'archive).
+            Route::get('/programme/discussions/{session}', [ProgramController::class, 'discussion'])->name('admin.program.discussions.show');
+            Route::get('/programme/discussions/{session}/export', [ProgramController::class, 'discussionExport'])->name('admin.program.discussions.export');
             Route::get('/programme/rapports', [ProgramController::class, 'reports'])->name('admin.program.reports');
             Route::post('/programme/rapports/{session}', [ProgramController::class, 'saveReport'])->name('admin.program.reports.save');
             Route::post('/programme/rapports/{session}/rouvrir', [ProgramController::class, 'reopenReport'])->name('admin.program.reports.reopen');

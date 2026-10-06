@@ -9,15 +9,18 @@ use App\Http\Controllers\Controller;
 use App\Models\Atelier;
 use App\Models\Event;
 use App\Models\EventSession;
+use App\Models\MeetingMessage;
 use App\Models\SessionReport;
 use App\Models\Slot;
 use App\Models\Submission;
 use App\Models\User;
 use App\Support\ListSort;
+use App\Support\MeetingTranscript;
 use App\Support\Notifier;
 use App\Support\ProgramConflicts;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
@@ -323,8 +326,16 @@ class ProgramController extends Controller
         $usedRooms = $sessions->pluck('room')->merge($slots->pluck('room'))
             ->filter()->unique()->sort()->values();
 
-        $tabs = ['apercu', 'planning', 'ateliers', 'sessions', 'creneaux', 'espaces', 'auto', 'options'];
+        $tabs = ['apercu', 'planning', 'ateliers', 'sessions', 'creneaux', 'espaces', 'discussions', 'auto', 'options'];
         $tab = in_array($request->query('tab'), $tabs, true) ? (string) $request->query('tab') : 'apercu';
+
+        // Onglet « Discussions » : séances ayant une visio ou au moins un message,
+        // avec le nombre de messages de leur fil. Consultable après la visio ET
+        // après l'événement (lecture directe de MeetingMessage, hors `canJoin`).
+        // Calculé seulement sur demande (une requête d'agrégat de plus, sinon).
+        $discussions = $tab === 'discussions' && $event
+            ? $this->discussionRows($event, $sessions)
+            : [];
 
         // ── Onglets Sessions & Créneaux = tableaux paginés + triés CÔTÉ SERVEUR
         //    (comme admin/soumissions). Les collections complètes ci-dessus
@@ -367,6 +378,7 @@ class ProgramController extends Controller
             'spaces' => $config['spaces'],
             'atelierRooms' => $config['atelier_rooms'],
             'usedRooms' => $usedRooms,
+            'discussions' => $discussions,
             'stats' => [
                 'ateliers' => $ateliers->count(),
                 'sessions' => $sessions->count(),
@@ -1234,6 +1246,94 @@ class ProgramController extends Controller
         $this->writeProgramConfig($event, ['spaces' => array_values($spaces)]);
 
         return back()->with('ukc_status', 'Espace supprimé.');
+    }
+
+    /**
+     * Fils de discussion de l'événement (onglet « Discussions ») : une ligne par
+     * séance ayant une visio OU au moins un message, avec le nombre de messages et
+     * la date du dernier. Un seul agrégat SQL (query builder) pour tous les comptes.
+     *
+     * @param  Collection<int, EventSession>  $sessions
+     * @return list<array{session: EventSession, count: int, lastAt: Carbon|null}>
+     */
+    private function discussionRows(Event $event, Collection $sessions): array
+    {
+        $counts = DB::table('meeting_messages')
+            ->where('meetable_type', EventSession::class)
+            ->whereIn('meetable_id', $sessions->pluck('id'))
+            ->groupBy('meetable_id')
+            ->selectRaw('meetable_id, COUNT(*) as total, MAX(created_at) as last_at')
+            ->get()
+            ->keyBy('meetable_id');
+
+        // Clôture paresseuse de l'affichage : une séance encore « en direct » dont
+        // l'horaire est passé apparaît « terminée » ici aussi.
+        $sessions->each(fn (EventSession $s) => $s->closeMeetingIfExpired());
+
+        $rows = [];
+        foreach ($sessions as $s) {
+            $row = $counts->get($s->id);
+            $total = $row ? (int) $row->total : 0;
+
+            if ($total === 0 && ! $s->hasMeeting()) {
+                continue;
+            }
+
+            $rows[] = [
+                'session' => $s,
+                'count' => $total,
+                'lastAt' => $row && $row->last_at ? Carbon::parse((string) $row->last_at) : null,
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Fil complet d'une séance (lecture après la visio et après l'événement).
+     * Lecture directe de MeetingMessage, indépendante de l'accès à la salle.
+     */
+    public function discussion(Request $request, EventSession $session): View
+    {
+        $this->ensureSessionAccessible($request, $session);
+
+        $session->loadMissing('event.series', 'atelier');
+
+        $messages = MeetingMessage::query()
+            ->where('meetable_type', EventSession::class)
+            ->where('meetable_id', $session->id)
+            ->with('reactions')
+            ->orderBy('id')
+            ->get();
+
+        return view('admin.program.discussion', [
+            'session' => $session,
+            'messages' => $messages,
+            'event_id' => (string) $session->event_id,
+        ]);
+    }
+
+    /** Le fil en .txt (même mise en forme que l'export depuis la salle). */
+    public function discussionExport(Request $request, EventSession $session): Response
+    {
+        $this->ensureSessionAccessible($request, $session);
+
+        return response(MeetingTranscript::toText($session), 200, [
+            'Content-Type' => 'text/plain; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="fil-seance-'.$session->id.'.txt"',
+        ]);
+    }
+
+    /**
+     * Garde d'étanchéité : la séance doit relever d'un événement accessible au
+     * membre du staff (le middleware du groupe ne connaît pas l'événement d'un
+     * paramètre `{session}`).
+     */
+    private function ensureSessionAccessible(Request $request, EventSession $session): void
+    {
+        $scoped = $this->scopedEditionIds($request, 'editions_read');
+
+        abort_unless($scoped === null || in_array((int) $session->event_id, $scoped, true), 403);
     }
 
     private function currentEdition(Request $request): ?Event

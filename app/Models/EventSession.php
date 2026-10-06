@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Console\Commands\CloseEndedMeetings;
 use App\Enums\MeetingRole;
 use App\Enums\MeetingStatus;
 use App\Enums\MeetingVisibility;
@@ -86,6 +87,50 @@ class EventSession extends Model implements Meetable
         return filled($this->recording_url);
     }
 
+    /**
+     * La fenêtre de la séance est-elle TERMINÉE (horaire de fin + marge dépassés) ?
+     *
+     * Fin effective : `ends_at` si connu, sinon la fin de la journée (`session_day`
+     * ou le jour de `starts_at`), sinon `starts_at` + 2 h. Marge de grâce pour les
+     * débordements (réglage `meetings.auto_close_grace_minutes`, défaut 120). Faux
+     * si la séance n'a aucun horaire : on ne ferme pas ce qu'on ne sait pas situer.
+     */
+    public function meetingWindowOver(): bool
+    {
+        $end = $this->ends_at
+            ?? $this->session_day?->copy()->endOfDay()
+            ?? $this->starts_at?->copy()->endOfDay()
+            ?? $this->starts_at?->copy()->addHours(2);
+
+        if ($end === null) {
+            return false;
+        }
+
+        $grace = (int) config('meetings.auto_close_grace_minutes', 120);
+
+        return $end->copy()->addMinutes($grace)->lt(now());
+    }
+
+    /**
+     * Clôture la visio si elle est « en direct » mais que sa fenêtre est passée :
+     * `live → ended`. Renvoie vrai si le statut a changé.
+     *
+     * ⚠️ Appelé par la commande planifiée {@see CloseEndedMeetings}
+     * ET en auto-réparation sur les chemins d'accès (join/token/chat) pour couper
+     * l'accès même sans planificateur (ex. en développement). Écriture silencieuse :
+     * ce n'est pas une modification métier à tracer.
+     */
+    public function closeMeetingIfExpired(): bool
+    {
+        if ($this->meetingStatusEnum() !== MeetingStatus::Live || ! $this->meetingWindowOver()) {
+            return false;
+        }
+
+        $this->forceFill(['meeting_status' => MeetingStatus::Ended->value])->saveQuietly();
+
+        return true;
+    }
+
     public function meetingStatusEnum(): MeetingStatus
     {
         return MeetingStatus::tryFrom((string) $this->meeting_status) ?? MeetingStatus::None;
@@ -97,16 +142,22 @@ class EventSession extends Model implements Meetable
     }
 
     /**
-     * Nom de salle. Utilise `meeting_room` si fourni, sinon un nom déterministe
-     * et stable dérivé de l'événement et de la session (préfixe configurable).
+     * Nom technique de la salle (LiveKit/Jitsi). TOUJOURS UNIQUE PAR SÉANCE.
+     *
+     * ⚠️ `meeting_room` n'est qu'une **étiquette** : deux séances peuvent porter
+     * le même (ex. « Salle 3 » recopié), et si on l'employait tel quel comme nom
+     * de salle, deux séances simultanées partageraient la même salle LiveKit - les
+     * participants, le chat instantané et le tableau blanc de l'une débordant chez
+     * l'autre. On suffixe donc toujours par l'événement + la séance : avec 2 à 6
+     * salles en parallèle, aucune ne peut collisionner. Sans `meeting_room`, le nom
+     * déterministe est déjà unique. (Les salles LiveKit sont éphémères : renommer
+     * n'a pas d'effet de bord serveur.)
      */
     public function meetingRoom(): string
     {
-        if (filled($this->meeting_room)) {
-            return (string) $this->meeting_room;
-        }
-
-        $prefix = (string) config('meetings.jitsi.room_prefix', 'gesco');
+        $prefix = filled($this->meeting_room)
+            ? (string) $this->meeting_room
+            : (string) config('meetings.jitsi.room_prefix', 'gesco');
 
         return Str::slug($prefix.'-'.$this->event_id.'-'.$this->id);
     }

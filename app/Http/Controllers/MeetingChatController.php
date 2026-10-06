@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Meetings\Contracts\Meetable;
 use App\Meetings\MeetableRegistry;
+use App\Models\EventSession;
 use App\Models\MeetingMessage;
 use App\Models\MeetingMessageReaction;
+use App\Support\MeetingTranscript;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -186,40 +188,7 @@ class MeetingChatController extends Controller
             403,
         );
 
-        $messages = MeetingMessage::query()
-            ->where('meetable_type', $salle::class)
-            ->where('meetable_id', $salle->getKey())
-            ->with('reactions')
-            ->orderBy('id')
-            ->get();
-
-        $lignes = [
-            'Fil de discussion - salle '.$salle->meetingRoom(),
-            'Export du '.now()->translatedFormat('d F Y à H:i'),
-            str_repeat('-', 60),
-            '',
-        ];
-
-        foreach ($messages as $m) {
-            $entete = '['.($m->created_at?->format('d/m H:i') ?? '').'] '.$m->author_name;
-            if ($m->reply_uid) {
-                $entete .= ' (en réponse à '.$m->reply_author.' « '.$m->reply_excerpt.' »)';
-            }
-            $lignes[] = $entete.' :';
-            $lignes[] = '    '.str_replace("\n", "\n    ", $m->body);
-
-            $reactions = $m->reactions->groupBy('emoji')->map(fn ($g, $e) => $e.' '.$g->count())->implode(', ');
-            if ($reactions !== '') {
-                $lignes[] = '    réactions : '.$reactions;
-            }
-            $lignes[] = '';
-        }
-
-        if ($messages->isEmpty()) {
-            $lignes[] = '(aucun message)';
-        }
-
-        return response(implode("\n", $lignes), 200, [
+        return response(MeetingTranscript::toText($salle), 200, [
             'Content-Type' => 'text/plain; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="fil-visio-'.$type.'-'.$id.'.txt"',
         ]);
@@ -293,6 +262,13 @@ class MeetingChatController extends Controller
     {
         $salle = MeetableRegistry::find($type, $id);
         abort_if($salle === null, 404);
+
+        // Clôture paresseuse : une séance dont l'horaire est passé n'est plus « en
+        // direct », donc on n'y écrit plus (la lecture du fil archivé reste permise
+        // à qui peut encore entrer).
+        if ($salle instanceof EventSession) {
+            $salle->closeMeetingIfExpired();
+        }
 
         // Le fil suit l'accès à la salle : qui ne peut pas entrer ne lit pas ce
         // qui s'y dit, et n'y écrit pas.

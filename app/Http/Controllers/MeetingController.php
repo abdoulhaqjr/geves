@@ -34,6 +34,11 @@ class MeetingController extends Controller
     /** Visio d'une session du programme. */
     public function join(EventSession $session): View
     {
+        // ⚠️ Clôture paresseuse : une séance « en direct » dont l'horaire est passé
+        // bascule « terminée » dès qu'on tente d'y entrer - l'accès est donc coupé
+        // même entre deux passages de la commande planifiée (ou sans planificateur).
+        $session->closeMeetingIfExpired();
+
         $isStaff = Auth::guard('web')->check();
         $account = Auth::guard('account')->user();
         $role = $session->meetingRoleFor($account, $isStaff);
@@ -143,6 +148,11 @@ class MeetingController extends Controller
     {
         $salle = MeetableRegistry::find($type, $id);
         abort_if($salle === null, 404);
+
+        // Clôture paresseuse d'une séance dont l'horaire est passé (cf. join()).
+        if ($salle instanceof EventSession) {
+            $salle->closeMeetingIfExpired();
+        }
 
         $account = Auth::guard('account')->user();
         $isStaff = Auth::guard('web')->check();

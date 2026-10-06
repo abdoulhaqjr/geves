@@ -1148,6 +1148,11 @@
             </div>
         @endif
 
+        {{-- ============================ DISCUSSIONS (fils de visio) ============================ --}}
+        @if ($tab === 'discussions')
+            @include('admin.program._discussions')
+        @endif
+
         {{-- ============================ MODALES ============================ --}}
         @if ($event)
             @include('admin.program._modals')

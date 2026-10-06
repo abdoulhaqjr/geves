@@ -31,6 +31,20 @@ return [
 
     'quality' => env('MEETING_VIDEO_QUALITY', 'md'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Clôture automatique d'une visio passée
+    |--------------------------------------------------------------------------
+    |
+    | Une visio « en direct » dont l'horaire de fin est dépassé de cette marge
+    | (en minutes) passe automatiquement « terminée » : l'accès est coupé et le
+    | statut se met à jour. Marge pour tolérer les débordements de séance. Voir
+    | la commande `meetings:close-ended` et EventSession::closeMeetingIfExpired().
+    |
+    */
+
+    'auto_close_grace_minutes' => (int) env('MEETING_AUTO_CLOSE_GRACE', 120),
+
     'livekit' => [
         // Serveur LiveKit (Cloud ou self-host) + identifiants d'API. Sans ces
         // trois valeurs, le fournisseur n'est pas disponible → repli sur Jitsi.

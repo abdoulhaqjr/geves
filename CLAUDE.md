@@ -1027,7 +1027,54 @@ aligné sur **modérer** ; `/animation` reste en **redirection** (signets, courr
   pour en écrire le rapport. ⚠️ Le test porte sur **`EventSession::isModeratedBy()`**
   (la séance confiée) et **non sur le rôle en salle** : le staff y est modérateur
   aussi, et n'a pas d'espace personnel où atterrir - il tomberait sur un 403.
+- ⚠️ **Les cartes ne portent PLUS le bouton « Espace d'échange (Q&A / sondages) »** ni
+  les formulaires « Valider le passage » par communication. La validation de passage a
+  sa **propre page** (`account.passage.edit`, `/compte/seances/{session}/passage`), sur
+  le modèle de la Présence : un bouton **« Validation de passage »** par carte (activé
+  seulement si `hasStarted()`), puis une page listant les communications à valider.
+  `SessionPassageController::edit` (garde `SessionPresence::canManage` : modérateur **ou**
+  rapporteur) ; le constat lui-même passe toujours par `session.passage` (même garde
+  horaire serveur). La liste des communications reste en **lecture** sur la carte, avec la
+  pastille « Passage validé ». (Les échanges Q&A/sondages restent accessibles DANS la
+  salle de visio et via la page autonome `session.engagement` ; seul le bouton de la carte
+  de modération a disparu.)
+- ⚠️ **Un modérateur ne valide pas un passage avant l'heure de sa séance** : la page ne
+  montre les boutons que si `hasStarted()`, et `SessionPassageController::store` refuse
+  (`abort_unless($session->hasStarted())`) de toute façon. Tests :
+  `CommunicationPassageTest` (page + garde horaire).
 - Tests : `tests/Feature/ModerationPageTest.php`.
+
+### Visio : clôture automatique, isolation des salles, historique des fils
+
+- **Clôture automatique d'une visio passée** (`live → ended`). ⚠️ `EventSession::isLive()`
+  lit une colonne **stockée** `meeting_status` : rien ne la faisait évoluer avec le temps,
+  donc une séance de la veille restait joignable et affichait « En direct ». Désormais
+  `EventSession::meetingWindowOver()` (fin effective = `ends_at` ?? fin de journée de
+  `session_day`/`starts_at`, + marge `meetings.auto_close_grace_minutes`, défaut **120 min**)
+  et `closeMeetingIfExpired()` (bascule `live → ended`, `saveQuietly`). Deux déclencheurs :
+  la **commande planifiée** `meetings:close-ended` (`routes/console.php`, toutes les 5 min)
+  **et** l'**auto-réparation à l'accès** (`MeetingController::join`/`token`,
+  `MeetingChatController` chemin écriture, `ModerationController`, onglet Discussions) - pour
+  que l'accès soit coupé même sans planificateur (ex. en dev). ⚠️ `isLive()` **n'est pas**
+  modifié : c'est la fermeture du statut qui coupe l'accès (`canJoin`/token/chat-write → 403).
+  Une séance **sans horaire** n'est jamais fermée. Tests : `MeetingAutoCloseTest`.
+- ⚠️ **Nom de salle TOUJOURS unique par séance** (`EventSession::meetingRoom()` /
+  `Formation::meetingRoom()`). `meeting_room` n'est qu'une **étiquette** : s'il était employé
+  tel quel comme nom de salle LiveKit/Jitsi, deux séances portant la même (« Salle 3 »
+  recopié) partageraient la même salle - participants, chat instantané et tableau blanc de
+  l'une débordant chez l'autre. On suffixe donc toujours par l'événement + la séance : avec
+  **2 à 6 salles simultanées**, aucune ne collisionne. (Salles LiveKit éphémères → renommer
+  n'a pas d'effet de bord.) Le « reset » au changement de salle est déjà assuré par
+  l'architecture (onglet par séance `geves-visio-<key>-<id>`, rechargement complet,
+  `room.disconnect()` au départ, fil archivé **par séance**). Tests : `MeetingTest`.
+- **Historique des fils de discussion (back-office)** : onglet **« Discussions »** du module
+  Programme (`?tab=discussions`, cap `editions_read`). Liste les séances ayant une visio ou
+  au moins un message (nombre de messages, dernier) ; `admin.program.discussions.show`
+  rend le fil complet, `admin.program.discussions.export` le `.txt`. ⚠️ **Lecture directe de
+  `MeetingMessage`** (indépendante de `canJoin`/live) → consultable **après la visio ET après
+  l'événement**, là où l'API de la salle (`meeting.chat.*`) reste gardée par l'accès à la
+  salle. Mise en forme texte partagée : **`App\Support\MeetingTranscript::toText()`** (réutilisée
+  par l'export de la salle). Tests : `ProgramDiscussionsTest`.
 
 - **Le nombre de connectés, dans la barre du haut.** Il ne se lisait **nulle
   part** en mosaïque : le compte du bandeau n'existe qu'en vue présentateur, et

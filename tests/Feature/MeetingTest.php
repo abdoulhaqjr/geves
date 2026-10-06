@@ -67,10 +67,24 @@ it('émet un JWT Jitsi quand un secret self-host est configuré', function () {
     $jwt = explode('?jwt=', $url)[1];
     $claims = json_decode(base64_decode(explode('.', $jwt)[1]), true);
     expect($claims['context']['user']['moderator'])->toBeTrue();
-    expect($claims['room'])->toBe('salle-1');
+    // ⚠️ Le nom de salle est TOUJOURS unique par séance (cf. EventSession::meetingRoom) :
+    // l'étiquette « salle-1 » est suffixée par l'événement + la séance pour qu'aucune
+    // des 2 à 6 salles simultanées ne collisionne.
+    expect($claims['room'])->toBe($session->meetingRoom());
 });
 
 // --- EventSession : état & salle -------------------------------------------
+
+it('isole les salles : deux séances au même nom de salle ont des salles distinctes', function () {
+    // ⚠️ 2 à 6 salles simultanées : même si le secrétariat recopie la même étiquette
+    // (« Salle 3 »), les salles LiveKit/Jitsi ne doivent JAMAIS collisionner.
+    $event = openEdition();
+    $a = liveSession($event, 'participants', ['meeting_room' => 'Salle 3']);
+    $b = liveSession($event, 'participants', ['meeting_room' => 'Salle 3']);
+
+    expect($a->meetingRoom())->not->toBe($b->meetingRoom());
+    expect($a->meetingRoom())->toContain((string) $a->id);
+});
 
 it('reflète l’état de la visio', function () {
     $event = openEdition();
@@ -224,7 +238,8 @@ it('génère un token LiveKit avec les droits dérivés du rôle', function () {
 
     $mod = $decode($provider->token($session, MeetingRole::Moderator, 'Modo'));
     expect($mod['iss'])->toBe('APIabc');
-    expect($mod['video']['room'])->toBe('salle-lk');
+    // Nom de salle unique par séance (étiquette « salle-lk » suffixée) - cf. meetingRoom().
+    expect($mod['video']['room'])->toBe($session->meetingRoom());
     expect($mod['video']['roomAdmin'])->toBeTrue();
     expect($mod['video']['canPublish'])->toBeTrue();
 

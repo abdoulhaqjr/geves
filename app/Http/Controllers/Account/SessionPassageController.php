@@ -4,14 +4,17 @@ namespace App\Http\Controllers\Account;
 
 use App\Actions\ValidateCommunicationPassage;
 use App\Http\Controllers\Controller;
+use App\Meetings\MeetableRegistry;
 use App\Models\EventSession;
 use App\Models\Slot;
+use App\Support\AttestationPolicy;
 use App\Support\EventLock;
 use App\Support\SessionPresence;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 
 /**
  * **Validation du passage d'une communication** par qui tient la séance.
@@ -28,6 +31,36 @@ use Illuminate\Support\Facades\Auth;
  */
 class SessionPassageController extends Controller
 {
+    /**
+     * Page de validation des passages d'une séance, hors visio (comme la page de
+     * présence). Modérateur **ou** rapporteur. Les boutons ne s'activent qu'une
+     * fois la séance commencée - un modérateur ne valide pas un passage avant
+     * l'heure (la route `session.passage` l'impose aussi côté serveur).
+     */
+    public function edit(EventSession $session): View
+    {
+        abort_unless(
+            SessionPresence::canManage($session, Auth::guard('account')->user()),
+            403,
+        );
+
+        $session->load('event.series', 'atelier');
+
+        return view('account.passage.edit', [
+            'session' => $session,
+            'communications' => $session->scheduledCommunications(),
+            'notStarted' => ! $session->hasStarted(),
+            'frozen' => EventLock::frozen($session->event),
+            // La page doit annoncer ce que « Valider » déclenche, avant le clic.
+            'issuesOnPassage' => AttestationPolicy::issuesOnPassage($session->event),
+            // Retour vers l'espace modérateur, et accès direct à la salle (onglet
+            // réutilisé : on ne rouvre pas une seconde salle).
+            'backRoute' => 'account.moderation',
+            'meetingUrl' => $session->hasMeeting() ? route('session.meeting', $session) : null,
+            'meetingTab' => MeetableRegistry::tabFor($session),
+        ]);
+    }
+
     public function store(
         Request $request,
         EventSession $session,

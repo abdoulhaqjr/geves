@@ -89,5 +89,8 @@ it('permet à l’admin de configurer la visio', function () {
 
     $formation->refresh();
     expect($formation->isLive())->toBeTrue();
-    expect($formation->meetingRoom())->toBe('salle-form-1');
+    // L'étiquette est bien enregistrée ; le nom technique de salle reste unique
+    // par formation (suffixé) pour ne jamais collisionner - cf. Formation::meetingRoom().
+    expect($formation->meeting_room)->toBe('salle-form-1');
+    expect($formation->meetingRoom())->toContain('salle-form-1');
 });

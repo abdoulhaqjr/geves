@@ -41,7 +41,10 @@ it('liste au modérateur ses séances à animer', function () {
         ->get(route('account.moderation'))
         ->assertOk()
         ->assertSee('Session - Atelier 1')
-        ->assertSee('Espace d’échange');
+        // ⚠️ L'espace d'échange (Q&A/sondages) n'est plus un bouton de la carte ; les
+        // outils de la séance (présence, validation de passage) le sont.
+        ->assertSee('Présence')
+        ->assertDontSee('Espace d’échange');
 });
 
 it('propose au modérateur un accès à son espace depuis le tableau de bord', function () {

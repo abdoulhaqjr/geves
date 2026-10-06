@@ -187,6 +187,41 @@ it('coupe l’annonce en mode papier, et garde le SMS fermé par défaut', funct
     expect(AttestationPolicy::issuesOnPassage($event))->toBeFalse();
 });
 
+// --- Page dédiée « Validation de passage » (comme la présence) --------------
+
+it('ouvre la page de validation de passage au modérateur et au rapporteur', function () {
+    [, $session] = seancePassage();
+    $session->update(['rapporteur_email' => 'rappass@example.tg']);
+
+    $this->actingAs(officier('modpass@example.tg'), 'account')
+        ->get(route('account.passage.edit', $session))
+        ->assertOk()
+        ->assertSee('Valider le passage');
+
+    $this->actingAs(officier('rappass@example.tg'), 'account')
+        ->get(route('account.passage.edit', $session))
+        ->assertOk();
+});
+
+it('refuse la page de validation de passage à un tiers', function () {
+    [, $session] = seancePassage();
+
+    $this->actingAs(officier('tiers@example.tg'), 'account')
+        ->get(route('account.passage.edit', $session))
+        ->assertForbidden();
+});
+
+it('ne propose pas de valider un passage avant le début de la séance', function () {
+    [, $session] = seancePassage();
+    $session->update(['starts_at' => now()->addDay()]);
+
+    $this->actingAs(officier('modpass@example.tg'), 'account')
+        ->get(route('account.passage.edit', $session))
+        ->assertOk()
+        ->assertSee('Validation pas encore ouverte')
+        ->assertDontSee('Valider le passage');
+});
+
 /** Un réglage abîmé ne doit pas fermer la délivrance : on retombe sur « en ligne ». */
 it('retombe sur la délivrance en ligne devant une valeur inconnue', function () {
     $event = openEdition();

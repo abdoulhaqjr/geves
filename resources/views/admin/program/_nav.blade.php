@@ -11,6 +11,7 @@
         'sessions' => 'Sessions',
         'creneaux' => 'Créneaux',
         'espaces' => 'Espaces',
+        'discussions' => 'Discussions',
         'auto' => 'Affectation auto',
         'options' => 'Options',
     ] as $key => $label)
