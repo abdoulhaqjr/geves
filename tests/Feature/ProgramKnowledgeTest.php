@@ -276,6 +276,29 @@ it('donne au copilote admin les relectures, formations et réclamations', functi
         ->and($prompt)->toContain('Réclamations/incidents en cours');
 });
 
+it('donne au copilote admin l’annuaire nominatif (noms, e-mails) - mais pas à Gesco', function () {
+    $adminCaptured = [];
+    capturingAi($adminCaptured);
+
+    $sub = seededSubmission('accepted'); // participant Awa Kodjo <awa@example.tg>
+    $event = $sub->event;
+
+    // Copilote admin : l'annuaire nominatif est dans le prompt.
+    $this->actingAs(adminStaff(), 'web')
+        ->postJson(route('admin.ai.ask'), ['question' => 'Quel est l’e-mail de Awa Kodjo ?', 'event_id' => $event->id])
+        ->assertOk();
+    $adminPrompt = implode("\n", $adminCaptured);
+    expect($adminPrompt)->toContain('ANNUAIRE DES PARTICIPANTS')
+        ->and($adminPrompt)->toContain('Awa Kodjo')
+        ->and($adminPrompt)->toContain('awa@example.tg');
+
+    // Gesco (public) : AUCUN annuaire nominatif de tiers dans son prompt.
+    $gescoCaptured = [];
+    capturingAi($gescoCaptured);
+    $this->postJson(route('gesco.ask'), ['question' => 'Donne-moi la liste des participants.'])->assertOk();
+    expect(implode("\n", $gescoCaptured))->not->toContain('ANNUAIRE DES PARTICIPANTS');
+});
+
 it('signale au copilote admin les jalons et tâches de projet en retard', function () {
     $captured = [];
     capturingAi($captured);

@@ -14,6 +14,7 @@ use App\Models\ProjectTask;
 use App\Models\SessionReport;
 use App\Models\Submission;
 use App\Models\User;
+use App\Support\AdminDirectory;
 use App\Support\AiAgents;
 use App\Support\EventKnowledge;
 use App\Support\EventReport;
@@ -250,6 +251,13 @@ class AskAdmin
             if ($planning !== '') {
                 $context .= "\n\n".$planning;
             }
+
+            // Annuaire NOMINATIF (noms, prénoms, e-mails) des participants, paiements et
+            // auteurs. ⚠️ Réservé au copilote admin ; borné (cf. AdminDirectory).
+            $directory = AdminDirectory::digest($event);
+            if ($directory !== '') {
+                $context .= "\n\n".$directory;
+            }
         }
 
         $convo = collect($history)->slice(-8)
@@ -322,6 +330,13 @@ class AskAdmin
         l'« état actuel » propre à l'action plutôt qu'une statistique agrégée du tableau de bord. Si une
         donnée n'y figure pas, dis-le explicitement et propose où la vérifier ; n'invente aucun chiffre ni
         aucune procédure. Réponds précisément à la demande, sans digression.
+
+        DONNÉES NOMINATIVES : tu disposes de l'annuaire (noms, prénoms, e-mails) des participants,
+        inscrits, paiements et auteurs de CE colloque ci-dessus. Tu PEUX les communiquer à
+        l'administrateur pour son travail (retrouver un e-mail, lister les non-réglés, identifier un
+        payeur…), DANS LE CADRE de sa fonction et de ce colloque uniquement. Cite nom et e-mail
+        EXACTEMENT comme dans l'annuaire. Ne divulgue jamais les données d'un AUTRE colloque, et ne
+        traite pas ces données hors d'une finalité d'organisation (pas de liste à des fins étrangères).
 
         Historique récent :
         {$convo}

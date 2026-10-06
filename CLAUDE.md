@@ -2598,6 +2598,16 @@ Sources, pour ne pas les redéclarer à chaque fois :
   **relectures** confiées (à rendre / en retard, `reviewer_id` = id Participant), ses
   **réclamations / incidents** déposés (référence + état). Même garde d'étanchéité : ne
   lit QUE les données du compte (par `user_id` / e-mail / ses `participant_id`).
+- **Copilote admin - ANNUAIRE NOMINATIF** (`App\Support\AdminDirectory::digest`, injecté
+  dans `AskAdmin` uniquement) : noms, prénoms et **e-mails** des participants (grade, rôle,
+  institution, payé/à régler), des **paiements** (reçu, payeur + e-mail, montant, méthode,
+  statut) et des **auteurs correspondants** (réf, titre, e-mail, axe, statut). Réutilise les
+  lignes d'export d'`EventReport` (source unique). ⚠️ **JAMAIS côté Gesco** (données de
+  tiers) ; le prompt admin autorise explicitement à les communiquer DANS le périmètre de
+  fonction et du colloque. ⚠️ **Borné** (participants 200, paiements 120, auteurs 200 ; le
+  prompt est reconstruit à chaque message) : au-delà, renvoi vers les filtres/export des
+  pages dédiées plutôt que gonfler le contexte. Test : `ProgramKnowledgeTest` (présent côté
+  admin, absent côté Gesco).
 - **Copilote admin - pilotage élargi** (`AskAdmin`, bloc « CHIFFRES RÉELS ») : en plus des
   soumissions/paiements/recettes, il reçoit les **relectures** (`EventReport::reviewStats`),
   les **rapports de séance** (validés / attendus, `SessionReport` + `counts()`), les
