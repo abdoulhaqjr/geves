@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Actions\NotifySlotRescheduled;
 use App\Enums\MeetingStatus;
 use App\Enums\MeetingVisibility;
 use App\Http\Controllers\Controller;
@@ -966,6 +967,11 @@ class ProgramController extends Controller
             'submission_id' => $submission?->id ?? 0,
             'participant_id' => $submission?->participant_id ?? 0,
         ]);
+
+        // Reprogrammation d'une communication déjà placée (horaire/salle/séance) :
+        // prévient l'auteur. Le modèle a posé `rescheduledNow` s'il y a bien eu un
+        // déplacement (pas une première planification) ; l'action est sans effet sinon.
+        app(NotifySlotRescheduled::class)->handle($slot);
 
         return back()->with('ukc_status', 'Créneau mis à jour.');
     }

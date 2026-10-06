@@ -4,6 +4,7 @@ use App\AI\AiManager;
 use App\AI\Contracts\AiProvider;
 use App\Models\EventSession;
 use App\Models\Slot;
+use App\Notifications\SystemNotification;
 use App\Support\ProgramKnowledge;
 
 // Fournisseur IA qui CAPTURE l'instruction (le prompt) pour vérifier le contexte
@@ -148,6 +149,41 @@ it('donne à l’assistante le programme personnel du participant connecté', fu
     expect($prompt)->toContain('Programme personnel')
         ->and($prompt)->toContain('Innovation durable')
         ->and($prompt)->toContain('Salle 2');
+});
+
+it('notifie l’auteur quand l’admin reprogramme son créneau (updateSlot)', function () {
+    $slot = placedSlot();
+    $user = $slot->submission->participant->user;
+    expect($user->notifications()->count())->toBe(0);
+
+    $this->actingAs(adminStaff(), 'web')
+        ->put(route('admin.program.slots.update', $slot), [
+            'slDay' => '2026-10-06',
+            'slStart' => '14:00',
+            'slRoom' => 'Salle 5',
+            'submission_id' => (string) $slot->submission_id, // la communication reste placée
+        ])->assertSessionHasNoErrors();
+
+    $notifs = $user->fresh()->notifications()->where('type', SystemNotification::class)->get();
+    expect($notifs)->toHaveCount(1)
+        ->and($notifs->first()->data['kind'])->toBe('schedule_change')
+        ->and($notifs->first()->data['title'])->toBe('Votre créneau de passage a changé');
+});
+
+it('ne notifie PAS lors d’un placement initial via updateSlot', function () {
+    $sub = seededSubmission('accepted');
+    // Créneau libre (jamais horodaté pour cette communication) puis planifié.
+    $slot = Slot::create([
+        'event_id' => $sub->event->id, 'submission_id' => 0, 'participant_id' => 0,
+    ]);
+
+    $this->actingAs(adminStaff(), 'web')
+        ->put(route('admin.program.slots.update', $slot), [
+            'slDay' => '2026-10-06', 'slStart' => '14:00', 'slRoom' => 'Salle 5',
+            'submission_id' => (string) $sub->id,
+        ])->assertSessionHasNoErrors();
+
+    expect($sub->participant->user->fresh()->notifications()->count())->toBe(0);
 });
 
 it('informe le participant d’une reprogrammation (avant / après)', function () {

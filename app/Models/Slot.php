@@ -34,6 +34,15 @@ class Slot extends Model
     /** Nombre maximal d'entrées conservées dans le journal (les plus récentes). */
     private const LOG_MAX = 10;
 
+    /**
+     * Drapeau TRANSITOIRE (non persisté) : vrai quand l'enregistrement courant a
+     * produit une entrée de reprogrammation. Il permet à l'appelant (un contrôleur
+     * déclenché par un humain) de décider d'envoyer une notification SANS que
+     * l'évènement du modèle ne la déclenche lui-même - sinon un seed de volume ou un
+     * rejeu idempotent enverrait des centaines de messages (cf. piège documenté).
+     */
+    public bool $rescheduledNow = false;
+
     protected function casts(): array
     {
         return [
@@ -85,6 +94,7 @@ class Slot extends Model
             // façon `schedule_log` n'est pas une colonne suivie, donc pas de récursion).
             $slot->schedule_log = array_slice($log, -self::LOG_MAX);
             $slot->saveQuietly();
+            $slot->rescheduledNow = true;
         });
     }
 

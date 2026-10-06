@@ -2568,6 +2568,17 @@ Sources, pour ne pas les redéclarer à chaque fois :
   une mise à jour en **masse** par le query builder (`whereIn()->update()`) ne déclenche
   pas l'évènement (cas marginal : attribution de salle en lot). Helpers
   `Slot::wasRescheduled()` / `lastReschedule()`. Tests : `ProgramKnowledgeTest`.
+- **Notification PROACTIVE de reprogrammation** (`App\Actions\NotifySlotRescheduled`,
+  kind **`schedule_change`**, in-app + e-mail générique selon préférence, icône
+  `calendar`, URL vers la fiche de la communication). ⚠️ **Jamais déclenchée depuis
+  l'évènement du modèle** (le seed de 200 communications et les rejeux spammeraient -
+  même piège que `LinkSubmissionAuthors`) : l'évènement pose seulement le **drapeau
+  transitoire `Slot::$rescheduledNow`**, et c'est le contrôleur déclenché par un humain
+  (`ProgramController::updateSlot`) qui appelle l'action. L'action est **sans effet** si
+  le drapeau est faux (placement initial, pas un déplacement) ou si l'auteur n'a pas de
+  compte. L'affectation auto (`autoAssignSlots`) ne fait que du **placement initial** et
+  ne notifie donc pas. Pour notifier depuis un nouveau chemin de reprogrammation,
+  rappeler `NotifySlotRescheduled` après l'`update()` (ne pas recâbler l'évènement).
 
 ### Tests
 

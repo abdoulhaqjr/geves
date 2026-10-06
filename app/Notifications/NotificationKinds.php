@@ -22,6 +22,7 @@ class NotificationKinds
             'submission_status' => ['label' => 'Décisions sur mes communications', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => true],
             'review_assigned' => ['label' => 'Relectures qui me sont assignées', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => true],
             'session_role' => ['label' => 'Désignations (modérateur / rapporteur)', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => false],
+            'schedule_change' => ['label' => 'Changement d’horaire de mon passage', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => false],
             'report_reminder' => ['label' => 'Relances de rapport de séance', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => true],
             'attestation' => ['label' => 'Attestations disponibles', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => false],
             'formation' => ['label' => 'Formations (inscriptions)', 'audience' => 'account', 'inapp' => true, 'email' => true, 'hasMail' => true],
