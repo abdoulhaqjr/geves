@@ -2568,6 +2568,18 @@ est listé en dernier) :
 - **IA** : couche `App\AI` (contrat `AiProvider`, `AiManager` = résolution + failover,
   `AiRouter` = routage fast/deep). Le copilote back-office exécute de vraies actions
   (`App\AI\Copilot`) **après autorisation explicite** + capacité RBAC revérifiée.
+  - ⚠️ **Copilote admin (« Marc ») = UN SEUL chemin : l'action exécutable.** Le
+    mécanisme de « proposition » descriptive (boutons *Approuver / Modifier avant /
+    Refuser* + route `admin.ai.decide` + clé `proposal` dans la réponse de `AskAdmin`)
+    a été **retiré** : approuver une proposition ne faisait que journaliser une ligne,
+    sans rien exécuter - un cul-de-sac incompris. Désormais `AskAdmin::handle` renvoie
+    `{ answer, action }` (plus de `proposal`), et le prompt impose à Marc : dès que la
+    demande correspond à une action de `CopilotActions`, il **propose cette action**
+    (carte *Autoriser et exécuter* → `admin.ai.execute`, qui exécute réellement côté
+    serveur) au lieu de décrire une démarche manuelle ; sinon il répond **en texte**
+    (marche à suivre, onglet concerné), sans faux bouton à valider. Ne pas réintroduire
+    la « proposition » : un conseil se donne dans le texte, une opération s'exécute via
+    une action. Tests : `AdminAiAssistantTest`, `CopilotActionsTest`.
 
 ### Contexte des assistants IA : programme, séances, salles, créneaux
 

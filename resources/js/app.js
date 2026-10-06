@@ -1244,7 +1244,7 @@ document.addEventListener('alpine:init', () => {
 
     // Copilote d'administration (page Assistant IA - mockup admin-ai-assistant).
     // Chat réel (AskAdmin) + propositions à décider + journal des décisions persisté.
-    window.Alpine.data('adminCopilot', (seed = '', askUrl = '', decideUrl = '', executeUrl = '', log = [], name = 'Copilote', editionId = '', scope = '0') => ({
+    window.Alpine.data('adminCopilot', (seed = '', askUrl = '', executeUrl = '', log = [], name = 'Copilote', editionId = '', scope = '0') => ({
         messages: [],
         input: '',
         sending: false,
@@ -1262,7 +1262,7 @@ document.addEventListener('alpine:init', () => {
         init() {
             this.purgeForeignScopes();
             const saved = this.restore();
-            this.messages = saved || [{ role: 'bot', text: this.seedText, proposal: null, decision: null }];
+            this.messages = saved || [{ role: 'bot', text: this.seedText }];
             this.$watch('messages', () => this.persist());
             this.scrollSoon();
         },
@@ -1288,7 +1288,7 @@ document.addEventListener('alpine:init', () => {
             try { sessionStorage.setItem(this.storageKey, JSON.stringify(this.messages)); } catch (e) { /* stockage indisponible */ }
         },
         reset() {
-            this.messages = [{ role: 'bot', text: this.seedText, proposal: null, decision: null }];
+            this.messages = [{ role: 'bot', text: this.seedText }];
             this.input = '';
             this.resetInputHeight();
             this.persist();
@@ -1340,7 +1340,7 @@ document.addEventListener('alpine:init', () => {
             if (!question || this.sending) return;
 
             const history = this.messages.map((m) => ({ role: m.role, text: m.text }));
-            this.messages.push({ role: 'user', text: question, proposal: null, decision: null });
+            this.messages.push({ role: 'user', text: question });
             this.input = '';
             this.resetInputHeight();
             this.sending = true;
@@ -1356,32 +1356,14 @@ document.addEventListener('alpine:init', () => {
                 this.messages.push({
                     role: 'bot',
                     text: data.answer || 'Une erreur est survenue. Réessayez dans un instant.',
-                    proposal: data.proposal || null,
                     action: data.action || null,
                     actionState: null,
-                    decision: null,
                 });
             } catch (e) {
-                this.messages.push({ role: 'bot', text: 'Connexion impossible. Vérifiez votre réseau et réessayez.', proposal: null, action: null, decision: null });
+                this.messages.push({ role: 'bot', text: 'Connexion impossible. Vérifiez votre réseau et réessayez.', action: null });
             } finally {
                 this.sending = false;
                 this.scrollSoon();
-            }
-        },
-        async decide(index, decision) {
-            const m = this.messages[index];
-            if (!m || !m.proposal || m.decision) return;
-            m.decision = decision;
-            try {
-                const res = await fetch(decideUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': this.csrf() },
-                    body: JSON.stringify({ title: m.proposal.title, decision }),
-                });
-                const data = await res.json().catch(() => ({}));
-                if (data.entry) this.decisionLog.unshift(data.entry);
-            } catch (e) {
-                /* silencieux : la décision reste affichée côté chat */
             }
         },
         // Exécution d'une action APRÈS autorisation explicite de l'utilisateur : le
@@ -1399,15 +1381,15 @@ document.addEventListener('alpine:init', () => {
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) {
                     m.actionState = 'error';
-                    this.messages.push({ role: 'bot', text: data.message || 'L’action a échoué.', proposal: null, action: null, decision: null });
+                    this.messages.push({ role: 'bot', text: data.message || 'L’action a échoué.', action: null });
                 } else {
                     m.actionState = 'done';
                     if (data.entry) this.decisionLog.unshift(data.entry);
-                    this.messages.push({ role: 'bot', text: '✅ ' + (data.message || 'Action exécutée.'), proposal: null, action: null, decision: null });
+                    this.messages.push({ role: 'bot', text: '✅ ' + (data.message || 'Action exécutée.'), action: null });
                 }
             } catch (e) {
                 m.actionState = 'error';
-                this.messages.push({ role: 'bot', text: 'Connexion impossible. Réessayez.', proposal: null, action: null, decision: null });
+                this.messages.push({ role: 'bot', text: 'Connexion impossible. Réessayez.', action: null });
             } finally {
                 this.scrollSoon();
             }
@@ -1415,12 +1397,6 @@ document.addEventListener('alpine:init', () => {
         dismissAction(index) {
             const m = this.messages[index];
             if (m && m.action) m.actionState = 'dismissed';
-        },
-        decisionLabel(d) {
-            return { approve: 'Approuvé par admin', edit: 'À modifier', reject: 'Refusé par admin' }[d] || '';
-        },
-        decisionPill(d) {
-            return { approve: 'ok', edit: 'info', reject: 'warn' }[d] || 'muted';
         },
         scrollSoon() {
             this.$nextTick(() => {

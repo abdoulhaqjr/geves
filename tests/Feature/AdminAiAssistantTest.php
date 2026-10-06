@@ -2,6 +2,7 @@
 
 use App\AI\Contracts\AiProvider;
 use App\Models\User;
+use Illuminate\Support\Facades\Route;
 
 // fakeAiProvider(), bindFakeAi() -> GenerateReportTest ; adminStaff(), openEdition() -> helpers
 
@@ -16,7 +17,26 @@ it('le copilote admin répond au staff', function () {
     $this->actingAs(adminStaff(), 'web')
         ->postJson(route('admin.ai.ask'), ['question' => 'Résume l’événement actif.'])
         ->assertOk()
-        ->assertJsonPath('answer', 'Voici une synthèse de l’événement actif.');
+        ->assertJsonPath('answer', 'Voici une synthèse de l’événement actif.')
+        // Plus de mécanisme « proposition » à valider dans le vide : seul le chemin
+        // « action exécutable » subsiste (clé "action").
+        ->assertJsonMissingPath('proposal');
+});
+
+it('ne propose plus de « proposition » descriptive (mécanisme retiré)', function () {
+    // Même si l'IA renvoie encore une "proposal", le serveur ne l'expose plus.
+    bindFakeAi(fakeAiProvider([
+        'answer' => 'Voici une piste.',
+        'proposal' => ['title' => 'Export manuel', 'detail' => 'À faire', 'impact' => 'Aucun'],
+    ]));
+
+    $this->actingAs(adminStaff(), 'web')
+        ->postJson(route('admin.ai.ask'), ['question' => 'Que puis-je faire ?'])
+        ->assertOk()
+        ->assertJsonMissingPath('proposal');
+
+    // La route de décision (approuver/modifier/refuser) n'existe plus.
+    expect(Route::has('admin.ai.decide'))->toBeFalse();
 });
 
 it('exige une saisie', function () {

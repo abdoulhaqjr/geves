@@ -18,18 +18,11 @@ use Illuminate\View\View;
  * le staff par des synthèses et brouillons à partir des chiffres réels de
  * l'événement actif, et peut EXÉCUTER une action ({@see CopilotActions}) une fois
  * celle-ci explicitement autorisée par l'utilisateur (endpoint execute, capacité
- * RBAC revérifiée). Chaque décision/exécution est journalisée. Consomme l'agent
- * « admin » via {@see AskAdmin}.
+ * RBAC revérifiée). Chaque exécution est journalisée. Consomme l'agent « admin »
+ * via {@see AskAdmin}.
  */
 class AiAssistantController extends Controller
 {
-    /** Libellé + pastille par décision (fidèle au mockup admin-ai-assistant). */
-    private const DECISIONS = [
-        'approve' => ['Approuvé par admin', 'ok'],
-        'edit' => ['À modifier', 'info'],
-        'reject' => ['Refusé par admin', 'warn'],
-    ];
-
     public function page(Request $request): View
     {
         // Identité de l'assistant (nom + avatar) paramétrée dans Réglages · Agents IA.
@@ -118,31 +111,6 @@ class AiAssistantController extends Controller
         Settings::set('ai_decision_log', array_slice($log, 0, 50));
 
         return response()->json(['message' => $message, 'entry' => $entry]);
-    }
-
-    /** Journalise une décision humaine sur une proposition (approuver/modifier/refuser). */
-    public function decide(Request $request): JsonResponse
-    {
-        $data = $request->validate([
-            'title' => ['required', 'string', 'max:160'],
-            'decision' => ['required', 'in:approve,edit,reject'],
-        ]);
-
-        [$label, $pill] = self::DECISIONS[$data['decision']];
-
-        $entry = [
-            'id' => (string) Str::uuid(),
-            'when' => now()->format('d/m/Y · H:i'),
-            'what' => Str::limit(trim($data['title']), 120, ''),
-            'label' => $label,
-            'pill' => $pill,
-        ];
-
-        $log = (array) Settings::get('ai_decision_log', []);
-        array_unshift($log, $entry);
-        Settings::set('ai_decision_log', array_slice($log, 0, 50));
-
-        return response()->json(['entry' => $entry]);
     }
 
     /**

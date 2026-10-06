@@ -2,16 +2,17 @@
     $seed = 'Bonjour. Je suis '.$agentName.', votre assistant d’administration pour '.config('app.name').'. '
         ."Je peux analyser les soumissions, repérer les anomalies de paiement, préparer des e-mails, "
         ."suggérer des créneaux ou des rapports.\n\n"
-        .'Dites-moi ce que vous souhaitez examiner - je proposerai, vous déciderez.';
+        .'Dites-moi ce que vous souhaitez examiner. Quand une action est possible, je vous la proposerai '
+        .'et vous l’autoriserez d’un clic avant qu’elle ne soit exécutée.';
 @endphp
-<x-layouts.admin title="Administration assistée" subtitle="Copilote IA · propositions uniquement - vous validez chaque action">
+<x-layouts.admin title="Administration assistée" subtitle="Copilote IA · chaque action est exécutée après votre autorisation">
     <x-slot:actions>
         <span class="ukc-pill ukc-pill--info">Agent : {{ $agentName }}</span>
         <a href="{{ route('admin.settings', ['tab' => 'agents-ia']) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">Configurer l’agent</a>
     </x-slot:actions>
 
     <div class="admin-page admin-ai"
-         x-data="adminCopilot(@js($seed), '{{ route('admin.ai.ask') }}', '{{ route('admin.ai.decide') }}', '{{ route('admin.ai.execute') }}', @js($decisionLog), @js($agentName), @js((string) $currentEditionId), @js((string) (auth('web')->id() ?? '0')))">
+         x-data="adminCopilot(@js($seed), '{{ route('admin.ai.ask') }}', '{{ route('admin.ai.execute') }}', @js($decisionLog), @js($agentName), @js((string) $currentEditionId), @js((string) (auth('web')->id() ?? '0')))">
         @if ($events->isNotEmpty())
             <div style="display:flex;flex-wrap:wrap;margin-bottom:16px;">
                 <div class="ukc-field" style="min-width:220px;margin:0;">
@@ -93,27 +94,6 @@
                                 <div class="who" x-text="m.role === 'user' ? 'Vous' : (agentName + ' · copilote')"></div>
                                 <template x-if="m.role === 'user'"><div style="white-space:pre-wrap;" x-text="m.text"></div></template>
                                 <template x-if="m.role !== 'user'"><div class="chat-md" x-html="render(m.text)"></div></template>
-
-                                {{-- Proposition d'action à décider --}}
-                                <template x-if="m.proposal">
-                                    <div class="proposal">
-                                        <strong x-text="m.proposal.title"></strong>
-                                        <p x-show="m.proposal.detail" x-text="m.proposal.detail"></p>
-                                        <div class="impact" x-show="m.proposal.impact" x-text="'Impact : ' + m.proposal.impact"></div>
-                                        <div class="actions">
-                                            <template x-if="!m.decision">
-                                                <div style="display:flex;flex-wrap:wrap;gap:6px;">
-                                                    <button type="button" class="ukc-btn ukc-btn--sm ukc-btn--green" @click="decide(i, 'approve')">Approuver</button>
-                                                    <button type="button" class="ukc-btn ukc-btn--sm ukc-btn--outline" @click="decide(i, 'edit')">Modifier avant</button>
-                                                    <button type="button" class="ukc-btn ukc-btn--sm" style="background:#fee2e2;color:#991b1b;" @click="decide(i, 'reject')">Refuser</button>
-                                                </div>
-                                            </template>
-                                            <template x-if="m.decision">
-                                                <span class="ukc-pill" :class="'ukc-pill--' + decisionPill(m.decision)" x-text="decisionLabel(m.decision)"></span>
-                                            </template>
-                                        </div>
-                                    </div>
-                                </template>
 
                                 {{-- Action exécutable : autorisation explicite requise avant exécution --}}
                                 <template x-if="m.action && m.actionState !== 'dismissed'">
@@ -210,7 +190,7 @@
                             </div>
                         </template>
                         <p x-show="decisionLog.length === 0" style="font-size:12.5px;color:var(--ukc-light);">
-                            Aucune décision pour l’instant. Vos approbations et refus de propositions apparaîtront ici.
+                            Aucune action pour l’instant. Les actions que vous autorisez apparaîtront ici.
                         </p>
                     </div>
                 </div>

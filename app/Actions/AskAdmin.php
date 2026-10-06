@@ -26,9 +26,11 @@ use Illuminate\Support\Str;
 /**
  * Copilote d'administration : répond aux questions du staff (synthèses,
  * brouillons, vérifications) à partir de l'agent « admin » (cf. {@see AiAgents})
- * et des chiffres réels de l'événement actif. Il peut aussi PROPOSER une action
- * concrète (parmi {@see CopilotActions}) que l'utilisateur autorise explicitement
- * avant qu'elle ne soit exécutée côté serveur - jamais d'exécution d'office.
+ * et des chiffres réels de l'événement actif. Quand la demande le justifie, il
+ * propose UNE action concrète (parmi {@see CopilotActions}) que l'utilisateur
+ * autorise explicitement avant qu'elle ne soit exécutée côté serveur - jamais
+ * d'exécution d'office. Les conseils qu'il ne peut pas exécuter lui-même restent
+ * dans son texte de réponse (pas de « proposition » à valider dans le vide).
  *
  * @phpstan-type ChatTurn array{role: string, text: string}
  */
@@ -38,7 +40,7 @@ class AskAdmin
 
     /**
      * @param  list<ChatTurn>  $history
-     * @return array{answer: string, proposal: array{title: string, detail: string, impact: string}|null, action: array{key: string, label: string, summary: string, params: array<string, mixed>}|null}
+     * @return array{answer: string, action: array{key: string, label: string, summary: string, params: array<string, mixed>}|null}
      */
     public function handle(array $history, string $question, ?Event $event = null, ?User $staff = null): array
     {
@@ -55,7 +57,6 @@ class AskAdmin
 
         return [
             'answer' => $answer !== '' ? Str::limit($answer, 4000, '') : 'Je n’ai pas d’élément suffisant pour répondre.',
-            'proposal' => $this->sanitizeProposal($raw['proposal'] ?? null),
             'action' => $this->sanitizeAction($raw['action'] ?? null, $staff, $event),
         ];
     }
@@ -85,29 +86,6 @@ class AskAdmin
             'label' => $resolved->label(),
             'summary' => Str::limit($resolved->summary($params, $event), 300, ''),
             'params' => $params,
-        ];
-    }
-
-    /**
-     * Normalise la proposition d'action éventuelle (titre + détail + impact).
-     *
-     * @return array{title: string, detail: string, impact: string}|null
-     */
-    protected function sanitizeProposal(mixed $proposal): ?array
-    {
-        if (! is_array($proposal)) {
-            return null;
-        }
-
-        $title = Str::limit(trim((string) ($proposal['title'] ?? '')), 120, '');
-        if ($title === '') {
-            return null;
-        }
-
-        return [
-            'title' => $title,
-            'detail' => Str::limit(trim((string) ($proposal['detail'] ?? '')), 400, ''),
-            'impact' => Str::limit(trim((string) ($proposal['impact'] ?? '')), 200, ''),
         ];
     }
 
@@ -273,7 +251,9 @@ class AskAdmin
         // avec l'ÉTAT RÉEL de leur ciblage (pour décider sur les bonnes données).
         $available = $staff !== null ? $this->copilot->availableFor($staff, $event) : [];
         $actionsBlock = $available === []
-            ? 'ACTIONS EXÉCUTABLES : aucune action exécutable n’est disponible pour ta fonction sur ce colloque. Mets toujours "action" à null.'
+            ? 'ACTIONS EXÉCUTABLES : aucune action exécutable n’est disponible pour ta fonction sur ce colloque. '
+                .'Mets toujours "action" à null. Si la demande appelle une opération que tu ne peux pas exécuter '
+                .'toi-même, réponds en texte (dans "answer") en expliquant la marche à suivre et l’onglet concerné.'
             : "ACTIONS EXÉCUTABLES DISPONIBLES (tu peux en proposer UNE, et une seule, quand la demande de l’utilisateur le justifie) :\n"
                 .collect($available)->map(function ($a) use ($event) {
                     $ctx = $event !== null ? $a->context($event) : null;
@@ -283,11 +263,14 @@ class AskAdmin
                 })->implode("\n")."\n"
                 .'Règles d’action : pour décider s’il faut proposer une action, APPUIE-TOI SUR SON « ÉTAT ACTUEL » '
                 .'ci-dessus (le ciblage réel de l’action), et NON sur les seules statistiques du tableau de bord, qui '
-                .'peuvent couvrir un périmètre différent. Ne propose une "action" que si l’utilisateur exprime cette '
-                .'intention et qu’elle est pertinente au vu de cet état réel ; n’invente JAMAIS une "key" hors de la '
-                .'liste ; propose au plus UNE action. Elle n’est JAMAIS exécutée d’office - l’utilisateur devra '
-                .'l’autoriser explicitement (il cliquera pour l’exécuter). Dans "answer", dis en une phrase ce que tu '
-                .'vas faire et demande l’autorisation. Sinon mets "action" à null.';
+                .'peuvent couvrir un périmètre différent. DÈS QUE la demande de l’utilisateur correspond à l’une de '
+                .'ces actions (ex. « relance les paiements en attente » ↔ key "send_payment_reminders"), PROPOSE '
+                .'cette action (renseigne "action") au lieu de décrire une démarche manuelle ou d’inviter '
+                .'l’utilisateur à le faire lui-même. N’invente JAMAIS une "key" hors de la liste ; propose au plus '
+                .'UNE action. Elle n’est JAMAIS exécutée d’office - l’utilisateur devra l’autoriser explicitement '
+                .'(il cliquera sur « Autoriser et exécuter »). Dans "answer", dis en une phrase ce que tu vas faire '
+                .'et demande l’autorisation. Si AUCUNE action de la liste ne correspond, mets "action" à null et '
+                .'donne directement la réponse ou la marche à suivre en texte - ne fabrique pas de fausse étape à valider.';
 
         // Horloge : date/heure courantes pour les questions temporelles (échéances,
         // délais, « aujourd'hui »).
@@ -352,13 +335,12 @@ class AskAdmin
 
         {$actionsBlock}
 
-        Si tu suggères une piste d'action SANS outil correspondant dans la liste (ex. export manuel,
-        décision d'organisation), tu peux ajouter une "proposal" descriptive : "title" (intitulé court),
-        "detail" (ce qui serait fait), "impact" (portée / garde-fou). Sinon mets "proposal" à null.
+        Si une opération ne correspond à AUCUNE action de la liste (ex. export manuel, décision
+        d'organisation), ne crée pas de bouton à valider : donne simplement la réponse ou la marche à
+        suivre dans "answer" (étapes, onglet concerné), et laisse "action" à null.
 
         Réponds UNIQUEMENT par un objet JSON STRICT (aucun texte autour) :
         { "answer": string,
-          "proposal": { "title": string, "detail": string, "impact": string } | null,
           "action": { "key": string, "params": object } | null }.
         TXT;
     }
