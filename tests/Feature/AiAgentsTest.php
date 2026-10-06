@@ -2,6 +2,8 @@
 
 use App\Support\AiAgents;
 use App\Support\Settings;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 // adminStaff() -> défini dans les helpers de tests partagés
 
@@ -82,6 +84,28 @@ it('choisit un avatar de la galerie et le persiste', function () {
     ])->assertSessionHasNoErrors();
 
     expect(AiAgents::all()[0]['avatar'])->toBe($path);
+});
+
+it('téléverse une image personnalisée via la tuile « + » et la persiste', function () {
+    Storage::fake('public');
+
+    $this->actingAs(adminStaff(), 'web')->put(route('admin.settings.agents.update'), [
+        'agents' => [['key' => 'gesco', 'name' => 'Gesco', 'audience' => 'participants', 'avatar' => '']],
+        'avatars' => [0 => UploadedFile::fake()->image('perso.png', 120, 120)],
+    ])->assertSessionHasNoErrors();
+
+    $avatar = AiAgents::all()[0]['avatar'];
+    expect($avatar)->toStartWith('ai-agents/');
+    Storage::disk('public')->assertExists($avatar);
+});
+
+it('rejette un avatar téléversé non-image', function () {
+    Storage::fake('public');
+
+    $this->actingAs(adminStaff(), 'web')->put(route('admin.settings.agents.update'), [
+        'agents' => [['key' => 'gesco', 'name' => 'Gesco', 'audience' => 'participants', 'avatar' => '']],
+        'avatars' => [0 => UploadedFile::fake()->create('malware.pdf', 100, 'application/pdf')],
+    ])->assertSessionHasErrors('avatars.0');
 });
 
 it('rejette un avatar hors de la galerie', function () {

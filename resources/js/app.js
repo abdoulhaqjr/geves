@@ -1890,7 +1890,9 @@ document.addEventListener('alpine:init', () => {
     // Éditeur d'agents IA (admin) : onglets, ajout/suppression côté client ;
     // les avatars sont téléversés à l'enregistrement du formulaire.
     window.Alpine.data('agentsEditor', (agents = [], gallery = []) => ({
-        agents: Array.isArray(agents) ? agents : [],
+        // `upload` = aperçu local (objectURL) d'une image choisie mais pas encore
+        // envoyée ; il n'est pas posté (aucun champ ne le porte), seul le fichier l'est.
+        agents: (Array.isArray(agents) ? agents : []).map((a) => ({ upload: '', ...a })),
         // Galerie d'avatars fournie (public/img/agents) : [{ path, url, group }].
         gallery: Array.isArray(gallery) ? gallery : [],
         active: 0,
@@ -1898,7 +1900,7 @@ document.addEventListener('alpine:init', () => {
             this.agents.push({
                 key: 'agent-' + Math.random().toString(36).slice(2, 6),
                 name: 'Nouvel agent', audience: 'participants', enabled: true,
-                avatar: '', persona: '', positive: '', negative: '',
+                avatar: '', upload: '', persona: '', positive: '', negative: '',
             });
             this.active = this.agents.length - 1;
         },
@@ -1907,8 +1909,29 @@ document.addEventListener('alpine:init', () => {
             this.active = Math.max(0, Math.min(this.active, this.agents.length - 1));
         },
         // Choisit un avatar de la galerie pour l'agent courant (re-cliquer = retirer).
+        // Un choix de galerie annule un fichier en attente (et vide l'input fichier).
         pickAvatar(i, path) {
             this.agents[i].avatar = this.agents[i].avatar === path ? '' : path;
+            this.clearUpload(i);
+        },
+        // Fichier choisi via la tuile « + » : aperçu local, et la nouvelle image
+        // remplace la sélection de galerie (c'est le fichier qui sera enregistré).
+        onAvatarFile(i, event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            this.agents[i].avatar = '';
+            if (this.agents[i].upload) { try { URL.revokeObjectURL(this.agents[i].upload); } catch (e) { /* noop */ } }
+            this.agents[i].upload = URL.createObjectURL(file);
+        },
+        clearUpload(i) {
+            if (this.agents[i].upload) { try { URL.revokeObjectURL(this.agents[i].upload); } catch (e) { /* noop */ } }
+            this.agents[i].upload = '';
+            const input = document.getElementById('agent-file-' + i);
+            if (input) input.value = '';
+        },
+        // Ce qu'affiche l'aperçu : le fichier en attente, sinon l'avatar enregistré.
+        avatarPreview(agent) {
+            return agent.upload ? agent.upload : this.avatarUrl(agent.avatar);
         },
         // URL servable d'un chemin d'avatar (galerie `img/…` ou ancien téléversement).
         avatarUrl(avatar) {

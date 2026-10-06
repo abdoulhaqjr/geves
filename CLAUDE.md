@@ -1718,17 +1718,21 @@ Deux mises en œuvre, selon la page :
   pas. Le bouton « Enregistrer les réglages » est masqué sur cet onglet, sans
   quoi deux boutons d'enregistrement voisinaient sans dire ce qu'ils couvrent.
   Tests : `tests/Feature/AdminSettingsTest.php`, `tests/Feature/AiAgentsTest.php`.
-- ⚠️ **Avatar d'agent = CHOISI dans une galerie fournie, plus de téléversement.** Les
-  huit visages vivent dans **`public/img/agents/`** (`marc-*` hommes, `awa-*` femmes) et
-  sont déclarés dans **`AiAgents::GALLERY`**. Marc (copilote admin) a `marc-1` par défaut,
-  l'agent public (Gesco) `awa-1` ; pour un nouvel agent, l'admin pioche parmi les huit
-  (`AiAgents::galleryForJs()` alimente l'éditeur Alpine `agentsEditor`). On ne stocke
-  qu'un **chemin de galerie** (ou vide) : `SettingAgentController` valide `avatar` ∈
-  galerie ∪ '' ∪ avatars **déjà enregistrés** (tolère un ancien téléversement, ⚠️ la
-  tolérance vient des agents STOCKÉS - jamais de la requête, qui s'autoriserait elle-même).
-  Rendu via **`AiAgents::avatarUrl()`** (source unique) : `img/…` → `asset()`, URL absolue
-  telle quelle, sinon repli `Storage::url()` pour un ancien upload. ⚠️ Ne pas réintroduire
-  l'`<input type=file>` ni la logique `avatars.*`/`remove_avatar.*` (retirées).
+- ⚠️ **Avatar d'agent = galerie fournie OU image téléversée (tuile « + »).** Les huit
+  visages vivent dans **`public/img/agents/`** (`marc-*` hommes, `awa-*` femmes), déclarés
+  dans **`AiAgents::GALLERY`**. Marc (copilote admin) a `marc-1` par défaut, l'agent public
+  (Gesco) `awa-1` ; pour un nouvel agent, l'admin pioche parmi les huit (`galleryForJs()`
+  alimente l'éditeur Alpine `agentsEditor`) **ou téléverse la sienne** via la **tuile « + »**
+  en fin de galerie (aperçu local `agent.upload` = objectURL, non posté ; seul le fichier
+  `avatars.$i` l'est). On stocke donc soit un **chemin de galerie** (`img/agents/…`), soit
+  un **chemin de téléversement** (`ai-agents/…` sur le disque `public`), soit vide.
+  `SettingAgentController` valide le champ texte `avatar` ∈ galerie ∪ '' ∪ avatars **déjà
+  enregistrés** (⚠️ tolérance depuis les agents STOCKÉS, jamais la requête qui s'autoriserait
+  elle-même) ; un **fichier** envoyé l'emporte, et l'**ancien fichier** devenu orphelin est
+  supprimé (jamais une image de galerie). Rendu via **`AiAgents::avatarUrl()`** (source
+  unique) : `img/…` → `asset()`, URL absolue telle quelle, sinon repli `Storage::url()`.
+  L'**aperçu de l'éditeur est agrandi (96px)** pour le distinguer des vignettes (52px).
+  ⚠️ Avatar téléversé : **pas de SVG** (servi depuis notre domaine, peut porter du script).
 
 ### Actions IA du back-office = AJAX + voile de travail
 
