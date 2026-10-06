@@ -2567,10 +2567,18 @@ Sources, pour ne pas les redéclarer à chaque fois :
 - **Copilote admin - pilotage élargi** (`AskAdmin`, bloc « CHIFFRES RÉELS ») : en plus des
   soumissions/paiements/recettes, il reçoit les **relectures** (`EventReport::reviewStats`),
   les **rapports de séance** (validés / attendus, `SessionReport` + `counts()`), les
-  **formations** (si `Formation::offeredIn`, inscriptions réglées) et les **réclamations
-  ouvertes**. Le prompt cadre déjà la réponse sur la FONCTION de l'utilisateur (un
-  comptable reste sur les finances) : enrichir le contexte ne contourne pas ce périmètre.
-  ⚠️ Réutiliser `EventReport` (source unique des agrégats), ne pas recompter à la main.
+  **formations** (si `Formation::offeredIn`, inscriptions réglées), les **réclamations
+  ouvertes** et le **projet EN RETARD** (`ProjectMilestone`/`ProjectTask::isOverdue()`,
+  jalons + tâches dont l'échéance est dépassée). Le prompt cadre déjà la réponse sur la
+  FONCTION de l'utilisateur (un comptable reste sur les finances) : enrichir le contexte
+  ne contourne pas ce périmètre. ⚠️ Réutiliser `EventReport` (source unique des agrégats),
+  ne pas recompter à la main.
+- **Assistante publique - MONTANT dû** (`GescoController::paymentDueContext`) : pour chaque
+  événement où le participant a une communication acceptée non réglée, le **montant exact**
+  (résolu depuis son grade par `Fees::resolveAmount`, repli `highestAmount` - EXACTEMENT
+  comme la page de paiement), le **tarif applicable** et l'échéance pratique (début de
+  l'événement, `date_start` - il n'y a pas de colonne d'échéance de paiement dédiée). Gesco
+  ne disait auparavant que « à régler » sans chiffre.
 - **Historique de reprogrammation = `slots.schedule_log`** (JSON, migration
   `2026_10_06_000100`). Capturé **automatiquement** par l'évènement `Slot::updated` :
   dès qu'un créneau portant une communication (`submission_id > 0`) et **déjà horodaté**

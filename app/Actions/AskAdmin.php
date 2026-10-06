@@ -9,6 +9,8 @@ use App\Models\Claim;
 use App\Models\Event;
 use App\Models\Formation;
 use App\Models\FormationEnrollment;
+use App\Models\ProjectMilestone;
+use App\Models\ProjectTask;
 use App\Models\SessionReport;
 use App\Models\Submission;
 use App\Models\User;
@@ -206,6 +208,23 @@ class AskAdmin
                 ->whereNotIn('status', ['resolved', 'closed'])->count();
             $claimLine = $openClaims > 0 ? 'Réclamations/incidents en cours : '.$openClaims : null;
 
+            // Pilotage du projet : jalons et tâches EN RETARD (échéance dépassée, non
+            // terminés). De quoi répondre « qu'est-ce qui est en retard sur le projet ».
+            $lateMilestones = ProjectMilestone::where('event_id', $event->id)->get()
+                ->filter(fn (ProjectMilestone $m) => $m->isOverdue());
+            $lateTasks = ProjectTask::where('event_id', $event->id)->get()
+                ->filter(fn (ProjectTask $t) => $t->isOverdue());
+            $projectLine = null;
+            if ($lateMilestones->isNotEmpty() || $lateTasks->isNotEmpty()) {
+                $detail = $lateMilestones->take(3)
+                    ->map(fn (ProjectMilestone $m) => '« '.Str::limit($m->title, 50).' » (jalon, échéance '.optional($m->due_date)->format('d/m/Y').')')
+                    ->merge($lateTasks->take(3)
+                        ->map(fn (ProjectTask $t) => '« '.Str::limit($t->title, 50).' » (tâche, échéance '.optional($t->due_date)->format('d/m/Y').')'))
+                    ->implode(', ');
+                $projectLine = 'Projet - EN RETARD : '.$lateMilestones->count().' jalon(s), '
+                    .$lateTasks->count().' tâche(s). '.$detail;
+            }
+
             $context = implode("\n", array_filter([
                 'Événement : '.($event->title ?: 'Événement').' ('.$event->year.') · statut '.$event->status
                     .($event->submission_deadline ? ' · clôture soumissions le '.$event->submission_deadline->translatedFormat('d/m/Y') : ''),
@@ -219,6 +238,7 @@ class AskAdmin
                 $formationLine,
                 $reportLine,
                 $claimLine,
+                $projectLine,
             ]));
 
             $knowledge = EventKnowledge::brief($event);

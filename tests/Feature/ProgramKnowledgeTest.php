@@ -6,6 +6,8 @@ use App\Models\Claim;
 use App\Models\EventSession;
 use App\Models\Formation;
 use App\Models\FormationEnrollment;
+use App\Models\ProjectMilestone;
+use App\Models\ProjectTask;
 use App\Models\Review;
 use App\Models\Slot;
 use App\Notifications\SystemNotification;
@@ -272,4 +274,55 @@ it('donne au copilote admin les relectures, formations et réclamations', functi
     $prompt = implode("\n", $captured);
     expect($prompt)->toContain('Relectures :')
         ->and($prompt)->toContain('Réclamations/incidents en cours');
+});
+
+it('signale au copilote admin les jalons et tâches de projet en retard', function () {
+    $captured = [];
+    capturingAi($captured);
+
+    $sub = seededSubmission('accepted');
+    $event = $sub->event;
+
+    ProjectMilestone::create([
+        'event_id' => $event->id, 'title' => 'Clôture des inscriptions',
+        'due_date' => now()->subDays(5)->toDateString(), 'status' => 'todo',
+    ]);
+    ProjectTask::create([
+        'event_id' => $event->id, 'title' => 'Imprimer les badges',
+        'due_date' => now()->subDays(2)->toDateString(), 'status' => 'todo', 'priority' => 'high',
+    ]);
+
+    $this->actingAs(adminStaff(), 'web')
+        ->postJson(route('admin.ai.ask'), ['question' => 'Quoi en retard ?', 'event_id' => $event->id])
+        ->assertOk();
+
+    $prompt = implode("\n", $captured);
+    expect($prompt)->toContain('Projet - EN RETARD')
+        ->and($prompt)->toContain('Clôture des inscriptions')
+        ->and($prompt)->toContain('Imprimer les badges');
+});
+
+it('donne à Gesco le montant exact dû et l’échéance du participant', function () {
+    $captured = [];
+    capturingAi($captured);
+
+    $sub = seededSubmission('accepted');
+    $event = $sub->event;
+    $event->update([
+        'date_start' => '2026-10-05',
+        'settings' => array_merge($event->settings ?? [], [
+            'fees' => [['label' => 'Enseignants-chercheurs', 'amount' => 35000, 'grades' => [], 'default' => true]],
+        ]),
+    ]);
+    $account = $sub->participant->user;
+
+    $this->actingAs($account, 'account')
+        ->postJson(route('gesco.ask'), ['question' => 'Combien je dois payer ?'])
+        ->assertOk();
+
+    $prompt = implode("\n", $captured);
+    expect($prompt)->toContain('Montant dû')
+        ->and($prompt)->toContain('35 000 FCFA')
+        ->and($prompt)->toContain('Enseignants-chercheurs')
+        ->and($prompt)->toContain('05/10/2026');
 });

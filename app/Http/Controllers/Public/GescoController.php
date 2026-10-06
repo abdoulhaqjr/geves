@@ -16,6 +16,7 @@ use App\Models\Slot;
 use App\Models\Submission;
 use App\Models\User;
 use App\Support\AiAgents;
+use App\Support\Fees;
 use App\Support\Notifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -241,10 +242,58 @@ class GescoController extends Controller
             $this->scheduleContext($participantIds),
             $this->engagementContext($account, $participantIds),
             $paymentLine,
+            $this->paymentDueContext($participantIds),
             'Badge participant : '.($paidCount > 0 ? 'disponible (généré après paiement), non téléchargeable ici - imprimé par l’organisation.' : 'sera disponible après confirmation du paiement.'),
             'Attestations : '.($att->isNotEmpty() ? $att->map->typeLabel()->unique()->implode(', ') : 'aucune émise pour l’instant').'.',
             $account->hasVerifiedEmail() ? 'E-mail vérifié.' : 'E-mail NON vérifié (à confirmer pour soumettre).',
         ]));
+    }
+
+    /**
+     * Montant EXACT dû par le participant (frais d'inscription), résolu depuis son
+     * grade comme la page de paiement (source unique {@see Fees::resolveAmount}), avec
+     * le tarif applicable et l'échéance pratique (début de l'événement). Une ligne par
+     * événement où des frais sont dus (communication acceptée, pas encore réglée).
+     *
+     * @param  Collection<int, int>  $participantIds
+     */
+    private function paymentDueContext($participantIds): string
+    {
+        if ($participantIds->isEmpty()) {
+            return '';
+        }
+
+        $participants = Participant::whereIn('id', $participantIds)->with('event')->get();
+
+        $lines = [];
+        foreach ($participants as $p) {
+            if (! $p->event || ! $p->hasAcceptedSubmission() || $p->hasPaid()) {
+                continue;
+            }
+
+            // Même résolution que la page de paiement : grade → tarif, repli sur le
+            // tarif le plus élevé si le grade n'est couvert par aucune catégorie.
+            $amount = Fees::resolveAmount($p->event, $p->title) ?? Fees::highestAmount($p->event);
+            if (! $amount) {
+                continue;
+            }
+
+            $label = null;
+            foreach (Fees::grid($p->event) as $tier) {
+                if ((float) ($tier['amount'] ?? 0) === (float) $amount) {
+                    $label = $tier['label'] ?? null;
+                    break;
+                }
+            }
+
+            $deadline = $p->event->date_start?->translatedFormat('d/m/Y');
+            $lines[] = 'Montant dû pour « '.($p->event->title ?: $p->event->year).' » : '
+                .number_format((float) $amount, 0, ',', ' ').' FCFA'
+                .($label ? ' (tarif « '.$label.' »)' : '')
+                .($deadline ? ', à régler avant le début de l’événement (le '.$deadline.')' : '').'.';
+        }
+
+        return $lines === [] ? '' : implode("\n", $lines);
     }
 
     /**
