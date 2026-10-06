@@ -40,7 +40,7 @@ class GescoController extends Controller
     {
         // Identité de l'assistante (nom + avatar) paramétrée dans Réglages · Agents IA.
         $agent = AiAgents::find('gesco') ?? AiAgents::defaults()[0];
-        $avatarUrl = filled($agent['avatar']) ? '/storage/'.ltrim((string) $agent['avatar'], '/') : null;
+        $avatarUrl = AiAgents::avatarUrl($agent['avatar']);
 
         return view('public.gesco', [
             'agentName' => $agent['name'] ?: 'Gesco',

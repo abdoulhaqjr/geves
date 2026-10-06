@@ -34,7 +34,7 @@ class AiAssistantController extends Controller
     {
         // Identité de l'assistant (nom + avatar) paramétrée dans Réglages · Agents IA.
         $agent = AiAgents::find('admin') ?? AiAgents::defaults()[1];
-        $avatarUrl = filled($agent['avatar']) ? '/storage/'.ltrim((string) $agent['avatar'], '/') : null;
+        $avatarUrl = AiAgents::avatarUrl($agent['avatar']);
 
         // Événements accessibles à l'utilisateur : l'assistant répond selon sa/ses
         // fonction(s) DANS le colloque sélectionné.

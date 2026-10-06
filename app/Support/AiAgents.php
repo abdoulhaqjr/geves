@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -16,6 +17,68 @@ use Illuminate\Support\Str;
 class AiAgents
 {
     /**
+     * Galerie d'avatars fournis avec le produit (dans `public/img/agents`). On ne
+     * téléverse plus d'image depuis l'ordinateur : l'admin choisit un visage dans
+     * cette galerie. Les `marc-*` (hommes) conviennent au copilote admin « Marc »,
+     * les `awa-*` (femmes) à l'assistante publique ; pour un NOUVEL agent, l'admin
+     * pioche librement parmi les huit. ⚠️ Chemins web relatifs (servis statiquement
+     * via `asset()`), pas des chemins du disque `public` (≠ anciens téléversements).
+     *
+     * @var list<array{path: string, group: string}>
+     */
+    public const GALLERY = [
+        ['path' => 'img/agents/marc-1.png', 'group' => 'marc'],
+        ['path' => 'img/agents/marc-2.webp', 'group' => 'marc'],
+        ['path' => 'img/agents/marc-3.webp', 'group' => 'marc'],
+        ['path' => 'img/agents/marc-4.png', 'group' => 'marc'],
+        ['path' => 'img/agents/awa-1.webp', 'group' => 'awa'],
+        ['path' => 'img/agents/awa-2.webp', 'group' => 'awa'],
+        ['path' => 'img/agents/awa-3.webp', 'group' => 'awa'],
+        ['path' => 'img/agents/awa-4.png', 'group' => 'awa'],
+    ];
+
+    /** Les chemins valides de la galerie (pour la validation). @return list<string> */
+    public static function galleryPaths(): array
+    {
+        return array_map(fn (array $a) => $a['path'], self::GALLERY);
+    }
+
+    /**
+     * La galerie prête pour l'éditeur (chemin relatif + URL servie + groupe).
+     *
+     * @return list<array{path: string, url: string, group: string}>
+     */
+    public static function galleryForJs(): array
+    {
+        return array_map(fn (array $a) => [
+            'path' => $a['path'],
+            'url' => asset($a['path']),
+            'group' => $a['group'],
+        ], self::GALLERY);
+    }
+
+    /**
+     * URL servable d'un avatar d'agent, ou null si aucun. Gère trois formes :
+     * galerie fournie (`img/agents/…` → `asset()`), URL absolue, et ANCIEN
+     * téléversement sur le disque `public` (repli `Storage::url()`).
+     */
+    public static function avatarUrl(?string $avatar): ?string
+    {
+        $avatar = trim((string) $avatar);
+        if ($avatar === '') {
+            return null;
+        }
+        if (Str::startsWith($avatar, ['http://', 'https://'])) {
+            return $avatar;
+        }
+        if (Str::startsWith($avatar, 'img/')) {
+            return asset($avatar);
+        }
+
+        return Storage::disk('public')->url($avatar);
+    }
+
+    /**
      * Agents fournis par défaut si rien n'est configuré.
      *
      * @return list<Agent>
@@ -28,7 +91,7 @@ class AiAgents
                 'name' => 'Gesco',
                 'audience' => 'participants',
                 'enabled' => true,
-                'avatar' => '',
+                'avatar' => 'img/agents/awa-1.webp',
                 'persona' => "Tu es Gesco, l'assistante officielle des colloques de l'Université de Kara (DRI). "
                     .'Tu aides les participants et auteurs sur : soumissions, inscriptions, paiements, programme, '
                     .'créneaux, badges et attestations. Tu es professionnelle, claire, bienveillante et concise. '
@@ -48,7 +111,7 @@ class AiAgents
                 'name' => 'Marc',
                 'audience' => 'admin',
                 'enabled' => true,
-                'avatar' => '',
+                'avatar' => 'img/agents/marc-1.png',
                 'persona' => "Tu es Marc, le copilote d'administration de ".config('app.name').'. Tu assistes le personnel de la DRI '
                     .'dans la gestion des événements, soumissions, créneaux et documents. Tu proposes des actions et '
                     .'des synthèses ; tu ne les exécutes jamais seul. Tu présentes tes réponses de façon lisible : '

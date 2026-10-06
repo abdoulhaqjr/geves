@@ -505,7 +505,7 @@
         {{-- Agents IA : septième onglet, mais formulaire DISTINCT (il s'enregistre
              en PUT sur sa propre route) - d'où sa place hors du formulaire
              ci-dessus, deux formulaires imbriqués étant impossibles. --}}
-        <div class="ukc-panel" :class="{ active: tab==='agents-ia' }" x-data="agentsEditor(@js($agents))">
+        <div class="ukc-panel" :class="{ active: tab==='agents-ia' }" x-data="agentsEditor(@js($agents), @js(\App\Support\AiAgents::galleryForJs()))">
             @include('admin.settings._agents')
         </div>
     </div>

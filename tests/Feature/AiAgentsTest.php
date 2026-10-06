@@ -2,8 +2,6 @@
 
 use App\Support\AiAgents;
 use App\Support\Settings;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 
 // adminStaff() -> défini dans les helpers de tests partagés
 
@@ -76,35 +74,38 @@ it('supprime un agent', function () {
     expect(AiAgents::all())->toHaveCount(2);
 });
 
-it('téléverse un avatar d’agent et le persiste', function () {
-    Storage::fake('public');
+it('choisit un avatar de la galerie et le persiste', function () {
+    $path = AiAgents::galleryPaths()[0];
 
     $this->actingAs(adminStaff(), 'web')->put(route('admin.settings.agents.update'), [
-        'agents' => [['key' => 'gesco', 'name' => 'Gesco', 'audience' => 'participants', 'avatar' => '']],
-        'avatars' => [0 => UploadedFile::fake()->image('gesco.png', 120, 120)],
+        'agents' => [['key' => 'gesco', 'name' => 'Gesco', 'audience' => 'participants', 'avatar' => $path]],
     ])->assertSessionHasNoErrors();
 
-    $agent = AiAgents::all()[0];
-    expect($agent['avatar'])->not->toBe('');
-    Storage::disk('public')->assertExists($agent['avatar']);
+    expect(AiAgents::all()[0]['avatar'])->toBe($path);
 });
 
-it('rejette un avatar non-image', function () {
-    Storage::fake('public');
-
+it('rejette un avatar hors de la galerie', function () {
     $this->actingAs(adminStaff(), 'web')->put(route('admin.settings.agents.update'), [
-        'agents' => [['key' => 'gesco', 'name' => 'Gesco', 'audience' => 'participants']],
-        'avatars' => [0 => UploadedFile::fake()->create('malware.pdf', 100, 'application/pdf')],
-    ])->assertSessionHasErrors('avatars.0');
+        'agents' => [['key' => 'gesco', 'name' => 'Gesco', 'audience' => 'participants', 'avatar' => 'img/agents/pirate.png']],
+    ])->assertSessionHasErrors('agents.0.avatar');
 });
 
-it('retire l’avatar d’un agent', function () {
-    Storage::fake('public');
-
+it('retire l’avatar d’un agent (choix vide)', function () {
     $this->actingAs(adminStaff(), 'web')->put(route('admin.settings.agents.update'), [
-        'agents' => [['key' => 'gesco', 'name' => 'Gesco', 'audience' => 'participants', 'avatar' => 'ai-agents/x.png']],
-        'remove_avatar' => [0 => '1'],
+        'agents' => [['key' => 'gesco', 'name' => 'Gesco', 'audience' => 'participants', 'avatar' => '']],
     ])->assertSessionHasNoErrors();
 
     expect(AiAgents::all()[0]['avatar'])->toBe('');
+});
+
+it('résout l’URL d’un avatar de galerie et d’un ancien téléversement', function () {
+    expect(AiAgents::avatarUrl('img/agents/marc-1.png'))->toContain('/img/agents/marc-1.png')
+        ->and(AiAgents::avatarUrl('ai-agents/x.png'))->toContain('ai-agents/x.png')
+        ->and(AiAgents::avatarUrl(''))->toBeNull()
+        ->and(AiAgents::avatarUrl(null))->toBeNull();
+});
+
+it('donne un avatar de galerie par défaut aux deux agents', function () {
+    expect(AiAgents::find('admin')['avatar'])->toContain('img/agents/marc-')
+        ->and(AiAgents::find('gesco')['avatar'])->toContain('img/agents/awa-');
 });

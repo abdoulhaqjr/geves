@@ -37,35 +37,31 @@
                     <input type="hidden" :name="'agents['+i+'][key]'" :value="agent.key">
                     <input type="hidden" :name="'agents['+i+'][avatar]'" :value="agent.avatar">
 
-                    {{-- Avatar de l'agent --}}
-                    <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--ukc-border);"
-                         x-data="{ removed: false, fileName: '' }">
+                    {{-- Avatar de l'agent : CHOISI dans la galerie fournie (plus de
+                         téléversement). Le visage retenu s'affiche dans le chat. --}}
+                    <div style="display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--ukc-border);">
                         <div style="width:72px;height:72px;border-radius:50%;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,var(--ukc-blue),var(--ukc-green));color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(20,40,90,.12);">
-                            <template x-if="agent.avatar && !removed">
-                                <img :src="'/storage/' + agent.avatar" alt="Avatar de l’agent" style="width:100%;height:100%;object-fit:cover;">
+                            <template x-if="agent.avatar">
+                                <img :src="avatarUrl(agent.avatar)" alt="Avatar de l’agent" style="width:100%;height:100%;object-fit:cover;">
                             </template>
-                            <template x-if="!agent.avatar || removed">
+                            <template x-if="!agent.avatar">
                                 <span><x-ukc.icon name="sparkles" :size="30" /></span>
                             </template>
                         </div>
-                        <div style="min-width:0;">
-                            <label style="font-size:13px;font-weight:700;display:block;margin-bottom:6px;">Avatar de l’agent</label>
-                            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-                                <label class="ukc-btn ukc-btn--outline ukc-btn--sm" style="cursor:pointer;">
-                                    <x-ukc.icon name="upload" :size="16" />
-                                    <span x-text="fileName || 'Choisir une image'"></span>
-                                    <input type="file" :name="'avatars['+i+']'" @change="fileName = $event.target.files[0]?.name || ''; removed = false"
-                                           accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display:none;">
-                                </label>
-                                <template x-if="agent.avatar">
-                                    <label class="ukc-btn ukc-btn--ghost ukc-btn--sm" style="cursor:pointer;">
-                                        <input type="checkbox" :name="'remove_avatar['+i+']'" value="1" x-model="removed" style="display:none;">
-                                        <span x-text="removed ? 'Sera retiré' : 'Retirer'"></span>
-                                    </label>
+                        <div style="min-width:0;flex:1;">
+                            <label style="font-size:13px;font-weight:700;display:block;margin-bottom:8px;">Avatar de l’agent <span style="font-weight:500;color:var(--ukc-muted);">· choisissez un visage</span></label>
+                            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                                <template x-for="g in gallery" :key="g.path">
+                                    <button type="button" @click="pickAvatar(i, g.path)"
+                                            :title="g.group === 'marc' ? 'Visage (homme)' : 'Visage (femme)'"
+                                            style="width:52px;height:52px;border-radius:50%;overflow:hidden;cursor:pointer;padding:0;background:none;transition:transform .12s;"
+                                            :style="agent.avatar === g.path ? 'border:3px solid var(--ukc-blue);box-shadow:0 0 0 2px #fff inset;transform:scale(1.05);' : 'border:2px solid var(--ukc-border);'">
+                                        <img :src="g.url" alt="" style="width:100%;height:100%;object-fit:cover;">
+                                    </button>
                                 </template>
                             </div>
-                            @error('avatars.*') <span class="error">{{ $message }}</span> @enderror
-                            <p style="font-size:12px;color:var(--ukc-light);margin-top:6px;">PNG, JPG, WEBP ou SVG · 2 Mo max. Affiché dans le chat de l’agent.</p>
+                            @error('agents.*.avatar') <span class="error">{{ $message }}</span> @enderror
+                            <p style="font-size:12px;color:var(--ukc-light);margin-top:8px;">Cliquez un visage pour le choisir (recliquez pour l’enlever). Affiché dans le chat de l’agent.</p>
                         </div>
                     </div>
 

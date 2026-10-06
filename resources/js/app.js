@@ -1889,8 +1889,10 @@ document.addEventListener('alpine:init', () => {
 
     // Éditeur d'agents IA (admin) : onglets, ajout/suppression côté client ;
     // les avatars sont téléversés à l'enregistrement du formulaire.
-    window.Alpine.data('agentsEditor', (agents = []) => ({
+    window.Alpine.data('agentsEditor', (agents = [], gallery = []) => ({
         agents: Array.isArray(agents) ? agents : [],
+        // Galerie d'avatars fournie (public/img/agents) : [{ path, url, group }].
+        gallery: Array.isArray(gallery) ? gallery : [],
         active: 0,
         addAgent() {
             this.agents.push({
@@ -1903,6 +1905,16 @@ document.addEventListener('alpine:init', () => {
         removeAgent(i) {
             this.agents.splice(i, 1);
             this.active = Math.max(0, Math.min(this.active, this.agents.length - 1));
+        },
+        // Choisit un avatar de la galerie pour l'agent courant (re-cliquer = retirer).
+        pickAvatar(i, path) {
+            this.agents[i].avatar = this.agents[i].avatar === path ? '' : path;
+        },
+        // URL servable d'un chemin d'avatar (galerie `img/…` ou ancien téléversement).
+        avatarUrl(avatar) {
+            if (!avatar) return '';
+            if (/^https?:\/\//.test(avatar)) return avatar;
+            return avatar.startsWith('img/') ? '/' + avatar : '/storage/' + avatar;
         },
     }));
 

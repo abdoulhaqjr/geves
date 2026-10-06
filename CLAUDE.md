@@ -1718,6 +1718,17 @@ Deux mises en œuvre, selon la page :
   pas. Le bouton « Enregistrer les réglages » est masqué sur cet onglet, sans
   quoi deux boutons d'enregistrement voisinaient sans dire ce qu'ils couvrent.
   Tests : `tests/Feature/AdminSettingsTest.php`, `tests/Feature/AiAgentsTest.php`.
+- ⚠️ **Avatar d'agent = CHOISI dans une galerie fournie, plus de téléversement.** Les
+  huit visages vivent dans **`public/img/agents/`** (`marc-*` hommes, `awa-*` femmes) et
+  sont déclarés dans **`AiAgents::GALLERY`**. Marc (copilote admin) a `marc-1` par défaut,
+  l'agent public (Gesco) `awa-1` ; pour un nouvel agent, l'admin pioche parmi les huit
+  (`AiAgents::galleryForJs()` alimente l'éditeur Alpine `agentsEditor`). On ne stocke
+  qu'un **chemin de galerie** (ou vide) : `SettingAgentController` valide `avatar` ∈
+  galerie ∪ '' ∪ avatars **déjà enregistrés** (tolère un ancien téléversement, ⚠️ la
+  tolérance vient des agents STOCKÉS - jamais de la requête, qui s'autoriserait elle-même).
+  Rendu via **`AiAgents::avatarUrl()`** (source unique) : `img/…` → `asset()`, URL absolue
+  telle quelle, sinon repli `Storage::url()` pour un ancien upload. ⚠️ Ne pas réintroduire
+  l'`<input type=file>` ni la logique `avatars.*`/`remove_avatar.*` (retirées).
 
 ### Actions IA du back-office = AJAX + voile de travail
 

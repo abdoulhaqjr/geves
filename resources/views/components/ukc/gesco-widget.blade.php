@@ -1,11 +1,10 @@
 @php
     use App\Support\AiAgents;
-    use Illuminate\Support\Facades\Storage;
 
     // Avatar de l'agent public (participants) configuré dans les réglages IA.
     $agent = collect(AiAgents::all())->firstWhere('audience', 'participants') ?? AiAgents::find('gesco');
     $agentName = $agent['name'] ?? 'Gesco';
-    $agentAvatar = ($agent['avatar'] ?? '') !== '' ? Storage::url($agent['avatar']) : null;
+    $agentAvatar = AiAgents::avatarUrl($agent['avatar'] ?? null);
 
     // Mascotte Gesco (dame au chapeau académique) - SVG autonome.
     $mascot = '<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:100%;height:100%;">'
