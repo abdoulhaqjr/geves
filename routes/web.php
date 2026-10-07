@@ -134,8 +134,9 @@ Route::get('/visio/{type}/{id}/messages.txt', [MeetingChatController::class, 'ex
 // une coupure, sans recharger la page. Les droits sont recalculés.
 Route::get('/visio/{type}/{id}/jeton', [MeetingController::class, 'token'])->name('meeting.token');
 
-// Engagement live d'une séance (Q&A + sondages) - accès géré dans le contrôleur.
-Route::get('/session/{session}/echanges', [SessionEngagementController::class, 'page'])->name('session.engagement');
+// Engagement live d'une séance (Q&A + sondages) = points d'entrée JSON SEULEMENT,
+// consommés par l'onglet « Échanges » de la salle de visio. Plus de page autonome :
+// les échanges se tiennent exclusivement dans la visio. Accès géré dans le contrôleur.
 Route::get('/session/{session}/echanges/questions', [SessionEngagementController::class, 'questions'])->name('session.engagement.questions');
 Route::post('/session/{session}/echanges/questions', [SessionEngagementController::class, 'ask'])->name('session.engagement.ask');
 Route::post('/session/{session}/echanges/questions/{question}/vote', [SessionEngagementController::class, 'vote'])->name('session.engagement.vote');

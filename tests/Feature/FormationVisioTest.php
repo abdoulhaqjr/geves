@@ -63,11 +63,11 @@ it('ouvre la salle du module visio quand la visio est en cours et l’accès aut
 it('la salle visio d’une formation indique l’état sans donner l’accès', function () {
     $event = openEdition();
 
-    // Non en cours : la page s'affiche mais annonce que la visio n'est pas en cours.
+    // Hors direct : la page s'affiche selon le statut (aucune visio ici), sans salle.
     $off = Formation::create(['event_id' => $event->id, 'title' => 'Off', 'fee' => 0, 'published' => true, 'meeting_status' => 'none']);
     $this->actingAs(verifiedAccount(), 'account')->get(route('account.formations.visio', $off))
         ->assertOk()
-        ->assertSee('n’est pas en cours', false)
+        ->assertSee('Aucune visio', false)
         ->assertDontSee('jitsi-container', false);
 
     // En cours mais non inscrit : accès réservé, aucune salle embarquée.

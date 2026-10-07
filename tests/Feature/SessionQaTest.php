@@ -7,10 +7,11 @@ use App\Models\SessionQuestion;
 it('refuse l’accès à un invité pour une séance réservée aux participants', function () {
     // ⚠️ L'accès à une séance est PUBLIC par défaut : on exerce ici le cas où le
     // gestionnaire a restreint aux inscrits (sinon un invité y aurait accès).
+    // Les échanges n'ont plus de page autonome : la garde vit sur les endpoints JSON.
     $session = sessionFor(openEdition());
     $session->update(['meeting_visibility' => 'participants']);
 
-    $this->get(route('session.engagement', $session))->assertForbidden();
+    $this->getJson(route('session.engagement.questions', $session))->assertForbidden();
 });
 
 it('permet à un participant inscrit de poser une question', function () {
@@ -19,7 +20,7 @@ it('permet à un participant inscrit de poser une question', function () {
     $account = participantAccount($event);
 
     $this->actingAs($account, 'account')
-        ->get(route('session.engagement', $session))->assertOk();
+        ->getJson(route('session.engagement.questions', $session))->assertOk();
 
     $this->actingAs($account, 'account')
         ->postJson(route('session.engagement.ask', $session), ['body' => 'Comment gérez-vous les biais ?'])

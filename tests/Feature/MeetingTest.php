@@ -181,7 +181,7 @@ it('la page visio embarque la salle pour un inscrit', function () {
 
     $this->actingAs($account, 'account')->get(route('session.meeting', $session))
         ->assertOk()
-        ->assertSee('EN DIRECT')
+        ->assertSee('En direct')
         ->assertSee('JitsiMeetExternalAPI');
 });
 
@@ -211,7 +211,7 @@ it('la page visio indique quand la visio n’est pas en cours', function () {
 
     $this->get(route('session.meeting', $session))
         ->assertOk()
-        ->assertSee('pas en cours')
+        ->assertSee('pas encore commencé')
         ->assertDontSee('JitsiMeetExternalAPI');
 });
 

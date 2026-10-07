@@ -992,21 +992,26 @@ renseigne, pour **son** édition, le fournisseur, les identifiants du serveur
   stable qu'une haute définition qui saccade.
 - Tests : `tests/Feature/EditionMeetingConfigTest.php`.
 
-### Les échanges : pourquoi ils ne sont plus sur une page à part
+### Les échanges (Q&A + sondages) = EXCLUSIVEMENT dans la visio
 
-Questions et sondages vivaient sur une **autre page** (`/session/{id}/echanges`),
+Questions et sondages vivaient sur une **page autonome** (`/session/{id}/echanges`),
 atteinte par un lien de la barre du haut de la visio : ⚠️ poser une question
 obligeait à **quitter la visio**, donc à cesser de voir et d'entendre ce dont on
 voulait parler. Ils sont un **onglet du panneau** (« Échanges »), au-dessus du
 chat et des participants.
 
-- ⚠️ **Aucune règle n'est réécrite** : la salle appelle les **mêmes points d'entrée
-  JSON** que la page autonome (`SessionEngagementController`), et c'est le serveur
-  qui dit qui peut poser, voter et modérer. Masquer un bouton n'a jamais protégé
-  personne. L'onglet n'apparaît que si le serveur a donné les adresses
-  (`cfg.engagement`, posées sous la même garde `canJoin()` que la salle).
-- **La page autonome demeure** : une séance peut se tenir en présentiel avec des
-  questions à distance, sans visio. Seul le lien **dans la salle** a disparu.
+- ⚠️ **La page autonome a été SUPPRIMÉE** (route `session.engagement`, méthode
+  `SessionEngagementController::page`, vue `session/engagement.blade.php` -
+  toutes retirées) : les échanges se tiennent **exclusivement dans la salle de
+  visio**. `SessionEngagementController` n'expose plus que des **points d'entrée
+  JSON** (`questions`/`ask`/`vote`/`moderate`/`polls`/`createPoll`/`votePoll`/
+  `togglePoll`), consommés par l'onglet « Échanges » de `resources/js/meeting.js`.
+  Ne pas recréer une page HTML : un sondage se répond là où se tient la séance.
+- ⚠️ **Aucune règle JSON n'est réécrite** : c'est le serveur qui dit qui peut
+  poser, voter et modérer (`abort_unless($role->canJoin())` / `isModerator()`).
+  Masquer un bouton n'a jamais protégé personne. L'onglet n'apparaît que si le
+  serveur a donné les adresses (`cfg.engagement`, posées sous la même garde
+  `canJoin()` que la salle). Tests : `SessionQaTest` (garde sur les endpoints JSON).
 - **Rafraîchissement** : toutes les 10 s **panneau ouvert sur cet onglet
   seulement** - la salle entière interrogeant le serveur pour un panneau que
   personne ne regarde, c'est du bruit pur. Entre-temps, une annonce sur le canal
@@ -1052,9 +1057,9 @@ aligné sur **modérer** ; `/animation` reste en **redirection** (signets, courr
   `SessionPassageController::edit` (garde `SessionPresence::canManage` : modérateur **ou**
   rapporteur) ; le constat lui-même passe toujours par `session.passage` (même garde
   horaire serveur). La liste des communications reste en **lecture** sur la carte, avec la
-  pastille « Passage validé ». (Les échanges Q&A/sondages restent accessibles DANS la
-  salle de visio et via la page autonome `session.engagement` ; seul le bouton de la carte
-  de modération a disparu.)
+  pastille « Passage validé ». (Les échanges Q&A/sondages se tiennent **exclusivement
+  dans la salle de visio** - la page autonome a été supprimée, cf. « Les échanges =
+  EXCLUSIVEMENT dans la visio ».)
 - ⚠️ **Un modérateur ne valide pas un passage avant l'heure de sa séance** : la page ne
   montre les boutons que si `hasStarted()`, et `SessionPassageController::store` refuse
   (`abort_unless($session->hasStarted())`) de toute façon. Tests :
@@ -1094,6 +1099,17 @@ aligné sur **modérer** ; `/animation` reste en **redirection** (signets, courr
   mode public) - ne pas aligner les deux. Un test qui veut exercer l'accès restreint d'une
   séance doit poser `meeting_visibility => 'participants'` explicitement (cf. `SessionQaTest`,
   `MeetingTest`). Tests : `MeetingTest`.
+- **Page « hors salle » = SALLE D'ATTENTE adaptée au statut** (`meeting/join.blade.php`,
+  branche hors LiveKit). Elle n'affiche plus un message générique « La visio n'est pas en
+  cours / Revenez à l'heure prévue » : le contrôleur passe `meetingStatus` (enum) et la vue
+  rend une carte par état - **programmée** (icône agenda + « Début prévu » + la page
+  **se recharge toute seule toutes les 60 s** pour entrer dès l'ouverture auto de la salle),
+  **terminée** (replay si dispo), **réservée** (accès inscrits), **connexion requise**
+  (invité sur séance live réservée), **salle en préparation** (live sans lien fournisseur),
+  **aucune visio**. Pastille de statut dans l'en-tête (`MeetingStatus::pill()/label()`),
+  charte UK (`.mlobby-*`, styles en tête de la branche). ⚠️ **Pas de `use` dans le bloc
+  `@php` d'une vue** (erreur de compilation « unexpected token use ») : l'enum est écrite en
+  nom complet `\App\Enums\MeetingStatus::…`, y compris dans les `@if`.
 - ⚠️ **Nom de salle TOUJOURS unique par séance** (`EventSession::meetingRoom()` /
   `Formation::meetingRoom()`). `meeting_room` n'est qu'une **étiquette** : s'il était employé
   tel quel comme nom de salle LiveKit/Jitsi, deux séances portant la même (« Salle 3 »

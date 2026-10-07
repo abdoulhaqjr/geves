@@ -12,31 +12,18 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\View\View;
 
 /**
- * Engagement live d'une séance (contrôleur + Blade + endpoints JSON, sans
- * Livewire) : espace d'échange « à côté » de la visio pour poser des questions
- * (Q&A voté par le public, modéré) et répondre aux sondages. Rafraîchissement
- * par fetch périodique (pas de WebSocket requis). L'accès reprend les règles de
- * la visio (participant inscrit / séance publique / staff / modérateur).
+ * Engagement live d'une séance : questions (Q&A voté par le public, modéré) et
+ * sondages. ⚠️ Points d'entrée JSON UNIQUEMENT - ils alimentent l'onglet
+ * « Échanges » du panneau de la salle de visio (`resources/js/meeting.js`).
+ * Il n'y a plus de page autonome : les échanges se tiennent exclusivement DANS
+ * la visio. Rafraîchissement par fetch périodique (pas de WebSocket requis).
+ * L'accès reprend les règles de la visio (participant inscrit / séance publique
+ * / staff / modérateur).
  */
 class SessionEngagementController extends Controller
 {
-    /** Page d'échange d'une séance. */
-    public function page(EventSession $session): View
-    {
-        [$account, $isStaff, $role] = $this->viewer($session);
-        abort_unless($role->canJoin(), 403);
-
-        return view('session.engagement', [
-            'session' => $session->load('event'),
-            'canModerate' => $role->isModerator() || $isStaff,
-            'canPost' => $account !== null,
-            'isGuest' => ! $account && ! $isStaff,
-        ]);
-    }
-
     /**
      * Liste des questions (JSON) - ce qui ATTEND passe devant, puis les plus
      * votées, puis les plus anciennes.

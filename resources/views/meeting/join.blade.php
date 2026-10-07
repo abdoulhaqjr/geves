@@ -1487,39 +1487,59 @@
 
     <script type="application/json" id="lk-config">@json($liveKit)</script>
 @else
-    {{-- ============ Jitsi / lien externe / messages ============ --}}
-    <div style="display:flex;flex-direction:column;height:100vh;">
-        <header style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
-                       padding:10px clamp(12px,3vw,24px);background:#fff;border-bottom:1px solid var(--ukc-border);">
-            <div style="min-width:0;">
-                <div style="display:flex;align-items:center;gap:8px;">
-                    @if ($isLive)
-                        <span class="ukc-pill ukc-pill--err" style="display:inline-flex;align-items:center;gap:5px;">
-                            <span style="width:8px;height:8px;border-radius:50%;background:currentColor;"></span> EN DIRECT
-                        </span>
-                    @endif
-                    <strong style="font-size:1rem;">{{ $label }}</strong>
-                </div>
-                <div style="font-size:.8rem;color:var(--ukc-muted);">
-                    {{ $editionTitle }}
-                    @if ($role->canJoin()) · Vous rejoignez en tant que
-                        <strong>{{ ['moderator' => 'modérateur', 'presenter' => 'présentateur', 'attendee' => 'participant'][$role->value] ?? '' }}</strong>
-                    @endif
-                </div>
+    {{-- ============ Hors salle LiveKit : Jitsi intégré, lien externe, ou état
+         « hors direct » ============
+         ⚠️ Cette page s'affiche SELON LE STATUT de la visio (programmée → salle
+         d'attente avec le début prévu ; terminée → replay ; réservée → connexion).
+         Plus de bouton « Questions & sondages » : les échanges se tiennent
+         EXCLUSIVEMENT dans la salle de visio (onglet « Échanges » du panneau). --}}
+    <style>
+        .mlobby{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;background:#eef1f6;}
+        .mlobby-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+            padding:12px clamp(12px,3vw,24px);background:#fff;border-bottom:1px solid var(--ukc-border);}
+        .mlobby-head{min-width:0;display:flex;flex-direction:column;gap:2px;}
+        .mlobby-head strong{font-size:1rem;color:#14205a;}
+        .mlobby-head span{font-size:.8rem;color:var(--ukc-muted);}
+        .mlobby-top-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+        .mlobby-main{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;
+            padding:clamp(16px,5vw,40px);}
+        .mlobby-main.is-embed{padding:0;align-items:stretch;}
+        .mlobby-card{width:100%;max-width:480px;background:#fff;border:1px solid var(--ukc-border);
+            border-radius:18px;box-shadow:0 18px 50px -24px rgba(20,32,90,.35);
+            padding:clamp(24px,5vw,40px);text-align:center;}
+        .mlobby-ico{width:72px;height:72px;border-radius:50%;display:inline-flex;align-items:center;
+            justify-content:center;margin-bottom:14px;color:var(--ukc-blue);background:#e8ecfb;}
+        .mlobby-card--muted .mlobby-ico{color:var(--ukc-muted);background:#eef1f6;}
+        .mlobby-card--warn .mlobby-ico{color:#b45309;background:#fef3e2;}
+        .mlobby-card--ok .mlobby-ico{color:var(--ukc-green);background:#e6f6ec;}
+        .mlobby-ttl{font-size:1.3rem;margin:2px 0 8px;color:#14205a;}
+        .mlobby-lead{color:var(--ukc-muted);line-height:1.55;margin:0 auto;max-width:38ch;}
+        .mlobby-when{display:inline-flex;align-items:center;gap:12px;margin-top:20px;padding:12px 18px;
+            border-radius:12px;background:#eef1f6;color:var(--ukc-blue);text-align:left;}
+        .mlobby-when small{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;
+            color:var(--ukc-muted);margin-bottom:1px;}
+        .mlobby-when strong{display:block;font-size:.98rem;color:#14205a;}
+        .mlobby-acts{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:24px;}
+        @media (prefers-color-scheme: dark){ .mlobby{background:#0f1726;} }
+    </style>
+    <div class="mlobby">
+        <header class="mlobby-top">
+            <div class="mlobby-head">
+                <strong>{{ $label }}</strong>
+                <span>
+                    {{ $editionTitle }}@if ($role->canJoin()) · Vous rejoignez en tant que
+                        <strong>{{ ['moderator' => 'modérateur', 'presenter' => 'présentateur', 'attendee' => 'participant'][$role->value] ?? '' }}</strong>@endif
+                </span>
             </div>
-            <div style="display:flex;gap:8px;">
-                @if ($engagementUrl)
-                    <a href="{{ $engagementUrl }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">
-                        <x-ukc.icon name="inbox" :size="16" /> Questions &amp; sondages
-                    </a>
-                @endif
+            <div class="mlobby-top-right">
+                <span class="ukc-pill ukc-pill--{{ $meetingStatus->pill() }}">{{ $meetingStatus->label() }}</span>
                 <a href="{{ $backUrl }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
                     <x-ukc.icon name="close" :size="16" /> Quitter
                 </a>
             </div>
         </header>
 
-        <main style="flex:1;min-height:0;display:flex;">
+        <main class="mlobby-main {{ $embed ? 'is-embed' : '' }}">
             @if ($embed)
                 <div id="jitsi-container" style="flex:1;width:100%;height:100%;"></div>
                 <script src="https://{{ $embed['domain'] }}/external_api.js"></script>
@@ -1538,48 +1558,85 @@
                     })();
                 </script>
             @elseif ($externalUrl)
-                <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:24px;">
-                    <div class="ukc-card" style="max-width:460px;text-align:center;">
-                        <span class="ico" style="display:inline-flex;color:var(--ukc-blue);margin-bottom:8px;"><x-ukc.icon name="video" :size="34" /></span>
-                        <h3 style="margin-bottom:6px;">Rejoindre la visio</h3>
-                        <p style="color:var(--ukc-muted);">La salle s’ouvre dans un nouvel onglet.</p>
-                        <a href="{{ $externalUrl }}" target="_blank" rel="noopener" class="ukc-btn ukc-btn--blue" style="margin-top:14px;">
+                <div class="mlobby-card mlobby-card--ok">
+                    <span class="mlobby-ico"><x-ukc.icon name="video" :size="30" /></span>
+                    <h1 class="mlobby-ttl">Rejoindre la visio</h1>
+                    <p class="mlobby-lead">La salle s’ouvre dans un nouvel onglet.</p>
+                    <div class="mlobby-acts">
+                        <a href="{{ $externalUrl }}" target="_blank" rel="noopener" class="ukc-btn ukc-btn--blue">
                             <x-ukc.icon name="external" :size="16" /> Ouvrir la salle
                         </a>
-                    </div>
-                </div>
-            @elseif ($isLive && $role->canJoin())
-                <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:24px;">
-                    <div class="ukc-card" style="max-width:460px;text-align:center;">
-                        <h3 style="margin-bottom:6px;">Salle non configurée</h3>
-                        <p style="color:var(--ukc-muted);">Le lien de la réunion n’a pas encore été renseigné par l’organisation.</p>
+                        <a href="{{ $backUrl }}" class="ukc-btn ukc-btn--outline">Retour</a>
                     </div>
                 </div>
             @else
-                <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:24px;">
-                    <div class="ukc-card" style="max-width:460px;text-align:center;">
-                        <span class="ico" style="display:inline-flex;color:var(--ukc-blue);margin-bottom:8px;"><x-ukc.icon name="video" :size="34" /></span>
-                        @if (! $isLive)
-                            <h3 style="margin-bottom:6px;">La visio n’est pas en cours</h3>
-                            <p style="color:var(--ukc-muted);">
-                                {{ $statusLabel }}.
-                                {{ $startsAt
-                                    ? __('Revenez à l’heure prévue (:date).', ['date' => $startsAt->translatedFormat('d F, H:i')])
-                                    : __('Revenez à l’heure prévue.') }}
-                            </p>
-                            @if ($recordingUrl)
-                                <a href="{{ $recordingUrl }}" target="_blank" class="ukc-btn ukc-btn--blue" style="margin-top:14px;"><x-ukc.icon name="video" :size="16" /> Voir le replay</a>
-                            @endif
-                        @elseif ($isGuest)
-                            <h3 style="margin-bottom:6px;">Connexion requise</h3>
-                            <p style="color:var(--ukc-muted);">Cette visio est réservée aux participants inscrits.</p>
-                            <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--blue" style="margin-top:14px;"><x-ukc.icon name="login" :size="16" /> Se connecter</a>
-                        @else
-                            <h3 style="margin-bottom:6px;">Accès réservé</h3>
-                            <p style="color:var(--ukc-muted);">Cette visio est réservée aux participants inscrits de cet événement.</p>
+                @php
+                    // L'état d'affichage découle du statut de la visio ET de l'accès.
+                    // (⚠️ pas de `use` dans un bloc @php de vue : enum en nom complet.)
+                    $when = $startsAt?->translatedFormat('l j F Y, H\hi');
+                    if ($isLive && $role->canJoin()) {
+                        $accent = 'warn';  $ico = 'video';
+                        $ttl = 'Salle en préparation';
+                        $lead = 'La visio est annoncée mais le lien de la réunion n’a pas encore été renseigné par l’organisation.';
+                    } elseif ($isLive && $isGuest) {
+                        $accent = 'blue';  $ico = 'login';
+                        $ttl = 'Connexion requise';
+                        $lead = 'La visio est en cours. Connectez-vous avec votre compte participant pour la rejoindre.';
+                    } elseif ($isLive) {
+                        $accent = 'blue';  $ico = 'lock';
+                        $ttl = 'Accès réservé';
+                        $lead = 'Cette visio est réservée aux participants inscrits de cet événement.';
+                    } elseif ($meetingStatus === \App\Enums\MeetingStatus::Ended) {
+                        $accent = 'muted'; $ico = 'check-circle';
+                        $ttl = 'La visio est terminée';
+                        $lead = $when
+                            ? 'Cette séance s’est tenue le '.$when.'.'
+                            : 'Cette séance est terminée.';
+                    } elseif ($meetingStatus === \App\Enums\MeetingStatus::Scheduled) {
+                        $accent = 'blue';  $ico = 'calendar';
+                        $ttl = 'La visio n’a pas encore commencé';
+                        $lead = $when
+                            ? 'La salle ouvrira automatiquement peu avant le début. Gardez cette page ouverte : elle vous y conduira.'
+                            : 'La salle ouvrira dès le début de la séance.';
+                    } else {
+                        $accent = 'muted'; $ico = 'video';
+                        $ttl = 'Aucune visio prévue';
+                        $lead = 'Aucune visioconférence n’est programmée pour cette séance.';
+                    }
+                @endphp
+                <div class="mlobby-card mlobby-card--{{ $accent }}">
+                    <span class="mlobby-ico"><x-ukc.icon :name="$ico" :size="30" /></span>
+                    <h1 class="mlobby-ttl">{{ $ttl }}</h1>
+                    <p class="mlobby-lead">{{ $lead }}</p>
+
+                    @if (! $isLive && $meetingStatus === \App\Enums\MeetingStatus::Scheduled && $when)
+                        <div class="mlobby-when">
+                            <x-ukc.icon name="calendar" :size="20" />
+                            <div><small>Début prévu</small><strong>{{ $when }}</strong></div>
+                        </div>
+                    @endif
+
+                    <div class="mlobby-acts">
+                        @if (! $isLive && $meetingStatus === \App\Enums\MeetingStatus::Ended && $recordingUrl)
+                            <a href="{{ $recordingUrl }}" target="_blank" rel="noopener" class="ukc-btn ukc-btn--blue">
+                                <x-ukc.icon name="video" :size="16" /> Voir le replay
+                            </a>
                         @endif
+                        @if ($isLive && $isGuest)
+                            <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--blue">
+                                <x-ukc.icon name="login" :size="16" /> Se connecter
+                            </a>
+                        @endif
+                        <a href="{{ $backUrl }}" class="ukc-btn ukc-btn--outline">Retour</a>
                     </div>
                 </div>
+
+                {{-- Salle d'attente : une séance programmée s'ouvre automatiquement
+                     à l'approche de l'horaire (cf. EventSession::syncMeetingStatus).
+                     On recharge périodiquement pour y entrer sans geste manuel. --}}
+                @if (! $isLive && $meetingStatus === \App\Enums\MeetingStatus::Scheduled)
+                    <script>setTimeout(function () { location.reload(); }, 60000);</script>
+                @endif
             @endif
         </main>
     </div>

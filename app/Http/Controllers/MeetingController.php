@@ -97,7 +97,6 @@ class MeetingController extends Controller
                     // partir de ces bases (vote, modération, ouverture/clôture).
                     'question' => url('session/'.$session->id.'/echanges/questions'),
                     'poll' => url('session/'.$session->id.'/echanges/sondages'),
-                    'page' => route('session.engagement', $session),
                 ],
             ];
         }
@@ -115,7 +114,6 @@ class MeetingController extends Controller
             'backUrl' => $session->isModeratedBy($account)
                 ? route('account.moderation')
                 : route('public.deroulement'),
-            'engagementUrl' => $role->canJoin() ? route('session.engagement', $session) : null,
         ], $extra);
     }
 
@@ -132,7 +130,6 @@ class MeetingController extends Controller
             'startsAt' => $formation->starts_at,
             'recordingUrl' => null,
             'backUrl' => route('account.formations'),
-            'engagementUrl' => null,
         ]);
     }
 
@@ -172,7 +169,7 @@ class MeetingController extends Controller
     /**
      * Rendu commun de la salle pour un objet `Meetable`.
      *
-     * @param  array{label: string, editionTitle: string, startsAt: Carbon|null, recordingUrl: string|null, backUrl: string, engagementUrl: string|null}  $ctx
+     * @param  array{label: string, editionTitle: string, startsAt: Carbon|null, recordingUrl: string|null, backUrl: string}  $ctx
      * @param  array<string, mixed>  $liveKitExtra  Enrichissements du lecteur LiveKit propres au type.
      */
     private function room(Meetable&Model $meetable, array $ctx, array $liveKitExtra = []): View
@@ -220,9 +217,10 @@ class MeetingController extends Controller
             'startsAt' => $ctx['startsAt'],
             'recordingUrl' => $ctx['recordingUrl'],
             'backUrl' => $ctx['backUrl'],
-            'engagementUrl' => $ctx['engagementUrl'],
             'isLive' => $meetable->isLive(),
-            'statusLabel' => $meetable->meetingStatusEnum()->label(),
+            // Statut de la visio : la page « hors salle » adapte son contenu dessus
+            // (programmée → salle d'attente, terminée → replay, réservée, etc.).
+            'meetingStatus' => $meetable->meetingStatusEnum(),
             'role' => $role,
             'isStaff' => $isStaff,
             'isGuest' => ! $account && ! $isStaff,
