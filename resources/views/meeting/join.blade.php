@@ -1504,7 +1504,7 @@
         .mlobby-main{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;
             padding:clamp(16px,5vw,40px);}
         .mlobby-main.is-embed{padding:0;align-items:stretch;}
-        .mlobby-card{width:100%;max-width:480px;background:#fff;border:1px solid var(--ukc-border);
+        .mlobby-card{width:100%;max-width:580px;background:#fff;border:1px solid var(--ukc-border);
             border-radius:18px;box-shadow:0 18px 50px -24px rgba(20,32,90,.35);
             padding:clamp(24px,5vw,40px);text-align:center;}
         .mlobby-ico{width:72px;height:72px;border-radius:50%;display:inline-flex;align-items:center;
@@ -1513,7 +1513,7 @@
         .mlobby-card--warn .mlobby-ico{color:#b45309;background:#fef3e2;}
         .mlobby-card--ok .mlobby-ico{color:var(--ukc-green);background:#e6f6ec;}
         .mlobby-ttl{font-size:1.3rem;margin:2px 0 8px;color:#14205a;}
-        .mlobby-lead{color:var(--ukc-muted);line-height:1.55;margin:0 auto;max-width:38ch;}
+        .mlobby-lead{color:var(--ukc-muted);line-height:1.55;margin:0 auto;max-width:62ch;}
         .mlobby-when{display:inline-flex;align-items:center;gap:12px;margin-top:20px;padding:12px 18px;
             border-radius:12px;background:#eef1f6;color:var(--ukc-blue);text-align:left;}
         .mlobby-when small{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;
