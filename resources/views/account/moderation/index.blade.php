@@ -1,4 +1,4 @@
-<x-layouts.participant :title="__('Mes séances à modérer')" :subtitle="__('Espace modérateur · présence et validation de passage')">
+<x-layouts.participant :title="__('Mes séances à modérer')" :subtitle="__('Espace modérateur · présence et passage des communications')">
 <div class="account-moderation">
     @forelse ($sessions as $session)
         @php
@@ -29,24 +29,9 @@
                 @endif
             </div>
 
-            @if ($comms)
-                <div style="margin-top:12px;">
-                    <div style="font-size:12px;font-weight:600;color:var(--ukc-muted);margin-bottom:6px;">{{ __('Communications programmées') }}</div>
-                    {{-- La validation du passage se fait désormais sur sa propre page
-                         (« Validation de passage »), comme la présence : ici, la liste
-                         est en lecture, avec l'état de chaque passage. --}}
-                    <ol style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:13.5px;">
-                        @foreach ($comms as $c)
-                            <li>
-                                <strong>{{ $c['title'] }}</strong> - {{ $c['name'] }}
-                                @if ($c['done'])
-                                    <span class="ukc-pill ukc-pill--ok" style="margin-left:6px;">{{ __('Passage validé') }}</span>
-                                @endif
-                            </li>
-                        @endforeach
-                    </ol>
-                </div>
-            @endif
+            {{-- ⚠️ La carte NE LISTE PLUS les communications (ce serait long) : elles
+                 vivent sur leur propre page « Communications programmées », qui sert
+                 aussi à en valider le passage. --}}
 
             <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;">
                 @if ($session->hasMeeting())
@@ -54,9 +39,8 @@
                         <x-ukc.icon name="video" :size="16" /> {{ __('Rejoindre la visio') }}
                     </a>
                 @endif
-                {{-- Présence et Validation de passage : ouvertes au début de la séance,
-                     comme le rapport - on ne pointe ni ne valide une séance pas encore
-                     commencée (la route session.passage le refuse aussi côté serveur). --}}
+                {{-- Présence : ouverte au début de la séance, comme le rapport - on ne
+                     pointe pas une séance pas encore commencée. --}}
                 @if ($started)
                     <a href="{{ route('account.attendance.edit', $session) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">
                         <x-ukc.icon name="users" :size="16" /> {{ __('Présence') }}
@@ -70,17 +54,14 @@
                         <x-ukc.icon name="lock" :size="16" /> {{ __('Présence') }}
                     </button>
                 @endif
+                {{-- « Communications programmées » : toujours consultable (on peut voir le
+                     programme de sa séance avant qu'elle commence) ; la VALIDATION du
+                     passage, elle, n'ouvre qu'une fois la séance commencée (sur la page). --}}
                 @if ($comms)
-                    @if ($started)
-                        <a href="{{ route('account.passage.edit', $session) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">
-                            <x-ukc.icon name="check" :size="16" /> {{ __('Validation de passage') }}
-                        </a>
-                    @else
-                        <button type="button" class="ukc-btn ukc-btn--outline ukc-btn--sm" disabled style="opacity:.5;cursor:not-allowed;"
-                                title="{{ __('La validation ouvrira au début de la séance.') }}">
-                            <x-ukc.icon name="lock" :size="16" /> {{ __('Validation de passage') }}
-                        </button>
-                    @endif
+                    <a href="{{ route('account.passage.edit', $session) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+                        <x-ukc.icon name="mic" :size="16" /> {{ __('Communications programmées') }}
+                        <span class="ukc-pill ukc-pill--muted" style="margin-left:6px;">{{ count($comms) }}</span>
+                    </a>
                 @endif
             </div>
         </div>

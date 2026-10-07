@@ -1,8 +1,10 @@
-{{-- Validation du passage des communications d'une séance, par son modérateur ou
-     son rapporteur - hors visio (page dédiée, comme la présence). ⚠️ Chaque constat
-     ÉMET les attestations des auteurs (en délivrance en ligne) et NE SE RETIRE PAS.
-     Les boutons ne s'activent qu'une fois la séance commencée. --}}
-<x-layouts.participant :title="__('Validation de passage')" :subtitle="$session->label">
+{{-- Communications programmées d'une séance + validation de leur passage, par son
+     modérateur ou son rapporteur - hors visio (page dédiée, comme la présence). La
+     carte de modération ne liste plus les communications (trop long) : elles sont
+     ici. ⚠️ Chaque constat ÉMET les attestations des auteurs (en délivrance en
+     ligne) et NE SE RETIRE PAS. Les boutons ne s'activent qu'une fois la séance
+     commencée ; avant, la liste reste consultable. --}}
+<x-layouts.participant :title="__('Communications programmées')" :subtitle="$session->label">
 <div class="account-passage" style="display:grid;grid-template-columns:minmax(0,1fr);gap:16px;">
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
         <a href="{{ route($backRoute) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
@@ -50,18 +52,21 @@
                 {{ __('Dès qu’une communication sera programmée dans cette séance, elle apparaîtra ici pour en valider le passage.') }}
             </p>
         </div>
-    @elseif ($notStarted)
-        {{-- ⚠️ Un modérateur ne valide pas un passage avant l'heure de sa séance :
-             la route session.passage le refuse aussi côté serveur. --}}
-        <div class="ukc-card" style="text-align:center;">
-            <span class="ico" style="color:var(--ukc-muted);"><x-ukc.icon name="clock" :size="28" /></span>
-            <h3 style="justify-content:center;">{{ __('Validation pas encore ouverte') }}</h3>
-            <p style="color:var(--ukc-muted);margin-top:6px;">
-                {{ __('Vous pourrez valider les passages dès le début de la séance') }}
-                @if ($session->starts_at) - {{ $session->starts_at->translatedFormat('l j F Y à H:i') }}@endif.
-            </p>
-        </div>
     @else
+        {{-- ⚠️ Un modérateur ne valide pas un passage avant l'heure de sa séance :
+             avant le début, la liste reste CONSULTABLE mais les boutons de validation
+             sont masqués (la route session.passage le refuse aussi côté serveur). --}}
+        @if ($notStarted)
+            <div class="ukc-card" style="display:flex;align-items:flex-start;gap:10px;background:#fff8e6;border-color:#f3e2b3;">
+                <span style="color:#b45309;flex-shrink:0;line-height:0;margin-top:1px;"><x-ukc.icon name="clock" :size="20" /></span>
+                <div>
+                    <strong>{{ __('Validation pas encore ouverte') }}</strong>
+                    <p style="color:var(--ukc-muted);margin-top:2px;font-size:13.5px;">
+                        {{ __('Vous pourrez valider les passages dès le début de la séance') }}@if ($session->starts_at) - {{ $session->starts_at->translatedFormat('l j F Y à H:i') }}@endif.
+                    </p>
+                </div>
+            </div>
+        @endif
         <div class="ukc-card">
             <div style="overflow-x:auto;">
                 <table class="ukc-table" style="width:100%;border-collapse:collapse;">
@@ -83,6 +88,10 @@
                                     @if ($c['done'])
                                         <span class="ukc-pill ukc-pill--ok">
                                             <x-ukc.icon name="check" :size="14" /> {{ __('Passage validé') }}
+                                        </span>
+                                    @elseif ($notStarted)
+                                        <span class="ukc-pill ukc-pill--muted">
+                                            <x-ukc.icon name="clock" :size="14" /> {{ __('À valider dès le début') }}
                                         </span>
                                     @elseif ($frozen || ! $c['slotId'])
                                         <span class="ukc-pill ukc-pill--muted">{{ __('Non validé') }}</span>

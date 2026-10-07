@@ -1049,21 +1049,24 @@ aligné sur **modérer** ; `/animation` reste en **redirection** (signets, courr
   pour en écrire le rapport. ⚠️ Le test porte sur **`EventSession::isModeratedBy()`**
   (la séance confiée) et **non sur le rôle en salle** : le staff y est modérateur
   aussi, et n'a pas d'espace personnel où atterrir - il tomberait sur un 403.
-- ⚠️ **Les cartes ne portent PLUS le bouton « Espace d'échange (Q&A / sondages) »** ni
-  les formulaires « Valider le passage » par communication. La validation de passage a
-  sa **propre page** (`account.passage.edit`, `/compte/seances/{session}/passage`), sur
-  le modèle de la Présence : un bouton **« Validation de passage »** par carte (activé
-  seulement si `hasStarted()`), puis une page listant les communications à valider.
-  `SessionPassageController::edit` (garde `SessionPresence::canManage` : modérateur **ou**
-  rapporteur) ; le constat lui-même passe toujours par `session.passage` (même garde
-  horaire serveur). La liste des communications reste en **lecture** sur la carte, avec la
-  pastille « Passage validé ». (Les échanges Q&A/sondages se tiennent **exclusivement
-  dans la salle de visio** - la page autonome a été supprimée, cf. « Les échanges =
-  EXCLUSIVEMENT dans la visio ».)
-- ⚠️ **Un modérateur ne valide pas un passage avant l'heure de sa séance** : la page ne
-  montre les boutons que si `hasStarted()`, et `SessionPassageController::store` refuse
-  (`abort_unless($session->hasStarted())`) de toute façon. Tests :
-  `CommunicationPassageTest` (page + garde horaire).
+- ⚠️ **Les cartes ne portent PLUS le bouton « Espace d'échange (Q&A / sondages) », ni la
+  LISTE des communications programmées** (elle pouvait être longue), ni les formulaires
+  « Valider le passage » par communication. Les communications d'une séance vivent sur
+  leur **propre page** (`account.passage.edit`, `/compte/seances/{session}/passage`), sur
+  le modèle de la Présence : un bouton **« Communications programmées »** par carte (avec
+  le NOMBRE de communications ; **toujours consultable** - on peut voir le programme de sa
+  séance avant qu'elle commence), qui ouvre une page listant les communications ET
+  permettant d'en valider le passage. `SessionPassageController::edit` (garde
+  `SessionPresence::canManage` : modérateur **ou** rapporteur) ; le constat passe toujours
+  par `session.passage` (même garde horaire serveur). (Les échanges Q&A/sondages se
+  tiennent **exclusivement dans la salle de visio** - la page autonome a été supprimée,
+  cf. « Les échanges = EXCLUSIVEMENT dans la visio ».)
+- ⚠️ **Un modérateur ne valide pas un passage avant l'heure de sa séance** : avant le
+  début, la page affiche la liste des communications (consultable) mais **masque les
+  boutons de validation** (bandeau « Validation pas encore ouverte », pastille « À valider
+  dès le début » par ligne) ; `SessionPassageController::store` refuse de toute façon
+  (`abort_unless($session->hasStarted())`). Tests : `CommunicationPassageTest` (page +
+  garde horaire), `ModerationPageTest` (le bouton renvoie vers la page).
 - Tests : `tests/Feature/ModerationPageTest.php`.
 
 ### Visio : clôture automatique, isolation des salles, historique des fils

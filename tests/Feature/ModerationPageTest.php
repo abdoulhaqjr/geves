@@ -89,14 +89,15 @@ it('n’affiche plus l’espace d’échange sur les cartes de modération', fun
         ->assertDontSee('Espace d’échange');
 });
 
-it('propose la validation de passage sur une séance commencée avec communications', function () {
+it('renvoie vers la page des communications programmées (où se valide le passage)', function () {
     // seancePassage() (CommunicationPassageTest) : séance commencée, un créneau,
-    // modérateur « modpass@example.tg ».
+    // modérateur « modpass@example.tg ». ⚠️ La carte ne liste plus les
+    // communications : un bouton « Communications programmées » mène à leur page.
     [, $session] = seancePassage();
 
     $this->actingAs(officier('modpass@example.tg'), 'account')->get('/moderation')
         ->assertOk()
-        ->assertSee('Validation de passage')
+        ->assertSee('Communications programmées')
         ->assertSee(route('account.passage.edit', $session));
 });
 
