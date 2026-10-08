@@ -45,7 +45,7 @@
         </section>
 
         @if ($canManage)
-            <section class="onboarding-automation"><span class="onboarding-automation__icon"><x-ukc.icon name="sparkles" :size="18" /></span><div><strong>Production vidéo assistée</strong><p>Codex exécute Brag et Hyperframes sur les écrans réels avec le logo et la charte GEVES, pour livrer une vidéo avec musique, mouvements sobres et effets d’interface.</p></div></section>
+            <section class="onboarding-automation"><span class="onboarding-automation__icon"><x-ukc.icon name="sparkles" :size="18" /></span><div><strong>Production vidéo assistée</strong><p>Gemini prépare le scénario lorsqu’il est configuré, Claude contrôle le contenu, puis Codex exécute Brag et Hyperframes sur les écrans réels avec le logo et la charte GEVES.</p></div></section>
         @endif
 
         <div class="ukc-nav-docs" id="guides" aria-label="Catégories de guides">
