@@ -57,6 +57,8 @@
             @foreach ($guides as $guide)
                 @continue($activeTab !== 'all' && $activeTab !== TutorialGuideCatalog::categoryFor($guide->key))
                 @php($isQueued = $guide->video_generation_status === 'queued')
+                @php($isGenerating = $guide->video_generation_status === 'generating')
+                @php($isFailed = $guide->video_generation_status === 'failed')
                 <article class="ukc-card onboarding-guide" id="{{ $guide->key }}">
                     <header class="onboarding-guide__head"><span class="onboarding-guide__icon"><x-ukc.icon :name="TutorialGuideCatalog::iconFor($guide->key)" :size="20" /></span><div><span class="onboarding-guide__number">Guide {{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span><h2>{{ $guide->title }}</h2></div></header>
                     <p class="onboarding-guide__intro">{{ $guide->intro }}</p>
@@ -66,7 +68,9 @@
                     @else
                         <div class="onboarding-video"><span><x-ukc.icon name="video" :size="18" /></span><div><strong>Vidéo de démonstration</strong><small>{{ $isQueued ? 'Demande de production enregistrée' : 'À ajouter prochainement' }}</small></div></div>
                     @endif
-                    @if ($isQueued)<span class="onboarding-guide__status"><x-ukc.icon name="clock" :size="13" /> En attente de l’agent vidéo</span>@endif
+                    @if ($isQueued)<span class="onboarding-guide__status"><x-ukc.icon name="clock" :size="13" /> Demande enregistrée, lancement de l’agent vidéo…</span>@endif
+                    @if ($isGenerating)<span class="onboarding-guide__status"><x-ukc.icon name="video" :size="13" /> Production Brag en cours…</span>@endif
+                    @if ($isFailed)<span class="onboarding-guide__status onboarding-guide__status--error"><x-ukc.icon name="alert-triangle" :size="13" /> La production a échoué. Relancez la demande ou consultez le journal.</span>@endif
                     <footer>
                         @if ($canManage)
                             <button class="ukc-btn ukc-btn--outline ukc-btn--sm" type="button" @click="edit({{ $guide->id }})"><x-ukc.icon name="settings" :size="14" /> Modifier</button>

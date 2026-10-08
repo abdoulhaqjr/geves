@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\GenerateTutorialVideo;
 use App\Models\TutorialGuide;
 use App\Models\TutorialVideoRequest;
 use App\Support\TutorialGuideCatalog;
 use App\Support\TutorialVideoProduction;
+use App\Services\TutorialVideoWorkerLauncher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -90,7 +92,9 @@ class OnboardingController extends Controller
             'prompt' => ['nullable', 'string', 'max:3000'],
         ]);
 
-        $this->queueVideoRequest($guide, $request, $data['action'], $data['prompt'] ?? null);
+        $videoRequest = $this->queueVideoRequest($guide, $request, $data['action'], $data['prompt'] ?? null);
+        GenerateTutorialVideo::dispatch($videoRequest->id)->onQueue('tutorial-videos');
+        app(TutorialVideoWorkerLauncher::class)->launch();
 
         return redirect()->route('admin.onboarding', ['tab' => $request->input('tab', 'all')])
             ->with('success', 'La demande vidéo a été enregistrée et est prête pour l’agent Brag.');
@@ -103,13 +107,21 @@ class OnboardingController extends Controller
         TutorialGuideCatalog::ensureDefaults();
 
         $created = 0;
-        TutorialGuide::query()->whereNull('video_path')->whereNull('video_url')->each(function (TutorialGuide $guide) use ($request, $data, &$created): void {
+        $requests = [];
+        TutorialGuide::query()->whereNull('video_path')->whereNull('video_url')->each(function (TutorialGuide $guide) use ($request, $data, &$created, &$requests): void {
             $alreadyQueued = $guide->videoRequests()->whereIn('status', ['queued', 'running'])->exists();
             if (! $alreadyQueued) {
-                $this->queueVideoRequest($guide, $request, 'generate', $data['prompt'] ?? null);
+                $requests[] = $this->queueVideoRequest($guide, $request, 'generate', $data['prompt'] ?? null);
                 $created++;
             }
         });
+
+        foreach ($requests as $videoRequest) {
+            GenerateTutorialVideo::dispatch($videoRequest->id)->onQueue('tutorial-videos');
+        }
+        if ($requests !== []) {
+            app(TutorialVideoWorkerLauncher::class)->launch();
+        }
 
         return redirect()->route('admin.onboarding')->with('success', $created > 0
             ? $created.' demande(s) vidéo ont été enregistrées.'
@@ -121,9 +133,9 @@ class OnboardingController extends Controller
         abort_unless($request->user()?->isColloqueAdmin(), 403);
     }
 
-    private function queueVideoRequest(TutorialGuide $guide, Request $request, string $action, ?string $prompt): void
+    private function queueVideoRequest(TutorialGuide $guide, Request $request, string $action, ?string $prompt): TutorialVideoRequest
     {
-        TutorialVideoRequest::create([
+        $videoRequest = TutorialVideoRequest::create([
             'tutorial_guide_id' => $guide->id,
             'requested_by_user_id' => $request->user()->id,
             'action' => $action,
@@ -137,5 +149,7 @@ class OnboardingController extends Controller
             'video_generation_status' => 'queued',
             'video_generation_prompt' => blank($prompt) ? null : $prompt,
         ]);
+
+        return $videoRequest;
     }
 }

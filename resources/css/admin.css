@@ -54,6 +54,7 @@
 .admin-onboarding .onboarding-video--ready video { display: block; width: 100%; max-height: 190px; background: #0f172a; }
 .admin-onboarding .onboarding-video--ready > div { padding: 9px 11px 10px; }
 .admin-onboarding .onboarding-guide__status { display: inline-flex; align-items: center; gap: 5px; margin: -4px 0 11px; color: #6941c6; font-size: 11.5px; font-weight: 700; }
+.admin-onboarding .onboarding-guide__status--error { color: #b42318; }
 .admin-onboarding .onboarding-field-hint { display: block; margin-top: 5px; color: var(--ukc-muted); font-size: 11.5px; }
 .admin-onboarding .onboarding-role-options { display: flex; flex-wrap: wrap; gap: 8px 14px; }
 .admin-onboarding .onboarding-role-options label, .admin-onboarding .onboarding-checkbox { color: var(--ukc-text); font-size: 12px; }

@@ -40,9 +40,11 @@ Larastan **niveau 5**.
   la police GEVES, un lit musical et des mouvements UI sobres. L’agent rattache le
   MP4 au guide après contrôle. Ses livrables suivent le format
   `storage/app/brag-output-*/` : plan, brief de composition, captures, poster, MP4
-  et texte de partage. La file conserve les demandes ; un agent de production doit
-  la traiter et faire évoluer le statut, elle n'appelle pas un fournisseur IA depuis
-  la requête HTTP.
+  et texte de partage. Chaque demande déclenche `GenerateTutorialVideo` sur la file
+  `tutorial-videos`, puis `TutorialVideoWorkerLauncher` démarre un travailleur caché
+  sous Windows. `TutorialVideoAgent` lance Codex avec Brag, valide le MP4 produit et
+  le publie dans le disque public. La commande `tutorial-videos:dispatch-pending`
+  reprend les demandes créées avant l’activation de ce pont.
 - L’espace participant expose `/prise-en-main` (`account.onboarding`). Il filtre les
   guides selon le colloque courant et les rôles réels (participant, modérateur,
   rapporteur) ; une vidéo masquée ne doit jamais y être rendue.
