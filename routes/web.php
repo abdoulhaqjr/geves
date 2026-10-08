@@ -38,6 +38,7 @@ use App\Http\Controllers\Admin\FormationController;
 use App\Http\Controllers\Admin\ImpersonationController;
 use App\Http\Controllers\Admin\LoginController as AdminLoginController;
 use App\Http\Controllers\Admin\LogoutController as AdminLogoutController;
+use App\Http\Controllers\Admin\OnboardingController;
 use App\Http\Controllers\Admin\ParticipantController;
 use App\Http\Controllers\Admin\ProgramController;
 use App\Http\Controllers\Admin\ProjectController;
@@ -306,6 +307,7 @@ Route::prefix('admin')->group(function () {
         // Accès de base au back-office : ouvert à tout membre du staff connecté
         // (le contenu est ensuite restreint aux événements accessibles).
         Route::get('/', App\Http\Controllers\Admin\DashboardController::class)->name('admin.dashboard');
+        Route::get('/prise-en-main', OnboardingController::class)->name('admin.onboarding');
         Route::get('/secretariat', [SecretariatController::class, 'index'])->name('admin.secretariat');
         // Rapports de séance : lecture, amélioration et validation - métier du secrétariat.
         Route::get('/secretariat/rapports', [SecretariatController::class, 'reports'])->name('admin.secretariat.reports');

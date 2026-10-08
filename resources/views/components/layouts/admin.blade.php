@@ -31,6 +31,10 @@
                    @class(['active' => request()->routeIs('admin.dashboard')])>
                     <x-ukc.icon name="home" :size="18" /> <span class="txt">Tableau de bord</span>
                 </a>
+                <a href="{{ route('admin.onboarding') }}" title="Prise en main"
+                   @class(['active' => request()->routeIs('admin.onboarding')])>
+                    <x-ukc.icon name="book" :size="18" /> <span class="txt">Prise en main</span>
+                </a>
 
                 {{-- ===== Scientifique : cœur académique de l'événement ===== --}}
                 @if ($staff?->canAnyEdition('editions_read') || $staff?->canAnyEdition('submissions_list') || $staff?->canAnyEdition('formation'))

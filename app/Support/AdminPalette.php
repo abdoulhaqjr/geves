@@ -23,6 +23,7 @@ class AdminPalette
         };
 
         $push(true, 'Tableau de bord', 'Pilotage', 'home', route('admin.dashboard'));
+        $push(true, 'Prise en main', 'Aide', 'book', route('admin.onboarding'));
         $push((bool) $staff?->canAnyEdition('editions_read'), 'Événements', 'Scientifique', 'calendar', route('admin.evenements.index'));
         $push((bool) $staff?->canAnyEdition('submissions_list'), 'Soumissions', 'Scientifique', 'inbox', route('admin.submissions.index'));
         $push((bool) $staff?->canAnyEdition('submissions_list'), 'Attribution auto', 'Scientifique', 'refresh', route('admin.submissions.auto-assign'));

@@ -26,6 +26,14 @@ Stack : PHP 8.4, Blade + **Livewire 4** + Alpine 3, Tailwind v4 + design system 
 (`resources/css/ukc.css`), Vite 8, SQLite en dev, **Pest** pour les tests, PHPStan/
 Larastan **niveau 5**.
 
+### Prise en main back-office
+
+- La page **Prise en main** (`/admin/prise-en-main`, `admin.onboarding`) est ouverte
+  à tout membre du staff connecté. Elle regroupe les guides de fonctionnement,
+  soumission, visio, rapport, modération, gestion et configuration d’événement,
+  secrétariat et chatbots. Chaque guide porte un emplacement vidéo homogène, à
+  alimenter ultérieurement sans changer le parcours de lecture.
+
 ## Toolchain - ⚠️ PHP/Composer/artisan ne sont PAS dans le PATH
 
 Ils sont fournis par **Laravel Herd** sous forme de shims `.bat`. Pour toute commande
