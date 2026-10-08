@@ -9,6 +9,7 @@ use App\Http\Controllers\Account\FormationController as AccountFormationControll
 use App\Http\Controllers\Account\LoginController;
 use App\Http\Controllers\Account\LogoutController;
 use App\Http\Controllers\Account\ModerationController;
+use App\Http\Controllers\Account\OnboardingController as AccountOnboardingController;
 use App\Http\Controllers\Account\OrcidController;
 use App\Http\Controllers\Account\PasswordResetController;
 use App\Http\Controllers\Account\PaymentController as AccountPaymentController;
@@ -203,6 +204,7 @@ Route::permanentRedirect('/notifications', '/compte/notifications');
 
 Route::middleware(['auth:account', StampAccountSession::class])->group(function () {
     Route::get('/compte', DashboardController::class)->name('account.dashboard');
+    Route::get('/prise-en-main', AccountOnboardingController::class)->name('account.onboarding');
     Route::get('/compte/agenda.ics', [AgendaController::class, 'ics'])->name('account.agenda.ics');
     Route::post('/compte/colloque', [EventContextController::class, 'switch'])->name('account.colloque.switch');
     Route::get('/compte/profil', [ProfileController::class, 'edit'])->name('account.profile');
@@ -308,6 +310,9 @@ Route::prefix('admin')->group(function () {
         // (le contenu est ensuite restreint aux événements accessibles).
         Route::get('/', App\Http\Controllers\Admin\DashboardController::class)->name('admin.dashboard');
         Route::get('/prise-en-main', OnboardingController::class)->name('admin.onboarding');
+        Route::put('/prise-en-main/guides/{guide}', [OnboardingController::class, 'update'])->name('admin.onboarding.guides.update');
+        Route::post('/prise-en-main/guides/{guide}/videos/demander', [OnboardingController::class, 'requestVideo'])->name('admin.onboarding.videos.request');
+        Route::post('/prise-en-main/videos/demander', [OnboardingController::class, 'requestAllVideos'])->name('admin.onboarding.videos.request-all');
         Route::get('/secretariat', [SecretariatController::class, 'index'])->name('admin.secretariat');
         // Rapports de séance : lecture, amélioration et validation - métier du secrétariat.
         Route::get('/secretariat/rapports', [SecretariatController::class, 'reports'])->name('admin.secretariat.reports');

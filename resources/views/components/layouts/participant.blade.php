@@ -104,6 +104,10 @@
                    @class(['active' => request()->routeIs('account.dashboard')])>
                     <x-ukc.icon name="home" :size="18" /> <span class="txt">{{ __('Tableau de bord') }}</span>
                 </a>
+                <a href="{{ route('account.onboarding') }}" title="{{ __('Prise en main') }}"
+                   @class(['active' => request()->routeIs('account.onboarding')])>
+                    <x-ukc.icon name="book" :size="18" /> <span class="txt">{{ __('Prise en main') }}</span>
+                </a>
 
                 <span class="nav-label">{{ __('Mon dossier') }}</span>
                 <a href="{{ route('account.profile') }}" title="{{ __('Mon compte') }}"

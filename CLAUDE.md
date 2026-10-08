@@ -29,10 +29,18 @@ Larastan **niveau 5**.
 ### Prise en main back-office
 
 - La page **Prise en main** (`/admin/prise-en-main`, `admin.onboarding`) est ouverte
-  à tout membre du staff connecté. Elle regroupe les guides de fonctionnement,
-  soumission, visio, rapport, modération, gestion et configuration d’événement,
-  secrétariat et chatbots. Chaque guide porte un emplacement vidéo homogène, à
-  alimenter ultérieurement sans changer le parcours de lecture.
+  à tout membre du staff connecté. Les administrateurs de colloque et super
+  administrateurs y modifient les textes, les rôles ciblés, les vidéos téléversées
+  ou référencées et leur visibilité dans l’espace participant. Les guides sont dans
+  `tutorial_guides` ; ne jamais réintroduire leur contenu en dur dans la vue.
+- Les demandes de production ou de mise à jour vidéo sont stockées dans
+  `tutorial_video_requests`, avec l’ordre de fournisseurs demandé Gemini, Codex,
+  Claude. Elles sont intentionnellement en attente tant qu’un connecteur de
+  production vidéo compatible n’est pas installé : ne jamais prétendre produire une
+  vidéo ou des captures sans cet agent.
+- L’espace participant expose `/prise-en-main` (`account.onboarding`). Il filtre les
+  guides selon le colloque courant et les rôles réels (participant, modérateur,
+  rapporteur) ; une vidéo masquée ne doit jamais y être rendue.
 
 ## Toolchain - ⚠️ PHP/Composer/artisan ne sont PAS dans le PATH
 
