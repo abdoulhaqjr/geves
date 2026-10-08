@@ -18,33 +18,30 @@
 
 /* ---- Prise en main ---- */
 .admin-onboarding { max-width: 1180px; }
-.admin-onboarding .onboarding-hero { display: flex; align-items: center; gap: 16px; padding: 22px 24px; border-radius: 14px; color: #fff; background: linear-gradient(135deg, var(--ukc-blue), #1a3080 62%, #177a62); margin-bottom: 16px; }
-.admin-onboarding .onboarding-hero__icon { width: 52px; height: 52px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; border-radius: 12px; color: var(--ukc-gold); background: rgba(255,255,255,.13); }
-.admin-onboarding .eyebrow { margin: 0 0 3px; font-size: 11px; letter-spacing: .08em; font-weight: 800; text-transform: uppercase; color: rgba(255,255,255,.7); }
-.admin-onboarding .onboarding-hero h2 { margin: 0 0 4px; font-size: 1.2rem; font-weight: 800; }
-.admin-onboarding .onboarding-hero p:not(.eyebrow) { margin: 0; font-size: 13.5px; max-width: 680px; color: rgba(255,255,255,.9); }
-.admin-onboarding .onboarding-nav { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 18px; }
-.admin-onboarding .onboarding-nav a { display: inline-flex; align-items: center; gap: 6px; padding: 6px 9px; border: 1px solid var(--ukc-border); border-radius: 7px; background: #fff; color: var(--ukc-muted); text-decoration: none; font-size: 12px; font-weight: 700; }
-.admin-onboarding .onboarding-nav a:hover { color: var(--ukc-blue); border-color: var(--ukc-blue); }
-.admin-onboarding .onboarding-nav span { color: var(--ukc-blue); font-size: 10px; }
-.admin-onboarding .onboarding-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-.admin-onboarding .onboarding-card { display: flex; flex-direction: column; padding: 18px; border: 1px solid var(--ukc-border); border-radius: 12px; background: #fff; }
-.admin-onboarding .onboarding-card header { display: flex; align-items: center; gap: 11px; }
-.admin-onboarding .onboarding-card__icon { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; flex: 0 0 auto; border-radius: 9px; background: #eef2ff; color: var(--ukc-blue); }
-.admin-onboarding .onboarding-card__number { display: block; color: var(--ukc-light); font-size: 10.5px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
-.admin-onboarding .onboarding-card h2 { margin: 1px 0 0; font-size: 15px; font-weight: 800; }
-.admin-onboarding .onboarding-card__intro { min-height: 38px; margin: 13px 0 10px; color: var(--ukc-muted); font-size: 13px; line-height: 1.45; }
-.admin-onboarding .onboarding-card ol { margin: 0 0 15px 19px; padding: 0; color: var(--ukc-text); font-size: 12.8px; line-height: 1.52; }
-.admin-onboarding .onboarding-card li + li { margin-top: 5px; }
-.admin-onboarding .onboarding-video { display: flex; align-items: center; gap: 10px; padding: 11px 12px; margin-top: auto; margin-bottom: 14px; border: 1px dashed #b9c5e8; border-radius: 9px; background: #f7f9ff; color: var(--ukc-blue); }
-.admin-onboarding .onboarding-video__icon { width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border-radius: 7px; background: #e3eafe; }
-.admin-onboarding .onboarding-video strong, .admin-onboarding .onboarding-video span { display: block; }
-.admin-onboarding .onboarding-video strong { font-size: 12.5px; }
-.admin-onboarding .onboarding-video div > span { margin-top: 1px; color: var(--ukc-muted); font-size: 11.5px; }
-.admin-onboarding .onboarding-card .ukc-btn { align-self: flex-start; }
-.admin-onboarding .onboarding-card__access { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--ukc-light); font-size: 12px; }
-@media (max-width: 780px) { .admin-onboarding .onboarding-grid { grid-template-columns: 1fr; } }
-@media (max-width: 560px) { .admin-onboarding .onboarding-hero { align-items: flex-start; padding: 18px; } .admin-onboarding .onboarding-hero__icon { width: 42px; height: 42px; } .admin-onboarding .onboarding-nav { max-height: 94px; overflow-y: auto; } }
+.admin-onboarding .onboarding-stats { margin-bottom: 14px; }
+.admin-onboarding .onboarding-intro { display: flex; align-items: center; gap: 14px; padding: 17px 18px; margin-bottom: 18px; }
+.admin-onboarding .onboarding-intro__icon, .admin-onboarding .onboarding-guide__icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; color: var(--ukc-blue); background: rgba(34, 62, 164, .1); border-radius: .6rem; }
+.admin-onboarding .onboarding-intro__icon { width: 42px; height: 42px; }
+.admin-onboarding .onboarding-intro h2 { margin: 0 0 3px; font-size: 15px; font-weight: 800; }
+.admin-onboarding .onboarding-intro p { margin: 0; color: var(--ukc-muted); font-size: 13px; line-height: 1.45; }
+.admin-onboarding .onboarding-guide-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.admin-onboarding .onboarding-guide { display: flex; flex-direction: column; min-height: 312px; padding: 18px; }
+.admin-onboarding .onboarding-guide__head { display: flex; align-items: center; gap: 11px; }
+.admin-onboarding .onboarding-guide__icon { width: 38px; height: 38px; }
+.admin-onboarding .onboarding-guide__number { display: block; color: var(--ukc-light); font-size: 10.5px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+.admin-onboarding .onboarding-guide h2 { margin: 1px 0 0; font-size: 15px; font-weight: 800; }
+.admin-onboarding .onboarding-guide__intro { min-height: 38px; margin: 13px 0 10px; color: var(--ukc-muted); font-size: 13px; line-height: 1.45; }
+.admin-onboarding .onboarding-guide__steps { margin: 0 0 15px 19px; padding: 0; color: var(--ukc-text); font-size: 12.8px; line-height: 1.52; }
+.admin-onboarding .onboarding-guide__steps li + li { margin-top: 5px; }
+.admin-onboarding .onboarding-video { display: flex; align-items: center; gap: 10px; padding: 10px 11px; margin-top: auto; margin-bottom: 14px; border: 1px dashed #cbd5e1; border-radius: .6rem; background: #f8fafc; color: var(--tw-ink, var(--ukc-muted)); }
+.admin-onboarding .onboarding-video > span { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; border-radius: .5rem; background: rgba(34, 62, 164, .1); color: var(--ukc-blue); }
+.admin-onboarding .onboarding-video strong, .admin-onboarding .onboarding-video small { display: block; }
+.admin-onboarding .onboarding-video strong { color: var(--tw-ink-strong, var(--ukc-text)); font-size: 12.5px; }
+.admin-onboarding .onboarding-video small { margin-top: 1px; color: var(--ukc-muted); font-size: 11.5px; }
+.admin-onboarding .onboarding-guide footer { min-height: 30px; }
+.admin-onboarding .onboarding-guide__access { display: inline-flex; align-items: center; gap: 6px; color: var(--ukc-light); font-size: 12px; }
+@media (max-width: 780px) { .admin-onboarding .onboarding-guide-grid { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .admin-onboarding .onboarding-intro { align-items: flex-start; } .admin-onboarding .ukc-tabs { overflow-x: auto; flex-wrap: nowrap; } .admin-onboarding .ukc-tabs button { white-space: nowrap; } }
 /* Icône + titre groupés dans un <span> : garder l'icône alignée au texte (évite le SVG block qui passe à la ligne). */
 .admin-page .ukc-card h2 > span { display: inline-flex; align-items: center; gap: 8px; }
 .admin-page .ukc-card .desc { font-size: 13px; color: var(--ukc-muted); margin-bottom: 14px; line-height: 1.45; }
