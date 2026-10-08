@@ -97,7 +97,7 @@ class OnboardingController extends Controller
         app(TutorialVideoWorkerLauncher::class)->launch();
 
         return redirect()->route('admin.onboarding', ['tab' => $request->input('tab', 'all')])
-            ->with('success', 'La demande vidéo a été enregistrée et est prête pour l’agent Brag.');
+            ->with('success', 'La demande vidéo a été enregistrée et sera traitée par le moteur vidéo GEVES.');
     }
 
     public function requestAllVideos(Request $request): RedirectResponse
@@ -141,7 +141,7 @@ class OnboardingController extends Controller
             'action' => $action,
             'prompt' => blank($prompt) ? null : $prompt,
             'status' => 'queued',
-            'providers' => ['codex'],
+            'providers' => [],
             'meta' => TutorialVideoProduction::briefFor($guide, $prompt),
         ]);
 

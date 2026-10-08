@@ -34,17 +34,20 @@ Larastan **niveau 5**.
   ou référencées et leur visibilité dans l’espace participant. Les guides sont dans
   `tutorial_guides` ; ne jamais réintroduire leur contenu en dur dans la vue.
 - Les demandes de production ou de mise à jour vidéo sont stockées dans
-  `tutorial_video_requests`. Gemini prépare un scénario JSON lorsque sa clé est
-  configurée, Claude relit ce scénario lorsque sa clé est configurée, et Codex reste
-  l’exécuteur qui produit les captures et le MP4. Le contrat persistant
-  `meta` est construit par `TutorialVideoProduction` :
-  **Brag** pilote Hyperframes, avec les captures réelles, le logo UK, la palette et
-  la police GEVES, un lit musical et des mouvements UI sobres. L’agent rattache le
-  MP4 au guide après contrôle. Ses livrables suivent le format
-  `storage/app/brag-output-*/` : plan, brief de composition, captures, poster, MP4
-  et texte de partage. Chaque demande déclenche `GenerateTutorialVideo` sur la file
+  `tutorial_video_requests`. Le travailleur choisit Gemini, Claude ou OpenAI parmi
+  les clés saisies dans **Réglages**, puis fait relire le scénario par un autre
+  fournisseur disponible. `TutorialVideoRenderer` rend ensuite le MP4 avec Node,
+  FFmpeg et Hyperframes sur le serveur : aucun compte Codex/Claude/Gemini ouvert
+  sur le poste de l’administrateur n’est nécessaire. Le contrat persistant
+  `meta` est construit par `TutorialVideoProduction` et s’inspire de **Brag** : logo
+  UK, palette et police GEVES, lit musical original et mouvements UI sobres. Le
+  premier rendu produit des repères illustrés à partir du guide ; ne pas le présenter
+  comme une capture d’un écran authentifié. L’agent rattache le MP4 au guide après
+  contrôle. Les livrables sont sous
+  `storage/app/tutorial-video-production/request-{id}/` : plan, brief de
+  composition, poster, MP4 et texte de partage. Chaque demande déclenche `GenerateTutorialVideo` sur la file
   `tutorial-videos`, puis `TutorialVideoWorkerLauncher` démarre un travailleur caché
-  sous Windows. `TutorialVideoAgent` lance Codex avec Brag, valide le MP4 produit et
+  sous Windows. `TutorialVideoAgent` lance le rendu Hyperframes, valide le MP4 produit et
   le publie dans le disque public. La commande `tutorial-videos:dispatch-pending`
   reprend les demandes créées avant l’activation de ce pont.
 - L’espace participant expose `/prise-en-main` (`account.onboarding`). Il filtre les

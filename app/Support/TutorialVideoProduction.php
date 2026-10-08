@@ -16,9 +16,10 @@ final class TutorialVideoProduction
     public static function briefFor(TutorialGuide $guide, ?string $instruction = null): array
     {
         return [
-            'engine' => 'brag',
+            'engine' => 'geves-hyperframes',
             'renderer' => 'hyperframes',
-            'command' => sprintf('/brag --tone polished --format landscape --duration 22 --title %s', $guide->title),
+            'workflow' => 'brag-inspired',
+            'format' => ['ratio' => '16:9', 'duration_seconds' => 22, 'tone' => 'polished'],
             'guide' => [
                 'key' => $guide->key,
                 'title' => $guide->title,
@@ -39,9 +40,9 @@ final class TutorialVideoProduction
                 'font' => 'Jost',
             ],
             'creative_direction' => [
-                'show_real_interface' => true,
+                'show_real_interface' => false,
                 'keep_text_readable' => true,
-                'motion' => 'Transitions douces, interactions simulées et mouvements subtils liés aux écrans réels.',
+                'motion' => 'Transitions douces, interactions illustrées et mouvements UI sobres.',
                 'music' => 'Lit musical professionnel sobre, synchronisé avec les révélations ; effets UI discrets.',
                 'voiceover' => false,
                 'avoid' => ['visuels génériques', 'revendications non présentes dans GEVES', 'pulsations ou effets sonores agressifs'],

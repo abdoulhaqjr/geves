@@ -10,7 +10,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
-/** Exécute un rendu Brag autonome sans bloquer le back-office. */
+/** Exécute un rendu Hyperframes autonome sans bloquer le back-office. */
 class GenerateTutorialVideo implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;

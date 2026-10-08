@@ -45,7 +45,7 @@
         </section>
 
         @if ($canManage)
-            <section class="onboarding-automation"><span class="onboarding-automation__icon"><x-ukc.icon name="sparkles" :size="18" /></span><div><strong>Production vidéo assistée</strong><p>Gemini prépare le scénario lorsqu’il est configuré, Claude contrôle le contenu, puis Codex exécute Brag et Hyperframes sur les écrans réels avec le logo et la charte GEVES.</p></div></section>
+            <section class="onboarding-automation"><span class="onboarding-automation__icon"><x-ukc.icon name="sparkles" :size="18" /></span><div><strong>Production vidéo assistée</strong><p>Le moteur sélectionne Gemini, Claude ou OpenAI selon les réglages, prépare le scénario, puis Hyperframes rend la vidéo sur le serveur avec la charte GEVES. Aucun compte IA sur le poste de l’administrateur n’est requis.</p></div></section>
         @endif
 
         <div class="ukc-nav-docs" id="guides" aria-label="Catégories de guides">
@@ -69,7 +69,7 @@
                         <div class="onboarding-video"><span><x-ukc.icon name="video" :size="18" /></span><div><strong>Vidéo de démonstration</strong><small>{{ $isQueued ? 'Demande de production enregistrée' : 'À ajouter prochainement' }}</small></div></div>
                     @endif
                     @if ($isQueued)<span class="onboarding-guide__status"><x-ukc.icon name="clock" :size="13" /> Demande enregistrée, lancement de l’agent vidéo…</span>@endif
-                    @if ($isGenerating)<span class="onboarding-guide__status"><x-ukc.icon name="video" :size="13" /> Production Brag en cours…</span>@endif
+                    @if ($isGenerating)<span class="onboarding-guide__status"><x-ukc.icon name="video" :size="13" /> Rendu vidéo Hyperframes en cours…</span>@endif
                     @if ($isFailed)<span class="onboarding-guide__status onboarding-guide__status--error"><x-ukc.icon name="alert-triangle" :size="13" /> La production a échoué. Relancez la demande ou consultez le journal.</span>@endif
                     <footer>
                         @if ($canManage)
@@ -111,7 +111,7 @@
         <div class="ukc-modal" x-show="batchOpen" x-cloak @keydown.escape.window="batchOpen = false" style="display: none;">
             <form class="box narrow" method="POST" action="{{ route('admin.onboarding.videos.request-all') }}">
                 @csrf<div class="box-head"><span>Ajouter les vidéos de prise en main</span><button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="batchOpen = false">Fermer</button></div>
-                <div class="box-body"><p>Une demande sera créée pour chaque guide sans vidéo. Codex exécute Brag avec la charte GEVES : logo, palette, police, musique et mouvements professionnels.</p><div class="ukc-form-row"><label for="batch-prompt">Consigne facultative pour toutes les vidéos</label><textarea id="batch-prompt" name="prompt" placeholder="Ex. utiliser le parcours d’un communicant pour les captures."></textarea></div></div>
+                <div class="box-body"><p>Une demande sera créée pour chaque guide sans vidéo. Le moteur GEVES choisit Gemini, Claude ou OpenAI pour préparer le scénario, puis Hyperframes produit la vidéo avec le logo, la palette, la police, une musique originale et des mouvements sobres.</p><div class="ukc-form-row"><label for="batch-prompt">Consigne facultative pour toutes les vidéos</label><textarea id="batch-prompt" name="prompt" placeholder="Ex. insister sur les étapes importantes pour les communicants."></textarea></div></div>
                 <div class="box-foot"><button type="button" class="ukc-btn ukc-btn--ghost" @click="batchOpen = false">Annuler</button><button class="ukc-btn ukc-btn--blue" type="submit">Enregistrer les demandes</button></div>
             </form>
         </div>

@@ -25,7 +25,7 @@ Schedule::command('backup:clean')->daily()->at('01:00');
 Schedule::command('backup:run')->daily()->at('01:30');
 Schedule::command('backup:monitor')->daily()->at('02:00');
 
-// Reprend les demandes vidéo créées avant l'activation du pont Brag/Codex.
+// Reprend les demandes vidéo créées avant l'activation du moteur Hyperframes.
 Artisan::command('tutorial-videos:dispatch-pending {--retry : Reprendre aussi les demandes en échec}', function () {
     $statuses = $this->option('retry') ? ['queued', 'failed'] : ['queued'];
     $requests = App\Models\TutorialVideoRequest::query()->whereIn('status', $statuses)->pluck('id');
@@ -43,4 +43,4 @@ Artisan::command('tutorial-videos:dispatch-pending {--retry : Reprendre aussi le
     }
 
     $this->info($requests->count().' demande(s) vidéo envoyée(s) à l’agent.');
-})->purpose('Démarre les rendus Brag des guides de prise en main en attente');
+})->purpose('Démarre les rendus Hyperframes des guides de prise en main en attente');
