@@ -17,6 +17,9 @@
         'visio' => 'seances', 'rapport' => 'seances', 'moderation' => 'seances',
         'soumission' => 'accompagnement', 'chat-public' => 'accompagnement', 'chat-admin' => 'accompagnement',
     ];
+    $tabs = ['all' => ['Tous', 10], 'pilotage' => ['Organisation', 4], 'seances' => ['Séances', 3], 'accompagnement' => ['Accompagnement', 3]];
+    $activeTab = (string) request('tab', 'all');
+    if (! array_key_exists($activeTab, $tabs)) $activeTab = 'all';
 @endphp
 
 <x-layouts.admin title="Prise en main" subtitle="Guides pratiques pour utiliser {{ config('app.name') }}">
@@ -25,7 +28,7 @@
         <a class="ukc-btn ukc-btn--blue ukc-btn--sm" href="#guides"><x-ukc.icon name="book" :size="14" /> Voir les guides</a>
     </x-slot:actions>
 
-    <div class="admin-page admin-onboarding" x-data="{ tab: 'all' }">
+    <div class="admin-page admin-onboarding">
         <div class="ukc-stats onboarding-stats">
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="book" :size="20" /></div><div class="lbl">Guides disponibles</div><div class="val blue">{{ count($guides) }}</div><div class="hint">Parcours de la plateforme</div></div>
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="video" :size="20" /></div><div class="lbl">Vidéos à ajouter</div><div class="val">{{ count($guides) }}</div><div class="hint">Un emplacement par guide</div></div>
@@ -40,17 +43,21 @@
             </div>
         </section>
 
-        <div class="ukc-tabs" id="guides" aria-label="Catégories de guides">
-            <button type="button" :class="{ active: tab === 'all' }" @click="tab = 'all'">Tous <span class="nav-count">{{ count($guides) }}</span></button>
-            <button type="button" :class="{ active: tab === 'pilotage' }" @click="tab = 'pilotage'">Organisation <span class="nav-count">4</span></button>
-            <button type="button" :class="{ active: tab === 'seances' }" @click="tab = 'seances'">Séances <span class="nav-count">3</span></button>
-            <button type="button" :class="{ active: tab === 'accompagnement' }" @click="tab = 'accompagnement'">Accompagnement <span class="nav-count">3</span></button>
+        <div class="ukc-nav-docs" id="guides" aria-label="Catégories de guides">
+            @foreach ($tabs as $key => [$label, $count])
+                @if ($activeTab === $key)
+                    <button type="button" class="active">{{ $label }} <span class="nav-count">{{ $count }}</span></button>
+                @else
+                    <a href="{{ route('admin.onboarding', ['tab' => $key]) }}#guides">{{ $label }} <span class="nav-count">{{ $count }}</span></a>
+                @endif
+            @endforeach
         </div>
 
         <div class="onboarding-guide-grid">
             @foreach ($guides as $guide)
                 @php($category = $categories[$guide['id']])
-                <article class="ukc-card onboarding-guide" id="{{ $guide['id'] }}" x-show="tab === 'all' || tab === '{{ $category }}'" x-cloak>
+                @if ($activeTab === 'all' || $activeTab === $category)
+                <article class="ukc-card onboarding-guide" id="{{ $guide['id'] }}">
                     <header class="onboarding-guide__head">
                         <span class="onboarding-guide__icon"><x-ukc.icon :name="$guide['icon']" :size="20" /></span>
                         <div><span class="onboarding-guide__number">Guide {{ $guide['number'] }}</span><h2>{{ $guide['title'] }}</h2></div>
@@ -68,6 +75,7 @@
                         @endif
                     </footer>
                 </article>
+                @endif
             @endforeach
         </div>
     </div>

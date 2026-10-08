@@ -17,13 +17,19 @@
 .admin-page .ukc-card h2 { font-size: 15px; font-weight: 800; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 
 /* ---- Prise en main ---- */
-.admin-onboarding { max-width: 1180px; }
+.admin-onboarding { width: 100%; }
 .admin-onboarding .onboarding-stats { margin-bottom: 14px; }
 .admin-onboarding .onboarding-intro { display: flex; align-items: center; gap: 14px; padding: 17px 18px; margin-bottom: 18px; }
 .admin-onboarding .onboarding-intro__icon, .admin-onboarding .onboarding-guide__icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; color: var(--ukc-blue); background: rgba(34, 62, 164, .1); border-radius: .6rem; }
 .admin-onboarding .onboarding-intro__icon { width: 42px; height: 42px; }
 .admin-onboarding .onboarding-intro h2 { margin: 0 0 3px; font-size: 15px; font-weight: 800; }
 .admin-onboarding .onboarding-intro p { margin: 0; color: var(--ukc-muted); font-size: 13px; line-height: 1.45; }
+.admin-onboarding .ukc-nav-docs { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
+.admin-onboarding .ukc-nav-docs button, .admin-onboarding .ukc-nav-docs a { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--ukc-border); border-radius: 10px; padding: 10px 16px; font-weight: 700; font-size: 13.5px; color: var(--ukc-muted); cursor: pointer; text-decoration: none; }
+.admin-onboarding .ukc-nav-docs button:hover, .admin-onboarding .ukc-nav-docs a:hover { border-color: var(--ukc-blue); color: var(--ukc-blue); }
+.admin-onboarding .ukc-nav-docs button.active, .admin-onboarding .ukc-nav-docs a.active { background: var(--ukc-blue); border-color: var(--ukc-blue); color: #fff; }
+.admin-onboarding .ukc-nav-docs .nav-count { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: #eef2ff; color: var(--ukc-blue); font-size: 11px; line-height: 1; }
+.admin-onboarding .ukc-nav-docs .active .nav-count { background: rgba(255,255,255,.2); color: #fff; }
 .admin-onboarding .onboarding-guide-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .admin-onboarding .onboarding-guide { display: flex; flex-direction: column; min-height: 312px; padding: 18px; }
 .admin-onboarding .onboarding-guide__head { display: flex; align-items: center; gap: 11px; }
@@ -41,7 +47,7 @@
 .admin-onboarding .onboarding-guide footer { min-height: 30px; }
 .admin-onboarding .onboarding-guide__access { display: inline-flex; align-items: center; gap: 6px; color: var(--ukc-light); font-size: 12px; }
 @media (max-width: 780px) { .admin-onboarding .onboarding-guide-grid { grid-template-columns: 1fr; } }
-@media (max-width: 560px) { .admin-onboarding .onboarding-intro { align-items: flex-start; } .admin-onboarding .ukc-tabs { overflow-x: auto; flex-wrap: nowrap; } .admin-onboarding .ukc-tabs button { white-space: nowrap; } }
+@media (max-width: 560px) { .admin-onboarding .onboarding-intro { align-items: flex-start; } .admin-onboarding .ukc-nav-docs { overflow-x: auto; flex-wrap: nowrap; } .admin-onboarding .ukc-nav-docs button, .admin-onboarding .ukc-nav-docs a { white-space: nowrap; } }
 /* Icône + titre groupés dans un <span> : garder l'icône alignée au texte (évite le SVG block qui passe à la ligne). */
 .admin-page .ukc-card h2 > span { display: inline-flex; align-items: center; gap: 8px; }
 .admin-page .ukc-card .desc { font-size: 13px; color: var(--ukc-muted); margin-bottom: 14px; line-height: 1.45; }
