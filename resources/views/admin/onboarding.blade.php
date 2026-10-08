@@ -84,7 +84,7 @@
         </div>
 
         <div class="ukc-modal" x-show="editing" x-cloak @keydown.escape.window="editing = null" style="display: none;">
-            <form class="box wide" method="POST" enctype="multipart/form-data" :action="editing ? updateUrl.replace('__guide__', editing.id) : ''">
+            <form class="box wide onboarding-guide-editor" method="POST" enctype="multipart/form-data" :action="editing ? updateUrl.replace('__guide__', editing.id) : ''">
                 @csrf @method('PUT')<input type="hidden" name="tab" value="{{ $activeTab }}">
                 <div class="box-head"><span>Modifier le guide</span><button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="editing = null">Fermer</button></div>
                 <div class="box-body">

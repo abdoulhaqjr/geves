@@ -52,7 +52,9 @@ Larastan **niveau 5**.
   reprend les demandes créées avant l’activation de ce pont.
 - L’espace participant expose `/prise-en-main` (`account.onboarding`). Il filtre les
   guides selon le colloque courant et les rôles réels (participant, modérateur,
-  rapporteur) ; une vidéo masquée ne doit jamais y être rendue.
+  rapporteur) ; une vidéo masquée ne doit jamais y être rendue. Ses onglets de
+  catégories filtrent aussi les cartes sans rechargement, avec la même présentation
+  en pilules que le back-office.
 
 ## Toolchain - ⚠️ PHP/Composer/artisan ne sont PAS dans le PATH
 
