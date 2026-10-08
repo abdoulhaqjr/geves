@@ -35,10 +35,14 @@ Larastan **niveau 5**.
   `tutorial_guides` ; ne jamais réintroduire leur contenu en dur dans la vue.
 - Les demandes de production ou de mise à jour vidéo sont stockées dans
   `tutorial_video_requests`, avec l’ordre de fournisseurs demandé Gemini, Codex,
-  Claude. L’agent de production applique le skill **Brag Slim** avec les captures
-  réelles de la plateforme, puis rattache le MP4 au guide. Ses livrables de travail
-  suivent le format `storage/app/brag-output-*/` : plan, captures, poster, MP4 et
-  texte de partage.
+  Claude. Le contrat persistant `meta` est construit par `TutorialVideoProduction` :
+  **Brag** pilote Hyperframes, avec les captures réelles, le logo UK, la palette et
+  la police GEVES, un lit musical et des mouvements UI sobres. L’agent rattache le
+  MP4 au guide après contrôle. Ses livrables suivent le format
+  `storage/app/brag-output-*/` : plan, brief de composition, captures, poster, MP4
+  et texte de partage. La file conserve les demandes ; un agent de production doit
+  la traiter et faire évoluer le statut, elle n'appelle pas un fournisseur IA depuis
+  la requête HTTP.
 - L’espace participant expose `/prise-en-main` (`account.onboarding`). Il filtre les
   guides selon le colloque courant et les rôles réels (participant, modérateur,
   rapporteur) ; une vidéo masquée ne doit jamais y être rendue.

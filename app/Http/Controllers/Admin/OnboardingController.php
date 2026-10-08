@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\TutorialGuide;
 use App\Models\TutorialVideoRequest;
 use App\Support\TutorialGuideCatalog;
+use App\Support\TutorialVideoProduction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -92,7 +93,7 @@ class OnboardingController extends Controller
         $this->queueVideoRequest($guide, $request, $data['action'], $data['prompt'] ?? null);
 
         return redirect()->route('admin.onboarding', ['tab' => $request->input('tab', 'all')])
-            ->with('success', 'La demande vidéo a été enregistrée et est prête pour l’agent Brag Slim.');
+            ->with('success', 'La demande vidéo a été enregistrée et est prête pour l’agent Brag.');
     }
 
     public function requestAllVideos(Request $request): RedirectResponse
@@ -129,6 +130,7 @@ class OnboardingController extends Controller
             'prompt' => blank($prompt) ? null : $prompt,
             'status' => 'queued',
             'providers' => ['gemini', 'codex', 'claude'],
+            'meta' => TutorialVideoProduction::briefFor($guide, $prompt),
         ]);
 
         $guide->update([
