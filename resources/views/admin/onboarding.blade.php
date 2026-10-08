@@ -20,7 +20,7 @@
     <x-slot:actions>
         <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.dashboard') }}"><x-ukc.icon name="home" :size="14" /> Tableau de bord</a>
         @if ($canManage)
-            <button class="ukc-btn ukc-btn--blue ukc-btn--sm" type="button" @click="batchOpen = true"><x-ukc.icon name="video" :size="14" /> Ajouter les vidéos</button>
+            <button class="ukc-btn ukc-btn--blue ukc-btn--sm" type="button" onclick="window.dispatchEvent(new CustomEvent('open-onboarding-video-batch'))"><x-ukc.icon name="video" :size="14" /> Ajouter les vidéos</button>
         @endif
     </x-slot:actions>
 
@@ -30,7 +30,7 @@
         updateUrl: '{{ $updateUrl }}', requestUrl: '{{ $requestUrl }}',
         edit(id) { this.editing = {...this.guides[id], roles: [...this.guides[id].roles]}; },
         request(id) { this.videoRequest = this.guides[id]; }
-    }">
+    }" @open-onboarding-video-batch.window="batchOpen = true">
         @if (session('success'))<div class="ukc-alert ukc-alert--success">{{ session('success') }}</div>@endif
 
         <div class="ukc-stats onboarding-stats">
@@ -45,7 +45,7 @@
         </section>
 
         @if ($canManage)
-            <section class="onboarding-automation"><span class="onboarding-automation__icon"><x-ukc.icon name="sparkles" :size="18" /></span><div><strong>Production vidéo assistée</strong><p>Les demandes sont préparées dans l’ordre Gemini, Codex puis Claude. Elles restent en attente jusqu’au raccordement d’un agent compatible.</p></div></section>
+            <section class="onboarding-automation"><span class="onboarding-automation__icon"><x-ukc.icon name="sparkles" :size="18" /></span><div><strong>Production vidéo assistée</strong><p>Les demandes sont préparées dans l’ordre Gemini, Codex puis Claude. L’agent Brag Slim utilise les captures réelles de la plateforme puis rattache le rendu au guide.</p></div></section>
         @endif
 
         <div class="ukc-nav-docs" id="guides" aria-label="Catégories de guides">

@@ -35,9 +35,10 @@ Larastan **niveau 5**.
   `tutorial_guides` ; ne jamais réintroduire leur contenu en dur dans la vue.
 - Les demandes de production ou de mise à jour vidéo sont stockées dans
   `tutorial_video_requests`, avec l’ordre de fournisseurs demandé Gemini, Codex,
-  Claude. Elles sont intentionnellement en attente tant qu’un connecteur de
-  production vidéo compatible n’est pas installé : ne jamais prétendre produire une
-  vidéo ou des captures sans cet agent.
+  Claude. L’agent de production applique le skill **Brag Slim** avec les captures
+  réelles de la plateforme, puis rattache le MP4 au guide. Ses livrables de travail
+  suivent le format `storage/app/brag-output-*/` : plan, captures, poster, MP4 et
+  texte de partage.
 - L’espace participant expose `/prise-en-main` (`account.onboarding`). Il filtre les
   guides selon le colloque courant et les rôles réels (participant, modérateur,
   rapporteur) ; une vidéo masquée ne doit jamais y être rendue.

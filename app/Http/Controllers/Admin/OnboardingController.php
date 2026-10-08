@@ -92,7 +92,7 @@ class OnboardingController extends Controller
         $this->queueVideoRequest($guide, $request, $data['action'], $data['prompt'] ?? null);
 
         return redirect()->route('admin.onboarding', ['tab' => $request->input('tab', 'all')])
-            ->with('success', 'La demande vidéo a été enregistrée. Elle attend un agent de production compatible.');
+            ->with('success', 'La demande vidéo a été enregistrée et est prête pour l’agent Brag Slim.');
     }
 
     public function requestAllVideos(Request $request): RedirectResponse
