@@ -47,7 +47,10 @@ Larastan **niveau 5**.
   `storage/app/tutorial-video-production/request-{id}/` : plan, brief de
   composition, poster, MP4 et texte de partage. Chaque demande déclenche `GenerateTutorialVideo` sur la file
   `tutorial-videos`, puis `TutorialVideoWorkerLauncher` démarre un travailleur caché
-  sous Windows. `TutorialVideoAgent` lance le rendu Hyperframes, valide le MP4 produit et
+  sous Windows. Il conserve le PID du worker et contrôle qu'il existe encore avant
+  de réutiliser le verrou : ne jamais remettre un verrou booléen d'une heure avant
+  d'avoir obtenu ce PID, car une demande resterait alors indéfiniment en attente.
+  `TutorialVideoAgent` lance le rendu Hyperframes, valide le MP4 produit et
   le publie dans le disque public. La commande `tutorial-videos:dispatch-pending`
   reprend les demandes créées avant l’activation de ce pont.
 - L’espace participant expose `/prise-en-main` (`account.onboarding`). Il filtre les
