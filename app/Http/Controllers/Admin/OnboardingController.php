@@ -141,7 +141,7 @@ class OnboardingController extends Controller
             'action' => $action,
             'prompt' => blank($prompt) ? null : $prompt,
             'status' => 'queued',
-            'providers' => ['gemini', 'codex', 'claude'],
+            'providers' => ['codex'],
             'meta' => TutorialVideoProduction::briefFor($guide, $prompt),
         ]);
 

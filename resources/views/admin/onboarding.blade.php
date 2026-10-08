@@ -45,7 +45,7 @@
         </section>
 
         @if ($canManage)
-            <section class="onboarding-automation"><span class="onboarding-automation__icon"><x-ukc.icon name="sparkles" :size="18" /></span><div><strong>Production vidéo assistée</strong><p>Les demandes sont préparées dans l’ordre Gemini, Codex puis Claude. Brag et Hyperframes utilisent les écrans réels, le logo et la charte GEVES pour livrer une vidéo avec musique, mouvements sobres et effets d’interface.</p></div></section>
+            <section class="onboarding-automation"><span class="onboarding-automation__icon"><x-ukc.icon name="sparkles" :size="18" /></span><div><strong>Production vidéo assistée</strong><p>Codex exécute Brag et Hyperframes sur les écrans réels avec le logo et la charte GEVES, pour livrer une vidéo avec musique, mouvements sobres et effets d’interface.</p></div></section>
         @endif
 
         <div class="ukc-nav-docs" id="guides" aria-label="Catégories de guides">
@@ -111,7 +111,7 @@
         <div class="ukc-modal" x-show="batchOpen" x-cloak @keydown.escape.window="batchOpen = false" style="display: none;">
             <form class="box narrow" method="POST" action="{{ route('admin.onboarding.videos.request-all') }}">
                 @csrf<div class="box-head"><span>Ajouter les vidéos de prise en main</span><button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="batchOpen = false">Fermer</button></div>
-                <div class="box-body"><p>Une demande sera créée pour chaque guide sans vidéo. La chaîne prévue est Gemini, puis Codex, puis Claude. Chaque demande fournit à Brag la charte GEVES : logo, palette, police, musique et mouvements professionnels.</p><div class="ukc-form-row"><label for="batch-prompt">Consigne facultative pour toutes les vidéos</label><textarea id="batch-prompt" name="prompt" placeholder="Ex. utiliser le parcours d’un communicant pour les captures."></textarea></div></div>
+                <div class="box-body"><p>Une demande sera créée pour chaque guide sans vidéo. Codex exécute Brag avec la charte GEVES : logo, palette, police, musique et mouvements professionnels.</p><div class="ukc-form-row"><label for="batch-prompt">Consigne facultative pour toutes les vidéos</label><textarea id="batch-prompt" name="prompt" placeholder="Ex. utiliser le parcours d’un communicant pour les captures."></textarea></div></div>
                 <div class="box-foot"><button type="button" class="ukc-btn ukc-btn--ghost" @click="batchOpen = false">Annuler</button><button class="ukc-btn ukc-btn--blue" type="submit">Enregistrer les demandes</button></div>
             </form>
         </div>

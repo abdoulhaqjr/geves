@@ -34,8 +34,8 @@ Larastan **niveau 5**.
   ou référencées et leur visibilité dans l’espace participant. Les guides sont dans
   `tutorial_guides` ; ne jamais réintroduire leur contenu en dur dans la vue.
 - Les demandes de production ou de mise à jour vidéo sont stockées dans
-  `tutorial_video_requests`, avec l’ordre de fournisseurs demandé Gemini, Codex,
-  Claude. Le contrat persistant `meta` est construit par `TutorialVideoProduction` :
+  `tutorial_video_requests`, avec `codex` comme exécuteur actif. Le contrat persistant
+  `meta` est construit par `TutorialVideoProduction` :
   **Brag** pilote Hyperframes, avec les captures réelles, le logo UK, la palette et
   la police GEVES, un lit musical et des mouvements UI sobres. L’agent rattache le
   MP4 au guide après contrôle. Ses livrables suivent le format
