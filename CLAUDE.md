@@ -524,6 +524,24 @@ Une relecture n'est plus un simple « assignée / rendue » : `Review::STATUSES`
   le nom de l'édition - il est déjà dans le sélecteur juste en dessous, et il
   faisait passer l'en-tête sur trois lignes. ⚠️ `subtitle` est une valeur PHP
   échappée à l'affichage : y écrire `&amp;` produit un `&amp;amp;` visible.
+  - ⚠️ **La barre d'actions doit pouvoir SE COMPRIMER.** `.head-actions` est
+    `flex-shrink:0` pour tenir sur la ligne du titre ; en dessous de **640px** une
+    media query la rend de nouveau compressible (`flex-shrink:1; min-width:0`).
+    Sans cela elle garde sa largeur idéale et **toute la page défile latéralement** :
+    sur « Modifier l'événement », « ← Liste / Importer / Exporter / Enregistrer »
+    réclamait 367px dans un corps qui en offre 354 (`scrollWidth` 402 pour un
+    `clientWidth` de 375). Compressible, elle enroule ses boutons toute seule.
+    Même règle que la barre de la salle de visio : rien ne doit se comprimer jusqu'à
+    zéro, **mais rien ne doit non plus refuser de se comprimer**.
+  - ⚠️ **Jamais la mise en page de l'en-tête en style EN LIGNE** : un style en ligne
+    l'emporte sur **toute** règle de la feuille, **media query comprise**. Un
+    `flex-wrap:nowrap` posé sur la balise neutralisait l'adaptation étroite sur cette
+    seule page, et une barre d'actions recopiée en ligne au lieu de porter
+    `.head-actions` n'était joignable par aucune règle. L'en-tête sans la carte
+    blanche est la **variante `.ukc-admin-head--plain`**, pas un `style=`.
+  - **Se mesurer, pas se juger à l'œil** : `document.documentElement.scrollWidth`
+    vs `clientWidth` à 375px. ⚠️ `html.ukc-dense` (`zoom:.9`) fausse la lecture
+    naïve - **`body.scrollWidth` vaut 417 (= 375/0.9) SANS aucun débordement**.
 
 - ⚠️ **Listes dans le chat** : `ukcMarkdownLite` produit de vrais `<ul>`/`<ol>`,
   mais le **reset Preflight de Tailwind** met `list-style: none` sur toutes les

@@ -34,7 +34,7 @@
          })">
 
         {{-- ===== En-tête ===== --}}
-        <header class="ukc-admin-head" style="background:transparent;border:none;padding:0;margin-bottom:16px;flex-wrap:nowrap;align-items:flex-start;">
+        <header class="ukc-admin-head ukc-admin-head--plain">
             <div style="flex:1;min-width:0;">
                 <div style="font-size:12px;margin-bottom:4px;color:var(--ukc-light);">
                     <a href="{{ route('admin.evenements.index') }}" style="color:var(--ukc-blue);font-weight:600;">Événements</a>
@@ -47,7 +47,7 @@
                     &nbsp; Paramétrage complet · assisté IA
                 </div>
             </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0;" x-data="{}">
+            <div class="head-actions" x-data="{}">
                 <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.evenements.index') }}">← Liste</a>
                 @if ($event)
                     {{-- Importer la configuration dans cet événement (fichier JSON) --}}

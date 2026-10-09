@@ -349,7 +349,24 @@ html.ukc-dense::-webkit-scrollbar-corner,
 .ukc-admin-head h1 { font-size: 1.2rem; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
 .ukc-admin-head .sub { font-size: 13px; color: var(--ukc-muted); margin-top: 2px; }
 .ukc-admin-head .head-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; flex-shrink: 0; }
-@media (max-width: 640px) { .ukc-admin-head { flex-wrap: wrap; } }
+/* Variante « nue » : même grammaire d'en-tête, sans la carte blanche - la page
+   fournit déjà son fond et ses marges. À écrire ICI et non en style en ligne :
+   un style en ligne l'emporte sur TOUTE règle de la feuille, media query
+   comprise. Un `flex-wrap:nowrap` posé sur la balise rendait donc l'adaptation
+   étroite ci-dessous inopérante, sur cette page-là seulement. */
+.ukc-admin-head--plain { background: transparent; border: none; padding: 0; margin-bottom: 16px; }
+@media (max-width: 640px) {
+  .ukc-admin-head { flex-wrap: wrap; }
+  /* Les actions passent à la ligne, et surtout elles REDEVIENNENT compressibles.
+     `flex-shrink:0` les gardait à leur largeur idéale : sur un téléphone la barre
+     « ← Liste / Importer / Exporter / Enregistrer » réclamait 367px dans un corps
+     qui en offre 354, et c'est la PAGE ENTIÈRE qui défilait latéralement
+     (scrollWidth 402 pour un clientWidth de 375). Compressibles, elles tiennent
+     dans la largeur et leur propre `flex-wrap` met les boutons sur deux lignes.
+     Même règle que la barre de la salle de visio : rien ne doit se comprimer
+     jusqu'à zéro, mais rien ne doit non plus refuser de se comprimer. */
+  .ukc-admin-head .head-actions { flex-shrink: 1; min-width: 0; }
+}
 .ukc-admin-body { padding: 20px 24px 48px; width: 100%; min-width: 0; }
 
 .ukc-main { flex: 1; margin-left: var(--ukc-sidebar); min-width: 0; display: flex; flex-direction: column; }
