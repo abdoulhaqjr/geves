@@ -89,9 +89,11 @@ class OnboardingController extends Controller
         $data = $request->validate([
             'action' => ['required', 'in:generate,update'],
             'prompt' => ['nullable', 'string', 'max:3000'],
+            'music_choice' => ['nullable', 'in:signature,calm,dynamic,none'],
+            'music' => ['nullable', 'file', 'mimetypes:audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/x-wav', 'max:25600'],
         ]);
 
-        $videoRequest = $this->queueVideoRequest($guide, $request, $data['action'], $data['prompt'] ?? null);
+        $videoRequest = $this->queueVideoRequest($guide, $request, $data['action'], $data['prompt'] ?? null, $this->music($request, $data));
         app(TutorialVideoWorkerLauncher::class)->launch();
 
         return redirect()->route('admin.onboarding', ['tab' => $request->input('tab', 'all')])
@@ -101,15 +103,20 @@ class OnboardingController extends Controller
     public function requestAllVideos(Request $request): RedirectResponse
     {
         $this->authorizeManagement($request);
-        $data = $request->validate(['prompt' => ['nullable', 'string', 'max:3000']]);
+        $data = $request->validate([
+            'prompt' => ['nullable', 'string', 'max:3000'],
+            'music_choice' => ['nullable', 'in:signature,calm,dynamic,none'],
+            'music' => ['nullable', 'file', 'mimetypes:audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/x-wav', 'max:25600'],
+        ]);
+        $music = $this->music($request, $data);
         TutorialGuideCatalog::ensureDefaults();
 
         $created = 0;
         $requests = [];
-        TutorialGuide::query()->whereNull('video_path')->whereNull('video_url')->each(function (TutorialGuide $guide) use ($request, $data, &$created, &$requests): void {
+        TutorialGuide::query()->whereNull('video_path')->whereNull('video_url')->each(function (TutorialGuide $guide) use ($request, $data, $music, &$created, &$requests): void {
             $alreadyQueued = $guide->videoRequests()->whereIn('status', ['queued', 'running'])->exists();
             if (! $alreadyQueued) {
-                $requests[] = $this->queueVideoRequest($guide, $request, 'generate', $data['prompt'] ?? null);
+                $requests[] = $this->queueVideoRequest($guide, $request, 'generate', $data['prompt'] ?? null, $music);
                 $created++;
             }
         });
@@ -128,7 +135,8 @@ class OnboardingController extends Controller
         abort_unless($request->user()?->isColloqueAdmin(), 403);
     }
 
-    private function queueVideoRequest(TutorialGuide $guide, Request $request, string $action, ?string $prompt): TutorialVideoRequest
+    /** @param array{choice: string, path: string|null} $music */
+    private function queueVideoRequest(TutorialGuide $guide, Request $request, string $action, ?string $prompt, array $music): TutorialVideoRequest
     {
         $videoRequest = TutorialVideoRequest::create([
             'tutorial_guide_id' => $guide->id,
@@ -137,7 +145,7 @@ class OnboardingController extends Controller
             'prompt' => blank($prompt) ? null : $prompt,
             'status' => 'queued',
             'providers' => [],
-            'meta' => TutorialVideoProduction::briefFor($guide, $prompt),
+            'meta' => TutorialVideoProduction::briefFor($guide, $prompt, $music),
         ]);
 
         $guide->update([
@@ -146,5 +154,14 @@ class OnboardingController extends Controller
         ]);
 
         return $videoRequest;
+    }
+
+    /** @param array<string, mixed> $data @return array{choice: string, path: string|null} */
+    private function music(Request $request, array $data): array
+    {
+        return [
+            'choice' => (string) ($data['music_choice'] ?? 'signature'),
+            'path' => $request->hasFile('music') ? $request->file('music')->store('tutorial-music', 'public') : null,
+        ];
     }
 }

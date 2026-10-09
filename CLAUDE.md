@@ -57,7 +57,10 @@ Larastan **niveau 5**.
   de réutiliser le verrou : ne jamais remettre un verrou booléen d'une heure avant
   d'avoir obtenu ce PID, car une demande resterait alors indéfiniment en attente.
   `TutorialVideoAgent` lance le rendu Hyperframes, valide le MP4 produit et
-  le publie dans le disque public. La commande `tutorial-videos:dispatch-pending`
+  le publie dans le disque public. Le modal permet de conserver la **Signature
+  GEVES** par défaut, de choisir les variantes locale `calm` ou `dynamic`,
+  de demander une vidéo sans musique, ou de téléverser une piste MP3/M4A/AAC/WAV
+  (25 Mo, prioritaire sur le choix). La commande `tutorial-videos:dispatch-pending`
   reprend les demandes créées avant l’activation de ce pont.
 - L’espace participant expose `/prise-en-main` (`account.onboarding`). Il filtre les
   guides selon le colloque courant et les rôles réels (participant, modérateur,
@@ -3031,7 +3034,7 @@ Deux mécanismes, complémentaires :
   transparente). C'est le repli quand PS ne s'applique pas (public = scrollbar
   natif du navigateur, ni `ukc-dense` ni `.ukc-shell`).
 
-### Tutoriels vidéo : rendu autonome et simulations par étape (2026-10-09)
+### Tutoriels vidéo : rendu autonome, captures authentifiées et musique (2026-10-09)
 
 - Une demande depuis `admin/prise-en-main` ne dépend plus d’un worker Laravel
   externe : `TutorialVideoWorkerLauncher` lance `tutorial-videos:render-pending`,
@@ -3039,7 +3042,8 @@ Deux mécanismes, complémentaires :
   Ainsi, un administrateur déclenche le rendu serveur sans intervention Codex.
 - Chaque vidéo reprend le **monogramme compact** (`app_logo_mark`, avec repli sur
   `public/img/apple-touch-icon.png`), jamais le lockup large.
-- Chaque étape porte une simulation d’interface contextualisée. Ce sont des
-  maquettes explicatives fidèles à la charte GEVES, jamais des captures
-  authentifiées. La bande son locale est une composition instrumentale originale
-  normalisée pour rester audible.
+- Chaque étape porte une **capture authentifiée** de l’interface GEVES via le
+  compte technique de démonstration ; ne pas remettre de maquette à la place.
+  La Signature GEVES est le lit instrumental local par défaut. `calm`, `dynamic`,
+  `none` et un fichier administrateur sont gérés par `meta.music` ; le fichier
+  téléversé est prioritaire et FFmpeg le boucle, le normalise puis l’atténue en fin.

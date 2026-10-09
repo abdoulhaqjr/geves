@@ -14,7 +14,8 @@ use Illuminate\Support\Facades\Storage;
 final class TutorialVideoProduction
 {
     /** @return array<string, mixed> */
-    public static function briefFor(TutorialGuide $guide, ?string $instruction = null): array
+    /** @param array{choice?: string, path?: string|null}|null $music */
+    public static function briefFor(TutorialGuide $guide, ?string $instruction = null, ?array $music = null): array
     {
         $stepCount = max(1, count($guide->steps ?: []));
         $customMark = Settings::get(Branding::MARK);
@@ -45,6 +46,12 @@ final class TutorialVideoProduction
                     'background' => '#f8fafc',
                 ],
                 'font' => 'Jost',
+            ],
+            'music' => [
+                'choice' => in_array($music['choice'] ?? 'signature', ['signature', 'calm', 'dynamic', 'none'], true)
+                    ? ($music['choice'] ?? 'signature') : 'signature',
+                'path' => filled($music['path'] ?? null) && Storage::disk('public')->exists((string) $music['path'])
+                    ? Storage::disk('public')->path((string) $music['path']) : null,
             ],
             'creative_direction' => [
                 'show_real_interface' => true,

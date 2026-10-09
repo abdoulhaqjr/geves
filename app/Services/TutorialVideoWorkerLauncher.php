@@ -72,10 +72,13 @@ class TutorialVideoWorkerLauncher
             return true;
         }
 
-        $check = new Process(['tasklist.exe', '/FI', 'PID eq '.$worker['pid'], '/FO', 'CSV', '/NH']);
+        $check = new Process([
+            'powershell.exe', '-NoProfile', '-NonInteractive', '-Command',
+            '(Get-CimInstance Win32_Process -Filter "ProcessId = '.$worker['pid'].'").CommandLine',
+        ]);
         $check->run();
 
-        return $check->isSuccessful() && str_contains($check->getOutput(), '"'.$worker['pid'].'"');
+        return $check->isSuccessful() && str_contains($check->getOutput(), 'tutorial-videos:render-pending');
     }
 
     private function ps(string $value): string

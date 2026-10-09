@@ -749,8 +749,11 @@ de l'édition.
   Hyperframes. Les clics administrateur ne requièrent ni Codex ni un worker de
   queue installé sur leur poste.
 - Les compositions utilisent le logo compact configurable (`app_logo_mark`), agrandi
-  dans le verrou de marque pour correspondre au bloc de texte voisin, une musique
-  originale audible et les **vraies pages GEVES** à chaque étape du guide.
+  dans le verrou de marque pour correspondre au bloc de texte voisin et les **vraies
+  pages GEVES** à chaque étape du guide. La **Signature GEVES** est la musique locale
+  par défaut. L’administrateur peut choisir `calm`, `dynamic`, sans musique, ou
+  téléverser un MP3/M4A/AAC/WAV de 25 Mo maximum (le fichier est prioritaire, bouclé
+  à la durée du guide et normalisé par FFmpeg).
   `TutorialVideoScreenshotService` génère pour chaque scène une URL signée, ouvre le
   pont `tutorial.capture`, connecte dans le navigateur Hyperframes le compte technique
   `captures-tutoriels@geves.invalid`, puis copie la capture dans le dossier de la
@@ -761,3 +764,6 @@ de l'édition.
 - Le modal de demande distingue la première production de la mise à jour et précise
   que les écrans proviennent de GEVES. Dans le menu staff, « Prise en main » vit sous
   **Système**.
+- Sous Windows, le lanceur ne se fie plus au seul PID mis en cache : il contrôle la
+  ligne de commande du processus (`tutorial-videos:render-pending`). Un PID réutilisé
+  par Windows ne peut donc plus laisser une demande `queued` bloquée indéfiniment.
