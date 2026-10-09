@@ -16,8 +16,13 @@ class TutorialVideoRenderer
         $output = $directory.DIRECTORY_SEPARATOR.'render-result.json';
 
         File::put($input, json_encode($brief, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
+        $ffmpeg = $this->ffmpegBinary();
         $process = Process::timeout((int) config('tutorial-video.render_timeout', 3300))
             ->path(base_path())
+            ->env([
+                'FFMPEG_BINARY' => $ffmpeg,
+                'HYPERFRAMES_FFMPEG_PATH' => $ffmpeg,
+            ])
             ->run([
                 config('tutorial-video.node_binary', 'node'),
                 resource_path('scripts/tutorial-video-renderer.mjs'),
@@ -39,5 +44,28 @@ class TutorialVideoRenderer
             'poster' => (string) ($result['poster'] ?? ''),
             'summary' => (string) ($result['summary'] ?? ''),
         ];
+    }
+
+    /** Résout FFmpeg même lorsque le worker Windows n’hérite pas du PATH utilisateur. */
+    private function ffmpegBinary(): string
+    {
+        $configured = config('tutorial-video.ffmpeg_binary');
+        if (is_string($configured) && $configured !== '' && is_file($configured)) {
+            return $configured;
+        }
+
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $localAppData = getenv('LOCALAPPDATA');
+            if (is_string($localAppData) && $localAppData !== '') {
+                $candidates = glob($localAppData.DIRECTORY_SEPARATOR.'Microsoft'.DIRECTORY_SEPARATOR.'WinGet'.DIRECTORY_SEPARATOR.'Packages'.DIRECTORY_SEPARATOR.'Gyan.FFmpeg_*'.DIRECTORY_SEPARATOR.'*'.DIRECTORY_SEPARATOR.'bin'.DIRECTORY_SEPARATOR.'ffmpeg.exe') ?: [];
+                if ($candidates !== []) {
+                    rsort($candidates, SORT_NATURAL);
+
+                    return $candidates[0];
+                }
+            }
+        }
+
+        return 'ffmpeg';
     }
 }

@@ -1,5 +1,11 @@
 <?php
 
+use App\Models\TutorialGuide;
+use App\Models\TutorialVideoRequest;
+use App\Services\TutorialVideoRenderer;
+use App\Services\TutorialVideoWorkerLauncher;
+use App\Support\TutorialGuideCatalog;
+
 /**
  * Rendu des deux pages de prise en main (back-office + espace participant).
  * ⚠️ Garde-fou de compilation Blade : la refonte a touché la structure des
@@ -35,10 +41,10 @@ it('affiche un seul formulaire vidéo et poste vers son URL déclarée', functio
 });
 
 it('expose la progression d’une production vidéo au calque de suivi', function () {
-    \App\Support\TutorialGuideCatalog::ensureDefaults();
+    TutorialGuideCatalog::ensureDefaults();
     $staff = adminStaff();
-    $videoRequest = \App\Models\TutorialVideoRequest::create([
-        'tutorial_guide_id' => \App\Models\TutorialGuide::query()->firstOrFail()->id,
+    $videoRequest = TutorialVideoRequest::create([
+        'tutorial_guide_id' => TutorialGuide::query()->firstOrFail()->id,
         'requested_by_user_id' => $staff->id,
         'action' => 'generate',
         'status' => 'running',
@@ -56,9 +62,17 @@ it('expose la progression d’une production vidéo au calque de suivi', functio
 });
 
 it('utilise un binaire PHP CLI pour le worker vidéo Windows', function () {
-    $method = new ReflectionMethod(\App\Services\TutorialVideoWorkerLauncher::class, 'phpCli');
+    $method = new ReflectionMethod(TutorialVideoWorkerLauncher::class, 'phpCli');
     $method->setAccessible(true);
 
-    expect($method->invoke(app(\App\Services\TutorialVideoWorkerLauncher::class)))
+    expect($method->invoke(app(TutorialVideoWorkerLauncher::class)))
         ->toEndWith('php.exe');
+});
+
+it('résout FFmpeg pour le renderer vidéo Windows', function () {
+    $method = new ReflectionMethod(TutorialVideoRenderer::class, 'ffmpegBinary');
+    $method->setAccessible(true);
+
+    expect($method->invoke(app(TutorialVideoRenderer::class)))
+        ->toEndWith('ffmpeg.exe');
 });

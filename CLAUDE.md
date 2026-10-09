@@ -3059,3 +3059,9 @@ Deux mécanismes, complémentaires :
   le processus : une requête servie par PHP-FPM peut exposer `php-cgi.exe`, qui quitte
   sans exécuter Artisan. Le PID n’est mis en cache qu’après vérification de la ligne
   de commande du worker.
+- Le renderer résout également `ffmpeg.exe` et transmet son chemin à Hyperframes
+  (`HYPERFRAMES_FFMPEG_PATH`) : le processus détaché Windows n’hérite pas toujours
+  du `PATH` utilisateur. Les tutoriels sont encodés en **1280×720 HD** à partir du
+  canevas de direction 1920×1080, mis à l’échelle scène par scène. Ce choix maintient
+  les captures, textes et mouvements tout en évitant les échecs mémoire `libx264` sur
+  les postes où Chrome laisse peu de RAM disponible.
