@@ -76,3 +76,14 @@ it('résout FFmpeg pour le renderer vidéo Windows', function () {
     expect($method->invoke(app(TutorialVideoRenderer::class)))
         ->toEndWith('ffmpeg.exe');
 });
+
+it('résout FFprobe compagnon de FFmpeg pour Hyperframes', function () {
+    $ffmpeg = new ReflectionMethod(TutorialVideoRenderer::class, 'ffmpegBinary');
+    $ffmpeg->setAccessible(true);
+    $ffprobe = new ReflectionMethod(TutorialVideoRenderer::class, 'ffprobeBinary');
+    $ffprobe->setAccessible(true);
+    $renderer = app(TutorialVideoRenderer::class);
+
+    expect($ffprobe->invoke($renderer, $ffmpeg->invoke($renderer)))
+        ->toEndWith('ffprobe.exe');
+});

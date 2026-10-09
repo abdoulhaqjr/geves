@@ -17,11 +17,13 @@ class TutorialVideoRenderer
 
         File::put($input, json_encode($brief, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
         $ffmpeg = $this->ffmpegBinary();
+        $ffprobe = $this->ffprobeBinary($ffmpeg);
         $process = Process::timeout((int) config('tutorial-video.render_timeout', 3300))
             ->path(base_path())
             ->env([
                 'FFMPEG_BINARY' => $ffmpeg,
                 'HYPERFRAMES_FFMPEG_PATH' => $ffmpeg,
+                'HYPERFRAMES_FFPROBE_PATH' => $ffprobe,
             ])
             ->run([
                 config('tutorial-video.node_binary', 'node'),
@@ -67,5 +69,21 @@ class TutorialVideoRenderer
         }
 
         return 'ffmpeg';
+    }
+
+    /** FFprobe accompagne FFmpeg ; Hyperframes le requiert pour vérifier les médias. */
+    private function ffprobeBinary(string $ffmpeg): string
+    {
+        $configured = config('tutorial-video.ffprobe_binary');
+        if (is_string($configured) && $configured !== '' && is_file($configured)) {
+            return $configured;
+        }
+
+        $sibling = dirname($ffmpeg).DIRECTORY_SEPARATOR.(DIRECTORY_SEPARATOR === '\\' ? 'ffprobe.exe' : 'ffprobe');
+        if (is_file($sibling)) {
+            return $sibling;
+        }
+
+        return 'ffprobe';
     }
 }

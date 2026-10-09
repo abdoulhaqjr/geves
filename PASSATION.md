@@ -779,8 +779,9 @@ de l'édition.
 - Sur Windows, `TutorialVideoWorkerLauncher` choisit `php.exe` voisin de `PHP_BINARY`
   puis vérifie le processus avant de garder son PID en cache. PHP-FPM peut déclarer
   `php-cgi.exe`, lequel crée un PID temporaire mais ne peut pas exécuter Artisan.
-- `TutorialVideoRenderer` résout `ffmpeg.exe` puis le transmet aussi à Hyperframes
-  avec `HYPERFRAMES_FFMPEG_PATH`, car le worker détaché n’a pas toujours le `PATH`
-  de la session administrateur. Le rendu sort en **HD 1280×720** avec le canevas
+- `TutorialVideoRenderer` résout `ffmpeg.exe` et son compagnon `ffprobe.exe`, puis les
+  transmet à Hyperframes avec `HYPERFRAMES_FFMPEG_PATH` et
+  `HYPERFRAMES_FFPROBE_PATH`, car le worker détaché n’a pas toujours le `PATH` de la
+  session administrateur. Le rendu sort en **HD 1280×720** avec le canevas
   graphique 1920×1080 réduit scène par scène : l’image reste complète et lisible,
   avec une consommation mémoire compatible avec un poste Windows sous pression.
