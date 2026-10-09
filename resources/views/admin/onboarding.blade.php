@@ -16,15 +16,15 @@
     ])->keyBy('id');
 @endphp
 
-<x-layouts.admin title="Prise en main" subtitle="Guides pratiques pour utiliser {{ config('app.name') }}">
+<x-layouts.admin title="Prise en main" subtitle="Guides pratiques pour prendre en main {{ config('app.name') }}">
     <x-slot:actions>
         <a class="ukc-btn ukc-btn--ghost ukc-btn--sm" href="{{ route('admin.dashboard') }}"><x-ukc.icon name="home" :size="14" /> Tableau de bord</a>
         @if ($canManage)
-            <button class="ukc-btn ukc-btn--blue ukc-btn--sm" type="button" onclick="window.dispatchEvent(new CustomEvent('open-onboarding-video-batch'))"><x-ukc.icon name="video" :size="14" /> Ajouter les vidéos</button>
+            <button class="ukc-btn ukc-btn--blue ukc-btn--sm" type="button" onclick="window.dispatchEvent(new CustomEvent('open-onboarding-video-batch'))"><x-ukc.icon name="video" :size="14" /> Produire les vidéos</button>
         @endif
     </x-slot:actions>
 
-    <div class="admin-page admin-onboarding" x-data="{
+    <div class="admin-page ukc-onb" x-data="{
         editing: null, videoRequest: null, batchOpen: false,
         guides: {{ Js::from($guidePayload) }},
         updateUrl: '{{ $updateUrl }}', requestUrl: '{{ $requestUrl }}',
@@ -33,19 +33,17 @@
     }" @open-onboarding-video-batch.window="batchOpen = true">
         @if (session('success'))<div class="ukc-alert ukc-alert--success">{{ session('success') }}</div>@endif
 
-        <div class="ukc-stats onboarding-stats">
+        <div class="ukc-stats onb-stats">
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="book" :size="20" /></div><div class="lbl">Guides disponibles</div><div class="val blue">{{ $guides->count() }}</div><div class="hint">Parcours de la plateforme</div></div>
-            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="video" :size="20" /></div><div class="lbl">Vidéos publiées</div><div class="val">{{ $videosReady }}</div><div class="hint">{{ $guides->count() - $videosReady }} vidéo(s) à ajouter</div></div>
-            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="users" :size="20" /></div><div class="lbl">Espaces concernés</div><div class="val green">3</div><div class="hint">Admin, participant et public</div></div>
+            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--violet"><x-ukc.icon name="video" :size="20" /></div><div class="lbl">Vidéos publiées</div><div class="val">{{ $videosReady }}</div><div class="hint">{{ $guides->count() - $videosReady }} vidéo(s) à produire</div></div>
+            <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="users" :size="20" /></div><div class="lbl">Espaces concernés</div><div class="val green">3</div><div class="hint">Administration, participant et public</div></div>
         </div>
 
-        <section class="ukc-card onboarding-intro">
-            <div class="onboarding-intro__icon"><x-ukc.icon name="book" :size="22" /></div>
-            <div><h2>Centre de prise en main</h2><p>Les administrateurs de colloque peuvent adapter les textes, déposer une vidéo et choisir sa visibilité dans l’espace participant.</p></div>
-        </section>
-
         @if ($canManage)
-            <section class="onboarding-automation"><span class="onboarding-automation__icon"><x-ukc.icon name="sparkles" :size="18" /></span><div><strong>Production vidéo assistée</strong><p>Le moteur sélectionne Gemini, Claude ou OpenAI selon les réglages, prépare le scénario, capture les écrans réels avec un compte de démonstration, puis Hyperframes rend la vidéo sur le serveur avec la charte GEVES. Aucun compte IA sur le poste de l’administrateur n’est requis.</p></div></section>
+            <div class="onb-note">
+                <span class="onb-note__icon"><x-ukc.icon name="sparkles" :size="18" /></span>
+                <div><strong>Production vidéo assistée</strong><p>Le moteur choisit Gemini, Claude ou OpenAI selon vos réglages, prépare le scénario, capture les écrans réels avec un compte de démonstration, puis Hyperframes rend la vidéo sur le serveur avec la charte {{ config('app.name') }}. Aucun compte IA n’est requis sur votre poste.</p></div>
+            </div>
         @endif
 
         <div class="ukc-nav-docs" id="guides" aria-label="Catégories de guides">
@@ -53,30 +51,47 @@
             @foreach ($categories as $key => $category)<a @class(['active' => $activeTab === $key]) href="{{ route('admin.onboarding', ['tab' => $key]) }}#guides">{{ $category['label'] }} <span class="nav-count">{{ $counts[$key] ?? 0 }}</span></a>@endforeach
         </div>
 
-        <div class="onboarding-guide-grid">
+        <div class="onb-grid">
             @foreach ($guides as $guide)
                 @continue($activeTab !== 'all' && $activeTab !== TutorialGuideCatalog::categoryFor($guide->key))
-                @php($isQueued = $guide->video_generation_status === 'queued')
-                @php($isGenerating = $guide->video_generation_status === 'generating')
-                @php($isFailed = $guide->video_generation_status === 'failed')
-                <article class="ukc-card onboarding-guide" id="{{ $guide->key }}">
-                    <header class="onboarding-guide__head"><span class="onboarding-guide__icon"><x-ukc.icon :name="TutorialGuideCatalog::iconFor($guide->key)" :size="20" /></span><div><span class="onboarding-guide__number">Guide {{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span><h2>{{ $guide->title }}</h2></div></header>
-                    <p class="onboarding-guide__intro">{{ $guide->intro }}</p>
-                    <ol class="onboarding-guide__steps">@foreach ($guide->steps ?: [] as $step)<li>{{ $step }}</li>@endforeach</ol>
+                @php($category = TutorialGuideCatalog::categoryFor($guide->key))
+                @php($status = $guide->video_generation_status)
+                <article class="ukc-card onb-card" id="{{ $guide->key }}">
+                    <header class="onb-card__head">
+                        <span class="onb-card__icon"><x-ukc.icon :name="TutorialGuideCatalog::iconFor($guide->key)" :size="21" /></span>
+                        <div class="onb-card__titles">
+                            <h3 class="onb-card__title">{{ $guide->title }}</h3>
+                            <span class="onb-card__tag"><x-ukc.icon :name="$categories[$category]['icon'] ?? 'book'" :size="12" /> {{ $categories[$category]['label'] ?? 'Guide' }}</span>
+                        </div>
+                    </header>
+                    <p class="onb-card__intro">{{ $guide->intro }}</p>
+                    <ol class="onb-steps">@foreach ($guide->steps ?: [] as $step)<li>{{ $step }}</li>@endforeach</ol>
+
                     @if ($guide->hasVideo())
-                        <div class="onboarding-video onboarding-video--ready"><video controls preload="metadata" src="{{ $guide->videoUrl() }}"></video><div><strong>Vidéo de démonstration</strong><small>{{ $guide->video_visible_to_participants ? 'Visible aux participants concernés' : 'Masquée dans l’espace participant' }}</small></div></div>
+                        <div class="onb-media">
+                            <video controls preload="metadata" src="{{ $guide->videoUrl() }}"></video>
+                            <div class="onb-media__meta">
+                                <span class="onb-media__ico"><x-ukc.icon name="check" :size="15" /></span>
+                                <div><strong>Vidéo de démonstration</strong><small>{{ $guide->video_visible_to_participants ? 'Visible par les participants concernés' : 'Masquée dans l’espace participant' }}</small></div>
+                            </div>
+                        </div>
                     @else
-                        <div class="onboarding-video"><span><x-ukc.icon name="video" :size="18" /></span><div><strong>Vidéo de démonstration</strong><small>{{ $isQueued ? 'Demande de production enregistrée' : 'À ajouter prochainement' }}</small></div></div>
+                        <div class="onb-media onb-media--soon">
+                            <span class="onb-media__play"><x-ukc.icon name="video" :size="17" /></span>
+                            <div><strong>Vidéo de démonstration</strong><small>{{ $status === 'queued' ? 'Demande de production enregistrée' : 'À produire' }}</small></div>
+                        </div>
                     @endif
-                    @if ($isQueued)<span class="onboarding-guide__status"><x-ukc.icon name="clock" :size="13" /> Demande enregistrée, lancement de l’agent vidéo…</span>@endif
-                    @if ($isGenerating)<span class="onboarding-guide__status"><x-ukc.icon name="video" :size="13" /> Rendu vidéo Hyperframes en cours…</span>@endif
-                    @if ($isFailed)<span class="onboarding-guide__status onboarding-guide__status--error"><x-ukc.icon name="alert-triangle" :size="13" /> La production a échoué. Relancez la demande ou consultez le journal.</span>@endif
-                    <footer>
+
+                    @if ($status === 'queued')<span class="onb-flag"><x-ukc.icon name="clock" :size="13" /> Demande enregistrée, lancement de l’agent vidéo…</span>@endif
+                    @if ($status === 'generating')<span class="onb-flag"><x-ukc.icon name="video" :size="13" /> Rendu Hyperframes en cours…</span>@endif
+                    @if ($status === 'failed')<span class="onb-flag onb-flag--error"><x-ukc.icon name="alert-triangle" :size="13" /> La production a échoué. Relancez la demande.</span>@endif
+
+                    <footer class="onb-card__foot">
                         @if ($canManage)
-                            <button class="ukc-btn ukc-btn--outline ukc-btn--sm" type="button" @click="edit({{ $guide->id }})"><x-ukc.icon name="settings" :size="14" /> Modifier</button>
-                            <button class="ukc-btn ukc-btn--ghost ukc-btn--sm" type="button" @click="request({{ $guide->id }})"><x-ukc.icon name="video" :size="14" /> {{ $guide->hasVideo() ? 'Mettre à jour la vidéo' : 'Demander la vidéo' }}</button>
+                            <button class="ukc-btn ukc-btn--outline ukc-btn--sm" type="button" @click="edit({{ $guide->id }})"><x-ukc.icon name="settings" :size="14" /> Modifier le texte</button>
+                            <button class="ukc-btn ukc-btn--ghost ukc-btn--sm" type="button" @click="request({{ $guide->id }})"><x-ukc.icon name="video" :size="14" /> {{ $guide->hasVideo() ? 'Mettre à jour la vidéo' : 'Produire la vidéo' }}</button>
                         @else
-                            <span class="onboarding-guide__access"><x-ukc.icon name="lock" :size="14" /> Modification réservée aux administrateurs</span>
+                            <span class="onb-card__lock"><x-ukc.icon name="lock" :size="14" /> Modification réservée aux administrateurs</span>
                         @endif
                     </footer>
                 </article>
@@ -103,16 +118,16 @@
         <div class="ukc-modal" x-show="videoRequest" x-cloak @keydown.escape.window="videoRequest = null" style="display: none;">
             <form class="box narrow onboarding-video-request" method="POST" enctype="multipart/form-data" :action="videoRequest ? requestUrl.replace('__guide__', videoRequest.id) : ''">
                 @csrf<input type="hidden" name="action" :value="videoRequest?.action"><input type="hidden" name="tab" value="{{ $activeTab }}">
-                <div class="box-head"><div class="onboarding-video-request__title"><span><x-ukc.icon name="video" :size="19" /></span><div><strong x-text="videoRequest?.action === 'update' ? 'Mettre à jour la vidéo' : 'Demander la vidéo' "></strong><small x-text="videoRequest?.title"></small></div></div><button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="videoRequest = null">Fermer</button></div>
-                <div class="box-body"><p x-text="videoRequest?.action === 'update' ? 'Une nouvelle version remplacera la vidéo publiée après le rendu.' : 'Le guide sera produit sous forme de vidéo dès que la demande sera confirmée.'"></p><div class="onboarding-video-request__workflow"><span><x-ukc.icon name="monitor" :size="17" /></span><div><strong>Captures réelles de GEVES</strong><small>Le serveur ouvre les pages avec un compte de démonstration, puis les intègre à la vidéo avec la charte et la musique GEVES.</small></div></div><div class="ukc-form-row"><label for="video-music">Musique</label><select id="video-music" name="music_choice" x-model="videoRequest.musicChoice"><option value="signature">Signature GEVES — instrumentale chaleureuse</option><option value="calm">Calme — institutionnelle et discrète</option><option value="dynamic">Dynamique — moderne et rythmée</option><option value="none">Sans musique</option></select><small class="onboarding-field-hint">La signature GEVES est utilisée par défaut.</small></div><div class="ukc-form-row"><label for="video-music-file">Ou utiliser votre musique</label><input id="video-music-file" type="file" name="music" accept="audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/x-wav"><small class="onboarding-field-hint">MP3, M4A, AAC ou WAV, 25 Mo maximum. Le fichier remplace le choix ci-dessus.</small></div><div class="ukc-form-row"><label for="video-prompt">Précision facultative</label><textarea id="video-prompt" name="prompt" placeholder="Ex. mettre l’accent sur le nouveau parcours de soumission."></textarea><small class="onboarding-field-hint">Cette précision oriente le scénario sans modifier les textes du guide.</small></div></div>
+                <div class="box-head"><div class="onboarding-video-request__title"><span><x-ukc.icon name="video" :size="19" /></span><div><strong x-text="videoRequest?.action === 'update' ? 'Mettre à jour la vidéo' : 'Produire la vidéo' "></strong><small x-text="videoRequest?.title"></small></div></div><button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="videoRequest = null">Fermer</button></div>
+                <div class="box-body"><p x-text="videoRequest?.action === 'update' ? 'Une nouvelle version remplacera la vidéo publiée après le rendu.' : 'Le guide sera produit sous forme de vidéo dès que la demande sera confirmée.'"></p><div class="onboarding-video-request__workflow"><span><x-ukc.icon name="monitor" :size="17" /></span><div><strong>Captures réelles de {{ config('app.name') }}</strong><small>Le serveur ouvre les pages avec un compte de démonstration, puis les intègre à la vidéo avec la charte et la musique.</small></div></div><div class="ukc-form-row"><label for="video-music">Musique</label><select id="video-music" name="music_choice" x-model="videoRequest.musicChoice"><option value="signature">Signature {{ config('app.name') }} — instrumentale chaleureuse</option><option value="calm">Calme — institutionnelle et discrète</option><option value="dynamic">Dynamique — moderne et rythmée</option><option value="none">Sans musique</option></select><small class="onboarding-field-hint">La signature est utilisée par défaut.</small></div><div class="ukc-form-row"><label for="video-music-file">Ou utiliser votre musique</label><input id="video-music-file" type="file" name="music" accept="audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/x-wav"><small class="onboarding-field-hint">MP3, M4A, AAC ou WAV, 25 Mo maximum. Le fichier remplace le choix ci-dessus.</small></div><div class="ukc-form-row"><label for="video-prompt">Précision facultative</label><textarea id="video-prompt" name="prompt" placeholder="Ex. mettre l’accent sur le nouveau parcours de soumission."></textarea><small class="onboarding-field-hint">Cette précision oriente le scénario sans modifier les textes du guide.</small></div></div>
                 <div class="box-foot"><button type="button" class="ukc-btn ukc-btn--ghost" @click="videoRequest = null">Annuler</button><button class="ukc-btn ukc-btn--blue" type="submit" x-text="videoRequest?.action === 'update' ? 'Lancer la mise à jour' : 'Lancer la production'"></button></div>
             </form>
         </div>
 
         <div class="ukc-modal" x-show="batchOpen" x-cloak @keydown.escape.window="batchOpen = false" style="display: none;">
             <form class="box narrow" method="POST" enctype="multipart/form-data" action="{{ route('admin.onboarding.videos.request-all') }}">
-                @csrf<div class="box-head"><span>Ajouter les vidéos de prise en main</span><button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="batchOpen = false">Fermer</button></div>
-                <div class="box-body"><p>Une demande sera créée pour chaque guide sans vidéo. Le moteur GEVES choisit Gemini, Claude ou OpenAI pour préparer le scénario, capture les vrais écrans avec un compte de démonstration, puis Hyperframes produit la vidéo avec le logo, la palette, la police, une musique originale et des mouvements sobres.</p><div class="ukc-form-row"><label for="batch-music">Musique par défaut</label><select id="batch-music" name="music_choice"><option value="signature">Signature GEVES — instrumentale chaleureuse</option><option value="calm">Calme — institutionnelle et discrète</option><option value="dynamic">Dynamique — moderne et rythmée</option><option value="none">Sans musique</option></select></div><div class="ukc-form-row"><label for="batch-music-file">Ou utiliser votre musique pour toutes les vidéos</label><input id="batch-music-file" type="file" name="music" accept="audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/x-wav"><small class="onboarding-field-hint">MP3, M4A, AAC ou WAV, 25 Mo maximum.</small></div><div class="ukc-form-row"><label for="batch-prompt">Consigne facultative pour toutes les vidéos</label><textarea id="batch-prompt" name="prompt" placeholder="Ex. insister sur les étapes importantes pour les communicants."></textarea></div></div>
+                @csrf<div class="box-head"><span>Produire les vidéos de prise en main</span><button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="batchOpen = false">Fermer</button></div>
+                <div class="box-body"><p>Une demande sera créée pour chaque guide sans vidéo. Le moteur choisit Gemini, Claude ou OpenAI pour préparer le scénario, capture les vrais écrans avec un compte de démonstration, puis Hyperframes produit la vidéo avec le logo, la palette, la police, une musique originale et des mouvements sobres.</p><div class="ukc-form-row"><label for="batch-music">Musique par défaut</label><select id="batch-music" name="music_choice"><option value="signature">Signature {{ config('app.name') }} — instrumentale chaleureuse</option><option value="calm">Calme — institutionnelle et discrète</option><option value="dynamic">Dynamique — moderne et rythmée</option><option value="none">Sans musique</option></select></div><div class="ukc-form-row"><label for="batch-music-file">Ou utiliser votre musique pour toutes les vidéos</label><input id="batch-music-file" type="file" name="music" accept="audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/x-wav"><small class="onboarding-field-hint">MP3, M4A, AAC ou WAV, 25 Mo maximum.</small></div><div class="ukc-form-row"><label for="batch-prompt">Consigne facultative pour toutes les vidéos</label><textarea id="batch-prompt" name="prompt" placeholder="Ex. insister sur les étapes importantes pour les communicants."></textarea></div></div>
                 <div class="box-foot"><button type="button" class="ukc-btn ukc-btn--ghost" @click="batchOpen = false">Annuler</button><button class="ukc-btn ukc-btn--blue" type="submit">Enregistrer les demandes</button></div>
             </form>
         </div>

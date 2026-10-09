@@ -16,102 +16,96 @@
 .ukc-shell .ukc-stat-card .hint.up { color: var(--ukc-green); }
 .admin-page .ukc-card h2 { font-size: 15px; font-weight: 800; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 
-/* ---- Prise en main ---- */
-.admin-onboarding { width: 100%; }
-.admin-onboarding .onboarding-stats { margin-bottom: 14px; }
-.admin-onboarding .onboarding-intro { display: flex; align-items: center; gap: 14px; padding: 17px 18px; margin-bottom: 18px; }
-.admin-onboarding .onboarding-intro__icon, .admin-onboarding .onboarding-guide__icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; color: var(--ukc-blue); background: rgba(34, 62, 164, .1); border-radius: .6rem; }
-.admin-onboarding .onboarding-intro__icon { width: 42px; height: 42px; }
-.admin-onboarding .onboarding-intro h2 { margin: 0 0 3px; font-size: 15px; font-weight: 800; }
-.admin-onboarding .onboarding-intro p { margin: 0; color: var(--ukc-muted); font-size: 13px; line-height: 1.45; }
-.admin-onboarding .ukc-nav-docs { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
-.admin-onboarding .ukc-nav-docs button, .admin-onboarding .ukc-nav-docs a { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--ukc-border); border-radius: 10px; padding: 10px 16px; font-weight: 700; font-size: 13.5px; color: var(--ukc-muted); cursor: pointer; text-decoration: none; }
-.admin-onboarding .ukc-nav-docs button:hover, .admin-onboarding .ukc-nav-docs a:hover { border-color: var(--ukc-blue); color: var(--ukc-blue); }
-.admin-onboarding .ukc-nav-docs button.active, .admin-onboarding .ukc-nav-docs a.active { background: var(--ukc-blue); border-color: var(--ukc-blue); color: #fff; }
-.admin-onboarding .ukc-nav-docs .nav-count { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: #eef2ff; color: var(--ukc-blue); font-size: 11px; line-height: 1; }
-.admin-onboarding .ukc-nav-docs .active .nav-count { background: rgba(255,255,255,.2); color: #fff; }
-.admin-onboarding .onboarding-guide-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
-.admin-onboarding .onboarding-guide { display: flex; flex-direction: column; min-height: 0; padding: 18px; }
-.admin-onboarding .onboarding-guide__head { display: flex; align-items: center; gap: 11px; }
-.admin-onboarding .onboarding-guide__icon { width: 38px; height: 38px; }
-.admin-onboarding .onboarding-guide__number { display: block; color: var(--ukc-light); font-size: 10.5px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
-.admin-onboarding .onboarding-guide h2 { margin: 1px 0 0; font-size: 15px; font-weight: 800; }
-.admin-onboarding .onboarding-guide__intro { margin: 13px 0 10px; color: var(--ukc-muted); font-size: 13px; line-height: 1.45; }
-.admin-onboarding .onboarding-guide__steps { margin: 0 0 15px 19px; padding: 0; color: var(--ukc-text); font-size: 12.8px; line-height: 1.52; }
-.admin-onboarding .onboarding-guide__steps li + li { margin-top: 5px; }
-.admin-onboarding .onboarding-video { display: flex; align-items: center; gap: 10px; padding: 10px 11px; margin-top: auto; margin-bottom: 14px; border: 1px dashed #cbd5e1; border-radius: .6rem; background: #f8fafc; color: var(--tw-ink, var(--ukc-muted)); }
-.admin-onboarding .onboarding-video > span { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; border-radius: .5rem; background: rgba(34, 62, 164, .1); color: var(--ukc-blue); }
-.admin-onboarding .onboarding-video strong, .admin-onboarding .onboarding-video small { display: block; }
-.admin-onboarding .onboarding-video strong { color: var(--tw-ink-strong, var(--ukc-text)); font-size: 12.5px; }
-.admin-onboarding .onboarding-video small { margin-top: 1px; color: var(--ukc-muted); font-size: 11.5px; }
-.admin-onboarding .onboarding-guide footer { min-height: 30px; }
-.admin-onboarding .onboarding-guide__access { display: inline-flex; align-items: center; gap: 6px; color: var(--ukc-light); font-size: 12px; }
-.admin-onboarding .onboarding-automation { display: flex; gap: 11px; align-items: flex-start; padding: 12px 14px; margin: 0 0 18px; border: 1px solid #d9ddfb; border-radius: 10px; background: #f7f8ff; }
-.admin-onboarding .onboarding-automation__icon { display: inline-flex; flex: 0 0 auto; padding: 7px; border-radius: 8px; color: #6941c6; background: #ede9fe; }
-.admin-onboarding .onboarding-automation strong { display: block; font-size: 13px; }
-.admin-onboarding .onboarding-automation p { margin: 3px 0 0; color: var(--ukc-muted); font-size: 12.5px; line-height: 1.45; }
-.admin-onboarding .onboarding-video--ready { display: block; padding: 0; overflow: hidden; border-style: solid; }
-.admin-onboarding .onboarding-video--ready video { display: block; width: 100%; max-height: 190px; background: #0f172a; }
-.admin-onboarding .onboarding-video--ready > div { padding: 9px 11px 10px; }
-.admin-onboarding .onboarding-guide__status { display: inline-flex; align-items: center; gap: 5px; margin: -4px 0 11px; color: #6941c6; font-size: 11.5px; font-weight: 700; }
-.admin-onboarding .onboarding-guide__status--error { color: #b42318; }
-.admin-onboarding .onboarding-field-hint { display: block; margin-top: 5px; color: var(--ukc-muted); font-size: 11.5px; }
-.admin-onboarding .onboarding-guide-editor { max-width: 780px; }
-.admin-onboarding .onboarding-guide-editor .box-foot { position: sticky; bottom: 0; z-index: 1; margin: 0; padding: 12px 20px 16px; background: #fff; }
-.admin-onboarding .onboarding-guide-editor select { min-height: 42px; }
-.admin-onboarding .onboarding-role-options { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px 12px; padding: 11px 12px; border: 1px solid var(--ukc-border); border-radius: 10px; background: #f8fafc; }
-.admin-onboarding .onboarding-role-options label { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
-.admin-onboarding .onboarding-role-options label, .admin-onboarding .onboarding-checkbox { color: var(--ukc-text); font-size: 12px; }
-.admin-onboarding .onboarding-checkbox { display: block; margin-top: 9px; }
-.admin-onboarding .onboarding-checkbox--danger { color: #b42318; }
-.admin-onboarding .onboarding-video-request .box-head { align-items: flex-start; }
-.admin-onboarding .onboarding-video-request__title { display: flex; align-items: center; gap: 10px; }
-.admin-onboarding .onboarding-video-request__title > span { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; color: #fff; background: linear-gradient(135deg, var(--ukc-blue), #6941c6); }
-.admin-onboarding .onboarding-video-request__title strong, .admin-onboarding .onboarding-video-request__title small { display: block; }
-.admin-onboarding .onboarding-video-request__title strong { font-size: 14px; }
-.admin-onboarding .onboarding-video-request__title small { margin-top: 2px; color: var(--ukc-muted); font-size: 11.5px; font-weight: 500; }
-.admin-onboarding .onboarding-video-request .box-body > p { margin-top: 0; color: var(--ukc-muted); line-height: 1.55; }
-.admin-onboarding .onboarding-video-request__workflow { display: flex; align-items: flex-start; gap: 10px; margin: 16px 0; padding: 12px; border: 1px solid #dbe5f3; border-radius: 10px; background: #f8fbff; }
-.admin-onboarding .onboarding-video-request__workflow > span { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; flex: 0 0 auto; border-radius: 8px; color: var(--ukc-blue); background: #e8eeff; }
-.admin-onboarding .onboarding-video-request__workflow strong, .admin-onboarding .onboarding-video-request__workflow small { display: block; }
-.admin-onboarding .onboarding-video-request__workflow strong { font-size: 12.5px; }
-.admin-onboarding .onboarding-video-request__workflow small { margin-top: 2px; color: var(--ukc-muted); font-size: 11.5px; line-height: 1.4; }
-.account-onboarding { width: 100%; }
-.account-onboarding .onboarding-stats { margin-bottom: 14px; }
-.account-onboarding .onboarding-intro { display: flex; align-items: center; gap: 14px; padding: 17px 18px; margin-bottom: 18px; }
-.account-onboarding .onboarding-intro__icon, .account-onboarding .onboarding-guide__icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; color: var(--ukc-blue); background: rgba(34, 62, 164, .1); border-radius: .6rem; }
-.account-onboarding .onboarding-intro__icon { width: 42px; height: 42px; }
-.account-onboarding .onboarding-intro h2 { margin: 0 0 3px; font-size: 15px; font-weight: 800; }
-.account-onboarding .onboarding-intro p { margin: 0; color: var(--ukc-muted); font-size: 13px; line-height: 1.45; }
-.account-onboarding .ukc-nav-docs { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
-.account-onboarding .ukc-nav-docs > button { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--ukc-border); border-radius: 10px; padding: 10px 16px; font-weight: 700; font-size: 13.5px; color: var(--ukc-muted); cursor: pointer; }
-.account-onboarding .ukc-nav-docs > button:hover { border-color: var(--ukc-blue); color: var(--ukc-blue); }
-.account-onboarding .ukc-nav-docs > button.active { background: var(--ukc-blue); border-color: var(--ukc-blue); color: #fff; }
-.account-onboarding .ukc-nav-docs .nav-count { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: #eef2ff; color: var(--ukc-blue); font-size: 11px; line-height: 1; }
-.account-onboarding .ukc-nav-docs .active .nav-count { background: rgba(255,255,255,.2); color: #fff; }
-.account-onboarding .onboarding-guide-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
-.account-onboarding .onboarding-guide { display: flex; flex-direction: column; min-height: 0; padding: 18px; }
-.account-onboarding .onboarding-guide__head { display: flex; align-items: center; gap: 11px; }
-.account-onboarding .onboarding-guide__icon { width: 38px; height: 38px; }
-.account-onboarding .onboarding-guide__number { display: block; color: var(--ukc-light); font-size: 10.5px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
-.account-onboarding .onboarding-guide h2 { margin: 1px 0 0; font-size: 15px; font-weight: 800; }
-.account-onboarding .onboarding-guide__intro { margin: 13px 0 10px; color: var(--ukc-muted); font-size: 13px; line-height: 1.45; }
-.account-onboarding .onboarding-guide__steps { margin: 0 0 15px 19px; padding: 0; color: var(--ukc-text); font-size: 12.8px; line-height: 1.52; }
-.account-onboarding .onboarding-guide__steps li + li { margin-top: 5px; }
-.account-onboarding .onboarding-video { margin-top: auto; margin-bottom: 14px; }
-.account-onboarding .onboarding-video--ready { overflow: hidden; border: 1px solid var(--ukc-border); border-radius: .6rem; background: #f8fafc; }
-.account-onboarding .onboarding-video--ready video { display: block; width: 100%; max-height: 190px; background: #0f172a; }
-.account-onboarding .onboarding-video--ready > div { padding: 9px 11px 10px; }
-.account-onboarding .onboarding-video strong, .account-onboarding .onboarding-video small { display: block; }
-.account-onboarding .onboarding-video strong { font-size: 12.5px; }
-.account-onboarding .onboarding-video small { margin-top: 1px; color: var(--ukc-muted); font-size: 11.5px; }
-.account-onboarding .onboarding-guide footer { min-height: 30px; }
-.account-onboarding .account-onboarding__event { font-size: 19px; }
-.account-onboarding .account-onboarding__empty { padding: 34px; text-align: center; color: var(--ukc-muted); }
-.account-onboarding .account-onboarding__empty h2 { margin: 10px 0 5px; color: var(--ukc-text); font-size: 16px; }
-.account-onboarding .account-onboarding__empty p { margin: 0; font-size: 13px; }
-@media (max-width: 780px) { .admin-onboarding .onboarding-guide-grid, .account-onboarding .onboarding-guide-grid { grid-template-columns: 1fr; } .admin-onboarding .onboarding-role-options { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 560px) { .admin-onboarding .onboarding-intro { align-items: flex-start; } .admin-onboarding .ukc-nav-docs, .account-onboarding .ukc-nav-docs { overflow-x: auto; flex-wrap: nowrap; } .admin-onboarding .ukc-nav-docs button, .admin-onboarding .ukc-nav-docs a, .account-onboarding .ukc-nav-docs button { white-space: nowrap; } .admin-onboarding .onboarding-role-options { grid-template-columns: 1fr; } }
+/* ============ Prise en main (back-office + espace participant) ============ */
+/* Vue UNIFIÉE : les deux pages portent `.ukc-onb` (toujours sous `.ukc-shell`),
+   donc une seule feuille habille le centre admin ET l'espace participant - plus
+   de blocs `.admin-onboarding` / `.account-onboarding` dupliqués à tenir d'accord. */
+.ukc-onb { width: 100%; }
+.ukc-onb .onb-stats { margin-bottom: 16px; }
+
+/* Encart de contexte (automatisation côté admin, colloque courant côté
+   participant) : compact, pas une bannière pleine hauteur de plus. */
+.ukc-onb .onb-note { display: flex; align-items: flex-start; gap: 12px; margin: 0 0 18px; padding: 13px 15px; border: 1px solid #e2e6fb; border-radius: 12px; background: linear-gradient(135deg, #f6f8ff, #ffffff); }
+.ukc-onb .onb-note__icon { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; color: #6941c6; background: #ece9fe; }
+.ukc-onb .onb-note strong { display: block; font-size: 13px; color: var(--ukc-text); }
+.ukc-onb .onb-note p { margin: 3px 0 0; font-size: 12.5px; color: var(--ukc-muted); line-height: 1.5; }
+
+.ukc-onb .ukc-nav-docs { margin-bottom: 18px; }
+
+/* Grille de guides : cartes à hauteur égale par rangée, pieds alignés. */
+.ukc-onb .onb-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
+.ukc-onb .onb-card { display: flex; flex-direction: column; padding: 18px 20px; }
+
+/* En-tête : chip d'icône + titre + étiquette de catégorie. */
+.ukc-onb .onb-card__head { display: flex; align-items: flex-start; gap: 13px; }
+.ukc-onb .onb-card__icon { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; color: var(--ukc-blue); background: linear-gradient(135deg, rgba(34, 62, 164, .13), rgba(34, 62, 164, .05)); }
+.ukc-onb .onb-card__titles { min-width: 0; flex: 1; }
+.ukc-onb .onb-card__title { display: block; margin: 0; font-size: 15px; font-weight: 800; line-height: 1.3; color: var(--ukc-text); }
+.ukc-onb .onb-card__tag { display: inline-flex; align-items: center; gap: 5px; margin-top: 7px; padding: 2px 9px; border-radius: 999px; background: #eef2ff; color: var(--ukc-blue); font-size: 10.5px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; }
+.ukc-onb .onb-card__intro { margin: 13px 0 0; color: var(--ukc-muted); font-size: 13px; line-height: 1.5; }
+
+/* Étapes clés : liste à pastilles numérotées (pas un simple <ol> indenté). */
+.ukc-onb .onb-steps { margin: 16px 0 0; padding: 0; list-style: none; counter-reset: onb-step; }
+.ukc-onb .onb-steps li { position: relative; padding-left: 30px; color: var(--ukc-text); font-size: 12.8px; line-height: 1.5; }
+.ukc-onb .onb-steps li + li { margin-top: 10px; }
+.ukc-onb .onb-steps li::before { counter-increment: onb-step; content: counter(onb-step); position: absolute; left: 0; top: 0; display: inline-flex; align-items: center; justify-content: center; width: 21px; height: 21px; border-radius: 999px; background: rgba(34, 62, 164, .1); color: var(--ukc-blue); font-size: 11px; font-weight: 800; }
+
+/* Vidéo prête. */
+.ukc-onb .onb-media { margin: 16px 0 0; border: 1px solid var(--ukc-border); border-radius: 12px; overflow: hidden; }
+.ukc-onb .onb-media video { display: block; width: 100%; max-height: 196px; background: #0f172a; }
+.ukc-onb .onb-media__meta { display: flex; align-items: center; gap: 9px; padding: 10px 12px; background: #fff; }
+.ukc-onb .onb-media__ico { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; background: rgba(0, 153, 51, .12); color: var(--ukc-green); }
+.ukc-onb .onb-media__meta strong { display: block; font-size: 12.5px; color: var(--ukc-text); }
+.ukc-onb .onb-media__meta small { display: block; margin-top: 1px; font-size: 11.5px; color: var(--ukc-muted); }
+
+/* Vidéo à venir : placeholder soigné (plus un cadre « inachevé »). */
+.ukc-onb .onb-media--soon { display: flex; align-items: center; gap: 11px; padding: 13px 14px; border-style: dashed; border-color: #cbd5e1; background: #f8fafc; }
+.ukc-onb .onb-media__play { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: rgba(34, 62, 164, .1); color: var(--ukc-blue); }
+.ukc-onb .onb-media--soon strong { display: block; font-size: 12.5px; color: var(--ukc-text); }
+.ukc-onb .onb-media--soon small { display: block; margin-top: 1px; font-size: 11.5px; color: var(--ukc-muted); }
+
+/* Drapeau de statut de production (file d'attente / rendu / échec). */
+.ukc-onb .onb-flag { display: inline-flex; align-items: center; gap: 6px; margin: 12px 0 0; padding: 5px 10px; border-radius: 8px; background: #f4f1fe; color: #6941c6; font-size: 11.5px; font-weight: 700; }
+.ukc-onb .onb-flag--error { background: #fef3f2; color: #b42318; }
+
+/* Pied de carte : actions, épinglées en bas (cartes à hauteur égale). */
+.ukc-onb .onb-card__foot { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 16px; }
+.ukc-onb .onb-card__lock { display: inline-flex; align-items: center; gap: 6px; color: var(--ukc-light); font-size: 12px; }
+
+/* État vide (participant sans guide). */
+.ukc-onb .onb-empty { padding: 40px 24px; text-align: center; color: var(--ukc-muted); }
+.ukc-onb .onb-empty__icon { display: inline-flex; align-items: center; justify-content: center; width: 54px; height: 54px; margin-bottom: 6px; border-radius: 14px; background: rgba(34, 62, 164, .08); color: var(--ukc-blue); }
+.ukc-onb .onb-empty h2 { margin: 8px 0 5px; color: var(--ukc-text); font-size: 16px; justify-content: center; }
+.ukc-onb .onb-empty p { margin: 0 auto; max-width: 400px; font-size: 13px; line-height: 1.5; }
+
+/* KPI « contexte » participant : une valeur TEXTE (nom de colloque), pas un nombre. */
+.ukc-onb .onb-stat-text { font-size: 18px; line-height: 1.25; }
+
+/* ----- Modales (édition d'un guide, demande vidéo, lot) ----- */
+.ukc-onb .onboarding-field-hint { display: block; margin-top: 5px; color: var(--ukc-muted); font-size: 11.5px; }
+.ukc-onb .onboarding-guide-editor { max-width: 780px; }
+.ukc-onb .onboarding-guide-editor .box-foot { position: sticky; bottom: 0; z-index: 1; margin: 0; padding: 12px 20px 16px; background: #fff; }
+.ukc-onb .onboarding-guide-editor select { min-height: 42px; }
+.ukc-onb .onboarding-role-options { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px 12px; padding: 11px 12px; border: 1px solid var(--ukc-border); border-radius: 10px; background: #f8fafc; }
+.ukc-onb .onboarding-role-options label { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.ukc-onb .onboarding-role-options label, .ukc-onb .onboarding-checkbox { color: var(--ukc-text); font-size: 12px; }
+.ukc-onb .onboarding-checkbox { display: block; margin-top: 9px; }
+.ukc-onb .onboarding-checkbox--danger { color: #b42318; }
+.ukc-onb .onboarding-video-request .box-head { align-items: flex-start; }
+.ukc-onb .onboarding-video-request__title { display: flex; align-items: center; gap: 10px; }
+.ukc-onb .onboarding-video-request__title > span { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; color: #fff; background: linear-gradient(135deg, var(--ukc-blue), #6941c6); }
+.ukc-onb .onboarding-video-request__title strong, .ukc-onb .onboarding-video-request__title small { display: block; }
+.ukc-onb .onboarding-video-request__title strong { font-size: 14px; }
+.ukc-onb .onboarding-video-request__title small { margin-top: 2px; color: var(--ukc-muted); font-size: 11.5px; font-weight: 500; }
+.ukc-onb .onboarding-video-request .box-body > p { margin-top: 0; color: var(--ukc-muted); line-height: 1.55; }
+.ukc-onb .onboarding-video-request__workflow { display: flex; align-items: flex-start; gap: 10px; margin: 16px 0; padding: 12px; border: 1px solid #dbe5f3; border-radius: 10px; background: #f8fbff; }
+.ukc-onb .onboarding-video-request__workflow > span { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; flex: 0 0 auto; border-radius: 8px; color: var(--ukc-blue); background: #e8eeff; }
+.ukc-onb .onboarding-video-request__workflow strong, .ukc-onb .onboarding-video-request__workflow small { display: block; }
+.ukc-onb .onboarding-video-request__workflow strong { font-size: 12.5px; }
+.ukc-onb .onboarding-video-request__workflow small { margin-top: 2px; color: var(--ukc-muted); font-size: 11.5px; line-height: 1.4; }
+
+@media (max-width: 820px) { .ukc-onb .onb-grid { grid-template-columns: 1fr; } .ukc-onb .onboarding-role-options { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .ukc-onb .ukc-nav-docs { overflow-x: auto; flex-wrap: nowrap; } .ukc-onb .ukc-nav-docs button, .ukc-onb .ukc-nav-docs a { white-space: nowrap; } .ukc-onb .onboarding-role-options { grid-template-columns: 1fr; } }
 /* Icône + titre groupés dans un <span> : garder l'icône alignée au texte (évite le SVG block qui passe à la ligne). */
 .admin-page .ukc-card h2 > span { display: inline-flex; align-items: center; gap: 8px; }
 .admin-page .ukc-card .desc { font-size: 13px; color: var(--ukc-muted); margin-bottom: 14px; line-height: 1.45; }
