@@ -3061,9 +3061,7 @@ Deux mécanismes, complémentaires :
   de commande du worker.
 - Le renderer résout également `ffmpeg.exe` **et `ffprobe.exe`** puis transmet leurs
   chemins à Hyperframes (`HYPERFRAMES_FFMPEG_PATH` / `HYPERFRAMES_FFPROBE_PATH`) : le
-  processus détaché Windows n’hérite pas toujours du `PATH` utilisateur. Les tutoriels sont encodés en **1280×720 HD** à partir du
-  canevas de direction 1920×1080, mis à l’échelle scène par scène. Ce choix maintient
-  les captures, textes et mouvements tout en évitant les échecs mémoire `libx264` sur
-  les postes où Chrome laisse peu de RAM disponible. Les variables
+  processus détaché Windows n’hérite pas toujours du `PATH` utilisateur. Les tutoriels sont encodés nativement en **1920×1080 Full HD** : les captures sont déjà créées dans ce format et ne sont donc plus réduites au montage. Le moteur conserve un seul worker et le mode faible mémoire ; il utilise les ressources du serveur qui exécute Laravel, jamais celles du navigateur de l’administrateur. Les variables
   `TUTORIAL_VIDEO_FFMPEG_BIN` et `TUTORIAL_VIDEO_FFPROBE_BIN` permettent un chemin
-  explicite si les binaires ne viennent pas de WinGet.
+  explicite si les binaires ne viennent pas de WinGet. `TUTORIAL_VIDEO_RENDER_WIDTH`
+  et `TUTORIAL_VIDEO_RENDER_HEIGHT` documentent le format attendu (1920×1080).

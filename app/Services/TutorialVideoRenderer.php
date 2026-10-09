@@ -15,6 +15,13 @@ class TutorialVideoRenderer
         $input = $directory.DIRECTORY_SEPARATOR.'render-input.json';
         $output = $directory.DIRECTORY_SEPARATOR.'render-result.json';
 
+        // Le format appartient à l'infrastructure, jamais à la demande envoyée
+        // par le navigateur. Les captures sont nativement en Full HD.
+        $brief['render'] = [
+            'width' => (int) config('tutorial-video.render_width', 1920),
+            'height' => (int) config('tutorial-video.render_height', 1080),
+        ];
+
         File::put($input, json_encode($brief, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
         $ffmpeg = $this->ffmpegBinary();
         $ffprobe = $this->ffprobeBinary($ffmpeg);

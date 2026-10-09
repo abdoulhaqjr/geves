@@ -6,6 +6,10 @@ return [
     'npx_binary' => env('TUTORIAL_VIDEO_NPX_BIN', PHP_OS_FAMILY === 'Windows' ? 'npx.cmd' : 'npx'),
     'ffmpeg_binary' => env('TUTORIAL_VIDEO_FFMPEG_BIN'),
     'ffprobe_binary' => env('TUTORIAL_VIDEO_FFPROBE_BIN'),
+    // Les captures authentifiées sont prises en 1920×1080 : garder ce format
+    // évite de les réduire puis de les agrandir au montage.
+    'render_width' => (int) env('TUTORIAL_VIDEO_RENDER_WIDTH', 1920),
+    'render_height' => (int) env('TUTORIAL_VIDEO_RENDER_HEIGHT', 1080),
     'hyperframes_version' => env('TUTORIAL_VIDEO_HYPERFRAMES_VERSION', '0.8.142'),
     'render_timeout' => (int) env('TUTORIAL_VIDEO_RENDER_TIMEOUT', 3300),
     'capture_timeout' => (int) env('TUTORIAL_VIDEO_CAPTURE_TIMEOUT', 60000),

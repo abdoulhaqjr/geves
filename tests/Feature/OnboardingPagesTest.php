@@ -87,3 +87,8 @@ it('résout FFprobe compagnon de FFmpeg pour Hyperframes', function () {
     expect($ffprobe->invoke($renderer, $ffmpeg->invoke($renderer)))
         ->toEndWith('ffprobe.exe');
 });
+
+it('prépare les rendus tutoriels au format Full HD', function () {
+    expect(config('tutorial-video.render_width'))->toBe(1920)
+        ->and(config('tutorial-video.render_height'))->toBe(1080);
+});

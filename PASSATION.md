@@ -782,6 +782,9 @@ de l'édition.
 - `TutorialVideoRenderer` résout `ffmpeg.exe` et son compagnon `ffprobe.exe`, puis les
   transmet à Hyperframes avec `HYPERFRAMES_FFMPEG_PATH` et
   `HYPERFRAMES_FFPROBE_PATH`, car le worker détaché n’a pas toujours le `PATH` de la
-  session administrateur. Le rendu sort en **HD 1280×720** avec le canevas
-  graphique 1920×1080 réduit scène par scène : l’image reste complète et lisible,
-  avec une consommation mémoire compatible avec un poste Windows sous pression.
+  session administrateur. Le rendu sort nativement en **Full HD 1920×1080** ; les
+  captures authentifiées sont produites dans ce même format et restent donc nettes.
+  Le worker reste unique et utilise le mode faible mémoire : la charge est portée par
+  le serveur Laravel qui rend la vidéo, pas par le navigateur de l’administrateur.
+  Les variables `TUTORIAL_VIDEO_RENDER_WIDTH` et
+  `TUTORIAL_VIDEO_RENDER_HEIGHT` sont réglées à 1920×1080.
