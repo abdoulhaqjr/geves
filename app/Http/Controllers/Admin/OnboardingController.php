@@ -8,6 +8,7 @@ use App\Models\TutorialVideoRequest;
 use App\Services\TutorialVideoWorkerLauncher;
 use App\Support\TutorialGuideCatalog;
 use App\Support\TutorialVideoProduction;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -83,7 +84,7 @@ class OnboardingController extends Controller
         return redirect()->route('admin.onboarding', ['tab' => $request->input('tab', 'all')])->with('success', 'Le guide a été mis à jour.');
     }
 
-    public function requestVideo(Request $request, TutorialGuide $guide): RedirectResponse
+    public function requestVideo(Request $request, TutorialGuide $guide): RedirectResponse|JsonResponse
     {
         $this->authorizeManagement($request);
         $data = $request->validate([
@@ -96,11 +97,15 @@ class OnboardingController extends Controller
         $videoRequest = $this->queueVideoRequest($guide, $request, $data['action'], $data['prompt'] ?? null, $this->music($request, $data));
         app(TutorialVideoWorkerLauncher::class)->launch();
 
+        if ($request->expectsJson()) {
+            return response()->json(['request' => $this->statusPayload($videoRequest)], 202);
+        }
+
         return redirect()->route('admin.onboarding', ['tab' => $request->input('tab', 'all')])
             ->with('success', 'La demande vidéo a été enregistrée : le rendu démarre automatiquement sur le serveur GEVES.');
     }
 
-    public function requestAllVideos(Request $request): RedirectResponse
+    public function requestAllVideos(Request $request): RedirectResponse|JsonResponse
     {
         $this->authorizeManagement($request);
         $data = $request->validate([
@@ -125,6 +130,13 @@ class OnboardingController extends Controller
             app(TutorialVideoWorkerLauncher::class)->launch();
         }
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'requests' => array_map(fn (TutorialVideoRequest $videoRequest) => $this->statusPayload($videoRequest), $requests),
+                'message' => $created > 0 ? $created.' production(s) lancée(s).' : 'Aucune nouvelle production n’était nécessaire.',
+            ], 202);
+        }
+
         return redirect()->route('admin.onboarding')->with('success', $created > 0
             ? $created.' demande(s) vidéo ont été enregistrées.'
             : 'Aucune nouvelle demande vidéo n’était nécessaire.');
@@ -133,6 +145,14 @@ class OnboardingController extends Controller
     private function authorizeManagement(Request $request): void
     {
         abort_unless($request->user()?->isColloqueAdmin(), 403);
+    }
+
+    /** Le navigateur interroge ce point pendant le rendu sans recharger la page. */
+    public function videoStatus(Request $request, TutorialVideoRequest $videoRequest): JsonResponse
+    {
+        $this->authorizeManagement($request);
+
+        return response()->json(['request' => $this->statusPayload($videoRequest)]);
     }
 
     /** @param array{choice: string, path: string|null} $music */
@@ -145,7 +165,9 @@ class OnboardingController extends Controller
             'prompt' => blank($prompt) ? null : $prompt,
             'status' => 'queued',
             'providers' => [],
-            'meta' => TutorialVideoProduction::briefFor($guide, $prompt, $music),
+            'meta' => array_merge(TutorialVideoProduction::briefFor($guide, $prompt, $music), [
+                'progress' => ['stage' => 'queued', 'percent' => 5, 'label' => 'Demande enregistrée, en attente du moteur vidéo.'],
+            ]),
         ]);
 
         $guide->update([
@@ -162,6 +184,32 @@ class OnboardingController extends Controller
         return [
             'choice' => (string) ($data['music_choice'] ?? 'signature'),
             'path' => $request->hasFile('music') ? $request->file('music')->store('tutorial-music', 'public') : null,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function statusPayload(TutorialVideoRequest $videoRequest): array
+    {
+        $videoRequest->loadMissing('guide');
+        $progress = data_get($videoRequest->meta, 'progress', []);
+        $fallbacks = [
+            'queued' => ['stage' => 'queued', 'percent' => 5, 'label' => 'Demande enregistrée, en attente du moteur vidéo.'],
+            'running' => ['stage' => 'planning', 'percent' => 15, 'label' => 'Préparation du scénario avec les assistants IA.'],
+            'ready' => ['stage' => 'ready', 'percent' => 100, 'label' => 'Vidéo créée et publiée.'],
+            'failed' => ['stage' => 'failed', 'percent' => 100, 'label' => 'La production vidéo a échoué.'],
+        ];
+        $progress = array_merge($fallbacks[$videoRequest->status] ?? $fallbacks['queued'], is_array($progress) ? $progress : []);
+
+        return [
+            'id' => $videoRequest->id,
+            'status' => $videoRequest->status,
+            'stage' => $progress['stage'],
+            'percent' => (int) $progress['percent'],
+            'label' => (string) $progress['label'],
+            'error' => data_get($videoRequest->meta, 'failure.message'),
+            'guide_title' => $videoRequest->guide?->title,
+            'video_url' => $videoRequest->status === 'ready' ? $videoRequest->guide?->videoUrl() : null,
+            'status_url' => route('admin.onboarding.videos.status', $videoRequest),
         ];
     }
 }

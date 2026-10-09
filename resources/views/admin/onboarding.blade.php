@@ -25,11 +25,46 @@
     </x-slot:actions>
 
     <div class="admin-page ukc-onb" x-data="{
-        editing: null, videoRequest: null, batchOpen: false,
+        editing: null, videoRequest: null, batchOpen: false, production: null, productionError: null, requestError: null,
         guides: {{ Js::from($guidePayload) }},
         updateUrl: '{{ $updateUrl }}', requestUrl: '{{ $requestUrl }}',
         edit(id) { this.editing = {...this.guides[id], roles: [...this.guides[id].roles]}; },
-        request(id) { const guide = this.guides[id]; this.videoRequest = {...guide, action: guide.hasVideo ? 'update' : 'generate', musicChoice: 'signature'}; }
+        request(id) { const guide = this.guides[id]; this.videoRequest = {...guide, action: guide.hasVideo ? 'update' : 'generate', musicChoice: 'signature'}; },
+        async submitProduction(event, batch = false) {
+            const form = event.currentTarget;
+            this.productionError = null; this.requestError = null;
+            try {
+                const response = await fetch(form.action, { method: 'POST', body: new FormData(form), headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                const payload = await response.json();
+                if (!response.ok) throw new Error(Object.values(payload.errors || {}).flat().join(' ') || payload.message || 'La demande vidéo n’a pas pu être enregistrée.');
+                const requests = batch ? (payload.requests || []) : [payload.request];
+                if (!requests.length) throw new Error(payload.message || 'Aucune nouvelle vidéo ne devait être produite.');
+                this.videoRequest = null; this.batchOpen = false;
+                this.production = { batch, requests };
+                this.pollProduction();
+            } catch (error) { this.requestError = error.message || 'La demande vidéo n’a pas pu être enregistrée.'; }
+        },
+        async pollProduction() {
+            if (!this.production) return;
+            try {
+                const requests = await Promise.all(this.production.requests.map(async (item) => {
+                    const response = await fetch(item.status_url, { headers: { Accept: 'application/json' } });
+                    if (!response.ok) throw new Error('Le suivi de la production est momentanément indisponible.');
+                    return (await response.json()).request;
+                }));
+                this.production.requests = requests;
+                this.productionError = null;
+                if (requests.some((item) => item.status === 'failed')) return;
+                if (requests.every((item) => item.status === 'ready')) {
+                    window.setTimeout(() => window.location.reload(), 900);
+                    return;
+                }
+            } catch (error) { this.productionError = error.message || 'Le suivi de la production est momentanément indisponible.'; }
+            window.setTimeout(() => this.pollProduction(), 2000);
+        },
+        productionPercent() { return Math.round((this.production?.requests || []).reduce((total, item) => total + Number(item.percent || 0), 0) / Math.max(1, this.production?.requests?.length || 1)); },
+        productionLabel() { const requests = this.production?.requests || []; return requests.length === 1 ? requests[0]?.label : `${requests.filter((item) => item.status === 'ready').length} vidéo(s) terminée(s) sur ${requests.length} · ${requests.find((item) => item.status !== 'ready')?.label || 'Publication terminée.'}`; },
+        closeProduction() { if (this.production?.requests?.some((item) => item.status === 'failed')) this.production = null; }
     }" @open-onboarding-video-batch.window="batchOpen = true">
         @if (session('success'))<div class="ukc-alert ukc-alert--success">{{ session('success') }}</div>@endif
 
@@ -116,20 +151,39 @@
         </div>
 
         <div class="ukc-modal" x-show="videoRequest" x-cloak @keydown.escape.window="videoRequest = null" style="display: none;">
-            <form class="box narrow onboarding-video-request" method="POST" enctype="multipart/form-data" :action="videoRequest ? requestUrl.replace('__guide__', videoRequest.id) : ''">
+            <form class="box narrow onboarding-video-request" method="POST" enctype="multipart/form-data" :action="videoRequest ? requestUrl.replace('__guide__', videoRequest.id) : ''" @submit.prevent="submitProduction($event)">
                 @csrf<input type="hidden" name="action" :value="videoRequest?.action"><input type="hidden" name="tab" value="{{ $activeTab }}">
                 <div class="box-head"><div class="onboarding-video-request__title"><span><x-ukc.icon name="video" :size="19" /></span><div><strong x-text="videoRequest?.action === 'update' ? 'Mettre à jour la vidéo' : 'Produire la vidéo' "></strong><small x-text="videoRequest?.title"></small></div></div><button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="videoRequest = null">Fermer</button></div>
                 <div class="box-body"><p x-text="videoRequest?.action === 'update' ? 'Une nouvelle version remplacera la vidéo publiée après le rendu.' : 'Le guide sera produit sous forme de vidéo dès que la demande sera confirmée.'"></p><div class="onboarding-video-request__workflow"><span><x-ukc.icon name="monitor" :size="17" /></span><div><strong>Captures réelles de {{ config('app.name') }}</strong><small>Le serveur ouvre les pages avec un compte de démonstration, puis les intègre à la vidéo avec la charte et la musique.</small></div></div><div class="ukc-form-row"><label for="video-music">Musique</label><select id="video-music" name="music_choice" x-model="videoRequest.musicChoice"><option value="signature">Uplifting Corporate — musique GEVES par défaut</option><option value="calm">Calme — institutionnelle et discrète</option><option value="dynamic">Dynamique — moderne et rythmée</option><option value="none">Sans musique</option></select><small class="onboarding-field-hint">Uplifting Corporate est utilisée par défaut.</small></div><div class="ukc-form-row"><label for="video-music-file">Ou utiliser votre musique</label><input id="video-music-file" type="file" name="music" accept="audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/x-wav"><small class="onboarding-field-hint">MP3, M4A, AAC ou WAV, 25 Mo maximum. Le fichier remplace le choix ci-dessus.</small></div><div class="ukc-form-row"><label for="video-prompt">Précision facultative</label><textarea id="video-prompt" name="prompt" placeholder="Ex. mettre l’accent sur le nouveau parcours de soumission."></textarea><small class="onboarding-field-hint">Cette précision oriente le scénario sans modifier les textes du guide.</small></div></div>
+                <div class="box-body"><p x-text="videoRequest?.action === 'update' ? 'Une nouvelle version remplacera la vidéo publiée après le rendu.' : 'Le guide sera produit sous forme de vidéo dès que la demande sera confirmée.'"></p><div class="onboarding-video-request__workflow"><span><x-ukc.icon name="monitor" :size="17" /></span><div><strong>Captures réelles de {{ config('app.name') }}</strong><small>Le serveur ouvre les pages avec un compte de démonstration, puis les intègre à la vidéo avec la charte et la musique.</small></div></div><div class="ukc-form-row"><label for="video-music">Musique</label><select id="video-music" name="music_choice" x-model="videoRequest.musicChoice"><option value="signature">Uplifting Corporate — musique GEVES par défaut</option><option value="calm">Calme — institutionnelle et discrète</option><option value="dynamic">Dynamique — moderne et rythmée</option><option value="none">Sans musique</option></select><small class="onboarding-field-hint">Uplifting Corporate est utilisée par défaut.</small></div><div class="ukc-form-row"><label for="video-music-file">Ou utiliser votre musique</label><input id="video-music-file" type="file" name="music" accept="audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/x-wav"><small class="onboarding-field-hint">MP3, M4A, AAC ou WAV, 25 Mo maximum. Le fichier remplace le choix ci-dessus.</small></div><div class="ukc-form-row"><label for="video-prompt">Précision facultative</label><textarea id="video-prompt" name="prompt" placeholder="Ex. mettre l’accent sur le nouveau parcours de soumission."></textarea><small class="onboarding-field-hint">Cette précision oriente le scénario sans modifier les textes du guide.</small></div><p class="onboarding-request-error" x-show="requestError" x-text="requestError"></p></div>
                 <div class="box-foot"><button type="button" class="ukc-btn ukc-btn--ghost" @click="videoRequest = null">Annuler</button><button class="ukc-btn ukc-btn--blue" type="submit" x-text="videoRequest?.action === 'update' ? 'Lancer la mise à jour' : 'Lancer la production'"></button></div>
             </form>
         </div>
 
         <div class="ukc-modal" x-show="batchOpen" x-cloak @keydown.escape.window="batchOpen = false" style="display: none;">
-            <form class="box narrow" method="POST" enctype="multipart/form-data" action="{{ route('admin.onboarding.videos.request-all') }}">
+            <form class="box narrow" method="POST" enctype="multipart/form-data" action="{{ route('admin.onboarding.videos.request-all') }}" @submit.prevent="submitProduction($event, true)">
                 @csrf<div class="box-head"><span>Produire les vidéos de prise en main</span><button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="batchOpen = false">Fermer</button></div>
-                <div class="box-body"><p>Une demande sera créée pour chaque guide sans vidéo. Le moteur choisit Gemini, Claude ou OpenAI pour préparer le scénario, capture les vrais écrans avec un compte de démonstration, puis Hyperframes produit la vidéo avec le logo, la palette, la police, la musique choisie et des mouvements sobres.</p><div class="ukc-form-row"><label for="batch-music">Musique par défaut</label><select id="batch-music" name="music_choice"><option value="signature">Uplifting Corporate — musique GEVES par défaut</option><option value="calm">Calme — institutionnelle et discrète</option><option value="dynamic">Dynamique — moderne et rythmée</option><option value="none">Sans musique</option></select></div><div class="ukc-form-row"><label for="batch-music-file">Ou utiliser votre musique pour toutes les vidéos</label><input id="batch-music-file" type="file" name="music" accept="audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/x-wav"><small class="onboarding-field-hint">MP3, M4A, AAC ou WAV, 25 Mo maximum.</small></div><div class="ukc-form-row"><label for="batch-prompt">Consigne facultative pour toutes les vidéos</label><textarea id="batch-prompt" name="prompt" placeholder="Ex. insister sur les étapes importantes pour les communicants."></textarea></div></div>
+                <div class="box-body"><p>Une demande sera créée pour chaque guide sans vidéo. Le moteur choisit Gemini, Claude ou OpenAI pour préparer le scénario, capture les vrais écrans avec un compte de démonstration, puis Hyperframes produit la vidéo avec le logo, la palette, la police, la musique choisie et des mouvements sobres.</p><div class="ukc-form-row"><label for="batch-music">Musique par défaut</label><select id="batch-music" name="music_choice"><option value="signature">Uplifting Corporate — musique GEVES par défaut</option><option value="calm">Calme — institutionnelle et discrète</option><option value="dynamic">Dynamique — moderne et rythmée</option><option value="none">Sans musique</option></select></div><div class="ukc-form-row"><label for="batch-music-file">Ou utiliser votre musique pour toutes les vidéos</label><input id="batch-music-file" type="file" name="music" accept="audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/x-wav"><small class="onboarding-field-hint">MP3, M4A, AAC ou WAV, 25 Mo maximum.</small></div><div class="ukc-form-row"><label for="batch-prompt">Consigne facultative pour toutes les vidéos</label><textarea id="batch-prompt" name="prompt" placeholder="Ex. insister sur les étapes importantes pour les communicants."></textarea></div><p class="onboarding-request-error" x-show="requestError" x-text="requestError"></p></div>
                 <div class="box-foot"><button type="button" class="ukc-btn ukc-btn--ghost" @click="batchOpen = false">Annuler</button><button class="ukc-btn ukc-btn--blue" type="submit">Enregistrer les demandes</button></div>
             </form>
+        </div>
+
+        <div class="onb-production-overlay" x-show="production" x-cloak style="display: none;" role="status" aria-live="polite">
+            <section class="onb-production-panel">
+                <div class="onb-production-panel__spark"><x-ukc.icon name="sparkles" :size="25" /></div>
+                <div class="onb-production-panel__eyebrow" x-text="production?.batch ? 'Production des tutoriels' : 'Production de votre tutoriel'"></div>
+                <h2 x-text="production?.batch ? 'Les vidéos sont en cours de préparation' : production?.requests?.[0]?.guide_title"></h2>
+                <p x-text="productionLabel()"></p>
+                <div class="onb-production-panel__meter" aria-label="Avancement de la production"><span :style="`width: ${productionPercent()}%`"></span></div>
+                <strong class="onb-production-panel__percent" x-text="`${productionPercent()} %`"></strong>
+                <ul class="onb-production-panel__tasks">
+                    <template x-for="item in production?.requests || []" :key="item.id">
+                        <li :class="{ 'is-ready': item.status === 'ready', 'is-failed': item.status === 'failed' }"><span x-text="item.status === 'ready' ? '✓' : item.status === 'failed' ? '!' : '…'"></span><div><strong x-text="item.guide_title"></strong><small x-text="item.label"></small></div></li>
+                    </template>
+                </ul>
+                <p class="onb-production-panel__error" x-show="productionError" x-text="productionError"></p>
+                <button class="ukc-btn ukc-btn--ghost" type="button" x-show="production?.requests?.some((item) => item.status === 'failed')" @click="closeProduction()">Fermer</button>
+            </section>
         </div>
     </div>
 </x-layouts.admin>

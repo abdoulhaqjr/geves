@@ -24,11 +24,13 @@ class TutorialVideoAgent
         $context = $directory.DIRECTORY_SEPARATOR.'production-context.json';
         $result = $directory.DIRECTORY_SEPARATOR.'result.json';
 
+        $this->progress($request, 'planning', 15, 'Préparation du scénario avec les assistants IA.');
         $request->update(['status' => 'running']);
         $guide->update(['video_generation_status' => 'generating']);
 
         try {
             $planning = $this->planner->prepare($request);
+            $this->progress($request, 'captures', 35, 'Capture des écrans réels de GEVES avec le compte de démonstration.');
             $captures = $this->screenshots->capture($guide, $directory);
             $meta = array_merge($request->meta ?? [], [
                 'creative' => $planning['creative'],
@@ -40,7 +42,9 @@ class TutorialVideoAgent
             $request->refresh();
 
             File::put($context, json_encode($request->meta, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
+            $this->progress($request, 'rendering', 70, 'Montage Hyperframes, musique et mouvements de l’interface.');
             $payload = $this->renderer->render($request->meta ?? [], $directory);
+            $this->progress($request, 'publishing', 94, 'Contrôle et publication de la vidéo.');
             File::put($result, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
             $source = $this->validatedVideoPath((string) ($payload['video'] ?? ''), $directory);
             $target = 'tutorial-guides/'.$guide->key.'-'.now()->format('YmdHis').'.mp4';
@@ -63,7 +67,7 @@ class TutorialVideoAgent
                     'poster' => $payload['poster'] ?? null,
                     'summary' => $payload['summary'] ?? null,
                     'completed_at' => now()->toIso8601String(),
-                ]]),
+                ], 'progress' => ['stage' => 'ready', 'percent' => 100, 'label' => 'Vidéo créée et publiée.']]),
             ]);
         } catch (Throwable $exception) {
             $request->update([
@@ -71,7 +75,7 @@ class TutorialVideoAgent
                 'meta' => array_merge($request->meta ?? [], ['failure' => [
                     'message' => $this->shortError($exception->getMessage()),
                     'at' => now()->toIso8601String(),
-                ]]),
+                ], 'progress' => ['stage' => 'failed', 'percent' => 100, 'label' => 'La production vidéo a échoué.']]),
             ]);
 
             if (! $guide->hasVideo()) {
@@ -97,5 +101,13 @@ class TutorialVideoAgent
     private function shortError(string $message): string
     {
         return str($message)->squish()->limit(1000, '…')->toString() ?: 'Le rendu vidéo n’a pas abouti.';
+    }
+
+    private function progress(TutorialVideoRequest $request, string $stage, int $percent, string $label): void
+    {
+        $request->update(['meta' => array_merge($request->meta ?? [], [
+            'progress' => compact('stage', 'percent', 'label'),
+        ])]);
+        $request->refresh();
     }
 }

@@ -23,3 +23,24 @@ it('affiche la prise en main du participant avec ses guides', function () {
         ->assertSee('onb-grid', false)
         ->assertSee('Votre parcours de prise en main');
 });
+
+it('expose la progression d’une production vidéo au calque de suivi', function () {
+    \App\Support\TutorialGuideCatalog::ensureDefaults();
+    $staff = adminStaff();
+    $videoRequest = \App\Models\TutorialVideoRequest::create([
+        'tutorial_guide_id' => \App\Models\TutorialGuide::query()->firstOrFail()->id,
+        'requested_by_user_id' => $staff->id,
+        'action' => 'generate',
+        'status' => 'running',
+        'providers' => [],
+        'meta' => ['progress' => ['stage' => 'rendering', 'percent' => 70, 'label' => 'Montage Hyperframes en cours.']],
+    ]);
+
+    $this->actingAs($staff, 'web')
+        ->getJson(route('admin.onboarding.videos.status', $videoRequest))
+        ->assertOk()
+        ->assertJsonPath('request.id', $videoRequest->id)
+        ->assertJsonPath('request.stage', 'rendering')
+        ->assertJsonPath('request.percent', 70)
+        ->assertJsonPath('request.label', 'Montage Hyperframes en cours.');
+});

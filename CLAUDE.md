@@ -3047,3 +3047,8 @@ Deux mécanismes, complémentaires :
   `Uplifting Corporate Loop` est le lit musical local par défaut. `calm`, `dynamic`,
   `none` et un fichier administrateur sont gérés par `meta.music` ; le fichier
   téléversé est prioritaire et FFmpeg le boucle, le normalise puis l’atténue en fin.
+  Après l’envoi, l’admin ne doit pas être redirigé : `admin.onboarding.videos.status`
+  expose l’état persistant et `meta.progress` (`queued`, `planning`, `captures`,
+  `rendering`, `publishing`, `ready`/`failed`). La vue conserve le calque bleu de
+  suivi, interroge ce point toutes les deux secondes, puis recharge uniquement quand
+  le MP4 est publié.

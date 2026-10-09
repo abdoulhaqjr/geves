@@ -768,3 +768,8 @@ de l'édition.
 - Sous Windows, le lanceur ne se fie plus au seul PID mis en cache : il contrôle la
   ligne de commande du processus (`tutorial-videos:render-pending`). Un PID réutilisé
   par Windows ne peut donc plus laisser une demande `queued` bloquée indéfiniment.
+- La demande est asynchrone côté serveur, mais **synchrone à l’usage** : l’envoi AJAX
+  garde l’administrateur sur la page et ouvre le calque bleu de production. Le point
+  `admin.onboarding.videos.status` restitue `meta.progress` (scénario, captures,
+  montage, publication) toutes les deux secondes ; à `ready`, la page se recharge et
+  affiche le MP4 sans intervention manuelle.

@@ -318,6 +318,7 @@ Route::prefix('admin')->group(function () {
         Route::put('/prise-en-main/guides/{guide}', [OnboardingController::class, 'update'])->name('admin.onboarding.guides.update');
         Route::post('/prise-en-main/guides/{guide}/videos/demander', [OnboardingController::class, 'requestVideo'])->name('admin.onboarding.videos.request');
         Route::post('/prise-en-main/videos/demander', [OnboardingController::class, 'requestAllVideos'])->name('admin.onboarding.videos.request-all');
+        Route::get('/prise-en-main/videos/{videoRequest}/statut', [OnboardingController::class, 'videoStatus'])->name('admin.onboarding.videos.status');
         Route::get('/secretariat', [SecretariatController::class, 'index'])->name('admin.secretariat');
         // Rapports de séance : lecture, amélioration et validation - métier du secrétariat.
         Route::get('/secretariat/rapports', [SecretariatController::class, 'reports'])->name('admin.secretariat.reports');
