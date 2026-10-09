@@ -15,11 +15,13 @@ final class TutorialVideoProduction
     /** @return array<string, mixed> */
     public static function briefFor(TutorialGuide $guide, ?string $instruction = null): array
     {
+        $stepCount = max(1, count($guide->steps ?: []));
+
         return [
             'engine' => 'geves-hyperframes',
             'renderer' => 'hyperframes',
             'workflow' => 'brag-inspired',
-            'format' => ['ratio' => '16:9', 'duration_seconds' => 22, 'tone' => 'polished'],
+            'format' => ['ratio' => '16:9', 'duration_seconds' => max(36, 20 + ($stepCount * 8)), 'tone' => 'polished'],
             'guide' => [
                 'key' => $guide->key,
                 'title' => $guide->title,

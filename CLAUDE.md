@@ -40,8 +40,10 @@ Larastan **niveau 5**.
   FFmpeg et Hyperframes sur le serveur : aucun compte Codex/Claude/Gemini ouvert
   sur le poste de l’administrateur n’est nécessaire. Le contrat persistant
   `meta` est construit par `TutorialVideoProduction` et s’inspire de **Brag** : logo
-  UK, palette et police GEVES, lit musical original et mouvements UI sobres. Le
-  premier rendu produit des repères illustrés à partir du guide ; ne pas le présenter
+  UK, palette et police GEVES, lit musical original audible et mouvements UI sobres.
+  Une vidéo dure au moins 36 secondes : elle reprend l’introduction exacte du guide,
+  puis une scène séquentielle pour chaque étape, dans leur ordre. Le premier rendu
+  produit des repères illustrés à partir du guide ; ne pas le présenter
   comme une capture d’un écran authentifié. L’agent rattache le MP4 au guide après
   contrôle. Les livrables sont sous
   `storage/app/tutorial-video-production/request-{id}/` : plan, brief de
