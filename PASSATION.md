@@ -773,3 +773,6 @@ de l'édition.
   `admin.onboarding.videos.status` restitue `meta.progress` (scénario, captures,
   montage, publication) toutes les deux secondes ; à `ready`, la page se recharge et
   affiche le MP4 sans intervention manuelle.
+- Le formulaire de production conserve un champ caché `action`. Pour poster en AJAX,
+  l’URL doit venir de `form.getAttribute('action')` et non de `form.action`, lequel
+  est masqué par le champ et produirait `/admin/[object HTMLInputElement]`.

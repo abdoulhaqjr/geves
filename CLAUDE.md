@@ -3052,3 +3052,6 @@ Deux mécanismes, complémentaires :
   `rendering`, `publishing`, `ready`/`failed`). La vue conserve le calque bleu de
   suivi, interroge ce point toutes les deux secondes, puis recharge uniquement quand
   le MP4 est publié.
+  Le formulaire comporte volontairement un champ caché `action` : en JavaScript,
+  récupérer l’URL avec `form.getAttribute('action')`, car `form.action` désignerait
+  ce champ HTML et conduirait à la route invalide `/admin/[object HTMLInputElement]`.

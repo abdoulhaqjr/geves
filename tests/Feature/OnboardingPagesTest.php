@@ -24,6 +24,16 @@ it('affiche la prise en main du participant avec ses guides', function () {
         ->assertSee('Votre parcours de prise en main');
 });
 
+it('affiche un seul formulaire vidéo et poste vers son URL déclarée', function () {
+    $response = $this->actingAs(adminStaff(), 'web')->get(route('admin.onboarding'));
+
+    $response
+        ->assertOk()
+        ->assertSee("form.getAttribute('action')", false);
+
+    expect(substr_count($response->getContent(), 'id="video-music"'))->toBe(1);
+});
+
 it('expose la progression d’une production vidéo au calque de suivi', function () {
     \App\Support\TutorialGuideCatalog::ensureDefaults();
     $staff = adminStaff();
