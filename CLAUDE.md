@@ -58,7 +58,7 @@ Larastan **niveau 5**.
   d'avoir obtenu ce PID, car une demande resterait alors indéfiniment en attente.
   `TutorialVideoAgent` lance le rendu Hyperframes, valide le MP4 produit et
   le publie dans le disque public. Le modal permet de conserver la **Signature
-  GEVES** par défaut, de choisir les variantes locale `calm` ou `dynamic`,
+  GEVES** par défaut (`resources/media/tutorials/uplifting-corporate-loop.mp3`), de choisir les variantes locale `calm` ou `dynamic`,
   de demander une vidéo sans musique, ou de téléverser une piste MP3/M4A/AAC/WAV
   (25 Mo, prioritaire sur le choix). La commande `tutorial-videos:dispatch-pending`
   reprend les demandes créées avant l’activation de ce pont.
@@ -3044,6 +3044,6 @@ Deux mécanismes, complémentaires :
   `public/img/apple-touch-icon.png`), jamais le lockup large.
 - Chaque étape porte une **capture authentifiée** de l’interface GEVES via le
   compte technique de démonstration ; ne pas remettre de maquette à la place.
-  La Signature GEVES est le lit instrumental local par défaut. `calm`, `dynamic`,
+  `Uplifting Corporate Loop` est le lit musical local par défaut. `calm`, `dynamic`,
   `none` et un fichier administrateur sont gérés par `meta.music` ; le fichier
   téléversé est prioritaire et FFmpeg le boucle, le normalise puis l’atténue en fin.

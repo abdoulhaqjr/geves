@@ -47,6 +47,7 @@ const duration = Math.max(36, introDuration + contextDuration + (steps.length * 
 // Les lits musicaux sont produits localement. Ils peuvent donc accompagner chaque
 // tutoriel sans introduire de dépendance ou de licence externe.
 const music = join(assets, 'geves-bed.m4a');
+const defaultMusic = join(appPath, 'resources', 'media', 'tutorials', 'uplifting-corporate-loop.mp3');
 const musicChoice = ['signature', 'calm', 'dynamic', 'none'].includes(input.music?.choice)
   ? input.music.choice
   : 'signature';
@@ -62,10 +63,14 @@ let musicTag = '';
 
 // Un fichier choisi par l'administrateur a toujours priorité, y compris si le
 // sélecteur était resté sur « Sans musique » avant le téléversement.
-if (musicChoice !== 'none' || (customMusic && existsSync(customMusic))) {
-  if (customMusic && existsSync(customMusic)) {
-    const copiedMusic = join(assets, `selected-music${extname(customMusic) || '.m4a'}`);
-    copy(customMusic, copiedMusic);
+const selectedMusic = customMusic && existsSync(customMusic)
+  ? customMusic
+  : musicChoice === 'signature' && existsSync(defaultMusic) ? defaultMusic : null;
+
+if (musicChoice !== 'none' || selectedMusic) {
+  if (selectedMusic) {
+    const copiedMusic = join(assets, `selected-music${extname(selectedMusic) || '.m4a'}`);
+    copy(selectedMusic, copiedMusic);
     run('ffmpeg', ['-y', '-stream_loop', '-1', '-i', copiedMusic, '-t', String(duration), '-vn', '-af', musicFilter, '-c:a', 'aac', '-b:a', '192k', music]);
   } else {
     run('ffmpeg', ['-y', '-f', 'lavfi', '-i', `aevalsrc=${musicExpressions[musicChoice]}:d=${duration}:s=44100`, '-af', musicFilter, '-c:a', 'aac', '-b:a', '192k', music]);
@@ -102,7 +107,7 @@ const correctedHtml = html
   .replaceAll('<div class="orb"></div>', '<div class="orb" data-layout-allow-overflow></div>');
 writeFileSync(join(composition, 'index.html'), correctedHtml);
 writeFileSync(join(composition, 'hyperframes.json'), JSON.stringify({ $schema: 'https://hyperframes.heygen.com/schema/hyperframes.json', authoringSkill: 'brag' }, null, 2));
-writeFileSync(join(outputDir, 'brag-plan.md'), `# Plan de réalisation\n\n- Guide : ${title}\n- Durée : ${duration} secondes\n- Format : 1920×1080\n- Scènes : introduction, objectif, ${steps.length} étape(s) séquentielle(s), conclusion\n- Musique : ${musicChoice === 'none' ? 'sans musique' : customMusic && existsSync(customMusic) ? 'fichier fourni par l’administrateur' : musicChoice}\n- Direction : monogramme GEVES compact agrandi, captures authentifiées de GEVES, musique et mouvements sobres.\n`);
+writeFileSync(join(outputDir, 'brag-plan.md'), `# Plan de réalisation\n\n- Guide : ${title}\n- Durée : ${duration} secondes\n- Format : 1920×1080\n- Scènes : introduction, objectif, ${steps.length} étape(s) séquentielle(s), conclusion\n- Musique : ${musicChoice === 'none' && !selectedMusic ? 'sans musique' : customMusic && existsSync(customMusic) ? 'fichier fourni par l’administrateur' : musicChoice === 'signature' ? 'Uplifting Corporate Loop (piste GEVES par défaut)' : musicChoice}\n- Direction : monogramme GEVES compact agrandi, captures authentifiées de GEVES, musique et mouvements sobres.\n`);
 writeFileSync(join(outputDir, 'composition-brief.md'), `# Brief de composition\n\n## Introduction\n${intro}\n\n## Étapes\n${steps.map((step, index) => `${index + 1}. ${step}`).join('\n')}\n`);
 writeFileSync(join(outputDir, 'share-copy.txt'), `Découvrez le guide « ${title} » dans GEVES.`);
 

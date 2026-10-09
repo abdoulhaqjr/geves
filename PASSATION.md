@@ -750,7 +750,8 @@ de l'édition.
   queue installé sur leur poste.
 - Les compositions utilisent le logo compact configurable (`app_logo_mark`), agrandi
   dans le verrou de marque pour correspondre au bloc de texte voisin et les **vraies
-  pages GEVES** à chaque étape du guide. La **Signature GEVES** est la musique locale
+  pages GEVES** à chaque étape du guide. **Uplifting Corporate Loop**
+  (`resources/media/tutorials/uplifting-corporate-loop.mp3`) est la musique locale
   par défaut. L’administrateur peut choisir `calm`, `dynamic`, sans musique, ou
   téléverser un MP3/M4A/AAC/WAV de 25 Mo maximum (le fichier est prioritaire, bouclé
   à la durée du guide et normalisé par FFmpeg).
