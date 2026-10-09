@@ -12,6 +12,7 @@ class TutorialVideoAgent
 {
     public function __construct(
         private readonly TutorialVideoCreativePlanner $planner,
+        private readonly TutorialVideoScreenshotService $screenshots,
         private readonly TutorialVideoRenderer $renderer,
     ) {}
 
@@ -28,7 +29,11 @@ class TutorialVideoAgent
 
         try {
             $planning = $this->planner->prepare($request);
-            $meta = array_merge($request->meta ?? [], ['creative' => $planning['creative']]);
+            $captures = $this->screenshots->capture($guide, $directory);
+            $meta = array_merge($request->meta ?? [], [
+                'creative' => $planning['creative'],
+                'captures' => $captures,
+            ]);
             unset($meta['failure']);
             $providers = $planning['providers'];
             $request->update(['meta' => $meta, 'providers' => $providers]);

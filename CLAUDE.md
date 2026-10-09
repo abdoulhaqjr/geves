@@ -40,12 +40,16 @@ Larastan **niveau 5**.
   FFmpeg et Hyperframes sur le serveur : aucun compte Codex/Claude/Gemini ouvert
   sur le poste de l’administrateur n’est nécessaire. Le contrat persistant
   `meta` est construit par `TutorialVideoProduction` et s’inspire de **Brag** : logo
-  UK, palette et police GEVES, lit musical original audible et mouvements UI sobres.
+  compact UK configurable, palette et police GEVES, lit musical original audible et
+  mouvements sobres.
   Une vidéo dure au moins 36 secondes : elle reprend l’introduction exacte du guide,
-  puis une scène séquentielle pour chaque étape, dans leur ordre. Le premier rendu
-  produit des repères illustrés à partir du guide ; ne pas le présenter
-  comme une capture d’un écran authentifié. L’agent rattache le MP4 au guide après
-  contrôle. Les livrables sont sous
+  puis une scène séquentielle pour chaque étape, dans leur ordre. Avant le rendu,
+  `TutorialVideoScreenshotService` appelle la capture native Hyperframes sur les
+  vraies pages GEVES au moyen du pont signé `tutorial.capture` et du compte
+  `captures-tutoriels@geves.invalid`. Ce compte est créé automatiquement, isolé des
+  comptes humains et ne sert qu’à la session de navigateur éphémère. Les captures
+  ne doivent pas être remplacées par des maquettes. L’agent rattache le MP4 au guide
+  après contrôle. Les livrables sont sous
   `storage/app/tutorial-video-production/request-{id}/` : plan, brief de
   composition, poster, MP4 et texte de partage. Chaque demande déclenche `GenerateTutorialVideo` sur la file
   `tutorial-videos`, puis `TutorialVideoWorkerLauncher` démarre un travailleur caché

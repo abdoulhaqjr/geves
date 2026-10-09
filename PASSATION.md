@@ -742,13 +742,22 @@ de l'édition.
 
 > **Mémoire projet** : le contexte fin (décisions, conventions, TODO différés - DOI/DataCite, connecteur Google anti-plagiat, amélioration `admin/reclamations`) est aussi consigné dans la **mémoire locale de Claude Code** (`~/.claude/…/memory/`, non versionnée). Comme cette mémoire ne se partage pas entre contributeurs, **le contexte partageable doit vivre dans `CLAUDE.md` + ce fichier** (versionnés) : les tenir à jour à chaque tâche notable.
 
-## Tutoriels vidéo — lancement serveur autonome et simulation d’écrans (2026-10-09)
+## Tutoriels vidéo — captures authentifiées et lancement serveur autonome (2026-10-09)
 
 - `admin/prise-en-main` démarre désormais un processus serveur dédié qui lit les
   demandes `queued` dans la base et les rend avec Gemini/Claude/OpenAI puis
   Hyperframes. Les clics administrateur ne requièrent ni Codex ni un worker de
   queue installé sur leur poste.
-- Les compositions utilisent le logo compact configurable (`app_logo_mark`), une
-  musique originale plus chaleureuse et audible, et une simulation de l’interface
-  GEVES pour chaque étape du guide. Une simulation n’est jamais présentée comme
-  une capture réelle connectée.
+- Les compositions utilisent le logo compact configurable (`app_logo_mark`), agrandi
+  dans le verrou de marque pour correspondre au bloc de texte voisin, une musique
+  originale audible et les **vraies pages GEVES** à chaque étape du guide.
+  `TutorialVideoScreenshotService` génère pour chaque scène une URL signée, ouvre le
+  pont `tutorial.capture`, connecte dans le navigateur Hyperframes le compte technique
+  `captures-tutoriels@geves.invalid`, puis copie la capture dans le dossier de la
+  demande. Ce compte est créé à la volée, n’est jamais utilisé par une personne et
+  évite toute capture de session administrateur réelle. La capture dépend de la CLI
+  Hyperframes déjà utilisée par le rendu (`npx hyperframes capture`) ; conservez Node,
+  npx, FFmpeg et l’accès de l’hôte de rendu à l’URL configurée dans `APP_URL`.
+- Le modal de demande distingue la première production de la mise à jour et précise
+  que les écrans proviennent de GEVES. Dans le menu staff, « Prise en main » vit sous
+  **Système**.

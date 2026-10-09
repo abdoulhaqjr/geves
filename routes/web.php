@@ -80,6 +80,11 @@ Route::get('/deroulement', DeroulementController::class)->name('public.derouleme
 Route::get('/assistante', [GescoController::class, 'page'])->name('public.gesco');
 Route::post('/gesco/demander', [GescoController::class, 'ask'])->name('gesco.ask');
 
+// Pont interne signé : uniquement le navigateur isolé de production des tutoriels
+// l'utilise pour ouvrir de vraies pages GEVES avec le compte de démonstration.
+Route::get('/_captures-tutoriels/{guide}/{step}', App\Http\Controllers\Internal\TutorialCaptureController::class)
+    ->middleware('signed')->name('tutorial.capture');
+
 Route::get('/colloques-passes', [ArchiveController::class, 'index'])->name('public.archives');
 Route::get('/colloques-passes/{slug}', [ArchiveController::class, 'show'])->name('public.archive');
 

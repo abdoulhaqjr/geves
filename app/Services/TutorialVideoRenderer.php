@@ -11,6 +11,7 @@ class TutorialVideoRenderer
     /** @param array<string, mixed> $brief @return array{video: string, poster: string, summary: string} */
     public function render(array $brief, string $directory): array
     {
+        File::ensureDirectoryExists($directory);
         $input = $directory.DIRECTORY_SEPARATOR.'render-input.json';
         $output = $directory.DIRECTORY_SEPARATOR.'render-result.json';
 

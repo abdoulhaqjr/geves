@@ -47,9 +47,9 @@ final class TutorialVideoProduction
                 'font' => 'Jost',
             ],
             'creative_direction' => [
-                'show_real_interface' => false,
+                'show_real_interface' => true,
                 'keep_text_readable' => true,
-                'motion' => 'Transitions douces, interactions illustrées et simulations d’écran contextualisées à chaque étape.',
+                'motion' => 'Transitions douces et recadrages animés sur les captures authentifiées de chaque écran GEVES.',
                 'music' => 'Lit musical original, chaleureux et entraînant, synchronisé avec les révélations ; effets UI discrets.',
                 'voiceover' => false,
                 'avoid' => ['visuels génériques', 'revendications non présentes dans GEVES', 'pulsations ou effets sonores agressifs'],

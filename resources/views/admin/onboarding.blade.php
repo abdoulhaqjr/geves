@@ -12,7 +12,7 @@
         'id' => $guide->id, 'title' => $guide->title, 'intro' => $guide->intro,
         'steps' => implode("\n", $guide->steps ?: []), 'audience' => $guide->audience,
         'roles' => $guide->participant_roles ?: [], 'videoUrl' => $guide->video_url,
-        'visible' => $guide->video_visible_to_participants,
+        'visible' => $guide->video_visible_to_participants, 'hasVideo' => $guide->hasVideo(),
     ])->keyBy('id');
 @endphp
 
@@ -29,7 +29,7 @@
         guides: {{ Js::from($guidePayload) }},
         updateUrl: '{{ $updateUrl }}', requestUrl: '{{ $requestUrl }}',
         edit(id) { this.editing = {...this.guides[id], roles: [...this.guides[id].roles]}; },
-        request(id) { this.videoRequest = this.guides[id]; }
+        request(id) { const guide = this.guides[id]; this.videoRequest = {...guide, action: guide.hasVideo ? 'update' : 'generate'}; }
     }" @open-onboarding-video-batch.window="batchOpen = true">
         @if (session('success'))<div class="ukc-alert ukc-alert--success">{{ session('success') }}</div>@endif
 
@@ -45,7 +45,7 @@
         </section>
 
         @if ($canManage)
-            <section class="onboarding-automation"><span class="onboarding-automation__icon"><x-ukc.icon name="sparkles" :size="18" /></span><div><strong>Production vidéo assistée</strong><p>Le moteur sélectionne Gemini, Claude ou OpenAI selon les réglages, prépare le scénario, puis Hyperframes rend la vidéo sur le serveur avec la charte GEVES. Aucun compte IA sur le poste de l’administrateur n’est requis.</p></div></section>
+            <section class="onboarding-automation"><span class="onboarding-automation__icon"><x-ukc.icon name="sparkles" :size="18" /></span><div><strong>Production vidéo assistée</strong><p>Le moteur sélectionne Gemini, Claude ou OpenAI selon les réglages, prépare le scénario, capture les écrans réels avec un compte de démonstration, puis Hyperframes rend la vidéo sur le serveur avec la charte GEVES. Aucun compte IA sur le poste de l’administrateur n’est requis.</p></div></section>
         @endif
 
         <div class="ukc-nav-docs" id="guides" aria-label="Catégories de guides">
@@ -101,17 +101,18 @@
         </div>
 
         <div class="ukc-modal" x-show="videoRequest" x-cloak @keydown.escape.window="videoRequest = null" style="display: none;">
-            <form class="box narrow" method="POST" :action="videoRequest ? requestUrl.replace('__guide__', videoRequest.id) : ''">
-                @csrf<input type="hidden" name="action" value="update"><input type="hidden" name="tab" value="{{ $activeTab }}"><div class="box-head"><span>Mettre à jour la vidéo</span><button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="videoRequest = null">Fermer</button></div>
-                <div class="box-body"><p>Confirmez la demande de mise à jour pour <strong x-text="videoRequest?.title"></strong>. Vous pouvez préciser le changement attendu.</p><div class="ukc-form-row"><label for="video-prompt">Précision facultative</label><textarea id="video-prompt" name="prompt" placeholder="Ex. intégrer le nouveau parcours de soumission."></textarea></div></div>
-                <div class="box-foot"><button type="button" class="ukc-btn ukc-btn--ghost" @click="videoRequest = null">Annuler</button><button class="ukc-btn ukc-btn--blue" type="submit">Confirmer la demande</button></div>
+            <form class="box narrow onboarding-video-request" method="POST" :action="videoRequest ? requestUrl.replace('__guide__', videoRequest.id) : ''">
+                @csrf<input type="hidden" name="action" :value="videoRequest?.action"><input type="hidden" name="tab" value="{{ $activeTab }}">
+                <div class="box-head"><div class="onboarding-video-request__title"><span><x-ukc.icon name="video" :size="19" /></span><div><strong x-text="videoRequest?.action === 'update' ? 'Mettre à jour la vidéo' : 'Demander la vidéo' "></strong><small x-text="videoRequest?.title"></small></div></div><button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="videoRequest = null">Fermer</button></div>
+                <div class="box-body"><p x-text="videoRequest?.action === 'update' ? 'Une nouvelle version remplacera la vidéo publiée après le rendu.' : 'Le guide sera produit sous forme de vidéo dès que la demande sera confirmée.'"></p><div class="onboarding-video-request__workflow"><span><x-ukc.icon name="monitor" :size="17" /></span><div><strong>Captures réelles de GEVES</strong><small>Le serveur ouvre les pages avec un compte de démonstration, puis les intègre à la vidéo avec la charte et la musique GEVES.</small></div></div><div class="ukc-form-row"><label for="video-prompt">Précision facultative</label><textarea id="video-prompt" name="prompt" placeholder="Ex. mettre l’accent sur le nouveau parcours de soumission."></textarea><small class="onboarding-field-hint">Cette précision oriente le scénario sans modifier les textes du guide.</small></div></div>
+                <div class="box-foot"><button type="button" class="ukc-btn ukc-btn--ghost" @click="videoRequest = null">Annuler</button><button class="ukc-btn ukc-btn--blue" type="submit" x-text="videoRequest?.action === 'update' ? 'Lancer la mise à jour' : 'Lancer la production'"></button></div>
             </form>
         </div>
 
         <div class="ukc-modal" x-show="batchOpen" x-cloak @keydown.escape.window="batchOpen = false" style="display: none;">
             <form class="box narrow" method="POST" action="{{ route('admin.onboarding.videos.request-all') }}">
                 @csrf<div class="box-head"><span>Ajouter les vidéos de prise en main</span><button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="batchOpen = false">Fermer</button></div>
-                <div class="box-body"><p>Une demande sera créée pour chaque guide sans vidéo. Le moteur GEVES choisit Gemini, Claude ou OpenAI pour préparer le scénario, puis Hyperframes produit la vidéo avec le logo, la palette, la police, une musique originale et des mouvements sobres.</p><div class="ukc-form-row"><label for="batch-prompt">Consigne facultative pour toutes les vidéos</label><textarea id="batch-prompt" name="prompt" placeholder="Ex. insister sur les étapes importantes pour les communicants."></textarea></div></div>
+                <div class="box-body"><p>Une demande sera créée pour chaque guide sans vidéo. Le moteur GEVES choisit Gemini, Claude ou OpenAI pour préparer le scénario, capture les vrais écrans avec un compte de démonstration, puis Hyperframes produit la vidéo avec le logo, la palette, la police, une musique originale et des mouvements sobres.</p><div class="ukc-form-row"><label for="batch-prompt">Consigne facultative pour toutes les vidéos</label><textarea id="batch-prompt" name="prompt" placeholder="Ex. insister sur les étapes importantes pour les communicants."></textarea></div></div>
                 <div class="box-foot"><button type="button" class="ukc-btn ukc-btn--ghost" @click="batchOpen = false">Annuler</button><button class="ukc-btn ukc-btn--blue" type="submit">Enregistrer les demandes</button></div>
             </form>
         </div>

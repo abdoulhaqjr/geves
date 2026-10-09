@@ -31,11 +31,6 @@
                    @class(['active' => request()->routeIs('admin.dashboard')])>
                     <x-ukc.icon name="home" :size="18" /> <span class="txt">Tableau de bord</span>
                 </a>
-                <a href="{{ route('admin.onboarding') }}" title="Prise en main"
-                   @class(['active' => request()->routeIs('admin.onboarding')])>
-                    <x-ukc.icon name="book" :size="18" /> <span class="txt">Prise en main</span>
-                </a>
-
                 {{-- ===== Scientifique : cœur académique de l'événement ===== --}}
                 @if ($staff?->canAnyEdition('editions_read') || $staff?->canAnyEdition('submissions_list') || $staff?->canAnyEdition('formation'))
                     <span class="nav-label">Scientifique</span>
@@ -148,10 +143,12 @@
                     </a>
                 @endif
 
-                {{-- ===== Système : utilisateurs, réglages ===== --}}
-                @if (auth('web')->user()?->can('users_roles') || auth('web')->user()?->can('settings'))
-                    <span class="nav-label">Système</span>
-                @endif
+                {{-- ===== Système : prise en main, utilisateurs, réglages ===== --}}
+                <span class="nav-label">Système</span>
+                <a href="{{ route('admin.onboarding') }}" title="Prise en main"
+                   @class(['active' => request()->routeIs('admin.onboarding')])>
+                    <x-ukc.icon name="book" :size="18" /> <span class="txt">Prise en main</span>
+                </a>
                 @can('users_roles')
                     <a href="{{ route('admin.users.index') }}" title="Utilisateurs"
                        @class(['active' => request()->routeIs('admin.users.*')])>

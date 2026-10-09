@@ -28,12 +28,16 @@ const concise = (value, fallback, length = 180) => String(value || fallback).rep
 const steps = Array.isArray(guide.steps) && guide.steps.length > 0
   ? guide.steps.map(step => concise(step, 'Suivez les indications de ce guide.', 280))
   : ['Suivez les indications de ce guide.'];
+const captures = Array.isArray(input.captures) ? input.captures : [];
+if (captures.length < steps.length) {
+  throw new Error('Les captures réelles de chaque étape sont nécessaires avant le rendu de la vidéo.');
+}
 const title = concise(guide.title, 'Prise en main GEVES', 110);
 const intro = concise(guide.intro, 'Guides pratiques pour utiliser la plateforme.', 300);
 const hook = concise(scenario.hook, 'Guide pratique GEVES', 95);
 // La précision libre de l'administrateur pilote les IA de préproduction ; elle
 // ne doit jamais être affichée telle quelle dans la vidéo finale.
-const instruction = 'Repérez l’action mise en avant dans cette simulation GEVES.';
+const instruction = 'Repérez l’action mise en avant sur l’écran réel de GEVES.';
 const introDuration = 7;
 const contextDuration = 6;
 const stepDuration = 10;
@@ -46,19 +50,13 @@ const music = join(assets, 'geves-bed.m4a');
 const musicExpression = '0.14*sin(2*PI*82.41*t)*(0.58+0.42*sin(2*PI*0.16*t)*sin(2*PI*0.16*t))+0.09*sin(2*PI*164.81*t)*(0.3+0.7*sin(2*PI*1.25*t)*sin(2*PI*1.25*t))+0.075*sin(2*PI*246.94*t)*(0.2+0.8*sin(2*PI*1.25*t+0.5)*sin(2*PI*1.25*t+0.5))+0.06*sin(2*PI*329.63*t)*(0.15+0.85*sin(2*PI*1.25*t+1.05)*sin(2*PI*1.25*t+1.05))+0.045*sin(2*PI*493.88*t)*(0.1+0.9*sin(2*PI*1.25*t+1.58)*sin(2*PI*1.25*t+1.58))';
 run('ffmpeg', ['-y', '-f', 'lavfi', '-i', `aevalsrc=${musicExpression}:d=${duration}:s=44100`, '-af', `afade=t=in:st=0:d=1.2,afade=t=out:st=${Math.max(0, duration - 3)}:d=3,loudnorm=I=-17:TP=-1.5:LRA=5`, '-c:a', 'aac', '-b:a', '192k', music]);
 
-const simulationFor = (step, index) => {
-  const text = step.toLocaleLowerCase('fr');
-  const action = text.includes('soumission') || text.includes('appel')
-    ? ['Nouvelle soumission', 'Sélectionner l’appel', 'Ouvrir le formulaire']
-    : text.includes('session') || text.includes('séance') || text.includes('visio')
-      ? ['Ma séance', 'Rejoindre la salle', 'Accéder à la visio']
-      : text.includes('rôle') || text.includes('droit') || text.includes('équipe')
-        ? ['Équipe du colloque', 'Rôles et accès', 'Vérifier les droits']
-        : text.includes('document')
-          ? ['Documents', 'Espace documentaire', 'Consulter le document']
-          : ['Tableau de bord', 'Parcours du colloque', 'Continuer'];
+const captureFor = (index) => {
+  const capture = captures[index];
+  const filename = `capture-${index + 1}.png`;
+  copy(capture.path, join(assets, filename));
+  if (!existsSync(join(assets, filename))) throw new Error(`Capture introuvable pour l’étape ${index + 1}.`);
 
-  return `<div class="screen-sim pop p1" aria-label="Simulation d’écran pour l’étape ${index + 1}"><div class="sim-head"><img src="assets/logo-mark.png"><strong>GEVES</strong><span>Back-office · Colloques</span><i></i><em>⌕</em><b>A</b></div><div class="sim-body"><aside><span class="sim-home">⌂</span><span class="sim-nav active"></span><span class="sim-nav"></span><span class="sim-nav"></span><span class="sim-nav"></span></aside><div class="sim-page"><div class="sim-crumb">${esc(action[0])} <small>›</small> ${esc(action[1])}</div><div class="sim-page-head"><div><b>${esc(action[1])}</b><span>Étape ${index + 1} sur ${steps.length}</span></div><button>${esc(action[2])}</button></div><div class="sim-card"><div class="sim-card-top"><span class="sim-pill">GUIDE</span><i></i><i></i></div><div class="sim-focus"><div class="sim-icon">${String(index + 1).padStart(2, '0')}</div><div><strong>${esc(step)}</strong><small>Action guidée dans GEVES</small></div><button>✓</button></div><div class="sim-row"><span></span><i></i><i></i><i></i></div><div class="sim-row short"><span></span><i></i></div></div><div class="sim-cursor">↖</div></div></div></div>`;
+  return `<figure class="screen-capture pop p1" aria-label="Capture réelle GEVES : ${esc(capture.title || `étape ${index + 1}`)}"><img src="assets/${filename}" alt="Capture réelle de ${esc(capture.title || 'GEVES')}"><figcaption>Écran réel GEVES · ${esc(capture.title || `Étape ${index + 1}`)}</figcaption></figure>`;
 };
 
 const stepSections = steps.map((step, index) => {
@@ -67,7 +65,7 @@ const stepSections = steps.map((step, index) => {
   const following = index + 1 < steps.length ? 'Suite du guide à venir' : 'Parcours terminé';
   const progress = Math.round(((index + 1) / steps.length) * 100);
 
-  return `<section id="scene-step-${index + 1}" class="clip step-scene" data-start="${start}" data-duration="${stepDuration}" data-track-index="${index + 2}"><div class="inner"><div class="step-top reveal delay1"><div class="eyebrow">Parcours guidé</div><div class="progress">${index + 1} <span>/ ${steps.length}</span></div></div><div class="step-layout"><div class="step-copy"><div class="step-number pop p1">${String(index + 1).padStart(2, '0')}</div><div class="step-label reveal delay1">ÉTAPE ${index + 1}</div><h2 class="reveal delay2">${esc(step)}</h2><p class="reveal delay3">${esc(instruction)}</p></div>${simulationFor(step, index)}</div><div class="step-rail reveal delay3"><span>${esc(previous)}</span><div class="rail"><i style="width:${progress}%"></i></div><span>${esc(following)}</span></div></div></section>`;
+  return `<section id="scene-step-${index + 1}" class="clip step-scene" data-start="${start}" data-duration="${stepDuration}" data-track-index="${index + 2}"><div class="inner"><div class="step-top reveal delay1"><div class="eyebrow">Parcours guidé</div><div class="progress">${index + 1} <span>/ ${steps.length}</span></div></div><div class="step-layout"><div class="step-copy"><div class="step-number pop p1">${String(index + 1).padStart(2, '0')}</div><div class="step-label reveal delay1">ÉTAPE ${index + 1}</div><h2 class="reveal delay2">${esc(step)}</h2><p class="reveal delay3">${esc(instruction)}</p></div>${captureFor(index)}</div><div class="step-rail reveal delay3"><span>${esc(previous)}</span><div class="rail"><i style="width:${progress}%"></i></div><span>${esc(following)}</span></div></div></section>`;
 }).join('');
 
 const html = `<!doctype html>
@@ -76,11 +74,11 @@ const html = `<!doctype html>
 </style></head><body><main id="root" data-composition-id="main" data-no-timeline data-start="0" data-width="1920" data-height="1080" data-duration="${duration}"><audio id="bgm" data-start="0" data-duration="${duration}" data-track-index="20" data-volume="0.78" src="assets/geves-bed.m4a"></audio><section id="scene-intro" class="clip s1" data-start="0" data-duration="${introDuration}" data-track-index="0"><div class="inner"><div class="orb"></div><div class="brand reveal delay1"><img src="assets/logo-mark.png"><span>GEVES<small>Université de Kara</small></span></div><div><div class="eyebrow reveal delay2">${esc(hook)}</div><h1 class="reveal delay2">${esc(title)}</h1><p class="reveal delay3">${esc(intro)}</p></div><div class="footer reveal delay3">Une expérience claire, adaptée à chaque rôle.</div></div></section><section id="scene-context" class="clip s2" data-start="${introDuration}" data-duration="${contextDuration}" data-track-index="1"><div class="inner"><div class="eyebrow reveal delay1" style="color:#223ea4">Introduction du guide</div><h2 class="reveal delay2">${esc(intro)}</h2><p class="reveal delay3">Le parcours suivant reprend chaque étape dans son ordre afin de vous accompagner jusqu’à la fin.</p><div class="context-card pop p1"><b>Objectif</b><span>${esc(instruction)}</span></div></div></section>${stepSections}<section id="scene-outro" class="clip s4" data-start="${duration - outroDuration}" data-duration="${outroDuration}" data-track-index="${steps.length + 2}"><div class="inner"><div class="orb"></div><div class="brand reveal delay1"><img src="assets/logo-mark.png"><span>GEVES<small>Prise en main</small></span></div><h2 class="reveal delay2">Votre parcours est prêt.</h2><p class="reveal delay3">${esc(title)}</p></div></section></main></body></html>`;
 
 const correctedHtml = html
-  .replace('</style>', '.progress{width:100px;height:68px}</style>')
+  .replace('</style>', '.progress{width:100px;height:68px}.brand{gap:22px}.brand img{width:auto;height:84px;max-width:300px;object-fit:contain}.screen-capture{height:560px;margin:0;border:11px solid #fff;border-radius:28px;overflow:hidden;background:#fff;box-shadow:0 30px 70px rgba(15,23,42,.22);position:relative}.screen-capture img{display:block;width:100%;height:100%;object-fit:cover;object-position:top;animation:capture-pan 10s ease-in-out both}.screen-capture figcaption{position:absolute;right:0;bottom:0;left:0;display:flex;align-items:center;height:42px;padding:0 19px;color:#fff;background:linear-gradient(90deg,rgba(15,23,42,.86),rgba(15,23,42,.48));font-size:15px;font-weight:700}@keyframes capture-pan{from{transform:scale(1.018);transform-origin:50% 0}to{transform:scale(1.075);transform-origin:50% 18%}}</style>')
   .replaceAll('<div class="orb"></div>', '<div class="orb" data-layout-allow-overflow></div>');
 writeFileSync(join(composition, 'index.html'), correctedHtml);
 writeFileSync(join(composition, 'hyperframes.json'), JSON.stringify({ $schema: 'https://hyperframes.heygen.com/schema/hyperframes.json', authoringSkill: 'brag' }, null, 2));
-writeFileSync(join(outputDir, 'brag-plan.md'), `# Plan de réalisation\n\n- Guide : ${title}\n- Durée : ${duration} secondes\n- Format : 1920×1080\n- Scènes : introduction, objectif, ${steps.length} étape(s) séquentielle(s), conclusion\n- Direction : monogramme GEVES compact, simulations d’écran contextualisées, musique originale chaleureuse et mouvements sobres.\n`);
+writeFileSync(join(outputDir, 'brag-plan.md'), `# Plan de réalisation\n\n- Guide : ${title}\n- Durée : ${duration} secondes\n- Format : 1920×1080\n- Scènes : introduction, objectif, ${steps.length} étape(s) séquentielle(s), conclusion\n- Direction : monogramme GEVES compact agrandi, captures authentifiées de GEVES, musique originale chaleureuse et mouvements sobres.\n`);
 writeFileSync(join(outputDir, 'composition-brief.md'), `# Brief de composition\n\n## Introduction\n${intro}\n\n## Étapes\n${steps.map((step, index) => `${index + 1}. ${step}`).join('\n')}\n`);
 writeFileSync(join(outputDir, 'share-copy.txt'), `Découvrez le guide « ${title} » dans GEVES.`);
 
