@@ -776,3 +776,6 @@ de l'édition.
 - Le formulaire de production conserve un champ caché `action`. Pour poster en AJAX,
   l’URL doit venir de `form.getAttribute('action')` et non de `form.action`, lequel
   est masqué par le champ et produirait `/admin/[object HTMLInputElement]`.
+- Sur Windows, `TutorialVideoWorkerLauncher` choisit `php.exe` voisin de `PHP_BINARY`
+  puis vérifie le processus avant de garder son PID en cache. PHP-FPM peut déclarer
+  `php-cgi.exe`, lequel crée un PID temporaire mais ne peut pas exécuter Artisan.

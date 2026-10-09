@@ -31,12 +31,13 @@ class TutorialVideoWorkerLauncher
         // Le processus lit directement les demandes persistées. Il ne dépend donc
         // pas d'un démon de queue externe sur le poste de l'administrateur.
         $arguments = ['artisan', 'tutorial-videos:render-pending', '--limit=20'];
+        $php = $this->phpCli();
 
         try {
             if (DIRECTORY_SEPARATOR === '\\') {
                 $process = new Process([
                     'powershell.exe', '-NoProfile', '-NonInteractive', '-Command',
-                    '$worker = Start-Process -FilePath '.$this->ps(PHP_BINARY)
+                    '$worker = Start-Process -FilePath '.$this->ps($php)
                     .' -ArgumentList '.$this->psArray($arguments)
                     .' -WorkingDirectory '.$this->ps(base_path())
                     .' -WindowStyle Hidden -PassThru; $worker.Id',
@@ -47,12 +48,20 @@ class TutorialVideoWorkerLauncher
                     throw new \RuntimeException('Le processus de rendu vidéo n’a pas retourné d’identifiant.');
                 }
 
+                // Depuis PHP-FPM, PHP_BINARY peut désigner php-cgi.exe. Le PID de
+                // php-cgi existe brièvement mais le rendu ne démarre jamais. Vérifier
+                // la ligne de commande du véritable worker avant de le mémoriser.
+                usleep(350000);
+                if (! $this->isWorkerProcess($pid)) {
+                    throw new \RuntimeException('Le processus de rendu vidéo a quitté avant son démarrage.');
+                }
+
                 Cache::put(self::CACHE_KEY, ['pid' => $pid], now()->addHour());
 
                 return;
             }
 
-            $process = new Process(array_merge([PHP_BINARY], $arguments), base_path());
+            $process = new Process(array_merge([$php], $arguments), base_path());
             $process->start();
             Cache::put(self::CACHE_KEY, ['pid' => $process->getPid()], now()->addHour());
         } catch (\Throwable $exception) {
@@ -72,13 +81,30 @@ class TutorialVideoWorkerLauncher
             return true;
         }
 
+        return $this->isWorkerProcess($worker['pid']);
+    }
+
+    private function isWorkerProcess(int $pid): bool
+    {
         $check = new Process([
             'powershell.exe', '-NoProfile', '-NonInteractive', '-Command',
-            '(Get-CimInstance Win32_Process -Filter "ProcessId = '.$worker['pid'].'").CommandLine',
+            '(Get-CimInstance Win32_Process -Filter "ProcessId = '.$pid.'").CommandLine',
         ]);
         $check->run();
 
         return $check->isSuccessful() && str_contains($check->getOutput(), 'tutorial-videos:render-pending');
+    }
+
+    /** Résout php.exe depuis php-cgi.exe lorsque la requête vient de PHP-FPM. */
+    private function phpCli(): string
+    {
+        if (DIRECTORY_SEPARATOR !== '\\') {
+            return PHP_BINARY;
+        }
+
+        $cli = dirname(PHP_BINARY).DIRECTORY_SEPARATOR.'php.exe';
+
+        return is_file($cli) ? $cli : PHP_BINARY;
     }
 
     private function ps(string $value): string

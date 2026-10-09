@@ -3055,3 +3055,7 @@ Deux mécanismes, complémentaires :
   Le formulaire comporte volontairement un champ caché `action` : en JavaScript,
   récupérer l’URL avec `form.getAttribute('action')`, car `form.action` désignerait
   ce champ HTML et conduirait à la route invalide `/admin/[object HTMLInputElement]`.
+  Sous Windows, le lanceur résout le voisin `php.exe` de `PHP_BINARY` avant de créer
+  le processus : une requête servie par PHP-FPM peut exposer `php-cgi.exe`, qui quitte
+  sans exécuter Artisan. Le PID n’est mis en cache qu’après vérification de la ligne
+  de commande du worker.

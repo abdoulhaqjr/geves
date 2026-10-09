@@ -54,3 +54,11 @@ it('expose la progression d’une production vidéo au calque de suivi', functio
         ->assertJsonPath('request.percent', 70)
         ->assertJsonPath('request.label', 'Montage Hyperframes en cours.');
 });
+
+it('utilise un binaire PHP CLI pour le worker vidéo Windows', function () {
+    $method = new ReflectionMethod(\App\Services\TutorialVideoWorkerLauncher::class, 'phpCli');
+    $method->setAccessible(true);
+
+    expect($method->invoke(app(\App\Services\TutorialVideoWorkerLauncher::class)))
+        ->toEndWith('php.exe');
+});
