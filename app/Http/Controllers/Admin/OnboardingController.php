@@ -3,12 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Jobs\GenerateTutorialVideo;
 use App\Models\TutorialGuide;
 use App\Models\TutorialVideoRequest;
+use App\Services\TutorialVideoWorkerLauncher;
 use App\Support\TutorialGuideCatalog;
 use App\Support\TutorialVideoProduction;
-use App\Services\TutorialVideoWorkerLauncher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -93,11 +92,10 @@ class OnboardingController extends Controller
         ]);
 
         $videoRequest = $this->queueVideoRequest($guide, $request, $data['action'], $data['prompt'] ?? null);
-        GenerateTutorialVideo::dispatch($videoRequest->id)->onQueue('tutorial-videos');
         app(TutorialVideoWorkerLauncher::class)->launch();
 
         return redirect()->route('admin.onboarding', ['tab' => $request->input('tab', 'all')])
-            ->with('success', 'La demande vidéo a été enregistrée et sera traitée par le moteur vidéo GEVES.');
+            ->with('success', 'La demande vidéo a été enregistrée : le rendu démarre automatiquement sur le serveur GEVES.');
     }
 
     public function requestAllVideos(Request $request): RedirectResponse
@@ -116,9 +114,6 @@ class OnboardingController extends Controller
             }
         });
 
-        foreach ($requests as $videoRequest) {
-            GenerateTutorialVideo::dispatch($videoRequest->id)->onQueue('tutorial-videos');
-        }
         if ($requests !== []) {
             app(TutorialVideoWorkerLauncher::class)->launch();
         }

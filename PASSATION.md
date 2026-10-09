@@ -741,3 +741,14 @@ de l'édition.
 **764 tests verts**, PHPStan niveau 5 OK, Pint OK.
 
 > **Mémoire projet** : le contexte fin (décisions, conventions, TODO différés - DOI/DataCite, connecteur Google anti-plagiat, amélioration `admin/reclamations`) est aussi consigné dans la **mémoire locale de Claude Code** (`~/.claude/…/memory/`, non versionnée). Comme cette mémoire ne se partage pas entre contributeurs, **le contexte partageable doit vivre dans `CLAUDE.md` + ce fichier** (versionnés) : les tenir à jour à chaque tâche notable.
+
+## Tutoriels vidéo — lancement serveur autonome et simulation d’écrans (2026-10-09)
+
+- `admin/prise-en-main` démarre désormais un processus serveur dédié qui lit les
+  demandes `queued` dans la base et les rend avec Gemini/Claude/OpenAI puis
+  Hyperframes. Les clics administrateur ne requièrent ni Codex ni un worker de
+  queue installé sur leur poste.
+- Les compositions utilisent le logo compact configurable (`app_logo_mark`), une
+  musique originale plus chaleureuse et audible, et une simulation de l’interface
+  GEVES pour chaque étape du guide. Une simulation n’est jamais présentée comme
+  une capture réelle connectée.

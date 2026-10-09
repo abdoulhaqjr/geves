@@ -28,7 +28,9 @@ class TutorialVideoWorkerLauncher
             return;
         }
 
-        $arguments = ['artisan', 'queue:work', 'database', '--queue=tutorial-videos', '--stop-when-empty', '--tries=1', '--timeout=3600'];
+        // Le processus lit directement les demandes persistées. Il ne dépend donc
+        // pas d'un démon de queue externe sur le poste de l'administrateur.
+        $arguments = ['artisan', 'tutorial-videos:render-pending', '--limit=20'];
 
         try {
             if (DIRECTORY_SEPARATOR === '\\') {

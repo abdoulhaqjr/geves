@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\TutorialGuide;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Contrat transmis à l'agent qui produit les vidéos de prise en main.
@@ -16,12 +17,16 @@ final class TutorialVideoProduction
     public static function briefFor(TutorialGuide $guide, ?string $instruction = null): array
     {
         $stepCount = max(1, count($guide->steps ?: []));
+        $customMark = Settings::get(Branding::MARK);
+        $logo = filled($customMark) && Storage::disk('public')->exists((string) $customMark)
+            ? Storage::disk('public')->path((string) $customMark)
+            : public_path('img/apple-touch-icon.png');
 
         return [
             'engine' => 'geves-hyperframes',
             'renderer' => 'hyperframes',
             'workflow' => 'brag-inspired',
-            'format' => ['ratio' => '16:9', 'duration_seconds' => max(36, 20 + ($stepCount * 8)), 'tone' => 'polished'],
+            'format' => ['ratio' => '16:9', 'duration_seconds' => max(42, 20 + ($stepCount * 10)), 'tone' => 'polished'],
             'guide' => [
                 'key' => $guide->key,
                 'title' => $guide->title,
@@ -30,7 +35,7 @@ final class TutorialVideoProduction
                 'instruction' => blank($instruction) ? null : $instruction,
             ],
             'brand' => [
-                'logo' => public_path('img/logo-uk.png'),
+                'logo' => $logo,
                 'colors' => [
                     'blue' => '#223ea4',
                     'blue_dark' => '#1a3080',
@@ -44,8 +49,8 @@ final class TutorialVideoProduction
             'creative_direction' => [
                 'show_real_interface' => false,
                 'keep_text_readable' => true,
-                'motion' => 'Transitions douces, interactions illustrées et mouvements UI sobres.',
-                'music' => 'Lit musical professionnel sobre, synchronisé avec les révélations ; effets UI discrets.',
+                'motion' => 'Transitions douces, interactions illustrées et simulations d’écran contextualisées à chaque étape.',
+                'music' => 'Lit musical original, chaleureux et entraînant, synchronisé avec les révélations ; effets UI discrets.',
                 'voiceover' => false,
                 'avoid' => ['visuels génériques', 'revendications non présentes dans GEVES', 'pulsations ou effets sonores agressifs'],
             ],
