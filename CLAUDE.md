@@ -640,6 +640,27 @@ paiement (`pay`), inscription à une formation.
     Ne pas réinjecter `$commsBySession` ni les rôles dans `#programme`. Test :
     `ProgramPublicTest` (`assertDontSee` le titre d'une communication).
 
+- **BASE vs données de colloque : seeders scindés** (réamorçage ciblé). La BASE que
+  possède le super-administrateur - rôles/permissions + compte super-admin
+  (`RolesAndAdminSeeder`) et les **réglages** (`settings`) - est **séparée** des
+  données de démonstration de colloque, regroupées dans **`ColloqueDemoSeeder`**
+  (`ColloqueAvenirSeeder` + `ColloqueAvenirVolumeSeeder`). `DatabaseSeeder` appelle
+  RolesAndAdmin **puis** ColloqueDemo.
+  - **`php artisan colloques:reseed`** recrée les données de colloque **sans
+    `migrate:fresh`** : il vide le domaine « colloque » (liste ordonnée enfant→parent
+    dans `App\Console\Commands\ReseedColloques::EVENT_TABLES` : events, event_series,
+    event_user, participants, submissions, slots, payments, reviews, formations,
+    attestations, claims, meeting_messages, sessions/polls/questions, project_*,
+    committee_members…), **purge les comptes de démo** (domaines `@test.tg` /
+    `@avenir-durable.tg` / `@example.org`, `--keep-accounts` pour les garder) puis
+    rejoue `ColloqueDemoSeeder`. ⚠️ **Ne touche JAMAIS** `settings`, le super-admin
+    (`admin@univkara.tg`), les rôles/permissions, `tutorial_*`, `document_templates`,
+    `emails`, `media`, `testimonials` : c'est tout l'intérêt vs `migrate:fresh --seed`.
+    `--force` (sans confirmation / autorise en production, refusé sinon),
+    `--class=` (rejouer un autre seeder de colloque). ⚠️ En AJOUTANT une table au
+    domaine « colloque », l'ajouter à `EVENT_TABLES` (sinon elle survit au réamorçage) ;
+    une table de **configuration** (réglage/design du super-admin) N'y va jamais.
+    Tests : `tests/Feature/ColloqueReseedTest.php`.
 - **Un seul colloque de démo, à l'échelle** : `migrate:fresh --seed` ne crée plus
   qu'**un** colloque (le VIIIe conjoint Parakou-Kara, `avenir-durable-2025`), au
   volume d'un vrai événement. `DatabaseSeeder` enchaîne `ColloqueAvenirSeeder`
@@ -3005,3 +3026,16 @@ Deux mécanismes, complémentaires :
   prendre) : même palette bizzcart (pouce `rgba(0,0,0,.2)`, rayon 6px, piste
   transparente). C'est le repli quand PS ne s'applique pas (public = scrollbar
   natif du navigateur, ni `ukc-dense` ni `.ukc-shell`).
+
+### Tutoriels vidéo : rendu autonome et simulations par étape (2026-10-09)
+
+- Une demande depuis `admin/prise-en-main` ne dépend plus d’un worker Laravel
+  externe : `TutorialVideoWorkerLauncher` lance `tutorial-videos:render-pending`,
+  lequel revendique puis produit les demandes `queued` directement en base.
+  Ainsi, un administrateur déclenche le rendu serveur sans intervention Codex.
+- Chaque vidéo reprend le **monogramme compact** (`app_logo_mark`, avec repli sur
+  `public/img/apple-touch-icon.png`), jamais le lockup large.
+- Chaque étape porte une simulation d’interface contextualisée. Ce sont des
+  maquettes explicatives fidèles à la charte GEVES, jamais des captures
+  authentifiées. La bande son locale est une composition instrumentale originale
+  normalisée pour rester audible.

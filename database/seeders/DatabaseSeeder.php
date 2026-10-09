@@ -11,26 +11,24 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
-        // Base fonctionnelle, TOUJOURS exécutée (y compris en production) :
-        // rôles/permissions + compte administrateur.
+        // BASE fonctionnelle, TOUJOURS exécutée (y compris en production) :
+        // rôles/permissions + compte super-administrateur. ⚠️ C'est la seule
+        // partie que le réamorçage des colloques (`colloques:reseed`) NE touche
+        // PAS - elle est volontairement séparée des données de démonstration.
         $this->call(RolesAndAdminSeeder::class);
 
-        // Données de DÉMONSTRATION (faux colloques, participants, séances en direct).
-        // Jamais en production, sauf override explicite SEED_DEMO_DATA=true (pour une
-        // instance de démo/staging). Évite d'expédier des données fictives en prod.
+        // Données de DÉMONSTRATION des colloques (événement, participants, séances
+        // en direct, 200 communications…). Jamais en production, sauf override
+        // explicite SEED_DEMO_DATA=true (pour une instance de démo/staging).
         if (app()->isProduction() && ! env('SEED_DEMO_DATA', false)) {
             $this->command?->warn('Production : données de démonstration ignorées (SEED_DEMO_DATA=true pour forcer).');
 
             return;
         }
 
-        // Un SEUL colloque de démonstration, au volume d'un vrai événement :
-        // le VIIIe colloque conjoint Parakou-Kara. L'Avenir crée le colloque,
-        // l'événement, les ateliers, le staff, les relecteurs et le direct ; le
-        // Volume lui ajoute ses 200 communications et les paiements.
-        $this->call([
-            ColloqueAvenirSeeder::class,
-            ColloqueAvenirVolumeSeeder::class,
-        ]);
+        // Un SEUL colloque de démonstration, au volume d'un vrai événement (le
+        // VIIIe colloque conjoint Parakou-Kara). Regroupé dans ColloqueDemoSeeder
+        // pour que `php artisan colloques:reseed` puisse le recréer seul.
+        $this->call(ColloqueDemoSeeder::class);
     }
 }
