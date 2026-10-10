@@ -2523,6 +2523,19 @@ ajoutée par la vue, elle ne se saisit pas.
     EST la vue Blade, donc la rendre suffit à montrer le final. Le **livret** ouvre son **PDF en
     inline** (`?format=pdf&inline=1`, `DocumentController` `stream()` vs `download()`). Tests :
     `DocumentPreviewTest`.
+- ⚠️ **Le livret ne contient QUE des communications acceptées - dans TOUTES ses sections.**
+  La règle a une seule définition, **`Submission::scopeForBooklet()`** (canonique + statut
+  `accepted`) et son pendant sur un modèle chargé, **`belongsInBooklet()`**. Les résumés
+  filtraient bien ; le **programme**, lui, lisait les créneaux sans rien vérifier - une
+  communication planifiée **puis refusée** gardait son créneau, et le livre imprimé
+  annonçait son titre et ses auteurs à l'heure dite alors que son résumé n'y figurait pas.
+  Une **resoumission** acceptée passait de même, en doublon de sa version canonique.
+  ⚠️ **Trois constructions de programme** à tenir d'accord : `LivretDocx::programmeByDay()`
+  (style par défaut), `LivretDocx::addProgrammeFss()` (style FSS) et
+  `DocumentController::livretViewData()` (PDF + aperçu HTML) - corriger l'une ne dit rien
+  des deux autres. ⚠️ Un créneau dont la communication n'est pas au livre est **écarté**,
+  pas replié sur l'intitulé de sa séance : la ligne n'existait que pour elle, et les autres
+  créneaux de la même séance représentent déjà la séance. Tests : `LivretTest`.
 - **Livre des résumés (livret)** : communications acceptées groupées par axe, trois sorties
   depuis `admin.documents.livret` (`DocumentController::livret`) : **aperçu HTML**,
   **.docx** (`?format=docx`) et **PDF** (`?format=pdf`, dompdf, vue autonome

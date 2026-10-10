@@ -30,9 +30,11 @@ class DocumentController extends Controller
     /** Livret des résumés : communications acceptées, groupées par axe. */
     public function livret(Event $event, Request $request): View|Response
     {
+        // ⚠️ Source unique de « ce que le livre contient » : le programme ci-dessous
+        // s'y aligne aussi, sans quoi il annoncerait des communications absentes
+        // de la section Résumés (cf. Submission::scopeForBooklet).
         $groups = $event->submissions()
-            ->where('revision_of', 0)
-            ->where('status', 'accepted')
+            ->forBooklet()
             ->orderBy('track')
             ->get()
             ->groupBy(fn ($s) => $s->track ?: 'Autres');
@@ -134,9 +136,17 @@ class DocumentController extends Controller
         $authorIndex = array_map(fn ($refs) => implode(', ', array_values(array_unique($refs))), $authorIndex);
 
         // Programme : communications placées (créneaux) regroupées par jour.
+        // ⚠️ **Un créneau dont la communication n'est pas au livre n'y figure pas
+        // non plus** : planifiée puis refusée, elle gardait son créneau et le
+        // programme imprimé annonçait son titre et ses auteurs, introuvables dans
+        // la section Résumés. On l'écarte, on ne la replie pas sur l'intitulé de
+        // sa séance - la ligne n'existait que pour elle, et les autres créneaux
+        // de la même séance la représentent déjà.
         $programme = $event->slots()->with(['submission', 'session'])
             ->whereNotNull('starts_at')->orderBy('starts_at')->get()
-            ->filter(fn ($sl) => $sl->submission || trim((string) $sl->session_label) !== '')
+            ->filter(fn ($sl) => $sl->submission
+                ? $sl->submission->belongsInBooklet()
+                : trim((string) $sl->session_label) !== '')
             ->groupBy(fn ($sl) => $sl->starts_at?->format('Y-m-d') ?? '')
             ->sortKeys();
 

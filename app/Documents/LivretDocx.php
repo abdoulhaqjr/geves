@@ -629,7 +629,9 @@ class LivretDocx
         }
 
         foreach ($sess->slots->sortBy(fn (Slot $sl) => optional($sl->starts_at)->timestamp ?? 0) as $sl) {
-            if (! $sl->submission) {
+            // ⚠️ Même règle que partout ailleurs dans le livre : seules les
+            // communications retenues s'annoncent (cf. `belongsInBooklet`).
+            if (! $sl->submission || ! $sl->submission->belongsInBooklet()) {
                 continue;
             }
             $title = trim((string) $sl->submission->title);
@@ -665,9 +667,14 @@ class LivretDocx
      */
     private function programmeByDay(): Collection
     {
+        // ⚠️ Même règle que la section Résumés (`Submission::belongsInBooklet`) :
+        // une communication refusée après avoir été planifiée gardait son créneau,
+        // et le programme imprimé l'annonçait alors qu'elle n'est pas au livre.
         return $this->event->slots()->with(['submission', 'session'])
             ->whereNotNull('starts_at')->orderBy('starts_at')->get()
-            ->filter(fn (Slot $sl) => $sl->submission || trim((string) $sl->session_label) !== '')
+            ->filter(fn (Slot $sl) => $sl->submission
+                ? $sl->submission->belongsInBooklet()
+                : trim((string) $sl->session_label) !== '')
             ->groupBy(fn (Slot $sl) => $sl->starts_at?->format('Y-m-d') ?? '')
             ->sortKeys();
     }

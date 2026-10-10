@@ -194,6 +194,28 @@ class Submission extends Model
         return $query->where('revision_of', 0);
     }
 
+    /**
+     * **Ce que le LIVRE DES RÉSUMÉS retient** : les communications acceptées,
+     * dans leur version canonique.
+     *
+     * ⚠️ **Une seule définition, pour TOUTES les sections du livret.** Les
+     * résumés filtraient bien ; le PROGRAMME, lui, lisait les créneaux sans rien
+     * vérifier. Une communication planifiée **puis refusée** - ou remplacée par
+     * une resoumission - gardait son créneau, et le livre imprimé annonçait son
+     * titre et ses auteurs à l'heure dite alors que son résumé n'y figurait pas.
+     * Deux sections du même livre se contredisaient.
+     */
+    public function scopeForBooklet($query)
+    {
+        return $query->canonical()->where('status', SubmissionStatus::Accepted->value);
+    }
+
+    /** La même règle, sur une communication déjà chargée (cf. `scopeForBooklet`). */
+    public function belongsInBooklet(): bool
+    {
+        return (int) $this->revision_of === 0 && $this->statusEnum() === SubmissionStatus::Accepted;
+    }
+
     /** L'auteur peut resoumettre uniquement quand une correction est demandée. */
     public function canBeRevised(): bool
     {
