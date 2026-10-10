@@ -10495,7 +10495,7 @@ ARCHIVE;
             ['name' => 'Colloque Scientifique sur la Problématique de l’Eau au Togo', 'type' => 'colloque']
         );
 
-        return Event::firstOrCreate(
+        $event = Event::firstOrCreate(
             ['slug' => self::EVENT_SLUG],
             [
                 'event_series_id' => $series->id,
@@ -10503,7 +10503,7 @@ ARCHIVE;
                 'event_label' => 'Premier colloque scientifique',
                 'theme' => 'La problématique de l’eau au Togo',
                 'year' => 2026,
-                'date_start' => '2026-11-11',
+                'date_start' => '2026-11-10',
                 'date_end' => '2026-11-13',
                 'location' => 'Université de Kara, Kara, Togo',
                 'status' => 'open',
@@ -10520,7 +10520,7 @@ ARCHIVE;
                     'tracks' => self::TRACKS,
                     'key_dates' => [
                         ['date' => '2026-10-15', 'label' => 'Date limite de soumission des résumés'],
-                        ['date' => '2026-11-11', 'label' => 'Début du colloque'],
+                        ['date' => '2026-11-10', 'label' => 'Début du colloque'],
                         ['date' => '2026-11-13', 'label' => 'Fin du colloque'],
                     ],
                     'contact' => [
@@ -10531,6 +10531,30 @@ ARCHIVE;
                 ],
             ]
         );
+
+        // La date confirmée par l'organisateur corrige également un import
+        // antérieur ; les autres modifications humaines restent intactes.
+        $settings = $event->settings ?? [];
+        $keyDates = $settings['key_dates'] ?? [];
+        $datesChanged = false;
+        foreach ($keyDates as &$keyDate) {
+            if (($keyDate['label'] ?? null) === 'Début du colloque' && ($keyDate['date'] ?? null) !== '2026-11-10') {
+                $keyDate['date'] = '2026-11-10';
+                $datesChanged = true;
+            }
+        }
+        unset($keyDate);
+
+        if ($event->date_start?->toDateString() !== '2026-11-10' || $datesChanged) {
+            $event->date_start = '2026-11-10';
+            if ($datesChanged) {
+                $settings['key_dates'] = $keyDates;
+                $event->settings = $settings;
+            }
+            $event->save();
+        }
+
+        return $event;
     }
 
     /** @param array<string, mixed> $source */
