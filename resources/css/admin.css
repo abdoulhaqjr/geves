@@ -152,18 +152,16 @@
 .ukc-onb .onboarding-role-options label, .ukc-onb .onboarding-checkbox { color: var(--ukc-text); font-size: 12px; }
 .ukc-onb .onboarding-checkbox { display: block; margin-top: 9px; }
 .ukc-onb .onboarding-checkbox--danger { color: #b42318; }
-.ukc-onb .onboarding-video-request .box-head { align-items: flex-start; }
+.ukc-onb .ukc-modal .box.onboarding-video-request { max-width: 720px; display: flex; flex-direction: column; overflow: hidden; }
+.ukc-onb .onboarding-video-request .box-head { flex: 0 0 auto; align-items: flex-start; padding: 18px 24px; }
+.ukc-onb .onboarding-video-request .box-body { min-height: 0; overflow-y: auto; padding: 22px 24px 20px; }
+.ukc-onb .onboarding-video-request .box-foot { flex: 0 0 auto; gap: 10px; margin: 0; padding: 16px 24px 20px; background: #fff; }
 .ukc-onb .onboarding-video-request__title { display: flex; align-items: center; gap: 10px; }
 .ukc-onb .onboarding-video-request__title > span { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; color: #fff; background: linear-gradient(135deg, var(--ukc-blue), #6941c6); }
 .ukc-onb .onboarding-video-request__title strong, .ukc-onb .onboarding-video-request__title small { display: block; }
 .ukc-onb .onboarding-video-request__title strong { font-size: 14px; }
 .ukc-onb .onboarding-video-request__title small { margin-top: 2px; color: var(--ukc-muted); font-size: 11.5px; font-weight: 500; }
 .ukc-onb .onboarding-video-request .box-body > p { margin-top: 0; color: var(--ukc-muted); line-height: 1.55; }
-.ukc-onb .onboarding-video-request__workflow { display: flex; align-items: flex-start; gap: 10px; margin: 16px 0; padding: 12px; border: 1px solid #dbe5f3; border-radius: 10px; background: #f8fbff; }
-.ukc-onb .onboarding-video-request__workflow > span { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; flex: 0 0 auto; border-radius: 8px; color: var(--ukc-blue); background: #e8eeff; }
-.ukc-onb .onboarding-video-request__workflow strong, .ukc-onb .onboarding-video-request__workflow small { display: block; }
-.ukc-onb .onboarding-video-request__workflow strong { font-size: 12.5px; }
-.ukc-onb .onboarding-video-request__workflow small { margin-top: 2px; color: var(--ukc-muted); font-size: 11.5px; line-height: 1.4; }
 .ukc-onb .onboarding-request-error { margin: 14px 0 0; padding: 9px 11px; border-radius: 9px; color: #b42318; background: #fef3f2; font-size: 12px; font-weight: 700; }
 
 /* Production suivie : le rendu reste côté serveur, mais l'administrateur garde
