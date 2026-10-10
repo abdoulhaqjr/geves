@@ -2914,6 +2914,19 @@ Sources, pour ne pas les redéclarer à chaque fois :
   les redéclarer dans un fichier de test.
 - **Ajouter des tests Pest** pour toute nouvelle fonctionnalité. Après suppression d'un
   composant, régénérer la baseline PHPStan.
+- ⚠️ **Un cas éprouve le CODE, jamais le POSTE.** Deux cas exigeaient
+  `toEndWith('ffmpeg.exe')` sur la résolution de FFmpeg : ils tenaient seulement sur une
+  machine où FFmpeg est installé **par WinGet** (paquet `Gyan.FFmpeg`). Sans lui - en
+  intégration continue, sous Linux, ou avec un FFmpeg posé par Chocolatey, Scoop ou à la
+  main - le résolveur rend `ffmpeg` et laisse le PATH trancher, **ce qui est le
+  comportement voulu**, et le cas échouait quand même. On fabrique donc l'arborescence
+  qu'on veut éprouver (fichiers temporaires, `putenv('LOCALAPPDATA=…')`) au lieu de
+  supposer celle du poste. Un cas propre à une plateforme se marque `->onlyOnWindows()`.
+- ⚠️ **Un cas « réparé » qui ne mord plus n'est pas réparé.** Avant de clore une
+  correction de test, le casser volontairement et vérifier qu'il échoue : c'est ainsi
+  qu'on a su que l'exemption des séances d'horloge n'avait pas affaibli la garde des
+  dates du seeder, et que le tri **naturel** des versions WinGet était bien couvert
+  (trié comme des chaînes, le résolveur servait `7.0` au lieu de `10.0`).
 
 ## Pièges fréquents
 
@@ -3141,5 +3154,10 @@ Deux mécanismes, complémentaires :
   chemins à Hyperframes (`HYPERFRAMES_FFMPEG_PATH` / `HYPERFRAMES_FFPROBE_PATH`) : le
   processus détaché Windows n’hérite pas toujours du `PATH` utilisateur. Les tutoriels sont encodés nativement en **1920×1080 Full HD** : les captures sont déjà créées dans ce format et ne sont donc plus réduites au montage. Le moteur conserve un seul worker et le mode faible mémoire ; il utilise les ressources du serveur qui exécute Laravel, jamais celles du navigateur de l’administrateur. Les variables
   `TUTORIAL_VIDEO_FFMPEG_BIN` et `TUTORIAL_VIDEO_FFPROBE_BIN` permettent un chemin
-  explicite si les binaires ne viennent pas de WinGet. `TUTORIAL_VIDEO_RENDER_WIDTH`
+  explicite si les binaires ne viennent pas de WinGet. ⚠️ Un chemin configuré qui
+  **n'existe pas** est ignoré (`is_file()`) : laissé dans un `.env` après une
+  désinstallation, il ferait échouer le rendu sur « commande introuvable » au lieu de
+  retomber sur le PATH, où FFmpeg est peut-être. ⚠️ Et le résolveur **n'exige pas**
+  FFmpeg : sans WinGet ni chemin configuré il rend `ffmpeg` tout court, et c'est le PATH
+  qui tranche à l'exécution - ne pas écrire de test qui suppose l'inverse (cf. §Tests). `TUTORIAL_VIDEO_RENDER_WIDTH`
   et `TUTORIAL_VIDEO_RENDER_HEIGHT` documentent le format attendu (1920×1080).

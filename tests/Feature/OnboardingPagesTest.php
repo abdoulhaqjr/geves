@@ -5,6 +5,7 @@ use App\Models\TutorialVideoRequest;
 use App\Services\TutorialVideoRenderer;
 use App\Services\TutorialVideoWorkerLauncher;
 use App\Support\TutorialGuideCatalog;
+use Illuminate\Support\Facades\File;
 
 /**
  * Rendu des deux pages de prise en main (back-office + espace participant).
@@ -69,23 +70,141 @@ it('utilise un binaire PHP CLI pour le worker vidéo Windows', function () {
         ->toEndWith('php.exe');
 });
 
-it('résout FFmpeg pour le renderer vidéo Windows', function () {
-    $method = new ReflectionMethod(TutorialVideoRenderer::class, 'ffmpegBinary');
-    $method->setAccessible(true);
+/**
+ * **Résolution de FFmpeg et FFprobe** (`TutorialVideoRenderer`).
+ *
+ * ⚠️ **Ces cas éprouvaient le POSTE, pas le code** : ils exigeaient
+ * `toEndWith('ffmpeg.exe')`, donc un FFmpeg installé **par WinGet** (paquet
+ * `Gyan.FFmpeg`) sur la machine qui lance les tests. Sans lui - en intégration
+ * continue, sous Linux, ou avec un FFmpeg posé par Chocolatey, Scoop ou à la
+ * main - le résolveur rend `ffmpeg` et laisse le PATH trancher, ce qui est le
+ * comportement VOULU ; le cas échouait quand même. Ils éprouvent désormais la
+ * **résolution elle-même**, sur une arborescence fabriquée, donc partout.
+ */
+function resoudreFfmpeg(): string
+{
+    $m = new ReflectionMethod(TutorialVideoRenderer::class, 'ffmpegBinary');
+    $m->setAccessible(true);
 
-    expect($method->invoke(app(TutorialVideoRenderer::class)))
-        ->toEndWith('ffmpeg.exe');
+    return (string) $m->invoke(app(TutorialVideoRenderer::class));
+}
+
+function resoudreFfprobe(string $ffmpeg): string
+{
+    $m = new ReflectionMethod(TutorialVideoRenderer::class, 'ffprobeBinary');
+    $m->setAccessible(true);
+
+    return (string) $m->invoke(app(TutorialVideoRenderer::class), $ffmpeg);
+}
+
+/** Racine jetable, nettoyée après chaque cas (cf. `afterEach` en bas de fichier). */
+function racineBinairesVideo(): string
+{
+    $racine = storage_path('framework'.DIRECTORY_SEPARATOR.'testing'.DIRECTORY_SEPARATOR.'bin-video');
+    File::ensureDirectoryExists($racine);
+
+    return $racine;
+}
+
+/** Nom d'un exécutable selon la plateforme, comme le fait le résolveur. */
+function nomBinaire(string $base): string
+{
+    return DIRECTORY_SEPARATOR === '\\' ? $base.'.exe' : $base;
+}
+
+it('préfère le chemin FFmpeg configuré', function () {
+    $binaire = racineBinairesVideo().DIRECTORY_SEPARATOR.nomBinaire('ffmpeg');
+    File::put($binaire, '');
+    config()->set('tutorial-video.ffmpeg_binary', $binaire);
+
+    expect(resoudreFfmpeg())->toBe($binaire);
 });
 
-it('résout FFprobe compagnon de FFmpeg pour Hyperframes', function () {
-    $ffmpeg = new ReflectionMethod(TutorialVideoRenderer::class, 'ffmpegBinary');
-    $ffmpeg->setAccessible(true);
-    $ffprobe = new ReflectionMethod(TutorialVideoRenderer::class, 'ffprobeBinary');
-    $ffprobe->setAccessible(true);
-    $renderer = app(TutorialVideoRenderer::class);
+it('ignore un chemin FFmpeg configuré qui n’existe pas', function () {
+    // ⚠️ Garde le `is_file()` : un chemin resté dans un `.env` après une
+    // désinstallation ferait échouer le rendu avec « commande introuvable »
+    // plutôt que de retomber sur le PATH, où FFmpeg est peut-être.
+    config()->set('tutorial-video.ffmpeg_binary', racineBinairesVideo().DIRECTORY_SEPARATOR.'nexiste-pas.exe');
 
-    expect($ffprobe->invoke($renderer, $ffmpeg->invoke($renderer)))
-        ->toEndWith('ffprobe.exe');
+    expect(resoudreFfmpeg())->toBe('ffmpeg');
+});
+
+it('trouve FFmpeg installé par WinGet, et prend la version la plus récente', function () {
+    $racine = racineBinairesVideo();
+    $paquets = $racine.DIRECTORY_SEPARATOR.'Microsoft'.DIRECTORY_SEPARATOR.'WinGet'.DIRECTORY_SEPARATOR.'Packages';
+
+    foreach (['Gyan.FFmpeg_7.0', 'Gyan.FFmpeg_10.0'] as $paquet) {
+        $bin = $paquets.DIRECTORY_SEPARATOR.$paquet.DIRECTORY_SEPARATOR.'build'.DIRECTORY_SEPARATOR.'bin';
+        File::ensureDirectoryExists($bin);
+        File::put($bin.DIRECTORY_SEPARATOR.'ffmpeg.exe', '');
+    }
+
+    $avant = getenv('LOCALAPPDATA');
+    putenv('LOCALAPPDATA='.$racine);
+
+    try {
+        $resolu = resoudreFfmpeg();
+    } finally {
+        putenv($avant === false ? 'LOCALAPPDATA' : 'LOCALAPPDATA='.$avant);
+    }
+
+    // ⚠️ Le tri est NATUREL, et ces deux versions le prouvent : trié comme des
+    // chaînes, « 7.0 » passerait APRÈS « 10.0 » et le résolveur servirait la
+    // vieille version.
+    expect($resolu)->toEndWith('ffmpeg.exe')
+        ->and($resolu)->toContain('Gyan.FFmpeg_10.0');
+})->onlyOnWindows();
+
+it('laisse le PATH trancher quand FFmpeg n’est installé nulle part', function () {
+    // C'est le cas d'un poste sans FFmpeg, et d'un FFmpeg posé autrement que par
+    // WinGet : `ffmpeg` tout court est la bonne réponse, pas un échec.
+    $avant = getenv('LOCALAPPDATA');
+    putenv('LOCALAPPDATA='.racineBinairesVideo());
+
+    try {
+        expect(resoudreFfmpeg())->toBe('ffmpeg');
+    } finally {
+        putenv($avant === false ? 'LOCALAPPDATA' : 'LOCALAPPDATA='.$avant);
+    }
+});
+
+it('prend FFprobe à côté de FFmpeg', function () {
+    $bin = racineBinairesVideo().DIRECTORY_SEPARATOR.'bin';
+    File::ensureDirectoryExists($bin);
+    $ffmpeg = $bin.DIRECTORY_SEPARATOR.nomBinaire('ffmpeg');
+    $ffprobe = $bin.DIRECTORY_SEPARATOR.nomBinaire('ffprobe');
+    File::put($ffmpeg, '');
+    File::put($ffprobe, '');
+
+    // Hyperframes exige FFprobe : il accompagne FFmpeg dans la même archive.
+    expect(resoudreFfprobe($ffmpeg))->toBe($ffprobe);
+});
+
+it('laisse le PATH trancher quand FFprobe n’accompagne pas FFmpeg', function () {
+    $bin = racineBinairesVideo().DIRECTORY_SEPARATOR.'bin';
+    File::ensureDirectoryExists($bin);
+    $ffmpeg = $bin.DIRECTORY_SEPARATOR.nomBinaire('ffmpeg');
+    File::put($ffmpeg, '');
+
+    expect(resoudreFfprobe($ffmpeg))->toBe('ffprobe');
+});
+
+it('préfère le chemin FFprobe configuré, même si un voisin existe', function () {
+    $bin = racineBinairesVideo().DIRECTORY_SEPARATOR.'bin';
+    File::ensureDirectoryExists($bin);
+    $ffmpeg = $bin.DIRECTORY_SEPARATOR.nomBinaire('ffmpeg');
+    File::put($ffmpeg, '');
+    File::put($bin.DIRECTORY_SEPARATOR.nomBinaire('ffprobe'), '');
+
+    $choisi = racineBinairesVideo().DIRECTORY_SEPARATOR.nomBinaire('ffprobe-choisi');
+    File::put($choisi, '');
+    config()->set('tutorial-video.ffprobe_binary', $choisi);
+
+    expect(resoudreFfprobe($ffmpeg))->toBe($choisi);
+});
+
+afterEach(function () {
+    File::deleteDirectory(storage_path('framework'.DIRECTORY_SEPARATOR.'testing'.DIRECTORY_SEPARATOR.'bin-video'));
 });
 
 it('prépare les rendus tutoriels au format Full HD', function () {
