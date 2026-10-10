@@ -102,7 +102,7 @@ const captureFor = (index) => {
   copy(capture.path, join(assets, filename));
   if (!existsSync(join(assets, filename))) throw new Error(`Capture introuvable pour l’étape ${index + 1}.`);
 
-  return `<figure class="screen-capture pop p1" aria-label="Capture réelle GEVES : ${esc(capture.title || `étape ${index + 1}`)}"><img data-layout-allow-overflow src="assets/${filename}" alt="Capture réelle de ${esc(capture.title || 'GEVES')}"><figcaption>Écran réel GEVES · ${esc(capture.title || `Étape ${index + 1}`)}</figcaption></figure>`;
+  return `<figure class="screen-capture pop p1" aria-label="Capture réelle GEVES : ${esc(capture.title || `étape ${index + 1}`)}"><img data-layout-allow-overflow src="assets/${filename}" alt="Capture réelle de ${esc(capture.title || 'GEVES')}"></figure>`;
 };
 
 const stepSections = steps.map((step, index) => {
@@ -120,13 +120,25 @@ const html = `<!doctype html>
 </style></head><body><main id="root" data-composition-id="main" data-no-timeline data-start="0" data-width="${renderWidth}" data-height="${renderHeight}" data-duration="${duration}">${musicTag}<section id="scene-intro" class="clip s1" data-start="0" data-duration="${introDuration}" data-track-index="0"><div class="inner"><div class="orb"></div><div class="brand reveal delay1"><img src="assets/logo-mark.png"><span>GEVES<small>Université de Kara</small></span></div><div><div class="eyebrow reveal delay2">${esc(hook)}</div><h1 class="reveal delay2">${esc(title)}</h1><p class="reveal delay3">${esc(intro)}</p></div><div class="footer reveal delay3">Une expérience claire, adaptée à chaque rôle.</div></div></section><section id="scene-context" class="clip s2" data-start="${introDuration}" data-duration="${contextDuration}" data-track-index="1"><div class="inner"><div class="eyebrow reveal delay1" style="color:#223ea4">Introduction du guide</div><h2 class="reveal delay2">${esc(intro)}</h2><p class="reveal delay3">Le parcours suivant reprend chaque étape dans son ordre afin de vous accompagner jusqu’à la fin.</p><div class="context-card pop p1"><b>Objectif</b><span>${esc(instruction)}</span></div></div></section>${stepSections}<section id="scene-outro" class="clip s4" data-start="${duration - outroDuration}" data-duration="${outroDuration}" data-track-index="${steps.length + 2}"><div class="inner"><div class="orb"></div><div class="brand reveal delay1"><img src="assets/logo-mark.png"><span>GEVES<small>Prise en main</small></span></div><h2 class="reveal delay2">Votre parcours est prêt.</h2><p class="reveal delay3">${esc(title)}</p></div></section></main></body></html>`;
 
 const correctedHtml = html
-  .replace('</style>', '.progress{display:flex;align-items:center;justify-content:center;gap:8px;width:124px;height:68px;white-space:nowrap;line-height:1}.progress span{display:inline;font-size:20px}.brand{gap:22px}.brand img{width:auto;height:84px;max-width:300px;object-fit:contain}.screen-capture{height:560px;margin:0;border:11px solid #fff;border-radius:28px;overflow:hidden;background:#fff;box-shadow:0 30px 70px rgba(15,23,42,.22);position:relative}.screen-capture img{display:block;width:100%;height:100%;object-fit:cover;object-position:top;animation:capture-pan 10s ease-in-out both}.screen-capture figcaption{position:absolute;right:0;bottom:0;left:0;display:flex;align-items:center;height:42px;padding:0 19px;color:#fff;background:linear-gradient(90deg,rgba(15,23,42,.86),rgba(15,23,42,.48));font-size:15px;font-weight:700}@keyframes capture-pan{from{transform:scale(1.018);transform-origin:50% 0}to{transform:scale(1.075);transform-origin:50% 18%}}</style>')
+  .replace('</style>', '.progress{display:flex;align-items:center;justify-content:center;gap:8px;width:124px;height:68px;white-space:nowrap;line-height:1}.progress span{display:inline;font-size:20px}.brand{gap:22px}.brand img{width:auto;height:84px;max-width:300px;object-fit:contain}.screen-capture{height:560px;margin:0;border:11px solid #fff;border-radius:28px;overflow:hidden;background:#fff;box-shadow:0 30px 70px rgba(15,23,42,.22);position:relative}.screen-capture img{display:block;width:100%;height:100%;object-fit:cover;object-position:top;animation:capture-pan 10s ease-in-out both}@keyframes capture-pan{from{transform:scale(1.018);transform-origin:50% 0}to{transform:scale(1.075);transform-origin:50% 18%}}</style>')
   .replaceAll('<div class="orb"></div>', '<div class="orb" data-layout-allow-overflow></div>');
+// La capture Full HD est l'élément principal de chaque étape. Son ratio natif
+// reste visible en entier, tandis que le texte conserve assez de place pour
+// les étapes plus longues du catalogue.
+const stepLayoutCss = `
+.step-layout{grid-template-columns:minmax(0,.6fr) minmax(0,1.4fr);gap:42px}
+.step-copy{min-width:0}
+.step-number{width:88px;height:88px;border-radius:23px;font-size:35px;margin-bottom:22px}
+.step-layout h2{font-size:32px;line-height:1.2;color:#243b61;overflow-wrap:break-word;margin:14px 0}
+.step-layout p{font-size:19px;line-height:1.35;color:#53647c}
+.screen-capture{width:100%;height:auto;aspect-ratio:16/9;border-width:8px;border-radius:22px}
+.screen-capture img{object-fit:contain;object-position:center;animation:none}
+`;
 // HyperFrames force les dimensions de #root selon data-width/data-height. Les
 // scènes sont donc mises à l'échelle individuellement pour remplir le canevas
 // HD sans bordure noire.
 const renderCss = `html,body{width:${renderWidth}px!important;height:${renderHeight}px!important;transform:none!important}#root{width:${renderWidth}px!important;height:${renderHeight}px!important}.clip{inset:0!important;width:${designWidth}px!important;height:${designHeight}px!important;transform:scale(${designScale})!important;transform-origin:top left!important}`;
-const finalHtml = correctedHtml.replace('<body>', `<style>${renderCss}</style><body>`);
+const finalHtml = correctedHtml.replace('<body>', `<style>${renderCss}${stepLayoutCss}</style><body>`);
 writeFileSync(join(composition, 'index.html'), finalHtml);
 writeFileSync(join(composition, 'hyperframes.json'), JSON.stringify({ $schema: 'https://hyperframes.heygen.com/schema/hyperframes.json', authoringSkill: 'brag' }, null, 2));
 writeFileSync(join(outputDir, 'brag-plan.md'), `# Plan de réalisation\n\n- Guide : ${title}\n- Durée : ${duration} secondes\n- Format : ${renderWidth}×${renderHeight} (${renderFormat.label})\n- Scènes : introduction, objectif, ${steps.length} étape(s) séquentielle(s), conclusion\n- Musique : ${musicChoice === 'none' && !selectedMusic ? 'sans musique' : customMusic && existsSync(customMusic) ? 'fichier fourni par l’administrateur' : musicChoice === 'signature' ? 'Uplifting Corporate Loop (piste GEVES par défaut)' : musicChoice}\n- Direction : monogramme GEVES compact agrandi, captures authentifiées de GEVES, musique et mouvements sobres.\n`);
