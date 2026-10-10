@@ -785,7 +785,15 @@ paiement (`pay`), inscription à une formation.
     de 7 à 5 jours il a fallu replier les décalages des plénières (table ronde J+3 → J+2,
     formation J+4 → J+3, clôture J+6 → J+4), les blocs d'ateliers et le **programme
     synthétique** - sinon la clôture tombait deux jours après la fin de l'édition. Deux tests
-    de garde : aucune séance hors fenêtre, et aucune journée du programme publié hors fenêtre.
+    de garde : aucune séance **du programme** hors fenêtre, et aucune journée du programme
+    publié hors fenêtre.
+  - ⚠️ **Le colloque de démonstration est DANS LE PASSÉ depuis le 10 octobre 2026**, et les
+    deux séances calées sur l'**horloge** (en direct, terminée) tombent le jour du seed :
+    elles sortent donc de la fenêtre **par construction**, et le test de garde les écarte.
+    C'est le prix assumé de « les trois états de visio se voient sans rien attendre » - les
+    y ramener de force donnerait une séance « en direct » qui ne l'est pas. ⚠️ Le cas vérifie
+    qu'il n'y en a que **DEUX** : sans ce compte, une vraie séance hors fenêtre se cacherait
+    derrière l'exception le jour où quelqu'un marquerait tout un bloc « terminé ».
   - ⚠️ **5 communications MINIMUM par séance d'atelier** (`MIN_PAR_SEANCE`), et c'est ce
     minimum qui **dicte le nombre de blocs**, pas le calendrier : 130 communications
     acceptées sur 42 séances en laissaient 3 par séance, et une séance à trois ne démontre

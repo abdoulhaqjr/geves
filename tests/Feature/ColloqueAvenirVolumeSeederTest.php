@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\MeetingStatus;
 use App\Meetings\MeetingProviderRegistry;
 use App\Models\Event;
 use App\Models\EventSession;
@@ -73,14 +74,31 @@ it('tient le colloque du 5 au 9 octobre 2026, sans jour vide', function () {
 
     $sessions = EventSession::where('event_id', $event->id)->whereNotNull('session_day')->get();
 
-    // Aucune séance hors de la fenêtre annoncée...
-    expect($sessions->filter(fn (EventSession $s) => $s->session_day->lt($event->date_start)
+    // ⚠️ **Deux séances de démonstration sont calées sur l'HORLOGE** - une EN
+    // DIRECT, une TERMINÉE avec replay - et non sur les dates du colloque : une
+    // séance « terminée » posée à une date fixe s'annoncerait terminée avant
+    // d'avoir eu lieu. Elles tombent donc le jour du seed, qui n'est dans la
+    // fenêtre que tant que le colloque n'est pas passé - il l'est depuis le
+    // 10 octobre 2026. Ce cas porte sur le PROGRAMME ; les écarter n'affaiblit
+    // rien, c'est le programme qui se cale sur `$start`.
+    $surHorloge = fn (EventSession $s) => in_array(
+        $s->meetingStatusEnum(), [MeetingStatus::Live, MeetingStatus::Ended], true,
+    );
+    $programme = $sessions->reject($surHorloge);
+
+    // ⚠️ L'exception vaut pour DEUX séances, pas pour une catégorie ouverte :
+    // sans ce compte, une vraie séance hors fenêtre se cacherait derrière elle
+    // le jour où quelqu'un marquerait tout un bloc « terminé ».
+    expect($sessions->filter($surHorloge))->toHaveCount(2);
+
+    // Aucune séance du programme hors de la fenêtre annoncée...
+    expect($programme->filter(fn (EventSession $s) => $s->session_day->lt($event->date_start)
         || $s->session_day->gt($event->date_end)))->toBeEmpty();
 
-    // ...et chaque jour du colloque porte quelque chose. Les séances calées sur
-    // l'horloge (direct, replay) tombent le jour du lancement du seed : on ne
-    // compte que les séances du programme, datées en dur.
-    $jours = $sessions->map(fn (EventSession $s) => $s->session_day->toDateString())->unique();
+    // ...et chaque jour du colloque porte quelque chose. ⚠️ Compté sur le seul
+    // programme, lui aussi : une séance d'horloge qui tomberait un jour du
+    // colloque masquerait le trou qu'on cherche ici.
+    $jours = $programme->map(fn (EventSession $s) => $s->session_day->toDateString())->unique();
     $vides = collect(range(0, 4))
         ->map(fn (int $i) => $event->date_start->copy()->addDays($i)->toDateString())
         ->reject(fn (string $jour) => $jours->contains($jour))
