@@ -410,6 +410,115 @@ document.addEventListener('submit', (e) => {
     run();
 });
 
+// ---------------------------------------------------------------------------
+// Filtres de liste en AJAX (back-office).
+//
+// ⚠️ **Un champ de recherche obligeait à taper PUIS valider**, et rechargeait
+// toute la page. Or chercher, c'est tâtonner - « aw », « awa », « awa k » - et
+// chaque tâtonnement coûtait un aller-retour complet : on perdait le focus, la
+// position de défilement, et l'attente rendait la recherche pénible au point
+// qu'on préférait parcourir la liste à la main.
+//
+// Le formulaire porte `data-filter`, et chaque région qui dépend des filtres
+// porte `data-filter-part="<nom>"` (tableau, pagination, barre d'export, lien
+// « Réinitialiser »…). ⚠️ **Le formulaire reste HORS des régions échangées** :
+// le remplacer sous les doigts de qui tape lui prendrait le focus et replacerait
+// le curseur au début.
+//
+// ⚠️ **La valeur de `data-filter` est un PRÉFIXE** et chaque région lui
+// appartient par son nom (`data-filter="payments"` → `payments-table`,
+// `payments-reset`). Les onglets de Programme portent DEUX barres de filtres
+// dans le même document (Sessions et Créneaux, l'une masquée) : sans
+// cloisonnement, filtrer les créneaux réécrirait aussi le tableau des sessions,
+// avec les filtres par défaut de celles-ci.
+// ---------------------------------------------------------------------------
+const UKC_FILTRE_DELAI = 350;
+
+// L'URL que produirait une soumission GET du formulaire, les valeurs vides en
+// moins : le serveur ne distingue pas « absent » de « vide », et une URL
+// `?type=&state=&search=` n'est pas partageable de bonne grâce.
+function ukcFiltreUrl(form) {
+    const url = new URL(form.getAttribute('action') || window.location.href, window.location.href);
+    const params = new URLSearchParams();
+    new FormData(form).forEach((valeur, cle) => {
+        const v = typeof valeur === 'string' ? valeur.trim() : '';
+        if (v !== '') params.append(cle, v);
+    });
+    url.search = params.toString();
+
+    return url;
+}
+
+async function ukcFiltreApplique(form) {
+    const prefixe = form.getAttribute('data-filter') || '';
+    const regions = [...document.querySelectorAll('[data-filter-part]')]
+        .filter((r) => ! prefixe || (r.getAttribute('data-filter-part') || '').startsWith(prefixe + '-'));
+    if (! regions.length) return;
+
+    // ⚠️ Jeton de fraîcheur : on tape plus vite que le réseau ne répond, et deux
+    // requêtes peuvent revenir dans le désordre. Sans ce garde-fou, la liste
+    // afficherait le résultat d'un filtre déjà abandonné - avec, dans la barre,
+    // le texte qui ne lui correspond pas.
+    const jeton = (form.__ukcFiltreJeton = (form.__ukcFiltreJeton || 0) + 1);
+    const url = ukcFiltreUrl(form);
+
+    regions.forEach((r) => r.classList.add('is-filtering'));
+    try {
+        const res = await fetch(url, { headers: { 'X-Requested-With': 'fetch', Accept: 'text/html' } });
+        if (! res.ok) throw new Error('http');
+        const html = await res.text();
+        if (jeton !== form.__ukcFiltreJeton) return;
+
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        regions.forEach((courante) => {
+            const nom = courante.getAttribute('data-filter-part');
+            const fraiche = doc.querySelector('[data-filter-part="' + nom + '"]');
+            if (! fraiche) return;
+            courante.innerHTML = fraiche.innerHTML;
+            window.Alpine?.initTree?.(courante);
+        });
+
+        // ⚠️ Les filtres vivent dans l'URL (convention du projet : une liste
+        // filtrée se partage par lien). `replaceState` et non `pushState` : un
+        // historique à une entrée par caractère frappé rendrait le bouton
+        // « précédent » inutilisable.
+        window.history.replaceState({}, '', url);
+    } catch (e) {
+        ukcToast('Filtrage impossible.', 'err');
+    } finally {
+        if (jeton === form.__ukcFiltreJeton) regions.forEach((r) => r.classList.remove('is-filtering'));
+    }
+}
+
+// Champ de saisie : on attend une pause dans la frappe. Les autres contrôles
+// (listes déroulantes, dates, cases) sont des gestes uniques : ils filtrent net.
+const ukcEstSaisie = (el) => el instanceof HTMLElement
+    && el.matches('input[type=search], input[type=text], input[type=number]');
+
+document.addEventListener('input', (e) => {
+    const form = e.target?.closest?.('form[data-filter]');
+    if (! form || ! ukcEstSaisie(e.target)) return;
+    clearTimeout(form.__ukcFiltreTimer);
+    form.__ukcFiltreTimer = setTimeout(() => ukcFiltreApplique(form), UKC_FILTRE_DELAI);
+});
+
+document.addEventListener('change', (e) => {
+    const form = e.target?.closest?.('form[data-filter]');
+    if (! form || ukcEstSaisie(e.target)) return;
+    clearTimeout(form.__ukcFiltreTimer);
+    ukcFiltreApplique(form);
+});
+
+// Entrée dans le champ : le filtre est déjà appliqué (ou le sera dans l'instant).
+// On coupe la soumission native, qui rechargerait la page pour rien.
+document.addEventListener('submit', (e) => {
+    const form = e.target;
+    if (! (form instanceof HTMLFormElement) || ! form.hasAttribute('data-filter')) return;
+    e.preventDefault();
+    clearTimeout(form.__ukcFiltreTimer);
+    ukcFiltreApplique(form);
+});
+
 // Glisser-déposer du planning (onglet Programme > Planning) : on tire une
 // communication — depuis le pool « À planifier » ou un créneau déjà placé — vers
 // un créneau « libre » du board. La persistance passe par l'endpoint d'assignation

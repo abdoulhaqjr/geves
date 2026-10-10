@@ -34,30 +34,34 @@
 
         {{-- Filtres (GET) - une seule ligne ; l'événement est reportée en champ caché
              pour qu'un filtre ne réélargisse pas le périmètre. --}}
-        <form method="GET" class="filter-bar filter-bar--inline">
+        {{-- ⚠️ Filtrage en AJAX (`data-filter`, cf. app.js) : la recherche
+             s'applique à la frappe, sans valider ni recharger la page. --}}
+        <form method="GET" class="filter-bar filter-bar--inline" data-filter="participants">
             <input type="hidden" name="event_id" value="{{ $event_id }}">
-            <select name="role" onchange="this.form.submit()">
+            <select name="role">
                 <option value="">Tous les rôles</option>
                 @foreach ($roles as $key => $label)<option value="{{ $key }}" @selected($role === $key)>{{ $label }}</option>@endforeach
             </select>
-            <select name="paid" onchange="this.form.submit()" title="Frais de participation">
+            <select name="paid" title="Frais de participation">
                 <option value="">Paiement : tous</option>
                 <option value="1" @selected($paid === '1')>Ont payé</option>
                 <option value="0" @selected($paid === '0')>N’ont pas payé</option>
             </select>
-            <select name="invited" onchange="this.form.submit()" title="Invitation envoyée">
+            <select name="invited" title="Invitation envoyée">
                 <option value="">Invitation : tous</option>
                 <option value="1" @selected($invited === '1')>Invités</option>
                 <option value="0" @selected($invited === '0')>Non invités</option>
             </select>
-            <input type="search" name="search" value="{{ $search }}" placeholder="Nom ou e-mail…" style="min-width:200px;flex:1;"
-                   onkeydown="if(event.key==='Enter'){this.form.submit();}">
-            @if ($search !== '' || $role !== '' || $paid !== '' || $invited !== '')
-                <a href="{{ route('admin.participants.index', ['event_id' => $event_id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
-            @endif
+            <input type="search" name="search" value="{{ $search }}" placeholder="Nom ou e-mail…" style="min-width:200px;flex:1;">
+            {{-- Le lien dépend des filtres : sa propre région échangée. --}}
+            <span data-filter-part="participants-reset">
+                @if ($search !== '' || $role !== '' || $paid !== '' || $invited !== '')
+                    <a href="{{ route('admin.participants.index', ['event_id' => $event_id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
+                @endif
+            </span>
         </form>
 
-        <div class="ukc-card" style="padding:0;" data-ajax-root="participants">
+        <div class="ukc-card" style="padding:0;" data-ajax-root="participants" data-filter-part="participants-table">
             @if ($participants->count())
                 <div class="ukc-table-wrap">
                     <table class="ukc-table">

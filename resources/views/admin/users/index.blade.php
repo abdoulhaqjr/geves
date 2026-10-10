@@ -23,24 +23,31 @@
                 <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="bell" :size="20" /></div><div class="lbl">Support</div><div class="val">{{ $stats['support'] }}</div></div>
             </div>
 
-            <form method="GET" class="filter-bar">
-                <select name="role" onchange="this.form.submit()">
+            {{-- ⚠️ Filtrage en AJAX (`data-filter`, cf. app.js) : la recherche
+                 s'applique à la frappe, sans valider ni recharger la page. Les
+                 régions qui en dépendent portent `data-filter-part`. --}}
+            <form method="GET" class="filter-bar" data-filter="users">
+                <select name="role">
                     <option value="">Tous les rôles</option>
                     @foreach ($roleOptions as $key => $label)<option value="{{ $key }}" @selected($role === $key)>{{ $label }}</option>@endforeach
                 </select>
-                <select name="status" onchange="this.form.submit()">
+                <select name="status">
                     <option value="">Tous les statuts</option>
                     <option value="active" @selected($status === 'active')>Actif</option>
                     <option value="inactive" @selected($status === 'inactive')>Inactif</option>
                 </select>
-                <input type="search" name="search" value="{{ $search }}" placeholder="Nom, e-mail, IP…" style="min-width:220px;"
-                       onkeydown="if(event.key==='Enter'){this.form.submit();}">
-                @if ($role !== '' || $status !== '' || $search !== '')
-                    <a href="{{ route('admin.users.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
-                @endif
+                <input type="search" name="search" value="{{ $search }}" placeholder="Nom, e-mail, IP…" style="min-width:220px;">
+                {{-- ⚠️ Le lien de réinitialisation apparaît selon les filtres : il
+                     vit donc dans sa propre région échangée. Le formulaire, lui,
+                     n'est jamais remplacé - il porte le curseur de qui tape. --}}
+                <span data-filter-part="users-reset">
+                    @if ($role !== '' || $status !== '' || $search !== '')
+                        <a href="{{ route('admin.users.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
+                    @endif
+                </span>
             </form>
 
-            <div class="ukc-card" style="padding:0;">
+            <div class="ukc-card" style="padding:0;" data-filter-part="users-table">
                 <div class="ukc-table-wrap">
                     <table class="ukc-table">
                         <thead>
@@ -121,7 +128,7 @@
                     </table>
                 </div>
             </div>
-            <div style="margin-top:12px;">{{ $users->links() }}</div>
+            <div style="margin-top:12px;" data-filter-part="users-foot">{{ $users->links() }}</div>
             <p class="ukc-hint" style="margin-top:12px;font-size:12px;color:var(--ukc-light);">L’adresse IP et la date de dernière connexion sont enregistrées à chaque connexion au back-office. Les rôles {{ config('app.name') }} déterminent l’accès aux fonctionnalités (matrice ci-dessous).</p>
         </div>
 

@@ -460,6 +460,14 @@ html.ukc-dense::-webkit-scrollbar-corner,
 
 /* ---- Tables ---- */
 .ukc-table-wrap { overflow-x: auto; }
+/* Liste en cours de refiltrage (cf. `data-filter` dans app.js).
+   ⚠️ On GRISE, on ne vide pas : remplacer le tableau par un voile ou un
+   squelette le ferait disparaître puis reparaître à chaque frappe, et la page
+   sauterait sous les yeux de qui tape. La hauteur ne bouge donc pas, et le
+   clic est coupé le temps que la réponse arrive - on ne valide pas une action
+   sur une ligne qui est sur le point d'être remplacée. */
+[data-filter-part].is-filtering { opacity: .55; pointer-events: none; }
+[data-filter-part] { transition: opacity .12s ease; }
 table.ukc-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 table.ukc-table th {
   text-align: left; font-size: 11.5px; font-weight: 700;

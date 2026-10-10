@@ -42,34 +42,35 @@
         {{-- Filtres (GET, auto-submit) --}}
         {{-- Filtres sur une seule ligne ; l'événement est reportée en champ caché pour
              qu'un filtre ne réélargisse pas le périmètre. --}}
-        <form method="GET" class="filter-bar filter-bar--inline">
+        {{-- ⚠️ Filtrage en AJAX (`data-filter`, cf. app.js) : la recherche
+             s'applique à la frappe, sans valider ni recharger la page. --}}
+        <form method="GET" class="filter-bar filter-bar--inline" data-filter="submissions">
             <input type="hidden" name="event_id" value="{{ $event_id }}">
-            <select name="status" onchange="this.form.submit()">
+            <select name="status">
                 <option value="">Tous les statuts</option>
                 @foreach ($statuses as $key => $label)<option value="{{ $key }}" @selected($status === $key)>{{ $label }}</option>@endforeach
             </select>
-            <select name="type" onchange="this.form.submit()">
+            <select name="type">
                 <option value="">Tous les types</option>
                 <option value="oral" @selected($type === 'oral')>Orale</option>
                 <option value="poster" @selected($type === 'poster')>Poster</option>
             </select>
             {{-- Liste recherchable (Tom Select) : le libellé de l’option vide sert
                  de placeholder, ne pas ajouter data-placeholder. --}}
-            <select name="track" onchange="this.form.submit()" data-tom title="Axe thématique">
+            <select name="track" data-tom title="Axe thématique">
                 <option value="">Tous les axes</option>
                 @foreach ($tracks as $t)<option value="{{ $t }}" @selected($track === $t)>{{ $t }}</option>@endforeach
             </select>
-            <input type="search" name="search" value="{{ $search }}" placeholder="Titre, auteur, réf.…" style="min-width:200px;"
-                   onkeydown="if(event.key==='Enter'){this.form.submit();}">
+            <input type="search" name="search" value="{{ $search }}" placeholder="Titre, auteur, réf.…" style="min-width:200px;">
             <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap;cursor:pointer;">
-                <input type="checkbox" name="unlinked" value="1" @checked($unlinked) onchange="this.form.submit()"> Co-auteurs non rattachés
+                <input type="checkbox" name="unlinked" value="1" @checked($unlinked)> Co-auteurs non rattachés
             </label>
             @if ($search !== '' || $status !== '' || $type !== '' || $track !== '' || $unlinked)
                 <a href="{{ route('admin.submissions.index', ['event_id' => $event_id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
             @endif
         </form>
 
-        <div class="ukc-card" style="padding:0;">
+        <div class="ukc-card" style="padding:0;" data-filter-part="submissions-table">
             <div class="ukc-table-wrap">
                 <table class="ukc-table">
                     <thead>
@@ -150,7 +151,7 @@
             </div>
         </div>
 
-        <div style="margin-top:12px;">{{ $submissions->links() }}</div>
+        <div style="margin-top:12px;" data-filter-part="submissions-foot">{{ $submissions->links() }}</div>
 
         {{-- Aperçu de la soumission (panneau latéral Tailwise) --}}
         <x-ukc.slideover open="pv" onClose="pv = null" width="460px">

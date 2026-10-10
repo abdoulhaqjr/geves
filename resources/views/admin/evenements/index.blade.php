@@ -29,23 +29,27 @@
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="card" :size="20" /></div><div class="lbl">Participants payés</div><div class="val">{{ $stats['paidParticipants'] }}</div></div>
         </div>
 
-        {{-- Barre d'outils : recherche + statut (GET, auto-submit) --}}
-        <form method="GET" class="filter-bar" style="margin-bottom:16px;">
+        {{-- Barre d'outils : recherche + statut. ⚠️ Filtrage en AJAX
+             (`data-filter`, cf. app.js) : la recherche s'applique à la frappe,
+             sans valider ni recharger la page. --}}
+        <form method="GET" class="filter-bar" style="margin-bottom:16px;" data-filter="events">
             <input type="search" name="search" value="{{ $search }}" placeholder="Rechercher un événement…"
-                   style="min-width:220px;" onkeydown="if(event.key==='Enter'){this.form.submit();}">
-            <select name="status" onchange="this.form.submit()">
+                   style="min-width:220px;">
+            <select name="status">
                 <option value="">Tous les statuts</option>
                 @foreach ($statusMeta as $key => $meta)
                     <option value="{{ $key }}" @selected($status === $key)>{{ $meta[0] }}</option>
                 @endforeach
             </select>
-            @if ($search !== '' || $status !== '')
-                <a href="{{ route('admin.evenements.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
-            @endif
+            <span data-filter-part="events-reset">
+                @if ($search !== '' || $status !== '')
+                    <a href="{{ route('admin.evenements.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
+                @endif
+            </span>
         </form>
 
         {{-- Cartes événements --}}
-        <div data-ajax-root="events">
+        <div data-ajax-root="events" data-filter-part="events-list">
         @forelse ($events as $e)
             <div class="ed-card {{ $e->status === 'open' ? 'active-ed' : '' }}">
                 <div class="thumb" style="{{ $thumbStyle($e) }}"></div>
@@ -89,6 +93,6 @@
         @endforelse
         </div>
 
-        <div style="margin-top:12px;">{{ $events->links() }}</div>
+        <div style="margin-top:12px;" data-filter-part="events-foot">{{ $events->links() }}</div>
     </div>
 </x-layouts.admin>

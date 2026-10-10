@@ -31,17 +31,19 @@
         </div>
 
         {{-- Filtres (GET) - une seule ligne, qui défile plutôt que de se replier. --}}
-        <form method="GET" class="filter-bar filter-bar--inline">
+        {{-- ⚠️ Filtrage en AJAX (`data-filter`, cf. app.js) : la recherche
+             s'applique à la frappe, sans valider ni recharger la page. --}}
+        <form method="GET" class="filter-bar filter-bar--inline" data-filter="payments">
             <input type="hidden" name="event_id" value="{{ $event_id }}">
-            <select name="status" onchange="this.form.submit()">
+            <select name="status">
                 <option value="">Tous les statuts</option>
                 @foreach ($statuses as $key => $label)<option value="{{ $key }}" @selected($status === $key)>{{ $label }}</option>@endforeach
             </select>
-            <select name="flow" onchange="this.form.submit()" title="Nature du paiement">
+            <select name="flow" title="Nature du paiement">
                 <option value="">Toutes les natures</option>
                 @foreach ($flows as $key => $label)<option value="{{ $key }}" @selected($flow === $key)>{{ $label }}</option>@endforeach
             </select>
-            <select name="method" onchange="this.form.submit()">
+            <select name="method">
                 <option value="">Tous les moyens</option>
                 @foreach ($methodGroups as $group => $items)
                     <optgroup label="{{ $group }}">
@@ -49,16 +51,18 @@
                     </optgroup>
                 @endforeach
             </select>
-            <input type="search" name="search" value="{{ $search }}" placeholder="Nom, e-mail, référence…" style="min-width:200px;flex:1;"
-                   onkeydown="if(event.key==='Enter'){this.form.submit();}">
-            <input type="date" name="from" value="{{ $from }}" title="Émis à partir du" onchange="this.form.submit()">
-            <input type="date" name="to" value="{{ $to }}" title="Émis jusqu’au" onchange="this.form.submit()">
-            @if ($search !== '' || $status !== '' || $method !== '' || $flow !== '' || $from !== '' || $to !== '')
-                <a href="{{ route('admin.payments.index', ['event_id' => $event_id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
-            @endif
+            <input type="search" name="search" value="{{ $search }}" placeholder="Nom, e-mail, référence…" style="min-width:200px;flex:1;">
+            <input type="date" name="from" value="{{ $from }}" title="Émis à partir du">
+            <input type="date" name="to" value="{{ $to }}" title="Émis jusqu’au">
+            {{-- Le lien dépend des filtres : sa propre région échangée. --}}
+            <span data-filter-part="payments-reset">
+                @if ($search !== '' || $status !== '' || $method !== '' || $flow !== '' || $from !== '' || $to !== '')
+                    <a href="{{ route('admin.payments.index', ['event_id' => $event_id]) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
+                @endif
+            </span>
         </form>
 
-        <div class="ukc-card" style="padding:0;" data-ajax-root="payments">
+        <div class="ukc-card" style="padding:0;" data-ajax-root="payments" data-filter-part="payments-table">
             @if ($payments->count())
                 <div class="ukc-table-wrap">
                     <table class="ukc-table">

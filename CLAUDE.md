@@ -245,9 +245,36 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   cf. `admin/soumissions`) : le contrôleur `->paginate(N)->withQueryString()` (rendu par
   `resources/views/vendor/pagination/ukc.blade.php`, `{{ $page->links() }}`) et **`ListSort`**
   (liste blanche anti-injection) + en-têtes **`<x-ukc.th sort="…" :current :dir>`** pour le
-  tri. Les filtres = **formulaire GET** (auto-submit), pas de filtre client sur une liste
-  paginée (il ne verrait que la page affichée). Utilisé : Soumissions (liste, **Attribution
-  auto**), Programme > **Sessions** et **Créneaux** (20/page).
+  tri. Les filtres = **formulaire GET**, **en AJAX** (voir ci-dessous), pas de filtre client
+  sur une liste paginée (il ne verrait que la page affichée). Utilisé : Soumissions (liste,
+  **Attribution auto**), Programme > **Sessions** et **Créneaux** (20/page).
+  - ⚠️ **Une barre de filtres NE RECHARGE PLUS LA PAGE** (`data-filter`, cf. `app.js`). Un
+    champ de recherche obligeait à **taper PUIS valider** (`onkeydown` sur Entrée), et chaque
+    essai rechargeait tout : focus perdu, position de défilement perdue, attente. Or chercher,
+    c'est tâtonner - « aw », « awa », « awa k ». La saisie filtre **à la frappe** (pause de
+    350 ms), les listes déroulantes et les dates filtrent **net**.
+    - Le formulaire porte **`data-filter="<groupe>"`**, et chaque région qui dépend des
+      filtres porte **`data-filter-part="<groupe>-<nom>"`** : tableau, pagination, barre
+      d'export, **et le lien « Réinitialiser »** (il apparaît selon les filtres, donc il a sa
+      propre région - sinon il ne se montrerait qu'au prochain rechargement complet).
+    - ⚠️ **Le formulaire reste HORS des régions échangées** : le remplacer sous les doigts de
+      qui tape lui prendrait le focus et replacerait le curseur au début.
+    - ⚠️ **Le groupe est un PRÉFIXE, et il est obligatoire** : les onglets de Programme
+      portent **deux** barres de filtres dans le même document (Sessions et Créneaux, l'une
+      masquée). Sans cloisonnement, filtrer les créneaux réécrirait aussi le tableau des
+      sessions, avec les filtres par défaut de celles-ci.
+    - ⚠️ **Jamais `onchange="this.form.submit()"`** : `form.submit()` n'émet **aucun**
+      évènement `submit`, donc il contourne l'interception et recharge la page. Un test de
+      garde (`ListFilterAjaxTest`) scanne les vues et échoue si le motif revient.
+    - ⚠️ **Les filtres restent dans l'URL** (`replaceState`, pas `pushState` : une entrée
+      d'historique par caractère frappé rendrait le bouton « précédent » inutilisable) : une
+      liste filtrée se partage toujours par lien, et la pagination échangée porte les bons
+      liens. Les valeurs **vides** sont retirées de l'URL.
+    - ⚠️ **Réponses dans le désordre** : on tape plus vite que le réseau ne répond. Un jeton
+      de fraîcheur écarte la réponse d'un filtre déjà abandonné - sinon la liste afficherait
+      un résultat qui ne correspond pas au texte visible dans la barre.
+    - Côté serveur, **rien de spécial** : c'est la même page, rendue par le même contrôleur,
+      dont on ne reprend que les régions. Un rendu partiel dédié finirait par diverger.
   - ⚠️ **Deux tableaux triables/paginés sur une même page** (Programme > Sessions **et**
     Créneaux vivent dans une seule vue, onglets en `?tab=`) : chacun a ses paramètres
     préfixés (`s_sort`/`s_dir`/`s_page`, `c_sort`/`c_dir`/`c_page`) ; `<x-ukc.th>` et

@@ -12,40 +12,46 @@
     <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--slate"><x-ukc.icon name="users" :size="20" /></div><div class="lbl">Reste à remettre</div><div class="val">{{ $issuedStats['pending'] }}</div></div>
 </div>
 
-<form method="GET" class="filter-bar">
+{{-- ⚠️ Filtrage en AJAX (`data-filter`, cf. app.js) : la recherche s'applique à
+     la frappe, sans valider ni recharger la page. --}}
+<form method="GET" class="filter-bar" data-filter="attestations">
     <input type="hidden" name="event_id" value="{{ $event_id }}">
     <input type="hidden" name="tab" value="attestations">
     <input type="hidden" name="stab" value="delivrees">
-    <select name="type" onchange="this.form.submit()">
+    <select name="type">
         <option value="">Tous les types</option>
         @foreach ($types as $key => $label)<option value="{{ $key }}" @selected($type === $key)>{{ $label }}</option>@endforeach
     </select>
-    <select name="state" onchange="this.form.submit()">
+    <select name="state">
         <option value="">Tous les états</option>
         <option value="valid" @selected($state === 'valid')>Valides</option>
         <option value="revoked" @selected($state === 'revoked')>Révoquées</option>
     </select>
     {{-- Remise en main propre : le filtre du guichet. --}}
-    <select name="delivery" onchange="this.form.submit()" title="Remise en main propre (délivrance papier)">
+    <select name="delivery" title="Remise en main propre (délivrance papier)">
         <option value="">Remises et non remises</option>
         <option value="pending" @selected($delivery === 'pending')>À remettre</option>
         <option value="done" @selected($delivery === 'done')>Déjà remises</option>
     </select>
-    <input type="search" name="search" value="{{ $search }}" placeholder="Nom ou e-mail du bénéficiaire…" style="min-width:230px;"
-           onkeydown="if(event.key==='Enter'){this.form.submit();}">
+    <input type="search" name="search" value="{{ $search }}" placeholder="Nom ou e-mail du bénéficiaire…" style="min-width:230px;">
     <span class="sep" style="width:1px;height:24px;background:var(--ukc-border);align-self:center;"></span>
-    <input type="date" name="from" value="{{ $from }}" title="Émise à partir du" onchange="this.form.submit()">
-    <input type="date" name="to" value="{{ $to }}" title="Émise jusqu’au" onchange="this.form.submit()">
-    @if ($type !== '' || $state !== '' || $delivery !== '' || $search !== '' || $from !== '' || $to !== '')
-        <a href="{{ route('admin.documents.attestations', $base) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
-    @endif
+    <input type="date" name="from" value="{{ $from }}" title="Émise à partir du">
+    <input type="date" name="to" value="{{ $to }}" title="Émise jusqu’au">
+    {{-- Le lien dépend des filtres : sa propre région échangée. --}}
+    <span data-filter-part="attestations-reset">
+        @if ($type !== '' || $state !== '' || $delivery !== '' || $search !== '' || $from !== '' || $to !== '')
+            <a href="{{ route('admin.documents.attestations', $base) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
+        @endif
+    </span>
 </form>
 
 {{-- ⚠️ Les exports portent sur LES FILTRES CI-DESSUS : on imprime ce qu'on
      regarde. Sans cela, le gestionnaire imprimerait un lot qui ne correspond pas
      à sa liste, sans rien pour s'en apercevoir. --}}
 @php($lots = (int) ceil(max($issued->total(), 1) / $exportLot))
-<div class="ukc-toolbar" style="margin-bottom:12px;">
+{{-- ⚠️ La barre d'export compte les lignes DU FILTRE : elle s'échange avec le
+     tableau, sinon elle annoncerait un lot qui ne correspond plus. --}}
+<div class="ukc-toolbar" style="margin-bottom:12px;" data-filter-part="attestations-tools">
     <span style="font-size:13px;color:var(--ukc-muted);">
         Sortie papier de ce filtre ({{ $issued->total() }} attestation(s))
     </span>
@@ -74,7 +80,7 @@
     </a>
 </div>
 
-<div class="ukc-card" style="padding:0;" data-ajax-root="attestations">
+<div class="ukc-card" style="padding:0;" data-ajax-root="attestations" data-filter-part="attestations-table">
     <div class="ukc-table-wrap">
         <table class="ukc-table">
             <thead>
@@ -140,7 +146,7 @@
 </div>
 
 {{-- Compteur + pagination (les liens conservent les filtres via withQueryString). --}}
-<div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+<div style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;" data-filter-part="attestations-foot">
     <span style="font-size:12.5px;color:var(--ukc-muted);">
         @if ($issued->total() > 0)
             {{ $issued->firstItem() }}–{{ $issued->lastItem() }} sur {{ $issued->total() }} attestation(s)

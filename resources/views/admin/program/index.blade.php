@@ -735,47 +735,51 @@
                     </h2>
                     <div class="desc">Chaque session a un modérateur et un rapporteur (fiches dédiées via Documents).</div>
 
-                    {{-- Filtres serveur (GET, auto-submit) - même patron que admin/soumissions.
+                    {{-- Filtres serveur (GET) - même patron que admin/soumissions.
                          `tab` et le tri courant sont reportés pour rester sur l'onglet et
-                         garder le tri quand on change un filtre. --}}
-                    <form method="GET" action="{{ route('admin.program.index') }}" class="filter-bar filter-bar--inline" style="margin:4px 0 14px;">
+                         garder le tri quand on change un filtre.
+                         ⚠️ Filtrage en AJAX (`data-filter`, cf. app.js) : la recherche
+                         s'applique à la frappe, sans valider ni recharger la page. --}}
+                    <form method="GET" action="{{ route('admin.program.index') }}" class="filter-bar filter-bar--inline" style="margin:4px 0 14px;" data-filter="prog-sessions">
                         <input type="hidden" name="event_id" value="{{ $event_id }}">
                         <input type="hidden" name="tab" value="sessions">
                         <input type="hidden" name="s_sort" value="{{ $sessSort }}">
                         <input type="hidden" name="s_dir" value="{{ $sessDir }}">
-                        <select name="s_day" onchange="this.form.submit()" aria-label="Filtrer par jour">
+                        <select name="s_day" aria-label="Filtrer par jour">
                             <option value="">Tous les jours</option>
                             @foreach ($sessDays as $d)<option value="{{ $d }}" @selected($sessFilters['day'] === $d)>{{ \Illuminate\Support\Carbon::parse($d)->translatedFormat('D d M') }}</option>@endforeach
                         </select>
-                        <select name="s_type" onchange="this.form.submit()" aria-label="Filtrer par type">
+                        <select name="s_type" aria-label="Filtrer par type">
                             <option value="">Tous les types</option>
                             <option value="plenary" @selected($sessFilters['type'] === 'plenary')>Plénière</option>
                             <option value="atelier" @selected($sessFilters['type'] === 'atelier')>Atelier</option>
                         </select>
-                        <select name="s_atelier" onchange="this.form.submit()" aria-label="Filtrer par atelier">
+                        <select name="s_atelier" aria-label="Filtrer par atelier">
                             <option value="">Tous les ateliers</option>
                             @foreach ($sessAteliers as $a)<option value="{{ $a }}" @selected($sessFilters['atelier'] === $a)>{{ Str::limit($a, 40) }}</option>@endforeach
                         </select>
-                        <select name="s_room" onchange="this.form.submit()" aria-label="Filtrer par salle">
+                        <select name="s_room" aria-label="Filtrer par salle">
                             <option value="">Toutes les salles</option>
                             @foreach ($sessRooms as $r)<option value="{{ $r }}" @selected($sessFilters['room'] === $r)>{{ $r }}</option>@endforeach
                         </select>
-                        <select name="s_mod" onchange="this.form.submit()" aria-label="Filtrer par modération">
+                        <select name="s_mod" aria-label="Filtrer par modération">
                             <option value="">Modération : toutes</option>
                             <option value="assigned" @selected($sessFilters['mod'] === 'assigned')>Modérateur désigné</option>
                             <option value="pending" @selected($sessFilters['mod'] === 'pending')>À désigner</option>
                         </select>
-                        <input type="search" name="s_q" value="{{ $sessFilters['q'] }}" placeholder="Session, modérateur, rapporteur…" style="min-width:190px;flex:1;"
-                               onkeydown="if(event.key==='Enter'){this.form.submit();}">
-                        @if ($sessActive)
-                            <a href="{{ route('admin.program.index', ['event_id' => $event_id, 'tab' => 'sessions']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
-                        @endif
+                        <input type="search" name="s_q" value="{{ $sessFilters['q'] }}" placeholder="Session, modérateur, rapporteur…" style="min-width:190px;flex:1;">
+                        {{-- Le lien dépend des filtres : sa propre région échangée. --}}
+                        <span data-filter-part="prog-sessions-reset">
+                            @if ($sessActive)
+                                <a href="{{ route('admin.program.index', ['event_id' => $event_id, 'tab' => 'sessions']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
+                            @endif
+                        </span>
                     </form>
-                    <div style="font-size:12.5px;color:var(--ukc-muted);margin-bottom:8px;">
+                    <div style="font-size:12.5px;color:var(--ukc-muted);margin-bottom:8px;" data-filter-part="prog-sessions-count">
                         {{ $sessionsPage->total() }} session(s)@if ($sessActive) filtrée(s) sur {{ $sessions->count() }}@endif.
                     </div>
 
-                    <div class="ukc-table-wrap">
+                    <div class="ukc-table-wrap" data-filter-part="prog-sessions-table">
                         <table class="ukc-table">
                             <thead>
                                 <tr>
@@ -836,7 +840,7 @@
                         </table>
                     </div>
 
-                    <div style="margin-top:12px;">{{ $sessionsPage->links() }}</div>
+                    <div style="margin-top:12px;" data-filter-part="prog-sessions-foot">{{ $sessionsPage->links() }}</div>
                 </div>
             </div>
 
@@ -854,45 +858,49 @@
                         <button type="button" class="ukc-btn ukc-btn--blue ukc-btn--sm" @click="openSlot(null)"><x-ukc.icon name="plus" :size="14" /> Nouveau créneau</button>
                     </h2>
 
-                    {{-- Filtres serveur (GET, auto-submit) - même patron que admin/soumissions. --}}
-                    <form method="GET" action="{{ route('admin.program.index') }}" class="filter-bar filter-bar--inline" style="margin:4px 0 14px;">
+                    {{-- Filtres serveur (GET) - même patron que admin/soumissions.
+                         ⚠️ Filtrage en AJAX (`data-filter`, cf. app.js) : la recherche
+                         s'applique à la frappe, sans valider ni recharger la page. --}}
+                    <form method="GET" action="{{ route('admin.program.index') }}" class="filter-bar filter-bar--inline" style="margin:4px 0 14px;" data-filter="prog-creneaux">
                         <input type="hidden" name="event_id" value="{{ $event_id }}">
                         <input type="hidden" name="tab" value="creneaux">
                         <input type="hidden" name="c_sort" value="{{ $slotSort }}">
                         <input type="hidden" name="c_dir" value="{{ $slotDir }}">
-                        <select name="c_day" onchange="this.form.submit()" aria-label="Filtrer par jour">
+                        <select name="c_day" aria-label="Filtrer par jour">
                             <option value="">Tous les jours</option>
                             @foreach ($slotDays as $d)<option value="{{ $d }}" @selected($slotFilters['day'] === $d)>{{ \Illuminate\Support\Carbon::parse($d)->translatedFormat('D d M') }}</option>@endforeach
                         </select>
-                        <select name="c_atelier" onchange="this.form.submit()" aria-label="Filtrer par atelier">
+                        <select name="c_atelier" aria-label="Filtrer par atelier">
                             <option value="">Tous les ateliers</option>
                             @foreach ($slotAteliers as $a)<option value="{{ $a }}" @selected($slotFilters['atelier'] === $a)>{{ Str::limit($a, 40) }}</option>@endforeach
                         </select>
-                        <select name="c_room" onchange="this.form.submit()" aria-label="Filtrer par salle">
+                        <select name="c_room" aria-label="Filtrer par salle">
                             <option value="">Toutes les salles</option>
                             @foreach ($slotRooms as $r)<option value="{{ $r }}" @selected($slotFilters['room'] === $r)>{{ $r }}</option>@endforeach
                         </select>
-                        <select name="c_status" onchange="this.form.submit()" aria-label="Filtrer par statut">
+                        <select name="c_status" aria-label="Filtrer par statut">
                             <option value="">Assignés & libres</option>
                             <option value="assigned" @selected($slotFilters['status'] === 'assigned')>Assignés</option>
                             <option value="free" @selected($slotFilters['status'] === 'free')>Libres</option>
                         </select>
-                        <select name="c_type" onchange="this.form.submit()" aria-label="Filtrer par type">
+                        <select name="c_type" aria-label="Filtrer par type">
                             <option value="">Tous les types</option>
                             <option value="oral" @selected($slotFilters['type'] === 'oral')>Orale</option>
                             <option value="poster" @selected($slotFilters['type'] === 'poster')>Poster</option>
                         </select>
-                        <input type="search" name="c_q" value="{{ $slotFilters['q'] }}" placeholder="Intitulé, titre, code…" style="min-width:190px;flex:1;"
-                               onkeydown="if(event.key==='Enter'){this.form.submit();}">
-                        @if ($slotActive)
-                            <a href="{{ route('admin.program.index', ['event_id' => $event_id, 'tab' => 'creneaux']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
-                        @endif
+                        <input type="search" name="c_q" value="{{ $slotFilters['q'] }}" placeholder="Intitulé, titre, code…" style="min-width:190px;flex:1;">
+                        {{-- Le lien dépend des filtres : sa propre région échangée. --}}
+                        <span data-filter-part="prog-creneaux-reset">
+                            @if ($slotActive)
+                                <a href="{{ route('admin.program.index', ['event_id' => $event_id, 'tab' => 'creneaux']) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
+                            @endif
+                        </span>
                     </form>
-                    <div style="font-size:12.5px;color:var(--ukc-muted);margin-bottom:8px;">
+                    <div style="font-size:12.5px;color:var(--ukc-muted);margin-bottom:8px;" data-filter-part="prog-creneaux-count">
                         {{ $slotsPage->total() }} créneau(x)@if ($slotActive) filtré(s) sur {{ $creneaux->count() }}@endif.
                     </div>
 
-                    <div class="ukc-table-wrap">
+                    <div class="ukc-table-wrap" data-filter-part="prog-creneaux-table">
                         <table class="ukc-table">
                             <thead>
                                 <tr>
@@ -952,7 +960,7 @@
                         </table>
                     </div>
 
-                    <div style="margin-top:12px;">{{ $slotsPage->links() }}</div>
+                    <div style="margin-top:12px;" data-filter-part="prog-creneaux-foot">{{ $slotsPage->links() }}</div>
                 </div>
             </div>
 

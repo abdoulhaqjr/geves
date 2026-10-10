@@ -10,19 +10,23 @@
     </div>
 @endunless
 
-<form method="GET" class="filter-bar">
+{{-- ⚠️ Filtrage en AJAX (`data-filter`, cf. app.js) : la recherche s'applique à
+     la frappe, sans valider ni recharger la page. --}}
+<form method="GET" class="filter-bar" data-filter="badges">
     <input type="hidden" name="event_id" value="{{ $event_id }}">
     <input type="hidden" name="tab" value="badges">
     <input type="hidden" name="stab" value="prets">
-    <select name="paid" onchange="this.form.submit()">
+    <select name="paid">
         <option value="1" @selected($badgePaidOnly)>Inscriptions réglées</option>
         <option value="0" @selected(! $badgePaidOnly)>Tous les participants</option>
     </select>
-    <input type="search" name="bsearch" value="{{ $badgeSearch }}" placeholder="Nom ou e-mail du participant…" style="min-width:230px;"
-           onkeydown="if(event.key==='Enter'){this.form.submit();}">
-    @if ($badgeSearch !== '' || ! $badgePaidOnly)
-        <a href="{{ route('admin.documents.attestations', $bAll) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
-    @endif
+    <input type="search" name="bsearch" value="{{ $badgeSearch }}" placeholder="Nom ou e-mail du participant…" style="min-width:230px;">
+    {{-- Le lien dépend des filtres : sa propre région échangée. --}}
+    <span data-filter-part="badges-reset">
+        @if ($badgeSearch !== '' || ! $badgePaidOnly)
+            <a href="{{ route('admin.documents.attestations', $bAll) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">Réinitialiser</a>
+        @endif
+    </span>
     <span style="flex:1;"></span>
     <a href="{{ route('admin.documents.badges', ['event' => $event_id, 'paid' => $badgePaidOnly ? 1 : 0]) }}"
        target="_blank" rel="noopener" class="ukc-btn ukc-btn--blue ukc-btn--sm">
@@ -30,7 +34,7 @@
     </a>
 </form>
 
-<div class="ukc-card" style="padding:0;">
+<div class="ukc-card" style="padding:0;" data-filter-part="badges-table">
     <div class="ukc-table-wrap">
         <table class="ukc-table">
             <thead>
