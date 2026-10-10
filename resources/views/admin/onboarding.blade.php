@@ -74,13 +74,6 @@
             <div class="ukc-stat-card tw-stat"><div class="tw-stat__icon tw-stat__icon--green"><x-ukc.icon name="users" :size="20" /></div><div class="lbl">Espaces concernés</div><div class="val green">3</div><div class="hint">Administration, participant et public</div></div>
         </div>
 
-        @if ($canManage)
-            <div class="onb-note">
-                <span class="onb-note__icon"><x-ukc.icon name="sparkles" :size="18" /></span>
-                <div><strong>Production vidéo assistée</strong><p>Le moteur choisit Gemini, Claude ou OpenAI selon vos réglages, prépare le scénario, capture les écrans réels avec un compte de démonstration, puis Hyperframes rend la vidéo sur le serveur avec la charte {{ config('app.name') }}. Aucun compte IA n’est requis sur votre poste.</p></div>
-            </div>
-        @endif
-
         <div class="onb-section-head">
             <div><span class="onb-section-head__eyebrow">BIBLIOTHÈQUE DES TUTORIELS</span><h2>Des parcours adaptés à chaque fonction</h2><p>Parcourez les étapes, ajustez les textes et gérez les démonstrations vidéo depuis un même espace.</p></div>
             <span class="onb-section-head__count">{{ $guides->count() }} parcours</span>
