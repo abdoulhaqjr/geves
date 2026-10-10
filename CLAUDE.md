@@ -26,6 +26,11 @@ Stack : PHP 8.4, Blade + **Livewire 4** + Alpine 3, Tailwind v4 + design system 
 (`resources/css/ukc.css`), Vite 8, SQLite en dev, **Pest** pour les tests, PHPStan/
 Larastan **niveau 5**.
 
+### Colloque Eau au Togo — import réel
+
+- `database/seeders/ColloqueEauTogoSeeder.php` est un import **manuel et autonome** : 44 réponses Google Forms, 47 résumés et les 47 Word intégrés au même fichier. Lancer `php artisan db:seed --class=ColloqueEauTogoSeeder` seulement sur la base voulue ; ne pas l'ajouter à `DatabaseSeeder` (données personnelles réelles).
+- Le seeder conserve les réponses libres de co-auteurs et les préférences de paiement en `meta`, sans créer de comptes, de paiements ni de décisions. `colloques:reseed` efface tout le domaine des événements, y compris ce colloque : ne pas l'utiliser pour actualiser cet import.
+
 ### Prise en main back-office
 
 - La page **Prise en main** (`/admin/prise-en-main`, `admin.onboarding`) est ouverte
