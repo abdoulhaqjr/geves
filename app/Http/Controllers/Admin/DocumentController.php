@@ -34,7 +34,7 @@ class DocumentController extends Controller
         // s'y aligne aussi, sans quoi il annoncerait des communications absentes
         // de la section Résumés (cf. Submission::scopeForBooklet).
         $groups = $event->submissions()
-            ->forBooklet()
+            ->acceptedCanonical()
             ->orderBy('track')
             ->get()
             ->groupBy(fn ($s) => $s->track ?: 'Autres');
@@ -145,7 +145,7 @@ class DocumentController extends Controller
         $programme = $event->slots()->with(['submission', 'session'])
             ->whereNotNull('starts_at')->orderBy('starts_at')->get()
             ->filter(fn ($sl) => $sl->submission
-                ? $sl->submission->belongsInBooklet()
+                ? $sl->submission->isAcceptedCanonical()
                 : trim((string) $sl->session_label) !== '')
             ->groupBy(fn ($sl) => $sl->starts_at?->format('Y-m-d') ?? '')
             ->sortKeys();

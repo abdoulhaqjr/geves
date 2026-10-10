@@ -349,3 +349,35 @@ it('donne à Gesco le montant exact dû et l’échéance du participant', funct
         ->and($prompt)->toContain('Enseignants-chercheurs')
         ->and($prompt)->toContain('05/10/2026');
 });
+
+/**
+ * ⚠️ Ce compte part à l'assistante **PUBLIQUE** : il ne doit porter que les
+ * communications que l'événement présente. Une communication planifiée **puis
+ * refusée** garde son créneau, et Gesco annonçait « 2 communications » là où la
+ * séance n'en tient qu'une (cf. `Submission::scopeAcceptedCanonical`).
+ */
+it('ne compte au programme public que les communications retenues', function () {
+    $slot = placedSlot();
+    $event = $slot->event;
+
+    // Même séance, un créneau de plus : une communication refusée après coup.
+    $refusee = $event->submissions()->create([
+        'participant_id' => $slot->participant_id,
+        'ref_code' => '26-002',
+        'title' => 'Communication refusée après planification',
+        'abstract' => str_repeat('Contexte. ', 10),
+        'track' => 'Sciences', 'type' => 'oral', 'status' => 'rejected', 'revision_of' => 0,
+        'authors' => [['name' => 'Kossi Mensah', 'email' => 'kossi@example.tg', 'corresponding' => true]],
+    ]);
+    Slot::create([
+        'event_id' => $event->id, 'session_id' => $slot->session_id,
+        'submission_id' => $refusee->id, 'participant_id' => $slot->participant_id,
+        'session_label' => 'Atelier Innovation', 'room' => 'Salle 2',
+        'starts_at' => '2026-10-05 09:30', 'ends_at' => '2026-10-05 10:00',
+    ]);
+
+    $digest = ProgramKnowledge::overview($event);
+
+    expect($digest)->toContain('1 communication')
+        ->and($digest)->not->toContain('2 communications');
+});

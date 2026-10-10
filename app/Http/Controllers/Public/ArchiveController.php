@@ -55,7 +55,11 @@ class ArchiveController extends Controller
             'documents' => $documents,
             'gallery' => Gallery::for($event),
             'stats' => [
-                'communications' => $event->submissions()->where('status', 'accepted')->count(),
+                // ⚠️ `acceptedCanonical`, pas seulement le statut : une
+                // resoumission acceptée compte sinon EN PLUS de sa version
+                // d'origine, et l'édition passée s'annonce plus fournie qu'elle
+                // ne l'a été.
+                'communications' => $event->submissions()->acceptedCanonical()->count(),
                 'participants' => $event->participants()->count(),
                 'sessions' => $event->sessions()->count(),
             ],

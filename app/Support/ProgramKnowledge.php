@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\Event;
 use App\Models\EventSession;
 use App\Models\Slot;
+use App\Models\Submission;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -40,7 +41,16 @@ class ProgramKnowledge
         }
 
         // Nombre de communications placées par séance (créneaux horodatés).
+        // ⚠️ **Seules celles que l'événement présente** : ce compte part à
+        // l'assistante PUBLIQUE. Une communication refusée après avoir été
+        // planifiée gardait son créneau, et Gesco annonçait « 6 communications »
+        // là où la séance n'en tient que 5.
+        // ⚠️ Sous-requête plutôt que `whereHas` : dans la fermeture d'un
+        // `whereHas`, le builder est générique et le scope du modèle n'y est pas
+        // visible - ni pour l'analyse statique, ni pour qui relit. Ici la règle
+        // reste nommée une seule fois.
         $counts = $event->slots()->where('submission_id', '>', 0)
+            ->whereIn('submission_id', Submission::query()->acceptedCanonical()->select('id'))
             ->whereNotNull('session_id')->selectRaw('session_id, count(*) as n')
             ->groupBy('session_id')->pluck('n', 'session_id');
 

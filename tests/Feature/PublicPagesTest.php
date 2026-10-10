@@ -149,3 +149,39 @@ it('n’expose pas un événement en brouillon', function () {
 
     $this->get(route('public.archive', $event->slug))->assertNotFound();
 });
+
+/**
+ * ⚠️ Le compteur de communications d'une édition passée filtrait le STATUT mais
+ * pas les resoumissions : une version corrigée acceptée comptait EN PLUS de sa
+ * version d'origine, et l'édition s'annonçait plus fournie qu'elle ne l'a été
+ * (cf. `Submission::scopeAcceptedCanonical`).
+ */
+it('ne compte qu’une fois une communication resoumise sur une édition passée', function () {
+    $canonique = seededSubmission('accepted');
+    $event = $canonique->event;
+
+    // La version corrigée, acceptée elle aussi : c'est la MÊME communication.
+    $event->submissions()->create([
+        'participant_id' => $canonique->participant_id,
+        'ref_code' => '26-001-v2',
+        'title' => 'Innovation durable (version corrigée)',
+        'abstract' => str_repeat('Contexte. ', 10),
+        'track' => 'Sciences', 'type' => 'oral', 'status' => 'accepted',
+        'revision_of' => $canonique->id,
+        'authors' => [['name' => 'Awa Kodjo', 'email' => 'awa@example.tg', 'corresponding' => true]],
+    ]);
+
+    // Et une refusée, qui n'a jamais compté.
+    $event->submissions()->create([
+        'participant_id' => $canonique->participant_id,
+        'ref_code' => '26-002',
+        'title' => 'Communication refusée',
+        'abstract' => str_repeat('Contexte. ', 10),
+        'track' => 'Sciences', 'type' => 'oral', 'status' => 'rejected', 'revision_of' => 0,
+        'authors' => [['name' => 'Kossi Mensah', 'email' => 'kossi@example.tg', 'corresponding' => true]],
+    ]);
+
+    $this->get(route('public.archive', $event->slug))
+        ->assertOk()
+        ->assertViewHas('stats', fn (array $stats) => $stats['communications'] === 1);
+});

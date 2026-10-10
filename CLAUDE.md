@@ -2539,9 +2539,19 @@ ajoutée par la vue, elle ne se saisit pas.
     EST la vue Blade, donc la rendre suffit à montrer le final. Le **livret** ouvre son **PDF en
     inline** (`?format=pdf&inline=1`, `DocumentController` `stream()` vs `download()`). Tests :
     `DocumentPreviewTest`.
+- ⚠️ **UNE SEULE règle pour « les communications que l'événement présente »** :
+  **`Submission::scopeAcceptedCanonical()`** (canonique + statut `accepted`) et son pendant
+  sur un modèle chargé, **`isAcceptedCanonical()`**. Elle vaut pour le **livret** ET pour
+  tout **chiffre public** portant sur les communications - elle a déjà divergé trois fois.
+  Deux de ces trois endroits étaient **publics** : l'assistante **Gesco** comptait les
+  communications d'une séance **sans regarder leur statut** (« 2 communications » pour une
+  séance qui n'en tient qu'une), et le compteur des **éditions passées** filtrait le statut
+  **mais pas** les resoumissions, qui comptaient double. ⚠️ Dans un `whereHas`, le builder
+  est générique et le scope du modèle n'y est **pas** visible : passer par une sous-requête
+  (`whereIn('submission_id', Submission::query()->acceptedCanonical()->select('id'))`)
+  plutôt que de recopier les conditions.
 - ⚠️ **Le livret ne contient QUE des communications acceptées - dans TOUTES ses sections.**
-  La règle a une seule définition, **`Submission::scopeForBooklet()`** (canonique + statut
-  `accepted`) et son pendant sur un modèle chargé, **`belongsInBooklet()`**. Les résumés
+  Les résumés
   filtraient bien ; le **programme**, lui, lisait les créneaux sans rien vérifier - une
   communication planifiée **puis refusée** gardait son créneau, et le livre imprimé
   annonçait son titre et ses auteurs à l'heure dite alors que son résumé n'y figurait pas.

@@ -195,23 +195,25 @@ class Submission extends Model
     }
 
     /**
-     * **Ce que le LIVRE DES RÉSUMÉS retient** : les communications acceptées,
-     * dans leur version canonique.
+     * **Les communications que l'événement présente** : acceptées, dans leur
+     * version canonique. C'est la règle du **livre des résumés** et de tout
+     * **chiffre public** portant sur les communications.
      *
-     * ⚠️ **Une seule définition, pour TOUTES les sections du livret.** Les
-     * résumés filtraient bien ; le PROGRAMME, lui, lisait les créneaux sans rien
-     * vérifier. Une communication planifiée **puis refusée** - ou remplacée par
-     * une resoumission - gardait son créneau, et le livre imprimé annonçait son
-     * titre et ses auteurs à l'heure dite alors que son résumé n'y figurait pas.
-     * Deux sections du même livre se contredisaient.
+     * ⚠️ **Une seule définition, parce qu'elle a déjà divergé trois fois.** Les
+     * résumés du livret filtraient ; son PROGRAMME lisait les créneaux sans rien
+     * vérifier, donc une communication planifiée **puis refusée** gardait son
+     * créneau et le livre imprimé annonçait son titre et ses auteurs à l'heure
+     * dite. L'assistante publique comptait de même les communications d'une
+     * séance **sans regarder leur statut**, et le compteur des éditions passées
+     * filtrait le statut **mais pas** les resoumissions, qui comptaient double.
      */
-    public function scopeForBooklet($query)
+    public function scopeAcceptedCanonical($query)
     {
         return $query->canonical()->where('status', SubmissionStatus::Accepted->value);
     }
 
-    /** La même règle, sur une communication déjà chargée (cf. `scopeForBooklet`). */
-    public function belongsInBooklet(): bool
+    /** La même règle, sur une communication déjà chargée (cf. `scopeAcceptedCanonical`). */
+    public function isAcceptedCanonical(): bool
     {
         return (int) $this->revision_of === 0 && $this->statusEnum() === SubmissionStatus::Accepted;
     }
