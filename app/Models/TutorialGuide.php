@@ -6,7 +6,20 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
-/** Guide éditable affiché dans les espaces d'administration et participant. */
+/**
+ * Guide éditable affiché dans les espaces d'administration et participant.
+ *
+ * ⚠️ **Les colonnes castées déclarent leur type ICI** (même convention que
+ * `TutorialVideoRequest` et `Attestation`) : sans annotation, l'analyse lit le
+ * SCHÉMA - une colonne `json` est un `text`, donc une chaîne. Elle croyait alors
+ * comparer une chaîne à un tableau dans `OnboardingController` (« comparaison
+ * toujours vraie ») et ne pouvait plus dire si la détection de guide modifié
+ * était juste. Le cast et l'annotation vont par paire.
+ *
+ * @property array<int, string> $steps
+ * @property array<int, string>|null $participant_roles
+ * @property bool $video_visible_to_participants
+ */
 class TutorialGuide extends Model
 {
     protected $guarded = ['id'];

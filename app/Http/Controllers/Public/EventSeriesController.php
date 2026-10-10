@@ -26,14 +26,6 @@ class EventSeriesController extends Controller
 
         $settings = $event->settings ?? [];
 
-        // Communications programmées, groupées par session (via les créneaux).
-        $commsBySession = $event->slots()
-            ->where('submission_id', '>', 0)
-            ->with('submission')
-            ->orderBy('starts_at')
-            ->get()
-            ->groupBy('session_id');
-
         return view('public.colloque', [
             'event' => $event,
             'intro' => $settings['intro'] ?? null,
@@ -69,7 +61,7 @@ class EventSeriesController extends Controller
                 : collect(),
             'plenaries' => $event->sessions()->where('type', 'plenary')->orderBy('ordre')->orderBy('starts_at')->get(),
             'ateliers' => $event->ateliers()->with(['sessions' => fn ($q) => $q->orderBy('ordre')])->orderBy('ordre')->get(),
-            'commsBySession' => $commsBySession,
+
             'committees' => $event->committeeMembers()->orderBy('ordre')->get()->groupBy('role'),
             // Autres événements publiées du même colloque (événements précédentes).
             'siblings' => $event->event_series_id

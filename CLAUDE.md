@@ -132,6 +132,10 @@ rapide fiable.
   demande explicite).
 - **`git pull --rebase` avant chaque `git push`** (on est plusieurs : évite les merges
   et les conflits).
+- ⚠️ **La vérification qui compte est celle d'APRÈS le rebase.** `composer check` lancé
+  avant le `pull` ne dit rien de l'état qu'on pousse : le travail d'un autre contributeur
+  arrive avec le rebase, et c'est le tout qui doit être vert. Deux erreurs PHPStan sont
+  ainsi apparues sur `master` sans qu'aucun des deux côtés ne soit fautif séparément.
 - **Pousser vers GitHub à la fin de chaque tâche** - ne pas laisser du travail terminé
   seulement en local. Dépôt privé : `https://github.com/abdoulhaqjr/geves`.
 - **Commits en français.** Éviter les heredoc PowerShell dans l'outil Bash.
