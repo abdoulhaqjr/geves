@@ -28584,14 +28584,14 @@ ARCHIVE;
         $posters = [
             'primary' => [
                 'path' => "events/{$event->id}/eau-togo-2026/affiche-colloque.jpeg",
-                'title' => 'Affiche du colloque (dates imprimées à corriger)',
+                'title' => 'Affiche du colloque',
                 'sha256' => self::POSTER_PRIMARY_SHA256,
                 'base64' => self::POSTER_PRIMARY_BASE64,
                 'ordre' => 1,
             ],
             'second_call' => [
                 'path' => "events/{$event->id}/eau-togo-2026/affiche-deuxieme-appel.jpeg",
-                'title' => 'Deuxième appel à communication (dates imprimées à corriger)',
+                'title' => 'Deuxième appel à communication',
                 'sha256' => self::POSTER_SECOND_CALL_SHA256,
                 'base64' => self::POSTER_SECOND_CALL_BASE64,
                 'ordre' => 2,
@@ -28615,10 +28615,14 @@ ARCHIVE;
             }
 
             $urls[$key] = $disk->url($poster['path']);
-            Media::firstOrCreate(
+            $media = Media::firstOrCreate(
                 ['event_id' => $event->id, 'url' => $urls[$key]],
                 ['type' => 'document', 'title' => $poster['title'], 'ordre' => $poster['ordre']]
             );
+            $previousTitle = $poster['title'].' (dates imprimées à corriger)';
+            if ($media->title === $previousTitle) {
+                $media->update(['title' => $poster['title']]);
+            }
         }
 
         return $urls;
@@ -28637,11 +28641,15 @@ ARCHIVE;
         if (blank($event->subtitle)) {
             $event->subtitle = 'Deuxième appel à communication';
         }
-        if (blank($settings['intro'] ?? null) || $settings['intro'] === $originalIntro) {
-            $settings['intro'] = 'L’Université de Kara organise le Premier Colloque Scientifique sur la Problématique de l’Eau au Togo, '
-                .'sous le haut parrainage des ministères chargés de l’enseignement supérieur, de la recherche scientifique, de l’eau et de l’assainissement. '
-                .'Thème : '.self::OFFICIAL_THEME.' Les résumés sont attendus au plus tard le 15 octobre 2026. '
-                .'Le colloque se tiendra du 10 au 13 novembre 2026 à l’Université de Kara.';
+        $posterIntro = 'L’Université de Kara organise le Premier Colloque Scientifique sur la Problématique de l’Eau au Togo, '
+            .'sous le haut parrainage des ministères chargés de l’enseignement supérieur, de la recherche scientifique, de l’eau et de l’assainissement. '
+            .'Thème : '.self::OFFICIAL_THEME.' Les résumés sont attendus au plus tard le 15 octobre 2026. '
+            .'Le colloque se tiendra du 11 au 13 novembre 2026 à l’Université de Kara.';
+        $previousPosterIntro = str_replace('du 11 au 13 novembre', 'du 10 au 13 novembre', $posterIntro);
+        if (blank($settings['intro'] ?? null)
+            || $settings['intro'] === $originalIntro
+            || $settings['intro'] === $previousPosterIntro) {
+            $settings['intro'] = $posterIntro;
         }
         $settings['short_desc'] ??= self::OFFICIAL_THEME;
         if (empty($settings['fees'])) {
@@ -28653,7 +28661,7 @@ ARCHIVE;
             ['date' => '2026-05-22', 'label' => 'Lancement de l’appel à communication'],
             ['date' => '2026-10-15', 'label' => 'Date limite de soumission des résumés'],
             ['date' => '2026-10-16', 'label' => 'Notification d’acceptation des résumés'],
-            ['date' => '2026-11-10', 'label' => 'Début du colloque'],
+            ['date' => '2026-11-11', 'label' => 'Début du colloque'],
             ['date' => '2026-11-13', 'label' => 'Fin du colloque'],
         ] as $officialDate) {
             if (! in_array($officialDate['label'], array_column($dates, 'label'), true)) {
@@ -28679,7 +28687,7 @@ ARCHIVE;
         $settings['poster_source'] = [
             'submission_url' => 'https://forms.gle/Rj4b7PUggn9XyU5E8',
             'printed_event_dates' => '11–13 novembre 2026',
-            'confirmed_event_dates' => '10–13 novembre 2026',
+            'confirmed_event_dates' => '11–13 novembre 2026',
         ];
         $settings['practical']['venue'] ??= 'Université de Kara, Kara, Togo';
         $settings['practical']['contacts'] ??= 'colloque_eau_uk@univkara.tg · +228 92168064 / 90721274 / 90212606';
@@ -28707,7 +28715,7 @@ ARCHIVE;
                 'event_label' => 'Premier colloque scientifique',
                 'theme' => 'La problématique de l’eau au Togo',
                 'year' => 2026,
-                'date_start' => '2026-11-10',
+                'date_start' => '2026-11-11',
                 'date_end' => '2026-11-13',
                 'location' => 'Université de Kara, Kara, Togo',
                 'status' => 'open',
@@ -28724,7 +28732,7 @@ ARCHIVE;
                     'tracks' => self::TRACKS,
                     'key_dates' => [
                         ['date' => '2026-10-15', 'label' => 'Date limite de soumission des résumés'],
-                        ['date' => '2026-11-10', 'label' => 'Début du colloque'],
+                        ['date' => '2026-11-11', 'label' => 'Début du colloque'],
                         ['date' => '2026-11-13', 'label' => 'Fin du colloque'],
                     ],
                     'contact' => [
@@ -28742,15 +28750,15 @@ ARCHIVE;
         $keyDates = $settings['key_dates'] ?? [];
         $datesChanged = false;
         foreach ($keyDates as &$keyDate) {
-            if (($keyDate['label'] ?? null) === 'Début du colloque' && ($keyDate['date'] ?? null) !== '2026-11-10') {
-                $keyDate['date'] = '2026-11-10';
+            if (($keyDate['label'] ?? null) === 'Début du colloque' && ($keyDate['date'] ?? null) !== '2026-11-11') {
+                $keyDate['date'] = '2026-11-11';
                 $datesChanged = true;
             }
         }
         unset($keyDate);
 
-        if ($event->date_start?->toDateString() !== '2026-11-10' || $datesChanged) {
-            $event->date_start = '2026-11-10';
+        if ($event->date_start?->toDateString() !== '2026-11-11' || $datesChanged) {
+            $event->date_start = '2026-11-11';
             if ($datesChanged) {
                 $settings['key_dates'] = $keyDates;
                 $event->settings = $settings;

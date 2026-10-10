@@ -30,7 +30,7 @@ Larastan **niveau 5**.
 
 - `database/seeders/ColloqueEauTogoSeeder.php` est un import **manuel et autonome** : 44 réponses Google Forms, 47 résumés et les 47 Word intégrés au même fichier. Lancer `php artisan db:seed --class=ColloqueEauTogoSeeder` seulement sur la base voulue ; ne pas l'ajouter à `DatabaseSeeder` (données personnelles réelles).
 - Le seeder conserve les réponses libres de co-auteurs et les préférences de paiement en `meta`, sans créer de comptes, de paiements ni de décisions. `colloques:reseed` efface tout le domaine des événements, y compris ce colloque : ne pas l'utiliser pour actualiser cet import.
-- Les deux affiches JPEG officielles sont intégrées au même seeder. Une relance ajoute leurs médias, le thème exact, les échéances, la grille de six tarifs et la limite de 250 mots au formulaire, en conservant les réglages humains déjà personnalisés. Les affiches impriment encore « 11–13 novembre » ; la date confirmée par l'organisateur et utilisée par GEVES est **10–13 novembre 2026**. Ne pas employer ces affiches comme bannière publique tant qu'elles ne sont pas corrigées.
+- Les deux affiches JPEG officielles sont intégrées au même seeder. Une relance ajoute leurs médias, le thème exact, les échéances, la grille de six tarifs et la limite de 250 mots au formulaire, en conservant les réglages humains déjà personnalisés. Les affiches et la date confirmée par l'organisateur indiquent **11–13 novembre 2026**. Ces affiches portrait restent des documents de l'événement ; le format de bannière publique recadrerait leur texte.
 
 ### Prise en main back-office
 
