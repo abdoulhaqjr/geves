@@ -299,7 +299,7 @@ class SubmissionController extends Controller
         $submission->update([
             'title' => $data['title'],
             'abstract' => Html::clean($data['abstract']),
-            'keywords' => ($data['keywords'] ?? null) ?: null,
+            'keywords' => \App\Support\SubmissionKeywords::join($data['keywords'] ?? null, $config->keywordSeparator()),
         ]);
 
         return redirect()->route('account.submissions.show', $submission)
@@ -342,7 +342,7 @@ class SubmissionController extends Controller
         $submission->update([
             'title' => $data['title'],
             'abstract' => Html::clean($data['abstract']),
-            'keywords' => ($data['keywords'] ?? null) ?: null,
+            'keywords' => \App\Support\SubmissionKeywords::join($data['keywords'] ?? null, (new SubmissionFormConfig($submission->event))->keywordSeparator()),
             'file_url' => $fileUrl,
             'version' => $submission->version + 1,
             'status' => 'submitted',

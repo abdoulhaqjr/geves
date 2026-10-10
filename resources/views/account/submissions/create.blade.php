@@ -9,7 +9,7 @@
         'title' => old('title', ''),
         'track' => old('track', $tracks[0] ?? ''),
         'type' => old('type', 'oral'),
-        'keywords' => array_values(array_filter(array_map('trim', explode(',', (string) old('keywords', ''))))),
+        'keywords' => \App\Support\SubmissionKeywords::parse(old('keywords', ''), $config->keywordSeparator()),
         'coauthors' => array_values(old('coauthors', [])),
         'errorStep' => (int) session('submission_error_step', 1),
         'lookupUrl' => route('account.authors.check'),
@@ -320,12 +320,12 @@
                             <div class="ukc-field full" style="margin-top:14px;">
                                 <label for="keywords">{{ $config->label('keywords') }} @if ($config->required('keywords'))<span class="req">*</span>@endif</label>
                                 <input type="text" id="keywords" name="keywords" value="{{ old('keywords') }}"
-                                       data-tom data-tom-create data-tom-max="{{ $config->keywordsMax() }}"
+                                       data-tom data-tom-create data-tom-max="{{ $config->keywordsMax() }}" data-keyword-separator="{{ $config->keywordSeparator() }}"
                                        placeholder="{{ __('Saisir un mot-clé puis Entrée…') }}">
                                 <span class="hint">
                                     @if ($config->help('keywords')){{ $config->help('keywords') }}
                                     @elseif ($config->keywordsMin() > 0){{ __('De :min à :max mots-clés.', ['min' => $config->keywordsMin(), 'max' => $config->keywordsMax()]) }}
-                                    @else {{ __('Jusqu’à :max mots-clés · Entrée ou virgule pour ajouter.', ['max' => $config->keywordsMax()]) }}@endif
+                                    @else Jusqu’à {{ $config->keywordsMax() }} mots-clés · {{ match ($config->keywordSeparator()) { 'semicolon' => 'séparez-les par un point-virgule', 'both' => 'séparez-les par une virgule ou un point-virgule', default => 'séparez-les par une virgule' } }}. @endif
                                 </span>
                                 @error('keywords') <span class="error">{{ $message }}</span> @enderror
                             </div>

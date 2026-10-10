@@ -109,8 +109,8 @@
                     <div class="abstract-box ukc-rte">{!! $s->abstract ? \App\Support\Html::render($s->abstract) : '-' !!}</div>
                     @if ($s->keywords)
                         <div class="keywords">
-                            @foreach (preg_split('/[,;]+/', $s->keywords, -1, PREG_SPLIT_NO_EMPTY) as $kw)
-                                <span>{{ trim($kw) }}</span>
+                            @foreach (\App\Support\SubmissionKeywords::parse($s->keywords, (new \App\Support\SubmissionFormConfig($s->event))->keywordSeparator()) as $kw)
+                                <span>{{ $kw }}</span>
                             @endforeach
                         </div>
                     @endif

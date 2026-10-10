@@ -912,7 +912,7 @@ class LivretDocx
         }
 
         // Mots-clés (trait d'union dans le style FSS, conforme au livret).
-        if ($keywords = trim((string) $s->keywords)) {
+        if ($keywords = \App\Support\SubmissionKeywords::join($s->keywords, (new \App\Support\SubmissionFormConfig($s->event))->keywordSeparator())) {
             $kwRun = $section->addTextRun(['spaceBefore' => 40, 'spaceAfter' => 40]);
             $kwRun->addText($fss ? 'Mots-clés : ' : 'Mots clés : ', ['bold' => true, 'size' => $sizeBody]);
             $kwRun->addText($keywords, ['italic' => true, 'size' => $sizeBody, 'color' => self::MUTED]);

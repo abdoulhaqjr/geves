@@ -23,6 +23,7 @@
                 'key' => $key,
                 'label' => $conf['label'],
                 'help' => $conf['help'],
+                'separator' => $key === 'keywords' ? $conf['separator'] : null,
                 'enabled' => (bool) $conf['enabled'],
                 'required' => (bool) $conf['required'],
                 'system' => in_array($key, $systemKeys, true),
@@ -140,6 +141,16 @@
                 <div class="ukc-form-row">
                     <label>Aide (sous le champ)</label>
                     <input type="text" x-model="draft.help" maxlength="200">
+                </div>
+
+                <div class="ukc-form-row" x-show="editKind === 'standard' && draft.key === 'keywords'" x-cloak>
+                    <label>Séparateur des mots-clés</label>
+                    <select x-model="draft.separator">
+                        @foreach (\App\Support\SubmissionKeywords::SEPARATORS as $value => $label)
+                            <option value="{{ $value }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    <span class="ukc-hint">Utilisé pour les badges, les imports et les nouveaux dépôts de cet événement.</span>
                 </div>
 
                 {{-- Options (liste déroulante personnalisée) --}}

@@ -133,8 +133,7 @@ class BibliographyExporter
             $raw = (string) $s->track;
         }
 
-        return collect(preg_split('/[,;]+/', $raw, -1, PREG_SPLIT_NO_EMPTY) ?: [])
-            ->map(fn ($k) => trim($k))->filter()->values()->all();
+        return SubmissionKeywords::parse($raw, (new SubmissionFormConfig($s->event))->keywordSeparator());
     }
 
     private function booktitle(Event $event): string

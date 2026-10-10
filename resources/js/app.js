@@ -51,9 +51,13 @@ function initTomSelects(root = document) {
         // ⚠️ À lire AVANT l'init : Tom Select force `multiple` sur l'élément
         // d'origine quand il passe en mode multi.
         const isMulti = el.multiple;
-        // Mode tags sur un <input> : on relit la valeur (mots séparés par des
-        // virgules) AVANT init pour ré-injecter les tags existants.
-        const seed = isInput ? String(el.value || '').split(',').map((s) => s.trim()).filter(Boolean) : [];
+        // Le séparateur des mots-clés est propre à chaque événement. La
+        // valeur persistée par Tom Select emploie un seul délimiteur ; « both »
+        // accepte aussi le second lors de la saisie et du collage.
+        const separator = el.getAttribute('data-keyword-separator') || 'comma';
+        const delimiter = separator === 'semicolon' ? ';' : ',';
+        const splitOn = separator === 'both' ? /\s*[,;]+\s*/ : separator === 'semicolon' ? /\s*;+\s*/ : /\s*,+\s*/;
+        const seed = isInput ? String(el.value || '').split(splitOn).map((s) => s.trim()).filter(Boolean) : [];
         // On vide la valeur avant init : Tom Select ne ré-analyse pas (sinon des
         // tags avec espaces en double) ; on ré-injecte des tags propres ensuite.
         if (isInput) el.value = '';
@@ -83,7 +87,8 @@ function initTomSelects(root = document) {
 
         const ts = new TomSelect(el, {
             create: tags,
-            delimiter: isInput ? ',' : undefined,
+            delimiter: isInput ? delimiter : undefined,
+            splitOn: isInput ? splitOn : undefined,
             createOnBlur: isInput,
             persist: false,
             allowEmptyOption: ! isInput && ! isSingleFilter,
@@ -107,6 +112,14 @@ function initTomSelects(root = document) {
             },
         });
         seed.forEach((v) => { ts.addOption({ value: v, text: v }); ts.addItem(v, true); });
+        if (isInput && separator === 'both') {
+            ts.control_input.addEventListener('keydown', (event) => {
+                if (event.key === ';') {
+                    event.preventDefault();
+                    ts.createItem();
+                }
+            });
+        }
         ts.refreshItems();
         ready = true;
     });
@@ -1584,7 +1597,9 @@ document.addEventListener('alpine:init', () => {
             const kw = document.getElementById('keywords');
             if (kw) {
                 const readKw = () => {
-                    this.keywords = String(kw.value || '').split(',').map((s) => s.trim()).filter(Boolean);
+                    const separator = kw.getAttribute('data-keyword-separator') || 'comma';
+                    const splitOn = separator === 'both' ? /[;,]/ : separator === 'semicolon' ? /;/ : /,/;
+                    this.keywords = kw.tomselect ? [...kw.tomselect.items] : String(kw.value || '').split(splitOn).map((s) => s.trim()).filter(Boolean);
                 };
                 kw.addEventListener('change', readKw);
                 readKw();
@@ -2463,6 +2478,7 @@ document.addEventListener('alpine:init', () => {
             this.standard.forEach((f) => {
                 body.append('fields[' + f.key + '][label]', f.label || '');
                 body.append('fields[' + f.key + '][help]', f.help || '');
+                if (f.key === 'keywords') body.append('fields[keywords][separator]', f.separator || 'comma');
                 if (f.canEnabled && f.enabled) body.append('fields[' + f.key + '][enabled]', '1');
                 if (f.canRequired && f.required) body.append('fields[' + f.key + '][required]', '1');
             });

@@ -132,7 +132,7 @@
                                             'title' => $s->title,
                                             'coauthors' => collect($s->authors ?? [])->filter(fn ($a) => empty($a['corresponding']))
                                                 ->map(fn ($a) => trim((string) ($a['name'] ?? '')))->filter()->values()->all(),
-                                            'keywords' => is_array($s->keywords) ? implode(', ', $s->keywords) : (string) $s->keywords,
+                                            'keywords' => \App\Support\SubmissionKeywords::join($s->keywords, (new \App\Support\SubmissionFormConfig($s->event))->keywordSeparator()) ?? '',
                                             'abstract' => trim((string) preg_replace('/\s+/', ' ', strip_tags((string) $s->abstract))),
                                             'url' => route('admin.submissions.show', $s),
                                         ];

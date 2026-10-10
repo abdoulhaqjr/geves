@@ -20,7 +20,7 @@ class SubmissionFormConfig
         'title' => ['label' => 'Titre', 'help' => '', 'required' => true],
         'track' => ['label' => 'Axe thématique', 'help' => '', 'required' => true],
         'type' => ['label' => 'Mode de présentation', 'help' => '', 'enabled' => true, 'required' => true],
-        'keywords' => ['label' => 'Mots-clés', 'help' => 'Séparés par des virgules', 'enabled' => true, 'required' => false],
+        'keywords' => ['label' => 'Mots-clés', 'help' => 'Séparés par des virgules', 'enabled' => true, 'required' => false, 'separator' => 'comma'],
         'abstract' => ['label' => 'Résumé', 'help' => '', 'required' => true, 'min' => 50, 'max' => 8000],
         'file' => ['label' => 'Fichier joint', 'help' => 'PDF/DOC/DOCX, max 8 Mo', 'enabled' => true, 'required' => false],
     ];
@@ -96,6 +96,20 @@ class SubmissionFormConfig
     {
         $conf = $this->fieldConf($key);
 
+        if ($key === 'keywords' && in_array($conf['help'] ?? null, [
+            null,
+            'Séparés par des virgules',
+            'Séparez les mots-clés par une virgule.',
+            'Séparez les mots-clés par un point-virgule.',
+            'Séparez les mots-clés par une virgule ou un point-virgule.',
+        ], true)) {
+            return match ($this->keywordSeparator()) {
+                'semicolon' => 'Séparez les mots-clés par un point-virgule.',
+                'both' => 'Séparez les mots-clés par une virgule ou un point-virgule.',
+                default => 'Séparez les mots-clés par une virgule.',
+            };
+        }
+
         return array_key_exists('help', $conf)
             ? (string) $conf['help']
             : (string) (self::STANDARD_DEFAULTS[$key]['help'] ?? '');
@@ -149,6 +163,13 @@ class SubmissionFormConfig
     public function keywordsMax(): int
     {
         return max($this->keywordsMin(), (int) $this->rules()['keywords_max']);
+    }
+
+    public function keywordSeparator(): string
+    {
+        $separator = $this->fieldConf('keywords')['separator'] ?? 'comma';
+
+        return array_key_exists($separator, SubmissionKeywords::SEPARATORS) ? $separator : 'comma';
     }
 
     /**

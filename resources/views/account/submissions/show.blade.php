@@ -7,7 +7,9 @@
         $mainAuthor = $authors->firstWhere('corresponding', true) ?? $authors->first();
         $coauthors = $authors->filter(fn ($a) => empty($a['corresponding']));
         $fmtAuthor = fn ($a) => trim(($a['name'] ?? '').(filled($a['affiliation'] ?? null) ? ' ('.$a['affiliation'].')' : ''));
-        $kw = collect(is_array($s->keywords) ? $s->keywords : preg_split('/\s*,\s*/', (string) $s->keywords, -1, PREG_SPLIT_NO_EMPTY))->filter();
+        $keywordSeparator = (new \App\Support\SubmissionFormConfig($s->event))->keywordSeparator();
+        $kw = collect(\App\Support\SubmissionKeywords::parse($s->keywords, $keywordSeparator));
+        $keywordHelp = match ($keywordSeparator) { 'semicolon' => 'Entrée ou point-virgule pour ajouter', 'both' => 'Entrée, virgule ou point-virgule pour ajouter', default => 'Entrée ou virgule pour ajouter' };
     @endphp
 
     <div class="account-submission-detail" x-data="{ slotModal: false }" @keydown.escape.window="slotModal = false">
@@ -103,9 +105,9 @@
                             @error('abstract') <span class="error">{{ $message }}</span> @enderror
                         </div>
                         <div class="ukc-field full">
-                            <label for="edit-keywords">{{ __('Mots-clés') }} <span class="hint">{{ __('(Entrée ou virgule pour ajouter)') }}</span></label>
-                            <input type="text" id="edit-keywords" name="keywords" data-tom data-tom-create data-placeholder="{{ __('Saisir un mot-clé…') }}"
-                                   value="{{ old('keywords', is_array($s->keywords) ? implode(', ', $s->keywords) : $s->keywords) }}">
+                            <label for="edit-keywords">{{ __('Mots-clés') }} <span class="hint">({{ $keywordHelp }})</span></label>
+                            <input type="text" id="edit-keywords" name="keywords" data-tom data-tom-create data-keyword-separator="{{ $keywordSeparator }}" data-placeholder="{{ __('Saisir un mot-clé…') }}"
+                                   value="{{ old('keywords', \App\Support\SubmissionKeywords::join($s->keywords, $keywordSeparator)) }}">
                             @error('keywords') <span class="error">{{ $message }}</span> @enderror
                         </div>
                         <div style="grid-column:1 / -1;display:flex;flex-direction:row;gap:8px;flex-wrap:wrap;">
@@ -388,8 +390,8 @@
                         @error('abstract') <span class="error">{{ $message }}</span> @enderror
                     </div>
                     <div class="ukc-field full">
-                        <label for="keywords">{{ __('Mots-clés') }} <span class="hint">{{ __('(Entrée ou virgule pour ajouter)') }}</span></label>
-                        <input type="text" id="keywords" name="keywords" data-tom data-placeholder="{{ __('Saisir un mot-clé…') }}" value="{{ old('keywords', is_array($s->keywords) ? implode(', ', $s->keywords) : $s->keywords) }}">
+                        <label for="keywords">{{ __('Mots-clés') }} <span class="hint">({{ $keywordHelp }})</span></label>
+                        <input type="text" id="keywords" name="keywords" data-tom data-keyword-separator="{{ $keywordSeparator }}" data-placeholder="{{ __('Saisir un mot-clé…') }}" value="{{ old('keywords', \App\Support\SubmissionKeywords::join($s->keywords, $keywordSeparator)) }}">
                         @error('keywords') <span class="error">{{ $message }}</span> @enderror
                     </div>
                     <div class="ukc-field full">

@@ -236,7 +236,7 @@
                     <p class="lbl sans">RÉSUMÉ :</p>
                     <div class="abs-body ukc-rte">{!! $body !!}</div>
                 @endif
-                @if ($kw = trim((string) $s->keywords))
+                @if ($kw = \App\Support\SubmissionKeywords::join($s->keywords, (new \App\Support\SubmissionFormConfig($s->event))->keywordSeparator()))
                     <p class="kw"><b>Mots clés :</b> <span class="muted" style="font-style:italic;">{{ $kw }}</span></p>
                 @endif
             </div>

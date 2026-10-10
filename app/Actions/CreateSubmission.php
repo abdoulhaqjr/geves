@@ -109,7 +109,7 @@ class CreateSubmission
                 'title' => $data['title'],
                 'authors' => $authors,
                 'abstract' => Html::clean($data['abstract']),
-                'keywords' => ($data['keywords'] ?? null) ?: null,
+                'keywords' => \App\Support\SubmissionKeywords::join($data['keywords'] ?? null, (new \App\Support\SubmissionFormConfig($event))->keywordSeparator()),
                 'track' => ($data['track'] ?? null) ?: null,
                 'type' => $data['type'] ?? 'oral',
                 'status' => 'submitted',

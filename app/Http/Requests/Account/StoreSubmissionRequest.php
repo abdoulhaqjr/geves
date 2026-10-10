@@ -5,6 +5,7 @@ namespace App\Http\Requests\Account;
 use App\Models\Event;
 use App\Models\Submission;
 use App\Support\SubmissionFormConfig;
+use App\Support\SubmissionKeywords;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -136,7 +137,7 @@ class StoreSubmissionRequest extends FormRequest
         if ($c->enabled('keywords')) {
             $rules['keywords'] = [$c->required('keywords') ? 'required' : 'nullable', 'string', 'max:500',
                 function (string $attr, string $value, \Closure $fail) use ($c): void {
-                    $n = count(array_filter(array_map('trim', preg_split('/[,;\n]+/', $value)), fn ($k) => $k !== ''));
+                    $n = count(SubmissionKeywords::parse($value, $c->keywordSeparator()));
                     if ($n > 0 && $n < $c->keywordsMin()) {
                         $fail('Indiquez au moins '.$c->keywordsMin().' mots-clés.');
                     } elseif ($n > $c->keywordsMax()) {

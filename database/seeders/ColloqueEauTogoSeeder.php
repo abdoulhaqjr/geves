@@ -9,10 +9,13 @@ use App\Models\Media;
 use App\Models\Participant;
 use App\Models\Submission;
 use App\Models\SubmissionAuthor;
+use App\Models\User;
+use App\Support\Phone;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use RuntimeException;
 use ZipArchive;
 
@@ -27,7 +30,9 @@ use ZipArchive;
  * archive de 47 fichiers Word et la date limite/contact de l'en-tête du
  * formulaire. Les dates et le lieu sont mentionnés dans plusieurs Word joints.
  * Les réponses libres sur les co-auteurs restent dans meta sans interprétation
- * hasardeuse ; aucun paiement ni résultat d'évaluation n'est inventé.
+ * hasardeuse ; les auteurs répondants reçoivent un compte à activer par
+ * réinitialisation du mot de passe. Aucun paiement ni résultat d'évaluation
+ * n'est inventé.
  */
 class ColloqueEauTogoSeeder extends Seeder
 {
@@ -28536,7 +28541,13 @@ ARCHIVE;
                 $number = 0;
 
                 foreach ($responses as $response) {
+                    $user = $this->authorAccount($response);
                     $participant = $this->participant($event, $response);
+                    if ($participant->user_id === null) {
+                        $participant->update(['user_id' => $user->id]);
+                    } elseif ((int) $participant->user_id !== (int) $user->id) {
+                        throw new RuntimeException("Le participant de la ligne {$response['row']} est déjà lié à un autre compte.");
+                    }
                     foreach ($response['submissions'] as $source) {
                         $number++;
                         $this->submission($event, $participant, $response, $source, $zip, $number);
@@ -28547,7 +28558,7 @@ ARCHIVE;
                     throw new RuntimeException('L’export intégré doit contenir 47 résumés.');
                 }
 
-                $this->command?->info('Colloque Eau au Togo : 44 réponses, 47 résumés et 47 pièces Word importés.');
+                $this->command?->info('Colloque Eau au Togo : 44 comptes auteurs, 44 réponses, 47 résumés et 47 pièces Word importés.');
             });
         } finally {
             if ($opened) {
@@ -28634,6 +28645,9 @@ ARCHIVE;
         $settings = $event->settings ?? [];
         $originalIntro = 'Premier Colloque Scientifique sur la Problématique de l’Eau au Togo. '
             .'Les résumés sont attendus au plus tard le 15 octobre 2026.';
+        if (blank($settings['short_name'] ?? null) || $settings['short_name'] === 'Colloque Eau au Togo 2026') {
+            $settings['short_name'] = 'Colloque Eau au Togo';
+        }
 
         if (blank($event->theme) || $event->theme === 'La problématique de l’eau au Togo') {
             $event->theme = self::OFFICIAL_THEME;
@@ -28676,6 +28690,10 @@ ARCHIVE;
             $rules['word_limit'] = 250;
         }
         $submissionForm['rules'] = $rules;
+        $submissionForm['fields']['keywords']['separator'] ??= 'both';
+        if (($submissionForm['fields']['keywords']['help'] ?? null) === 'Séparés par des virgules') {
+            $submissionForm['fields']['keywords']['help'] = 'Séparez les mots-clés par une virgule ou un point-virgule.';
+        }
         $submissionForm['fields']['abstract']['help'] ??= 'Résumé de 250 mots maximum.';
         $submissionForm['fields']['file']['help'] ??= 'Respectez le template du colloque : Times New Roman 12, interligne simple.';
         $settings['submission_form'] = $submissionForm;
@@ -28722,7 +28740,7 @@ ARCHIVE;
                 'submission_open' => now()->lt(Carbon::parse('2026-10-16 00:00:00')),
                 'submission_deadline' => '2026-10-15 23:59:59',
                 'settings' => [
-                    'short_name' => 'Colloque Eau au Togo 2026',
+                    'short_name' => 'Colloque Eau au Togo',
                     'intro' => 'Premier Colloque Scientifique sur la Problématique de l’Eau au Togo. '
                         .'Les résumés sont attendus au plus tard le 15 octobre 2026.',
                     'main_language' => 'Français',
@@ -28777,8 +28795,7 @@ ARCHIVE;
         $email = filter_var($firstEmail, FILTER_VALIDATE_EMAIL) ? mb_strtolower($firstEmail) : '';
         $phone = trim((string) $source['phone']);
 
-        // Une saisie du formulaire n'est pas un compte GEVES : aucun mot de
-        // passe n'est créé. Pour l'adresse invalide, le téléphone sert de clé.
+        // Pour l'adresse invalide, le téléphone reste la clé de la fiche source.
         $identity = $email !== ''
             ? ['event_id' => $event->id, 'email' => $email]
             : ['event_id' => $event->id, 'phone' => $phone];
@@ -28804,6 +28821,48 @@ ARCHIVE;
             ],
             'created_at' => $source['timestamp'],
         ]);
+    }
+
+    /** Compte global de l'auteur répondant, sans mot de passe connu du seeder. */
+    private function authorAccount(array $source): User
+    {
+        $rawEmail = trim(explode(';', (string) $source['email'])[0]);
+        $validEmail = filter_var($rawEmail, FILTER_VALIDATE_EMAIL) ? mb_strtolower($rawEmail) : null;
+        // Un contact invalide ne devient jamais une adresse de livraison.
+        // Le compte réservé pourra être corrigé par l'équipe avant activation.
+        $email = $validEmail ?? 'eau-togo-source-'.$source['row'].'@geves.invalid';
+        $user = User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
+        if ($user !== null) {
+            if ($validEmail === null && ($user->meta['import_source'] ?? null) !== self::SOURCE) {
+                throw new RuntimeException("Adresse réservée déjà utilisée pour la ligne {$source['row']}.");
+            }
+
+            return $user;
+        }
+
+        $phone = Phone::normalize((string) $source['phone']);
+        if (! Phone::usable($phone) || User::query()->where('phone', $phone)->exists()) {
+            $phone = null;
+        }
+
+        $user = new User;
+        $user->forceFill([
+            'name' => trim($source['given_name'].' '.$source['surname']),
+            'first_name' => trim((string) $source['given_name']),
+            'last_name' => trim((string) $source['surname']),
+            'email' => $email,
+            'phone' => $phone,
+            'grade' => trim((string) $source['grade']),
+            'affiliation' => trim((string) $source['affiliation']),
+            'country' => trim((string) $source['country']),
+            'password' => Str::password(48),
+            'must_reset_password' => true,
+            'is_active' => true,
+            'access_level' => User::ACCESS_USER,
+            'meta' => ['import_source' => self::SOURCE, 'source_row' => $source['row'], 'contact_email_needs_review' => $validEmail === null],
+        ])->save();
+
+        return $user;
     }
 
     /** @param array<string, mixed> $response @param array<string, mixed> $source */
@@ -28879,7 +28938,7 @@ ARCHIVE;
             'created_at' => $response['timestamp'],
         ]);
 
-        SubmissionAuthor::firstOrCreate([
+        $authorLink = SubmissionAuthor::firstOrCreate([
             'submission_id' => $submission->id,
             'author_index' => 0,
         ], [
@@ -28893,5 +28952,10 @@ ARCHIVE;
             'match_type' => $participant->user_id ? 'self' : null,
             'status' => $participant->user_id ? 'linked' : 'unmatched',
         ]);
+        if ($authorLink->user_id === null) {
+            $authorLink->update(['user_id' => $participant->user_id, 'match_type' => 'self', 'status' => 'linked']);
+        } elseif ((int) $authorLink->user_id !== (int) $participant->user_id) {
+            throw new RuntimeException("L'auteur de {$reference} est déjà lié à un autre compte.");
+        }
     }
 }
