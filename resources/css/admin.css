@@ -466,6 +466,14 @@
 .admin-program .day-tabs button .d-sub { display: block; font-size: 11px; font-weight: 600; opacity: .85; margin-top: 2px; }
 
 .admin-program .layout-plan { display: grid; grid-template-columns: 1fr 280px; gap: 16px; align-items: start; }
+/* ⚠️ Un élément de grille a `min-width:auto` : sa largeur MINIMALE est celle de
+   son contenu, et une colonne `1fr` s'étire pour l'absorber. Le plateau de
+   planification (« Heure | Salle 1 | Salle 2 … ») réclame 840px : la colonne
+   passait à 841px dans un conteneur de 332, et toute la page défilait
+   latéralement (`scrollWidth` 779 pour un `clientWidth` de 375) - alors même que
+   `.plan-scroll` est déjà en `overflow-x:auto` et sait défiler seul. `min-width:0`
+   rend la colonne compressible et rend le défilement au plateau, où il doit être. */
+.admin-program .layout-plan > * { min-width: 0; }
 @media (max-width: 1000px) { .admin-program .layout-plan { grid-template-columns: 1fr; } }
 
 .admin-program .atelier-block { border: 1px solid var(--ukc-border); border-radius: 12px; margin-bottom: 16px; overflow: hidden; background: #fff; }
@@ -598,6 +606,17 @@
     .ukc-shell .prog-syn-row--head { display: none; }
     .ukc-shell .prog-syn-row__label { grid-column: 1 / -1; }
     .ukc-shell .prog-syn-moves { grid-column: 1 / -1; justify-content: flex-start; }
+    /* ⚠️ L'en-tête du jour n'était PAS adapté, seules les lignes l'étaient : la
+       date figée (160px, `flex:none`), l'intitulé - dont le `min-width:auto`
+       d'un <input> vaut sa taille INTRINSÈQUE, soit 189px, et non zéro - et les
+       trois flèches (`flex:none`, 90px) réclamaient 459px dans 268 disponibles.
+       Résultat : /admin/programme défilait latéralement (`scrollWidth` 494 pour
+       un `clientWidth` de 375). La date garde la ligne des flèches, l'intitulé
+       passe dessous ; `min-width:0` est ce qui autorise enfin les champs à se
+       réduire. */
+    .ukc-shell .prog-syn-day__head { flex-wrap: wrap; }
+    .ukc-shell .prog-syn-day__date { width: auto; flex: 1 1 auto; min-width: 0; }
+    .ukc-shell .prog-syn-day__title { flex: 1 1 100%; min-width: 0; }
 }
 
 /* Pause déjeuner : bandeau plein largeur, derriere les evenements (clic traversant) */
@@ -628,6 +647,13 @@
 .admin-program .entity-card .meta { font-size: 13px; color: var(--ukc-muted); line-height: 1.45; margin-bottom: 8px; }
 .admin-program .entity-card .row-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
 .admin-program .chip-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+/* ⚠️ Ces pastilles-là portent des PHRASES (le nom complet d'un axe), pas un
+   état en deux mots. Le `white-space:nowrap` de `.admin-page .ukc-pill` - bon
+   pour « Soumissions ouvertes », qu'on ne veut pas voir coupé - leur faisait
+   réclamer 386px de large : l'onglet Ateliers défilait latéralement
+   (`scrollWidth` 442 pour un `clientWidth` de 375). Ici le texte s'enroule, et
+   `overflow-wrap` traite le cas du mot plus long que la pastille. */
+.admin-program .chip-list .ukc-pill { white-space: normal; overflow-wrap: anywhere; max-width: 100%; text-align: left; }
 
 .admin-program .settings-box { border: 1px solid var(--ukc-border); border-radius: 12px; padding: 16px; background: #f8fafc; margin-bottom: 12px; }
 .admin-program .settings-box h3 { font-size: 14px; font-weight: 800; margin-bottom: 8px; }

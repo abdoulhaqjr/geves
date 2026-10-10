@@ -10,6 +10,10 @@
       --ukc-font: 'Jost', system-ui, sans-serif;
       --sidebar: 56px;
       --panel: 300px;
+      /* ⚠️ Hauteur de la barre du haut = VARIABLE, car `.ed-shell` s'y accroche
+         (`calc(100vh - var(--edtop))`). Écrite en dur des deux côtés, elle
+         laissait la scène à l'ancienne hauteur dès que la barre s'épaississait. */
+      --edtop: 52px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -23,7 +27,7 @@
     button { cursor: pointer; border: none; background: none; }
 
     .ed-top {
-      height: 52px; background: #fff; border-bottom: 1px solid var(--ukc-border);
+      height: var(--edtop); background: #fff; border-bottom: 1px solid var(--ukc-border);
       display: flex; align-items: center; padding: 0 12px 0 8px; gap: 10px;
       flex-shrink: 0;
     }
@@ -48,10 +52,25 @@
     }
     .ed-top .btn-save:hover { background: var(--ukc-blue-dark); }
 
+    /* ⚠️ Sur téléphone la barre du concepteur débordait de l'écran : le champ de
+       nom s'interdisait de descendre sous 280px (`min-width`, pour qu'un libellé
+       d'attestation tienne entier - vrai sur un grand écran, intenable sur 375),
+       et avec « Retour » et « Enregistrer » la ligne réclamait 509px
+       (`scrollWidth` 517 pour un `clientWidth` de 375). Le fil d'Ariane, lui,
+       était comprimé À ZÉRO pixel : rien ne doit se comprimer jusqu'à zéro, mais
+       rien ne doit non plus refuser de se comprimer. La barre passe donc sur deux
+       lignes, et `--edtop` suit pour que la scène en dessous garde sa hauteur. */
+    @media (max-width: 640px) {
+      :root { --edtop: 92px; }
+      .ed-top { flex-wrap: wrap; align-content: center; padding: 6px 10px; row-gap: 6px; }
+      .ed-top .crumb { flex: 1 1 100%; min-width: 0; }
+      .ed-top .name-input { flex: 1 1 auto; min-width: 0; }
+    }
+
     .ed-shell {
       display: grid;
       grid-template-columns: var(--sidebar) var(--panel) 1fr;
-      height: calc(100vh - 52px);
+      height: calc(100vh - var(--edtop));
       min-height: 0;
     }
 

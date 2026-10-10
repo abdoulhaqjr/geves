@@ -387,7 +387,14 @@ html.ukc-dense::-webkit-scrollbar-corner,
 .ukc-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .ukc-pagination__info { font-size: 12.5px; color: var(--ukc-muted); }
 .ukc-pagination__info span { opacity: .7; }
-.ukc-pagination__list { display: flex; align-items: center; gap: 4px; list-style: none; margin: 0; padding: 0; }
+/* ⚠️ La LISTE doit s'enrouler, pas seulement la barre qui la contient.
+   `.ukc-pagination` est `flex-wrap:wrap` : la liste passe donc à la ligne sous
+   le compteur, mais elle restait elle-même en `nowrap` et gardait sa largeur de
+   contenu. Au-delà d'une dizaine de pages (« ‹ 1 2 … 13 14 › » = 479px) elle
+   débordait de la carte et faisait défiler TOUTE la page latéralement :
+   /admin/soumissions mesurait 500px de `scrollWidth` pour 375 de `clientWidth`,
+   /admin/participants 459. Le `gap` sert alors aussi d'interligne. */
+.ukc-pagination__list { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; list-style: none; margin: 0; padding: 0; }
 .ukc-pagination__list li { margin: 0; }
 .ukc-pagination__list a,
 .ukc-pagination__list span { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--ukc-border); background: #fff; color: var(--ukc-text); font-size: 13px; font-weight: 600; text-decoration: none; transition: background .12s, border-color .12s, color .12s; }

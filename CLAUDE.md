@@ -542,6 +542,31 @@ Une relecture n'est plus un simple « assignée / rendue » : `Review::STATUSES`
   - **Se mesurer, pas se juger à l'œil** : `document.documentElement.scrollWidth`
     vs `clientWidth` à 375px. ⚠️ `html.ukc-dense` (`zoom:.9`) fausse la lecture
     naïve - **`body.scrollWidth` vaut 417 (= 375/0.9) SANS aucun débordement**.
+- **Débordement horizontal du back-office : les quatre causes déjà rencontrées.**
+  Un seul élément trop large fait défiler **toute la page** ; la sonde utile liste
+  les débordants dont **aucun ancêtre ne déborde** et **ignore** ceux qui vivent
+  dans un conteneur `overflow-x:auto` (eux défilent chez eux, c'est voulu).
+  - ⚠️ **`min-width:auto` sur un élément de grille ou de flex** : sa largeur
+    minimale est celle de son **contenu**, et une piste `1fr` s'étire pour
+    l'absorber. Le plateau de planification (840px) gonflait la colonne à 841px
+    dans un conteneur de 332 - alors que `.plan-scroll` savait déjà défiler.
+    D'où **`.layout-plan > * { min-width: 0 }`** : c'est la ligne qui rend le
+    défilement au bon élément. Vrai aussi pour les `<input>`, dont le `min-width`
+    automatique vaut la **taille intrinsèque** (189px), jamais zéro.
+  - ⚠️ **Un conteneur qui s'enroule n'enroule pas ses enfants** : `.ukc-pagination`
+    était `flex-wrap:wrap` mais `.ukc-pagination__list` restait `nowrap` et gardait
+    ses 479px. Au-delà d'une dizaine de pages, /admin/soumissions et
+    /admin/participants défilaient. **La liste aussi doit s'enrouler.**
+  - ⚠️ **Une pastille qui porte une PHRASE ne peut pas être `nowrap`** :
+    `.admin-page .ukc-pill` l'est à juste titre (« Soumissions ouvertes » ne se
+    coupe pas), mais les pastilles de `.chip-list` portent le nom complet d'un axe
+    et réclamaient 386px. Exception explicite, `overflow-wrap` compris.
+  - ⚠️ **Une barre dont la hauteur sert d'ancrage est une VARIABLE** : les
+    concepteurs (`template-designer.css`, `badge-designer.css` - **deux fichiers
+    jumeaux, corriger les deux**) accrochent `.ed-shell` à
+    `calc(100vh - var(--edtop))`. Écrite en dur, la hauteur laissait la scène
+    décalée dès que la barre passait sur deux lignes. Même leçon que `--vtop` /
+    `--vtoolbar` dans la salle de visio.
 
 - ⚠️ **Listes dans le chat** : `ukcMarkdownLite` produit de vrais `<ul>`/`<ol>`,
   mais le **reset Preflight de Tailwind** met `list-style: none` sur toutes les
