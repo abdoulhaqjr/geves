@@ -5,7 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/** Demande durable de création ou de mise à jour d'une vidéo de guide. */
+/**
+ * Demande durable de création ou de mise à jour d'une vidéo de guide.
+ *
+ * ⚠️ **Les colonnes castées déclarent leur type ICI.** Sans cette annotation,
+ * l'analyse statique lit le SCHÉMA - une colonne `json` est un `text`, donc une
+ * chaîne - et refuse `$request->meta['guide']` alors que le cast `array` rend
+ * bien un tableau à l'exécution. Même convention que les autres modèles du
+ * projet (cf. `Attestation`) : le cast et l'annotation vont par paire.
+ *
+ * @property array<int, string>|null $providers
+ * @property array<string, mixed>|null $meta
+ */
 class TutorialVideoRequest extends Model
 {
     protected $guarded = ['id'];

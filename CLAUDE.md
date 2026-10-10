@@ -2808,6 +2808,11 @@ est listé en dernier) :
   le composant Livewire. Gardes d'autorisation dans `mount()` (`abort_unless`).
 - Écritures multi-étapes clés sous `DB::transaction` (paiement anti-doublon avec
   `lockForUpdate`).
+- ⚠️ **Un cast et son annotation vont par PAIRE.** Un `'meta' => 'array'` dans `casts()`
+  ne suffit pas à l'analyse statique : sans `@property array<string, mixed>|null $meta`
+  sur le modèle, elle lit le SCHÉMA (une colonne `json` est un `text`, donc une chaîne) et
+  refuse `$modele->meta['cle']`, pourtant valide à l'exécution. Tous les modèles du projet
+  annotent leurs colonnes castées (cf. `Attestation`).
 - **IA** : couche `App\AI` (contrat `AiProvider`, `AiManager` = résolution + failover,
   `AiRouter` = routage fast/deep). Le copilote back-office exécute de vraies actions
   (`App\AI\Copilot`) **après autorisation explicite** + capacité RBAC revérifiée.

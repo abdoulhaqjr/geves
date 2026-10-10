@@ -76,10 +76,12 @@ final class TutorialCaptureCatalog
             ],
         };
 
-        return array_values(array_map(
+        // `$targets` est une liste et `array_map` sur une liste en rend une :
+        // `array_values` n'y changeait rien.
+        return array_map(
             fn (array $target): array => ['title' => $target[0], 'url' => $target[1]],
             $targets,
-        ));
+        );
     }
 
     public static function targetFor(TutorialGuide $guide, int $step): ?string

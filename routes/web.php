@@ -57,6 +57,7 @@ use App\Http\Controllers\AttestationController;
 use App\Http\Controllers\AuthorLinkController;
 use App\Http\Controllers\EgressController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Internal\TutorialCaptureController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\MeetingChatController;
 use App\Http\Controllers\MeetingController;
@@ -82,7 +83,7 @@ Route::post('/gesco/demander', [GescoController::class, 'ask'])->name('gesco.ask
 
 // Pont interne signé : uniquement le navigateur isolé de production des tutoriels
 // l'utilise pour ouvrir de vraies pages GEVES avec le compte de démonstration.
-Route::get('/_captures-tutoriels/{guide}/{step}', App\Http\Controllers\Internal\TutorialCaptureController::class)
+Route::get('/_captures-tutoriels/{guide}/{step}', TutorialCaptureController::class)
     ->middleware('signed')->name('tutorial.capture');
 
 Route::get('/colloques-passes', [ArchiveController::class, 'index'])->name('public.archives');
