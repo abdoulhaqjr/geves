@@ -30,8 +30,8 @@ function compteParticipant(): User
     return $user;
 }
 
-/** Co-signature CONFIRMÉE du compte sur une communication déposée par un tiers. */
-function cosigne(Submission $submission, User $account, string $statut = 'linked'): SubmissionAuthor
+/** Liaison CONFIRMÉE du compte comme co-auteur d’une communication d’un tiers. */
+function coauteur(Submission $submission, User $account, string $statut = 'linked'): SubmissionAuthor
 {
     return SubmissionAuthor::create([
         'event_id' => $submission->event_id,
@@ -211,11 +211,12 @@ it('annonce l’heure, la salle et la séance du prochain passage', function () 
         ->assertSee('AVD-001');
 });
 
-it('ne retient pas le passage d’une communication seulement co-signée', function () {
-    // ⚠️ Un co-signataire ne monte pas forcément à la tribune : lui annoncer
-    // « vous présentez à 14h00 » quand c'est son collègue qui présente serait
-    // pire que de ne rien dire. Sa co-signature reste visible dans « Mes
-    // communications », avec son rôle.
+it('retient le passage d’une communication dont le compte est co-auteur', function () {
+    // ⚠️ **Un co-auteur ne présente pas seul, mais il CO-PRÉSENTE** : il est en
+    // salle à l'heure dite, et c'est précisément ce qu'il vient chercher sur son
+    // tableau de bord. L'écarter reviendrait à ne rien lui dire du moment où sa
+    // communication passe. Son rôle est en revanche nommé : « Je co-présente »,
+    // jamais « Je présente ».
     ['event' => $event, 'account' => $account] = colloqueDate(0);
     $autre = $event->participants()->create([
         'first_name' => 'X', 'last_name' => 'Y', 'email' => 'x@uk.tg', 'role' => 'author',
@@ -224,46 +225,59 @@ it('ne retient pas le passage d’une communication seulement co-signée', funct
         'participant_id' => $autre->id, 'ref_code' => 'AVD-118', 'title' => 'Travail du collègue',
         'status' => 'accepted', 'revision_of' => 0, 'access_token' => Str::random(64),
     ]);
-    cosigne($sienne, $account);
-    Slot::create([
+    coauteur($sienne, $account);
+    $creneau = Slot::create([
         'event_id' => $event->id, 'submission_id' => $sienne->id,
         'participant_id' => $autre->id, 'room' => 'Salle 9',
+        // Plus TÔT que son propre passage (14h00) : c'est donc lui le prochain.
         'starts_at' => Carbon::today()->setTime(9, 0),
         'ends_at' => Carbon::today()->setTime(9, 30),
     ]);
 
     $tdb = new ParticipantDashboard($account, $event);
 
-    expect($tdb->passages()->pluck('submission_id')->all())->not->toContain($sienne->id);
-    expect($tdb->prochainPassage()?->submission_id)->not->toBe($sienne->id);
+    expect($tdb->passages()->pluck('submission_id')->all())->toContain($sienne->id);
+    expect($tdb->prochainPassage()?->id)->toBe($creneau->id);
+
+    // ⚠️ Le créneau porte le `participant_id` du DÉPOSANT : le rôle se lit sur la
+    // communication, jamais sur le créneau - sinon chacun serait co-auteur de son
+    // propre passage.
+    expect($tdb->roleSur($creneau))->toBe('coauteur');
+    expect($tdb->roleSur($tdb->passages()->firstWhere('submission_id', '!=', $sienne->id)))
+        ->toBe('correspondant');
+
+    $this->actingAs($account, 'account')->get(route('account.dashboard'))
+        ->assertOk()
+        ->assertSee('Vous co-présentez cette communication.')
+        ->assertSee('Salle 9');
 });
 
 // =====================================================================
-// Les co-signatures comptent
+// Les communications en co-auteur comptent
 // =====================================================================
 
-it('compte les communications co-signées comme la page qui les détaille', function () {
+it('compte les communications en co-auteur comme la page qui les détaille', function () {
     // ⚠️ La carte et l'indicateur comptaient les communications DÉPOSÉES
-    // (`participant_id`) quand `/compte/communications` y ajoute les
-    // co-signatures : mesuré sur la base de démonstration, le tableau de bord
-    // annonçait « 1 » là où la page d'à côté en listait trois.
+    // (`participant_id`) quand `/compte/communications` y ajoute celles dont le
+    // compte est co-auteur : mesuré sur la base de démonstration, le tableau de
+    // bord annonçait « 1 » là où la page d'à côté en listait trois.
     ['event' => $event, 'account' => $account] = colloqueDate(0);
     $autre = $event->participants()->create([
         'first_name' => 'X', 'last_name' => 'Y', 'email' => 'x@uk.tg', 'role' => 'author',
     ]);
-    $cosignee = $event->submissions()->create([
-        'participant_id' => $autre->id, 'ref_code' => 'AVD-118', 'title' => 'Co-signée',
+    $enCoauteur = $event->submissions()->create([
+        'participant_id' => $autre->id, 'ref_code' => 'AVD-118', 'title' => 'Signée par un tiers',
         'status' => 'under_review', 'revision_of' => 0, 'access_token' => Str::random(64),
     ]);
-    cosigne($cosignee, $account);
+    coauteur($enCoauteur, $account);
 
     $tdb = new ParticipantDashboard($account, $event);
     expect($tdb->communications())->toHaveCount(2);
-    expect($tdb->estCorrespondant($cosignee))->toBeFalse();
+    expect($tdb->estCorrespondant($enCoauteur))->toBeFalse();
 
     $indicateur = collect($tdb->indicateurs())->firstWhere('libelle', 'Mes communications');
     expect($indicateur['valeur'])->toBe('2');
-    expect($indicateur['detail'])->toContain('co-signée');
+    expect($indicateur['detail'])->toContain('en co-auteur');
 
     $this->actingAs($account, 'account')->get(route('account.dashboard'))
         ->assertOk()
@@ -273,7 +287,7 @@ it('compte les communications co-signées comme la page qui les détaille', func
 
 it('écarte une liaison d’auteur déclinée', function () {
     // Même règle que `/compte/communications` : seules les liaisons CONFIRMÉES
-    // (`linked`) comptent. Une invitation déclinée n'est pas une co-signature.
+    // (`linked`) comptent. Une invitation déclinée ne fait pas un co-auteur.
     ['event' => $event, 'account' => $account] = colloqueDate(0);
     $autre = $event->participants()->create([
         'first_name' => 'X', 'last_name' => 'Y', 'email' => 'x@uk.tg', 'role' => 'author',
@@ -282,7 +296,7 @@ it('écarte une liaison d’auteur déclinée', function () {
         'participant_id' => $autre->id, 'ref_code' => 'AVD-900', 'title' => 'Déclinée',
         'status' => 'accepted', 'revision_of' => 0, 'access_token' => Str::random(64),
     ]);
-    cosigne($refusee, $account, 'declined');
+    coauteur($refusee, $account, 'declined');
 
     expect((new ParticipantDashboard($account, $event))->communications())->toHaveCount(1);
 });
@@ -364,6 +378,34 @@ it('ne détaille dans « À faire » que ce qui reste à faire', function () {
 
     expect($tache)->not->toBeNull();
     expect($tache['url'])->toBe(route('account.verification.notice'));
+});
+
+it('ne réclame pas un profil déjà complet', function () {
+    // ⚠️ **Défaut constaté en production** : l'état vide offrait « Compléter mon
+    // profil » à TOUT LE MONDE, profil complet compris. On envoyait corriger une
+    // page qui n'avait rien à corriger - et comme c'était le seul geste proposé,
+    // la personne en concluait que quelque chose clochait chez elle.
+    $complet = compteParticipant();
+    expect($complet->profileComplete())->toBeTrue();
+
+    $this->actingAs($complet, 'account')->get(route('account.dashboard'))
+        ->assertOk()
+        ->assertSee('Votre espace se remplira bientôt')
+        ->assertDontSee('Compléter mon profil')
+        ->assertSee('Votre profil est complet');
+});
+
+it('réclame le profil quand il manque vraiment quelque chose', function () {
+    // Le pendant du cas précédent : le bouton suit `aFaire`, donc il réapparaît
+    // dès qu'il manque réellement une pièce. Sans ce second cas, retirer le
+    // bouton pour de bon passerait inaperçu.
+    $incomplet = compteParticipant();
+    $incomplet->forceFill(['affiliation' => null])->save();
+
+    $this->actingAs($incomplet->fresh(), 'account')->get(route('account.dashboard'))
+        ->assertOk()
+        ->assertSee('Compléter mon profil')
+        ->assertDontSee('Votre profil est complet');
 });
 
 it('garde ses fonctions à qui n’est inscrit à aucun colloque', function () {

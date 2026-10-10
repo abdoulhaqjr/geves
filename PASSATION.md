@@ -862,12 +862,30 @@ tout seul** selon le moment du parcours.
   - ⚠️ Le tableau de bord **savait** quand et où le participant présente et ne le
     disait pas : le contrôleur calculait les créneaux datés pour n'en garder qu'un
     booléen `$hasAgenda`, qui n'affichait qu'un bouton « Télécharger (.ics) ».
-  - ⚠️ Le compteur de communications ignorait les **co-signatures** : il annonçait
-    « 1 » là où `/compte/communications` en listait trois. Même règle désormais
-    (dépôt **ou** `authorLinks` confirmée).
-- ⚠️ **Le prochain passage ne retient QUE les communications déposées**, comme
-  l'export `.ics` : un co-signataire ne monte pas forcément à la tribune, et lui
-  annoncer « vous présentez à 14h00 » serait pire que de ne rien dire.
+  - ⚠️ Le compteur de communications ignorait celles dont le compte est
+    **co-auteur** : il annonçait « 1 » là où `/compte/communications` en listait
+    trois. Même règle désormais (dépôt **ou** `authorLinks` confirmée).
+- ⚠️ **Vocabulaire : « co-auteur », jamais « co-signataire ».** C'est le mot de la
+  fiche de soumission et de la colonne « Mon rôle ». (Reste « co-signé » dans
+  `ConflictOfInterest`, où il décrit une publication commune entre deux
+  personnes - un autre objet, à trancher si on veut l'aligner aussi.)
+- ⚠️ **Le prochain passage retient AUSSI les communications en co-auteur** : un
+  co-auteur ne présente pas seul, mais il **co-présente** - il est en salle à
+  l'heure dite. L'écarter revenait à ne rien lui dire du moment où sa
+  communication passe. Son rôle est en revanche nommé partout
+  (`ParticipantDashboard::roleSur()`) : « Je présente » pour l'auteur
+  correspondant, « Je co-présente » pour le co-auteur, distingués par la clarté
+  autant que par la teinte. ⚠️ Le créneau porte le `participant_id` du
+  **déposant** : le rôle se lit sur la communication, jamais sur le créneau.
+- ⚠️ **L'export `.ics` part des MÊMES créneaux** : `AgendaController::events()`
+  appelle `ParticipantDashboard::passages()`. Les deux décidaient chacun de leur
+  côté de ce qui compte comme un passage, et un bouton « Ajouter à mon agenda »
+  posé sous un créneau que le fichier n'exporte pas rend un agenda amputé sans
+  rien dire.
+- ⚠️ **L'état vide ne réclame plus un profil déjà complet** (défaut constaté en
+  production) : son appel à l'action sort de `aFaire()`, et quand la liste est
+  vide il annonce « Votre profil est complet » au lieu d'inventer une tâche.
+  Deux cas l'encadrent, un par branche.
 - ⚠️ **Une fonction ne vient pas avec une inscription** : modérateur, rapporteur et
   relecteur sont rapprochés par **e-mail** et peuvent n'avoir aucun `Participant`,
   donc aucun événement de contexte. L'état vide ne s'affiche que si le compte n'a
@@ -885,6 +903,6 @@ tout seul** selon le moment du parcours.
   **retirée** de `tailwise.css` : les cartes sont désormais identiques à celles du
   back-office, badge d'angle compris.
 - Vues : `account/dashboard.blade.php` + partials `_tdb-agenda` et `_tdb-documents`.
-  Tests : `tests/Feature/ParticipantDashboardTest.php` (15 cas). Mesuré au
+  Tests : `tests/Feature/ParticipantDashboardTest.php` (17 cas). Mesuré au
   navigateur : aucun débordement horizontal à 375px ni à 708px, contrastes de 5,02
   à 11,81:1, pastilles de document à 48px.

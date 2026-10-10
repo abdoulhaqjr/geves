@@ -30,8 +30,8 @@ use Illuminate\Support\Collection;
  *
  * ⚠️ **Cette classe est la source unique des grandeurs du tableau de bord.** Deux
  * d'entre elles avaient déjà divergé de la page qui les détaille :
- *  - les communications **co-signées** ne comptaient pas (le compteur disait « 1 »
- *    quand « Mes communications » en listait trois) ;
+ *  - les communications dont le compte est **co-auteur** ne comptaient pas (le
+ *    compteur disait « 1 » quand « Mes communications » en listait trois) ;
  *  - le prochain **passage** était calculé puis réduit à un booléen `$hasAgenda`,
  *    qui ne servait qu'à afficher un bouton de téléchargement : l'écran savait
  *    quand et où le participant présente, et ne le disait pas.
@@ -42,7 +42,7 @@ use Illuminate\Support\Collection;
  * voisine mais distincte, et le type de la collection groupée ne tenait plus -
  * les gabarits de `Collection` ne sont pas covariants.
  *
- * @phpstan-type AgendaEntree array{genre: string, debut: Carbon|null, fin: Carbon|null, titre: string, lieu: string, detail: string, ref: string, url: string|null, visio: string|null, fait: bool}
+ * @phpstan-type AgendaEntree array{genre: string, role: string, debut: Carbon|null, fin: Carbon|null, titre: string, lieu: string, detail: string, ref: string, url: string|null, visio: string|null, fait: bool}
  */
 class ParticipantDashboard
 {
@@ -108,7 +108,8 @@ class ParticipantDashboard
     }
 
     /**
-     * « Mes communications » = celles que j'ai **déposées** ou que je **co-signe**.
+     * « Mes communications » = celles que j'ai **déposées** et celles dont je suis
+     * **co-auteur**.
      *
      * ⚠️ Exactement la règle de `/compte/communications`
      * ({@see SubmissionController::index()}) : le
@@ -134,7 +135,7 @@ class ParticipantDashboard
             ->get();
     }
 
-    /** Suis-je l'auteur correspondant de cette communication (par opposition à co-signataire) ? */
+    /** Suis-je l'auteur correspondant de cette communication (sinon : co-auteur) ? */
     public function estCorrespondant(Submission $submission): bool
     {
         return $this->participantIds()->contains($submission->participant_id);
@@ -152,11 +153,13 @@ class ParticipantDashboard
      * Créneaux de passage DATÉS du compte sur l'événement de contexte, du plus
      * proche au plus lointain.
      *
-     * ⚠️ **Seules les communications que le compte a déposées**, comme l'export
-     * calendrier. Un co-signataire ne monte pas forcément à la tribune : lui
-     * annoncer « vous présentez à 14h00 » quand c'est son collègue qui présente
-     * serait pire que de ne rien dire. Ses co-signatures restent visibles dans
-     * « Mes communications », avec leur horaire et la mention « Co-auteur ».
+     * ⚠️ **Les communications déposées ET celles dont le compte est co-auteur.**
+     * Un co-auteur ne présente pas seul, mais il **co-présente** : il est en salle
+     * à l'heure dite, et c'est précisément ce qu'il vient chercher ici. L'écarter
+     * reviendrait à ne rien lui dire du moment où sa communication passe. Son rôle
+     * est en revanche NOMMÉ partout où le créneau s'affiche
+     * ({@see roleSur()}) - « Je présente » pour l'auteur correspondant,
+     * « Je co-présente » pour le co-auteur.
      *
      * @return Collection<int, Slot>
      */
@@ -166,14 +169,13 @@ class ParticipantDashboard
             return $this->passages;
         }
 
-        $mesDepots = Submission::whereIn('participant_id', $this->participantIds())
-            ->canonical()->pluck('id');
+        $mesCommunications = $this->communications()->pluck('id');
 
         return $this->passages = Slot::query()
             ->whereNotNull('starts_at')
             ->when($this->event, fn ($q) => $q->where('event_id', $this->event->id))
             ->where(fn ($q) => $q
-                ->whereIn('submission_id', $mesDepots)
+                ->whereIn('submission_id', $mesCommunications)
                 ->orWhereIn('participant_id', $this->participantIds()))
             ->with(['submission', 'session.atelier', 'event'])
             ->orderBy('starts_at')
@@ -191,6 +193,25 @@ class ParticipantDashboard
         return $this->passages()
             ->first(fn (Slot $s) => ($s->ends_at ?? $s->starts_at)?->gte($now) ?? false)
             ?? $this->passages()->last();
+    }
+
+    /**
+     * Mon rôle sur un créneau : `correspondant` (je présente) ou `coauteur` (je
+     * co-présente). ⚠️ Le créneau porte le `participant_id` du DÉPOSANT, jamais
+     * celui du co-auteur : le rôle se lit donc sur la communication, pas sur le
+     * créneau - sinon tout le monde serait co-auteur de son propre passage.
+     */
+    public function roleSur(Slot $slot): string
+    {
+        $submission = $slot->submission;
+
+        // Créneau rattaché directement au participant, sans communication : il
+        // est à lui, pas à quelqu'un dont il serait co-auteur.
+        if (! $submission) {
+            return 'correspondant';
+        }
+
+        return $this->estCorrespondant($submission) ? 'correspondant' : 'coauteur';
     }
 
     // ===================================================== Agenda personnel
@@ -235,6 +256,7 @@ class ParticipantDashboard
                 debut: $slot->starts_at,
                 fin: $slot->ends_at,
                 titre: (string) ($slot->submission?->title ?: 'Ma communication'),
+                role: $this->roleSur($slot),
                 lieu: (string) ($slot->room ?: $slot->session?->room ?: ''),
                 detail: trim((string) ($slot->session?->label ?: $slot->session_label)),
                 // ⚠️ `data_get`, pas `?->… ?? ''` : Larastan type les relations
@@ -315,6 +337,7 @@ class ParticipantDashboard
         ?Carbon $debut,
         ?Carbon $fin,
         string $titre,
+        string $role = '',
         string $lieu = '',
         string $detail = '',
         string $ref = '',
@@ -324,6 +347,7 @@ class ParticipantDashboard
     ): array {
         return [
             'genre' => $genre,
+            'role' => $role,
             'debut' => $debut,
             'fin' => $fin,
             'titre' => $titre,
@@ -522,15 +546,15 @@ class ParticipantDashboard
     {
         $communications = $this->communications();
         $deposees = $communications->filter(fn (Submission $s) => $this->estCorrespondant($s))->count();
-        $cosignees = $communications->count() - $deposees;
+        $coauteur = $communications->count() - $deposees;
 
         $carteCommunications = [
             'libelle' => 'Mes communications',
             'valeur' => (string) $communications->count(),
             'unite' => '',
-            'detail' => $cosignees > 0
+            'detail' => $coauteur > 0
                 ? trans_choice(':count déposée|:count déposées', $deposees, ['count' => $deposees])
-                    .' · '.trans_choice(':count co-signée|:count co-signées', $cosignees, ['count' => $cosignees])
+                    .' · '.trans_choice(':count en co-auteur|:count en co-auteur', $coauteur, ['count' => $coauteur])
                 : trans_choice(':count déposée|:count déposées', $deposees, ['count' => $deposees]),
             'icone' => 'file',
             'ton' => 'blue',

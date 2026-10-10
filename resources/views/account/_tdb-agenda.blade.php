@@ -58,7 +58,12 @@
                     <div class="b">
                         <div class="t">
                             @if ($e['genre'] === 'passage')
-                                <span class="tdb-ag__me">{{ __('Je présente') }}</span>
+                                {{-- ⚠️ Un co-auteur ne présente pas seul, mais il est en salle
+                                     et peut co-présenter : son créneau figure ici comme celui
+                                     de l'auteur correspondant, avec son rôle NOMMÉ. --}}
+                                <span @class(['tdb-ag__me', 'is-co' => $e['role'] === 'coauteur'])>
+                                    {{ $e['role'] === 'coauteur' ? __('Je co-présente') : __('Je présente') }}
+                                </span>
                             @endif
                             @if ($e['url'])
                                 <a href="{{ $e['url'] }}">{{ \Illuminate\Support\Str::limit($e['titre'], 90) }}</a>

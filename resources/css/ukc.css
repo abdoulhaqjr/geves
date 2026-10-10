@@ -1064,6 +1064,10 @@ body.ukc-overlay-open { overflow: hidden; }
 .ukc-shell .tdb-next__lede .n { font-size: 2.3rem; font-weight: 800; line-height: 1; letter-spacing: -.02em; }
 .ukc-shell .tdb-next__lede .w { font-size: 14.5px; font-weight: 600; color: #e2e8f0; }
 .ukc-shell .tdb-next__title { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.45; }
+/* Le rôle sur le créneau : un co-auteur ne présente pas seul, il co-présente. */
+.ukc-shell .tdb-next__role {
+  margin-top: -6px; font-size: 13px; font-weight: 600; color: #e2e8f0;
+}
 .ukc-shell .tdb-next__acts { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 3px; }
 
 /* ⚠️ Trois boutons POSÉS SUR LE DÉGRADÉ : les variantes `.ukc-btn--*` sont
@@ -1136,6 +1140,7 @@ body.ukc-overlay-open { overflow: hidden; }
 .ukc-shell .tdb .tdb-sub { margin: 0 0 14px; font-size: 13px; color: #64748b; text-align: left; }
 .ukc-shell .tdb .tdb-empty { font-size: 13px; color: #64748b; }
 .ukc-shell .tdb-ok { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 13px; color: #166534; }
+.ukc-shell .tdb-ok--centre { justify-content: center; margin: 0 0 16px; }
 /* ⚠️ Le lien d'en-tête se pousse à droite : `.ukc-card h3` est en
    `justify-content: flex-start` dans l'espace participant (le back-office, lui,
    a une action à droite). Sans ce `margin-left: auto`, il collerait au titre. */
@@ -1193,6 +1198,10 @@ body.ukc-overlay-open { overflow: hidden; }
   background: var(--ukc-blue); color: #fff; font-size: 10.5px; font-weight: 800;
   letter-spacing: .04em; text-transform: uppercase;
 }
+/* ⚠️ « Je co-présente » se distingue de « Je présente » par la CLARTÉ autant que
+   par la teinte : deux bleus voisins ne se séparent pas d'un coup d'œil, et
+   l'écart doit tenir pour qui ne distingue pas les couleurs. */
+.ukc-shell .tdb-ag__me.is-co { background: #e0e7ff; color: #1e3a8a; }
 
 /* ---- Parcours (avant le colloque seulement) ---- */
 .ukc-shell .tdb-steps__list { margin: 0; padding: 0; list-style: none; }

@@ -46,9 +46,25 @@
         <div class="ukc-empty">
             <h3>{{ __('Votre espace se remplira bientôt') }}</h3>
             <p>{{ __('Communications, paiements et attestations apparaîtront ici au fil de votre participation.') }}</p>
-            <a href="{{ route('account.profile') }}" class="ukc-btn ukc-btn--blue">
-                <x-ukc.icon name="user" :size="18" /> {{ __('Compléter mon profil') }}
-            </a>
+            {{-- ⚠️ **Ne jamais réclamer ce qui est déjà fait.** Ce bouton était
+                 « Compléter mon profil » pour TOUT LE MONDE, profil complet
+                 compris : on envoyait corriger une page qui n'avait rien à
+                 corriger. Il suit désormais ce qui manque RÉELLEMENT (`aFaire`,
+                 la même liste que la carte « À faire »), et quand il ne manque
+                 rien on le dit au lieu d'inventer une tâche. --}}
+            @if ($aFaire !== [])
+                <a href="{{ $aFaire[0]['url'] }}" class="ukc-btn ukc-btn--blue">
+                    <x-ukc.icon name="user" :size="18" /> {{ $aFaire[0]['titre'] }}
+                </a>
+            @else
+                <p class="tdb-ok tdb-ok--centre">
+                    <x-ukc.icon name="check-circle" :size="16" />
+                    {{ __('Votre profil est complet : il ne manque qu’une participation à un colloque.') }}
+                </p>
+                <a href="{{ route('home') }}" class="ukc-btn ukc-btn--blue">
+                    <x-ukc.icon name="globe" :size="18" /> {{ __('Voir les colloques') }}
+                </a>
+            @endif
         </div>
     @else
 
@@ -127,6 +143,12 @@
                     <x-ukc.icon name="calendar" :size="16" />
                     {{ $passagePasse ? __('Mon passage') : __('Mon prochain passage') }}
                 </div>
+                @if ($tdb->roleSur($passage) === 'coauteur')
+                    {{-- ⚠️ Un co-auteur ne présente pas seul, mais il co-présente : le
+                         créneau le concerne, et le lui cacher reviendrait à ne rien lui
+                         dire du moment où sa communication passe. Son rôle est nommé. --}}
+                    <div class="tdb-next__role">{{ __('Vous co-présentez cette communication.') }}</div>
+                @endif
                 <div class="tdb-next__lede">
                     <span class="n">{{ $passage->starts_at->format('H\hi') }}</span>
                     <span class="w">
@@ -344,10 +366,11 @@
                 </section>
             @endif
 
-            {{-- Mes communications : déposées ET co-signées.
+            {{-- Mes communications : déposées ET en co-auteur.
                  ⚠️ Cette carte ne montrait que les communications déposées, alors
-                 que /compte/communications y ajoute les co-signatures : le tableau
-                 de bord annonçait un chiffre plus petit que la page qu'il résume. --}}
+                 que /compte/communications y ajoute celles dont il est co-auteur :
+                 le tableau de bord annonçait donc un chiffre plus petit que la page
+                 qu'il résume. --}}
             <section class="ukc-card tdb-comms">
                 <h3>
                     <x-ukc.icon name="file" :size="20" /> {{ __('Mes communications') }}
@@ -355,7 +378,7 @@
                 </h3>
                 <div class="ukc-table-wrap">
                     <table class="ukc-table">
-                        <caption class="tdb-sub">{{ __('Celles que vous avez déposées et celles que vous co-signez.') }}</caption>
+                        <caption class="tdb-sub">{{ __('Celles que vous avez déposées et celles dont vous êtes co-auteur.') }}</caption>
                         <thead>
                             <tr>
                                 <th>{{ __('Communication') }}</th>

@@ -3,11 +3,10 @@
 namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
-use App\Models\Participant;
 use App\Models\Slot;
-use App\Models\Submission;
 use App\Support\CalendarExport;
 use App\Support\CurrentEvent;
+use App\Support\ParticipantDashboard;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -37,25 +36,15 @@ class AgendaController extends Controller
     private function events(): array
     {
         $account = Auth::guard('account')->user();
-        $current = CurrentEvent::current($account);
 
-        $participantIds = Participant::where('user_id', $account->id)
-            ->when($current, fn ($q) => $q->where('event_id', $current->id))
-            ->pluck('id');
+        // ⚠️ **Mêmes créneaux que « Mon prochain passage »** : le tableau de bord
+        // et l'export calendrier décidaient chacun de leur côté de ce qui compte
+        // comme un passage. Depuis qu'un co-auteur y figure (il co-présente), un
+        // bouton « Ajouter à mon agenda » posé sous un créneau que le .ics
+        // n'exportait pas aurait rendu un fichier amputé, sans rien dire.
+        $tdb = new ParticipantDashboard($account, CurrentEvent::current($account));
 
-        $submissionIds = Submission::whereIn('participant_id', $participantIds)
-            ->where('revision_of', 0)->pluck('id');
-
-        $slots = Slot::query()
-            ->whereNotNull('starts_at')
-            ->where(fn ($q) => $q
-                ->whereIn('submission_id', $submissionIds)
-                ->orWhereIn('participant_id', $participantIds))
-            ->with(['submission', 'session', 'event'])
-            ->orderBy('starts_at')
-            ->get();
-
-        return $slots->map(fn (Slot $slot) => self::slotEvent($slot))->values()->all();
+        return $tdb->passages()->map(fn (Slot $slot) => self::slotEvent($slot))->values()->all();
     }
 
     /**

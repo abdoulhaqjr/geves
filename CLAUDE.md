@@ -374,11 +374,24 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   le contrôleur ne fait que résoudre l'événement de contexte. Tout chiffre du
   tableau de bord sort de cette classe - c'est ce qui l'empêche de diverger de la
   page qu'il résume.
-- ⚠️ **Le compteur de communications inclut les CO-SIGNATURES** (dépôt **ou**
-  `authorLinks` confirmée), exactement comme `/compte/communications` : il
-  annonçait « 1 » là où la page d'à côté en listait trois.
-- ⚠️ **« Mon prochain passage » ne retient QUE les communications déposées**, comme
-  l'export `.ics` : un co-signataire ne monte pas forcément à la tribune.
+- ⚠️ **Le mot est « CO-AUTEUR », jamais « co-signataire »** (c'est déjà celui de
+  la fiche de soumission et de la colonne « Mon rôle »). Un seul mot par chose.
+- ⚠️ **Le compteur de communications inclut celles dont le compte est co-auteur**
+  (dépôt **ou** `authorLinks` confirmée), exactement comme
+  `/compte/communications` : il annonçait « 1 » là où la page d'à côté en
+  listait trois.
+- ⚠️ **« Mon prochain passage » retient AUSSI les communications en co-auteur** :
+  un co-auteur ne présente pas seul, mais il **co-présente** - il est en salle à
+  l'heure dite, et c'est ce qu'il vient chercher. Son rôle est NOMMÉ partout
+  (`ParticipantDashboard::roleSur()` → « Je présente » / « Je co-présente »).
+  ⚠️ Le créneau porte le `participant_id` du **déposant** : le rôle se lit sur la
+  communication, jamais sur le créneau. ⚠️ L'export **`.ics` part des mêmes
+  créneaux** (`AgendaController` appelle `passages()`) - un bouton « Ajouter à mon
+  agenda » sous un créneau que le fichier n'exporterait pas serait un piège.
+- ⚠️ **Ne jamais réclamer ce qui est déjà fait** : l'état vide proposait
+  « Compléter mon profil » à tout le monde, profil complet compris. Tout appel à
+  l'action de cet écran sort de **`aFaire()`** ; quand la liste est vide, on le
+  dit au lieu d'inventer une tâche.
 - ⚠️ **Une fonction ne vient pas avec une inscription** : modérateur / rapporteur /
   relecteur sont rapprochés par **e-mail** et peuvent n'avoir aucun `Participant`.
   L'état vide exige donc « ni participation, ni appel ouvert, **ni fonction** ».
