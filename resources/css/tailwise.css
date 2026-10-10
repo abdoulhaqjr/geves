@@ -392,9 +392,12 @@
 .ukc-shell .tw-stat__trend--up { background: rgba(0, 153, 51, .12); color: #16803c; }
 .ukc-shell .tw-stat__trend--down { background: rgba(220, 38, 38, .1); color: #dc2626; }
 .ukc-shell .tw-stat__trend--flat { background: rgba(100, 116, 139, .12); color: #64748b; }
-/* Cartes KPI centrées (espace participant) : icône centrée au-dessus du chiffre. */
-.ukc-shell .account-dashboard .tw-stat { padding-top: 20px; }
-.ukc-shell .account-dashboard .tw-stat__icon { position: static; margin: 0 auto 10px; }
+/* ⚠️ L'espace participant centrait l'icône de ses cartes KPI au-dessus du chiffre
+   (`position: static; margin: 0 auto`). Règle RETIRÉE : le tableau de bord du
+   participant porte les mêmes cartes que le back-office, badge d'angle compris -
+   deux présentations pour le même composant, c'était deux rendus à tenir
+   d'accord, et la version centrée imposait une carte plus haute pour moins
+   d'information. Ne pas la réintroduire. */
 
 /* ===================== Score de relecture (highlight) ===================== */
 .ukc-shell .tw-score {

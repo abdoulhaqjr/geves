@@ -2,26 +2,29 @@
 
 namespace App\Http\Controllers\Account;
 
+use App\Enums\EventPhase;
 use App\Http\Controllers\Controller;
-use App\Models\Attestation;
 use App\Models\Event;
-use App\Models\EventSession;
 use App\Models\Participant;
-use App\Models\Payment;
-use App\Models\Review;
-use App\Models\Slot;
 use App\Models\Submission;
 use App\Support\AccountActivity;
 use App\Support\CurrentEvent;
-use Illuminate\Support\Carbon;
+use App\Support\ParticipantDashboard;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 /**
- * Tableau de bord du participant (Blade, fidèle au mockup espace-participant.html) :
- * parcours (stepper), prochaine étape, et blocs personnels - communications,
- * paiements & reçus, attestations, documents, sessions en direct, rôles dérivés.
- * Lecture seule → Blade.
+ * Tableau de bord du participant.
+ *
+ * ⚠️ **L'écran BASCULE tout seul selon les dates de l'événement** : « avant » on
+ * dépose, on corrige et on règle ; « pendant » on passe en séance et on suit son
+ * programme ; « après » on retire ses documents. La bascule n'a qu'une définition,
+ * {@see EventPhase::participantView()}, dérivée de `Event::phase()` -
+ * celle dont le site public se sert déjà. **Ne pas recomparer des dates ici** :
+ * deux règles finiraient par se contredire sur le même écran.
+ *
+ * L'assemblage des données vit dans {@see ParticipantDashboard} : lecture seule,
+ * donc Blade, et une classe testable sans passer par HTTP.
  */
 class DashboardController extends Controller
 {
@@ -29,151 +32,85 @@ class DashboardController extends Controller
     {
         $account = Auth::guard('account')->user();
 
-        // Événement courant (sélecteur) : le tableau de bord se scope dessus.
+        // Événement courant (sélecteur) : tout le tableau de bord se scope dessus.
         $current = CurrentEvent::current($account);
 
-        $participantIds = Participant::where('user_id', $account->id)
-            ->when($current, fn ($q) => $q->where('event_id', $current->id))
-            ->pluck('id');
-
-        // Rôles et activité dérivés (inter-événements, par rapprochement d'e-mail).
-        $activity = new AccountActivity($account);
-
-        // Documents du colloque courant (médias + livret).
-        $editionIds = $current
-            ? collect([$current->id])
-            : Participant::where('user_id', $account->id)->pluck('event_id')->unique()->filter();
-
-        // Sessions en direct : uniquement les séances EN COURS aujourd'hui qui le
-        // concernent - soit il y présente une communication, soit elles portent sur
-        // l'un de ses axes thématiques.
-        $mySubmissionIds = Submission::whereIn('participant_id', $participantIds)
-            ->where('revision_of', 0)->pluck('id');
-        $myTracks = Submission::whereIn('id', $mySubmissionIds)
-            ->pluck('track')->filter()
-            ->map(fn ($t) => mb_strtolower(trim((string) $t)))->unique();
-        $mySessionIds = Slot::whereIn('submission_id', $mySubmissionIds)
-            ->whereNotNull('session_id')->pluck('session_id')->unique();
-
-        // Agenda personnel : le participant a-t-il au moins un créneau daté ?
-        $hasAgenda = Slot::whereNotNull('starts_at')
-            ->where(fn ($q) => $q
-                ->whereIn('submission_id', $mySubmissionIds)
-                ->orWhereIn('participant_id', $participantIds))
-            ->exists();
-
-        $now = Carbon::now();
-        $liveSessions = EventSession::query()->live()
-            ->whereIn('event_id', $editionIds)
-            ->with(['event', 'atelier'])
-            ->get()
-            ->filter(function (EventSession $s) use ($now, $account, $mySessionIds, $myTracks) {
-                // En cours maintenant (fenêtre horaire de la séance).
-                $inProgress = $s->starts_at && $s->ends_at && $s->starts_at->lte($now) && $s->ends_at->gte($now);
-                if (! $inProgress || ! $s->canJoin($account)) {
-                    return false;
-                }
-                // Le participant y présente une communication ?
-                if ($mySessionIds->contains($s->id)) {
-                    return true;
-                }
-                // La séance porte-t-elle sur l'un de ses axes thématiques ?
-                $sessionTracks = collect($s->atelier?->tracks ?? [])
-                    ->map(fn ($t) => mb_strtolower(trim((string) $t)));
-
-                return $sessionTracks->intersect($myTracks)->isNotEmpty();
-            })
-            ->values();
-
-        $editionDocuments = Event::whereIn('id', $editionIds)
-            ->with(['media' => fn ($q) => $q->orderBy('ordre')->orderBy('id')])
-            ->latest('id')
-            ->get()
-            ->map(fn (Event $e) => [
-                'event' => $e,
-                'media' => $e->media,
-                'hasBooklet' => $e->submissions()
-                    ->where('revision_of', 0)->where('status', 'accepted')->exists(),
-            ])
-            ->filter(fn ($d) => $d['media']->isNotEmpty() || $d['hasBooklet'])
-            ->values();
-
-        // Événement où une communication est acceptée et les frais non encore réglés.
-        $payable = Participant::whereIn('id', $participantIds)
-            ->whereHas('submissions', fn ($q) => $q->where('revision_of', 0)->where('status', 'accepted'))
-            ->whereDoesntHave('participationPayments', fn ($q) => $q->where('status', 'paid'))
-            ->with('event')
-            ->first();
-
-        $openEdition = Event::where('status', 'open')
+        // Appel ouvert, pour un compte qui ne participe encore à rien : il n'a pas
+        // de colloque à sélectionner, et c'est pourtant là qu'il doit déposer.
+        $openEvent = Event::where('status', 'open')
             ->where('submission_open', true)
             ->latest('id')
             ->first();
 
-        // On soumet TOUJOURS dans le colloque sélectionné. Repli sur l'appel ouvert
-        // uniquement pour un compte sans aucune participation (pas de colloque à sélectionner).
-        $submitEdition = $current ?? $openEdition;
-        // Contrôle en amont (avant la saisie) : place restante dans ce colloque.
-        $submitRemaining = $submitEdition ? Submission::remainingFor($submitEdition, $account) : 0;
+        $context = $current ?? $openEvent;
+        $tdb = new ParticipantDashboard($account, $context);
 
-        // Indicateurs synthétiques (rangée de cartes KPI du mockup) :
-        // communications, profil, paiement, jours restants avant l'échéance.
-        $commsCount = Submission::whereIn('participant_id', $participantIds)
-            ->where('revision_of', 0)->count();
-        // ⚠️ Seule la PARTICIPATION compte : une formation réglée est rattachée au
-        // même participant mais ne vaut pas inscription à l'événement.
-        $hasPaid = Payment::whereIn('participant_id', $participantIds)
-            ->forParticipation()->where('status', 'paid')->exists();
-        $deadlineEdition = $payable?->event ?? $openEdition;
-        $deadline = $deadlineEdition?->submission_deadline;
-        $daysRemaining = $deadline && $deadline->isFuture()
-            ? (int) ceil(now()->diffInDays($deadline, false))
-            : null;
+        // On soumet TOUJOURS dans le colloque sélectionné ; contrôle de la place
+        // restante en amont, avant même d'ouvrir le formulaire.
+        $submitEvent = $context;
+        $submitRemaining = $submitEvent ? Submission::remainingFor($submitEvent, $account) : 0;
 
-        // Événement de contexte (pour le bandeau d'accueil : dates & lieu du colloque)
-        // = colloque courant sélectionné, avec replis.
-        $contextEdition = $current ?? $payable?->event ?? $openEdition
-            ?? Event::whereIn('id', $editionIds)->latest('id')->first();
+        // Rôles dérivés (inter-événements, par rapprochement d'e-mail) : ils ne se
+        // scopent PAS sur l'événement courant - un modérateur n'est pas forcément
+        // inscrit à l'événement qu'il modère.
+        $activity = new AccountActivity($account);
+
+        // ⚠️ **Une fonction ne vient pas forcément avec une inscription.** Un
+        // modérateur, un rapporteur ou un relecteur est rapproché par E-MAIL : il
+        // peut n'avoir aucun `Participant`, donc aucun colloque sélectionnable,
+        // donc aucun événement de contexte. L'état vide le renverrait alors sur
+        // « votre espace se remplira bientôt » en lui cachant les séances qu'on
+        // lui a confiées - c'est exactement le défaut que garde un cas d'
+        // `AccountActivityTest`.
+        $fonctions = $activity->moderatedSessions()->isNotEmpty()
+            || $activity->reportedSessions()->isNotEmpty()
+            || $activity->committees()->isNotEmpty()
+            || $activity->isReviewer();
 
         return view('account.dashboard', [
             'account' => $account,
-            'openEdition' => $openEdition,
-            'submitEdition' => $submitEdition,
+            'event' => $context,
+            'phase' => $tdb->phase(),
+            'vue' => $tdb->vue(),
+            'jour' => $tdb->jour(),
+
+            'liveSessions' => $tdb->seancesEnDirect(),
+            'prochainPassage' => $tdb->prochainPassage(),
+            'passages' => $tdb->passages(),
+            'agenda' => $tdb->agenda(),
+            'jourOuvert' => $tdb->jourOuvert(),
+
+            'indicateurs' => $tdb->indicateurs(),
+            'communications' => $tdb->communications(),
+            'tdb' => $tdb,
+
+            'aFaire' => $tdb->aFaire(),
+            'etapes' => $tdb->etapes(),
+            'avancement' => $tdb->avancement(),
+            'documents' => $tdb->documents(),
+
+            'fraisDus' => $tdb->fraisDus(),
+            'submitEvent' => $submitEvent,
             'submitRemaining' => $submitRemaining,
-            'payableEdition' => $payable?->event,
-            'contextEdition' => $contextEdition,
-            'kpi' => [
-                'communications' => $commsCount,
-                // Règle unique (identité + téléphone + affiliation + e-mail vérifié) :
-                // c'est aussi ce qui conditionne le paiement d'une formation.
-                'profileComplete' => $account->profileComplete(),
-                'hasPaid' => $hasPaid,
-                'daysRemaining' => $daysRemaining,
-                'deadline' => $deadline,
-            ],
-            'submissions' => Submission::whereIn('participant_id', $participantIds)
-                ->where('revision_of', 0)->with('event')->latest('id')->limit(5)->get(),
-            'payments' => Payment::whereIn('participant_id', $participantIds)
-                ->forParticipation()->where('status', 'paid')->with('event')->latest('id')->get(),
-            'attestations' => Attestation::whereIn('participant_id', $participantIds)
-                ->where('revoked', false)->with('event')->latest('id')->get(),
-            'editionDocuments' => $editionDocuments,
-            'liveSessions' => $liveSessions,
-            'hasAgenda' => $hasAgenda,
+            'deadline' => $context?->submission_deadline,
+
+            // Documents de l'événement (médias téléversés par l'organisation).
+            'media' => $context
+                ? $context->media()->orderBy('ordre')->orderBy('id')->get()
+                : collect(),
+
             'roles' => $activity->roles(),
             'moderatedSessions' => $activity->moderatedSessions(),
             'reportedSessions' => $activity->reportedSessions(),
             'committees' => $activity->committees(),
             'isReviewer' => $activity->isReviewer(),
-            // ⚠️ « À traiter » = invitée ou acceptée (Review::PENDING_STATUSES).
-            // Un `status != completed` comptait aussi les relectures refusées ou
-            // annulées : le relecteur gardait un badge pour un travail qu'il
-            // n'avait plus à faire.
-            'pendingReviews' => $activity->isReviewer()
-                ? Review::whereIn('reviewer_id', Participant::where('user_id', $account->id)
-                    ->where('role', 'reviewer')->pluck('id'))
-                    ->whereIn('status', Review::PENDING_STATUSES)->count()
-                : 0,
+            'pendingReviews' => $tdb->relecturesEnAttente(),
+
+            // Un compte sans aucune participation, ni appel ouvert, ni fonction :
+            // l'espace est vide, et le dire vaut mieux que des cartes à zéro.
+            'vierge' => $context === null
+                && ! $fonctions
+                && Participant::where('user_id', $account->id)->doesntExist(),
         ]);
     }
 }

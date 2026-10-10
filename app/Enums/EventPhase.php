@@ -69,6 +69,32 @@ enum EventPhase: string
         };
     }
 
+    /**
+     * **Moment du parcours vu du PARTICIPANT**, qui gouverne la disposition de son
+     * tableau de bord : `avant` (déposer, corriger, régler), `pendant` (passer en
+     * séance, suivre le programme), `apres` (retirer ses documents).
+     *
+     * ⚠️ **C'est la bascule automatique du tableau de bord, et elle n'a qu'une
+     * définition.** Elle se dérive de {@see Event::phase()} - donc des DATES de
+     * l'événement, et de l'archivage explicite - au lieu de comparer des dates une
+     * seconde fois dans le contrôleur : le site public range déjà cet événement
+     * dans la même case ({@see publicView()}), et deux règles de dates finiraient
+     * par se contredire sur le même écran.
+     *
+     * ⚠️ Un appel à communications ouvert n'est **pas** « pendant » : tant que le
+     * déroulement n'a pas commencé, le participant dépose et corrige - lui montrer
+     * « votre prochain passage » n'aurait aucun sens. Un brouillon se lit comme un
+     * événement qui n'a pas commencé.
+     */
+    public function participantView(): string
+    {
+        return match ($this) {
+            self::Ongoing => 'pendant',
+            self::Closed => 'apres',
+            self::Draft, self::CallOpen, self::UnderReview, self::Registration => 'avant',
+        };
+    }
+
     /** Est-ce un événement passé (archives) ? */
     public function isPast(): bool
     {

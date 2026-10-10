@@ -65,7 +65,12 @@ it('expose les documents de l’événement sur le tableau de bord participant',
     $this->actingAs($account, 'account')
         ->get(route('account.dashboard'))
         ->assertOk()
-        ->assertSee('Documents de mes événements')
+        // ⚠️ « Documents de mes événements » est devenu « Documents du colloque » :
+        // ce bloc listait les médias de TOUS les événements du compte alors que
+        // tout le reste du tableau de bord se scope sur le colloque sélectionné -
+        // il était le seul à ignorer le sélecteur. Le titre dit désormais ce que
+        // le bloc montre.
+        ->assertSee('Documents du colloque')
         ->assertSee('Programme')
         ->assertSee('Livret des résumés');
 });

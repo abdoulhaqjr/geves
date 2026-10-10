@@ -58,7 +58,10 @@ it('propose au modérateur un accès à son espace depuis le tableau de bord', f
     $this->actingAs($mod, 'account')
         ->get(route('account.dashboard'))
         ->assertOk()
-        ->assertSee('Mes rôles &amp; activité', false)
+        // ⚠️ « Mes rôles & activité » est devenu « Mes fonctions » (le mot du
+        // menu latéral). Ce qui compte ici reste l'ADRESSE de l'espace de
+        // travail, qui ne dépend d'aucun libellé.
+        ->assertSee('Mes fonctions')
         ->assertSee(route('account.moderation'), false);
 });
 

@@ -828,3 +828,54 @@ Ne pas retirer ce réglage ; lors d'une exécution manuelle, fixer également
 - Vérification visuelle effectuée dans le navigateur intégré aux formats bureau et téléphone. La couleur du texte du bouton du bandeau doit garder une spécificité supérieure à `.ukc-scope a:not(.ukc-btn)` ; sinon le texte devient blanc sur blanc.
 - Le modal individuel « Produire / Mettre à jour la vidéo » utilise la largeur standard de 720 px, avec corps défilant et pied de formulaire toujours visible et correctement espacé. Le bloc explicatif « Captures réelles » a été retiré du modal. Le bandeau « Production vidéo assistée » a ensuite été retiré de la page admin pour laisser les guides directement sous les indicateurs.
 - Dans les vidéos rendues par `resources/scripts/tutorial-video-renderer.mjs`, la scène de chaque étape donne la majorité de sa largeur à la capture 16:9 et la montre en entier. Le bandeau « Écran réel GEVES » n'est plus incrusté ; le texte d'étape est plus petit et bleu ardoise. Les MP4 déjà publiés gardent leur ancien montage jusqu'à une nouvelle demande « Mettre à jour la vidéo ».
+
+## Tableau de bord participant — bascule sur les dates (2026-10-10)
+
+`/compte` ne montre plus la même page du début à la fin du colloque : **il bascule
+tout seul** selon le moment du parcours.
+
+- **Une seule définition de la bascule** : `EventPhase::participantView()` rend
+  `avant` / `pendant` / `apres`, dérivé de `Event::phase()` - celui dont le site
+  public se sert déjà (`publicView()`). ⚠️ **Ne jamais recomparer des dates dans
+  le contrôleur ou la vue** : deux règles finiraient par se contredire sur le même
+  écran. Elle suit aussi l'**archivage explicite**, pas seulement l'horloge.
+  - `avant` (brouillon, appel ouvert, évaluation, inscriptions) : échéance, dépôt,
+    parcours complet en sept étapes, tarif applicable.
+  - `pendant` (`Ongoing`) : **mon prochain passage**, mon programme du jour,
+    séances en direct. Le déroulé en étapes disparaît - il n'annoncerait qu'un
+    travail déjà fait.
+  - `apres` (`Closed`) : les documents passent en carte principale.
+- **Assemblage dans `App\Support\ParticipantDashboard`** (lecture seule, testable
+  sans HTTP) : `vue()`, `jour()`, `prochainPassage()`, `passages()`, `agenda()`,
+  `communications()`, `indicateurs()`, `aFaire()`, `etapes()`, `documents()`.
+  Le contrôleur ne fait plus que résoudre l'événement de contexte et passer la main.
+- **Deux manques comblés, tous deux mesurés sur la base de démonstration :**
+  - ⚠️ Le tableau de bord **savait** quand et où le participant présente et ne le
+    disait pas : le contrôleur calculait les créneaux datés pour n'en garder qu'un
+    booléen `$hasAgenda`, qui n'affichait qu'un bouton « Télécharger (.ics) ».
+  - ⚠️ Le compteur de communications ignorait les **co-signatures** : il annonçait
+    « 1 » là où `/compte/communications` en listait trois. Même règle désormais
+    (dépôt **ou** `authorLinks` confirmée).
+- ⚠️ **Le prochain passage ne retient QUE les communications déposées**, comme
+  l'export `.ics` : un co-signataire ne monte pas forcément à la tribune, et lui
+  annoncer « vous présentez à 14h00 » serait pire que de ne rien dire.
+- ⚠️ **Une fonction ne vient pas avec une inscription** : modérateur, rapporteur et
+  relecteur sont rapprochés par **e-mail** et peuvent n'avoir aucun `Participant`,
+  donc aucun événement de contexte. L'état vide ne s'affiche que si le compte n'a
+  **ni participation, ni appel ouvert, ni fonction** - sans cette garde, un
+  modérateur tombait sur « votre espace se remplira bientôt ». Défaut introduit
+  pendant la refonte, attrapé par `AccountActivityTest`.
+- **Les indicateurs portent quatre CHIFFRES.** Deux cartes affichaient une coche
+  (« Profil complet ✓ ») ou des points de suspension : une tâche n'est pas une
+  grandeur, elle ne se compare à rien et n'était pas cliquable. Elle vit dans
+  « À faire », qui ne détaille que ce qui **reste**, avec une barre d'avancement.
+- **Styles sous `.tdb-*`** (`resources/css/ukc.css`, fin de fichier) : la vue
+  portait **62 styles en ligne** contre 10 sur le tableau de bord admin. Il en
+  reste un seul, la largeur calculée de la barre d'avancement.
+- La règle qui centrait l'icône des cartes KPI de l'espace participant a été
+  **retirée** de `tailwise.css` : les cartes sont désormais identiques à celles du
+  back-office, badge d'angle compris.
+- Vues : `account/dashboard.blade.php` + partials `_tdb-agenda` et `_tdb-documents`.
+  Tests : `tests/Feature/ParticipantDashboardTest.php` (15 cas). Mesuré au
+  navigateur : aucun débordement horizontal à 375px ni à 708px, contrastes de 5,02
+  à 11,81:1, pastilles de document à 48px.

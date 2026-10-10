@@ -1003,3 +1003,287 @@ body.ukc-overlay-open { overflow: hidden; }
 .ukc-presence__opt--none input:checked + span { background: #e2e8f0; color: #475569; }
 .ukc-presence__opt input:disabled { cursor: not-allowed; }
 .ukc-presence__opt input:disabled + span { opacity: .65; }
+
+/* =====================================================================
+ | Tableau de bord du participant (`.tdb`)
+ |---------------------------------------------------------------------
+ | ⚠️ Ces règles existent parce que la vue portait **62 styles en ligne**
+ | (contre 10 sur le tableau de bord admin) : aucun n'était réutilisable,
+ | aucun ne répondait à une media query, et deux cartes voisines
+ | divergeaient sans qu'on puisse les corriger d'un seul endroit.
+ |
+ | ⚠️ La disposition BASCULE avec le moment du parcours (`.tdb--avant`,
+ | `.tdb--pendant`, `.tdb--apres`) mais les COMPOSANTS sont les mêmes : la
+ | bascule se joue dans la vue (quel bloc, dans quel ordre), jamais ici.
+ |
+ | ⚠️ **Spécificité** : ce fichier est importé AVANT `admin.css` et
+ | `tailwise.css`. Toute règle qui touche un composant partagé
+ | (`.ukc-stats`, `.ukc-stat-card .val`, `.ukc-table td`) doit donc porter
+ | UNE CLASSE DE PLUS que la leur, sinon elle perd à spécificité égale par
+ | l'ordre source - le piège a déjà coûté un chiffre resté gris.
+ ===================================================================== */
+.ukc-shell .tdb { display: flex; flex-direction: column; gap: 20px; }
+
+/* ---- Séance en direct : elle passe avant tout le reste ---- */
+.ukc-shell .tdb-live {
+  border: 1px solid #fca5a5; border-left: 4px solid #dc2626;
+  border-radius: var(--ukc-radius); background: #fff;
+  box-shadow: 0 2px 10px rgba(20, 40, 90, .04); padding: 6px 18px;
+}
+.ukc-shell .tdb-live__row {
+  display: flex; flex-wrap: wrap; gap: 14px; align-items: center;
+  padding: 12px 0; border-top: 1px solid var(--ukc-border);
+}
+.ukc-shell .tdb-live__row:first-child { border-top: 0; }
+.ukc-shell .tdb-live__row .b { flex: 999 1 380px; min-width: 0; }
+.ukc-shell .tdb-live__row .h { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-bottom: 4px; }
+.ukc-shell .tdb-live__row .h .w { font-size: 13px; font-weight: 600; color: var(--ukc-muted); }
+.ukc-shell .tdb-live__row .t { margin: 0; font-size: 14.5px; font-weight: 600; color: #0f172a; }
+.ukc-shell .tdb-live__tag { display: inline-flex; align-items: center; gap: 6px; }
+.ukc-shell .tdb-live__tag .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+/* ---- Haut de page : la carte « ce qui vient » + le repère du colloque ---- */
+.ukc-shell .tdb-top { display: flex; flex-wrap: wrap; gap: 20px; align-items: stretch; }
+.ukc-shell .tdb-top > .tdb-next { flex: 999 1 540px; min-width: 0; }
+.ukc-shell .tdb-top > .tdb-ctx { flex: 1 1 300px; min-width: 0; }
+
+.ukc-shell .tdb-next {
+  border-radius: var(--ukc-radius); padding: 22px 24px; color: #fff;
+  background: var(--ukc-hero);
+  box-shadow: 0 2px 10px rgba(20, 40, 90, .08);
+  display: flex; flex-direction: column; gap: 13px;
+}
+/* ⚠️ Après le colloque il n'y a plus d'urgence : la même carte, posée à plat. */
+.ukc-shell .tdb-next--calme { background: linear-gradient(135deg, #1f2a52 0%, var(--ukc-blue-dark) 100%); }
+.ukc-shell .tdb-next__eyebrow {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11.5px; font-weight: 800; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--ukc-gold);
+}
+.ukc-shell .tdb-next__lede { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: baseline; }
+.ukc-shell .tdb-next__lede .n { font-size: 2.3rem; font-weight: 800; line-height: 1; letter-spacing: -.02em; }
+.ukc-shell .tdb-next__lede .w { font-size: 14.5px; font-weight: 600; color: #e2e8f0; }
+.ukc-shell .tdb-next__title { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.45; }
+.ukc-shell .tdb-next__acts { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 3px; }
+
+/* ⚠️ Trois boutons POSÉS SUR LE DÉGRADÉ : les variantes `.ukc-btn--*` sont
+   dessinées pour un fond clair et s'y perdraient.
+   ⚠️⚠️ **MESURÉ, et c'est le piège de ce fichier** : tout lien du projet qui n'est
+   pas un `.ukc-btn` prend `color: inherit` par la règle
+   `.ukc-scope a:not(.ukc-btn)`, dont la spécificité est (0,2,1) - `:not()` compte
+   l'argument. Un sélecteur à deux classes y perd, donc `.ukc-shell .tdb-btn-light`
+   était ignoré et le bouton sortait **blanc sur blanc**, texte invisible. Les
+   liens du tableau de bord nomment donc leur élément (`a.tdb-…`) et leur bloc
+   (`.tdb`), ce qui les met à (0,3,1). La même règle vaut pour `.tdb-link` et
+   `.tdb-doc` plus bas. */
+.ukc-shell .tdb a.tdb-btn-light,
+.ukc-shell .tdb a.tdb-btn-ghost,
+.ukc-shell .tdb a.tdb-btn-gold {
+  display: inline-flex; align-items: center; gap: 7px;
+  min-height: 40px; padding: 0 16px; border-radius: 0.6rem;
+  font-size: 13.5px; font-weight: 700; text-decoration: none;
+  transition: background .12s, border-color .12s;
+}
+.ukc-shell .tdb a.tdb-btn-light { background: #fff; color: var(--ukc-blue-dark); }
+.ukc-shell .tdb a.tdb-btn-light:hover { background: #eef2ff; }
+.ukc-shell .tdb a.tdb-btn-gold { background: var(--ukc-gold); color: #3f2d00; font-weight: 800; }
+.ukc-shell .tdb a.tdb-btn-gold:hover { background: #ffe34d; }
+.ukc-shell .tdb a.tdb-btn-ghost {
+  background: rgba(255, 255, 255, .1); color: #fff; font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, .42);
+}
+.ukc-shell .tdb a.tdb-btn-ghost:hover { background: rgba(255, 255, 255, .2); }
+.ukc-shell .tdb-next a:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+.ukc-shell .tdb-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ukc-shell .tdb-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 11px; border-radius: 999px;
+  background: rgba(255, 255, 255, .15);
+  font-size: 12.5px; font-weight: 600; color: #fff;
+}
+.ukc-shell .tdb-chip--gold { background: var(--ukc-gold); color: #3f2d00; font-weight: 800; }
+
+/* ---- Repère du colloque (dates, lieu, axes) ---- */
+.ukc-shell .tdb-ctx { display: flex; flex-direction: column; gap: 11px; }
+.ukc-shell .tdb-ctx__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.ukc-shell .tdb-ctx__head .e {
+  font-size: 11.5px; font-weight: 800; letter-spacing: .09em;
+  text-transform: uppercase; color: #64748b;
+}
+.ukc-shell .tdb-ctx__title { margin: 0; font-size: 16px; font-weight: 700; line-height: 1.35; color: #0f172a; }
+.ukc-shell .tdb-facts { margin: 0; display: flex; flex-direction: column; gap: 9px; font-size: 13.5px; }
+.ukc-shell .tdb-facts > div { display: flex; gap: 10px; }
+.ukc-shell .tdb-facts dt { flex: 0 0 74px; color: #64748b; }
+.ukc-shell .tdb-facts dd { margin: 0; min-width: 0; font-weight: 600; color: #334155; }
+
+/* ---- Indicateurs (spécificité : +1 classe sur admin.css, cf. en-tête) ---- */
+.ukc-shell .ukc-stats.tdb-kpi { margin-bottom: 0; }
+.ukc-shell .tdb-kpi .ukc-stat-card .val .u {
+  font-size: .62em; font-weight: 700; color: var(--ukc-muted); margin-left: 4px;
+}
+.ukc-shell .tdb-kpi .ukc-stat-card .val--blue { color: var(--ukc-blue); }
+.ukc-shell .tdb-kpi .ukc-stat-card .val--green { color: #00772a; }
+.ukc-shell .tdb-kpi .ukc-stat-card .val--amber { color: #b45309; }
+.ukc-shell .tdb-kpi .ukc-stat-card .val--slate { color: #334155; }
+
+/* ---- Deux colonnes. La latérale passe dessous quand la principale étouffe ---- */
+.ukc-shell .tdb-cols { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+.ukc-shell .tdb-main { flex: 999 1 540px; min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+.ukc-shell .tdb-side { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+
+/* ---- Petites pièces partagées ---- */
+.ukc-shell .tdb .tdb-sub { margin: 0 0 14px; font-size: 13px; color: #64748b; text-align: left; }
+.ukc-shell .tdb .tdb-empty { font-size: 13px; color: #64748b; }
+.ukc-shell .tdb-ok { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 13px; color: #166534; }
+/* ⚠️ Le lien d'en-tête se pousse à droite : `.ukc-card h3` est en
+   `justify-content: flex-start` dans l'espace participant (le back-office, lui,
+   a une action à droite). Sans ce `margin-left: auto`, il collerait au titre. */
+/* ⚠️ `a.tdb-link` et non `.tdb-link` : cf. le piège de spécificité documenté plus
+   haut (`.ukc-scope a:not(.ukc-btn)` impose `color: inherit` à (0,2,1)). */
+.ukc-shell .tdb a.tdb-link {
+  margin-left: auto; font-size: 12.5px; font-weight: 700;
+  color: var(--ukc-blue-dark); text-decoration: none; white-space: nowrap;
+}
+.ukc-shell .tdb a.tdb-link:hover { text-decoration: underline; }
+.ukc-shell .tdb a.tdb-link--foot { margin-top: auto; display: inline-flex; align-items: center; gap: 5px; }
+
+/* ---- Agenda personnel ---- */
+.ukc-shell .tdb-days { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.ukc-shell .tdb-day {
+  appearance: none; font: inherit; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 7px;
+  min-height: 36px; padding: 0 13px; border-radius: 999px;
+  border: 1px solid var(--ukc-border); background: #fff;
+  color: #475569; font-size: 12.5px; font-weight: 600;
+  transition: background .12s, border-color .12s, color .12s;
+}
+.ukc-shell .tdb-day:hover { border-color: var(--ukc-blue); color: var(--ukc-blue); }
+.ukc-shell .tdb-day:focus-visible { outline: 2px solid var(--ukc-blue); outline-offset: 2px; }
+.ukc-shell .tdb-day.is-on { background: var(--ukc-blue); border-color: var(--ukc-blue); color: #fff; font-weight: 700; }
+.ukc-shell .tdb-day .t {
+  padding: 1px 7px; border-radius: 999px; background: var(--ukc-gold);
+  color: #3f2d00; font-size: 10.5px; font-weight: 800;
+}
+.ukc-shell .tdb-ag { margin: 0; padding: 0; list-style: none; }
+.ukc-shell .tdb-ag__row {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 13px 0; border-top: 1px solid var(--ukc-border);
+}
+/* ⚠️ Marges négatives ÉGALES au rembourrage latéral de `.ukc-card` (22px) : la
+   ligne du passage est surlignée bord à bord. VÉRIFIÉ : aucune media query ne
+   réduit ce rembourrage dans l'espace participant (seul `.admin-page` le
+   change), donc la valeur est la même à toutes les largeurs - une reprise
+   « mobile » à 16px laisserait justement le liseré blanc de 6px qu'on évite. */
+.ukc-shell .tdb-ag__row.is-mine {
+  margin: 0 -22px; padding-left: 22px; padding-right: 22px; background: #fffbeb;
+}
+.ukc-shell .tdb-ag__row .h { flex: 0 0 62px; font-size: 13.5px; font-weight: 700; color: #0f172a; }
+.ukc-shell .tdb-ag__row .h .f { display: block; font-size: 11.5px; font-weight: 600; color: #94a3b8; }
+.ukc-shell .tdb-ag__row .rail { flex: 0 0 3px; align-self: stretch; border-radius: 2px; background: var(--ukc-border); }
+.ukc-shell .tdb-ag__row.is-mine .rail { background: var(--ukc-gold); }
+.ukc-shell .tdb-ag__row .b { flex: 1 1 auto; min-width: 0; }
+.ukc-shell .tdb-ag__row .b .t { font-size: 14px; font-weight: 600; color: #334155; line-height: 1.4; }
+.ukc-shell .tdb-ag__row .b .t a { color: var(--ukc-blue-dark); text-decoration: none; }
+.ukc-shell .tdb-ag__row .b .t a:hover { text-decoration: underline; }
+.ukc-shell .tdb-ag__row .b .m { margin-top: 3px; font-size: 12.5px; color: #64748b; }
+.ukc-shell .tdb-ag__row .a { flex: 0 0 auto; align-self: center; }
+.ukc-shell .tdb-ag__me {
+  display: inline-block; margin-right: 6px; padding: 2px 8px; border-radius: 999px;
+  background: var(--ukc-blue); color: #fff; font-size: 10.5px; font-weight: 800;
+  letter-spacing: .04em; text-transform: uppercase;
+}
+
+/* ---- Parcours (avant le colloque seulement) ---- */
+.ukc-shell .tdb-steps__list { margin: 0; padding: 0; list-style: none; }
+.ukc-shell .tdb-step { display: flex; gap: 13px; }
+.ukc-shell .tdb-step .g { flex: 0 0 26px; display: flex; flex-direction: column; align-items: center; }
+.ukc-shell .tdb-step .p {
+  width: 26px; height: 26px; flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; border: 2px solid var(--ukc-border); background: #fff;
+  font-size: 11.5px; font-weight: 800; color: #64748b;
+}
+.ukc-shell .tdb-step .r { flex: 1 1 auto; width: 2px; margin: 5px 0; background: var(--ukc-border); }
+.ukc-shell .tdb-step .b { padding: 3px 0 16px; min-width: 0; }
+.ukc-shell .tdb-step .b .t { font-size: 14px; font-weight: 600; color: #334155; }
+.ukc-shell .tdb-step .b .d { margin-top: 2px; font-size: 12.5px; color: #64748b; }
+.ukc-shell .tdb-step.is-fait .p { border-color: #00772a; background: #00772a; color: #fff; }
+.ukc-shell .tdb-step.is-fait .r { background: var(--ukc-green); }
+.ukc-shell .tdb-step.is-encours .p { border-color: #b45309; background: #fffbeb; color: #92400e; }
+.ukc-shell .tdb-step.is-encours .b .t { font-weight: 700; color: #0f172a; }
+.ukc-shell .tdb-step.is-attente { opacity: .58; }
+
+/* ---- À faire ---- */
+.ukc-shell .tdb-bar { height: 7px; border-radius: 999px; background: #eef2f6; overflow: hidden; margin-bottom: 10px; }
+.ukc-shell .tdb-bar > span {
+  display: block; height: 100%; border-radius: 999px;
+  background: linear-gradient(to right, var(--ukc-blue), var(--ukc-green));
+}
+.ukc-shell .tdb-todo__item {
+  display: flex; gap: 11px; align-items: flex-start;
+  padding: 11px 12px; margin-top: 9px;
+  border: 1px solid var(--ukc-border); border-radius: 0.6rem;
+  text-decoration: none; transition: border-color .12s, background .12s;
+}
+.ukc-shell .tdb-todo__item:hover { border-color: var(--ukc-blue); background: #f8fafc; }
+.ukc-shell .tdb-todo__item .i {
+  flex: 0 0 auto; width: 21px; height: 21px; margin-top: 1px;
+  display: flex; align-items: center; justify-content: center; border-radius: 50%;
+}
+.ukc-shell .tdb-todo__item .b { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ukc-shell .tdb-todo__item .t { font-size: 13.5px; font-weight: 700; color: var(--ukc-blue-dark); }
+.ukc-shell .tdb-todo__item .d { font-size: 12px; color: #475569; }
+.ukc-shell .tdb-todo__item.is-warn { border-color: #fde68a; background: #fffbeb; }
+.ukc-shell .tdb-todo__item.is-warn .i { background: #fde68a; color: #92400e; }
+.ukc-shell .tdb-todo__item.is-warn .t { color: #92400e; }
+.ukc-shell .tdb-todo__item.is-warn .d { color: #78350f; }
+.ukc-shell .tdb-todo__item.is-info .i { background: rgba(34, 62, 164, .1); color: var(--ukc-blue); }
+
+/* ---- Mes fonctions ---- */
+.ukc-shell .tdb-role {
+  display: flex; gap: 11px; align-items: center;
+  padding: 11px 0; border-top: 1px solid var(--ukc-border);
+}
+.ukc-shell .tdb-role .i {
+  flex: 0 0 auto; width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 0.5rem; background: rgba(34, 62, 164, .1); color: var(--ukc-blue);
+}
+.ukc-shell .tdb-role .b { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.ukc-shell .tdb-role .t { font-size: 13.5px; font-weight: 700; color: #0f172a; }
+.ukc-shell .tdb-role .d { font-size: 12px; color: #64748b; }
+
+/* ---- Pastilles de document (44px : atteignables au doigt) ---- */
+.ukc-shell .tdb a.tdb-doc {
+  display: flex; gap: 10px; align-items: center;
+  min-height: 44px; padding: 7px 12px; margin-top: 9px;
+  border: 1px solid var(--ukc-border); border-radius: 0.6rem;
+  color: #334155; font-size: 13px; font-weight: 600; text-decoration: none;
+  transition: border-color .12s, background .12s;
+}
+.ukc-shell .tdb a.tdb-doc:hover { border-color: var(--ukc-blue); background: #f8fafc; }
+.ukc-shell .tdb-doc .i { flex: 0 0 auto; display: flex; color: var(--ukc-blue); }
+.ukc-shell .tdb-doc .t { flex: 1 1 auto; min-width: 0; }
+.ukc-shell .tdb-doc .t .d { display: block; font-size: 11.5px; font-weight: 500; color: #64748b; }
+.ukc-shell .tdb-doc .f { flex: 0 0 auto; display: flex; align-items: center; font-size: 11.5px; color: #64748b; }
+.ukc-shell .tdb-docs--grand .tdb-doc { min-height: 52px; font-size: 13.5px; }
+
+.ukc-shell .tdb-help__acts { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ⚠️ `min-width: 0` sur la cellule de titre : sans lui, un titre long refuse de
+   s'enrouler et c'est TOUTE la page qui défile latéralement (piège déjà payé
+   en back-office). */
+.ukc-shell .tdb-comms .ukc-table td { vertical-align: top; min-width: 0; }
+.ukc-shell .tdb-comms .ukc-table .title { font-weight: 600; }
+.ukc-shell .tdb-comms .ukc-table .title a { color: var(--ukc-blue-dark); text-decoration: none; }
+.ukc-shell .tdb-comms .ukc-table .title a:hover { text-decoration: underline; }
+.ukc-shell .tdb-comms .ukc-table .meta { margin-top: 3px; font-size: 12px; color: var(--ukc-muted); }
+.ukc-shell .tdb-comms .ukc-table caption { caption-side: top; }
+
+@media (max-width: 640px) {
+  .ukc-shell .tdb-next { padding: 18px 16px; }
+  .ukc-shell .tdb-next__lede .n { font-size: 1.9rem; }
+  .ukc-shell .tdb-ag__row { flex-wrap: wrap; }
+  .ukc-shell .tdb-ag__row .a { align-self: flex-start; }
+}

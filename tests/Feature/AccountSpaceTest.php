@@ -24,16 +24,22 @@ function participantWithActivity(): array
 }
 
 it('affiche les blocs personnels sur le tableau de bord', function () {
-    ['account' => $account] = participantWithActivity();
+    ['account' => $account, 'payment' => $payment, 'attestation' => $attestation] = participantWithActivity();
 
+    // ⚠️ Le cas vérifiait la présence du mot « Télécharger », qui était le libellé
+    // des boutons des anciennes cartes « Paiements & reçus » / « Mes attestations ».
+    // Les trois cartes de fin de page ont été réunies en UN rang de pastilles, où
+    // chaque pastille porte le NOM du document et son format. On éprouve donc ce
+    // que le cas voulait vraiment dire - « ses pièces sont à portée de clic » -
+    // par les ADRESSES, qui ne dépendent d'aucun libellé.
     $this->actingAs($account, 'account')
         ->get(route('account.dashboard'))
         ->assertOk()
         ->assertSee('26-007')
         ->assertSee('Innovation locale')
-        ->assertSee('Reçu')
-        ->assertSee('Participation')       // attestation type
-        ->assertSee('Télécharger');
+        ->assertSee('Participation')       // type d'attestation
+        ->assertSee(route('account.receipt', $payment))
+        ->assertSee(route('attestation.document', $attestation->uuid));
 });
 
 it('donne au participant l’accès à son reçu', function () {

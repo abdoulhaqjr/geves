@@ -1,351 +1,521 @@
-<x-layouts.participant :title="__('Tableau de bord')" :subtitle="__('Votre parcours, communications & documents')">
-<div class="account-dashboard">
-    {{-- Bandeau : prochaine étape --}}
-    @if (! $account->hasVerifiedEmail())
-        <div class="ukc-alert ukc-alert--warn">
-            <span class="ico"><x-ukc.icon name="mail" :size="18" /></span>
-            <div style="flex:1;">
-                <strong>{{ __('Confirmez votre adresse e-mail') }}</strong> {{ __('pour pouvoir soumettre une communication.') }}
-                <a href="{{ route('account.verification.notice') }}"
-                   style="color:inherit;text-decoration:underline;font-weight:700;">{{ __('Renvoyer le lien') }}</a>
-            </div>
-        </div>
-    @elseif (blank($account->affiliation))
-        <div class="ukc-alert ukc-alert--info">
-            <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
-            <div style="flex:1;">
-                <strong>{{ __('Complétez votre profil') }}</strong> {{ __('(affiliation) pour finaliser votre inscription.') }}
-                <a href="{{ route('account.profile') }}"
-                   style="color:inherit;text-decoration:underline;font-weight:700;">{{ __('Compléter mon profil') }}</a>
-            </div>
-        </div>
-    @endif
+@php
+    // ⚠️ UN SEUL bloc de code PHP dans cette vue, et il vient en premier : Blade
+    // extrait les blocs bruts AVANT de compiler le reste (piège documenté dans
+    // CLAUDE.md). ⚠️⚠️ Et on n'écrit JAMAIS la forme EN LIGNE de cette directive
+    // en toutes lettres dans un commentaire : Blade la reconnaît dans le texte,
+    // sort du bloc à cet endroit, et tout ce qui suit s'imprime tel quel en haut
+    // de la page. Ce fichier l'a payé une fois.
+    $moments = [
+        'avant' => __('Préparez votre participation'),
+        'pendant' => __('Le colloque se déroule en ce moment'),
+        'apres' => __('Le colloque est terminé'),
+    ];
+    $sousTitre = $jour
+        ? __('Jour :n sur :total', ['n' => $jour['n'], 'total' => $jour['total']])
+        : ($moments[$vue] ?? '');
 
-    {{-- Bandeau d'accueil (fidèle au mockup) : bienvenue + dates & lieu du colloque --}}
-    @php
-        $colloqueLine = null;
-        if ($contextEdition && $contextEdition->date_start) {
-            $d1 = $contextEdition->date_start;
-            $d2 = $contextEdition->date_end;
-            $dates = $d2 && $d2->ne($d1)
-                ? $d1->translatedFormat('j').' – '.$d2->translatedFormat('j F Y')
-                : $d1->translatedFormat('j F Y');
-            $colloqueLine = trim($dates.($contextEdition->location ? ' · '.\Illuminate\Support\Str::limit(strip_tags($contextEdition->location), 60) : ''));
-        }
-    @endphp
-    <div class="ukc-alert ukc-alert--info" style="margin-bottom:22px;">
-        <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
-        <div style="flex:1;">
-            {{ __('Bonjour') }} <strong>{{ $account->first_name }}</strong>. {{ __('Suivez l’état de vos soumissions, finalisez votre inscription et téléchargez vos documents.') }}
-            @if ($colloqueLine)<br><strong>{{ __('Colloque :') }} {{ $colloqueLine }}</strong>@endif
-        </div>
-    </div>
+    $dates = null;
+    if ($event && $event->date_start) {
+        $d1 = $event->date_start;
+        $d2 = $event->date_end;
+        $dates = $d2 && $d2->ne($d1)
+            ? $d1->translatedFormat('j').' - '.$d2->translatedFormat('j F Y')
+            : $d1->translatedFormat('j F Y');
+    }
 
-    {{-- Indicateurs synthétiques (rangée KPI, fidèle au mockup) --}}
-    <div class="ukc-grid-4" style="margin-bottom:20px;">
-        <div class="ukc-stat-card tw-stat">
-            <div class="tw-stat__icon tw-stat__icon--blue"><x-ukc.icon name="inbox" :size="20" /></div>
-            <div class="num">{{ $kpi['communications'] }}</div>
-            <div class="lbl">{{ __('Communications') }}</div>
-        </div>
-        <div class="ukc-stat-card tw-stat">
-            <div class="tw-stat__icon tw-stat__icon--{{ $kpi['profileComplete'] ? 'green' : 'amber' }}"><x-ukc.icon name="user" :size="20" /></div>
-            @if ($kpi['profileComplete'])
-                <div class="num" style="color:var(--ukc-green);">✓</div>
-            @else
-                <div class="num" style="color:#b45309;">…</div>
-            @endif
-            <div class="lbl">{{ __('Profil complet') }}</div>
-        </div>
-        <div class="ukc-stat-card tw-stat">
-            <div class="tw-stat__icon tw-stat__icon--{{ $kpi['hasPaid'] ? 'green' : 'violet' }}"><x-ukc.icon name="card" :size="20" /></div>
-            @if ($kpi['hasPaid'])
-                <div class="num" style="color:var(--ukc-green);">✓</div>
-            @else
-                <div class="num" style="color:#b45309;">…</div>
-            @endif
-            <div class="lbl">{{ __('Paiement') }}</div>
-        </div>
-        <div class="ukc-stat-card tw-stat">
-            <div class="tw-stat__icon tw-stat__icon--amber"><x-ukc.icon name="clock" :size="20" /></div>
-            <div class="num">{{ $kpi['daysRemaining'] ?? '-' }}</div>
-            <div class="lbl">{{ __('Jours restants') }}</div>
-        </div>
-    </div>
+    $passage = $prochainPassage;
+    $passagePasse = $passage && ($passage->ends_at ?? $passage->starts_at)?->isPast();
+    $axes = $communications->pluck('track')->filter()->unique()->values();
 
-    {{-- Mon agenda : passages datés → export calendrier (ICS / Google) --}}
-    @if ($hasAgenda)
-        <div class="ukc-card" style="margin-bottom:20px;display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap;">
-            <div style="min-width:0;">
-                <h3 style="margin:0;"><x-ukc.icon name="calendar" :size="20" /> {{ __('Mon agenda') }}</h3>
-                <p style="font-size:.86rem;color:var(--ukc-muted);margin:4px 0 0;">
-                    {{ __('Vos créneaux de passage, avec un rappel une heure avant. Importez-les dans votre agenda.') }}
-                </p>
-            </div>
-            <a href="{{ route('account.agenda.ics') }}" class="ukc-btn ukc-btn--blue ukc-btn--sm" style="flex-shrink:0;">
-                <x-ukc.icon name="download" :size="15" /> {{ __('Télécharger (.ics)') }}
-            </a>
-        </div>
-    @endif
+    // ⚠️ Préparé ICI plutôt qu'en ligne plus bas dans la vue : ce fichier porte
+    // déjà un bloc de code, et la convention du projet est d'employer la même
+    // forme partout dans un tel fichier.
+    $rapportsARediger = $reportedSessions
+        ->filter(fn ($s) => ! $s->report || ! $s->report->isSubmitted())
+        ->count();
+@endphp
 
-    {{-- Sessions en direct maintenant --}}
-    @if ($liveSessions->isNotEmpty())
-        <div class="ukc-card" style="margin-bottom:20px;border-color:#fecaca;background:#fff5f5;">
-            <h3 style="display:flex;align-items:center;gap:8px;">
-                <span class="ukc-pill ukc-pill--err" style="display:inline-flex;align-items:center;gap:5px;">
-                    <span style="width:7px;height:7px;border-radius:50%;background:currentColor;"></span> {{ __('EN DIRECT') }}
-                </span>
-                {{ __('Sessions en cours') }}
-            </h3>
-            @foreach ($liveSessions as $s)
-                <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--ukc-border);">
-                    <div style="min-width:0;">
-                        <div style="font-weight:700;">{{ $s->label }}</div>
-                        <div style="font-size:.82rem;color:var(--ukc-muted);">{{ $s->event?->title }}</div>
-                    </div>
-                    <a href="{{ route('session.meeting', $s) }}" class="ukc-btn ukc-btn--green ukc-btn--sm" style="flex-shrink:0;">
-                        <x-ukc.icon name="video" :size="15" /> {{ __('Rejoindre') }}
-                    </a>
-                </div>
-            @endforeach
-        </div>
-    @endif
+<x-layouts.participant :title="__('Tableau de bord')" :subtitle="$sousTitre">
+<div class="account-dashboard tdb tdb--{{ $vue }}">
 
-    {{-- Bloc principal (fidèle au mockup) : Mes soumissions (table) + Prochaines étapes --}}
-    @php
-        $hasSubs = $submissions->isNotEmpty();
-        $decided = $submissions->contains(fn ($s) => in_array($s->status, ['accepted', 'rejected'], true));
-    @endphp
-    <div class="ukc-grid-2" style="align-items:start;margin-bottom:22px;">
-        {{-- Mes soumissions --}}
-        <div class="ukc-card">
-            <h3>{{ __('Mes soumissions') }}</h3>
-            <div class="ukc-table-wrap">
-                <table class="ukc-table">
-                    <thead>
-                        <tr><th>{{ __('Titre') }}</th><th>{{ __('Atelier') }}</th><th>{{ __('Statut') }}</th></tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($submissions as $s)
-                            <tr>
-                                <td>
-                                    <div class="title"><a href="{{ route('account.submissions.show', $s) }}" style="color:var(--ukc-blue);font-weight:600;">{{ \Illuminate\Support\Str::limit($s->title, 46) }}</a></div>
-                                    <div class="meta" style="font-size:12px;color:var(--ukc-muted);">{{ $s->type === 'poster' ? __('Poster') : __('Orale') }} · {{ $s->ref_code }}@if ($s->created_at) · {{ __('Déposée le') }} {{ $s->created_at->translatedFormat('j M Y') }}@endif</div>
-                                </td>
-                                <td>{{ $s->track ?: '-' }}</td>
-                                <td><span class="ukc-pill ukc-pill--{{ $s->statusPill() }}">{{ $s->statusLabel() }}</span></td>
-                            </tr>
-                        @empty
-                            <tr><td colspan="3" style="padding:18px;text-align:center;color:var(--ukc-muted);">{{ __('Aucune communication déposée.') }}</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-            <div style="margin-top:16px;">
-                <a href="{{ route('account.submissions.index') }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">{{ __('Gérer les soumissions') }}</a>
-            </div>
-        </div>
-
-        {{-- Prochaines étapes --}}
-        <div class="ukc-card">
-            <h3>{{ __('Prochaines étapes') }}</h3>
-            <div class="ukc-steps" style="flex-direction:column;">
-                <div class="ukc-step done">1. {{ __('Compte créé') }}</div>
-                <div @class(['ukc-step', 'done' => $account->hasVerifiedEmail(), 'active' => ! $account->hasVerifiedEmail()])>2. {{ __('E-mail vérifié') }}</div>
-                <div @class(['ukc-step', 'done' => filled($account->affiliation), 'active' => $account->hasVerifiedEmail() && blank($account->affiliation)])>3. {{ __('Profil renseigné') }}</div>
-                <div @class(['ukc-step', 'done' => $hasSubs, 'active' => $account->hasVerifiedEmail() && filled($account->affiliation) && ! $hasSubs])>4. {{ __('Résumé déposé') }}</div>
-                <div @class(['ukc-step', 'done' => $decided, 'active' => $hasSubs && ! $decided])>5. {{ __('Notification d’acceptation') }}</div>
-                <div @class(['ukc-step', 'done' => $payments->isNotEmpty(), 'active' => $payableEdition && $payments->isEmpty()])>6. {{ __('Inscription & paiement') }}</div>
-            </div>
-            @if ($kpi['deadline'])
-                <p style="font-size:13px;color:var(--ukc-muted);margin-top:6px;">
-                    {{ __('Échéance de soumission :') }} <strong>{{ $kpi['deadline']->translatedFormat('j F Y') }}</strong>.
-                </p>
-            @endif
-        </div>
-    </div>
-
-    {{-- Mes rôles & activité (dérivés inter-événements) --}}
-    @if (count($roles) || $moderatedSessions->isNotEmpty() || $reportedSessions->isNotEmpty() || $committees->isNotEmpty() || $isReviewer)
-        <div class="ukc-card" style="margin-bottom:18px;">
-            <h3><x-ukc.icon name="role" :size="20" /> {{ __('Mes rôles & activité') }}</h3>
-            @if (count($roles))
-                <div style="display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 6px;">
-                    @foreach ($roles as $role)
-                        <span class="ukc-pill ukc-pill--info">{{ $role }}</span>
-                    @endforeach
-                </div>
-                <p class="ukc-muted" style="font-size:.8rem;margin:0 0 8px;">{{ __('Rôles dérivés de votre activité sur l’ensemble des événements.') }}</p>
-            @endif
-
-            @if ($moderatedSessions->isNotEmpty() || $reportedSessions->isNotEmpty())
-                <div style="margin-top:8px;">
-                    @foreach ($moderatedSessions as $s)
-                        <div style="padding:6px 0;font-size:.9rem;border-top:1px solid var(--ukc-border);">
-                            <span class="ukc-pill ukc-pill--muted">{{ __('Modérateur') }}</span>
-                            {{ $s->label ?: __('Session') }} <span class="ukc-muted">- {{ $s->event?->title }}</span>
-                        </div>
-                    @endforeach
-                    @foreach ($reportedSessions as $s)
-                        @php($rep = $s->report)
-                        <div style="padding:6px 0;font-size:.9rem;border-top:1px solid var(--ukc-border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                            <span class="ukc-pill ukc-pill--muted">{{ __('Rapporteur') }}</span>
-                            {{ $s->label ?: __('Session') }} <span class="ukc-muted">- {{ $s->event?->title }}</span>
-                            @if ($rep && $rep->isSubmitted())
-                                <span class="ukc-pill ukc-pill--ok">{{ __('Rapport soumis') }}</span>
-                            @elseif ($rep)
-                                <span class="ukc-pill ukc-pill--warn">{{ __('Brouillon') }}</span>
-                            @else
-                                <span class="ukc-pill ukc-pill--warn">{{ __('Rapport à rédiger') }}</span>
-                            @endif
-                        </div>
-                    @endforeach
-                </div>
-            @endif
-
-            @if ($isReviewer)
-                <div style="margin-top:8px;">
-                    <div style="padding:6px 0;font-size:.9rem;border-top:1px solid var(--ukc-border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                        <span class="ukc-pill ukc-pill--muted">{{ __('Relecteur') }}</span>
-                        @if ($pendingReviews > 0)
-                            <span class="ukc-pill ukc-pill--warn">{{ trans_choice(':count relecture à évaluer|:count relectures à évaluer', $pendingReviews, ['count' => $pendingReviews]) }}</span>
-                        @else
-                            <span class="ukc-pill ukc-pill--ok">{{ __('Relectures à jour') }}</span>
-                        @endif
-                    </div>
-                </div>
-            @endif
-
-            @if ($committees->isNotEmpty())
-                <div style="margin-top:8px;">
-                    @foreach ($committees as $c)
-                        <div style="padding:6px 0;font-size:.9rem;border-top:1px solid var(--ukc-border);">
-                            <span class="ukc-pill ukc-pill--muted">{{ __('Comité') }}</span>
-                            {{ $c->person_title ?: __('Membre') }} <span class="ukc-muted">- {{ $c->event?->title }}</span>
-                        </div>
-                    @endforeach
-                </div>
-            @endif
-
-            @if ($moderatedSessions->isNotEmpty() || $reportedSessions->isNotEmpty() || $isReviewer)
-                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;">
-                    @if ($moderatedSessions->isNotEmpty())
-                        <a href="{{ route('account.moderation') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">
-                            <x-ukc.icon name="mic" :size="16" /> {{ __('Séances à animer') }}
-                        </a>
-                    @endif
-                    @if ($reportedSessions->isNotEmpty())
-                        <a href="{{ route('account.reports') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">
-                            <x-ukc.icon name="sheet" :size="16" /> {{ __('Séances à rapporter') }}
-                        </a>
-                    @endif
-                    @if ($isReviewer)
-                        <a href="{{ route('account.reviews') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">
-                            <x-ukc.icon name="inbox" :size="16" /> {{ __('Mes relectures') }}
-                        </a>
-                    @endif
-                </div>
-            @endif
-        </div>
-    @endif
-
-    @if ($payableEdition)
-        <div class="ukc-card" style="text-align:center;background:linear-gradient(135deg,rgba(0,153,51,.08),rgba(34,62,164,.06));margin-bottom:18px;">
-            <h3 style="justify-content:center;">{{ __('Communication acceptée') }}</h3>
-            <p style="color:var(--ukc-muted);margin:6px 0 18px;">{{ __('Réglez vos frais d’inscription pour finaliser votre participation à') }} « {{ $payableEdition->title }} ».</p>
-            <a href="{{ route('account.payment', $payableEdition) }}" class="ukc-btn ukc-btn--green">
-                <x-ukc.icon name="card" :size="18" /> {{ __('Payer mes frais') }}
-            </a>
-        </div>
-    @endif
-
-    @if ($submitEdition && $submitEdition->submission_open)
-        <div class="ukc-card" style="text-align:center;background:linear-gradient(135deg,rgba(34,62,164,.06),rgba(0,153,51,.06));margin-bottom:20px;">
-            <h3 style="justify-content:center;">{{ __('Appel à communications ouvert') }}</h3>
-            <p style="color:var(--ukc-muted);margin:6px 0 18px;">{{ $submitEdition->title }}</p>
-            @if ($submitRemaining > 0)
-                <a href="{{ route('account.submissions.create', $submitEdition->slug) }}" class="ukc-btn ukc-btn--blue">
-                    <x-ukc.icon name="upload" :size="18" /> {{ __('Soumettre une communication') }}
-                </a>
-            @else
-                {{-- Contrôle en amont : quota atteint pour ce colloque, avant même d'ouvrir le formulaire. --}}
-                <span class="ukc-pill ukc-pill--muted">{{ __('Nombre maximum de communications atteint pour ce colloque.') }}</span>
-            @endif
-        </div>
-    @endif
-
-    @php($hasContent = $submissions->isNotEmpty() || $payments->isNotEmpty() || $attestations->isNotEmpty())
-
-    @if ($hasContent)
-        <div class="ukc-grid-2" style="align-items:start;">
-            {{-- Paiements & reçus --}}
-                <div class="ukc-card">
-                    <h3><x-ukc.icon name="receipt" :size="20" /> {{ __('Paiements & reçus') }}</h3>
-                    @forelse ($payments as $p)
-                        <div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--ukc-border);align-items:center;">
-                            <span style="font-size:.88rem;">
-                                <strong>{{ number_format((float) $p->amount, 0, ',', ' ') }} {{ $p->currency }}</strong>
-                                <span style="color:var(--ukc-muted);"> · {{ $p->event?->year }}</span>
-                            </span>
-                            <a href="{{ route('account.receipt', $p) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
-                                <x-ukc.icon name="download" :size="14" /> {{ __('Reçu') }}
-                            </a>
-                        </div>
-                    @empty
-                        <p style="font-size:.88rem;color:var(--ukc-muted);">{{ __('Aucun paiement réglé.') }}</p>
-                    @endforelse
-                </div>
-
-                <div class="ukc-card">
-                    <h3><x-ukc.icon name="award" :size="20" /> {{ __('Mes attestations') }}</h3>
-                    @forelse ($attestations as $a)
-                        <div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--ukc-border);align-items:center;">
-                            <span style="font-size:.88rem;">{{ $a->typeLabel() }}
-                                <span style="color:var(--ukc-muted);"> · {{ $a->event?->year }}</span>
-                            </span>
-                            <a href="{{ route('attestation.document', $a->uuid) }}" target="_blank" class="ukc-btn ukc-btn--outline ukc-btn--sm">
-                                <x-ukc.icon name="diploma" :size="14" /> {{ __('Télécharger') }}
-                            </a>
-                        </div>
-                    @empty
-                        <p style="font-size:.88rem;color:var(--ukc-muted);">{{ __('Aucune attestation pour le moment.') }}</p>
-                    @endforelse
-                </div>
-        </div>
-    @elseif (! $openEdition)
+    {{-- ===================================================================
+         Un compte sans participation ni appel ouvert : l'espace est vide, et le
+         dire vaut mieux qu'une rangée de cartes à zéro.
+    =================================================================== --}}
+    @if ($vierge)
         <div class="ukc-empty">
             <h3>{{ __('Votre espace se remplira bientôt') }}</h3>
-            <p>{{ __('Communications, paiements et attestation apparaîtront ici au fil de votre participation.') }}</p>
+            <p>{{ __('Communications, paiements et attestations apparaîtront ici au fil de votre participation.') }}</p>
             <a href="{{ route('account.profile') }}" class="ukc-btn ukc-btn--blue">
                 <x-ukc.icon name="user" :size="18" /> {{ __('Compléter mon profil') }}
             </a>
         </div>
-    @endif
+    @else
 
-    {{-- Documents de mes événements --}}
-    @if ($editionDocuments->isNotEmpty())
-        <div class="ukc-card" style="margin-top:18px;">
-            <h3><x-ukc.icon name="folder" :size="20" /> {{ __('Documents de mes événements') }}</h3>
-            @foreach ($editionDocuments as $doc)
-                <div style="padding:12px 0;border-top:1px solid var(--ukc-border);">
-                    <div style="font-weight:700;margin-bottom:8px;">{{ $doc['event']->title ?: $doc['event']->year }}</div>
-                    <div style="display:flex;flex-wrap:wrap;gap:8px;">
-                        @if ($doc['hasBooklet'])
-                            <a href="{{ route('account.documents.livret', $doc['event']) }}" target="_blank"
-                               class="ukc-btn ukc-btn--outline ukc-btn--sm">
-                                <x-ukc.icon name="book" :size="14" /> {{ __('Livret des résumés') }}
-                            </a>
-                        @endif
-                        @foreach ($doc['media'] as $m)
-                            <a href="{{ $m->url }}" target="_blank" class="ukc-btn ukc-btn--ghost ukc-btn--sm">
-                                <x-ukc.icon name="file" :size="14" /> {{ $m->title ?: $m->typeLabel() }}
-                            </a>
-                        @endforeach
+    {{-- ===================================================================
+         1. EN DIRECT - une séance en cours passe AVANT TOUT LE RESTE.
+         ⚠️ Elle était rendue en quatrième position, sous deux bandeaux et la
+         rangée d'indicateurs : la chose la plus urgente de l'écran se trouvait
+         sous ce qui ne presse pas.
+    =================================================================== --}}
+    @if ($liveSessions->isNotEmpty())
+        <section class="tdb-live" aria-label="{{ __('Séances en direct') }}">
+            @foreach ($liveSessions as $s)
+                <div class="tdb-live__row">
+                    <div class="b">
+                        <div class="h">
+                            <span class="ukc-pill ukc-pill--err tdb-live__tag">
+                                <span class="dot" aria-hidden="true"></span>{{ __('EN DIRECT') }}
+                            </span>
+                            <span class="w">{{ $s->atelier?->title ?: $s->label }}@if ($s->room) · {{ __('Salle') }} {{ $s->room }}@endif</span>
+                        </div>
+                        <p class="t">{{ __('Cette séance vous concerne et elle a commencé.') }}</p>
                     </div>
+                    <a href="{{ route('session.meeting', $s) }}" class="ukc-btn ukc-btn--green">
+                        <x-ukc.icon name="video" :size="16" /> {{ __('Rejoindre la salle') }}
+                    </a>
                 </div>
             @endforeach
+        </section>
+    @endif
+
+    {{-- ===================================================================
+         2. La carte haute : ce qui vient. Son contenu EST la bascule.
+    =================================================================== --}}
+    <div class="tdb-top">
+
+        @if (! $event)
+            {{-- ⚠️ Un modérateur, un rapporteur ou un relecteur est rapproché par
+                 E-MAIL : il peut n'avoir aucune inscription, donc aucun colloque à
+                 sélectionner. Lui annoncer une échéance de dépôt n'aurait aucun
+                 sens ; ce qu'on lui doit, ce sont ses séances. --}}
+            <article class="tdb-next tdb-next--calme">
+                <div class="tdb-next__eyebrow">
+                    <x-ukc.icon name="users" :size="16" /> {{ __('Mon espace') }}
+                </div>
+                <div class="tdb-next__lede">
+                    <span class="n">{{ __('Mes fonctions') }}</span>
+                </div>
+                <p class="tdb-next__title">
+                    {{ __('Vous n’êtes inscrit à aucun colloque pour l’instant. Les séances et les relectures que l’organisation vous a confiées restent accessibles ci-dessous.') }}
+                </p>
+                <div class="tdb-next__acts">
+                    @if ($moderatedSessions->isNotEmpty())
+                        <a href="{{ route('account.moderation') }}" class="tdb-btn-light">
+                            <x-ukc.icon name="mic" :size="15" /> {{ __('Séances à modérer') }}
+                        </a>
+                    @endif
+                    @if ($reportedSessions->isNotEmpty())
+                        <a href="{{ route('account.reports') }}" class="tdb-btn-ghost">
+                            <x-ukc.icon name="sheet" :size="15" /> {{ __('Séances à rapporter') }}
+                        </a>
+                    @endif
+                    @if ($isReviewer)
+                        <a href="{{ route('account.reviews') }}" class="tdb-btn-ghost">
+                            <x-ukc.icon name="inbox" :size="15" /> {{ __('Mes relectures') }}
+                        </a>
+                    @endif
+                </div>
+            </article>
+
+        @elseif ($vue === 'pendant' && $passage)
+            {{-- ⚠️ Le contrôleur calculait déjà ces créneaux pour n'en garder qu'un
+                 booléen : l'écran savait quand et où le participant présente, et ne
+                 le disait pas - il offrait seulement un bouton de téléchargement. --}}
+            <article class="tdb-next">
+                <div class="tdb-next__eyebrow">
+                    <x-ukc.icon name="calendar" :size="16" />
+                    {{ $passagePasse ? __('Mon passage') : __('Mon prochain passage') }}
+                </div>
+                <div class="tdb-next__lede">
+                    <span class="n">{{ $passage->starts_at->format('H\hi') }}</span>
+                    <span class="w">
+                        {{ \Illuminate\Support\Str::ucfirst($passage->starts_at->translatedFormat('l j F')) }}
+                        · {{ $passage->starts_at->diffForHumans() }}
+                    </span>
+                </div>
+                <p class="tdb-next__title">{{ $passage->submission?->title ?: __('Ma communication') }}</p>
+                <div class="tdb-chips">
+                    @if ($passage->room || $passage->session?->room)
+                        <span class="tdb-chip"><x-ukc.icon name="pin" :size="13" /> {{ __('Salle') }} {{ $passage->room ?: $passage->session->room }}</span>
+                    @endif
+                    @if ($passage->session?->label || $passage->session_label)
+                        <span class="tdb-chip">{{ $passage->session?->label ?: $passage->session_label }}</span>
+                    @endif
+                    @if ($passage->starts_at && $passage->ends_at)
+                        <span class="tdb-chip">{{ (int) $passage->starts_at->diffInMinutes($passage->ends_at) }} {{ __('min') }}</span>
+                    @endif
+                    @if ($passage->submission?->ref_code)
+                        <span class="tdb-chip tdb-chip--gold">{{ $passage->submission->ref_code }}</span>
+                    @endif
+                    @if ($passage->wasPresented())
+                        <span class="tdb-chip tdb-chip--gold">{{ __('Passage constaté') }}</span>
+                    @endif
+                </div>
+                <div class="tdb-next__acts">
+                    @if ($passage->session && $passage->session->isLive())
+                        <a href="{{ route('session.meeting', $passage->session) }}" class="ukc-btn ukc-btn--green">
+                            <x-ukc.icon name="video" :size="16" /> {{ __('Rejoindre ma séance') }}
+                        </a>
+                    @endif
+                    @if ($passage->submission)
+                        <a href="{{ route('account.submissions.show', $passage->submission) }}" class="tdb-btn-light">
+                            <x-ukc.icon name="file" :size="15" /> {{ __('Ma communication') }}
+                        </a>
+                    @endif
+                    <a href="{{ route('account.agenda.ics') }}" class="tdb-btn-ghost">
+                        <x-ukc.icon name="download" :size="15" /> {{ __('Ajouter à mon agenda (.ics)') }}
+                    </a>
+                </div>
+            </article>
+
+        @elseif ($vue === 'apres')
+            <article class="tdb-next tdb-next--calme">
+                <div class="tdb-next__eyebrow">
+                    <x-ukc.icon name="award" :size="16" /> {{ __('Ce qu’il vous reste à retirer') }}
+                </div>
+                <div class="tdb-next__lede">
+                    <span class="n">{{ count($documents) }}</span>
+                    <span class="w">{{ trans_choice('document disponible|documents disponibles', count($documents)) }}</span>
+                </div>
+                <p class="tdb-next__title">
+                    {{ __('Le colloque est terminé. Vos reçus, attestations et le livre des résumés restent accessibles ici, et vos attestations restent vérifiables publiquement.') }}
+                </p>
+                <div class="tdb-next__acts">
+                    <a href="{{ route('account.documents') }}" class="tdb-btn-light">
+                        <x-ukc.icon name="folder" :size="15" /> {{ __('Mes documents') }}
+                    </a>
+                    <a href="{{ route('account.testimonials') }}" class="tdb-btn-ghost">
+                        <x-ukc.icon name="sparkles" :size="15" /> {{ __('Laisser un témoignage') }}
+                    </a>
+                </div>
+            </article>
+
+        @else
+            {{-- Avant le colloque : l'échéance et la place restante. --}}
+            <article class="tdb-next">
+                <div class="tdb-next__eyebrow">
+                    <x-ukc.icon name="clock" :size="16" /> {{ __('Ma prochaine étape') }}
+                </div>
+                @if ($fraisDus)
+                    <div class="tdb-next__lede">
+                        <span class="n">{{ __('À régler') }}</span>
+                        <span class="w">{{ __('vos frais d’inscription') }}</span>
+                    </div>
+                    <p class="tdb-next__title">{{ __('Votre communication est acceptée pour « :event ». Réglez vos frais pour finaliser votre participation.', ['event' => $fraisDus->title]) }}</p>
+                    <div class="tdb-next__acts">
+                        <a href="{{ route('account.payment', $fraisDus) }}" class="tdb-btn-gold">
+                            <x-ukc.icon name="card" :size="16" /> {{ __('Payer mes frais') }}
+                        </a>
+                    </div>
+                @elseif ($submitEvent && $submitEvent->submission_open)
+                    <div class="tdb-next__lede">
+                        @if ($deadline && $deadline->isFuture())
+                            <span class="n">J-{{ (int) ceil(now()->diffInDays($deadline, false)) }}</span>
+                            <span class="w">{{ __('clôture des dépôts le :date', ['date' => $deadline->translatedFormat('j F Y')]) }}</span>
+                        @else
+                            <span class="n">{{ __('Appel ouvert') }}</span>
+                            <span class="w">{{ $submitEvent->title }}</span>
+                        @endif
+                    </div>
+                    <p class="tdb-next__title">
+                        @if ($submitRemaining > 0)
+                            {{ trans_choice(
+                                'Il vous reste :count dépôt possible dans ce colloque.|Il vous reste :count dépôts possibles dans ce colloque.',
+                                $submitRemaining, ['count' => $submitRemaining]
+                            ) }}
+                        @else
+                            {{ __('Vous avez atteint le nombre maximum de communications pour ce colloque. Vos résumés suivent leur relecture.') }}
+                        @endif
+                    </p>
+                    <div class="tdb-next__acts">
+                        @if ($submitRemaining > 0)
+                            <a href="{{ route('account.submissions.create', $submitEvent->slug) }}" class="tdb-btn-gold">
+                                <x-ukc.icon name="upload" :size="16" /> {{ __('Déposer un résumé') }}
+                            </a>
+                        @endif
+                        <a href="{{ route('account.submissions.index') }}" class="tdb-btn-ghost">
+                            <x-ukc.icon name="file" :size="15" /> {{ __('Mes communications') }}
+                        </a>
+                    </div>
+                @else
+                    <div class="tdb-next__lede">
+                        <span class="n">{{ __('En relecture') }}</span>
+                        @if ($dates)<span class="w">{{ __('rendez-vous du :dates', ['dates' => $dates]) }}</span>@endif
+                    </div>
+                    <p class="tdb-next__title">{{ __('Les dépôts sont clos. Vous serez prévenu dès que le comité scientifique aura rendu sa décision.') }}</p>
+                    <div class="tdb-next__acts">
+                        <a href="{{ route('account.submissions.index') }}" class="tdb-btn-light">
+                            <x-ukc.icon name="file" :size="15" /> {{ __('Mes communications') }}
+                        </a>
+                    </div>
+                @endif
+            </article>
+        @endif
+
+        {{-- Le colloque : dates, lieu, axes. Un repère, pas une alerte. --}}
+        <aside class="ukc-card tdb-ctx">
+            <div class="tdb-ctx__head">
+                <span class="e">{{ __('Le colloque') }}</span>
+                @if ($phase)
+                    <span class="ukc-pill ukc-pill--{{ $phase->pill() }}">{{ $phase->label() }}</span>
+                @endif
+            </div>
+            @if ($event)
+                <p class="tdb-ctx__title">{{ $event->title ?: $event->series?->name }}</p>
+                <dl class="tdb-facts">
+                    @if ($dates)
+                        <div><dt>{{ __('Dates') }}</dt><dd>{{ $dates }}</dd></div>
+                    @endif
+                    @if ($event->location)
+                        <div><dt>{{ __('Lieu') }}</dt><dd>{{ \Illuminate\Support\Str::limit(strip_tags($event->location), 70) }}</dd></div>
+                    @endif
+                    @if ($axes->isNotEmpty())
+                        <div><dt>{{ trans_choice('Mon axe|Mes axes', $axes->count()) }}</dt>
+                            <dd>{{ $axes->map(fn ($a) => \Illuminate\Support\Str::limit($a, 48))->implode(' · ') }}</dd></div>
+                    @endif
+                </dl>
+                <a href="{{ route('public.colloque', $event->slug) }}" class="tdb-link tdb-link--foot">
+                    {{ __('Page du colloque') }} <x-ukc.icon name="chevron" :size="14" />
+                </a>
+            @else
+                <p class="tdb-empty">{{ __('Aucun colloque sélectionné.') }}</p>
+            @endif
+        </aside>
+    </div>
+
+    {{-- ===================================================================
+         3. Indicateurs : QUATRE CHIFFRES.
+         ⚠️ Deux des quatre cartes portaient une coche (« Profil complet ✓ ») ou
+         des points de suspension : une tâche n'est pas une grandeur, elle ne se
+         compare à rien et elle n'était pas cliquable. Elle est passée dans
+         « À faire ».
+    =================================================================== --}}
+    <div class="ukc-stats tdb-kpi">
+        @foreach ($indicateurs as $i)
+            <div class="ukc-stat-card tw-stat">
+                <div class="tw-stat__icon tw-stat__icon--{{ $i['ton'] }}"><x-ukc.icon :name="$i['icone']" :size="20" /></div>
+                <div class="lbl">{{ $i['libelle'] }}</div>
+                <div class="val val--{{ $i['ton'] }}">{{ $i['valeur'] }}@if ($i['unite'] !== '')<span class="u">{{ $i['unite'] }}</span>@endif</div>
+                @if ($i['detail'] !== '')<div class="hint">{{ $i['detail'] }}</div>@endif
+            </div>
+        @endforeach
+    </div>
+
+    {{-- ===================================================================
+         4. Deux colonnes. La latérale passe dessous sous 960px.
+    =================================================================== --}}
+    <div class="tdb-cols">
+        <div class="tdb-main">
+
+            @if ($vue === 'apres')
+                @include('account._tdb-documents', ['grand' => true])
+            @elseif ($agenda !== [])
+                @include('account._tdb-agenda')
+            @endif
+
+            {{-- Le parcours en entier : il RENSEIGNE avant le colloque (il dit ce
+                 qui vient). Pendant et après, il n'annoncerait qu'un travail déjà
+                 fait - c'est « À faire » qui prend le relais. --}}
+            @if ($vue === 'avant')
+                <section class="ukc-card tdb-steps">
+                    <h3><x-ukc.icon name="list" :size="20" /> {{ __('Mon parcours') }}</h3>
+                    <p class="tdb-sub">{{ __('De la création du compte à l’attestation.') }}</p>
+                    <ol class="tdb-steps__list">
+                        @foreach ($etapes as $k => $etape)
+                            <li @class(['tdb-step', 'is-'.$etape['etat']])>
+                                <div class="g">
+                                    <span class="p">
+                                        @if ($etape['etat'] === 'fait')
+                                            <x-ukc.icon name="check" :size="13" />
+                                        @else
+                                            {{ $k + 1 }}
+                                        @endif
+                                    </span>
+                                    @unless ($loop->last)<span class="r" aria-hidden="true"></span>@endunless
+                                </div>
+                                <div class="b">
+                                    <div class="t">{{ $etape['titre'] }}</div>
+                                    @if ($etape['detail'] !== '')<div class="d">{{ $etape['detail'] }}</div>@endif
+                                </div>
+                            </li>
+                        @endforeach
+                    </ol>
+                </section>
+            @endif
+
+            {{-- Mes communications : déposées ET co-signées.
+                 ⚠️ Cette carte ne montrait que les communications déposées, alors
+                 que /compte/communications y ajoute les co-signatures : le tableau
+                 de bord annonçait un chiffre plus petit que la page qu'il résume. --}}
+            <section class="ukc-card tdb-comms">
+                <h3>
+                    <x-ukc.icon name="file" :size="20" /> {{ __('Mes communications') }}
+                    <a href="{{ route('account.submissions.index') }}" class="tdb-link">{{ __('Gérer mes soumissions') }}</a>
+                </h3>
+                <div class="ukc-table-wrap">
+                    <table class="ukc-table">
+                        <caption class="tdb-sub">{{ __('Celles que vous avez déposées et celles que vous co-signez.') }}</caption>
+                        <thead>
+                            <tr>
+                                <th>{{ __('Communication') }}</th>
+                                <th>{{ __('Mon rôle') }}</th>
+                                <th>{{ __('État') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($communications as $s)
+                                <tr>
+                                    <td>
+                                        <div class="title">
+                                            <a href="{{ route('account.submissions.show', $s) }}">{{ \Illuminate\Support\Str::limit($s->title, 64) }}</a>
+                                        </div>
+                                        <div class="meta">
+                                            {{ collect([
+                                                $s->ref_code,
+                                                $s->type === 'poster' ? __('Poster') : __('Orale'),
+                                                $s->track ? \Illuminate\Support\Str::limit($s->track, 34) : null,
+                                            ])->filter()->implode(' · ') }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @if ($tdb->estCorrespondant($s))
+                                            <span class="ukc-pill ukc-pill--info">{{ __('Auteur correspondant') }}</span>
+                                        @else
+                                            <span class="ukc-pill ukc-pill--muted">{{ __('Co-auteur') }}</span>
+                                        @endif
+                                    </td>
+                                    <td><span class="ukc-pill ukc-pill--{{ $s->statusPill() }}">{{ $s->statusLabel() }}</span></td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="3" class="tdb-empty">{{ __('Aucune communication pour l’instant.') }}</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </section>
         </div>
+
+        <div class="tdb-side">
+
+            {{-- À faire : seulement ce qui RESTE, et chaque ligne est cliquable. --}}
+            <section class="ukc-card tdb-todo">
+                <h3>
+                    <x-ukc.icon name="check-circle" :size="20" /> {{ __('À faire') }}
+                    @if ($aFaire !== [])<span class="ukc-pill ukc-pill--warn">{{ count($aFaire) }}</span>@endif
+                </h3>
+                <div class="tdb-bar" role="img"
+                     aria-label="{{ __(':faites étapes franchies sur :total', ['faites' => $avancement['faites'], 'total' => $avancement['total']]) }}">
+                    <span style="width: {{ round(100 * $avancement['faites'] / max(1, $avancement['total'])) }}%"></span>
+                </div>
+                <p class="tdb-sub">{{ __(':faites étapes sur :total sont derrière vous.', ['faites' => $avancement['faites'], 'total' => $avancement['total']]) }}</p>
+
+                @forelse ($aFaire as $tache)
+                    <a href="{{ $tache['url'] }}" @class(['tdb-todo__item', 'is-'.$tache['ton']])>
+                        <span class="i"><x-ukc.icon name="info" :size="13" /></span>
+                        <span class="b">
+                            <span class="t">{{ $tache['titre'] }}</span>
+                            <span class="d">{{ $tache['detail'] }}</span>
+                        </span>
+                    </a>
+                @empty
+                    <p class="tdb-ok"><x-ukc.icon name="check-circle" :size="16" /> {{ __('Rien ne vous attend. Tout est à jour.') }}</p>
+                @endforelse
+            </section>
+
+            {{-- Mes fonctions : ce que le colloque vous a confié. --}}
+            @if ($moderatedSessions->isNotEmpty() || $reportedSessions->isNotEmpty() || $isReviewer || $committees->isNotEmpty())
+                <section class="ukc-card tdb-roles">
+                    <h3><x-ukc.icon name="users" :size="20" /> {{ __('Mes fonctions') }}</h3>
+                    <p class="tdb-sub">{{ __('Ce que le colloque vous a confié.') }}</p>
+
+                    @if ($moderatedSessions->isNotEmpty())
+                        <div class="tdb-role">
+                            <span class="i"><x-ukc.icon name="mic" :size="17" /></span>
+                            <span class="b">
+                                <span class="t">{{ __('Modérateur') }}</span>
+                                <span class="d">{{ trans_choice(':count séance à modérer|:count séances à modérer', $moderatedSessions->count(), ['count' => $moderatedSessions->count()]) }}</span>
+                            </span>
+                            <a href="{{ route('account.moderation') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">{{ __('Ouvrir') }}</a>
+                        </div>
+                    @endif
+                    @if ($reportedSessions->isNotEmpty())
+                        <div class="tdb-role">
+                            <span class="i"><x-ukc.icon name="sheet" :size="17" /></span>
+                            <span class="b">
+                                <span class="t">{{ __('Rapporteur') }}</span>
+                                <span class="d">
+                                    @if ($rapportsARediger > 0)
+                                        {{ trans_choice(':count rapport à rédiger|:count rapports à rédiger', $rapportsARediger, ['count' => $rapportsARediger]) }}
+                                    @else
+                                        {{ __('Rapports à jour') }}
+                                    @endif
+                                </span>
+                            </span>
+                            <a href="{{ route('account.reports') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">{{ __('Ouvrir') }}</a>
+                        </div>
+                    @endif
+                    @if ($isReviewer)
+                        <div class="tdb-role">
+                            <span class="i"><x-ukc.icon name="inbox" :size="17" /></span>
+                            <span class="b">
+                                <span class="t">{{ __('Relecteur') }}</span>
+                                <span class="d">
+                                    @if ($pendingReviews > 0)
+                                        {{ trans_choice(':count relecture à évaluer|:count relectures à évaluer', $pendingReviews, ['count' => $pendingReviews]) }}
+                                    @else
+                                        {{ __('Relectures à jour') }}
+                                    @endif
+                                </span>
+                            </span>
+                            <a href="{{ route('account.reviews') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">{{ __('Ouvrir') }}</a>
+                        </div>
+                    @endif
+                    @foreach ($committees as $c)
+                        <div class="tdb-role">
+                            <span class="i"><x-ukc.icon name="award" :size="17" /></span>
+                            <span class="b">
+                                <span class="t">{{ __('Comité') }}</span>
+                                <span class="d">{{ $c->person_title ?: __('Membre') }} · {{ $c->event?->title }}</span>
+                            </span>
+                        </div>
+                    @endforeach
+                </section>
+            @endif
+
+            @if ($vue !== 'apres')
+                @include('account._tdb-documents', ['grand' => false])
+            @endif
+
+            {{-- Documents de l'organisation (appel à communications, gabarits…). --}}
+            @if ($media->isNotEmpty())
+                <section class="ukc-card tdb-docs">
+                    <h3><x-ukc.icon name="book" :size="20" /> {{ __('Documents du colloque') }}</h3>
+                    @foreach ($media as $m)
+                        <a href="{{ $m->url }}" target="_blank" rel="noopener" class="tdb-doc">
+                            <span class="i"><x-ukc.icon name="file" :size="16" /></span>
+                            <span class="t">{{ $m->title ?: $m->typeLabel() }}</span>
+                            <span class="f"><x-ukc.icon name="external" :size="13" /></span>
+                        </a>
+                    @endforeach
+                </section>
+            @endif
+
+            <section class="ukc-card tdb-help">
+                <h3><x-ukc.icon name="sparkles" :size="20" /> {{ __('Une question ?') }}</h3>
+                <p class="tdb-sub">{{ __('L’assistante connaît le programme, les salles, les échéances et votre dossier.') }}</p>
+                <div class="tdb-help__acts">
+                    <a href="{{ route('public.gesco') }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">
+                        <x-ukc.icon name="sparkles" :size="15" /> {{ __('Demander à l’assistante') }}
+                    </a>
+                    <a href="{{ route('account.onboarding') }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">
+                        {{ __('Prise en main') }}
+                    </a>
+                </div>
+            </section>
+        </div>
+    </div>
+
     @endif
 </div>
-
 </x-layouts.participant>

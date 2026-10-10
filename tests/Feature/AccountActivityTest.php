@@ -108,6 +108,12 @@ it('affiche les rôles dérivés sur le tableau de bord participant', function (
     $this->actingAs($account, 'account')
         ->get(route('account.dashboard'))
         ->assertOk()
-        ->assertSee('Mes rôles')
+        // ⚠️ La carte s'appelait « Mes rôles & activité » ; elle s'appelle
+        // « Mes fonctions », le mot que le MENU latéral employait déjà pour le
+        // même groupe de liens. Un seul mot par chose.
+        // ⚠️ On n'éprouve PAS « Mes fonctions » : le menu latéral porte déjà ces
+        // deux mots, donc l'assertion passerait même si la carte disparaissait.
+        // Le sous-titre de la carte, lui, n'existe qu'une fois dans la page.
+        ->assertSee('Ce que le colloque vous a confié')
         ->assertSee('Modérateur');
 });

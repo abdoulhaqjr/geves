@@ -190,6 +190,16 @@ le nom `Gesco` : `AskGesco`, `GescoController` - c'est du code, pas de l'afficha
   -topbar`). Préférer ces classes aux littéraux.
 - **Icônes = SVG uniquement** via `<x-ukc.icon name="…" :size="18" />`. **Jamais
   d'emoji dans l'UI** (exception assumée : les e-mails).
+- ⚠️⚠️ **UN LIEN QUI N'EST PAS `.ukc-btn` HÉRITE SA COULEUR.** La règle
+  **`.ukc-scope a:not(.ukc-btn) { color: inherit }`** a une spécificité de
+  **(0,2,1)** - `:not()` compte son argument. Tout sélecteur à **deux classes**
+  (`.ukc-shell .mon-bouton`) y perd, la déclaration de couleur est ignorée, et un
+  lien posé sur un fond sombre sort **blanc sur blanc, texte invisible**. Le piège
+  a été payé **deux fois** : sur le bouton du bandeau de Prise en main, puis sur
+  les boutons du tableau de bord participant. Remède : nommer l'élément **et** le
+  bloc (`.ukc-shell .tdb a.tdb-btn-light`, soit (0,3,1)) - ou donner au lien la
+  classe `.ukc-btn`. Se vérifie en lisant la **couleur calculée**, pas à l'œil :
+  `getComputedStyle(el).color`.
 - **Ne jamais utiliser le tiret cadratin `—` (U+2014)** dans le projet (UI, code,
   seeds, docs) : utiliser un tiret simple `-`.
 - Charte UK : bleu `#223ea4`, or `#ffd700`, vert `#009933`, police **Jost**.
@@ -344,6 +354,31 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   cas « le webhook n'est jamais arrivé ». `ReconcilePayments::settle()` est la **source
   unique** d'application d'un statut vérifié (retour navigateur, webhook, réconciliation).
   Bouton **« Revérifier »** sur un paiement en ligne en attente (`admin.payments.recheck`).
+
+### Tableau de bord participant = il BASCULE sur les dates
+
+`/compte` ne montre pas la même chose du début à la fin du colloque.
+
+- **Une seule définition** : **`EventPhase::participantView()`** → `avant` /
+  `pendant` / `apres`, dérivée de **`Event::phase()`** (celle du site public,
+  `publicView()`). ⚠️ **Ne jamais recomparer des dates** dans le contrôleur ou la
+  vue : deux règles finiraient par se contredire sur le même écran. Elle suit
+  aussi l'**archivage explicite**, pas seulement l'horloge.
+- **Assemblage dans `App\Support\ParticipantDashboard`** (lecture seule → Blade) :
+  le contrôleur ne fait que résoudre l'événement de contexte. Tout chiffre du
+  tableau de bord sort de cette classe - c'est ce qui l'empêche de diverger de la
+  page qu'il résume.
+- ⚠️ **Le compteur de communications inclut les CO-SIGNATURES** (dépôt **ou**
+  `authorLinks` confirmée), exactement comme `/compte/communications` : il
+  annonçait « 1 » là où la page d'à côté en listait trois.
+- ⚠️ **« Mon prochain passage » ne retient QUE les communications déposées**, comme
+  l'export `.ics` : un co-signataire ne monte pas forcément à la tribune.
+- ⚠️ **Une fonction ne vient pas avec une inscription** : modérateur / rapporteur /
+  relecteur sont rapprochés par **e-mail** et peuvent n'avoir aucun `Participant`.
+  L'état vide exige donc « ni participation, ni appel ouvert, **ni fonction** ».
+- ⚠️ **Les indicateurs portent des CHIFFRES, jamais une coche** : une tâche n'est
+  pas une grandeur, elle va dans « À faire », qui ne liste que ce qui reste.
+- Styles sous **`.tdb-*`** (fin de `ukc.css`). Tests : `ParticipantDashboardTest`.
 
 ### URLs de l'espace participant = sous `/compte`
 
