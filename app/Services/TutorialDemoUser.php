@@ -35,4 +35,28 @@ class TutorialDemoUser
 
         return $user;
     }
+
+    /** Identité non privilégiée pour filmer les parcours de l'espace participant. */
+    public function ensureParticipant(): User
+    {
+        $user = User::query()->firstOrNew(['email' => 'captures-participant@geves.invalid']);
+        $user->fill([
+            'name' => 'Participant de démonstration',
+            'first_name' => 'Participant',
+            'last_name' => 'Démonstration',
+            'affiliation' => 'Université de démonstration',
+            'is_active' => true,
+            'access_level' => User::ACCESS_USER,
+            'notes' => 'Compte technique réservé aux captures des parcours participants.',
+        ]);
+
+        if (! $user->exists) {
+            $user->password = Hash::make(Str::password(48));
+            $user->email_verified_at = now();
+        }
+
+        $user->save();
+
+        return $user;
+    }
 }

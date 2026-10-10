@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\TutorialGuide;
 use App\Models\TutorialVideoRequest;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
@@ -19,6 +20,7 @@ class TutorialVideoAgent
     public function produce(TutorialVideoRequest $request): void
     {
         $guide = $request->guide;
+        $wasStale = $guide->video_generation_status === 'stale';
         $directory = storage_path('app/tutorial-video-production/request-'.$request->id);
         File::ensureDirectoryExists($directory);
         $context = $directory.DIRECTORY_SEPARATOR.'production-context.json';
@@ -26,9 +28,12 @@ class TutorialVideoAgent
 
         $this->progress($request, 'planning', 15, 'Préparation du scénario avec les assistants IA.');
         $request->update(['status' => 'running']);
-        $guide->update(['video_generation_status' => 'generating']);
+        if (! $wasStale) {
+            $guide->update(['video_generation_status' => 'generating']);
+        }
 
         try {
+            $this->assertGuideMatchesRequest($request, $guide);
             $planning = $this->planner->prepare($request);
             $this->progress($request, 'captures', 35, 'Capture des écrans réels de GEVES avec le compte de démonstration.');
             $captures = $this->screenshots->capture($guide, $directory);
@@ -47,6 +52,7 @@ class TutorialVideoAgent
             $this->progress($request, 'publishing', 94, 'Contrôle et publication de la vidéo.');
             File::put($result, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
             $source = $this->validatedVideoPath((string) ($payload['video'] ?? ''), $directory);
+            $this->assertGuideMatchesRequest($request, $guide);
             $target = 'tutorial-guides/'.$guide->key.'-'.now()->format('YmdHis').'.mp4';
             Storage::disk('public')->put($target, File::get($source));
 
@@ -78,11 +84,24 @@ class TutorialVideoAgent
                 ], 'progress' => ['stage' => 'failed', 'percent' => 100, 'label' => 'La production vidéo a échoué.']]),
             ]);
 
-            if (! $guide->hasVideo()) {
+            if ($wasStale || ($guide->fresh()?->video_generation_status === 'stale')) {
+                $guide->update(['video_generation_status' => 'stale']);
+            } elseif (! $guide->hasVideo()) {
                 $guide->update(['video_generation_status' => 'failed']);
             } else {
                 $guide->update(['video_generation_status' => 'ready']);
             }
+        }
+    }
+
+    private function assertGuideMatchesRequest(TutorialVideoRequest $request, TutorialGuide $guide): void
+    {
+        $current = $guide->fresh();
+        $snapshot = (array) data_get($request->meta, 'guide', []);
+        if ($current === null || ($snapshot['title'] ?? null) !== $current->title
+            || ($snapshot['intro'] ?? null) !== $current->intro
+            || ($snapshot['steps'] ?? null) !== $current->steps) {
+            throw new \RuntimeException('Le guide a été modifié depuis la demande. Relancez la production avec ses nouvelles étapes.');
         }
     }
 

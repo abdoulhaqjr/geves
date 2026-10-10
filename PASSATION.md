@@ -456,6 +456,18 @@ Phase de **professionnalisation** post-portage. Tout est testé (**≈568 tests 
   filtrent le parcours sans rechargement. Côté administration, la modale d’édition
   utilise toute sa largeur utile, groupe les rôles dans une grille lisible et garde les
   actions Enregistrer/Annuler accessibles pendant le défilement.
+- **Parcours de prise en main** - onze guides détaillés et ordonnés couvrent les
+  présentations distinctes participant/admin, le dépôt et le suivi d’un résumé,
+  la visio, les missions de rapporteur et modérateur, la gestion/configuration
+  d’un colloque, le secrétariat et les deux assistants. `TutorialGuideCatalog`
+  remplace automatiquement les seuls dix anciens textes encore intacts et conserve
+  les modifications humaines. Une vidéo attachée à un guide révisé passe en état
+  `stale` : elle reste inspectable par l’admin, disparaît de l’espace participant
+  et entre dans la prochaine production groupée. `TutorialCaptureCatalog` aligne
+  une cible de capture sur chaque étape ; les parcours participant passent par
+  `captures-participant@geves.invalid`, sans droits d’administration. Vérifier
+  le contexte de démonstration avant de produire les vidéos de visio, présence
+  et rapport : ces écrans dépendent d’affectations et de séances réelles.
 - **Prise en main admin et participant** - `admin.onboarding` (`/admin/prise-en-main`) initialise et lit les dix guides stockés dans `tutorial_guides`. Tout staff peut les consulter ; seuls `isColloqueAdmin()` et les super-administrateurs peuvent modifier texte, étapes, audience, rôles, vidéo téléversée ou URL et visibilité participant. Les demandes de création/mise à jour sont persistées dans `tutorial_video_requests`. Le travailleur choisit Gemini, Claude ou OpenAI parmi les clés stockées dans **Réglages**, écrit un scénario JSON et le fait relire par un autre fournisseur disponible ; les sorties sont conservées dans `meta.creative`, sans bloquer le rendu si une API est indisponible. `TutorialVideoRenderer` crée une composition **Hyperframes**, synthétise un lit musical original avec FFmpeg, valide la composition et rend le MP4 côté serveur : aucun compte IA installé ou connecté chez l’administrateur n’est requis. La clé Gemini a été validée par un appel réel. `TutorialVideoProduction` renseigne `meta` avec un contrat inspiré de **Brag** : logo UK (`public/img/logo-uk.png`), palette `#223ea4/#1a3080/#2f52c8/#009933`, police Jost, musique originale audible et mouvements UI sobres ; narration désactivée par défaut. Chaque vidéo dure au minimum 36 secondes : elle montre l’introduction exacte du guide et une scène dédiée à chaque étape, dans leur ordre. Le rendu courant compose des repères illustrés à partir du guide : ne pas le présenter comme une capture d’un écran authentifié. `GenerateTutorialVideo` traite la file `tutorial-videos`; `TutorialVideoAgent` valide le MP4 et le publie dans le guide, et `TutorialVideoWorkerLauncher` démarre le travailleur de façon cachée sous Windows. Son verrou contient le PID renvoyé par PowerShell et il vérifie ce PID avant de se considérer déjà actif : un démarrage raté ne bloque donc plus la file pendant une heure. `tutorial-videos:dispatch-pending` reprend les anciennes demandes. Les livrables restent dans `storage/app/tutorial-video-production/request-{id}/`, avec un JSON de résultat validé ; les vidéos `video_visible_to_participants = false` restent exclusivement admin. L’espace participant est `account.onboarding` (`/prise-en-main`), entré depuis son menu, et filtre le catalogue sur l’événement courant et ses rôles (`author`, `moderator`, `rapporteur`, etc.).
 - **Résilience & routage & failover** - relance transparente **3×** sur erreurs transitoires (503) via `RetriesTransientFailures` + `AiUnavailableException` ; **routage automatique** fast/deep selon la complexité (`App\AI\AiRouter`) ; **bascule entre fournisseurs** (`AiManager::extract`) selon la capacité (lecture PDF) et le quota, avec repli sur le modèle par défaut si un palier est refusé. Modèles Gemini passés en alias `-latest` (les versions datées 2.5 renvoyaient 404) + `licenseKey`.
 - **Copilote back-office à actions exécutables** - `App\AI\Copilot` : le copilote **exécute de vraies actions système** après **autorisation explicite** de l'utilisateur (endpoint `admin.ai.execute`, **capacité RBAC revérifiée** côté serveur). Il s'appuie sur le **colloque sélectionné** et le **ciblage réel de l'action**, pas seulement sur les statistiques du tableau de bord. Extensible.
@@ -798,3 +810,15 @@ de l'édition.
   le serveur Laravel qui rend la vidéo, pas par le navigateur de l’administrateur.
   Les variables `TUTORIAL_VIDEO_RENDER_WIDTH` et
   `TUTORIAL_VIDEO_RENDER_HEIGHT` sont réglées à 1920×1080.
+
+**Tests SQLite** : `bootstrap/cache/config.php` peut pointer vers la base locale
+malgré `DB_DATABASE=:memory:`. `phpunit.xml` force donc un autre chemin de cache
+(`bootstrap/cache/config.testing.php`) pour que les tests utilisent la mémoire.
+Ne pas retirer ce réglage ; lors d'une exécution manuelle, fixer également
+`DB_CONNECTION=sqlite` et `DB_DATABASE=:memory:`.
+
+## Prise en main — refonte visuelle (2026-10-10)
+
+- L'espace participant `/prise-en-main` affiche un bandeau de bienvenue, un résumé du parcours, des catégories cohérentes avec le back-office et une carte mise en avant pour le premier guide avec vidéo. Chaque guide garde son objectif, son nombre d'étapes, ses étapes dépliables et le lien vers le module concerné ; la vidéo reste réservée aux rôles autorisés.
+- Le back-office `/admin/prise-en-main` conserve ses commandes d'édition et de production, avec des cartes plus lisibles et des étapes repliables. Les styles communs vivent sous `.ukc-onb` dans `resources/css/admin.css`, avec des adaptations mobiles propres à la page participant.
+- Vérification visuelle effectuée dans le navigateur intégré aux formats bureau et téléphone. La couleur du texte du bouton du bandeau doit garder une spécificité supérieure à `.ukc-scope a:not(.ukc-btn)` ; sinon le texte devient blanc sur blanc.

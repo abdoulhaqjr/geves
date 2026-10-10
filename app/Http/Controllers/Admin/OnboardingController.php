@@ -79,6 +79,12 @@ class OnboardingController extends Controller
             $attributes['video_generation_status'] = 'ready';
         }
 
+        if ($guide->hasVideo() && ! isset($attributes['video_path']) && ! isset($attributes['video_url']) && (
+            $guide->title !== $attributes['title'] || $guide->intro !== $attributes['intro'] || $guide->steps !== $attributes['steps']
+        )) {
+            $attributes['video_generation_status'] = 'stale';
+        }
+
         $guide->update($attributes);
 
         return redirect()->route('admin.onboarding', ['tab' => $request->input('tab', 'all')])->with('success', 'Le guide a été mis à jour.');
@@ -118,10 +124,14 @@ class OnboardingController extends Controller
 
         $created = 0;
         $requests = [];
-        TutorialGuide::query()->whereNull('video_path')->whereNull('video_url')->each(function (TutorialGuide $guide) use ($request, $data, $music, &$created, &$requests): void {
+        TutorialGuide::query()->where(function ($query) {
+            $query->where(function ($missing) {
+                $missing->whereNull('video_path')->whereNull('video_url');
+            })->orWhere('video_generation_status', 'stale');
+        })->each(function (TutorialGuide $guide) use ($request, $data, $music, &$created, &$requests): void {
             $alreadyQueued = $guide->videoRequests()->whereIn('status', ['queued', 'running'])->exists();
             if (! $alreadyQueued) {
-                $requests[] = $this->queueVideoRequest($guide, $request, 'generate', $data['prompt'] ?? null, $music);
+                $requests[] = $this->queueVideoRequest($guide, $request, $guide->hasVideo() ? 'update' : 'generate', $data['prompt'] ?? null, $music);
                 $created++;
             }
         });
@@ -171,7 +181,7 @@ class OnboardingController extends Controller
         ]);
 
         $guide->update([
-            'video_generation_status' => 'queued',
+            'video_generation_status' => $guide->video_generation_status === 'stale' ? 'stale' : 'queued',
             'video_generation_prompt' => blank($prompt) ? null : $prompt,
         ]);
 

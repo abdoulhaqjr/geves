@@ -5,7 +5,7 @@
     $activeTab = (string) request('tab', 'all');
     if ($activeTab !== 'all' && ! array_key_exists($activeTab, $categories)) $activeTab = 'all';
     $counts = $guides->countBy(fn ($guide) => TutorialGuideCatalog::categoryFor($guide->key));
-    $videosReady = $guides->filter->hasVideo()->count();
+    $videosReady = $guides->filter->hasCurrentVideo()->count();
     $updateUrl = route('admin.onboarding.guides.update', '__guide__');
     $requestUrl = route('admin.onboarding.videos.request', '__guide__');
     $guidePayload = $guides->map(fn ($guide) => [
@@ -24,7 +24,7 @@
         @endif
     </x-slot:actions>
 
-    <div class="admin-page ukc-onb" x-data="{
+    <div class="admin-page ukc-onb ukc-onb--admin" x-data="{
         editing: null, videoRequest: null, batchOpen: false, production: null, productionError: null, requestError: null,
         guides: {{ Js::from($guidePayload) }},
         updateUrl: '{{ $updateUrl }}', requestUrl: '{{ $requestUrl }}',
@@ -81,6 +81,11 @@
             </div>
         @endif
 
+        <div class="onb-section-head">
+            <div><span class="onb-section-head__eyebrow">BIBLIOTHÈQUE DES TUTORIELS</span><h2>Des parcours adaptés à chaque fonction</h2><p>Parcourez les étapes, ajustez les textes et gérez les démonstrations vidéo depuis un même espace.</p></div>
+            <span class="onb-section-head__count">{{ $guides->count() }} parcours</span>
+        </div>
+
         <div class="ukc-nav-docs" id="guides" aria-label="Catégories de guides">
             <a @class(['active' => $activeTab === 'all']) href="{{ route('admin.onboarding', ['tab' => 'all']) }}#guides">Tous <span class="nav-count">{{ $guides->count() }}</span></a>
             @foreach ($categories as $key => $category)<a @class(['active' => $activeTab === $key]) href="{{ route('admin.onboarding', ['tab' => $key]) }}#guides">{{ $category['label'] }} <span class="nav-count">{{ $counts[$key] ?? 0 }}</span></a>@endforeach
@@ -95,19 +100,24 @@
                     <header class="onb-card__head">
                         <span class="onb-card__icon"><x-ukc.icon :name="TutorialGuideCatalog::iconFor($guide->key)" :size="21" /></span>
                         <div class="onb-card__titles">
+                            <span class="onb-card__number">GUIDE {{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
                             <h3 class="onb-card__title">{{ $guide->title }}</h3>
                             <span class="onb-card__tag"><x-ukc.icon :name="$categories[$category]['icon'] ?? 'book'" :size="12" /> {{ $categories[$category]['label'] ?? 'Guide' }}</span>
                         </div>
                     </header>
-                    <p class="onb-card__intro">{{ $guide->intro }}</p>
-                    <ol class="onb-steps">@foreach ($guide->steps ?: [] as $step)<li>{{ $step }}</li>@endforeach</ol>
+                    <p class="onb-card__intro"><strong>Objectif · </strong>{{ $guide->intro }}</p>
+                    <div class="onb-card__course"><span>{{ count($guide->steps ?: []) }} étapes</span><span>{{ $guide->audience === 'admin' ? 'Administration' : ($guide->audience === 'participant' ? 'Participants' : 'Tous les espaces') }}</span></div>
+                    <details class="onb-guide-details">
+                        <summary>Voir les étapes du guide <x-ukc.icon name="chevron" :size="15" /></summary>
+                        <ol class="onb-steps">@foreach ($guide->steps ?: [] as $step)<li>{{ $step }}</li>@endforeach</ol>
+                    </details>
 
                     @if ($guide->hasVideo())
                         <div class="onb-media">
                             <video controls preload="metadata" src="{{ $guide->videoUrl() }}"></video>
                             <div class="onb-media__meta">
                                 <span class="onb-media__ico"><x-ukc.icon name="check" :size="15" /></span>
-                                <div><strong>Vidéo de démonstration</strong><small>{{ $guide->video_visible_to_participants ? 'Visible par les participants concernés' : 'Masquée dans l’espace participant' }}</small></div>
+                                <div><strong>Vidéo de démonstration</strong><small>{{ $status === 'stale' ? 'À actualiser après la révision du guide' : ($guide->video_visible_to_participants ? 'Visible par les participants concernés' : 'Masquée dans l’espace participant') }}</small></div>
                             </div>
                         </div>
                     @else
@@ -120,6 +130,7 @@
                     @if ($status === 'queued')<span class="onb-flag"><x-ukc.icon name="clock" :size="13" /> Demande enregistrée, lancement de l’agent vidéo…</span>@endif
                     @if ($status === 'generating')<span class="onb-flag"><x-ukc.icon name="video" :size="13" /> Rendu Hyperframes en cours…</span>@endif
                     @if ($status === 'failed')<span class="onb-flag onb-flag--error"><x-ukc.icon name="alert-triangle" :size="13" /> La production a échoué. Relancez la demande.</span>@endif
+                    @if ($status === 'stale')<span class="onb-flag"><x-ukc.icon name="clock" :size="13" /> Le guide a changé : régénérez sa vidéo avant de la montrer aux participants.</span>@endif
 
                     <footer class="onb-card__foot">
                         @if ($canManage)
@@ -162,7 +173,7 @@
         <div class="ukc-modal" x-show="batchOpen" x-cloak @keydown.escape.window="batchOpen = false" style="display: none;">
             <form class="box narrow" method="POST" enctype="multipart/form-data" action="{{ route('admin.onboarding.videos.request-all') }}" @submit.prevent="submitProduction($event, true)">
                 @csrf<div class="box-head"><span>Produire les vidéos de prise en main</span><button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" @click="batchOpen = false">Fermer</button></div>
-                <div class="box-body"><p>Une demande sera créée pour chaque guide sans vidéo. Le moteur choisit Gemini, Claude ou OpenAI pour préparer le scénario, capture les vrais écrans avec un compte de démonstration, puis Hyperframes produit la vidéo avec le logo, la palette, la police, la musique choisie et des mouvements sobres.</p><div class="ukc-form-row"><label for="batch-music">Musique par défaut</label><select id="batch-music" name="music_choice"><option value="signature">Uplifting Corporate — musique GEVES par défaut</option><option value="calm">Calme — institutionnelle et discrète</option><option value="dynamic">Dynamique — moderne et rythmée</option><option value="none">Sans musique</option></select></div><div class="ukc-form-row"><label for="batch-music-file">Ou utiliser votre musique pour toutes les vidéos</label><input id="batch-music-file" type="file" name="music" accept="audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/x-wav"><small class="onboarding-field-hint">MP3, M4A, AAC ou WAV, 25 Mo maximum.</small></div><div class="ukc-form-row"><label for="batch-prompt">Consigne facultative pour toutes les vidéos</label><textarea id="batch-prompt" name="prompt" placeholder="Ex. insister sur les étapes importantes pour les communicants."></textarea></div><p class="onboarding-request-error" x-show="requestError" x-text="requestError"></p></div>
+                <div class="box-body"><p>Une demande sera créée pour chaque guide sans vidéo à jour. Le moteur choisit Gemini, Claude ou OpenAI pour préparer le scénario, capture les écrans réels avec un compte de démonstration, puis Hyperframes produit la vidéo avec le logo, la palette, la police, la musique choisie et des mouvements sobres.</p><div class="ukc-form-row"><label for="batch-music">Musique par défaut</label><select id="batch-music" name="music_choice"><option value="signature">Uplifting Corporate — musique GEVES par défaut</option><option value="calm">Calme — institutionnelle et discrète</option><option value="dynamic">Dynamique — moderne et rythmée</option><option value="none">Sans musique</option></select></div><div class="ukc-form-row"><label for="batch-music-file">Ou utiliser votre musique pour toutes les vidéos</label><input id="batch-music-file" type="file" name="music" accept="audio/mpeg,audio/mp4,audio/aac,audio/wav,audio/x-wav"><small class="onboarding-field-hint">MP3, M4A, AAC ou WAV, 25 Mo maximum.</small></div><div class="ukc-form-row"><label for="batch-prompt">Consigne facultative pour toutes les vidéos</label><textarea id="batch-prompt" name="prompt" placeholder="Ex. insister sur les étapes importantes pour les communicants."></textarea></div><p class="onboarding-request-error" x-show="requestError" x-text="requestError"></p></div>
                 <div class="box-foot"><button type="button" class="ukc-btn ukc-btn--ghost" @click="batchOpen = false">Annuler</button><button class="ukc-btn ukc-btn--blue" type="submit">Enregistrer les demandes</button></div>
             </form>
         </div>

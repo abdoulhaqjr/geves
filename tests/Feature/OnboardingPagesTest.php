@@ -4,6 +4,7 @@ use App\Models\TutorialGuide;
 use App\Models\TutorialVideoRequest;
 use App\Services\TutorialVideoRenderer;
 use App\Services\TutorialVideoWorkerLauncher;
+use App\Support\TutorialCaptureCatalog;
 use App\Support\TutorialGuideCatalog;
 use Illuminate\Support\Facades\File;
 
@@ -19,7 +20,7 @@ it('affiche la prise en main du back-office avec la nouvelle grille de guides', 
         ->assertOk()
         ->assertSee('onb-grid', false)
         ->assertSee('onb-card', false)
-        ->assertSee('Comprendre la plateforme')
+        ->assertSee('Découvrir GEVES comme administrateur')
         ->assertDontSee('onboarding-guide__number', false); // l'ancien gadget « Guide 01 » a disparu
 });
 
@@ -28,7 +29,7 @@ it('affiche la prise en main du participant avec ses guides', function () {
         ->get(route('account.onboarding'))
         ->assertOk()
         ->assertSee('onb-grid', false)
-        ->assertSee('Votre parcours de prise en main');
+        ->assertSee('Des guides à suivre à votre rythme');
 });
 
 it('affiche un seul formulaire vidéo et poste vers son URL déclarée', function () {
@@ -125,8 +126,14 @@ it('ignore un chemin FFmpeg configuré qui n’existe pas', function () {
     // désinstallation ferait échouer le rendu avec « commande introuvable »
     // plutôt que de retomber sur le PATH, où FFmpeg est peut-être.
     config()->set('tutorial-video.ffmpeg_binary', racineBinairesVideo().DIRECTORY_SEPARATOR.'nexiste-pas.exe');
+    $avant = getenv('LOCALAPPDATA');
+    putenv('LOCALAPPDATA='.racineBinairesVideo());
 
-    expect(resoudreFfmpeg())->toBe('ffmpeg');
+    try {
+        expect(resoudreFfmpeg())->toBe('ffmpeg');
+    } finally {
+        putenv($avant === false ? 'LOCALAPPDATA' : 'LOCALAPPDATA='.$avant);
+    }
 });
 
 it('trouve FFmpeg installé par WinGet, et prend la version la plus récente', function () {
@@ -210,4 +217,53 @@ afterEach(function () {
 it('prépare les rendus tutoriels au format Full HD', function () {
     expect(config('tutorial-video.render_width'))->toBe(1920)
         ->and(config('tutorial-video.render_height'))->toBe(1080);
+});
+
+it('sépare la découverte participant de la découverte administrateur et cible chaque rôle', function () {
+    TutorialGuideCatalog::ensureDefaults();
+
+    $guides = TutorialGuide::query()->get()->keyBy('key');
+    expect($guides)->toHaveCount(11)
+        ->and($guides['fonctionnement-participant']->audience)->toBe('participant')
+        ->and($guides['fonctionnement']->audience)->toBe('admin')
+        ->and($guides['soumission']->audience)->toBe('participant')
+        ->and($guides['rapport']->participant_roles)->toBe(['rapporteur'])
+        ->and($guides['moderation']->participant_roles)->toBe(['moderator']);
+
+    $visible = TutorialGuideCatalog::forParticipant(verifiedAccount(), null)->pluck('key')->all();
+    expect($visible)->toContain('fonctionnement-participant', 'soumission', 'chat-public')
+        ->not->toContain('fonctionnement', 'rapport', 'moderation', 'chat-admin');
+
+    foreach ($guides as $guide) {
+        $targets = TutorialCaptureCatalog::targetsFor($guide);
+        expect($targets)->toHaveCount(count($guide->steps))
+            ->and(collect($targets)->pluck('guard')->unique()->all())->not->toContain('invalid');
+        if ($guide->audience === 'participant') {
+            expect(collect($targets)->pluck('guard')->all())->not->toContain('web');
+        }
+    }
+});
+
+it('actualise les anciens textes sans écraser une adaptation et masque les vidéos périmées', function () {
+    $legacy = TutorialGuide::create([
+        'key' => 'chat-public', 'title' => 'Utiliser le chatbot public',
+        'intro' => 'L’assistante publique répond aux questions des visiteurs et oriente les participants.',
+        'steps' => ['Testez l’assistante comme un visiteur.', 'Maintenez à jour les informations publiées.', 'Transmettez les demandes non résolues au back-office.'],
+        'audience' => 'both', 'participant_roles' => ['all'], 'sort_order' => 90,
+        'video_path' => 'tutorial-guides/ancienne-video.mp4', 'video_generation_status' => 'ready',
+    ]);
+    $custom = TutorialGuide::create([
+        'key' => 'soumission', 'title' => 'Guide personnalisé par l’équipe',
+        'intro' => 'Notre procédure locale.', 'steps' => ['Notre première étape.'],
+        'audience' => 'participant', 'participant_roles' => ['all'], 'sort_order' => 20,
+    ]);
+
+    TutorialGuideCatalog::ensureDefaults();
+
+    expect($legacy->fresh()->video_generation_status)->toBe('stale')
+        ->and($legacy->fresh()->audience)->toBe('participant')
+        ->and($legacy->fresh()->steps)->toHaveCount(5)
+        ->and($legacy->fresh()->hasCurrentVideo())->toBeFalse()
+        ->and($custom->fresh()->title)->toBe('Guide personnalisé par l’équipe')
+        ->and($custom->fresh()->steps)->toBe(['Notre première étape.']);
 });

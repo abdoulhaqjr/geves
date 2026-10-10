@@ -31,6 +31,11 @@ class TutorialGuide extends Model
         return filled($this->video_path) || filled($this->video_url);
     }
 
+    public function hasCurrentVideo(): bool
+    {
+        return $this->hasVideo() && $this->video_generation_status !== 'stale';
+    }
+
     public function videoUrl(): ?string
     {
         if (filled($this->video_path)) {

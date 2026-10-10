@@ -17,9 +17,19 @@ class TutorialCaptureController extends Controller
         $target = TutorialCaptureCatalog::targetFor($guide, $step);
         abort_if($target === null, 404);
 
-        auth('web')->login($demoUser->ensure());
+        // Chaque capture démarre dans le rôle prévu par le guide. La page
+        // d'inscription doit notamment rester visible après une capture de
+        // l'espace participant dans la même session de navigateur.
+        auth('web')->logout();
+        auth('account')->logout();
+
+        if ($target['guard'] === 'web') {
+            auth('web')->login($demoUser->ensure());
+        } elseif ($target['guard'] === 'account') {
+            auth('account')->login($demoUser->ensureParticipant());
+        }
         $request->session()->regenerate();
 
-        return redirect()->away($target);
+        return redirect()->away($target['url']);
     }
 }

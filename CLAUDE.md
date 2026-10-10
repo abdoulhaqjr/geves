@@ -67,6 +67,16 @@ Larastan **niveau 5**.
   rapporteur) ; une vidéo masquée ne doit jamais y être rendue. Ses onglets de
   catégories filtrent aussi les cartes sans rechargement, avec la même présentation
   en pilules que le back-office.
+- Le catalogue initial contient **onze guides** : deux présentations distinctes
+  de GEVES (participant et administrateur), puis les parcours soumission, visio,
+  rapporteur, modération, gestion de colloque, configuration, secrétariat et les
+  deux assistants. Les textes et étapes sont dans `TutorialGuideCatalog`, les
+  pages réelles à capturer dans `TutorialCaptureCatalog`. `ensureDefaults()` ne
+  remplace que les dix anciens guides restés strictement inchangés : préserver
+  les adaptations humaines. Lorsqu'un texte change, l'ancienne vidéo devient
+  `stale`, est masquée aux participants, puis peut être actualisée via la
+  production individuelle ou groupée. Le navigateur de capture emploie un
+  compte de démonstration distinct et non privilégié pour les parcours participant.
 
 ## Toolchain - ⚠️ PHP/Composer/artisan ne sont PAS dans le PATH
 
@@ -95,6 +105,12 @@ npm run build                               # build des assets (requis pour voir
 
 ⚠️ `vendor/bin/phpunit` ne marche pas (Pest requis). Le lanceur affiche une sortie
 JSON compacte, pas la trace complète.
+
+⚠️ Les tests doivent ignorer `bootstrap/cache/config.php` : ce cache local peut
+pointer vers la base SQLite de développement malgré `DB_DATABASE=:memory:`.
+`phpunit.xml` définit `APP_CONFIG_CACHE=bootstrap/cache/config.testing.php` pour
+isoler le processus de test. Garder cette protection et, pour un test manuel,
+définir explicitement `DB_CONNECTION=sqlite` et `DB_DATABASE=:memory:`.
 
 ⚠️ **PHPStan et les chemins relatifs** : lancé depuis la racine, `phpstan analyse`
 se termine en **code 1 sans rien écrire** - ni erreurs, ni « No errors », ni fatale.
