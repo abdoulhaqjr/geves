@@ -133,7 +133,15 @@ class BibliographyExporter
             $raw = (string) $s->track;
         }
 
-        return SubmissionKeywords::parse($raw, (new SubmissionFormConfig($s->event))->keywordSeparator());
+        // ⚠️ `event` est nullable AU RUNTIME (une communication peut être exportée
+        // sans son colloque, et trois cas le font) alors que Larastan type les
+        // relations `BelongsTo` comme non nulles : d'où l'annotation, sans
+        // laquelle le `??` passerait pour mort. Sans colloque, les réglages par
+        // défaut - c'est déjà l'idiome d'Admin\SubmissionController.
+        /** @var Event|null $event */
+        $event = $s->event;
+
+        return SubmissionKeywords::parse($raw, (new SubmissionFormConfig($event ?? new Event))->keywordSeparator());
     }
 
     private function booktitle(Event $event): string
