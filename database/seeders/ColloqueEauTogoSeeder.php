@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Spatie\Permission\Models\Role;
 use ZipArchive;
 
 /**
@@ -39,6 +40,31 @@ class ColloqueEauTogoSeeder extends Seeder
     private const SOURCE = 'google-forms-eau-togo-2026';
 
     private const EVENT_SLUG = 'premier-colloque-eau-togo-2026';
+
+    /**
+     * Équipe d'organisation, rattachée à CE colloque.
+     *
+     * ⚠️ C'est la ligne dans `event_user` qui ouvre l'accès, et elle ne l'ouvre
+     * que sur ce colloque : `User::capabilitiesOnEdition()` lit le pivot, jamais
+     * le rôle global. Le rôle spatie posé en plus sert à la page Utilisateurs et
+     * à la matrice d'accès.
+     *
+     * @var list<array{role: string, given_name: string, surname: string, email: string}>
+     */
+    private const TEAM = [
+        [
+            'role' => 'gerant',
+            'given_name' => 'Seyf-Laye',
+            'surname' => 'ALFA-SIKA MANDE',
+            'email' => 'seyf_laye@yahoo.com',
+        ],
+        [
+            'role' => 'co_gerant',
+            'given_name' => 'Eralakaza',
+            'surname' => 'OURO BITASSE',
+            'email' => 'ourobitasse2001@yahoo.fr',
+        ],
+    ];
 
     private const OFFICIAL_THEME = 'Problématique de l’eau dans la région de la Kara : quelle approche de gestion pour une stabilité durable de l’eau potable ?';
 
@@ -28531,6 +28557,7 @@ ARCHIVE;
             $this->validateDocuments($responses, $zip);
             DB::transaction(function () use ($responses, $zip): void {
                 $event = $this->event();
+                $this->equipe($event);
                 $this->applyPosterDetails($event, $this->storePosters($event));
                 foreach (self::TRACKS as $order => $track) {
                     Atelier::firstOrCreate(
@@ -28715,6 +28742,63 @@ ARCHIVE;
         }
         if ($event->isDirty()) {
             $event->save();
+        }
+    }
+
+    /**
+     * Installe le gestionnaire et le co-gestionnaire du colloque.
+     *
+     * ⚠️ Aucun mot de passe connu n'est posé : le compte s'ouvre par
+     * réinitialisation, comme les comptes auteurs de cet import. Poser un mot de
+     * passe choisi ici le mettrait en clair dans le dépôt.
+     *
+     * ⚠️ Idempotent : un compte déjà présent est réutilisé (la personne peut
+     * figurer parmi les auteurs), et une fonction déjà attribuée n'est pas
+     * dupliquée. Le seeder se rejoue.
+     */
+    private function equipe(Event $event): void
+    {
+        foreach (self::TEAM as $membre) {
+            if (! Role::query()->where('guard_name', 'web')->where('name', $membre['role'])->exists()) {
+                throw new RuntimeException(
+                    "Le rôle « {$membre['role']} » n’existe pas : lancez `php artisan db:seed` "
+                    .'(RolesAndAdminSeeder) avant d’importer le colloque.'
+                );
+            }
+
+            $email = mb_strtolower($membre['email']);
+            $user = User::query()->whereRaw('LOWER(email) = ?', [$email])->first();
+
+            if ($user === null) {
+                $user = new User;
+                $user->forceFill([
+                    'name' => trim($membre['given_name'].' '.$membre['surname']),
+                    'first_name' => $membre['given_name'],
+                    'last_name' => $membre['surname'],
+                    'email' => $email,
+                    'password' => Str::password(48),
+                    'must_reset_password' => true,
+                    'is_active' => true,
+                    // « Administrateur de colloque » : crée et gère des
+                    // colloques, sans voir ceux où il n'est pas affecté.
+                    'access_level' => User::ACCESS_COLLOQUE_ADMIN,
+                    'meta' => ['import_source' => self::SOURCE, 'team_role' => $membre['role']],
+                ])->save();
+            }
+
+            if (! $user->hasRole($membre['role'])) {
+                $user->assignRole($membre['role']);
+            }
+
+            $deja = DB::table('event_user')
+                ->where('event_id', $event->id)
+                ->where('user_id', $user->id)
+                ->where('role', $membre['role'])
+                ->exists();
+
+            if (! $deja) {
+                $event->team()->attach($user->id, ['role' => $membre['role']]);
+            }
         }
     }
 

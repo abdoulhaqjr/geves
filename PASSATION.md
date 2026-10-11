@@ -1133,3 +1133,33 @@ rencontrés**.
   `up()` seulement (un `down()` ne tourne pas à l'installation), ce qui a ramené
   cinq migrations à examiner sur quarante, dont deux déjà passées sur le
   serveur. Les noms d'index ont été mesurés sur la base de dev réelle.
+
+## Colloque Eau au Togo — équipe d'organisation (2026-10-11)
+
+Le gestionnaire et le co-gestionnaire du premier colloque sur l'eau sont
+désormais **dans le seeder d'import** (`ColloqueEauTogoSeeder::equipe()`), et
+non posés à la main : l'import est la source de ce colloque, l'équipe en fait
+partie.
+
+- **Seyf-Laye ALFA-SIKA MANDE** - gestionnaire (`gerant`)
+- **Eralakaza OURO BITASSE** - co-gestionnaire (`co_gerant`)
+
+- ⚠️ **Ce qui ouvre l'accès, c'est la ligne dans `event_user`, pas le rôle
+  spatie.** `User::capabilitiesOnEdition()` lit le pivot et rien d'autre : un
+  rôle `gerant` posé seul ne donnerait accès à rien. Le rôle global est posé en
+  plus, pour la page Utilisateurs et la matrice.
+- ⚠️ **Et c'est aussi ce qui LIMITE l'accès.** Vérifié par un cas dédié : ni
+  l'un ni l'autre n'atteint le VIIIe Colloque. `access_level` vaut
+  `colloque_admin` (« crée et gère des colloques »), ce qui n'ouvre aucun
+  colloque où la personne n'est pas affectée.
+- ⚠️ **Aucun mot de passe dans le dépôt** : les deux comptes naissent avec
+  `must_reset_password`, comme les 44 comptes auteurs de cet import. Ils
+  s'ouvrent par réinitialisation.
+- Idempotent : compte réutilisé s'il existe déjà (la personne peut figurer
+  parmi les auteurs - « Seyf-Laye ALFA-SIKA MANDE » apparaît déjà comme
+  co-auteur dans un résumé), fonction non dupliquée. Le pivot porte une unicité
+  `(event_id, user_id, role)` : un second passage non gardé ferait échouer tout
+  l'import.
+- Tests : `EauTogoEquipeTest` (4 cas, dont la portée et l'absence de mot de
+  passe), vérifiés en retirant l'appel à `equipe()`.
+
