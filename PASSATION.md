@@ -1014,7 +1014,7 @@ Après la correction du tableau de bord, revue de **tous** les dégradés de
 | **Prise en main (participant) `.onb-hero`** | `115deg, #172b78, #2447a8 60%, #096b75` | **corrigé** |
 | **Voile d'analyse `.ukc-ai-veil`** | `var(--ukc-hero, <ancien dégradé #14205a>)` | **corrigé** |
 | **Accueil, repli de bannière** | `120deg, #0f1a33, #1a3080 55%, #0a7a2f` | **corrigé** |
-| **Bannière admin `.admin-dash .edition-banner`** | `135deg, #223ea4, #1a3080 55%, #009933 160%` | **corrigé** |
+| Bannière admin `.admin-dash .edition-banner` | `135deg, #223ea4, #1a3080 55%, #009933 160%` | **exception voulue, inchangée** |
 
 - ⚠️ **Le pire était le plus visible.** `#0f1a33` est la teinte que le
   commentaire du jeton nomme **explicitement** comme à écarter, et elle servait
@@ -1028,14 +1028,23 @@ Après la correction du tableau de bord, revue de **tous** les dégradés de
 - ⚠️ **Un repli jamais atteint reste un modèle.** `.ukc-ai-veil` écrivait
   `var(--ukc-hero, <ancien dégradé>)`. La valeur ne servait pas, mais elle
   restait à portée de copier-coller.
-- **La bannière admin a suivi** (demandée ensuite). Elle répétait en dur des
-  valeurs qui ont des jetons et posait son dernier arrêt à **160%** - un arrêt
-  au-delà de 100% ne s'atteint jamais : le vert n'était qu'un soupçon en bout de
-  bande. Elle porte le jeton. ⚠️ Son nom ne contient pas « hero », donc la règle
-  ne la voyait pas : d'où `SURFACES_HEROS`, une **liste nommée** dans le cas.
-  Contraste vérifié après coup, le bout de bande étant devenu plus clair : blanc
-  sur le dernier arrêt, 4,80:1 pour les boutons et 5,29:1 pour la ligne de
-  méta - au-dessus de 4,5:1.
+- ⚠️ **La bannière admin N'EST PAS un écart : c'est une intention.** Je l'ai
+  « alignée » sur le jeton, puis remise. C'est la **jonction entre la charte de
+  l'université et le bundle Tailwise** : elle part du bleu de la charte et va
+  chercher son vert, là où les héros restent dans les bleus. Les deux signes que
+  j'avais lus comme des défauts en étaient les moyens - les valeurs écrites à la
+  main parce qu'elle ne suit pas le jeton, et l'arrêt **à 160%** parce qu'au-delà
+  de 100% le vert n'est jamais atteint en pleine valeur : il ne donne qu'un
+  virage en bout de bande, pas un aplat. Le commentaire est désormais dans
+  `admin.css`, et la règle ne la réclame plus.
+- **Ce que ça change pour la règle** : elle porte sur les **héros**, pas sur tout
+  bandeau coloré. J'avais ajouté une liste nommée pour y faire entrer la
+  bannière ; elle est retirée.
 - **Fausse piste écartée** : `.gesco-chat .chat-hero .av` est une pastille de
   64px dans la fenêtre d'assistance, pas une bannière. La règle regarde donc le
   **dernier maillon** du sélecteur.
+- ⚠️ **Le garde-fou lisait aussi les commentaires.** Il prend pour sélecteur
+  tout ce qui précède une accolade : un commentaire citant `--ukc-hero` juste
+  avant une règle la faisait passer pour un héros. Découvert en documentant
+  l'exception ci-dessus - le commentaire a déclenché la règle qu'il expliquait.
+  Les feuilles sont maintenant lues **commentaires retirés**.

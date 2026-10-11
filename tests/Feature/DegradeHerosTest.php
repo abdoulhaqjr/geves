@@ -12,26 +12,36 @@ use Illuminate\Support\Str;
  * tombe. Ces cas lisent les sources, parce que c'est là que la règle se perd.
  */
 
-/** @return array<string, string> chemin relatif => contenu */
+/**
+ * Les feuilles de style, **commentaires retirés**.
+ *
+ * ⚠️ Indispensable : le découpage ci-dessous prend pour sélecteur tout ce qui
+ * précède une accolade, commentaire compris. Un commentaire qui cite
+ * `--ukc-hero` juste avant une règle la faisait donc passer pour un héros - et
+ * c'est arrivé, en documentant une exception. Un commentaire n'applique rien :
+ * il n'a pas à peser dans la règle.
+ *
+ * @return array<string, string> chemin relatif => contenu
+ */
 function feuillesDeStyle(): array
 {
     $out = [];
     foreach ((array) glob(resource_path('css/*.css')) as $chemin) {
-        $out['css/'.basename((string) $chemin)] = (string) file_get_contents((string) $chemin);
+        $css = (string) file_get_contents((string) $chemin);
+        $out['css/'.basename((string) $chemin)] = (string) preg_replace('#/\*.*?\*/#s', '', $css);
     }
 
     return $out;
 }
 
 /**
- * Grandes surfaces qui portent le dégradé sans s'appeler « hero ». Une liste,
- * parce qu'il n'y a pas de règle de nommage à laquelle se raccrocher : la
- * bannière du tableau de bord admin est le bandeau coloré de sa page, mais rien
- * dans son nom ne le dit. Toute autre bannière de ce genre s'ajoute ici.
- */
-const SURFACES_HEROS = ['edition-banner'];
-
-/**
+ * ⚠️ La règle porte sur les HÉROS, pas sur tout bandeau coloré. La bannière du
+ * tableau de bord admin (`.admin-dash .edition-banner`) garde son dégradé
+ * propre : c'est la jonction voulue entre la charte de l'université et le
+ * bundle Tailwise, elle va chercher le vert là où les héros restent dans les
+ * bleus. Je l'avais « alignée » : c'était effacer une intention. Ne pas la
+ * ramener ici.
+ *
  * Le héros LUI-MÊME, pas ce qui vit dedans : on regarde le DERNIER maillon de
  * chaque sélecteur. ⚠️ Sans cette distinction, la règle attrapait l'avatar de
  * la fenêtre d'assistance (`.gesco-chat .chat-hero .av`), une pastille de 64px
@@ -41,7 +51,7 @@ function estUnHeros(string $selecteur): bool
 {
     foreach (explode(',', $selecteur) as $un) {
         $dernier = (string) Str::afterLast(trim(preg_replace('/\s+/', ' ', $un) ?? ''), ' ');
-        if (str_contains($dernier, 'hero') || Str::contains($dernier, SURFACES_HEROS)) {
+        if (str_contains($dernier, 'hero')) {
             return true;
         }
     }
