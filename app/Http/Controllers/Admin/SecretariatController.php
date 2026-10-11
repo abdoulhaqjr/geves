@@ -546,7 +546,12 @@ class SecretariatController extends Controller
                 $when = $s->starts_at ? $s->starts_at->translatedFormat('D j M · H:i') : '';
                 $bits = array_filter([
                     $s->label,
-                    $s->room ? 'Salle : '.$s->room : null,
+                    // ⚠️ « Lieu », pas « Salle » : la colonne nomme déjà le lieu
+                    // (« Salle 5 », mais aussi « Auditorium »), et le préfixe
+                    // donnait « Salle : Salle 5 ». L'étiquette reste, elle, parce
+                    // que cette ligne est une suite de champs nommés lue par le
+                    // moteur de rédaction : sans elle, la valeur serait anonyme.
+                    $s->room ? 'Lieu : '.$s->room : null,
                     $when ?: null,
                     $s->moderator_name ? 'Modérateur : '.$s->moderator_name : null,
                     $s->rapporteur_name ? 'Rapporteur : '.$s->rapporteur_name : null,

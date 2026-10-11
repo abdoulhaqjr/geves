@@ -251,7 +251,11 @@ it('associe une salle à un atelier et la propage à ses sessions', function () 
 
     $this->actingAs($staff, 'web')
         ->post(route('admin.program.ateliers.room', $atelier).'?event_id='.$event->id, ['atelierRoom' => 'Salle B'])
-        ->assertSessionHasNoErrors();
+        ->assertSessionHasNoErrors()
+        // ⚠️ La valeur nomme déjà le lieu : le message disait « Salle « Salle B »
+        // associée ». On vérifie l'ABSENCE du doublon plutôt que le libellé exact,
+        // qui changerait à la première reformulation sans que la règle bouge.
+        ->assertSessionHas('ukc_status', fn (string $m) => ! str_contains($m, 'Salle « Salle B »'));
 
     expect($event->fresh()->settings['program']['atelier_rooms'][(string) $atelier->id])->toBe('Salle B');
     expect($session->fresh()->room)->toBe('Salle B');

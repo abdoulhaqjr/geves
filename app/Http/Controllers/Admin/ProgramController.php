@@ -766,9 +766,13 @@ class ProgramController extends Controller
             }
         }
 
+        // ⚠️ « Lieu », pas « Salle » : la valeur nomme déjà le lieu, et le
+        // message disait « Salle « Salle 5 » associée ». ⚠️ Le nom générique est
+        // NÉCESSAIRE ici, et il doit être MASCULIN : l'accord du participe porte
+        // sur lui, pas sur la valeur - « Auditorium » aurait donné « associée ».
         return back()->with('ukc_status', $room
-            ? 'Salle « '.$room.' » associée à l’atelier « '.$atelier->title.' ».'
-            : 'Salle dissociée de l’atelier.');
+            ? 'Lieu « '.$room.' » associé à l’atelier « '.$atelier->title.' ».'
+            : 'Lieu dissocié de l’atelier.');
     }
 
     public function storeSlot(Request $request): RedirectResponse

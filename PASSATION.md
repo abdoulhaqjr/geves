@@ -927,9 +927,14 @@ Passe menée sur le compte de démonstration le plus fourni (3 communications do
   `account/submissions/show`** (trois autres endroits), qui affichaient « Salle :
   Salle 5 » et « Salle Auditorium ». La règle est tenue par
   `tests/Feature/SalleLibelleTest.php`, **un cas par écran** : elle se perd écran
-  par écran, et rien ne la rappelait. ⚠️ Restent, hors écrans :
+  par écran, et rien ne la rappelait. Les deux derniers endroits ont suivi :
   `SecretariatController::programContext()` (texte de contexte des documents) et
-  un message de `ProgramController`, où la valeur est entre guillemets.
+  le message d'association d'un lieu à un atelier. Là, l'étiquette est
+  **nécessaire** - une suite de champs nommés, une phrase - donc elle devient
+  « Lieu ». ⚠️ Et elle doit être **masculine** : l'accord du participe porte sur
+  le nom générique, pas sur la valeur, et « Salle « Auditorium » associée »
+  était faux. Le message est sous garde dans `ProgramSlotsTest`, par l'absence
+  du doublon plutôt que par le libellé exact.
 - **Quatre lignes pour deux choses.** « Mon programme » listait le passage **et**
   la séance qui le contient, laquelle ne disait rien de plus (la ligne du passage
   nomme sa séance et sa salle). Seules les plénières s'ajoutent désormais.
