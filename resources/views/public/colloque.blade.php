@@ -47,10 +47,16 @@
                 <source src="{{ $heroVideo }}"
                         type="{{ str_ends_with(strtolower(parse_url($heroVideo, PHP_URL_PATH) ?? ''), '.webm') ? 'video/webm' : 'video/mp4' }}">
             </video>
-            <div style="position:absolute;inset:0;z-index:1;background:linear-gradient(135deg, rgba(15,26,51,.86), rgba(34,62,164,.78));"></div>
+            {{-- ⚠️ Voile sur image : `--ukc-hero-navy` (#14205a), le navy bleuté que la
+                 charte désigne pour cet usage. Il portait #0f1a33, la teinte quasi
+                 noire explicitement écartée - écrite EN LIGNE, elle échappait au cas
+                 qui relit les feuilles de style. Elle ne se voyait que sur les rares
+                 événements ayant téléversé un visuel ; depuis la bannière par défaut
+                 (Réglages › Bannières), ce voile est celui de TOUS les événements. --}}
+            <div style="position:absolute;inset:0;z-index:1;background:linear-gradient(135deg, rgba(20,32,90,.86), rgba(20,32,90,.60));"></div>
         @elseif ($heroImage)
             <img src="{{ $heroImage }}" alt="" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;">
-            <div style="position:absolute;inset:0;z-index:1;background:linear-gradient(135deg, rgba(15,26,51,.88), rgba(34,62,164,.72));"></div>
+            <div style="position:absolute;inset:0;z-index:1;background:linear-gradient(135deg, rgba(20,32,90,.88), rgba(20,32,90,.62));"></div>
         @endif
         <div class="ukc-container" style="position:relative;z-index:2;">
             <div class="ukc-hero-inner">

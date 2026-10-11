@@ -19,7 +19,11 @@
     @include('partials.public-header')
 
     {{-- ===================== Hero ===================== --}}
-    <section class="hero">
+    {{-- Bandeau d'accueil (Réglages › Bannières). Sans image, le dégradé de la
+         charte reste seul : la classe et la variable ne sont même pas posées. --}}
+    @php($heroAccueil = \App\Support\SiteBanners::home())
+    <section @class(['hero', 'hero--image' => $heroAccueil])
+             @if ($heroAccueil) style="--hero-bg: url('{{ $heroAccueil }}');" @endif>
         <div class="ukc-container">
             <div class="hero-grid">
                 <div>

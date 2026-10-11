@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Providers\AppServiceProvider;
 use App\Support\AiAgents;
 use App\Support\Branding;
+use App\Support\EventArtwork;
 use App\Support\ParticipantTypes;
 use App\Support\Settings;
+use App\Support\SiteBanners;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
@@ -34,6 +36,7 @@ class SettingController extends Controller
      */
     public const TAB_LABELS = [
         'general' => 'Général',
+        'banners' => 'Bannières',
         'payments' => 'Paiements',
         'email' => 'E-mail',
         'ai' => 'Intelligence artificielle',
@@ -43,7 +46,7 @@ class SettingController extends Controller
     ];
 
     /** @var list<string> */
-    public const TABS = ['general', 'payments', 'email', 'ai', 'agents-ia', 'meetings', 'integrations'];
+    public const TABS = ['general', 'banners', 'payments', 'email', 'ai', 'agents-ia', 'meetings', 'integrations'];
 
     /** Correspondance champ de formulaire → clé de réglage. */
     private const MAP = [
@@ -198,6 +201,15 @@ class SettingController extends Controller
             'app_logo_white' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:1024'],
             'app_logo_mark' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:1024'],
             'app_logo_mark_white' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:1024'],
+            // ⚠️ Pas la limite des logos : un bandeau est une PHOTO pleine
+            // largeur, 1 Mo la refuserait presque toujours. Et pas de SVG : ces
+            // images sont recadrées en `cover`, un dessin vectoriel n'a rien à
+            // y faire. Le plafond suit celui du serveur, parce qu'une règle
+            // plus généreuse que `upload_max_filesize` ne sert à rien : PHP
+            // coupe la requête avant la validation et l'admin reçoit une page
+            // vide au lieu d'un message.
+            SiteBanners::HOME => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:'.self::bannerMaxKb()],
+            SiteBanners::EVENT_DEFAULT => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:'.self::bannerMaxKb()],
         ]);
 
         if ($validator->fails()) {
@@ -222,8 +234,15 @@ class SettingController extends Controller
 
         Settings::setMany($payload);
         $this->saveLogos($request);
+        $toucheBanniere = $this->saveBanners($request);
 
-        return back()->with('ukc_status', 'Réglages enregistrés.')->with('settings_tab', 'general');
+        // ⚠️ On revient sur l'onglet des bannières quand c'est lui qu'on vient
+        // d'utiliser : renvoyer vers « Général » après un téléversement, c'est
+        // priver l'admin du seul retour qui compte, l'aperçu de ce qu'il vient
+        // de poser.
+        return back()
+            ->with('ukc_status', 'Réglages enregistrés.')
+            ->with('settings_tab', $toucheBanniere ? 'banners' : 'general');
     }
 
     /**
@@ -254,6 +273,56 @@ class SettingController extends Controller
             $this->forget($previous);
             Settings::set($key, $path);
         }
+    }
+
+    /**
+     * Bandeaux du site (accueil, repli des événements) et remise à zéro.
+     *
+     * Rend **vrai** si l'admin a touché à l'un des deux, pour que la page
+     * revienne sur l'onglet « Bannières » plutôt que sur « Général ».
+     *
+     * ⚠️ Même règle que pour les logos : on remplace le fichier précédent au
+     * lieu d'empiler. Un bandeau n'a pas d'historique, et les anciens
+     * resteraient servis publiquement.
+     */
+    private function saveBanners(Request $request): bool
+    {
+        $touche = false;
+
+        // La clé du réglage sert aussi de nom de champ : une seule source.
+        foreach (SiteBanners::KEYS as $key) {
+            $previous = (string) (Settings::get($key) ?? '');
+
+            if ($request->boolean($key.'_remove')) {
+                $this->forget($previous);
+                Settings::set($key, '');
+                $touche = true;
+
+                continue;
+            }
+
+            if (! $request->hasFile($key)) {
+                continue;
+            }
+
+            $path = $request->file($key)->store(SiteBanners::DIR, 'public');
+            $this->forget($previous);
+            Settings::set($key, $path);
+            $touche = true;
+        }
+
+        return $touche;
+    }
+
+    /**
+     * Plafond de téléversement d'un bandeau, en kilo-octets.
+     *
+     * 4 Mo suffisent très largement pour une image de 1920px bien compressée ;
+     * on n'annonce jamais plus que ce que le serveur accepte réellement.
+     */
+    public static function bannerMaxKb(): int
+    {
+        return (int) min(4096, EventArtwork::maxUploadKb());
     }
 
     /** Supprime un fichier de marque devenu inutile (ignore l'absence). */
@@ -298,6 +367,7 @@ class SettingController extends Controller
     private function tabForField(string $field): string
     {
         return match (true) {
+            str_starts_with($field, 'hero_') => 'banners',
             str_starts_with($field, 'payments_'), str_starts_with($field, 'cashpay_'), str_starts_with($field, 'fedapay_') => 'payments',
             str_starts_with($field, 'mail_'), $field === 'test_email' => 'email',
             str_starts_with($field, 'ai_') => 'ai',

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\Formation;
 use App\Support\Fees;
+use App\Support\SiteBanners;
 use Illuminate\Contracts\View\View;
 
 /**
@@ -42,7 +43,10 @@ class EventSeriesController extends Controller
             'partners' => $settings['partners'] ?? [],
             'faq' => $settings['faq'] ?? [],
             'contact' => $settings['contact'] ?? [],
-            'heroImage' => $settings['hero_image'] ?? null,
+            // Repli commun quand l'événement n'a pas téléversé son propre
+            // bandeau (Réglages › Bannières). ⚠️ Le choix de l'événement
+            // passe toujours devant : le repli ne s'applique qu'à défaut.
+            'heroImage' => $settings['hero_image'] ?? SiteBanners::eventDefault(),
             // ⚠️ La vidéo n'est servie que si la case « Activer la vidéo de fond »
             // l'est : sans ce test, l'interrupteur de l'onglet Apparence ne
             // faisait rien et toute URL enregistrée se jouait.

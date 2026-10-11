@@ -62,6 +62,21 @@
     radial-gradient(ellipse 60% 50% at 85% 20%, rgba(255, 215, 0, .16), transparent 55%),
     radial-gradient(ellipse 40% 40% at 10% 80%, rgba(0, 153, 51, .18), transparent 50%);
 }
+/* Bandeau téléversé : l'image prend la place des halos décoratifs, sous un
+   voile navy qui garde le texte blanc lisible.
+   ⚠️ Le voile est celui de `.detail-hero .bg::after`, bâti sur
+   `--ukc-hero-navy` (#14205a) - le navy bleuté que `ukc.css` désigne pour les
+   voiles sur image. Surtout pas un troisième dégradé bricolé, et surtout pas
+   #0f1a33, la teinte quasi noire que la charte écarte.
+   ⚠️ Le dégradé `--ukc-hero` reste en fond de `.hero` : si l'image met du
+   temps à venir, ou ne vient jamais, on ne voit pas une bande blanche. */
+.hero--image::before {
+  background-image:
+    linear-gradient(135deg, rgba(20, 32, 90, .90), rgba(20, 32, 90, .64)),
+    var(--hero-bg);
+  background-size: cover;
+  background-position: center;
+}
 .hero .ukc-container { position: relative; z-index: 1; }
 .hero-kicker {
   display: inline-flex; align-items: center; gap: 8px;
@@ -787,7 +802,7 @@ input[data-uppercase] { text-transform: uppercase; }
    `ukc-section`, pied de page du colloque. On y arrive par un lien reçu par
    e-mail, souvent sans savoir de quel colloque il s'agit : la page doit se
    présenter, pas seulement poser une question. */
-.coauthor-wrap { max-width: 720px; }
+.coauthor-wrap { max-width: 1120px; }
 /* ⚠️ Icône + titre GROUPÉS à gauche sur les pages publiques. `.ukc-card h2` est
    réglé en `space-between` pour le back-office, où une action vit à droite du
    titre ; sur une page publique il n'y en a aucune, et le titre partait à

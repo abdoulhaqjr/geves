@@ -178,6 +178,75 @@
                 </div>
             </div>
 
+            {{-- Bannières --}}
+            <div class="ukc-panel" :class="{ active: tab==='banners' }">
+                <div class="ukc-card">
+                    <h2><span><x-ukc.icon name="image" :size="20" /> Bannières</span></h2>
+                    <p class="desc">
+                        Les grandes images de bandeau du site. Format paysage très large conseillé
+                        (21:9, par exemple 1920 x 820). Un voile bleu est posé par-dessus pour que
+                        le texte blanc reste lisible : évitez les visuels déjà très chargés au centre.
+                    </p>
+                    <div class="ukc-banner-grid">
+                        @foreach ([
+                            [
+                                'key' => \App\Support\SiteBanners::HOME,
+                                'titre' => 'Bandeau de la page d’accueil',
+                                'aide' => 'Première image du site, derrière le titre de la plateforme. Sans fichier, le dégradé de la charte est utilisé.',
+                            ],
+                            [
+                                'key' => \App\Support\SiteBanners::EVENT_DEFAULT,
+                                'titre' => 'Bandeau par défaut des événements',
+                                'aide' => 'Habille la page de tout événement qui n’a pas téléversé le sien dans l’onglet « Identité visuelle » de sa fiche. Un événement qui a choisi son bandeau garde le sien.',
+                            ],
+                        ] as $banniere)
+                            @php($posee = \App\Support\SiteBanners::url($banniere['key']))
+                            <div class="ukc-banner-card" x-data="{
+                                    preview: '{{ $posee }}',
+                                    custom: {{ $posee ? 'true' : 'false' }},
+                                    removed: false,
+                                    pick(e) {
+                                        const f = e.target.files[0]; if (! f) return;
+                                        this.preview = URL.createObjectURL(f);
+                                        this.custom = true; this.removed = false;
+                                    },
+                                    reset() {
+                                        this.preview = ''; this.custom = false;
+                                        this.removed = true; this.$refs.f.value = '';
+                                    }
+                                 }">
+                                <div class="head">
+                                    {{ $banniere['titre'] }}
+                                    <span class="ukc-pill" :class="custom ? 'ukc-pill--info' : 'ukc-pill--muted'"
+                                          x-text="custom ? 'Image posée' : 'Dégradé de la charte'">Dégradé de la charte</span>
+                                </div>
+                                <p class="hint">{{ $banniere['aide'] }}</p>
+                                {{-- L'aperçu vide n'est pas vide : il montre le dégradé que les
+                                     visiteurs voient aujourd'hui, c'est-à-dire ce que remplacera
+                                     le fichier téléversé. --}}
+                                <div class="shot" :style="preview ? `background-image:url(&quot;${preview}&quot;)` : ''">
+                                    <span x-show="! preview" x-cloak>Aucune image : dégradé de la charte</span>
+                                </div>
+                                <div class="row">
+                                    <input type="file" id="{{ $banniere['key'] }}" name="{{ $banniere['key'] }}" x-ref="f"
+                                           accept="image/png,image/jpeg,image/webp" @change="pick($event)">
+                                    <label for="{{ $banniere['key'] }}" class="ukc-btn ukc-btn--sm" style="cursor:pointer;">
+                                        <x-ukc.icon name="upload" :size="16" /> <span x-text="custom ? 'Remplacer' : 'Téléverser'">Téléverser</span>
+                                    </label>
+                                    <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" x-show="custom" x-cloak @click="reset()">
+                                        Supprimer
+                                    </button>
+                                    <span class="hint">{{ number_format(\App\Http\Controllers\Admin\SettingController::bannerMaxKb() / 1024, 1, ',', ' ') }} Mo max · JPG, PNG ou WebP</span>
+                                </div>
+                                {{-- Champ caché plutôt qu'une case : la remise à zéro se décide par
+                                     le bouton, qui met aussi l'aperçu à jour. --}}
+                                <input type="hidden" name="{{ $banniere['key'] }}_remove" :value="removed ? '1' : '0'">
+                                @error($banniere['key']) <span class="error">{{ $message }}</span> @enderror
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
             {{-- Paiement --}}
             <div class="ukc-panel" :class="{ active: tab==='payments' }">
                 <div class="ukc-card">

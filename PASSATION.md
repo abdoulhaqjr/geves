@@ -1226,3 +1226,43 @@ vaut pour un événement donné se dit dans la note de tarifs
 (`settings.fees_note`), affichée sous le titre de la section, où l'organisation
 l'écrit elle-même. Règles CSS `.incl` et clé anglaise retirées dans la foulée :
 elles n'avaient plus d'objet.
+
+## 2026-10-11 - Bandeaux du site réglables, et la page co-auteur élargie
+
+**Deux demandes.** Élargir `.coauthor-wrap` de 720 à 1120px (fait, mesuré à
+1120 dans une fenêtre de 1350), et pouvoir renseigner depuis `admin/reglages`
+le bandeau de la page d'accueil et le bandeau par défaut des événements.
+
+**Ce que j'ai construit.** Un onglet **Bannières** (deuxième, après Général) et
+`App\Support\SiteBanners`, calqué sur `Branding` : clé sans point parce qu'elle
+sert aussi de nom de champ, remplacement du fichier précédent, `null` quand le
+fichier a disparu. L'accueil pose `.hero--image` et une variable CSS ; les
+événements reçoivent le repli par `$settings['hero_image'] ?? eventDefault()` -
+dans cet ordre, car un bandeau de site qui écraserait l'affiche d'un colloque
+serait pire que pas de bandeau.
+
+**Un effet de bord que j'ai corrigé.** Les deux voiles du bandeau d'événement
+étaient écrits **en ligne** dans la vue, en #0f1a33 - la teinte quasi noire que
+la charte écarte depuis le travail sur `--ukc-hero`. Écrits en ligne, ils
+échappaient à `DegradeHerosTest`, qui relit les feuilles de style. Tant que de
+rares événements téléversaient un visuel, cela se voyait peu ; avec la bannière
+par défaut, c'est le voile de **tous**. Passés sur `--ukc-hero-navy`, celui que
+`ukc.css` désigne pour cet usage.
+
+**Et une leçon de test, payée sur place.** Ma garde contre ce retour s'écrivait
+`expect($src)->not->toContain('rgba(15,26,51', "explication")`. Le second
+argument de `toContain()` n'est **pas un message, c'est une seconde aiguille** :
+nié, cela veut dire « ne contient pas (A et B) », ce qui passe dès que
+l'explication manque - par construction. Le cas ne mordait **jamais**. Seul le
+sabotage l'a montré, exactement comme l'`assertSee($long)` qui passait sur un
+texte tronqué. Puis sa correction s'est révélée **trop large** (elle dénonçait
+sept ombres et voiles de modale légitimes) : la règle vise les **dégradés**, pas
+la teinte, que la charte autorise en aplat. Une garde qui crie sur du code
+correct finit par être désactivée.
+
+**Gardes.** `tests/Feature/SiteBannersTest.php`, 10 cas, 4 sabotages vérifiés
+(voile quasi-noir réintroduit, repli d'événement retiré, bandeau d'accueil
+ignoré, enregistrement débranché) - chacun fait tomber ce qu'il doit, et la
+restauration est vérifiée bit pour bit.
+
+1150 tests / 4075 assertions, Pint et PHPStan niveau 5 sans erreur.

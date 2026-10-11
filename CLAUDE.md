@@ -2157,6 +2157,53 @@ Certifier/Credsverse).
   la réouverture le jeton était perdu et l'image gardait l'adresse d'alors. Elle
   fait désormais l'aller-retour, et le QR est redessiné à la restauration.
   Tests : `tests/Feature/AttestationPageTest.php`, `tests/Feature/DocumentDesignerTest.php`.
+### Bandeaux du site = Réglages › Bannières (2026-10-11)
+
+Deux images de niveau **plateforme**, servies par **`App\Support\SiteBanners`** :
+`hero_home_image` (bandeau de la page d'accueil) et `hero_event_default_image`
+(**repli** des pages d'événement). Même grammaire que `Branding` pour les logos :
+la **clé du réglage sert aussi de nom de champ**, un fichier **remplace** le
+précédent, et un réglage pointant vers un fichier disparu rend `null`.
+
+- ⚠️ **Les clés n'ont PAS de point**, contrairement à `site.facebook` : Laravel
+  lit un point comme un niveau de tableau, et `hasFile('hero.home')` ne
+  trouverait rien.
+- ⚠️ **Le repli ne passe JAMAIS devant le choix d'un événement** :
+  `EventSeriesController` écrit `$settings['hero_image'] ?? SiteBanners::eventDefault()`,
+  dans cet ordre. Un cas Pest le gèle - un bandeau de site qui écraserait
+  l'affiche d'un colloque serait pire que pas de bandeau du tout.
+- ⚠️ **`SiteBanners::eventDefault()` rend une URL**, pas un chemin : c'est ce
+  que stocke `settings.hero_image` (cf. `EventArtwork`), et le repli doit
+  pouvoir s'y substituer sans conversion.
+- **Accueil** : `home.blade.php` pose `.hero--image` + la variable `--hero-bg`,
+  et `public.css` ne surcharge que le `background-image` du calque `::before`.
+  Le dégradé `--ukc-hero` reste en fond de `.hero` : une image lente, ou
+  absente, ne laisse jamais une bande blanche.
+- ⚠️ **Le voile d'un bandeau est bâti sur `--ukc-hero-navy` (#14205a)**, celui
+  de `.detail-hero .bg::after`. Les deux voiles du bandeau d'événement
+  portaient #0f1a33, la teinte que la charte écarte - **écrits EN LIGNE dans la
+  vue**, ils échappaient à `DegradeHerosTest`, qui relit les feuilles de style.
+  Tant que de rares événements téléversaient un visuel, cela se voyait peu ;
+  avec la bannière par défaut, c'est le voile de **tous**. Un cas de
+  `SiteBannersTest` interdit le retour d'un **dégradé** en #0f1a33 - la teinte
+  reste permise en **aplat** (ombres portées, pastille de vignette, voile de
+  modale : sept usages légitimes dans `public.css`).
+- ⚠️ **Le plafond de téléversement suit le serveur**
+  (`SettingController::bannerMaxKb()`, 4 Mo ou moins) : une règle `max:` plus
+  généreuse que `upload_max_filesize` ne sert à rien, PHP coupe la requête avant
+  la validation. Et **pas de SVG** : l'image est recadrée en `cover`.
+- ⚠️ **Après un téléversement, la page revient sur l'onglet « Bannières »** et
+  non sur « Général » : sinon l'admin perd le seul retour qui compte, l'aperçu
+  de ce qu'il vient de poser. L'aperçu vide montre le **dégradé de la charte**,
+  c'est-à-dire ce que le fichier va remplacer.
+- Tests : `tests/Feature/SiteBannersTest.php` (10 cas, 4 sabotages vérifiés).
+
+⚠️ **Piège Pest rencontré ici** : `toContain()` prend **plusieurs aiguilles**,
+pas un message. `expect($x)->not->toContain('motif', "explication")` nie « A ET
+B », donc passe dès que l'explication manque - **par construction**. Le cas ne
+mordait jamais ; seul un sabotage l'a montré. Relever les fautifs dans un
+tableau et comparer à `[]` : le message d'échec nomme alors le fichier et la
+ligne.
 ### Onglets d'une page = pilules + URL
 
 Toutes les sous-navigations du back-office sont en **pilules**
