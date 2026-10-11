@@ -1,5 +1,5 @@
 @php
-    $seed = __('Bonjour ! Je suis :name, l’assistante du colloque de l’Université de Kara. Comment puis-je vous aider aujourd’hui ?', ['name' => $agentName]);
+    $seed = __('Bonjour ! Je suis :name, l’assistante des événements scientifiques de l’Université de Kara. Comment puis-je vous aider aujourd’hui ?', ['name' => $agentName]);
 @endphp
 <x-layouts.app :title="__('Assistante :name', ['name' => $agentName])">
     @include('partials.public-header')
@@ -16,7 +16,7 @@
                         @endif
                     </div>
                     <div>
-                        <h1>{{ $agentName }} - {{ __('votre assistante colloque') }}</h1>
+                        <h1>{{ $agentName }} - {{ __('votre assistante événements') }}</h1>
                         <p>{{ __('Questions sur les soumissions, l’inscription, les tarifs, le programme et les documents.') }}</p>
                     </div>
                     <button type="button" class="ukc-btn ukc-btn--ghost ukc-btn--sm" style="margin-left:auto;align-self:center;flex-shrink:0;"
@@ -58,7 +58,7 @@
                         <button type="button" @click="ask('{{ __('Comment soumettre une communication ?') }}')">{{ __('Soumettre une communication') }}</button>
                         <button type="button" @click="ask('{{ __('Quels sont les tarifs d’inscription ?') }}')">{{ __('Tarifs d’inscription') }}</button>
                         <button type="button" @click="ask('{{ __('Où voir mon badge et mon attestation ?') }}')">{{ __('Badge & attestation') }}</button>
-                        <button type="button" @click="ask('{{ __('Quel est le programme du colloque ?') }}')">{{ __('Programme') }}</button>
+                        <button type="button" @click="ask('{{ __('Quel est le programme de l’événement ?') }}')">{{ __('Programme') }}</button>
                     </div>
 
                     <div class="chat-input" :class="{ 'is-big': big, 'has-grow': showGrow || big }" x-data="{ big: false }">
@@ -77,7 +77,7 @@
                 </div>
 
                 <p class="hint" style="text-align:center;font-size:12.5px;color:var(--ukc-muted);margin-top:10px;">
-                    {{ $agentName }} {{ __('s’appuie sur les informations officielles du colloque. Pour une demande sensible, contactez le secrétariat.') }}
+                    {{ $agentName }} {{ __('s’appuie sur les informations officielles de l’événement. Pour une demande sensible, contactez le secrétariat.') }}
                 </p>
             </div>
         </div>

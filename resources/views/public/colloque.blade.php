@@ -120,7 +120,7 @@
             <div class="ukc-nav-bar-inner" x-data="ukcScrollspy()">
                 @php
                     $cfShort = $e->settings['short_name'] ?? null;
-                    $cfShort = $cfShort ?: ($e->tr('event_label') ?: \Illuminate\Support\Str::limit($e->series?->name ?? 'Colloque', 22));
+                    $cfShort = $cfShort ?: ($e->tr('event_label') ?: \Illuminate\Support\Str::limit($e->series?->name ?? __('Événement'), 22));
                 @endphp
                 <a href="#top" class="ukc-nav-brand">
                     <span class="dot" aria-hidden="true"></span>
@@ -215,7 +215,7 @@
                 }
                 if ($e->date_end && (! $e->date_start || $e->date_end->ne($e->date_start))) {
                     $days = ($e->date_start && $e->date_end) ? ((int) $e->date_start->startOfDay()->diffInDays($e->date_end->startOfDay()) + 1).' '.__('jours') : __('Clôture');
-                    $keyDates[] = ['icon' => 'calendar-check', 'label' => __('Colloque'), 'value' => $e->date_end->translatedFormat('d M Y'), 'pill' => 'info', 'pillLabel' => $days];
+                    $keyDates[] = ['icon' => 'calendar-check', 'label' => __('Événement'), 'value' => $e->date_end->translatedFormat('d M Y'), 'pill' => 'info', 'pillLabel' => $days];
                 }
             @endphp
             @if (count($keyDates))
@@ -285,7 +285,7 @@
                     <div class="ukc-block-head">
                         <h2>{{ __('Ateliers disciplinaires') }}</h2>
                         <div class="ukc-accent"><i></i><i></i><i></i></div>
-                        <p>{{ __(':count ateliers regroupant les champs disciplinaires du colloque.', ['count' => count($disciplines)]) }}</p>
+                        <p>{{ __(':count ateliers regroupant les champs disciplinaires de l’événement.', ['count' => count($disciplines)]) }}</p>
                     </div>
                     <div class="ukc-themes">
                         @foreach ($disciplines as $i => $disc)
@@ -310,7 +310,7 @@
                     <div class="ukc-block-head">
                         <h2>{{ ($programSynthesis['title'] ?? '') !== '' ? $programSynthesis['title'] : __('Programme') }}</h2>
                         <div class="ukc-accent"><i></i><i></i><i></i></div>
-                        <p>{{ __('Aperçu du déroulement du colloque.') }}</p>
+                        <p>{{ __('Aperçu du déroulement de l’événement.') }}</p>
                     </div>
 
                     @include('partials.program-synthesis', ['synthesis' => $programSynthesis])
@@ -391,7 +391,7 @@
                     <div class="ukc-block-head">
                         <h2>{{ __('Frais de participation') }}</h2>
                         <div class="ukc-accent"><i></i><i></i><i></i></div>
-                        <p>{{ __('Tarifs officiels du colloque (FCFA).') }}@if ($feesNote) {{ $feesNote }}@endif</p>
+                        <p>{{ __('Tarifs officiels de l’événement (FCFA).') }}@if ($feesNote) {{ $feesNote }}@endif</p>
                     </div>
 
 

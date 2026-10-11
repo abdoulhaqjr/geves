@@ -2157,6 +2157,32 @@ Certifier/Credsverse).
   la réouverture le jeton était perdu et l'image gardait l'adresse d'alors. Elle
   fait désormais l'aller-retour, et le QR est redessiné à la restauration.
   Tests : `tests/Feature/AttestationPageTest.php`, `tests/Feature/DocumentDesignerTest.php`.
+### Le site PUBLIC dit « evenement », pas « colloque » (2026-10-11)
+
+La plateforme gere des colloques, des seminaires ET des journees
+scientifiques (`EventType`) : « Colloques a venir » annoncait donc moins que
+ce que le site contient. Les sections, les titres de page, les boutons et les
+phrases de l'assistante disent **evenement**.
+
+⚠️ **« Colloque » reste legitime a deux endroits, et seulement la :**
+
+- quand il designe **le TYPE** : l'enumeration « seminaires, colloques et
+  journees scientifiques », le filtre et la pastille des archives ;
+- dans les **identifiants** : la route `/colloque/{slug}` (des liens sont
+  deja partis par e-mail), les classes CSS `.colloque-grid` /
+  `.colloque-card`, le partial `partials.colloque-footer`, la variable
+  `$colloqueUrl`, l'adresse colloque@univkara.tg, `GescoController`.
+
+⚠️ **Renommer un libelle cree une cle neuve** : sans traduction, la version
+anglaise redevient un panachage. 58 cles ajoutees a `lang/en.json` dans la
+foulee. Quatre accords faux corriges au passage (« evenements cloturees »,
+« Evenements archivees », « a venir ou passees », et le sous-titre des
+evenements a venir).
+
+Tenu par `tests/Feature/VocabulairePublicTest.php` : liste d'exception
+EXPLICITE pour les deux usages legitimes, et garde de traduction sur toute la
+surface publique.
+
 ### Indicateurs de l'accueil : ce qu'ils mesurent VRAIMENT (2026-10-11)
 
 ⚠️ **Deux des quatre étaient faux ou inutiles**, et les clés mentaient :

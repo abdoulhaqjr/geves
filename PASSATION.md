@@ -1370,3 +1370,31 @@ l'accueil au lieu de la page d'archives - donc elle prend la meme garde que
 ses deux voisines (`navHasPast`), sans quoi on reintroduisait exactement le
 lien mort corrige le matin meme. La page d'archives reste atteignable depuis
 la section (« Toutes les archives ») et depuis le pied de page.
+
+## 2026-10-11 - « Evenement », pas « colloque », sur tout le site public
+
+La plateforme gere trois types d'evenements ; le site public n'en nommait
+qu'un. « Colloques a venir », « Colloques passes », « Infos du colloque »,
+« Tarifs officiels du colloque », « votre assistante colloque »... une
+trentaine de libelles, repris en « evenement ».
+
+**Ce qui NE bouge pas**, et c'est la moitie du travail : la route
+`/colloque/{slug}` (des liens sont deja partis par e-mail), les classes CSS,
+le partial de pied de page, l'adresse colloque@univkara.tg - des noms de
+choses - et surtout « colloque » quand il designe le TYPE : l'enumeration
+« seminaires, colloques et journees scientifiques » et le filtre des
+archives. Une regle qui interdirait le mot partout effacerait aussi le type.
+
+**58 cles anglaises** ajoutees : renommer un libelle cree une cle neuve, et
+sans traduction la version anglaise redevient un panachage. L'audit a sorti
+au passage quatre accords faux (« evenements cloturees », « Evenements
+archivees », « a venir ou passees », « la date du colloque »).
+
+**Quatre cas existants sont tombes** sur les anciens libelles - c'est le
+signe que la garde porte : ils assertaient « Colloques a venir », « Galerie -
+dernier colloque », « Colloques passes », « Aucun colloque en cours ».
+
+Garde : `VocabulairePublicTest`, avec liste d'exception explicite. Quatre
+sabotages verifies.
+
+1172 tests / 4165 assertions, Pint et PHPStan niveau 5 sans erreur.

@@ -20,7 +20,7 @@
         : $mascot;
 
     // Même message d'accueil que la page dédiée /assistante.
-    $seed = 'Bonjour ! Je suis '.$agentName.', l’assistante du colloque de l’Université de Kara. '
+    $seed = 'Bonjour ! Je suis '.$agentName.', l’assistante des événements scientifiques de l’Université de Kara. '
         .'Comment puis-je vous aider aujourd’hui ?';
 @endphp
 
@@ -31,7 +31,7 @@
             <div class="av">{!! $avatarHtml !!}</div>
             <div class="meta">
                 <strong>{{ $agentName }}</strong>
-                <span>Assistante colloque · en ligne</span>
+                <span>{{ __('Assistante événements · en ligne') }}</span>
             </div>
             <div class="tools">
                 <button type="button" @click="reset()" x-show="messages.length > 1" title="Nouvelle discussion" aria-label="Nouvelle discussion">

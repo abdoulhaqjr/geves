@@ -57,7 +57,7 @@
                             @endif
                         </div>
                         <div style="display:flex;flex-wrap:wrap;gap:8px;">
-                            <a href="{{ $colloqueUrl($featured) }}" class="ukc-btn ukc-btn--primary ukc-btn--sm">{{ __('Page du colloque') }}</a>
+                            <a href="{{ $colloqueUrl($featured) }}" class="ukc-btn ukc-btn--primary ukc-btn--sm">{{ __('Page de l’événement') }}</a>
                             @auth('account')
                                 <a href="{{ route('account.submissions.create', $featured->slug) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">{{ __('Soumettre un résumé') }}</a>
                             @endauth
@@ -75,7 +75,7 @@
 
     {{-- ===================== Indicateurs =====================
          ⚠️ Rien à montrer quand tout est à zéro : sur un site neuf, quatre
-         cartes annonçant « 0 événement · 0 colloque · 0 participant · 0
+         cartes annonçant « 0 événement · 0 communication · 0 participant · 0
          établissement » ne renseignent personne et donnent une plateforme à
          l'abandon. On masque le bandeau ENTIER, pas les cartes une à une :
          retirer deux cartes sur quatre laisse une rangée trouée. --}}
@@ -114,12 +114,12 @@
     </div>
     @endif
 
-    {{-- ===================== Colloque en cours ===================== --}}
+    {{-- ===================== Événement en cours ===================== --}}
     @if ($ongoing)
         <section class="ukc-section" id="en-cours">
             <div class="ukc-container">
                 <div class="block-head">
-                    <h2>{{ __('Colloque en cours') }}</h2>
+                    <h2>{{ __('Événement en cours') }}</h2>
                     <p>{!! __('Manifestation dont le <strong>déroulement</strong> a commencé : sessions, ateliers et communications en direct (présentiel et/ou visio).') !!}</p>
                 </div>
                 <article class="live-card">
@@ -136,7 +136,7 @@
                         </div>
                         <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;">
                             <a href="{{ route('public.deroulement') }}" class="ukc-btn ukc-btn--blue">{{ __('Rejoindre le déroulement') }}</a>
-                            <a href="{{ $colloqueUrl($ongoing) }}" class="ukc-btn ukc-btn--outline">{{ __('Infos du colloque') }}</a>
+                            <a href="{{ $colloqueUrl($ongoing) }}" class="ukc-btn ukc-btn--outline">{{ __('Infos de l’événement') }}</a>
                         </div>
                     </div>
                 </article>
@@ -144,13 +144,13 @@
         </section>
     @endif
 
-    {{-- ===================== Colloques à venir ===================== --}}
+    {{-- ===================== Événements à venir ===================== --}}
     @if ($upcoming->isNotEmpty())
         <section class="ukc-section ukc-section--alt" id="a-venir">
             <div class="ukc-container">
                 <div class="block-head">
-                    <h2>{{ __('Colloques à venir') }}</h2>
-                    <p>{!! __('Événements dont l’<strong>appel est lancé</strong> (soumission, évaluation, inscription…) - la date du colloque n’est pas encore atteinte.') !!}</p>
+                    <h2>{{ __('Événements à venir') }}</h2>
+                    <p>{!! __('Événements dont l’<strong>appel est lancé</strong> (soumission, évaluation, inscription…) - la date de l’événement n’est pas encore atteinte.') !!}</p>
                 </div>
                 <div class="colloque-grid">
                     @foreach ($upcoming as $e)
@@ -170,7 +170,7 @@
                                     @if ($e->submission_deadline)<div>{{ __('Date limite :') }} {{ $e->submission_deadline->translatedFormat('d F Y') }}</div>@endif
                                 </div>
                                 <div class="foot">
-                                    <a href="{{ $colloqueUrl($e) }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">{{ __('Page du colloque') }}</a>
+                                    <a href="{{ $colloqueUrl($e) }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">{{ __('Page de l’événement') }}</a>
                                     @auth('account')
                                         <a href="{{ route('account.submissions.create', $e->slug) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">{{ __('Soumettre') }}</a>
                                     @endauth
@@ -183,12 +183,12 @@
         </section>
     @endif
 
-    {{-- ===================== Colloques passés ===================== --}}
+    {{-- ===================== Événements passés ===================== --}}
     @if ($past->isNotEmpty())
         <section class="ukc-section" id="passes">
             <div class="ukc-container">
                 <div class="block-head">
-                    <h2>{{ __('Colloques passés') }}</h2>
+                    <h2>{{ __('Événements passés') }}</h2>
                     <p>{{ __('Mémoire des événements précédents - programmes, galeries et documents publics.') }}</p>
                 </div>
                 <div class="colloque-grid">
@@ -280,7 +280,7 @@
         <div class="ukc-container">
             <div class="block-head">
                 <h2>{{ __('Au service des participants et des comités') }}</h2>
-                <p>{{ __('Outils mis à disposition pour le cycle de vie des colloques universitaires.') }}</p>
+                <p>{{ __('Outils mis à disposition pour le cycle de vie des événements universitaires.') }}</p>
             </div>
             <div class="features">
                 <div class="feature">
@@ -317,12 +317,12 @@
         </div>
     </section>
 
-    {{-- ===================== Galerie - dernier colloque ===================== --}}
+    {{-- ===================== Galerie - dernier événement ===================== --}}
     @if (! empty($gallery))
         <section class="ukc-section ukc-section--alt" id="galerie">
             <div class="ukc-container">
                 <div class="block-head">
-                    <h2>{{ __('Galerie - dernier colloque') }}</h2>
+                    <h2>{{ __('Galerie - dernier événement') }}</h2>
                     <p>{{ __('Photos et vidéos') }}{{ $galleryEdition ? ' - '.$galleryEdition->title : '' }}. {{ __('Cliquez pour agrandir ou visionner.') }}</p>
                 </div>
                 @include('partials.gallery', ['media' => $gallery])
@@ -366,7 +366,7 @@
         <div class="ukc-container">
             <div class="block-head">
                 <h2>{{ __('Contact') }}</h2>
-                <p>{{ __('Une question sur un colloque, une soumission ou un document ? Écrivez à la DRI.') }}</p>
+                <p>{{ __('Une question sur un événement, une soumission ou un document ? Écrivez à la DRI.') }}</p>
             </div>
             <div class="contact-grid">
                 <div class="contact-info">
@@ -444,7 +444,7 @@
         <div class="ukc-container">
             <div class="cta-band">
                 <div>
-                    <h2>{{ __('Prêt à participer au prochain colloque ?') }}</h2>
+                    <h2>{{ __('Prêt à participer au prochain événement ?') }}</h2>
                     <p>{{ __('Créez votre espace, déposez un résumé ou consultez le programme de l’événement en cours. Un accompagnement est disponible via l’assistante :name.', ['name' => \App\Support\AiAgents::publicName()]) }}</p>
                 </div>
                 <div style="display:flex;flex-wrap:wrap;gap:10px;">

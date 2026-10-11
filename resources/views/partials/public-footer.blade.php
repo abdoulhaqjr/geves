@@ -14,12 +14,12 @@
                      s'affichent sur l'accueil qu'en présence d'événements, et un
                      lien vers une ancre absente ne fait rien du tout. --}}
                 @if ($navHasOngoing ?? false)
-                    <a href="{{ route('home') }}#en-cours">{{ __('Colloque en cours') }}</a>
+                    <a href="{{ route('home') }}#en-cours">{{ __('Événement en cours') }}</a>
                 @endif
                 @if ($navHasUpcoming ?? false)
                     <a href="{{ route('home') }}#a-venir">{{ __('À venir') }}</a>
                 @endif
-                <a href="{{ route('public.archives') }}">{{ __('Colloques passés') }}</a>
+                <a href="{{ route('public.archives') }}">{{ __('Événements passés') }}</a>
                 <a href="{{ route('home') }}#apropos">{{ __('À propos') }}</a>
                 <a href="{{ route('home') }}#contact">{{ __('Contact') }}</a>
             </div>

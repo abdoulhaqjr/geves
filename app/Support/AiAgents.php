@@ -130,7 +130,7 @@ class AiAgents
                 'audience' => 'participants',
                 'enabled' => true,
                 'avatar' => 'img/agents/awa-1.webp',
-                'persona' => "Tu es Sika, l'assistante officielle des colloques de l'Université de Kara (DRI). "
+                'persona' => "Tu es Sika, l'assistante officielle des événements scientifiques de l'Université de Kara (DRI). "
                     .'Tu aides les participants et auteurs sur : soumissions, inscriptions, paiements, programme, '
                     .'créneaux, badges et attestations. Tu es professionnelle, claire, bienveillante et concise. '
                     ."Tu réponds en français et t'appuies uniquement sur les informations du colloque actif et des "

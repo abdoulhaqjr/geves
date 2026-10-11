@@ -1,12 +1,12 @@
 @use('App\Http\Controllers\Public\ArchiveController')
 
-<x-layouts.app :title="__('Colloques passés - :app', ['app' => config('app.name')])">
+<x-layouts.app :title="__('Événements passés - :app', ['app' => config('app.name')])">
     @include('partials.public-header')
 
     <section class="page-hero">
         <div class="ukc-container">
             <div class="eyebrow">{{ __('Archives scientifiques') }}</div>
-            <h1>{{ __('Colloques passés') }}</h1>
+            <h1>{{ __('Événements passés') }}</h1>
             <p>{!! __('Mémoire des manifestations scientifiques organisées sous l’égide de l’Université de Kara. La plateforme :app est un service institutionnel de la <strong>Direction de la Recherche et de l’Innovation (DRI)</strong> - sans vocation commerciale.', ['app' => config('app.name')]) !!}</p>
             <div class="note">{{ __('Programmes · galeries · documents publics · actes') }}</div>
         </div>
@@ -16,7 +16,7 @@
         <div class="ukc-container">
             <div class="toolbar-filter">
                 <div>
-                    <h2>{{ __('Événements archivées') }}</h2>
+                    <h2>{{ __('Événements archivés') }}</h2>
                     <p>{{ __('Cliquez sur une carte pour consulter le détail de l’événement.') }}</p>
                 </div>
                 @if ($events->count() > 1)
@@ -31,7 +31,7 @@
             @if ($events->isEmpty())
                 <div class="ukc-empty">
                     <h3>{{ __('Aucun événement archivé pour le moment') }}</h3>
-                    <p>{{ __('Les événements clôturées apparaîtront ici avec leurs programmes, galeries et documents.') }}</p>
+                    <p>{{ __('Les événements clôturés apparaîtront ici avec leurs programmes, galeries et documents.') }}</p>
                 </div>
             @else
                 <div class="editions-grid" id="editionsGrid">

@@ -99,6 +99,6 @@ it('l’accueil range un appel ouvert dans « à venir »', function () {
 
     $this->get(route('home'))
         ->assertOk()
-        ->assertSee('Colloques à venir')
+        ->assertSee('Événements à venir')
         ->assertSee('Appel Ouvert 2027');
 });

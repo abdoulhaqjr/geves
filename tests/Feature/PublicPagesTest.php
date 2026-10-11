@@ -19,7 +19,7 @@ it('affiche la galerie du dernier colloque sur l’accueil', function () {
 
     $this->get(route('home'))
         ->assertOk()
-        ->assertSee('Galerie - dernier colloque', false)
+        ->assertSee('Galerie - dernier événement', false)
         ->assertSee('galleryData', false)
         ->assertSee('https://example.test/g1.jpg');
 });
@@ -29,7 +29,7 @@ it('n’affiche pas la galerie sur l’accueil sans média passé', function () 
 
     $this->get(route('home'))
         ->assertOk()
-        ->assertDontSee('Galerie - dernier colloque', false);
+        ->assertDontSee('Galerie - dernier événement', false);
 });
 
 it('affiche la liste des archives', function () {
@@ -37,7 +37,7 @@ it('affiche la liste des archives', function () {
 
     $this->get(route('public.archives'))
         ->assertOk()
-        ->assertSee('Colloques passés');
+        ->assertSee('Événements passés');
 });
 
 it('liste un événement passé dans les archives', function () {
@@ -65,7 +65,7 @@ it('affiche le détail d’un événement avec sa galerie', function () {
 it('affiche l’état vide du déroulement sans colloque en cours', function () {
     $this->get(route('public.deroulement'))
         ->assertOk()
-        ->assertSee('Aucun colloque en cours', false);
+        ->assertSee('Aucun événement en cours', false);
 });
 
 it('affiche le déroulement d’un colloque en cours', function () {

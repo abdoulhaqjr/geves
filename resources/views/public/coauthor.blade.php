@@ -25,7 +25,7 @@
             <h1>{{ __('Frais de co-auteur') }}</h1>
             <p>{{ __('Vous êtes cité(e) comme co-auteur d’une communication acceptée ? Retrouvez-la par votre e-mail, puis réglez vos frais depuis votre espace participant, au tarif de votre grade.') }}</p>
             <a class="note" href="{{ route('public.colloque', $event->slug) }}">
-                <x-ukc.icon name="chevron" :size="14" /> {{ __('Revenir à la page du colloque') }}
+                <x-ukc.icon name="chevron" :size="14" /> {{ __('Revenir à la page de l’événement') }}
             </a>
         </div>
     </section>
@@ -95,7 +95,7 @@
                         <p class="lead">{!! __('Vos frais se règlent depuis <strong>votre espace participant</strong>, au tarif de votre grade.') !!}</p>
                         <ul>
                             <li><x-ukc.icon name="check" :size="16" /> {{ __('Vos communications y sont déjà rattachées.') }}</li>
-                            <li><x-ukc.icon name="check" :size="16" /> {{ __('Votre attestation de communication s’y trouvera après le colloque.') }}</li>
+                            <li><x-ukc.icon name="check" :size="16" /> {{ __('Votre attestation de communication s’y trouvera après l’événement.') }}</li>
                             <li><x-ukc.icon name="check" :size="16" /> {{ __('Votre reçu et vos documents y restent accessibles.') }}</li>
                         </ul>
                         <div class="acts">
@@ -127,7 +127,7 @@
                     <div>
                         <span class="ico"><x-ukc.icon name="diploma" :size="18" /></span>
                         <strong>{{ __('Votre attestation vous suit') }}</strong>
-                        <p>{{ __('Le règlement ouvre droit à l’attestation de communication, délivrée dans votre espace après le colloque.') }}</p>
+                        <p>{{ __('Le règlement ouvre droit à l’attestation de communication, délivrée dans votre espace après l’événement.') }}</p>
                     </div>
                 </div>
             @endif

@@ -5,10 +5,10 @@
         <section class="ukc-section">
             <div class="ukc-container">
                 <div class="ukc-empty">
-                    <h3>{{ __('Aucun colloque en cours actuellement') }}</h3>
-                    <p>{{ __('Le déroulement en direct s’affichera ici pendant les journées d’un colloque. Consultez les événements à venir ou passées.') }}</p>
+                    <h3>{{ __('Aucun événement en cours actuellement') }}</h3>
+                    <p>{{ __('Le déroulement en direct s’affichera ici pendant les journées d’un événement. Consultez les événements à venir ou passés.') }}</p>
                     @if ($navHasUpcoming ?? false)
-                        <a href="{{ route('home') }}#a-venir" class="ukc-btn ukc-btn--blue">{{ __('Colloques à venir') }}</a>
+                        <a href="{{ route('home') }}#a-venir" class="ukc-btn ukc-btn--blue">{{ __('Événements à venir') }}</a>
                     @endif
                     <a href="{{ route('public.archives') }}" class="ukc-btn ukc-btn--outline" style="margin-left:8px;">{{ __('Archives') }}</a>
                 </div>
@@ -47,7 +47,7 @@
                     </div>
                     <div class="live-actions">
                         <button type="button" class="ukc-btn ukc-btn--primary" @click="modal = 'programme'">{{ __('Programme du jour') }}</button>
-                        <button type="button" class="ukc-btn ukc-btn--ghost" @click="modal = 'infos'">{{ __('Infos du colloque') }}</button>
+                        <button type="button" class="ukc-btn ukc-btn--ghost" @click="modal = 'infos'">{{ __('Infos de l’événement') }}</button>
                         <button type="button" class="ukc-btn ukc-btn--ghost" @click="modal = 'indications'">{{ __('Indications') }}</button>
                         <button type="button" class="ukc-btn ukc-btn--ghost" @click="modal = 'annonces'">{{ __('Annonces') }}</button>
                     </div>
@@ -143,7 +143,7 @@
             <div class="modal-overlay" x-cloak x-show="modal === 'programme'" x-transition @click.self="modal = null">
                 <div class="modal modal--lg" x-data="{ day: {{ $currentDayIndex }} }">
                     <div class="modal-head">
-                        <div><h2>{{ __('Programme du colloque') }}</h2><div class="sub">{{ $event->title ?: $event->series?->name }} · {{ $dates }}</div></div>
+                        <div><h2>{{ __('Programme de l’événement') }}</h2><div class="sub">{{ $event->title ?: $event->series?->name }} · {{ $dates }}</div></div>
                         <button type="button" class="modal-close" @click="modal = null">×</button>
                     </div>
                     <div class="modal-body">
@@ -188,7 +188,7 @@
             <div class="modal-overlay" x-cloak x-show="modal === 'infos'" x-transition @click.self="modal = null">
                 <div class="modal">
                     <div class="modal-head">
-                        <div><h2>{{ __('Informations du colloque') }}</h2><div class="sub">{{ $event->title ?: $event->series?->name }}</div></div>
+                        <div><h2>{{ __('Informations de l’événement') }}</h2><div class="sub">{{ $event->title ?: $event->series?->name }}</div></div>
                         <button type="button" class="modal-close" @click="modal = null">×</button>
                     </div>
                     <div class="modal-body">
