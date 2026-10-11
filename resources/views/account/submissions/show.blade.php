@@ -328,7 +328,8 @@
                         <div class="slot-card">
                             <strong>{{ $slot->session_label ?: __('Présentation') }}</strong>
                             @if ($slot->starts_at){{ $slot->starts_at->translatedFormat('d F, H:i') }}@endif
-                            @if ($slot->room) · {{ __('Salle') }} {{ $slot->room }}@endif
+                            {{-- ⚠️ `room` nomme déjà le lieu : pas de préfixe, sinon « Salle Salle 5 ». --}}
+                            @if ($slot->room) · {{ $slot->room }}@endif
                             @if ($slot->chosen_by_participant) <span class="ukc-pill ukc-pill--info" style="margin-left:6px;">{{ __('Choisi') }}</span>@endif
                         </div>
                         @if ($slot->starts_at)
@@ -429,7 +430,7 @@
                                         <span>
                                             <strong>{{ $av->session_label ?: __('Créneau') }}</strong>
                                             @if ($av->starts_at)<span style="color:var(--ukc-muted);"> - {{ $av->starts_at->translatedFormat('d F, H:i') }}</span>@endif
-                                            @if ($av->room)<span style="color:var(--ukc-muted);"> · {{ __('Salle') }} {{ $av->room }}</span>@endif
+                                            @if ($av->room)<span style="color:var(--ukc-muted);"> · {{ $av->room }}</span>@endif
                                         </span>
                                         <x-ukc.icon name="chevron" :size="16" />
                                     </button>

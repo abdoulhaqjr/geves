@@ -923,8 +923,13 @@ Passe menée sur le compte de démonstration le plus fourni (3 communications do
   `Carbon::setTestNow()`, **sans toucher aux dates en base**.
 - **« Salle Salle 5 ».** `slots.room` contient déjà « Salle 5 », « Auditorium »,
   « Grand amphithéâtre » : le préfixe `__('Salle')` doublait le mot. Retiré des
-  trois endroits du tableau de bord. ⚠️ `public/deroulement.blade.php` (« Salle :
-  Salle 5 ») et `account/submissions/show.blade.php` le font encore - à aligner.
+  trois endroits du tableau de bord, **puis de `public/deroulement` et de
+  `account/submissions/show`** (trois autres endroits), qui affichaient « Salle :
+  Salle 5 » et « Salle Auditorium ». La règle est tenue par
+  `tests/Feature/SalleLibelleTest.php`, **un cas par écran** : elle se perd écran
+  par écran, et rien ne la rappelait. ⚠️ Restent, hors écrans :
+  `SecretariatController::programContext()` (texte de contexte des documents) et
+  un message de `ProgramController`, où la valeur est entre guillemets.
 - **Quatre lignes pour deux choses.** « Mon programme » listait le passage **et**
   la séance qui le contient, laquelle ne disait rien de plus (la ligne du passage
   nomme sa séance et sa salle). Seules les plénières s'ajoutent désormais.

@@ -80,7 +80,9 @@
                                                 <h3>{{ $s->atelier?->title ?: ($s->type === 'plenary' ? __('Plénière') : __('Atelier')) }}</h3>
                                                 <div class="session-title">{{ $s->label }}</div>
                                                 <div class="meta">
-                                                    @if ($s->room)<span>{{ __('Salle :') }} {{ $s->room }}</span>@endif
+                                                    {{-- ⚠️ `room` NOMME déjà le lieu (« Salle 5 », mais aussi « Auditorium ») :
+                                                         préfixer donnait « Salle : Salle 5 » et « Salle : Auditorium ». --}}
+                                                    @if ($s->room)<span>{{ $s->room }}</span>@endif
                                                     @if ($s->starts_at && $s->ends_at)<span>{{ $s->starts_at->format('H:i') }} - {{ $s->ends_at->format('H:i') }}</span>@endif
                                                     @if ($s->moderator_name)<span>{{ __('Modération :') }} {{ $s->moderator_name }}</span>@endif
                                                 </div>

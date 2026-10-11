@@ -401,8 +401,11 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
 - ⚠️ **`slots.room` / `sessions.room` NOMMENT déjà le lieu** (« Salle 5 », mais
   aussi « Auditorium », « Grand amphithéâtre ») : **ne jamais préfixer par
   « Salle »**, on obtient « Salle Salle 5 » et « Salle Grand amphithéâtre ».
-  L'icône `pin` porte le sens. (Reste à aligner : `public/deroulement` et
-  `account/submissions/show` préfixent encore.)
+  L'icône `pin` porte le sens. Règle valable sur **tout le site** : tableau de
+  bord, `public/deroulement`, `account/submissions/show` - tenue par
+  `tests/Feature/SalleLibelleTest.php`, un cas par écran. (Restent, hors
+  écrans : `SecretariatController::programContext()` et le message de
+  `ProgramController` ligne 770, où la valeur est entre guillemets.)
 - ⚠️ **« Mon programme » ne dit chaque chose qu'une fois** : la séance qui
   contient un de mes passages n'y figure PAS en plus du passage - à 11h30 on
   lisait quatre lignes pour deux choses, et la ligne du passage nomme déjà sa
