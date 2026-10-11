@@ -403,7 +403,8 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   « Salle »**, on obtient « Salle Salle 5 » et « Salle Grand amphithéâtre ».
   L'icône `pin` porte le sens. Règle valable sur **tout le site**, écrans comme
   messages et textes générés - tenue par `tests/Feature/SalleLibelleTest.php`
-  (un cas par écran) et par `ProgramSlotsTest`.
+  (**un cas par endroit**, pas par écran : la liste des créneaux au choix ne
+  s'affiche que sans créneau attribué) et par `ProgramSlotsTest`.
   - **À l'écran, pas d'étiquette** : la valeur est seule, l'icône ou la colonne
     dit ce que c'est (tableau de bord, `public/deroulement`,
     `account/submissions/show`).

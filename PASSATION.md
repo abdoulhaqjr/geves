@@ -926,8 +926,11 @@ Passe menée sur le compte de démonstration le plus fourni (3 communications do
   trois endroits du tableau de bord, **puis de `public/deroulement` et de
   `account/submissions/show`** (trois autres endroits), qui affichaient « Salle :
   Salle 5 » et « Salle Auditorium ». La règle est tenue par
-  `tests/Feature/SalleLibelleTest.php`, **un cas par écran** : elle se perd écran
-  par écran, et rien ne la rappelait. Les deux derniers endroits ont suivi :
+  `tests/Feature/SalleLibelleTest.php`, **un cas par ENDROIT** (pas par écran) :
+  elle se perd endroit par endroit, et rien ne la rappelait. ⚠️ La liste des
+  créneaux au choix a son cas à elle, parce qu'elle ne s'affiche QUE sans
+  créneau attribué - le cas du créneau attribué ne pouvait pas la couvrir.
+  Vérifié en ne sabotant QUE cette ligne : un seul cas tombe. Les deux derniers endroits ont suivi :
   `SecretariatController::programContext()` (texte de contexte des documents) et
   le message d'association d'un lieu à un atelier. Là, l'étiquette est
   **nécessaire** - une suite de champs nommés, une phrase - donc elle devient

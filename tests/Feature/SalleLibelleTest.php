@@ -1,17 +1,44 @@
 <?php
 
+use App\Models\Event;
 use App\Models\Slot;
+use App\Models\Submission;
+use App\Models\User;
 use Illuminate\Support\Str;
 
 /**
  * **La salle ne se préfixe pas : la valeur nomme déjà le lieu.**
  *
  * `slots.room` et `sessions.room` sont saisis en toutes lettres - « Salle 5 »,
- * mais aussi « Auditorium », « Auditorium B », « Grand amphithéâtre ». Trois
+ * mais aussi « Auditorium », « Auditorium B », « Grand amphithéâtre ». Plusieurs
  * écrans ajoutaient le mot « Salle » devant, et affichaient « Salle : Salle 5 »
- * ou « Salle Grand amphithéâtre ». Un cas par écran, parce que la règle se perd
- * écran par écran et que rien ne la rappelait.
+ * ou « Salle Grand amphithéâtre ». Un cas par ENDROIT, parce que la règle se
+ * perd endroit par endroit et que rien ne la rappelait.
  */
+
+/**
+ * Une communication acceptée, déposée par le compte connecté.
+ *
+ * @return array{0: Event, 1: User, 2: Submission}
+ */
+function communicationAcceptee(): array
+{
+    $event = openEdition();
+    $account = verifiedAccount();
+    $participant = $event->participants()->create([
+        'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo',
+        'email' => $account->email, 'role' => 'author',
+    ]);
+    $submission = $event->submissions()->create([
+        'participant_id' => $participant->id, 'ref_code' => 'UK-010',
+        'title' => 'Une communication', 'status' => 'accepted',
+        'revision_of' => 0, 'track' => 'Sciences', 'type' => 'oral',
+        'access_token' => Str::random(64),
+    ]);
+
+    return [$event, $account, $submission];
+}
+
 it('n’écrit pas « Salle : Salle A » sur le déroulement public', function () {
     $event = openEdition();
     $event->update([
@@ -32,21 +59,10 @@ it('n’écrit pas « Salle : Salle A » sur le déroulement public', function (
         ->assertDontSee('Salle : Salle A');
 });
 
-it('n’écrit pas « Salle Auditorium » sur la fiche de communication', function () {
+it('n’écrit pas « Salle Auditorium » sur le créneau attribué', function () {
     // ⚠️ « Auditorium » plutôt que « Salle 5 » : c'est la valeur qui montre que
     // le préfixe est faux sur le FOND, pas seulement redondant.
-    $event = openEdition();
-    $account = verifiedAccount();
-    $participant = $event->participants()->create([
-        'user_id' => $account->id, 'first_name' => 'Awa', 'last_name' => 'Kodjo',
-        'email' => $account->email, 'role' => 'author',
-    ]);
-    $submission = $event->submissions()->create([
-        'participant_id' => $participant->id, 'ref_code' => 'UK-010',
-        'title' => 'Une communication', 'status' => 'accepted',
-        'revision_of' => 0, 'track' => 'Sciences', 'type' => 'oral',
-        'access_token' => Str::random(64),
-    ]);
+    [$event, $account, $submission] = communicationAcceptee();
     $session = $event->sessions()->create([
         'type' => 'atelier', 'label' => 'Séance - Atelier 1', 'room' => 'Auditorium',
         'session_day' => now()->toDateString(), 'ordre' => 1,
@@ -54,7 +70,7 @@ it('n’écrit pas « Salle Auditorium » sur la fiche de communication', functi
     ]);
     Slot::create([
         'event_id' => $event->id, 'submission_id' => $submission->id,
-        'participant_id' => $participant->id, 'session_id' => $session->id,
+        'participant_id' => $submission->participant_id, 'session_id' => $session->id,
         'room' => 'Auditorium',
         'starts_at' => now()->addDay(), 'ends_at' => now()->addDay()->addMinutes(20),
     ]);
@@ -62,6 +78,27 @@ it('n’écrit pas « Salle Auditorium » sur la fiche de communication', functi
     $this->actingAs($account, 'account')
         ->get(route('account.submissions.show', $submission))
         ->assertOk()
+        ->assertSee('Auditorium')
+        ->assertDontSee('Salle Auditorium');
+});
+
+it('n’écrit pas « Salle Auditorium » dans la liste des créneaux au choix', function () {
+    // ⚠️ Cette liste ne s'affiche QUE sans créneau attribué : la communication
+    // est acceptée et le colloque offre des créneaux libres (`submission_id` à
+    // zéro). Aucune séance ici, et donc aucune autre source du mot
+    // « Auditorium » dans la page : si l'assertion tombe, c'est bien cette
+    // ligne-là. C'était le seul des trois endroits à n'être gardé par rien.
+    [$event, $account, $submission] = communicationAcceptee();
+    Slot::create([
+        'event_id' => $event->id, 'submission_id' => 0,
+        'session_label' => 'Créneau du matin', 'room' => 'Auditorium',
+        'starts_at' => now()->addDay(), 'ends_at' => now()->addDay()->addMinutes(20),
+    ]);
+
+    $this->actingAs($account, 'account')
+        ->get(route('account.submissions.show', $submission))
+        ->assertOk()
+        ->assertSee('Créneau du matin')
         ->assertSee('Auditorium')
         ->assertDontSee('Salle Auditorium');
 });
