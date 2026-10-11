@@ -457,6 +457,24 @@ php artisan queue:restart
 php artisan up
 ```
 
+⚠️ **La ligne `npm run build` n'est jamais facultative, même pour une
+modification purement visuelle.** `public/build/` n'est pas dans le dépôt :
+`git pull` rapporte le HTML neuf mais laisse en place la feuille de style
+**déjà construite**. Le site ne tombe pas, il s'affiche de travers - une
+section nouvelle apparaît en texte brut, sans cadres ni colonnes, pendant que
+le reste de la page reste normal. C'est arrivé le 11/10/2026 sur le barème des
+tarifs : le symptôme accuse la page, la cause est l'habillage resté en arrière.
+
+Pour en avoir le cœur net après une mise à jour, cherchez dans l'habillage
+construit une classe introduite par la version que vous venez de déployer :
+
+```bash
+grep -l "ukc-fee__amount" ~/apps/geves/public/build/assets/*.css
+```
+
+Un nom de fichier s'affiche : l'habillage est à jour. Rien ne s'affiche : le
+build n'a pas tourné, relancez la ligne `npm ci && npm run build`.
+
 ⚠️ `queue:restart` n'est pas facultatif : un travailleur déjà lancé garde
 l'ancien code en mémoire jusqu'à la fin de son passage, et traiterait les
 nouvelles tâches avec l'ancienne version.

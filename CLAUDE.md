@@ -479,6 +479,15 @@ les héros**, pour les harmoniser et pour écarter la teinte quasi noire
 
 ### Mise en ligne = `DEPLOIEMENT.md`
 
+⚠️ **Une modification de CSS seule ne se déploie PAS par `git pull`.**
+`public/build/` est dans `.gitignore` : le dépôt porte les sources
+(`resources/css/*.css`), pas l'habillage construit. Sur le serveur, `git pull`
+rapporte donc le HTML neuf et laisse la feuille de style de la version
+précédente. Le site ne tombe pas, il s'affiche de travers : les classes neuves
+n'ont aucune règle, la section concernée part en texte brut pendant que le
+reste de la page reste normal. Il faut `npm ci && npm run build` sur le
+serveur, à chaque version. Vu le 11/10/2026 sur le barème des tarifs.
+
 Le mode opératoire o2switch vit dans **`DEPLOIEMENT.md`**, l'environnement type
 dans **`.env.production.example`**. Les pièges qui se paient en ligne :
 
