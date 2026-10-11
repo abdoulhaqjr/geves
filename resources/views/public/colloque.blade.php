@@ -165,21 +165,19 @@
     <div style="background:var(--ukc-bg);">
         <div style="max-width:1380px;margin:0 auto;padding:clamp(40px,6vw,72px) clamp(16px,4vw,32px);display:flex;flex-direction:column;gap:clamp(40px,6vw,64px);">
 
-            {{-- Bannière officielle (activable/désactivable ; fidèle au mockup) --}}
-            @if (($e->settings['banner_enabled'] ?? true))
+            {{-- Bannière officielle : un visuel téléversé par l'organisation,
+                 affichable ou non depuis l'onglet « Identité visuelle ».
+                 ⚠️ Il y avait ici, à défaut de visuel, un SUBSTITUT : un bloc
+                 coloré de 420px intitulé « BANNIÈRE OFFICIELLE » qui répétait le
+                 titre et les dates déjà écrits dans le bandeau, 400px plus haut.
+                 Aucun des deux colloques n'ayant téléversé de visuel, c'est ce
+                 substitut que voyait TOUT visiteur : un emplacement vide montré
+                 au public, avec son étiquette d'emplacement. Un emplacement vide
+                 ne se montre pas, il ne s'affiche tout simplement pas. --}}
+            @if (($e->settings['banner_enabled'] ?? true) && $e->banner_url)
                 <section id="banniere">
                     <div class="ukc-banner-frame">
-                        @if ($e->banner_url)
-                            <img src="{{ $e->banner_url }}" alt="Bannière du colloque {{ $e->title }}" width="1200" height="514" loading="eager">
-                        @else
-                            <div class="ukc-banner-placeholder">
-                                <div class="tag">{{ __('Bannière officielle') }}</div>
-                                <h2>{{ $e->tr('title') }}</h2>
-                                @if ($dateLabel || $e->subtitle)
-                                    <p>{{ $dateLabel }}@if ($dateLabel && $e->subtitle) · @endif{{ $e->subtitle }}</p>
-                                @endif
-                            </div>
-                        @endif
+                        <img src="{{ $e->banner_url }}" alt="Bannière du colloque {{ $e->title }}" width="1200" height="514" loading="eager">
                     </div>
                 </section>
             @endif
@@ -391,27 +389,46 @@
                     </div>
 
 
-                    <div class="ukc-pricing">
+                    {{-- ⚠️ Une GRILLE DE CARTES, c'est ce qu'il y avait, et c'est la
+                         mauvaise forme pour un barème. Mesuré sur le colloque de l'eau
+                         (6 catégories, fenêtre de 1280px) : une rangée de 4 cartes puis
+                         une rangée ORPHELINE de 2 ; des cartes hautes de 388px dont
+                         194px de VIDE sous le contenu, parce qu'une grille égalise les
+                         hauteurs de rangée alors que les catégories couvrent 1 à 6
+                         grades ; et six montants à six abscisses différentes, donc
+                         incomparables - alors que COMPARER est la seule chose qu'on
+                         fasse devant un barème.
+                         Une liste n'a ni rangée orpheline (2 ou 12 catégories tiennent
+                         pareil), ni vide à combler (chaque ligne fait sa hauteur), et
+                         elle empile les montants dans une colonne unique. --}}
+                    <ul class="ukc-fees">
                         @foreach ($fees as $fee)
-                            <div class="ukc-price-card">
-                                <h3>{{ $fee['label'] }}</h3>
-                                <div class="amount">{{ number_format((float) ($fee['amount'] ?? 0), 0, ',', ' ') }} <small>FCFA</small></div>
-                                @if (($fee['grades'] ?? []) !== [] || ($fee['default'] ?? false))
-                                    <div class="who">
-                                        <span class="who-head">{{ __('Grades concernés') }}</span>
-                                        <ul>
-                                            @foreach ($fee['grades'] ?? [] as $gradeCouvert)
-                                                <li><x-ukc.icon name="check" :size="16" /> {{ $gradeCouvert }}</li>
-                                            @endforeach
-                                            @if ($fee['default'] ?? false)
-                                                <li><x-ukc.icon name="check" :size="16" /> {{ __('Tout autre grade') }}</li>
-                                            @endif
-                                        </ul>
-                                    </div>
-                                @endif
-                            </div>
+                            @php
+                                // Le drapeau « catégorie par défaut » se lit comme un
+                                // grade couvert de plus : c'est ce qu'il est pour le
+                                // visiteur, qui cherche la ligne qui le concerne.
+                                $gradesCouverts = $fee['grades'] ?? [];
+                                if ($fee['default'] ?? false) {
+                                    $gradesCouverts[] = __('Tout autre grade');
+                                }
+                            @endphp
+                            <li class="ukc-fee">
+                                <div class="ukc-fee__who">
+                                    <h3>{{ $fee['label'] }}</h3>
+                                    @if ($gradesCouverts !== [])
+                                        <p class="ukc-fee__grades">
+                                            <span class="k">{{ __('Grades concernés') }}</span>
+                                            <span class="v">{{ implode(' · ', $gradesCouverts) }}</span>
+                                        </p>
+                                    @endif
+                                </div>
+                                <p class="ukc-fee__amount">
+                                    <span class="n">{{ number_format((float) ($fee['amount'] ?? 0), 0, ',', ' ') }}</span>
+                                    <span class="c">FCFA</span>
+                                </p>
+                            </li>
                         @endforeach
-                    </div>
+                    </ul>
 
                     <div class="ukc-fees-foot">
                         <p class="incl">
@@ -614,11 +631,11 @@
                 </section>
             @endif
 
-            {{-- Événements précédentes (fidèle au mockup : past-cards) --}}
+            {{-- Événements précédents (fidèle au mockup : past-cards) --}}
             @if ($siblings->count())
                 <section id="events" style="scroll-margin-top:72px;">
                     <div class="ukc-block-head">
-                        <h2>{{ __('Événements précédentes') }}</h2>
+                        <h2>{{ __('Événements précédents') }}</h2>
                         <div class="ukc-accent"><i></i><i></i><i></i></div>
                     </div>
                     <div class="ukc-editions">

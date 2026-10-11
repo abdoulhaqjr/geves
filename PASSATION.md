@@ -1163,3 +1163,56 @@ partie.
 - Tests : `EauTogoEquipeTest` (4 cas, dont la portée et l'absence de mot de
   passe), vérifiés en retirant l'appel à `equipe()`.
 
+## 2026-10-11 - Page publique d'un événement : barème, rangées orphelines, bannière vide
+
+Point de départ : « la section des frais de participation n'est pas bien faite »,
+capture à l'appui. Mesuré avant de corriger, sur le colloque de l'eau, dans une
+fenêtre de 1280px.
+
+**Ce que la grille de cartes faisait vraiment.** 4 cartes puis une rangée
+orpheline de 2 ; des cartes de 388px dont 194px de vide dans la plus courte
+(la grille égalise les hauteurs de rangée, les catégories couvrent de 1 à 6
+grades) ; six montants à six abscisses différentes. Et, dans le pied de
+section, `text-align: center` avec des enfants `inline-flex` ne les empilait
+pas : la phrase « tous les tarifs comprennent… » et le bouton d'inscription se
+posaient sur la MÊME ligne (phrase à x=168, bouton à x=877). L'appel à l'action
+était devenu la queue d'une phrase grise.
+
+**Ce que j'ai fait.** Le barème est passé en liste : une ligne par catégorie,
+intitulé et grades couverts à gauche, montant à droite en `tabular-nums`, le
+tout plafonné à 960px (la ligne de contenu la plus longue en fait 740, plus les
+marges, l'écart et le montant : 953). Plus de rangée orpheline, plus de vide,
+et les montants dans une colonne unique - ce qu'on vient y chercher. Le pied de
+section est passé en colonne.
+
+**Deux voisins du même défaut, trouvés en balayant la page.** Les ateliers
+disciplinaires avaient la même grille `auto-fit` et le même 4 + 2 : flux souple
+centré. Et la bannière officielle affichait, à défaut de visuel, un bloc coloré
+de 420px intitulé « BANNIÈRE OFFICIELLE » répétant le titre et les dates du
+bandeau - un emplacement vide montré au public, avec son étiquette
+d'emplacement. Aucun des deux colloques n'ayant de visuel, c'est ce que voyait
+tout le monde. La section ne s'affiche plus sans image.
+
+**Et l'anglais.** Audit des `__()` de la vue : douze chaînes sans traduction,
+dont six dans le barème que je venais de refaire. Ajoutées en place dans
+`lang/en.json` (12 insertions, 0 déplacement - un tri global avait déjà prouvé
+qu'il rend la revue illisible). Un cas Pest le gèle désormais.
+
+**Gardes.** `tests/Feature/PageColloquePubliqueTest.php`, 5 cas. Six sabotages
+vérifiés un par un : barème remis en grille `auto-fit`, `tabular-nums` retiré,
+ateliers remis en `auto-fit`, substitut de bannière réintroduit, clé anglaise
+supprimée, barème remis en cartes. Chacun fait tomber exactement le cas prévu,
+et la restauration est vérifiée bit pour bit. ⚠️ Le cas CSS retire les
+commentaires avant de lire : mes propres commentaires expliquent pourquoi
+`auto-fit` est abandonné, ils citent donc le mot et feraient tomber la règle -
+c'est exactement ce qui était arrivé sur `--ukc-hero`.
+
+**Laissé de côté, volontairement.** La carte « Contacts » des informations
+pratiques affiche un texte libre où l'e-mail et les téléphones ne sont pas
+cliquables ; les rendre actifs demande d'analyser du texte saisi, c'est une
+fonctionnalité, pas une correction de mise en page. Les sections `#chiffres`,
+`#intervenants`, `#comites`, `#partenaires`, `#faq` et `#events` n'ont de
+données dans aucun des deux colloques de développement : elles n'ont donc pas
+pu être revues à l'écran.
+
+1140 tests / 4022 assertions, Pint et PHPStan niveau 5 sans erreur.

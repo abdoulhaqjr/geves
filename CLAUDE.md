@@ -3247,20 +3247,69 @@ Voir la liste complète en [§8 de PASSATION.md](PASSATION.md). Les plus courant
 C'est la règle du logiciel (`Fees::resolveAmount`) ; trois écrans disaient
 l'inverse et ont été repris :
 
-- **Page publique, grille des tarifs** : un bouton « Choisir » par carte et une
+- **Page publique, barème des tarifs** : un bouton « Choisir » par carte et une
   pastille « Recommandé » posée sur la carte du MILIEU - un index, pas un
-  conseil. ⚠️ La règle se lit **dans les cartes** (les grades couverts y
-  figurent) : le bandeau qui la répétait au-dessus de la grille a été retiré,
-  il doublait ce que la grille montre déjà. Ne pas le réintroduire (un cas Pest
-  le gèle). Les cartes **renseignent** (qui est concerné, à quel prix),
-  avec les grades couverts dedans, les avantages dits UNE fois sous la grille, et
-  **un seul** appel à l'action. Quand aucune catégorie ne déclare de grade, la
-  page le dit au visiteur : le tarif lui sera confirmé à l'inscription - sinon il
-  reste devant trois prix sans savoir lequel est le sien.
+  conseil. ⚠️ La règle se lit **dans le barème lui-même** (les grades couverts y
+  figurent) : le bandeau qui la répétait au-dessus a été retiré, il doublait ce
+  que le barème montre déjà. Ne pas le réintroduire (un cas Pest le gèle). Le
+  barème **renseigne** (qui est concerné, à quel prix), avec les grades couverts
+  sur chaque ligne, les avantages dits UNE fois en dessous, et **un seul** appel
+  à l'action. Quand aucune catégorie ne déclare de grade, la page le dit au
+  visiteur : le tarif lui sera confirmé à l'inscription - sinon il reste devant
+  trois prix sans savoir lequel est le sien.
 - **Co-auteurs** : voir la section suivante - ce parcours n'encaisse plus.
 - ⚠️ **Rien de personnalisé sur la page publique** (pas de « votre tarif » pour
   qui est connecté) : elle doit rester identique pour tout le monde, donc
   cacheable en HTTP - cf. l'en-tête de `ColloqueController`.
+
+### ⚠️ Page publique d'un événement : trois travers de mise en page (2026-10-11)
+
+Tous les trois étaient invisibles en lisant le code et bien visibles à l'écran.
+`tests/Feature/PageColloquePubliqueTest.php` les retient.
+
+**1. Un barème est une LISTE, pas une grille de cartes.** La grille tarifaire
+était `grid-template-columns: repeat(auto-fit, minmax(260px, 1fr))`. Mesuré sur
+le colloque de l'eau (6 catégories, fenêtre de 1280px) :
+
+- une rangée de 4 cartes puis une rangée **orpheline** de 2, la moitié droite
+  vide ;
+- des cartes hautes de 388px dont **194px de vide** dans la plus courte : une
+  grille égalise les hauteurs de rangée, et les catégories couvrent de 1 à 6
+  grades ;
+- six montants à **six abscisses différentes**, donc incomparables - alors que
+  comparer est la seule chose qu'on fasse devant un barème.
+
+Une liste (`.ukc-fees` / `.ukc-fee`) n'a ni rangée orpheline (2 ou 12 catégories
+tiennent pareil), ni vide à combler (chaque ligne fait sa hauteur), et elle
+empile les montants dans une colonne unique. ⚠️ `font-variant-numeric:
+tabular-nums` sur le montant, sinon les chiffres de « 100 000 » et de « 10 000 »
+ne tombent pas les uns sous les autres. ⚠️ Les grades couverts tiennent sur UNE
+ligne qui s'enroule : en puces, la catégorie qui en couvre six gonflait sa
+rangée entière, et c'est ce gonflement qui creusait les voisines.
+
+**2. `auto-fit` troue la dernière rangée.** Même cause pour les ateliers
+disciplinaires (6 ateliers -> 4 + 2). `auto-fit` choisit un nombre de colonnes
+sans savoir combien d'éléments il reste. Remplacé par un flux souple centré
+(`display: flex; flex-wrap: wrap; justify-content: center`) avec un plafond de
+largeur, pour que le reliquat se place au milieu sans s'étirer au double des
+rangées du dessus. Un cas Pest interdit le retour d'`auto-fit` sur ces deux
+blocs - **commentaires retirés avant lecture**, sinon la documentation de la
+règle fait tomber la règle (déjà vu sur `--ukc-hero`).
+
+**3. Un emplacement vide ne se montre pas au public.** Sans visuel téléversé, la
+page affichait à la place de la bannière officielle un bloc coloré de 420px
+intitulé « BANNIÈRE OFFICIELLE » qui répétait le titre et les dates déjà écrits
+dans le bandeau, 400px plus haut. Aucun des deux colloques n'ayant téléversé de
+visuel, **c'est ce substitut que voyait tout visiteur**. La section ne s'affiche
+plus que s'il y a vraiment une image ; le réglage « afficher la bannière » reste
+décisif par-dessus.
+
+⚠️ **La page publique existe aussi en anglais**, et le sélecteur de langue est
+dans sa propre barre de navigation. Douze chaînes n'avaient pas de traduction,
+dont six dans le seul barème. Un cas Pest lit les `__()` de la vue et exige
+leur clé dans `lang/en.json`. Les intitulés de catégorie et les noms de grades
+restent en français : ce sont des **données** saisies par l'organisation, pas
+des chaînes d'interface.
 
 ### ⚠️ UN SEUL chemin de règlement pour un co-auteur : son compte
 

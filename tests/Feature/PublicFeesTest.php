@@ -35,7 +35,7 @@ it('rend la page publique quand toute la grille fees est au format legacy associ
     // Pas de 500 ; la section tarifs est simplement masquée faute d'entrée valide.
     $this->get(route('public.colloque', $event->slug))
         ->assertOk()
-        ->assertDontSee('ukc-pricing', false);
+        ->assertDontSee('ukc-fees', false);
 });
 
 it('normalise la grille tarifaire en ignorant les entrées invalides', function () {
