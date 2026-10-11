@@ -1014,7 +1014,7 @@ Après la correction du tableau de bord, revue de **tous** les dégradés de
 | **Prise en main (participant) `.onb-hero`** | `115deg, #172b78, #2447a8 60%, #096b75` | **corrigé** |
 | **Voile d'analyse `.ukc-ai-veil`** | `var(--ukc-hero, <ancien dégradé #14205a>)` | **corrigé** |
 | **Accueil, repli de bannière** | `120deg, #0f1a33, #1a3080 55%, #0a7a2f` | **corrigé** |
-| Bannière admin `.admin-dash .edition-banner` | `135deg, #223ea4, #1a3080 55%, #009933 160%` | signalé, pas touché |
+| **Bannière admin `.admin-dash .edition-banner`** | `135deg, #223ea4, #1a3080 55%, #009933 160%` | **corrigé** |
 
 - ⚠️ **Le pire était le plus visible.** `#0f1a33` est la teinte que le
   commentaire du jeton nomme **explicitement** comme à écarter, et elle servait
@@ -1028,10 +1028,14 @@ Après la correction du tableau de bord, revue de **tous** les dégradés de
 - ⚠️ **Un repli jamais atteint reste un modèle.** `.ukc-ai-veil` écrivait
   `var(--ukc-hero, <ancien dégradé>)`. La valeur ne servait pas, mais elle
   restait à portée de copier-coller.
-- **Laissé en l'état, signalé** : la bannière du tableau de bord admin répète en
-  dur des valeurs qui ont des jetons (`#223ea4`, `#1a3080`, `#009933`) et son
-  dernier arrêt est à 160%. Ce n'est pas un héros, et le changer est un choix
-  d'affichage qui n'a pas été demandé.
+- **La bannière admin a suivi** (demandée ensuite). Elle répétait en dur des
+  valeurs qui ont des jetons et posait son dernier arrêt à **160%** - un arrêt
+  au-delà de 100% ne s'atteint jamais : le vert n'était qu'un soupçon en bout de
+  bande. Elle porte le jeton. ⚠️ Son nom ne contient pas « hero », donc la règle
+  ne la voyait pas : d'où `SURFACES_HEROS`, une **liste nommée** dans le cas.
+  Contraste vérifié après coup, le bout de bande étant devenu plus clair : blanc
+  sur le dernier arrêt, 4,80:1 pour les boutons et 5,29:1 pour la ligne de
+  méta - au-dessus de 4,5:1.
 - **Fausse piste écartée** : `.gesco-chat .chat-hero .av` est une pastille de
   64px dans la fenêtre d'assistance, pas une bannière. La règle regarde donc le
   **dernier maillon** du sélecteur.

@@ -24,6 +24,14 @@ function feuillesDeStyle(): array
 }
 
 /**
+ * Grandes surfaces qui portent le dégradé sans s'appeler « hero ». Une liste,
+ * parce qu'il n'y a pas de règle de nommage à laquelle se raccrocher : la
+ * bannière du tableau de bord admin est le bandeau coloré de sa page, mais rien
+ * dans son nom ne le dit. Toute autre bannière de ce genre s'ajoute ici.
+ */
+const SURFACES_HEROS = ['edition-banner'];
+
+/**
  * Le héros LUI-MÊME, pas ce qui vit dedans : on regarde le DERNIER maillon de
  * chaque sélecteur. ⚠️ Sans cette distinction, la règle attrapait l'avatar de
  * la fenêtre d'assistance (`.gesco-chat .chat-hero .av`), une pastille de 64px
@@ -33,7 +41,7 @@ function estUnHeros(string $selecteur): bool
 {
     foreach (explode(',', $selecteur) as $un) {
         $dernier = (string) Str::afterLast(trim(preg_replace('/\s+/', ' ', $un) ?? ''), ' ');
-        if (str_contains($dernier, 'hero')) {
+        if (str_contains($dernier, 'hero') || Str::contains($dernier, SURFACES_HEROS)) {
             return true;
         }
     }

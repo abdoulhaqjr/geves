@@ -439,8 +439,9 @@ les héros**, pour les harmoniser et pour écarter la teinte quasi noire
 (`#0f1a33`) des anciens dégradés.
 
 - ⚠️ **Un héros ne pose jamais sa propre couleur.** `background: var(--ukc-hero)`
-  - accueil, pages internes, direct, prise en main, tableau de bord. Les reflets
-  or/vert restent apportés par les calques `::before`.
+  - accueil, pages internes, direct, prise en main, tableau de bord participant
+  et **bannière du tableau de bord admin**. Les reflets or/vert restent apportés
+  par les calques `::before`.
 - ⚠️ **`#0f1a33` n'a plus droit à un dégradé** (elle reste permise en aplat,
   c'est le fond de la barre latérale).
 - ⚠️ **Pas de repli dans `var(--ukc-hero, …)`** : un repli jamais atteint reste
@@ -452,9 +453,11 @@ les héros**, pour les harmoniser et pour écarter la teinte quasi noire
   `.edition-card .cover.no-img`, `.gallery-item.is-more`, le repli de bannière
   de l'accueil). Reprendre l'existant plutôt que d'en écrire un troisième.
 - Tenu par **`tests/Feature/DegradeHerosTest.php`**, qui relit les sources : un
-  commentaire ne retient personne, trois écrans s'en étaient écartés sans que
+  commentaire ne retient personne, quatre écrans s'en étaient écartés sans que
   rien ne tombe. La règle vise le **dernier maillon** du sélecteur - le héros
-  lui-même, pas l'avatar posé dedans.
+  lui-même, pas l'avatar posé dedans - plus une **liste nommée**
+  (`SURFACES_HEROS`) pour les bandeaux qui ne s'appellent pas « hero ».
+  Toute nouvelle bannière de ce genre s'y ajoute.
 
 ### URLs de l'espace participant = sous `/compte`
 
