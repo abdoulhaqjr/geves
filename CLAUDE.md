@@ -492,6 +492,19 @@ dans **`.env.production.example`**. Les pièges qui se paient en ligne :
 - ⚠️ **`config/app.php` fixe le fuseau à `UTC` EN DUR** : une `APP_TIMEZONE`
   dans le `.env` ne serait pas lue.
 
+### `env()` ne s'appelle QUE depuis `config/`
+
+⚠️ Dès que `php artisan config:cache` a tourné - la règle en production -
+Laravel ne charge plus le `.env`, et **`env()` rend `null` partout ailleurs que
+dans les fichiers de `config/`**, qui sont lus au moment de fabriquer le cache.
+Un seeder lisait `env('ADMIN_PASSWORD')` : en production il refusait un mot de
+passe pourtant bien écrit dans le `.env`, et a bloqué un déploiement. Le
+symptôme accuse le fichier, la cause est dans le code. Toute valeur
+d'environnement passe par un fichier de configuration
+(`config/super-admin.php` pour le compte admin et `SEED_DEMO_DATA`). Tenu par
+`EnvHorsConfigTest`, qui balaie `app/`, `database/seeders/`, `routes/` et
+`bootstrap/`.
+
 ### Migrations = elles tournent sur MySQL, pas seulement sur SQLite
 
 On développe sur SQLite, on déploie sur MySQL. Deux limites n'existent que du

@@ -242,8 +242,15 @@ php artisan migrate --force
 ### D4. Installer les rôles et votre compte administrateur
 
 ```bash
+php artisan config:clear
 php artisan db:seed --force
 ```
+
+⚠️ **`config:clear` d'abord, et ce n'est pas une précaution de principe.** Dès
+qu'une configuration a été mise en cache, Laravel **ne relit plus le `.env`** :
+vous pouvez y écrire ce que vous voulez, l'application continue de lire
+l'ancienne version. Le symptôme accuse le fichier (« pourtant j'ai bien
+renseigné le mot de passe ») alors que la cause est le cache.
 
 **Ce que vous devez voir** : quelques lignes de seeders, dont un avertissement
 disant que les données de démonstration sont ignorées. C'est voulu : votre base
@@ -307,7 +314,9 @@ php artisan event:cache
 ⚠️ **À refaire après chaque modification du `.env`.** Une fois la configuration
 en cache, Laravel **ne relit plus** le fichier `.env` : une correction qui n'est
 pas suivie de `config:cache` n'a aucun effet, ce qui donne des heures de
-débogage pour rien.
+débogage pour rien. C'est **la** source de confusion de ce déploiement : si une
+commande vous dit qu'une valeur est vide alors qu'elle figure dans le `.env`,
+lancez `php artisan config:clear` et recommencez.
 
 ### E3. Droits d'écriture
 

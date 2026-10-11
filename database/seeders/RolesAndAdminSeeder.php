@@ -49,20 +49,28 @@ class RolesAndAdminSeeder extends Seeder
         // rôles et le super-administrateur. Il posait le mot de passe
         // « password », donc une mise en ligne ouvrait un compte à tous les
         // pouvoirs avec un mot de passe public. En production, le mot de passe
-        // vient de l'environnement et son absence ARRÊTE le déploiement : mieux
-        // vaut une migration qui échoue qu'un site ouvert.
-        $email = (string) (env('ADMIN_EMAIL') ?: 'admin@univkara.tg');
+        // vient de la configuration et son absence ARRÊTE le déploiement :
+        // mieux vaut un déploiement qui échoue qu'un site ouvert.
+        //
+        // ⚠️ `config()`, PAS `env()`. Un `env()` appelé hors d'un fichier de
+        // configuration rend `null` dès que la configuration est en cache
+        // (`php artisan config:cache`), ce qui est la règle en production :
+        // le seeder refusait un mot de passe pourtant bien renseigné dans le
+        // `.env`. Vu sur le premier déploiement.
+        $email = (string) (config('super-admin.email') ?: 'admin@univkara.tg');
         $user = User::where('email', $email)->first();
 
         if (! $user) {
-            $motDePasse = (string) (env('ADMIN_PASSWORD') ?: '');
+            $motDePasse = (string) (config('super-admin.password') ?: '');
 
             if ($motDePasse === '') {
                 if (app()->isProduction()) {
                     throw new \RuntimeException(
                         'ADMIN_PASSWORD est vide : refus de créer le super-administrateur '
                         .'avec un mot de passe par défaut en production. Renseignez '
-                        .'ADMIN_EMAIL et ADMIN_PASSWORD dans .env, puis relancez.'
+                        .'ADMIN_EMAIL et ADMIN_PASSWORD dans .env, puis lancez '
+                        .'`php artisan config:clear` AVANT de relancer le seeder : '
+                        .'une configuration en cache ne relit pas le fichier .env.'
                     );
                 }
                 $motDePasse = 'password';
@@ -70,7 +78,7 @@ class RolesAndAdminSeeder extends Seeder
 
             $user = User::create([
                 'email' => $email,
-                'name' => (string) (env('ADMIN_NAME') ?: 'Administrateur'),
+                'name' => (string) (config('super-admin.name') ?: 'Administrateur'),
                 'password' => Hash::make($motDePasse),
                 'email_verified_at' => now(),
             ]);

@@ -20,7 +20,10 @@ class DatabaseSeeder extends Seeder
         // Données de DÉMONSTRATION des colloques (événement, participants, séances
         // en direct, 200 communications…). Jamais en production, sauf override
         // explicite SEED_DEMO_DATA=true (pour une instance de démo/staging).
-        if (app()->isProduction() && ! env('SEED_DEMO_DATA', false)) {
+        // ⚠️ `config()`, pas `env()` : hors fichier de configuration, `env()`
+        // rend `null` dès que la configuration est en cache, donc l'échappatoire
+        // SEED_DEMO_DATA n'aurait jamais fonctionné en production.
+        if (app()->isProduction() && ! config('super-admin.seed_demo_data')) {
             $this->command?->warn('Production : données de démonstration ignorées (SEED_DEMO_DATA=true pour forcer).');
 
             return;

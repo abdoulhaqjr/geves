@@ -11,12 +11,18 @@ use Illuminate\Support\Facades\Hash;
  * les rôles et le compte à tous les pouvoirs. Il posait le mot de passe
  * « password », celui du jeu de démonstration : le premier `db:seed --force`
  * d'une mise en ligne ouvrait donc le back-office à qui connaît le projet. En
- * production, le mot de passe vient de l'environnement, et son absence arrête
+ * production, le mot de passe vient de la configuration, et son absence arrête
  * le déploiement.
+ *
+ * ⚠️ Les cas passent par `config()`, et non `putenv()`, parce que le seeder lit
+ * `config()`. C'est tout le sujet : un `env()` appelé hors d'un fichier de
+ * configuration rend `null` dès que la configuration est en cache, ce qui est
+ * la règle en production. La première version lisait l'environnement et
+ * refusait un mot de passe pourtant renseigné - sur un vrai déploiement.
  */
 it('refuse de créer le super-administrateur sans mot de passe en production', function () {
     app()['env'] = 'production';
-    putenv('ADMIN_PASSWORD');
+    config()->set('super-admin.password', '');
 
     expect(fn () => (new RolesAndAdminSeeder)->run())
         ->toThrow(RuntimeException::class, 'ADMIN_PASSWORD');
@@ -24,10 +30,20 @@ it('refuse de créer le super-administrateur sans mot de passe en production', f
     expect(User::where('email', 'admin@univkara.tg')->exists())->toBeFalse();
 });
 
-it('pose en production l’identifiant et le mot de passe de l’environnement', function () {
+it('dit où chercher quand la configuration en cache masque le mot de passe', function () {
+    // ⚠️ Le message doit nommer le remède : sans lui, on relit son `.env` en
+    // boucle, où la valeur est pourtant bien là.
     app()['env'] = 'production';
-    putenv('ADMIN_EMAIL=dri@univkara.tg');
-    putenv('ADMIN_PASSWORD=un-mot-de-passe-long-et-unique');
+    config()->set('super-admin.password', '');
+
+    expect(fn () => (new RolesAndAdminSeeder)->run())
+        ->toThrow(RuntimeException::class, 'config:clear');
+});
+
+it('pose en production l’identifiant et le mot de passe de la configuration', function () {
+    app()['env'] = 'production';
+    config()->set('super-admin.email', 'dri@univkara.tg');
+    config()->set('super-admin.password', 'un-mot-de-passe-long-et-unique');
 
     (new RolesAndAdminSeeder)->run();
 
@@ -37,9 +53,6 @@ it('pose en production l’identifiant et le mot de passe de l’environnement',
     expect(Hash::check('un-mot-de-passe-long-et-unique', (string) $admin->password))->toBeTrue();
     expect($admin->hasRole('administrator'))->toBeTrue();
     expect(User::where('email', 'admin@univkara.tg')->exists())->toBeFalse();
-
-    putenv('ADMIN_EMAIL');
-    putenv('ADMIN_PASSWORD');
 });
 
 it('ne retouche pas le mot de passe d’un administrateur déjà en place', function () {
