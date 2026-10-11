@@ -25,7 +25,7 @@
 
 /* Parcours participant : une entrée claire, puis des guides que l'on peut
    parcourir sans subir immédiatement plusieurs dizaines de lignes. */
-.ukc-onb .onb-hero { position: relative; isolation: isolate; display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(250px, .7fr); gap: 28px; overflow: hidden; margin-bottom: 28px; padding: clamp(24px, 3vw, 40px); border-radius: 18px; color: #fff; background: linear-gradient(115deg, #172b78 0%, #2447a8 60%, #096b75 100%); box-shadow: 0 16px 34px rgba(28, 57, 131, .13); }
+.ukc-onb .onb-hero { position: relative; isolation: isolate; display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(250px, .7fr); gap: 28px; overflow: hidden; margin-bottom: 28px; padding: clamp(24px, 3vw, 40px); border-radius: 18px; color: #fff; background: var(--ukc-hero); box-shadow: 0 16px 34px rgba(28, 57, 131, .13); }
 .ukc-onb .onb-hero::after { content: ''; position: absolute; z-index: -1; width: 370px; height: 370px; right: -105px; top: -205px; border: 1px solid rgba(255, 255, 255, .16); border-radius: 50%; box-shadow: 0 0 0 55px rgba(255, 255, 255, .045), 0 0 0 120px rgba(255, 255, 255, .025); }
 .ukc-onb .onb-hero__copy { min-width: 0; }
 .ukc-onb .onb-hero__eyebrow { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 15px; color: #d8e7ff; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }

@@ -999,3 +999,39 @@ montrés, plus un signalé par la relecture.
 - **Comment refaire la passe** : l'impersonation est le chemin, pas un rendu
   hors session. Penser à **quitter l'impersonation** à la fin, et à remettre le
   colloque courant sur celui qu'on a trouvé en arrivant.
+
+## Dégradé de héros — revue de tous les écrans (2026-10-11)
+
+Après la correction du tableau de bord, revue de **tous** les dégradés de
+`resources/css` et des vues. `--ukc-hero` est le jeton canonique
+(`#1a3080 -> #223ea4 58% -> #2f52c8`) ; son commentaire dit déjà pourquoi. Trois
+écarts, aucun tenu par quoi que ce soit.
+
+| Écran | Avant | Verdict |
+| --- | --- | --- |
+| Accueil `.hero`, pages internes `.page-hero`, direct `.live-hero` | `var(--ukc-hero)` | conforme |
+| Fiche colloque `.detail-hero` | `var(--ukc-hero-navy)` + voile sur photo | conforme (aplat voulu) |
+| **Prise en main (participant) `.onb-hero`** | `115deg, #172b78, #2447a8 60%, #096b75` | **corrigé** |
+| **Voile d'analyse `.ukc-ai-veil`** | `var(--ukc-hero, <ancien dégradé #14205a>)` | **corrigé** |
+| **Accueil, repli de bannière** | `120deg, #0f1a33, #1a3080 55%, #0a7a2f` | **corrigé** |
+| Bannière admin `.admin-dash .edition-banner` | `135deg, #223ea4, #1a3080 55%, #009933 160%` | signalé, pas touché |
+
+- ⚠️ **Le pire était le plus visible.** `#0f1a33` est la teinte que le
+  commentaire du jeton nomme **explicitement** comme à écarter, et elle servait
+  encore de repli aux bannières d'événement **sur l'accueil**. Remplacée par le
+  dégradé de remplacement d'image qui existait déjà deux fois dans `public.css`,
+  plutôt que par un troisième.
+- ⚠️ **« Prise en main » finissait sur un #096b75 PÉTROLE**, ni bleu ni vert de
+  la charte - sans doute un bleu poussé vers le vert en un seul saut. C'est la
+  page que le tableau de bord met en lien : deux identités côte à côte. Mesuré
+  après correction : identique au jeton.
+- ⚠️ **Un repli jamais atteint reste un modèle.** `.ukc-ai-veil` écrivait
+  `var(--ukc-hero, <ancien dégradé>)`. La valeur ne servait pas, mais elle
+  restait à portée de copier-coller.
+- **Laissé en l'état, signalé** : la bannière du tableau de bord admin répète en
+  dur des valeurs qui ont des jetons (`#223ea4`, `#1a3080`, `#009933`) et son
+  dernier arrêt est à 160%. Ce n'est pas un héros, et le changer est un choix
+  d'affichage qui n'a pas été demandé.
+- **Fausse piste écartée** : `.gesco-chat .chat-hero .av` est une pastille de
+  64px dans la fenêtre d'assistance, pas une bannière. La règle regarde donc le
+  **dernier maillon** du sélecteur.

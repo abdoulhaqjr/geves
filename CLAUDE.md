@@ -423,17 +423,38 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   coupe en plein mot et, joint par « · », rend un pavé. La coupe revient au CSS
   (`line-clamp`), qui coupe au bord de la boîte, avec l'intitulé entier dans
   `title`. Vaut pour « Mes axes », un axe par ligne.
-- ⚠️ **Aucun dégradé maison** : la carte haute porte **`var(--ukc-hero)`**, le
-  dégradé canonique. Son commentaire dans `ukc.css` le dit déjà - une seule
-  source pour tous les héros, pour écarter les teintes quasi noires des anciens
-  dégradés. Un second dégradé « calme » pour l'après-colloque rouvrait ce
-  défaut. Ce qui distingue les trois moments, c'est le **libellé, l'icône et les
-  boutons**, pas la teinte. Tenu par un cas qui relit `ukc.css`.
+- ⚠️ **Aucun dégradé maison** : la carte haute porte **`var(--ukc-hero)`**. Ce
+  qui distingue les trois moments, c'est le **libellé, l'icône et les boutons**,
+  pas la teinte. Règle valable partout - voir ci-dessous.
 - ⚠️ **Une pastille de document ne promet un format que si c'en est un** : le
   badge n'est pas un fichier (il est dessiné sur « Mes documents »), sa pastille
   dit « Voir » et vise l'ancre `#mon-badge`. D'où « Prêts à **retirer** », pas
   « à télécharger ».
 - Styles sous **`.tdb-*`** (fin de `ukc.css`). Tests : `ParticipantDashboardTest`.
+
+### Un seul dégradé de héros = `--ukc-hero`
+
+Le jeton porte son mode d'emploi dans `ukc.css` : **une seule source pour tous
+les héros**, pour les harmoniser et pour écarter la teinte quasi noire
+(`#0f1a33`) des anciens dégradés.
+
+- ⚠️ **Un héros ne pose jamais sa propre couleur.** `background: var(--ukc-hero)`
+  - accueil, pages internes, direct, prise en main, tableau de bord. Les reflets
+  or/vert restent apportés par les calques `::before`.
+- ⚠️ **`#0f1a33` n'a plus droit à un dégradé** (elle reste permise en aplat,
+  c'est le fond de la barre latérale).
+- ⚠️ **Pas de repli dans `var(--ukc-hero, …)`** : un repli jamais atteint reste
+  un modèle que l'on recopie - celui qui était écrit était une copie de l'ancien
+  dégradé.
+- **Familles voisines, à ne pas confondre avec un héros** : bandeaux d'appel
+  (`.cta-band`, `.ukc-callout`, `.ukc-final-cta`, bleu -> bleu foncé) et
+  remplacement d'image (`145deg, #1a3080, #223ea4 55%, #0a7a2f` :
+  `.edition-card .cover.no-img`, `.gallery-item.is-more`, le repli de bannière
+  de l'accueil). Reprendre l'existant plutôt que d'en écrire un troisième.
+- Tenu par **`tests/Feature/DegradeHerosTest.php`**, qui relit les sources : un
+  commentaire ne retient personne, trois écrans s'en étaient écartés sans que
+  rien ne tombe. La règle vise le **dernier maillon** du sélecteur - le héros
+  lui-même, pas l'avatar posé dedans.
 
 ### URLs de l'espace participant = sous `/compte`
 

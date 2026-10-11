@@ -400,24 +400,6 @@ it('n’annonce pas le badge comme un fichier, et mène à l’ancre du badge', 
         ->assertSee('id="mon-badge"', false);
 });
 
-it('n’invente aucun dégradé : le tableau de bord n’utilise que des jetons', function () {
-    // ⚠️ `--ukc-hero` est le dégradé CANONIQUE, et son commentaire le dit : une
-    // seule source pour tous les héros, justement pour écarter les teintes quasi
-    // noires des anciens dégradés. J'en avais posé un second, en dur
-    // (#1f2a52 -> bleu foncé), pour « calmer » la carte d'après-colloque : la
-    // carte sortait du reste du site. Le moment du parcours se dit par le
-    // libellé, l'icône et les boutons - pas par la teinte.
-    $css = (string) file_get_contents(resource_path('css/ukc.css'));
-    $bloc = substr($css, (int) strpos($css, '.ukc-shell .tdb'));
-
-    preg_match_all('/linear-gradient\([^;]*\)/', $bloc, $m);
-    expect($m[0])->not->toBeEmpty(); // la barre d'avancement en a un, en jetons
-
-    $enDur = array_values(array_filter($m[0], fn (string $g) => (bool) preg_match('/#[0-9a-fA-F]{3,8}\b/', $g)));
-
-    expect($enDur)->toBe([]);
-});
-
 it('montre chaque axe en entier, un par ligne', function () {
     // ⚠️ Les axes étaient rognés à 48 caractères PUIS joints par « · » : un
     // intitulé d'atelier en fait couramment 70, et trois d'affilée dans la

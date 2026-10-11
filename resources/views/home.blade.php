@@ -2,7 +2,12 @@
     @php
         // Style de bannière d'un événement : image si disponible, sinon dégradé UK.
         $bannerStyle = function ($event) {
-            $fallback = 'background:linear-gradient(120deg,#0f1a33,#1a3080 55%,#0a7a2f);';
+            // ⚠️ #0f1a33 est la teinte quasi noire que le commentaire de
+            // `--ukc-hero` nomme comme étant À ÉCARTER. Le dégradé de
+            // remplacement d'image existe déjà dans `public.css`
+            // (`.edition-card .cover.no-img`, `.gallery-item.is-more`) : on
+            // reprend le même, au lieu d'en garder un troisième.
+            $fallback = 'background:linear-gradient(145deg,#1a3080,#223ea4 55%,#0a7a2f);';
             if ($event && $event->banner_url) {
                 return "background-image:linear-gradient(120deg,rgba(15,26,51,.55),rgba(34,62,164,.4)),url('".e($event->banner_url)."');";
             }

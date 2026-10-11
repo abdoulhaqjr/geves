@@ -938,7 +938,10 @@ body:has(.ukc-cb-root) .ukc-content { padding-bottom: 104px; }
 .ukc-ai-veil {
   position: fixed; inset: 0; z-index: 120;
   display: flex; align-items: center; justify-content: center; padding: 24px;
-  background: var(--ukc-hero, linear-gradient(135deg, #14205a 0%, #223ea4 55%, #2f55d4 100%));
+  /* ⚠️ Pas de repli : celui qui était écrit ici était une COPIE de l'ancien
+     dégradé quasi noir, c'est-à-dire exactement ce que `--ukc-hero` existe pour
+     écarter. Un repli jamais atteint reste un modèle que l'on recopie. */
+  background: var(--ukc-hero);
   opacity: 0; transition: opacity .28s ease;
   cursor: progress;
 }
