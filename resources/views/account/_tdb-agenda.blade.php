@@ -73,7 +73,7 @@
                         </div>
                         <div class="m">
                             {{ collect([
-                                $e['lieu'] !== '' ? __('Salle').' '.$e['lieu'] : null,
+                                $e['lieu'] !== '' ? $e['lieu'] : null,
                                 $e['detail'] !== '' ? $e['detail'] : null,
                                 $e['ref'] !== '' ? $e['ref'] : null,
                             ])->filter()->implode(' · ') }}

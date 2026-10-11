@@ -83,7 +83,7 @@
                             <span class="ukc-pill ukc-pill--err tdb-live__tag">
                                 <span class="dot" aria-hidden="true"></span>{{ __('EN DIRECT') }}
                             </span>
-                            <span class="w">{{ $s->atelier?->title ?: $s->label }}@if ($s->room) · {{ __('Salle') }} {{ $s->room }}@endif</span>
+                            <span class="w">{{ $s->atelier?->title ?: $s->label }}@if ($s->room) · {{ $s->room }}@endif</span>
                         </div>
                         <p class="t">{{ __('Cette séance vous concerne et elle a commencé.') }}</p>
                     </div>
@@ -159,7 +159,7 @@
                 <p class="tdb-next__title">{{ $passage->submission?->title ?: __('Ma communication') }}</p>
                 <div class="tdb-chips">
                     @if ($passage->room || $passage->session?->room)
-                        <span class="tdb-chip"><x-ukc.icon name="pin" :size="13" /> {{ __('Salle') }} {{ $passage->room ?: $passage->session->room }}</span>
+                        <span class="tdb-chip"><x-ukc.icon name="pin" :size="13" /> {{ $passage->room ?: $passage->session->room }}</span>
                     @endif
                     @if ($passage->session?->label || $passage->session_label)
                         <span class="tdb-chip">{{ $passage->session?->label ?: $passage->session_label }}</span>

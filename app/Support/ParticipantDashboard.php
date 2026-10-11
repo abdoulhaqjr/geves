@@ -245,12 +245,8 @@ class ParticipantDashboard
         // une `collect()` vide rend une collection dont la valeur est `mixed`, et
         // le type de retour annoncé ne tient plus.
         $entrees = [];
-        $sessionsDuPassage = [];
 
         foreach ($this->passages() as $slot) {
-            if ($slot->session_id !== null) {
-                $sessionsDuPassage[] = (int) $slot->session_id;
-            }
             $entrees[] = self::entree(
                 genre: 'passage',
                 debut: $slot->starts_at,
@@ -275,11 +271,14 @@ class ParticipantDashboard
         }
 
         /** @var Collection<int, EventSession> $seances */
+        // ⚠️ Les plénières SEULEMENT. La séance qui contient un de mes passages
+        // était listée en plus du passage : à 11h30 le participant lisait quatre
+        // lignes pour deux choses, et la seconde ne disait rien que la première
+        // ne dise déjà (la ligne du passage nomme sa séance et sa salle). Son
+        // horaire de fin complet reste sur « Programme complet ».
         $seances = EventSession::where('event_id', $event->id)
             ->whereNotNull('starts_at')
-            ->where(fn ($q) => $q
-                ->where('type', 'plenary')
-                ->orWhereIn('id', $sessionsDuPassage))
+            ->where('type', 'plenary')
             ->with('atelier')
             ->orderBy('starts_at')
             ->get();

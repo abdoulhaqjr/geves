@@ -359,6 +359,34 @@ it('bâtit un agenda personnel groupé par jour, ouvert sur le bon jour', functi
     expect($genres)->toContain('passage');
 });
 
+it('ne redit pas la séance qui contient déjà un de mes passages', function () {
+    // ⚠️ Vu sur données réelles : à 11h30 le participant lisait QUATRE lignes
+    // pour deux choses - son passage, puis l'atelier qui le contient, qui ne
+    // disait rien que la ligne du passage ne dise déjà (elle nomme sa séance et
+    // sa salle). Seules les plénières s'ajoutent aux passages et aux formations.
+    ['account' => $account, 'event' => $event] = colloqueDate(0);
+    $tdb = new ParticipantDashboard($account, $event);
+
+    $lignes = collect($tdb->agenda())->flatten(1);
+
+    expect($lignes->pluck('genre'))->not->toContain('seance');
+    expect($lignes->where('genre', 'passage'))->toHaveCount(1);
+    // La séance reste nommée, mais sur la ligne du passage.
+    expect($lignes->firstWhere('genre', 'passage')['detail'])->toBe('Atelier 1 - séance 1');
+});
+
+it('n’écrit pas « Salle Salle 1 » : la valeur nomme déjà le lieu', function () {
+    // ⚠️ `slots.room` contient « Salle 1 », mais aussi « Auditorium » ou
+    // « Grand amphithéâtre » : préfixer par « Salle » doublait le mot sur les
+    // trois écrans du tableau de bord.
+    ['account' => $account] = colloqueDate(0);
+
+    $this->actingAs($account, 'account')->get(route('account.dashboard'))
+        ->assertOk()
+        ->assertSee('Salle 1')
+        ->assertDontSee('Salle Salle');
+});
+
 it('ne détaille dans « À faire » que ce qui reste à faire', function () {
     // ⚠️ Le déroulé en six étapes restait affiché en entier, coches comprises,
     // jusqu'à la fin du colloque. Ici on ne liste que ce qui attend ; la

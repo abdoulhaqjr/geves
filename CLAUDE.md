@@ -398,6 +398,16 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   L'état vide exige donc « ni participation, ni appel ouvert, **ni fonction** ».
 - ⚠️ **Les indicateurs portent des CHIFFRES, jamais une coche** : une tâche n'est
   pas une grandeur, elle va dans « À faire », qui ne liste que ce qui reste.
+- ⚠️ **`slots.room` / `sessions.room` NOMMENT déjà le lieu** (« Salle 5 », mais
+  aussi « Auditorium », « Grand amphithéâtre ») : **ne jamais préfixer par
+  « Salle »**, on obtient « Salle Salle 5 » et « Salle Grand amphithéâtre ».
+  L'icône `pin` porte le sens. (Reste à aligner : `public/deroulement` et
+  `account/submissions/show` préfixent encore.)
+- ⚠️ **« Mon programme » ne dit chaque chose qu'une fois** : la séance qui
+  contient un de mes passages n'y figure PAS en plus du passage - à 11h30 on
+  lisait quatre lignes pour deux choses, et la ligne du passage nomme déjà sa
+  séance et sa salle. Seules les **plénières** s'ajoutent aux passages et aux
+  formations.
 - Styles sous **`.tdb-*`** (fin de `ukc.css`). Tests : `ParticipantDashboardTest`.
 
 ### URLs de l'espace participant = sous `/compte`

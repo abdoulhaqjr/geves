@@ -907,3 +907,37 @@ tout seul** selon le moment du parcours.
   Tests : `tests/Feature/ParticipantDashboardTest.php` (17 cas). Mesuré au
   navigateur : aucun débordement horizontal à 375px ni à 708px, contrastes de 5,02
   à 11,81:1, pastilles de document à 48px.
+
+## Tableau de bord participant — passe visuelle sur données réelles (2026-10-11)
+
+Les 17 cas automatisés passaient, mais **aucun œil n'avait vu l'écran rempli**.
+Passe menée sur le compte de démonstration le plus fourni (3 communications dont
+2 en co-auteur, 3 passages, 2 paiements, 3 documents), dans les trois états.
+
+- ⚠️ **Comment voir l'écran d'un participant sans toucher à une session.** Le
+  navigateur de travail est connecté en back-office et l'usurpation est refusée :
+  le contrôleur a été **rendu en ligne de commande** (`Auth::guard('account')
+  ->setUser()` puis `->render()`), le HTML déposé sous `public/_passe-visuelle/`
+  le temps de la passe, puis **supprimé**. Servi par `geves.test`, donc même
+  origine : CSS et Alpine réels. L'état « pendant » s'obtient avec
+  `Carbon::setTestNow()`, **sans toucher aux dates en base**.
+- **« Salle Salle 5 ».** `slots.room` contient déjà « Salle 5 », « Auditorium »,
+  « Grand amphithéâtre » : le préfixe `__('Salle')` doublait le mot. Retiré des
+  trois endroits du tableau de bord. ⚠️ `public/deroulement.blade.php` (« Salle :
+  Salle 5 ») et `account/submissions/show.blade.php` le font encore - à aligner.
+- **Quatre lignes pour deux choses.** « Mon programme » listait le passage **et**
+  la séance qui le contient, laquelle ne disait rien de plus (la ligne du passage
+  nomme sa séance et sa salle). Seules les plénières s'ajoutent désormais.
+- **Le liseré de 22px n'est pas un débordement.** `ol.tdb-ag` mesure
+  `scrollWidth - clientWidth = 22` à toutes les largeurs : c'est la marge négative
+  qui fait saigner la ligne surlignée jusqu'au bord de la carte, égale au
+  rembourrage de `.ukc-card`. Vérifié : rien ne dépasse le viewport, à 375px comme
+  à 1366px.
+- ⚠️ **Le volet navigateur rend la page À L'ÉCHELLE** : `getBoundingClientRect()`
+  y rendait 32px là où le CSS pose `min-height: 36px`, et `border-width` ressortait
+  à `0.888889px`. Lire la largeur de bordure calculée pour connaître le facteur
+  **avant** de conclure qu'une cible tactile est trop petite - j'ai failli
+  « corriger » une règle correcte.
+- Reste en l'état, signalé : « Mes axes » tronque trois intitulés d'affilée dans
+  le volet de droite, et la carte haute de l'état « après » est haute et creuse
+  (elle s'aligne sur le volet). Choix d'affichage, pas défauts.
