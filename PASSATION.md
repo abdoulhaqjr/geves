@@ -1048,3 +1048,44 @@ Après la correction du tableau de bord, revue de **tous** les dégradés de
   avant une règle la faisait passer pour un héros. Découvert en documentant
   l'exception ci-dessus - le commentaire a déclenché la règle qu'il expliquait.
   Les feuilles sont maintenant lues **commentaires retirés**.
+
+## Tableau de bord participant — troisième passe : l'anglais (2026-10-11)
+
+Passe refaite en impersonation, après les corrections précédentes. Le français
+était bon partout : dégradé canonique, axes en pastilles, pastille de badge
+honnête, en-tête du volet sur une ligne, pas de débordement à 375px ni à 1366px,
+contrastes de 4,74:1 (filet or) à 11,81:1. Une seule chose, mais grosse.
+
+- ⚠️ **L'anglais était à moitié mort.** La refonte a remplacé une page dont les
+  chaînes étaient traduites par une page qui en portait **145 de neuves, aucune
+  traduite**. Sous `EN`, l'écran mélangeait « Dashboard », « My documents » et
+  « View all » avec « CE QU'IL VOUS RESTE À RETIRER », « Prêts à retirer » et
+  « MES COMMUNICATIONS ». Une page à moitié traduite se lit **plus mal** qu'une
+  page qui ne l'est pas du tout. Invisible en français : c'est pour ça que trois
+  passes ne l'avaient pas vue - je regardais toujours la même langue.
+- **Ce qu'il a fallu** : 37 chaînes de `ParticipantDashboard` n'étaient même pas
+  enveloppées dans `__()` (libellés d'indicateurs, pastilles de document, étapes
+  du parcours) ; elles ne pouvaient donc pas être traduites. Puis 114 clés
+  ajoutées à `lang/en.json`, au glossaire maison (colloque -> conference,
+  communication -> paper, atelier -> workshop, axe -> track, attestation ->
+  certificate, passage -> presentation).
+- ⚠️ **`lang/en.json` n'est PAS exactement trié** : il est globalement
+  alphabétique, casse ignorée, mais quelques clés ont dérivé. Un `uksort` global
+  déplacerait des lignes que personne n'a demandé de toucher. Les clés neuves
+  sont donc **insérées à leur place** sans retrier : le diff est de 114 ajouts
+  et **zéro suppression**. (Vérifié : un retri complet donnait 162/48.)
+- ⚠️ **Ce qui reste en français, et pourquoi je n'y ai pas touché** :
+  - `EventPhase::label()` (« Événement passé ») est partagé avec le site public
+    **et les documents générés** : traduire pourrait sortir de l'anglais dans un
+    PDF français.
+  - `User::missingProfileFields()` rend des libellés français **qu'on compare** :
+    `ParticipantDashboard` filtre sur la chaîne `'E-mail vérifié'`. Les traduire
+    sans séparer d'abord la clé du libellé casserait ce filtre en silence sous
+    une session anglaise. C'est un refactor du modèle, pas une traduction.
+  - La pastille d'état d'une soumission et le bandeau d'impersonation, tous deux
+    partagés.
+- **Observation, pas défaut** : dans l'état « après », l'écran annonce « 3
+  documents » à trois endroits (carte haute, indicateur, carte de liste). La
+  bande d'indicateurs est un récapitulatif et la carte le détail - c'est la
+  convention d'un tableau de bord. À trancher si vous préférez un quatrième
+  indicateur différent après le colloque.

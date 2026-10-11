@@ -251,7 +251,7 @@ class ParticipantDashboard
                 genre: 'passage',
                 debut: $slot->starts_at,
                 fin: $slot->ends_at,
-                titre: (string) ($slot->submission?->title ?: 'Ma communication'),
+                titre: (string) ($slot->submission?->title ?: __('Ma communication')),
                 role: $this->roleSur($slot),
                 lieu: (string) ($slot->room ?: $slot->session?->room ?: ''),
                 detail: trim((string) ($slot->session?->label ?: $slot->session_label)),
@@ -288,9 +288,9 @@ class ParticipantDashboard
                 genre: $seance->type === 'plenary' ? 'pleniere' : 'seance',
                 debut: $seance->starts_at,
                 fin: $seance->ends_at,
-                titre: (string) ($seance->atelier?->title ?: $seance->label ?: 'Séance'),
+                titre: (string) ($seance->atelier?->title ?: $seance->label ?: __('Séance')),
                 lieu: (string) $seance->room,
-                detail: $seance->type === 'plenary' ? 'Séance plénière' : 'Ma séance',
+                detail: $seance->type === 'plenary' ? __('Séance plénière') : __('Ma séance'),
                 visio: $seance->isLive() && $seance->canJoin($this->account)
                     ? route('session.meeting', $seance)
                     : null,
@@ -308,7 +308,7 @@ class ParticipantDashboard
                 fin: $formation->ends_at,
                 titre: (string) $formation->title,
                 lieu: (string) $formation->room,
-                detail: $inscription->isPaid() ? 'Formation - inscription réglée' : 'Formation - à régler',
+                detail: $inscription->isPaid() ? __('Formation - inscription réglée') : __('Formation - à régler'),
                 url: route('account.formations'),
                 visio: $formation->isLive()
                     ? route('account.formations.visio', $formation)
@@ -486,7 +486,7 @@ class ParticipantDashboard
 
         if ($paiement = $this->paiement()) {
             $out[] = [
-                'libelle' => 'Reçu '.($paiement->receipt_no ?: 'de paiement'),
+                'libelle' => __('Reçu :no', ['no' => $paiement->receipt_no ?: __('de paiement')]),
                 'detail' => number_format((float) $paiement->amount, 0, ',', ' ').' '.$paiement->currency,
                 'url' => route('account.receipt', $paiement),
                 'icone' => 'receipt',
@@ -497,11 +497,11 @@ class ParticipantDashboard
             // et ouvrait une page - on promettait un téléchargement. Elle dit
             // « Voir » et mène à l'ancre du badge, pas au haut de la page.
             $out[] = [
-                'libelle' => 'Mon badge',
-                'detail' => 'À présenter à l’accueil',
+                'libelle' => __('Mon badge'),
+                'detail' => __('À présenter à l’accueil'),
                 'url' => route('account.documents').'#mon-badge',
                 'icone' => 'card',
-                'format' => 'Voir',
+                'format' => __('Voir'),
             ];
         }
 
@@ -521,7 +521,7 @@ class ParticipantDashboard
                 // le back-office dit « Livre des résumés », l'espace participant
                 // « Livret ». On ne change pas le vocabulaire d'un espace au
                 // passage d'une refonte de mise en page.
-                'libelle' => 'Livret des résumés',
+                'libelle' => __('Livret des résumés'),
                 'detail' => (string) ($this->event->title ?: $this->event->year),
                 'url' => route('account.documents.livret', $this->event),
                 'icone' => 'book',
@@ -552,7 +552,7 @@ class ParticipantDashboard
         $coauteur = $communications->count() - $deposees;
 
         $carteCommunications = [
-            'libelle' => 'Mes communications',
+            'libelle' => __('Mes communications'),
             'valeur' => (string) $communications->count(),
             'unite' => '',
             'detail' => $coauteur > 0
@@ -565,13 +565,13 @@ class ParticipantDashboard
 
         $documents = count($this->documents());
         $carteDocuments = [
-            'libelle' => 'Mes documents',
+            'libelle' => __('Mes documents'),
             'valeur' => (string) $documents,
             'unite' => '',
             // ⚠️ « À retirer », pas « à télécharger » : le badge se montre à
             // l'accueil, il ne se télécharge pas. Même mot que la carte haute
             // de l'après-colloque (« ce qu'il vous reste à retirer »).
-            'detail' => $documents > 0 ? 'Prêts à retirer' : 'Rien à retirer pour l’instant',
+            'detail' => $documents > 0 ? __('Prêts à retirer') : __('Rien à retirer pour l’instant'),
             'icone' => 'folder',
             'ton' => 'amber',
         ];
@@ -579,18 +579,18 @@ class ParticipantDashboard
         $paiement = $this->paiement();
         $cartePaiement = $paiement
             ? [
-                'libelle' => 'Frais d’inscription',
+                'libelle' => __('Frais d’inscription'),
                 'valeur' => number_format((float) $paiement->amount, 0, ',', ' '),
                 'unite' => (string) $paiement->currency,
-                'detail' => 'Réglés'.($paiement->receipt_no ? ' · reçu '.$paiement->receipt_no : ''),
+                'detail' => __('Réglés').($paiement->receipt_no ? ' · '.__('reçu :no', ['no' => $paiement->receipt_no]) : ''),
                 'icone' => 'card',
                 'ton' => 'green',
             ]
             : [
-                'libelle' => 'Frais d’inscription',
-                'valeur' => $this->fraisDus() ? 'À régler' : '-',
+                'libelle' => __('Frais d’inscription'),
+                'valeur' => $this->fraisDus() ? __('À régler') : '-',
                 'unite' => '',
-                'detail' => $this->fraisDus() ? 'Dus après acceptation' : 'Rien à régler aujourd’hui',
+                'detail' => $this->fraisDus() ? __('Dus après acceptation') : __('Rien à régler aujourd’hui'),
                 'icone' => 'card',
                 'ton' => $this->fraisDus() ? 'amber' : 'slate',
             ];
@@ -605,22 +605,22 @@ class ParticipantDashboard
             return [
                 $carteCommunications,
                 [
-                    'libelle' => 'Avant la clôture',
+                    'libelle' => __('Avant la clôture'),
                     'valeur' => $jours !== null ? (string) $jours : '-',
                     'unite' => $jours !== null ? trans_choice('jour|jours', $jours) : '',
                     'detail' => $echeance
                         ? $echeance->translatedFormat('l j F Y')
-                        : 'Aucune échéance annoncée',
+                        : __('Aucune échéance annoncée'),
                     'icone' => 'clock',
                     'ton' => 'amber',
                 ],
                 [
-                    'libelle' => 'Mon dossier',
+                    'libelle' => __('Mon dossier'),
                     'valeur' => (string) (5 - count($manquants)),
                     'unite' => '/ 5',
                     'detail' => $manquants === []
-                        ? 'Complet'
-                        : implode(', ', $manquants).' à renseigner',
+                        ? __('Complet')
+                        : __(':champs à renseigner', ['champs' => implode(', ', $manquants)]),
                     'icone' => 'user',
                     'ton' => $manquants === [] ? 'green' : 'slate',
                 ],
@@ -633,7 +633,7 @@ class ParticipantDashboard
         return [
             $carteCommunications,
             [
-                'libelle' => 'Acceptées',
+                'libelle' => __('Acceptées'),
                 'valeur' => (string) $acceptees,
                 'unite' => '',
                 'detail' => $this->vue() === 'apres'
@@ -671,8 +671,8 @@ class ParticipantDashboard
 
         if (! $this->account->hasVerifiedEmail()) {
             $out[] = [
-                'titre' => 'Confirmer mon adresse e-mail',
-                'detail' => 'Sans elle, impossible de déposer une communication.',
+                'titre' => __('Confirmer mon adresse e-mail'),
+                'detail' => __('Sans elle, impossible de déposer une communication.'),
                 'url' => route('account.verification.notice'),
                 'ton' => 'warn',
             ];
@@ -681,8 +681,8 @@ class ParticipantDashboard
         $manquants = array_values(array_diff($this->account->missingProfileFields(), ['E-mail vérifié']));
         if ($manquants !== []) {
             $out[] = [
-                'titre' => 'Compléter mon profil : '.implode(', ', $manquants),
-                'detail' => 'Ces informations figurent sur votre attestation et dans le livre des résumés.',
+                'titre' => __('Compléter mon profil : :champs', ['champs' => implode(', ', $manquants)]),
+                'detail' => __('Ces informations figurent sur votre attestation et dans le livre des résumés.'),
                 'url' => route('account.profile'),
                 'ton' => 'warn',
             ];
@@ -690,8 +690,8 @@ class ParticipantDashboard
 
         if ($dus = $this->fraisDus()) {
             $out[] = [
-                'titre' => 'Régler mes frais d’inscription',
-                'detail' => 'Votre communication est acceptée pour « '.$dus->title.' ».',
+                'titre' => __('Régler mes frais d’inscription'),
+                'detail' => __('Votre communication est acceptée pour « :event ».', ['event' => $dus->title]),
                 'url' => route('account.payment', $dus),
                 'ton' => 'warn',
             ];
@@ -701,7 +701,7 @@ class ParticipantDashboard
             $formation = $inscription->formation;
             if (! $inscription->isPaid() && $formation && (float) $formation->fee > 0) {
                 $out[] = [
-                    'titre' => 'Régler ma formation',
+                    'titre' => __('Régler ma formation'),
                     'detail' => (string) $formation->title,
                     'url' => route('account.formations'),
                     'ton' => 'warn',
@@ -713,7 +713,7 @@ class ParticipantDashboard
         if ($relectures > 0) {
             $out[] = [
                 'titre' => trans_choice(':count relecture à évaluer|:count relectures à évaluer', $relectures, ['count' => $relectures]),
-                'detail' => 'Le comité attend votre évaluation.',
+                'detail' => __('Le comité attend votre évaluation.'),
                 'url' => route('account.reviews'),
                 'ton' => 'info',
             ];
@@ -721,8 +721,8 @@ class ParticipantDashboard
 
         if ($this->vue() === 'apres' && $this->acceptees()->isNotEmpty()) {
             $out[] = [
-                'titre' => 'Laisser un témoignage',
-                'detail' => 'Votre retour peut figurer sur la page d’accueil.',
+                'titre' => __('Laisser un témoignage'),
+                'detail' => __('Votre retour peut figurer sur la page d’accueil.'),
                 'url' => route('account.testimonials'),
                 'ton' => 'info',
             ];
@@ -769,34 +769,34 @@ class ParticipantDashboard
         $profil = array_diff($this->account->missingProfileFields(), ['E-mail vérifié']) === [];
 
         return [
-            ['titre' => 'Compte créé', 'detail' => '', 'etat' => 'fait'],
+            ['titre' => __('Compte créé'), 'detail' => '', 'etat' => 'fait'],
             [
-                'titre' => 'E-mail vérifié',
+                'titre' => __('E-mail vérifié'),
                 'detail' => '',
                 'etat' => $verifie ? 'fait' : 'encours',
             ],
             [
-                'titre' => 'Profil renseigné',
+                'titre' => __('Profil renseigné'),
                 'detail' => '',
                 'etat' => $profil ? 'fait' : ($verifie ? 'encours' : 'attente'),
             ],
             [
-                'titre' => 'Résumé déposé',
+                'titre' => __('Résumé déposé'),
                 'detail' => $deposee ? (string) data_get($communications->first(), 'ref_code', '') : '',
                 'etat' => $deposee ? 'fait' : ($verifie && $profil ? 'encours' : 'attente'),
             ],
             [
-                'titre' => 'Notification d’acceptation',
+                'titre' => __('Notification d’acceptation'),
                 'detail' => '',
                 'etat' => $tranchee ? 'fait' : ($deposee ? 'encours' : 'attente'),
             ],
             [
-                'titre' => 'Inscription & paiement',
+                'titre' => __('Inscription & paiement'),
                 'detail' => '',
                 'etat' => $paye ? 'fait' : ($this->fraisDus() ? 'encours' : 'attente'),
             ],
             [
-                'titre' => 'Passage en séance & attestation',
+                'titre' => __('Passage en séance & attestation'),
                 'detail' => '',
                 'etat' => $passe ? 'fait' : ($paye ? 'encours' : 'attente'),
             ],

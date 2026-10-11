@@ -430,6 +430,18 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   badge n'est pas un fichier (il est dessiné sur « Mes documents »), sa pastille
   dit « Voir » et vise l'ancre `#mon-badge`. D'où « Prêts à **retirer** », pas
   « à télécharger ».
+- ⚠️ **Le site est BILINGUE : toute chaîne affichée passe par `__()`**, y compris
+  celles que `ParticipantDashboard` fabrique (libellés d'indicateurs, pastilles
+  de document, étapes du parcours). La refonte en avait posé 145 sans aucune
+  traduction : en français rien ne se voyait, en anglais l'écran devenait un
+  panachage. Glossaire maison : colloque -> conference, communication -> paper,
+  atelier -> workshop, axe -> track, créneau -> slot, attestation -> certificate,
+  reçu -> receipt, relecture -> review, résumé -> abstract, passage ->
+  presentation, lieu -> venue. Tenu par `TableauDeBordTraduitTest`.
+- ⚠️ **`User::missingProfileFields()` rend des libellés FRANÇAIS, et on les
+  compare** : `ParticipantDashboard` filtre sur la chaîne `'E-mail vérifié'`.
+  Les traduire sans séparer d'abord la clé du libellé casserait ce filtre en
+  silence sous une session anglaise.
 - Styles sous **`.tdb-*`** (fin de `ukc.css`). Tests : `ParticipantDashboardTest`.
 
 ### Un seul dégradé de héros = `--ukc-hero`
