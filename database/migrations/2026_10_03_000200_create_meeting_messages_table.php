@@ -47,7 +47,12 @@ return new class extends Migration
             $table->timestamps();
             // ⚠️ L'unicité est tenue par la BASE : deux clics rapides, ou deux
             // onglets, compteraient sinon deux fois la même personne.
-            $table->unique(['meeting_message_id', 'reactor', 'emoji']);
+            // ⚠️ Nom d'index EXPLICITE : celui que Laravel déduirait
+            // (`meeting_message_reactions_meeting_message_id_reactor_emoji_unique`)
+            // fait 65 caractères, soit un de trop pour MySQL, qui plafonne les
+            // identifiants à 64. SQLite n'a pas cette limite, donc rien ne se
+            // voyait en développement.
+            $table->unique(['meeting_message_id', 'reactor', 'emoji'], 'mm_reactions_message_reactor_emoji_unique');
         });
     }
 

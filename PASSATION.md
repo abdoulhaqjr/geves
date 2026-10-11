@@ -1105,3 +1105,31 @@ contrastes de 4,74:1 (filet or) à 11,81:1. Une seule chose, mais grosse.
   bande d'indicateurs est un récapitulatif et la carte le détail - c'est la
   convention d'un tableau de bord. À trancher si vous préférez un quatrième
   indicateur différent après le colloque.
+
+## Premier déploiement — ce que MySQL a refusé (2026-10-11)
+
+La première `migrate --force` sur o2switch s'est arrêtée à
+`2026_09_11_000300_add_user_id_to_session_votes`. Trois défauts, tous
+invisibles sous SQLite, dont **deux que le serveur n'avait pas encore
+rencontrés**.
+
+- ⚠️ **Erreur 1553, « Cannot drop index: needed in a foreign key
+  constraint ».** L'unicité `(question_id, account_id)` soutenait la clé
+  étrangère sur `question_id` (ses colonnes en forment le préfixe), et la
+  migration la supprimait avant de poser la nouvelle. Corrigé en inversant
+  l'ordre : le nouvel index `(question_id, user_id)` commence par la même
+  colonne, il prend le relais, l'ancien devient libre. Aucune clé étrangère à
+  toucher.
+- ⚠️ **Le même défaut attendait deux migrations plus loin**, dans
+  `2026_10_03_000300` sur `meeting_message_reactions`. Trouvé en auditant tous
+  les `up()` plutôt qu'en attendant le prochain échec.
+- ⚠️ **Un nom d'index de 65 caractères**, soit un de trop pour MySQL, dans
+  `2026_10_03_000200`. Trouvé en mesurant les noms réels dans la base de dev, et
+  non en relisant le code : c'est Laravel qui déduit le nom, pas l'auteur.
+  `SchemaPortableMySqlTest` les mesure désormais à chaque exécution.
+- **Les migrations sont maintenant rejouables** (`Schema::hasIndex`) : l'échec
+  s'était produit à mi-chemin, la colonne `user_id` était déjà posée.
+- **Méthode** : pas de MySQL en local pour reproduire. L'audit a porté sur les
+  `up()` seulement (un `down()` ne tourne pas à l'installation), ce qui a ramené
+  cinq migrations à examiner sur quarante, dont deux déjà passées sur le
+  serveur. Les noms d'index ont été mesurés sur la base de dev réelle.

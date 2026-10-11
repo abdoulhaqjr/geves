@@ -39,9 +39,33 @@ return new class extends Migration
                 DB::table($table)->where('account_id', $u->merged_account_id)->update(['user_id' => $u->id]);
             }
 
-            Schema::table($table, function (Blueprint $t) use ($table, $group) {
-                $t->dropUnique($table.'_'.$group.'_account_id_unique');
-                $t->unique([$group, 'user_id']);
+            $ancien = $table.'_'.$group.'_account_id_unique';
+            $nouveau = $table.'_'.$group.'_user_id_unique';
+
+            // ⚠️ CRÉER LE NOUVEL INDEX AVANT DE SUPPRIMER L'ANCIEN. MySQL exige
+            // que chaque clé étrangère soit soutenue par un index dont ses
+            // colonnes forment le PRÉFIXE : l'unicité `(question_id,
+            // account_id)` soutenait donc la clé étrangère sur `question_id`,
+            // et la retirer en premier échouait en erreur 1553 (« Cannot drop
+            // index: needed in a foreign key constraint »). SQLite, lui,
+            // l'acceptait - le défaut ne pouvait apparaître qu'en production.
+            // Le nouvel index commence par la même colonne : une fois posé, il
+            // prend le relais et l'ancien devient libre.
+            if (! Schema::hasIndex($table, $nouveau)) {
+                Schema::table($table, function (Blueprint $t) use ($group) {
+                    $t->unique([$group, 'user_id']);
+                });
+            }
+
+            // ⚠️ Les gardes rendent la migration REJOUABLE : elle a échoué une
+            // fois à mi-chemin sur un vrai déploiement, colonne déjà ajoutée.
+            if (Schema::hasIndex($table, $ancien)) {
+                Schema::table($table, function (Blueprint $t) use ($ancien) {
+                    $t->dropUnique($ancien);
+                });
+            }
+
+            Schema::table($table, function (Blueprint $t) {
                 $t->unsignedBigInteger('account_id')->nullable()->change();
             });
         }

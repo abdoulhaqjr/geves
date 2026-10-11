@@ -17,21 +17,36 @@ use Illuminate\Support\Facades\Schema;
  */
 return new class extends Migration
 {
+    /** ⚠️ Nom explicite : la forme déduite ferait 65 caractères, un de trop pour MySQL. */
+    private const ANCIEN_INDEX = 'mm_reactions_message_reactor_emoji_unique';
+
     public function up(): void
     {
         $this->degonfle();
 
-        Schema::table('meeting_message_reactions', function (Blueprint $table) {
-            $table->dropUnique(['meeting_message_id', 'reactor', 'emoji']);
-            $table->unique(['meeting_message_id', 'reactor']);
-        });
+        // ⚠️ CRÉER AVANT DE SUPPRIMER. `meeting_message_id` porte une clé
+        // étrangère, et l'ancienne unicité la soutenait (ses colonnes en
+        // forment le préfixe). La retirer en premier échoue sous MySQL en
+        // erreur 1553 ; SQLite l'acceptait. Le nouvel index commence par la
+        // même colonne et prend donc le relais.
+        if (! Schema::hasIndex('meeting_message_reactions', ['meeting_message_id', 'reactor'])) {
+            Schema::table('meeting_message_reactions', function (Blueprint $table) {
+                $table->unique(['meeting_message_id', 'reactor']);
+            });
+        }
+
+        if (Schema::hasIndex('meeting_message_reactions', self::ANCIEN_INDEX)) {
+            Schema::table('meeting_message_reactions', function (Blueprint $table) {
+                $table->dropUnique(self::ANCIEN_INDEX);
+            });
+        }
     }
 
     public function down(): void
     {
         Schema::table('meeting_message_reactions', function (Blueprint $table) {
+            $table->unique(['meeting_message_id', 'reactor', 'emoji'], self::ANCIEN_INDEX);
             $table->dropUnique(['meeting_message_id', 'reactor']);
-            $table->unique(['meeting_message_id', 'reactor', 'emoji']);
         });
     }
 

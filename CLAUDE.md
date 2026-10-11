@@ -492,6 +492,27 @@ dans **`.env.production.example`**. Les pièges qui se paient en ligne :
 - ⚠️ **`config/app.php` fixe le fuseau à `UTC` EN DUR** : une `APP_TIMEZONE`
   dans le `.env` ne serait pas lue.
 
+### Migrations = elles tournent sur MySQL, pas seulement sur SQLite
+
+On développe sur SQLite, on déploie sur MySQL. Deux limites n'existent que du
+côté MySQL : elles ne se découvrent donc qu'en ligne, au milieu d'un
+déploiement. Les deux se sont produites.
+
+- ⚠️ **Créer le nouvel index AVANT de supprimer l'ancien.** MySQL exige que
+  chaque clé étrangère reste soutenue par un index dont ses colonnes forment le
+  **préfixe**. Une unicité `(question_id, account_id)` soutient donc la clé
+  étrangère sur `question_id` : la retirer d'abord échoue en **erreur 1553**
+  (« Cannot drop index: needed in a foreign key constraint »). Poser d'abord le
+  remplaçant, qui commence par la même colonne, puis retirer l'ancien.
+- ⚠️ **64 caractères maximum pour un nom d'index.** Le nom déduit par Laravel
+  pour une unicité à trois colonnes peut dépasser ; il en faisait 65 sur
+  `meeting_message_reactions`. Passer un **nom explicite** en second argument.
+  Tenu par `SchemaPortableMySqlTest`.
+- ⚠️ **Une migration doit pouvoir être REJOUÉE.** Celle qui a échoué l'avait
+  fait à mi-chemin, colonne déjà ajoutée : sans garde (`Schema::hasIndex`,
+  `Schema::hasColumn`), la reprise rejoue un geste déjà fait et échoue à son
+  tour.
+
 ### URLs de l'espace participant = sous `/compte`
 
 Les pages personnelles du compte vivent sous **`/compte/...`** (`/compte`, `/compte/profil`,
