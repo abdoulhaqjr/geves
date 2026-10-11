@@ -772,13 +772,6 @@ input[data-uppercase] { text-transform: uppercase; }
   margin-top: 26px; display: flex; flex-direction: column;
   align-items: center; gap: 16px; text-align: center;
 }
-.ukc-fees-foot .incl {
-  display: inline-flex; align-items: flex-start; gap: 9px; margin: 0;
-  max-width: 68ch; padding: 10px 16px; border-radius: 12px;
-  background: var(--ukc-bg); border: 1px solid var(--ukc-border);
-  font-size: 14px; line-height: 1.5; color: var(--ukc-muted); text-align: left;
-}
-.ukc-fees-foot .incl svg { flex-shrink: 0; margin-top: 2px; color: var(--ukc-green); }
 .ukc-fees-foot .pending { margin: 0; font-size: 13.5px; color: var(--ukc-muted); }
 .ukc-fees-foot .coauthor { margin: 0; font-size: .9rem; color: var(--ukc-muted); }
 .ukc-fees-foot .coauthor a { color: var(--ukc-blue); font-weight: 700; }

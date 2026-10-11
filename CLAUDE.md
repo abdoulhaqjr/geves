@@ -3262,8 +3262,11 @@ l'inverse et ont été repris :
   figurent) : le bandeau qui la répétait au-dessus a été retiré, il doublait ce
   que le barème montre déjà. Ne pas le réintroduire (un cas Pest le gèle). Le
   barème **renseigne** (qui est concerné, à quel prix), avec les grades couverts
-  sur chaque ligne, les avantages dits UNE fois en dessous, et **un seul** appel
-  à l'action. Quand aucune catégorie ne déclare de grade, la page le dit au
+  sur chaque ligne et **un seul** appel à l'action. ⚠️ Pas de phrase « tous les
+  tarifs comprennent… » sous le barème : écrite en dur, elle affirmait la même
+  chose pour TOUS les événements sans qu'aucun réglage ne la soutienne. Ce qui
+  vaut pour un événement donné se dit dans la note de tarifs
+  (`settings.fees_note`), que l'organisation écrit elle-même. Quand aucune catégorie ne déclare de grade, la page le dit au
   visiteur : le tarif lui sera confirmé à l'inscription - sinon il reste devant
   trois prix sans savoir lequel est le sien.
 - **Co-auteurs** : voir la section suivante - ce parcours n'encaisse plus.

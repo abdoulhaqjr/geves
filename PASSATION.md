@@ -1216,3 +1216,13 @@ données dans aucun des deux colloques de développement : elles n'ont donc pas
 pu être revues à l'écran.
 
 1140 tests / 4022 assertions, Pint et PHPStan niveau 5 sans erreur.
+
+**Suite, même jour.** La phrase « tous les tarifs comprennent l'accès aux
+sessions, les communications & ateliers et l'attestation de participation » a
+été retirée du pied du barème, à la demande. Elle était écrite en dur dans la
+vue, donc affirmée à l'identique pour TOUS les événements, sans qu'aucun
+réglage ne la soutienne : une promesse que le logiciel ne tient pas. Ce qui
+vaut pour un événement donné se dit dans la note de tarifs
+(`settings.fees_note`), affichée sous le titre de la section, où l'organisation
+l'écrit elle-même. Règles CSS `.incl` et clé anglaise retirées dans la foulée :
+elles n'avaient plus d'objet.

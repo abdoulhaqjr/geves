@@ -430,11 +430,15 @@
                         @endforeach
                     </ul>
 
+                    {{-- ⚠️ Pas de phrase « tous les tarifs comprennent l'accès aux
+                         sessions, les communications et l'attestation ». Elle était
+                         écrite en dur, donc affirmée à l'identique pour TOUS les
+                         événements, sans qu'aucun réglage ne la soutienne : une
+                         promesse que le logiciel ne tient pas. Ce qui vaut pour un
+                         événement donné se dit dans la note de tarifs
+                         (`settings.fees_note`), affichée sous le titre de la section,
+                         où l'organisation l'écrit elle-même. --}}
                     <div class="ukc-fees-foot">
-                        <p class="incl">
-                            <x-ukc.icon name="check" :size="15" />
-                            {{ __('Tous les tarifs comprennent l’accès aux sessions, les communications & ateliers et l’attestation de participation.') }}
-                        </p>
                         {{-- Sans grade rattaché, le visiteur ne peut PAS savoir laquelle des
                              cartes est la sienne : on le lui dit plutôt que de le laisser
                              deviner devant trois prix. --}}
