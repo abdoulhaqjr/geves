@@ -1314,3 +1314,10 @@ travers avec `toContain('motif', 'explication')`. Un cas qu'on n'a pas vu
 échouer n'est pas un cas.
 
 1158 tests / 4110 assertions, Pint et PHPStan niveau 5 sans erreur.
+
+**Suite, meme jour.** La bulle de l'assistante Gesco est passee de **64 a
+84px** (72px de mascotte), et **68px** sous 560px. Le diametre est devenu le
+jeton `--ukc-cb-fab` parce que quatre regles s'y accrochent, dont le decalage
+et la hauteur du panneau : agrandir la bulle sans les suivre la faisait
+recouvrir par son propre panneau. Mesure apres coup : 84x84, panneau a 12px
+au-dessus, aucun chevauchement, et rien qui deborde a 375px.

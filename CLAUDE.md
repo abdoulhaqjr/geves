@@ -2157,6 +2157,28 @@ Certifier/Credsverse).
   la réouverture le jeton était perdu et l'image gardait l'adresse d'alors. Elle
   fait désormais l'aller-retour, et le QR est redessiné à la restauration.
   Tests : `tests/Feature/AttestationPageTest.php`, `tests/Feature/DocumentDesignerTest.php`.
+### Bulle de l'assistante : son diametre est un JETON
+
+`--ukc-cb-fab` (dans `:root`, `ukc.css`) : **84px**, ramene a **68px** sous
+560px - sur un telephone la bulle recouvre une part bien plus grande de
+l'ecran.
+
+⚠️ **Quatre regles s'y accrochent** : la bulle, la mascotte qu'elle contient
+(`diametre - 12px`, la bordure blanche comprise), le decalage ET la hauteur
+du panneau pose au-dessus d'elle, et le degagement laisse en bas des pages
+qui la portent (`:has(.ukc-cb-root)`, **deux** regles). Ecrites en dur, elles
+se decalent des qu'on touche au diametre : un `bottom: 76px` fige laissait le
+panneau **recouvrir** une bulle de 84. Meme lecon que `--vtop` dans la salle
+de visio et `--edtop` dans les concepteurs.
+
+⚠️ Le garde-fou de politesse (`initChatbotPoliteness`) **mesure** la bulle
+(`getBoundingClientRect`) : il suit le jeton sans rien a changer. Ne pas y
+reintroduire de taille en dur.
+
+Tests : `tests/Feature/BulleAssistanteTest.php` (4 sabotages ; l'un a montre
+qu'un `str_contains` sur le fichier entier ne voyait pas qu'UNE des deux
+regles de degagement avait ete remise en dur - on examine chaque bloc).
+
 ### Page d'accueil : on n'annonce que ce qu'on a (2026-10-11)
 
 - ⚠️ **Un lien vers une ancre que la page ne rend pas ne fait RIEN.** « En

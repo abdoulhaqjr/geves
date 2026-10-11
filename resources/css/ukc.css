@@ -47,6 +47,19 @@ html { scrollbar-gutter: stable; }
   --ukc-shadow-lg: 0 20px 40px -10px rgba(34, 62, 164, .15);
   --ukc-font: 'Jost', system-ui, sans-serif;
   --ukc-sidebar: 260px;
+  /* ⚠️ Diamètre de la bulle de l'assistante, et JETON parce que quatre
+     règles s'y accrochent : la bulle, la mascotte qu'elle contient, le
+     décalage du panneau au-dessus d'elle et le dégagement laissé en bas
+     des pages du back-office. Écrites en dur, elles se décalaient dès
+     qu'on touchait au diamètre - le panneau venait chevaucher la bulle.
+     Même leçon que `--vtop` dans la salle de visio. */
+  --ukc-cb-fab: 84px;
+}
+
+/* Sur un téléphone, la bulle recouvre une part bien plus grande de l'écran :
+   elle y reste plus discrète. */
+@media (max-width: 560px) {
+  :root { --ukc-cb-fab: 68px; }
 }
 
 /* ---- Reset local a l'app UK (n'affecte pas Tailwind preflight) ---- */
@@ -943,9 +956,9 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 /* La bulle du chatbot est fixée en bas à droite : sans cette marge, le dernier
    bouton d'action d'une liste passe dessous et devient inatteignable. */
 .ukc-shell:has(.ukc-cb-root) .ukc-admin-body,
-.ukc-shell:has(.ukc-cb-root) .ukc-content { padding-bottom: 104px; }
+.ukc-shell:has(.ukc-cb-root) .ukc-content { padding-bottom: calc(var(--ukc-cb-fab) + 40px); }
 body:has(.ukc-cb-root) .ukc-admin-body,
-body:has(.ukc-cb-root) .ukc-content { padding-bottom: 104px; }
+body:has(.ukc-cb-root) .ukc-content { padding-bottom: calc(var(--ukc-cb-fab) + 40px); }
 
 /* ============================================================
    VOILE DE TRAVAIL DE L'IA (window.ukcAiVeil)
