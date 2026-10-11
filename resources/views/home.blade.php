@@ -64,7 +64,7 @@
                         </div>
                     @else
                         <h3>{{ __('À la une') }}</h3>
-                        <div class="event-title">{{ __('Prochaine événement à venir') }}</div>
+                        <div class="event-title">{{ __('Prochain événement à venir') }}</div>
                         <div class="meta"><div>{{ __('Les appels à communications seront publiés ici dès leur ouverture.') }}</div></div>
                         <a href="{{ route('account.register') }}" class="ukc-btn ukc-btn--primary ukc-btn--sm">{{ __('Créer un compte') }}</a>
                     @endif
@@ -82,26 +82,34 @@
     @if (array_sum($stats) > 0)
     <div class="ukc-container">
         <div class="stats">
+            @if ($stats['evenements'] > 0)
             <div class="stat">
                 <div class="ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10z"/></svg></div>
-                <div class="num">{{ $stats['event_series'] }}</div>
-                <div class="lbl">{{ __('Événements organisées') }}</div>
+                <div class="num">{{ $stats['evenements'] }}</div>
+                <div class="lbl">{{ __('Événements organisés') }}</div>
             </div>
+            @endif
+            @if ($stats['communications'] > 0)
             <div class="stat">
                 <div class="ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9h-4v4h-2v-4H9V9h4V5h2v4h4v2z"/></svg></div>
-                <div class="num">{{ $stats['formats'] }}</div>
-                <div class="lbl">{{ __('Colloques & séries') }}</div>
+                <div class="num">{{ number_format($stats['communications'], 0, ',', ' ') }}</div>
+                <div class="lbl">{{ __('Communications déposées') }}</div>
             </div>
+            @endif
+            @if ($stats['participants'] > 0)
             <div class="stat">
                 <div class="ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>
                 <div class="num">{{ number_format($stats['participants'], 0, ',', ' ') }}</div>
                 <div class="lbl">{{ __('Participants au total') }}</div>
             </div>
+            @endif
+            @if ($stats['attestations'] > 0)
             <div class="stat">
                 <div class="ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/></svg></div>
-                <div class="num">{{ $stats['etablissements'] }}</div>
-                <div class="lbl">{{ __('Établissements représentés') }}</div>
+                <div class="num">{{ number_format($stats['attestations'], 0, ',', ' ') }}</div>
+                <div class="lbl">{{ __('Attestations délivrées') }}</div>
             </div>
+            @endif
         </div>
     </div>
     @endif
@@ -181,7 +189,7 @@
             <div class="ukc-container">
                 <div class="block-head">
                     <h2>{{ __('Colloques passés') }}</h2>
-                    <p>{{ __('Mémoire des événements précédentes - programmes, galeries et documents publics.') }}</p>
+                    <p>{{ __('Mémoire des événements précédents - programmes, galeries et documents publics.') }}</p>
                 </div>
                 <div class="colloque-grid">
                     @foreach ($past as $e)
@@ -297,7 +305,7 @@
                 </div>
                 <a href="{{ route('public.gesco') }}" class="feature" style="display:block;">
                     <div class="ico c-ai"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 9V7c0-1.1-.9-2-2-2h-3c0-1.66-1.34-3-3-3S9 3.34 9 5H6c-1.1 0-2 .9-2 2v2c-1.66 0-3 1.34-3 3s1.34 3 3 3v4c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-4c1.66 0 3-1.34 3-3s-1.34-3-3-3zM7.5 11.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5S9.83 13 9 13s-1.5-.67-1.5-1.5zM16 17H8v-1.5c0-1.1 1.79-1.67 4-1.67s4 .57 4 1.67V17zm-.5-4c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg></div>
-                    <h3>{{ __('Assistance IA Gesco') }}</h3>
+                    <h3>{{ __('Assistance IA :name', ['name' => \App\Support\AiAgents::publicName()]) }}</h3>
                     <p>{{ __('Chat pour répondre aux questions sur les soumissions, tarifs, programme et documents.') }}</p>
                 </a>
                 <div class="feature">
@@ -394,7 +402,7 @@
                                   style="display:flex;flex-direction:column;gap:12px;">
                                 @csrf
                                 <input type="hidden" name="loaded_at" :value="loadedAt">
-                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                                <div class="contact-form-row">
                                     <div class="ukc-field" style="margin:0;">
                                         <label for="hc_name">{{ __('Votre nom') }}</label>
                                         <input type="text" id="hc_name" name="name" value="{{ old('name') }}">
@@ -437,7 +445,7 @@
             <div class="cta-band">
                 <div>
                     <h2>{{ __('Prêt à participer au prochain colloque ?') }}</h2>
-                    <p>{{ __('Créez votre espace, déposez un résumé ou consultez le programme de l’événement en cours. Un accompagnement est disponible via l’assistante Gesco.') }}</p>
+                    <p>{{ __('Créez votre espace, déposez un résumé ou consultez le programme de l’événement en cours. Un accompagnement est disponible via l’assistante :name.', ['name' => \App\Support\AiAgents::publicName()]) }}</p>
                 </div>
                 <div style="display:flex;flex-wrap:wrap;gap:10px;">
                     @guest('account')

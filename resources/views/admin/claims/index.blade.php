@@ -55,7 +55,7 @@
                 </div>
                 <div style="padding:14px 18px;">{{ $claims->links() }}</div>
             @else
-                <div class="ukc-empty"><h3>Aucune réclamation</h3><p>Les signalements des participants (via l'assistante Gesco ou saisis) apparaîtront ici.</p></div>
+                <div class="ukc-empty"><h3>Aucune réclamation</h3><p>Les signalements des participants (via l’assistante {{ \App\Support\AiAgents::publicName() }} ou saisis) apparaîtront ici.</p></div>
             @endif
         </div>
     </div>

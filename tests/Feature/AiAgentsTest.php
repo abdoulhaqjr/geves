@@ -42,7 +42,7 @@ it('affiche l’éditeur d’agents au staff', function () {
         ->get(route('admin.settings', ['tab' => 'agents-ia']))
         ->assertOk()
         ->assertSee('Agents IA')
-        ->assertSee('Gesco')
+        ->assertSee(AiAgents::publicName())
         ->assertSee('proposer', false);
 });
 

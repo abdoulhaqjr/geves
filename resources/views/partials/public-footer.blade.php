@@ -31,7 +31,7 @@
                 @else
                     <a href="{{ route('account.dashboard') }}">{{ __('Espace participant') }}</a>
                 @endguest
-                <a href="{{ route('public.gesco') }}">{{ __('Assistante Gesco') }}</a>
+                <a href="{{ route('public.gesco') }}">{{ __('Assistante :name', ['name' => \App\Support\AiAgents::publicName()]) }}</a>
                 <a href="mailto:dri@univkara.tg">dri@univkara.tg</a>
             </div>
             <div>

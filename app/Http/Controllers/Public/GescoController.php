@@ -43,7 +43,7 @@ class GescoController extends Controller
         $avatarUrl = AiAgents::avatarUrl($agent['avatar']);
 
         return view('public.gesco', [
-            'agentName' => $agent['name'] ?: 'Gesco',
+            'agentName' => AiAgents::publicName(),
             'agentAvatar' => $avatarUrl,
         ]);
     }

@@ -124,11 +124,16 @@
 .live-hero .ukc-btn--ghost:hover { background: rgba(255, 255, 255, .22); color: #fff; }
 
 /* ---- Stats ---- */
+/* ⚠️ De UNE à QUATRE cartes : un indicateur à zéro ne s'affiche pas, et
+   `repeat(4, 1fr)` laissait alors un trou béant à droite. Les cartes sont
+   plafonnées et le reliquat se centre - même parti pris que les ateliers de la
+   page d'un événement. */
 .stats {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 320px));
+  justify-content: center; gap: 14px;
   margin-top: -36px; position: relative; z-index: 2;
 }
-@media (max-width: 700px) { .stats { grid-template-columns: 1fr 1fr; margin-top: -24px; } }
+@media (max-width: 700px) { .stats { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-top: -24px; } }
 .stat {
   background: #fff; border: 1px solid var(--ukc-border);
   border-radius: var(--ukc-radius); padding: 18px 14px; text-align: center;
@@ -279,6 +284,19 @@
 .contact-info > p { color: var(--ukc-muted); font-size: 15px; line-height: 1.6; margin-bottom: 28px; max-width: 32em; }
 .contact-list { display: flex; flex-direction: column; gap: 22px; }
 .contact-line { display: flex; gap: 16px; align-items: flex-start; font-size: 14.5px; }
+/* Rangée « Votre nom / Votre e-mail » du formulaire de contact.
+   ⚠️ Elle était écrite EN LIGNE (`style="display:grid;grid-template-columns:1fr 1fr"`)
+   et débordait sur téléphone. Deux causes, et il faut les deux :
+   1. `min-width: auto` d'un `<input>` vaut sa taille INTRINSÈQUE (188px mesurés
+      ici) : les deux pistes `1fr` refusaient de descendre sous 188, soit 388px
+      de rangée dans une carte de 343px sur un écran de 375 ;
+   2. un style EN LIGNE l'emporte sur toute règle de feuille, media query
+      comprise - l'adaptation étroite n'aurait eu aucun effet tant que la grille
+      restait sur la balise. D'où cette classe. */
+.contact-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.contact-form-row > * { min-width: 0; }
+@media (max-width: 560px) { .contact-form-row { grid-template-columns: 1fr; } }
+
 .contact-line .ico { width: 48px; height: 48px; border-radius: 50%; background: #eff6ff; color: var(--ukc-blue); display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(15, 26, 51, .04); }
 .contact-line .ico svg { width: 18px; height: 18px; fill: currentColor; }
 .contact-line .txt { padding-top: 2px; min-width: 0; }

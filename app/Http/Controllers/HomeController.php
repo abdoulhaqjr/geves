@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Attestation;
 use App\Models\Event;
-use App\Models\EventSeries;
 use App\Models\Participant;
+use App\Models\Submission;
 use App\Models\Testimonial;
 use App\Support\Gallery;
 use Illuminate\Contracts\View\View;
@@ -36,13 +37,32 @@ class HomeController extends Controller
         // « À la une » : l'événement en cours, sinon la prochaine, sinon la dernière passée.
         $featured = $ongoing->first() ?? $upcoming->first() ?? $past->first();
 
+        // ⚠️ **Deux de ces quatre chiffres étaient faux ou inutiles**, et les
+        // clés mentaient : `event_series` portait des ÉVÉNEMENTS, `formats` des
+        // séries.
+        //
+        // ⚠️ « Établissements représentés » comptait des **chaînes libres
+        // distinctes**, pas des établissements. Mesuré sur le colloque de l'eau :
+        // 44 inscrits, 44 chaînes distinctes - parce que chacun saisit son
+        // LABORATOIRE (« Laboratoire Hydrosciences Lavoisier, Université de
+        // Bangui »), et que deux laboratoires d'une même université comptaient
+        // pour deux. Le chiffre suivait donc le nombre d'inscrits : l'accueil
+        // affichait « 44 participants » à côté de « 44 établissements ». Compter
+        // de vrais établissements demanderait de rapprocher ces textes libres
+        // d'un référentiel (ROR est déjà là, cf. `RorClient`) : c'est une
+        // fonctionnalité, pas un compteur.
+        //
+        // ⚠️ « Colloques & séries » comptait les séries, ce que le visiteur ne
+        // distingue pas des événements - et le mot « colloque » contredit le
+        // modèle typé (séminaires, journées scientifiques).
+        //
+        // Les quatre chiffres racontent maintenant le parcours de la plateforme :
+        // des événements, des communications, des gens, des documents.
         $stats = [
-            'event_series' => $published->count(),
-            'formats' => EventSeries::count(),
+            'evenements' => $published->count(),
+            'communications' => Submission::query()->canonical()->count(),
             'participants' => Participant::count(),
-            'etablissements' => Participant::query()
-                ->whereNotNull('institution')->where('institution', '!=', '')
-                ->distinct()->count('institution'),
+            'attestations' => Attestation::count(),
         ];
 
         // Galerie « dernier colloque » : médias de l'événement passé le plus récent.

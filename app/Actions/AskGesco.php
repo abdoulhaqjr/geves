@@ -30,7 +30,7 @@ class AskGesco
     public function handle(array $history, string $question, ?Event $event = null, ?string $personal = null, ?array $contact = null): array
     {
         if (! $this->manager->resolve(false)) {
-            throw new \RuntimeException('L’assistance Gesco est momentanément indisponible.');
+            throw new \RuntimeException('L’assistance de '.AiAgents::publicName().' est momentanément indisponible.');
         }
 
         // Palier de modèle choisi selon la complexité (économie sur les questions simples).
@@ -92,7 +92,9 @@ class AskGesco
         // Derniers tours de conversation (bornés).
         $convo = collect($history)
             ->slice(-8)
-            ->map(fn (array $t) => ($t['role'] === 'user' ? 'Utilisateur' : 'Gesco').' : '.Str::limit((string) $t['text'], 500, ''))
+            // Le nom de l'assistante etiquette ses propres tours dans l'historique
+            // envoye au modele : il doit etre celui qu'elle porte a l'ecran.
+            ->map(fn (array $t) => ($t['role'] === 'user' ? 'Utilisateur' : AiAgents::publicName()).' : '.Str::limit((string) $t['text'], 500, ''))
             ->implode("\n");
 
         // Bloc « données personnelles » : présent uniquement si l'utilisateur est connecté.

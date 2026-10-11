@@ -1321,3 +1321,43 @@ jeton `--ukc-cb-fab` parce que quatre regles s'y accrochent, dont le decalage
 et la hauteur du panneau : agrandir la bulle sans les suivre la faisait
 recouvrir par son propre panneau. Mesure apres coup : 84x84, panneau a 12px
 au-dessus, aucun chevauchement, et rien qui deborde a 375px.
+
+## 2026-10-11 - Quatre questions sur l'accueil, et deux chiffres qui mentaient
+
+**« 44 établissements représentés, c'est vérifié ? »** Non. Mesuré avant de
+répondre : sur le colloque de l'eau, 44 inscrits et 44 chaînes distinctes, même
+après normalisation - parce que le compteur comptait des **chaînes libres**, et
+que chacun saisit son laboratoire, pas son établissement. Deux laboratoires
+d'une même université comptaient pour deux, et le total suivait mécaniquement
+le nombre d'inscrits : d'où « 44 participants » à côté de « 44 établissements »
+sur la capture. Compter de vrais établissements demanderait de rapprocher ces
+textes d'un référentiel (ROR est déjà dans le projet) : c'est une
+fonctionnalité, pas un compteur.
+
+**« Colloques & séries est-il pertinent ? »** Non plus : il comptait les
+séries, que le visiteur ne distingue pas des événements, et le mot contredit le
+modèle typé. Les quatre indicateurs racontent maintenant le parcours de la
+plateforme - événements, communications déposées, participants, attestations
+délivrées - une carte à zéro ne s'affiche pas, et la grille est passée de
+quatre colonnes fixes à des cartes plafonnées et centrées (sinon une carte
+masquée creuse un trou). Trois accords faux corrigés au passage.
+
+**Le formulaire de contact débordait sur téléphone.** Deux causes, et il
+fallait les deux : `min-width: auto` d'un `<input>` vaut sa taille intrinsèque,
+donc les pistes `1fr 1fr` restaient à 188px chacune - 388px de rangée dans une
+carte de 293 ; et la grille était posée en **style en ligne**, qui l'emporte
+sur toute media query. Mesuré en forçant la carte à 343px : la grille ne
+bougeait pas. Après : une colonne de 293px, aucun débordement de page.
+
+**L'assistante s'appelle Sika.** Le nom était recopié en dur à **dix endroits**
+- dont le message « L'assistance Gesco est momentanément indisponible » et
+l'étiquette de ses propres tours dans l'historique envoyé au modèle. Le
+changer dans Réglages n'en changeait aucun. Source unique
+`AiAgents::publicName()` ; la clé `gesco` reste, c'est un identifiant.
+
+⚠️ **Ma garde ne lisait que `resources/views`** : ce sont deux cas existants
+qui sont tombés sur « Gesco » et m'ont montré le message d'`AskGesco`. Elle
+balaie maintenant `app/` aussi, commentaires de fin de ligne compris. Troisième
+garde trop étroite de la journée.
+
+1167 tests / 4145 assertions, Pint et PHPStan niveau 5 sans erreur.

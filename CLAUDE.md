@@ -2157,6 +2157,67 @@ Certifier/Credsverse).
   la réouverture le jeton était perdu et l'image gardait l'adresse d'alors. Elle
   fait désormais l'aller-retour, et le QR est redessiné à la restauration.
   Tests : `tests/Feature/AttestationPageTest.php`, `tests/Feature/DocumentDesignerTest.php`.
+### Indicateurs de l'accueil : ce qu'ils mesurent VRAIMENT (2026-10-11)
+
+⚠️ **Deux des quatre étaient faux ou inutiles**, et les clés mentaient :
+`event_series` portait des **événements**, `formats` des **séries**.
+
+- ⚠️ **« Établissements représentés » ne comptait pas des établissements** mais
+  des **chaînes libres distinctes**. Mesuré sur le colloque de l'eau : 44
+  inscrits, 44 chaînes distinctes - même après normalisation. Parce que chacun
+  saisit son LABORATOIRE (« Laboratoire Hydrosciences Lavoisier, Université de
+  Bangui », « Groupe de recherche … de l'Université Joseph KI ZERBO »), deux
+  laboratoires d'une même université comptaient pour deux. Le chiffre suivait
+  donc le nombre d'inscrits, et l'accueil affichait **44 à côté de 44**.
+  Compter de vrais établissements demanderait de rapprocher ces textes libres
+  d'un référentiel - ROR est déjà là (`RorClient`) - : c'est une
+  fonctionnalité, pas un compteur. **Ne pas réintroduire ce `distinct()`.**
+- ⚠️ **« Colloques & séries »** comptait les séries, que le visiteur ne
+  distingue pas des événements, et le mot « colloque » contredit le modèle
+  typé (séminaires, journées scientifiques).
+- Les quatre chiffres racontent maintenant le parcours de la plateforme :
+  **événements, communications déposées, participants, attestations
+  délivrées**.
+- ⚠️ **Une carte à zéro ne s'affiche pas** (même règle que le bandeau entier),
+  et la grille est passée de `repeat(4, 1fr)` à des cartes plafonnées et
+  centrées : à quatre colonnes fixes, une carte masquée creusait un trou.
+- L'accord « Événements organisées » était faux, comme « Prochaine événement à
+  venir » et « Mémoire des événements précédentes ».
+
+### Le nom de l'assistante publique se RÈGLE, il ne se recopie pas
+
+Par défaut **« Sika »** (`AiAgents::defaults()`). ⚠️ La **clé** reste `gesco` :
+c'est un identifiant, enregistré tel quel dans les réglages des installations
+existantes, et il sert à retrouver l'agent (`AiAgents::find('gesco')`, route
+`public.gesco`, `GescoController`, `AskGesco`). **Seul le nom s'affiche.**
+
+⚠️ Le nom était recopié en dur à **dix endroits** : bouton du widget, pied de
+page, deux fois sur l'accueil, deux fois dans l'espace participant, la page de
+connexion, deux vues de réclamations, et - celui qui a le plus échappé - le
+message « L'assistance Gesco est momentanément indisponible » d'`AskGesco`,
+plus l'étiquette des tours de l'assistante dans l'historique envoyé au modèle.
+Changer le nom dans **Réglages › Agents IA** n'en changeait aucun.
+
+Source unique : **`AiAgents::publicAgent()`** et **`AiAgents::publicName()`**.
+Tenu par `tests/Feature/NomAssistanteTest.php`, qui balaie `resources/views`
+**et `app/`** - une première version ne lisait que les vues et laissait passer
+le message d'`AskGesco` ; ce sont deux cas existants qui l'ont révélé, pas la
+garde. Les commentaires (y compris en fin de ligne) et `AiAgents` lui-même sont
+exclus : l'un explique, l'autre est la source.
+### ⚠️ Un `<input>` dans une grille `1fr 1fr` déborde sur téléphone
+
+La rangée « Votre nom / Votre e-mail » du formulaire de contact débordait.
+Deux causes, et il fallait les deux :
+
+1. **`min-width: auto` d'un `<input>` vaut sa taille INTRINSÈQUE** (188px
+   mesurés) : les deux pistes `1fr` refusaient de descendre sous 188, soit
+   388px de rangée dans une carte de 293 sur un écran de 375. D'où
+   `min-width: 0` sur les enfants - la même ligne que `.layout-plan > *`.
+2. La grille était posée en **style EN LIGNE**, qui l'emporte sur toute
+   règle de feuille, **media query comprise** : l'adaptation étroite
+   n'aurait eu aucun effet tant que la grille restait sur la balise. D'où
+   la classe `.contact-form-row`, qui passe à une colonne sous 560px.
+
 ### Bulle de l'assistante : son diametre est un JETON
 
 `--ukc-cb-fab` (dans `:root`, `ukc.css`) : **84px**, ramene a **68px** sous

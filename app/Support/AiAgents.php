@@ -79,6 +79,41 @@ class AiAgents
     }
 
     /**
+     * L'agent destiné aux **participants**, celui du widget et de sa page.
+     *
+     * ⚠️ Une seule résolution : la vue du widget, celle de la page et chaque
+     * libellé qui la nomme doivent désigner le MÊME agent. Trois recherches
+     * écrites séparément finiraient par se contredire le jour où une
+     * installation en configure deux.
+     *
+     * @return Agent|null
+     */
+    public static function publicAgent(): ?array
+    {
+        foreach (self::all() as $agent) {
+            if ($agent['audience'] === 'participants') {
+                return $agent;
+            }
+        }
+
+        return self::find('gesco');
+    }
+
+    /**
+     * Nom affiché de l'assistante publique.
+     *
+     * ⚠️ Aucun écran ne réécrit ce nom en dur : il se règle dans **Réglages ›
+     * Agents IA**, et un libellé recopié ne suivrait pas - exactement ce qui
+     * faisait mentir la configuration pour le logo de la salle de visio.
+     */
+    public static function publicName(): string
+    {
+        $nom = trim((string) (self::publicAgent()['name'] ?? ''));
+
+        return $nom !== '' ? $nom : 'Sika';
+    }
+
+    /**
      * Agents fournis par défaut si rien n'est configuré.
      *
      * @return list<Agent>
@@ -87,12 +122,15 @@ class AiAgents
     {
         return [
             [
+                // ⚠️ La CLÉ reste `gesco` : c'est un identifiant, il est
+                // enregistré dans les réglages des installations existantes et
+                // sert à retrouver l'agent. Seul le NOM s'affiche.
                 'key' => 'gesco',
-                'name' => 'Gesco',
+                'name' => 'Sika',
                 'audience' => 'participants',
                 'enabled' => true,
                 'avatar' => 'img/agents/awa-1.webp',
-                'persona' => "Tu es Gesco, l'assistante officielle des colloques de l'Université de Kara (DRI). "
+                'persona' => "Tu es Sika, l'assistante officielle des colloques de l'Université de Kara (DRI). "
                     .'Tu aides les participants et auteurs sur : soumissions, inscriptions, paiements, programme, '
                     .'créneaux, badges et attestations. Tu es professionnelle, claire, bienveillante et concise. '
                     ."Tu réponds en français et t'appuies uniquement sur les informations du colloque actif et des "

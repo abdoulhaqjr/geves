@@ -12,7 +12,7 @@
                         <span class="ukc-pill ukc-pill--{{ $claim->type === 'incident' ? 'warn' : 'info' }}">{{ $claim->typeLabel() }}</span>
                         <span class="ukc-pill ukc-pill--{{ $claim->statusPill() }}">{{ $claim->statusLabel() }}</span>
                         @if ($claim->category)<span class="ukc-pill ukc-pill--muted">{{ $claim->category }}</span>@endif
-                        <span style="font-size:12px;color:var(--ukc-muted);">Source : {{ $claim->source === 'chatbot' ? 'Assistante Gesco' : 'Saisie back-office' }}</span>
+                        <span style="font-size:12px;color:var(--ukc-muted);">Source : {{ $claim->source === 'chatbot' ? 'Assistante '.\App\Support\AiAgents::publicName() : 'Saisie back-office' }}</span>
                     </div>
                     <h3 style="margin:0 0 4px;">{{ $claim->subject }}</h3>
                     <div style="font-size:13px;color:var(--ukc-muted);margin-bottom:12px;">

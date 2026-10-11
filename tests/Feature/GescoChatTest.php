@@ -2,6 +2,7 @@
 
 use App\Actions\AskGesco;
 use App\AI\Contracts\AiProvider;
+use App\Support\AiAgents;
 
 // fakeAiProvider(), bindFakeAi() -> GenerateReportTest
 
@@ -13,10 +14,10 @@ it('répond à une question via l’agent Gesco', function () {
     expect($result['answer'])->toContain('espace participant');
 });
 
-it('affiche la page dédiée de l’assistante Gesco', function () {
+it('affiche la page dédiée de l’assistante', function () {
     $this->get(route('public.gesco'))
         ->assertOk()
-        ->assertSee('Gesco');
+        ->assertSee(AiAgents::publicName());
 });
 
 it('limite le chatbot public à N questions par jour', function () {
@@ -84,7 +85,7 @@ it('gère proprement l’absence de fournisseur IA', function () {
 
     $this->postJson(route('gesco.ask'), ['question' => 'Bonjour'])
         ->assertOk()
-        ->assertJsonFragment(['answer' => 'L’assistance Gesco est momentanément indisponible.']);
+        ->assertJsonFragment(['answer' => 'L’assistance de '.AiAgents::publicName().' est momentanément indisponible.']);
 });
 
 it('injecte les données personnelles du participant connecté dans le prompt', function () {

@@ -1256,7 +1256,10 @@ document.addEventListener('alpine:init', () => {
     // Assistante Gesco (widget flottant + page dédiée) : conversation côté client,
     // chaque tour appelle l'endpoint JSON /gesco/demander. Aucune action serveur
     // n'est déclenchée par l'IA - elle informe seulement.
-    window.Alpine.data('gescoChat', (seed = '', endpoint = '/gesco/demander', name = 'Gesco', scope = 'guest') => ({
+    // ⚠️ Replis NEUTRES : le nom de l'assistante se règle dans Réglages, et les
+    // deux appelants (widget, page dédiée) le transmettent. Un prénom écrit en
+    // dur ici ressortirait le jour où l'un d'eux oublierait de le passer.
+    window.Alpine.data('gescoChat', (seed = '', endpoint = '/gesco/demander', name = 'Assistante', scope = 'guest') => ({
         messages: [],
         input: '',
         sending: false,
@@ -1276,7 +1279,7 @@ document.addEventListener('alpine:init', () => {
         // pour les autres (même règle que la discussion).
         get cidKey() { return this.storagePrefix + 'cid.' + this.scope; },
         conversationId: '',
-        seedText: seed || 'Bonjour, je suis Gesco.',
+        seedText: seed || 'Bonjour !',
         init() {
             this.purgeForeignScopes();
             const saved = this.restore();

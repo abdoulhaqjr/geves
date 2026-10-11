@@ -183,8 +183,8 @@
                 <a href="{{ route('home') }}" title="{{ __('Accueil plateforme') }}">
                     <x-ukc.icon name="external" :size="18" /> <span class="txt">{{ __('Accueil plateforme') }}</span>
                 </a>
-                <a href="{{ route('public.gesco') }}" title="{{ __('Assistant Gesco') }}">
-                    <x-ukc.icon name="sparkles" :size="18" /> <span class="txt">{{ __('Assistant Gesco') }}</span>
+                <a href="{{ route('public.gesco') }}" title="{{ __('Assistante :name', ['name' => \App\Support\AiAgents::publicName()]) }}">
+                    <x-ukc.icon name="sparkles" :size="18" /> <span class="txt">{{ __('Assistante :name', ['name' => \App\Support\AiAgents::publicName()]) }}</span>
                 </a>
             </nav>
             <div class="ukc-sidebar-foot">

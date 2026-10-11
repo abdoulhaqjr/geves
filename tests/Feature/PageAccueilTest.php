@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Attestation;
 use App\Models\Event;
 use App\Models\EventSeries;
 use App\Support\Branding;
@@ -116,4 +117,72 @@ it('pose le logo compact sur la carte « À propos », pas des lettres dessinée
     expect(preg_match('#<img[^>]+src="([^"]+)"#', $pastille, $img))->toBe(1);
     expect(trim($img[1]))->not->toBeEmpty();
     expect($img[1])->toBe(Branding::markWhite());
+});
+
+/**
+ * ⚠️ **« 44 établissements représentés » n'était pas vérifié.** Le chiffre
+ * comptait des **chaînes libres distinctes**, pas des établissements : chacun
+ * saisit son laboratoire (« Laboratoire Hydrosciences Lavoisier, Université de
+ * Bangui »), donc deux laboratoires d'une même université comptaient pour
+ * deux, et le total suivait le nombre d'inscrits. Mesuré sur le colloque de
+ * l'eau : 44 inscrits, 44 chaînes distinctes - l'accueil affichait « 44
+ * participants » à côté de « 44 établissements ».
+ *
+ * ⚠️ « Colloques & séries » comptait les séries, que le visiteur ne distingue
+ * pas des événements, et le mot « colloque » contredit le modèle typé.
+ */
+it('n’affiche plus les deux indicateurs qui ne mesuraient pas ce qu’ils disaient', function () {
+    evenementAccueil('upcoming');
+
+    $html = (string) $this->get(route('home'))->assertOk()->getContent();
+
+    expect($html)->not->toContain('Établissements représentés');
+    expect($html)->not->toContain('Colloques &amp; séries');
+    expect($html)->not->toContain('Colloques & séries');
+    // Et l'accord du premier indicateur, qui était faux.
+    expect($html)->not->toContain('Événements organisées');
+    expect($html)->toContain('Événements organisés');
+});
+
+/**
+ * ⚠️ **Une carte à zéro ne s'affiche pas** - même règle que le bandeau entier.
+ * Elle laisserait sinon un « 0 » parmi des chiffres réels, et la grille à
+ * quatre colonnes fixes creusait un trou : les cartes sont plafonnées et le
+ * reliquat se centre.
+ */
+it('masque l’indicateur qui vaut zéro', function () {
+    evenementAccueil('upcoming');
+
+    $html = (string) $this->get(route('home'))->assertOk()->getContent();
+
+    // Aucune attestation n'a été délivrée : la carte ne doit pas paraître.
+    expect(Attestation::count())->toBe(0);
+    expect($html)->not->toContain('Attestations délivrées');
+    // Mais les indicateurs qui ont de la matière, oui.
+    expect($html)->toContain('Événements organisés');
+});
+
+/**
+ * ⚠️ **La rangée « nom / e-mail » du formulaire de contact débordait sur
+ * téléphone.** Deux causes, et il fallait les deux : `min-width: auto` d'un
+ * `<input>` vaut sa taille intrinsèque (188px mesurés), donc deux pistes `1fr`
+ * refusaient de descendre sous 188 - soit 388px dans une carte de 293 ; et la
+ * grille était posée en **style EN LIGNE**, qui l'emporte sur toute règle de
+ * feuille, media query comprise.
+ */
+it('ne pose plus la grille du formulaire de contact en style en ligne', function () {
+    // ⚠️ Sans événement « à la une », la section Contact n'affiche qu'un lien
+    // e-mail : le formulaire n'existe pas, et le cas passerait à vide.
+    evenementAccueil('upcoming');
+
+    $html = (string) $this->get(route('home'))->assertOk()->getContent();
+
+    expect($html)->toContain('class="contact-form-row"');
+    expect($html)->not->toContain('style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"');
+
+    $css = (string) preg_replace('#/\*.*?\*/#s', '', (string) file_get_contents(resource_path('css/public.css')));
+
+    // La piste doit pouvoir se réduire, et passer à une colonne sur téléphone.
+    expect($css)->toContain('.contact-form-row > * { min-width: 0; }');
+    expect($css)->toContain('.contact-form-row { grid-template-columns: 1fr; }');
 });

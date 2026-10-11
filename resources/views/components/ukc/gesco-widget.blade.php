@@ -2,11 +2,11 @@
     use App\Support\AiAgents;
 
     // Avatar de l'agent public (participants) configuré dans les réglages IA.
-    $agent = collect(AiAgents::all())->firstWhere('audience', 'participants') ?? AiAgents::find('gesco');
-    $agentName = $agent['name'] ?? 'Gesco';
+    $agent = AiAgents::publicAgent();
+    $agentName = AiAgents::publicName();
     $agentAvatar = AiAgents::avatarUrl($agent['avatar'] ?? null);
 
-    // Mascotte Gesco (dame au chapeau académique) - SVG autonome.
+    // Mascotte de secours (dame au chapeau académique) - SVG autonome.
     $mascot = '<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width:100%;height:100%;">'
         .'<circle cx="40" cy="40" r="40" fill="#e0e7ff"/><ellipse cx="40" cy="72" rx="22" ry="10" fill="#223ea4"/>'
         .'<path d="M22 70c2-14 10-22 18-22s16 8 18 22" fill="#1a3080"/><circle cx="40" cy="36" r="16" fill="#f5d0b5"/>'
@@ -89,7 +89,7 @@
         </div>
     </div>
 
-    <button type="button" class="ukc-cb-fab" @click="open = !open" title="Ouvrir Gesco" aria-label="Ouvrir le chat Gesco">
+    <button type="button" class="ukc-cb-fab" @click="open = !open" title="{{ __('Ouvrir :name', ['name' => $agentName]) }}" aria-label="{{ __('Ouvrir le chat de :name', ['name' => $agentName]) }}">
         <span class="pulse"></span>
         <span class="mascot">{!! $avatarHtml !!}</span>
     </button>
