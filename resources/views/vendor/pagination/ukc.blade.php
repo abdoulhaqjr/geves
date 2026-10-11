@@ -1,5 +1,5 @@
 @if ($paginator->hasPages())
-    <nav class="ukc-pagination" role="navigation" aria-label="{{ __('Pagination') }}">
+    <nav class="ukc-pagination" role="navigation" aria-label="{{ __('Navigation des pages') }}">
         <div class="ukc-pagination__info">
             @if ($paginator->total() > 0)
                 {{ $paginator->firstItem() }}–{{ $paginator->lastItem() }} <span>sur</span> {{ $paginator->total() }}

@@ -13,8 +13,17 @@
         </a>
         <button type="button" class="burger" id="burger" aria-label="{{ __('Ouvrir le menu') }}" aria-controls="mainNav" aria-expanded="false">☰</button>
         <nav class="nav" id="mainNav">
-            <a href="{{ route('home') }}#en-cours">{{ __('En cours') }}</a>
-            <a href="{{ route('home') }}#a-venir">{{ __('À venir') }}</a>
+            {{-- ⚠️ Ces deux entrées visent des ANCRES de la page d'accueil, et
+                 ces sections ne s'y affichent qu'en présence d'événements. Sans
+                 garde, le menu promettait « En cours » et « Passés » alors que
+                 la page n'avait ni l'un ni l'autre : le clic ne faisait rien.
+                 Constaté sur geves.univkara.tg. --}}
+            @if ($navHasOngoing ?? false)
+                <a href="{{ route('home') }}#en-cours">{{ __('En cours') }}</a>
+            @endif
+            @if ($navHasUpcoming ?? false)
+                <a href="{{ route('home') }}#a-venir">{{ __('À venir') }}</a>
+            @endif
             <a href="{{ route('public.archives') }}">{{ __('Passés') }}</a>
             @if ($navEdition ?? null)
                 <a href="{{ route('public.colloque', $navEdition->slug) }}">{{ __('Événement en cours') }}</a>

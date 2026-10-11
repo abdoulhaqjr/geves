@@ -73,7 +73,13 @@
         </div>
     </section>
 
-    {{-- ===================== Indicateurs ===================== --}}
+    {{-- ===================== Indicateurs =====================
+         ⚠️ Rien à montrer quand tout est à zéro : sur un site neuf, quatre
+         cartes annonçant « 0 événement · 0 colloque · 0 participant · 0
+         établissement » ne renseignent personne et donnent une plateforme à
+         l'abandon. On masque le bandeau ENTIER, pas les cartes une à une :
+         retirer deux cartes sur quatre laisse une rangée trouée. --}}
+    @if (array_sum($stats) > 0)
     <div class="ukc-container">
         <div class="stats">
             <div class="stat">
@@ -98,6 +104,7 @@
             </div>
         </div>
     </div>
+    @endif
 
     {{-- ===================== Colloque en cours ===================== --}}
     @if ($ongoing)
@@ -220,7 +227,17 @@
                     </div>
                 </div>
                 <aside class="about-side">
-                    <div class="mark-lg">DRI</div>
+                    {{-- ⚠️ Le logo compact, pas trois lettres dessinées à la main :
+                         une marque redessinée dans une vue ne suit pas celle que
+                         l'administration téléverse dans Réglages, et c'est
+                         exactement ce qui faisait mentir la configuration dans la
+                         salle de visio. Carte sombre, donc variante pour fond
+                         sombre - et `logo-auto-white` seulement en secours, quand
+                         aucune version claire n'a été fournie. --}}
+                    <div class="mark-lg">
+                        <img src="{{ \App\Support\Branding::markWhite() }}" alt=""
+                             @class(['logo-auto-white' => \App\Support\Branding::whitensOnDark(\App\Support\Branding::MARK)])>
+                    </div>
                     <h3>{{ __('Direction de la Recherche et de l’Innovation') }}</h3>
                     <p>{{ __('La DRI pilote la politique scientifique de l’Université de Kara et coordonne les colloques, séminaires et journées scientifiques organisés sur le campus et avec les partenaires.') }}</p>
                     <ul>
@@ -356,10 +373,12 @@
                             <div class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg></div>
                             <div class="txt"><strong>{{ __('Email') }}</strong><a href="mailto:dri@univkara.tg">dri@univkara.tg</a><a href="mailto:colloque@univkara.tg">colloque@univkara.tg</a></div>
                         </div>
-                        <div class="contact-line">
-                            <div class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.62 10.79a15.15 15.15 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.57.57a1 1 0 011 1V20a1 1 0 01-1 1C10.4 21 3 13.6 3 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1.02l-2.2 2.2z"/></svg></div>
-                            <div class="txt"><strong>{{ __('Téléphone') }}</strong><span>+228 XX XX XX XX</span></div>
-                        </div>
+                        {{-- ⚠️ Plus de ligne « Téléphone » : elle affichait
+                             « +228 XX XX XX XX », un gabarit de saisie montré au
+                             public sur la page d'accueil. Un renseignement qu'on
+                             n'a pas ne se remplace pas par sa forme. Pour en
+                             mettre un vrai, il faudra un réglage - le reste de ce
+                             bloc est écrit en dur lui aussi. --}}
                     </div>
                 </div>
                 <div class="ukc-card" style="padding:24px;">

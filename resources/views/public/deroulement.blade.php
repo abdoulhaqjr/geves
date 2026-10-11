@@ -7,7 +7,9 @@
                 <div class="ukc-empty">
                     <h3>{{ __('Aucun colloque en cours actuellement') }}</h3>
                     <p>{{ __('Le déroulement en direct s’affichera ici pendant les journées d’un colloque. Consultez les événements à venir ou passées.') }}</p>
-                    <a href="{{ route('home') }}#a-venir" class="ukc-btn ukc-btn--blue">{{ __('Colloques à venir') }}</a>
+                    @if ($navHasUpcoming ?? false)
+                        <a href="{{ route('home') }}#a-venir" class="ukc-btn ukc-btn--blue">{{ __('Colloques à venir') }}</a>
+                    @endif
                     <a href="{{ route('public.archives') }}" class="ukc-btn ukc-btn--outline" style="margin-left:8px;">{{ __('Archives') }}</a>
                 </div>
             </div>

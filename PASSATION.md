@@ -1266,3 +1266,51 @@ ignoré, enregistrement débranché) - chacun fait tomber ce qu'il doit, et la
 restauration est vérifiée bit pour bit.
 
 1150 tests / 4075 assertions, Pint et PHPStan niveau 5 sans erreur.
+
+## 2026-10-11 - « [email protected] », une page 500 et le ménage de l'accueil
+
+**La question posée.** « Pourquoi la recherche remplace les e-mails par
+[email protected] ? » Ce n'est pas GEVES : `Server: cloudflare` sur
+geves.univkara.tg, et l'option **Email Address Obfuscation** y est active - le
+HTML de production contient deux `__cf_email__`, zéro adresse en clair, et le
+script `email-decode.min.js`. Ce script ne tourne **qu'au chargement** : nos
+régions remplacées en AJAX (`data-filter`) arrivent masquées et le restent.
+D'où le symptôme exact : adresses correctes au chargement, substitut dès la
+première frappe. Filet côté client (`ukcDecodeCfEmails`, le même XOR que
+Cloudflare), appelé par les deux mécanismes de remplacement. Vérifié en
+simulant la réécriture sur la réponse AJAX : 97 adresses masquées, 0 restante
+après l'échange.
+
+**Une page 500 trouvée en voulant vérifier.** `/admin/utilisateurs` tombait en
+local : `htmlspecialchars(): must be of type string, array given`, depuis
+`__('Pagination')`. Laravel lit le mot avant le premier point comme un
+**groupe** de traduction, et le framework livre `lang/en/pagination.php` ; sur
+un disque **insensible à la casse** (Windows, macOS), `Pagination.php` tombe
+dessus et `__()` rend le **tableau**. Donc : 500 en anglais sur tout poste de
+développement, et rien en ligne, sous Linux. `__('Validation')`, l'autre clé
+d'un seul mot, est sauve parce qu'elle figure dans `lang/en.json` - la
+recherche JSON court-circuite le groupe.
+
+**Le ménage demandé sur l'accueil.** Les sections de données étaient déjà
+conditionnées ; ce qui ne l'était pas, c'est ce qui les **annonce**. Le menu
+offrait « En cours » et « À venir » vers des ancres absentes - clic sans effet
+sur geves.univkara.tg. Gardé dans l'en-tête, **et dans le pied de page**, que
+j'avais oublié et que le cas Pest a trouvé, **et** sur le bouton de Déroulement.
+S'y ajoutent le bandeau d'indicateurs (masqué quand les quatre compteurs sont à
+zéro : « 0 participant » sur un site neuf donne une plateforme à l'abandon) et
+le « +228 XX XX XX XX » de la section Contact, un gabarit de saisie montré au
+public.
+
+**Et le carré « DRI »** de la carte À propos est devenu le logo compact
+(`Branding::markWhite()`, carte sombre). Trois lettres dessinées dans une vue
+ne suivent pas le logo téléversé dans Réglages - exactement ce qui faisait
+mentir la configuration dans la salle de visio.
+
+**Deux gardes qui ne mordaient pas, trouvées par sabotage.** Celle du logo
+cherchait l'adresse du monogramme **dans toute la page**, où elle figure aussi
+dans le `<link rel="apple-touch-icon">` : `src` vidé, rien ne tombait. Elle
+regarde maintenant dans la pastille. Et plus tôt dans la journée, le même
+travers avec `toContain('motif', 'explication')`. Un cas qu'on n'a pas vu
+échouer n'est pas un cas.
+
+1158 tests / 4110 assertions, Pint et PHPStan niveau 5 sans erreur.

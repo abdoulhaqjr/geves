@@ -2157,6 +2157,79 @@ Certifier/Credsverse).
   la réouverture le jeton était perdu et l'image gardait l'adresse d'alors. Elle
   fait désormais l'aller-retour, et le QR est redessiné à la restauration.
   Tests : `tests/Feature/AttestationPageTest.php`, `tests/Feature/DocumentDesignerTest.php`.
+### Page d'accueil : on n'annonce que ce qu'on a (2026-10-11)
+
+- ⚠️ **Un lien vers une ancre que la page ne rend pas ne fait RIEN.** « En
+  cours » et « À venir » visaient `#en-cours` / `#a-venir`, dont les sections
+  n'existent qu'en présence d'événements. Sur geves.univkara.tg, qui n'a aucun
+  colloque en cours, le menu promettait une section absente. Les **trois**
+  surfaces concernées sont gardées par `navHasOngoing` / `navHasUpcoming`
+  (composeur de `AppServiceProvider`) : l'**en-tête**, le **pied de page** et
+  le bouton « Colloques à venir » de **Déroulement**. ⚠️ Une seule oubliée et
+  le lien mort revient par là - c'est le pied de page qui avait été oublié, et
+  c'est le cas Pest qui l'a trouvé.
+- ⚠️ **Le bandeau d'indicateurs tombe quand tout est à zéro.** Sur un site
+  neuf, « 0 événement · 0 colloque · 0 participant · 0 établissement » donne
+  une plateforme à l'abandon. On masque le bandeau **entier** : retirer deux
+  cartes sur quatre laisserait une rangée trouée (même raison que pour les
+  ateliers).
+- ⚠️ **Un renseignement qu'on n'a pas ne se remplace pas par sa forme.** La
+  section Contact affichait « +228 XX XX XX XX » au public. Ligne retirée ; le
+  reste du bloc (adresse, e-mails) est écrit en dur et porte de vraies valeurs.
+  Pour un vrai numéro, il faudra un réglage.
+- ⚠️ **Une marque ne se redessine pas dans une vue.** La carte « À propos »
+  portait un carré avec « DRI » écrit à la main : le logo téléversé dans
+  Réglages ne s'y appliquait pas. Elle porte désormais `Branding::markWhite()`
+  (carte sombre), avec `logo-auto-white` en secours. Même travers que le « UK »
+  en dur de la salle de visio.
+- Tests : `tests/Feature/PageAccueilTest.php` (4 cas, sabotages vérifiés).
+  ⚠️ L'un d'eux ne mordait pas : il cherchait l'adresse du monogramme **dans
+  toute la page**, où elle figure aussi dans le `<link rel="apple-touch-icon">`
+  et dans la marque de l'en-tête. Vidé de son `src`, le logo de la carte
+  disparaissait sans que rien ne tombe. On regarde DANS la pastille.
+
+### ⚠️ Une clé `__()` d'un seul mot peut rendre un TABLEAU
+
+Laravel lit la partie d'une clé qui précède le premier point comme un
+**groupe** de traduction. `__('Pagination')` cherche la clé dans
+`lang/<locale>.json` ; faute de l'y trouver, il charge le **groupe**
+`pagination` - et le framework en livre quatre : `auth`, `pagination`,
+`passwords`, `validation`. Il rend alors le tableau entier, et
+`htmlspecialchars()` lève « must be of type string, array given ».
+
+⚠️ Le défaut n'apparaît **que dans une langue** (celle qui a un fichier de
+groupe, donc l'anglais) et **que sur un disque insensible à la casse**
+(Windows, macOS), où `lang/en/Pagination.php` tombe sur `pagination.php`.
+Résultat : `/admin/utilisateurs` rendait une **erreur 500 en anglais sur tout
+poste de développement** et fonctionnait en ligne, sous Linux.
+
+La parade : une clé qui porte le nom d'un groupe **doit** exister dans
+`lang/en.json` (la recherche JSON passe en premier et court-circuite le
+groupe). C'est le cas de « Validation », l'étape du dépôt, qui reste valide ;
+l'aria-label de la pagination, lui, est devenu « Navigation des pages ».
+Tenu par `tests/Feature/ClesDeTraductionTest.php`.
+
+### ⚠️ Cloudflare masque les e-mails, et son script ne tourne qu'une fois
+
+Derrière Cloudflare, l'option **« Email Address Obfuscation »** (Scrape Shield)
+réécrit toute adresse de la page en
+`<a class="__cf_email__" data-cfemail="HEX">[email protected]</a>`, et injecte un
+script qui les redéchiffre dans le navigateur. **Ce script ne tourne qu'au
+chargement.** Une région remplacée en AJAX arrive donc masquée et le reste :
+`/admin/utilisateurs` affichait de vraies adresses au chargement, et
+« [email protected] » partout dès la première recherche.
+
+- ⚠️ **Rien de tel en local** : geves.test est servi par nginx, sans proxy
+  devant. Le défaut ne se voit qu'en ligne, d'où une garde qui lit la SOURCE.
+- `ukcDecodeCfEmails(racine)` (`app.js`) rejoue le déchiffrement de Cloudflare
+  (premier octet de `data-cfemail` = clé, le reste en XOR) et est appelée par
+  les **deux** mécanismes de remplacement du projet, `data-ajax` et
+  `data-filter`, **avant** `Alpine.initTree` - un composant qui lit le texte
+  doit voir l'adresse, pas le substitut.
+- Le correctif de fond est côté Cloudflare : désactiver l'option, ou poser une
+  règle de configuration qui l'écarte sur `/admin/*`. Le filet côté client rend
+  le back-office correct quel que soit ce réglage.
+- Tests : `tests/Feature/EmailsMasquesCloudflareTest.php`.
 ### Bandeaux du site = Réglages › Bannières (2026-10-11)
 
 Deux images de niveau **plateforme**, servies par **`App\Support\SiteBanners`** :

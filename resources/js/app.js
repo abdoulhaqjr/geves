@@ -327,6 +327,46 @@ window.ukcConfirm = function (message, opts = {}) {
     });
 };
 
+// Rétablit les adresses e-mail masquées par Cloudflare dans un fragment qu'on
+// vient d'injecter.
+//
+// ⚠️ Pourquoi il le faut. Derrière Cloudflare, l'option « Email Address
+// Obfuscation » (Scrape Shield) réécrit TOUTE adresse de la page en
+// `<a class="__cf_email__" data-cfemail="HEX">[email protected]</a>`, et injecte
+// un script qui les redéchiffre dans le navigateur. Ce script ne tourne QU'UNE
+// FOIS, au chargement : un fragment remplacé en AJAX arrive masqué et le reste.
+// La liste des utilisateurs montrait donc de vraies adresses au chargement, et
+// « [email protected] » partout dès la première recherche. Constaté sur
+// geves.univkara.tg le 11/10/2026 ; rien de tel en local, qui n'a pas de proxy.
+//
+// Le déchiffrement est celui de Cloudflare : le premier octet de `data-cfemail`
+// est la clé, les suivants sont l'adresse passée en XOR avec elle.
+function ukcCfAdresse(hex) {
+    const cle = parseInt(hex.slice(0, 2), 16);
+    const octets = [];
+    for (let i = 2; i < hex.length; i += 2) octets.push(parseInt(hex.slice(i, i + 2), 16) ^ cle);
+    return new TextDecoder().decode(new Uint8Array(octets));
+}
+
+function ukcDecodeCfEmails(racine) {
+    if (! racine) return;
+    racine.querySelectorAll('.__cf_email__[data-cfemail]').forEach((el) => {
+        let adresse;
+        try { adresse = ukcCfAdresse(el.getAttribute('data-cfemail')); } catch (e) { return; }
+        if (! adresse) return;
+        // ⚠️ `textContent`, jamais `innerHTML` : c'est une donnée saisie.
+        el.textContent = adresse;
+        el.classList.remove('__cf_email__');
+        el.removeAttribute('data-cfemail');
+        if (el.tagName === 'A') el.setAttribute('href', 'mailto:' + adresse);
+    });
+    // Lien dont seule l'adresse de destination est masquée.
+    racine.querySelectorAll('a[href*="/cdn-cgi/l/email-protection#"]').forEach((a) => {
+        const hex = (a.getAttribute('href') || '').split('#')[1] || '';
+        if (hex) a.setAttribute('href', 'mailto:' + ukcCfAdresse(hex));
+    });
+}
+
 async function ukcAjaxSubmit(form, submitter) {
     const key = form.dataset.ajaxTarget || form.closest('[data-ajax-root]')?.getAttribute('data-ajax-root');
     // IMPORTANT : construire le corps AVANT de désactiver les boutons — un bouton
@@ -356,7 +396,7 @@ async function ukcAjaxSubmit(form, submitter) {
                 fresh = doc.querySelector('[data-ajax-root="' + key + '"]');
             }
             const cur = document.querySelector('[data-ajax-root="' + key + '"]');
-            if (fresh && cur) { cur.innerHTML = fresh.innerHTML; window.Alpine?.initTree?.(cur); }
+            if (fresh && cur) { cur.innerHTML = fresh.innerHTML; ukcDecodeCfEmails(cur); window.Alpine?.initTree?.(cur); }
         }
     } catch (e) {
         ukcToast('Action impossible.', 'err');
@@ -488,6 +528,7 @@ async function ukcFiltreApplique(form) {
             const fraiche = doc.querySelector('[data-filter-part="' + nom + '"]');
             if (! fraiche) return;
             courante.innerHTML = fraiche.innerHTML;
+            ukcDecodeCfEmails(courante);
             window.Alpine?.initTree?.(courante);
         });
 

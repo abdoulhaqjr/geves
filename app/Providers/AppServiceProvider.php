@@ -75,9 +75,14 @@ class AppServiceProvider extends ServiceProvider
         // En-tête public : alimente les liens « Événement en cours » et
         // « Déroulement » (mockup index.html) avec l'événement à la une -
         // celle en cours, sinon la prochaine, sinon la dernière publiée.
-        View::composer('partials.public-header', function ($view) {
+        // ⚠️ Les TROIS surfaces qui pointent vers les ancres de l'accueil :
+        // l'en-tête, le pied de page et le bouton de la page Déroulement. Une
+        // seule oubliée, et le lien mort revient par là.
+        View::composer(['partials.public-header', 'partials.public-footer', 'public.deroulement'], function ($view) {
             $event = null;
             $hasLive = false;
+            $ongoing = null;
+            $upcoming = null;
 
             try {
                 $published = Event::query()
@@ -97,7 +102,14 @@ class AppServiceProvider extends ServiceProvider
                 // Table absente (migrations/installation) : header sans ces liens.
             }
 
-            $view->with('navEdition', $event)->with('navHasLive', $hasLive);
+            // ⚠️ Mêmes règles que `HomeController` (`EventPhase::publicView()`),
+            // parce que le menu ne doit offrir une ancre que si la section
+            // existe vraiment sur la page d'accueil. Un cas Pest compare les
+            // deux côtés plutôt que de faire confiance à cette note.
+            $view->with('navEdition', $event)
+                ->with('navHasLive', $hasLive)
+                ->with('navHasOngoing', $ongoing !== null)
+                ->with('navHasUpcoming', $upcoming !== null);
         });
     }
 
