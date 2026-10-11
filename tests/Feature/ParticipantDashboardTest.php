@@ -375,6 +375,33 @@ it('ne redit pas la séance qui contient déjà un de mes passages', function ()
     expect($lignes->firstWhere('genre', 'passage')['detail'])->toBe('Atelier 1 - séance 1');
 });
 
+it('montre chaque axe en entier, un par ligne', function () {
+    // ⚠️ Les axes étaient rognés à 48 caractères PUIS joints par « · » : un
+    // intitulé d'atelier en fait couramment 70, et trois d'affilée dans la
+    // colonne étroite donnaient un pavé où la coupe tombait en plein mot. La
+    // coupe revient au CSS (deux lignes, `title` porte l'intitulé entier) ;
+    // PHP ne tronque plus rien.
+    ['account' => $account, 'event' => $event, 'participant' => $participant] = colloqueDate(0);
+
+    $long = 'Atelier 6 - Mathématiques, physique, chimie et innovations technologiques';
+    $event->submissions()->create([
+        'participant_id' => $participant->id, 'ref_code' => 'AVD-002',
+        'title' => 'Seconde communication', 'status' => 'accepted',
+        'revision_of' => 0, 'track' => $long, 'type' => 'oral',
+        'access_token' => Str::random(64),
+    ]);
+
+    // ⚠️ `assertSee($long)` seul ne suffit PAS : l'intitulé entier reste dans
+    // l'attribut `title`, donc l'assertion passerait même si l'affichage était
+    // rogné. C'est l'ABSENCE de la forme rognée qui tient la règle.
+    $this->actingAs($account, 'account')->get(route('account.dashboard'))
+        ->assertOk()
+        ->assertSee('Mes axes')
+        ->assertSee($long)
+        ->assertDontSee(Str::limit($long, 48))
+        ->assertSee('Sciences');
+});
+
 it('n’écrit pas « Salle Salle 1 » : la valeur nomme déjà le lieu', function () {
     // ⚠️ `slots.room` contient « Salle 1 », mais aussi « Auditorium » ou
     // « Grand amphithéâtre » : préfixer par « Salle » doublait le mot sur les

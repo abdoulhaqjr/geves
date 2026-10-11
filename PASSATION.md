@@ -938,6 +938,18 @@ Passe menée sur le compte de démonstration le plus fourni (3 communications do
   à `0.888889px`. Lire la largeur de bordure calculée pour connaître le facteur
   **avant** de conclure qu'une cible tactile est trop petite - j'ai failli
   « corriger » une règle correcte.
-- Reste en l'état, signalé : « Mes axes » tronque trois intitulés d'affilée dans
-  le volet de droite, et la carte haute de l'état « après » est haute et creuse
-  (elle s'aligne sur le volet). Choix d'affichage, pas défauts.
+- **« Mes axes » : un axe par ligne, coupé par le CSS.** Les intitulés étaient
+  rognés à 48 caractères PUIS joints par « · » dans la colonne étroite des
+  autres faits : un intitulé d'atelier en fait couramment 70, la coupe tombait
+  en plein mot et les points de suspension se mêlaient aux séparateurs. La ligne
+  passe en pleine largeur, chaque axe est une pastille à part, et la coupe est
+  faite par le CSS (`line-clamp: 2`, `title` porte l'intitulé entier). Mesuré :
+  les trois axes du jeu de démonstration tiennent **en entier**, un axe de 170
+  caractères se coupe à deux lignes, et la carte fait exactement la hauteur de
+  la carte haute (376px) au lieu de la dépasser.
+  ⚠️ Le premier cas écrit pour cette règle **ne mordait pas** : `assertSee($long)`
+  passe même quand l'affichage est rogné, puisque l'intitulé entier reste dans
+  l'attribut `title`. C'est `assertDontSee(Str::limit($long, 48))` qui tient la
+  règle. Un cas qui ne tombe pas sous sabotage ne garde rien.
+- Reste en l'état : la carte haute de l'état « après » est un peu creuse (elle
+  s'aligne sur le volet de droite). Choix d'affichage, pas un défaut.

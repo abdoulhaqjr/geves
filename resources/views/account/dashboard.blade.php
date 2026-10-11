@@ -293,8 +293,23 @@
                         <div><dt>{{ __('Lieu') }}</dt><dd>{{ \Illuminate\Support\Str::limit(strip_tags($event->location), 70) }}</dd></div>
                     @endif
                     @if ($axes->isNotEmpty())
-                        <div><dt>{{ trans_choice('Mon axe|Mes axes', $axes->count()) }}</dt>
-                            <dd>{{ $axes->map(fn ($a) => \Illuminate\Support\Str::limit($a, 48))->implode(' · ') }}</dd></div>
+                        {{-- ⚠️ UN AXE PAR LIGNE, et la coupe est faite par le CSS.
+                             Trois intitulés d'atelier rognés à 48 caractères puis
+                             joints par « · » donnaient un pavé où l'on ne voyait
+                             plus où l'un finissait : la coupe tombait en plein mot
+                             et les points de suspension se mêlaient aux
+                             séparateurs. --}}
+                        <div class="is-stack"><dt>{{ trans_choice('Mon axe|Mes axes', $axes->count()) }}</dt>
+                            <dd>
+                                <ul class="tdb-axes">
+                                    @foreach ($axes->take(4) as $axe)
+                                        <li title="{{ $axe }}">{{ $axe }}</li>
+                                    @endforeach
+                                    @if ($axes->count() > 4)
+                                        <li class="plus">{{ trans_choice('+:count autre|+:count autres', $axes->count() - 4) }}</li>
+                                    @endif
+                                </ul>
+                            </dd></div>
                     @endif
                 </dl>
                 <a href="{{ route('public.colloque', $event->slug) }}" class="tdb-link tdb-link--foot">

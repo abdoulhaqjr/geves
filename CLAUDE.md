@@ -408,6 +408,10 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   lisait quatre lignes pour deux choses, et la ligne du passage nomme déjà sa
   séance et sa salle. Seules les **plénières** s'ajoutent aux passages et aux
   formations.
+- ⚠️ **Ne jamais tronquer un intitulé en PHP dans cet écran** : `Str::limit()`
+  coupe en plein mot et, joint par « · », rend un pavé. La coupe revient au CSS
+  (`line-clamp`), qui coupe au bord de la boîte, avec l'intitulé entier dans
+  `title`. Vaut pour « Mes axes », un axe par ligne.
 - Styles sous **`.tdb-*`** (fin de `ukc.css`). Tests : `ParticipantDashboardTest`.
 
 ### URLs de l'espace participant = sous `/compte`

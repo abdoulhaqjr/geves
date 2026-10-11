@@ -1120,6 +1120,22 @@ body.ukc-overlay-open { overflow: hidden; }
 .ukc-shell .tdb-facts > div { display: flex; gap: 10px; }
 .ukc-shell .tdb-facts dt { flex: 0 0 74px; color: #64748b; }
 .ukc-shell .tdb-facts dd { margin: 0; min-width: 0; font-weight: 600; color: #334155; }
+/* ⚠️ Les axes ne tiennent PAS dans la colonne étroite des autres faits : un
+   intitulé d'atelier fait couramment 70 caractères, et trois d'affilée dans
+   180px rendaient un pavé. Cette ligne-là passe donc en pleine largeur, un axe
+   par ligne, et la coupe est faite par le CSS (deux lignes) - jamais par PHP,
+   qui coupait en plein mot. `title` porte l'intitulé entier. */
+.ukc-shell .tdb-facts > .is-stack { flex-direction: column; gap: 6px; }
+.ukc-shell .tdb-facts > .is-stack dt { flex: none; }
+.ukc-shell .tdb-axes { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; }
+.ukc-shell .tdb-axes li {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
+  overflow: hidden;
+  padding: 5px 9px; border: 1px solid var(--ukc-border); border-radius: 8px;
+  background: var(--ukc-bg); color: #334155;
+  font-size: 12.5px; font-weight: 600; line-height: 1.35;
+}
+.ukc-shell .tdb-axes li.plus { padding: 0 2px; border: 0; background: none; color: #64748b; }
 
 /* ---- Indicateurs (spécificité : +1 classe sur admin.css, cf. en-tête) ---- */
 .ukc-shell .ukc-stats.tdb-kpi { margin-bottom: 0; }
