@@ -32,6 +32,11 @@
                     <a href="{{ route('account.dashboard') }}">{{ __('Espace participant') }}</a>
                 @endguest
                 <a href="{{ route('public.gesco') }}">{{ __('Assistante :name', ['name' => \App\Support\AiAgents::publicName()]) }}</a>
+                {{-- ⚠️ Retirée du menu du haut, mais PAS du site : cette page
+                     existe pour un tiers - un recruteur qui contrôle une
+                     attestation reçue. La laisser sans aucune entrée de
+                     navigation la rendrait introuvable à qui n'a pas le lien. --}}
+                <a href="{{ route('attestation.verify.landing') }}">{{ __('Vérifier une attestation') }}</a>
                 <a href="mailto:dri@univkara.tg">dri@univkara.tg</a>
             </div>
             <div>

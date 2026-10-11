@@ -2243,8 +2243,10 @@ regles de degagement avait ete remise en dur - on examine chaque bloc).
 ### Page d'accueil : on n'annonce que ce qu'on a (2026-10-11)
 
 - ⚠️ **Un lien vers une ancre que la page ne rend pas ne fait RIEN.** « En
-  cours » et « À venir » visaient `#en-cours` / `#a-venir`, dont les sections
-  n'existent qu'en présence d'événements. Sur geves.univkara.tg, qui n'a aucun
+  cours », « À venir » et « Passés » visent `#en-cours` / `#a-venir` /
+  `#passes`, dont les sections n'existent qu'en présence d'événements.
+  (« Passés » pointait d'abord vers la PAGE d'archives ; elle reste
+  atteignable depuis la section elle-même et depuis le pied de page.) Sur geves.univkara.tg, qui n'a aucun
   colloque en cours, le menu promettait une section absente. Les **trois**
   surfaces concernées sont gardées par `navHasOngoing` / `navHasUpcoming`
   (composeur de `AppServiceProvider`) : l'**en-tête**, le **pied de page** et
@@ -2265,7 +2267,11 @@ regles de degagement avait ete remise en dur - on examine chaque bloc).
   Réglages ne s'y appliquait pas. Elle porte désormais `Branding::markWhite()`
   (carte sombre), avec `logo-auto-white` en secours. Même travers que le « UK »
   en dur de la salle de visio.
-- Tests : `tests/Feature/PageAccueilTest.php` (4 cas, sabotages vérifiés).
+- ⚠️ **« Vérifier une attestation » n'est plus dans la barre du haut**, mais
+  elle reste dans les **liens utiles du pied de page** : cette page existe
+  pour un TIERS - un recruteur qui contrôle une attestation reçue - et la
+  retirer de toute navigation la rendrait introuvable à qui n'a pas le lien.
+- Tests : `tests/Feature/PageAccueilTest.php` (sabotages vérifiés).
   ⚠️ L'un d'eux ne mordait pas : il cherchait l'adresse du monogramme **dans
   toute la page**, où elle figure aussi dans le `<link rel="apple-touch-icon">`
   et dans la marque de l'en-tête. Vidé de son `src`, le logo de la carte

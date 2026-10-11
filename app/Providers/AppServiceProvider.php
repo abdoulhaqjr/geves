@@ -83,6 +83,7 @@ class AppServiceProvider extends ServiceProvider
             $hasLive = false;
             $ongoing = null;
             $upcoming = null;
+            $past = null;
 
             try {
                 $published = Event::query()
@@ -95,6 +96,9 @@ class AppServiceProvider extends ServiceProvider
                     ->filter(fn (Event $e) => $e->phase()->publicView() === 'upcoming')
                     ->sortBy('date_start')
                     ->first();
+
+                $past = $published
+                    ->first(fn (Event $e) => $e->phase()->publicView() === 'past');
 
                 $event = $ongoing ?? $upcoming ?? $published->first();
                 $hasLive = (bool) $ongoing;
@@ -109,7 +113,8 @@ class AppServiceProvider extends ServiceProvider
             $view->with('navEdition', $event)
                 ->with('navHasLive', $hasLive)
                 ->with('navHasOngoing', $ongoing !== null)
-                ->with('navHasUpcoming', $upcoming !== null);
+                ->with('navHasUpcoming', $upcoming !== null)
+                ->with('navHasPast', $past !== null);
         });
     }
 

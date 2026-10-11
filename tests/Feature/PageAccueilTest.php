@@ -18,14 +18,20 @@ function evenementAccueil(string $quand): Event
     $serie = EventSeries::create(['name' => 'Série accueil '.$quand, 'slug' => 'serie-'.$quand]);
 
     // ⚠️ La phase se DÉDUIT des dates (EventPhase) : on les pose, on ne la force pas.
+    [$debut, $fin] = match ($quand) {
+        'ongoing' => [now()->subDay(), now()->addDay()],
+        'past' => [now()->subMonths(4), now()->subMonths(4)->addDays(2)],
+        default => [now()->addMonths(3), now()->addMonths(3)->addDays(2)],
+    };
+
     return $serie->events()->create([
         'title' => 'Colloque '.$quand,
-        'year' => (int) now()->format('Y'),
+        'year' => (int) $debut->format('Y'),
         'status' => 'open',
         'slug' => 'colloque-'.$quand,
         'submission_open' => false,
-        'date_start' => $quand === 'ongoing' ? now()->subDay() : now()->addMonths(3),
-        'date_end' => $quand === 'ongoing' ? now()->addDay() : now()->addMonths(3)->addDays(2),
+        'date_start' => $debut,
+        'date_end' => $fin,
         'settings' => [],
     ]);
 }
@@ -46,7 +52,7 @@ it('n’annonce jamais dans le menu une section absente de la page', function ()
         $html = $this->get(route('home'))->assertOk()->getContent();
 
         $fautives = [];
-        foreach (['en-cours', 'a-venir', 'apropos', 'contact'] as $ancre) {
+        foreach (['en-cours', 'a-venir', 'passes', 'apropos', 'contact'] as $ancre) {
             $lien = str_contains($html, '#'.$ancre.'"');
             $section = str_contains($html, 'id="'.$ancre.'"');
             if ($lien && ! $section) {
@@ -61,10 +67,19 @@ it('n’annonce jamais dans le menu une section absente de la page', function ()
     expect($verifie())->toBe([]);
     expect($this->get(route('home'))->getContent())->not->toContain('#en-cours"');
 
+    expect($this->get(route('home'))->getContent())->not->toContain('#passes"');
+
     // Un colloque en cours : la section apparaît, et le lien avec elle.
     evenementAccueil('ongoing');
     expect($verifie())->toBe([]);
     expect($this->get(route('home'))->getContent())->toContain('#en-cours"');
+
+    // ⚠️ « Passés » visait la PAGE d'archives ; c'est désormais l'ancre de
+    // l'accueil, comme « En cours » et « À venir ». Elle suit donc la même
+    // règle : pas de section, pas de lien.
+    evenementAccueil('past');
+    expect($verifie())->toBe([]);
+    expect($this->get(route('home'))->getContent())->toContain('#passes"');
 });
 
 /**
@@ -185,4 +200,39 @@ it('ne pose plus la grille du formulaire de contact en style en ligne', function
     // La piste doit pouvoir se réduire, et passer à une colonne sur téléphone.
     expect($css)->toContain('.contact-form-row > * { min-width: 0; }');
     expect($css)->toContain('.contact-form-row { grid-template-columns: 1fr; }');
+});
+
+/**
+ * ⚠️ **« Vérifier une attestation » quitte la barre du haut, pas le site.**
+ * Cette page existe pour un TIERS - un recruteur qui contrôle une attestation
+ * reçue. La retirer de toute navigation la rendrait introuvable à qui n'a pas
+ * le lien : elle est reprise dans les liens utiles du pied de page.
+ */
+it('retire « Vérifier une attestation » du menu du haut sans la rendre introuvable', function () {
+    $html = (string) $this->get(route('home'))->assertOk()->getContent();
+
+    $menu = (string) Str::between($html, '<nav class="nav"', '</nav>');
+    expect($menu)->not->toBeEmpty();
+    expect($menu)->not->toContain(route('attestation.verify.landing'));
+
+    $pied = (string) Str::between($html, '<footer class="site-footer"', '</footer>');
+    expect($pied)->toContain(route('attestation.verify.landing'));
+});
+
+/**
+ * ⚠️ **« Passés » vise l'ancre de l'accueil**, comme « En cours » et « À
+ * venir » - et non plus la page d'archives, qui reste atteignable depuis la
+ * section elle-même (« Toutes les archives ») et depuis le pied de page.
+ */
+it('fait pointer « Passés » vers la section de l’accueil', function () {
+    evenementAccueil('past');
+
+    $html = (string) $this->get(route('home'))->assertOk()->getContent();
+    $menu = (string) Str::between($html, '<nav class="nav"', '</nav>');
+
+    expect($menu)->toContain('#passes"');
+    expect($menu)->not->toContain(route('public.archives'));
+
+    // La page d'archives n'est pas pour autant orpheline.
+    expect($html)->toContain(route('public.archives'));
 });

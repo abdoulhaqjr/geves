@@ -1361,3 +1361,12 @@ balaie maintenant `app/` aussi, commentaires de fin de ligne compris. Troisième
 garde trop étroite de la journée.
 
 1167 tests / 4145 assertions, Pint et PHPStan niveau 5 sans erreur.
+
+**Suite, meme jour.** La barre publique perd « Verifier une attestation »,
+recueillie dans les liens utiles du pied de page : cette page existe pour un
+tiers qui controle une attestation recue, la retirer de toute navigation la
+rendrait introuvable. Et « Passes » vise desormais l'ancre `#passes` de
+l'accueil au lieu de la page d'archives - donc elle prend la meme garde que
+ses deux voisines (`navHasPast`), sans quoi on reintroduisait exactement le
+lien mort corrige le matin meme. La page d'archives reste atteignable depuis
+la section (« Toutes les archives ») et depuis le pied de page.
