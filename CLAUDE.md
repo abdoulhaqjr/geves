@@ -477,6 +477,21 @@ les héros**, pour les harmoniser et pour écarter la teinte quasi noire
   retirés**, sinon un commentaire citant `--ukc-hero` fait passer la règle
   suivante pour un héros.
 
+### Mise en ligne = `DEPLOIEMENT.md`
+
+Le mode opératoire o2switch vit dans **`DEPLOIEMENT.md`**, l'environnement type
+dans **`.env.production.example`**. Les pièges qui se paient en ligne :
+
+- ⚠️ **Le `composer.lock` exige PHP ≥ 8.4.1** (Symfony 8.x), bien que
+  `composer.json` annonce `^8.3`.
+- ⚠️ **`RolesAndAdminSeeder` tourne AUSSI en production.** Il posait le mot de
+  passe « password » : en production il lit désormais `ADMIN_EMAIL` /
+  `ADMIN_PASSWORD` et **échoue** si le second est vide. Il ne retouche jamais
+  un mot de passe déjà changé. Tenu par `SuperAdminSeedTest`.
+- ⚠️ **Les e-mails sont des jobs** : sans `queue:work`, rien ne part.
+- ⚠️ **`config/app.php` fixe le fuseau à `UTC` EN DUR** : une `APP_TIMEZONE`
+  dans le `.env` ne serait pas lue.
+
 ### URLs de l'espace participant = sous `/compte`
 
 Les pages personnelles du compte vivent sous **`/compte/...`** (`/compte`, `/compte/profil`,

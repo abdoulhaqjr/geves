@@ -45,11 +45,36 @@ class RolesAndAdminSeeder extends Seeder
         // Rôle legacy conservé (compat, accès complet).
         Role::firstOrCreate(['name' => 'editor', 'guard_name' => 'web'])->givePermissionTo($manage);
 
-        // Administrateur par défaut (dev). À changer en production.
-        $user = User::firstOrCreate(
-            ['email' => 'admin@univkara.tg'],
-            ['name' => 'Administrateur', 'password' => Hash::make('password'), 'email_verified_at' => now()]
-        );
+        // ⚠️ Ce seeder tourne AUSSI en production : c'est lui qui installe les
+        // rôles et le super-administrateur. Il posait le mot de passe
+        // « password », donc une mise en ligne ouvrait un compte à tous les
+        // pouvoirs avec un mot de passe public. En production, le mot de passe
+        // vient de l'environnement et son absence ARRÊTE le déploiement : mieux
+        // vaut une migration qui échoue qu'un site ouvert.
+        $email = (string) (env('ADMIN_EMAIL') ?: 'admin@univkara.tg');
+        $user = User::where('email', $email)->first();
+
+        if (! $user) {
+            $motDePasse = (string) (env('ADMIN_PASSWORD') ?: '');
+
+            if ($motDePasse === '') {
+                if (app()->isProduction()) {
+                    throw new \RuntimeException(
+                        'ADMIN_PASSWORD est vide : refus de créer le super-administrateur '
+                        .'avec un mot de passe par défaut en production. Renseignez '
+                        .'ADMIN_EMAIL et ADMIN_PASSWORD dans .env, puis relancez.'
+                    );
+                }
+                $motDePasse = 'password';
+            }
+
+            $user = User::create([
+                'email' => $email,
+                'name' => (string) (env('ADMIN_NAME') ?: 'Administrateur'),
+                'password' => Hash::make($motDePasse),
+                'email_verified_at' => now(),
+            ]);
+        }
 
         if (! $user->hasRole('administrator')) {
             $user->assignRole('administrator');

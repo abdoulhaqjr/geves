@@ -427,9 +427,25 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
 
 ---
 
-## 9. Déploiement (à définir)
+## 9. Déploiement
 
-Pas encore mis en place. Pistes : cible **MySQL** en prod (migrations déjà portables), `php artisan migrate --force`, `npm run build`, `php artisan storage:link`, file de queue pour les e-mails, planificateur pour les rappels. Prévoir un vrai driver mail (SMTP/Postmark/Resend - `config/services.php` déjà prêt).
+**Mode opératoire complet : [`DEPLOIEMENT.md`](DEPLOIEMENT.md)** (cible o2switch,
+`https://geves.univkara.tg`), et modèle d'environnement :
+`.env.production.example`. Ce qu'il faut retenir :
+
+- ⚠️ **Le `composer.lock` exige PHP ≥ 8.4.1.** `composer.json` dit `^8.3` et
+  Laravel 13 l'accepterait, mais le verrou a résolu **Symfony 8.x**. Viser 8.3
+  imposerait de re-verrouiller sur Symfony 7.4 **et de relancer toute la suite**.
+- ⚠️ **Deux crons, pas un.** `schedule:run` chaque minute, ET
+  `queue:work --stop-when-empty` chaque minute : **dix des onze classes d'e-mail
+  sont des jobs**, sans travailleur rien ne part.
+- ⚠️ **`APP_URL` change l'adresse inscrite DANS les attestations signées** :
+  `php artisan attestations:sign --force` après la mise en ligne (déjà noté
+  dans CLAUDE.md).
+- ⚠️ **La racine du document du sous-domaine doit viser `public/`**, et le dépôt
+  vivre hors du dossier servi - sinon `.env` est téléchargeable.
+- **Indisponible sur mutualisé** : production des vidéos de prise en main
+  (FFmpeg + processus long). Les guides texte fonctionnent.
 
 ---
 
