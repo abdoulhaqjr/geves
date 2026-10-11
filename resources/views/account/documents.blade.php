@@ -16,7 +16,8 @@
         @endphp
 
         {{-- ============ Mon badge participant ============ --}}
-        <div class="ukc-badge-wrap">
+        {{-- `id` : cible de la pastille « Mon badge » du tableau de bord. --}}
+        <div class="ukc-badge-wrap" id="mon-badge">
             <div class="ukc-card ukc-badge-card">
                 <h3><x-ukc.icon name="shield" :size="20" /> {{ __('Mon badge participant') }}</h3>
                 <p class="badge-intro">

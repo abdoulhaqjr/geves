@@ -1053,8 +1053,12 @@ body.ukc-overlay-open { overflow: hidden; }
   box-shadow: 0 2px 10px rgba(20, 40, 90, .08);
   display: flex; flex-direction: column; gap: 13px;
 }
-/* ⚠️ Après le colloque il n'y a plus d'urgence : la même carte, posée à plat. */
-.ukc-shell .tdb-next--calme { background: linear-gradient(135deg, #1f2a52 0%, var(--ukc-blue-dark) 100%); }
+/* ⚠️ PAS de dégradé propre à cet écran. `--ukc-hero` est le dégradé CANONIQUE,
+   et son commentaire le dit : une seule source pour tous les héros, justement
+   pour écarter les teintes quasi noires des anciens dégradés. J'en avais ajouté
+   un second (#1f2a52 -> bleu foncé) pour « calmer » la carte après le colloque :
+   c'était rouvrir le défaut que le jeton avait fermé. Ce qui distingue les trois
+   moments, ce sont le libellé, l'icône et les boutons - pas la teinte. */
 .ukc-shell .tdb-next__eyebrow {
   display: flex; align-items: center; gap: 8px;
   font-size: 11.5px; font-weight: 800; letter-spacing: .09em;
@@ -1110,7 +1114,14 @@ body.ukc-overlay-open { overflow: hidden; }
 
 /* ---- Repère du colloque (dates, lieu, axes) ---- */
 .ukc-shell .tdb-ctx { display: flex; flex-direction: column; gap: 11px; }
-.ukc-shell .tdb-ctx__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+/* ⚠️ `flex-wrap` + `nowrap` sur les deux enfants : dans un volet de 270px,
+   « LE COLLOQUE » et « Appel à communications » se partageaient la largeur et
+   passaient CHACUN sur deux lignes. La pastille descend d'une ligne quand il
+   n'y a pas la place, au lieu que les deux se tassent. Mesuré : 2 lignes
+   chacun avant, 1 ligne chacun après. */
+.ukc-shell .tdb-ctx__head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.ukc-shell .tdb-ctx__head .e,
+.ukc-shell .tdb-ctx__head .ukc-pill { white-space: nowrap; }
 .ukc-shell .tdb-ctx__head .e {
   font-size: 11.5px; font-weight: 800; letter-spacing: .09em;
   text-transform: uppercase; color: #64748b;

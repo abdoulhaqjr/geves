@@ -423,6 +423,16 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   coupe en plein mot et, joint par « · », rend un pavé. La coupe revient au CSS
   (`line-clamp`), qui coupe au bord de la boîte, avec l'intitulé entier dans
   `title`. Vaut pour « Mes axes », un axe par ligne.
+- ⚠️ **Aucun dégradé maison** : la carte haute porte **`var(--ukc-hero)`**, le
+  dégradé canonique. Son commentaire dans `ukc.css` le dit déjà - une seule
+  source pour tous les héros, pour écarter les teintes quasi noires des anciens
+  dégradés. Un second dégradé « calme » pour l'après-colloque rouvrait ce
+  défaut. Ce qui distingue les trois moments, c'est le **libellé, l'icône et les
+  boutons**, pas la teinte. Tenu par un cas qui relit `ukc.css`.
+- ⚠️ **Une pastille de document ne promet un format que si c'en est un** : le
+  badge n'est pas un fichier (il est dessiné sur « Mes documents »), sa pastille
+  dit « Voir » et vise l'ancre `#mon-badge`. D'où « Prêts à **retirer** », pas
+  « à télécharger ».
 - Styles sous **`.tdb-*`** (fin de `ukc.css`). Tests : `ParticipantDashboardTest`.
 
 ### URLs de l'espace participant = sous `/compte`

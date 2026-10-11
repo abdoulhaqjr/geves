@@ -492,12 +492,16 @@ class ParticipantDashboard
                 'icone' => 'receipt',
                 'format' => 'PDF',
             ];
+            // ⚠️ Le badge n'est PAS un fichier : il est dessiné sur « Mes
+            // documents » et s'imprime depuis là. La pastille annonçait « PDF »
+            // et ouvrait une page - on promettait un téléchargement. Elle dit
+            // « Voir » et mène à l'ancre du badge, pas au haut de la page.
             $out[] = [
                 'libelle' => 'Mon badge',
                 'detail' => 'À présenter à l’accueil',
-                'url' => route('account.documents'),
+                'url' => route('account.documents').'#mon-badge',
                 'icone' => 'card',
-                'format' => 'PDF',
+                'format' => 'Voir',
             ];
         }
 
@@ -564,7 +568,10 @@ class ParticipantDashboard
             'libelle' => 'Mes documents',
             'valeur' => (string) $documents,
             'unite' => '',
-            'detail' => $documents > 0 ? 'Prêts à télécharger' : 'Rien à retirer pour l’instant',
+            // ⚠️ « À retirer », pas « à télécharger » : le badge se montre à
+            // l'accueil, il ne se télécharge pas. Même mot que la carte haute
+            // de l'après-colloque (« ce qu'il vous reste à retirer »).
+            'detail' => $documents > 0 ? 'Prêts à retirer' : 'Rien à retirer pour l’instant',
             'icone' => 'folder',
             'ton' => 'amber',
         ];

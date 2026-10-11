@@ -105,7 +105,7 @@
                  E-MAIL : il peut n'avoir aucune inscription, donc aucun colloque à
                  sélectionner. Lui annoncer une échéance de dépôt n'aurait aucun
                  sens ; ce qu'on lui doit, ce sont ses séances. --}}
-            <article class="tdb-next tdb-next--calme">
+            <article class="tdb-next">
                 <div class="tdb-next__eyebrow">
                     <x-ukc.icon name="users" :size="16" /> {{ __('Mon espace') }}
                 </div>
@@ -192,7 +192,7 @@
             </article>
 
         @elseif ($vue === 'apres')
-            <article class="tdb-next tdb-next--calme">
+            <article class="tdb-next">
                 <div class="tdb-next__eyebrow">
                     <x-ukc.icon name="award" :size="16" /> {{ __('Ce qu’il vous reste à retirer') }}
                 </div>

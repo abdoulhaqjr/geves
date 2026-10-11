@@ -966,3 +966,36 @@ Passe menée sur le compte de démonstration le plus fourni (3 communications do
   règle. Un cas qui ne tombe pas sous sabotage ne garde rien.
 - Reste en l'état : la carte haute de l'état « après » est un peu creuse (elle
   s'aligne sur le volet de droite). Choix d'affichage, pas un défaut.
+
+## Tableau de bord participant — seconde passe visuelle, en impersonation (2026-10-11)
+
+Première passe faite sur du HTML rendu hors navigateur ; celle-ci sur le site,
+connecté **en tant que** participant depuis `Admin > Participants > Sa page >
+Se connecter en tant que`. Trois défauts que le rendu hors session n'avait pas
+montrés, plus un signalé par la relecture.
+
+- **Le dégradé de la carte haute n'était pas celui du site.** J'avais ajouté
+  `.tdb-next--calme` (`#1f2a52` -> bleu foncé) pour « calmer » l'après-colloque.
+  Or `--ukc-hero` est le dégradé **canonique** et son propre commentaire dit
+  pourquoi : une seule source, pour écarter les teintes quasi noires des anciens
+  dégradés. J'avais donc rouvert le défaut que le jeton avait fermé, en ignorant
+  un commentaire qui l'expliquait. Supprimé ; un cas relit `ukc.css` et refuse
+  tout `linear-gradient` en dur sous `.tdb-`.
+- **La pastille « Mon badge » annonçait « PDF » et ouvrait une page.** Le badge
+  n'est pas un fichier : il est dessiné sur « Mes documents ». Elle dit « Voir »
+  et vise l'ancre `#mon-badge` (ajoutée sur cette page), au lieu du haut de
+  l'écran. L'indicateur disait « Prêts à télécharger » pour trois pièces dont une
+  ne se télécharge pas : « Prêts à retirer », le mot de la carte haute.
+- **L'en-tête du volet de droite se tassait.** Dans 270px, « LE COLLOQUE » et la
+  pastille « Appel à communications » se partageaient la largeur et passaient
+  **chacun sur deux lignes**. `flex-wrap` + `white-space: nowrap` : la pastille
+  descend d'une ligne s'il n'y a pas la place. Mesuré : 2 lignes chacun avant,
+  1 ligne chacun après, même largeur.
+- ⚠️ **Deux fausses alertes, écartées par la mesure.** Le menu latéral compact
+  paraissait écrire ses libellés par-dessus ses icônes : c'était une image prise
+  **pendant la transition de 260 ms**, la barre s'ouvre correctement après une
+  seconde d'attente. Et l'en-tête semblait rogné à gauche : le DOM dit que non,
+  c'est le volet qui rend à l'échelle (cf. la passe précédente).
+- **Comment refaire la passe** : l'impersonation est le chemin, pas un rendu
+  hors session. Penser à **quitter l'impersonation** à la fin, et à remettre le
+  colloque courant sur celui qu'on a trouvé en arrivant.
