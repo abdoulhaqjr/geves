@@ -302,6 +302,12 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   (profil + auteur correspondant). Le **grade est capturé par édition** sur le
   participant (`participant.title`) → une personne peut avoir des grades différents au
   fil des colloques ; ne pas le lire uniquement depuis le profil global.
+- **Civilités** : liste unique **`App\Support\Civilities::all()`** = **`M.` / `Mme` /
+  `Mlle`** (inscription, profil participant, profil staff, fabrique). ⚠️ **Ne pas la
+  redéclarer** : trois contrôleurs la recopiaient et divergeaient dans l'ordre. La
+  civilité reste **libre en base** (`max:20`, pas de `in:`) : d'anciennes valeurs
+  (« Dr », « Pr ») restent valides. Le **titre académique** se capte ailleurs (grade,
+  `trainer.title` des formateurs - datalist Pr./Dr. distincte, ne pas confondre).
 - **Wizard de soumission** (`resources/js/app.js` → `submissionWizard`) : blocage
   d'étape (`validateStep`), erreurs en **toast** (`window.ukcToast`), auteur
   correspondant éditable (identité forcée côté serveur quand « self », cf.
