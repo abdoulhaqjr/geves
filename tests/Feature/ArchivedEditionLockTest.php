@@ -152,7 +152,7 @@ it('laisse consulter la page de paiement mais ferme le règlement', function () 
     $this->actingAs($account, 'account')
         ->get(route('account.payment', $event))
         ->assertOk()
-        ->assertSee('archivée', false);
+        ->assertSee('archivé', false); // « Cet événement est archivé » (masculin depuis le renommage « événement »)
 
     $this->actingAs($account, 'account')
         ->post(route('account.payment.pay', $event), ['gateway' => 'manual'])

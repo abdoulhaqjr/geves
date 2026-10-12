@@ -33,7 +33,7 @@ it('n’emploie plus « colloque » comme mot générique sur le site public', f
     // « colloque ».
     $permises = [
         // L'énumération des types : c'est ce que la plateforme gère.
-        'Plateforme de gestion de <em>séminaires, colloques et journées scientifiques</em> de l’Université de Kara',
+        'La plateforme des <em>séminaires, colloques et journées scientifiques</em> de l’Université de Kara',
         'Plateforme institutionnelle de l’Université de Kara pour la gestion des séminaires, colloques et journées scientifiques.',
         'La DRI pilote la politique scientifique de l’Université de Kara et coordonne les colloques, séminaires et journées scientifiques organisés sur le campus et avec les partenaires.',
         // Le filtre des archives et la pastille de type portent SUR le type :
