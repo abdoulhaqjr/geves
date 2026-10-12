@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Account;
+use App\Support\Civilities;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -13,7 +14,7 @@ class AccountFactory extends Factory
     public function definition(): array
     {
         return [
-            'civility' => fake()->randomElement(['M.', 'Mme', 'Dr', 'Pr']),
+            'civility' => fake()->randomElement(Civilities::all()),
             'first_name' => fake()->firstName(),
             'last_name' => fake()->lastName(),
             'email' => fake()->unique()->safeEmail(),

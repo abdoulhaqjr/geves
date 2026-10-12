@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
+use App\Support\Civilities;
 use App\Support\HalClient;
 use App\Support\Orcid;
 use App\Support\OrcidClient;
@@ -28,7 +29,7 @@ class ProfileController extends Controller
     {
         return view('account.profile', [
             'account' => Auth::guard('account')->user(),
-            'civilities' => ['M.', 'Mme', 'Pr', 'Dr'],
+            'civilities' => Civilities::all(),
             'participantTypes' => ParticipantTypes::all(),
             'halEnabled' => HalClient::enabled(),
             'orcidConnect' => app(OrcidClient::class)->isConfigured(),

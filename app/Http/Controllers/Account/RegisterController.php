@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\Civilities;
 use App\Support\ParticipantTypes;
 use App\Support\Phone;
 use Illuminate\Auth\Events\Registered;
@@ -30,8 +31,8 @@ class RegisterController extends Controller
         }
 
         return view('account.auth.register', [
-            // Civilités par défaut (surchargeable plus tard par la config d'événement).
-            'civilities' => ['M.', 'Mme', 'Dr', 'Pr'],
+            // Civilités proposées - source unique App\Support\Civilities.
+            'civilities' => Civilities::all(),
             // ⚠️ Source UNIQUE des grades (cf. ParticipantTypes) : une liste propre
             // à ce formulaire produisait des valeurs (« Doctorant / étudiant »…) que
             // la grille tarifaire ne pouvait plus rapprocher - le montant restait

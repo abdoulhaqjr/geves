@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\Civilities;
 use App\Support\Orcid;
 use App\Support\Totp;
 use Illuminate\Http\RedirectResponse;
@@ -31,7 +32,7 @@ class ProfileController extends Controller
 
         return view('admin.profile', [
             'staff' => $staff,
-            'civilities' => ['M.', 'Mme', 'Pr', 'Dr'],
+            'civilities' => Civilities::all(),
             'notifPrefs' => $staff?->resolvedNotificationPreferences('staff') ?? [],
             'twoFactorEnabled' => $staff?->hasTotpEnabled() ?? false,
             'recoveryCount' => $staff?->countRecoveryCodes() ?? 0,
