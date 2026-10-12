@@ -220,18 +220,20 @@
     {{-- ===================== À propos ===================== --}}
     <section class="ukc-section ukc-section--alt" id="apropos">
         <div class="ukc-container">
-            <div class="block-head">
+            <div class="block-head about-heading">
+                <span class="about-eyebrow">{{ __('Université de Kara · Recherche et innovation') }}</span>
                 <h2>{{ __('À propos de :app', ['app' => config('app.name')]) }}</h2>
-                <p>{{ __('Plateforme institutionnelle de l’Université de Kara pour la gestion des séminaires, colloques et journées scientifiques.') }}</p>
+                <p>{{ __('Un service commun pour les organisateurs, les comités scientifiques et les participants.') }}</p>
             </div>
             <div class="about-intro">
                 <div class="about-copy">
-                    <h2>{{ __('Un service de la Direction de la Recherche et de l’Innovation') }}</h2>
-                    <p>{{ __(':app est le portail unique de l’Université de Kara pour organiser, suivre et valoriser les manifestations scientifiques placées sous l’égide de l’établissement. De l’appel à communications à la remise des attestations, la plateforme couvre l’ensemble du cycle de vie.', ['app' => config('app.name')]) }}</p>
-                    <p>{!! __('Elle n’a <strong>aucune vocation commerciale</strong> : il s’agit d’un outil institutionnel mis à disposition des chercheurs, doctorants, comités scientifiques et partenaires, sous la responsabilité de la <strong>Direction de la Recherche et de l’Innovation (DRI)</strong>.') !!}</p>
+                    <span class="about-eyebrow">{{ __('La plateforme') }}</span>
+                    <h3>{{ __('Chaque étape d’un événement scientifique, au même endroit.') }}</h3>
+                    <p>{{ __('De l’appel à communications aux archives, :app réunit les soumissions, l’évaluation, les inscriptions, le programme et les documents officiels.', ['app' => config('app.name')]) }}</p>
+                    <p>{{ __('Chercheurs, doctorants et équipes d’organisation disposent ainsi d’un parcours commun, simple à suivre.') }}</p>
                     <div class="actions">
-                        <a href="mailto:dri@univkara.tg" class="ukc-btn ukc-btn--blue ukc-btn--sm">{{ __('Écrire à la DRI') }}</a>
-                        <a href="#contact" class="ukc-btn ukc-btn--outline ukc-btn--sm">{{ __('Nous contacter') }}</a>
+                        <a href="#fonctionnalites" class="ukc-btn ukc-btn--blue">{{ __('Explorer les fonctionnalités') }}</a>
+                        <a href="#contact" class="ukc-btn ukc-btn--outline">{{ __('Contacter la DRI') }}</a>
                     </div>
                 </div>
                 <aside class="about-side">
@@ -246,31 +248,14 @@
                         <img src="{{ \App\Support\Branding::markWhite() }}" alt=""
                              @class(['logo-auto-white' => \App\Support\Branding::whitensOnDark(\App\Support\Branding::MARK)])>
                     </div>
+                    <span class="about-side__eyebrow">{{ __('Porté par l’Université de Kara') }}</span>
                     <h3>{{ __('Direction de la Recherche et de l’Innovation') }}</h3>
-                    <p>{{ __('La DRI pilote la politique scientifique de l’Université de Kara et coordonne les colloques, séminaires et journées scientifiques organisés sur le campus et avec les partenaires.') }}</p>
-                    <ul>
-                        <li><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>{{ __('Coordination des événements et comités') }}</li>
-                        <li><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>{{ __('Suivi des soumissions et évaluations') }}</li>
-                        <li><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>{{ __('Valorisation et mémoire scientifique') }}</li>
-                    </ul>
+                    <p>{{ __('La DRI coordonne les événements scientifiques de l’Université de Kara et accompagne les équipes qui les organisent.') }}</p>
+                    <div class="about-side__footer">
+                        <span>{{ __('Un service institutionnel sans vocation commerciale.') }}</span>
+                        <a href="mailto:dri@univkara.tg">{{ __('Écrire à la DRI') }} <span aria-hidden="true">↗</span></a>
+                    </div>
                 </aside>
-            </div>
-            <div class="about-pillars">
-                <div class="about-pillar">
-                    <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/></svg></div>
-                    <h3>{{ __('Mission institutionnelle') }}</h3>
-                    <p>{{ __('Accompagner la communauté universitaire dans l’organisation et la traçabilité des événements scientifiques.') }}</p>
-                </div>
-                <div class="about-pillar">
-                    <div class="ico"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></div>
-                    <h3>Cycle complet</h3>
-                    <p>Appel à communications, soumission, évaluation, programme, badges, attestations et archives.</p>
-                </div>
-                <div class="about-pillar">
-                    <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg></div>
-                    <h3>{{ __('Non commercial') }}</h3>
-                    <p>{{ __('Outil public de service, sans logique marchande - au service de la recherche et de l’innovation.') }}</p>
-                </div>
             </div>
         </div>
     </section>

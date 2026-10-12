@@ -35,6 +35,10 @@ Larastan **niveau 5**.
 
 - `resources/views/account/payment/pay.blade.php` affiche d’abord l’état réel de la participation et la prochaine action ; la grille tarifaire est un `<details>` secondaire. Si le paiement est ouvert, le montant et les moyens disponibles passent en premier. Le choix de passerelle est transmis par le radio `name="gateway"` ; conserver le `x-model="gw"` utilisé par le sélecteur d’opérateur. Les tarifs sont fournis par `Fees`, et un libellé de catégorie ne doit être présenté comme personnel que si `Fees::resolveAmount()` a trouvé une correspondance explicite.
 
+### Accueil public : À propos
+
+- La section `#apropos` de `home.blade.php` est une présentation concise en deux panneaux : rôle de la plateforme et responsabilité de la DRI. Les fonctionnalités détaillées restent dans `#fonctionnalites` ; éviter de réintroduire des cartes qui répètent le même contenu. Les textes sont traduits dans `lang/en.json` et les styles résident dans `resources/css/public.css`.
+
 ### Colloque Eau au Togo - import réel
 
 - `database/seeders/ColloqueEauTogoSeeder.php` est un import **manuel et autonome** : 44 réponses Google Forms, 47 résumés et les 47 Word intégrés au même fichier. Lancer `php artisan db:seed --class=ColloqueEauTogoSeeder` seulement sur la base voulue ; ne pas l'ajouter à `DatabaseSeeder` (données personnelles réelles).

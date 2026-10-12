@@ -186,35 +186,37 @@
 .colloque-card .foot { display: flex; flex-wrap: wrap; gap: 8px; }
 
 /* ---- À propos ---- */
-.about-intro { display: grid; grid-template-columns: 1.15fr .85fr; gap: 28px; align-items: stretch; margin-bottom: 28px; }
-@media (max-width: 860px) { .about-intro { grid-template-columns: 1fr; } }
-.about-copy h2 { font-size: clamp(1.35rem, 2.5vw, 1.7rem); font-weight: 900; margin-bottom: 12px; letter-spacing: -.02em; }
-.about-copy p { color: var(--ukc-muted); font-size: 15px; margin-bottom: 12px; }
-.about-copy .actions { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 10px; }
+.about-heading { text-align: left; margin-bottom: 24px; }
+.about-heading p { margin-left: 0; max-width: 48em; }
+.about-eyebrow { display: block; margin-bottom: 10px; color: var(--ukc-blue); font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.about-intro { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 18px; align-items: stretch; }
+.about-copy { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; min-width: 0; padding: clamp(24px, 3vw, 38px); background: #fff; border: 1px solid var(--ukc-border); border-radius: 18px; box-shadow: var(--ukc-shadow); }
+.about-copy h3 { max-width: 20em; margin: 0 0 16px; color: var(--ukc-text); font-size: clamp(1.35rem, 2.4vw, 1.8rem); font-weight: 900; line-height: 1.22; letter-spacing: -.02em; }
+.about-copy p { max-width: 62ch; margin: 0 0 12px; color: var(--ukc-muted); font-size: 15px; line-height: 1.65; }
+.about-copy .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
 .about-side {
-  background: var(--ukc-hero);
-  color: #fff; border-radius: var(--ukc-radius); padding: 24px 22px;
-  display: flex; flex-direction: column; gap: 14px; box-shadow: 0 16px 40px rgba(15, 26, 51, .18);
+  position: relative; isolation: isolate; overflow: hidden;
+  display: flex; flex-direction: column; min-width: 0; padding: clamp(24px, 3vw, 38px);
+  background: linear-gradient(145deg, var(--ukc-blue-dark), var(--ukc-blue));
+  color: #fff; border-radius: 18px; box-shadow: 0 16px 40px rgba(15, 26, 51, .14);
 }
+.about-side::before { content: ''; position: absolute; z-index: -1; width: 320px; height: 320px; right: -110px; bottom: -180px; border-radius: 50%; background: rgba(255, 255, 255, .08); }
 .about-side .mark-lg {
-  width: 52px; height: 52px; border-radius: 14px; background: rgba(255, 255, 255, .12);
-  display: flex; align-items: center; justify-content: center; padding: 7px;
+  width: 56px; height: 56px; margin-bottom: 22px; border-radius: 15px; background: rgba(255, 255, 255, .12);
+  display: flex; align-items: center; justify-content: center; padding: 8px;
 }
 /* Le logo s'INSCRIT dans la pastille (`contain`), il ne la remplit pas : un
    monogramme recadré n'est plus un monogramme. */
 .about-side .mark-lg img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; }
-.about-side h3 { font-size: 1.15rem; font-weight: 900; margin: 0; }
-.about-side p { color: rgba(255, 255, 255, .88); font-size: 14px; margin: 0; line-height: 1.55; }
-.about-side ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
-.about-side li { display: flex; align-items: flex-start; gap: 10px; font-size: 13.5px; font-weight: 600; color: rgba(255, 255, 255, .92); }
-.about-side li svg { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; color: var(--ukc-gold); fill: currentColor; }
-.about-pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-@media (max-width: 800px) { .about-pillars { grid-template-columns: 1fr; } }
-.about-pillar { background: #fff; border: 1px solid var(--ukc-border); border-radius: 14px; padding: 18px 16px; box-shadow: var(--ukc-shadow); }
-.about-pillar .ico { width: 40px; height: 40px; border-radius: 11px; background: #eef2ff; color: var(--ukc-blue); display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
-.about-pillar .ico svg { width: 20px; height: 20px; fill: currentColor; }
-.about-pillar h3 { font-size: 1rem; font-weight: 800; margin-bottom: 6px; }
-.about-pillar p { font-size: 13.5px; color: var(--ukc-muted); margin: 0; line-height: 1.5; }
+.about-side__eyebrow { display: block; margin-bottom: 10px; color: var(--ukc-gold); font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.about-side h3 { max-width: 17em; margin: 0 0 14px; font-size: clamp(1.35rem, 2vw, 1.7rem); font-weight: 900; line-height: 1.25; }
+.about-side p { max-width: 48ch; margin: 0; color: rgba(255, 255, 255, .9); font-size: 15px; line-height: 1.6; }
+.about-side__footer { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; margin-top: auto; padding-top: 24px; }
+.about-side__footer > span { border-top: 1px solid rgba(255, 255, 255, .28); width: 100%; padding-top: 20px; color: rgba(255, 255, 255, .82); font-size: 13px; }
+.about-side__footer a { color: #fff; font-size: 14px; font-weight: 800; text-decoration: underline; text-underline-offset: 4px; }
+.about-side__footer a:hover { color: var(--ukc-gold); }
+@media (max-width: 860px) { .about-intro { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .about-copy, .about-side { padding: 24px; } .about-copy .actions { width: 100%; } }
 
 /* ---- Fonctionnalités ---- */
 .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }

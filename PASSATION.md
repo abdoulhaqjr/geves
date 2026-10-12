@@ -25,6 +25,10 @@ La page `/compte/paiement/{event}` présente un parcours en quatre étapes, l’
 
 `Event::publicPageLabel()` produit « Page du colloque », « Page du séminaire », « Page de la journée scientifique » ou « Page des journées scientifiques » selon le type de la série et, pour les journées, la formulation de l'édition puis sa durée ; `Autre` conserve « Page de l'événement ». Le bouton de l'accueil, les cartes des événements à venir, le menu participant et le tableau de bord partagent ce libellé. Les nouvelles chaînes ont leur traduction anglaise dans `lang/en.json`.
 
+### Accueil public : section À propos (2026-10-12)
+
+La section `#apropos` présente désormais deux panneaux complémentaires : ce que GEVES rassemble dans un parcours d'événement, puis la responsabilité de la DRI et le caractère institutionnel du service. Les trois cartes qui répétaient mission, cycle et absence de vocation commerciale ont été retirées ; les détails fonctionnels restent dans la section suivante. Les deux accès de contact renvoient respectivement à `#contact` et à l'adresse de la DRI. Les nouveaux textes français ont une traduction dans `lang/en.json`.
+
 **GEVES** (Gestion des ÉVénements Scientifiques - Direction de la Recherche et de l'Innovation, **Université de Kara**) est le portage **Laravel** d'une extension WordPress existante (`uk-colloques`). La plateforme gère de bout en bout non seulement des **colloques** mais tout **événement scientifique** (journées scientifiques, séminaires…) : séries → éditions datées → soumissions de résumés → relecture en aveugle → paiements → créneaux/ateliers → livret/badges/attestations → e-mails → rapports → comptes participants. Assistance **IA** intégrée (chatbot public « Gesco » + copilote back-office à actions exécutables).
 
 - **But** : plateforme professionnelle, autonome (sans WordPress).
