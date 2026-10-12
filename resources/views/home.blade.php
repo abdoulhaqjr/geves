@@ -211,7 +211,7 @@
                     @endforeach
                 </div>
                 <div style="text-align:center;margin-top:24px;">
-                    <a href="{{ route('public.archives') }}" class="ukc-btn ukc-btn--outline">{{ __('Toutes les archives des colloques') }}</a>
+                    <a href="{{ route('public.archives') }}" class="ukc-btn ukc-btn--outline">{{ __('Toutes les archives des événements') }}</a>
                 </div>
             </div>
         </section>
