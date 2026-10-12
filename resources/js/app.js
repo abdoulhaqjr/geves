@@ -301,7 +301,7 @@ function ukcToast(msg, type = 'ok') {
 }
 window.ukcToast = ukcToast;
 
-// Popup de confirmation (style Tailwise) — remplace window.confirm(). Renvoie une
+// Popup de confirmation (style Tailwise) - remplace window.confirm(). Renvoie une
 // Promise<boolean>. Fermeture au clic sur le fond, Échap (annule) ou Entrée (confirme).
 window.ukcConfirm = function (message, opts = {}) {
     const { title = 'Confirmer', confirmLabel = 'Confirmer', cancelLabel = 'Annuler', danger = false } = opts;
@@ -369,7 +369,7 @@ function ukcDecodeCfEmails(racine) {
 
 async function ukcAjaxSubmit(form, submitter) {
     const key = form.dataset.ajaxTarget || form.closest('[data-ajax-root]')?.getAttribute('data-ajax-root');
-    // IMPORTANT : construire le corps AVANT de désactiver les boutons — un bouton
+    // IMPORTANT : construire le corps AVANT de désactiver les boutons - un bouton
     // désactivé est exclu de FormData, ce qui perdrait la valeur du bouton cliqué
     // (ex. name="status"). On passe `submitter` pour inclure ce bouton.
     const body = new FormData(form, submitter);
@@ -574,7 +574,7 @@ document.addEventListener('submit', (e) => {
 });
 
 // Glisser-déposer du planning (onglet Programme > Planning) : on tire une
-// communication — depuis le pool « À planifier » ou un créneau déjà placé — vers
+// communication - depuis le pool « À planifier » ou un créneau déjà placé - vers
 // un créneau « libre » du board. La persistance passe par l'endpoint d'assignation
 // via un formulaire data-ajax éphémère : le board et le pool sont rafraîchis d'un
 // bloc (swap de data-ajax-root="prog-planning"). Desktop uniquement (le clic reste

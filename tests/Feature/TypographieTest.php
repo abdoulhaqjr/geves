@@ -10,9 +10,16 @@ use Illuminate\Support\Str;
  * Le **point médian** U+00B7 servait de séparateur dans une cinquantaine
  * d'écrans (« Chrome - Windows », « PDF - Déposé le », « d/m/Y - H:i ») ; le
  * **tiret demi-cadratin** U+2013 marquait les plages (« 08:30 - 11:30 »,
- * « 11 - 13 novembre »). Tous deux arrivent par copier-coller et repartent en
- * mojibake dès qu'un maillon perd l'UTF-8. Le séparateur du projet est le
- * tiret simple « - ».
+ * « 11 - 13 novembre ») ; le **tiret cadratin** U+2014 coupait les incises et
+ * titrait les sections des documents. Tous trois arrivent par copier-coller et
+ * repartent en mojibake dès qu'un maillon perd l'UTF-8. Le séparateur du projet
+ * est le tiret simple « - ».
+ *
+ * ⚠️ Le cadratin ne coûtait pas que de l'allure : l'expertise d'un relecteur
+ * stocke une COPIE du libellé de l'axe, et un cadratin recopié depuis Word
+ * faisait échouer l'égalité stricte **en silence** - plus aucun appariement par
+ * axe (`ReviewerExpertise::axisKey()`, qui normalise désormais toute la famille
+ * des tirets typographiques).
  *
  * ⚠️ **La règle porte sur le CODE, pas sur les données.** Ce qu'une personne
  * saisit - un intitulé d'atelier, une affiliation, un résumé - lui appartient
@@ -36,15 +43,20 @@ function caracteresProscrits(): array
     return [
         'point médian' => "\u{00B7}",
         'tiret demi-cadratin' => "\u{2013}",
+        'tiret cadratin' => "\u{2014}",
     ];
 }
 
 /**
- * Ce qui échappe à la règle, et pourquoi. Chaque entrée vaut pour un fichier ;
- * la valeur, quand elle n'est pas `null`, borne la tolérance à une région du
- * fichier (le heredoc nommé), le reste du fichier restant tenu par la règle.
+ * Ce qui échappe à la règle, et pourquoi.
  *
- * @return array<string, string|null>
+ * Chaque tolérance est **doublement bornée** : `heredoc` la limite à une région
+ * du fichier (le reste restant tenu par la règle), et `caracteres` à une liste
+ * de caractères (`null` = tous, pour du texte humain qui peut porter n'importe
+ * lequel). Une tolérance de fichier entier pour tous les caractères serait un
+ * blanc-seing ; on n'en accorde aucun.
+ *
+ * @return array<string, array{heredoc: string|null, caracteres: list<string>|null}>
  */
 function tolereesTypographie(): array
 {
@@ -53,13 +65,29 @@ function tolereesTypographie(): array
         // c'est le texte que les AUTEURS ont tapé, y compris « Abomey - Calavi »
         // écrit avec un demi-cadratin. Le réécrire falsifierait des soumissions.
         // ⚠️ Borné au heredoc : le reste du seeder est notre code.
-        'database/seeders/ColloqueEauTogoSeeder.php' => 'RESPONSES_JSON',
+        'database/seeders/ColloqueEauTogoSeeder.php' => [
+            'heredoc' => 'RESPONSES_JSON',
+            'caracteres' => null,
+        ],
 
         // La CLÉ de la table de correspondance transcrit le texte DÉJÀ EN BASE
         // qu'il faut retrouver pour le corriger - sa valeur, elle, porte bien un
         // tiret simple. Changer la clé désactiverait silencieusement la
         // correction de cette phrase.
-        'database/migrations/2026_10_02_000100_fix_document_template_typography.php' => null,
+        'database/migrations/2026_10_02_000100_fix_document_template_typography.php' => [
+            'heredoc' => null,
+            'caracteres' => null,
+        ],
+
+        // ⚠️ Le jeu d'essai DOIT porter un cadratin : il simule une expertise de
+        // relecteur recopiée depuis Word (« Atelier 2 [cadratin] Sciences
+        // naturelles ») que `axisKey()` doit rapprocher du tiret simple de
+        // l'édition. Sans lui, le cas compare deux chaînes identiques et
+        // n'atteste plus rien. Borné à ce seul caractère.
+        'tests/Feature/AutoAssignReviewersTest.php' => [
+            'heredoc' => null,
+            'caracteres' => ['tiret cadratin'],
+        ],
     ];
 }
 
@@ -162,18 +190,21 @@ it('n’écrit nulle part dans le code les caractères proscrits', function () {
 
     foreach ($fichiers as $rel) {
         $src = (string) file_get_contents(base_path($rel));
-
-        if (array_key_exists($rel, $tolerees)) {
-            $src = sansRegionToleree($src, $tolerees[$rel]);
-        }
+        $tol = $tolerees[$rel] ?? null;
 
         foreach (caracteresProscrits() as $nom => $car) {
-            if (! str_contains($src, $car)) {
+            // La tolérance ne vaut que pour les caractères qu'elle nomme, et
+            // seulement hors de sa région : partout ailleurs, la règle tient.
+            $portee = $tol !== null && ($tol['caracteres'] === null || in_array($nom, $tol['caracteres'], true))
+                ? sansRegionToleree($src, $tol['heredoc'])
+                : $src;
+
+            if (! str_contains($portee, $car)) {
                 continue;
             }
 
             // La première ligne fautive suffit à retrouver l'endroit.
-            foreach (explode("\n", $src) as $no => $ligne) {
+            foreach (explode("\n", $portee) as $no => $ligne) {
                 if (str_contains($ligne, $car)) {
                     $fautifs[] = $rel.':'.($no + 1).'  ('.$nom.')  '.Str::limit(trim($ligne), 56);
 
@@ -197,7 +228,7 @@ it('n’écrit nulle part dans le code les caractères proscrits', function () {
 it('ne tolère que des exceptions encore justifiées', function () {
     $inutiles = [];
 
-    foreach (tolereesTypographie() as $rel => $heredoc) {
+    foreach (tolereesTypographie() as $rel => $tol) {
         if (! is_file(base_path($rel))) {
             $inutiles[] = $rel.' : fichier disparu, retirez la tolérance';
 
@@ -206,10 +237,15 @@ it('ne tolère que des exceptions encore justifiées', function () {
 
         $src = (string) file_get_contents(base_path($rel));
 
+        // Chaque caractère nommé doit encore se trouver dans le fichier : une
+        // tolérance qui ne couvre plus rien est une porte laissée ouverte.
+        $attendus = $tol['caracteres'] ?? array_keys(caracteresProscrits());
         $porte = false;
-        foreach (caracteresProscrits() as $car) {
-            if (str_contains($src, $car)) {
+        foreach ($attendus as $nom) {
+            if (str_contains($src, caracteresProscrits()[$nom])) {
                 $porte = true;
+            } elseif ($tol['caracteres'] !== null) {
+                $inutiles[] = $rel.' : plus aucun « '.$nom.' », retirez-le de la tolérance';
             }
         }
 
@@ -219,8 +255,8 @@ it('ne tolère que des exceptions encore justifiées', function () {
 
         // La région nommée doit exister : un heredoc renommé rendrait la
         // tolérance inopérante, et le cas précédent tomberait sans dire pourquoi.
-        if ($heredoc !== null && mb_strlen(sansRegionToleree($src, $heredoc)) >= mb_strlen($src)) {
-            $inutiles[] = $rel.' : le heredoc « '.$heredoc.' » est introuvable ou vide';
+        if ($tol['heredoc'] !== null && mb_strlen(sansRegionToleree($src, $tol['heredoc'])) >= mb_strlen($src)) {
+            $inutiles[] = $rel.' : le heredoc « '.$tol['heredoc'].' » est introuvable ou vide';
         }
     }
 

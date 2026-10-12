@@ -24,7 +24,7 @@ class ReviewerExpertise
      * libellé est du texte libre : un tiret cadratin collé depuis Word, une
      * double espace ou une majuscule suffisaient à faire échouer l'égalité
      * stricte - sans aucun signal. Résultat observé en base : tous les axes
-     * stockés en « Atelier 1 — … » alors que l'événement dit « Atelier 1 - … »,
+     * stockés avec un tiret CADRATIN là où l'événement écrit un tiret simple,
      * donc AUCUN appariement par axe ne fonctionnait et l'attribution proposait
      * systématiquement « hors axe ».
      */

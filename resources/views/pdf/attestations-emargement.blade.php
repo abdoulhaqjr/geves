@@ -24,7 +24,7 @@
 <body>
     <h1>Liste d’émargement - Attestations</h1>
     <div class="meta">
-        {{ $event->series?->name }} - {{ $event->title ?: $event->year }} —
+        {{ $event->series?->name }} - {{ $event->title ?: $event->year }} -
         {{ $typeLabel }} - {{ $attestations->count() }} bénéficiaire(s) -
         éditée le {{ now()->format('d/m/Y à H:i') }}
     </div>
@@ -61,7 +61,7 @@
     </table>
 
     <div class="pied">
-        Fait à ……………………………… le ……… / ……… / ………  —  Le secrétariat : ………………………………………
+        Fait à ……………………………… le ……… / ……… / ………  -  Le secrétariat : ………………………………………
     </div>
 </body>
 </html>

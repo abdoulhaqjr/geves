@@ -14,7 +14,7 @@ parameters:
 
     ignoreErrors:
         # Propriétés magiques des composants Livewire (bindings de vue).
-        # reportUnmatched:false — le motif reste valable pour le futur code
+        # reportUnmatched:false - le motif reste valable pour le futur code
         # Livewire même quand aucune occurrence n'existe à un instant donné.
         -
             identifier: property.notFound

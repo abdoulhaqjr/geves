@@ -26,7 +26,7 @@ Stack : PHP 8.4, Blade + **Livewire 4** + Alpine 3, Tailwind v4 + design system 
 (`resources/css/ukc.css`), Vite 8, SQLite en dev, **Pest** pour les tests, PHPStan/
 Larastan **niveau 5**.
 
-### Colloque Eau au Togo — import réel
+### Colloque Eau au Togo - import réel
 
 - `database/seeders/ColloqueEauTogoSeeder.php` est un import **manuel et autonome** : 44 réponses Google Forms, 47 résumés et les 47 Word intégrés au même fichier. Lancer `php artisan db:seed --class=ColloqueEauTogoSeeder` seulement sur la base voulue ; ne pas l'ajouter à `DatabaseSeeder` (données personnelles réelles).
 - Le seeder conserve les réponses libres de co-auteurs et les préférences de paiement en `meta`. Il crée ou retrouve le compte global de chacun des 44 auteurs répondants, relie leur fiche et leurs soumissions, avec mot de passe aléatoire et réinitialisation obligatoire. Une adresse source invalide reçoit un compte réservé `@geves.invalid` à corriger manuellement avant accès ; aucun e-mail de vérification n'est envoyé par l'import. Les co-auteurs libres ne sont pas provisionnés sans identité fiable. Aucun paiement ni décision n'est créé. `colloques:reseed` efface tout le domaine des événements, y compris ce colloque : ne pas l'utiliser pour actualiser cet import.
@@ -207,38 +207,39 @@ le nom `Gesco` : `AskGesco`, `GescoController` - c'est du code, pas de l'afficha
   bloc (`.ukc-shell .tdb a.tdb-btn-light`, soit (0,3,1)) - ou donner au lien la
   classe `.ukc-btn`. Se vérifie en lisant la **couleur calculée**, pas à l'œil :
   `getComputedStyle(el).color`.
-- **Ne jamais utiliser le tiret cadratin `—` (U+2014)** dans le projet (UI, code,
-  seeds, docs) : utiliser un tiret simple `-`.
-  - ⚠️ **Règle énoncée mais NON gardée, et violée 70 fois** (relevé le
-    2026-10-12 : surtout des titres de `PASSATION.md` et `docs/`, mais aussi
-    `.env.example`, `eslint.config.js`, `phpstan.neon` et quelques vues). Il
-    suffirait de l'ajouter à `caracteresProscrits()` dans `TypographieTest.php`
-    - avec une tolérance pour `AutoAssignReviewersTest`, dont le jeu d'essai
-    **doit** porter un cadratin : il simule une expertise saisie à la main que
-    l'appariement doit retrouver.
-- **Ni le point médian U+00B7, ni le tiret demi-cadratin U+2013**, même règle,
-  même remède : `-`. Le premier séparait (« Chrome - Windows »), le second
-  marquait les plages (« 08:30 - 11:30 », « 11 - 13 novembre »). Ce sont des
-  caractères qu'on ne tape pas au clavier : ils arrivent par copier-coller et
-  repartent en mojibake dès qu'un maillon perd l'UTF-8. Gardés par
-  `tests/Feature/TypographieTest.php`, qui balaie les sources, le HTML rendu
+- **Trois caractères proscrits, un seul remède : le tiret simple `-`.** Le
+  **point médian U+00B7** séparait (« Chrome - Windows »), le **demi-cadratin
+  U+2013** marquait les plages (« 08:30 - 11:30 »), le **cadratin U+2014**
+  coupait les incises et titrait les sections. On ne les tape pas au clavier :
+  ils arrivent par copier-coller et repartent en mojibake dès qu'un maillon perd
+  l'UTF-8. La liste vit dans `caracteresProscrits()`
+  (`tests/Feature/TypographieTest.php`), qui balaie les sources, le HTML rendu
   **et** `lang/*.json`.
-  - ⚠️ **Deux tolérances, et elles sont BORNÉES** : le heredoc `RESPONSES_JSON`
-    du seeder Eau-Togo (résumés et affiliations **tels que les auteurs les ont
-    tapés**, « Abomey - Calavi » compris) et la **clé** de la table de
-    correspondance de `fix_document_template_typography` (elle transcrit le
-    texte déjà en base qu'il faut retrouver ; sa valeur, elle, porte bien un
-    tiret simple). Hors de ces régions, les deux fichiers restent tenus par la
-    règle - un cas dédié vérifie que chaque tolérance sert encore.
+  - ⚠️ **Ce n'est pas qu'une affaire d'allure.** Un cadratin recopié depuis Word
+    dans l'expertise d'un relecteur faisait échouer l'égalité stricte **en
+    silence** : plus aucun appariement par axe. D'où `ReviewerExpertise::axisKey()`,
+    qui normalise toute la famille des tirets typographiques.
+  - ⚠️ **Trois tolérances, toutes BORNÉES** - par région *et* par caractère ;
+    aucun blanc-seing de fichier :
+    1. le heredoc `RESPONSES_JSON` du seeder Eau-Togo (résumés et affiliations
+       **tels que les auteurs les ont tapés**, « Abomey - Calavi » compris) ;
+    2. la **clé** de la table de correspondance de
+       `fix_document_template_typography` (elle transcrit le texte déjà en base
+       qu'il faut retrouver ; sa valeur, elle, porte bien un tiret simple) ;
+    3. `AutoAssignReviewersTest`, **pour le cadratin seul** : son jeu d'essai
+       doit en porter un, sinon le cas compare deux chaînes identiques.
+    Un cas dédié vérifie que chaque tolérance **sert encore** : fichier disparu,
+    heredoc renommé ou caractère parti, elle doit être retirée.
   - ⚠️ **La règle porte sur le CODE, pas sur les données.** Ce qu'une personne
     saisit lui appartient et traverse la plateforme tel quel.
-  - ⚠️ **Deux emplois ne sont pas des séparateurs** et ne deviennent pas `-` :
+  - ⚠️ **Trois emplois ne sont pas des séparateurs** et ne deviennent pas `-` :
     l'**écriture inclusive** (le point médian entre « Invité » et « e »), qui
-    prend la forme parenthésée du
-    projet - « Invité(e) », déjà employée par `Co-auteur(s)` ; et le caractère
-    **cité comme sujet du propos** dans un commentaire, qu'on nomme en toutes
-    lettres (« point médian ») plutôt que de le remplacer, sous peine de faire
-    dire au journal l'inverse de ce qui s'est passé.
+    prend la forme parenthésée du projet - « Invité(e) », déjà employée par
+    `Co-auteur(s)` ; la **multiplication** (« 0,55 fois la taille ») ; et le
+    caractère **cité comme sujet du propos** dans un commentaire, qu'on nomme en
+    toutes lettres plutôt que de le remplacer - sinon la phrase « stocké en X
+    alors que l'événement dit X » perd son bug, et le journal dit l'inverse de
+    ce qui s'est passé.
   - ⚠️ **Une liste dont les éléments portent déjà un tiret se joint par une
     virgule**, pas par `-`. Mesuré : 30 intitulés de séance sur 30 (« Session -
     Atelier 1 - Sciences… »), 6 axes sur 12, et surtout « Enseignant » et
@@ -591,7 +592,7 @@ SMS à la connexion et voit son code d'authenticator refusé. Vaut pour
 correctif des deux côtés). ⚠️ En dev, `sms.default` = **`log`** : les codes SMS ne partent
 pas, ils atterrissent dans `storage/logs/laravel.log`.
 
-### Comptes = `User` unifié (option B) — ⚠️ pas `Account`
+### Comptes = `User` unifié (option B) - ⚠️ pas `Account`
 
 Les **participants sont des `App\Models\User`** : depuis la refonte « compte unifié »,
 les guards **`web`** (back-office) et **`account`** (espace participant) résolvent la
@@ -653,7 +654,7 @@ sélectionnée** (`CurrentColloque::current()`). Si cette édition ne propose pa
 (module désactivé **ou** aucune formation publiée → `Formation::offeredIn($edition)` faux),
 le **lien du menu est masqué ET la page renvoie 404**. **Paiement de nature
 `formation`** : `Payment.meta.flow='formation'` (helper `Payment::flow()`) ; ⚠️ **`ConfirmPayment`
-est flow-aware** — la garde anti-double ne vaut que pour la **participation**, donc participation +
+est flow-aware** - la garde anti-double ne vaut que pour la **participation**, donc participation +
 formation(s) + co-auteur coexistent. Page publique : section `#formations` (formations `public`)
 via `Public\ColloqueController`. E-mails : confirmation d'inscription (`FormationEnrollmentMail`,
 kind notif `formation`) + message admin aux inscrits (`admin.formations.message`, réutilise
@@ -809,8 +810,8 @@ Une relecture n'est plus un simple « assignée / rendue » : `Review::STATUSES`
 - ⚠️ **Un axe thématique se compare par CLÉ, jamais par chaîne brute** :
   l'expertise d'un relecteur stocke une **copie** du libellé de l'axe, et ce
   libellé est du texte libre. Un tiret cadratin recopié suffisait à faire échouer
-  l'égalité stricte **en silence** - en base, les axes des relecteurs étaient en
-  « Atelier 1 — … » et ceux de l'édition en « Atelier 1 - … », donc l'attribution
+  l'égalité stricte **en silence** - en base, les axes des relecteurs portaient un
+  tiret **cadratin** et ceux de l'édition un tiret simple, donc l'attribution
   automatique proposait *systématiquement* « hors axe ». Passer par
   **`ReviewerExpertise::covers()`** / **`axisKey()`** (tirets typographiques,
   casse et espaces normalisés) ; l'enregistrement **recanonise** sur le libellé de

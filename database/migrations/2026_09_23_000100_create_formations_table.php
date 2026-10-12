@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Formations d'un événement : module activable, plusieurs formations par événement
- * (titre/thème, objectif, lieu/salle, frais — 0 = gratuite, dates), avec visio
+ * (titre/thème, objectif, lieu/salle, frais - 0 = gratuite, dates), avec visio
  * optionnelle (couche App\Meetings, comme les sessions du programme).
  */
 return new class extends Migration
@@ -27,7 +27,7 @@ return new class extends Migration
             $table->unsignedInteger('capacity')->nullable();
             $table->boolean('published')->default(false); // formation active/visible
             $table->boolean('public')->default(false);     // affichée sur la page publique
-            // Visio (réutilise App\Meetings) — remplie à la phase visio.
+            // Visio (réutilise App\Meetings) - remplie à la phase visio.
             $table->string('meeting_provider', 20)->nullable();
             $table->string('meeting_room', 120)->nullable();
             $table->string('meeting_url', 500)->nullable();

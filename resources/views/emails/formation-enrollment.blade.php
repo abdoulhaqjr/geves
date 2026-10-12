@@ -11,9 +11,9 @@
 {{ __('Votre inscription à la formation ci-dessous est enregistrée. Réglez vos frais pour la finaliser.') }}
 @endif
 
-- **{{ __('Formation :') }}** {{ $formation->title }}@if ($formation->theme) — {{ $formation->theme }}@endif
+- **{{ __('Formation :') }}** {{ $formation->title }}@if ($formation->theme) - {{ $formation->theme }}@endif
 @if ($formation->starts_at)
-- **{{ __('Date :') }}** {{ $formation->starts_at->format('d/m/Y H:i') }}@if ($formation->ends_at) — {{ $formation->ends_at->format('d/m/Y H:i') }}@endif
+- **{{ __('Date :') }}** {{ $formation->starts_at->format('d/m/Y H:i') }}@if ($formation->ends_at) - {{ $formation->ends_at->format('d/m/Y H:i') }}@endif
 @endif
 @if ($formation->location)
 - **{{ __('Lieu :') }}** {{ $formation->location }}@if ($formation->room) ({{ $formation->room }})@endif

@@ -375,7 +375,7 @@
                         <div class="ukc-stat-card"><div class="lbl">Résumés inclus</div><div class="val">{{ $counts['accepted'] }}</div><div class="hint">communications acceptées</div></div>
                         <div class="ukc-stat-card"><div class="lbl">Axes</div><div class="val">{{ $counts['axes'] }}</div><div class="hint">{{ $counts['sessions'] }} session(s)</div></div>
                         <div class="ukc-stat-card"><div class="lbl">Sections de tête</div><div class="val">{{ $livretSectionsFilled }}/{{ $livretSectionCount }}</div><div class="hint">renseignées</div></div>
-                        <div class="ukc-stat-card"><div class="lbl">Dernière génération</div><div class="val" style="font-size:15px;">{{ $livreState['lastGen'] ? \Illuminate\Support\Carbon::parse($livreState['lastGen'])->format('d/m/Y') : '—' }}</div><div class="hint">{{ $livreState['lastGen'] ? \Illuminate\Support\Carbon::parse($livreState['lastGen'])->format('H:i') : 'jamais compilé' }}</div></div>
+                        <div class="ukc-stat-card"><div class="lbl">Dernière génération</div><div class="val" style="font-size:15px;">{{ $livreState['lastGen'] ? \Illuminate\Support\Carbon::parse($livreState['lastGen'])->format('d/m/Y') : '-' }}</div><div class="hint">{{ $livreState['lastGen'] ? \Illuminate\Support\Carbon::parse($livreState['lastGen'])->format('H:i') : 'jamais compilé' }}</div></div>
                     </div>
 
                     <form method="POST" action="{{ route('admin.documents.livret.options') }}" class="ukc-card">

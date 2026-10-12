@@ -92,7 +92,7 @@
                  au secrétariat. --}}
             @if ($papier)
                 <div class="ukc-note" style="margin-bottom:14px;padding:12px 14px;border:1px solid #f3d7a0;background:#fffaf0;border-radius:12px;font-size:13px;line-height:1.55;color:#7a5a12;">
-                    {{ __('Cet événement délivre ses attestations sur papier : votre exemplaire officiel vous est remis par le secrétariat. Vous pouvez consulter et vérifier chacune d’elles ici — le document affiché en est un spécimen.') }}
+                    {{ __('Cet événement délivre ses attestations sur papier : votre exemplaire officiel vous est remis par le secrétariat. Vous pouvez consulter et vérifier chacune d’elles ici - le document affiché en est un spécimen.') }}
                 </div>
             @endif
 

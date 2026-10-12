@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Attestations de formation (participation & animation) : référence à la
- * formation concernée (nullable — les autres types n'y sont pas liés), sur le
+ * formation concernée (nullable - les autres types n'y sont pas liés), sur le
  * même modèle que `submission_id` pour les communications.
  */
 return new class extends Migration

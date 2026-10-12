@@ -1,11 +1,11 @@
-# Couverture fidélité — maquettes → routes
+# Couverture fidélité - maquettes → routes
 
 > Passe de vérification « fidélité au mockup ». Chaque maquette du dossier de
 > référence `~/Downloads/gesco-mockup/*.html` est portée sur une route Laravel
 > implémentée, avec sa vue Blade et son niveau de test.
 >
 > **31 maquettes - 31 routes portées - aucune page manquante.**
-> Dernière vérification : 2026-08-28 — 357 tests verts, 1175 assertions, Pint conforme.
+> Dernière vérification : 2026-08-28 - 357 tests verts, 1175 assertions, Pint conforme.
 
 ## Niveaux de test
 
@@ -16,11 +16,11 @@
 
 ---
 
-## Site public — 10 pages - layout `app`
+## Site public - 10 pages - layout `app`
 
 Accessibles sans connexion. Le widget flottant Gesco est monté globalement via le
 layout `app` (`resources/views/components/layouts/app.blade.php`), sous
-`@unless(admin.*|reviewer.*|session.meeting|public.gesco)` — donc présent en public
+`@unless(admin.*|reviewer.*|session.meeting|public.gesco)` - donc présent en public
 et dans l'espace participant, exclu de l'admin, du portail relecteur, de la salle
 visio et de la page chat dédiée.
 
@@ -37,7 +37,7 @@ visio et de la page chat dédiée.
 | `inscription.html` | `account.register` | `account.auth.register` | Test métier |
 | `attestation-verify.html` | `attestation.verify.landing` | `attestations.verify-landing` | Smoke 200 |
 
-## Espace participant — 4 pages - layout `participant`
+## Espace participant - 4 pages - layout `participant`
 
 Réservées au compte connecté (garde `account`).
 
@@ -48,7 +48,7 @@ Réservées au compte connecté (garde `account`).
 | `soumission-formulaire.html` | `account.submissions.create` | `account.submissions.create` | Test métier |
 | `soumission-detail.html` | `account.submissions.show` | `account.submissions.show` | Test métier |
 
-## Back-office — 17 pages - layout `admin`
+## Back-office - 17 pages - layout `admin`
 
 Réservées au staff habilité (permission `manage_colloques`). Toutes vérifiées en
 rendu `200` par la suite de fumée.
@@ -78,7 +78,7 @@ rendu `200` par la suite de fumée.
 ## Suite de fumée
 
 `tests/Feature/SmokeTest.php` (5 tests, 42 assertions) parcourt chaque famille de
-routes et exige un rendu `200` — verrou de non-régression contre les 500 introduits
+routes et exige un rendu `200` - verrou de non-régression contre les 500 introduits
 par un changement de vue ou de contrôleur.
 
 - **Public** (invité) : accueil, colloque, archives, déroulement, Gesco, vérification d'attestation.
@@ -94,5 +94,5 @@ rôle n'existe pas encore en base (installation fraîche). Corrigé en
 sans lever d'exception).
 
 Les fabriques de test partagées (`openEdition`, `verifiedAccount`, `adminStaff`,
-`seededSubmission`) sont centralisées dans `tests/Pest.php` — globales quel que soit
+`seededSubmission`) sont centralisées dans `tests/Pest.php` - globales quel que soit
 l'ordre de chargement des fichiers, donc la suite est exécutable en isolation.

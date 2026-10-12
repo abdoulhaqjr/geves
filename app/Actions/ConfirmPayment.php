@@ -29,7 +29,7 @@ class ConfirmPayment
             // Garde anti-double-paiement : UNIQUEMENT pour les frais de
             // participation (un seul règlement de participation par participant
             // et par événement). Les autres natures (formation, co-auteur)
-            // coexistent — leur unicité est portée ailleurs (inscription unique
+            // coexistent - leur unicité est portée ailleurs (inscription unique
             // par formation/personne, dédoublonnage co-auteur).
             if ($payment->flow() === 'participation') {
                 $already = Payment::where('event_id', $payment->event_id)

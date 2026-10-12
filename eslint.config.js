@@ -6,7 +6,7 @@ import prettier from 'eslint-config-prettier';
  * Lint du JavaScript front-end (resources/js). On applique le jeu « recommended »
  * (détection de vrais bugs) ; la mise en forme est déléguée à Prettier (règles de
  * style désactivées via eslint-config-prettier). Les avertissements (ex. variables
- * inutilisées) sont tolérés pour ne pas bloquer sur le code hérité — à réduire
+ * inutilisées) sont tolérés pour ne pas bloquer sur le code hérité - à réduire
  * progressivement, à l'image de la baseline PHPStan.
  */
 export default [

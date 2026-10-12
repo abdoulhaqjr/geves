@@ -316,7 +316,7 @@ Tout est **couvert par des tests Pest** (42 tests, 144 assertions au 2026-08-10)
     **remplies** sont stockées). `App\Support\EditionPaymentConfig::apply($edition)`
     surcharge `payments.default` + `services.fedapay/cashpay.*` au runtime, avec **repli
     global** champ par champ. Appelé en tête de chaque parcours (`Account\PaymentController`,
-    `Public\CoauthorController`, `Account\FormationController` — `show`/`pay`/`enroll`) et
+    `Public\CoauthorController`, `Account\FormationController` - `show`/`pay`/`enroll`) et
     dans `PaymentController::return` via `$payment->edition`. Pour enchaîner plusieurs
     configurations, `EditionPaymentConfig::using()` applique **puis restaure** (sinon fuite
     d'identifiants d'un candidat à l'autre). Tests : `EditionPaymentConfigTest`.
@@ -521,7 +521,7 @@ Phase de **professionnalisation** post-portage. Tout est testé (**≈568 tests 
 - **Popup de confirmation (remplace `confirm()`)** : `window.ukcConfirm(message, {title, confirmLabel, cancelLabel, danger})` → Promise<boolean>, style Tailwise (`.ukc-confirm-overlay/.ukc-confirm-box`, dans `ukc.css`). Déclenché par **`data-confirm`** sur le **bouton** (formulaires multi-boutons / data-ajax) ou sur le **formulaire** (mono-bouton natif). Le handler de soumission global gère data-ajax ET soumission native (en préservant `name/value` + `formaction/formmethod` du bouton). Ne plus utiliser `onclick="return confirm(...)"`.
 - **Décision admin sans relecture** : `Admin\SubmissionController::applyStatus` n'impose AUCUN passage par la relecture - l'admin peut accepter/refuser/demander une correction **directement** depuis l'état « déposée » (débloque les cas où les relecteurs ne répondent pas). Un **encart d'aide** dans le panneau « Décision du comité » le signale quand aucune relecture n'est lancée. Test : `AdminSubmissionWorkflowTest` (« accepte directement une soumission déposée »).
 - **Espace participant pleine largeur** : `.ukc-content` n'a plus de `max-width` côté participant (`.ukc-shell:not(.ukc-shell--admin) .ukc-content { max-width: none }`) ; l'admin garde sa largeur bornée.
-- **Auteurs — Nom/Prénom séparés + téléphone (correspondant ET co-auteurs)** : l'auteur correspondant et chaque co-auteur ont des champs **Nom** (`last_name`, MAJUSCULES) + **Prénom** (`first_name`) séparés, **e-mail**, **téléphone** (intl-tel-input), **affiliation**, **grade**. Co-auteurs sur **une seule ligne** (`.coauthor-row`, responsive : 2 colonnes < 900px). Nom+prénom+e-mail+affiliation **obligatoires** (client `validateStep(2)` + serveur `StoreSubmissionRequest::withValidator` ; identité du correspondant forcée depuis le compte quand « self »). `CreateSubmission` compose `name` = « Prénom NOM » et stocke `first_name`/`last_name`/`phone` pour chaque auteur. L'indice de compte se déclenche **en live** (input debouncé) dès qu'un e-mail valide.
+- **Auteurs - Nom/Prénom séparés + téléphone (correspondant ET co-auteurs)** : l'auteur correspondant et chaque co-auteur ont des champs **Nom** (`last_name`, MAJUSCULES) + **Prénom** (`first_name`) séparés, **e-mail**, **téléphone** (intl-tel-input), **affiliation**, **grade**. Co-auteurs sur **une seule ligne** (`.coauthor-row`, responsive : 2 colonnes < 900px). Nom+prénom+e-mail+affiliation **obligatoires** (client `validateStep(2)` + serveur `StoreSubmissionRequest::withValidator` ; identité du correspondant forcée depuis le compte quand « self »). `CreateSubmission` compose `name` = « Prénom NOM » et stocke `first_name`/`last_name`/`phone` pour chaque auteur. L'indice de compte se déclenche **en live** (input debouncé) dès qu'un e-mail valide.
 - **⚠️ Téléphone (intl-tel-input) dans un formulaire Alpine** : NE PAS mettre `x-model` sur un `input[data-ukc-tel]` (intl-tel-input possède la valeur → conflit `[object Object]` au changement de pays). On rend la valeur initiale via `x-init="$el.value = …"` (co-auteurs) ou `value="…"` (correspondant), et la normalisation E.164 se fait à la soumission (`initPhoneInputs`). `autoPlaceholder: 'aggressive'` + `placeholderNumberType: 'MOBILE'` affichent un exemple de numéro selon le pays. L'**indicatif** (`.iti__selected-dial-code`) est aligné sur la taille/le poids du champ (14px normal ; 13.5px en co-auteur). Reset du champ correspondant à la bascule « self » : impératif via `#corr-phone` dans `onSelfToggle`. Le bloc auteur correspondant est en **3 colonnes** (`.ukc-form-grid-3`).
 - **Plafond de co-auteurs** : `settings.coauthors_max` (défaut 8) limite le nombre de co-auteurs à la soumission - le bouton « Ajouter un co-auteur » notifie (toast) si la limite est atteinte (`submissionWizard.addCoauthor`), et le serveur refuse au-delà (`StoreSubmissionRequest::withValidator`). (Ce réglage servait déjà aux attestations de co-auteurs.)
 - **Nom de famille en MAJUSCULES (projet)** : tout champ `last_name` (ou `[last_name]`, ou `data-uppercase`) est affiché en capitales (**CSS** `text-transform: uppercase`) et sa **valeur** est mise en majuscules à la frappe (**handler délégué** dans `app.js`, accents inclus). Pas de mutator modèle (le stock/les seeds existants ne sont pas modifiés) ; les nouveaux co-auteurs sont stockés en MAJUSCULES par `CreateSubmission`. Convention notée dans `CLAUDE.md`.
@@ -614,10 +614,10 @@ Nouveau module **Formation** (activable par édition), construit **par phases**.
 - Colonne `attestations.formation_id` (nullable, comme `submission_id`) + relation `Attestation::formation()`. `IssueAttestation::handle($participant, $type, ?Submission, ?Formation)` : idempotence par `(édition, participant, type, submission_id, formation_id)`, `meta.formation_title` dénormalisé. Variable **`{formation}`** dans le designer + `AttestationController` (vues HTML/PDF) ; la vue PDF par défaut nomme la formation (« pour la formation / pour l'animation de la formation »).
 - **Émission depuis la page Formations** : `Admin\FormationController::issueAttestations` (`admin.formations.attestations`, bouton « Attestations ») → **participation** aux inscrits éligibles (réglés, ou inscrits si gratuite) + **animation** aux formateurs (participant support créé par compte lié, sinon e-mail/nom). L'envoi s'appuie sur la notification d'attestation existante (in-app + e-mail générique pour les comptes). L'ancienne émission `formation` par édition (rôle `trainee`) a été **retirée** de `DocumentHubController`.
 - ⚠️ **Infra** : `phpunit.xml` reçoit `memory_limit=512M` (la suite dépassait 128M en grandissant → OOM dompdf). Tests `tests/Feature/FormationAttestationTest.php`. **647 tests verts, PHPStan niveau 5 OK.**
-- Reste sur les attestations formateurs sans compte : pas d'e-mail direct (seulement l'attestation vérifiable par lien) — à raffiner si besoin.
+- Reste sur les attestations formateurs sans compte : pas d'e-mail direct (seulement l'attestation vérifiable par lien) - à raffiner si besoin.
 
 **Phase 6 livrée (visio)** :
-- ⚠️ **Refactor `App\Meetings`** : introduction de l'interface **`Meetable`** (`meetingRoom()`, `meetingUrl()`, `meetingProviderKey()`) implémentée par **`EventSession` ET `Formation`**. Les type-hints des providers (Jitsi/LiveKit/Custom) et du registry passent de `EventSession` à `Meetable` (aucune logique changée — les providers n'utilisaient que `meetingRoom()`/`meeting_url`). La visio des sessions du programme reste intacte (tests verts).
+- ⚠️ **Refactor `App\Meetings`** : introduction de l'interface **`Meetable`** (`meetingRoom()`, `meetingUrl()`, `meetingProviderKey()`) implémentée par **`EventSession` ET `Formation`**. Les type-hints des providers (Jitsi/LiveKit/Custom) et du registry passent de `EventSession` à `Meetable` (aucune logique changée - les providers n'utilisaient que `meetingRoom()`/`meeting_url`). La visio des sessions du programme reste intacte (tests verts).
 - **Formation** porte ses helpers visio (colonnes `meeting_*` déjà là depuis la phase 1) : `hasMeeting/isLive/meetingRoom/meetingRoleFor/canJoin/joinUrl`. **Rôle** : staff & **formateurs = modérateur** ; **inscrit éligible** (réglé, ou inscrit si gratuite) = participant ; sinon aucun (pas d'accès public).
 - **Admin** : `Admin\FormationController::setMeeting` (`admin.formations.meeting`) → fournisseur (défaut/livekit/jitsi/custom), salle, lien externe, état (aucune/programmée/en direct/terminée), visibilité ; bloc « Visio » par formation.
 - **Participant** : `account.formations.visio` → **la page du module visio** (`MeetingController::joinFormation`, vue `meeting.join`), **la même que pour les sessions du programme** : embarquement Jitsi en iframe, lecteur LiveKit inline, ou lien externe, avec arrière-plans virtuels et rôles. Bouton « Rejoindre la visio » sur la carte quand la formation est en direct **et** que le compte y a accès (`canJoin`).
@@ -773,8 +773,8 @@ définitions. Tout est regroupé dans **un module à cinq onglets** :
 
 ⚠️ **Bug de fond découvert au passage** : l'appariement par axe ne fonctionnait
 **jamais**. L'expertise stocke une copie du libellé de l'axe ; en base les
-relecteurs avaient « Atelier 1 — … » (tiret cadratin) et l'édition « Atelier 1 - … »
-(tiret simple), si bien que l'égalité stricte échouait en silence et que le moteur
+relecteurs portaient un tiret cadratin là où l'édition écrivait un tiret simple,
+si bien que l'égalité stricte échouait en silence et que le moteur
 proposait toujours « hors axe (équilibrage) ». Correction : comparaison par clé
 normalisée (`ReviewerExpertise::axisKey()` / `covers()`, utilisée aussi par
 `ReviewerAssignmentPlanner`), et l'enregistrement recanonise l'axe sur le libellé
@@ -784,7 +784,7 @@ de l'édition.
 
 > **Mémoire projet** : le contexte fin (décisions, conventions, TODO différés - DOI/DataCite, connecteur Google anti-plagiat, amélioration `admin/reclamations`) est aussi consigné dans la **mémoire locale de Claude Code** (`~/.claude/…/memory/`, non versionnée). Comme cette mémoire ne se partage pas entre contributeurs, **le contexte partageable doit vivre dans `CLAUDE.md` + ce fichier** (versionnés) : les tenir à jour à chaque tâche notable.
 
-## Tutoriels vidéo — captures authentifiées et lancement serveur autonome (2026-10-09)
+## Tutoriels vidéo - captures authentifiées et lancement serveur autonome (2026-10-09)
 
 - `admin/prise-en-main` démarre désormais un processus serveur dédié qui lit les
   demandes `queued` dans la base et les rend avec Gemini/Claude/OpenAI puis
@@ -837,7 +837,7 @@ malgré `DB_DATABASE=:memory:`. `phpunit.xml` force donc un autre chemin de cach
 Ne pas retirer ce réglage ; lors d'une exécution manuelle, fixer également
 `DB_CONNECTION=sqlite` et `DB_DATABASE=:memory:`.
 
-## Prise en main — refonte visuelle (2026-10-10)
+## Prise en main - refonte visuelle (2026-10-10)
 
 - L'espace participant `/prise-en-main` affiche un bandeau de bienvenue, un résumé du parcours, des catégories cohérentes avec le back-office et une carte mise en avant pour le premier guide avec vidéo. Chaque guide garde son objectif, son nombre d'étapes, ses étapes dépliables et le lien vers le module concerné ; la vidéo reste réservée aux rôles autorisés.
 - Le back-office `/admin/prise-en-main` conserve ses commandes d'édition et de production, avec des cartes plus lisibles et des étapes repliables. Les styles communs vivent sous `.ukc-onb` dans `resources/css/admin.css`, avec des adaptations mobiles propres à la page participant.
@@ -855,7 +855,7 @@ Ne pas retirer ce réglage ; lors d'une exécution manuelle, fixer également
 - La relance du seeder sur la base locale a ajouté les deux médias et la grille tarifaire sans dupliquer les 44 participants ni les 47 soumissions ; les deux JPEG stockés correspondent à leur SHA-256 et la base passe `PRAGMA quick_check`. Les profils « Professionnel », « Association », « ONG » et « Entreprise privée du secteur de l’eau » ne figurent pas dans les types de participant globaux par défaut : les ajouter dans Réglages avant de compter sur l'affectation automatique de leurs tarifs. Le seeder ne modifie pas ces réglages globaux partagés par les autres événements.
 - Le nom court devient « Colloque Eau au Togo ». Pour les mots-clés, l'éditeur du champ propose virgule, point-virgule ou les deux par événement ; le seeder sélectionne les deux pour cet import. `SubmissionKeywords` est utilisé dans la validation, Tom Select, les badges et les sorties documentaires afin de ne pas afficher les délimiteurs comme des mots-clés.
 
-## Tableau de bord participant — bascule sur les dates (2026-10-10)
+## Tableau de bord participant - bascule sur les dates (2026-10-10)
 
 `/compte` ne montre plus la même page du début à la fin du colloque : **il bascule
 tout seul** selon le moment du parcours.
@@ -924,7 +924,7 @@ tout seul** selon le moment du parcours.
   navigateur : aucun débordement horizontal à 375px ni à 708px, contrastes de 5,02
   à 11,81:1, pastilles de document à 48px.
 
-## Tableau de bord participant — passe visuelle sur données réelles (2026-10-11)
+## Tableau de bord participant - passe visuelle sur données réelles (2026-10-11)
 
 Les 17 cas automatisés passaient, mais **aucun œil n'avait vu l'écran rempli**.
 Passe menée sur le compte de démonstration le plus fourni (3 communications dont
@@ -983,7 +983,7 @@ Passe menée sur le compte de démonstration le plus fourni (3 communications do
 - Reste en l'état : la carte haute de l'état « après » est un peu creuse (elle
   s'aligne sur le volet de droite). Choix d'affichage, pas un défaut.
 
-## Tableau de bord participant — seconde passe visuelle, en impersonation (2026-10-11)
+## Tableau de bord participant - seconde passe visuelle, en impersonation (2026-10-11)
 
 Première passe faite sur du HTML rendu hors navigateur ; celle-ci sur le site,
 connecté **en tant que** participant depuis `Admin > Participants > Sa page >
@@ -1016,7 +1016,7 @@ montrés, plus un signalé par la relecture.
   hors session. Penser à **quitter l'impersonation** à la fin, et à remettre le
   colloque courant sur celui qu'on a trouvé en arrivant.
 
-## Dégradé de héros — revue de tous les écrans (2026-10-11)
+## Dégradé de héros - revue de tous les écrans (2026-10-11)
 
 Après la correction du tableau de bord, revue de **tous** les dégradés de
 `resources/css` et des vues. `--ukc-hero` est le jeton canonique
@@ -1065,7 +1065,7 @@ Après la correction du tableau de bord, revue de **tous** les dégradés de
   l'exception ci-dessus - le commentaire a déclenché la règle qu'il expliquait.
   Les feuilles sont maintenant lues **commentaires retirés**.
 
-## Tableau de bord participant — troisième passe : l'anglais (2026-10-11)
+## Tableau de bord participant - troisième passe : l'anglais (2026-10-11)
 
 Passe refaite en impersonation, après les corrections précédentes. Le français
 était bon partout : dégradé canonique, axes en pastilles, pastille de badge
@@ -1106,7 +1106,7 @@ contrastes de 4,74:1 (filet or) à 11,81:1. Une seule chose, mais grosse.
   convention d'un tableau de bord. À trancher si vous préférez un quatrième
   indicateur différent après le colloque.
 
-## Premier déploiement — ce que MySQL a refusé (2026-10-11)
+## Premier déploiement - ce que MySQL a refusé (2026-10-11)
 
 La première `migrate --force` sur o2switch s'est arrêtée à
 `2026_09_11_000300_add_user_id_to_session_votes`. Trois défauts, tous
@@ -1134,7 +1134,7 @@ rencontrés**.
   cinq migrations à examiner sur quarante, dont deux déjà passées sur le
   serveur. Les noms d'index ont été mesurés sur la base de dev réelle.
 
-## Colloque Eau au Togo — équipe d'organisation (2026-10-11)
+## Colloque Eau au Togo - équipe d'organisation (2026-10-11)
 
 Le gestionnaire et le co-gestionnaire du premier colloque sur l'eau sont
 désormais **dans le seeder d'import** (`ColloqueEauTogoSeeder::equipe()`), et
@@ -1486,3 +1486,39 @@ dans `caracteresProscrits()` suffirait, avec une tolérance pour
 `AutoAssignReviewersTest` dont le jeu d'essai **doit** en porter un.
 
 1176 tests / 4175 assertions, Pint et PHPStan niveau 5 sans erreur.
+
+## 2026-10-12 - Le tiret cadratin, et la tolérance bornée par caractère
+
+La règle existait dans `CLAUDE.md` « depuis toujours » et comptait **70
+violations** : elle n'avait jamais eu de garde. 65 remplacées, 4 reformulées,
+1 gardée.
+
+⚠️ **Le cadratin ne coûtait pas que de l'allure.** L'expertise d'un relecteur
+stocke une **copie** du libellé de l'axe. Un cadratin recopié depuis Word
+faisait échouer l'égalité stricte **en silence** : plus aucun appariement par
+axe, et l'attribution automatique proposait *systématiquement* « hors axe ».
+C'est ce bug qui avait fait naître `ReviewerExpertise::axisKey()`, lequel
+normalise toute la famille des tirets typographiques. La règle de CLAUDE.md
+avait donc déjà coûté cher une fois, faute d'être tenue.
+
+**Les 4 reformulations** sont les endroits qui **citent** le caractère pour
+décrire ce bug (le commentaire de `ReviewerExpertise`, deux passages de
+`CLAUDE.md`, un de `PASSATION.md`) : y écrire `-` aurait donné « les relecteurs
+avaient *Atelier 1 - …* et l'édition *Atelier 1 - …* », c'est-à-dire plus de
+différence, donc plus de bug. Le caractère y est nommé en toutes lettres.
+
+**La 1 gardée** est le jeu d'essai de `AutoAssignReviewersTest` : il *doit*
+porter un cadratin, sinon `covers()` compare deux chaînes identiques et le cas
+n'atteste plus rien.
+
+⚠️ **Les tolérances sont désormais bornées PAR CARACTÈRE autant que par
+région.** `AutoAssignReviewersTest` n'est toléré que pour le cadratin : un
+sabotage y pose un point médian, et la garde mord quand même. Trois tolérances
+en tout, aucune de fichier entier pour tous les caractères.
+
+Trois sabotages vérifiés (cadratin dans notre code, point médian dans le
+fichier toléré, cadratin retiré du jeu d'essai - la tolérance devient caduque
+et le cas le dit), restauration bit pour bit.
+
+1176 tests / 4175 assertions, 80 cas Vitest, Pint et PHPStan niveau 5 sans
+erreur. Plus aucun des trois caractères dans le code.
