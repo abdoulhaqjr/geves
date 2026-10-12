@@ -72,7 +72,7 @@
    temps à venir, ou ne vient jamais, on ne voit pas une bande blanche. */
 .hero--image::before {
   background-image:
-    linear-gradient(135deg, rgba(20, 32, 90, .82), rgba(20, 32, 90, .56)),
+    linear-gradient(135deg, rgba(20, 32, 90, .86), rgba(20, 32, 90, .60)),
     var(--hero-bg);
   background-size: cover;
   background-position: center;
@@ -311,7 +311,7 @@
 
 /* ---- Hero de page (archives, déroulement…) ---- */
 .page-hero { position: relative; overflow: hidden; background: var(--ukc-hero); color: #fff; padding: clamp(40px, 6vw, 64px) 0; }
-.page-hero--image::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(135deg, rgba(20, 32, 90, .80), rgba(20, 32, 90, .54)), var(--page-hero-bg); background-size: cover; background-position: center; }
+.page-hero--image::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient(135deg, rgba(20, 32, 90, .84), rgba(20, 32, 90, .58)), var(--page-hero-bg); background-size: cover; background-position: center; }
 .page-hero .ukc-container { position: relative; z-index: 1; }
 .page-hero .eyebrow { font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--ukc-gold); margin-bottom: 10px; }
 .page-hero h1 { font-size: clamp(1.7rem, 3.5vw, 2.35rem); font-weight: 900; margin-bottom: 12px; letter-spacing: -.02em; }
@@ -351,7 +351,7 @@
 /* ---- Détail d'une édition passée (scopé pour éviter les collisions) ---- */
 .detail-hero { position: relative; overflow: hidden; color: #fff; background: var(--ukc-hero-navy); }
 .detail-hero .bg { position: absolute; inset: 0; background-size: cover; background-position: center; }
-.detail-hero .bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20, 32, 90, .28), rgba(20, 32, 90, .8)); }
+.detail-hero .bg::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20, 32, 90, .32), rgba(20, 32, 90, .84)); }
 .detail-hero .ukc-container { position: relative; z-index: 1; padding-top: 48px; padding-bottom: 36px; }
 .detail-hero h1 { font-size: clamp(1.45rem, 3vw, 2rem); font-weight: 900; line-height: 1.25; max-width: 18em; margin-bottom: 12px; }
 .detail-hero .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
@@ -382,7 +382,7 @@
 
 /* ---- Déroulement live (scopé) ---- */
 .live-hero { background: var(--ukc-hero); color: #fff; padding: clamp(28px, 5vw, 48px) 0; position: relative; overflow: hidden; }
-.live-hero.has-bg::before { content: ""; position: absolute; inset: 0; background-image: var(--live-hero-bg); background-size: cover; background-position: center; opacity: .3; }
+.live-hero.has-bg::before { content: ""; position: absolute; inset: 0; background-image: var(--live-hero-bg); background-size: cover; background-position: center; opacity: .26; }
 .live-hero .ukc-container { position: relative; z-index: 1; }
 .live-hero .top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
 .live-hero h1 { font-size: clamp(1.3rem, 3vw, 1.85rem); font-weight: 900; line-height: 1.25; margin-bottom: 8px; max-width: 22em; }

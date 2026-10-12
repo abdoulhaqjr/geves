@@ -53,10 +53,10 @@
                  qui relit les feuilles de style. Elle ne se voyait que sur les rares
                  événements ayant téléversé un visuel ; depuis la bannière par défaut
                  (Réglages › Bannières), ce voile est celui de TOUS les événements. --}}
-            <div style="position:absolute;inset:0;z-index:1;background:linear-gradient(135deg, rgba(20,32,90,.78), rgba(20,32,90,.52));"></div>
+            <div style="position:absolute;inset:0;z-index:1;background:linear-gradient(135deg, rgba(20,32,90,.82), rgba(20,32,90,.56));"></div>
         @elseif ($heroImage)
             <img src="{{ $heroImage }}" alt="" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;">
-            <div style="position:absolute;inset:0;z-index:1;background:linear-gradient(135deg, rgba(20,32,90,.80), rgba(20,32,90,.54));"></div>
+            <div style="position:absolute;inset:0;z-index:1;background:linear-gradient(135deg, rgba(20,32,90,.84), rgba(20,32,90,.58));"></div>
         @endif
         <div class="ukc-container" style="position:relative;z-index:2;">
             <div class="ukc-hero-inner">
