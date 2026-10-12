@@ -38,10 +38,12 @@ class PaymentController extends Controller
 
         // Libellé du tarif applicable (rapproché du grade du participant).
         $applicableLabel = null;
-        foreach (Fees::grid($event) as $tier) {
-            if ((float) ($tier['amount'] ?? 0) === (float) $amount) {
-                $applicableLabel = $tier['label'] ?? null;
-                break;
+        if ($applicable !== null) {
+            foreach (Fees::grid($event) as $tier) {
+                if ((float) ($tier['amount'] ?? 0) === (float) $applicable) {
+                    $applicableLabel = $tier['label'] ?? null;
+                    break;
+                }
             }
         }
 
