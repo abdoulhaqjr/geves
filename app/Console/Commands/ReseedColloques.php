@@ -135,8 +135,11 @@ class ReseedColloques extends Command
 
         $count = (clone $demo)->count();
 
+        // ⚠️ forceDelete : User utilise SoftDeletes, mais la purge doit être
+        // DÉFINITIVE - un simple delete() laisserait les lignes (et leurs e-mails
+        // uniques), et le re-seed échouerait sur la contrainte users.email.
         Schema::withoutForeignKeyConstraints(function () use ($demo): void {
-            $demo->delete();
+            $demo->forceDelete();
         });
 
         $this->line("Comptes de démonstration purgés : {$count}.");
