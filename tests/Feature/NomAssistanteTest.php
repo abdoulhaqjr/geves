@@ -3,7 +3,7 @@
 use App\Support\AiAgents;
 
 /**
- * **L'assistante publique s'appelle « Sika » par défaut, et son nom se règle.**
+ * **L'assistante publique s'appelle « Peace » par défaut, et son nom se règle.**
  *
  * ⚠️ Le nom était recopié en dur dans six libellés (bouton du widget, pied de
  * page, deux endroits de l'accueil, deux de l'espace participant) : le changer
@@ -11,8 +11,8 @@ use App\Support\AiAgents;
  * « UK » dessiné en dur dans la salle de visio - c'est ce qui fait mentir la
  * configuration.
  */
-it('nomme l’assistante publique « Sika » par défaut', function () {
-    expect(AiAgents::publicName())->toBe('Sika');
+it('nomme l’assistante publique « Peace » par défaut', function () {
+    expect(AiAgents::publicName())->toBe('Peace');
 
     $public = AiAgents::publicAgent();
     expect($public)->not->toBeNull();
@@ -39,7 +39,7 @@ it('fait suivre le nom réglé à toutes les surfaces publiques', function () {
     expect($html)->toContain('Awa');
     // Le nom précédent ne doit subsister nulle part : s'il reste, c'est qu'un
     // libellé est de nouveau écrit en dur.
-    expect($html)->not->toContain('Sika');
+    expect($html)->not->toContain('Peace');
     expect($html)->not->toContain('Gesco');
 });
 
@@ -77,7 +77,7 @@ it('ne laisse aucune vue ni aucune action écrire le nom de l’assistante en du
         }
 
         foreach (file((string) $fichier->getRealPath(), FILE_IGNORE_NEW_LINES) ?: [] as $i => $ligne) {
-            if (! str_contains($ligne, 'Gesco') && ! str_contains($ligne, 'Sika')) {
+            if (! str_contains($ligne, 'Gesco') && ! str_contains($ligne, 'Peace')) {
                 continue;
             }
             // Les COMMENTAIRES peuvent nommer l'agent : ils expliquent, ils
@@ -89,7 +89,7 @@ it('ne laisse aucune vue ni aucune action écrire le nom de l’assistante en du
                 continue;
             }
             $ligne = (string) preg_replace('#//.*$#', '', $ligne);
-            if (! str_contains($ligne, 'Gesco') && ! str_contains($ligne, 'Sika')) {
+            if (! str_contains($ligne, 'Gesco') && ! str_contains($ligne, 'Peace')) {
                 continue;
             }
             // Identifiants : route, contrôleur, classe, clé, nom de fichier.
@@ -98,7 +98,7 @@ it('ne laisse aucune vue ni aucune action écrire le nom de l’assistante en du
                 '',
                 $ligne
             );
-            if (! str_contains($nu, 'Gesco') && ! str_contains($nu, 'Sika')) {
+            if (! str_contains($nu, 'Gesco') && ! str_contains($nu, 'Peace')) {
                 continue;
             }
 

@@ -1349,7 +1349,7 @@ carte de 293 ; et la grille était posée en **style en ligne**, qui l'emporte
 sur toute media query. Mesuré en forçant la carte à 343px : la grille ne
 bougeait pas. Après : une colonne de 293px, aucun débordement de page.
 
-**L'assistante s'appelle Sika.** Le nom était recopié en dur à **dix endroits**
+**L'assistante s'appelle Peace.** Le nom était recopié en dur à **dix endroits**
 - dont le message « L'assistance Gesco est momentanément indisponible » et
 l'étiquette de ses propres tours dans l'historique envoyé au modèle. Le
 changer dans Réglages n'en changeait aucun. Source unique

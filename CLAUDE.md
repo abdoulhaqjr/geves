@@ -2307,7 +2307,7 @@ surface publique.
 
 ### Le nom de l'assistante publique se RÈGLE, il ne se recopie pas
 
-Par défaut **« Sika »** (`AiAgents::defaults()`). ⚠️ La **clé** reste `gesco` :
+Par défaut **« Peace »** (`AiAgents::defaults()`). ⚠️ La **clé** reste `gesco` :
 c'est un identifiant, enregistré tel quel dans les réglages des installations
 existantes, et il sert à retrouver l'agent (`AiAgents::find('gesco')`, route
 `public.gesco`, `GescoController`, `AskGesco`). **Seul le nom s'affiche.**

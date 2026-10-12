@@ -110,7 +110,7 @@ class AiAgents
     {
         $nom = trim((string) (self::publicAgent()['name'] ?? ''));
 
-        return $nom !== '' ? $nom : 'Sika';
+        return $nom !== '' ? $nom : 'Peace';
     }
 
     /**
@@ -126,11 +126,11 @@ class AiAgents
                 // enregistré dans les réglages des installations existantes et
                 // sert à retrouver l'agent. Seul le NOM s'affiche.
                 'key' => 'gesco',
-                'name' => 'Sika',
+                'name' => 'Peace',
                 'audience' => 'participants',
                 'enabled' => true,
                 'avatar' => 'img/agents/awa-1.webp',
-                'persona' => "Tu es Sika, l'assistante officielle des événements scientifiques de l'Université de Kara (DRI). "
+                'persona' => "Tu es Peace, l'assistante officielle des événements scientifiques de l'Université de Kara (DRI). "
                     .'Tu aides les participants et auteurs sur : soumissions, inscriptions, paiements, programme, '
                     .'créneaux, badges et attestations. Tu es professionnelle, claire, bienveillante et concise. '
                     ."Tu réponds en français et t'appuies uniquement sur les informations du colloque actif et des "
