@@ -724,7 +724,7 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 .ukc-pay-secure { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ukc-muted); margin-top: 14px; }
 
 /* Inscription et paiement : l'état du dossier précède la grille tarifaire. */
-.account-payment { max-width: 1240px; margin: 0 auto; display: grid; gap: 18px; }
+.account-payment { display: grid; gap: 18px; }
 .payment-overview, .payment-state, .payment-checkout, .payment-tariffs {
   background: #fff; border: 1px solid var(--ukc-border); border-radius: var(--ukc-radius-lg);
   box-shadow: var(--ukc-shadow);
@@ -909,14 +909,24 @@ table.ukc-table .meta { font-size: 12px; color: var(--ukc-muted); margin-top: 2p
 }
 
 /* ---- Etapes ---- */
-.ukc-steps { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+.ukc-steps { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; }
 .ukc-step {
-  flex: 1; min-width: 120px; padding: 12px 14px; border-radius: 12px;
+  flex: 1; min-width: 150px; display: flex; align-items: center; gap: 10px;
+  padding: 11px 16px; border-radius: 14px;
   background: var(--ukc-bg); border: 1.5px solid var(--ukc-border);
-  font-size: 13px; font-weight: 600; color: var(--ukc-muted); text-align: center;
+  font-size: 14px; font-weight: 650; color: var(--ukc-muted);
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
 }
-.ukc-step.active { background: rgba(34, 62, 164, .08); border-color: var(--ukc-blue); color: var(--ukc-blue); }
-.ukc-step.done { background: #dcfce7; border-color: #86efac; color: #166534; }
+.ukc-step .n {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: #e2e8f0; color: var(--ukc-muted);
+  font-size: 13px; font-weight: 800; line-height: 1;
+}
+.ukc-step.active { background: #eef2ff; border-color: var(--ukc-blue); color: var(--ukc-blue); }
+.ukc-step.active .n { background: var(--ukc-blue); color: #fff; }
+.ukc-step.done { background: #ecfdf3; border-color: #86efac; color: #166534; }
+.ukc-step.done .n { background: #16a34a; color: #fff; }
 
 /* ---- Etat vide ---- */
 .ukc-empty { text-align: center; padding: 40px 20px; color: var(--ukc-muted); }
