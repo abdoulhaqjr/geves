@@ -31,6 +31,10 @@ class AttestationVars
             'dates' => $event?->dateRangeLabel() ?? '',
             'institution' => (string) ($attestation->participant?->institution ?? ''),
             'role' => (string) ($attestation->participant?->roleLabel() ?? ''),
+            // Civilité réelle du bénéficiaire (M. / Mme / Mlle), lue sur son compte.
+            // data_get : la relation user est nullable au runtime (Larastan la croit
+            // non-nulle → `?->` déclencherait nullsafe.neverNull).
+            'civility' => (string) (data_get($attestation, 'participant.user.civility') ?? ''),
             'name' => (string) $attestation->recipient_name,
             'type' => mb_strtolower($attestation->typeLabel()),
             'date' => $attestation->issued_at?->format('d/m/Y') ?? '',

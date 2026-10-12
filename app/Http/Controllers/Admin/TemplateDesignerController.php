@@ -31,6 +31,7 @@ class TemplateDesignerController extends Controller
     /** Variables insérables dans les champs texte, avec libellé. */
     public const VARIABLES = [
         '{name}' => 'Nom du bénéficiaire',
+        '{civility}' => 'Civilité du bénéficiaire',
         '{role}' => 'Rôle',
         '{institution}' => 'Institution',
         '{type}' => 'Type d’attestation',
@@ -312,6 +313,7 @@ class TemplateDesignerController extends Controller
             'year' => (string) ($event?->year ?: date('Y')),
             'location' => $event?->location ?? 'Kara, Togo',
             'name' => 'Awa Kodjo',
+            'civility' => 'Mme',
             'role' => 'Communicant',
             'institution' => 'Université de Kara',
             'type' => self::ATTESTATION_TYPES[$type] ?? 'participation',

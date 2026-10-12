@@ -9,7 +9,7 @@
   <script>window.UKC_EDITOR = @json($ukcEditorCfg);</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700;800;900&family=Lato:ital,wght@0,400;0,700;1,400;1,700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
   @vite(['resources/css/template-designer.css', 'resources/css/designer-tailwise.css', 'resources/js/template-designer.js'])
 </head>
 <body>
@@ -140,6 +140,7 @@
         <div class="ed-panel-body">
           <p style="font-size:12px;color:var(--ukc-muted);margin-bottom:10px;">Cliquez un champ pour le poser sur la page. Il sera remplacé par la vraie valeur sur le document délivré.</p>
           <div class="ed-attr" data-attr="[recipient.name]">[recipient.name]</div>
+          <div class="ed-attr" data-attr="[recipient.civility]">[recipient.civility]</div>
           <div class="ed-attr" data-attr="[recipient.institution]">[recipient.institution]</div>
           <div class="ed-attr" data-attr="[certificate.uuid]">[certificate.uuid]</div>
           <div class="ed-attr" data-attr="[certificate.issued_on]">[certificate.issued_on]</div>
@@ -148,6 +149,7 @@
           <div class="ed-attr" data-attr="[communication.type]">[communication.type]</div>
           <div class="ed-attr" data-attr="[edition.name]">[edition.name]</div>
           <div class="ed-attr" data-attr="[edition.dates]">[edition.dates]</div>
+          <div class="ed-attr" data-attr="[edition.location]">[edition.location]</div>
           <div class="ed-attr" data-attr="[edition.theme]">[edition.theme]</div>
           <div class="ed-attr" data-attr="[signatory.name]">[signatory.name]</div>
           <div class="ed-attr" data-attr="[signatory.role]">[signatory.role]</div>
@@ -266,6 +268,7 @@
         <select id="fontFamily">
           <option value="Jost">Jost</option>
           <option value="Georgia">Georgia</option>
+          <option value="'Times New Roman', Times, serif">Times</option>
           <option value="'Playfair Display'">Playfair</option>
           <option value="Arial">Arial</option>
           <option value="Lato, sans-serif">Lato</option>

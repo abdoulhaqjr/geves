@@ -28,6 +28,7 @@ class DocumentVars
      */
     private const ALIASES = [
         'recipient.name' => 'name',
+        'recipient.civility' => 'civility',
         'recipient.role' => 'role',
         'recipient.institution' => 'institution',
         'recipient.photo' => 'recipient.photo',
@@ -37,6 +38,7 @@ class DocumentVars
         'edition.name' => 'event',
         'edition.theme' => 'theme',
         'edition.dates' => 'dates',
+        'edition.location' => 'location',
         'event.name' => 'event',
         'event.year' => 'year',
         'org.name' => 'org',

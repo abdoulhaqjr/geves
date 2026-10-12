@@ -1402,6 +1402,7 @@
   function fontKey(family) {
     var f = (family || '').toLowerCase();
     if (f.indexOf('playfair') > -1) return 'playfair';
+    if (f.indexOf('times') > -1) return 'times';
     if (f.indexOf('georgia') > -1) return 'georgia';
     if (f.indexOf('lato') > -1) return 'lato';
     if (f.indexOf('arial') > -1 || f.indexOf('helvetica') > -1) return 'arial';
@@ -1600,13 +1601,13 @@
       ],
       // Attestation de COMMUNICATION (modèle officiel UK x Université de Parakou).
       // ⚠️ Doit rester identique à LayoutSanitizer::attestationCommunication() (PHP) :
-      // les deux décrivent la même maquette. Le cadre décoratif et les deux logos
-      // sont portés par l'image de fond ; seul le texte est éditable. Styles en
-      // ligne (serif Georgia pour le titre, Arial pour le corps) plutôt que les
-      // classes du concepteur, dont l'allure ne convient pas à ce modèle.
+      // les deux décrivent la même maquette. Le cadre décoratif est porté par l'image
+      // de fond ; logos et texte sont éditables. Jetons de la palette ([espace.cle]).
+      // Titre en Times (dompdf : Times natif), corps en Lato (hébergée) : rendu
+      // identique écran/PDF, fidèle à la typographie du modèle.
       communication: (function () {
-        var SERIF = "Georgia, 'Times New Roman', serif";
-        var SANS = 'Arial, Helvetica, sans-serif';
+        var SERIF = "'Times New Roman', Times, serif";
+        var SANS = "'Lato', system-ui, sans-serif";
         var DARK = '#1a2332';
         var LOGOS = (window.UKC_EDITOR || {}).logos || {};
         var imgHtml = function (src) {
@@ -1616,21 +1617,22 @@
           // Logos en éléments image : UK = logo large des Réglages, Parakou = asset livré.
           { type: 'logo', label: 'Logo UK', x: 135, y: 26, w: 230, h: 60, uploadSrc: LOGOS.uk || '/img/logo-uk.png', html: imgHtml(LOGOS.uk || '/img/logo-uk.png') },
           { type: 'logo', label: 'Logo Parakou', x: 620, y: 26, w: 260, h: 60, uploadSrc: LOGOS.parakou || '/img/attestations/logo-parakou.png', html: imgHtml(LOGOS.parakou || '/img/attestations/logo-parakou.png') },
-          { type: 'text', label: 'Titre', x: 120, y: 96, w: 660, text: 'ATTESTATION DE COMMUNICATION', font: SERIF, size: 31, weight: 700, color: DARK, align: 'center' },
-          { type: 'text', label: 'Sous-titre', x: 120, y: 150, w: 660, text: 'Décernée à', font: SANS, size: 15, weight: 500, color: '#2b3340', align: 'center' },
-          { type: 'text', label: 'Destinataire', x: 120, y: 176, w: 660, text: 'Mme/M. {name}', font: SANS, size: 23, weight: 800, color: DARK, align: 'center' },
-          { type: 'text', label: 'Corps', x: 125, y: 226, w: 640, text: 'pour avoir participé et communiqué au {event}, {dates}, à {location}.', font: SANS, size: 15, weight: 500, color: DARK, leading: 1.4 },
-          { type: 'text', label: 'Thème (libellé)', x: 125, y: 284, w: 195, text: 'Thème du colloque :', font: SANS, size: 14, weight: 700, color: DARK },
-          { type: 'text', label: 'Thème', x: 330, y: 284, w: 436, text: '{theme}', font: SANS, size: 14, weight: 700, color: DARK, leading: 1.3 },
-          { type: 'text', label: 'Titre com. (libellé)', x: 125, y: 348, w: 200, text: 'Titre de la communication :', font: SANS, size: 14, weight: 700, color: DARK },
-          { type: 'text', label: 'Titre com.', x: 330, y: 348, w: 436, text: '{communication}', font: SANS, size: 14, weight: 700, color: DARK, italic: true, leading: 1.3 },
-          { type: 'text', label: 'Type (libellé)', x: 125, y: 412, w: 200, text: 'Type de communication :', font: SANS, size: 14, weight: 700, color: DARK },
-          { type: 'text', label: 'Type', x: 330, y: 412, w: 220, text: '{communication_type}', font: SANS, size: 14, weight: 700, color: DARK, italic: true },
-          { type: 'text', label: 'Formule', x: 125, y: 458, w: 648, text: 'En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.', font: SANS, size: 13, weight: 500, color: DARK },
-          { type: 'text', label: 'Lieu / date', x: 450, y: 492, w: 360, text: 'Fait à Kara, le {date}', font: SANS, size: 14, weight: 500, color: DARK, align: 'center' },
-          { type: 'text', label: 'Fonction', x: 450, y: 514, w: 360, text: 'Le {signatory_role}', font: SANS, size: 15, weight: 700, color: DARK, align: 'center' },
-          { type: 'text', label: 'Signataire', x: 450, y: 560, w: 360, text: '{signatory}', font: SANS, size: 17, weight: 700, color: DARK, align: 'center' },
-          { type: 'text', label: 'Identifiant', x: 30, y: 582, w: 560, text: 'Identifiant de l’attestation : {ref}', font: SANS, size: 11, weight: 700, color: DARK }
+          { type: 'text', label: 'Titre', x: 120, y: 104, w: 660, text: 'ATTESTATION DE COMMUNICATION', font: SERIF, size: 28, weight: 700, color: DARK, align: 'center' },
+          { type: 'text', label: 'Sous-titre', x: 120, y: 152, w: 660, text: 'Décernée à', font: SANS, size: 15, weight: 500, color: '#2b3340', align: 'center' },
+          { type: 'text', label: 'Destinataire', x: 120, y: 178, w: 660, text: '[recipient.civility] [recipient.name]', font: SANS, size: 23, weight: 800, color: DARK, align: 'center' },
+          { type: 'text', label: 'Corps', x: 125, y: 226, w: 640, text: 'pour avoir participé et communiqué au [edition.name], [edition.dates], à [edition.location].', font: SANS, size: 13, weight: 500, color: DARK, leading: 1.4 },
+          { type: 'text', label: 'Thème (libellé)', x: 125, y: 286, w: 195, text: 'Thème du colloque :', font: SANS, size: 14, weight: 700, color: DARK },
+          { type: 'text', label: 'Thème', x: 330, y: 286, w: 436, text: '[edition.theme]', font: SANS, size: 14, weight: 700, color: DARK, leading: 1.3 },
+          { type: 'text', label: 'Titre com. (libellé)', x: 125, y: 350, w: 200, text: 'Titre de la communication :', font: SANS, size: 14, weight: 700, color: DARK },
+          { type: 'text', label: 'Titre com.', x: 330, y: 350, w: 436, text: '[communication.title]', font: SANS, size: 14, weight: 700, color: DARK, italic: true, leading: 1.3 },
+          { type: 'text', label: 'Type (libellé)', x: 125, y: 414, w: 200, text: 'Type de communication :', font: SANS, size: 14, weight: 700, color: DARK },
+          { type: 'text', label: 'Type', x: 330, y: 414, w: 220, text: '[communication.type]', font: SANS, size: 14, weight: 700, color: DARK, italic: true },
+          { type: 'text', label: 'Formule', x: 125, y: 460, w: 648, text: 'En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.', font: SANS, size: 13, weight: 500, color: DARK },
+          { type: 'qr', label: 'QR vérification', x: 120, y: 500, w: 76, qrUrl: DEFAULT_QR_URL },
+          { type: 'text', label: 'Lieu / date', x: 490, y: 490, w: 350, text: 'Fait à Kara, le [certificate.issued_on]', font: SANS, size: 14, weight: 500, color: DARK },
+          { type: 'text', label: 'Fonction', x: 490, y: 514, w: 350, text: 'Le [signatory.role]', font: SANS, size: 15, weight: 700, color: DARK },
+          { type: 'text', label: 'Signataire', x: 490, y: 560, w: 350, text: '[signatory.name]', font: SANS, size: 17, weight: 700, color: DARK },
+          { type: 'text', label: 'Identifiant', x: 30, y: 588, w: 430, text: 'Identifiant de l’attestation : [certificate.uuid]', font: SANS, size: 11, weight: 700, color: DARK }
         ];
       })(),
       moderation: [

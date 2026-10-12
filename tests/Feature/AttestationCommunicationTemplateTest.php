@@ -24,11 +24,14 @@ it('a un modèle par défaut propre au type « communication »', function () {
     expect($comm)->not->toBe($default);
     expect($comm['bg_image'])->toBe('/img/attestations/attestation-communication-bg.png');
 
+    // Jetons de la palette du concepteur ([espace.cle]), civilité comprise.
     $texts = collect($comm['elements'])->pluck('text')->implode(' | ');
     expect($texts)
         ->toContain('ATTESTATION DE COMMUNICATION')
-        ->toContain('{communication}')
-        ->toContain('{communication_type}')
+        ->toContain('[recipient.civility] [recipient.name]')
+        ->toContain('[communication.title]')
+        ->toContain('[communication.type]')
+        ->toContain('[edition.location]')
         ->toContain('Type de communication :');
 
     // Les deux logos sont des éléments IMAGE (pas cuits dans le fond) : l'UK suit
@@ -37,6 +40,12 @@ it('a un modèle par défaut propre au type « communication »', function () {
     expect($images)->toHaveCount(2);
     expect($images->contains('/img/attestations/logo-parakou.png'))->toBeTrue();
     expect($images->contains(fn ($s) => str_contains((string) $s, 'logo-uk')))->toBeTrue();
+
+    // QR de vérification + titre en Times (taille du modèle).
+    $qr = collect($comm['elements'])->firstWhere('type', 'qr');
+    expect($qr)->not->toBeNull();
+    $title = collect($comm['elements'])->firstWhere('text', 'ATTESTATION DE COMMUNICATION');
+    expect($title['font'])->toBe('times');
 });
 
 it('fige le format de présentation à l’émission (orale / affichée)', function () {
@@ -50,9 +59,11 @@ it('fige le format de présentation à l’émission (orale / affichée)', funct
     expect(AttestationVars::for($attestation, 'https://example.test')['communication_type'])->toBe('Affichée');
 });
 
-it('rend {communication_type} et {communication} sur l’attestation', function () {
+it('rend le format, la communication et la vraie civilité sur l’attestation', function () {
     $submission = seededSubmission('accepted'); // type « oral » par défaut
     $submission->update(['title' => 'Pile microbienne à plante de citronnelle']);
+    // Civilité réelle du bénéficiaire (plus de « Mme/M. » générique).
+    $submission->participant->user->update(['civility' => 'Mme']);
     $attestation = app(IssueAttestation::class)->handle($submission->participant, 'communication', $submission->fresh());
 
     $layout = LayoutSanitizer::default('attestation', 'communication');
@@ -61,7 +72,8 @@ it('rend {communication_type} et {communication} sur l’attestation', function 
     expect($html)
         ->toContain('Orale')
         ->toContain('Pile microbienne à plante de citronnelle')
-        ->toContain('Mme/M. Awa Kodjo');
+        ->toContain('Mme Awa Kodjo')
+        ->not->toContain('Mme/M.');
 });
 
 it('résout l’alias [communication.type] vers le format, pas la référence', function () {

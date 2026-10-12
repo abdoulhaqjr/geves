@@ -3169,18 +3169,29 @@ ajoutée par la vue, elle ne se saisit pas.
     (les vignettes « UK - Univ. Kara » / « Univ. Parakou » insèrent ces vraies images, plus de
     placeholder texte). ⚠️ En production, `php artisan storage:link` pour qu'un logo UK
     **téléversé** (`/storage/...`) sorte aussi dans le PDF.
-  - **Polices du modèle** : titre en **Georgia** (`georgia` → dompdf **Times**), corps en
-    **Arial** (`arial` → dompdf **Helvetica**) - deux familles **natives du PDF**, donc rendu
-    identique écran/PDF **sans police à héberger** (contrairement à Jost/Playfair, cf.
-    `DocumentFonts`). `createEl` (concepteur) applique désormais des **styles en ligne**
-    (`font`/`size`/`weight`/`color`/`italic`/`align`/`leading`…), prioritaires sur les classes
-    `.heading`/`.sub`/`.attr` (dont l'allure - Playfair, indigo - ne convient pas à tout
-    modèle).
-  - ⚠️ **`{communication_type}`** est **figé à l'émission** dans `meta` (`IssueAttestation` :
-    `poster → « Affichée »`, sinon `« Orale »`), comme le titre : une attestation dit ce
-    qu'elle disait le jour de sa délivrance. L'alias **`[communication.type]`** pointe
-    désormais sur ce **format** (et non la référence) ; la référence reste en
-    `[communication.ref]` / `{communication_ref}`. **Signatures des formateurs** : élément de mise en page **`signatures`**
+  - **Polices du modèle, fidèles à la maquette** : titre en **Times** (clé `times` →
+    `'Times New Roman', Times, serif` ; dompdf a Times en natif, l'écran a Times New Roman),
+    corps en **Lato** (clé `lato`, **hébergée** dans `public/fonts/lato-*` et déclarée dans
+    `DocumentFonts::FACES`/`FAMILIES` - woff2 écran + ttf dompdf, cf. `documents/_fonts`). Le
+    concepteur charge Lato depuis Google Fonts (lien dans `template-designer.blade.php`).
+    `createEl` applique des **styles en ligne** (`font`/`size`/`weight`/`color`/`italic`/
+    `align`/`leading`…), prioritaires sur les classes `.heading`/`.sub`/`.attr` (dont l'allure
+    ne convient pas à ce modèle). ⚠️ **La taille du titre se mesure sur la maquette** (ici
+    Times 28 px = ~508 px de large, capitales ~19 px), pas au jugé : un titre à 31 px Georgia
+    faisait 612 px, trop large.
+  - **Jetons = ceux de la palette** (`[espace.cle]`), pas la forme plate : `[recipient.name]`,
+    `[recipient.civility]`, `[edition.name]`/`[edition.dates]`/`[edition.location]`/
+    `[edition.theme]`, `[communication.title]`/`[communication.type]`, `[signatory.role]`/
+    `[signatory.name]`, `[certificate.issued_on]`/`[certificate.uuid]`. ⚠️ **`[recipient.civility]`
+    (vraie civilité, lue sur le compte) et `[edition.location]` ont été AJOUTÉS** à la palette
+    (`DocumentVars::ALIASES`, `VARIABLES`, `sampleVars`, et les `ed-attr` du blade) : plus de
+    « Mme/M. » générique, on écrit `[recipient.civility] [recipient.name]`.
+  - **QR de vérification** : élément `qr` (valeur `{verify_url}` → `/attestation/{uuid}`), posé
+    en bas à gauche. Le bloc signataire (« Fait à … », rôle, nom) est **aligné à gauche** sur
+    une même colonne, comme la maquette.
+  - ⚠️ **`[communication.type]` = le FORMAT** (orale / affichée), **figé à l'émission** dans
+    `meta` (`IssueAttestation` : `poster → « Affichée »`, sinon `« Orale »`), comme le titre.
+    La référence de la communication reste en `[communication.ref]` / `{communication_ref}`. **Signatures des formateurs** : élément de mise en page **`signatures`**
   (`LayoutSanitizer::ELEMENT_TYPES`) rendu par `LayoutRenderer::renderSignatures()` à
   partir de `$vars['signatures']` - seule valeur **structurée** des variables (les
   autres sont des chaînes). La signature de chaque formateur se téléverse sur la page

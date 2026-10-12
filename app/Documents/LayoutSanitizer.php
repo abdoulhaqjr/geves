@@ -27,7 +27,10 @@ class LayoutSanitizer
         'georgia' => "Georgia, 'Times New Roman', serif",
         'playfair' => "'Playfair Display', Georgia, serif",
         'arial' => 'Arial, Helvetica, sans-serif',
-        'lato' => 'Lato, system-ui, sans-serif',
+        'lato' => "'Lato', system-ui, sans-serif",
+        // Times : rendu identique écran (Times New Roman) / PDF (Times natif de dompdf),
+        // sans fonte à héberger. Police du titre des attestations officielles.
+        'times' => "'Times New Roman', Times, serif",
     ];
 
     /** @return array<string, mixed> */
@@ -198,21 +201,21 @@ class LayoutSanitizer
     /**
      * Attestation de COMMUNICATION (modèle officiel UK x Université de Parakou).
      *
-     * Le cadre décoratif (motifs kente, hélice ADN) et les deux logos sont portés
-     * par l'image de fond `bg_image` ; seul le texte est en éléments éditables, avec
-     * ses jetons. Serif Georgia pour le titre (dompdf : Times), sans-serif Arial
-     * pour le corps (dompdf : Helvetica) - deux familles natives du PDF, donc rendu
-     * fidèle à l'écran sans police à héberger.
+     * Le cadre décoratif (motifs kente, hélice ADN) est porté par l'image de fond ;
+     * les logos et le texte sont des éléments éditables. Jetons de la palette du
+     * concepteur (`[espace.cle]`). Titre en **Times** (dompdf : Times natif ; écran :
+     * Times New Roman), corps en **Lato** (hébergée, cf. DocumentFonts) : rendu
+     * identique écran/PDF, fidèle à la typographie du modèle officiel.
      */
     protected static function attestationCommunication(): array
     {
         $dark = '#1a2332';
 
-        // Fabrique un élément texte : les valeurs par défaut (sans-serif, corps) sont
+        // Fabrique un élément texte : les valeurs par défaut (Lato, corps) sont
         // surchargées par les clés passées (p. ex. une autre police ou graisse).
         $t = fn (array $e): array => $e + [
             'type' => 'text', 'size' => 14, 'weight' => 500, 'color' => $dark,
-            'align' => 'left', 'font' => 'arial', 'italic' => false, 'leading' => 1.3,
+            'align' => 'left', 'font' => 'lato', 'italic' => false, 'leading' => 1.3,
         ];
 
         // Logos en éléments image (pas cuits dans le fond) : l'UK suit le logo large
@@ -226,21 +229,24 @@ class LayoutSanitizer
             'elements' => [
                 ['type' => 'image', 'x' => 135, 'y' => 26, 'w' => 230, 'h' => 60, 'src' => (string) $ukLogo],
                 ['type' => 'image', 'x' => 620, 'y' => 26, 'w' => 260, 'h' => 60, 'src' => '/img/attestations/logo-parakou.png'],
-                $t(['x' => 120, 'y' => 96, 'w' => 660, 'h' => 44, 'text' => 'ATTESTATION DE COMMUNICATION', 'size' => 31, 'weight' => 700, 'align' => 'center', 'font' => 'georgia']),
-                $t(['x' => 120, 'y' => 150, 'w' => 660, 'h' => 24, 'text' => 'Décernée à', 'size' => 15, 'align' => 'center', 'color' => '#2b3340']),
-                $t(['x' => 120, 'y' => 176, 'w' => 660, 'h' => 40, 'text' => 'Mme/M. {name}', 'size' => 23, 'weight' => 800, 'align' => 'center']),
-                $t(['x' => 125, 'y' => 226, 'w' => 640, 'h' => 52, 'text' => 'pour avoir participé et communiqué au {event}, {dates}, à {location}.', 'size' => 15, 'leading' => 1.4]),
-                $t(['x' => 125, 'y' => 284, 'w' => 195, 'h' => 22, 'text' => 'Thème du colloque :', 'weight' => 700]),
-                $t(['x' => 330, 'y' => 284, 'w' => 436, 'h' => 40, 'text' => '{theme}', 'weight' => 700]),
-                $t(['x' => 125, 'y' => 348, 'w' => 200, 'h' => 22, 'text' => 'Titre de la communication :', 'weight' => 700]),
-                $t(['x' => 330, 'y' => 348, 'w' => 436, 'h' => 40, 'text' => '{communication}', 'weight' => 700, 'italic' => true]),
-                $t(['x' => 125, 'y' => 412, 'w' => 200, 'h' => 22, 'text' => 'Type de communication :', 'weight' => 700]),
-                $t(['x' => 330, 'y' => 412, 'w' => 220, 'h' => 22, 'text' => '{communication_type}', 'weight' => 700, 'italic' => true]),
-                $t(['x' => 125, 'y' => 458, 'w' => 648, 'h' => 24, 'text' => 'En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.', 'size' => 13]),
-                $t(['x' => 450, 'y' => 492, 'w' => 360, 'h' => 22, 'text' => 'Fait à Kara, le {date}', 'align' => 'center']),
-                $t(['x' => 450, 'y' => 514, 'w' => 360, 'h' => 24, 'text' => 'Le {signatory_role}', 'size' => 15, 'weight' => 700, 'align' => 'center']),
-                $t(['x' => 450, 'y' => 560, 'w' => 360, 'h' => 28, 'text' => '{signatory}', 'size' => 17, 'weight' => 700, 'align' => 'center']),
-                $t(['x' => 30, 'y' => 582, 'w' => 560, 'h' => 20, 'text' => 'Identifiant de l’attestation : {ref}', 'size' => 11, 'weight' => 700]),
+                // Titre en Times 28 px : largeur et hauteur de capitales identiques au
+                // modèle (mesurées à ~508 px de large sur la maquette d'origine).
+                $t(['x' => 120, 'y' => 104, 'w' => 660, 'h' => 40, 'text' => 'ATTESTATION DE COMMUNICATION', 'size' => 28, 'weight' => 700, 'align' => 'center', 'font' => 'times']),
+                $t(['x' => 120, 'y' => 152, 'w' => 660, 'h' => 24, 'text' => 'Décernée à', 'size' => 15, 'align' => 'center', 'color' => '#2b3340']),
+                $t(['x' => 120, 'y' => 178, 'w' => 660, 'h' => 40, 'text' => '[recipient.civility] [recipient.name]', 'size' => 23, 'weight' => 800, 'align' => 'center']),
+                $t(['x' => 125, 'y' => 226, 'w' => 640, 'h' => 56, 'text' => 'pour avoir participé et communiqué au [edition.name], [edition.dates], à [edition.location].', 'size' => 13, 'leading' => 1.4]),
+                $t(['x' => 125, 'y' => 286, 'w' => 195, 'h' => 22, 'text' => 'Thème du colloque :', 'weight' => 700]),
+                $t(['x' => 330, 'y' => 286, 'w' => 436, 'h' => 40, 'text' => '[edition.theme]', 'weight' => 700]),
+                $t(['x' => 125, 'y' => 350, 'w' => 200, 'h' => 22, 'text' => 'Titre de la communication :', 'weight' => 700]),
+                $t(['x' => 330, 'y' => 350, 'w' => 436, 'h' => 40, 'text' => '[communication.title]', 'weight' => 700, 'italic' => true]),
+                $t(['x' => 125, 'y' => 414, 'w' => 200, 'h' => 22, 'text' => 'Type de communication :', 'weight' => 700]),
+                $t(['x' => 330, 'y' => 414, 'w' => 220, 'h' => 22, 'text' => '[communication.type]', 'weight' => 700, 'italic' => true]),
+                $t(['x' => 125, 'y' => 460, 'w' => 648, 'h' => 24, 'text' => 'En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.', 'size' => 13]),
+                ['type' => 'qr', 'x' => 120, 'y' => 500, 'size' => 76, 'value' => '{verify_url}'],
+                $t(['x' => 490, 'y' => 490, 'w' => 350, 'h' => 22, 'text' => 'Fait à Kara, le [certificate.issued_on]']),
+                $t(['x' => 490, 'y' => 514, 'w' => 350, 'h' => 24, 'text' => 'Le [signatory.role]', 'size' => 15, 'weight' => 700]),
+                $t(['x' => 490, 'y' => 560, 'w' => 350, 'h' => 28, 'text' => '[signatory.name]', 'size' => 17, 'weight' => 700]),
+                $t(['x' => 30, 'y' => 588, 'w' => 430, 'h' => 20, 'text' => 'Identifiant de l’attestation : [certificate.uuid]', 'size' => 11, 'weight' => 700]),
             ],
         ];
     }

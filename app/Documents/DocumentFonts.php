@@ -31,12 +31,19 @@ class DocumentFonts
         ['playfair-700', 'Playfair Display', 700, 'normal'],
         ['playfair-900', 'Playfair Display', 900, 'normal'],
         ['playfair-700-italic', 'Playfair Display', 700, 'italic'],
+        // Lato : police du corps des attestations (modèle officiel). Hébergée pour
+        // un rendu identique écran/PDF (dompdf ne connaît pas Lato nativement).
+        ['lato-400', 'Lato', 400, 'normal'],
+        ['lato-700', 'Lato', 700, 'normal'],
+        ['lato-400-italic', 'Lato', 400, 'italic'],
+        ['lato-700-italic', 'Lato', 700, 'italic'],
     ];
 
     /** Famille réelle, par clé de police du concepteur. */
     private const FAMILIES = [
         'jost' => 'Jost',
         'playfair' => 'Playfair Display',
+        'lato' => 'Lato',
     ];
 
     /**
