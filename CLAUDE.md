@@ -3443,6 +3443,32 @@ Sources, pour ne pas les redéclarer à chaque fois :
   prompt est reconstruit à chaque message) : au-delà, renvoi vers les filtres/export des
   pages dédiées plutôt que gonfler le contexte. Test : `ProgramKnowledgeTest` (présent côté
   admin, absent côté Gesco).
+- **Copilote admin - ANNUAIRE DES COMPTES** (`App\Support\UserDirectory::digest`, injecté
+  dans `AskAdmin` **hors** du bloc `if ($event)` : un compte n'appartient pas à un
+  colloque). Quatre blocs : le **personnel** (nom, e-mail, niveau d'accès, rôles UKC, état,
+  dernière connexion + IP), la **répartition** (total, actifs, désactivés, non vérifiés,
+  jamais connectés, par rôle, par niveau), les **derniers comptes créés** et les **comptes
+  non vérifiés ou désactivés**.
+  - ⚠️ **La porte est la permission `users_roles`**, celle du middleware
+    `can:users_roles` qui garde `admin/utilisateurs` - **pas** un niveau d'accès.
+    `AskAdmin` est joignable par tout le staff ayant « Tableau de bord » (relecteur,
+    secrétariat, comptabilité) ; et un **administrateur de colloque** sans cette permission
+    est en 403 sur la page. L'assistant ne doit ouvrir aucune porte que l'interface tient
+    fermée. Pour l'ouvrir à quelqu'un : cocher la permission dans la **matrice d'accès**,
+    rien à toucher dans le code.
+  - ⚠️ **La garde vit DANS `UserDirectory`**, pas chez l'appelant : `digest()` et
+    `resume()` rendent une chaîne vide à qui n'y a pas droit. Une garde posée au point
+    d'appel finit oubliée au premier déplacement de bloc.
+  - ⚠️ **Rien n'est même MENTIONNÉ** à qui n'y a pas droit : décrire à un modèle une donnée
+    qu'on lui refuse, c'est l'inviter à la deviner.
+  - ⚠️ **Marc lit, il n'écrit pas** : aucune création, modification ni désactivation de
+    compte ; le prompt le renvoie vers l'onglet Utilisateurs & rôles.
+  - **Marc n'en dit ni plus ni moins que la page** : le contenu est calqué sur les colonnes
+    d'`admin/utilisateurs` et ses compteurs. Si une donnée n'est pas sur la page, elle n'est
+    pas dans l'annuaire. ⚠️ Borné (60 comptes de personnel, 25 par liste).
+  - Tests : `AnnuaireComptesTest` (servi à l'habilité, vide pour le staff ordinaire ET pour
+    un admin de colloque sans la permission, suit la matrice d'accès, borné, présent/absent
+    du prompt réel, cité nulle part ailleurs qu'`AskAdmin`).
 - **Copilote admin - pilotage élargi** (`AskAdmin`, bloc « CHIFFRES RÉELS ») : en plus des
   soumissions/paiements/recettes, il reçoit les **relectures** (`EventReport::reviewStats`),
   les **rapports de séance** (validés / attendus, `SessionReport` + `counts()`), les

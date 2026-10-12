@@ -20,6 +20,7 @@ use App\Support\EventKnowledge;
 use App\Support\EventReport;
 use App\Support\ProgramKnowledge;
 use App\Support\StaffRoles;
+use App\Support\UserDirectory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -238,6 +239,15 @@ class AskAdmin
             }
         }
 
+        // Annuaire des COMPTES (niveaux d'accès, rôles, vérification, connexions).
+        // ⚠️ Hors du bloc `if ($event)` : un compte n'appartient pas à un événement,
+        // et la question « qui est gérant ? » se pose aussi sans colloque sélectionné.
+        // ⚠️ La permission est vérifiée DANS UserDirectory, pas ici (cf. sa classe).
+        $comptes = UserDirectory::digest($staff);
+        if ($comptes !== '') {
+            $context .= "\n\n".$comptes;
+        }
+
         $convo = collect($history)->slice(-8)
             ->map(fn (array $t) => ($t['role'] === 'user' ? 'Admin' : 'Copilote').' : '.Str::limit((string) $t['text'], 500, ''))
             ->implode("\n");
@@ -275,6 +285,18 @@ class AskAdmin
         // Horloge : date/heure courantes pour les questions temporelles (échéances,
         // délais, « aujourd'hui »).
         $now = now()->locale('fr')->translatedFormat('l j F Y, H:i');
+
+        // ⚠️ Vide pour qui n'a pas la permission « Utilisateurs & rôles » : le prompt
+        // ne mentionne alors AUCUN annuaire des comptes. Ne pas en parler vaut mieux
+        // que l'annoncer puis le refuser - un modèle à qui l'on décrit une donnée
+        // finit par la deviner de travers.
+        $regleComptes = UserDirectory::resume($staff);
+        if ($regleComptes !== '') {
+            $regleComptes = "COMPTES DE LA PLATEFORME : {$regleComptes}\n"
+                ."        ⚠️ Les comptes ne sont PAS rattachés à un colloque : la règle « jamais les données\n"
+                ."        d'un autre colloque » ne s'y applique pas. En revanche, ne donne jamais un mot de\n"
+                .'        passe ni un jeton (tu n’y as pas accès), et reste dans la finalité d’administration.';
+        }
 
         return <<<TXT
         {$agent['persona']}
@@ -330,6 +352,8 @@ class AskAdmin
         payeur…), DANS LE CADRE de sa fonction et de ce colloque uniquement. Cite nom et e-mail
         EXACTEMENT comme dans l'annuaire. Ne divulgue jamais les données d'un AUTRE colloque, et ne
         traite pas ces données hors d'une finalité d'organisation (pas de liste à des fins étrangères).
+
+        {$regleComptes}
 
         Historique récent :
         {$convo}

@@ -1529,3 +1529,52 @@ et le cas le dit), restauration bit pour bit.
 
 1176 tests / 4175 assertions, 80 cas Vitest, Pint et PHPStan niveau 5 sans
 erreur. Plus aucun des trois caractères dans le code.
+
+## 2026-10-12 - Marc répond sur les comptes, à qui peut déjà les voir
+
+Nouveau `App\Support\UserDirectory`, injecté dans `AskAdmin` : le personnel avec
+niveaux d'accès, rôles, état et dernière connexion ; la répartition des comptes ;
+les derniers créés ; les non vérifiés ou désactivés. Marc répond désormais à
+« qui est gérant ? », « combien de comptes ne sont pas vérifiés ? », « quand
+untel s'est-il connecté ? ».
+
+⚠️ **L'écart trouvé avant d'écrire la moindre ligne.** La demande disait « si
+c'est un admin ou un super-admin ». Or `AskAdmin` est joignable par **tout** le
+staff ayant « Tableau de bord » sur l'événement - relecteur, secrétariat,
+comptabilité - tandis que la page `admin/utilisateurs` est gardée par la
+permission `users_roles`, que **seul le rôle Administrateur** porte. Dans la base
+de dev, les deux administrateurs **de colloque** (gérant, co-gérant) sont donc en
+**403 sur cette page**. Les leur servir par l'assistant aurait fait de Marc la
+porte la plus large de la plateforme. Arbitrage retenu après question :
+**`users_roles`, la porte exacte de la page**. Pour ouvrir l'annuaire à
+quelqu'un, on coche la permission dans la matrice d'accès - et il voit la page ET
+l'annuaire, du même mouvement.
+
+**Trois décisions de conception qui tiennent la règle toute seule :**
+- La garde vit **dans** `UserDirectory`, pas chez l'appelant : `AskAdmin`
+  reconstruit son prompt à chaque message, et une garde posée au point d'appel
+  finit oubliée au premier déplacement de bloc.
+- Qui n'y a pas droit n'en entend **même pas parler** : `resume()` rend une
+  chaîne vide. Décrire à un modèle une donnée qu'on lui refuse, c'est l'inviter à
+  la deviner.
+- **Ni plus ni moins que la page** : le contenu est calqué sur les colonnes
+  d'`admin/utilisateurs`. Règle simple à tenir et à vérifier.
+
+Borné (60 comptes de personnel, 25 par liste) : les 263 comptes participants d'un
+colloque importé n'ont rien à faire dans un prompt - leurs données nominatives
+viennent déjà d'`AdminDirectory`, bornées à l'événement.
+
+Garde : `AnnuaireComptesTest` (9 cas). Quatre sabotages vérifiés : permission
+retirée, porte élargie au niveau d'accès (le choix écarté), assistante publique
+qui s'en approche, plafond supprimé. ⚠️ Le second ne mordait **qu'indirectement**
+au premier essai : un cas dédié encode maintenant la décision noir sur blanc.
+
+⚠️ **Deux cas rouges trouvés sur master, venus d'ailleurs.** Les commits amont du
+pied de page avaient (1) retiré « Vérifier une attestation » des liens utiles -
+or cette page sert un TIERS, un recruteur qui contrôle une attestation reçue, et
+elle a déjà quitté la barre du haut : sans le pied de page elle devient
+introuvable ; (2) ajouté deux chaînes sans traduction anglaise. `PageAccueilTest`
+et `VocabulairePublicTest` les ont attrapés. Lien restauré avec son commentaire,
+deux clés ajoutées.
+
+1189 tests / 4217 assertions, Pint et PHPStan niveau 5 sans erreur.

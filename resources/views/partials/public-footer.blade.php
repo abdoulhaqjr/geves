@@ -33,6 +33,11 @@
                     <a href="{{ route('account.register') }}">{{ __('Créer un compte') }}</a>
                 @endif
                 <a href="{{ route('public.gesco') }}">{{ __('Assistante :name', ['name' => \App\Support\AiAgents::publicName()]) }}</a>
+                {{-- ⚠️ Cette page sert un TIERS : un recruteur qui contrôle une attestation
+                     reçue. Elle a quitté la barre du haut ; si elle quitte aussi le pied de
+                     page, elle devient introuvable à qui n'a pas le lien. Gardée par
+                     PageAccueilTest. --}}
+                <a href="{{ route('attestation.verify.landing') }}">{{ __('Vérifier une attestation') }}</a>
             </div>
             <div>
                 <h4>{{ __('Contact DRI') }}</h4>
