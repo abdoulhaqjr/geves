@@ -704,9 +704,35 @@ instance tout juste créée porte `null` jusqu'au rechargement. Inoffensif (les
 comparaisons `===` retombent du bon côté), mais ne lisez pas l'attribut juste après un
 `create()`.
 
-Garde : **`ModeleDesRolesTest`** - trois niveaux et pas plus, qui crée un événement,
+⚠️ **L'onglet Rôles (`admin/utilisateurs`) montre les FONCTIONS D'ÉQUIPE**, pas les
+niveaux système - qui n'y figurent pas du tout. Trois pièges levés le 2026-10-12 :
+
+- Son compteur lisait les rôles **globaux** (spatie) alors qu'une fonction se confie par
+  événement : il annonçait « 0 utilisateur » pour un secrétariat et une comptabilité à
+  l'œuvre sur un colloque. Il affiche désormais **« N personne(s) sur M événement(s) »**
+  (`UserController::roleUsageLines`, `user_id` distincts), puis **« N rôle global »
+  seulement s'il y en a** - ce qui rend visible qu'« Administrateur colloque » est un rôle
+  de plateforme.
+- Les deux familles s'appellent **« Organisation » / « Appui »** : « Système » entrait en
+  collision avec les trois niveaux système, qui n'ont rien à voir. Une seule couleur par
+  famille (`StaffRoles::categoryPill()`) ; `pill()` reste la couleur de la FONCTION,
+  employée dans la liste des utilisateurs.
+- Le rôle legacy **`editor` est supprimé** : il portait `manage_colloques` (accès complet
+  par court-circuit de `Gate::before`) **sans figurer dans `StaffRoles`**, donc ni dans cet
+  onglet ni dans la matrice d'accès. Un rôle à tous les pouvoirs invisible des écrans qui
+  servent à surveiller les pouvoirs. Migration `drop_legacy_editor_role`, qui ne retire que
+  s'il n'est attribué à personne.
+
+⚠️ **`admin/users/index.blade.php` emploie la forme EN LIGNE de la directive PHP de Blade
+(ligne 73).** N'y ouvrez pas de bloc PHP : Blade apparie la première ouverture à la
+première fermeture et avale tout ce qui les sépare. Et ne nommez pas ces directives en
+toutes lettres, même dans un commentaire - Blade les compile **avant** de retirer les
+commentaires. Toute logique de cet écran se calcule dans le contrôleur.
+
+Gardes : **`ModeleDesRolesTest`** - trois niveaux et pas plus, qui crée un événement,
 l'équipe attachée à UN événement, les rôles déduits et non stockés, et l'accord des deux
-portails.
+portails. Et **`OngletRolesTest`** pour l'écran : compteurs, familles, couleur par famille,
+absence du rôle `editor`.
 
 ### E-mails de compte = rédigés, LOCALISÉS (défaut français) + charte UK
 

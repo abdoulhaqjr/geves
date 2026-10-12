@@ -9,7 +9,9 @@ use App\Support\ListSort;
 use App\Support\StaffRoles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -49,11 +51,23 @@ class UserController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        // Comptes par rôle (pour les indicateurs + l'onglet Rôles).
+        // Comptes par rôle GLOBAL (pour les indicateurs + l'onglet Rôles).
         // whereHas plutôt que le scope role() de spatie : renvoie 0 sans lever
         // RoleDoesNotExist si le rôle n'a pas encore été créé (install fraîche).
         $countsByRole = collect(array_keys(StaffRoles::ROLES))
             ->mapWithKeys(fn ($r) => [$r => User::whereHas('roles', fn ($q) => $q->where('name', $r))->count()]);
+
+        // ⚠️ Et les affectations PAR ÉVÉNEMENT, qui sont la vraie vie des
+        // fonctions d'équipe : `$countsByRole` ne voit que les rôles globaux, si
+        // bien que l'onglet Rôles annonçait « 0 utilisateur » pour un secrétariat
+        // et une comptabilité pourtant à l'œuvre sur un colloque.
+        // On compte les PERSONNES (user_id distincts), pas les lignes : tenir la
+        // même fonction sur deux événements ne fait pas deux personnes.
+        $parEvenement = DB::table('event_user')
+            ->selectRaw('role, count(distinct user_id) as personnes, count(distinct event_id) as evenements')
+            ->groupBy('role')
+            ->get()
+            ->keyBy('role');
 
         // Permissions RÉELLES par rôle (spatie) - source de la matrice d'accès éditable.
         $rolePermissions = Role::query()->where('guard_name', 'web')
@@ -62,8 +76,12 @@ class UserController extends Controller
             ->get()
             ->mapWithKeys(fn (Role $r) => [$r->name => $r->permissions->pluck('name')->all()]);
 
+        // ⚠️ La famille s'appelle « Appui » depuis le renommage : « Système » /
+        // « Support » entrait en collision avec les TROIS rôles système du modèle
+        // (super-admin, admin, utilisateur), qui n'ont rien à voir avec ce
+        // classement des fonctions d'équipe.
         $support = collect(StaffRoles::ROLES)
-            ->filter(fn ($m) => $m['category'] === 'Support')
+            ->filter(fn ($m) => $m['category'] === 'Appui')
             ->keys()
             ->sum(fn ($r) => $countsByRole[$r] ?? 0);
 
@@ -78,6 +96,7 @@ class UserController extends Controller
             'roles' => StaffRoles::ROLES,
             'permissions' => StaffRoles::PERMISSIONS,
             'countsByRole' => $countsByRole,
+            'roleUsage' => $this->roleUsageLines($parEvenement->all(), $countsByRole->all(), $rolePermissions->all()),
             'rolePermissions' => $rolePermissions,
             'stats' => [
                 'total' => User::count(),
@@ -90,10 +109,63 @@ class UserController extends Controller
     }
 
     /**
+     * La ligne de compteurs d'une fonction, dans l'onglet Rôles.
+     *
+     * ⚠️ **Les personnes AFFECTÉES d'abord.** Le compteur ne lisait que les rôles
+     * globaux (spatie) alors qu'une fonction d'équipe se confie par événement :
+     * l'écran annonçait « 0 utilisateur » pour un secrétariat et une comptabilité
+     * pourtant à l'œuvre sur un colloque. Le chiffre n'était pas faux, il
+     * répondait à une question que personne ne pose devant cet écran.
+     *
+     * ⚠️ **Le rôle global n'est mentionné QUE s'il y en a** : c'est ce qui rend
+     * visible, d'un coup d'œil, qu'« Administrateur colloque » est un rôle de
+     * plateforme et non une fonction d'événement.
+     *
+     * Assemblé ici et non dans le gabarit : un bloc `@php … @endphp` y casserait
+     * la compilation, le fichier contenant déjà un `@php(...)` en ligne.
+     *
+     * ⚠️ Des TABLEAUX et non des `Collection` : les génériques de Collection ne
+     * sont pas covariants, si bien qu'une collection issue de `keyBy()` ou de
+     * `pluck()` ne satisfait jamais un type de paramètre plus précis. Le tableau,
+     * lui, est covariant - et cette méthode n'a besoin de rien d'autre.
+     *
+     * @param  array<array-key, object>  $parEvenement
+     * @param  array<string, int>  $countsByRole
+     * @param  array<string, array<mixed>>  $rolePermissions
+     * @return array<string, string>
+     */
+    private function roleUsageLines(array $parEvenement, array $countsByRole, array $rolePermissions): array
+    {
+        $lignes = [];
+
+        foreach (array_keys(StaffRoles::ROLES) as $name) {
+            $usage = $parEvenement[$name] ?? null;
+            $global = (int) ($countsByRole[$name] ?? 0);
+            $perms = count(array_intersect($rolePermissions[$name] ?? [], array_keys(StaffRoles::PERMISSIONS)));
+
+            $bits = [$usage === null
+                ? 'aucune affectation'
+                : trans_choice(':count personne|:count personnes', (int) $usage->personnes, ['count' => $usage->personnes])
+                    .' sur '.trans_choice(':count événement|:count événements', (int) $usage->evenements, ['count' => $usage->evenements]),
+            ];
+
+            if ($global > 0) {
+                $bits[] = trans_choice(':count rôle global|:count rôles globaux', $global, ['count' => $global]);
+            }
+
+            $bits[] = trans_choice(':count permission|:count permissions', $perms, ['count' => $perms]);
+
+            $lignes[$name] = implode(' - ', $bits);
+        }
+
+        return $lignes;
+    }
+
+    /**
      * Met à jour la matrice d'accès : synchronise les permissions granulaires de
      * chaque rôle UKC depuis les cases cochées. L'administrateur conserve toutes
-     * les permissions ; la porte d'entrée `manage_colloques` des rôles « Système »
-     * est préservée (hors matrice).
+     * les permissions ; la porte d'entrée `manage_colloques` des rôles
+     * « Organisation » est préservée (hors matrice).
      */
     public function updateAccess(Request $request): RedirectResponse
     {

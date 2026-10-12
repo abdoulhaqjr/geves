@@ -120,18 +120,22 @@ it('pose le logo compact sur la carte « À propos », pas des lettres dessinée
 
     expect($html)->not->toContain('<div class="mark-lg">DRI</div>');
 
-    // ⚠️ On regarde DANS la pastille, pas dans la page : l'adresse du
-    // monogramme livré figure aussi dans le `<link rel="apple-touch-icon">` et
-    // dans la marque de l'en-tête. Un premier jet cherchait cette adresse
-    // n'importe où - vidé de son `src`, le logo de la carte disparaissait sans
-    // que le cas bronche. Montré par un sabotage.
-    expect(preg_match('#<div class="mark-lg">(.*?)</div>#s', $html, $m))->toBe(1);
+    // ⚠️ La carte porte désormais le logo LARGE (`.logo-wide`) et non plus le
+    // monogramme compact : la section « À propos » a été simplifiée en amont et
+    // le panneau a la place du logo complet. Ce qui est éprouvé n'a pas changé -
+    // une vraie image, pas des lettres dessinées.
+    //
+    // ⚠️ On regarde DANS la pastille, pas dans la page : l'adresse du logo livré
+    // figure aussi dans la marque de l'en-tête. Un premier jet cherchait cette
+    // adresse n'importe où - vidé de son `src`, le logo de la carte disparaissait
+    // sans que le cas bronche. Montré par un sabotage.
+    expect(preg_match('#<div class="logo-wide">(.*?)</div>#s', $html, $m))->toBe(1);
 
     $pastille = $m[1];
     expect($pastille)->toContain('<img ');
     expect(preg_match('#<img[^>]+src="([^"]+)"#', $pastille, $img))->toBe(1);
     expect(trim($img[1]))->not->toBeEmpty();
-    expect($img[1])->toBe(Branding::markWhite());
+    expect($img[1])->toBe(Branding::wideWhite());
 });
 
 /**

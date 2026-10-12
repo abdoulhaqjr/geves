@@ -42,7 +42,7 @@ class StaffRoles
     public const ROLES = [
         'administrator' => [
             'label' => 'Administrateur colloque',
-            'category' => 'Système', 'pill' => 'ok', 'abbr' => 'Admin',
+            'category' => 'Organisation', 'pill' => 'ok', 'abbr' => 'Admin',
             'description' => 'Accès complet : événements, soumissions, décisions, documents, paiements, e-mails, réglages.',
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
@@ -52,7 +52,7 @@ class StaffRoles
         ],
         'gerant' => [
             'label' => 'Gestionnaire du colloque',
-            'category' => 'Système', 'pill' => 'ok', 'abbr' => 'Gestion.',
+            'category' => 'Organisation', 'pill' => 'ok', 'abbr' => 'Gestion.',
             'description' => 'Responsable d’un colloque : accès complet à CE colloque (soumissions, décisions, documents, paiements, e-mails, équipe).',
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
@@ -61,7 +61,7 @@ class StaffRoles
         ],
         'co_gerant' => [
             'label' => 'Co-gestionnaire du colloque',
-            'category' => 'Système', 'pill' => 'ok', 'abbr' => 'Co-gest.',
+            'category' => 'Organisation', 'pill' => 'ok', 'abbr' => 'Co-gest.',
             'description' => 'Co-responsable d’un colloque : mêmes accès que le gestionnaire sur CE colloque.',
             'permissions' => [
                 'view_dashboard', 'editions_read', 'editions_write', 'submissions_list', 'assign_reviewers',
@@ -70,55 +70,55 @@ class StaffRoles
         ],
         'scientific' => [
             'label' => 'Comité scientifique',
-            'category' => 'Système', 'pill' => 'review', 'abbr' => 'Comité sci.',
+            'category' => 'Organisation', 'pill' => 'review', 'abbr' => 'Comité sci.',
             'description' => 'Synthèse des relectures, décisions d’acceptation / refus / corrections.',
             'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'assign_reviewers', 'evaluate', 'final_decision'],
         ],
         'comite_supervision' => [
             'label' => 'Comité de supervision',
-            'category' => 'Système', 'pill' => 'info', 'abbr' => 'Comité sup.',
+            'category' => 'Organisation', 'pill' => 'info', 'abbr' => 'Comité sup.',
             'description' => 'Supervision du colloque : vue d’ensemble et suivi (soumissions, participants, paiements), sans décision ni modification.',
             'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'participants', 'payments'],
         ],
         'comite_organisation' => [
             'label' => 'Comité d’organisation',
-            'category' => 'Support', 'pill' => 'warn', 'abbr' => 'Comité org.',
+            'category' => 'Appui', 'pill' => 'warn', 'abbr' => 'Comité org.',
             'description' => 'Membre du comité d’organisation : suivi des participants, documents et programme du colloque.',
             'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'participants', 'documents', 'emails', 'project', 'claims'],
         ],
         'reviewer' => [
             'label' => 'Relecteur',
-            'category' => 'Système', 'pill' => 'info', 'abbr' => 'Relect.',
+            'category' => 'Organisation', 'pill' => 'info', 'abbr' => 'Relect.',
             'description' => 'Évaluation des soumissions assignées, déclaration COI, commentaires et recommandation.',
             'permissions' => ['view_dashboard', 'submissions_list', 'evaluate'],
         ],
         'organizer' => [
             'label' => 'Organisateur',
-            'category' => 'Système', 'pill' => 'warn', 'abbr' => 'Organis.',
+            'category' => 'Organisation', 'pill' => 'warn', 'abbr' => 'Organis.',
             'description' => 'Participants, paiements, e-mails, documents (attestations / badges) - sans décisions scientifiques.',
             'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'participants', 'payments', 'documents', 'emails', 'project'],
         ],
         'secretariat' => [
             'label' => 'Secrétariat',
-            'category' => 'Support', 'pill' => 'sec', 'abbr' => 'Sécr.',
+            'category' => 'Appui', 'pill' => 'sec', 'abbr' => 'Sécr.',
             'description' => 'Suivi administratif des soumissions et participants, relances, envoi de documents, assistance aux auteurs.',
             'permissions' => ['view_dashboard', 'editions_read', 'submissions_list', 'participants', 'documents', 'emails', 'project', 'announcements', 'claims'],
         ],
         'accounting' => [
             'label' => 'Comptabilité',
-            'category' => 'Support', 'pill' => 'compta', 'abbr' => 'Compta',
+            'category' => 'Appui', 'pill' => 'compta', 'abbr' => 'Compta',
             'description' => 'Consultation et suivi des paiements, rapprochements, exports financiers - sans modification des tarifs.',
             'permissions' => ['view_dashboard', 'payments'],
         ],
         'support' => [
             'label' => 'Appui à l’organisation',
-            'category' => 'Support', 'pill' => 'appui', 'abbr' => 'Appui',
+            'category' => 'Appui', 'pill' => 'appui', 'abbr' => 'Appui',
             'description' => 'Aide logistique (programme, salles, partenaires), consultation des listes participants, documents de session.',
             'permissions' => ['view_dashboard', 'editions_read', 'participants', 'documents', 'project', 'claims'],
         ],
         'reception' => [
             'label' => 'Accueil',
-            'category' => 'Support', 'pill' => 'accueil', 'abbr' => 'Accueil',
+            'category' => 'Appui', 'pill' => 'accueil', 'abbr' => 'Accueil',
             'description' => 'Accueil et orientation des participants le jour J, consultation des listes d’inscrits.',
             'permissions' => ['view_dashboard', 'participants'],
         ],
@@ -134,6 +134,21 @@ class StaffRoles
     public static function pill(string $role): string
     {
         return self::ROLES[$role]['pill'] ?? 'muted';
+    }
+
+    /**
+     * Pastille de la FAMILLE (« Organisation » / « Appui »), une couleur par
+     * famille.
+     *
+     * ⚠️ L'onglet Rôles affichait le nom de la famille mais prenait, pour les
+     * « Appui », la couleur propre à chaque fonction : Comptabilité ressortait en
+     * vert, exactement comme les « Organisation ». La couleur ne portait donc
+     * aucune information - elle en suggérait une fausse. {@see pill()} reste la
+     * couleur de la FONCTION, employée ailleurs (liste des utilisateurs).
+     */
+    public static function categoryPill(string $role): string
+    {
+        return (self::ROLES[$role]['category'] ?? '') === 'Organisation' ? 'ok' : 'info';
     }
 
     /** Options {name => label} pour les sélecteurs de rôle. */

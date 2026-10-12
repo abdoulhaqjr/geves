@@ -1725,3 +1725,56 @@ nouveau cas vérifie les trois accords. ⚠️ C'est la règle du vocabulaire
 appliquée : « colloque » reste juste quand il nomme le TYPE.
 
 1210 tests / 4301 assertions, Pint et PHPStan niveau 5 sans erreur.
+
+## 2026-10-12 - L'onglet Rôles compte ce qu'il annonce
+
+Quatre corrections sur `admin/utilisateurs`, onglet Rôles - l'écran qui liste les
+**fonctions d'équipe** (et non les niveaux système, qui n'y figurent pas).
+
+⚠️ **Le compteur répondait à une autre question.** Il lisait les rôles GLOBAUX
+(spatie) alors qu'une fonction se confie par événement : votre base a un
+secrétariat et une comptabilité affectés sur le colloque, et l'écran annonçait
+« 0 utilisateur(s) » pour les deux. Il affiche désormais **« N personne(s) sur M
+événement(s) »** (`user_id` distincts : tenir la même fonction sur deux
+événements ne fait pas deux personnes), puis **« N rôle global » seulement s'il y
+en a** - ce qui rend visible d'un coup d'œil qu'« Administrateur colloque » est un
+rôle de plateforme et non une fonction d'événement.
+
+**Les familles s'appellent « Organisation » et « Appui ».** « Système » entrait en
+collision avec les trois niveaux système du modèle, qui n'ont rien à voir avec ce
+classement - deux sens du même mot à un écran d'écart. Et **une seule couleur par
+famille** : les « Appui » reprenaient la couleur propre de chaque fonction, si
+bien que Comptabilité ressortait en vert comme les « Organisation ». La couleur ne
+portait rien, elle suggérait le faux.
+
+⚠️ **Le rôle legacy `editor` n'était pas une scorie inoffensive.** Il portait
+`manage_colloques`, la super-capacité qui court-circuite `Gate::before` et ouvre
+TOUT le back-office - sans figurer dans `StaffRoles`, donc ni dans l'onglet Rôles
+ni dans la matrice d'accès. Un rôle à tous les pouvoirs que les écrans de
+surveillance ne montraient pas. Retiré du seeder ; migration
+`drop_legacy_editor_role` pour les bases existantes, qui ne supprime **que** s'il
+n'est attribué à personne.
+
+⚠️ **Un piège Blade attrapé en chemin, deux fois.** `admin/users/index.blade.php`
+emploie la forme EN LIGNE de la directive PHP (ligne 73). Y ouvrir un bloc PHP
+casse la compilation du fichier entier : Blade apparie la première ouverture à la
+première fermeture et avale tout ce qui les sépare. Le calcul est donc passé dans
+le contrôleur (`roleUsageLines`). **Et le commentaire qui expliquait ce piège l'a
+reproduit** : il nommait les directives en toutes lettres, or Blade les compile
+AVANT de retirer les commentaires. La note a cassé le fichier qu'elle décrivait.
+
+Garde : `OngletRolesTest` (6 cas), quatre sabotages vérifiés - compteur global
+remis, pastille reprenant la couleur de la fonction, `editor` recréé, rôle global
+affiché même à zéro.
+
+⚠️ **Trois cas tombés, venus d'ailleurs** (commits arrivés au rebase précédent) :
+`b4529ad6` a renommé « Soumissions » en « Communications » dans l'espace
+participant (`LocaleTest` attendait « Submissions », c'est « Papers ») ;
+`bd79df10` a **délibérément rendu le menu participant générique** - « Page de
+l'événement » quel que soit le type - alors que `13fee7de` venait d'introduire
+l'accord au type, qui reste juste pour le SITE PUBLIC ; `8be7ccf4` a remplacé le
+monogramme compact de la carte « À propos » par le logo large. Les trois cas ont
+été alignés sur ces décisions, pas l'inverse. ⚠️ `bd79df10` annonçait « Corrige
+MenuParticipantTest » mais n'a touché que le gabarit.
+
+1220 tests / 4343 assertions, Pint et PHPStan niveau 5 sans erreur.

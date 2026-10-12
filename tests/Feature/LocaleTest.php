@@ -29,7 +29,9 @@ it('rend l’interface participant en anglais selon la préférence du compte', 
         ->get(route('account.dashboard'))
         ->assertOk()
         ->assertSee('My account')   // « Mon compte » traduit (entrée de menu)
-        ->assertSee('Submissions')  // « Soumissions » traduit
+        // ⚠️ L'entrée du menu s'appelle « Communications » depuis `b4529ad6`
+        // (et non plus « Soumissions ») : sa traduction est « Papers ».
+        ->assertSee('Papers')
         ->assertDontSee('Mon compte');
 });
 

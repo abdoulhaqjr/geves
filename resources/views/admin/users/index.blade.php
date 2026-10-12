@@ -142,12 +142,26 @@
         <div x-show="tab==='roles'" x-cloak>
             <div class="ukc-card">
                 <h2>Rôles {{ config('app.name') }}</h2>
-                <div class="desc">Rôles métier du module, avec leurs permissions dans le back-office.</div>
+                <div class="desc">
+                    Rôles métier du module, avec leurs permissions dans le back-office.
+                    Une fonction se confie <strong>par événement</strong> ; un rôle global, lui,
+                    vaut sur toute la plateforme.
+                </div>
+                {{-- ⚠️ La ligne de compteurs est assemblée par le CONTRÔLEUR
+                     (`UserController::roleUsageLines`). Un bloc PHP ouvert ici
+                     casserait la compilation : Blade apparie l'ouverture du
+                     PREMIER bloc à la PREMIÈRE fermeture, et ce gabarit emploie
+                     déjà la forme en ligne plus haut (ligne 73) - tout ce qui
+                     les sépare serait avalé comme du PHP brut.
+                     ⚠️ Et ne pas écrire ces directives en toutes lettres, même
+                     dans un commentaire : Blade les compile AVANT de retirer les
+                     commentaires. C'est ainsi que la première version de cette
+                     note a cassé le fichier qu'elle décrivait. --}}
                 @foreach ($roles as $name => $meta)
                     <div class="role-card">
-                        <h3>{{ $meta['label'] }} <span class="ukc-pill ukc-pill--{{ $meta['category'] === 'Système' ? 'ok' : $meta['pill'] }}">{{ $meta['category'] }}</span></h3>
+                        <h3>{{ $meta['label'] }} <span class="ukc-pill ukc-pill--{{ \App\Support\StaffRoles::categoryPill($name) }}">{{ $meta['category'] }}</span></h3>
                         <p>{{ $meta['description'] }}</p>
-                        <div class="meta">{{ $countsByRole[$name] ?? 0 }} utilisateur(s) - {{ count(array_intersect($rolePermissions[$name] ?? [], array_keys($permissions))) }} permission(s)</div>
+                        <div class="meta">{{ $roleUsage[$name] ?? '' }}</div>
                     </div>
                 @endforeach
             </div>
@@ -181,7 +195,7 @@
                             @endforeach
                         </div>
                     </div>
-                    <p class="ukc-hint" style="margin-top:12px;font-size:12px;color:var(--ukc-light);">La porte d’entrée du back-office reste la capacité <code>manage_colloques</code> (rôles « Système ») - préservée automatiquement.</p>
+                    <p class="ukc-hint" style="margin-top:12px;font-size:12px;color:var(--ukc-light);">La porte d’entrée du back-office reste la capacité <code>manage_colloques</code>, portée par le seul rôle <strong>Administrateur colloque</strong> - hors matrice, préservée automatiquement.</p>
                     <div class="ukc-form-actions" style="margin-top:14px;">
                         <button type="submit" class="ukc-btn ukc-btn--blue">
                             <x-ukc.icon name="check" :size="16" /> Enregistrer la matrice

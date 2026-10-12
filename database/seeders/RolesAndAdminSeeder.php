@@ -42,8 +42,13 @@ class RolesAndAdminSeeder extends Seeder
             }
         }
 
-        // Rôle legacy conservé (compat, accès complet).
-        Role::firstOrCreate(['name' => 'editor', 'guard_name' => 'web'])->givePermissionTo($manage);
+        // ⚠️ Le rôle legacy `editor` N'EST PLUS CRÉÉ. Il portait `manage_colloques`,
+        // donc l'accès complet au back-office par court-circuit de `Gate::before`,
+        // alors qu'il n'apparaissait NI dans `StaffRoles::ROLES` (donc ni dans
+        // l'onglet Rôles, ni dans la matrice d'accès). Un rôle à tous les pouvoirs
+        // que personne ne voyait : rien ne l'employait, tout l'exposait.
+        // La migration `2026_10_12_000100_drop_legacy_editor_role` le retire des
+        // bases existantes, et seulement s'il n'est attribué à personne.
 
         // ⚠️ Ce seeder tourne AUSSI en production : c'est lui qui installe les
         // rôles et le super-administrateur. Il posait le mot de passe
