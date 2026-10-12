@@ -26,6 +26,11 @@ Stack : PHP 8.4, Blade + **Livewire 4** + Alpine 3, Tailwind v4 + design system 
 (`resources/css/ukc.css`), Vite 8, SQLite en dev, **Pest** pour les tests, PHPStan/
 Larastan **niveau 5**.
 
+### Protection des formulaires publics
+
+- L'inscription participant (`/inscription`) et le formulaire de contact de l'accueil utilisent Cloudflare Turnstile. Renseigner les deux clés dans **Réglages → Sécurité** (secret chiffré en base) ou dans `CLOUDFLARE_TURNSTILE_SITE_KEY` et `CLOUDFLARE_TURNSTILE_SECRET_KEY`, avec les domaines autorisés dans Cloudflare. Sans les deux clés, les boutons d'envoi restent désactivés ; le serveur refuse aussi les requêtes directes.
+- `<x-turnstile action="registration|contact" />` affiche le widget. `App\Support\Turnstile::validate()` appelle Siteverify côté serveur avant la création du compte ou l'envoi de l'e-mail, puis contrôle le succès, l'action et le domaine. Garder la clé secrète uniquement côté serveur ; ne pas contourner ce contrôle pour les POST directs. Le contact conserve aussi son honeypot et sa limite par IP.
+
 ### Colloque Eau au Togo - import réel
 
 - `database/seeders/ColloqueEauTogoSeeder.php` est un import **manuel et autonome** : 44 réponses Google Forms, 47 résumés et les 47 Word intégrés au même fichier. Lancer `php artisan db:seed --class=ColloqueEauTogoSeeder` seulement sur la base voulue ; ne pas l'ajouter à `DatabaseSeeder` (données personnelles réelles).

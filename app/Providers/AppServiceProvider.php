@@ -8,11 +8,13 @@ use App\Support\Settings;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
@@ -214,6 +216,21 @@ class AppServiceProvider extends ServiceProvider
         foreach (['secret', 'mode', 'webhook_secret'] as $k) {
             if (filled($set("fedapay.$k"))) {
                 Config::set("services.fedapay.$k", $set("fedapay.$k"));
+            }
+        }
+
+        // Turnstile : la clé publique est éditable ; le secret est chiffré en
+        // base et n'est jamais renvoyé au formulaire de réglages.
+        if (array_key_exists('turnstile.site_key', $s)) {
+            Config::set('services.turnstile.site_key', $set('turnstile.site_key') ?: null);
+        }
+        if (array_key_exists('turnstile.secret_key', $s)) {
+            try {
+                Config::set('services.turnstile.secret_key', filled($set('turnstile.secret_key'))
+                    ? Crypt::decryptString((string) $set('turnstile.secret_key'))
+                    : null);
+            } catch (DecryptException) {
+                Config::set('services.turnstile.secret_key', null);
             }
         }
 

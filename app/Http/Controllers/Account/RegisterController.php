@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Support\Civilities;
 use App\Support\ParticipantTypes;
 use App\Support\Phone;
+use App\Support\Turnstile;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -43,6 +44,8 @@ class RegisterController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        Turnstile::validate($request, 'registration');
+
         $request->merge(['phone' => Phone::normalize($request->input('phone'))]);
 
         $data = $request->validate([

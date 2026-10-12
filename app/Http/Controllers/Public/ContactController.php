@@ -7,11 +7,13 @@ use App\Mail\ContactMessageMail;
 use App\Models\Email;
 use App\Models\Event;
 use App\Support\Notifier;
+use App\Support\Turnstile;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Formulaire de contact public d'un événement (Blade + POST classique, sans
@@ -43,6 +45,12 @@ class ContactController extends Controller
         if (RateLimiter::tooManyAttempts($key, 5)) {
             return back()->withInput()
                 ->withErrors(['message' => 'Trop de messages envoyés. Réessayez plus tard.']);
+        }
+        try {
+            Turnstile::validate($request, 'contact');
+        } catch (ValidationException $exception) {
+            return back()->withFragment('contact')->withInput($request->except('cf-turnstile-response'))
+                ->withErrors($exception->errors());
         }
         RateLimiter::hit($key, 3600);
 

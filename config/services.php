@@ -35,6 +35,11 @@ return [
         ],
     ],
 
+    'turnstile' => [
+        'site_key' => env('CLOUDFLARE_TURNSTILE_SITE_KEY'),
+        'secret_key' => env('CLOUDFLARE_TURNSTILE_SECRET_KEY'),
+    ],
+
     // Passerelles de paiement (identifiants marchands ; vides = passerelle inactive).
 
     // CashPay (SEMOA) - OAuth 2.0 + facture hébergée (bill_url) + callback JWT HS256.

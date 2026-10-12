@@ -13,6 +13,10 @@ Ce fichier résume **l'état du projet**, la **mise en route**, l'**architecture
 
 ## 1. Vue d'ensemble
 
+### Sécurité des formulaires publics (2026-10-12)
+
+L'inscription participant et le contact de la page d'accueil utilisent Cloudflare Turnstile. Configurer la clé du site et la clé secrète dans **Réglages → Sécurité** (secret chiffré en base et non réaffiché), ou via `CLOUDFLARE_TURNSTILE_SITE_KEY` et `CLOUDFLARE_TURNSTILE_SECRET_KEY`, puis enregistrer les domaines du site dans le widget Cloudflare. Le composant Blade `x-turnstile` affiche le défi et `App\Support\Turnstile` vérifie le jeton avec Siteverify côté serveur (succès, action, hostname) avant toute création de compte ou tout e-mail. Sans configuration complète, l'envoi est désactivé dans les vues et rejeté sur les endpoints. Le contact garde son honeypot et sa limitation par IP.
+
 **GEVES** (Gestion des ÉVénements Scientifiques - Direction de la Recherche et de l'Innovation, **Université de Kara**) est le portage **Laravel** d'une extension WordPress existante (`uk-colloques`). La plateforme gère de bout en bout non seulement des **colloques** mais tout **événement scientifique** (journées scientifiques, séminaires…) : séries → éditions datées → soumissions de résumés → relecture en aveugle → paiements → créneaux/ateliers → livret/badges/attestations → e-mails → rapports → comptes participants. Assistance **IA** intégrée (chatbot public « Gesco » + copilote back-office à actions exécutables).
 
 - **But** : plateforme professionnelle, autonome (sans WordPress).

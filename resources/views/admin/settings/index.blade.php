@@ -341,6 +341,38 @@
                 </div>
             </div>
 
+            {{-- Sécurité des formulaires publics --}}
+            <div class="ukc-panel" :class="{ active: tab==='security' }">
+                <div class="ukc-card">
+                    <h2><span><x-ukc.icon name="shield" :size="20" /> Sécurité</span></h2>
+                    <p class="desc">Cloudflare Turnstile protège l’inscription des participants et le formulaire de contact public. Créez un widget Turnstile pour les domaines de la plateforme, puis renseignez ses deux clés.</p>
+                    <p class="ukc-pill {{ \App\Support\Turnstile::configured() ? 'ukc-pill--open' : 'ukc-pill--muted' }}" style="margin-bottom:16px;">
+                        {{ \App\Support\Turnstile::configured() ? 'Clés configurées' : 'Clés à renseigner : formulaires temporairement indisponibles' }}
+                    </p>
+                    <div class="ukc-form-grid">
+                        <div class="ukc-field">
+                            <label for="turnstile_site_key">Clé du site <span class="req">*</span></label>
+                            <input type="text" id="turnstile_site_key" name="turnstile_site_key" value="{{ $v('turnstile_site_key') }}" autocomplete="off" placeholder="Clé publique Turnstile">
+                            <span class="hint">Cette clé est affichée dans le navigateur pour charger le défi.</span>
+                            @error('turnstile_site_key') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-field">
+                            <label for="turnstile_secret_key">Clé secrète <span class="req">*</span></label>
+                            <input type="password" id="turnstile_secret_key" name="turnstile_secret_key" value="" autocomplete="new-password" placeholder="{{ filled(config('services.turnstile.secret_key')) ? 'Clé enregistrée — laisser vide pour conserver' : 'Clé secrète Turnstile' }}">
+                            <span class="hint">Enregistrée chiffrée ; jamais réaffichée. Laissez vide pour conserver la clé actuelle.</span>
+                            @error('turnstile_secret_key') <span class="error">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="ukc-field full">
+                            <label style="display:flex;align-items:center;gap:8px;font-weight:500;">
+                                <input type="checkbox" name="turnstile_secret_key_remove" value="1" style="width:auto;">
+                                Supprimer la clé secrète enregistrée
+                            </label>
+                            <span class="hint">Après suppression, les deux formulaires seront bloqués jusqu’à la saisie d’une nouvelle clé.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {{-- Intelligence artificielle --}}
             <div class="ukc-panel" :class="{ active: tab==='ai' }">
                 <div class="ukc-card">

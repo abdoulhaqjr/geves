@@ -121,7 +121,8 @@
         </div>
 
         <div class="ukc-field full">
-            <button type="submit" class="ukc-btn ukc-btn--blue" style="width:100%;">{{ __('Créer mon compte') }}</button>
+            <x-turnstile action="registration" style="margin-bottom:16px;" />
+            <button type="submit" class="ukc-btn ukc-btn--blue" style="width:100%;" @disabled(! \App\Support\Turnstile::configured())>{{ __('Créer mon compte') }}</button>
         </div>
     </form>
 

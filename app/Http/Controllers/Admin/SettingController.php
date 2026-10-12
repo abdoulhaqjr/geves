@@ -13,6 +13,7 @@ use App\Support\SiteBanners;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -39,6 +40,7 @@ class SettingController extends Controller
         'banners' => 'Bannières',
         'payments' => 'Paiements',
         'email' => 'E-mail',
+        'security' => 'Sécurité',
         'ai' => 'Intelligence artificielle',
         'agents-ia' => 'Agents IA',
         'meetings' => 'Visio',
@@ -46,7 +48,7 @@ class SettingController extends Controller
     ];
 
     /** @var list<string> */
-    public const TABS = ['general', 'banners', 'payments', 'email', 'ai', 'agents-ia', 'meetings', 'integrations'];
+    public const TABS = ['general', 'banners', 'payments', 'email', 'security', 'ai', 'agents-ia', 'meetings', 'integrations'];
 
     /** Correspondance champ de formulaire → clé de réglage. */
     private const MAP = [
@@ -71,6 +73,7 @@ class SettingController extends Controller
         'fedapay_secret' => 'fedapay.secret',
         'fedapay_mode' => 'fedapay.mode',
         'fedapay_webhook_secret' => 'fedapay.webhook_secret',
+        'turnstile_site_key' => 'turnstile.site_key',
         'ai_default' => 'ai.default',
         'ai_openai_key' => 'ai.openai_key',
         'ai_openai_model' => 'ai.openai_model',
@@ -134,6 +137,7 @@ class SettingController extends Controller
             'fedapay_secret' => $g('fedapay.secret'),
             'fedapay_mode' => $g('fedapay.mode', 'test'),
             'fedapay_webhook_secret' => $g('fedapay.webhook_secret'),
+            'turnstile_site_key' => $g('turnstile.site_key', (string) config('services.turnstile.site_key')),
             'ai_default' => $g('ai.default', (string) config('services.ai.default', 'claude')),
             'ai_openai_key' => $g('ai.openai_key'),
             'ai_openai_model' => $g('ai.openai_model', (string) config('services.openai.model')),
@@ -195,6 +199,8 @@ class SettingController extends Controller
             'sms_http_url' => ['nullable', 'url'],
             'plagiarism_provider' => ['nullable', 'in:none,prepostseo'],
             'orcid_environment' => ['nullable', 'in:sandbox,production'],
+            'turnstile_site_key' => ['nullable', 'string', 'max:255'],
+            'turnstile_secret_key' => ['nullable', 'string', 'max:255'],
             // Deux formes (large, compacte), chacune avec sa version pour fonds
             // sombres - facultative : à défaut, le logo clair est blanchi en CSS.
             'app_logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:1024'],
@@ -215,7 +221,8 @@ class SettingController extends Controller
         if ($validator->fails()) {
             $tab = $this->tabForField((string) array_key_first($validator->errors()->toArray()));
 
-            return back()->withInput()->withErrors($validator)->with('settings_tab', $tab);
+            return back()->withInput($request->except('turnstile_secret_key'))
+                ->withErrors($validator)->with('settings_tab', $tab);
         }
 
         $payload = [];
@@ -233,6 +240,11 @@ class SettingController extends Controller
         }
 
         Settings::setMany($payload);
+        if ($request->boolean('turnstile_secret_key_remove')) {
+            Settings::set('turnstile.secret_key', '');
+        } elseif ($request->filled('turnstile_secret_key')) {
+            Settings::set('turnstile.secret_key', Crypt::encryptString(trim((string) $request->input('turnstile_secret_key'))));
+        }
         $this->saveLogos($request);
         $toucheBanniere = $this->saveBanners($request);
 
@@ -370,6 +382,7 @@ class SettingController extends Controller
             str_starts_with($field, 'hero_') => 'banners',
             str_starts_with($field, 'payments_'), str_starts_with($field, 'cashpay_'), str_starts_with($field, 'fedapay_') => 'payments',
             str_starts_with($field, 'mail_'), $field === 'test_email' => 'email',
+            str_starts_with($field, 'turnstile_') => 'security',
             str_starts_with($field, 'ai_') => 'ai',
             str_starts_with($field, 'meeting_'), str_starts_with($field, 'livekit_') => 'meetings',
             $field === 'hal_enabled', str_starts_with($field, 'sms_'), str_starts_with($field, 'plagiarism_'), str_starts_with($field, 'orcid_') => 'integrations',

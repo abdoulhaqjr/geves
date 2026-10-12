@@ -422,8 +422,9 @@
                                 <div style="position:absolute;left:-9999px;" aria-hidden="true">
                                     <label>{{ __('Ne pas remplir') }} <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
                                 </div>
+                                <x-turnstile action="contact" />
                                 <div>
-                                    <button type="submit" class="ukc-btn ukc-btn--blue">
+                                    <button type="submit" class="ukc-btn ukc-btn--blue" @disabled(! \App\Support\Turnstile::configured())>
                                         <x-ukc.icon name="mail" :size="18" /> {{ __('Envoyer le message') }}
                                     </button>
                                 </div>
