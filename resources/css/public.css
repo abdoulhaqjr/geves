@@ -678,7 +678,7 @@ input[data-uppercase] { text-transform: uppercase; }
 .site-footer a { display: block; padding: 4px 0; color: #e0e8ff; }
 .site-footer a:hover { color: #fff; }
 .site-footer .brand-foot { color: #fff; font-weight: 900; font-size: 1.05rem; margin-bottom: 8px; }
-.site-footer .footer-logo { height: 40px; width: auto; display: block; margin-bottom: 12px; }
+.site-footer .footer-logo { height: 48px; width: auto; display: block; margin-bottom: 12px; }
 .footer-bottom { border-top: 1px solid rgba(255, 255, 255, .1); padding-top: 18px; display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; font-size: 13px; }
 
 /* =========================================================================

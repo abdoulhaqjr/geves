@@ -21,8 +21,6 @@
                     <a href="{{ route('home') }}#a-venir">{{ __('À venir') }}</a>
                 @endif
                 <a href="{{ route('public.archives') }}">{{ __('Événements passés') }}</a>
-                <a href="{{ route('home') }}#apropos">{{ __('À propos') }}</a>
-                <a href="{{ route('home') }}#contact">{{ __('Contact') }}</a>
             </div>
             <div>
                 <h4>{{ __('Liens utiles') }}</h4>
