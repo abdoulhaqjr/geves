@@ -2273,6 +2273,25 @@ deux raisons distinctes.
    (« Save », « Layers », « Add heading », « Paper Size ») et de français sans
    accents, alors que tout le back-office est en français. Libellés, infobulles
    et messages uniformisés.
+7. **La barre d'outils SE SYNCHRONISE sur l'élément sélectionné** (`selectEl` →
+   `syncTextControls`, **les deux concepteurs** `template-designer.js` /
+   `badge-designer.js`) : police, graisse, couleur, gras/italique/souligné et
+   alignement reflètent l'élément qu'on vient de choisir - avant, le champ police
+   gardait la valeur du précédent. ⚠️ La police s'apparie **par clé** (`fontKey`,
+   et `fontKeyB` côté badge), jamais par chaîne CSS brute : le navigateur normalise
+   guillemets et espaces, une égalité stricte échouerait.
+8. **Garde « modifications non enregistrées ».** Toute modification passe par
+   `pushHistory()` (qui pose `dirty = true`) ; les réglages de barre d'outils qui ne
+   créent pas d'entrée d'historique (couleur/opacité en continu) posent `markDirty()`.
+   ⚠️ L'enregistrement réussi **et** la fin de l'hydratation initiale remettent
+   `dirty = false` (la construction du canevas marque sinon le document « modifié »).
+   Quitter avec des modifications : le bouton **« ← Documents »** ouvre un **modal
+   maison** (Annuler / Quitter sans enregistrer / Enregistrer et quitter) ; un
+   **rechargement / fermeture d'onglet / retour navigateur** déclenche l'avertissement
+   **natif** `beforeunload` (seul moyen pour ces cas - un navigateur n'autorise pas de
+   modal maison là). ⚠️ En **mode aperçu verrouillé** (`cfg.preview`), la garde est
+   désactivée : rien n'y est modifiable. Le `onclick` inline du bouton retour est
+   remplacé en JS (`backBtn.onclick = null` puis `addEventListener`).
 
 ### `/attestation/{uuid}` = la page que le bénéficiaire partage
 

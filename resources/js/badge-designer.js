@@ -10,6 +10,9 @@
   var history = [];
   var historyIndex = -1;
   var historyLock = false;
+  // Modifications non enregistrées : prévenir avant de quitter (cf. template-designer.js).
+  var dirty = false;
+  function markDirty() { dirty = true; }
   var SNAP = 6;
   var zoomLevel = 1;
   var DEFAULT_QR_URL = 'https://univkara.tg/colloque/badge';
@@ -147,6 +150,7 @@
   }
   function pushHistory() {
     if (historyLock) return;
+    dirty = true;
     history = history.slice(0, historyIndex + 1);
     history.push(snapshot());
     if (history.length > 50) history.shift(); else historyIndex++;
@@ -312,6 +316,7 @@
       document.getElementById('lyOpacityVal').textContent = op + '%';
       document.getElementById('lyBlend').value = el.dataset.blend || 'normal';
       document.getElementById('fontSize').value = parseInt(window.getComputedStyle(el).fontSize, 10) || 13;
+      syncTextControls(el, window.getComputedStyle(el));
       refreshLayers();
       updateFloatBar();
     } else {
@@ -320,6 +325,43 @@
       hideFloatBar();
     }
     updateLayerToolbar();
+  }
+
+  // Police du navigateur -> clé de liste blanche (même grammaire que template-designer).
+  function fontKeyB(family) {
+    var f = (family || '').toLowerCase();
+    if (f.indexOf('playfair') > -1) return 'playfair';
+    if (f.indexOf('georgia') > -1) return 'georgia';
+    if (f.indexOf('lato') > -1) return 'lato';
+    if (f.indexOf('arial') > -1 || f.indexOf('helvetica') > -1) return 'arial';
+    return 'jost';
+  }
+  /* Synchronise la barre d'outils sur l'élément sélectionné (police, graisse,
+     couleur, alignement) : le champ police reflète ce qu'on vient de choisir. */
+  function syncTextControls(el, cs) {
+    var famSel = document.getElementById('fontFamily');
+    if (famSel) {
+      var wantKey = fontKeyB(cs.fontFamily);
+      Array.prototype.forEach.call(famSel.options, function (opt) { opt.selected = fontKeyB(opt.value) === wantKey; });
+    }
+    var wSel = document.getElementById('fontWeight');
+    if (wSel) {
+      var w = cs.fontWeight; if (w === 'normal') w = '400'; if (w === 'bold') w = '700';
+      var wn = parseInt(w, 10) || 400;
+      var opts = [400, 500, 600, 700, 800];
+      wSel.value = String(opts.reduce(function (a, b) { return Math.abs(b - wn) < Math.abs(a - wn) ? b : a; }));
+    }
+    var colorInp = document.getElementById('fontColor');
+    if (colorInp) { var hex = rgbToHex(cs.color); if (hex) colorInp.value = hex; }
+    var align = cs.textAlign; if (align === 'start') align = 'left'; if (align === 'end') align = 'right';
+    document.querySelectorAll('[data-align]').forEach(function (b) { b.classList.toggle('active', b.dataset.align === align); });
+    var weightOn = cs.fontWeight === '700' || cs.fontWeight === '800' || cs.fontWeight === 'bold';
+    var italicOn = cs.fontStyle === 'italic';
+    var underlineOn = (cs.textDecorationLine || cs.textDecoration || '').indexOf('underline') > -1;
+    document.querySelectorAll('[data-style]').forEach(function (b) {
+      var s = b.dataset.style;
+      b.classList.toggle('active', (s === 'bold' && weightOn) || (s === 'italic' && italicOn) || (s === 'underline' && underlineOn));
+    });
   }
 
   function hideFloatBar() {
@@ -688,11 +730,16 @@
     if (!selected) return;
     selected.style.opacity = String(this.value / 100);
     document.getElementById('lyOpacityVal').textContent = this.value + '%';
+    markDirty();
+  });
+  document.getElementById('lyOpacity').addEventListener('change', function () {
+    if (selected) pushHistory();
   });
   document.getElementById('lyBlend').addEventListener('change', function () {
     if (!selected) return;
     selected.dataset.blend = this.value;
     selected.style.mixBlendMode = this.value;
+    pushHistory();
   });
 
   document.getElementById('btnUndo').addEventListener('click', undo);
@@ -702,7 +749,7 @@
   document.getElementById('zoomReset').addEventListener('click', function () { zoomLevel = 1; applyZoom(); });
 
   document.getElementById('fontSize').addEventListener('change', function () {
-    if (selected && !isLocked(selected)) selected.style.fontSize = this.value + 'px';
+    if (selected && !isLocked(selected)) { selected.style.fontSize = this.value + 'px'; pushHistory(); }
   });
   document.getElementById('fontSizeMinus').addEventListener('click', function () {
     var i = document.getElementById('fontSize'); i.value = Math.max(8, parseInt(i.value, 10) - 1); i.dispatchEvent(new Event('change'));
@@ -711,14 +758,17 @@
     var i = document.getElementById('fontSize'); i.value = Math.min(48, parseInt(i.value, 10) + 1); i.dispatchEvent(new Event('change'));
   });
   document.getElementById('fontFamily').addEventListener('change', function () {
-    if (selected && !isLocked(selected)) selected.style.fontFamily = this.value;
+    if (selected && !isLocked(selected)) { selected.style.fontFamily = this.value; pushHistory(); }
   });
   var fw = document.getElementById('fontWeight');
   if (fw) fw.addEventListener('change', function () {
-    if (selected && !isLocked(selected)) selected.style.fontWeight = this.value;
+    if (selected && !isLocked(selected)) { selected.style.fontWeight = this.value; pushHistory(); }
   });
   document.getElementById('fontColor').addEventListener('input', function () {
-    if (selected && !isLocked(selected)) selected.style.color = this.value;
+    if (selected && !isLocked(selected)) { selected.style.color = this.value; markDirty(); }
+  });
+  document.getElementById('fontColor').addEventListener('change', function () {
+    if (selected && !isLocked(selected)) pushHistory();
   });
   document.querySelectorAll('[data-style]').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -726,11 +776,17 @@
       if (btn.dataset.style === 'bold') selected.style.fontWeight = selected.style.fontWeight === '800' || selected.style.fontWeight === '700' ? '400' : '700';
       if (btn.dataset.style === 'italic') selected.style.fontStyle = selected.style.fontStyle === 'italic' ? 'normal' : 'italic';
       if (btn.dataset.style === 'underline') selected.style.textDecoration = selected.style.textDecoration === 'underline' ? 'none' : 'underline';
+      syncTextControls(selected, window.getComputedStyle(selected));
+      pushHistory();
     });
   });
   document.querySelectorAll('[data-align]').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      if (selected && !isLocked(selected)) selected.style.textAlign = btn.dataset.align;
+      if (!selected || isLocked(selected)) return;
+      selected.style.textAlign = btn.dataset.align;
+      document.querySelectorAll('[data-align]').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      pushHistory();
     });
   });
   document.getElementById('btnDelete').addEventListener('click', deleteSelected);
@@ -776,9 +832,9 @@
     }).filter(function (e) { return e && !(e.type === 'text' && !e.text); });
     return { width: W, height: H, bg: '#ffffff', accent: '#223ea4', elements: elements };
   }
-  document.getElementById('btnSave').addEventListener('click', function () {
+  function performSave(onSuccess) {
     var cfg = window.UKC_EDITOR || {};
-    var btn = this;
+    var btn = document.getElementById('btnSave');
     if (!cfg.saveUrl) { toast('Enregistrement indisponible'); return; }
     btn.disabled = true;
     var original = btn.textContent;
@@ -789,12 +845,72 @@
       body: JSON.stringify({ event_id: cfg.editionId || '', kind: cfg.kind || 'badge', type: cfg.type || 'default', title: (document.getElementById('tplName') || {}).value || '', layout: serializeLayout(), editor_state: snapshot() })
     }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
       .then(function (res) {
-        if (res.ok && res.j && res.j.ok) toast('Badge « ' + document.getElementById('tplName').value + ' » enregistré');
-        else toast((res.j && res.j.error) ? res.j.error : 'Échec de l’enregistrement');
+        if (res.ok && res.j && res.j.ok) {
+          dirty = false;
+          toast('Badge « ' + document.getElementById('tplName').value + ' » enregistré');
+          if (typeof onSuccess === 'function') onSuccess();
+        } else toast((res.j && res.j.error) ? res.j.error : 'Échec de l’enregistrement');
       })
       .catch(function () { toast('Erreur réseau lors de l’enregistrement'); })
       .finally(function () { btn.disabled = false; btn.textContent = original; });
-  });
+  }
+  document.getElementById('btnSave').addEventListener('click', function () { performSave(); });
+
+  /* ---------- Garde « modifications non enregistrées » (cf. template-designer.js) ---------- */
+  (function () {
+    var cfg = window.UKC_EDITOR || {};
+    if (cfg.preview) return;
+    var nameInp = document.getElementById('tplName');
+    if (nameInp) nameInp.addEventListener('input', markDirty);
+    window.addEventListener('beforeunload', function (e) {
+      if (!dirty) return;
+      e.preventDefault(); e.returnValue = ''; return '';
+    });
+    function go() { location.href = cfg.backUrl || '/admin/documents'; }
+    function confirmLeave() {
+      if (document.getElementById('ukcLeaveModal')) return;
+      var ov = document.createElement('div');
+      ov.id = 'ukcLeaveModal';
+      ov.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(15,23,42,.6);display:flex;align-items:center;justify-content:center;padding:24px;';
+      var box = document.createElement('div');
+      box.style.cssText = 'background:#fff;border-radius:14px;max-width:440px;width:100%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.3);font-family:Jost,system-ui,sans-serif;';
+      var h = document.createElement('h3');
+      h.textContent = 'Modifications non enregistrées';
+      h.style.cssText = 'margin:0 0 8px;font-size:18px;font-weight:800;color:#1a2332;';
+      var p = document.createElement('p');
+      p.textContent = 'Vous avez des modifications non enregistrées. Voulez-vous quitter sans enregistrer ?';
+      p.style.cssText = 'margin:0 0 20px;font-size:14px;color:#475569;line-height:1.5;';
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;';
+      function mkBtn(label, kind) {
+        var b = document.createElement('button'); b.type = 'button'; b.textContent = label;
+        var base = 'border:none;border-radius:9px;padding:10px 16px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;';
+        if (kind === 'primary') b.style.cssText = base + 'background:#223ea4;color:#fff;';
+        else if (kind === 'danger') b.style.cssText = base + 'background:#fee2e2;color:#b91c1c;';
+        else b.style.cssText = base + 'background:#e2e8f0;color:#334155;';
+        return b;
+      }
+      function close() { ov.remove(); }
+      var bCancel = mkBtn('Annuler', 'ghost');
+      var bLeave = mkBtn('Quitter sans enregistrer', 'danger');
+      var bSave = mkBtn('Enregistrer et quitter', 'primary');
+      bCancel.addEventListener('click', close);
+      bLeave.addEventListener('click', function () { dirty = false; go(); });
+      bSave.addEventListener('click', function () { performSave(function () { go(); }); });
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+      document.addEventListener('keydown', function esc(e) {
+        if (e.key === 'Escape' && document.getElementById('ukcLeaveModal')) { close(); document.removeEventListener('keydown', esc); }
+      });
+      row.appendChild(bCancel); row.appendChild(bLeave); row.appendChild(bSave);
+      box.appendChild(h); box.appendChild(p); box.appendChild(row);
+      ov.appendChild(box); document.body.appendChild(ov);
+    }
+    var backBtn = document.querySelector('.ed-top .back');
+    if (backBtn) {
+      backBtn.onclick = null;
+      backBtn.addEventListener('click', function () { if (dirty) confirmLeave(); else go(); });
+    }
+  })();
   function fillBadgeTokens(root) {
     var vars = (window.UKC_EDITOR || {}).vars || {};
     var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -1041,6 +1157,9 @@
       } catch (e) { /* conserve le badge par défaut si l'instantané est invalide */ }
     }
   })();
+
+  // La construction initiale a marqué le document « modifié » : on repart propre.
+  dirty = false;
 
   /* ---------- Mode APERÇU verrouillé : ouvre l'aperçu exact du badge ---------- */
   (function () {
