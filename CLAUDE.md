@@ -3105,12 +3105,18 @@ ajoutée par la vue, elle ne se saisit pas.
     `template-designer.js`, aussi chargé à l'ouverture d'un type sans `editor_state`) décrivent
     la **MÊME maquette** : toucher à l'un, c'est toucher à l'autre. Garde :
     `AttestationCommunicationTemplateTest`.
-  - **Cadre + logos = image de fond, texte = éléments éditables.** Le cadre décoratif (motifs
-    kente, hélice ADN) et les **deux logos** (UK + Parakou) sont **cuits** dans
+  - **Cadre = image de fond ; logos et texte = éléments éditables.** Le cadre décoratif
+    (motifs kente, hélice ADN) **seul** est cuit dans
     `public/img/attestations/attestation-communication-bg.png` (`bg_image`), reconstruit depuis
-    le PDF officiel (`Modele AT/Communication.pdf`) en effaçant le texte d'exemple. Seul le
-    texte est en éléments (jetons), donc entièrement éditable. Pour un autre modèle au cadre
-    fourni, même recette : cadre+logos en image de fond, texte par-dessus.
+    le PDF officiel (`Modele AT/Communication.pdf`) en **effaçant le texte ET les deux logos**.
+    Les **logos sont des éléments image** : l'**UK suit le logo large des Réglages**
+    (`Branding::wide()`, chemin relatif via `parse_url(..., PHP_URL_PATH)` → indépendant du
+    domaine), **Parakou** est l'asset livré `public/img/attestations/logo-parakou.png`. Le
+    texte est en éléments (jetons). Tout est donc éditable, et l'UK se met à jour avec le logo
+    de l'établissement. Les URL des logos sont passées au concepteur via `UKC_EDITOR.logos`
+    (les vignettes « UK - Univ. Kara » / « Univ. Parakou » insèrent ces vraies images, plus de
+    placeholder texte). ⚠️ En production, `php artisan storage:link` pour qu'un logo UK
+    **téléversé** (`/storage/...`) sorte aussi dans le PDF.
   - **Polices du modèle** : titre en **Georgia** (`georgia` → dompdf **Times**), corps en
     **Arial** (`arial` → dompdf **Helvetica**) - deux familles **natives du PDF**, donc rendu
     identique écran/PDF **sans police à héberger** (contrairement à Jost/Playfair, cf.

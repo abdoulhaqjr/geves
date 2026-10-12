@@ -366,6 +366,9 @@
 
     if (cfg.type === 'logo') {
       el.classList.add('logo');
+      // Hauteur explicite : une image en height:100% a besoin d'une boîte dimensionnée
+      // (sinon elle s'effondre), et la sérialisation lit cette hauteur.
+      if (cfg.h) el.style.height = cfg.h + 'px';
       el.innerHTML = cfg.html || 'LOGO';
     } else if (cfg.type === 'qr') {
       el.classList.add('qr');
@@ -1245,11 +1248,17 @@
   });
   document.querySelectorAll('#uploadList .ed-thumb').forEach(function (th) {
     th.addEventListener('click', function () {
-      var label = th.dataset.logo === 'up' ? 'Logo UP' : 'Logo UK';
-      var html = th.dataset.logo === 'up'
-        ? 'UNIVERSITÉ DE PARAKOU'
-        : '<div class="mark">UK</div> UNIVERSITÉ DE KARA';
-      selectEl(createEl({ type: 'logo', label: label, x: 80, y: 80, w: 160, html: html }));
+      // Vraies images : UK = logo large des Réglages, Parakou = asset livré (plus de
+      // placeholder texte, qui ne survivait pas au rendu).
+      var logos = (window.UKC_EDITOR || {}).logos || {};
+      var up = th.dataset.logo === 'up';
+      var src = up ? (logos.parakou || '/img/attestations/logo-parakou.png') : (logos.uk || '/img/logo-uk.png');
+      var el = createEl({
+        type: 'logo', label: up ? 'Logo Parakou' : 'Logo UK',
+        x: 80, y: 60, w: up ? 260 : 230, h: 60, uploadSrc: src,
+        html: '<img src="' + src + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;">'
+      });
+      selectEl(el);
       pushHistory();
     });
   });
@@ -1599,7 +1608,14 @@
         var SERIF = "Georgia, 'Times New Roman', serif";
         var SANS = 'Arial, Helvetica, sans-serif';
         var DARK = '#1a2332';
+        var LOGOS = (window.UKC_EDITOR || {}).logos || {};
+        var imgHtml = function (src) {
+          return '<img src="' + src + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;">';
+        };
         return [
+          // Logos en éléments image : UK = logo large des Réglages, Parakou = asset livré.
+          { type: 'logo', label: 'Logo UK', x: 135, y: 26, w: 230, h: 60, uploadSrc: LOGOS.uk || '/img/logo-uk.png', html: imgHtml(LOGOS.uk || '/img/logo-uk.png') },
+          { type: 'logo', label: 'Logo Parakou', x: 620, y: 26, w: 260, h: 60, uploadSrc: LOGOS.parakou || '/img/attestations/logo-parakou.png', html: imgHtml(LOGOS.parakou || '/img/attestations/logo-parakou.png') },
           { type: 'text', label: 'Titre', x: 120, y: 96, w: 660, text: 'ATTESTATION DE COMMUNICATION', font: SERIF, size: 31, weight: 700, color: DARK, align: 'center' },
           { type: 'text', label: 'Sous-titre', x: 120, y: 150, w: 660, text: 'Décernée à', font: SANS, size: 15, weight: 500, color: '#2b3340', align: 'center' },
           { type: 'text', label: 'Destinataire', x: 120, y: 176, w: 660, text: 'Mme/M. {name}', font: SANS, size: 23, weight: 800, color: DARK, align: 'center' },

@@ -30,6 +30,13 @@ it('a un modèle par défaut propre au type « communication »', function () {
         ->toContain('{communication}')
         ->toContain('{communication_type}')
         ->toContain('Type de communication :');
+
+    // Les deux logos sont des éléments IMAGE (pas cuits dans le fond) : l'UK suit
+    // le logo large des Réglages, Parakou est l'asset livré.
+    $images = collect($comm['elements'])->where('type', 'image')->pluck('src');
+    expect($images)->toHaveCount(2);
+    expect($images->contains('/img/attestations/logo-parakou.png'))->toBeTrue();
+    expect($images->contains(fn ($s) => str_contains((string) $s, 'logo-uk')))->toBeTrue();
 });
 
 it('fige le format de présentation à l’émission (orale / affichée)', function () {

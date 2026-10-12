@@ -2,6 +2,8 @@
 
 namespace App\Documents;
 
+use App\Support\Branding;
+
 /**
  * Validation déterministe d'une mise en page (badge / attestation). Quelle que
  * soit la sortie de l'IA, on borne les coordonnées, on liste blanche les types
@@ -213,10 +215,17 @@ class LayoutSanitizer
             'align' => 'left', 'font' => 'arial', 'italic' => false, 'leading' => 1.3,
         ];
 
+        // Logos en éléments image (pas cuits dans le fond) : l'UK suit le logo large
+        // des Réglages, Parakou est l'asset livré. Chemins relatifs (indépendants du
+        // domaine) : le rendu PDF les résout sur le disque, l'écran sur l'origine.
+        $ukLogo = parse_url(Branding::wide(), PHP_URL_PATH) ?: Branding::wide();
+
         return [
             'width' => 900, 'height' => 636, 'bg' => '#ffffff', 'accent' => '#223ea4',
             'bg_image' => '/img/attestations/attestation-communication-bg.png',
             'elements' => [
+                ['type' => 'image', 'x' => 135, 'y' => 26, 'w' => 230, 'h' => 60, 'src' => (string) $ukLogo],
+                ['type' => 'image', 'x' => 620, 'y' => 26, 'w' => 260, 'h' => 60, 'src' => '/img/attestations/logo-parakou.png'],
                 $t(['x' => 120, 'y' => 96, 'w' => 660, 'h' => 44, 'text' => 'ATTESTATION DE COMMUNICATION', 'size' => 31, 'weight' => 700, 'align' => 'center', 'font' => 'georgia']),
                 $t(['x' => 120, 'y' => 150, 'w' => 660, 'h' => 24, 'text' => 'Décernée à', 'size' => 15, 'align' => 'center', 'color' => '#2b3340']),
                 $t(['x' => 120, 'y' => 176, 'w' => 660, 'h' => 40, 'text' => 'Mme/M. {name}', 'size' => 23, 'weight' => 800, 'align' => 'center']),
