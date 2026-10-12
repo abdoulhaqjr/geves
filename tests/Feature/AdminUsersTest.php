@@ -2,6 +2,7 @@
 
 use App\Models\EventSeries;
 use App\Models\User;
+use App\Notifications\AccountResetPassword;
 use App\Notifications\StaffVerifyEmail;
 use Database\Seeders\RolesAndAdminSeeder;
 use Illuminate\Support\Facades\Notification;
@@ -67,6 +68,27 @@ it('renvoie le mail de vérification à un utilisateur non vérifié', function 
 
     $this->actingAs($admin, 'web')->post(route('admin.users.resend', $u))->assertRedirect();
     Notification::assertSentTo($u, StaffVerifyEmail::class);
+});
+
+it('envoie un e-mail de réinitialisation du mot de passe à un utilisateur', function () {
+    Notification::fake();
+    $admin = usersAdmin();
+    $u = User::factory()->create();
+
+    $this->actingAs($admin, 'web')
+        ->post(route('admin.users.password-reset', $u))
+        ->assertRedirect()
+        ->assertSessionHas('ukc_status');
+
+    Notification::assertSentTo($u, AccountResetPassword::class);
+});
+
+it('refuse le lien de réinitialisation à qui n’a pas la permission', function () {
+    $u = User::factory()->create();
+
+    $this->actingAs(User::factory()->create(), 'web')
+        ->post(route('admin.users.password-reset', $u))
+        ->assertForbidden();
 });
 
 it('vérifie l’adresse via le lien signé', function () {

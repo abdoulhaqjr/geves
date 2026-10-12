@@ -428,6 +428,7 @@ Route::prefix('admin')->group(function () {
             Route::get('/utilisateurs/{user}/modifier', [UserController::class, 'edit'])->name('admin.users.edit');
             Route::put('/utilisateurs/{user}', [UserController::class, 'update'])->name('admin.users.update');
             Route::post('/utilisateurs/{user}/verification', [UserController::class, 'resendVerification'])->name('admin.users.resend');
+            Route::post('/utilisateurs/{user}/mot-de-passe', [UserController::class, 'sendPasswordReset'])->name('admin.users.password-reset');
             Route::delete('/utilisateurs/{user}', [UserController::class, 'destroy'])->name('admin.users.destroy');
         });
 

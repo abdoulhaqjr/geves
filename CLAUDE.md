@@ -620,7 +620,9 @@ et **habillés à la charte de l'Université de Kara** :
 - Notifications dédiées : **`App\Notifications\AccountVerifyEmail`** (inscription = aussi
   un mot de bienvenue), **`AccountResetPassword`** (mot de passe oublié ; comptes unifiés
   → staff **et** participants), **`StaffVerifyEmail`** (back-office). `User::sendEmailVerificationNotification`
-  / `sendPasswordResetNotification` les envoient. ⚠️ **L'URL signée reste fournie par les
+  / `sendPasswordResetNotification` les envoient. Un **admin peut déclencher la
+  réinitialisation** depuis `/admin/utilisateurs` (bouton clé → `admin.users.password-reset`
+  → `Password::broker('users')->sendResetLink`, donc le même e-mail localisé). ⚠️ **L'URL signée reste fournie par les
   `VerifyEmail::createUrlUsing` / `ResetPassword::createUrlUsing`** d'`AppServiceProvider`
   (routes `account.*`) : les notifications ne redéfinissent QUE `buildMailMessage` (le texte).
 - Rédaction via **`__('texte FR')`** (clé = français), traductions dans **`lang/en.json`**.

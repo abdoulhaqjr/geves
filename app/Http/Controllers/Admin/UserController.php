@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Notifications\AccountResetPassword;
 use App\Support\ListSort;
 use App\Support\StaffRoles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -187,6 +189,27 @@ class UserController extends Controller
         $user->sendStaffEmailVerificationNotification();
 
         return back()->with('ukc_status', 'E-mail de vérification renvoyé à '.$user->email.'.');
+    }
+
+    /**
+     * Envoie à l'utilisateur un e-mail de réinitialisation de mot de passe.
+     * Passe par le courtier « users » (= User::sendPasswordResetNotification),
+     * donc le message rédigé/localisé {@see AccountResetPassword}.
+     * Comptes unifiés : vaut pour le staff comme pour les participants.
+     */
+    public function sendPasswordReset(User $user): RedirectResponse
+    {
+        $status = Password::broker('users')->sendResetLink(['email' => $user->email]);
+
+        if ($status === Password::RESET_LINK_SENT) {
+            return back()->with('ukc_status', 'E-mail de réinitialisation du mot de passe envoyé à '.$user->email.'.');
+        }
+
+        $message = $status === Password::RESET_THROTTLED
+            ? 'Un e-mail de réinitialisation a déjà été envoyé récemment ; patientez avant de réessayer.'
+            : 'Impossible d’envoyer l’e-mail de réinitialisation à '.$user->email.'.';
+
+        return back()->with('ukc_error', $message);
     }
 
     public function destroy(User $user): RedirectResponse
