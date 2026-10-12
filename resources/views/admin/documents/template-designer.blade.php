@@ -98,8 +98,16 @@
           <input type="file" id="fileUpload" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none;">
           <div class="ed-panel-section">Images ajoutées</div>
           <div class="ed-grid-2" id="uploadList">
-            <div class="ed-thumb" data-logo="uk">UK - Univ. Kara</div>
-            <div class="ed-thumb" data-logo="up">Univ. Parakou</div>
+            {{-- Vrais logos (UK = logo large des Réglages, Parakou = asset livré) : on
+                 montre l'image, pas un libellé texte. Cliquer pose le logo sur la page. --}}
+            <div class="ed-thumb ed-thumb--logo" data-logo="uk" title="UK - Université de Kara">
+              <img src="{{ $ukcEditorCfg['logos']['uk'] }}" alt="Logo Université de Kara">
+              <span>UK - Univ. Kara</span>
+            </div>
+            <div class="ed-thumb ed-thumb--logo" data-logo="up" title="Université de Parakou">
+              <img src="{{ $ukcEditorCfg['logos']['parakou'] }}" alt="Logo Université de Parakou">
+              <span>Univ. Parakou</span>
+            </div>
           </div>
           <p class="ly-meta" style="margin-top:10px;">Cliquez une image pour l’ajouter sur la page. Le fond se change avec <strong>Image de fond</strong>.</p>
         </div>

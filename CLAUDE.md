@@ -3184,10 +3184,11 @@ ajoutée par la vue, elle ne se saisit pas.
     (`Branding::wide()`, chemin relatif via `parse_url(..., PHP_URL_PATH)` → indépendant du
     domaine), **Parakou** est l'asset livré `public/img/attestations/logo-parakou.png`. Le
     texte est en éléments (jetons). Tout est donc éditable, et l'UK se met à jour avec le logo
-    de l'établissement. Les URL des logos sont passées au concepteur via `UKC_EDITOR.logos`
-    (les vignettes « UK - Univ. Kara » / « Univ. Parakou » insèrent ces vraies images, plus de
-    placeholder texte). ⚠️ En production, `php artisan storage:link` pour qu'un logo UK
-    **téléversé** (`/storage/...`) sorte aussi dans le PDF.
+    de l'établissement. Les URL des logos sont passées au concepteur via `UKC_EDITOR.logos` ;
+    dans le panneau **Images**, les deux vignettes « UK - Univ. Kara » / « Univ. Parakou »
+    **affichent la vraie image** (`.ed-thumb--logo` : `<img>` + légende, plus de libellé texte
+    seul) et, au clic, insèrent ce logo sur la page. ⚠️ En production, `php artisan storage:link`
+    pour qu'un logo UK **téléversé** (`/storage/...`) sorte aussi dans le PDF.
   - **Polices du modèle, fidèles à la maquette** : titre en **Times** (clé `times` →
     `'Times New Roman', Times, serif` ; dompdf a Times en natif, l'écran a Times New Roman),
     corps en **Lato** (clé `lato`, **hébergée** dans `public/fonts/lato-*` et déclarée dans
