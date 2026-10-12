@@ -5,6 +5,7 @@ use App\Models\User;
 use App\Notifications\AccountResetPassword;
 use App\Notifications\StaffVerifyEmail;
 use Database\Seeders\RolesAndAdminSeeder;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
 use Spatie\Permission\Models\Role;
@@ -108,6 +109,43 @@ it('empêche de supprimer le dernier administrateur et son propre compte', funct
 
     $this->actingAs($admin, 'web')->delete(route('admin.users.destroy', $admin))->assertRedirect();
     expect(User::whereKey($admin->id)->exists())->toBeTrue();
+});
+
+it('supprime un compte en SOFT DELETE après le mot « Supprimer » et le mot de passe admin', function () {
+    $admin = usersAdmin();
+    $admin->forceFill(['password' => Hash::make('secret-admin-123')])->save();
+    $target = User::factory()->create();
+
+    $this->actingAs($admin, 'web')
+        ->delete(route('admin.users.destroy', $target), ['confirm' => 'Supprimer', 'password' => 'secret-admin-123'])
+        ->assertRedirect(route('admin.users.index'));
+
+    expect(User::whereKey($target->id)->exists())->toBeFalse();              // écarté par le scope SoftDeleting
+    expect(User::withTrashed()->find($target->id)?->trashed())->toBeTrue();  // mais récupérable
+});
+
+it('refuse la suppression quand le mot de passe de l’administrateur est faux', function () {
+    $admin = usersAdmin();
+    $admin->forceFill(['password' => Hash::make('secret-admin-123')])->save();
+    $target = User::factory()->create();
+
+    $this->actingAs($admin, 'web')
+        ->delete(route('admin.users.destroy', $target), ['confirm' => 'Supprimer', 'password' => 'mauvais'])
+        ->assertRedirect();
+
+    expect(User::whereKey($target->id)->exists())->toBeTrue();
+});
+
+it('refuse la suppression sans le mot « Supprimer »', function () {
+    $admin = usersAdmin();
+    $admin->forceFill(['password' => Hash::make('secret-admin-123')])->save();
+    $target = User::factory()->create();
+
+    $this->actingAs($admin, 'web')
+        ->delete(route('admin.users.destroy', $target), ['confirm' => 'oui', 'password' => 'secret-admin-123'])
+        ->assertRedirect();
+
+    expect(User::whereKey($target->id)->exists())->toBeTrue();
 });
 
 it('modifie la matrice d’accès : ajoute et retire des permissions par rôle', function () {

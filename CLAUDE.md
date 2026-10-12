@@ -627,6 +627,18 @@ les guards **`web`** (back-office) et **`account`** (espace participant) résolv
 est **legacy et mort**. Toute nouvelle table liée à un participant référence **`user_id`**
 (users), jamais `account_id`. `Participant` (par édition) porte `user_id`.
 
+- ⚠️ **`User` utilise `SoftDeletes`** (colonne `deleted_at`) : une suppression de compte
+  est **réversible**. Le fournisseur d'authentification Eloquent et la liaison de route
+  appliquent le scope SoftDeleting → un compte supprimé **ne peut plus se connecter** ni
+  être retrouvé (404). ⚠️ `users.email`/`users.phone` restent **uniques en base** : un
+  compte soft-deleted garde son adresse/numéro et bloque la réinscription tant qu'il n'est
+  pas restauré ou purgé (pas d'écran de restauration pour l'instant).
+- **Suppression depuis le back-office** (`admin.users.destroy`) : modale sécurisée (liste
+  **et** fiche, partial `admin/users/_delete-modal.blade.php`) exigeant la saisie du mot
+  **« Supprimer »** ET du **mot de passe de l'administrateur** (`Hash::check`), en plus des
+  gardes « pas soi-même » / « pas le dernier administrateur ». Messages via flash (toast).
+  Tests : `AdminUsersTest`.
+
 ### E-mails de compte = rédigés, LOCALISÉS (défaut français) + charte UK
 
 Les e-mails d'**authentification** (confirmation d'adresse à l'inscription, mot de

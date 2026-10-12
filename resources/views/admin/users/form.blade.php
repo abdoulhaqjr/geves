@@ -1,15 +1,53 @@
 @php($editing = $user->exists)
+@php($initials = \Illuminate\Support\Str::of($user->name)->explode(' ')->map(fn ($w) => \Illuminate\Support\Str::substr($w, 0, 1))->take(2)->implode('') ?: 'U')
+@php($lvl = $user->access_level ?? \App\Models\User::ACCESS_USER)
 <x-layouts.admin :title="$editing ? 'Modifier - '.$user->name : 'Associer un utilisateur'"
                  :subtitle="'Compte staff - rôles '.config('app.name').' & permissions'">
     <x-slot:actions>
         <a href="{{ route('admin.users.index') }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">← Utilisateurs</a>
     </x-slot:actions>
 
-    <div class="admin-page admin-users" style="max-width:760px;">
+    <div class="admin-page admin-users" style="max-width:860px;"
+         x-data="{ delOpen: false, delConfirm: '', delUser: { url: @js($editing ? route('admin.users.destroy', $user) : ''), name: @js($user->name) } }">
         @if ($errors->any())
             <div class="ukc-alert ukc-alert--err">
                 <span class="ico"><x-ukc.icon name="info" :size="18" /></span>
                 <div>{{ $errors->first() }}</div>
+            </div>
+        @endif
+
+        {{-- ===== Carte résumé (édition) ===== --}}
+        @if ($editing)
+            <div class="ukc-card" style="margin-bottom:16px;">
+                <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+                    <div class="av" style="width:52px;height:52px;font-size:17px;flex:0 0 auto;">{{ $initials }}</div>
+                    <div style="flex:1;min-width:220px;">
+                        <div style="font-size:18px;font-weight:800;line-height:1.2;">{{ $user->name }}</div>
+                        <div style="color:var(--ukc-muted);font-size:14px;">{{ $user->email }}</div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:9px;">
+                            <span class="ukc-pill ukc-pill--{{ $lvl === 'super_admin' ? 'ok' : ($lvl === 'colloque_admin' ? 'info' : 'muted') }}">{{ \App\Models\User::accessLevels()[$lvl] ?? 'Utilisateur' }}</span>
+                            @if ($user->hasVerifiedEmail())
+                                <span class="ukc-pill ukc-pill--ok">Adresse vérifiée</span>
+                            @else
+                                <span class="ukc-pill ukc-pill--warn">Adresse non vérifiée</span>
+                            @endif
+                            @if ($user->is_active)
+                                <span class="ukc-pill ukc-pill--ok">Actif</span>
+                            @else
+                                <span class="ukc-pill ukc-pill--muted">Inactif</span>
+                            @endif
+                            @foreach ($user->roles as $r)
+                                <span class="ukc-pill ukc-pill--{{ \App\Support\StaffRoles::pill($r->name) }}">{{ \App\Support\StaffRoles::label($r->name) }}</span>
+                            @endforeach
+                        </div>
+                    </div>
+                    <div style="text-align:right;font-size:12.5px;color:var(--ukc-muted);line-height:1.7;flex:0 0 auto;">
+                        <div>Dernière connexion<br><strong style="color:var(--ukc-text);">{{ $user->last_login_at?->translatedFormat('d/m/Y - H:i') ?? 'Jamais' }}</strong></div>
+                        @if ($user->created_at)
+                            <div style="margin-top:6px;">Compte créé<br><strong style="color:var(--ukc-text);">{{ $user->created_at->translatedFormat('d/m/Y') }}</strong></div>
+                        @endif
+                    </div>
+                </div>
             </div>
         @endif
 
@@ -36,12 +74,12 @@
                         <label for="access_level">Niveau d’accès</label>
                         <select id="access_level" name="access_level" required>
                             @foreach (\App\Models\User::accessLevels() as $key => $label)
-                                <option value="{{ $key }}" @selected(old('access_level', $user->access_level ?? \App\Models\User::ACCESS_USER) === $key)>{{ $label }}</option>
+                                <option value="{{ $key }}" @selected(old('access_level', $lvl) === $key)>{{ $label }}</option>
                             @endforeach
                         </select>
                         <span class="hint">Super admin : toute la plateforme - Admin de colloque : crée &amp; gère des colloques - Utilisateur : accès par colloque.</span>
                     </div>
-                    <div class="ukc-field">
+                    <div class="ukc-field full">
                         <label for="notes">Notes internes</label>
                         <input type="text" id="notes" name="notes" value="{{ old('notes', $user->notes) }}" placeholder="Optionnel">
                     </div>
@@ -81,34 +119,55 @@
             </div>
         </form>
 
+        {{-- ===== Actions sur le compte (édition) ===== --}}
         @if ($editing)
             <div class="ukc-card" style="margin-top:16px;">
-                <h2>Actions</h2>
-                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-                    @unless ($user->hasVerifiedEmail())
-                        <form method="POST" action="{{ route('admin.users.resend', $user) }}">
-                            @csrf
-                            <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-                                Renvoyer le mail de vérification
-                            </button>
-                        </form>
-                        <span class="ukc-pill ukc-pill--warn">Adresse non vérifiée</span>
-                    @else
-                        <span class="ukc-pill ukc-pill--ok">Adresse vérifiée</span>
-                    @endunless
+                <h2>Actions sur le compte</h2>
 
-                    <form method="POST" action="{{ route('admin.users.destroy', $user) }}" style="margin-left:auto;"
-                          onsubmit="return confirm('Supprimer définitivement cet utilisateur du back-office ?');">
+                {{-- Vérification de l'adresse --}}
+                <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 0;">
+                    <span style="flex:0 0 auto;width:36px;height:36px;border-radius:9px;background:#eef2ff;color:#223ea4;display:inline-flex;align-items:center;justify-content:center;"><x-ukc.icon name="mail" :size="18" /></span>
+                    <div style="flex:1;min-width:220px;">
+                        <div style="font-weight:700;">Vérification de l’adresse</div>
+                        <div style="color:var(--ukc-muted);font-size:13px;">{{ $user->hasVerifiedEmail() ? 'L’adresse est confirmée.' : 'L’adresse n’est pas confirmée : renvoyez le lien de vérification.' }}</div>
+                    </div>
+                    @if ($user->hasVerifiedEmail())
+                        <span class="ukc-pill ukc-pill--ok">Vérifiée</span>
+                    @else
+                        <form method="POST" action="{{ route('admin.users.resend', $user) }}"
+                              data-confirm="Renvoyer l’e-mail de vérification à {{ $user->email }} ?">
+                            @csrf
+                            <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="mail" :size="15" /> Renvoyer le mail de vérification</button>
+                        </form>
+                    @endif
+                </div>
+
+                {{-- Réinitialisation du mot de passe --}}
+                <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--ukc-border);">
+                    <span style="flex:0 0 auto;width:36px;height:36px;border-radius:9px;background:#eef2ff;color:#223ea4;display:inline-flex;align-items:center;justify-content:center;"><x-ukc.icon name="key" :size="18" /></span>
+                    <div style="flex:1;min-width:220px;">
+                        <div style="font-weight:700;">Mot de passe</div>
+                        <div style="color:var(--ukc-muted);font-size:13px;">Envoie à l’utilisateur un lien pour définir un nouveau mot de passe.</div>
+                    </div>
+                    <form method="POST" action="{{ route('admin.users.password-reset', $user) }}"
+                          data-confirm="Envoyer un e-mail de réinitialisation du mot de passe à {{ $user->email }} ?">
                         @csrf
-                        @method('DELETE')
-                        <button type="submit" class="ukc-btn ukc-btn--danger ukc-btn--sm">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                            Supprimer
-                        </button>
+                        <button type="submit" class="ukc-btn ukc-btn--outline ukc-btn--sm"><x-ukc.icon name="key" :size="15" /> Envoyer un lien de réinitialisation</button>
                     </form>
                 </div>
+
+                {{-- Suppression --}}
+                <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 0 2px;border-top:1px solid var(--ukc-border);">
+                    <span style="flex:0 0 auto;width:36px;height:36px;border-radius:9px;background:#fef2f2;color:#dc2626;display:inline-flex;align-items:center;justify-content:center;"><x-ukc.icon name="trash" :size="18" /></span>
+                    <div style="flex:1;min-width:220px;">
+                        <div style="font-weight:700;">Supprimer le compte</div>
+                        <div style="color:var(--ukc-muted);font-size:13px;">Retire l’accès au back-office. Suppression douce (réversible en base) ; vous confirmerez par mot de passe.</div>
+                    </div>
+                    <button type="button" class="ukc-btn ukc-btn--danger ukc-btn--sm" @click="delOpen = true"><x-ukc.icon name="trash" :size="15" /> Supprimer</button>
+                </div>
             </div>
+
+            @include('admin.users._delete-modal')
         @endif
     </div>
 </x-layouts.admin>

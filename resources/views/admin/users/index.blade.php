@@ -6,7 +6,7 @@
         </a>
     </x-slot:actions>
 
-    <div class="admin-page admin-users" x-data="{ tab: new URLSearchParams(window.location.search).get('tab') || 'list' }">
+    <div class="admin-page admin-users" x-data="{ tab: new URLSearchParams(window.location.search).get('tab') || 'list', delOpen: false, delConfirm: '', delUser: { url: '', name: '' } }">
         <div class="ukc-nav-docs">
             <button type="button" @click="tab='list'" :class="{ active: tab==='list' }">Liste des utilisateurs</button>
             <button type="button" @click="tab='roles'" :class="{ active: tab==='roles' }">Rôles</button>
@@ -103,7 +103,8 @@
                                                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                                             </a>
                                             @unless ($u->hasVerifiedEmail())
-                                                <form method="POST" action="{{ route('admin.users.resend', $u) }}">
+                                                <form method="POST" action="{{ route('admin.users.resend', $u) }}"
+                                                      data-confirm="Renvoyer l’e-mail de vérification à {{ $u->email }} ?">
                                                     @csrf
                                                     <button type="submit" class="ukc-btn--icon" title="Renvoyer le mail de vérification">
                                                         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
@@ -117,14 +118,10 @@
                                                     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.65 10A5.99 5.99 0 0 0 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6a5.99 5.99 0 0 0 5.65-4H17v4h4v-4h2v-4h-10.35zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
                                                 </button>
                                             </form>
-                                            <form method="POST" action="{{ route('admin.users.destroy', $u) }}"
-                                                  onsubmit="return confirm('Supprimer cet utilisateur du back-office ?');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="ukc-btn--icon danger" title="Supprimer">
-                                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-                                                </button>
-                                            </form>
+                                            <button type="button" class="ukc-btn--icon danger" title="Supprimer"
+                                                    @click="delUser = { url: @js(route('admin.users.destroy', $u)), name: @js($u->name) }; delConfirm = ''; delOpen = true">
+                                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -138,6 +135,8 @@
             <div style="margin-top:12px;" data-filter-part="users-foot">{{ $users->links() }}</div>
             <p class="ukc-hint" style="margin-top:12px;font-size:12px;color:var(--ukc-light);">L’adresse IP et la date de dernière connexion sont enregistrées à chaque connexion au back-office. Les rôles {{ config('app.name') }} déterminent l’accès aux fonctionnalités (matrice ci-dessous).</p>
         </div>
+
+        @include('admin.users._delete-modal')
 
         {{-- ===== ROLES ===== --}}
         <div x-show="tab==='roles'" x-cloak>

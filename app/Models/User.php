@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -53,6 +54,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $two_factor_otp
  * @property Carbon|null $two_factor_otp_expires_at
  * @property bool $must_reset_password
+ * @property Carbon|null $deleted_at
  */
 #[Fillable(['name', 'email', 'password', 'is_active', 'notes', 'access_level',
     'civility', 'first_name', 'last_name', 'grade', 'phone', 'affiliation',
@@ -61,7 +63,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable implements HasLocalePreference, MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasNotificationPreferences, HasRoles, Impersonate, Notifiable, ParticipantIdentity;
+    use HasFactory, HasNotificationPreferences, HasRoles, Impersonate, Notifiable, ParticipantIdentity, SoftDeletes;
 
     /**
      * Rôles & permissions spatie toujours résolus sous le guard « web » : depuis

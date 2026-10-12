@@ -212,7 +212,13 @@ class UserController extends Controller
         return back()->with('ukc_error', $message);
     }
 
-    public function destroy(User $user): RedirectResponse
+    /**
+     * Suppression d'un compte : SoftDeletes (réversible), confirmée par la saisie
+     * du mot « Supprimer » ET du mot de passe de l'administrateur connecté (même
+     * esprit que la suppression de compte de Laravel). Les messages passent par le
+     * flash (toast) pour s'afficher aussi bien depuis la liste que depuis la fiche.
+     */
+    public function destroy(Request $request, User $user): RedirectResponse
     {
         if ($user->id === Auth::id()) {
             return back()->with('ukc_error', 'Vous ne pouvez pas supprimer votre propre compte.');
@@ -220,6 +226,15 @@ class UserController extends Controller
         // Ne pas retirer le dernier administrateur.
         if ($user->hasRole('administrator') && User::role('administrator')->count() <= 1) {
             return back()->with('ukc_error', 'Impossible de supprimer le dernier administrateur.');
+        }
+
+        if ($request->input('confirm') !== 'Supprimer') {
+            return back()->with('ukc_error', 'Saisissez exactement « Supprimer » pour confirmer la suppression.');
+        }
+
+        $admin = Auth::user();
+        if (! $admin instanceof User || ! Hash::check((string) $request->input('password'), (string) $admin->password)) {
+            return back()->with('ukc_error', 'Mot de passe incorrect : la suppression a été annulée.');
         }
 
         $user->delete();
