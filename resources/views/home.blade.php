@@ -421,11 +421,11 @@
     <section class="ukc-section ukc-section--tight">
         <div class="ukc-container">
             <div class="cta-band">
-                <div>
+                <div class="cta-band__content">
                     <h2>{{ __('Prêt à participer au prochain événement ?') }}</h2>
                     <p>{{ __('Créez votre espace, déposez un résumé ou consultez le programme de l’événement en cours. Un accompagnement est disponible via l’assistante :name.', ['name' => \App\Support\AiAgents::publicName()]) }}</p>
                 </div>
-                <div style="display:flex;flex-wrap:wrap;gap:10px;">
+                <div class="cta-band__actions">
                     @if (auth('account')->check())
                         <a href="{{ route('account.dashboard') }}" class="ukc-btn ukc-btn--primary">{{ __('Mon espace') }}</a>
                     @elseif (auth('web')->check())
