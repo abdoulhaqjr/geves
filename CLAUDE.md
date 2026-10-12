@@ -619,6 +619,16 @@ et **habillés à la charte de l'Université de Kara** :
   (routes `account.*`) : les notifications ne redéfinissent QUE `buildMailMessage` (le texte).
 - Rédaction via **`__('texte FR')`** (clé = français), traductions dans **`lang/en.json`**.
   ⚠️ Ajouter une ligne d'e-mail = ajouter la clé FR **et** sa traduction `en`.
+- **Accueil personnalisé** : les greetings « Bonjour, » saluent par **civilité + nom**
+  quand ils sont connus (« Bonjour Dr Awa Doumbia, »), sinon repli générique. Source
+  unique **`App\Notifications\Greeting::for($user)`** + **`User::salutationName()`**
+  (⚠️ jamais `name`, qui peut valoir l'e-mail faute de prénom/nom). Les notifications
+  captent le destinataire dans **`toMail($notifiable)`** (buildMailMessage ne le reçoit
+  pas) pour le passer au helper.
+- **Texte de repli sous le bouton** (subcopy « copiez-collez l'adresse… ») : c'était
+  une chaîne **anglaise du framework**. La vue de notification est publiée
+  (`resources/views/vendor/notifications/email.blade.php`) et localisée (clé FR + en.json),
+  replis de greeting/salutation compris.
 - Locales prises en charge : `config('app.available_locales')` = `fr` (défaut) / `en`.
 - **Charte UK = thème markdown partagé** (`config('mail.markdown.theme') = 'geves'`),
   donc **TOUS les e-mails markdown** l'héritent (notifications ET mailables de
