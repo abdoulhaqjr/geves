@@ -286,6 +286,22 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   (Projet, Rapports, Assistant IA) - **Système** (Utilisateurs, Réglages). En ajoutant un lien,
   le ranger dans la bonne catégorie **et** inclure sa capacité dans la garde du `nav-label` du
   groupe (sinon un label vide peut apparaître).
+- ⚠️ **Même règle côté participant** (`components/layouts/participant.blade.php`) : **Tableau
+  de bord** hors catégorie, puis **Ma participation** (Soumissions, Inscription & paiement,
+  Formations, Documents, Mon témoignage) - **Mes fonctions** (modérer, rapporter, relire ;
+  seulement pour qui en porte) - **L'événement** (Page de l'événement, Programme) - **La
+  plateforme** (Déroulement, Archives, Accueil, Assistante) - **Mon compte** (Mon compte,
+  Prise en main).
+  - ⚠️ **« Déroulement » appartient à « La plateforme », pas à « L'événement »** : sa route
+    est globale (`public.deroulement`) et reste utile sans événement suivi. C'est ce qui
+    permet à « L'événement » de partager la garde `@if ($colloqueEdition)` de ses deux liens
+    et de disparaître ENTIÈRE, sans laisser un lien orphelin sous un intitulé masqué.
+  - ⚠️ **Icônes toutes distinctes dans un même menu** : replié (`ukc-compact`), l'icône est
+    tout ce qui reste d'un lien ; deux identiques rendent deux entrées indiscernables.
+  - Garde : `MenuParticipantTest` (ordre des catégories, aucun intitulé sans lien, « L'événement »
+    masqué sans événement, aucune icône répétée, vocabulaire, traductions). ⚠️ Le cas du
+    vocabulaire éprouve le **texte visible**, pas le HTML : la route `/colloque/{slug}`
+    apparaît dans chaque `href` et reste délibérément conservée.
 
 ### Composants transverses à réutiliser
 

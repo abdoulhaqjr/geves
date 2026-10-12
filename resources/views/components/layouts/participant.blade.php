@@ -104,16 +104,9 @@
                    @class(['active' => request()->routeIs('account.dashboard')])>
                     <x-ukc.icon name="home" :size="18" /> <span class="txt">{{ __('Tableau de bord') }}</span>
                 </a>
-                <a href="{{ route('account.onboarding') }}" title="{{ __('Prise en main') }}"
-                   @class(['active' => request()->routeIs('account.onboarding')])>
-                    <x-ukc.icon name="book" :size="18" /> <span class="txt">{{ __('Prise en main') }}</span>
-                </a>
 
-                <span class="nav-label">{{ __('Mon dossier') }}</span>
-                <a href="{{ route('account.profile') }}" title="{{ __('Mon compte') }}"
-                   @class(['active' => request()->routeIs('account.profile') || request()->routeIs('account.preferences') || request()->routeIs('account.notifications') || request()->routeIs('account.security')])>
-                    <x-ukc.icon name="user" :size="18" /> <span class="txt">{{ __('Mon compte') }}</span>
-                </a>
+                {{-- ===== Ma participation : ce que je dépose, règle, suis et reçois ===== --}}
+                <span class="nav-label">{{ __('Ma participation') }}</span>
                 <a href="{{ route('account.submissions.index') }}" title="{{ __('Soumissions') }}"
                    @class(['active' => request()->routeIs('account.submissions.*')])>
                     <x-ukc.icon name="file" :size="18" /> <span class="txt">{{ __('Soumissions') }}</span>
@@ -125,7 +118,7 @@
                 @if ($hasFormations)
                     <a href="{{ route('account.formations') }}" title="{{ __('Formations') }}"
                        @class(['active' => request()->routeIs('account.formations')])>
-                        <x-ukc.icon name="book" :size="18" /> <span class="txt">{{ __('Formations') }}</span>
+                        <x-ukc.icon name="award" :size="18" /> <span class="txt">{{ __('Formations') }}</span>
                     </a>
                 @endif
                 <a href="{{ route('account.documents') }}" title="{{ __('Documents') }}"
@@ -134,10 +127,10 @@
                 </a>
                 <a href="{{ route('account.testimonials') }}" title="{{ __('Mon témoignage') }}"
                    @class(['active' => request()->routeIs('account.testimonials')])>
-                    <x-ukc.icon name="sparkles" :size="18" /> <span class="txt">{{ __('Mon témoignage') }}</span>
+                    <x-ukc.icon name="message" :size="18" /> <span class="txt">{{ __('Mon témoignage') }}</span>
                 </a>
 
-                {{-- Fonctions événementielles : n'apparaissent que pour les personnes concernées. --}}
+                {{-- ===== Mes fonctions : n'apparaissent que pour les personnes concernées ===== --}}
                 @php
                     $isModerator = $account?->isModeratorSomewhere() ?? false;
                     $isRapporteur = $account?->isRapporteurSomewhere() ?? false;
@@ -165,26 +158,49 @@
                     @endif
                 @endif
 
-                <span class="nav-label">{{ __('Colloque') }}</span>
+                {{-- ===== L'événement : les deux pages PROPRES à l'événement suivi =====
+                     ⚠️ L'intitulé partage la garde de ses liens. Sans événement courant
+                     la catégorie disparaît entière, au lieu d'annoncer un vide - c'est la
+                     règle posée côté admin, où chaque intitulé est masqué si aucun de ses
+                     liens n'est accessible. --}}
                 @if ($colloqueEdition)
-                    <a href="{{ route('public.colloque', $colloqueEdition->slug) }}" title="{{ __('Page du colloque') }}">
-                        <x-ukc.icon name="globe" :size="18" /> <span class="txt">{{ __('Page du colloque') }}</span>
+                    <span class="nav-label">{{ __('L’événement') }}</span>
+                    <a href="{{ route('public.colloque', $colloqueEdition->slug) }}" title="{{ __('Page de l’événement') }}">
+                        <x-ukc.icon name="globe" :size="18" /> <span class="txt">{{ __('Page de l’événement') }}</span>
                     </a>
                     <a href="{{ route('public.colloque', $colloqueEdition->slug) }}#programme" title="{{ __('Programme') }}">
                         <x-ukc.icon name="calendar" :size="18" /> <span class="txt">{{ __('Programme') }}</span>
                     </a>
                 @endif
+
+                {{-- ===== La plateforme : ce qui existe quel que soit l'événement suivi =====
+                     ⚠️ « Déroulement » est ici et non dans « L'événement » : la route est
+                     globale (`public.deroulement`) et reste utile sans événement suivi.
+                     C'est aussi ce qui permet à la catégorie ci-dessus d'être masquée sans
+                     laisser un lien orphelin. --}}
+                <span class="nav-label">{{ __('La plateforme') }}</span>
                 <a href="{{ route('public.deroulement') }}" title="{{ __('Déroulement') }}">
                     <x-ukc.icon name="video" :size="18" /> <span class="txt">{{ __('Déroulement') }}</span>
                 </a>
                 <a href="{{ route('public.archives') }}" title="{{ __('Archives') }}">
-                    <x-ukc.icon name="book" :size="18" /> <span class="txt">{{ __('Archives') }}</span>
+                    <x-ukc.icon name="layers" :size="18" /> <span class="txt">{{ __('Archives') }}</span>
                 </a>
                 <a href="{{ route('home') }}" title="{{ __('Accueil plateforme') }}">
                     <x-ukc.icon name="external" :size="18" /> <span class="txt">{{ __('Accueil plateforme') }}</span>
                 </a>
                 <a href="{{ route('public.gesco') }}" title="{{ __('Assistante :name', ['name' => \App\Support\AiAgents::publicName()]) }}">
                     <x-ukc.icon name="sparkles" :size="18" /> <span class="txt">{{ __('Assistante :name', ['name' => \App\Support\AiAgents::publicName()]) }}</span>
+                </a>
+
+                {{-- ===== Mon compte : moi et la prise en main, en bas comme « Système » ===== --}}
+                <span class="nav-label">{{ __('Mon compte') }}</span>
+                <a href="{{ route('account.profile') }}" title="{{ __('Mon compte') }}"
+                   @class(['active' => request()->routeIs('account.profile') || request()->routeIs('account.preferences') || request()->routeIs('account.notifications') || request()->routeIs('account.security')])>
+                    <x-ukc.icon name="user" :size="18" /> <span class="txt">{{ __('Mon compte') }}</span>
+                </a>
+                <a href="{{ route('account.onboarding') }}" title="{{ __('Prise en main') }}"
+                   @class(['active' => request()->routeIs('account.onboarding')])>
+                    <x-ukc.icon name="book" :size="18" /> <span class="txt">{{ __('Prise en main') }}</span>
                 </a>
             </nav>
             <div class="ukc-sidebar-foot">

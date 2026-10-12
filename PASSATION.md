@@ -1582,3 +1582,53 @@ et `VocabulairePublicTest` les ont attrapés. Lien restauré avec son commentair
 deux clés ajoutées.
 
 1189 tests / 4217 assertions, Pint et PHPStan niveau 5 sans erreur.
+
+## 2026-10-12 - Le menu participant prend la règle du menu admin
+
+`bb3a9206` avait recatégorisé le menu du back-office en cinq groupes cohérents,
+**chacun masqué si aucun de ses liens n'est accessible**, icônes différenciées.
+Le menu participant, lui, entassait six entrées sous « Mon dossier » et
+annonçait une catégorie « Colloque » qui contenait surtout des liens de
+plateforme.
+
+Il porte maintenant : **Tableau de bord** (hors catégorie), **Ma participation**
+(Soumissions, Inscription & paiement, Formations, Documents, Mon témoignage),
+**Mes fonctions** (inchangé, déjà bien gardé), **L'événement** (Page de
+l'événement, Programme), **La plateforme** (Déroulement, Archives, Accueil,
+Assistante), **Mon compte** (Mon compte, Prise en main).
+
+⚠️ **Le déplacement qui fait marcher la garde.** « Déroulement » était rangé
+avec les liens de l'événement. Or sa route est GLOBALE (`public.deroulement`) et
+reste utile sans événement suivi : en le laissant là, « L'événement » ne pouvait
+pas partager la garde `@if ($colloqueEdition)` de ses deux autres liens sans
+laisser « Déroulement » orphelin sous un intitulé masqué. Déplacé dans « La
+plateforme », la catégorie « L'événement » disparaît ENTIÈRE quand le compte
+n'en suit aucun - la règle du menu admin, appliquée pour de vrai.
+
+⚠️ **Icônes : trois doublons corrigés.** `book` servait à Prise en main,
+Formations ET Archives ; `sparkles` à Mon témoignage ET l'assistante. Replié
+(`ukc-compact`), l'icône est TOUT ce qui reste d'un lien : deux identiques
+rendent deux entrées indiscernables. Formations -> `award`, Mon témoignage ->
+`message`, Archives -> `layers`. Un cas compte les formes SVG et interdit les
+doublons.
+
+Le menu avait aussi échappé au renommage « colloque » -> « événement » :
+`VocabulairePublicTest` ne balaie que le site public, pas les gabarits de
+l'espace connecté. Corrigé, avec trois clés anglaises ajoutées.
+
+Garde : `MenuParticipantTest` (6 cas). Quatre sabotages vérifiés : intitulé
+sorti de sa garde, icône dupliquée, « colloque » de retour, ordre des catégories
+changé. ⚠️ Le cas du vocabulaire éprouve le **texte visible** et non le HTML :
+la route `/colloque/{slug}`, délibérément conservée, apparaît dans chaque
+`href`. ⚠️ Et le helper s'appelle `compteDuMenu()` et non `compteParticipant()` :
+les fonctions d'un fichier de cas sont GLOBALES, et le nom évident était déjà
+pris par `ParticipantDashboardTest` - la redéclaration fait tomber la suite
+entière sur une erreur fatale muette.
+
+Vérifié à l'écran en impersonation d'un participant réel, menu déployé.
+
+⚠️ **Reste** : le tableau de bord participant dit encore « Le colloque est
+terminé », « LE COLLOQUE », « Page du colloque ». Le renommage s'est arrêté au
+site public ; l'espace connecté n'a pas de garde de vocabulaire.
+
+1195 tests / 4242 assertions, Pint et PHPStan niveau 5 sans erreur.
