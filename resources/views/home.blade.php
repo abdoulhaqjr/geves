@@ -247,10 +247,6 @@
                     <span class="about-side__eyebrow">{{ __('Porté par l’Université de Kara') }}</span>
                     <h3>{{ __('Direction de la Recherche et de l’Innovation') }}</h3>
                     <p>{{ __('La DRI coordonne les événements scientifiques de l’Université de Kara et accompagne les équipes qui les organisent.') }}</p>
-                    <div class="about-side__footer">
-                        <span>{{ __('Un service institutionnel sans vocation commerciale.') }}</span>
-                        <a href="mailto:dri@univkara.tg">{{ __('Écrire à la DRI') }} <span aria-hidden="true">↗</span></a>
-                    </div>
                 </aside>
             </div>
         </div>
