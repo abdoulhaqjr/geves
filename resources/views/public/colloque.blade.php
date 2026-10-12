@@ -669,10 +669,16 @@
                 <h2>{{ __('Prêt à participer ?') }}</h2>
                 <p>{{ __('Créez votre compte en quelques minutes, soumettez votre résumé ou inscrivez-vous comme auditeur. Tout se passe en ligne.') }}</p>
                 <div class="actions">
-                    <a href="{{ route('account.register') }}" class="ukc-btn ukc-btn--primary">
-                        <x-ukc.icon name="user-plus" :size="18" /> {{ __('Créer mon compte') }}
-                    </a>
-                    <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--ghost">{{ __('Se connecter') }}</a>
+                    @if (auth('account')->check())
+                        <a href="{{ route('account.dashboard') }}" class="ukc-btn ukc-btn--primary">{{ __('Mon espace') }}</a>
+                    @elseif (auth('web')->check())
+                        <a href="{{ route('admin.dashboard') }}" class="ukc-btn ukc-btn--primary">{{ __('Mon espace') }}</a>
+                    @else
+                        <a href="{{ route('account.register') }}" class="ukc-btn ukc-btn--primary">
+                            <x-ukc.icon name="user-plus" :size="18" /> {{ __('Créer mon compte') }}
+                        </a>
+                        <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--ghost">{{ __('Se connecter') }}</a>
+                    @endif
                 </div>
             </div>
         </div>

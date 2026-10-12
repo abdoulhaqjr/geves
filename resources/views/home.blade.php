@@ -448,12 +448,14 @@
                     <p>{{ __('Créez votre espace, déposez un résumé ou consultez le programme de l’événement en cours. Un accompagnement est disponible via l’assistante :name.', ['name' => \App\Support\AiAgents::publicName()]) }}</p>
                 </div>
                 <div style="display:flex;flex-wrap:wrap;gap:10px;">
-                    @guest('account')
+                    @if (auth('account')->check())
+                        <a href="{{ route('account.dashboard') }}" class="ukc-btn ukc-btn--primary">{{ __('Mon espace') }}</a>
+                    @elseif (auth('web')->check())
+                        <a href="{{ route('admin.dashboard') }}" class="ukc-btn ukc-btn--primary">{{ __('Mon espace') }}</a>
+                    @else
                         <a href="{{ route('account.register') }}" class="ukc-btn ukc-btn--primary">{{ __('Créer un compte') }}</a>
                         <a href="{{ route('account.login') }}" class="ukc-btn ukc-btn--ghost">{{ __('Se connecter') }}</a>
-                    @else
-                        <a href="{{ route('account.dashboard') }}" class="ukc-btn ukc-btn--primary">{{ __('Mon espace participant') }}</a>
-                    @endguest
+                    @endif
                     @if ($featured)
                         <a href="{{ $colloqueUrl($featured) }}" class="ukc-btn ukc-btn--ghost">{{ __('Événement en cours') }}</a>
                     @endif

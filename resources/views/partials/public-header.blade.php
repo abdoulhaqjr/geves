@@ -35,11 +35,13 @@
             @endif
             <a href="{{ route('home') }}#apropos">{{ __('À propos') }}</a>
             <a href="{{ route('home') }}#contact">{{ __('Contact') }}</a>
-            @guest('account')
-                <a href="{{ route('account.login') }}">{{ __('Se connecter') }}</a>
+            @if (auth('account')->check())
+                <a href="{{ route('account.dashboard') }}">{{ __('Mon espace') }}</a>
+            @elseif (auth('web')->check())
+                <a href="{{ route('admin.dashboard') }}">{{ __('Mon espace') }}</a>
             @else
-                <a href="{{ route('account.dashboard') }}">{{ __('Espace participant') }}</a>
-            @endguest
+                <a href="{{ route('account.login') }}">{{ __('Se connecter') }}</a>
+            @endif
         </nav>
     </div>
 </header>

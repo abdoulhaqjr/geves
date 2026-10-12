@@ -24,12 +24,14 @@
             </div>
             <div>
                 <h4>{{ __('Liens utiles') }}</h4>
-                @guest('account')
+                @if (auth('account')->check())
+                    <a href="{{ route('account.dashboard') }}">{{ __('Mon espace') }}</a>
+                @elseif (auth('web')->check())
+                    <a href="{{ route('admin.dashboard') }}">{{ __('Mon espace') }}</a>
+                @else
                     <a href="{{ route('account.login') }}">{{ __('Se connecter') }}</a>
                     <a href="{{ route('account.register') }}">{{ __('Créer un compte') }}</a>
-                @else
-                    <a href="{{ route('account.dashboard') }}">{{ __('Espace participant') }}</a>
-                @endguest
+                @endif
                 <a href="{{ route('public.gesco') }}">{{ __('Assistante :name', ['name' => \App\Support\AiAgents::publicName()]) }}</a>
             </div>
             <div>
