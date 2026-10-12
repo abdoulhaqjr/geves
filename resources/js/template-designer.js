@@ -390,6 +390,19 @@
       el.classList.add('text');
       if (cfg.cls) cfg.cls.split(/\s+/).forEach(function (c) { if (c) el.classList.add(c); });
       el.textContent = cfg.text || 'Texte';
+      // Styles explicites, prioritaires sur les classes : un modèle peut fixer sa
+      // police, sa taille, sa graisse, etc. sans dépendre des classes du concepteur
+      // (dont l'allure - Playfair, indigo - ne convient pas à toute maquette).
+      if (cfg.font) el.style.fontFamily = cfg.font;
+      if (cfg.size) el.style.fontSize = cfg.size + 'px';
+      if (cfg.weight) el.style.fontWeight = String(cfg.weight);
+      if (cfg.color) el.style.color = cfg.color;
+      if (cfg.italic) el.style.fontStyle = 'italic';
+      if (cfg.underline) el.style.textDecoration = 'underline';
+      if (cfg.upper) el.style.textTransform = 'uppercase';
+      if (cfg.align) el.style.textAlign = cfg.align;
+      if (cfg.leading) el.style.lineHeight = String(cfg.leading);
+      if (cfg.spacing) el.style.letterSpacing = cfg.spacing + 'px';
     }
 
     var rz = document.createElement('div');
@@ -1576,26 +1589,34 @@
         { type: 'qr', label: 'QR Verification', x: 48, y: 500, w: 64, qrUrl: DEFAULT_QR_URL },
         { type: 'text', label: 'Identifiant', x: 48, y: 580, w: 500, cls: 'sub', text: 'Identifiant : [certificate.uuid]' }
       ],
-      communication: [
-        { type: 'logo', label: 'Logo UK', x: 48, y: 24, w: 170, html: '<div class="mark">UK</div> UNIVERSITÉ DE KARA' },
-        { type: 'logo', label: 'Logo UP', x: 680, y: 24, w: 180, html: 'UNIVERSITÉ DE PARAKOU' },
-        { type: 'text', label: 'Titre', x: 80, y: 90, w: 740, cls: 'heading', text: 'ATTESTATION DE COMMUNICATION' },
-        { type: 'text', label: 'Sous-titre', x: 100, y: 138, w: 700, cls: 'sub', text: 'Décernée à' },
-        { type: 'text', label: 'Destinataire', x: 100, y: 168, w: 700, cls: 'name attr', text: '[recipient.name]' },
-        { type: 'text', label: 'Corps', x: 80, y: 220, w: 740, cls: 'sub', text: 'pour avoir participé et communiqué au Colloque Scientifique International de l’Université de Kara, en collaboration avec l’Université de Parakou, du 06 au 10 octobre 2025 au palais des congrès de Kara, au Togo.' },
-        { type: 'text', label: 'Thème (libellé)', x: 80, y: 290, w: 180, cls: 'sub', text: 'Thème du colloque :' },
-        { type: 'text', label: 'Thème', x: 260, y: 290, w: 560, cls: 'sub attr', text: '[edition.theme]' },
-        { type: 'text', label: 'Titre com. label', x: 80, y: 340, w: 200, cls: 'sub', text: 'Titre de la communication :' },
-        { type: 'text', label: 'Titre com.', x: 280, y: 340, w: 540, cls: 'sub attr', text: '[communication.title]' },
-        { type: 'text', label: 'Type label', x: 80, y: 400, w: 180, cls: 'sub', text: 'Type de communication :' },
-        { type: 'text', label: 'Type', x: 270, y: 400, w: 200, cls: 'sub attr', text: '[communication.type]' },
-        { type: 'text', label: 'Formule', x: 80, y: 450, w: 740, cls: 'sub', text: 'En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.' },
-        { type: 'text', label: 'Lieu / date', x: 520, y: 500, w: 320, cls: 'sub', text: 'Fait à Kara, le [certificate.issued_on]' },
-        { type: 'text', label: 'Fonction', x: 520, y: 530, w: 320, cls: 'sub', text: 'Le Président du comité d’organisation' },
-        { type: 'text', label: 'Signataire', x: 520, y: 570, w: 320, cls: '', text: '[signatory.name]' },
-        { type: 'qr', label: 'QR Verification', x: 48, y: 520, w: 56, qrUrl: DEFAULT_QR_URL },
-        { type: 'text', label: 'Identifiant', x: 48, y: 590, w: 450, cls: 'sub', text: 'Identifiant : [certificate.uuid]' }
-      ],
+      // Attestation de COMMUNICATION (modèle officiel UK x Université de Parakou).
+      // ⚠️ Doit rester identique à LayoutSanitizer::attestationCommunication() (PHP) :
+      // les deux décrivent la même maquette. Le cadre décoratif et les deux logos
+      // sont portés par l'image de fond ; seul le texte est éditable. Styles en
+      // ligne (serif Georgia pour le titre, Arial pour le corps) plutôt que les
+      // classes du concepteur, dont l'allure ne convient pas à ce modèle.
+      communication: (function () {
+        var SERIF = "Georgia, 'Times New Roman', serif";
+        var SANS = 'Arial, Helvetica, sans-serif';
+        var DARK = '#1a2332';
+        return [
+          { type: 'text', label: 'Titre', x: 120, y: 96, w: 660, text: 'ATTESTATION DE COMMUNICATION', font: SERIF, size: 31, weight: 700, color: DARK, align: 'center' },
+          { type: 'text', label: 'Sous-titre', x: 120, y: 150, w: 660, text: 'Décernée à', font: SANS, size: 15, weight: 500, color: '#2b3340', align: 'center' },
+          { type: 'text', label: 'Destinataire', x: 120, y: 176, w: 660, text: 'Mme/M. {name}', font: SANS, size: 23, weight: 800, color: DARK, align: 'center' },
+          { type: 'text', label: 'Corps', x: 125, y: 226, w: 640, text: 'pour avoir participé et communiqué au {event}, {dates}, à {location}.', font: SANS, size: 15, weight: 500, color: DARK, leading: 1.4 },
+          { type: 'text', label: 'Thème (libellé)', x: 125, y: 284, w: 195, text: 'Thème du colloque :', font: SANS, size: 14, weight: 700, color: DARK },
+          { type: 'text', label: 'Thème', x: 330, y: 284, w: 436, text: '{theme}', font: SANS, size: 14, weight: 700, color: DARK, leading: 1.3 },
+          { type: 'text', label: 'Titre com. (libellé)', x: 125, y: 348, w: 200, text: 'Titre de la communication :', font: SANS, size: 14, weight: 700, color: DARK },
+          { type: 'text', label: 'Titre com.', x: 330, y: 348, w: 436, text: '{communication}', font: SANS, size: 14, weight: 700, color: DARK, italic: true, leading: 1.3 },
+          { type: 'text', label: 'Type (libellé)', x: 125, y: 412, w: 200, text: 'Type de communication :', font: SANS, size: 14, weight: 700, color: DARK },
+          { type: 'text', label: 'Type', x: 330, y: 412, w: 220, text: '{communication_type}', font: SANS, size: 14, weight: 700, color: DARK, italic: true },
+          { type: 'text', label: 'Formule', x: 125, y: 458, w: 648, text: 'En foi de quoi, la présente attestation lui est délivrée pour servir et valoir ce que de droit.', font: SANS, size: 13, weight: 500, color: DARK },
+          { type: 'text', label: 'Lieu / date', x: 450, y: 492, w: 360, text: 'Fait à Kara, le {date}', font: SANS, size: 14, weight: 500, color: DARK, align: 'center' },
+          { type: 'text', label: 'Fonction', x: 450, y: 514, w: 360, text: 'Le {signatory_role}', font: SANS, size: 15, weight: 700, color: DARK, align: 'center' },
+          { type: 'text', label: 'Signataire', x: 450, y: 560, w: 360, text: '{signatory}', font: SANS, size: 17, weight: 700, color: DARK, align: 'center' },
+          { type: 'text', label: 'Identifiant', x: 30, y: 582, w: 560, text: 'Identifiant de l’attestation : {ref}', font: SANS, size: 11, weight: 700, color: DARK }
+        ];
+      })(),
       moderation: [
         { type: 'logo', label: 'Logo UK', x: 48, y: 28, w: 170, html: '<div class="mark">UK</div> UNIVERSITÉ DE KARA' },
         { type: 'logo', label: 'Logo UP', x: 680, y: 28, w: 180, html: 'UNIVERSITÉ DE PARAKOU' },
@@ -1648,7 +1669,11 @@
     // fond selon modele
     var bgEl = document.getElementById('pageBg');
     page.classList.remove('bg-none', 'bg-simple', 'bg-gold', 'bg-bands', 'bg-custom', 'bg-plain');
-    if (key === 'formation-csiuk') {
+    if (key === 'communication') {
+      // Cadre décoratif officiel (motifs kente, hélice ADN) + logos UK et Parakou.
+      bgEl.style.backgroundImage = "url('/img/attestations/attestation-communication-bg.png')";
+      bgEl.style.backgroundSize = '100% 100%';
+    } else if (key === 'formation-csiuk') {
       bgEl.style.backgroundImage = "url('/img/bg-attestation-uk.png')";
       bgEl.style.backgroundSize = '100% 100%';
     } else if (key === 'formation-forvarrito') {

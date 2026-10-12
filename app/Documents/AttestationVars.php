@@ -45,6 +45,8 @@ class AttestationVars
             // Communication concernée (attestation de communication) - vide pour les autres types.
             'communication' => (string) ($meta['communication_title'] ?? ''),
             'communication_ref' => (string) ($meta['communication_ref'] ?? ''),
+            // Format de présentation (« Orale » / « Affichée »), figé à l'émission.
+            'communication_type' => (string) ($meta['communication_type'] ?? ''),
             // Formation concernée (attestation de formation / animation) - vide sinon.
             'formation' => (string) ($meta['formation_title'] ?? ''),
             'formation_theme' => (string) ($meta['formation_theme'] ?? ''),

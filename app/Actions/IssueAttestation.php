@@ -45,6 +45,9 @@ class IssueAttestation
         if ($submission) {
             $meta['communication_title'] = (string) $submission->title;
             $meta['communication_ref'] = (string) $submission->ref_code;
+            // Format de présentation, figé à l'émission (comme le titre) : une
+            // attestation dit ce qu'elle disait le jour de sa délivrance.
+            $meta['communication_type'] = $submission->type === 'poster' ? 'Affichée' : 'Orale';
         }
         if ($formation) {
             $meta['formation_title'] = (string) $formation->title;

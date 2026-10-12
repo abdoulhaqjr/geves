@@ -3094,9 +3094,35 @@ ajoutée par la vue, elle ne se saisit pas.
   vues de repli (`attestations.document`, `documents.badges`, `pdf.attestation`) ont été
   **supprimées** - ne pas les réintroduire : un document que l'admin ne peut ni voir ni
   modifier dans le back-office est un piège. Supprimer un modèle le **réinitialise**. Placeholders dispo dans `TemplateDesignerController::VARIABLES` - dont
-  **`{communication}` / `{communication_ref}`** pour nommer la communication, et
+  **`{communication}` / `{communication_ref}` / `{communication_type}`** pour nommer la
+  communication (titre, référence, **format** orale/affichée), et
   **`{formation}` / `{formation_theme}` / `{formateurs}`** pour une attestation de
-  formation. **Signatures des formateurs** : élément de mise en page **`signatures`**
+  formation.
+  - ⚠️ **Le défaut dépend du TYPE** : `LayoutSanitizer::default('attestation', $type)` a un
+    `match` ; le type **`communication`** renvoie le **modèle officiel UK x Université de
+    Parakou** (`attestationCommunication()`). Ce modèle PHP (rendu quand aucun modèle n'est
+    enregistré) et le modèle du **concepteur** (`loadTemplate('communication')` dans
+    `template-designer.js`, aussi chargé à l'ouverture d'un type sans `editor_state`) décrivent
+    la **MÊME maquette** : toucher à l'un, c'est toucher à l'autre. Garde :
+    `AttestationCommunicationTemplateTest`.
+  - **Cadre + logos = image de fond, texte = éléments éditables.** Le cadre décoratif (motifs
+    kente, hélice ADN) et les **deux logos** (UK + Parakou) sont **cuits** dans
+    `public/img/attestations/attestation-communication-bg.png` (`bg_image`), reconstruit depuis
+    le PDF officiel (`Modele AT/Communication.pdf`) en effaçant le texte d'exemple. Seul le
+    texte est en éléments (jetons), donc entièrement éditable. Pour un autre modèle au cadre
+    fourni, même recette : cadre+logos en image de fond, texte par-dessus.
+  - **Polices du modèle** : titre en **Georgia** (`georgia` → dompdf **Times**), corps en
+    **Arial** (`arial` → dompdf **Helvetica**) - deux familles **natives du PDF**, donc rendu
+    identique écran/PDF **sans police à héberger** (contrairement à Jost/Playfair, cf.
+    `DocumentFonts`). `createEl` (concepteur) applique désormais des **styles en ligne**
+    (`font`/`size`/`weight`/`color`/`italic`/`align`/`leading`…), prioritaires sur les classes
+    `.heading`/`.sub`/`.attr` (dont l'allure - Playfair, indigo - ne convient pas à tout
+    modèle).
+  - ⚠️ **`{communication_type}`** est **figé à l'émission** dans `meta` (`IssueAttestation` :
+    `poster → « Affichée »`, sinon `« Orale »`), comme le titre : une attestation dit ce
+    qu'elle disait le jour de sa délivrance. L'alias **`[communication.type]`** pointe
+    désormais sur ce **format** (et non la référence) ; la référence reste en
+    `[communication.ref]` / `{communication_ref}`. **Signatures des formateurs** : élément de mise en page **`signatures`**
   (`LayoutSanitizer::ELEMENT_TYPES`) rendu par `LayoutRenderer::renderSignatures()` à
   partir de `$vars['signatures']` - seule valeur **structurée** des variables (les
   autres sont des chaînes). La signature de chaque formateur se téléverse sur la page

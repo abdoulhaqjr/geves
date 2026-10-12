@@ -44,7 +44,10 @@ class DocumentVars
         'certificate.reference' => 'ref',
         'certificate.issued_on' => 'date',
         'communication.title' => 'communication',
-        'communication.type' => 'communication_ref',
+        // ⚠️ `[communication.type]` nomme le FORMAT (orale / affichée), pas la
+        // référence : les modèles livrés l'emploient sous « Type de communication ».
+        'communication.type' => 'communication_type',
+        'communication.ref' => 'communication_ref',
         'signatory.name' => 'signatory',
         'signatory.role' => 'signatory_role',
         'badge.ref' => 'ref',
