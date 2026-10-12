@@ -296,6 +296,26 @@ class User extends Authenticatable implements HasLocalePreference, MustVerifyEma
     }
 
     /**
+     * Nom à utiliser pour saluer la personne dans un e-mail : civilité + prénom
+     * nom quand ils sont connus (« Dr Awa Doumbia »), sinon null pour retomber
+     * sur un accueil générique (« Bonjour, »). ⚠️ On n'utilise jamais `name`,
+     * qui peut valoir l'e-mail faute de prénom/nom : saluer par une adresse
+     * serait pire que l'accueil générique.
+     */
+    public function salutationName(): ?string
+    {
+        $name = trim(((string) $this->first_name).' '.((string) $this->last_name));
+
+        if ($name === '') {
+            return null;
+        }
+
+        $civility = trim((string) $this->civility);
+
+        return $civility !== '' ? $civility.' '.$name : $name;
+    }
+
+    /**
      * Vérification d'e-mail par défaut = flux participant (route account signée,
      * via VerifyEmail::createUrlUsing). Les comptes staff créés au back-office
      * reçoivent explicitement {@see StaffVerifyEmail}.

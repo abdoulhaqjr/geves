@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\User;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Carbon;
@@ -15,6 +16,19 @@ use Illuminate\Support\Facades\URL;
  */
 class StaffVerifyEmail extends VerifyEmail
 {
+    /** Destinataire, capté dans toMail pour personnaliser l'accueil. */
+    protected ?User $recipient = null;
+
+    /**
+     * @param  mixed  $notifiable
+     */
+    public function toMail($notifiable): MailMessage
+    {
+        $this->recipient = $notifiable instanceof User ? $notifiable : null;
+
+        return parent::toMail($notifiable);
+    }
+
     protected function verificationUrl($notifiable): string
     {
         return URL::temporarySignedRoute(
@@ -34,7 +48,7 @@ class StaffVerifyEmail extends VerifyEmail
 
         return (new MailMessage)
             ->subject(__('Vérifiez votre adresse - Back-office :app', ['app' => $app]))
-            ->greeting(__('Bonjour,'))
+            ->greeting(Greeting::for($this->recipient))
             ->line(__('Confirmez votre adresse e-mail pour activer votre accès au back-office de :app.', ['app' => $app]))
             ->action(__('Vérifier mon adresse'), $url)
             ->line(__('Ce lien de confirmation expire dans :count minutes.', ['count' => $minutes]))

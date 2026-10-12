@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Config;
@@ -18,6 +19,19 @@ use Illuminate\Support\Facades\Config;
  */
 class AccountResetPassword extends ResetPassword
 {
+    /** Destinataire, capté dans toMail pour personnaliser l'accueil. */
+    protected ?User $recipient = null;
+
+    /**
+     * @param  mixed  $notifiable
+     */
+    public function toMail($notifiable): MailMessage
+    {
+        $this->recipient = $notifiable instanceof User ? $notifiable : null;
+
+        return parent::toMail($notifiable);
+    }
+
     protected function buildMailMessage($url): MailMessage
     {
         $app = (string) config('app.name');
@@ -26,7 +40,7 @@ class AccountResetPassword extends ResetPassword
 
         return (new MailMessage)
             ->subject(__('Réinitialisation de votre mot de passe - :app', ['app' => $app]))
-            ->greeting(__('Bonjour,'))
+            ->greeting(Greeting::for($this->recipient))
             ->line(__('Vous recevez cet e-mail car une réinitialisation du mot de passe a été demandée pour votre compte :app.', ['app' => $app]))
             ->action(__('Réinitialiser mon mot de passe'), $url)
             ->line(__('Ce lien de réinitialisation expire dans :count minutes.', ['count' => $minutes]))
