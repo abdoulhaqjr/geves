@@ -313,7 +313,7 @@
                     @endif
                 </dl>
                 <a href="{{ route('public.colloque', $event->slug) }}" class="tdb-link tdb-link--foot">
-                    {{ __('Page du colloque') }} <x-ukc.icon name="chevron" :size="14" />
+                    {{ $event->publicPageLabel() }} <x-ukc.icon name="chevron" :size="14" />
                 </a>
             @else
                 <p class="tdb-empty">{{ __('Aucun colloque sélectionné.') }}</p>

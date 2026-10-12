@@ -170,6 +170,9 @@ Depuis la refonte « événements typés », le modèle a **deux niveaux** :
   Relation **`Event::series()`** (FK **explicite** `event_series_id` - le nom de méthode
   « series » ferait sinon déduire `series_id`) ; inverse **`EventSeries::events()`**.
   L'**accesseur `Event::type()`** renvoie le type hérité de la série (défaut `colloque`).
+  Pour un lien vers sa page publique, utiliser **`Event::publicPageLabel()`** : le
+  libellé accorde colloque, séminaire et journée(s) scientifique(s). Pour ces
+  dernières, le titre/libellé de l'édition prime sur les dates, puis sur la série.
 
 - **Le type se choisit dans la fiche de l'événement**, bloc *Série de rattachement*
   (onglet Général) : sélecteur **`series_type`** (`admin/evenements/form.blade.php`),

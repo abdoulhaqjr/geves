@@ -21,6 +21,10 @@ L'inscription participant et le contact de la page d'accueil utilisent Cloudflar
 
 La page `/compte/paiement/{event}` présente un parcours en quatre étapes, l’état du dossier et l’action utile avant la grille des tarifs. Sans fiche de participation, elle oriente vers le suivi ou le dépôt d’une communication ; avec une communication acceptée, elle met le montant et le formulaire de paiement au premier plan. La grille des six catégories éventuelles est repliable sans participation et met en évidence le tarif personnel uniquement quand le grade correspond explicitement à une entrée de `Fees::grid()`. Le moyen de paiement est un radio `gateway` relié à Alpine pour que le sélecteur d’opérateur suive le choix. La règle serveur d’éligibilité et les passerelles restent inchangées.
 
+### Libellé des liens vers une page d'événement (2026-10-12)
+
+`Event::publicPageLabel()` produit « Page du colloque », « Page du séminaire », « Page de la journée scientifique » ou « Page des journées scientifiques » selon le type de la série et, pour les journées, la formulation de l'édition puis sa durée ; `Autre` conserve « Page de l'événement ». Le bouton de l'accueil, les cartes des événements à venir, le menu participant et le tableau de bord partagent ce libellé. Les nouvelles chaînes ont leur traduction anglaise dans `lang/en.json`.
+
 **GEVES** (Gestion des ÉVénements Scientifiques - Direction de la Recherche et de l'Innovation, **Université de Kara**) est le portage **Laravel** d'une extension WordPress existante (`uk-colloques`). La plateforme gère de bout en bout non seulement des **colloques** mais tout **événement scientifique** (journées scientifiques, séminaires…) : séries → éditions datées → soumissions de résumés → relecture en aveugle → paiements → créneaux/ateliers → livret/badges/attestations → e-mails → rapports → comptes participants. Assistance **IA** intégrée (chatbot public « Gesco » + copilote back-office à actions exécutables).
 
 - **But** : plateforme professionnelle, autonome (sans WordPress).

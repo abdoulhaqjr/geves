@@ -57,7 +57,7 @@
                             @endif
                         </div>
                         <div style="display:flex;flex-wrap:wrap;gap:8px;">
-                            <a href="{{ $colloqueUrl($featured) }}" class="ukc-btn ukc-btn--primary ukc-btn--sm">{{ __('Page de l’événement') }}</a>
+                            <a href="{{ $colloqueUrl($featured) }}" class="ukc-btn ukc-btn--primary ukc-btn--sm">{{ $featured->publicPageLabel() }}</a>
                             @auth('account')
                                 <a href="{{ route('account.submissions.create', $featured->slug) }}" class="ukc-btn ukc-btn--ghost ukc-btn--sm">{{ __('Soumettre un résumé') }}</a>
                             @endauth
@@ -170,7 +170,7 @@
                                     @if ($e->submission_deadline)<div>{{ __('Date limite :') }} {{ $e->submission_deadline->translatedFormat('d F Y') }}</div>@endif
                                 </div>
                                 <div class="foot">
-                                    <a href="{{ $colloqueUrl($e) }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">{{ __('Page de l’événement') }}</a>
+                                    <a href="{{ $colloqueUrl($e) }}" class="ukc-btn ukc-btn--blue ukc-btn--sm">{{ $e->publicPageLabel() }}</a>
                                     @auth('account')
                                         <a href="{{ route('account.submissions.create', $e->slug) }}" class="ukc-btn ukc-btn--outline ukc-btn--sm">{{ __('Soumettre') }}</a>
                                     @endauth

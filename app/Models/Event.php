@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 /**
  * Événement : une occurrence datée d'un colloque, avec son cycle de vie et son
@@ -58,6 +59,42 @@ class Event extends Model
     public function type(): EventType
     {
         return $this->series?->type ?? EventType::Colloque;
+    }
+
+    /** Libellé du lien vers la page publique, accordé avec le type de l'événement. */
+    public function publicPageLabel(): string
+    {
+        return match ($this->type()) {
+            EventType::Colloque => __('Page du colloque'),
+            EventType::Seminaire => __('Page du séminaire'),
+            EventType::JourneesScientifiques => $this->isSingleScientificDay()
+                ? __('Page de la journée scientifique')
+                : __('Page des journées scientifiques'),
+            EventType::Autre => __('Page de l’événement'),
+        };
+    }
+
+    private function isSingleScientificDay(): bool
+    {
+        // Le type de la série est au pluriel, mais une édition peut être une seule journée.
+        // La formulation explicite de l'édition prime sur les dates et le nom de la série.
+        foreach ([$this->title, $this->event_label] as $text) {
+            $normalized = strtolower(Str::ascii((string) $text));
+            if (preg_match('/\bjournees\b/', $normalized)) {
+                return false;
+            }
+            if (preg_match('/\bjournee\b/', $normalized)) {
+                return true;
+            }
+        }
+
+        if ($this->date_start !== null) {
+            return $this->date_end === null || $this->date_start->isSameDay($this->date_end);
+        }
+
+        $seriesName = strtolower(Str::ascii((string) $this->series?->name));
+
+        return preg_match('/\bjournee\b/', $seriesName) === 1;
     }
 
     /** @return HasMany<Participant, $this> */
