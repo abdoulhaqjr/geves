@@ -600,11 +600,12 @@ les guards **`web`** (back-office) et **`account`** (espace participant) résolv
 est **legacy et mort**. Toute nouvelle table liée à un participant référence **`user_id`**
 (users), jamais `account_id`. `Participant` (par édition) porte `user_id`.
 
-### E-mails de compte = rédigés + LOCALISÉS (défaut français)
+### E-mails de compte = rédigés, LOCALISÉS (défaut français) + charte UK
 
 Les e-mails d'**authentification** (confirmation d'adresse à l'inscription, mot de
 passe oublié, vérification staff) étaient les **notifications par défaut de Laravel**,
-en **anglais générique**. Ils sont désormais rédigés et **localisés** :
+en **anglais générique** et sans habillage. Ils sont désormais rédigés, **localisés**
+et **habillés à la charte de l'Université de Kara** :
 
 - **`User implements HasLocalePreference`** → `preferredLocale()` = `Locales::resolve($this->locale)`
   (repli **français**). Laravel enveloppe l'envoi de **toute notification** dans cette
@@ -619,8 +620,26 @@ en **anglais générique**. Ils sont désormais rédigés et **localisés** :
 - Rédaction via **`__('texte FR')`** (clé = français), traductions dans **`lang/en.json`**.
   ⚠️ Ajouter une ligne d'e-mail = ajouter la clé FR **et** sa traduction `en`.
 - Locales prises en charge : `config('app.available_locales')` = `fr` (défaut) / `en`.
+- **Charte UK = thème markdown partagé** (`config('mail.markdown.theme') = 'geves'`),
+  donc **TOUS les e-mails markdown** l'héritent (notifications ET mailables de
+  `resources/views/emails/*` via `<x-mail::message>`) : bandeau **bleu `#223ea4`** +
+  filet **or `#ffd700`**, **logo en en-tête**, bouton d'action au bleu charte (vert
+  `#009933` = succès), police **Jost** (repli sans-serif), pied de page français.
+  - Composants publiés dans **`resources/views/vendor/mail`** : on ne garde que ceux
+    qu'on personnalise (`html/layout`, `html/header`, `html/message`, `text/message`,
+    `html/themes/geves.css`) ; les autres **retombent sur le framework** (ne pas
+    republier tout le kit). ⚠️ Le thème est en **aplats** (pas de dégradé : Outlook ne
+    les rend pas) et l'inlining CSS fige les couleurs.
+  - **Le logo vient de `App\Support\Branding::wideWhite()`** (réglé dans Réglages ›
+    Général), en **URL absolue** (hébergée) sur le bandeau sombre ; repli sur le fichier
+    livré, déjà dessiné en blanc. ⚠️ Ne pas écrire un logo en dur dans l'en-tête.
+  - ⚠️ **Jamais le point médian (U+00B7) dans un sujet/pied d'e-mail** : c'est un
+    **caractère proscrit** (cf. TypographieTest), au même titre que le cadratin (U+2014)
+    et le demi-cadratin (U+2013). Séparateur = tiret simple ` - `. Les sujets des
+    notifications l'employaient : repris en tiret simple.
 - Tests : `tests/Feature/AccountMailLocalizationTest.php` (langue suit le compte + rendu
-  FR/EN) ; `AccountAuthTest` asserte `AccountVerifyEmail::class` à l'inscription.
+  FR/EN) ; `AccountAuthTest` asserte `AccountVerifyEmail::class` à l'inscription ;
+  `TypographieTest` garde l'absence des caractères proscrits (sujets compris).
 
 ### Impersonation (« se connecter en tant que »)
 

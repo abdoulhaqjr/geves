@@ -1041,5 +1041,7 @@
     "Vérifiez votre adresse - Back-office :app": "Verify your email address - :app back office",
     "Confirmez votre adresse e-mail pour activer votre accès au back-office de :app.": "Confirm your email address to activate your access to the :app back office.",
     "Vérifier mon adresse": "Verify my email address",
-    "Si vous n’êtes pas concerné par cette demande, ignorez cet e-mail.": "If this request wasn’t made by you, ignore this email."
+    "Si vous n’êtes pas concerné par cette demande, ignorez cet e-mail.": "If this request wasn’t made by you, ignore this email.",
+    "Université de Kara": "University of Kara",
+    "Cet e-mail vous a été envoyé par :app, plateforme de gestion des événements scientifiques.": "This email was sent to you by :app, the scientific events management platform."
 }

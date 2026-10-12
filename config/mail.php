@@ -115,4 +115,24 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Markdown Mail Settings
+    |--------------------------------------------------------------------------
+    |
+    | Thème de la charte de l'Université de Kara (bleu/or, logo), appliqué à TOUS
+    | les e-mails markdown - notifications (confirmation, mot de passe oublié...)
+    | comme mailables. Les composants publiés et le thème vivent dans
+    | resources/views/vendor/mail.
+    |
+    */
+
+    'markdown' => [
+        'theme' => 'geves',
+
+        'paths' => [
+            resource_path('views/vendor/mail'),
+        ],
+    ],
+
 ];
