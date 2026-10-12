@@ -150,7 +150,7 @@
             <div class="ukc-container">
                 <div class="block-head">
                     <h2>{{ __('Événements à venir') }}</h2>
-                    <p>{!! __('Événements dont l’<strong>appel est lancé</strong> (soumission, évaluation, inscription…) - la date de l’événement n’est pas encore atteinte.') !!}</p>
+                    <p>{{ __('Découvrez les prochains événements scientifiques de l’Université de Kara et les modalités pour y participer.') }}</p>
                 </div>
                 <div class="colloque-grid">
                     @foreach ($upcoming as $e)
