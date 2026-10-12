@@ -12,11 +12,9 @@ use Illuminate\Support\Facades\Storage;
  * différentes :
  *  - **l'accueil** a un bandeau qui lui est propre : c'est la première image du
  *    site, elle ne dépend d'aucun événement ;
- *  - **les événements** ont chacun le leur (onglet « Identité visuelle » de la
- *    fiche), mais la plupart n'en téléversent pas. Celle-ci est le **repli
- *    commun** : elle habille tous ceux qui n'ont rien choisi, au lieu de les
- *    laisser sur un aplat dégradé. Un événement qui pose son propre bandeau
- *    garde le sien : le repli ne passe jamais devant un choix explicite.
+ *  - **les autres pages publiques avec un héros** partagent un bandeau par
+ *    défaut. Il sert aussi de repli aux événements sans visuel propre ; un
+ *    événement qui pose son bandeau garde toujours son choix.
  *
  * ⚠️ **Les clés n'ont pas de point**, contrairement à `site.facebook` et
  * consorts : la clé sert aussi de **nom de champ** du formulaire, et Laravel lit
@@ -36,7 +34,7 @@ class SiteBanners
     /** Bandeau de la page d'accueil. */
     public const HOME = 'hero_home_image';
 
-    /** Bandeau par défaut des pages d'événement. */
+    /** Bandeau par défaut des pages publiques hors accueil. */
     public const EVENT_DEFAULT = 'hero_event_default_image';
 
     /** Toutes les clés téléversables (la clé sert aussi de nom de champ). */
@@ -51,16 +49,16 @@ class SiteBanners
         return self::url(self::HOME);
     }
 
-    /**
-     * Bandeau par défaut d'une page d'événement, ou null.
-     *
-     * ⚠️ Rend une **URL**, pas un chemin : c'est ce que stocke
-     * `settings.hero_image` d'un événement (cf. `EventArtwork`), et le repli
-     * doit pouvoir s'y substituer sans conversion.
-     */
-    public static function eventDefault(): ?string
+    /** URL du bandeau partagé par les pages publiques hors accueil, ou null. */
+    public static function pageDefault(): ?string
     {
         return self::url(self::EVENT_DEFAULT);
+    }
+
+    /** Compatibilité avec les pages d'événement déjà branchées sur ce repli. */
+    public static function eventDefault(): ?string
+    {
+        return self::pageDefault();
     }
 
     /** URL du fichier téléversé pour cette clé, ou null s'il n'existe plus. */

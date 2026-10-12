@@ -12,9 +12,10 @@
     @include('partials.public-header')
 
     <div class="archive-detail">
+        @php($pageBanner = $event->banner_url ?: (($event->settings['hero_image'] ?? null) ?: \App\Support\SiteBanners::pageDefault()))
         <section class="detail-hero">
-            @if ($event->banner_url)
-                <div class="bg" style="background-image:url('{{ $event->banner_url }}');"></div>
+            @if ($pageBanner)
+                <div class="bg" style="background-image:url('{{ $pageBanner }}');"></div>
             @endif
             <div class="ukc-container">
                 <div class="chips">

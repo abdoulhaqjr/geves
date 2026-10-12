@@ -19,7 +19,9 @@
 <x-layouts.app :title="__('Frais de co-auteur').' - '.($event->tr('title') ?: config('app.name'))">
     @include('partials.public-header')
 
-    <section class="page-hero">
+    @php($pageBanner = ($event->settings['hero_image'] ?? null) ?: ($event->banner_url ?: \App\Support\SiteBanners::pageDefault()))
+    <section @class(['page-hero', 'page-hero--image' => $pageBanner])
+             @if ($pageBanner) style="--page-hero-bg: url('{{ $pageBanner }}');" @endif>
         <div class="ukc-container">
             <div class="eyebrow">{{ $event->tr('title') ?: $event->year }}</div>
             <h1>{{ __('Frais de co-auteur') }}</h1>

@@ -2444,7 +2444,10 @@ chargement.** Une région remplacée en AJAX arrive donc masquée et le reste :
 
 Deux images de niveau **plateforme**, servies par **`App\Support\SiteBanners`** :
 `hero_home_image` (bandeau de la page d'accueil) et `hero_event_default_image`
-(**repli** des pages d'événement). Même grammaire que `Branding` pour les logos :
+(**repli des autres pages publiques**, clé conservée pour les réglages existants).
+Les pages d'événement gardent la priorité à leur visuel propre ; les pages
+Archives, archive d'événement, direct et co-auteur utilisent aussi ce repli.
+Même grammaire que `Branding` pour les logos :
 la **clé du réglage sert aussi de nom de champ**, un fichier **remplace** le
 précédent, et un réglage pointant vers un fichier disparu rend `null`.
 
@@ -2452,10 +2455,10 @@ précédent, et un réglage pointant vers un fichier disparu rend `null`.
   lit un point comme un niveau de tableau, et `hasFile('hero.home')` ne
   trouverait rien.
 - ⚠️ **Le repli ne passe JAMAIS devant le choix d'un événement** :
-  `EventSeriesController` écrit `$settings['hero_image'] ?? SiteBanners::eventDefault()`,
+  `EventSeriesController` écrit `($settings['hero_image'] ?? null) ?: SiteBanners::pageDefault()`,
   dans cet ordre. Un cas Pest le gèle - un bandeau de site qui écraserait
   l'affiche d'un colloque serait pire que pas de bandeau du tout.
-- ⚠️ **`SiteBanners::eventDefault()` rend une URL**, pas un chemin : c'est ce
+- ⚠️ **`SiteBanners::pageDefault()` rend une URL**, pas un chemin : c'est ce
   que stocke `settings.hero_image` (cf. `EventArtwork`), et le repli doit
   pouvoir s'y substituer sans conversion.
 - **Accueil** : `home.blade.php` pose `.hero--image` + la variable `--hero-bg`,

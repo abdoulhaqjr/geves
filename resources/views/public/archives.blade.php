@@ -3,7 +3,9 @@
 <x-layouts.app :title="__('Événements passés - :app', ['app' => config('app.name')])">
     @include('partials.public-header')
 
-    <section class="page-hero">
+    @php($pageBanner = \App\Support\SiteBanners::pageDefault())
+    <section @class(['page-hero', 'page-hero--image' => $pageBanner])
+             @if ($pageBanner) style="--page-hero-bg: url('{{ $pageBanner }}');" @endif>
         <div class="ukc-container">
             <div class="eyebrow">{{ __('Archives scientifiques') }}</div>
             <h1>{{ __('Événements passés') }}</h1>

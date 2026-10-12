@@ -196,8 +196,8 @@
                             ],
                             [
                                 'key' => \App\Support\SiteBanners::EVENT_DEFAULT,
-                                'titre' => 'Bandeau par défaut des événements',
-                                'aide' => 'Habille la page de tout événement qui n’a pas téléversé le sien dans l’onglet « Identité visuelle » de sa fiche. Un événement qui a choisi son bandeau garde le sien.',
+                                'titre' => 'Bandeau par défaut des pages',
+                                'aide' => 'Habille les bandeaux des pages publiques hors accueil et ceux des événements sans visuel propre. Un événement qui a choisi son bandeau garde le sien.',
                             ],
                         ] as $banniere)
                             @php($posee = \App\Support\SiteBanners::url($banniere['key']))

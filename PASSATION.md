@@ -1229,6 +1229,13 @@ elles n'avaient plus d'objet.
 
 ## 2026-10-11 - Bandeaux du site réglables, et la page co-auteur élargie
 
+**Évolution du repli (2026-10-12).** Le réglage `hero_event_default_image`,
+affiché comme « Bandeau par défaut des pages », couvre aussi les héros des
+archives, des archives d'événement, du direct et de la page co-auteur. La clé
+reste inchangée pour conserver les images déjà téléversées. Un visuel propre
+à l'événement prime toujours, puis vient le repli commun ; sans fichier, le
+dégradé de la charte reste visible.
+
 **Deux demandes.** Élargir `.coauthor-wrap` de 720 à 1120px (fait, mesuré à
 1120 dans une fenêtre de 1350), et pouvoir renseigner depuis `admin/reglages`
 le bandeau de la page d'accueil et le bandeau par défaut des événements.

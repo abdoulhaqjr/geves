@@ -46,7 +46,7 @@ class EventSeriesController extends Controller
             // Repli commun quand l'événement n'a pas téléversé son propre
             // bandeau (Réglages › Bannières). ⚠️ Le choix de l'événement
             // passe toujours devant : le repli ne s'applique qu'à défaut.
-            'heroImage' => $settings['hero_image'] ?? SiteBanners::eventDefault(),
+            'heroImage' => ($settings['hero_image'] ?? null) ?: SiteBanners::pageDefault(),
             // ⚠️ La vidéo n'est servie que si la case « Activer la vidéo de fond »
             // l'est : sans ce test, l'interrupteur de l'onglet Apparence ne
             // faisait rien et toute URL enregistrée se jouait.

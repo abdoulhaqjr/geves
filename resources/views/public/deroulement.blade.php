@@ -26,11 +26,9 @@
 
         <div class="deroulement" x-data="{ modal: null }" @keydown.escape.window="modal = null">
             {{-- ===== Hero live ===== --}}
-            <section class="live-hero {{ $event->banner_url ? 'has-bg' : '' }}"
-                     @if ($event->banner_url) style="--x:0" @endif>
-                @if ($event->banner_url)
-                    <style>.deroulement .live-hero.has-bg::before{background-image:url('{{ $event->banner_url }}');}</style>
-                @endif
+            @php($pageBanner = $event->banner_url ?: (($event->settings['hero_image'] ?? null) ?: \App\Support\SiteBanners::pageDefault()))
+            <section @class(['live-hero', 'has-bg' => $pageBanner])
+                     @if ($pageBanner) style="--live-hero-bg: url('{{ $pageBanner }}');" @endif>
                 <div class="ukc-container">
                     <div class="top">
                         <span class="ukc-pill ukc-pill--live">● {{ __('En cours') }}</span>

@@ -42,7 +42,7 @@ it('ouvre l’onglet Bannières des réglages', function () {
         ->assertOk()
         ->assertSee('Bannières')
         ->assertSee('Bandeau de la page d’accueil', false)
-        ->assertSee('Bandeau par défaut des événements', false)
+        ->assertSee('Bandeau par défaut des pages', false)
         ->assertSee('name="'.SiteBanners::HOME.'"', false)
         ->assertSee('name="'.SiteBanners::EVENT_DEFAULT.'"', false);
 
