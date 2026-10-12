@@ -324,7 +324,7 @@ class TemplateDesignerController extends Controller
             'dates' => $event?->dateRangeLabel() ?: 'du 06 au 10 octobre 2026',
             'signatory' => 'Pr. Padabo Kadouza',
             'signatory_role' => 'Président du comité d’organisation',
-            'date' => now()->format('d/m/Y'),
+            'date' => now()->locale('fr')->translatedFormat('j F Y'),
             'ref' => 'UK-2026-001',
             'verify_url' => url('/attestation/exemple'),
             'communication' => 'L’apport du numérique dans l’enseignement supérieur',

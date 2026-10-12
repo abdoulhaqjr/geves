@@ -37,7 +37,10 @@ class AttestationVars
             'civility' => (string) (data_get($attestation, 'participant.user.civility') ?? ''),
             'name' => (string) $attestation->recipient_name,
             'type' => mb_strtolower($attestation->typeLabel()),
-            'date' => $attestation->issued_at?->format('d/m/Y') ?? '',
+            // Date rédigée en toutes lettres (« 12 octobre 2026 »), jamais 12/10/2026 :
+            // c'est un document officiel. Locale forcée au français, indépendamment
+            // de la langue d'interface.
+            'date' => $attestation->issued_at?->locale('fr')->translatedFormat('j F Y') ?? '',
             'ref' => $attestation->uuid,
             'verify_url' => $verifyUrl,
             // Signataire de l'événement : les modèles livrés portent [signatory.name]

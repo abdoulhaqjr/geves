@@ -3189,6 +3189,14 @@ ajoutée par la vue, elle ne se saisit pas.
   - **QR de vérification** : élément `qr` (valeur `{verify_url}` → `/attestation/{uuid}`), posé
     en bas à gauche. Le bloc signataire (« Fait à … », rôle, nom) est **aligné à gauche** sur
     une même colonne, comme la maquette.
+  - ⚠️ **La date (`[certificate.issued_on]`) est rédigée en toutes lettres** (« 12 octobre
+    2026 »), jamais `12/10/2026` : c'est un document officiel. `AttestationVars` formate
+    `issued_at->locale('fr')->translatedFormat('j F Y')` (locale forcée au français,
+    indépendante de la langue d'interface) ; l'aperçu du concepteur (`sampleVars`) fait de
+    même. Gelé par `AttestationCommunicationTemplateTest`.
+  - ⚠️ **`[communication.title]` et `[communication.type]` sont rendus TELS QUELS** (droit,
+    non italique) : on affiche la valeur enregistrée sans style. Le corps et la formule sont
+    en **14 px** (ni 13 ni plus) ; le titre reste en Times 28 px.
   - ⚠️ **`[communication.type]` = le FORMAT** (orale / affichée), **figé à l'émission** dans
     `meta` (`IssueAttestation` : `poster → « Affichée »`, sinon `« Orale »`), comme le titre.
     La référence de la communication reste en `[communication.ref]` / `{communication_ref}`. **Signatures des formateurs** : élément de mise en page **`signatures`**

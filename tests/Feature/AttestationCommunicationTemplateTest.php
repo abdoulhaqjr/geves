@@ -74,6 +74,12 @@ it('rend le format, la communication et la vraie civilité sur l’attestation',
         ->toContain('Pile microbienne à plante de citronnelle')
         ->toContain('Mme Awa Kodjo')
         ->not->toContain('Mme/M.');
+
+    // Date du « Fait à … » en toutes lettres (« 12 octobre 2026 »), jamais 12/10/2026.
+    $longDate = $attestation->issued_at->locale('fr')->translatedFormat('j F Y');
+    expect($html)
+        ->toContain($longDate)
+        ->not->toContain($attestation->issued_at->format('d/m/Y'));
 });
 
 it('résout l’alias [communication.type] vers le format, pas la référence', function () {
