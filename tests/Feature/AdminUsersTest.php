@@ -207,3 +207,15 @@ it('applique l’étanchéité par événement (affectation → accès, modèle 
     $this->actingAs($admin, 'web')->get(route('admin.settings'))->assertOk();
     $this->actingAs($admin, 'web')->get(route('admin.users.index'))->assertOk();
 });
+
+it('affiche la fiche d’un utilisateur (rendu de la page refondue)', function () {
+    $admin = usersAdmin();
+    $u = User::factory()->create(['email_verified_at' => null]);
+
+    $this->actingAs($admin, 'web')
+        ->get(route('admin.users.edit', $u))
+        ->assertOk()
+        ->assertSee($u->name)
+        ->assertSee('Actions sur le compte')
+        ->assertSee('Supprimer');
+});
