@@ -8,7 +8,7 @@
             <span class="brand-rule" aria-hidden="true"></span>
             <div class="brand-tag">
                 {{ config('app.name') }}
-                <span>{{ __('Direction de la Recherche et de l’Innovation') }}</span>
+                <span>{{ __('Gestion des événements scientifiques') }}</span>
             </div>
         </a>
         <button type="button" class="burger" id="burger" aria-label="{{ __('Ouvrir le menu') }}" aria-controls="mainNav" aria-expanded="false">☰</button>
