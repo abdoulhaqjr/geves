@@ -288,20 +288,26 @@ Le **back-office admin ET l'espace participant** sont habillés avec le kit dash
   groupe (sinon un label vide peut apparaître).
 - ⚠️ **Même règle côté participant** (`components/layouts/participant.blade.php`) : **Tableau
   de bord** hors catégorie, puis **Ma participation** (Soumissions, Inscription & paiement,
-  Formations, Documents, Mon témoignage) - **Mes fonctions** (modérer, rapporter, relire ;
-  seulement pour qui en porte) - **L'événement** (Page de l'événement, Programme) - **La
-  plateforme** (Déroulement, Archives, Accueil, Assistante) - **Mon compte** (Mon compte,
+  Formations, Documents) - **Mes fonctions** (modérer, rapporter, relire ; seulement pour qui
+  en porte) - **L'événement** (Page de l'événement, Programme) - **La plateforme**
+  (Déroulement, Archives, **Témoignage**, Accueil, Assistante) - **Mon compte** (Mon compte,
   Prise en main).
+  - ⚠️ **« Témoignage » est dans « La plateforme », pas dans « Ma participation »** : il
+    alimente la page d'accueil, il ne fait pas partie du dossier de participation. Et le
+    libellé du menu est « Témoignage » tout court - le « Mon » reste au titre de la page.
   - ⚠️ **« Déroulement » appartient à « La plateforme », pas à « L'événement »** : sa route
     est globale (`public.deroulement`) et reste utile sans événement suivi. C'est ce qui
     permet à « L'événement » de partager la garde `@if ($colloqueEdition)` de ses deux liens
     et de disparaître ENTIÈRE, sans laisser un lien orphelin sous un intitulé masqué.
   - ⚠️ **Icônes toutes distinctes dans un même menu** : replié (`ukc-compact`), l'icône est
     tout ce qui reste d'un lien ; deux identiques rendent deux entrées indiscernables.
-  - Garde : `MenuParticipantTest` (ordre des catégories, aucun intitulé sans lien, « L'événement »
-    masqué sans événement, aucune icône répétée, vocabulaire, traductions). ⚠️ Le cas du
-    vocabulaire éprouve le **texte visible**, pas le HTML : la route `/colloque/{slug}`
-    apparaît dans chaque `href` et reste délibérément conservée.
+  - Garde : `MenuParticipantTest` (ordre des catégories, **composition de chacune**, aucun
+    intitulé sans lien, « L'événement » masqué sans événement, aucune icône répétée,
+    vocabulaire, traductions). ⚠️ Le cas de **composition** est celui qui tient le rangement :
+    sans lui, déplacer un lien d'une catégorie à l'autre passe au vert. ⚠️ Son jeu d'essai
+    active le module formations ET publie une formation, sinon le menu rendu n'est pas le menu
+    complet. ⚠️ Le cas du vocabulaire éprouve le **texte visible**, pas le HTML : la route
+    `/colloque/{slug}` apparaît dans chaque `href` et reste délibérément conservée.
 
 ### Composants transverses à réutiliser
 

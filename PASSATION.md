@@ -1592,10 +1592,20 @@ annonçait une catégorie « Colloque » qui contenait surtout des liens de
 plateforme.
 
 Il porte maintenant : **Tableau de bord** (hors catégorie), **Ma participation**
-(Soumissions, Inscription & paiement, Formations, Documents, Mon témoignage),
-**Mes fonctions** (inchangé, déjà bien gardé), **L'événement** (Page de
-l'événement, Programme), **La plateforme** (Déroulement, Archives, Accueil,
-Assistante), **Mon compte** (Mon compte, Prise en main).
+(Soumissions, Inscription & paiement, Formations, Documents), **Mes fonctions**
+(inchangé, déjà bien gardé), **L'événement** (Page de l'événement, Programme),
+**La plateforme** (Déroulement, Archives, **Témoignage**, Accueil, Assistante),
+**Mon compte** (Mon compte, Prise en main).
+
+⚠️ **« Témoignage » est passé de « Ma participation » à « La plateforme »** (sur
+arbitrage) : il alimente la page d'accueil, il ne fait pas partie du dossier de
+participation. Son libellé perd le « Mon » - qui reste au titre de la page. Et
+c'est ce qui a montré un **trou dans la garde** : les cas n'éprouvaient que les
+intitulés, leur ordre et leur non-vacuité, si bien qu'un lien pouvait changer de
+catégorie sans qu'aucun ne bronche. Un cas de **composition** épingle désormais
+le contenu exact de chaque groupe. ⚠️ Son jeu d'essai active le module formations
+et publie une formation : sans cela le menu rendu n'est pas le menu complet, et le
+cas croirait la catégorie juste en ne regardant que quatre liens sur cinq.
 
 ⚠️ **Le déplacement qui fait marcher la garde.** « Déroulement » était rangé
 avec les liens de l'événement. Or sa route est GLOBALE (`public.deroulement`) et
@@ -1616,11 +1626,11 @@ Le menu avait aussi échappé au renommage « colloque » -> « événement » :
 `VocabulairePublicTest` ne balaie que le site public, pas les gabarits de
 l'espace connecté. Corrigé, avec trois clés anglaises ajoutées.
 
-Garde : `MenuParticipantTest` (6 cas). Quatre sabotages vérifiés : intitulé
+Garde : `MenuParticipantTest` (7 cas). Cinq sabotages vérifiés : intitulé
 sorti de sa garde, icône dupliquée, « colloque » de retour, ordre des catégories
-changé. ⚠️ Le cas du vocabulaire éprouve le **texte visible** et non le HTML :
-la route `/colloque/{slug}`, délibérément conservée, apparaît dans chaque
-`href`. ⚠️ Et le helper s'appelle `compteDuMenu()` et non `compteParticipant()` :
+changé, « Témoignage » remis dans « Ma participation ». ⚠️ Le cas du vocabulaire
+éprouve le **texte visible** et non le HTML : la route `/colloque/{slug}`,
+délibérément conservée, apparaît dans chaque `href`. ⚠️ Et le helper s'appelle `compteDuMenu()` et non `compteParticipant()` :
 les fonctions d'un fichier de cas sont GLOBALES, et le nom évident était déjà
 pris par `ParticipantDashboardTest` - la redéclaration fait tomber la suite
 entière sur une erreur fatale muette.
@@ -1631,4 +1641,31 @@ Vérifié à l'écran en impersonation d'un participant réel, menu déployé.
 terminé », « LE COLLOQUE », « Page du colloque ». Le renommage s'est arrêté au
 site public ; l'espace connecté n'a pas de garde de vocabulaire.
 
-1195 tests / 4242 assertions, Pint et PHPStan niveau 5 sans erreur.
+Pint et PHPStan niveau 5 sans erreur, `MenuParticipantTest` et `TypographieTest`
+verts.
+
+⚠️ **La suite complète, elle, est rouge de 6 cas qui ne viennent pas d'ici** :
+`cb693027` (Turnstile) refuse inscription et contact quand les clés ne sont pas
+configurées - voir l'entrée suivante.
+
+## 2026-10-12 - À TRAITER : Turnstile bloque inscription et contact
+
+`cb693027` protège l'inscription et le formulaire de contact par Cloudflare
+Turnstile. ⚠️ `Turnstile::validate()` **refuse tout quand les clés ne sont pas
+configurées** (« La vérification de sécurité est temporairement indisponible »).
+
+**Conséquence en production** : si `CLOUDFLARE_TURNSTILE_SITE_KEY` /
+`CLOUDFLARE_TURNSTILE_SECRET_KEY` ne sont ni dans le `.env` ni dans Réglages sur
+geves.univkara.tg, **l'inscription et le contact sont hors service**. Les clés
+sont lisibles depuis le tableau de bord Cloudflare du domaine.
+
+**Conséquence sur la suite** : 6 cas rouges (`AccountAuthTest`,
+`NotificationTest`, `PublicFinishingTest`, `UserPhoneUniquenessTest` x3).
+
+Deux issues, et c'est un arbitrage, pas un oubli de frappe :
+1. **Garder le refus** (fail-closed) et configurer des clés d'essai dans la
+   suite, avec `Http::fake()` sur l'appel à `siteverify` ;
+2. **Laisser passer** quand Turnstile n'est pas configuré (fail-open), au prix
+   d'une protection absente sur toute installation non configurée.
+
+Rien n'a été touché dans ce commit : la décision appartient à l'auteur.

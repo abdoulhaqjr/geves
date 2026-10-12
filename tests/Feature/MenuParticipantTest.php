@@ -2,8 +2,10 @@
 
 use App\Models\Event;
 use App\Models\EventSeries;
+use App\Models\Formation;
 use App\Models\Participant;
 use App\Models\User;
+use App\Support\AiAgents;
 use Illuminate\Support\Str;
 
 /**
@@ -88,7 +90,17 @@ function participantAvecEvenement(): User
         'submission_open' => true,
         'date_start' => now()->addMonths(2),
         'date_end' => now()->addMonths(2)->addDays(2),
-        'settings' => [],
+        // ⚠️ Module formations ACTIF + une formation publiée : sans quoi le lien
+        // « Formations » est masqué et le menu rendu n'est pas le menu complet -
+        // le cas de composition croirait alors à tort que la catégorie est juste.
+        'settings' => ['formation_enabled' => true],
+    ]);
+
+    Formation::create([
+        'event_id' => $event->id,
+        'title' => 'Atelier menu',
+        'slug' => 'atelier-menu-'.$event->id,
+        'published' => true,
     ]);
 
     Participant::create(['user_id' => $account->id, 'event_id' => $event->id]);
@@ -108,6 +120,51 @@ it('range le menu participant en catégories, dans l’ordre', function () {
 
     // « Tableau de bord » reste HORS catégorie, en tête, comme côté admin.
     expect(Str::before($nav, '<span class="nav-label">'))->toContain('Tableau de bord');
+});
+
+/**
+ * **Ce que chaque catégorie contient, et dans quel ordre.**
+ *
+ * ⚠️ Sans ce cas, les autres passent au vert quand un lien change de groupe :
+ * ils n'éprouvent que les intitulés. Or le rangement est précisément ce qui a
+ * été arbitré - « Témoignage » relève de la plateforme (il alimente la page
+ * d'accueil) et non du dossier de participation.
+ */
+it('range chaque lien dans la bonne catégorie', function () {
+    $nav = menuParticipant(participantAvecEvenement());
+
+    $troncons = preg_split('/<span class="nav-label">.*?<\/span>/s', $nav);
+    $tete = (string) array_shift($troncons);
+
+    $libelles = function (string $html): array {
+        preg_match_all('/<span class="txt">(.*?)<\/span>/s', $html, $m);
+
+        return array_map(fn (string $t) => trim(html_entity_decode($t)), $m[1]);
+    };
+
+    expect($libelles($tete))->toBe(['Tableau de bord']);
+
+    $attendu = [
+        'Ma participation' => ['Soumissions', 'Inscription & paiement', 'Formations', 'Documents'],
+        'L’événement' => ['Page de l’événement', 'Programme'],
+        'La plateforme' => ['Déroulement', 'Archives', 'Témoignage', 'Accueil plateforme', 'Assistante Peace'],
+        'Mon compte' => ['Mon compte', 'Prise en main'],
+    ];
+
+    $reel = [];
+    foreach (categoriesDuMenu($nav) as $i => $titre) {
+        $reel[$titre] = $libelles((string) ($troncons[$i] ?? ''));
+    }
+
+    // Le nom de l'assistante est un réglage : on compare sur ce que le menu rend.
+    $attendu['La plateforme'] = array_map(
+        fn (string $l) => str_starts_with($l, 'Assistante ')
+            ? 'Assistante '.AiAgents::publicName()
+            : $l,
+        $attendu['La plateforme'],
+    );
+
+    expect($reel)->toBe($attendu);
 });
 
 /**

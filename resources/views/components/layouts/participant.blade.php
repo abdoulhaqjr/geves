@@ -125,10 +125,6 @@
                    @class(['active' => request()->routeIs('account.documents')])>
                     <x-ukc.icon name="folder" :size="18" /> <span class="txt">{{ __('Documents') }}</span>
                 </a>
-                <a href="{{ route('account.testimonials') }}" title="{{ __('Mon témoignage') }}"
-                   @class(['active' => request()->routeIs('account.testimonials')])>
-                    <x-ukc.icon name="message" :size="18" /> <span class="txt">{{ __('Mon témoignage') }}</span>
-                </a>
 
                 {{-- ===== Mes fonctions : n'apparaissent que pour les personnes concernées ===== --}}
                 @php
@@ -184,6 +180,12 @@
                 </a>
                 <a href="{{ route('public.archives') }}" title="{{ __('Archives') }}">
                     <x-ukc.icon name="layers" :size="18" /> <span class="txt">{{ __('Archives') }}</span>
+                </a>
+                {{-- Le témoignage alimente la page d'accueil : il relève de la
+                     plateforme, pas du dossier de participation. --}}
+                <a href="{{ route('account.testimonials') }}" title="{{ __('Témoignage') }}"
+                   @class(['active' => request()->routeIs('account.testimonials')])>
+                    <x-ukc.icon name="message" :size="18" /> <span class="txt">{{ __('Témoignage') }}</span>
                 </a>
                 <a href="{{ route('home') }}" title="{{ __('Accueil plateforme') }}">
                     <x-ukc.icon name="external" :size="18" /> <span class="txt">{{ __('Accueil plateforme') }}</span>
