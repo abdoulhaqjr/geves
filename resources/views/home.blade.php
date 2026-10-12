@@ -221,7 +221,7 @@
     <section class="ukc-section ukc-section--alt" id="apropos">
         <div class="ukc-container">
             <div class="block-head about-heading">
-                <span class="about-eyebrow">{{ __('Université de Kara · Recherche et innovation') }}</span>
+                <span class="about-eyebrow">{{ __('Université de Kara - Recherche et innovation') }}</span>
                 <h2>{{ __('À propos de :app', ['app' => config('app.name')]) }}</h2>
                 <p>{{ __('Un service commun pour les organisateurs, les comités scientifiques et les participants.') }}</p>
             </div>
