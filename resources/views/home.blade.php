@@ -28,7 +28,7 @@
             <div class="hero-grid">
                 <div>
                     <div class="hero-kicker">{{ __('Université de Kara - Direction de la Recherche et de l’Innovation') }}</div>
-                    <h1>{!! __('Plateforme de gestion de <em>séminaires, colloques et journées scientifiques</em> de l’Université de Kara') !!}</h1>
+                    <h1>{!! __('La plateforme des <em>séminaires, colloques et journées scientifiques</em> de l’Université de Kara') !!}</h1>
                     <p class="lead">
                         {{ __('Service institutionnel de la DRI pour piloter l’ensemble du cycle de vie des manifestations scientifiques : appels à communications, évaluation, inscriptions, programme, documents officiels et archives. Un espace unique pour les organisateurs, les comités et la communauté universitaire.') }}
                     </p>

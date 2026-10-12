@@ -88,7 +88,7 @@
 .hero h1 {
   font-size: clamp(1.45rem, 3.6vw, 2.15rem);
   font-weight: 900; line-height: 1.15; letter-spacing: -.02em;
-  margin-bottom: 16px; max-width: 16em;
+  margin-bottom: 16px; max-width: 18em;
 }
 .hero h1 em { font-style: normal; color: var(--ukc-gold); }
 .hero .lead {
