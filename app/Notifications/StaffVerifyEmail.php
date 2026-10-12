@@ -29,11 +29,16 @@ class StaffVerifyEmail extends VerifyEmail
 
     protected function buildMailMessage($url): MailMessage
     {
+        $app = (string) config('app.name');
+        $minutes = (int) Config::get('auth.verification.expire', 60);
+
         return (new MailMessage)
-            ->subject('Vérifiez votre adresse - Back-office '.config('app.name'))
-            ->greeting('Bonjour,')
-            ->line('Confirmez votre adresse e-mail pour activer votre accès au back-office '.config('app.name').'.')
-            ->action('Vérifier mon adresse', $url)
-            ->line('Si vous n’êtes pas concerné, ignorez cet e-mail.');
+            ->subject(__('Vérifiez votre adresse · Back-office :app', ['app' => $app]))
+            ->greeting(__('Bonjour,'))
+            ->line(__('Confirmez votre adresse e-mail pour activer votre accès au back-office de :app.', ['app' => $app]))
+            ->action(__('Vérifier mon adresse'), $url)
+            ->line(__('Ce lien de confirmation expire dans :count minutes.', ['count' => $minutes]))
+            ->line(__('Si vous n’êtes pas concerné par cette demande, ignorez cet e-mail.'))
+            ->salutation(__('L’équipe :app', ['app' => $app]));
     }
 }

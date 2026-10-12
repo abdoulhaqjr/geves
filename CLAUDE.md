@@ -599,6 +599,28 @@ les guards **`web`** (back-office) et **`account`** (espace participant) résolv
 est **legacy et mort**. Toute nouvelle table liée à un participant référence **`user_id`**
 (users), jamais `account_id`. `Participant` (par édition) porte `user_id`.
 
+### E-mails de compte = rédigés + LOCALISÉS (défaut français)
+
+Les e-mails d'**authentification** (confirmation d'adresse à l'inscription, mot de
+passe oublié, vérification staff) étaient les **notifications par défaut de Laravel**,
+en **anglais générique**. Ils sont désormais rédigés et **localisés** :
+
+- **`User implements HasLocalePreference`** → `preferredLocale()` = `Locales::resolve($this->locale)`
+  (repli **français**). Laravel enveloppe l'envoi de **toute notification** dans cette
+  locale, donc l'e-mail part dans la langue choisie par la personne. ⚠️ Vaut pour les
+  notifications (canal mail) ; les `Mailable` ne s'auto-localisent PAS ainsi.
+- Notifications dédiées : **`App\Notifications\AccountVerifyEmail`** (inscription = aussi
+  un mot de bienvenue), **`AccountResetPassword`** (mot de passe oublié ; comptes unifiés
+  → staff **et** participants), **`StaffVerifyEmail`** (back-office). `User::sendEmailVerificationNotification`
+  / `sendPasswordResetNotification` les envoient. ⚠️ **L'URL signée reste fournie par les
+  `VerifyEmail::createUrlUsing` / `ResetPassword::createUrlUsing`** d'`AppServiceProvider`
+  (routes `account.*`) : les notifications ne redéfinissent QUE `buildMailMessage` (le texte).
+- Rédaction via **`__('texte FR')`** (clé = français), traductions dans **`lang/en.json`**.
+  ⚠️ Ajouter une ligne d'e-mail = ajouter la clé FR **et** sa traduction `en`.
+- Locales prises en charge : `config('app.available_locales')` = `fr` (défaut) / `en`.
+- Tests : `tests/Feature/AccountMailLocalizationTest.php` (langue suit le compte + rendu
+  FR/EN) ; `AccountAuthTest` asserte `AccountVerifyEmail::class` à l'inscription.
+
 ### Impersonation (« se connecter en tant que »)
 
 `lab404/laravel-impersonate`, cross-guard (`web` → `account`), via

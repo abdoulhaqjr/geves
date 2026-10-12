@@ -1024,5 +1024,22 @@
     "Événements passés - :app": "Past events - :app",
     "Événements précédents": "Previous events",
     "Événements à venir": "Upcoming events",
-    "à préciser": "to be confirmed"
+    "à préciser": "to be confirmed",
+    "Confirmez votre adresse e-mail · :app": "Confirm your email address · :app",
+    "Bienvenue sur :app !": "Welcome to :app!",
+    "Votre compte vient d’être créé. Il reste une étape pour l’activer : confirmer votre adresse e-mail. Elle sécurise votre compte et vous ouvre l’ensemble des services (soumissions, inscriptions, documents).": "Your account has just been created. One step remains to activate it: confirm your email address. It secures your account and unlocks every service (submissions, registrations, documents).",
+    "Confirmer mon adresse": "Confirm my email address",
+    "Ce lien de confirmation expire dans :count minutes.": "This confirmation link expires in :count minutes.",
+    "Si vous n’êtes pas à l’origine de cette inscription, ignorez simplement cet e-mail : aucun compte ne sera activé sans cette confirmation.": "If you did not create this account, simply ignore this email: no account is activated without this confirmation.",
+    "L’équipe :app": "The :app team",
+    "Réinitialisation de votre mot de passe · :app": "Reset your password · :app",
+    "Bonjour,": "Hello,",
+    "Vous recevez cet e-mail car une réinitialisation du mot de passe a été demandée pour votre compte :app.": "You are receiving this email because a password reset was requested for your :app account.",
+    "Réinitialiser mon mot de passe": "Reset my password",
+    "Ce lien de réinitialisation expire dans :count minutes.": "This password reset link expires in :count minutes.",
+    "Si vous n’avez pas demandé cette réinitialisation, aucune action n’est requise : votre mot de passe reste inchangé.": "If you did not request a password reset, no action is required: your password stays unchanged.",
+    "Vérifiez votre adresse · Back-office :app": "Verify your email address · :app back office",
+    "Confirmez votre adresse e-mail pour activer votre accès au back-office de :app.": "Confirm your email address to activate your access to the :app back office.",
+    "Vérifier mon adresse": "Verify my email address",
+    "Si vous n’êtes pas concerné par cette demande, ignorez cet e-mail.": "If this request wasn’t made by you, ignore this email."
 }

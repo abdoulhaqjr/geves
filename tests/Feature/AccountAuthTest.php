@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\User;
-use Illuminate\Auth\Notifications\VerifyEmail;
+use App\Notifications\AccountVerifyEmail;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
@@ -39,7 +39,7 @@ it('inscrit un participant, le connecte et envoie l’e-mail de vérification', 
     expect(auth('account')->check())->toBeTrue();
     expect($account->hasVerifiedEmail())->toBeFalse();
 
-    Notification::assertSentTo($account, VerifyEmail::class);
+    Notification::assertSentTo($account, AccountVerifyEmail::class);
 });
 
 it('refuse la connexion avec de mauvais identifiants', function () {

@@ -4,12 +4,15 @@ namespace App\Models;
 
 use App\Models\Concerns\HasNotificationPreferences;
 use App\Models\Concerns\ParticipantIdentity;
+use App\Notifications\AccountResetPassword;
+use App\Notifications\AccountVerifyEmail;
 use App\Notifications\StaffVerifyEmail;
+use App\Support\Locales;
 use App\Support\Phone;
 use App\Support\StaffRoles;
 use Database\Factories\UserFactory;
-use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
@@ -55,7 +58,7 @@ use Spatie\Permission\Traits\HasRoles;
     'civility', 'first_name', 'last_name', 'grade', 'phone', 'affiliation',
     'orcid', 'country', 'city', 'bio', 'photo_path', 'locale'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable implements MustVerifyEmail
+class User extends Authenticatable implements HasLocalePreference, MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasNotificationPreferences, HasRoles, Impersonate, Notifiable, ParticipantIdentity;
@@ -283,19 +286,39 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Langue de rendu des notifications (e-mails) : celle choisie par la personne
+     * (`locale`), repli français. Laravel enveloppe l'envoi dans cette locale, donc
+     * les e-mails de compte sont rédigés dans la langue de l'utilisateur.
+     */
+    public function preferredLocale(): string
+    {
+        return Locales::resolve($this->locale);
+    }
+
+    /**
      * Vérification d'e-mail par défaut = flux participant (route account signée,
      * via VerifyEmail::createUrlUsing). Les comptes staff créés au back-office
      * reçoivent explicitement {@see StaffVerifyEmail}.
      */
     public function sendEmailVerificationNotification(): void
     {
-        $this->notify(new VerifyEmail);
+        $this->notify(new AccountVerifyEmail);
     }
 
     /** Lien de vérification staff (route admin signée) - création back-office. */
     public function sendStaffEmailVerificationNotification(): void
     {
         $this->notify(new StaffVerifyEmail);
+    }
+
+    /**
+     * Réinitialisation de mot de passe : e-mail rédigé et localisé {@see
+     * AccountResetPassword}, en lieu et place de la notification anglaise par
+     * défaut de Laravel. Vaut pour les participants ET le staff (comptes unifiés).
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new AccountResetPassword($token));
     }
 
     /**
